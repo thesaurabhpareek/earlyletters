@@ -229,7 +229,7 @@ describe('[S3] "Write the words" on a recording with no words', () => {
     expect(sheet).not.toMatch(/setText\(''\)|setText\(""\)/);
     expect(sheet.slice(0, close)).not.toMatch(/onClose\(\)/);
     expect(sheet).toMatch(/\{refused \? \([\s\S]*?copy\.review\.saveFailed/);
-    expect(en.review.saveFailed).toBe('Your words are still here. That did not work this time.');
+    expect(en.review.saveFailed).toBe('That did not save. Your words are still here.');
   });
 
   it('the journey asserts it: j10e sees "Write the words" and neither retry nor "Get words ready", and the save goes to Review', () => {

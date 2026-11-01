@@ -61,3 +61,23 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back: CR-32's.
 - Chief Compliance Officer (Claude role, not counsel)
 
+### CCO-4 PR #161's export reads of the consent record pass the compliance fence (31 Oct 2026, CCO via session_01JQRV3b)
+- Question: PR #161 (BL-323, export schema 1.3.0) adds `supabase/tests/export_reads.test.mjs`, which names `policy_acceptances` (the fence scans only `supabase/**` for content markers), so the fence's `cco_review` tier asks for a CCO approval on head e7349e9. Does the change meet the CCO checklist in `compliance/README.md`?
+- Tier and type: T1; clear
+- Options considered: approve; hold until counsel answers a question about access rights; ask the founder about the export README wording
+- Ruling: approve e7349e9. Checklist, item by item:
+  - Sign-up checks table unchanged: the diff touches no gate, age-signal, auth or invite file.
+  - No new collection: the phone reads the person's own existing `policy_acceptances` and `my_policy_state` rows (DATA_CLASSIFICATION classifies every column, L2 except `locale` L3) into their own export, never `profile_id`, `subject_hash` or `pseudonymised_at`. The class's export rule allows a person's own L2 and L3, and the temporary ZIP already has its row ("Export ZIPs in app temp").
+  - No legal or platform fact is relied on.
+  - No promise changes. In-app copy changes: the export README in `packages/content/src/features/export.en.ts` gains a section, and the comment above `offlineNote` changes (its text does not). The new section adds no promise: it describes a record the privacy policy already discloses (the retention table's "Consent and policy-acceptance records ... to show what you agreed to", and the Account row's "the consents you gave or withdrew, and when"). Its last sentence is about export behaviour and is backed by tests (`export-server-records.test.ts`, `export_reads.test.mjs`). Terms, Privacy Policy and store text are untouched.
+  - No new door path; no geo result, so DB-IP attribution does not apply.
+- Why: two counted reviews passed at e7349e9 (Review A correctness, Review B privacy, PR #161 comments), and the database test proves own rows only. No legal judgment gates this approval. LEGAL-REQ-034 is an engineering requirement we set, derived from the access-rights review (its source line names CR-014 and CR-022), and #161 only adds to an export that had no consent history at all; it removes nothing. Whether any right-of-access law asks for more is not ruled here and is not in the counsel packet. Open items, none blocking:
+  - An offline export carries no consent history, because the record lives on the server. That is a gap against LEGAL-REQ-034's "works offline from local data", filed as BL-528 with an owner, not a counsel question.
+  - `support_assisted` acts skip the `context` key allowlist: handoff to data-architect before support records its first act.
+  - Claims register entries for the new README section, for "The export is made on this phone" now sitting beside a signed-in server read, and for Privacy Policy section 14's "every letter you wrote" beside an export that leaves out Recently deleted letters (BL-388, CR-35).
+  - The privacy policy's Account row names consents given or withdrawn, while the record also holds declines and acknowledgements: handoff to `legal` to name them; policy text goes through the founder.
+  - The server-built export (DATA-REQ-054) is not built yet.
+- Door: two-way
+- Way back: revert PR #161; the export falls back to schema 1.2.0.
+- Revisit when: BL-528 is decided. #161 merged at e7349e9 (4651256), the head this approval covers.
+- Signed: Chief Compliance Officer (Claude role, not counsel)

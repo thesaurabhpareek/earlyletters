@@ -32,11 +32,14 @@ const CHAPTER_7: Record<string, string> = {
   // Led with "Your letters are safe." as the S52 table now words them (amended 28 Oct, #360); the earlier words follow.
   'errors.not_available': "Your letters are safe. This way of signing in isn't available right now. Try another way.",
   'errors.code_paused': 'Your letters are safe. You can try a code again in 15 minutes.',
-  'errors.rate_limited': 'Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
-  'errors.provider': 'Your letters are safe. That did not work this time. Try again, or try another way.',
+  // SIGN-01 (comms validation, 31 Oct 2026): no length the app cannot know, no provider the build may not offer.
+  'errors.rate_limited': 'Your letters are safe. Too many tries for now. Wait a few minutes, then try again.',
+  'errors.email_wait': "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
+  // LNG-05: the stock "That did not work this time" says what did not finish.
+  'errors.provider': 'Your letters are safe. That sign-in did not finish. Try again, or try another way.',
   'errors.session_expired': 'Your letters are safe on this phone. Sign in again to keep sharing them.',
   'errors.consent_unavailable': 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
-  'errors.unknown': 'That did not work this time. Your letters are safe on this phone.',
+  'errors.unknown': 'That did not go through. Your letters are safe on this phone.',
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
   // S54
@@ -57,8 +60,9 @@ const KEPT: Record<string, string> = {
   'sheet.titles.sign_in': 'Welcome back',
   'sheet.titles.settings': 'Sign in',
   'sheet.bodies.sign_in': 'Sign in the same way as last time to see every letter.',
-  'sheet.google': 'Continue with Google',
-  'sheet.email': 'Continue with email',
+  // LNG-13: the BRAND.md glossary's button names, the words the emails use.
+  'sheet.google': 'Sign in with Google',
+  'sheet.email': 'Sign in with email',
   'sheet.passkey': 'Use a passkey',
   'sheet.later': 'Not now',
   'sheet.busy': 'Signing you in',
@@ -66,7 +70,7 @@ const KEPT: Record<string, string> = {
   'errors.wrong_code': "That code didn't match. Check the newest email, or send a new one.",
   'errors.invalid_email': "That email doesn't look quite right.",
   'errors.under_18': '{app} is currently for adults 18 and over.',
-  'email.title': 'Continue with email',
+  'email.title': 'Sign in with email',
   'email.label': 'Email',
   'email.placeholder': 'you@example.com',
   'email.send': 'Send link',
@@ -115,7 +119,7 @@ const KEPT: Record<string, string> = {
  */
 const CRITICS: Record<string, string> = {
   'code.lettersSafe': 'Your letters are safe on this phone.',
-  'code.pausedOtherWays': 'The link in the newest email still works, and so does signing in with Apple or Google.',
+  'code.pausedOtherWays': 'The link in the newest email still works, and so do the other ways to sign in.',
 };
 
 /** RET in chapter 7: no longer shown, and every reader was a P8 file, so P8a deletes them (section 6). */
@@ -172,10 +176,14 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // The pause line (lens A2): only typing a code waits. The email's link and Apple or Google still sign in, and it
     // neither blames nor counts down (code_paused already says 15 minutes, once, as a fact).
     expect(authCopy.code.pausedOtherWays).toMatch(/link in the newest email still works/);
-    expect(authCopy.code.pausedOtherWays).toMatch(/Apple or Google/);
+    // SIGN-01, BL-475 point 3: no provider is named, since a build may offer neither.
+    expect(authCopy.code.pausedOtherWays).not.toMatch(/Apple|Google/);
     expect(authCopy.code.pausedOtherWays).not.toMatch(/\d|minute|second|wrong|too many|you /i);
     expect(authCopy.errors.code_paused).toMatch(/try a code again/);
-    expect(authCopy.errors.rate_limited).toMatch(/Use Apple or Google/);
+    for (const line of [authCopy.errors.rate_limited, authCopy.errors.email_wait]) {
+      expect(line).not.toMatch(/Apple|Google|an hour|\d/);
+      expect(line).toMatch(/a few minutes/);
+    }
   });
 
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {
@@ -233,10 +241,10 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // letters are safe as its first sentence. An error fixed by typing again (a wrong or expired code, an address)
     // keeps its words. `unknown` says it second. Every error is in exactly one list, so a new key must be placed.
     const SAFE = /^Your letters are safe(?: on this phone)?\./;
-    const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'code_paused'];
+    const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
     const INPUT = ['wrong_code', 'expired', 'invalid_email'];
-    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'already_signed_in'];
+    const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in'];
     const errors = authCopy.errors as Record<string, string>;
     expect(Object.keys(errors).sort()).toEqual([...LEADS, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
     for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);
@@ -246,7 +254,7 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     }
     for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe/);
     // The four the ruling changed keep their table words after the new first sentence.
-    expect(errors.provider).toBe('Your letters are safe. That did not work this time. Try again, or try another way.');
+    expect(errors.provider).toBe('Your letters are safe. That sign-in did not finish. Try again, or try another way.');
     expect(authCopy.sheet.notConfigured).toContain('Your letters are safe on this phone.');
   });
 

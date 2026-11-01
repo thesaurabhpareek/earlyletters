@@ -121,14 +121,14 @@ Each is one owner and one PR. None is started by this file. Founder-only steps a
 
 | Follow-up | Owner | When |
 |---|---|---|
-| `EXPO_PUBLIC_ENGLISH_ONLY=on` in the `production` profile in `eas.json`, with its three tests (the switch is `capabilities.ts` line 75) | Mobile and release agents | After the 5 Nov go/no-go (`eas.json` is frozen 3 to 5 Nov) |
+| `EXPO_PUBLIC_ENGLISH_ONLY=on` in the `production` profile in `eas.json`, with its three tests (the switch is `capabilities.ts` line 75) | Mobile and release agents | After the go/no-go (Mon 9 Nov, D-130; `eas.json` is frozen Tue 3 to Mon 9 Nov) |
 | Store listing and screenshot rewrite for the staged binary; no seven-language or co-parent claims; no "exactly as you said it" in the subtitle | Store agent, counsel | Before submission |
 | Notes for Review: the dormant-code paragraph and the flag list (Apple 2.5.19, 2.3.1(a); F19-REQ-024). Draft in `docs/store/app-store-staged-1.0-proposal.md` | Store agent, counsel | Before submission |
-| Hide the co-parent "coming soon" surfaces (Family tab, Settings row, invite screens) in the store build through the existing capability switch (D-126); mobile PR with tests | Mobile agent | After the 5 Nov go/no-go, with the `ENGLISH_ONLY` change |
+| Hide the co-parent "coming soon" surfaces (Family tab, Settings row, invite screens) in the store build through the existing capability switch (D-126); mobile PR with tests | Mobile agent | After the go/no-go (Mon 9 Nov, D-130), with the `ENGLISH_ONLY` change |
 | Root `.easignore` after a dry run on build 1 (EAS then ignores `.gitignore`; the command and effect are unverified) | Release agent | After build 1 |
 | Wire `scripts/guards/docs-leak-guard.mjs` into the seam-guard job in `ci.yml` and `web.yml`; fix the stale comments in `web.yml` lines 18 and 28 | Ops | A `.github` change; founder step under D-122 |
 | `scripts/trace.mjs` ID pattern to read sub-IDs (line 33); fix the C-NFR-005 duplicate ID | QA agent | This week, as a branch |
-| `plan.ts` backup gate removed to match D-111 item 6, with test updates | Billing path, two reviews | After 5 Nov, before any profile turns backup on |
+| `plan.ts` backup gate removed to match D-111 item 6, with test updates | Billing path, two reviews | After the go/no-go (Mon 9 Nov, D-130), before any profile turns backup on |
 | F18 re-tagged to v1.1 or later; DR-19 and DR-20 closed in `09`; `08-delivery.md` dates re-based | Docs agents | Separate docs PRs |
 | Check the merged backup server (PR #151) against D-108 and F08-REQ-034 | Docs agent | Before anyone edits the requirement |
 | Reconcile DR-01 (Hindi needs a tuned model) with counsel packet Q9 (Hindi uses the shared model) | Speech engineer | Before Hindi is scheduled |

@@ -33,6 +33,9 @@ export type AuthErrorKind =
   | 'expired'
   | 'wrong_code'
   | 'code_paused'
+  /** A 429 while sending an email (SIGN-01): the wait between emails, or the project's email cap. */
+  | 'email_wait'
+  /** A 429 anywhere else (checking a code or a link): no email was being sent. */
   | 'rate_limited'
   | 'invalid_email'
   | 'not_available'
@@ -42,6 +45,8 @@ export type AuthErrorKind =
   | 'consent_unavailable'
   /** An email link this phone did not ask for (BL-347, security review H1): never verified here. */
   | 'other_phone'
+  /** SIGN-06: the same refusal, after GET /verify already ran, so the email's code may be spent too: send a new email. */
+  | 'other_phone_spent'
   /** A link opened while an account is signed in on this phone: it never replaces the session. */
   | 'already_signed_in'
   | 'unknown';

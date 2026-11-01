@@ -45,6 +45,7 @@ import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
 import { WELCOME_LOCKUP } from '@/components/onboarding/welcome-lockup.logic';
@@ -126,7 +127,7 @@ function FirstRun() {
   const [nudged, setNudged] = useState(false);
   // Tapping during "The book is open." lands the cover on its open state at once (S08: any tap completes it).
   const [settled, setSettledOpen] = useState(false);
-  const child = joinNames(names, 'your child');
+  const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
   const doors = visibleCoParentDoors(capabilities.coParent);
@@ -239,7 +240,7 @@ function FirstRun() {
       if (!dueDate) return o.child.needDueDate;
       return checkDueDate(dueDate, today).ok ? null : copy.childrenExtra.edit.dueDateRange;
     }
-    if (!birthday) return fill(o.child.needBirthday, { child: namedCount ? child : 'your child' });
+    if (!birthday) return fill(o.child.needBirthday, { child: namedCount ? child : o.childFallback });
     return checkBirthday(birthday, today).ok ? null : copy.childrenExtra.edit.birthdayFuture;
   })();
   // Twins or more: the reason agrees in number with the title (S06).
@@ -328,7 +329,7 @@ function FirstRun() {
                   </Animated.View>
                   <Animated.View entering={enterAt(150)} style={{ marginTop: WELCOME.bodyGap }}>
                     <Text variant="body" tone="muted" className="text-center">
-                      {fill(o.welcome.body, { child: 'your child' })}
+                      {fill(o.welcome.body, { child: o.childFallback })}
                     </Text>
                   </Animated.View>
                   <Animated.View entering={enterAt(180)} style={{ marginTop: WELCOME.freeGap }}>
@@ -350,7 +351,7 @@ function FirstRun() {
                   {/* A small fix, shown: the real engine's marks on a fictional sentence (S04). */}
                   <PromiseSample />
                   <View className="gap-6">
-                    <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: 'your child' })} />
+                    <IconRow icon={MicrophoneIcon} text={fill(o.promise.recordingBody, { child: o.childFallback })} />
                     <IconRow icon={LockSimpleIcon} text={o.promise.privateNote} />
                   </View>
                 </>
@@ -400,11 +401,11 @@ function FirstRun() {
                   {dateShown ? (
                     <Animated.View entering={motion.enter()} className="gap-4">
                       <ChoiceGroup
-                        label={o.child.birthdayLabel}
+                        label={o.child.bornQuestion}
                         value={expecting ? 'expecting' : 'born'}
                         onChange={(v) => setExpecting(v === 'expecting')}
                         options={[
-                          { value: 'born', label: o.child.birthdayLabel },
+                          { value: 'born', label: o.child.bornLabel },
                           { value: 'expecting', label: o.child.expectingLabel },
                         ]}
                       />
@@ -464,18 +465,20 @@ function FirstRun() {
                     </ChipGroup>
                     <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
-                  {/* The spoken language, under a hairline, with no footer (S06). */}
-                  <View className="gap-4">
-                    <Separator />
-                    <ListSection>
-                      <ListRow
-                        title={copy.settingsHome.languageLabel}
-                        trailing={languageInfo(spoken.primary.code).native}
-                        onPress={() => setLanguageOpen(true)}
-                        accessibilityHint={languageCopy.picker.rowHint}
-                      />
-                    </ListSection>
-                  </View>
+                  {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
+                  {showOnboardingLanguageRow(capabilities.englishOnly) && (
+                    <View className="gap-4">
+                      <Separator />
+                      <ListSection>
+                        <ListRow
+                          title={copy.settingsHome.languageLabel}
+                          trailing={languageInfo(spoken.primary.code).native}
+                          onPress={() => setLanguageOpen(true)}
+                          accessibilityHint={languageCopy.picker.rowHint}
+                        />
+                      </ListSection>
+                    </View>
+                  )}
                 </>
               )}
 

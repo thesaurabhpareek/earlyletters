@@ -1,6 +1,6 @@
 ---
 title: Counsel packet, Early Letters v1.0 and after
-version: 1.0.0
+version: 1.2.0
 status: for counsel
 date: 2026-10-03
 owner: founder
@@ -11,7 +11,7 @@ prepared_by: AI (Claude), legal and privacy counsel support (legal-alignment age
 
 ## 0. How to use this packet
 
-- **The product, in one paragraph.** Early Letters is an iOS memory book for adults (18+ only) who speak or type letters to their child. Transcription runs on the phone in seven languages. Recordings never leave the phone in v1.0. Letter text syncs to Supabase (US) once the person signs in (Apple, Google or email link) and gives a separate sensitive-data consent. Co-parents share a book; other family members come later. Plus ($3.99 a month or $29.99 a year, with free trials) is sold only through Apple, checked on the phone, shared through Apple Family Sharing, and gates only Read together after 3 free sessions per book and books for more children. Analytics are opt-in PostHog. US App Store only. Published by the founder as an individual. Founder decisions: `docs/DECISIONS.md` D-051 to D-070.
+- **The product, in one paragraph.** Early Letters is an iOS memory book for adults (18+ only) who speak or type letters to their child. Transcription runs on the phone in seven languages. Recordings never leave the phone in v1.0. Letter text syncs to Supabase (US) once the person signs in (Apple, Google or email link) and gives a separate sensitive-data consent. Co-parents share a book; other family members come later. Plus (Plus Monthly $4.99 a month with a 1-month free trial, or Plus Annual $49.99 a year with a 2-month free trial; D-082) is sold only through Apple, checked on the phone and shared through Apple Family Sharing. The first 2 letters are free; Plus gates only keeping a letter after them (D-082, D-083). Read together and new books are free. **Update 31 Oct 2026:** only the Plus facts in this paragraph were brought up to date; the rest describes the plan of 3 Oct (for the first store build, read D-121: on-device, servers, analytics and email off, English only). Analytics are opt-in PostHog. US App Store only. Published by the founder as an individual. Founder decisions: `docs/DECISIONS.md` D-051 to D-070.
 - **The calendar (ROADMAP 2.0).** Package to counsel Fri 9 Oct. External TestFlight beta (15 to 25 families) from Mon 19 Oct. Answers after **Fri 23 Oct** move the submission date. Feature freeze Mon 26 Oct (anything that needs code must be decided before). Counsel sign-off and legal pages published **Thu 29 Oct**. App Privacy answers and store listing Fri 30 Oct. **Submit 2 to 6 Nov.** Release 9 to 20 Nov. First Plus trial reminders from about 2 Dec. California AB 1043 applies from 1 Jan 2027. v1.1 about 6 to 8 weeks after launch.
 - **Priorities.** **A** blocks submission (answer by 23 Oct unless stated). **B** needed before release, before the external beta, or before a dated event. **C** needed before a later feature ships.
 - **Time estimate for counsel:** tier A about 6 to 8 hours; tier B about 3 hours; tier C as each feature comes.
@@ -147,6 +147,7 @@ prepared_by: AI (Claude), legal and privacy counsel support (legal-alignment age
 - **Documents.** Privacy Policy 10, CN-12; CHD policy 6; data-policy 5; deletion spec 2.1, DATA-REQ-036; LEGAL-REQ-031.
 
 ### Q14. "Free, always" scope
+- **Update 31 Oct 2026 (Terms 4.0.0).** Under D-082 the Terms 13.1 list became: keeping the first two letters; reading every kept letter and playing its recordings; exporting everything. "Writing with no limit" and co-parent writing left the permanent list, for the founder to decide under (c). Read together and new books are free under D-083 but stated in 14.1, not in 13.
 - **Context.** Terms 13 promises writing, reading, playing recordings, export and writing with a co-parent free "for as long as we operate the Service", and 13.3 makes Section 13 non-amendable for existing users. Earlier drafts also promised family members' letters free; v1.0 has co-parents only (D-055), so 1.5.0 narrows the promise to what exists. Which books are free (D-007, D-008) is described as Plus scope in 14.1, not as a permanent promise.
 - **Questions.** (a) Is the open-ended promise enforceable and wise (FTC "free" claims, register CR-012)? (b) Does it bind an asset buyer through 17.2 and 27.3? (c) Should the founder extend the permanent promise to other family members when they ship?
 - **Default.** As drafted; the founder decides (c) when contributors ship.
@@ -361,4 +362,5 @@ Superseded and closed since the 2 Oct memos (no longer questions): PowerSync no-
 
 | Version | Date | Change |
 |---|---|---|
+| 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |
 | 1.0.0 | 2026-10-03 | First consolidated packet, prepared with the legal alignment to D-051 to D-070. |

@@ -7,60 +7,43 @@
  *
  * Pattern: Apple's "what's new" sheets and Calm's feature screens: one line
  * drawing on a soft wash, a quiet status, a serif title, three plain points with
- * glyphs, and one optional action.
+ * glyphs, and no action.
  *
- * - "Tell me when it's here" stores a day on this phone (lib/family/coming-soon.logic.ts):
- *   no network, no account. It turns into a quiet confirmation. Two content-free events measure the
- *   teaser (coparent_soon_opened, coparent_soon_notify); nothing else leaves the phone.
+ * - No "Tell me when it's here" (SET-08, 31 Oct 2026): its confirmation promised a note "here" when the
+ *   update arrives, and no build keeps that promise yet (the arrival card ships with co-parent sharing, a
+ *   later 1.0.x under D-121). The button returns with that card. A day already stored on a phone
+ *   (lib/family/coming-soon.logic.ts) is kept for it. One content-free event (coparent_soon_opened) counts
+ *   how often the screen is seen; nothing else leaves the phone.
  * - Remote config `flags.familyTeaser = 'quiet'` keeps the drawing and a plain line
  *   about this phone and drops the teaser copy. It cannot turn sharing on.
  *
  * Accessibility: the drawing is decorative; headings in reading order (Family,
  * then the title); each point is one element ("title. body"); the status reads
- * "Coming soon"; the confirmation is announced. Text scales with Dynamic Type
+ * "Coming soon". Text scales with Dynamic Type
  * (display and title caps from tokens only). Reduce Motion: the drawing is shown
- * complete and does not breathe; the confirmation fades.
+ * complete and does not breathe.
  * Motion: the drawing draws once and breathes while focused (MOTION 5h, 5j);
  * controls never animate in (MOTION principle 2).
  */
 import { useIsFocused } from 'expo-router';
-import { CheckCircleIcon } from 'phosphor-react-native/src/icons/CheckCircle';
 import { DevicesIcon } from 'phosphor-react-native/src/icons/Devices';
 import { HandHeartIcon } from 'phosphor-react-native/src/icons/HandHeart';
 import { PenNibIcon } from 'phosphor-react-native/src/icons/PenNib';
 import type { Icon } from 'phosphor-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
-import Animated from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Breathe } from '@/components/motion/breathe';
-import { Button } from '@/components/ui/button';
 import { LineArt } from '@/components/ui/line-art';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
-import { announce, useTheme } from '@/lib/a11y';
+import { useTheme } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
-import { hasRequestedCoParentNotify, requestCoParentNotify } from '@/lib/family/coming-soon.logic';
 import { track } from '@/lib/analytics/track';
-import { haptic } from '@/lib/haptics';
-import { useMotion } from '@/lib/motion';
 import { useRemoteConfig } from '@/lib/remote';
-import { getSetting, setSetting, subscribe } from '@/lib/store';
 
-const settings = { getSetting, setSetting };
 const POINT_ICONS: readonly Icon[] = [PenNibIcon, DevicesIcon, HandHeartIcon];
-
-/** The local "tell me" flag, live (another screen may have set it). */
-function useNotifyRequested(): [boolean, () => void] {
-  const [requested, setRequested] = useState(() => hasRequestedCoParentNotify(settings));
-  useEffect(() => subscribe(() => setRequested(hasRequestedCoParentNotify(settings))), []);
-  const request = () => {
-    requestCoParentNotify(settings, new Date());
-    setRequested(true);
-  };
-  return [requested, request];
-}
 
 function StatusChip({ label }: { label: string }) {
   const { c } = useTheme();
@@ -88,39 +71,6 @@ function Point({ icon: Glyph, title, body }: { icon: Icon; title: string; body: 
         </Text>
       </View>
     </View>
-  );
-}
-
-function NotifyAction() {
-  const { c } = useTheme();
-  const { enter } = useMotion();
-  const [requested, request] = useNotifyRequested();
-  const n = familyCopy.soon.notify;
-
-  if (requested) {
-    return (
-      <Animated.View entering={enter(0)} accessible accessibilityLiveRegion="polite" accessibilityLabel={n.done} className="min-h-14 flex-row items-center gap-3 rounded-2xl bg-secondary px-4 py-3">
-        <CheckCircleIcon size={24} color={c.success} weight="fill" />
-        <Text variant="callout" className="flex-1">
-          {n.done}
-        </Text>
-      </Animated.View>
-    );
-  }
-  return (
-    <Button
-      variant="secondary"
-      size="lg"
-      fullWidth
-      label={n.button}
-      accessibilityHint={n.hint}
-      onPress={() => {
-        haptic('success');
-        request();
-        track('coparent_soon_notify', {}); // content-free: no book, no child, no text
-        announce(n.done);
-      }}
-    />
   );
 }
 
@@ -181,7 +131,6 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
             <Text variant="subhead" tone="muted">
               {s.building}
             </Text>
-            <NotifyAction />
           </View>
         </>
       )}

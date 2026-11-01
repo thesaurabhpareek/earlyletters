@@ -29,7 +29,7 @@ const TOKEN = 'q8Zr0_Yc-3Jk9LmN2pQ4sT6vW8xZ1aB3cD5eF7gH9iJ';
 const OTHER = 'papa@example.invalid';
 const WRONG = "That code didn't match. Check the newest email, or send a new one.";
 /** While the pause holds, one line: errors.code_paused, then the ways in that still work (code.pausedOtherWays). */
-const PAUSED = 'Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so does signing in with Apple or Google.';
+const PAUSED = 'Your letters are safe. You can try a code again in 15 minutes. The link in the newest email still works, and so do the other ways to sign in.';
 const RESENT = 'A new email is on its way.';
 const RESEND_WAIT = 'You can send another in a minute.';
 const BAD_CODE = { status: 403, body: { code: 'otp_expired', error_code: 'otp_expired', msg: 'Token has expired or is invalid' } };
@@ -45,7 +45,7 @@ async function expectSheet(page: Page, title: string, body: string) {
   // `.last()`: on the web the page that opened the sheet stays in the tree under it (Account says the same body).
   await expect(page.getByRole('heading', { name: title, exact: true }).last()).toBeVisible();
   await expect(page.getByText(body, { exact: true }).last()).toBeVisible();
-  await expect(btn(page, 'Continue with email')).toBeVisible();
+  await expect(btn(page, 'Sign in with email')).toBeVisible();
   await expect(page.getByText(PRIVACY, { exact: true })).toBeVisible();
   await expect(btn(page, 'Not now')).toBeVisible();
   // No "we" outside the registered privacy line, and no line about "this build".
@@ -55,7 +55,7 @@ async function expectSheet(page: Page, title: string, body: string) {
 
 /** Email and code through the mocked server. */
 async function signInWithEmail(page: Page) {
-  await btn(page, 'Continue with email').click();
+  await btn(page, 'Sign in with email').click();
   await page.getByLabel('Email', { exact: true }).fill(EMAIL);
   await btn(page, 'Send link').click();
   await expect(page.getByText(`A link and a code are on their way to ${EMAIL}.`)).toBeVisible();
@@ -105,12 +105,12 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await step('unhappy', 'Not now', 'Not now closes the sheet onto the welcome as it was. Nothing is asked of the server and nothing on this phone changes (local-first).');
 
   await btn(app, 'I already have a book').click();
-  await btn(app, 'Continue with email').click();
-  await expect(app.getByRole('heading', { name: 'Continue with email' })).toBeVisible();
+  await btn(app, 'Sign in with email').click();
+  await expect(app.getByRole('heading', { name: 'Sign in with email' })).toBeVisible();
   await expect(app.getByText('A link and a code arrive by email. No password to remember.')).toBeVisible();
   await app.getByLabel('Email', { exact: true }).fill('mama@example');
   await expect(app.getByText("That email doesn't look quite right.")).toHaveCount(0);
-  await step('happy', 'Continue with email', 'One field with the email keyboard and AutoFill, the help under it, and Send link outlined until the text looks like an address. Nothing is wrong while the person types (S53).');
+  await step('happy', 'Sign in with email', 'One field with the email keyboard and AutoFill, the help under it, and Send link outlined until the text looks like an address. Nothing is wrong while the person types (S53).');
 
   await btn(app, 'Send link').click();
   await expect(app.getByText("That email doesn't look quite right.")).toBeVisible();
@@ -125,8 +125,8 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
 
   m.auth('otp', () => ({ status: 429, body: { code: 'over_email_send_rate_limit', error_code: 'over_email_send_rate_limit', msg: 'email rate limit exceeded' } }));
   await btn(app, 'Send link').click();
-  await expect(app.getByText(`${SAFE.replace(' on this phone.', '.')} Sign-in emails are paused for an hour. Use Apple or Google, or try again later.`)).toBeVisible();
-  await step('unhappy', 'Too many emails', 'The letters are safe first, then the cause and a way forward, in the person\'s words, not the system\'s.');
+  await expect(app.getByText("Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.")).toBeVisible();
+  await step('unhappy', 'Too many emails', 'The letters are safe first, then the cause and a way forward, in the person\'s words, not the system\'s. It names no length the app cannot know and no provider the build may not offer (SIGN-01).');
 
   m.auth('otp', () => null);
   await btn(app, 'Send link').click();
@@ -162,22 +162,47 @@ test('[J22] "I already have a book": the sheet, Not now, email, a wrong code, an
   await expect(btn(app, 'Begin the book')).toBeVisible();
 });
 
-test('[J22b] the first kept letter: the sheet rises over the Book, never in place of Review', async ({ app, record }) => {
-  test.setTimeout(120_000);
+test('[J22b] DR-12 B: the reminder card after the first letter; Keep the book on the first save of session 2, over the Book', async ({ app, record }) => {
+  // SET-01, SET-02 (docs/reviews/2026-10-31/setup.md). This journey used to show the sheet after the first letter, which
+  // was the bug: the first ask slot is the reminder card (F13-REQ-023), and Keep the book waits for session 2 or letter 2.
+  test.setTimeout(150_000);
   const step = journey(record, 'J22', 'sign-in', 20, 'J07-03');
+  await app.clock.install();
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
   await openOn(app);
   await firstRun(app);
   await typeLetter(app, 'You put both hands on the window today and watched the rain.');
   await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
+  await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` })).toHaveCount(0);
+  await expect(btn(app, 'Yes, evenings')).toBeVisible();
+  await expect(btn(app, 'Pick a time')).toBeVisible();
+  await step('happy', 'After the first letter: the reminder card', 'The first ask after the first letter is the reminder card over the Book (C-REQ-001 Rev, F13-REQ-023). The account sheet does not open (DR-12 B).');
+
+  await btn(app, 'No reminders').click();
+  await expect(app.getByText('You can write whenever you like.')).toBeVisible();
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  await app.clock.fastForward(4000);
+  await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` }), 'one ask per session').toHaveCount(0);
+  expect(m.serverCalls(), 'the card asks nothing of the server').toEqual([]);
+
+  // Session 2, the next day: a relaunch.
+  const now = await app.evaluate(() => Date.now());
+  await app.clock.setSystemTime(now + 25 * 60 * MIN);
+  await app.reload();
+  await tab(app, 'Tonight').click(); // the relaunch reopens the Book it was on
+  await expect(btn(app, /^Type/)).toBeVisible({ timeout: 15_000 });
+  await typeLetter(app, 'You laughed at the dog all through breakfast.');
+  await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
   await expect(app.getByRole('heading', { name: `Keep ${CHILD}'s book on any phone` })).toBeVisible({ timeout: 8000 });
   await expectSheet(app, `Keep ${CHILD}'s book on any phone`, BODY);
   await expect(app.getByRole('heading', { name: 'Read it back' })).toHaveCount(0);
-  await step('happy', 'Keep the book on any phone', 'After the first kept letter the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b). It is about this book, so its cover sits beside the title.');
+  await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
+  await step('happy', 'Keep the book on any phone', 'On the first save of session 2 the sheet rises over the Book, 600 ms after the Book is on screen, so the letter is seen in its month first (5.8 row 5b, DR-12 B). It is about this book, so its cover sits beside the title.');
 
   await btn(app, 'Not now').click();
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
-  await expect(app.getByText('You put both hands on the window today and watched the rain.')).toBeVisible();
+  await expect(app.getByText('You laughed at the dog all through breakfast.')).toBeVisible();
   expect(m.serverCalls(), 'Not now asks nothing of the server').toEqual([]);
   await step('unhappy', 'Not now, on the Book', 'Not now leaves the person on the Book with the new letter, as it was. The ask is made once (PRD-REQ-001).');
 });
@@ -305,7 +330,7 @@ async function toCodeStep(page: Page) {
   await openOn(page);
   await passAgeGate(page);
   await btn(page, 'I already have a book').click();
-  await btn(page, 'Continue with email').click();
+  await btn(page, 'Sign in with email').click();
   await sendTo(page, EMAIL);
 }
 
@@ -365,7 +390,7 @@ test('[J22g] the code step: Not now top right closes and asks nothing; the lette
   await openOn(app, '/?seed=asha');
   await openOn(app, '/settings/account?seed=asha');
   await btn(app, 'Sign in').click();
-  await btn(app, 'Continue with email').click();
+  await btn(app, 'Sign in with email').click();
   await sendTo(app, EMAIL);
   await expect(app.getByText(SAFE, { exact: true })).toBeVisible();
   await step('happy', 'Waiting for the email, with a book here', 'Under the code field, only when this phone holds a book: "Your letters are safe on this phone." A fresh install has no letters to be safe, so it says nothing there.');
@@ -445,9 +470,10 @@ test('[J22k] the pause stands through a new email, another address and back, and
   await expectPaused(app, 'after a new email to the same address');
 
   // Use a different email, then the same address again, typed with a space and capitals: the same list, so the pause holds.
+  // Inside the minute after that email, nothing new is sent (SIGN-01): the code screen comes back for the email just sent.
   await btn(app, 'Use a different email').click();
   await sendTo(app, ' Mama@Example.invalid');
-  expect(emailsSent(m)).toHaveLength(3);
+  expect(emailsSent(m), 'the same address inside the minute sends no second email (SIGN-01)').toHaveLength(2);
   await expectPaused(app, 'the same address from the email step');
 
   // Another address has its own list: nothing of the first address's five is counted for it.
@@ -481,7 +507,7 @@ test('[J22l] Not now waits while a code is being checked, and changes nothing: t
   await btn(app, 'Not now').click();
   await expect(btn(app, 'Begin the book')).toBeVisible();
   await btn(app, 'I already have a book').click();
-  await btn(app, 'Continue with email').click();
+  await btn(app, 'Sign in with email').click();
   await sendTo(app, EMAIL);
   await expectPaused(app, 'after Not now and back to the same address');
   expect(codesAsked(m)).toHaveLength(5);

@@ -30,7 +30,7 @@ export default function VerifyLink() {
   const v = authCopy.verify;
   const [error, setError] = useState<AuthErrorKind | null>(null);
   const started = useRef(false);
-  const refused = error === 'other_phone' || error === 'already_signed_in';
+  const refused = error === 'other_phone' || error === 'other_phone_spent' || error === 'already_signed_in';
 
   useEffect(() => {
     if (started.current) return;
@@ -41,7 +41,9 @@ export default function VerifyLink() {
       return;
     }
     void auth.verifyEmailLink(link.tokenHash, link.type).then((r) => {
-      if (r.ok) router.replace('/sign-in/consent');
+      // TPL-04: a confirmed new address is shown where it lives, on Account; it is not a sign-in, so no consent step.
+      if (r.ok && link.type === 'email_change') router.replace('/settings/account');
+      else if (r.ok) router.replace('/sign-in/consent');
       else setError(r.error === 'cancelled' ? 'unknown' : r.error);
     });
     // auth changes identity on every state change; this runs once per opened link.
@@ -53,6 +55,9 @@ export default function VerifyLink() {
   const newEmail = () => router.replace('/sign-in/email');
   const footer = !error ? undefined : error === 'already_signed_in' ? (
     <QuietButton label={v.close} onPress={close} />
+  ) : error === 'other_phone_spent' ? (
+    // SIGN-06: GET /verify already ran on this phone, so the email's code may be spent with the link: a new email only.
+    <Button size="lg" fullWidth label={v.newEmail} onPress={newEmail} />
   ) : error === 'expired' ? (
     <>
       <Button size="lg" fullWidth label={v.newEmail} onPress={newEmail} />

@@ -382,8 +382,7 @@ describe('Lamp gradient', () => {
   // Tonight allows none: since P3 (S33) "A quiet day, kept." is in `text` with the Moon in textMuted, so Tonight and
   // every file it renders (the draft cards, "A month ago", the quiet line) must use no status colour at all.
   const STATUS_ON_LIT_PAPER: Record<string, StatusUse[]> = {
-    // "We'll tell you" on the Family tab: a check mark on its own chip.
-    'components/family/coparent-soon.tsx': [{ use: 'c.success', surface: 'bg-secondary' }],
+    // coparent-soon.tsx: none since SET-08 removed "Tell me when it's here" and its check mark.
     // A sign-in or invite error on the Family tab: its warning mark on its own chip, beside the words.
     'lib/auth/ui.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
     // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.

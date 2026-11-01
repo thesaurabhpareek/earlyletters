@@ -1,6 +1,6 @@
 import { Button as ReButton } from 'react-email';
 import { Children, Fragment, isValidElement, type ReactNode } from 'react';
-import { fonts, light, layout, space, type } from '../tokens';
+import { fonts, light, layout, space, type, wrap } from '../tokens';
 import { Mso, NotMso } from './mso';
 import { Block, bgcolor, tableProps } from './primitives';
 import { cls } from './theme';
@@ -130,6 +130,7 @@ export function CodeBox({ code, label }: CodeBoxProps) {
           fontSize: type.small.size,
           lineHeight: type.small.line,
           color: light.inkMuted,
+          ...wrap,
         }}
       >
         {label}
@@ -202,6 +203,7 @@ export function LinkFallback({ href, label }: LinkFallbackProps) {
             fontSize: type.small.size,
             lineHeight: type.small.line,
             color: light.inkMuted,
+            ...wrap,
           }}
         >
           {label}
@@ -212,7 +214,7 @@ export function LinkFallback({ href, label }: LinkFallbackProps) {
             fontFamily: fonts.sans,
             fontSize: type.small.size,
             lineHeight: type.small.line,
-            overflowWrap: 'anywhere',
+            ...wrap,
           }}
         >
           <a href={href} target="_blank" className={cls.accent} style={{ color: light.accent, textDecoration: 'underline' }}>
@@ -257,6 +259,7 @@ export function KeyFacts({ facts }: KeyFactsProps) {
                     lineHeight: '24px',
                     color: light.inkMuted,
                     width: '42%',
+                    ...wrap,
                   }}
                 >
                   {f.label}
@@ -272,6 +275,7 @@ export function KeyFacts({ facts }: KeyFactsProps) {
                     lineHeight: '24px',
                     fontWeight: type.ui.weight,
                     color: light.ink,
+                    ...wrap,
                   }}
                 >
                   {f.value}

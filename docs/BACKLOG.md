@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); the next block starts after BL-508.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); the next block starts after BL-529.
 
 ---
 
@@ -423,10 +423,21 @@ The review found no Critical issue and three High ones. H2, M1, M3, M5, L1 and L
 - Satisfies: LEGAL-REQ-043. Scope: `ios.privacyManifests` in `app.config.ts` covering React Native's required-reason APIs and `whisper.rn`; inspect `PrivacyInfo.xcprivacy` in the archived build before C1 so the upload does not fail ITMS-91053.
 
 #### BL-323 Export carries consent history and dictionary terms (review L4)
-- Status: ready. Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; include Recently deleted letters; use the real membership role instead of `'parent'`.
+- Status: done (PR #161, merged as 4651256; comment follow-up in PR #463). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034. Scope: add the person's `policy_acceptances` (through `my_policy_state` and own rows) and dictionary terms; use the real membership role instead of `'parent'`. Recently deleted letters moved to BL-388 (CR-35). The offline gap is BL-528.
+
+#### BL-528 An offline export carries the consent record, or LEGAL-REQ-034 says it cannot [Medium]
+- Status: needs-decision (Chief Privacy Officer: which option; options (b) and (c) change legal text, so they go to the founder through the gate). Mode: agent. Owner: export owner, privacy engineer. Satisfies: LEGAL-REQ-034 ("Works offline from local data"). Raised by: Reviews A and B of PR #456 (CCO-4).
+- Problem: after BL-323 (PR #161) the export reads the person's consent record from the server; offline, `consent_history.status` is `unavailable` and the record is missing, while LEGAL-REQ-034 asks for consent history and an export that works offline from local data.
+- Options: (a) keep a local copy of the person's own `policy_acceptances` rows after each successful read (L2 and L3, own rows only; a DATA_CLASSIFICATION row and a deletion path with it) and export that copy, marked with when it was read; (b) amend LEGAL-REQ-034 to say the consent history needs a connection; (c) both, (a) now and the wording in (b) for the gap before the first read.
+- Done when: the chosen option is recorded; for (a), an export taken offline after one signed-in read holds the record and says when it was read, with a test.
 
 #### BL-324 Native modules never crash or hang on bad input (review L9)
 - Status: ready. Mode: agent (device check FT-22). Owner: speech engineer, payments engineer. Scope: clamp and `isFinite`-check times in `ScribeAudioModule.swift` `samples()`; `PlusStoreSheet.swift` resumes its continuation once when UIKit refuses the presentation.
+
+#### BL-529 Export carries the person's own profile fields [Medium]
+- Status: done (PR #469, merged as 985ed66). Mode: agent. Owner: export owner. Satisfies: LEGAL-REQ-034 ("profile fields"). Raised by: Review B of PR #161.
+- Scope: `account.json` gains `profile` (export schema 1.4.0): the signed-in person's own `profiles` row (`display_name`, `signs_as`, `created_at`), read while the export is made, with a `status` like `consent_history`. The two server reads fail apart. Left out on purpose: `updated_at` and `first_run_closed_at` (L2 system timestamps; the class's export rule includes L2 only where useful). The phone keeps no copy, so an offline export says `unavailable`, the same offline gap the consent record has (BL-528).
+- Done when: the export carries the profile when signed in, and says why when not; `supabase/tests/export_profile_read.test.mjs` runs the exact column list as a signed-in person.
 
 #### BL-325 Remote documents cannot be held stale (review L10)
 - Status: ready. Mode: agent. Owner: platform. Scope: ignore a same-version document with a different body; treat kill-switch config older than N days as stale (`notAfter` or `generatedAt`); act on `forceReauthEpoch` by signing out locally (review L3).
@@ -1059,6 +1070,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Status: ready. Mode: agent. Owner: export owner, mobile engineer. Milestone: M-JR. Size: L.
 - Severity: major. Raised by: product, quality (4 findings). Steps: J14-01, J15-01, J15-02.
 - Satisfies: LEGAL-REQ-034; BL-150, BL-323; the screen promises "every letter and recording".
+- Before building (CR-35): settle with the Chief Privacy Officer whether Recently deleted letters go in always (this scope) or only when "Include recently deleted" is ticked (`docs/legal/DELETION_AND_EXPORT_SPEC.md` 4.1). If the answer changes the spec, Privacy Policy section 14 or the export screen copy, it goes to the founder through the gate.
 - Scope: Include tombstoned letters, drafts (typed and recorded) and orphan recordings in a "not in the book" folder and the manifest. ZIP64 or split by year so a very large book does not fail. Keep the ZIP until the person leaves the export screen (Share cancelled must not delete it). The failure line names a cause only when known ("That did not work this time. Your letters are safe on this phone.").
 - Done when: An export-golden fixture with a draft, an orphan and a deleted letter lists all three in the manifest. A test across the 4 GB boundary passes. Cancelling the Share sheet keeps the ZIP and Export again needs no rebuild. The "needs a little more free space" line shows only for a real space error.
 - Test: Journey J15 (J15-01, J15-02); `apps/mobile/test/export-golden.test.ts` and `apps/mobile/test/export-schema.test.ts`.
@@ -1478,7 +1490,7 @@ Found in the PR reviews of 28 Oct 2026 (#311, #312, #358, #359, #360, #361, #362
 - Satisfies: DATA-REQ-053 (P0, `docs/legal/DELETION_AND_EXPORT_SPEC.md:376`: "Export works for everything not yet purged, including letters tombstoned by the request").
 - Why: `request_account_deletion` sets `entries.deleted_at` with `deleted_reason = 'account_deletion'` and tombstones sole-parent books (`supabase/migrations/20261005000000_family_cap_language_idempotency.sql:435-443`). The next sync moves those letters to Recently deleted and unlists the books: `sync_pull` has no `deleted_reason` in the pull row (`supabase/migrations/20261016000000_sync_v1_server.sql:1485-1495`), so the phone sees them as ordinary deletions (`apps/mobile/src/lib/sync/merge.ts:644`, `:844-845`). Export skips both. Its letters filter is `deleted_at IS NULL` (`apps/mobile/src/lib/db/repos/entries.ts:167`, in `listForChild`) and its books come from `listChildren` and `listHiddenChildren` (`apps/mobile/src/lib/export/device.ts:102-103`), which leave out left and deleted books (`apps/mobile/src/lib/db/repos/children.ts:29`); the comment at `apps/mobile/src/lib/export/build.logic.ts:9` says Recently deleted letters are left out by design (D-085). A person in the 30-day grace period who taps Export gets a file without those letters. Found in the review of #358, lens A: code reading, not reproduced on a phone.
 - Where it can happen: in `preview` (alpha build 2), the only profile with `EXPO_PUBLIC_SERVER_FEATURES` on (`apps/mobile/eas.json:47`), and in the first release that turns sign-in and sync on. Not in a server-off store build: `production` and `testflight` are off (`apps/mobile/eas.json:61`, `:75`), and `apps/mobile/src/lib/capabilities.ts:8-9` and `:17` say store profiles stay off and the Delete account row is not offered when off. D-121 (proposed in PR #340, not on develop) would make the first store build server-off, with submission targeted Tue 1 Dec 2026; `docs/release/1.0.0.md:15` has App Store 1.0.0 as not started and re-planned. For build 2, PR #358 (merged as 8301ac8) removed the export promise from the scheduled page and the request email; this task is the real fix.
-- Scope: make Export complete while a request is open, covering the letters the request tombstoned and the books it unlisted. Two ways; the owner picks one in the PR and says why: a wire change (put `deleted_reason` in the `sync_pull` row, which is a new migration and needs the founder's `approve-migration` label), or an export that reads Recently deleted and the unlisted books while a request is open. Reproduce first. Overlap: BL-323 and PR #161 ask whether Recently deleted letters belong in an export at all (spec 4.1 says only when "Include recently deleted" is ticked; D-085 leaves them out). That question is the founder's and is not decided here; this task covers only what an open request moved.
+- Scope: make Export complete while a request is open, covering the letters the request tombstoned and the books it unlisted. Two ways; the owner picks one in the PR and says why: a wire change (put `deleted_reason` in the `sync_pull` row, which is a new migration and needs the founder's `approve-migration` label), or an export that reads Recently deleted and the unlisted books while a request is open. Reproduce first. Overlap: whether Recently deleted letters belong in an export at all (spec 4.1 says only when "Include recently deleted" is ticked; BL-388 says always; D-085 does not decide it) is BL-388's to settle with the Chief Privacy Officer, and goes to the founder if the answer changes the spec, Privacy Policy section 14 or the export screen copy (CR-35). This task covers only what an open request moved.
 - Done when: an export taken during the grace period holds every letter the request tombstoned and every book it unlisted; a test runs the real merge and export path on the Asha fixture (request, sync, export); after Cancel the letters and books are back where they were and export as before.
 
 #### BL-447 A deletion request under a legal hold: what the scheduled page tells the person [High]
@@ -2240,6 +2252,137 @@ Found in the independent reviews of four PRs of 30 Oct 2026: #408 (BL-485 option
 - Problem and evidence (re-opened on `develop` at e4fd94d): `apps/mobile/test/privacy-sensitive-row.test.ts:256-258` pins the provider with two regexes on its comment-stripped text, an import line and `useEffect(() => { registerSensitiveDataRow(); }, [])`. The effect is at `apps/mobile/src/lib/auth/session-provider.tsx:193-195`. A harmless reformat (another callback shape, the effect moved into a hook) turns the test red while the behaviour holds, and a registration moved somewhere that never runs would still pass. The provider imports React Native and cannot render in Node, and the repo has no component renderer (the header of `apps/mobile/test/helpers/mini-react.ts`: no `react-test-renderer`, tests run in a Node environment); the stand-in covers hooks only.
 - Scope: if the effect can move into a small hook in a file the stand-in can run, replace the regexes with a behavioural check that mounting it registers a source whose `read` follows the auth snapshot. If not, keep the regexes, add a comment on them saying what they pin and what a refactor must keep, and record that here.
 - Done when: either a test fails when the registration call is removed from what runs on mount, or the pin carries its reason and this entry says it is left as it is.
+
+## Review follow-ups, wave 6 (31 Oct 2026)
+
+Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10-31/`: `signin.md`, `subscriptions.md`, `email-templates.md`, `language.md`, `setup.md`) and their closure review (`CLOSURE_REVIEW.md`), on branch `fix/comms-validation-2026-10-31`. Each item is outside that branch's reach: website copy and pages live on `main` (`apps/web`), `supabase/**` was held by a database test run, or the work is planned for a later build. Ids BL-509 to BL-527; every branch was searched first and none of them was used.
+
+### Website (web lane, `apps/web` on `main`)
+
+#### BL-509 Website `authConfirm.expired` names an error the app never shows (SIGN-08)
+- Status: ready. Mode: agent. Owner: web lane. Milestone: M12. Size: S. Depends on: none.
+- Priority: Low. Gate: before build 2 (the first build with sign-in, D-121).
+- Problem and evidence: `site.ts` `authConfirm.expired` on `main` says "If the app says the code has expired, tap 'Send a new email'". The app never says a code expired: `otp_expired` in code context maps to `wrong_code` ("That code didn't match", `apps/mobile/src/lib/auth/errors.logic.ts`). `docs/reviews/2026-10-31/signin.md` SIGN-08.
+- Scope: change the line to "If the code does not work, tap Send a new email in the app." Content rules apply.
+- Done when: the page text on `main` says it, with the website's copy test updated.
+
+#### BL-510 Website `/open` page and AASA path (TPL-06)
+- Status: ready. Mode: agent. Owner: web lane. Milestone: M12. Size: S. Depends on: none.
+- Priority: High for build 2. Gate: build 2 (the first release with server features, D-121).
+- Problem and evidence: `{appUrl}` in 14 emails points at `/open` (`packages/emails/src/links.ts`, `docs/emails/CATALOG.md` "Website pages emails need"). The website does not serve it and the AASA file does not hand it to the app.
+- Scope: a `/open` page (opens the app, or the App Store when it is not installed) and the AASA path; add it to the route contract test.
+- Done when: `/open` serves on `main`, the AASA lists it, and the emails route test passes against the website list.
+
+#### BL-511 Website `/stop` page (TPL-06)
+- Status: blocked (before owner backup ships, D-121 item 2(c)). Mode: agent. Owner: web lane. Size: S.
+- Problem and evidence: `backup-restore-requested` links `/stop#<token>` (`supabase/functions` escrow `restore.ts`, `packages/api/src/server/recovery-key.ts`). No page serves it.
+- Scope: the page reads the token after `#` (never sent to the server in a query) and calls the stop endpoint; words in `packages/content`.
+- Done when: the page exists before owner backup is switched on, with a test that the token never leaves the fragment.
+
+#### BL-512 Website `/subscription-terms` page (TPL-06, SUB-10)
+- Status: ready. Mode: agent. Owner: web lane, legal. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: before the reminder emails ship (D-121 item 2(b)), or point `{subscriptionTermsUrl}` at `/terms` instead.
+- Problem and evidence: `trial-started` and `plus-started` link `/subscription-terms`; the StoreKit test file now names it too (SUB-11). The website does not serve it.
+- Scope: publish `docs/legal/subscription-terms.md` at `/subscription-terms` once the founder merges the legal text (D-125 item 5).
+- Done when: the page serves the current version and the emails route test lists it as built.
+
+#### BL-513 Website `/delete-account/confirm` page (TPL-06)
+- Status: blocked (before the D-042 email route takes requests). Mode: agent. Owner: web lane, privacy engineer. Size: S.
+- Problem and evidence: `deletion-confirm` links `/delete-account/confirm`; no page serves it, so the email stays Ops-only (`docs/reviews/2026-10-31/email-templates.md` TPL-06).
+- Scope: the confirm page and its call, with the words in `packages/content`.
+- Done when: the page exists and `deletion-confirm` can move off Ops-only.
+
+#### BL-514 Website `/open/export/<id>` route (TPL-06)
+- Status: deferred (v1.1). Mode: agent. Owner: web lane. Size: S.
+- Problem and evidence: `export-ready` links `/open/export/<id>`; the route is not defined (`email-templates.md` row export-ready).
+- Scope: the route and its AASA path, handing the id to the app's export screen.
+- Done when: the route serves and the email's link opens the export in the app.
+
+#### BL-515 Website `/auth/confirm` handling matches the app (SIGN-04, website side)
+- Status: ready. Mode: agent. Owner: web lane. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: build 2.
+- Problem and evidence: the AASA on `main` hands `/auth/confirm` to the app. The app now accepts it (`apps/mobile/src/lib/auth/links.logic.ts`, SIGN-04), but the website page and its fallback were written for `/auth/callback` only (`signin.md` SIGN-04). No redirect sends `/auth/confirm` yet (`docs/ops/AUTH_SETUP.md` 5.1).
+- Scope: the `/auth/confirm` page shows the same "open the app, or type the code" fallback as `/auth/callback`, never reads or logs the token, and says the same words as the app.
+- Done when: both paths behave the same in the website's tests.
+
+### Server lane (`supabase/**`)
+
+#### BL-516 Two stale comments under `supabase/` (closure review N4)
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M12. Size: XS. Depends on: none.
+- Priority: Low. Gate: none (comments only, but `supabase/**` needs the D-041 review).
+- Problem and evidence: `supabase/config.toml:38` says "/auth/confirm is not listed until the app accepts it (SIGN-04)"; the app accepts it now, and the real reason it is not listed is that no code sends it as a redirect. `supabase/templates/README.md:59-61` says the app does not accept `email_change`; it does now (SIGN-10). Left alone on 31 Oct because a database test run held `supabase/**`.
+- Scope: reword both lines. No setting changes.
+- Done when: both lines match the code and `supabase/tests/auth_config.test.mjs` still passes.
+
+#### BL-517 Billing reminder email scheduler (TPL-03, SUB-03)
+- Status: blocked (after build 2, D-121 item 2(b); WP-F14-16 in `docs/prd/v2/08-delivery.md`). Mode: agent. Owner: payments engineer, sync owner. Size: M.
+- Problem and evidence: no function sends any billing template (`trial-ending-*`, `annual-renewal-*`, `plus-started`, `plus-cancelled`, `plus-ended`). Terms 14.6 says the emails are not sent yet and what they will contain (`docs/legal/CHANGES-2026-10-31.md`).
+- Scope: a scheduler that sends the D-022 windows to the payer only (D-080), through `generated/resend.ts`, with the amount and period from the status report; update Terms 14.6 in the same release.
+- Done when: each window sends once in a test, never to a Family Sharing member, and the legal text says emails are sent.
+
+### App (mobile)
+
+#### BL-518 The second reminder prime (after the first month chapter)
+- Status: ready. Mode: agent. Owner: mobile engineer (asks). Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: none.
+- Problem and evidence: C-REQ-001 Rev allows at most two primes; F13 6.2 B row 4c places the second after the first month chapter. Only the first is built (`apps/mobile/src/lib/asks/next-ask.logic.ts:7`, SET-02).
+- Scope: offer `reminder_prime` again once after the first month chapter, inside the cap of 2 (`MAX_REMINDER_PRIMES`) and the one-ask-per-session rule.
+- Done when: `test/next-ask.test.ts` covers the second prime and the cap, and a web journey shows it.
+
+#### BL-519 Keep the book re-offer after the third letter when the person chose Later
+- Status: ready. Mode: agent. Owner: mobile engineer (asks), auth owner. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: build 2 (the sheet needs `auth.configured`).
+- Problem and evidence: F02 6.1 offers Keep the book again after the third letter if the person tapped Later; `next-ask.logic.ts:10` offers it once ("the re-offer is not built", SET-01).
+- Scope: one re-offer after the third saved letter when the first was declined, never more, within the session and day caps.
+- Done when: `test/next-ask.test.ts` covers offer, Later, re-offer and no third offer.
+
+### Typed invite codes: PR #306 follow-ups (D-120, with BL-445)
+
+All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. They are recorded one per item so none is lost when the PR resumes. Each problem line restates a label from the coordinator's fix list; the full findings are in #306's hold comment (issuecomment-6460527733) and were not re-checked against #306's head here (unverified).
+
+#### BL-520 #306: wrong file name in the header and the PR body
+- Status: blocked (BL-445). Mode: agent. Owner: data architect (S02). Size: XS.
+- Problem and evidence: the file header and the PR body name a file that is not the one changed.
+- Done when: both name the real file.
+
+#### BL-521 #306: APPLY.md step for the typed-code screen
+- Status: blocked (BL-445). Mode: agent. Owner: data architect (S02), family owner (S04). Size: XS.
+- Problem and evidence: the apply notes (`APPLY.md`) do not cover the typed-code screen the client adds, so whoever applies the migration cannot check it end to end.
+- Done when: APPLY.md has the step and its expected result.
+
+#### BL-522 #306: `redeem.brake` alert and its runbook
+- Status: blocked (BL-445). Mode: pair. Owner: data architect (S02), platform. Size: S.
+- Problem and evidence: F11-REQ-007 asks for an alert within 15 minutes when code redemption reaches the global limit and answers `SCRAT` for everyone. The `redeem.brake` alert and a runbook entry for it do not exist.
+- Done when: the alert fires in a test and the runbook says what to do, including that links keep working.
+
+#### BL-523 #306: retention wording for failure rows
+- Status: blocked (BL-445). Mode: agent. Owner: data architect (S02), privacy engineer. Size: XS.
+- Problem and evidence: the comment and docs for the failed-attempt rows do not say how long they are kept in the same words as the retention schedule.
+- Done when: the wording matches the retention schedule and the purge test covers the rows.
+
+#### BL-524 #306: typed-code app copy, including `codes_paused`
+- Status: blocked (BL-445). Mode: agent. Owner: content, family owner (S04). Size: S.
+- Problem and evidence: the client needs words for each typed-code answer, including `codes_paused` (the global brake); none exist in `packages/content` (`familyCopy` has link words only, D-120).
+- Done when: every answer the endpoint can give has words in `packages/content`, passing the content rules.
+
+#### BL-525 #306: a retry after success answers `limited`
+- Status: blocked (BL-445). Mode: agent. Owner: data architect (S02). Size: S.
+- Problem and evidence: retrying a code that already succeeded can count against the limiter and answer `limited` instead of the success it already had.
+- Done when: a test shows a retry after success returns the same success and does not count as a failure.
+
+### Release and counsel
+
+#### BL-526 Offer codes: TestFlight sandbox pass D-10 before submission (SUB-06)
+- Status: needs-founder. Mode: human. Owner: founder, payments engineer. Milestone: M12. Size: S. Depends on: none.
+- Priority: High. Gate: before App Store submission (offer codes ship in v1.0: ROADMAP, FUTURE G-16).
+- Problem and evidence: Redeem a code is reachable in v1.0 (`settings/plus.tsx`, the Keep sheet). The native call has not run on a device (`ScribeStoreModule.swift`). The local StoreKit file now has one free-month code offer (SUB-11), but the App Store Connect sandbox codes (`docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 7) and run D-10 are not done.
+- Done when: D-10 passes on TestFlight (a free-period code shows "free until", SUB-05) and the result is recorded in the ASC doc.
+
+#### BL-527 Counsel reads the counsel-locked rewrites of 31 Oct 2026
+- Status: needs-founder (counsel). Mode: pair. Owner: legal, content. Milestone: M12. Size: S. Depends on: none.
+- Priority: Medium. Gate: before App Store submission.
+- Problem and evidence: the language review's rewrites for registered disclosure strings were not applied, because those words change only through counsel (`docs/legal/in-app-disclosures.md`). The keys and proposed rewrites are in `docs/reviews/2026-10-31/COUNSEL_LOCKED.md` (LNG-04, LNG-09, LNG-12, LNG-15, LNG-18).
+- Done when: counsel accepts or rejects each row; accepted rows change in `packages/content`, the disclosures file and its pinning tests in one PR with a version bump.
 
 ## Appendix: TDD proposal to BL mapping
 

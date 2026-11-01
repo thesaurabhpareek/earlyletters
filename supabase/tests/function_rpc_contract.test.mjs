@@ -26,10 +26,7 @@ const IDENT = '[A-Za-z_][A-Za-z0-9_]*';
 
 // Calls allowed to name a function the migrations do not create yet. Each entry fails once the name exists,
 // so it is removed in the same change that adds the function.
-export const ALLOWLIST = [
-  { kind: 'rpc', name: 'invite_redeem_by_code', pr: 306,
-    why: 'called by invite-redeem/handler.ts; the migration that creates it is open PR #306 (20261027000000_invite_redeem_by_code.sql)' },
-];
+export const ALLOWLIST = [];
 
 // Call sites whose name is built at run time. `site` must match in `file`; `resolve(text)` returns the names.
 export const DYNAMIC_SITES = [
@@ -184,9 +181,9 @@ check('allowlist self-check: while the function is absent the call is allowed, n
   allowNotYet.mustRemove.length === 0 && allowNotYet.missing.length === 0 && allowNotYet.allowed.length === 1);
 check('allowlist self-check: an entry no function calls any more is reported unused',
   evaluate([], { rpc: new Set(), table: new Set() }, [{ kind: 'rpc', name: 'zz_pending', pr: 0 }]).unused.length === 1);
-const withInvite = { rpc: new Set([...schema.rpc, 'invite_redeem_by_code']), table: schema.table };
-check('allowlist self-check: once invite_redeem_by_code exists (#306 merged), its entry is flagged for removal',
-  evaluate([], withInvite).mustRemove.some((a) => a.name === 'invite_redeem_by_code'));
+// #306 added invite_redeem_by_code, so its entry was removed in the same change (the rule above).
+check('allowlist: invite_redeem_by_code is created by the migrations and no longer allowlisted',
+  schema.rpc.has('invite_redeem_by_code') && !ALLOWLIST.some((a) => a.name === 'invite_redeem_by_code'));
 
 // ── 2. The real Edge Functions ───────────────────────────────────────────
 const sources = readFunctionSources();

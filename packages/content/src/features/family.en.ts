@@ -173,7 +173,7 @@ export const familyCopy = {
       },
       {
         title: 'Private to your family',
-        body: "Only the people you invite can read {child}'s book. A letter you keep private stays yours.",
+        body: "{child}'s book is shared only with {child}'s other parent, if you invite them. A letter you keep private stays yours.",
       },
     ],
     building: "We're building it now. Until then, every letter you write stays on this phone.",
@@ -205,7 +205,7 @@ export const familyCopy = {
     book_deleted: "This book isn't available.",
     signed_out: 'Sign in again to continue.',
     network: 'This phone is offline. Try again once it is back online.',
-    unknown: 'That did not work this time. Try again.',
+    unknown: 'That did not go through. Try again.',
     /** SCCAP (F11-U10, F11-REQ-026): the invitee's line. The inviter's sheet shows create.full instead. */
     book_full: 'This book already has two parents. Ask the person who invited you.',
     /** SCLPG: the only parent of a book cannot leave it (DATA-REQ-016). */
@@ -213,9 +213,9 @@ export const familyCopy = {
     /** 42501: a parent tried something only the server's own paths may do. Never offered by the app. */
     not_allowed: "That isn't possible from here.",
     /** An invite code or token collided twice in a row (code_taken, token_taken, closed); the app already retried once. */
-    retry_new_invite: 'That did not work this time. Try again.',
+    retry_new_invite: 'That did not go through. Try again.',
     /** SCCID twice in a row: the same action and words as retry_new_invite. */
-    id_taken: 'That did not work this time. Try again.',
+    id_taken: 'That did not go through. Try again.',
     /**
      * SCCON family-share (D-050, F11-REQ-018): only when the server's app.family_share_consent_required
      * is on, which follows a release with the family-share sheet; this build has no sheet.

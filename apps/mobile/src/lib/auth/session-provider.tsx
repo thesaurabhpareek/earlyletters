@@ -29,9 +29,9 @@ import { maskEmail, phoneHoldsAnyRow } from './account-claim.logic';
 import { appleCredentialRevoked, clearPendingAppleName, forgetAppleUser, signInWithApple, takePendingAppleName } from './apple';
 import { accountClaimPending, confirmAccountClaim, publishAuth, onUploadsDrained, pendingUploads, setClaimReaders, subscribeAuth } from './auth-store';
 import { loadSyncGate, recordConsent as recordConsentAct, saveDisplayName } from './consent';
-import { sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
+import { RESEND_WAIT_MS, sendEmailLink as sendEmail, verifyEmailCode as verifyCode, verifyEmailLinkPkce } from './email';
 import { openEmailLink } from './email-link.logic';
-import { authErrorKind, codeEntryPause } from './errors.logic';
+import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey } from './errors.logic';
 import { signInWithGoogle } from './google';
 import type { EmailLinkType } from './links.logic';
 import {
@@ -171,6 +171,8 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   const [account, setAccount] = useState<AccountInfo>({ email: null, maskedEmail: null, provider: null });
   const [claimPending, setClaimPending] = useState(false);
   const methodRef = useRef<AuthMethod | null>(null);
+  // SIGN-01: when each address last got an email from this phone, in memory only (never stored, never sent).
+  const emailSentAt = useRef(new Map<string, number>());
   const lastGateCheck = useRef(0);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -377,11 +379,21 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         if (!sb) return { ok: false, error: 'not_available' };
         methodRef.current = 'email';
         if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
+        // SIGN-01: the same address again inside the minute: the email from a moment ago is the one to use, so go
+        // back to its code screen with its own time (the resend wait counts down from it) and ask nothing of Supabase.
+        const key = emailWaitKey(email);
+        const last = emailSentAt.current.get(key) ?? null;
+        if (emailSendWaitMs(last, Date.now(), RESEND_WAIT_MS) > 0 && last !== null) {
+          dispatch({ type: 'EMAIL_SENT', at: last });
+          return { ok: true };
+        }
         try {
           await sendEmail(sb, email);
           // H1: remember that this phone asked (the time only, never the address).
           await notePendingEmailRequest();
-          dispatch({ type: 'EMAIL_SENT', at: Date.now() });
+          const at = Date.now();
+          emailSentAt.current.set(key, at);
+          dispatch({ type: 'EMAIL_SENT', at });
           return { ok: true };
         } catch (e) {
           const error = authErrorKind(e, 'send');
@@ -429,8 +441,10 @@ export function SessionProvider({ children, onUnder18 }: Props) {
               readPending: () => readPendingEmailRequest(),
               signedIn: () => signedInNow,
               exchange: async (hash, t) => {
-                methodRef.current = 'email';
                 started = true;
+                // TPL-04: an email-change link confirms the new address of the account signed in here; it is not a sign-in.
+                if (t === 'email_change') return verifyEmailLinkPkce(sb, hash, t);
+                methodRef.current = 'email';
                 if (stateRef.current.status !== 'awaitingCode') dispatch({ type: 'START', method: 'email' });
                 return verifyEmailLinkPkce(sb, hash, t);
               },
@@ -438,13 +452,21 @@ export function SessionProvider({ children, onUnder18 }: Props) {
             },
           );
           if (!r.ok) return r;
+          if (type === 'email_change') {
+            const cur = stateRef.current;
+            // The PKCE verifier exists only on the phone whose account asked for the change, so this is that account.
+            return isSignedIn(cur) && cur.userId === r.userId ? { ok: true } : { ok: false, error: 'unknown' };
+          }
           remember('email');
           dispatch({ type: 'SIGNED_IN', userId: r.userId, method: 'email' });
           return { ok: true };
         } catch (e) {
           if (!started) return { ok: false, error: 'unknown' };
-          const error = authErrorKind(e, 'link');
-          dispatch({ type: 'FAILED', error });
+          const kind = authErrorKind(e, 'link');
+          // SIGN-06: refused after GET /verify ran (another phone with its own recent request): the token, and so the
+          // email's code, may be spent; point to a new email rather than the code.
+          const error: AuthErrorKind = kind === 'other_phone' ? 'other_phone_spent' : kind;
+          if (type !== 'email_change') dispatch({ type: 'FAILED', error }); // a failed change leaves the session as it was
           return { ok: false, error };
         }
       },

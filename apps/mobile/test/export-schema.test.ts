@@ -89,22 +89,107 @@ describe('export schema', () => {
     expect(validate({ ...account, consent_on_this_phone: { age_confirmed: true, usage_sharing: 'maybe' } })).toBe(false);
   });
 
-  it('[DATA-REQ-055] still reads every 1.0.0 file (kept in __golden__/export-asha/_v1.0.0)', () => {
-    const dir = join(__dirname, '__golden__', 'export-asha', '_v1.0.0');
-    const cases: [string, string][] = [
-      ['data/entries.json', 'entriesFile'],
-      ['data/children.json', 'childrenFile'],
-      ['data/account.json', 'accountFile'],
-      ['manifest.json', 'manifest'],
-    ];
-    for (const [path, def] of cases) {
-      const data = JSON.parse(readFileSync(join(dir, path), 'utf8'));
-      expect(data.schema_version ?? data.format_version, path).toBe('1.0.0');
-      const validate = validator(def);
-      const ok = validate(data);
-      expect(validate.errors ?? [], path).toEqual([]);
-      expect(ok, path).toBe(true);
-    }
+  for (const version of ['1.0.0', '1.1.0', '1.2.0', '1.3.0']) {
+    it(`[DATA-REQ-055] still reads every ${version} file (kept in __golden__/export-asha/_v${version})`, () => {
+      const dir = join(__dirname, '__golden__', 'export-asha', `_v${version}`);
+      const cases: [string, string][] = [
+        ['data/entries.json', 'entriesFile'],
+        ['data/children.json', 'childrenFile'],
+        ['data/account.json', 'accountFile'],
+        ['manifest.json', 'manifest'],
+      ];
+      for (const [path, def] of cases) {
+        const data = JSON.parse(readFileSync(join(dir, path), 'utf8'));
+        expect(data.schema_version ?? data.format_version, path).toBe(version);
+        const validate = validator(def);
+        const ok = validate(data);
+        expect(validate.errors ?? [], path).toEqual([]);
+        expect(ok, path).toBe(true);
+      }
+    });
+  }
+
+  describe('[BL-529, LEGAL-REQ-034] profile (1.4.0)', () => {
+    const profile = validator('profile');
+    const read = { status: 'included', read_at: '2027-03-15T10:00:00.000Z', display_name: 'Nani', signs_as: 'Nani', created_at: '2026-10-01T00:00:00+00:00' };
+
+    it('accepts a profile that was read (values may be null) and an empty one that says why', () => {
+      expect(profile(read), JSON.stringify(profile.errors)).toBe(true);
+      expect(profile({ ...read, display_name: null, signs_as: null }), JSON.stringify(profile.errors)).toBe(true);
+      for (const status of ['not_signed_in', 'unavailable', 'different_account']) {
+        expect(profile({ status, read_at: null, display_name: null, signs_as: null, created_at: null }), status).toBe(true);
+      }
+    });
+
+    it('rejects values on a profile that was not read, a missing read time, and any id', () => {
+      expect(profile({ ...read, status: 'unavailable' })).toBe(false);
+      expect(profile({ ...read, read_at: null })).toBe(false);
+      expect(profile({ ...read, id: 'user-1' })).toBe(false);
+    });
+
+    it('an account.json carrying a profile validates', async () => {
+      const account = json(await ashaZip(), 'data/account.json');
+      const validate = validator('accountFile');
+      expect(validate({ ...account, profile: read }), JSON.stringify(validate.errors)).toBe(true);
+    });
+  });
+
+  describe('[BL-323, LEGAL-REQ-034] consent_history (1.3.0)', () => {
+    const act = {
+      id: 'a1',
+      document: 'terms',
+      version: '1.0.0',
+      action: 'accept',
+      method: 'signin_sheet',
+      surface: 'signin.terms',
+      at: '2027-01-02T03:04:05.000Z',
+      client_recorded_at: null,
+      app_version: '1.0.0',
+      platform: 'ios',
+      locale: 'en-US',
+      rendered_sha256: null,
+      context: { auth: 'apple', age_attested: true },
+    };
+    const included = {
+      status: 'included',
+      read_at: '2027-03-15T10:00:00.000Z',
+      current: [{ document: 'terms', version: '1.0.0', action: 'accept', at: act.at }],
+      acts: [act],
+    };
+    const history = validator('consentHistory');
+
+    it('accepts a record that was read, and an empty one that says why', () => {
+      expect(history(included), JSON.stringify(history.errors)).toBe(true);
+      for (const status of ['not_signed_in', 'unavailable', 'different_account']) {
+        expect(history({ status, read_at: null, current: [], acts: [] }), status).toBe(true);
+      }
+    });
+
+    it('rejects rows or a read time on a record that was not read', () => {
+      expect(history({ ...included, status: 'unavailable' })).toBe(false);
+      expect(history({ status: 'not_signed_in', read_at: null, current: [], acts: [act] })).toBe(false);
+      expect(history({ status: 'not_signed_in', read_at: '2027-03-15T10:00:00.000Z', current: [], acts: [] })).toBe(false);
+    });
+
+    it('rejects an included record without a read time, an unknown action, and any account column', () => {
+      expect(history({ ...included, read_at: null })).toBe(false);
+      expect(history({ ...included, acts: [{ ...act, action: 'maybe' }] })).toBe(false);
+      expect(history({ ...included, acts: [{ ...act, profile_id: 'u1' }] })).toBe(false);
+      expect(history({ ...included, acts: [{ ...act, subject_hash: null }] })).toBe(false);
+      expect(history({ ...included, acts: [{ ...act, rendered_sha256: 'abc' }] })).toBe(false);
+    });
+
+    it('an account.json carrying a server record validates', async () => {
+      const account = json(await ashaZip(), 'data/account.json');
+      const validate = validator('accountFile');
+      expect(validate({ ...account, consent_history: included }), JSON.stringify(validate.errors)).toBe(true);
+      const word = { child_id: null, term: 'Nani', kind: 'family', heard_as: [], source: 'phone' };
+      expect(validate({ ...account, dictionary: [word] }), JSON.stringify(validate.errors)).toBe(true);
+      expect(validate({ ...account, dictionary: [{ ...word, term: '' }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, kind: 'robot' }] })).toBe(false);
+      expect(validate({ ...account, dictionary: [{ ...word, forms: null }] })).toBe(false);
+      expect(validate({ ...account, memberships: [{ child_id: 'c', role: 'owner', signs_as: 'Mama' }] })).toBe(false);
+    });
   });
 
   it('ships the same schema inside the export', async () => {

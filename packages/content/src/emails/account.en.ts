@@ -12,14 +12,14 @@
  *   {deletionDate}     date the 30-day grace ends and deletion runs
  *   {completedDate}    date deletion finished
  *   {backupClearDate}  date backups no longer hold the data (completed + 7 days)
- *   {appUrl}           universal link that opens the app
+ *   {appUrl}           universal link that opens the app (https://earlyletters.com/open; the website page and the
+ *                      AASA path are still to build, docs/emails/CATALOG.md section 14)
  *   {confirmDeleteUrl} one-time web link that opens /delete-account/confirm (deletion-confirm; works in any browser)
  *   {coParentName}     display name of the co-parent who is deleting their account (coparent-left; E-2)
  *   {exportUrl}        signed download link for a server export (v1.1)
  *   {expiresIn}        how long a link works, in words, e.g. "7 days"
  *   {documentName}     "Privacy Policy", "Terms of Service", ...
- *   {documentUrl}      the new version, published
- *   {changesUrl}       the changes page for that version
+ *   {documentUrl}      the new version, published (its page lists what changed; no separate changes page, TPL-06)
  *   {changeSummary}    the plain-language summary approved with the version (POLICY_VERSIONING s.5)
  *   {effectiveDate}    effective_at of the new version
  */
@@ -144,7 +144,7 @@ export const accountEmails = {
     id: 'deletion-request-received',
     subject: "We have your deletion request",
     preheader: "One more step to confirm it is you. Nothing is deleted until then.",
-    heading: "Thank you, we have your request",
+    heading: "We have your request",
     body: [
       `We received a request to delete the ${brand.name} account for this email address. Request number: {requestId}.`,
       "To make sure it is really you, we will send a separate email to this address with a link that confirms it. It works in any web browser, so you do not need the app. Nothing is deleted until you confirm.",
@@ -157,7 +157,8 @@ export const accountEmails = {
   },
 
   // L2 review: CUS-14. Second step of the D-042 email route, sent after deletion-request-received.
-  // The link opens /delete-account/confirm on earlyletters.com (web route still to build), which shows the
+  // Ops only, and not sent at all until /delete-account/confirm exists on the website (TPL-06; CATALOG section 14):
+  // until then support confirms identity by reply. The link opens that page on earlyletters.com, which shows the
   // date and one button. Pressing it files the request with source 'support' (DATA-REQ-021); the normal
   // account-deletion-scheduled receipt follows. Works with no app and on any device.
   'deletion-confirm': {
@@ -207,7 +208,7 @@ export const accountEmails = {
     id: 'privacy-request-received',
     subject: "We have your privacy request",
     preheader: "A person is on it. We reply within 45 days, and usually much sooner.",
-    heading: "Thank you, we have your request",
+    heading: "We have your request",
     body: [
       "We received your request about your information. Request number: {requestId}.",
       "We answer within 45 days. If we need longer, we will tell you before then, and finish within 45 more.",
@@ -246,9 +247,9 @@ export const accountEmails = {
     preheader: "What is changing, in plain words, and the date it takes effect.",
     heading: "Our {documentName} changes on {effectiveDate}",
     body: [
-      "We are updating our {documentName}. Here is what changes, in plain words:",
+      "We are updating our {documentName}. What changes, in plain words:",
       "{changeSummary}",
-      "The new version takes effect on {effectiveDate}. You can read it in full at {documentUrl}, and see every change at {changesUrl}.",
+      "The new version takes effect on {effectiveDate}. The button below opens it in full, with a list of what changed.",
       "If the change needs your agreement, the app will ask you once, on or after {effectiveDate}.",
       "You can export everything at any time in Settings, Your data, and delete your account in Settings, Delete account.",
     ],
