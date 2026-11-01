@@ -504,7 +504,7 @@ async function runJob(id: string): Promise<void> {
     const dictionary = child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : [];
     const res = await transcriber.transcribe(
       { audioUri: source.audioUri, durationMs: source.durationMs, dictionary, language: job.language },
-      { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total }) },
+      { signal: ctrl.signal, onProgress: (p) => dispatch({ type: 'progress', id, done: p.done, total: p.total, fraction: p.fraction }) },
     );
     if (ctrl.signal.aborted) throw new TranscriptionAborted();
     deliver(id, res, transcriber.isSample);
