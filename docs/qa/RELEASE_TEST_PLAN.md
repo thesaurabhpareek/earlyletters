@@ -21,7 +21,7 @@ Labels: **V** checked on 1 Nov 2026 (command or page named); **A** assumption to
 | Database rules | 38 test files (`npm run test:db`) | `ci.yml` "database rules"; `nightly.yml` real Supabase stack, perf budgets, legacy grants | V: CI green; first scheduled nightly (41216366599, 31 Oct) green. Not run locally |
 | Store-profile launch | 1 check: the `testflight` profile Release app launches on a simulator and stays up 20 s | `ios-compile.yml` on native changes; `kill-harness.yml` | V: green (41245906829) |
 | Kill harness | DL-01 (kill mid-take) and DL-02 (kill during save) on the simulator | `kill-harness.yml`, scheduled and on dispatch | V: 31 Oct scheduled run green, 50 runs each; the 500-run gate is per release candidate |
-| Web journeys (Playwright) | 22 journeys, 203 steps (142 happy, 61 unhappy) | Nowhere. `npm run e2e:web -w @scribe/mobile` by hand | See section 6.2 |
+| Web journeys (Playwright) | 90 tests; the committed journey record shows 22 journeys, 203 steps (142 happy, 61 unhappy) | Nowhere. `npm run e2e:web -w @scribe/mobile` by hand | V: 89 of 90 pass (15.3 min, 2 workers). J05e (a 65 s take) fails with `Array buffer allocation failed`, alone too: #480. The run also wrote 4 steps the committed record lacks (J13-05 to 07, J22-22), so the record is behind the flows |
 | Maestro flows (iOS simulator) | 20 flow files for 16 ids (E2E-01 to 15 and 17; there is no E2E-16) | Nowhere. `ios-e2e.yml.example` is not enabled | Never run. V: `lint-flows.mjs --app` finds 108 of the 136 ids the flows select missing from `apps/mobile/src`, so every flow stops at its first selector |
 | Phone items by hand | 59 sections in DEVICE_TEST_PLAN (S1-01 to 35, S2, TF-01 to 11, DL-01 to 06, B1-01) | A person with a phone | Never run. `docs/qa/evidence` holds only the README and template |
 | Alpha run sheets | 106 steps across AL-01 to AL-09, plus AL-10 rehearsals | A person with a phone | Never run |
@@ -121,7 +121,7 @@ Production checks happen in two windows: before release, on the build Apple will
 
 Karma's ruling (CR-37) is to switch these on in this order, each as its own PR with two reviews because it touches `.github/**`, and none of them before the freeze unless it closes a store-path item:
 
-1. **Web journeys in CI.** Linux, no secrets, about the cost of the existing jobs. It turns the 11 automated rows into covered rows and catches screen regressions on every PR. Run it on PRs that touch `apps/mobile/src/**`, and nightly.
+1. **Web journeys in CI.** Linux, no secrets; 15 minutes on two workers here. Fix or quarantine J05e first (#480), with an owner and a date, so the job starts green. It turns the 11 automated rows into covered rows and catches screen regressions on every PR. Run it on PRs that touch `apps/mobile/src/**`, and nightly.
 2. **Rewrite E2E-06 and E2E-07** to D-082 so no stale flow can be read as evidence.
 3. **testIDs.** The 108 missing ids in `TESTID_REQUESTS.md` belong to the mobile owner. Nothing in Maestro can run until they land, and enabling the workflow before that only produces a red job.
 4. **Maestro on the simulator.** The e2e app already builds in `kill-harness.yml`, so the blocker in the e2e README ("an `e2e` EAS build profile") is solved in practice: the Maestro job reuses that app artifact. Start with the offline P0 flows (E2E-01, 03, 04, 08, 10, 17), nightly on `macos-26`, then the screenshot sweep across the section 3 simulator sizes (RT-DSP-03) and the text-size sweep (RT-A11Y-02).
@@ -146,5 +146,5 @@ Build 2: the B2 rows, after the build 2 gates in ALPHA_GO_NO_GO.
 
 - Point sizes and memory in section 3 are from public specs, not measured. The first simulator sweep records them.
 - The catalog says a case exists; only a CI run or an evidence file says it passed.
-- I ran unit tests and the web journeys on Linux. I did not run `npm run test:db`, any Mac job or anything on a phone.
+- I ran the unit tests and the web journeys on Linux. I did not run `npm run test:db`, any Mac job or anything on a phone.
 - iOS 27 support details came from press coverage, not Apple's own page.

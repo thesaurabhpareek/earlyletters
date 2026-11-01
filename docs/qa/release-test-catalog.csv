@@ -37,7 +37,7 @@ RT-REC-06,Speak,"Calls, Siri, timers, AirPods, wired headphones",unhappy,P0,both
 RT-REC-07,Speak,"Kill mid-take, 500 runs",error,P0,both,kill,sim,SIM,DL-01,covered,Kill harness dl01,0 lost; >= 49 of 50 play to within 5 s
 RT-REC-08,Speak,Kill mid-take on the phone,error,P0,both,device,tf-build1,D2,DL-06;S1-13,planned,Swipe away 10 times; once force a reboot,Every take kept and plays (ADTS)
 RT-REC-09,Speak,VoiceOver never speaks into a recording,a11y,P0,both,unit,local,n/a,SR-C-02;B2-21,gap,"VoiceOver on, record, change state",0 announceForAccessibility calls while recording (listen.tsx calls it today)
-RT-REC-10,Speak,Very short and very long takes,edge,P1,both,device,tf-build1,REF,J05;SR-C-14,partial,Record 1 s; record 30 min,Short take handled kindly; 30 min cap stops and keeps (cap not built)
+RT-REC-10,Speak,Very short and very long takes,edge,P1,both,device,tf-build1,REF,J05;SR-C-14;#480,partial,Record 1 s; record 30 min,Short take handled kindly; 30 min cap stops and keeps (cap not built)
 RT-REC-11,Speak,Low storage and Low Power Mode,error,P0,both,device,tf-build1,D1,S1-14,planned,"Under 1 GB, under 50 MB, under 20 MB; Low Power Mode","Warning, refusal, auto-finish with the take kept; transcription completes slowly"
 RT-REC-12,Speak,Screen stays awake only while recording,happy,P1,both,device,tf-build1,REF,S1-26,planned,"Let auto-lock run while recording, then paused",Awake while recording; may lock when paused
 RT-REC-13,Speak,Thermal pressure during transcription,perf,P2,both,device,tf-build1,"D2,D5",S1-17,planned,Ten 5-minute transcriptions back to back,Completes; thermal state recorded; no crash
