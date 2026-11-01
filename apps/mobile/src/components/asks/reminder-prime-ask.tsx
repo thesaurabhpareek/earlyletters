@@ -13,6 +13,7 @@
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BellSimpleIcon } from 'phosphor-react-native/src/icons/BellSimple';
+import { renderTemplate } from '@scribe/core';
 import { useEffect, useState } from 'react';
 import { Modal, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -24,6 +25,7 @@ import { track } from '@/lib/analytics/track';
 import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
+import { getActiveChild } from '@/lib/store';
 import { clampReminderTime, enableReminders, formatReminderTime, readPrefs, writePrefs, type ReminderTime } from '@/lib/reminders';
 
 const at = (t: ReminderTime): Date => {
@@ -55,6 +57,8 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const [picking, setPicking] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [time, setTime] = useState<ReminderTime>(() => readPrefs().time);
+  // In-app only: the lock screen stays neutral (D-025). A book always has a name; the fallback is the neutral phrase.
+  const [body] = useState(() => renderTemplate(r.body, { child: getActiveChild()?.name || 'your little one' }));
 
   const yes = (chosen?: ReminderTime) => {
     haptic('tap');
@@ -81,7 +85,7 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
           <Text role="heading" className="font-serif text-2xl leading-8 text-foreground">
             {r.title}
           </Text>
-          <Text className="text-base leading-6 text-foreground">{r.body}</Text>
+          <Text className="text-base leading-6 text-foreground">{body}</Text>
         </View>
         {picking ? (
           <View className="gap-3">
