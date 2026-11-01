@@ -8,7 +8,9 @@ Time: about 75 minutes of clicking for steps 1 to 8, plus Apple's waiting times 
 
 ## What you are creating
 
-The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Products live on an app record, so **create everything below on the `.preview` record**. The production record `com.earlyletters.scribe` gets the same setup later, when the store submission is re-planned (step 10).
+**Correction, 1 Nov 2026.** Product IDs are unique across the whole developer account, not per app. Apple refused `plus.monthly` on the `.preview` record with "The Product ID you entered is already being used by another subscription" while the id was held elsewhere in the account, observed on appstoreconnect.apple.com by the founder, so this is observed, not read from a developer.apple.com page. Plus therefore lives on **one** record, the production record "Early Letters: Memory Book" (`com.earlyletters.scribe`, Apple ID 6829377245), and the `.preview` record carries no products. The group and both products were created there on 31 Oct (`infra/setup-record-2026-11-01.md`). Read "the `.preview` record" below as the production record.
+
+The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Because products cannot be repeated, a purchase with the real product ids can be sandbox-tested only in a TestFlight build of `com.earlyletters.scribe`; the `.preview` alpha builds can test Plus through the StoreKit configuration file in Xcode, or not at all (catalog row RT-PAY-21).
 
 | | Value | Must match |
 |---|---|---|
@@ -34,13 +36,13 @@ Apple: "To sell your apps on the App Store or offer In-App Purchases, the Accoun
 
 ## Step 2. The app record
 
-`docs/release/TESTFLIGHT.md` step 2 creates the `.preview` record (S20's runbook). Nothing more is needed for Plus.
+`docs/release/TESTFLIGHT.md` step 2 creates the `.preview` record (S20's runbook); it is not used for Plus products (see the correction above).
 
 The App Store Small Business Program (15% commission) is not needed for TestFlight; enrol before the store launch (developer.apple.com/app-store/small-business-program). **U** for the current terms; the 3 Oct version of this page had them.
 
 ## Step 3. The subscription group and the two subscriptions
 
-**3.1 The group.** In **Apps**, open **Early Letters Preview**. In the sidebar, under **Monetization**, click **Subscriptions**, then the add button (**+**). Enter the reference name `Plus` and click **Create**. **V** (Offer auto-renewable subscriptions). Make only this one group: people can hold one subscription per group at a time, which stops anyone paying twice by accident. **V** (Auto-renewable subscription information)
+**3.1 The group.** In **Apps**, open **Early Letters: Memory Book** (the production record; it was **Early Letters Preview** before the 1 Nov correction). In the sidebar, under **Monetization**, click **Subscriptions**, then the add button (**+**). Enter the reference name `Plus` and click **Create**. **V** (Offer auto-renewable subscriptions). Make only this one group: people can hold one subscription per group at a time, which stops anyone paying twice by accident. **V** (Auto-renewable subscription information)
 
 **3.2 The group's display name.** Click the group name. In **Display Name and Description**, click **Add**, choose **English (U.S.)**, enter the display name `Plus`, then click **Add**. **V** for the path (Offer auto-renewable subscriptions). Apple: group display names "must not contain control characters ... or markup language (for example, HTML tags, or Unicode characters, such as emoticons, diacritics, or special characters)". **V** (Auto-renewable subscription information). If the screen offers **App Name Display Options**, keep the app's own name. **U**
 
@@ -48,7 +50,7 @@ The App Store Small Business Program (15% commission) is not needed for TestFlig
 
 **3.4 The annual subscription.** In the group, click the add button (**+**). Enter reference name `Plus Annual` and Product ID `plus.annual`, then click **Create**. **V** (same page: **+** once the group has a subscription)
 
-Product ID rules, **V** (In-App Purchase information): letters, numbers, hyphens, periods and underscores, up to 100 characters; "isn't editable after you save"; "can't be reused for another In-App Purchase within the same app, even if you delete the original". Type them exactly. Because the rule is per app, the production record later uses the same two ids.
+Product ID rules, **V** (In-App Purchase information): letters, numbers, hyphens, periods and underscores, up to 100 characters; "isn't editable after you save"; "can't be reused for another In-App Purchase within the same app, even if you delete the original". Type them exactly. Apple's page says "within the same app", but the observed behaviour on 1 Nov is account-wide: an id used on one record is refused on another (see the correction at the top). There is one set of ids, on the production record.
 
 For **each** of the two subscriptions, open it and do 3.5 to 3.10:
 
@@ -137,7 +139,7 @@ Apple's rule for that submission: "Your first auto-renewable subscription must b
 
 ## Step 10. Later: the production record
 
-When the store submission is re-planned (D-106), repeat steps 3 to 7 on the `com.earlyletters.scribe` record with the same ids, names, prices and offers (ids are unique within an app, **V** step 3.4), then step 3.11 and step 9. The sandbox testers and the test family are account-wide and are reused. **U** whether Apple keeps sandbox purchase history per app.
+Do not repeat steps 3 to 7 on another record: ids are unique across the account (observed 1 Nov, see the correction at the top), and Plus already lives on the production record. Continue with step 3.11 and step 9 there. The sandbox testers and the test family are account-wide and are reused. **U** whether Apple keeps sandbox purchase history per app.
 
 ## Step 11. Device run sheet D-1 to D-12 (WP-F14-12, the founder's run)
 
