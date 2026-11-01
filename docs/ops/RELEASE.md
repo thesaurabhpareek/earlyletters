@@ -129,6 +129,10 @@ Build budget (D-092): EAS Free gives 15 iOS builds a month, shared by both lanes
 
 After the freeze, C1 builds come from `testflight.yml` run on the latest RC tag, so families test the RC's commit in the preview record.
 
+Licenses page: Settings, Licenses lists what ships in the iOS app and nothing else, from `apps/mobile/src/generated/licences.json` (generated from `package-lock.json` and `scripts/licences/components.mjs`; `npm test` fails while a shipped package has no theme or the file is stale). Before each RC tag:
+- [ ] `npm run licences:verify -w @scribe/mobile` exits 0 on the RC commit. It exports the production iOS bundle, reads its source map and the autolinked native modules, and exits 1 if any npm package is in the build but not listed, listed but not built, or in the source map but not in `package-lock.json`. Record the line it prints ("N npm packages in the iOS build, N listed") in `docs/release/<x.y.z>.md`.
+- [ ] After the first EAS production build of the release, the pod list in the build log matches `NON_NPM` in `components.mjs` (Google Sign-In and its dependencies are listed by major version, since no Podfile.lock is kept).
+
 Store text: `apps/mobile/store.config.json` is generated from `packages/content` (`npx tsx scripts/release/store-config.ts`, BL-436). Whoever changes the source regenerates it in the same PR; the drift test in `npm test` fails otherwise. The founder runs `release-ios.yml` by hand from the release branch with `job: metadata`. The job refuses any other ref, refuses a listing that promises sharing while server features are off (BL-440), waits for the founder's approval in the `app-store` environment, adds the review contact and copyright from the secret, and runs `eas metadata:push`. GitHub shows the Run workflow button only for workflows on the default branch, so the job is available once the release PR has merged to `main` (V: GitHub docs, per the 15 Oct review). EAS Metadata cannot upload screenshots: upload them by hand (6.3).
 
 ### 3.5 Release secrets and the gate (ADR 0022 decision 8; FT-20)

@@ -85,6 +85,7 @@
     "preflight:alpha": "node scripts/preflight-testflight.mjs --profile preview",
     "preflight:production": "node scripts/preflight-production.mjs",
     "licences:generate": "node ../../scripts/licences/generate.mjs",
+    "licences:verify": "node ../../scripts/licences/verify-shipped.mjs",
     "test": "vitest run",
     "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "e2e:web:index": "node e2e-web/support/build-index.mjs",
