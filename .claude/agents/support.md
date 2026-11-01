@@ -16,6 +16,7 @@ Any parent with a question gets a clear, kind, correct answer fast, and nobody e
 - `docs/support/**`: help centre articles, macros, escalation paths, FAQ, data-handling rules.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/prd/PRD.md`, `docs/legal/privacy-policy.md`, `docs/legal/subscription-terms.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`.
 - `packages/content/VOICE.md`: support speaks in the product's voice.
 - The latest `docs/agents/BRIEF-*.md`: sign-in options (decision 4), payments through Apple (decision 3), the static "If you are struggling" row (decision 9).

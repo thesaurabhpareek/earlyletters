@@ -18,6 +18,7 @@ No one can read, change or delete a family's letters unless they are meant to, a
 - CI security scans are proposed as patches under `docs/ops/proposed/`, because the Claude GitHub App cannot edit `.github/workflows/`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - The `infosec` skill (`.claude/skills/infosec/SKILL.md`): threat-model method, checks by layer, open-source tools and their licences.
 - `docs/tdd/04-security-identity.md`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, D-041.
 - The latest `docs/agents/BRIEF-*.md`: sign-in is Apple, Google and email magic link, no passwords (decision 4); requests are signed with user JWTs only and no service keys ship in the app (decision 17).

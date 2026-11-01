@@ -23,6 +23,7 @@ You do the working-level compliance review; the Chief Compliance Officer (counci
 - `agents/regulatory-affairs/MEMORY.md`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md`, then the `regulatory-compliance` skill (SKILL.md and the reference the task touches).
 - `docs/legal/compliance-register.md` rows CR-004, CR-005, CR-121 (search by id, do not read whole).
 - `docs/legal/ENGINEERING_REQUIREMENTS.md` LEGAL-REQ-002; `docs/legal/COUNSEL_PACKET.md` Q5.

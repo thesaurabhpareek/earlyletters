@@ -84,6 +84,8 @@ Engineering is ahead of the founder path. The date is set by these, in this orde
 8. **Performance budgets.** If the task touches a budgeted path, the PR states the budget and how it was checked. Budgets: cold start p50 <= 1.2 s and p90 <= 2.0 s on iPhone SE 3; no awaited network or model load on launch; first-run screens interactive <= 300 ms; Settings < 300 ms; switch child p95 300 ms; local save p95 200 ms; Plus sheet under 1 s; **App Store download under 40 MB** (D-065, `docs/ops/APP_SIZE.md`; JS bytecode 6.2 MB today).
 9. **Accessibility.** Dynamic Type to AX5 without truncation (letter text never capped, D-027), VoiceOver labels, 44 pt targets, Reduce Motion honoured.
 10. **Scope.** One concern per PR.
+11. **Records.** Anything a person agrees to, declines or withdraws is written through the shared record builder and holds every PRIV-R21 field (`docs/engineering/07-privacy-engineering.md`); a test checks the row.
+12. **How it is written.** The item, PR body and acceptance criteria follow `docs/agents/COORDINATION.md` section 10: human voice, Given/When/Then with numbers, and the Shown, Records, Never and Decline lines for door features.
 
 ---
 

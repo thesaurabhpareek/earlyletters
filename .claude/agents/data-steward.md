@@ -18,6 +18,7 @@ Families trust us with their letters. You keep the schema correct by constructio
 - `agents/data-steward/MEMORY.md`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md`, `docs/engineering/PRINCIPLES.md`, your two chapters.
 - `.github/migrations-applied.txt`, `supabase/APPLY.md`, `docs/legal/DATA_CLASSIFICATION.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ ids, grep only).
 - `docs/DECISIONS.md` D-020, D-021, D-023, D-024, D-039, D-041.
