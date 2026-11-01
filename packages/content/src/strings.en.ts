@@ -165,7 +165,7 @@ export const en = {
     // Shown as a card on Tonight after the first letter is saved, never during first run (PRD.md K-02).
     reminder: {
       title: "A gentle nudge, now and then?",
-      body: "A couple of evenings a week, at a time you pick. Never late at night.",
+      body: "A couple of evenings a week, at a time you pick, to add to {child}'s book. Never late at night.",
       yesEveningsButton: "Yes, evenings",
       pickTimeButton: "Pick a time",
       timeLabel: "Remind me at",

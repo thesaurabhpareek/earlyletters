@@ -29,11 +29,15 @@ need() { command -v "$1" >/dev/null || { say "Missing $1"; exit 1; }; }
 need gh; need jq
 [[ "$(gh api user --jq .login)" == "thesaurabhpareek" ]] || { say "Sign in to gh as thesaurabhpareek first."; exit 1; }
 
-protection_body() { cat <<'JSON'
+# develop also requires compliance-fence (CR-27); main does not, because a release PR into main carries
+# compliance paths while main has no FENCE.json, so the fence's bootstrap fails it and would block every release.
+protection_body() { local extra=''
+  [[ "${1:-}" == develop ]] && extra=', { "context": "compliance-fence", "app_id": 15368 }'
+  cat <<JSON
 {
   "required_status_checks": { "strict": false, "checks": [
     { "context": "required", "app_id": 15368 },
-    { "context": "applied migrations unchanged", "app_id": 15368 } ] },
+    { "context": "applied migrations unchanged", "app_id": 15368 }$extra ] },
   "enforce_admins": true,
   "required_pull_request_reviews": { "required_approving_review_count": 0, "dismiss_stale_reviews": false, "require_code_owner_reviews": false },
   "restrictions": null,
@@ -68,7 +72,9 @@ verify() {
     if gh api $R/branches/$b/protection >/dev/null 2>&1; then
       v=$(gh api $R/branches/$b/protection --jq '[([.required_status_checks.checks[]|.context]|sort|join(",")), .enforce_admins.enabled, .required_pull_request_reviews.required_approving_review_count, .allow_force_pushes.enabled, .allow_deletions.enabled]|@tsv')
     else v=none; fi
-    [[ "$v" == $'applied migrations unchanged,required\ttrue\t0\tfalse\tfalse' ]] && say "OK   protection $b" || { say "DRIFT protection $b: $v"; bad=1; }
+    want=$'applied migrations unchanged,required\ttrue\t0\tfalse\tfalse'
+    [[ "$b" == develop ]] && want=$'applied migrations unchanged,compliance-fence,required\ttrue\t0\tfalse\tfalse'
+    [[ "$v" == "$want" ]] && say "OK   protection $b" || { say "DRIFT protection $b: $v"; bad=1; }
   done
   v=$(gh api $R/rulesets/$COPILOT_RULESET --jq '.conditions.ref_name.include|join(",")')
   [[ "$v" == "refs/heads/main" ]] && say "OK   Copilot ruleset on main only" || { say "DRIFT Copilot ruleset include: $v"; bad=1; }
@@ -87,7 +93,7 @@ case "$MODE" in
     say ""
     say "Would run, in order:"
     say "1. CR-6  PATCH $R  rebase off, delete branches on merge, auto-merge off, update-branch on, squash title = PR title"
-    say "2. CR-7  PUT $R/branches/develop/protection and main: PR required, checks 'required' and 'applied migrations unchanged' (app $CHECKS_APP), 0 approvals, admins enforced, no force push or deletion"
+    say "2. CR-7  PUT $R/branches/develop/protection and main: PR required, checks 'required' and 'applied migrations unchanged' (app $CHECKS_APP), plus 'compliance-fence' on develop (CR-27), 0 approvals, admins enforced, no force push or deletion"
     say "3. CR-11  POST $R/rulesets x3: release tags immutable, release branches keep history, archive tags kept"
     say "4. CR-9  PUT $R/rulesets/$COPILOT_RULESET to target main only, then PATCH default_branch=develop, then disable agents.yml"
     say "Then --verify. Way back: --undo."
@@ -120,7 +126,7 @@ case "$MODE" in
     say "CR-6"; gh api -X PATCH $R -F allow_squash_merge=true -F allow_merge_commit=true -F allow_rebase_merge=false \
       -F delete_branch_on_merge=true -F allow_auto_merge=false -F allow_update_branch=true \
       -f squash_merge_commit_title=PR_TITLE -f squash_merge_commit_message=COMMIT_MESSAGES --jq .full_name
-    say "CR-7"; for b in develop main; do protection_body | gh api -X PUT $R/branches/$b/protection --input - --jq .url; done
+    say "CR-7"; for b in develop main; do protection_body "$b" | gh api -X PUT $R/branches/$b/protection --input - --jq .url; done
     say "CR-11"; while read -r body; do
       name=$(jq -r .name <<<"$body")
       if gh api $R/rulesets | jq -r --arg n "$name" '.[]|select(.name==$n)|.id' | grep -q .; then say "  exists: $name"; else gh api -X POST $R/rulesets --input - <<<"$body" --jq '"  created \(.id) \(.name)"'; fi

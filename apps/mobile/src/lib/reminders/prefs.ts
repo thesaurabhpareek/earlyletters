@@ -9,7 +9,7 @@
  * | `reminders.paused` | `on` / `off` | `off` (C-REQ-007) |
  * | `reminders.cadence` | `off`, `weekly`, `fewTimes`, `everyEvening` | `fewTimes` (C-REQ-002) |
  * | `reminders.days` | weekdays, comma separated, 0 = Sunday | `2,6` (Tuesday, Saturday) |
- * | `reminders.weeklyDay` | 0 to 6 | `0` |
+ * | `reminders.weeklyDay` | 0 to 6 | `6` (Saturday) |
  * | `reminders.time` | `HH:MM`, 07:00 to 21:30 in 15-minute steps | `20:30` |
  * | `reminders.monthNotes` | `on` / `off` | `on` |
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |

@@ -385,6 +385,23 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Revisit when: the CR-20 automation identity exists, which would let GitHub enforce identity, or a fenced change is ever merged without both approvals.
 - Sequence (Karma, under D-132, the founder's 31 Oct delegation of merges to the CTO): merge this PR into `develop`. The workflow reaches `main` with the next release PR from `develop` (docs/DEVELOPMENT.md: `main` changes only by a release PR or a website hotfix, and this is neither a hotfix nor worth an exception). Until then the fence does not run; the prose rule and reviews cover the gap. Once it is on `main`, make `compliance-fence` required on `develop` (a settings write the proxy refuses, so it is done in the founder's browser). Karma
 
+### CR-32 The compliance fence is required on `develop`, not on `main` (31 Oct 2026, Karma via compliance session)
+- Question: Saurabh asked me to make `compliance-fence` a required check myself ("do 2 yourself"). It was blocked on a browser, and CR-27 said the check would only run once the workflow reached `main`.
+- Tier and type: T2 (a settings write and `.github/**`); clear once the live state was read.
+- What changed under us: the founder's settings run (CR-6 to CR-11) made `develop` the default branch and protected both branches. So the fence started running from `develop` on every PR. It ran on #437 (base `main`) and #438 (base `develop`), and both reported on the PR head (API, 31 Oct).
+- Options considered:
+  - (a) Require it on both branches.
+  - (b) Require it on `develop` only.
+  - (c) Leave it advisory.
+- Ruling: (b), applied in the founder's browser on 31 Oct (Settings, Branches, the `develop` rule). The API shows `develop` requiring `required`, `applied migrations unchanged` and `compliance-fence`; `main` is unchanged.
+- Why not `main`: `main` has no `FENCE.json`, so the bootstrap path fails any PR into `main` that carries compliance paths. The release PR from `develop` will carry them, so requiring it there would block every release until the release itself landed.
+- Also in this PR:
+  - `apply-branch-settings.sh` and `github-settings.ts` now carry the per-branch check, so a re-run neither removes it nor reports drift.
+  - CR-27's text that the fence "runs only from `main`" is superseded by this ruling; the README and the workflow header are corrected.
+- Door: two-way.
+- Way back: remove the check from the `develop` rule in Settings, and revert this PR.
+- Revisit when: `main` has a `FENCE.json` (after the lineage and release merges planned for after the 9 Nov go/no-go; Project doc `infra/cto-rulings-2026-10-31-karma-deploy.md`); then require it on `main` too. Karma
+
 ### CR-33 Settings applied through the founder's browser, and how the branch cleanup is restored (31 Oct 2026, Karma via retro session)
 - Question: The founder said "take browser control and do what you need" for the pending settings run. How do I apply it, given that the proxy refuses settings writes, tag pushes and branch deletions?
 - Tier and type: T2 (repository settings); clear.
@@ -418,3 +435,53 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - **Two-factor authentication on GitHub becomes mandatory after 17 Nov:** a founder task.
 - Door: two-way.
 - Revisit when: #437 merges (s08 PR), or FT-19 is done (email footer).
+
+### CR-35 Recently deleted letters in the export belong to BL-388, not BL-323 (31 Oct 2026, Karma via session_01JQRV3b, PR #161)
+- Question: Should "Export everything" include letters on the Recently deleted shelf, and does PR #161 (BL-323) have to settle it before it merges?
+- Tier and type: T1; clear.
+- Options considered: (a) ask the founder now; (b) build it in #161, either always or behind a tick box; (c) take it out of BL-323 and leave it with BL-388, which already scopes it; (d) leave the conflict sitting in three backlog items.
+- Ruling: (c). BL-323 drops "include Recently deleted letters"; #161 ships without it, as `develop` does today. BL-388 ("Export is complete and safe", ready, High) already scopes tombstoned letters, drafts and orphan recordings in a "not in the book" folder. Before anyone builds BL-388, its owner settles one difference with the Chief Privacy Officer: spec 4.1 says Recently deleted goes in only when "Include recently deleted" is ticked, and BL-388 says always. The answer goes to the founder, through the gate and with a recommendation, if it changes `docs/legal/DELETION_AND_EXPORT_SPEC.md`, or if it conflicts with Privacy Policy section 14 ("every letter you wrote") or the export screen's "Every letter". BL-446, which covers only the letters an account-deletion request tombstoned, keeps its own scope; its Overlap note now points here instead of saying the general question is the founder's, because no founder decision is needed until BL-388 has a design.
+- Why: one concern per PR, and BL-388 is the item that already owns this (`docs/BACKLOG.md`, BL-388 scope line). The old `build.logic.ts` header said deleted letters were left out "by design (D-085)". D-085 sets up the 30-day shelf and mentions export (the "Last export" nudge), but it does not say whether an export includes the shelf. The debate behind it (PR #87, open) proposed a test that the export excludes the shelf; that is a proposal, not a decision. #161 corrects the comment to point at BL-388. Nobody is building BL-388 now, and the build 2 freeze starts Tue 3 Nov, so a founder question today would be unripe and would spend his time on a design that does not exist yet. Return: #161 is unblocked at no cost. Risk: low; nothing a user sees changes.
+- Council: no CPO or CPrivO view was taken, because this ruling moves a backlog line and decides nothing on the substance; the substance goes to the CPrivO before BL-388 starts (COUNCIL section 2, rule 4).
+- Door: two-way.
+- Way back: put the line back into BL-323's scope and BL-446's Overlap note.
+- Revisit when: BL-388 is picked up, or a data-access request asks for a deleted letter. Karma
+
+### CR-38 The export's real-stack check merges before the freeze, keeps its SQL fixture, and the hosted test waits on staging (1 Nov 2026, Karma via session_01JQRV3b, PR #476)
+- Question: (1) May #476, which adds a blocking step to `.github/workflows/db-cli.yml`, merge before the build 2 freeze (Tue 3 Nov 13:00 UTC, D-130)? (2) Should its co-parent fixture use the real invite flow instead of an owner-run insert into `child_members`? (3) The founder asked for a test "with live server": is the local stack in CI enough for BL-323 and BL-529, and what goes to him?
+- Tier and type: T2 (a `.github/**` change); clear.
+- Options considered: (1) merge once green and reviewed before the freeze; hold to after the go/no-go (Mon 9 Nov); drop the CI step and run the script by hand. (2) keep the owner-run insert; switch to `create_child_invite` and `accept_child_invite` over the API with idempotency headers; do both. (3) call the local stack enough and say nothing; ask the founder to create staging now; point at the staging step already in his queue and run this check there once it exists.
+- Ruling: (1) merge before the freeze, only with CI green on the head (including this step's first full pass) and two counted reviews on that head; if either misses Tue 3 Nov 13:00 UTC, hold to after Mon 9 Nov. (2) keep the owner-run insert. (3) the local stack is enough to merge BL-323 and BL-529; there is no new founder question, because creating `scribe-staging` is already FOUNDER_QUEUE row 8 (TESTFLIGHT step 6, Mon 2 Nov). Once staging exists, the same check runs against it, as follow-up work.
+- Why: (1) the step runs only against the throwaway local stack that `db-cli.yml` already starts; it holds no secret and deploys nothing; it touches no alpha profile, `eas.json` or `production` (the freeze rules in D-124 item 1, and `docs/release/AUTOMATION.md` row 17, which bars workflow changes between the freeze and the go/no-go; D-130 sets the dates). D-123 item 4 says "no new blocking check before the go/no-go". I read that as covering the requirement-rule checks D-123 adopts (RR-1 to RR-13), not every CI step, and that reading is the reason this step is allowed. It is not in branch protection (DB CLI is outside the `required` aggregator, `ci.yml` job `required`), but it does block in practice, because the merge gate needs green CI on the head (D-117, D-132). It runs on PRs touching `supabase/**`, the export lib, `ids.ts`, `apps/mobile/package.json` (so every mobile dependency bump), `apps/mobile/test/live/**` or `db-cli.yml`, and in the nightly from the first night after it merges, since the default branch is already `develop` (`nightly.yml` calls `db-cli.yml`; its header still says `main`). That first nightly falls inside the freeze window, which is fine: it changes nothing, it only reports. A lockfile-only supabase-js bump is caught by that nightly, not on its PR. If a later ruling or the founder reads D-123 item 4 more widely, the way back below applies. A pre-mortem gives three ways it goes wrong: the step is flaky and blocks unrelated database PRs; the env parsing breaks on a CLI bump; it passes vacuously. Each is covered: the script exits 1 on any failed check and never skips, the CLI is pinned to 2.119.0 (DEPLOY.md), and a red step on someone else's PR is reverted in one commit. (2) the check is about the export's reads, not about joining a book; the invite flow has its own PGlite tests (`supabase/tests/harness.mjs` `join`), and adding two more RPCs with idempotency claims widens what can fail without testing anything this check owns. (3) the first run on `ee1a68f` already showed real GoTrue sign-in and `record_policy_act` working against every migration in the repo. Staging runs the same migrations from `develop`, so what a hosted run adds is the hosted network and keys, not the SQL. Return: export reads proven over HTTP before the freeze, at no founder time. Risk: low.
+- Door: two-way.
+- Way back: revert the `db-cli.yml` step (one commit); the script and `postgrestReader` can stay, since `device.ts` uses `postgrestReader` with no behaviour change.
+- Revisit when: `scribe-staging` exists (point the check at it, with the fixture SQL sent over a pooler URL instead of `docker exec`); or the step fails on a PR that does not touch the export (a mobile dependency bump included). Karma
+### CR-39 Fence approval lines may start with up to three spaces (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+- Question: on #443 the founder's approval comments failed the fence because each line began with three spaces copied from my indented instructions. Do we loosen the match or keep it?
+- Tier and type: T2 (the fence is fenced, CR-27); clear
+- Options considered: keep the match and only fix how lines are handed over; accept any leading whitespace; accept up to three spaces, the most a Markdown heading may carry.
+- Ruling: accept up to three leading spaces (`^ {0,3}## ...`) in both approval patterns in `compliance/FENCE.json`, with tests in `compliance/fence/fence.test.mjs`. Four spaces or a tab is a code block in Markdown and stays refused. It ships in one fenced PR with the `regulatory-compliance` skill refresh (stale rows found on 1 Nov), so the founder posts approvals once. Hand-overs also stop indenting the lines (D-135 email carries them flush left).
+- Why: the lines still count only from the owner's login and only on the head SHA. One new exposure, found in review: every session posts as the owner (CR-20), so an indented approval line inside an instruction comment on a PR would now count, as a flush-left one already did. So sessions never post approval lines, or instructions containing them, as PR comments; they go by email (D-135) and the founder posts them himself. A rule a person must remember failed once already; the machine should accept what GitHub renders as the same heading. Return: no repeat of a failed check. Risk: 1x2.
+- Door: two-way
+- Way back: revert the two patterns in `FENCE.json`.
+- Revisit when: an approval is ever counted that the owner did not mean to post. Karma
+
+### CR-40 No new audit value for under-18 closures; the support deletion function stays after 9 Nov (1 Nov 2026, 05:19 UTC, Karma via the compliance session, with the CDO's data-model view)
+- Question: the underage runbook (#451) listed two gaps for `data-architect`: a service-role `ops_open_account_deletion`, and an `under_18` value in `ops.audit_log`. Build both now?
+- Tier and type: T2; clear
+- Options considered: build both now as a draft; add only the enum value; drop the enum and keep the function after 9 Nov.
+- Ruling: no `under_18` value. `ops.audit_log.runbook` already has `under_13` (`20261004200000_ops_deletion_worker.sql:38`), and a 13 to 17 closure is a `deletion` row with reason code `under_18_closure`, which the reason check already accepts. The runbook is corrected. `ops_open_account_deletion` stays after the 9 Nov go/no-go and before any sign-in outside the family (D-121), as BL-551, owner `data-architect`.
+- Why: an enum value that duplicates what the reason code says is a migration with no new information. The function has no cost of delay until someone outside the family can sign in, and building it now adds review load before the go/no-go (principle 4).
+- Door: two-way
+- Way back: add the value in a new migration if a report needs it.
+- Revisit when: BL-551 starts, or the first non-family sign-in is scheduled. Karma
+
+### CR-41 How a basic hand-off is emailed (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+- Question: D-135 says save-and-forward steps go by email to earlyletters@gmail.com with a timestamp. What exactly does a session do?
+- Tier and type: T1; clear
+- Options considered: email only; email plus a repo PR per send; email plus one line in a Project log.
+- Ruling: an interactive session sends one email through the Gmail connector to earlyletters@gmail.com, subject `[Early Letters] <what> <UTC timestamp>`, body in plain text: what it is, why, the exact text to save or paste (flush left), links to the PRs or docs, and what happens by default if nothing is done. It then appends one line to the Project doc `infra/founder-handoffs.md` (UTC time, subject, PRs). Founder tasks with a row in `docs/release/FOUNDER_QUEUE.md` get the timestamp at the next docs PR that touches the queue; no PR per email. Unattended runs never send: they write the line with "to send" and the next interactive session sends it.
+- Why: one record people already read (the Project docs), no new register in the repo, and nothing an unattended run could misuse.
+- Door: two-way
+- Way back: stop sending; the Project log stays as the record.
+- Revisit when: the founder asks for a different inbox or channel. Karma
