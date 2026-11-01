@@ -360,3 +360,18 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(true);
   });
 });
+
+describe("the screens' rules (components/settings/wipe.logic.ts, components/book/shelf.logic.ts)", () => {
+  it('the typed confirm takes the word in any case, with spaces around it, and nothing else', async () => {
+    const { typedWordMatches } = await import('../src/components/settings/wipe.logic');
+    expect(typedWordMatches(' Delete ', 'delete')).toBe(true);
+    expect(typedWordMatches('delet', 'delete')).toBe(false);
+    expect(typedWordMatches('Asha', 'delete')).toBe(false);
+  });
+
+  it('a deleted book shows the day it was deleted and the day it is kept until, 30 days on, never a countdown', async () => {
+    const { shelfBookDays, shelfDateLine } = await import('../src/components/book/shelf.logic');
+    const line = shelfDateLine(shelfBookDays('2026-10-03T09:00:00.000Z', 'en-US'), { deletedOn: 'Deleted {date}', erasesOn: 'Kept here until {date}' });
+    expect(line).toBe('Deleted October 3. Kept here until November 2.');
+  });
+});

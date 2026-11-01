@@ -137,11 +137,11 @@ export default function RootLayout() {
 }
 
 function Root() {
+  // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
+  useE2eSeams();
   // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
   // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
   useState(() => void resumeEraseAtLaunch());
-  // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
-  useE2eSeams();
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
