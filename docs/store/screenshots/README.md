@@ -71,5 +71,4 @@ python3 -I finish.py && rm -rf .tmp
   Recapture after the TestFlight fixes (#540 to #546) are all in; #544 moves the Book's month numerals.
 - **Review frame.** On web the fixes list opens expanded, so frame 2 shows the card after tapping a fix.
 - **No audio.** The seed has no recordings, so no player is shown playing.
-- **Frame 5 letter text** mentions "Nani" inside the demo letter. It is a parent's words, not a feature claim, but it
-  is the only family word on any frame; recapture with another demo letter if the founder prefers.
+- **Frame 5 letter text** names only Mama and the child. Every frame's on-screen text was checked against the sharing and family word list in `packages/content/test/rules.test.ts`.

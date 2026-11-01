@@ -80,7 +80,7 @@ passes. Publish only after the app is live.
 | Screenshots | `screenshots/iphone-medium-1206x2622` (required), `screenshots/ios-6.9in` (optional); frames 1 to 6, plus 7 and 8 if wanted | READY, subject to the Family tab note in `screenshots/README.md` |
 | App preview | Optional; 15 to 30 s, at most 30 fps, 886 x 1920; storyboard in `art/README.md`, capture steps in `preview/CAPTURE_GUIDE.md` | VIDEO |
 | Promotional text, description, keywords | `app-store.md` | READY (keywords: ASO) |
-| Support URL | Recommended `https://earlyletters.com/support` (build it); fallback `https://earlyletters.com`, which has a mailto link | **BLOCKED** until one is chosen; `/support` returns 404 today |
+| Support URL | `https://earlyletters.com` for now (it has a mailto link; this is what `store.config.json` carries). Switch to `https://earlyletters.com/support` once that page exists | Ready with the homepage; `/support` returns 404 today |
 | Marketing URL | `https://earlyletters.com` | READY |
 | Copyright | `2026 <founder's legal name>`, typed only in App Store Connect | FOUNDER |
 | What's New | Not shown for a first version | n/a |
@@ -175,7 +175,7 @@ What is different: the app never rewrites a parent's words. Speech-to-text runs 
 
 It is private by default. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models.
 
-It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read Together goes through the book one letter at a time, oldest first, as a bedtime moment, in the parent's own voice.
+It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read together goes through the book one letter at a time, oldest first, as a bedtime moment, in the parent's own voice.
 
 The first two letters are free. Plus, at $4.99 a month or $49.99 a year with a free trial, lets a parent keep adding letters, and every letter already kept stays readable, playable and exportable for free, as text, audio and a PDF of the book.
 
