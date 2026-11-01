@@ -188,7 +188,7 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder steps still open (the production ascAppId and the pack manifest); every other check passes', () => {
+  it('fails exactly the one founder step still open (the production ascAppId); every other check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
@@ -197,9 +197,9 @@ describe('the real repository', () => {
     // signing-keys passes since #512 (el-2026-11 and el-2026-11-backup) and must stay passing.
     // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
     // asc-app-id from this set. project-id passes since #487 and must stay passing.
-    // pack-manifest: PACK_MANIFEST is null on develop and packs.earlyletters.app answers 404. The founder's publish run
-    // (scripts/packs/publish.ts release, upload, then commit published.ts; PACKS_HOSTING.md steps 5 to 8) removes pack-manifest from this set.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'pack-manifest']);
+    // pack-manifest passes since #527: release v1 is published (signed by el-2026-11, live at packs.earlyletters.app) and
+    // supabase/functions/config/published.ts records it. It must stay passing.
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id']);
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
