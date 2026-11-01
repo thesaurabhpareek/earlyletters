@@ -166,24 +166,22 @@ category; Apple's 2026 holiday schedule; anything that needs the release build.
 
 Draft description:
 
+Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows the positioning the founder chooses.
+
 ```text
 Early Letters is a baby memory book that parents fill by talking. At the end of the day a parent tells their child one thing about it, in a sentence or a few minutes. The app writes the words down on the iPhone, keeps the recording beside them, and files the letter by the child's month of age. Years later the child can read it, and hear how their parent sounded when they said it.
 
-What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a misheard word, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
+What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a name spelled the family's way, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
 
-It is private by design. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models.
+It is private by default. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models.
 
-It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read Together turns a month of letters into a bedtime moment, in the parent's own voice.
+It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read Together goes through the book one letter at a time, oldest first, as a bedtime moment, in the parent's own voice.
 
 The first two letters are free. Plus, at $4.99 a month or $49.99 a year with a free trial, lets a parent keep adding letters, and every letter already kept stays readable, playable and exportable for free, as text, audio and a PDF of the book.
 
 Launching in the United States on iPhone, iOS 17 or later.
 ```
 
-Before submitting, check two lines against what this change found: "a misheard word" overclaims (the engine fixes a
-misheard name only from the family's own word list; the listing now says "a name spelled your way"), and "Read
-Together turns a month of letters" is not what the app does (it goes through the whole book, oldest first). Also
-confirm "Not much today", reminders off by default, and the PDF export on the release build.
 
 Draft Helpful Details:
 
