@@ -41,7 +41,7 @@ A Framework for OFAC Compliance Commitments (ofac.treasury.gov/media/16331/downl
 - All of this section is COUNSEL_PACKET Q57 (1.5.0, on #163): name screening (item 2, D-137), the D-131 list, and whether the country check changes the App Privacy label (CPrivO-2).
 - D-131's counsel list: whether the app is subject to the EAR at all (734.7 "published"), CCD for Russia and Belarus, the 5D992.c self-classification and any 740.17 reporting, whether sign-up blocking is enough when US-storefront downloads are not gated, Kherson and Zaporizhzhia.
 - Terms 2.4 names "terrorist supporting" countries (Cuba, North Korea, Iran today); our list blocks all of them, so the Terms and the list agree.
-- Whether a refused sign-up's `block` count survives GoTrue's transaction is unverified (APPLY.md File 27, step 4).
+- Whether a refused sign-up's `block` count survives GoTrue's transaction is unverified (APPLY.md File 28, step 4).
 
 ## Known limits (say these out loud)
 - VPNs get around any IP block. OFAC expects reasonable effort, and the Terms attestation covers the rest.

@@ -29,6 +29,9 @@ export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)'
   'ops_storage_owned_by(uuid,integer)', 'ops_storage_queue_due(integer,uuid)', 'ops_storage_residue(uuid,integer)',
   'prepare_account_purge(uuid)', 'purge_due(timestamp with time zone,integer)', 'record_deletion_step(uuid,text,text,text)',
   'record_purge_attempt(bigint,boolean,text)', 'subscription_retention_purge(timestamp with time zone)',
-  'sync_begin_epoch(text,timestamp with time zone)', 'sync_housekeeping(timestamp with time zone,integer)'];
+  'sync_begin_epoch(text,timestamp with time zone)', 'sync_housekeeping(timestamp with time zone,integer)',
+  // 20261031000000 (CR-26)
+  'ops_compliance_report(date,date)', 'ops_compliance_retention(timestamp with time zone)', 'ops_count_check(text,text,text)',
+  'ops_regwatch_record(jsonb)', 'ops_regwatch_triage(bigint,text,text)'];
 // "role relation letters" rows, sorted, for an exact comparison.
 export const grantRows = () => Object.entries(GRANTS).flatMap(([role, m]) => Object.entries(m).map(([rel, l]) => `${role} ${rel} ${l}`)).sort();

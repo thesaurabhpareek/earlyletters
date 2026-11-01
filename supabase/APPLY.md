@@ -31,6 +31,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 | 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
+| 28 | `20261031000000_compliance_gates.sql` | **Pending** | Sign-up refusal for the D-131 places, daily compliance counts, the regulatory watch table and the geo loader tables (section "File 28") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -1182,3 +1183,34 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 28: compliance gates at sign-up, counts and the regulatory watch (31 Oct 2026, CR-26)
+
+`20261031000000_compliance_gates.sql`. Not before the 9 Nov go/no-go; apply before any server-feature release (sign-in, D-100, staged by D-121) reaches people outside the family. Apply after File 26. Idempotent; adds tables in `ops` and functions; changes no existing row or function.
+
+- **What it adds.** `ops.restricted_jurisdictions` (seeded per D-131: KP, IR, CU, SY, RU, BY and four Ukrainian regions), `ops.geo_ip_ranges` and `ops.geo_ip_meta` (empty until loaded), `ops.compliance_check_counts` (daily counts, no person id, no IP), `ops.regulatory_watch`; the auth hook `public.hook_before_user_created(jsonb)`; five service-only `ops_*` functions.
+- **Fails open.** With no geo data the hook allows every sign-up and counts `geo_unknown`, so applying the file changes nothing a user sees until geo data is loaded and the hook is turned on.
+
+**Before the hook is turned on (CCO conditions, CR-27 review):**
+- An ops alert on the `geo_stale`, `geo_unknown` and `error` counts exists (not built yet).
+- Step 4 below is verified on a local stack, so we know whether `block` counts survive a refused sign-up.
+- `legal` has drafted, and the founder has approved, the Privacy Policy disclosure that the sign-up IP is used to work out a country. Today the policy says we do not collect location.
+- DATA_CLASSIFICATION rows exist for the five new tables, and the retention schedule lists two years for the counts (`legal` and `compliance-engineer`).
+- The refusal screen links to https://db-ip.com (DB-IP's CC BY 4.0 attribution).
+
+**What it does not cover:** at sign-up Crimea, Donetsk and Luhansk are covered only by the Terms 2.4 confirmation, because country-level data cannot single them out. "No IP stored" is true of our tables only. Supabase Auth's own audit log probably records the sign-up IP (unverified, 31 Oct 2026); check its retention before making any claim.
+
+**After applying (founder, in this order):**
+1. Load geo data: `node compliance/scripts/load-geo-ip.mjs --csv dbip-country-lite-YYYY-MM.csv.gz --version YYYY-MM --dry-run`, then again with `SUPABASE_DB_URL` and without `--dry-run`.
+2. Turn the hook on: Dashboard > Authentication > Hooks > "Before User Created" > Postgres > `public.hook_before_user_created`.
+3. Check one sign-up from a normal network still works, then `select public.ops_compliance_report(current_date, current_date);` shows one `pass`.
+4. Before relying on block counts: on a local stack (`supabase start`), refuse one sign-up through the hook and check the `block` row survived. If GoTrue's rollback removed it, block counts are not recorded at the hook and the report says only passes and fail-opens.
+
+**Check after applying** (expect 10, then `false`, then `true`):
+```sql
+select count(*) from ops.restricted_jurisdictions;
+select has_function_privilege('authenticated', 'public.hook_before_user_created(jsonb)', 'execute');
+select has_function_privilege('supabase_auth_admin', 'public.hook_before_user_created(jsonb)', 'execute');
+```
+
+**Rollback.** Turn the hook off in the Dashboard first (a dropped hook function with the hook on breaks every sign-up). Then run the drop statements in the file header.
