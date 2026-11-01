@@ -87,7 +87,7 @@ CDesO-1 (the row is on home and in Privacy; one setting).
 
 ## 6. Settings home
 
-CDesO-1 (five groups plus About), CCO-9 (a Plan row one tap from home in both builds), CDesO-6 (plan status words), CLO-5 (version row), CDesO-2 (sign-off). Today's home has 18 rows; this one has 14 in build 1 with one child.
+CDesO-1 (five groups plus About), CCO-9 (a Plan row one tap from home in both builds), CDesO-6 (plan status words), CLO-5 (version row), CDesO-2 (sign-off). Build 1 with one child: the header card plus 17 rows (today: 18 rows including Plan, settings-ia.md 1). The gain is one job per page and plain group names, not a lower count.
 
 ```
  +--------------------------------------+
