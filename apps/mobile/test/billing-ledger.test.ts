@@ -408,3 +408,133 @@ describe('the Keep gate flow: 2 free letters, then Plus (D-082)', () => {
     expect(await pressKeep(draft().id, FREE, 0)).toBe('held');
   });
 });
+
+/**
+ * D-133 (31 Oct; decision PR #439; RT-PLS-04, RT-PLS-11, RT-PLS-12; SR-C-16): notes ship in v1.0, and a kept
+ * note counts toward the free letters like a letter. Every other D-103 rule stays: only your own count, the words
+ * must exist, the item is kept from Review, the ledger never decreases, Erase everything resets it.
+ */
+describe('[D-133] a kept note counts like a letter', () => {
+  /** A draft the parent marked as a note in Review (setDraftKind): saveFromDraft stores it as kind 'note'. */
+  function noteDraft() {
+    const d = draft();
+    expect(drafts.setKind(f.ctx, d.id, 'note')).toBe(true);
+    return d;
+  }
+  const kindOf = (id: string) => f.db.get<{ kind: string }>('SELECT kind FROM entries WHERE id = ?', id)?.kind;
+  const OWNER = 'acct-mama';
+  const OTHER_PARENT = 'acct-papa';
+  const signIn = (id: string) => f.db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('sync.ownerId', ?)", id);
+
+  it('a note kept from Review adds one, in the save transaction, and is in the letters present', () => {
+    const d = noteDraft();
+    keep(d.id);
+    expect(kindOf(d.id)).toBe('note');
+    expect(ledger.readState(f.ctx).n).toBe(1);
+    expect(ledger.countPresent(f.ctx)).toBe(1);
+    expect(ledger.counts(f.ctx, d.id)).toBe(true);
+    ledger.recordKept(f.ctx, d.id, 0); // idempotent per id, like a letter
+    expect(ledger.readState(f.ctx).n).toBe(1);
+  });
+
+  it('1 letter and 1 note kept, then a third: the gate shows (letter or note)', async () => {
+    configureLedgerStorage(fakeKeychain().storage);
+    expect(await pressKeep(draft().id, FREE)).toBe('kept');
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('kept');
+    expect(await lettersKept(dbAdapter())).toBe(2);
+    const third = draft();
+    expect(await pressKeep(third.id, FREE)).toBe('held');
+    expect(drafts.get(f.ctx, third.id)).toEqual(third); // held writes nothing
+    const thirdNote = noteDraft();
+    expect(await pressKeep(thirdNote.id, FREE)).toBe('held');
+    expect(entries.get(f.ctx, thirdNote.id)).toBeNull();
+  });
+
+  it('2 notes kept, then a third: the gate shows', async () => {
+    configureLedgerStorage(fakeKeychain().storage);
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('kept');
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('kept');
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('held');
+  });
+
+  it('the words must exist: a note with no words yet, or marks only, does not count', () => {
+    keep(noteDraft().id, { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' });
+    keep(noteDraft().id, { finalText: '...' });
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
+  });
+
+  it('kept from Review: a note whose machine words the author has not kept yet does not count', () => {
+    keep(noteDraft().id, { transcriptStatus: 'unreviewed' });
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
+  });
+
+  it('a quiet-day mark still never counts, and is never relabelled a note', () => {
+    const d = noteDraft();
+    keep(d.id, { kind: 'not_much', audioUri: null });
+    expect(kindOf(d.id)).toBe('not_much');
+    expect(ledger.countPresent(f.ctx)).toBe(0);
+    expect(ledger.readState(f.ctx).n).toBe(0);
+  });
+
+  it("the other parent's synced letters and notes never count, nor raise the mirror (ledger.ts author rule)", async () => {
+    signIn(OWNER);
+    // What a pull writes (sync/merge.ts): the server row always carries its author's id, never null.
+    entries.upsert(f.ctx, letter({ id: 'papa-letter', authorId: OTHER_PARENT }), defaults);
+    entries.upsert(f.ctx, letter({ id: 'papa-note', kind: 'note', authorId: OTHER_PARENT }), defaults);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
+    expect(ledger.counts(f.ctx, 'papa-letter')).toBe(false);
+    expect(ledger.counts(f.ctx, 'papa-note')).toBe(false);
+    ledger.recordKept(f.ctx, 'papa-letter', 0);
+    ledger.recordKept(f.ctx, 'papa-note', 0);
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(await lettersKept(dbAdapter())).toBe(0);
+    // This parent still has both free letters.
+    configureLedgerStorage(fakeKeychain().storage);
+    expect(await pressKeep(draft().id, FREE)).toBe('kept');
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('kept');
+    expect(await pressKeep(draft().id, FREE)).toBe('held');
+  });
+
+  it("the other parent's rows do not count on a phone that has not signed in either (no owner: only author_id null counts)", () => {
+    entries.upsert(f.ctx, letter({ id: 'papa-note', kind: 'note', authorId: OTHER_PARENT }), defaults);
+    expect(ledger.countPresent(f.ctx)).toBe(0);
+  });
+
+  it('own rows count: author_id null (made before any sign-in) and author_id = this account', () => {
+    signIn(OWNER);
+    keep(noteDraft().id); // author_id null
+    entries.upsert(f.ctx, letter({ id: 'mama-letter', authorId: OWNER }), defaults);
+    expect(ledger.counts(f.ctx, 'mama-letter')).toBe(true);
+    expect(ledger.countPresent(f.ctx)).toBe(2);
+  });
+
+  it('a deleted letter or note still counts, and the ledger never decreases', async () => {
+    configureLedgerStorage(fakeKeychain().storage);
+    const a = draft();
+    expect(await pressKeep(a.id, FREE)).toBe('kept');
+    entries.tombstone(f.ctx, a.id);
+    expect(ledger.countPresent(f.ctx)).toBe(1); // a deleted letter still counts (D-083)
+    const b = noteDraft();
+    expect(await pressKeep(b.id, FREE)).toBe('kept');
+    entries.tombstone(f.ctx, b.id);
+    expect(ledger.countPresent(f.ctx)).toBe(2);
+    expect(await pressKeep(draft().id, FREE)).toBe('held'); // deleting both did not give a free letter back
+    f.db.run('DELETE FROM entries'); // purged after 30 days: the mirror and Keychain remember
+    expect(await lettersKept(dbAdapter())).toBe(2);
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('held');
+  });
+
+  it('Erase everything resets a count that includes notes', async () => {
+    const kc = fakeKeychain();
+    configureLedgerStorage(kc.storage);
+    await pressKeep(draft().id, FREE);
+    await pressKeep(noteDraft().id, FREE);
+    expect(kc.count()).toBe(2);
+    f.db.run('DELETE FROM entries');
+    await clearLedger(dbAdapter());
+    expect(await lettersKept(dbAdapter())).toBe(0);
+    expect(await pressKeep(noteDraft().id, FREE)).toBe('kept');
+  });
+});

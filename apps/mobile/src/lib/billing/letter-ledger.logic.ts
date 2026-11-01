@@ -2,8 +2,8 @@
  * The letter ledger, pure part (D-082, D-083; debate Q-013 section 3, option B).
  *
  * One never-decreasing whole number: how many letters this account has ever
- * kept. It is the only thing the free-letter limit looks at, so deleting a
- * letter, undoing a delete, restoring from Recently deleted, editing or moving
+ * kept. A kept note counts as a letter (D-133). It is the only thing the
+ * free-letter limit looks at, so deleting a letter, undoing a delete, restoring from Recently deleted, editing or moving
  * a letter between the Book and private never change it. No identifier, no
  * timestamp, no content, no device id (that would edge toward fingerprinting).
  *
@@ -12,8 +12,8 @@
  *      this-device-only, never in a backup);
  *   2. the database mirror, settings key `letters.keptEver` (comes back with an
  *      iCloud or device backup restore);
- *   3. the letters present in the database (a restored database still shows its
- *      letters even if both counters are gone).
+ *   3. the letters and notes present in the database (a restored database
+ *      still shows them even if both counters are gone).
  * Every way a source can be lost errs on the safe side: the person gets a
  * gift, never a lock-out. Apple does not guarantee Keychain items survive app
  * deletion; that is accepted (Q-013 section 3).
