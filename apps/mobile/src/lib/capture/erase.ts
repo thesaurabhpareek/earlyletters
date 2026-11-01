@@ -23,7 +23,7 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { audioRows, eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
 
@@ -36,10 +36,19 @@ export const eraseAudioFile: AudioEraser = (uri, entryId) => {
   removeListeningCopy(entryId);
 };
 
-/** Stored paths of every other draft and letter, deleted letters included (they can still be restored). */
-function otherAudioUris(entryId: string): string[] {
+/**
+ * Stored paths of every other draft and letter, deleted letters included (they can still be restored). The row
+ * being erased is left out whichever table holds it: a draft keeps its id when it becomes a letter, so one id is
+ * one recording, and a draft erased with its book (eraseBook) must not count as another owner of its own file.
+ */
+function otherAudioUris(id: string): string[] {
   const { drafts, entries } = audioRows();
-  return [...drafts, ...entries.filter((e) => e.id !== entryId)].flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+  return [...drafts, ...entries].filter((r) => r.id !== id).flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+}
+
+/** Erase now on a deleted book, from the shelf (BL-387): every recording of the book, then its rows. */
+export function eraseDeletedBook(id: string): boolean {
+  return eraseBook(id, eraseAudioFile);
 }
 
 /** Erase now, from the shelf. True when the letter and its recording are gone. */

@@ -237,6 +237,33 @@ export async function enableReminders(cadence?: Exclude<Cadence, 'off'>): Promis
   return status;
 }
 
+/**
+ * Erase everything (BL-387, F17 6.2 F): every nudge and note of ours goes, scheduled or already in Notification
+ * Center (a note can carry a child's name when the person chose names, F13), and the last plan is forgotten so a
+ * new first run plans afresh. Local only. Never throws.
+ */
+export async function forgetReminders(): Promise<void> {
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  const run = async () => {
+    lastSignature = null;
+    try {
+      for (const s of await Notifications.getAllScheduledNotificationsAsync()) {
+        if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
+      }
+      for (const n of await Notifications.getPresentedNotificationsAsync()) {
+        if (isOurs(n.request.content.data) || n.request.identifier.startsWith(ID_PREFIX)) await Notifications.dismissNotificationAsync(n.request.identifier).catch(() => {});
+      }
+    } catch {
+      // Nothing scheduled, or no notification module (web preview).
+    }
+  };
+  chain = chain.then(run, run);
+  return chain;
+}
+
 /** The user turned reminders off: every scheduled nudge and note is removed. */
 export async function disableReminders(): Promise<void> {
   writePrefs({ enabled: false });

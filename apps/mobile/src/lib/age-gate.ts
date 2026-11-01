@@ -7,7 +7,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { answerGate, decideGate, type GateDecision } from './age-gate.logic';
 import { clearPendingInvite } from './family/pending-invite';
-import { deleteSetting, getSetting, setSetting } from './store';
+import { deleteSetting, getSetting, setSetting, subscribeTo } from './store';
 
 // Keys from docs/DECISIONS.md D-026 (DATA_CLASSIFICATION 4.6, L2).
 const PASSED = 'ageGate.passed';
@@ -44,6 +44,9 @@ export function reopenAgeGate(): void {
 export function useAgeGate(): { decision: GateDecision; refresh: () => void } {
   const [decision, setDecision] = useState<GateDecision>(() => readDecision());
   const refresh = useCallback(() => setDecision(readDecision()), []);
+  // Erase everything (lib/erase-everything.ts) removes the stored answer with every other setting: the question
+  // comes back at once, as on first run. Only reads; nothing is written here.
+  useEffect(() => subscribeTo('settings', refresh), [refresh]);
   useEffect(() => {
     // Re-check when the app returns to the foreground and once a minute while stopped,
     // so a stop screen left open past its 24 hours can offer the question again.

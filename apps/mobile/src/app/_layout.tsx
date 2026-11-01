@@ -21,6 +21,7 @@ import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startBackup } from '@/lib/backup/gate';
+import { resumeEraseAtLaunch } from '@/lib/erase-everything';
 import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
@@ -136,6 +137,9 @@ export default function RootLayout() {
 }
 
 function Root() {
+  // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
+  // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
+  useState(() => void resumeEraseAtLaunch());
   // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
   useE2eSeams();
   useAppearance();
