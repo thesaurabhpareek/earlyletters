@@ -19,6 +19,36 @@ D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build wit
 
 **No build has been made and nothing has been uploaded.** Both need the founder's Apple Developer and Expo accounts. **Where builds run:** every build, submit and store action runs in GitHub Actions (`.github/workflows/testflight.yml`, from the Actions tab) or on your own computer, with secrets held in GitHub and EAS. Agent sandboxes cannot reach expo.dev, api.expo.dev or App Store Connect, so no agent ever builds, signs or uploads. Further release automation comes through `docs/release/AUTOMATION.md` (merged in #185). Anything marked *unverified* is a fact about Apple, Expo or Supabase that has not been confirmed from a primary source here; check it on the screen before relying on it. Times are estimates of your hands-on time [A], plus waits that are not yours.
 
+## One-time setup versus each release (REL-10, 1 Nov 2026)
+
+Read this before any build. Items marked done are recorded in the setup record (see the setup record for dates and entry ids); this page does not repeat account identifiers.
+
+| Kind | What | Where on this page | State |
+|---|---|---|---|
+| One-time | Apple Developer Program enrolment | Step 1 | Done, see the setup record |
+| One-time | `.preview` App ID, app record, testers | Step 2 | See the setup record |
+| One-time | Expo account, project, robot token, `testflight` environment | Step 3 | See the setup record |
+| One-time | Speech-pack keys and the R2 host | Step 4 | See the setup record |
+| One-time | Signing credentials in EAS (certificate, profile, App Manager key) | Step 2.6 and "Signing, the first time" | See the setup record |
+| One-time per new bundle id | Capabilities on the App ID (list below) | Step 2.1 | Check in the Apple portal |
+| Each release | `npm run preflight:testflight -w @scribe/mobile`, then `eas build`, then `eas submit` | "From GitHub" and "From your own computer" under step 5 | Every build |
+| Each release | Add the build to its TestFlight group, paste the "What to test" text | "Who may have which build" | Every build |
+
+**Answer yes to the Apple login prompt in `eas build`.** "Do you want to log in to your Apple account?" is answered **yes**, then your Apple ID and the two-factor code. Answering no leaves EAS unable to see or sync the App ID and its capabilities (the "other questions" line under step 5 has the other answers).
+
+**Do not run `eas credentials` unless a step says so.** On 1 Nov 2026 a session wandered into it and created an extra Admin-role App Store Connect key. Sessions never create, revoke or change Apple, Expo or GitHub keys, roles or capabilities; the founder does. The one step that sends you there is "Signing, the first time" under step 5.
+
+**Capabilities per bundle id** (tick them on the App ID, then compare against what the build needs):
+
+| Bundle id | Sign in with Apple | Associated Domains | Data Protection, level "Protected Until First User Authentication" |
+|---|---|---|---|
+| `com.earlyletters.scribe.preview` (both alphas) | yes | yes | yes |
+| `com.earlyletters.scribe` (production, next) | yes | yes | yes |
+
+Lesson, 1 Nov 2026: EAS did not sync the Data Protection capability to the App ID for the `.preview` bundle, and five builds failed at the Xcode archive step. The mechanism (why EAS skipped it, and whether the archive error names the capability) is unverified. So for any new bundle id, including production `com.earlyletters.scribe` next, open Certificates, Identifiers & Profiles > Identifiers > the App ID in the Apple developer portal and confirm all three capabilities and the Data Protection level before the first build. Do not rely on EAS to add them.
+
+**Hosted lane:** the first hosted run of `.github/workflows/testflight.yml` is the next alpha build that is needed, dispatched with `submit=false` (the founder approves the `testflight` environment). `eas build` on the founder's Mac is the fallback.
+
 ## The founder steps, in order
 
 Each step names what it unblocks. The preflight prints the open ones by these names and numbers.
@@ -59,7 +89,7 @@ Each step names what it unblocks. The preflight prints the open ones by these na
 - **From your own computer** (the path for build 1 until a dispatch of `testflight.yml` has been tried; build 2 uses step 11's commands, profile `preview`; same result): at the repo root `git switch develop && git pull` (step 4's runbook leaves you on its own branch), then `npm ci`, `npm run preflight:testflight -w @scribe/mobile`, then in `apps/mobile`: `npx eas-cli@24.10.0 build --platform ios --profile testflight` and `npx eas-cli@24.10.0 submit --platform ios --profile testflight --latest` (the version `testflight.yml` pins as `EAS_CLI_VERSION`, so both paths build with one CLI).
 - **If `eas build` asks to install expo-updates, answer no.** The profiles set `channel`, but expo-updates is not installed and over-the-air updates are not planned for the alpha (`EXPO_PUBLIC_` values are inlined at build time, `apps/mobile/src/lib/capabilities.ts`).
 - **If `eas build` asks "Would you like to set up Push Notifications for your project?", answer No** (plain No: "No, don't ask again" edits `eas.json` on your computer). `eas.json` sets `cli.promptToConfigurePushNotifications: false`, so eas-cli 24.10.0 should not ask at all. The app uses no remote push and must have no push key (`docs/ops/RELEASE.md` section 4).
-- **The other questions on the first build, and the answers:** the Expo login, if you used the dashboard in step 3; "Do you want to log in to your Apple account?" yes, then your Apple ID and the two-factor code (`build/credentials/context.js`); "Generate a new Apple Distribution Certificate?" and "Generate a new Apple Provisioning Profile?" yes (`build/credentials/utils/promptForCredentials.js`; files in eas-cli 24.10.0).
+- **The other questions on the first build, and the answers:** the Expo login, if you used the dashboard in step 3; "Do you want to log in to your Apple account?" **YES, always** (see the top of this page), then your Apple ID and the two-factor code (`build/credentials/context.js`); "Generate a new Apple Distribution Certificate?" and "Generate a new Apple Provisioning Profile?" yes (`build/credentials/utils/promptForCredentials.js`; files in eas-cli 24.10.0).
 - **If `eas submit` asks "Generate a new App Store Connect API Key?", answer yes, then at "Select role for the generated API key:" choose APP_MANAGER, not "ADMIN (default)", which is listed first** (eas-cli 24.10.0 `build/credentials/ios/actions/AscApiKeyUtils.js`). App Manager is the role this repo gives that key (step 2.6, `docs/release/AUTOMATION.md` AF-10, ADR 0026). It asks unless the key of step 2.6 is already stored in EAS. If a key is on your Expo account but not yet used for this app, it asks "Reuse this App Store Connect API Key?" instead, after the Apple sign-in (`build/credentials/ios/actions/SetUpAscApiKey.js`): answer yes when the Key ID it shows is the App Manager key (Users and Access > Integrations lists each key's role); the prompt itself does not show the role.
 - **`eas submit` makes the App Store Connect record itself if step 2.2 was skipped.** With no `ascAppId`, eas-cli 24.10.0 signs in to Apple, looks the record up by bundle id and, when there is none, creates one under the app's own name without asking (`build/submit/ios/IosSubmitCommand.js`, `AppProduce.js`, `build/credentials/ios/appstore/ensureAppExists.js`). If you are unsure whether step 2.2 is done, stop at the Apple sign-in that follows "Ensuring your app exists on App Store Connect" and check App Store Connect > Apps first; if a record named after the app appears anyway, rename it in App Information (*unverified*) instead of making a second one. `eas.json` cannot pin the name (`submit.*.ios.appName`), because the public name lives only in `packages/brand`.
 - **Before the first `eas submit`, create the "Family" internal group with automatic distribution off** (TestFlight > Internal Testing, see "Who may have which build"). If the app has no TestFlight group, the first submit creates "Team (Expo)", an internal group with access to every new build, and adds every Admin user to it (eas-cli 24.10.0 `build/credentials/ios/appstore/ensureTestFlightGroup.js`). With no `ascAppId` in the submit profile that runs whatever flag you pass (`build/submit/ios/AppProduce.js`). Such a group would later take build 2 by itself, which this page never allows. If "Team (Expo)" appears anyway, delete it in App Store Connect: eas-cli cannot turn that setting off on an existing group. Whether App Store Connect lets you create a group before the first build is *unverified* (the reviewer could not check it): try it, and if it is not possible, delete "Team (Expo)" right after the first submit.
