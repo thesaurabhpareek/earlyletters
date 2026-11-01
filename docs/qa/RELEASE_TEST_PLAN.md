@@ -150,7 +150,7 @@ Facts to plan around:
 
 ### 6.2 What does not run, and the order to switch it on
 
-Karma's ruling (CR-37) sets the order below. Each step is its own PR with two reviews, because each touches `.github/**`. None goes in before the freeze unless it closes a store-path item:
+Karma's ruling (CR-37) sets the order below. Each step is its own PR with two reviews, because each touches `.github/**`. None merges before the 9 Nov go/no-go unless it closes a store-path item (SR-B-08). Steps 1 and 2 do, so they may land before the 3 Nov freeze; steps 3 to 6 wait:
 
 1. **Web journeys in CI.** Linux, no secrets; 15 minutes on two workers here. Fix or quarantine J05e first (#480), with an owner and a date, so the job starts green. It turns the automated rows into covered rows and catches screen regressions on every PR. Run it on PRs that touch `apps/mobile/src/**`, and nightly.
 2. **Rewrite E2E-06 and E2E-07** to D-082 and D-083, so no stale flow can be read as evidence.
@@ -205,6 +205,8 @@ Some rows cite ids from review documents that live in the founder's Project, not
 | SR-B-03 | Staged release requirements, 31 Oct | The privacy label is right |
 | SR-B-04 | Staged release requirements, 31 Oct | The age-range signal exists, or counsel has a written plan |
 | SR-B-05 | Staged release requirements, 31 Oct | A store-profile preflight exists |
+| SR-B-06 | Staged release requirements, 31 Oct | Device evidence is committed, and someone owns it |
+| SR-B-08 | Staged release requirements, 31 Oct | Effort goes to the store path until 9 Nov |
 | SR-C-01 | Staged release requirements, 31 Oct | A parent gets words (signed packs) |
 | SR-C-02 | Staged release requirements, 31 Oct | VoiceOver never speaks into a recording |
 | SR-C-04 | Staged release requirements, 31 Oct | A thumb slip does not lock a parent out for a day (age gate confirm) |
