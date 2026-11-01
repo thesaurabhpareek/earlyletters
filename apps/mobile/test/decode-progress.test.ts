@@ -60,6 +60,12 @@ describe('the queue keeps the share, and it only rises', () => {
     expect(s.jobs['asha-1'].progress?.fraction).toBeCloseTo(0.6, 6);
   });
 
+  it('a new part starting (no fraction) keeps the share reached so far', () => {
+    let s = reduce(runningQueue(), { type: 'progress', id: 'asha-1', done: 0, total: 3, fraction: 1 / 3 });
+    s = reduce(s, { type: 'progress', id: 'asha-1', done: 1, total: 3 });
+    expect(s.jobs['asha-1'].progress).toEqual({ done: 1, total: 3, fraction: 1 / 3 });
+  });
+
   it('without a fraction it is parts only, as before', () => {
     const s = reduce(runningQueue(), { type: 'progress', id: 'asha-1', done: 1, total: 3 });
     expect(s.jobs['asha-1'].progress).toEqual({ done: 1, total: 3 });
@@ -84,6 +90,12 @@ describe('the Review states while the words are written down', () => {
     expect(wordsCard(running({ done: 0, total: 1 })).bar).toBeUndefined();
   });
 
+  it('if whisper.rn never calls back: "Part 1 of 3" in words and no bar (never an empty bar that looks stuck)', () => {
+    const c = wordsCard(running({ done: 0, total: 3 }));
+    expect(c.title).toBe('Writing down what you said. Part 1 of 3.');
+    expect(c.bar).toBeUndefined();
+  });
+
   it('without the recogniser progress it steps per part, as before', () => {
     expect(wordsCard(running({ done: 1, total: 3 })).bar).toBeCloseTo(1 / 3, 6);
   });
@@ -100,6 +112,11 @@ describe('wiring', () => {
     expect(w).toMatch(/transcribeData\(pcm, \{[^}]*onProgress: within/);
     expect(w).toMatch(/fraction: runFraction\(/);
     expect(src('lib/transcription-queue/index.ts')).toMatch(/fraction: p\.fraction/);
+    // A part's start sends no fraction, so a recogniser that never calls back leaves no stuck bar.
+    expect(w).toMatch(/onProgress\?\.\(\{ stage: 'listening', done, total \}\)/);
+    // One update per whole percent, for the part fixed at the call's start.
+    expect(w).toMatch(/const at = part;/);
+    expect(w).toMatch(/if \(!\(whole > lastPct\)\) return;/);
   });
 
   it('the Review bar track is controlBorder (bg-input), and a moving percent resets the no-progress clock', () => {

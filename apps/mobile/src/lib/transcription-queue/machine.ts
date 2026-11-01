@@ -141,6 +141,8 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
       if (e.fraction !== undefined && Number.isFinite(e.fraction)) {
         // Never moves backwards (a part decoded again, a loop retry): the bar only rises.
         progress.fraction = Math.max(j.progress?.fraction ?? 0, Math.min(1, Math.max(0, e.fraction)));
+      } else if (j.progress?.fraction !== undefined) {
+        progress.fraction = j.progress.fraction; // a new part's start keeps the share reached so far
       }
       return put(s, { ...j, progress });
     }

@@ -160,8 +160,15 @@ async function transcribeWithWhisper(
       const decode: ChunkDecoder = async (chunk, temperature) => {
         const pcm = await run.decode(chunk.pieces);
         check();
-        const within = (pct: number) =>
-          onProgress?.({ stage: 'listening', done: part.done, total: part.total, fraction: runFraction(part.done, part.total, pct) });
+        // The part this call belongs to, fixed at its start; one update per whole percent, not per callback.
+        const at = part;
+        let lastPct = -1;
+        const within = (pct: number) => {
+          const whole = Math.floor(pct);
+          if (!(whole > lastPct)) return;
+          lastPct = whole;
+          onProgress?.({ stage: 'listening', done: at.done, total: at.total, fraction: runFraction(at.done, at.total, whole) });
+        };
         const job = ctx.asr.transcribeData(pcm, { ...DECODE_OPTIONS, language, prompt: prompt || undefined, temperature, onProgress: within });
         const stop = () => void job.stop().catch(() => {});
         signal?.addEventListener('abort', stop);
@@ -183,7 +190,9 @@ async function transcribeWithWhisper(
           check,
           onProgress: (done, total) => {
             part = { done, total };
-            onProgress?.({ stage: 'listening', done, total, fraction: runFraction(done, total, 0) });
+            // No fraction here: only whisper.rn's own callback gives one, so if it never fires the bar is not drawn
+            // stuck at the start (words-state.logic.ts falls back to the part words and per-part steps).
+            onProgress?.({ stage: 'listening', done, total });
           },
         },
         meta,
