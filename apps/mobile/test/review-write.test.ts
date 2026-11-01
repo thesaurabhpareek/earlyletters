@@ -370,6 +370,45 @@ describe('S19: Write', () => {
     expect(keep).toMatch(/timer\.current = null;/);
   });
 
+  it('the page is the keyboard\'s: uncontrolled, never written back into while typing or composing (TestFlight build 1, D-057)', () => {
+    const field = write.slice(write.indexOf('<TextField'), write.indexOf('</ScrollView>'));
+    // No `value`: a controlled multiline input re-applies its text on every change, which can break marked text
+    // (Hindi, dictation), autocorrect and QuickType, and move the caret.
+    expect(field).not.toMatch(/\svalue=/);
+    expect(field).toMatch(/defaultValue=\{initialText\}/);
+    expect(field).toMatch(/onChangeText=\{onChange\}/);
+    // The keyboard's own autocorrect and capitalisation stay on: nothing turns them off, limits length or submits.
+    expect(field).not.toMatch(/autoCorrect=|autoCapitalize=|spellCheck=|maxLength=|blurOnSubmit|submitBehavior|returnKeyType|keyboardType|smartInsertDelete/);
+    expect(write).not.toMatch(/setNativeProps|\.setSelection\(|selection=\{/);
+    // A keystroke renders Write only when the page goes from empty to words or back.
+    const onChange = write.slice(write.indexOf('const onChange = (value: string) =>'), write.indexOf('const persistRef'));
+    expect(onChange).toMatch(/if \(pageEmptinessChanged\(latest\.current, value\)\) setText\(value\);\s*latest\.current = value;/);
+    expect(onChange.match(/setText\(/g)).toHaveLength(1);
+    // Close and Keep read the newest words, not a render's copy.
+    const close = write.slice(write.indexOf('const close = () =>'), write.indexOf('const keep = (inBook: boolean)'));
+    expect(close).toMatch(/const text = latest\.current;/);
+    const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
+    expect(keep).toMatch(/const text = latest\.current;/);
+  });
+
+  it('nothing on Write reads the store on a render: the child and the draft are read once, when it opens', () => {
+    expect(write).toMatch(/const \[child\] = useState\(getActiveChild\);/);
+    expect(write).toMatch(/const \[existing\] = useState\(\(\) => \(params\.draftId \? getDraft\(params\.draftId\) : null\)\);/);
+    expect(write.match(/getActiveChild\(/g)).toBeNull();
+    expect(write.match(/getDraft\(/g)).toHaveLength(2); // the one at open, and Close's check for a recording
+  });
+
+  it('the page and both destinations sit above the keyboard, and the line being written stays in view', () => {
+    expect(write).toMatch(/keyboardVerticalOffset=\{keyboardOffset\}/);
+    expect(write).toMatch(/const keyboardOffset = sheetKeyboardOffset\(screen\.height, sheetHeight\);/);
+    expect(write).toMatch(/onLayout=\{\(e\) => setSheetHeight\(e\.nativeEvent\.layout\.height\)\}/);
+    const field = write.slice(write.indexOf('<TextField'), write.indexOf('</ScrollView>'));
+    expect(field).toMatch(/scrollEnabled=\{false\}/);
+    expect(field).toMatch(/className="mt-3 flex-none"\s*inputClassName="flex-none"/);
+    expect(field).toMatch(/onContentSizeChange=\{onContentSizeChange\}/);
+    expect(write).toMatch(/if \(followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: latest\.current\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
+  });
+
   it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {
     // Every write goes through writeWords; its answer sets the autosave line, which the swipe reads.
     const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const latest = useRef'));

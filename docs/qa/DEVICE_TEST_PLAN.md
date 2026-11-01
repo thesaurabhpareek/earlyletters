@@ -482,6 +482,23 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
 
+### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
+- **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
+- **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:
+  - (a) Type about 300 words as fast as you can, without looking at the screen for the last 100. Then read them back.
+  - (b) Misspell a word ("teh") and let autocorrect replace it with the space bar; misspell another and tap the underlined word to undo the correction.
+  - (c) Tap a QuickType suggestion mid-sentence, three times.
+  - (d) Switch to the Hindi keyboard (the globe key) and type a sentence, including a transliterated or multi-stage word if the layout offers it; switch back.
+  - (e) Tap the dictation key and say two sentences; stop dictation.
+  - (f) Paste a paragraph copied from Notes.
+  - (g) Drag the caret (press and hold the space bar) into the middle of the text, type a word there, and add a new line there with Return.
+  - (h) Turn the phone to landscape and back with the keyboard up (rotate keyboard).
+  - (i) Send the app to the background mid-sentence, wait 30 s, return, and keep typing. Then close Write and open the draft again from Tonight.
+  - (j) Repeat (a) and (g) at AX5 text size.
+- **Expected:** no character is lost, doubled or reordered in any step; the caret never jumps (not to the end, not to the start) except where the person moves it; autocorrect, its undo bubble, QuickType, Hindi composition and dictation all behave as in Apple Notes; Return always adds a new line, never sends or closes; the line being written and the caret stay in view above the keyboard while writing on at the end; "Add to Asha's book" and "Keep private" both sit fully above the keyboard and QuickType bar; "Saved on this phone" appears after a pause; after (i) the words come back exactly as typed, the caret at the end. Typing never feels slower than Notes on the SE 3.
+- **Record:** S1-36 rows (a) to (j): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
+- **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

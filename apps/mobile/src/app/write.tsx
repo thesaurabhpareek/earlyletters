@@ -23,12 +23,12 @@ import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } fr
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
+import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
 import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -49,9 +49,15 @@ type SaveState = 'none' | 'saved' | 'failed';
 export default function Write() {
   const { c } = useTheme();
   const params = useLocalSearchParams<{ promptKey?: string; draftId?: string }>();
-  const child = getActiveChild();
-  const existing = params.draftId ? getDraft(params.draftId) : null;
-  const [text, setText] = useState(existing?.typedText ?? '');
+  // Read from the store once, when Write opens: never again on a render, so nothing on this page waits on the
+  // database while someone types.
+  const [child] = useState(getActiveChild);
+  const [existing] = useState(() => (params.draftId ? getDraft(params.draftId) : null));
+  const [initialText] = useState(existing?.typedText ?? '');
+  // The page is uncontrolled (pageEmptinessChanged): the words live in the input and in `latest` below. `text` is the
+  // words as of the last pause or the last time the page went from empty to words or back; Write renders then, never
+  // on each keystroke, and nothing is ever sent back into the input.
+  const [text, setText] = useState(initialText);
   const [saveState, setSaveState] = useState<SaveState>('none');
   const draftId = useRef<string | null>(existing?.id ?? null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -70,6 +76,8 @@ export default function Write() {
     // releases Close, Android's back and the swipe.
     if (r.saveState) setSaveState(r.saveState);
     if (r.saveState === 'failed') announce(copy.write.notSaved);
+    // The words as of this write, for the swipe and the destinations (one render per pause, not per keystroke).
+    setText(value);
     if (!r.ok) return false;
     const now = Date.now();
     if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
@@ -80,9 +88,9 @@ export default function Write() {
   };
 
   // The words as last typed, for the unmount flush (a closure would hold an old copy).
-  const latest = useRef(text);
+  const latest = useRef(initialText);
   const onChange = (value: string) => {
-    setText(value);
+    if (pageEmptinessChanged(latest.current, value)) setText(value);
     latest.current = value;
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => {
@@ -107,6 +115,7 @@ export default function Write() {
   );
 
   const close = () => {
+    const text = latest.current;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     // An empty typed draft is nothing; a recording draft is always kept.
@@ -153,6 +162,7 @@ export default function Write() {
 
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
   const keep = (inBook: boolean) => {
+    const text = latest.current;
     if (timer.current) clearTimeout(timer.current);
     timer.current = null;
     if (!persist(text) || !draftId.current) return;
@@ -163,6 +173,19 @@ export default function Write() {
   // At accessibility text sizes the autosave line has its own row under the header, where it can wrap, instead of
   // running into Close (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+
+  // KeyboardAvoidingView measures itself inside the sheet but the keyboard from the top of the screen; the sheet's
+  // own top closes the gap (sheetKeyboardOffset), so the page and both destinations sit above the keyboard.
+  const screen = useWindowDimensions();
+  const [sheetHeight, setSheetHeight] = useState(0);
+  const keyboardOffset = sheetKeyboardOffset(screen.height, sheetHeight);
+
+  // The page grows with the words and the sheet scrolls, so the line being written stays in view above the keyboard.
+  const scroll = useRef<ScrollView>(null);
+  const selectionEnd = useRef<number | null>(null);
+  const onContentSizeChange = () => {
+    if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: latest.current.length })) scroll.current?.scrollToEnd({ animated: false });
+  };
 
   if (!child) return null;
   const age = ageText(child, todayISO());
@@ -186,15 +209,15 @@ export default function Write() {
     ) : null;
 
   return (
-    <SafeAreaView className="flex-1 bg-background">
+    <SafeAreaView className="flex-1 bg-background" onLayout={(e) => setSheetHeight(e.nativeEvent.layout.height)}>
       {/* Words on screen that the last write could not keep: the sheet will not swipe away (iOS holds it in place), so
           they are never lost to a swipe. Close stays open in the same case; both work again after the next good write. */}
       <Stack.Screen options={screenOptions} />
       <Lamp scene="write" />
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset} className="flex-1">
         <ModalHeader onClose={close} leading={large ? null : status} />
         {large && status ? <View className="px-5 pb-1">{status}</View> : null}
-        <ScrollView contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
+        <ScrollView ref={scroll} contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
           <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
             {dateline}
           </Text>
@@ -208,9 +231,18 @@ export default function Write() {
             variant="letter"
             label={pendingCopy.write.label}
             labelHidden
-            className="mt-3"
-            value={text}
+            // Uncontrolled (D-057): the keyboard's own autocorrect, QuickType, dictation and composing keyboards work
+            // undisturbed, and the person's words are never written back into the field. The field grows with the
+            // words instead of scrolling inside itself, so the sheet's scroll keeps the caret in view.
+            className="mt-3 flex-none"
+            inputClassName="flex-none"
+            defaultValue={initialText}
             onChangeText={onChange}
+            onSelectionChange={(e) => {
+              selectionEnd.current = e.nativeEvent.selection.end;
+            }}
+            onContentSizeChange={onContentSizeChange}
+            scrollEnabled={false}
             placeholder={copy.tonight.typing.placeholder}
             autoFocus
           />
