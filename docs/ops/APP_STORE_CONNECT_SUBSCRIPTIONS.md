@@ -12,7 +12,7 @@ Time: about 75 minutes of clicking for steps 1 to 8, plus Apple's waiting times 
 
 The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Because products cannot be repeated, Plus with the real product ids loads only in a TestFlight build of the `production` profile (bundle id `com.earlyletters.scribe`), which exists after Mon 9 Nov at the earliest (D-124 item 1 keeps `eas.json` unedited from Tue 3 Nov to Mon 9 Nov and any other production change waits for the go/no-go). Until then every Plus row runs against the StoreKit configuration file in Xcode and says "StoreKit file, not sandbox". A development build on the production bundle id is not a route: it would need an `eas.json` change, and nobody has shown it completes a sandbox purchase before the first production upload.
 
-**State read in App Store Connect on 1 Nov 2026** (by the founder): on "Early Letters: Memory Book" (Apple ID 6829377245), group `Plus` (Apple ID 22533462) holds `plus.monthly` (Apple ID 6829377487) and `plus.annual` (Apple ID 6829377668). Both are on level 1, with free introductory offers of 1 month and 2 months, availability United States only, and Family Sharing on. **Not set yet:** the Billing Grace Period (step 5), which waits for the founder's yes. Rows of the table below that this paragraph does not name (prices, display names, descriptions) were not part of that reading.
+**State read in App Store Connect on 1 Nov 2026** (by the founder): on "Early Letters: Memory Book" (Apple ID 6829377245), group `Plus` (Apple ID 22533462) holds `plus.monthly` (Apple ID 6829377487) and `plus.annual` (Apple ID 6829377668). Both are on level 1, with free introductory offers of 1 month and 2 months, availability United States only, and Family Sharing on. The Billing Grace Period (step 5) is **on**: 16 days, All Renewals, Production and Sandbox (D-048), set on the production record on 1 Nov 2026 at about 05:30 UTC on the founder's delegation and read back. **V** (1 Nov, browser). Rows of the table below that this paragraph does not name (prices, display names, descriptions) were not part of that reading.
 
 | | Value | Must match |
 |---|---|---|
@@ -85,7 +85,7 @@ The app never says "free" itself: Apple's sheet shows the trial only to people w
 
 ## Step 5. Billing Grace Period
 
-**Not set on 1 Nov 2026: it waits for the founder's yes.** Do not set it before then; the values below are the proposal (D-048).
+**Done on 1 Nov 2026, about 05:30 UTC**, on the production record, with the values below (16 days, All Renewals, Production and Sandbox; D-048), on the founder's delegation, and read back. **V** (1 Nov, browser). The steps stay here as the record of how.
 
 **V** (Enable Billing Grace Period for auto-renewable subscriptions)
 1. **Apps** > the app > sidebar **Subscriptions**. In the **Billing Grace Period** section, click **Set Up Billing Grace Period**.
