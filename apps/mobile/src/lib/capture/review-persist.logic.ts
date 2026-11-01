@@ -119,6 +119,21 @@ export function restorable(saved: ReviewSaved | null, words: string): ReviewSave
   return saved;
 }
 
+/**
+ * Review's mount (review.tsx calls exactly this, and the replay test does too): what the person chose before, on these
+ * same words only, else the defaults. `putBack` seeds the put-backs that `restoreApplied` leaves out once the engine
+ * has proposed and verified its fixes for `words`.
+ */
+export function mountReview(input: { saved: ReviewSaved | null; words: string; defaultView: ReviewView }): {
+  saved: ReviewSaved | null;
+  view: ReviewView;
+  userText: string | null;
+  putBack: Edit[];
+} {
+  const saved = restorable(input.saved, input.words);
+  return { saved, view: saved?.view ?? input.defaultView, userText: saved?.text ?? null, putBack: saved?.putBack ?? [] };
+}
+
 export interface Timers {
   setTimeout: (fn: () => void, ms: number) => unknown;
   clearTimeout: (handle: unknown) => void;

@@ -115,7 +115,7 @@ import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
-import { restorable, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
+import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
@@ -226,7 +226,13 @@ export default function Review() {
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
   // The person's choices from an earlier visit (a kill, or Close and reopen), on these same words only (SR-C-06).
   // A letter whose words arrived later has no draft row, so nothing is stored or restored for it.
-  const [saved] = useState(() => (draftId && !later ? restorable(getDraftReview(draftId), raw) : null));
+  const [mounted] = useState(() =>
+    mountReview({
+      saved: draftId && !later ? getDraftReview(draftId) : null,
+      words: raw,
+      defaultView: typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)),
+    }),
+  );
   const [isSample, setIsSample] = useState(false);
   const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
@@ -235,13 +241,13 @@ export default function Review() {
   const [wash, setWash] = useState(false);
   // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
   // The view the person chose on an earlier visit (SR-C-06), else the Settings default (Word for word switch).
-  const [view, setView] = useState<ReviewView>(() => saved?.view ?? (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
+  const [view, setView] = useState<ReviewView>(mounted.view);
   // The view Review opened with: choosing the other one is a change of the person's, kept on the draft until Keep (S1).
   const [openedView] = useState(view);
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [userText, setUserText] = useState<string | null>(() => saved?.text ?? null);
+  const [userText, setUserText] = useState<string | null>(mounted.userText);
   const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
@@ -274,7 +280,7 @@ export default function Review() {
   const rejected = useRef<RejectedEdit[]>([]);
   const reverted = useRef(0);
   // The fixes the person put back, as the engine proposed them; stored on the draft (SR-C-06).
-  const putBacks = useRef<Edit[]>(saved?.putBack ?? []);
+  const putBacks = useRef<Edit[]>(mounted.putBack);
   useEffect(() => {
     if (!raw || typed) return;
     const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));

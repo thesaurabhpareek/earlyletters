@@ -368,7 +368,8 @@ export const MIGRATIONS: Migration[] = [
     name: "Review's own choices survive a kill: put-backs, the view, the person's typed words (SR-C-06, BL-377, WP-F06-08b)",
     up(db) {
       // CR-39. What the person chose in Review lives on the draft until Keep, so a reopened Review shows the
-      // same final text. Local only: never synced, never exported, never sent; the synced machine_edits shape
+      // same final text. Never synced and not in the app's export (Settings > Export); like typed_text, it is
+      // carried by the recovery export and the iOS device backup of the database. The synced machine_edits shape
       // is unchanged (the letter still stores only the fixes in force at Keep). Kept until Keep (the draft row
       // goes) or Let it go (cleared at step 1, then the row goes).
       //   drafts.review_put_back  L4  JSON array of the machine fixes the person put back (each exactly as the
@@ -376,7 +377,8 @@ export const MIGRATIONS: Migration[] = [
       //                               and only these are left out: the machine adds nothing from storage.
       //   drafts.review_view      L2  fixes | exact; null = the Settings default
       //   drafts.review_text      L4  the person's own words from Change words; null = not changed
-      //   drafts.review_base      L2  fingerprint of the words those choices were made on (review-persist.logic);
+      //   drafts.review_base      L4  fingerprint (hash) of the person's words those choices were made on
+      //                               (review-persist.logic; DATA_CLASSIFICATION 1.1.2: a hash of words is L4);
       //                               a mismatch (typed words changed since) means the choices no longer apply
       // Existing drafts gain nulls: nothing chosen yet. Nothing is queued.
       addColumns(db, 'drafts', [

@@ -4,7 +4,7 @@
  * switched, the person's words typed with pauses, Done) writes through the real store over a file on disk
  * (node:sqlite, as store.shelf.test.ts), and at a seeded random moment every bit of in-memory state is dropped: no
  * flush, no unmount, the store closed as a kill leaves it. The database is opened again from the file and Review's
- * mount is rebuilt exactly as review.tsx does it (restorable, a fresh verified clean, restoreApplied). The final text
+ * mount runs the functions review.tsx calls (mountReview, cleanSpoken, restoreApplied). The final text
  * must be the one on screen at the kill, except typed words still inside the 300 ms debounce, which may be lost and
  * nothing older (F04-REQ-011). 100 seeds. Fictional family "Asha" only.
  */
@@ -12,7 +12,7 @@ import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterAll, describe, expect, it, vi } from 'vitest';
-import { faithfulClean, finalText, type Edit } from '@scribe/core';
+import { finalText, type Edit } from '@scribe/core';
 import { nodeDb } from './helpers/node-db';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
@@ -23,7 +23,8 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { TYPED_WRITE_DEBOUNCE_MS, restorable, restoreApplied, reviewWriter, withoutPutBack, wordsBase } = await import(
+const { cleanSpoken } = await import('../src/lib/transcription-queue/clean');
+const { TYPED_WRITE_DEBOUNCE_MS, mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } = await import(
   '../src/lib/capture/review-persist.logic'
 );
 type Timers = import('../src/lib/capture/review-persist.logic').Timers;
@@ -78,7 +79,8 @@ function virtualTimers() {
   return { timers, advance, now: () => now };
 }
 
-const cleanOf = (raw: string) => faithfulClean(raw, { level: 'clean', dictionary: [] }).applied;
+// Review's own clean (review.tsx: cleanSpoken). An empty dictionary and no installed pack: lib/language loads files.
+const cleanOf = (raw: string) => cleanSpoken(raw, [], 'en').applied;
 const shown = (raw: string, s: { applied: Edit[]; view: ReviewView; userText: string | null }) =>
   s.userText ?? finalText(raw, s.view === 'exact' ? [] : s.applied);
 
@@ -98,13 +100,13 @@ function open(path: string) {
   return h;
 }
 
-/** Review's mount after a reopen, as review.tsx builds it. */
+/** Review's mount after a reopen: the same calls review.tsx makes (its useState initialisers, then its clean effect). */
 function mount(draftId: string, defaultView: ReviewView) {
   const d = store.getDraft(draftId)!;
   const raw = d.rawTranscript!;
-  const saved = restorable(store.getDraftReview(draftId), raw);
-  const kept = restoreApplied(cleanOf(raw), saved?.putBack ?? []);
-  return { raw, applied: kept.applied, putBacks: kept.putBack, view: saved?.view ?? defaultView, userText: saved?.text ?? null };
+  const m = mountReview({ saved: store.getDraftReview(draftId), words: raw, defaultView });
+  const kept = restoreApplied(cleanOf(raw), m.putBack);
+  return { raw, applied: kept.applied, putBacks: kept.putBack, view: m.view, userText: m.userText };
 }
 
 /** One migrated database with Asha's book, copied for every run (migrating 100 times would only test the migrator). */
