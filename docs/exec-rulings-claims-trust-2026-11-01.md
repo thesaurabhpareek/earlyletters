@@ -153,7 +153,7 @@ Key paths follow the object in `site.ts` on `main` (896101e2). #478 also reorder
 | `s09.points[0]` (208) | Only the people you invite can see your letters. | Your letters and recordings stay on your iPhone. They are not sent to us. |
 | `s09.headline` (206) | For your family only. | Kept on your phone. |
 | `s04.support` (151) | `${NAME}` takes out the ums and false starts and fixes a misheard name. It never adds a word. Every fix is marked and can be put back. | `${NAME}` takes out the ums and accidental repeats, and spells your names your way. It never adds a word. Every fix is marked and can be put back. |
-| `s05.support` (161) | Every letter you speak keeps its recording. One day Meera can hear exactly how you sounded tonight. | Every letter you speak keeps its original recording, unchanged. One day Meera can hear exactly how you sounded tonight. |
+| `s05.support` (161) | Every letter you speak keeps its recording. One day {child} can hear exactly how you sounded tonight. | Every letter you speak keeps its original recording, unchanged. One day {child} can hear exactly how you sounded tonight. |
 | `s08.support` (189) | English first. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each once a native speaker has checked it. | English first. More languages follow one at a time, each after a native speaker has checked it. |
 | `s08.lines` (194-203) | seven lines | English line only, until a native reviewer's name and date are on record (D-115). |
 | `welcomeEmail.promises[1]` (292) | Each letter you speak keeps its recording. | Each letter you speak keeps its original recording, unchanged. |
