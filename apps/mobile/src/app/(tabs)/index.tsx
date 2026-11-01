@@ -12,7 +12,7 @@
  * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals, except that two or more
  * letters held at the Keep step fold into one row that opens their list (F14-REQ-041) (or, when none is waiting,
  * "A month ago"); once the free letters are used and Plus is off, one standing line above Speak and Type says new
- * letters need Plus, with "See Plus" (SR-C-08, F14-REQ-040); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
+ * letters need Plus, with no button (SR-C-08, F14-REQ-040); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
  * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
  * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
  *
@@ -61,7 +61,7 @@ import {
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
 import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
-import { PLUS_ROUTE, plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
+import { plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -246,7 +246,7 @@ export default function Tonight() {
   const actions = (
     <View className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}>
       {/* Before the person records, not only at Review: new letters need Plus (SR-C-08). Never a count or a price. */}
-      {showPlusLine ? <PlusLine onSeePlus={() => router.push(PLUS_ROUTE)} /> : null}
+      {showPlusLine ? <PlusLine /> : null}
       <ButtonRow>
         <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />

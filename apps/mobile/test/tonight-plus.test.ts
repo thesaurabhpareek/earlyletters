@@ -12,7 +12,6 @@ import { describe, expect, it } from 'vitest';
 import { draftCard, type DraftFields } from '../src/components/tonight/draft-card.logic';
 import {
   HELD_COLLAPSE_AT,
-  PLUS_ROUTE,
   heldRowAction,
   plusLine,
   plusLineShows,
@@ -66,13 +65,19 @@ describe('[F14-REQ-040] the standing line on Tonight', () => {
     expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: null, allowance: undefined })).toBe(false);
   });
 
-  it('says a state, not a count or a price, and its action is See Plus', () => {
+  it('says a state, not a count or a price', () => {
     const line = plusLine();
-    expect(line.text).toBe(billingCopy.tonight.plusLine);
-    expect(line.action).toBe(billingCopy.keepGate.seePlus);
-    expect(line.text).not.toMatch(/\d|\$|price|trial|left|remaining/i);
-    expect(line.text).toMatch(/needs Plus/);
-    expect(PLUS_ROUTE).toBe('/settings/plus');
+    expect(line).toBe(billingCopy.tonight.plusLine);
+    expect(line).not.toMatch(/\d|\$|price|trial|left|remaining/i);
+    expect(line).toMatch(/needs Plus/);
+  });
+
+  it('renders no pressable: no button, link or press handler (F14-REQ-040 "No count, no button")', () => {
+    const view = code('components/tonight/plus-line.tsx');
+    expect(view).toMatch(/<Text /);
+    expect(view).not.toMatch(/Button|Pressable|Touchable|onPress|role=|href|Link\b/);
+    expect(view).not.toMatch(/seePlus|router/);
+    expect(code('app/(tabs)/index.tsx')).toMatch(/<PlusLine \/>/);
   });
 });
 

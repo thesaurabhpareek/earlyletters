@@ -182,8 +182,9 @@ test('[J04h] past the free letters: the line before Speak, and held letters as o
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   const line = 'Adding new letters to the book needs Plus. Recording, reading and export are always free.';
   await expect(app.getByText(line, { exact: true })).toBeVisible();
-  await expect(btn(app, 'See Plus')).toBeVisible();
-  await step('happy', 'Before recording: new letters need Plus', 'Two letters are kept, so Tonight says it before the next recording, in one calm line above Speak and Type, with "See Plus". No count, no price; Speak and Type work as before.');
+  // A state, not a sell: nothing to press (F14-REQ-040).
+  await expect(btn(app, 'See Plus')).toHaveCount(0);
+  await step('happy', 'Before recording: new letters need Plus', 'Two letters are kept, so Tonight says it before the next recording, in one calm line above Speak and Type. No count, no price, no button; Speak and Type work as before.');
 
   for (const words of ['You waved at the dog on the corner.', 'You pointed at the moon and said ball.']) {
     await btn(app, /^Type/).click();
