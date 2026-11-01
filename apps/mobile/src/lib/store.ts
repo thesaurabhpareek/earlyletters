@@ -23,6 +23,7 @@
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
+import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
@@ -948,6 +949,30 @@ export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
  */
 export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): boolean {
   return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
+}
+
+/**
+ * Review's own choices on this draft (v9; SR-C-06, CR-39): the fixes put back, the view, the person's words from
+ * Change words, and the fingerprint of the words they were made on. Null for a missing draft. Read on Review's mount
+ * (lib/capture/review-persist.logic `restorable`).
+ */
+export function getDraftReview(id: string): ReviewSaved | null {
+  const r = drafts.getReview(ctx(), id);
+  if (!r) return null;
+  return { putBack: parsePutBack(r.putBack), view: parseView(r.view), text: r.text, base: r.base };
+}
+
+/**
+ * Writes part of Review's choices on the draft, with `base` (wordsBase of the words Review shows). Local only: it
+ * never queues a sync op, never changes raw_transcript or typed_text, and emits nothing (no list shows these).
+ * Cleared at Keep (the draft row goes) and at Let it go (beginDiscard). False for a missing draft or one being let go.
+ */
+export function setDraftReview(id: string, base: string, patch: ReviewPatch): boolean {
+  return drafts.setReview(ctx(), id, base, {
+    putBack: patch.putBack === undefined ? undefined : JSON.stringify(patch.putBack),
+    view: patch.view,
+    text: patch.text,
+  });
 }
 
 /** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */

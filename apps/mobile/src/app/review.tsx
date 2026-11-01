@@ -6,7 +6,10 @@
  * can be put back (withoutEdit). One control, "With small fixes | Exactly as
  * said", is both the view and the choice for this letter until it is saved;
  * choosing Exactly as said keeps the fixes in state, so it is reversible
- * (D-086, review-view.logic.ts). The raw
+ * (D-086, review-view.logic.ts). The person's own choices (fixes put back,
+ * the view, their words from Change words) are written to the draft as they
+ * happen and come back when Review reopens, so a kill before Keep loses none
+ * of them (SR-C-06, CR-39; lib/capture/review-persist.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
  * entry locally first, then the success haptic, then the saved moment, which
  * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
@@ -45,7 +48,7 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -112,6 +115,7 @@ import { Text } from '@/components/ui/text';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
+import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
@@ -127,6 +131,7 @@ import {
   dictionaryFor,
   getChild,
   getDraft,
+  getDraftReview,
   getEntry,
   getSetting,
   holdDraft,
@@ -138,6 +143,7 @@ import {
   saveVoiceOnlyFromDraft,
   setActiveChildId,
   setDraftChild,
+  setDraftReview,
   setSetting,
   todayISO,
   type Draft,
@@ -218,6 +224,15 @@ export default function Review() {
   const [voiceOnly, setVoiceOnly] = useState(false);
   const [keptForWords, setKeptForWords] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
+  // The person's choices from an earlier visit (a kill, or Close and reopen), on these same words only (SR-C-06).
+  // A letter whose words arrived later has no draft row, so nothing is stored or restored for it.
+  const [mounted] = useState(() =>
+    mountReview({
+      saved: draftId && !later ? getDraftReview(draftId) : null,
+      words: raw,
+      defaultView: typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)),
+    }),
+  );
   const [isSample, setIsSample] = useState(false);
   const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
@@ -225,13 +240,14 @@ export default function Review() {
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
   const [wash, setWash] = useState(false);
   // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
-  const [view, setView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
-  // The view Review opened with: choosing the other one is a change of the person's, kept only until Keep (S1).
+  // The view the person chose on an earlier visit (SR-C-06), else the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(mounted.view);
+  // The view Review opened with: choosing the other one is a change of the person's, kept on the draft until Keep (S1).
   const [openedView] = useState(view);
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [userText, setUserText] = useState<string | null>(null);
+  const [userText, setUserText] = useState<string | null>(mounted.userText);
   const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
@@ -263,13 +279,50 @@ export default function Review() {
   // What the verifier refused is counted once at save (machine_edit_rejected: type, source, reason only).
   const rejected = useRef<RejectedEdit[]>([]);
   const reverted = useRef(0);
+  // The fixes the person put back, as the engine proposed them; stored on the draft (SR-C-06).
+  const putBacks = useRef<Edit[]>(mounted.putBack);
   useEffect(() => {
     if (!raw || typed) return;
     const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
     rejected.current = result.rejected;
-    setApplied(result.applied);
+    // Only leaves out what the person put back: every fix shown is one the verifier just accepted (constitution).
+    const kept = restoreApplied(result.applied, putBacks.current);
+    putBacks.current = kept.putBack;
+    reverted.current = kept.putBack.length;
+    setApplied(kept.applied);
     setProposed(result.applied.length);
   }, [raw, typed, dictionary, language, letterLanguage]);
+
+  // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
+  // after 300 ms of quiet (F04-REQ-011), and at once when the app leaves the foreground, at Done and at Close.
+  // Sample words (development builds) are never saved, so nothing is stored for them either.
+  const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
+  persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
+  const [writer] = useState(() =>
+    reviewWriter((patch) => {
+      if (draftId && persist.current.on) setDraftReview(draftId, persist.current.base, patch);
+    }),
+  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') writer.flush();
+    });
+    return () => {
+      sub.remove();
+      writer.flush();
+    };
+  }, [writer]);
+  // Every change of the person's words goes to the draft (debounced); the words restored on mount are already there.
+  const lastWords = useRef(userText);
+  useEffect(() => {
+    if (userText === lastWords.current) return;
+    lastWords.current = userText;
+    writer.text(userText);
+  }, [userText, writer]);
+  // Done writes the words at once.
+  useEffect(() => {
+    if (!editing) writer.flush();
+  }, [editing, writer]);
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
@@ -364,6 +417,8 @@ export default function Review() {
     haptic('tap');
     reverted.current++;
     track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    putBacks.current = [...putBacks.current, edit];
+    writer.putBack(putBacks.current);
     setApplied(next.applied);
     setRestored({ edit, index });
     setOpenEdit(null);
@@ -377,6 +432,8 @@ export default function Review() {
     reverted.current = Math.max(0, reverted.current - 1);
     const next = [...applied];
     next.splice(restored.index, 0, restored.edit);
+    putBacks.current = withoutPutBack(putBacks.current, restored.edit);
+    writer.putBack(putBacks.current);
     setApplied(next);
     setRestored(null);
   };
@@ -386,6 +443,7 @@ export default function Review() {
     if (next === view) return;
     haptic('tap');
     if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    writer.view(next);
     setView(next);
     setRestored(null);
     setOpenEdit(null);
@@ -459,6 +517,7 @@ export default function Review() {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
     heldInBook.current = inBook;
+    writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
@@ -805,9 +864,13 @@ export default function Review() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ModalHeader
-        onClose={() => router.back()}
-        // Say what is true: the person's own changes (Change words, a fix put back, the other view) are only on this screen until Keep
-        // (P4 critics' pass S1; storing them on the draft is build 3's item, #274 N1).
+        onClose={() => {
+          writer.flush();
+          router.back();
+        }}
+        // The person's own changes (Change words, a fix put back, the other view) are written to the draft as they
+        // happen (SR-C-06), but the hint still steps aside while any is there (P4 critics' pass S1): whether Close
+        // should now say "Saved on this phone" over them is a design and copy call, handed off (W6b PR).
         closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
         leading={
           editing ? (
