@@ -523,6 +523,20 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-38 Book month card type: the numeral and one left edge (founder report on TestFlight build 1, "18 is merging. Font alignment can be cleaner."; PR #544)
+- **Needs:** a build with PR #544; the founder's iPhone and the SE 3; Asha's book seeded with letters in the current month and at least one past month, and a month of age of 10 or more (two figures, ideally 18 or 11). Fictional family only (Asha, Papa).
+- **Steps:** open the Book tab and look at the current month's lit card and one past month's opener, in each of:
+  - (a) Light, text size Default. (b) Dark, Default. (c) Light, xxxLarge. (d) Dark, xxxLarge. (e) Light, AX5. (f) Dark, AX5. (g) Dark, AX5, Increase Contrast on. (h) Light, Default, Increase Contrast on.
+- **Expected:** in every case:
+  - the two figures (for example "18") read as two separate figures, with clear white between their ink, never touching;
+  - the kicker ("THIS MONTH" or "MONTH"), the numeral and the meta line ("1 letter · From Papa") and the date range start on one left edge (the numeral's ink is not visibly right of the kicker);
+  - the gap from the kicker down to the top of the numeral and from the numeral's foot down to the meta line look even, and the numeral's top never touches the kicker;
+  - in the lit card, the kicker and numeral start at the same left edge as the dateline and words of the letter cards below it (36 pt from the screen edge);
+  - at AX5 the numeral stops growing at its cap (about 90 pt), and the meta line and range wrap and are never cut;
+  - with Increase Contrast, the lit card has a plain 1 pt edge and no glow, with the same alignment.
+- **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
+- **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

@@ -89,6 +89,7 @@ describe('display figures do not close up (TestFlight build 1)', () => {
   it('figures are never tracked tighter than the face draws them', () => {
     expect(numeral.letterSpacing).toBeGreaterThanOrEqual(0);
   });
+  // At +1 tracking the gap is 4.1 pt against a 4.0 pt floor: tracking below about +0.95 fails this on purpose.
   it('the 1 and 8 of "18" keep at least 1/16 em of white between their ink', () => {
     const gap = (literata.glyph('1').rsb + literata.glyph('8').lsb) * numeral.fontSize + numeral.letterSpacing;
     expect(gap).toBeGreaterThanOrEqual(numeral.fontSize / 16);

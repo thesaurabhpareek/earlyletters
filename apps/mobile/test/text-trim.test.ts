@@ -34,10 +34,24 @@ describe('figureTrim (the numeral)', () => {
     expect(figureTrim('numeral', 3.571)).toEqual(figureTrim('numeral', t.maxScale!));
   });
 
-  it('at the default size: about 30 pt off the top, 20 off the bottom, and the side bearing off the left', () => {
+  it('centres the face in the line, as iOS and CSS do: the leading above the ascent equals the leading below the descent', () => {
+    // The box-height test above holds for any baseline; this one fails if the baseline is not centred (for example
+    // figures on the line's floor, as iOS draws a line shorter than the face).
+    for (const s of SCALES) {
+      const trim = figureTrim('numeral', s)!;
+      const size = t.fontSize * renderedScale('numeral', s);
+      const above = -trim.marginTop - (m.ascent - m.figureHeight) * size;
+      const below = -trim.marginBottom - m.descent * size;
+      expect(above, String(s)).toBeGreaterThan(0);
+      expect(Math.abs(above - below), String(s)).toBeLessThan(0.02);
+    }
+  });
+
+  it('at the default size: 29.6 pt off the top, 20.19 off the bottom, and the side bearing off the left', () => {
     const trim = figureTrim('numeral', 1)!;
-    expect(trim.marginTop).toBeCloseTo(-29.6, 0);
-    expect(trim.marginBottom).toBeCloseTo(-20.2, 0);
+    // 96 pt line, 95.04 pt face: 0.48 pt of leading each side, baseline at 0.48 + 75.33 = 75.81 pt.
+    expect(trim.marginTop).toBeCloseTo(-29.6, 2);
+    expect(trim.marginBottom).toBeCloseTo(-20.19, 2);
     expect(trim.marginLeft).toBeCloseTo(-m.figureBearing * t.fontSize, 2);
     // A small optical correction, never a layout shift: under 3 pt even at the cap.
     expect(Math.abs(figureTrim('numeral', 3.571)!.marginLeft)).toBeLessThan(3);
