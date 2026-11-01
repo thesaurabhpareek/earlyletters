@@ -120,7 +120,8 @@ async function main() {
   check('it holds A\'s two acts, terms then sensitive-data', r.consent.acts.map((x) => x.document).join() === 'terms,sensitive-data', r.consent.acts.map((x) => x.document));
   check('the terms act carries the age attestation as stored', r.consent.acts[0]?.context?.age_attested === true, r.consent.acts[0]?.context);
   check('my_policy_state gives the latest act per document', r.consent.current.map((x) => `${x.document}:${x.action}`).join() === 'sensitive-data:accept,terms:accept', r.consent.current);
-  // B's rows look like A's (same document, version, action), so only the time tells them apart: B acted after A.
+  // Defence in depth over the table's own-rows policy: B's rows look like A's (same document, version, action),
+  // so only the time tells them apart (B acted after A). Red if the view ever returns another person's rows.
   const latestOfA = (doc: string) => r.consent.acts.filter((x) => x.document === doc).map((x) => x.at).sort().pop();
   check('each current row is A\'s own latest act, not B\'s (my_policy_state is own rows only)', r.consent.current.length === 2 && r.consent.current.every((x) => x.at === latestOfA(x.document)), { current: r.consent.current.map((x) => x.at), acts: r.consent.acts.map((x) => x.at) });
   const all = JSON.stringify(r);
@@ -140,7 +141,7 @@ async function main() {
   check('signed out: not_signed_in', signedOut.consent.status === 'not_signed_in' && signedOut.profile.status === 'not_signed_in', signedOut);
   const anon = fresh();
   const noSession = await read({ sb: anon, uid: a.id, owner: a.id });
-  check('a client with no session gets no record, never a partial or someone else\'s one', noSession.consent.status !== 'included' || noSession.consent.acts.length === 0, noSession.consent);
+  check('a client with no session gets no record, never a partial or someone else\'s one', noSession.consent.status !== 'included' || (noSession.consent.acts.length === 0 && noSession.consent.current.length === 0), noSession.consent);
   check('and no profile', noSession.profile.status === 'unavailable', noSession.profile);
 
   // The spelling list stays on the device: the API refuses the table to a signed-in person.

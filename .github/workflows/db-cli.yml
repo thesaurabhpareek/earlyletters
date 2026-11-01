@@ -16,7 +16,8 @@ on:
       - '.github/workflows/db-cli.yml'
       - 'apps/mobile/src/lib/export/**'
       - 'apps/mobile/src/lib/db/repos/ids.ts'
-      # supabase-js version (the reader's query builder; device.ts casts it, so tsc cannot see a shape change)
+      # supabase-js range (the reader's query builder; device.ts casts it, so tsc cannot see a shape change).
+      # A lockfile-only bump is left to the nightly: on package-lock.json this would run on every dependency PR.
       - 'apps/mobile/package.json'
       - 'apps/mobile/test/live/**'
   workflow_call:
