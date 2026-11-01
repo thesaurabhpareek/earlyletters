@@ -138,6 +138,7 @@ None of these says what a child "should" be doing. They ask about what the paren
 ### Family celebrations and festivals (opt-in)
 
 Rules for this block:
+- Two separate switches decide what shows, and both default to off. (1) Names in notifications (D-025) gates `{child}`. (2) A festival-name switch (BL-542, a new proposal, needs a settings string) gates the festival name. With either off, the lock screen shows the neutral text only. The named column is shown only when BOTH are on; with only (1) on, use the neutral line plus `{child}` only if the neutral row has a named variant. Even opted in, a festival name on the lock screen reveals that the family keeps a tradition. Counsel and `privacy` must see this before BL-542 ships.
 - Off until the parent adds a celebration in Settings. They pick from a list or type their own. We never infer from name, language, location or locale.
 - The parent confirms the date when a festival is near. Lunar and lunisolar dates, and Eid in particular (moon sighting), can move by a day, so a confirm step beats a hard-coded date. [unverified: I did not build a date table; the content steward needs a reviewed one.]
 - N variant is always the generic frame. The festival name appears only in C, and only when a separate "Show celebration names" switch is on (proposed). A festival name on a lock screen can reveal faith.
@@ -163,7 +164,7 @@ Rules for this block:
 | id | type | shape | trigger | N | C | tone |
 |---|---|---|---|---|---|---|
 | PH01 | photo-based | I | parent picked photos, no recording yet | Ready when you are // Your chosen photos are waiting by the red circle. | Ready when you are // Your photos for {child} are waiting by the red circle. | quiet |
-| PH02 | photo-based | Q | opt-in photo moments, library date metadata only | Photos from this week? // Any you would like to say a few words about? | Photos from this week? // Any you would like to tell {child} about? | warm |
+| PH02 | photo-based | Q | NOT APPROVED (needs library read, blocked by M13 rule 4); kept only as a record of the idea | Photos from this week? // Any you would like to say a few words about? | Photos from this week? // Any you would like to tell {child} about? | warm |
 | PH03 | photo-based | T | rotation, after the parent has used photos once | Pick up to five // Choose a few photos and say what was going on. | Photos for {child} // Choose up to five and say what was going on. | playful |
 | PH04 | photo-based | Q | birthday evening (date, not photo) | Any photos from today? // You can add up to five to the letter. | Any photos from today? // You can add up to five to {child}'s letter. | warm |
 | PH05 | photo-based | I | parent-made reminder with their own label | A story to tell // You asked for a nudge. Choose a few photos and tell it. | The story of {name} // You asked for a nudge. Choose a few photos and tell it to {child}. | warm |
@@ -202,7 +203,7 @@ The founder ask is "tell more about your recent trip". Detecting a trip means re
 |---|---|---|---|---|
 | A. Parent-initiated | Parent taps "Add photos" | Only the chosen photos | None (system picker) | Ship first |
 | B. Date-triggered or parent-labelled | Birthday evening, parent-set "remind me to talk about X" | A date, or the parent's own label | None | Ship with A |
-| C. Photo moments (opt-in) | New library items by date or count | Counts and dates only, no scene or place | Limited-library or full read access | Later, after a privacy and constitution check; counts and dates only |
+| C. Photo moments (opt-in) | New library items by date or count | Counts and dates only, no scene or place | Limited-library or full read access | NOT APPROVED. Blocked by M13 rule 4 (never read the library). Reopening needs the privacy steward, counsel and a founder decision, and a change to rule 4 |
 
 Tier C never uses scene labels, faces, places or "memories" grouping. Apple's own Journal suggestions do use those (photos, people and pet names, scene types, significant locations), on device, with per-category switches [verified: Apple privacy page for Journaling Suggestions]. Our line: "we never read what is in your photos". That is a real, checkable difference and it matches the Data Not Collected label. A new permission or any classifier changes that label story, so it needs the privacy steward and counsel before anything ships. [unverified: whether a limited-library read of dates alone needs an updated privacy label; ask counsel.]
 
@@ -227,7 +228,7 @@ First time only, before the system picker (one sheet, one button, per Apple's pr
 
 Wording checks: no claim of where photos are stored (the on-device-only rule bans that), no "we" (the touched-key rule), brand not typed. Whether chosen photos are copied into the app or referenced by library ID is an engineering call. I recommend copying, because a photo deleted from the library would otherwise leave a hole in a letter. That also means photos join export and any future backup. [unverified: no storage design exists; ask `mobile` and the backup owner.]
 
-Tier C consent (later, separate sheet, off by default):
+Tier C consent (NOT APPROVED, blocked by M13 rule 4; draft kept for the record only; counsel must see "does not look at what is in them" and "Data Not Collected" before it could ever ship):
 - Title: Photo moments
 - Body: Early Letters can look at when new photos were added, and how many, to suggest a time to talk about them. It does not look at what is in them.
 - Buttons: Turn on / Not now

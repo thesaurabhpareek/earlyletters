@@ -83,11 +83,11 @@ This is a new feature plus a privacy-label and children's-data question. It is n
 | Claim | Status |
 |---|---|
 | Calm: 40% of users shown a post-first-session prompt set a daily reminder; "almost 3x" retention for reminder-setters | Re-opened. Vendor page (Amplitude). It claims the experiment shows cause; it reports no sample sizes, significance or duration. Direction only. Our R1 doc calls it first-party fact and needs the label fixed |
-| Headspace: precommitment raised app opens 7.5%, course starts more than doubled, users did not meditate more | Re-opened (Irrational Labs page). The 7.5% is tied to one plan type. Picking a time raises opens a little, not the habit |
+| Headspace: precommitment raised app opens 7.5%, course starts more than doubled, users did not meditate more | UNVERIFIED IN THIS REPO: read in the 1 Nov session from the Irrational Labs page; the URL was not recorded, so re-open and add it to the evidence file before quoting. The 7.5% is tied to one plan type. Picking a time raises opens a little, not the habit |
 | Duolingo: pool of hand-written templates, a bandit picks, new templates fade (novelty effect), recently seen ones are demoted | Re-opened (Duolingo's own 2020 post). About 200 million reminders over 34 days. The post gives no daily-active or retention numbers, so the +0.5% and +2% figures I saw elsewhere are not backed by the primary source |
-| A baby-app trial (TodaysBaby): 18.8% engaged while pushes were on, 3.0% after pushes were removed | Re-opened. Not randomised, different periods, self-selected, English only. Engagement fell through pregnancy and was very low postpartum. Shows push matters; does not show how much |
+| A baby-app trial (TodaysBaby): 18.8% engaged while pushes were on, 3.0% after pushes were removed | UNVERIFIED IN THIS REPO: read in the 1 Nov session; URL not recorded. Not randomised, different periods, self-selected, English only. Engagement fell through pregnancy and was very low postpartum. Shows push matters; does not show how much |
 | Each extra weekly promotional push raised uninstalls about 2.5 points (17,500 users, one retailer) | Research A. Retail promotions; direction transfers, size may not |
-| 72% of 166 pregnancy apps do not account for loss | Re-opened (Andalibi, 2021). Supports the sensitive-season rule |
+| 72% of 166 pregnancy apps do not account for loss | UNVERIFIED IN THIS REPO: Andalibi 2021, read in the 1 Nov session; URL not recorded. Supports the sensitive-season rule |
 | Day One and Apple Journal use on-device suggestions; apps see data only after the person picks | Re-opened |
 | Best notification time for new parents | No evidence found. A registered trial on notification timing (India, health app) has no results. 8:30 PM is a hypothesis |
 | iOS permission grant rate for baby or journaling apps | No public figure. The only number is a 2025 industry median near 49%, so our 60% target is unsupported |
