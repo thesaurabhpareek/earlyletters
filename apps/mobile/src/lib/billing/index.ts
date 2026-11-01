@@ -16,6 +16,7 @@
  *
  */
 export { PLUS_PRODUCT_IDS, periodOf } from './config';
+export { allowanceSourceFor, isAlphaBuild, PLUS_ALPHA, plusLineFor } from './alpha';
 export { billingCopy } from './copy';
 export { getPlan, refreshPlan, startPlus, storeViewSupport, subscribePlan } from './plan-store';
 export { usePlan, type UsePlan } from './use-plan';

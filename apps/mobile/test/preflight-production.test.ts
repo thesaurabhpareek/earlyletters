@@ -79,6 +79,7 @@ describe('the store preflight on a store-ready fixture', () => {
     expect(results.filter((r) => r.level === 'FAIL')).toEqual([]);
     const ids = results.filter((r) => r.level === 'PASS').map((r) => r.id);
     expect(ids).toEqual([
+      'app-env',
       'english-only',
       'analytics',
       'servers',
@@ -99,6 +100,9 @@ describe('the store preflight on a store-ready fixture', () => {
 
 describe('one failing fixture per check: only that check FAILs', () => {
   const cases: [string, string, Input][] = [
+    ['app-env', 'EXPO_PUBLIC_APP_ENV=preview (an alpha build: no letter limit, no Plus)', withEnv({ EXPO_PUBLIC_APP_ENV: 'preview' })],
+    ['app-env', 'EXPO_PUBLIC_APP_ENV unwritten (resolves to development, an alpha build)', withEnv({ EXPO_PUBLIC_APP_ENV: undefined })],
+    ['app-env', 'the evaluated config says appEnv preview', withCfg((c) => (c.extra.appEnv = 'preview'))],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY unset', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: undefined })],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY=off', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: 'off' })],
     ['analytics', 'EXPO_PUBLIC_ANALYTICS=on', withEnv({ EXPO_PUBLIC_ANALYTICS: 'on' })],

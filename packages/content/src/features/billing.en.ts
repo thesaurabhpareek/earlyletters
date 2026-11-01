@@ -66,6 +66,15 @@ export const billingCopy = {
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
   },
 
+  /**
+   * Alpha builds only (TestFlight and development; founder, 1 Nov 2026, "No letter limit in alpha"). The Plus products
+   * cannot load in a test build, so wherever the store build offers Plus (the Welcome footnote, Settings Plan row, the
+   * Plan screen, the Keep sheet) an alpha build says this instead. Never shown in the App Store app.
+   */
+  alpha: {
+    note: 'Plus is not part of this test. Every letter is free while you test.',
+  },
+
   /** The gate a person meets before Apple's store view. */
   gate: {
     opening: 'Opening the App Store',
