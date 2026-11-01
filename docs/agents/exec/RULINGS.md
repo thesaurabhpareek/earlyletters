@@ -81,3 +81,25 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back: revert PR #161; the export falls back to schema 1.2.0.
 - Revisit when: BL-528 is decided. #161 merged at e7349e9 (4651256), the head this approval covers.
 - Signed: Chief Compliance Officer (Claude role, not counsel)
+
+### CLO-3 The Privacy Policy line for the sign-up country check, and counsel Q57 (1 Nov 2026, 05:19 UTC, CLO via the compliance session; not legal advice)
+- Question: the founder said "add in privacy policy, assign chief legal officer to work and update docs with cto" (D-136). What text, where, and how does it reach counsel?
+- Tier and type: T1 for the drafting; the promise itself is the founder's (D-136)
+- Options considered: a new policy version on its own PR; a line in the 3.0.0 draft already on #163; wait until the hook ships.
+- Ruling: added to the 3.0.0 draft on #163 (commit dc1f4fc): section 2 (the IP is also used to work out the country), section 5 (the purpose), section 12 (what we refuse, that the IP is not kept, the daily count, DB-IP named, and that a wrong lookup can be raised without being asked where you are), and a "which builds" line that the part takes effect when the check ships. COUNSEL_PACKET 1.5.0 adds Q57 (the country block, no name screening, the D-131 EAR list, and the label reading). Both stay a founder merge (D-125).
+- Why: a separate PR would collide with #163, which rewrites the same files and versions. 3.0.0 already says a part takes effect only when its feature ships, so the line is true before the hook is on. Return: one founder merge carries it. Risk: low; counsel reviews the wording in Q57.
+- Door: two-way
+- Way back: remove the four edits from the draft before it is published.
+- Revisit when: counsel answers Q57, or the blocked list changes in a way the general wording no longer covers.
+- Signed: Chief Legal Officer (Claude role, not a lawyer)
+
+### CPrivO-2 The country check does not change the App Privacy label (1 Nov 2026, 05:19 UTC, CPrivO via the compliance session; not counsel)
+- Question: once the sign-up hook works out a country from the IP address, do we declare Coarse Location?
+- Tier and type: T1; complicated
+- Options considered: declare Coarse Location; declare nothing and say why; ask counsel first and hold the hook.
+- Ruling: declare nothing. Apple's "collect" is transmitting data off the device "in a way that allows you and/or your third-party partners to access it for a period longer than what is necessary to service the transmitted request in real time" (developer.apple.com/app-store/app-privacy-details, read 1 Nov 2026). The hook uses the country in memory to answer the sign-up and keeps only an unlinked daily count by country code. Counsel is asked to confirm in Q57 (e). If the hook ever stores the country with an account, this flips to Coarse Location, linked.
+- Why: the label must match what the code keeps. Data minimisation already keeps the IP and the per-person country out of storage.
+- Door: two-way
+- Way back: add the row in App Store Connect and in `docs/legal/app-store-privacy-labels.md`.
+- Revisit when: #424 changes what it stores, or counsel answers Q57.
+- Signed: Chief Privacy Officer (Claude role, not counsel)

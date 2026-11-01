@@ -2384,6 +2384,9 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Problem and evidence: the language review's rewrites for registered disclosure strings were not applied, because those words change only through counsel (`docs/legal/in-app-disclosures.md`). The keys and proposed rewrites are in `docs/reviews/2026-10-31/COUNSEL_LOCKED.md` (LNG-04, LNG-09, LNG-12, LNG-15, LNG-18).
 - Done when: counsel accepts or rejects each row; accepted rows change in `packages/content`, the disclosures file and its pinning tests in one PR with a version bump.
 
+### Compliance follow-ups (1 Nov 2026)
+- **BL-551 Support can open an account deletion for another person (`ops_open_account_deletion`).** Owner: `data-architect`. When: after the 9 Nov go/no-go, before any sign-in outside the family (D-121). Scope: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`, service role only, pinned `search_path`, explicit grants (and its line in `supabase/tests/grants.mjs`); writes `source='support'` (DATA-REQ-027) and a `support_access` audit event; reuses the same steps as `request_account_deletion`; idempotent on an open request; tests in `supabase/tests` that fail on today's code. Why: the underage runbook (`docs/ops/runbooks/underage-account.md` section 4) cannot keep the under-13 promise if the person does not delete the account themselves. No `under_18` audit value (CR-39).
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.

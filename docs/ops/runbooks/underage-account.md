@@ -21,7 +21,7 @@ Engineering reading, confirm with counsel. Owner: `regulatory-affairs` with `ops
 ## 1. Record the report (same day)
 Write one audit row before anything else. All SQL runs in Dashboard > SQL Editor as `postgres`.
 - Under 13: runbook `under_13`, which exists in `ops.audit_log`.
-- 13 to 17: runbook `deletion` with reason `under_18_closure`. There is no `under_18` runbook value yet; see the gaps table.
+- 13 to 17: runbook `deletion` with reason `under_18_closure`. No separate `under_18` value is needed (CR-39).
 
 ```sql
 select public.ops_audit_write('<your handle>', 'under_13', 'actual_knowledge', '<ticket>', '<profile id>');
@@ -48,7 +48,7 @@ If one exists, stop and take it to the founder. A hold wins over deletion (DATA-
 - But `public.request_account_deletion` works only for the signed-in person (`require_user()`), and it refuses `source='support'` (20261003000000).
 - No service-role function opens an account deletion for another person (checked 31 Oct 2026).
 - Until one exists, the only path is to ask the person to delete the account from Settings. That does not meet the under-13 promise if they don't act.
-- Fix: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`. It is service-role only, writes `source='support'` and a `support_access` audit event, and is tested in `supabase/tests`. Owner: `data-architect`, after the 9 Nov go/no-go.
+- Fix: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`. It is service-role only, writes `source='support'` and a `support_access` audit event, and is tested in `supabase/tests`. Owner: `data-architect`, after the 9 Nov go/no-go (BL-551, CR-39).
 
 ## 5. Tell the family, neutrally (within 10 days for under 13)
 - If the person was a contributor or co-parent, tell the inviter only that the person can no longer take part, because the app is for adults.
@@ -62,8 +62,7 @@ If one exists, stop and take it to the founder. A hold wins over deletion (DATA-
 ## Gaps this runbook depends on (not yet)
 | Gap | Owner | When |
 |---|---|---|
-| Service-role `ops_open_account_deletion` (section 4) | `data-architect` | After 9 Nov, before any non-family sign-in (D-121) |
-| `under_18` runbook value in `ops.audit_log` | `data-architect` | Same migration |
+| Service-role `ops_open_account_deletion` (section 4; BL-551) | `data-architect` | After 9 Nov, before any non-family sign-in (D-121) |
 | Neutral notice macro | `support` | Before the first non-family tester |
 | Store age signal (Declared Age Range; iOS 26 only, floor iOS 17) | `mobile` | The 1.0.x before 1 Jan 2027 (COUNSEL_PACKET Q5) |
 | Whether a store minor signal after a Yes is actual knowledge | counsel, through the CLO | COUNSEL_PACKET Q5(d) |

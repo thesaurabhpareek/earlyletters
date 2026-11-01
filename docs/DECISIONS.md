@@ -653,6 +653,9 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-130 | Dates: the build 2 freeze is Tue 3 Nov 2026 and the go/no-go is Mon 9 Nov 2026 (the founder's two dates). The freeze hour, 5:00 AM PT (13:00 UTC), is the coordinator's (`docs/agents/BOARD.md`), not the founder's. Supersedes the Thu 5 Nov go/no-go in D-123 and D-124 (PR #340, merged in 46a75a3) | Decided (founder: the two dates); the hour by the coordinator | Yes | 2026-10-30 |
 | D-131 | Countries blocked at sign-up and on the web contribution page: North Korea, Iran, Cuba, Syria, Russia, Belarus, and Crimea, Sevastopol, Donetsk and Luhansk (web page only). Any sanctioned country is blocked totally; other countries are blocked when offering the app there exposes the founder to sanctions or export-control risk | Decided (founder: the rule); the country list by the Chief Compliance Officer (founder may reverse) | Yes | 2026-10-31 |
 | D-132 | Merge decisions go to the CTO (Karma), not the founder. Karma merges under the existing gates (two independent counted reviews on the head and green CI, D-107, D-117); `docs/legal/**`, and founder-only matters other than the merge itself (money, accounts, promises, applying migrations), stay his | Decided (founder: the delegation); gates and limits by Karma (founder may reverse) | Yes | 2026-10-31 |
+| D-135 | Founder hand-offs that only save, file or forward something go by email to earlyletters@gmail.com, recorded in the repo with a UTC timestamp, instead of a question to him. Karma and the harness are kept informed through this entry and Karma's skill | Decided (founder: the rule); limits by Karma (founder may reverse) | Yes | 2026-11-01 |
+| D-136 | The Privacy Policy says that sign-up uses the request's IP address to work out the country, refuses sign-up from the D-131 places, and does not store the IP for this. Takes effect when the check ships. The Chief Legal Officer drafts; Karma updates the docs | Decided (founder: the disclosure); text by the Chief Legal Officer, counsel must confirm | Yes | 2026-11-01 |
+| D-137 | No screening of names against OFAC or other restricted-party lists in v1.0 and its 1.0.x releases. The controls are the Terms 2.4 confirmation, the D-131 country block and the US-only storefront. Counsel confirms (COUNSEL_PACKET Q57) | Decided by the Chief Compliance Officer, Chief Legal Officer and Karma under the founder's delegation (founder may reverse); counsel must confirm | Yes | 2026-11-01 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1014,3 +1017,25 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Amends:** D-107's founder-only merge list; D-117's operating rule (the merge now needs no separate founder action); D-125 item 5 for `docs/DECISIONS.md` only (Karma merges entries that record the founder's own words; `docs/legal/**` stays his).
 - **Follow-up:** Karma's skill, section 3, still lists "merging `docs/DECISIONS.md` and legal text" as founder-only; update it to point here.
 - **Owner:** founder; Karma.
+### D-135 Basic hand-offs go by email, with a timestamp (founder, 1 Nov 2026, 05:19 UTC)
+- **Founder's words:** "just save to earlyletters@gmail.com and send an email there. automate such basic things, keep cto and harness informed, do in documentation with timestamp".
+- **Decision (the founder's):** when a step for him is only saving, filing or forwarding something (a skill proposal to save, the exact approval lines for a fenced PR, a status pack), the session emails it to earlyletters@gmail.com instead of asking him, and records what it sent in the repo or the Project docs with a UTC timestamp.
+- **Limits (Karma's reading; the founder may reverse it):**
+  - Only that address, only from an interactive session. Unattended harness runs have no write connectors (CTO skill section 9), so they record the hand-off for the next interactive session to send.
+  - Never in an email: letter text, transcripts, audio, a child's name, real family details, secrets, keys or tokens.
+  - An email is a record, not an approval. Money, accounts, applying migrations, merging `docs/legal/**` and the approval comments a fenced PR needs stay his (D-132, CR-27). The email carries them ready to paste.
+- **Kept informed:** Karma's skill, section 3, points here; the harness reads this file from `develop` at run time; CR-40 records the procedure.
+- **Owner:** founder; Karma.
+### D-136 The Privacy Policy discloses the sign-up country check (founder, 1 Nov 2026, 05:19 UTC)
+- **Founder's words:** "add in privacy policy, assign chief legal officer to work and update docs with cto".
+- **Decision (the founder's):** the Privacy Policy says that when someone creates an account, our server uses the IP address of that request to work out which country it comes from, and refuses sign-up from the places D-131 lists. The IP address is not stored for this check; only a daily count of checks and outcomes by country code is kept.
+- **How:** the Chief Legal Officer drafts the text into the next policy version (3.0.0, PR #163), under that version's rule that a part takes effect only when the feature ships (CLO-3). Karma updates the other docs. The privacy label is unchanged (CPrivO-2).
+- **Still the founder's:** merging `docs/legal/**` (D-125, D-132). Counsel must confirm the wording (COUNSEL_PACKET Q57).
+- **Owner:** founder; Chief Legal Officer; Karma.
+### D-137 No name screening against restricted-party lists for now (delegated, 1 Nov 2026, 05:19 UTC)
+- **Founder's words:** "decide on name screening against restricted-party lists, with counsel (the default is none); Decide with compliance, legal, cto and finish".
+- **Decision (Chief Compliance Officer, Chief Legal Officer and Karma, under that delegation; Claude roles, not counsel):** v1.0 and its 1.0.x releases do not screen names against the OFAC SDN List or any other restricted-party list. The controls are the Terms 2.4 confirmation, the D-131 country block at sign-up, the US-only App Store storefront, and taking no payments ourselves (Apple sells Plus).
+- **Why:** OFAC asks for a risk-based programme fitted to the business, which "may include" list screening (OFAC FAQ 445; A Framework for OFAC Compliance Commitments; both read 1 Nov 2026). Screening would make us collect full legal names, and in practice dates of birth to clear false matches, that the product otherwise never needs; that works against data minimisation and our privacy promises. Full reasoning and the challenge: CCO-5.
+- **Revisit when:** we take a payment ourselves; the app opens outside the US storefront; the web contribution page lets people in without an account; counsel says otherwise; or we learn a listed person uses the service.
+- **Counsel must confirm:** COUNSEL_PACKET Q57, with the D-131 counsel list.
+- **Owner:** founder; Chief Compliance Officer.
