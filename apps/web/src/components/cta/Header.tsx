@@ -9,6 +9,7 @@ import { launch } from '@/lib/launch';
 import { track } from '@/lib/analytics';
 import { Lockup } from '@/components/brand/Lockup';
 import { useLenis } from '@/film/SmoothScroll';
+import { useViewport } from '@/film/hooks';
 import { AppStoreBadge } from './AppStoreBadge';
 import { goToStart } from './goToStart';
 import { useSceneActive, useToneAt } from './useTone';
@@ -47,8 +48,11 @@ export function Header() {
 export function CtaPill() {
   const tone = useToneAt('bottom');
   const end = useSceneActive('start', -0.6, Infinity);
-  // The playing letter in S07 sits low on phones; the pill steps aside while it plays.
-  const peak = useSceneActive('years-later', 0.4, 0.92);
+  // The playing letter in S07 sits low on phones; the pill steps aside while it plays. On a short phone the player
+  // bar is still fading (S07's phone is gone at 0.97) when the pill would return at 0.92, and the two overlap, so
+  // there the pill waits for the phone to finish fading.
+  const { h } = useViewport();
+  const peak = useSceneActive('years-later', 0.4, h < 760 ? 0.97 : 0.92);
   const lenis = useLenis();
   // Shown from the very first screen on phones: a parent who stops at the top still has one thing to do.
   const hidden = end || peak;

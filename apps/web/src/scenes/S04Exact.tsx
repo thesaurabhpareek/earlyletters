@@ -17,7 +17,7 @@ import { Scene } from '@/film/Scene';
 import { Headline, Support } from '@/film/Copy';
 import { EDIT_COUNT, PaperLetter } from '@/film/PaperLetter';
 import { useStage, useViewport } from '@/film/hooks';
-import { useLetterFit } from '@/film/fit';
+import { useLeanCap, useLetterFit } from '@/film/fit';
 import { site } from '@/content/site';
 import { Grain, PaperTexture, Vignette } from '@/components/atmosphere';
 import stage from '@/film/stage.module.css';
@@ -57,7 +57,9 @@ function ExactStage() {
   const down = narrow ? h * 0.1 : h * 0.05;
   const letterY = useTransform(p, tight ? [0.5, 0.7, 0.9, 0.96] : [0.58, 0.7, 0.86, 0.96], [0, tight ? fit.y : down, tight ? fit.y : down, 0]);
   // A macro on the fix: the camera leans toward the first word while the name is set right, then eases back.
-  const macro = useTransform(p, [0.18, 0.3, 0.42], [1, narrow ? 1.1 : 1.16, 1]);
+  // On a phone the letter is nearly as wide as the screen, so the lean is capped to what fits before its words reach the edge.
+  const lean = useLeanCap({ frame: frameRef, letter: boxRef, lean: narrow ? 1.1 : 1.16, w, h });
+  const macro = useTransform(p, [0.18, 0.3, 0.42], [1, lean, 1]);
   const held = tight ? fit.scale : narrow ? 0.84 : 0.9;
   const settle = useTransform(p, tight ? [0.5, 0.7, 0.9, 0.96] : [0.58, 0.7, 0.86, 0.96], [1, held, held, 1]);
   const letterScale = useTransform([macro, settle], ([a, b]: number[]) => a * b);
