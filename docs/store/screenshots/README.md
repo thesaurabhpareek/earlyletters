@@ -11,7 +11,7 @@ Captions live in `captions.json`; layout in `src/entry.tsx`.
 |---|---|---|---|---|
 | 1 | 01-tonight.png | Tonight | A minute is plenty. | Open it, say one thing about today, put the phone down. |
 | 2 | 02-listening.png | Listening | Just talk. | Pause, laugh, lose your thread. It is listening. |
-| 3 | 03-review.png | Review | Exactly as you said it. | Small slips are marked for fixing. Nothing is added. |
+| 3 | 03-review.png | Review | Every change is marked. | Put any fix back with one tap. Nothing is added. |
 | 4 | 04-book.png | Book | A book that grows by month. | Every letter is filed by your child's age. |
 | 5 | 05-letter.png | Letter (paper) | Said once. Heard for years. | Read it, and hear the voice that said it. |
 | 6 | 06-letter-night.png | Letter (night) | Bedtime, in your voice. | Night mode for late reading. |
@@ -28,6 +28,7 @@ Each folder holds all six files above (24 PNGs).
 ## Not done, or to know
 - iPad 13 inch skipped: `supportsTablet` is false in `apps/mobile/app.config.ts`, and iPad shots must show the app on iPad.
 - Screens are the website's web renders of the app UI, not captures of the Expo app on a device or simulator. Real-device rendering is unverified.
+- Screenshot 03 (Review) is a web re-render, not a capture of build 1. It shows fixes as dotted marks on a text that still contains the um, and the demo text names a child ("Maria") instead of the fictional Asha. Recapture from the production build before submission.
 - The Review screen is shown with fixes unresolved (dotted underlines). Resolved, the component leaves blank gaps where fillers were removed.
 - The listening screen shows words arriving mid-take (a fixed point, not live).
 - Play screenshots are prepared only; the site copy says no Android in v1.0.
