@@ -1,0 +1,7 @@
+--- a/docs/DECISIONS.md
++++ b/docs/DECISIONS.md
+@@ -1,0 +1,5 @@
++| D-138 | Four calls from an audit (fixture text) | Decided (founder) | Yes | 2026-11-01 |
++
++### D-138 Four calls from an audit (fixture text)
++- **Status:** Decided.
