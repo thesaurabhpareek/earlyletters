@@ -363,7 +363,7 @@ describe('[S55] before your book syncs', () => {
 
   it('shows every registered sentence of each step (no consent sentence dropped)', () => {
     for (const k of ['title', 'body', 'use', 'declineHelp', 'changeLater', 'agreeButton', 'declineButton']) expect(sensitive, k).toContain(`sc.${k}`);
-    for (const k of ['title', 'body', 'agreeLine', 'termsLink', 'privacyLink', 'healthLink', 'agree', 'notNow']) expect(terms, k).toContain(`t.${k}`);
+    for (const k of ['title', 'body', 'agreeLine', 'termsLink', 'privacyLink', 'agree', 'notNow']) expect(terms, k).toContain(`t.${k}`);
   });
 
   it('the agree line sits right above the button it describes', () => {

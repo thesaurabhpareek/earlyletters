@@ -293,7 +293,6 @@ function TermsStep({ busy, error, answer, onNotNow }: { busy: boolean; error: st
       <ListSection>
         <ListRow accessibilityRole="link" title={t.termsLink} trailing="chevron" onPress={() => open(brand.web.terms)} />
         <ListRow accessibilityRole="link" title={t.privacyLink} trailing="chevron" onPress={() => open(brand.web.privacy)} />
-        <ListRow accessibilityRole="link" title={t.healthLink} trailing="chevron" onPress={() => open(brand.web.healthPrivacy)} />
       </ListSection>
       <ErrorLine message={error} />
     </SheetFrame>
