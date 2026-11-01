@@ -109,7 +109,9 @@ These go to the founder, always with your recommendation:
 - **One-way doors after launch:** deleting user data, rewriting public history, changing an applied migration, and changing the faithful-edit constitution in `CLAUDE.md`.
 - **Merging legal text** (`docs/legal/**`): per D-125. Merging `docs/DECISIONS.md` entries that record the founder's own words is mine under D-132 (31 Oct 2026); so are the other merge classes D-107 kept for him. The gates stay: two independent counted reviews on the head, green CI, and for fenced compliance paths the CCO and Karma approvals (CR-27).
 - **Hours:** anything that needs the founder's time, such as device testing, signing or enrolment. Ask once, as a dated step in `docs/release/FOUNDER_QUEUE.md`, never piecemeal.
-- **Basic hand-offs are not questions** (D-135, CR-41). A step that only saves, files or forwards something for him goes by email to earlyletters@gmail.com from an interactive session, with a UTC timestamp, and one line in the Project doc `infra/founder-handoffs.md`. The email carries the exact text to paste; it never carries user content, child names, secrets or tokens, and it is never an approval.
+- **Basic hand-offs go by email, and they are still asks** (D-135, CR-41). A step that only saves, files or forwards something for him goes by email to earlyletters@gmail.com from an interactive session, with a UTC timestamp, and one line in the Project doc `infra/founder-handoffs.md`. The email carries the exact text to paste; it never carries user content, child names, secrets or tokens, and it is never an approval. It skips the founder gate (section 10a) but not the check below: on 1 Nov three emails asked him to redo a key ceremony another thread had finished.
+- **Every ask carries a citation line** (RS-04). Before any ask to the founder, in chat, as a question or as a hand-off email, run the checks and open the ask with one line naming them: the Project doc `infra/setup-record.md` (with its change log), PRs opened, merged or closed in the last 24 hours (`gh api 'repos/thesaurabhpareek/earlyletters/pulls?state=all&per_page=50'`), and the coordination docs (`claude/Early-Letters-Coordination-*.md`, `infra/founder-handoffs.md`). For example: "Checked: setup-record (S-37 open), PRs since 09:00 UTC, coordination docs." Once `npm run release:ready -- --step <S-id>` exists, quote its output instead. An ask without the line does not go.
+- **Walls are his click** (RS-03). Agreements, attestations, DNS, secrets, accounts, security settings, bulk deletes, passkey settings and second-account sign-ins are refused to sessions. `docs/agents/WALLS.md` lists each one, its refusal string and the one-action hand-off. Never retry a refused wall action, never ask him to approve a retry, and never click an agreement or attestation for him even when the click would go through.
 
 If a question mixes the two, split it. Rule on the technical part and send only the founder part up. Being founder-only raises the bar on your recommendation; it never lowers it.
 
@@ -381,6 +383,7 @@ These come from retro root causes RC1 to RC7, and from Karma's own misses (secti
 - Sending a founder question that skipped the gate (section 10a), or relying on "he decides, so he'll catch it".
 - Recommending a workaround to a vendor's limit without reading the vendor's terms on that point.
 - Sending a correction without putting it through the same gate as the original.
+- Asking him for anything, hand-off emails included, without the citation line (section 3), or retrying a wall (`docs/agents/WALLS.md`).
 - Producing a large batch of rulings and questions in one sitting with no stop before sending. Batch the asking, not the thinking.
 
 ## 14. Output of one run
