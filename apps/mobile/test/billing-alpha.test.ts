@@ -168,25 +168,52 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
     expect(read('src/app/settings/index.tsx')).toMatch(/subtitle=\{plusLineFor\(PLUS_ALPHA, h\.planHelp\)\}/);
   });
 
-  it('Keep sheet: no See Plus and no Redeem in alpha, the note instead; unchanged in the store build', () => {
+  it('Keep sheet (reached in alpha only past 100 letters): the alpha note as its body, no store and no Plus wording', () => {
     const base = { lapsed: false, heldOn: 'tonight' as const, synced: false, offline: false, storeSupport: 'available' as const };
-    const alpha = keepSheetView({ ...base, alpha: true });
-    expect(alpha.canOpenStore).toBe(false);
-    expect(alpha.note).toBe(NOTE);
-    expect(alpha.heldNote).toBe(billingCopy.keepGate.heldNote);
+    const k = billingCopy.keepGate;
+    for (const lapsed of [false, true]) {
+      for (const offline of [false, true]) {
+        for (const heldOn of ['tonight', 'letter'] as const) {
+          const v = keepSheetView({ ...base, lapsed, offline, heldOn, alpha: true });
+          expect(v).toEqual({ body: NOTE, heldNote: heldOn === 'letter' ? k.heldNoteLetter : k.heldNote, note: null, canOpenStore: false });
+          // Every line the sheet shows besides its title: none names Plus except the note itself.
+          for (const line of [v.heldNote, v.note, k.title, k.holdButton, k.heldChip]) if (line) expect(line).not.toMatch(/Plus/);
+        }
+      }
+    }
     expect(keepSheetView({ ...base, alpha: false })).toEqual(keepSheetView(base));
-    expect(keepSheetView(base).canOpenStore).toBe(true);
+    expect(keepSheetView(base)).toEqual({ body: k.body, heldNote: k.heldNote, note: null, canOpenStore: true });
     expect(read('src/components/child/plus-gate.tsx')).toMatch(/keepSheetView\(\{[^}]*alpha: PLUS_ALPHA \}\)/);
   });
 
-  it('Settings, Plan: "See what Plus adds" becomes the note and Redeem is hidden in alpha; unchanged in the store build', () => {
-    const base = { line: { kind: 'off' } as const, details: { status: 'none' as const, period: null, ownership: null }, plusOn: false, storeSupport: 'available' as const, noteLines: [], longDate: (d: string) => d };
-    const alpha = planScreen({ ...base, alpha: true } as Parameters<typeof planScreen>[0]);
-    expect(alpha.seePlans).toEqual({ kind: 'unavailable', title: NOTE });
-    expect(alpha.redeem).toBe(false);
-    const storeBuild = planScreen(base as Parameters<typeof planScreen>[0]);
-    expect(storeBuild.seePlans).toEqual({ kind: 'open', title: billingCopy.plan.seePlans });
-    expect(storeBuild.redeem).toBe(true);
-    expect(read('src/app/settings/plus.tsx')).toMatch(/alpha: PLUS_ALPHA,/);
+  it('Settings, Plan in alpha: only the alpha note, in every plan state; no promise, status, Manage or Redeem', () => {
+    const longDate = (d: string) => d;
+    const states = [
+      { line: { kind: 'off' } as const, details: { status: 'none' as const, period: null, ownership: null }, plusOn: false },
+      { line: { kind: 'on' } as const, details: { status: 'active' as const, period: 'month' as const, ownership: 'purchased' as const }, plusOn: true },
+      { line: { kind: 'retry' } as const, details: { status: 'billing_retry' as const, period: 'year' as const, ownership: 'purchased' as const }, plusOn: false },
+    ];
+    for (const st of states) {
+      for (const storeSupport of ['available', 'needs_ios_17', 'unsupported'] as const) {
+        const s = planScreen({ ...st, storeSupport, noteLines: [], longDate, alpha: true } as Parameters<typeof planScreen>[0]);
+        expect(s).toEqual({ status: null, seePlans: { kind: 'unavailable', title: NOTE }, promise: null, manage: false, redeem: false, alpha: true });
+      }
+    }
+    const storeBuild = planScreen({ ...states[0], storeSupport: 'available', noteLines: [], longDate } as Parameters<typeof planScreen>[0]);
+    expect(storeBuild).toMatchObject({ seePlans: { kind: 'open', title: billingCopy.plan.seePlans }, promise: billingCopy.store.promise, redeem: true, alpha: false });
+  });
+
+  it('Settings, Plan in alpha renders the note row alone: no purchase, restore, redeem, manage or refund control, no payment line', () => {
+    const src = read('src/app/settings/plus.tsx');
+    expect(src).toMatch(/alpha: PLUS_ALPHA,/);
+    const start = src.indexOf('if (screen.alpha) {');
+    expect(start).toBeGreaterThan(-1);
+    const block = src.slice(start, src.indexOf('\n  }\n', start));
+    // The alpha return comes before the store screen's render, after every hook.
+    expect(start).toBeLessThan(src.lastIndexOf('  return (\n    <ScrollView'));
+    expect(src.slice(start)).not.toMatch(/^\s+(?:const|let) \[?\w+.*= use[A-Z]/m);
+    expect(block).toMatch(/testID="plan\.alpha"/);
+    expect((block.match(/<ListRow/g) ?? []).length).toBe(1);
+    expect(block).not.toMatch(/onPress|presentPlusStore|restorePurchases|redeemOfferCode|manageSubscription|requestRefund|p\.payment|p\.restore|p\.redeem|p\.manage|p\.refund|screen\.promise|footer=/);
   });
 });

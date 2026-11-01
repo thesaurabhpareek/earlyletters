@@ -82,10 +82,16 @@ export type PlanScreen = {
   status: { title: string; subtitle: string | null; value: string | null } | null;
   /** Plus off: "See what Plus adds" opens Apple's view; or the line that says why it cannot here. */
   seePlans: { kind: 'open'; title: string } | { kind: 'unavailable'; title: string } | null;
-  /** The section footer, once: the registered promise. */
-  promise: string;
+  /** The section footer, once: the registered promise. Null in alpha, where the free-letter limit does not apply. */
+  promise: string | null;
   manage: boolean;
   redeem: boolean;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA; founder, 1 Nov 2026; Karma ruling on #552): the screen shows only the
+   * alpha note (`seePlans.title`). No status, promise, payment line, Manage, Restore, Redeem, Save a copy or refund:
+   * no StoreKit call can be reached from it.
+   */
+  alpha: boolean;
 };
 
 export function planScreen(input: {
@@ -104,6 +110,9 @@ export function planScreen(input: {
    */
   alpha?: boolean;
 }): PlanScreen {
+  if (input.alpha) {
+    return { status: null, seePlans: { kind: 'unavailable', title: billingCopy.alpha.note }, promise: null, manage: false, redeem: false, alpha: true };
+  }
   const said = new Set([...input.noteLines, ...(input.restored ? [input.restored] : [])]);
   const line = input.line;
   // A trial whose end date the open note already says ("Plus is free until {date}."): the row says only that Plus is
@@ -121,9 +130,7 @@ export function planScreen(input: {
   // Someone with Plus, or with a subscription Apple is retrying, is never offered it again.
   const seePlans = input.plusOn || subscriptionExists(input.details.status)
     ? null
-    : input.alpha
-      ? ({ kind: 'unavailable', title: billingCopy.alpha.note } as const)
-      : available
+    : available
       ? ({ kind: 'open', title: p.seePlans } as const)
       : ({ kind: 'unavailable', title: input.storeSupport === 'needs_ios_17' ? p.needsNewerIos : p.unavailable } as const);
   return {
@@ -133,7 +140,8 @@ export function planScreen(input: {
     // A Family Sharing member cannot change or cancel the organiser's plan in Apple's screen (SUB-08), so Manage is
     // shown only for the person's own subscription; the status row already says it is shared with them.
     manage: subscriptionExists(input.details.status) && input.details.ownership !== 'familyShared',
-    redeem: !input.plusOn && available && !input.alpha,
+    redeem: !input.plusOn && available,
+    alpha: false,
   };
 }
 
