@@ -3,7 +3,8 @@
  * so the rule lives in one place and its tests run it (test/keep-step.test.ts):
  *
  *   keepSheetFor(wordsOnScreen)    before writing. The gate when the Keep sheet must open (the caller opens it
- *                                  and writes nothing), or null when the save may go ahead. Words on screen are
+ *                                  and writes nothing), a `hold` gate when Plus is not known yet (the caller holds
+ *                                  the letter, no sheet; RT-PAY-17), or null when the save may go ahead. Words on screen are
  *                                  asked about (keepGateFor); no words (empty, blank, marks only) never are.
  *   countAfterSave(wordsOnScreen)  after writing. Copies the count to the Keychain. With words on screen, notes
  *                                  the moment the free letters are used (free_allowance_reached, once, when Plus
@@ -23,6 +24,9 @@ export async function keepSheetFor(wordsOnScreen: string): Promise<KeepGate | nu
   // null: no words on screen. Under M17 that save never counts (the ledger uses the same hasWords rule), so
   // there is nothing to gate: no ledger read, no sheet, the save goes ahead at once.
   if (g === null || g.decision.kind === 'allow') return null;
+  // hold (RT-PAY-17): Plus is not known yet on this phone. The caller holds the letter and opens no sheet, so nothing
+  // was shown and nothing is noted.
+  if (g.decision.kind === 'hold') return g;
   track('keep_gate_shown', {
     letters_kept: Math.min(1000, g.lettersKept),
     allowance: Math.min(100, Math.max(2, g.allowance)),

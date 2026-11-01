@@ -17,6 +17,7 @@ vi.mock('../src/lib/store', () => ({
 }));
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: NO_PLAN, details: {}, checkedAt: null }),
+  planReadiness: async () => 'read', // StoreKit has answered (RT-PAY-17 is pinned in billing-keep-gate-plan-read.test.ts)
 }));
 
 const { hasWords, keepGateFor, keepLetterGate } = await import('../src/lib/billing/gates');

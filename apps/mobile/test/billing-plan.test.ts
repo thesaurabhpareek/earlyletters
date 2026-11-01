@@ -22,6 +22,7 @@ import {
   sameEntitlements,
   sanitizeSnapshot,
   serializePlanCache,
+  STILL_LISTED_MS,
   type BookFacts,
 } from '../src/lib/billing/plan.logic';
 
@@ -86,16 +87,31 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
     expect(planLine(p, NOW)).toEqual({ kind: 'grace' });
   });
 
-  it('grace without a date from Apple: on until the next check (one day)', () => {
+  it('grace without a date from Apple: on until the next check (at most 7 days, C-NFR-004)', () => {
     const p = planFromSnapshot(snap([tx({ expiresAt: at(-1) })], [status({ expiresAt: at(-1), state: 'inGracePeriod' })]));
-    expect(p.view.effectiveUntil).toBe(at(1));
+    expect(p.view.effectiveUntil).toBe(at(7));
   });
 
-  it('Apple still lists a subscription past its end (renewal not on this phone yet): on for a day, not called a payment problem', () => {
+  it('Apple still lists a subscription past its end (renewal not on this phone yet): on for 7 days, not called a payment problem', () => {
     const p = planFromSnapshot(snap([tx({ expiresAt: at(-0.5) })]));
     expect(p.view.state).toBe('active');
     expect(plusOn(p, NOW)).toBe(true);
-    expect(plusOn(p, at(1.5))).toBe(false);
+    expect(plusOn(p, at(1.5))).toBe(true);
+    expect(plusOn(p, at(6.9))).toBe(true);
+    expect(plusOn(p, at(7))).toBe(false);
+  });
+
+  it('[C-NFR-004, RT-SUB-13] offline renewal grace is 7 days, pinned to the PRD line (CR-39: fail open for a payer)', () => {
+    expect(STILL_LISTED_MS).toBe(7 * 86_400_000);
+    const prd = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'prd', 'C-habits-pricing-settings.md'), 'utf8');
+    const line = prd.split('\n').find((l) => l.includes('**C-NFR-004'));
+    expect(line).toContain('The last known entitlement is cached for 7 days.');
+    // A payer whose renewal has not reached this phone, offline for 6 days after the last read, still has Plus.
+    const offline = planFromSnapshot(snap([tx({ expiresAt: at(-0.1) })], [status({ expiresAt: at(-0.1) })]));
+    expect(plusOn(offline, at(6))).toBe(true);
+    // A fresh read that no longer lists it is Free at once: the 7 days never outlive Apple's answer.
+    const lapsed = planFromSnapshot(snap([], [status({ state: 'expired', expiresAt: at(-0.1), willAutoRenew: false })]));
+    expect(plusOn(lapsed, NOW)).toBe(false);
   });
 
   it('[K-28] Family Sharing: the co-parent has Plus as their own entitlement; nothing to cancel or refund', () => {
