@@ -69,7 +69,7 @@ export const site = {
   skip: 'Skip the film',
 
   comingSoon: {
-    line: 'A baby book you fill by talking. Tell your child about today and it is kept in your own words.',
+    line: 'A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.',
     // Re-check at the first release with sync or backup (1.0.x): "stay on your iPhone" is true for the first build only (D-121).
     trust: 'Your letters stay on your iPhone. Only the people you invite can see them.',
     shareButton: 'Share with a friend',
@@ -110,7 +110,7 @@ export const site = {
       label: 'Evening',
       dateline: '9:41 pm',
       headline: 'Meera is asleep.',
-      support: 'The house is quiet at last. Something from today is still on your mind.',
+      support: 'The house has gone quiet. You are still turning the day over.',
     },
     s02: {
       label: 'A minute',
@@ -135,8 +135,8 @@ export const site = {
     },
     s03: {
       label: 'Talking',
-      headline: 'Talk like you normally do.',
-      support: 'Say it the way you would say it to Meera, even if you lose your thread halfway.',
+      headline: 'Talk to Meera the way you do.',
+      support: 'A half-finished sentence is fine. So is laughing in the middle of one.',
       appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
@@ -148,7 +148,7 @@ export const site = {
     s04: {
       label: 'Your words',
       headline: 'It stays in your words.',
-      support: `${NAME} takes out the ums and false starts and fixes a misheard name. It never adds a word. Every fix is marked and can be put back.`,
+      support: `${NAME} clears the ums and mends a misheard name. It never adds a word, and every fix can be put back.`,
       /** review.title, review.changesLabel with {count} = 3, review.trustLine, review.undoEditButton */
       appTitle: 'Read it back',
       appChanges: '3 small fixes',
@@ -157,14 +157,14 @@ export const site = {
     },
     s05: {
       label: 'Your voice',
-      headline: 'Your voice is kept too.',
+      headline: 'Your voice comes with it.',
       support: 'Each spoken letter keeps its recording, tired end-of-day voice and all.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
     s06: {
       label: 'The book',
-      headline: "Sorted by Meera's age.",
+      headline: 'Month by month.',
       support: "Each letter is filed under the month Meera was when you said it, with your name on it.",
       appTitle: "Meera's Book",
       chapters: [
@@ -177,16 +177,16 @@ export const site = {
     s07: {
       label: 'Years later',
       dateline: 'Years from now',
-      headline: 'Play it again.',
-      support: 'Years from now, press play and hear yourself, with the words on the page alongside.',
+      headline: 'Back to that Tuesday night.',
+      support: 'Press play and there is your voice, with the words on the page beside it.',
       appFrom: 'From Papa',
       /** Optional tap-to-hear. Hidden until a released recording exists (docs/web/STORYBOARD.md). */
       hear: 'Hear this letter',
     },
     s08: {
       label: 'Languages',
-      headline: 'Your language, in time.',
-      support: 'English at launch. Next are Hindi, Spanish, Mandarin, French, Arabic and Portuguese, each after a native speaker has read it.',
+      headline: 'Every new language is read by a native speaker first.',
+      support: 'English comes first, then Hindi, Spanish, Mandarin, French, Arabic and Portuguese.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
@@ -216,7 +216,7 @@ export const site = {
       label: 'Pricing',
       headline: 'Your first two letters are free.',
       // Said plainly, to a tired parent: what is free, then what Plus is for.
-      lede: 'Two letters is enough to see if it suits you. Plus is for adding more.',
+      lede: 'Enough to tell whether it suits you. Plus is for the letters after those.',
       // The whole offer as one sentence: it names the plans for screen readers (the plans group is labelled with it)
       // and is what test/pricing.test.ts holds to the constants in pricing.ts.
       support: `${plusPricing.monthly.price} a month with a ${plusPricing.monthly.trialMonths}-month free trial, or ${plusPricing.annual.price} a year with a ${plusPricing.annual.trialMonths}-month free trial.`,
@@ -237,7 +237,7 @@ export const site = {
     s11: {
       label: 'Start tonight',
       headline: 'Tell Meera about today.',
-      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write when it is out.`,
+      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will let you know.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and each takes about a minute.',
     },
   },
@@ -252,16 +252,16 @@ export const site = {
     quietButton: 'Save my place',
     sending: 'Saving',
     successTitle: 'Thank you, you are on the list.',
-    successBody: `A hello is in your inbox now. After that, one email when ${NAME} is out.`,
-    success: `Thank you, you are on the list. A hello is in your inbox now. After that, one email when ${NAME} is out.`,
+    successBody: `There is a hello waiting in your inbox. You will hear from us once more, at launch.`,
+    success: `Thank you, you are on the list. There is a hello waiting in your inbox. You will hear from us once more, at launch.`,
     /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
     alreadyTitle: 'You are already on the list.',
-    alreadyBody: `We already have your address, so there is nothing to do. We will write when ${NAME} is out.`,
-    already: `You are already on the list. We already have your address, so there is nothing to do. We will write when ${NAME} is out.`,
+    alreadyBody: `We already have your address. You will hear from us at launch.`,
+    already: `You are already on the list. We already have your address. You will hear from us at launch.`,
     error: 'That email does not look quite right. Could you check it and try again?',
-    rateLimited: 'Please give it a minute, then try once more.',
-    server: 'That did not go through on our side. Please try again in a moment.',
-    empty: 'Please add your email address first.',
+    rateLimited: 'Give it a minute and try again.',
+    server: 'Something went wrong on our side. Try again in a moment.',
+    empty: 'Add your email address first.',
     network: 'We could not connect just now. Check your connection and try again.',
     sendingStatus: 'Saving your place on the list.',
     retry: 'Try again',
@@ -275,10 +275,10 @@ export const site = {
   /** The one short hello sent when someone leaves their address (lib/notify/welcome-email.ts). */
   welcomeEmail: {
     subject: `You are on the list for ${NAME}`,
-    preheader: 'A first look at a letter, and what happens next.',
+    preheader: 'One letter from the book, and what happens next.',
     kicker: 'Welcome',
     headline: 'You are on the list.',
-    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. We will email you once more when it opens.`,
+    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
     letterLabel: 'What a letter looks like',
     letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',
