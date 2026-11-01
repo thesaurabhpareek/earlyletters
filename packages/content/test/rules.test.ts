@@ -1128,3 +1128,48 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
     expect(offenders(ALL, surface.uk)).toEqual([]);
   });
 });
+
+// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md), ported from main's
+// #485 onto develop's keys. Each rule names the ruling it enforces. If one fails, fix the copy, not the test.
+describe('claims that must be true of what the first build does', () => {
+  it('never calls the fixes tidying (D-086, Q2)', () => {
+    expect(offenders(EVERY, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
+  });
+
+  it('the book never says nobody changed the words, or that every word is kept exactly as said (Q1)', () => {
+    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes/i;
+    expect(offenders(BOOK, bad)).toEqual([]);
+  });
+
+  it('"About this book" says what the engine does and no more (Q1; core EditType; D-133 line)', () => {
+    const body = book.aboutThisBook.body;
+    expect(body).toMatch(/no word was added/);
+    expect(body).toMatch(/small fixes/);
+    expect(body).toMatch(/original recording is kept unchanged/);
+    expect(body).toMatch(/Typed letters are exactly as they were typed/);
+  });
+
+  it('status lines never promise a later update or say beta (Q4, D-060, D-126)', () => {
+    const status = [
+      ...leaves(en.settingsMore, 'settingsMore'),
+      ...leaves(en.childrenExtra, 'childrenExtra'),
+      ...leaves(en.familyTab, 'familyTab'),
+    ];
+    expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
+  });
+
+  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
+    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
+    expect(offenders(SITE, held)).toEqual([]);
+  });
+
+  it('the website, book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
+    const retired = /exactly as (you said (it|them)|they were said|they said)/i;
+    expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
+  });
+
+  it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
+    const overclaim = /grammar|we was|misheard word/i;
+    expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
+  });
+});

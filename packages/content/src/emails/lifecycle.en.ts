@@ -28,7 +28,7 @@ export const lifecycleEmails = {
       "{parentName} is keeping a book of letters for a child you love, and would like yours in it.",
       `To write, open ${brand.name} and tap the red circle.`,
       "Then just talk, in the language you speak. A minute is plenty.",
-      "Your words are kept exactly as you said them. Your voice is kept too.",
+      "It stays in your words. Each letter you speak keeps its original recording, unchanged.",
       "{parentName} reads your letters first, then adds them to the book. Until then, only the parents can see them.",
     ],
     cta: { label: "Write a letter", urlVar: "{appUrl}" },
