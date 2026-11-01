@@ -80,7 +80,7 @@ export const brand = {
   storeName: `${name}: Memory Book`,
   /** App Store subtitle, max 30 characters. Adds search words the name lacks ("baby", "journal"). */
   subtitle: 'Baby journal in your own voice',
-  tagline: 'Exactly as you said it.',
+  tagline: 'It stays in your words.',
   /** Printed product naming pattern. */
   printTitle: (year: number) => `${name}: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,
   publisher,

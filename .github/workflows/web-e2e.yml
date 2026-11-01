@@ -1,0 +1,85 @@
+# earlyletters.com end-to-end checks (apps/web/e2e). Owner: QA.
+#
+# Builds the site and runs it in headless Chromium with the Resend API mocked on localhost: no real email is sent
+# and no outside service is called. Covers the landing page, sign-up, welcome email, unsubscribe, legal pages,
+# redirects, security headers, accessibility (axe-core, light and dark), a link check and reduced motion.
+# See apps/web/e2e/playwright.config.ts and docs/release/qa/web-e2e-findings.md.
+#
+# Separate from web.yml (typecheck, unit tests, builds) on purpose. Like web.yml it is path filtered, so it is
+# NOT a required check in branch protection: a required check that never reports blocks merges that do not touch the
+# site. Playwright traces and the HTML report are uploaded when the run fails.
+name: Web e2e
+
+on:
+  pull_request:
+    paths:
+      - 'apps/web/**'
+      - 'packages/brand/**'
+      - 'packages/design-tokens/**'
+      - 'packages/content/**'
+      - 'docs/legal/**' # the legal pages are rendered from these files at build time
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/web-e2e.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: web-e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  NEXT_TELEMETRY_DISABLED: 1
+
+jobs:
+  e2e:
+    name: web e2e (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Cache npm downloads
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: web-e2e-npm-${{ runner.os }}-node22-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            web-e2e-npm-${{ runner.os }}-node22-
+
+      - name: Install @scribe/web only
+        run: npm ci --workspace=@scribe/web --no-audit --no-fund
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: web-e2e-playwright-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
+
+      - name: Install Chromium
+        working-directory: apps/web
+        run: npx playwright install --with-deps chromium
+
+      # Builds the coming-soon site with dummy Resend credentials, starts it on a free port next to a mock of the
+      # Resend API, and runs every spec (apps/web/e2e/support/global-setup.ts).
+      - name: End-to-end tests
+        run: npm run e2e -w @scribe/web
+
+      - name: Upload traces and report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-e2e-traces
+          path: |
+            apps/web/e2e/.results/artifacts
+            apps/web/e2e/.results/report
+            apps/web/e2e/.results/*.log
+          retention-days: 14
+          if-no-files-found: ignore

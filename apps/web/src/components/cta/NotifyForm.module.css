@@ -1,0 +1,309 @@
+.form {
+  width: 100%;
+  max-width: 36rem;
+  text-align: left;
+  padding: 20px;
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--night) 78%, transparent);
+}
+.label {
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: 16px;
+  color: color-mix(in srgb, var(--night-ink) 90%, transparent);
+}
+.row {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--night-raised) 92%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 24%, transparent);
+}
+.row:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--night-accent);
+}
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 56px;
+  padding: 0 14px 0 18px;
+  border: 0;
+  background: transparent;
+  color: var(--night-ink);
+  font: 500 17px/1 var(--font-sans);
+  outline: none;
+}
+.input::placeholder {
+  color: color-mix(in srgb, var(--night-ink) 64%, transparent);
+}
+.button {
+  flex: none;
+  height: 56px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(110deg, var(--night-accent) 0%, #f3c98b 45%, var(--night-accent) 100%);
+  background-size: 220% 100%;
+  color: var(--night-on-accent);
+  font: 600 17px/1 var(--font-sans);
+  cursor: pointer;
+  animation: buttonSheen 7s ease-in-out 3;
+  transition: transform 160ms var(--ease-standard), filter 160ms;
+}
+.button:hover {
+  filter: brightness(1.06);
+}
+.button:active {
+  transform: scale(0.97);
+}
+.button[aria-disabled='true'] {
+  opacity: 0.7;
+  cursor: default;
+}
+.button:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 2px;
+}
+.honeypot {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.note {
+  margin: 12px 0 0;
+  padding: 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.45;
+  color: color-mix(in srgb, var(--night-ink) 88%, transparent);
+}
+.error {
+  min-height: 1.4em;
+  margin: 6px 0 0;
+  padding: 0 4px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--night-recording);
+}
+.pending {
+  color: var(--lamp);
+}
+.success {
+  position: relative;
+  margin: 0 auto;
+  max-width: 30rem;
+  padding: clamp(22px, 3vw, 32px);
+  border-radius: 24px;
+  text-align: center;
+  color: var(--night-ink);
+  outline: none;
+  isolation: isolate;
+  background:
+    linear-gradient(color-mix(in srgb, var(--night-raised) 88%, transparent), color-mix(in srgb, var(--night) 82%, transparent)) padding-box,
+    linear-gradient(120deg, rgba(243, 201, 139, 0.75), rgba(176, 142, 214, 0.55), rgba(217, 164, 126, 0.75), rgba(243, 201, 139, 0.75)) border-box;
+  background-size: 100% 100%, 300% 300%;
+  border: 1px solid transparent;
+  animation: successRise 900ms var(--ease-standard) both, borderDrift 9s ease-in-out 900ms infinite;
+}
+.success::before {
+  content: '';
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 120%;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(60% 55% at 50% 0%, rgba(243, 201, 139, 0.28), transparent 70%);
+  animation: glowBreathe 6s ease-in-out infinite;
+}
+.check {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  display: block;
+  fill: none;
+  stroke: var(--lamp);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.check circle {
+  stroke-dasharray: 70;
+  stroke-dashoffset: 70;
+  animation: drawIn 900ms var(--ease-standard) 150ms forwards;
+}
+.check path {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: drawIn 600ms var(--ease-standard) 750ms forwards;
+}
+.successTitle {
+  margin: 0;
+  text-wrap: balance;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(24px, 2.4vw, 32px);
+  line-height: 1.2;
+}
+.successBody {
+  margin: 10px 0 0;
+  text-wrap: balance;
+  font-size: clamp(16px, 1.5vw, 19px);
+  line-height: 1.5;
+  color: var(--night-ink-muted);
+}
+@keyframes buttonSheen {
+  0%, 100% { background-position: 0% 0; }
+  50% { background-position: 100% 0; }
+}
+@keyframes successRise {
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes borderDrift {
+  0%, 100% { background-position: 0 0, 0% 50%; }
+  50% { background-position: 0 0, 100% 50%; }
+}
+@keyframes glowBreathe {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+@keyframes drawIn {
+  to { stroke-dashoffset: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .success, .success::before, .button { animation: none; }
+  .check circle, .check path { animation: none; stroke-dashoffset: 0; }
+}
+@media (max-width: 560px) {
+  .row {
+    flex-direction: column;
+    gap: 12px;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+  }
+  .row:focus-within {
+    box-shadow: none;
+  }
+  .input {
+    height: 54px;
+    padding: 0 20px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--night-raised) 92%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 28%, transparent);
+  }
+  .input:focus {
+    box-shadow: inset 0 0 0 1.5px var(--night-accent);
+  }
+  .button {
+    width: 100%;
+    height: 54px;
+  }
+}
+
+/* Quiet variant: one underlined field, a text button, no pill or fill. It must also undo the phone layout above
+   (stacked pill field, full-width button), or the field draws a pill inside the underline. */
+.quiet {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.quiet .label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.quiet .row {
+  gap: 14px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--night-ink) 55%, transparent);
+  flex-direction: row;
+}
+.quiet .row:focus-within {
+  box-shadow: 0 1px 0 0 var(--night-accent);
+  border-bottom-color: var(--night-accent);
+}
+.quiet .input:focus-visible {
+  outline: 2px solid var(--night-ink);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+.quiet .error {
+  padding: 0;
+}
+.quiet .input {
+  height: 48px;
+  padding: 0;
+  font-size: 19px;
+}
+.quiet .button {
+  width: auto;
+  min-width: 8.4rem;
+  padding: 0 2px;
+  background: transparent;
+  animation: none;
+  color: var(--lamp);
+  font-size: 17px;
+  white-space: nowrap;
+}
+.quiet .button:hover {
+  filter: none;
+  color: var(--night-ink);
+}
+.quiet .note {
+  padding: 0;
+}
+.quiet .row,
+.quiet .input,
+.quiet .button {
+  box-sizing: border-box;
+}
+.quiet .row {
+  align-items: center;
+}
+.quiet .input {
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.quiet .input:focus {
+  box-shadow: none;
+}
+.quiet .button {
+  height: 48px;
+  width: auto;
+}
+@media (max-width: 560px) {
+  .quiet .row {
+    flex-direction: row;
+    gap: 12px;
+  }
+  .quiet .input {
+    height: 48px;
+    padding: 0;
+    font-size: 17px;
+  }
+  .quiet .button {
+    width: auto;
+    height: 48px;
+    padding: 0 2px;
+  }
+}
+
+/* Windows high contrast: keep the button edge and a clear focus ring. */
+@media (forced-colors: active) {
+  .button { border: 2px solid ButtonText; forced-color-adjust: none; }
+  .input:focus-visible { outline: 2px solid Highlight; outline-offset: 2px; }
+}
