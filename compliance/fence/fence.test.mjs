@@ -140,9 +140,9 @@ test('the infosec skill is the CISO\'s, not fenced here', () => {
   assert.equal(protectedPaths(config, [{ filename: '.claude/skills/infosec/SKILL.md' }]).length, 0);
 });
 
-test('an approval line may start with up to three spaces, never four or a tab (CR-38)', () => {
+test('an approval line may start with up to three spaces, never four or a tab (CR-39)', () => {
   const o = { labels: ['agent:regulatory-affairs'] };
-  const line = (role, pad) => ({ login: OWNER, body: `${pad}## ${role} approval at ${SHA}: APPROVED (${role === 'CCO' ? 'CCO-5' : 'CR-38'})` });
+  const line = (role, pad) => ({ login: OWNER, body: `${pad}## ${role} approval at ${SHA}: APPROVED (${role === 'CCO' ? 'CCO-5' : 'CR-39'})` });
   assert.equal(pr(['compliance/README.md'], { ...o, comments: [line('CCO', '   '), line('Karma', ' ')] }).pass, true);
   assert.equal(pr(['compliance/README.md'], { ...o, comments: [line('CCO', '    '), line('Karma', '')] }).pass, false);
   assert.equal(pr(['compliance/README.md'], { ...o, comments: [line('CCO', ''), line('Karma', '\t')] }).pass, false);
