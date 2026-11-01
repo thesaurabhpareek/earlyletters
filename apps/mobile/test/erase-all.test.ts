@@ -376,8 +376,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBeNull();
     expect(await next.sweep.runLaunchSweep()).toEqual({});
-    // The launch writes only its own time (the purge's clock guard); nothing came back.
-    expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key)).toEqual(['lastLaunchAt']);
+    // The launch writes only its own time (the purge's clock guard) and its one-time rebuild mark; nothing came back.
+    expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort()).toEqual(['db.secureDeleteVacuumAt', 'lastLaunchAt']);
     db.run('DELETE FROM settings');
     expectEmpty();
   });
@@ -494,6 +494,27 @@ describe('[DATA-REQ-024] erased words leave the database file itself, not only i
     expect(app.erase.eraseDeletedBook(asha)).toBe(true);
     expect(found(WORD)).toBe(false);
     expect(found('Asha')).toBe(false);
+  });
+
+  it('a letter erased by an earlier build (no secure_delete) leaves no bytes after the first launch of this build, which rebuilds the file once', async () => {
+    let app = await launch();
+    const avi = app.store.addChild({ name: 'Avi', birthday: null, dueDate: null, signsAs: 'Papa' }).id;
+    words(app, '0199a5b0-0000-7000-8000-0000000c0005', avi, null);
+    // An earlier build: no secure_delete, a plain DELETE, the WAL folded into the file. The words sit in free pages.
+    db.exec('PRAGMA secure_delete = OFF');
+    db.run('DELETE FROM entries');
+    db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    db.run('DELETE FROM settings WHERE key = ?', 'db.secureDeleteVacuumAt'); // that build never rebuilt the file
+    expect(found(WORD)).toBe(true);
+
+    app = await launch(); // this build's first open: migrations, then the one-time rebuild, before any screen
+    expect(found(WORD)).toBe(false);
+    const mark = app.store.getSetting('db.secureDeleteVacuumAt');
+    expect(mark).not.toBeNull();
+
+    vi.setSystemTime(T0 + DAY);
+    app = await launch(); // once only
+    expect(app.store.getSetting('db.secureDeleteVacuumAt')).toBe(mark);
   });
 
   it('Erase everything: no words and no name anywhere in the file', async () => {

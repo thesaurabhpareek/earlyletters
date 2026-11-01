@@ -176,7 +176,29 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
+}
+
+/** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
+export const SECURE_DELETE_VACUUM_SETTING = 'db.secureDeleteVacuumAt';
+
+/**
+ * Once, on the first open of a build with secure_delete (expo-adapter.ts OPEN_PRAGMAS), after the migrations and
+ * before any screen reads the store: VACUUM rebuilds the file, so words of letters erased by an earlier build no
+ * longer sit in free pages, then the WAL is truncated. The mark is written only after both, so a kill part way
+ * (VACUUM is atomic) simply runs it again at the next open. Erase everything removes the mark with every setting,
+ * so one more VACUUM runs on the next open; that is harmless. Never throws: a failure is retried next open.
+ */
+function vacuumOnceForSecureDelete(c: RepoContext): void {
+  try {
+    if (settings.getSetting(c, SECURE_DELETE_VACUUM_SETTING) !== null) return;
+    c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    settings.setSetting(c, SECURE_DELETE_VACUUM_SETTING, c.now());
+  } catch {
+    // Disk full or busy: the app runs as before, and the next open tries again.
+  }
 }
 
 /** Closes the connection; the next call opens again. For tests and a future "reset this phone". */
@@ -828,7 +850,10 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
   // Deleted books whose 30 days are over (F17 6.2 D step 6), on this phone's clock, like letters.
-  for (const id of wipe.expiredIds(c, cutoff)) eraseBook(id, eraseAudio);
+  let books = 0;
+  for (const id of wipe.expiredIds(c, cutoff)) if (eraseBook(id, eraseAudio)) books += 1;
+  // After the 30-day erase, rebuild the file too (rare, and cheap at this size; PR #520 body has the numbers).
+  if (erased + books > 0) compactAfterErase(c, true);
   return erased;
 }
 
