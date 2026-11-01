@@ -31,3 +31,27 @@ export function clampISO(iso: string, min?: string, max?: string): string {
   if (max && iso > max) return max;
   return iso;
 }
+
+/** The day the sheet opens on, worked out fresh on every open: the stored day or the start, inside the range. */
+export function sheetStart(value: string | null, startISO: string, min?: string, max?: string): string {
+  return clampISO(value ?? startISO, min, max);
+}
+
+/**
+ * Bounds for the compact picker once a day is stored. It shows the stored day as it is, even when it has left
+ * the range (a due date that has gone by): the range widens to include it, because UIDatePicker would otherwise
+ * draw the nearest allowed day instead. The save check in packages/core still decides.
+ */
+export function compactBounds(value: string, min?: string, max?: string): { min?: string; max?: string } {
+  return { min: min && value < min ? value : min, max: max && value > max ? value : max };
+}
+
+/**
+ * Tallest the sheet's scrolling part may be, so Done and Cancel can always be reached at the largest text
+ * sizes: the window less the safe areas, the sheet's own top gap (24) and padding (48), and up to two lines of
+ * the title2 heading (28 pt a line at 100%) at the current text size.
+ */
+export function sheetBodyMaxHeight(windowHeight: number, insetTop: number, insetBottom: number, fontScale: number): number {
+  const title = 2 * 28 * Math.max(1, fontScale);
+  return Math.max(200, Math.floor(windowHeight - insetTop - insetBottom - 24 - 48 - title));
+}

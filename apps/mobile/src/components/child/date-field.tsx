@@ -20,13 +20,14 @@
  */
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as React from 'react';
-import { AccessibilityInfo, Keyboard, Platform, View } from 'react-native';
+import { AccessibilityInfo, Keyboard, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Sheet } from '@/components/ui/sheet';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 import { isoOf, longDate } from '@/lib/dates';
-import { clampISO, dateOf } from './date-field.logic';
+import { compactBounds, dateOf, sheetBodyMaxHeight, sheetStart } from './date-field.logic';
 
 /** What a screen can ask of the date control. */
 export type DateFieldHandle = { focus: () => void };
@@ -49,6 +50,17 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
   const [pending, setPending] = React.useState(startISO);
   const control = React.useRef<View>(null);
   const input = React.useRef<{ focus?: () => void } | null>(null);
+  const { height, fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+
+  /** VoiceOver focus to the control: S05, and after the sheet closes (its opener may be gone by then). */
+  const focusControl = React.useCallback(() => {
+    const node = control.current;
+    if (!node) return;
+    try {
+      AccessibilityInfo.sendAccessibilityEvent(node as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0], 'focus');
+    } catch {}
+  }, []);
 
   React.useImperativeHandle(
     ref,
@@ -58,14 +70,10 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
           input.current?.focus?.();
           return;
         }
-        const node = control.current;
-        if (!node) return;
-        try {
-          AccessibilityInfo.sendAccessibilityEvent(node as unknown as Parameters<typeof AccessibilityInfo.sendAccessibilityEvent>[0], 'focus');
-        } catch {}
+        focusControl();
       },
     }),
-    [],
+    [focusControl],
   );
 
   if (Platform.OS === 'web') {
@@ -85,16 +93,18 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
     });
   }
 
-  const start = clampISO(value ?? startISO, min, max);
   const minimumDate = min ? dateOf(min) : undefined;
   const maximumDate = max ? dateOf(max) : undefined;
 
   if (Platform.OS === 'ios') {
     const openSheet = () => {
       Keyboard.dismiss();
-      setPending(start);
+      setPending(sheetStart(value, startISO, min, max));
       setOpen(true);
     };
+    const closeSheet = () => setOpen(false);
+    // The stored day as it is, even a due date that has gone by (only the sheet's start is clamped).
+    const shown = value === null ? null : compactBounds(value, min, max);
     return (
       <View ref={control} className="items-end">
         {value === null ? (
@@ -103,12 +113,12 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
           // onTouchStart: the compact picker opens natively, so the keyboard is put away on the touch itself.
           <View onTouchStart={() => Keyboard.dismiss()}>
             <DateTimePicker
-              value={dateOf(start)}
+              value={dateOf(value)}
               mode="date"
               display="compact"
               themeVariant={scheme}
-              minimumDate={minimumDate}
-              maximumDate={maximumDate}
+              minimumDate={shown?.min ? dateOf(shown.min) : undefined}
+              maximumDate={shown?.max ? dateOf(shown.max) : undefined}
               accentColor={c.accent}
               accessibilityLabel={label}
               onChange={(e, d) => {
@@ -118,31 +128,44 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
             />
           </View>
         )}
-        <Sheet open={open} onClose={() => setOpen(false)} title={label} dismissible={false} hideClose>
-          <View className="gap-4 pb-2">
-            <DateTimePicker
-              value={dateOf(pending)}
-              mode="date"
-              display="inline"
-              themeVariant={scheme}
-              minimumDate={minimumDate}
-              maximumDate={maximumDate}
-              accentColor={c.accent}
-              accessibilityLabel={label}
-              onChange={(e, d) => {
-                if (e.type === 'dismissed' || !d) return;
-                setPending(isoOf(d));
-              }}
-            />
-            <Button
-              size="lg"
-              label={copy.common.doneButton}
-              onPress={() => {
-                onChange(pending);
-                setOpen(false);
-              }}
-            />
-            <Button variant="quiet" size="lg" label={copy.common.cancelButton} onPress={() => setOpen(false)} />
+        {/* Closed by Done or Cancel only (no pan over the month swipe), so the VoiceOver escape gesture is Cancel, and
+            the body scrolls so Done and Cancel stay reachable at the largest text sizes. When it closes, VoiceOver
+            focus goes to the date control: "Choose a date", which opened it, is gone once a day is set. */}
+        <Sheet
+          open={open}
+          onClose={() => {
+            setOpen(false);
+            focusControl();
+          }}
+          title={label}
+          dismissible={false}
+          hideClose>
+          <View onAccessibilityEscape={closeSheet}>
+            <ScrollView style={{ maxHeight: sheetBodyMaxHeight(height, insets.top, insets.bottom, fontScale) }} contentContainerClassName="gap-4 pb-2" bounces={false}>
+              <DateTimePicker
+                value={dateOf(pending)}
+                mode="date"
+                display="inline"
+                themeVariant={scheme}
+                minimumDate={minimumDate}
+                maximumDate={maximumDate}
+                accentColor={c.accent}
+                accessibilityLabel={label}
+                onChange={(e, d) => {
+                  if (e.type === 'dismissed' || !d) return;
+                  setPending(isoOf(d));
+                }}
+              />
+              <Button
+                size="lg"
+                label={copy.common.doneButton}
+                onPress={() => {
+                  onChange(pending);
+                  closeSheet();
+                }}
+              />
+              <Button variant="quiet" size="lg" label={copy.common.cancelButton} onPress={closeSheet} />
+            </ScrollView>
           </View>
         </Sheet>
       </View>
@@ -155,7 +178,7 @@ export const DateField = React.forwardRef<DateFieldHandle, DateFieldProps>(funct
       <Button variant="secondary" size="sm" label={value ? longDate(value) : chooseLabel} accessibilityLabel={`${label}. ${value ? longDate(value) : chooseLabel}`} onPress={() => setOpen(true)} />
       {open ? (
         <DateTimePicker
-          value={dateOf(start)}
+          value={dateOf(sheetStart(value, startISO, min, max))}
           mode="date"
           display="default"
           minimumDate={minimumDate}
