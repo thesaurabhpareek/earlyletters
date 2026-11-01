@@ -495,6 +495,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: stop sending; the Project log stays as the record.
 - Revisit when: the founder asks for a different inbox or channel. Karma
+- Amended (1 Nov 2026, Karma via the RS-04 session; setup retro #569, rows RS-03 and RS-04): the body's first line is the citation line from CTO skill section 3, naming the checks run before sending: the Project doc `infra/setup-record.md`, PRs from the last 24 hours, and the coordination docs, for example "Checked: setup-record (S-37 open), PRs since 09:00 UTC, coordination docs." Once `npm run release:ready -- --step <S-id>` exists, its output replaces it. An email without the line is not sent, and its `infra/founder-handoffs.md` line quotes it. If the step is a wall (`docs/agents/WALLS.md`), the email carries the one-action hand-off from WALLS.md section 3. Why: on 1 Nov this path skipped the check, and three emails (06:19, 07:30, 07:35 UTC) asked him to redo a finished key ceremony.
 
 ### CR-42 What is still missing after the compliance decisions (1 Nov 2026, 06:10 UTC, Karma via the compliance session)
 - Question: the founder asked to document the decisions and find what is missing or an opportunity. What is missing, and in what order?
