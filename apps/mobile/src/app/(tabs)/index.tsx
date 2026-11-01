@@ -61,7 +61,7 @@ import {
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
 import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
-import { plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
+import { heldCountOf, plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -191,6 +191,11 @@ export default function Tonight() {
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
   const rows = useMemo(() => tonightRows(cards), [cards]);
+  // A new held letter, or one kept or let go, closes the held list; the row shows the new count, closed.
+  const heldCount = heldCountOf(rows);
+  useEffect(() => setHeldOpen(false), [heldCount]);
+  // The held list also closes when the person leaves Tonight (blur).
+  useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance() });
   const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 

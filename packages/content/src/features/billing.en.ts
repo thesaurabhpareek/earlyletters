@@ -68,8 +68,8 @@ export const billingCopy = {
 
   /**
    * Tonight, once the free letters are used and Plus is off (F14-REQ-040, SR-C-08): one standing line above Speak and
-   * Type, so the person knows before they record, not only at Review. A state, never a count, never a price. Its
-   * action is keepGate.seePlus. Words from F14 section 6.2 B step 2b.
+   * Type, so the person knows before they record, not only at Review. A state, never a count, never a price, and
+   * no button. Words from F14 section 6.2 B step 2b.
    */
   tonight: {
     plusLine: 'Adding new letters to the book needs Plus. Recording, reading and export are always free.',
