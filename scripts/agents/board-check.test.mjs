@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { parseClaims, checkClaims, globsOverlap, exitCode, render, MAX_ROWS } from './board-check.mjs';
+import { parseClaims, checkClaims, globsOverlap, exitCode, render, MAX_ROWS, sweepList, renderSweep, listOpenPrs, SWEEP_KEEP, SWEEP_HARVEST } from './board-check.mjs';
 
 const NOW = '2026-11-01T12:00:00Z';
 const HEAD = '| id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |\n|---|---|---|---|---|---|---|---|\n';
@@ -126,4 +126,38 @@ test('T9: the archive is byte-identical to the old BOARD.md (git blob hash from 
   const OLD_BLOB = '799a75b8b3ebef66dfac5d00e319bf1ad1a28129';
   const file = new URL('../../docs/agents/BOARD-ARCHIVE.md', import.meta.url).pathname;
   assert.equal(execFileSync('git', ['hash-object', file], { encoding: 'utf8' }).trim(), OLD_BLOB);
+});
+
+// Sweep (HV2-B08). The 18 numbers are the open PRs created before 18 Oct read on 1 Nov 2026.
+const STALE = [26, 30, 32, 35, 37, 40, 41, 51, 53, 87, 88, 89, 90, 105, 112, 164, 167, 168];
+const prs = [...STALE.map((n) => ({ number: n, created_at: '2026-10-05T00:00:00Z', title: 'SECRET TITLE @someone https://x.test' })),
+  { number: 315, created_at: '2026-10-28T05:00:00Z' }, { number: 551, created_at: '2026-11-01T10:00:00Z' }];
+
+test('T10: the sweep list holds the stale numbers outside keep and harvest, and no recent PR', () => {
+  const list = sweepList(prs, '2026-11-01T12:00:00Z');
+  assert.deepEqual(list, [35, 37, 40, 41, 51, 53, 87, 88, 89, 90, 105]);
+  for (const n of [...SWEEP_KEEP, ...SWEEP_HARVEST, 315, 551]) assert.ok(!list.includes(n));
+});
+
+test('T10: the 14 day line is exact and uses created_at', () => {
+  const mk = (created_at) => [{ number: 7, created_at }];
+  assert.deepEqual(sweepList(mk('2026-10-18T12:00:00Z'), '2026-11-01T12:00:00Z'), []);
+  assert.deepEqual(sweepList(mk('2026-10-18T11:59:00Z'), '2026-11-01T12:00:00Z'), [7]);
+});
+
+test('T10: the printed sweep has the numbers, never deletes a branch, never prints a title', () => {
+  const text = renderSweep(sweepList(prs, '2026-11-01T12:00:00Z'), 'o/r');
+  assert.match(text, /for n in 35 37 40 41 51 53 87 88 89 90 105; do/);
+  assert.doesNotMatch(text, /delete-branch|SECRET|someone|x\.test/);
+  assert.match(text, /Printed only; nothing has been run/);
+  assert.match(renderSweep([], 'o/r'), /Nothing to sweep/);
+});
+
+test('the sweep reads open PRs by GET with paging, and a REST error throws', async () => {
+  const calls = [];
+  const page = (n) => Array.from({ length: n }, (_, i) => ({ number: i + 1 }));
+  const get = async (path) => { calls.push(path); return { status: 200, body: page(/page=1$/.test(path) ? 100 : 3) }; };
+  assert.equal((await listOpenPrs(get, 'o/r')).length, 103);
+  assert.equal(calls.length, 2);
+  await assert.rejects(listOpenPrs(async () => ({ status: 500, body: null }), 'o/r'), /unreadable/);
 });

@@ -2,6 +2,9 @@
 // Advisory checker for docs/agents/CLAIMS.md (harness v2, HV2-B04, requirement HV2-007).
 // It never blocks a merge and never writes anything. GET requests only.
 // Run: node scripts/agents/board-check.mjs [--repo owner/name] [--file path] [--json] [--fetch] [--now ISO]
+//      node scripts/agents/board-check.mjs --sweep [--repo owner/name] [--fetch] [--now ISO]
+// --sweep (HV2-B08) prints the stale-PR close commands for the founder to read and paste. It never
+// runs them, never closes anything and never deletes a branch. Exit 0, or 2 if the PR list cannot be read.
 // Auth: by default `gh api --method GET`; --fetch uses Node's fetch with GITHUB_TOKEN or GH_TOKEN.
 // Exit: 0 clean, 1 findings (C1, C2, C3, C5), 2 unreadable or malformed (C4, a row missing a field,
 // a PR that cannot be read). Exit 2 wins over 1: if the file or the PR state cannot be trusted,
@@ -101,11 +104,57 @@ export function render(findings, rowCount) {
   return [head, ...findings.map((f) => `${f.code} ${f.id}: ${f.detail}`)].join('\n');
 }
 
+// Stale-PR sweep (HV2-B08). Policy: an open PR created more than 14 days ago may be closed by the
+// founder; branches stay. KEEP are harness PRs held to the 9 Nov go/no-go. HARVEST are PRs whose
+// content is to be copied out first (HV2-B16); they leave the list when that has been done.
+export const SWEEP_KEEP = [112, 164, 167, 168];
+export const SWEEP_HARVEST = [26, 30, 32];
+const DAY = 24 * 3600_000;
+
+/** Numbers to print: open, created over 14 days ago, not in KEEP or HARVEST. Pure. */
+export function sweepList(open, now, { keep = SWEEP_KEEP, harvest = SWEEP_HARVEST } = {}) {
+  const t = new Date(now).getTime();
+  const skip = new Set([...keep, ...harvest]);
+  return (open ?? []).filter((p) => t - new Date(p.created_at).getTime() > 14 * DAY && !skip.has(p.number))
+    .map((p) => p.number).sort((a, b) => a - b);
+}
+
+/** The paste-ready shell text. Numbers and fixed words only. Pure. */
+export function renderSweep(list, repo, { keep = SWEEP_KEEP, harvest = SWEEP_HARVEST } = {}) {
+  if (!list.length) return '# Nothing to sweep: no open PR is over 14 days old outside the keep and harvest lists.';
+  return [
+    `# Stale-PR sweep: ${list.length} open PR(s) created over 14 days ago. Printed only; nothing has been run.`,
+    `# Not listed: held to 9 Nov (${keep.map((n) => `#${n}`).join(' ')}); harvest first (${harvest.map((n) => `#${n}`).join(' ')}).`,
+    '# Read each one, edit the reason, then paste. Branches stay; reopen if still wanted.',
+    `R=${repo}`,
+    `for n in ${list.join(' ')}; do`,
+    '  gh pr close "$n" --repo "$R" --comment "Closing in the 1 Nov stale sweep: open for more than 14 days, reason: <superseded by #N | not needed | rebuilt later>. Branch kept; reopen if still wanted."',
+    'done',
+  ].join('\n');
+}
+
+/** Open PRs by REST through the injected `get(path)`. */
+export async function listOpenPrs(get, repo) {
+  const all = [];
+  for (let page = 1; page <= 10; page++) {
+    const res = await get(`repos/${repo}/pulls?state=open&per_page=100&page=${page}`);
+    if (res.status !== 200 || !Array.isArray(res.body)) throw new Error(`open PRs unreadable (HTTP ${res.status})`);
+    all.push(...res.body);
+    if (res.body.length < 100) break;
+  }
+  return all;
+}
+
 async function main(argv) {
   const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
   const repo = opt('repo', DEFAULT_REPO);
   const file = opt('file', new URL('../../docs/agents/CLAIMS.md', import.meta.url));
   const now = opt('now', new Date().toISOString());
+  if (argv.includes('--sweep')) {
+    const get = argv.includes('--fetch') ? fetchGet(process.env.GITHUB_TOKEN || process.env.GH_TOKEN) : ghGet();
+    try { console.log(renderSweep(sweepList(await listOpenPrs(get, repo), now), repo)); } catch (e) { console.log(String(e.message)); process.exitCode = 2; }
+    return;
+  }
   let text;
   try { text = fs.readFileSync(file, 'utf8'); } catch { console.log('CLAIMS.md unreadable'); process.exitCode = 2; return; }
   const get = argv.includes('--fetch') ? fetchGet(process.env.GITHUB_TOKEN || process.env.GH_TOKEN) : ghGet();
