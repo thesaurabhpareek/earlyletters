@@ -44,10 +44,10 @@ Status follows the row's own lane and Expected, not the best case it cites. A ro
 
 | Status | Rows | Meaning |
 |---|---|---|
-| covered | 8 | An automated test or workflow runs in CI today and proves the Expected |
+| covered | 7 | An automated test or workflow runs in CI today and proves the Expected |
 | automated | 14 | An automated case proves it when run (web journeys); no pipeline runs it yet |
 | planned | 96 | A case is written (Maestro, phone item, run sheet, StoreKit check) but has never run |
-| partial | 34 | Part of the Expected is proven or written |
+| partial | 35 | Part of the Expected is proven or written |
 | gap | 87 | No case anywhere; this plan adds it |
 | stale | 0 | The written case contradicts a decision (none since #505 rewrote E2E-06 and E2E-07) |
 | decision | 1 | Needs a decision before it can be a test (RT-A11Y-17, portrait lock against WCAG 1.3.4) |
