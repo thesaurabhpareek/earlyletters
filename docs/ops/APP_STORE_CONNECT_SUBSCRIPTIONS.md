@@ -8,7 +8,9 @@ Time: about 75 minutes of clicking for steps 1 to 8, plus Apple's waiting times 
 
 ## What you are creating
 
-The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Products live on an app record, so **create everything below on the `.preview` record**. The production record `com.earlyletters.scribe` gets the same setup later, when the store submission is re-planned (step 10).
+**Correction, 1 Nov 2026.** Product IDs are unique across the whole developer account, not per app. Apple refused `plus.monthly` on the `.preview` record with "The Product ID you entered is already being used by another subscription" while the id was held elsewhere in the account, observed on appstoreconnect.apple.com by the founder, so this is observed, not read from a developer.apple.com page; mark it **U** until Apple documents it. Plus therefore lives on **one** record, the production record "Early Letters: Memory Book" (`com.earlyletters.scribe`, Apple ID 6829377245), and the `.preview` record carries no products. The group and both products were created there on 31 Oct. On the D-125 item 6 gate: it closed on 31 Oct when the founder chose to publish from his individual developer account with no entity (D-134, in `docs/DECISIONS.md`), so creating the production record and these products on 31 Oct and 1 Nov was inside the gate. Counsel still has to confirm the entity question (COUNSEL_PACKET Q1). Read "the `.preview` record" below as the production record.
+
+The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Because products cannot be repeated, Plus with the real product ids loads only in a TestFlight build of the `production` profile (bundle id `com.earlyletters.scribe`), which exists after Mon 9 Nov at the earliest (D-124 item 1 keeps `eas.json` unedited from Tue 3 Nov to Mon 9 Nov and any other production change waits for the go/no-go). Until then every Plus row runs against the StoreKit configuration file in Xcode and says "StoreKit file, not sandbox". A development build on the production bundle id is not a route: it would need an `eas.json` change, and nobody has shown it completes a sandbox purchase before the first production upload.
 
 | | Value | Must match |
 |---|---|---|
@@ -34,13 +36,13 @@ Apple: "To sell your apps on the App Store or offer In-App Purchases, the Accoun
 
 ## Step 2. The app record
 
-`docs/release/TESTFLIGHT.md` step 2 creates the `.preview` record (S20's runbook). Nothing more is needed for Plus.
+`docs/release/TESTFLIGHT.md` step 2 creates the `.preview` record (S20's runbook); it is not used for Plus products (see the correction above).
 
 The App Store Small Business Program (15% commission) is not needed for TestFlight; enrol before the store launch (developer.apple.com/app-store/small-business-program). **U** for the current terms; the 3 Oct version of this page had them.
 
 ## Step 3. The subscription group and the two subscriptions
 
-**3.1 The group.** In **Apps**, open **Early Letters Preview**. In the sidebar, under **Monetization**, click **Subscriptions**, then the add button (**+**). Enter the reference name `Plus` and click **Create**. **V** (Offer auto-renewable subscriptions). Make only this one group: people can hold one subscription per group at a time, which stops anyone paying twice by accident. **V** (Auto-renewable subscription information)
+**3.1 The group.** In **Apps**, open **Early Letters: Memory Book** (the production record; it was **Early Letters Preview** before the 1 Nov correction). In the sidebar, under **Monetization**, click **Subscriptions**, then the add button (**+**). Enter the reference name `Plus` and click **Create**. **V** (Offer auto-renewable subscriptions). Make only this one group: people can hold one subscription per group at a time, which stops anyone paying twice by accident. **V** (Auto-renewable subscription information)
 
 **3.2 The group's display name.** Click the group name. In **Display Name and Description**, click **Add**, choose **English (U.S.)**, enter the display name `Plus`, then click **Add**. **V** for the path (Offer auto-renewable subscriptions). Apple: group display names "must not contain control characters ... or markup language (for example, HTML tags, or Unicode characters, such as emoticons, diacritics, or special characters)". **V** (Auto-renewable subscription information). If the screen offers **App Name Display Options**, keep the app's own name. **U**
 
@@ -48,7 +50,7 @@ The App Store Small Business Program (15% commission) is not needed for TestFlig
 
 **3.4 The annual subscription.** In the group, click the add button (**+**). Enter reference name `Plus Annual` and Product ID `plus.annual`, then click **Create**. **V** (same page: **+** once the group has a subscription)
 
-Product ID rules, **V** (In-App Purchase information): letters, numbers, hyphens, periods and underscores, up to 100 characters; "isn't editable after you save"; "can't be reused for another In-App Purchase within the same app, even if you delete the original". Type them exactly. Because the rule is per app, the production record later uses the same two ids.
+Product ID rules, **V** (In-App Purchase information): letters, numbers, hyphens, periods and underscores, up to 100 characters; "isn't editable after you save"; "can't be reused for another In-App Purchase within the same app, even if you delete the original". Type them exactly. Apple's page says "within the same app", but the observed behaviour on 1 Nov is account-wide: an id used on one record is refused on another (see the correction at the top). **U**: observed once, not documented by Apple. There is one set of ids, on the production record.
 
 For **each** of the two subscriptions, open it and do 3.5 to 3.10:
 
@@ -137,11 +139,11 @@ Apple's rule for that submission: "Your first auto-renewable subscription must b
 
 ## Step 10. Later: the production record
 
-When the store submission is re-planned (D-106), repeat steps 3 to 7 on the `com.earlyletters.scribe` record with the same ids, names, prices and offers (ids are unique within an app, **V** step 3.4), then step 3.11 and step 9. The sandbox testers and the test family are account-wide and are reused. **U** whether Apple keeps sandbox purchase history per app.
+Do not repeat steps 3 to 7 on another record: ids are unique across the account (observed 1 Nov, see the correction at the top), and Plus already lives on the production record. Continue with step 3.11 and step 9 there. The sandbox testers and the test family are account-wide and are reused. **U** whether Apple keeps sandbox purchase history per app.
 
 ## Step 11. Device run sheet D-1 to D-12 (WP-F14-12, the founder's run)
 
-Run these on a TestFlight build of the `preview` profile against staging. Sign each row with the date, the build number (TestFlight shows it) and pass or fail; put failures in the PR thread for S06, with a screenshot when there is something to see. Evidence goes in a new file of your own under `docs/qa/evidence/` (S19 owns the template; see `docs/prd/v2/08-delivery.md` section 4). Prepare: steps 1 and 3 to 8 done; one iPhone signed in with the right tester per row; a second iPhone for D-5 and D-6; for D-12, S06's migration applied to staging and the `subscription-status` function deployed there, and a build with `EXPO_PUBLIC_STATUS_REPORT=on` (see "Founder steps for D-12" below). Plan reminders on the phone are a courtesy here (G-15): note what you see, they are not a pass condition. Order: D-1, D-1b, D-2, D-3, D-4 with `asha1`; D-6 with `asha4`; D-12, then D-5, D-9 and D-11 with `asha2`; D-10 with `asha3`; D-7 and D-8 last, on a Free phone.
+Run these on a TestFlight build of the `production` profile against staging, after Mon 9 Nov (see the correction at the top: a `preview` profile build cannot load the products, and the production profile is frozen until the go/no-go, D-124 item 1). Until that build exists, rows run against the StoreKit configuration file and say so. Sign each row with the date, the build number (TestFlight shows it) and pass or fail; put failures in the PR thread for S06, with a screenshot when there is something to see. Evidence goes in a new file of your own under `docs/qa/evidence/` (S19 owns the template; see `docs/prd/v2/08-delivery.md` section 4). Prepare: steps 1 and 3 to 8 done; one iPhone signed in with the right tester per row; a second iPhone for D-5 and D-6; for D-12, S06's migration applied to staging and the `subscription-status` function deployed there, and a build with `EXPO_PUBLIC_STATUS_REPORT=on` (see "Founder steps for D-12" below). Plan reminders on the phone are a courtesy here (G-15): note what you see, they are not a pass condition. Order: D-1, D-1b, D-2, D-3, D-4 with `asha1`; D-6 with `asha4`; D-12, then D-5, D-9 and D-11 with `asha2`; D-10 with `asha3`; D-7 and D-8 last, on a Free phone.
 
 | ID | Check | Steps | Expected | Proves |
 |---|---|---|---|---|
@@ -167,7 +169,7 @@ Also on the same build, not D rows: Apple's sheet and our Keep sheet at the larg
 2. Apply `supabase/migrations/20261016001000_subscription_status.sql` to **staging** through `.github/workflows/deploy-db.yml` (after two independent passing reviews on the current head, with green CI, the coordinator merges it into `develop`, D-117), after the earlier pending files (file 17, `20261016000000_sync_v1_server.sql`, included), following section "File 18" in `supabase/APPLY.md`. Check in the staging SQL editor: `select public.consent_pepper_ready();` is true (an account with consent rows cannot be deleted without the pepper; the function comes with S02's #140).
 3. Turn the server side on, in the staging SQL editor: `alter database postgres set app.status_report_enabled = 'on';` It fails closed: until this is set both RPCs answer "paused" and the phone keeps its report for later. Setting it to anything else pauses it again.
 4. Deploy the function to staging: `npx supabase functions deploy subscription-status --use-api --project-ref <staging ref>`. No secrets are needed; `KILL_SWITCHES=statusReport` in its secrets stops it.
-5. Ask S20 for a preview build with `EXPO_PUBLIC_STATUS_REPORT=on` (it is `off` in every profile today; a request in this PR). Build 1 (`testflight` profile) stays off.
+5. Ask S20, after Mon 9 Nov, for a `production` profile build (not `preview`, which cannot load the products) with `EXPO_PUBLIC_STATUS_REPORT=on` (it is `off` in every profile today; a request in this PR). Build 1 (`testflight` profile) stays off.
 6. To read the result, in the staging SQL editor: `select environment, plan, trial_end, renewal_date, cancelled, reported_at from subscription_status;` and `select product_id, offer_type, terms_shown, shown_at from subscription_consents;`. There is no id or price to see, by design.
 7. To stop it at once: set `statusReport` true in the signed remote config (`scripts/packs/publish.ts config --kill statusReport`) and `KILL_SWITCHES=statusReport` on the function; on the database, `alter database postgres set app.status_report_enabled = 'off';` also stops direct calls.
 
