@@ -303,6 +303,12 @@ export const en = {
 
   review: {
     title: "Read it back",
+    // The date sheet (F04 6.2 E; F09 6.2 step 6 reuses it on the letter page): a day, or a month of age.
+    date: {
+      label: "When was this?",
+      dayTab: "A day",
+      monthTab: "A month",
+    },
     // The edit feature is called "Word for word" (D-074) and only where the feature is named (D-086: the promise,
     // Settings, store, website). Here, plain words: a "small fix" is named by what happened, and "Exactly as said"
     // is said only when it is true. Never "edit", "correct", "clean" or "tidy" in text a person reads.
@@ -522,6 +528,18 @@ export const en = {
       showOriginal: "Show exactly what I said",
       shareButton: "Share",
       deleteButton: "Delete",
+      // F09 6.2 step 6: own letters only. Opens the date sheet (`review.date.*`).
+      changeDate: "Change the date",
+    },
+    // A letter dated to a month, not a day (F09-REQ-003, F04-REQ-015): no weekday and no day. Before You uses
+    // `beforeYouChapter`.
+    dateline: {
+      monthOnly: "Sometime in Month {month}",
+      monthOnlyNewborn: "Sometime in the first weeks",
+    },
+    changeDate: {
+      // {label} is the month's name in the book: "Month 2", "The first weeks" or "Before You".
+      movedToast: "Moved to {label}.",
     },
     // No printed-book prompt: v1 is digital only; printed books are a future launch (PRD.md K-32).
   },

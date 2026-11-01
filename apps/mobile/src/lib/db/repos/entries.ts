@@ -189,6 +189,23 @@ export function setInBook(ctx: RepoContext, id: string, inBook: boolean): boolea
 }
 
 /**
+ * Change the date (F09-REQ-004, F04-REQ-015): the day the moment happened and whether the author named a day or only a
+ * month. Only `occurred_on` and `occurred_precision` change; the words, raw_transcript, captured_at, the book and the
+ * author never do. Refused (false) for a missing or tombstoned row, a quiet-day mark (one per day, D-084, and no page
+ * of its own), a malformed date, and a letter another author wrote (`owner` is this phone's account, or null before
+ * the first sign-in, when every letter here is this phone's user's).
+ */
+export function setOccurred(ctx: RepoContext, id: string, occurredOn: string, precision: OccurredPrecision, owner: string | null): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(occurredOn)) return false;
+  ctx.db.run(
+    `UPDATE entries SET occurred_on = ?, occurred_precision = ?, updated_at = ?
+     WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much' AND (author_id IS NULL OR ? IS NULL OR author_id = ?)`,
+    occurredOn, precision === 'month' ? 'month' : 'day', ctx.now(), id, owner, owner,
+  );
+  return changes(ctx.db) === 1;
+}
+
+/**
  * Sets the words of a voice-only letter, once: only while it is waiting,
  * its raw is still '' and it is not tombstoned. The first transcript becomes
  * the immutable raw (TDD 03 FM-9). False when it already had words.

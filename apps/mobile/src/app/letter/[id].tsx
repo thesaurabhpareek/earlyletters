@@ -4,7 +4,9 @@
  * - Apple Books: reader-owned "Aa" Reading Size in a small sheet, the page changing live
  *   behind it; text never animates its size, it cross-fades (MOTION 5i).
  * - Day One: the recording and its words in one entry; the voice comes first after the text.
- * - Apple Settings inset list for the few actions (Add to book, Make private, Delete).
+ * - Apple Settings inset list for the few actions (Add to book, Make private, Change the date, Delete).
+ * - Change the date (F09 6.2 step 6, F09-REQ-004): own letters only; the date sheet (a day, or a month of age), then the
+ *   letter is filed in its new chapter at once. The words are never touched.
  * - Delete asks first (D-085, "Keep it" is the default), then returns to the Book at once, where the card leaves
  *   its row and "Letter deleted." waits with Undo (S36; TDD 09 A11Y-F03: the person's tap, never a timer).
  *
@@ -21,6 +23,7 @@
  */
 import { Redirect, router, Stack, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
+import { CalendarBlankIcon } from 'phosphor-react-native/src/icons/CalendarBlank';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { PencilSimpleLineIcon } from 'phosphor-react-native/src/icons/PencilSimpleLine';
@@ -57,13 +60,16 @@ import {
   getChild,
   getEntry,
   listDeleted,
+  setEntryDate,
   setEntryInBook,
+  todayISO,
   canTypeWordsFor,
   setTypedWordsForWaitingEntry,
   subscribeTo,
   undeleteEntry,
   type Child,
   type Entry,
+  type OccurredPrecision,
 } from '@/lib/store';
 import { useReducedMotion } from '@/lib/motion';
 import { ROUTES, canCarry, type Move } from '@/lib/transitions.logic';
@@ -72,7 +78,9 @@ import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
-import { provenanceOf, shortDateline } from '@/components/book/chapters';
+import { provenanceOf } from '@/components/book/chapters';
+import { entryDateline, movedToast } from '@/components/book/date-change.logic';
+import { DateSheet } from '@/components/book/date-sheet';
 import { exactViewAvailable, provenanceLine as provenanceLineOf } from '@/lib/provenance';
 import { ConfirmSheet } from '@/components/book/confirm-sheet';
 import { CARD_TEXT_GAP, CARD_TEXT_INSET, PrivateChip, excerptOf } from '@/components/book/letter-card';
@@ -148,8 +156,10 @@ function Letter() {
   const words = letterWords(entry);
   const text = showOriginal ? entry.rawTranscript : note ? excerpt : entry.finalText;
   const shownNote = note && !showOriginal;
-  const dateline = shortDateline(child, entry.occurredOn);
-  const spokenDateline = letterDateline(child, entry.occurredOn);
+  // A letter dated to a month shows the month only, on the card and here alike (F09-REQ-003).
+  const monthOnly = entry.occurredPrecision === 'month';
+  const dateline = entryDateline(child, entry);
+  const spokenDateline = monthOnly ? dateline : letterDateline(child, entry.occurredOn);
   const openingFor: Opening = (focus) => (
     <OpeningBlock focusRef={focus} dateline={dateline} spokenDateline={spokenDateline} text={text} note={shownNote} scale={scale} swapKey={`${size}:${showOriginal}`} />
   );
@@ -297,6 +307,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   );
   const [sizeOpen, setSizeOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [dateOpen, setDateOpen] = useState(false);
   // "Write the words" sheet: open state lives here, with the sheet, so it outlives the words card (below).
   const [writing, setWriting] = useState(false);
   // Words that arrived after the letter was saved and have not been read back yet (D-086).
@@ -337,6 +348,16 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
     haptic('tap');
     onEntry({ ...entry, inBook: next });
     toast.show({ message: next ? fill(copy.review.destination.addedToast, { child: child.name }) : copy.review.destination.privateToast });
+  };
+
+  // Change the date (F09-REQ-004): one local write (and, with sync on, one outbox op); the page follows the store, so
+  // its dateline changes in place and the Book behind files the letter in its new chapter.
+  const changeDate = (next: { occurredOn: string; precision: OccurredPrecision }) => {
+    setDateOpen(false);
+    if (!setEntryDate(entry.id, next.occurredOn, next.precision)) return toast.show({ message: copy.errors.generic.title });
+    haptic('tap');
+    onEntry({ ...entry, occurredOn: next.occurredOn, occurredPrecision: next.precision });
+    toast.show({ message: movedToast(child, next.occurredOn) });
   };
 
   // Delete (S35, S36): committed at once (the tombstone; with sync on, the outbox op), then back to the Book, where
@@ -442,6 +463,12 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
                 onPress={toggleInBook}
               />
               <ListRow
+                title={copy.book.entryMenu.changeDate}
+                leading={<CalendarBlankIcon size={20} color={c.text} />}
+                onPress={() => setDateOpen(true)}
+                testID="letter.changeDate"
+              />
+              <ListRow
                 title={copy.book.entryMenu.deleteButton}
                 variant="destructive"
                 leading={<TrashIcon size={20} color={c.destructive} />}
@@ -470,6 +497,10 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         onKeep={() => setConfirmOpen(false)}
         onConfirm={remove}
       />
+
+      {own && (
+        <DateSheet open={dateOpen} child={child} entry={entry} todayISO={todayISO()} onClose={() => setDateOpen(false)} onSave={changeDate} />
+      )}
 
       <ReadingSizeSheet visible={sizeOpen} value={size} onChange={onSize} onClose={() => setSizeOpen(false)} />
     </View>
