@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # Release notes: v1.0.0 and the template for later releases
 
 Applies to: App Store "What's New in This Version" (limit 4000 characters) and Google Play "What's new" (limit 500 characters per language). Release tag format from `CLAUDE.md`: `ios-v<major>.<minor>.<patch>`. Version in `apps/mobile/app.config.ts` is `1.0.0`; `eas.json` has `appVersionSource: remote` and `autoIncrement: true`, so the build number is assigned by EAS, not by hand.
