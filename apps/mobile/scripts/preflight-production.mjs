@@ -151,7 +151,7 @@ export function productionChecks(input) {
   check(
     packManifestPublished(input.publishedSource ?? ''),
     'a signed pack manifest is published in supabase/functions/config/published.ts (whether the host serves it is not checked here: `npx tsx scripts/packs/publish.ts verify`)',
-    'No signed pack manifest has been published (supabase/functions/config/published.ts PACK_MANIFEST is null): the store build would download no English pack, so recordings get no words (D-115, SR-C-01). Run `npx tsx scripts/packs/publish.ts release --key-file <signing.env> --models upstream`, then `upload` (docs/ops/PACKS_HOSTING.md steps 5 to 7).',
+    'No signed pack manifest has been published (supabase/functions/config/published.ts is missing, or its PACK_MANIFEST is not a non-empty string): the store build would download no English pack, so recordings get no words (D-115, SR-C-01). Run `npx tsx scripts/packs/publish.ts release --key-file <signing.env> --models upstream`, then `upload`, and commit published.ts (docs/ops/PACKS_HOSTING.md steps 5 to 8).',
     'pack-manifest',
   );
 

@@ -73,11 +73,14 @@ export function signingKeys(keysSource) {
 }
 
 /**
- * True when supabase/functions/config/published.ts holds a published signed pack manifest (scripts/packs/publish.ts
- * writes it). While PACK_MANIFEST is null the host has nothing to serve, so no speech model or pack downloads (D-115).
+ * True only when supabase/functions/config/published.ts assigns PACK_MANIFEST a non-empty string literal (what
+ * scripts/packs/lib.ts writes: `export const PACK_MANIFEST: string | null = ${JSON.stringify(manifest)};`). Fails
+ * closed: a missing or empty file, null in any formatting, undefined, an empty string or anything it cannot read is
+ * "not published", because then the host has nothing to serve and no speech model or pack downloads (D-115).
  */
 export function packManifestPublished(publishedSource) {
-  return !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(publishedSource);
+  const code = String(publishedSource ?? '').replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  return /\bexport\s+const\s+PACK_MANIFEST\s*(?::[^=]*)?=\s*(["'`])(?:\\.|(?!\1)[^\\])+\1/.test(code);
 }
 
 /** True when an evaluated ios.privacyManifests says tracking false and declares at least one required-reason category. */
