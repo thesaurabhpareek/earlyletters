@@ -212,6 +212,19 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Record:** S1-15 row: download time on Wi-Fi, hash seconds, resume worked (yes or no).
 - **Update:** ADR 0016 Risks (URLSession Range across Hugging Face redirects; Hermes hash time), ADR 0015 section 9.
 
+### S1-15a TF1-DL First-run download card lines, stalls and resume (PR #541, TestFlight build 1 "Getting ready, 0%")
+- **Steps:** Fresh install, finish first run to "The book is open.", tap Download on Wi-Fi, keep the card on screen.
+  1. On a normal Wi-Fi network: watch the card from the tap to the end.
+  2. Turn Wi-Fi off mid-download (cellular only, "Use mobile data" off).
+  3. Turn a VPN on (any), on Wi-Fi, before tapping (a second fresh install, or after Remove in Storage). Note what the card says.
+  4. Mid-download, send the app to the background for 2 minutes, then return.
+  5. Slow Wi-Fi under 2 Mbps (Network Link Conditioner "3G" or a 1 Mbps profile on the router): let it run at least 10 minutes.
+  6. Settings > Storage, cancel or remove the model mid-download, then go back to a screen with the card or Review.
+  7. Book, Review (a recording waiting for its words) and Settings > Recordings while the model downloads or waits: the same rule applies there.
+- **Expected:** The card never shows "0%". Before bytes move: "Waiting to start", then "Downloading", then "Getting ready, n%" with a bar that moves. "Checking the download" and "Finishing" at the end, then "On this phone, 575 MB". Wi-Fi off: "Waits for Wi-Fi, 575 MB", no bar, no percent; it carries on by itself when Wi-Fi returns. Background and return: it carries on from where it was (the percent does not drop to the start). Slow Wi-Fi: the percent keeps moving and the download finishes, however long it takes. Any stop: a calm line with Try again ("Paused" after a cancel); after several automatic tries on a link that keeps stopping, "The download stopped. Tap Try again when the Wi-Fi is steady." VoiceOver announces a line that offers Try again once. Book, Review and Settings show their wait line, never 0%.
+- **Record:** S1-15a row: each step's lines as seen (no letter text). Step 3: did the card say "Waits for Wi-Fi" on Wi-Fi with a VPN (yes or no: confirms or clears the expo-network `UNKNOWN` hypothesis). Step 5: link speed and total minutes.
+- **Update:** If step 3 says yes: open an issue for `packs/expo-adapter.ts` `toConnection` (a Wi-Fi path that also uses an "other" interface reads `UNKNOWN`). If step 5 fails: STALL_MS and WASTED_CHUNKS_PER_RUN in `packs/engine.ts`.
+
 ### S1-16 Language packs on demand (decision 15, D-065)
 - **Steps:** Settings > Spoken language: add Portuguese. Then Storage: only `text-rules.pt` is new. Add Hindi as the primary: its text pack plus its speech model (the Hindi small model once hosted, else the shared one). Turn on the `packDownloads` kill switch in the staging config (RELEASE.md 9) and add French. Remove a pack in Storage.
 - **Expected:** Choosing a language downloads that language and nothing else; status words match the state (downloading, on this phone, waiting for Wi-Fi, paused); removing a pack keeps letters; English text rules are bundled (no download).
@@ -266,7 +279,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - When a row opens its card, note where focus goes: the card opens inside the letter, under the mark's line, and nothing moves focus to it (lens B B7). Record whether the card's "Put it back" can be reached without hunting.
   - Keep, then listen: "Kept in Month N. Added to Asha's book." is said once, in full, before the Book; the Book comes as the sentence ends (at least 3 s, at most about 8 s). Record whether iOS's `announcementFinished` fires for that sentence word for word: if every save waits the full 8 s, it does not (S6, lens A A3).
   - Start "Hear it", then Keep while it plays: the same sentence is said at once, not held until the Book (S6, lens B B4).
-- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review:
+- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review, on a production-profile build only (bundle id `com.earlyletters.scribe`): development and preview builds count as alpha and never open the Keep sheet before letter 101 (S1-37), so this cannot run on build 2; that build exists after Mon 9 Nov at the earliest. Mark it not run, not failed, until then:
   - Focus lands on "Keep adding to Asha's book". At the default text size, swiping back reaches the held letter, which sits above the title. At accessibility sizes the held letter follows the words, so swiping forward reaches it after the body (#370). Either way it is one element ("To Asha, Month 7", its words, "From Mama", "Waiting"). Nothing of Review behind the sheet is reachable. The escape gesture returns to the letter in Review with nothing held or kept.
   - "Keep it here for now" closes the sheet and Review; Tonight's card for that letter reads "Waiting to be kept." and "Keep it".
   - Double-tap "Keep it here for now" quickly: you stay on Tonight, with one card for the letter. The second tap must not land on the tab bar under the sheet's bottom edge. On the web it lands on the Book tab. On iOS the sheet's dismiss animation probably swallows it, but that is unverified, so record where the second tap goes (#312 lens B delta).
@@ -275,6 +288,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
 - **V-09 Read together:** Previous, Next and Close reachable; playback state announced.
 - **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable. P6a (S40, S46, S47): "If you are struggling" and Licenses push their own pages; each support line reads its name and how to reach it and starts a call; the early-version note is read once, after Version; Add a child reads its heading first, the waiting "Add this book" as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to the empty field; the due-date card's "Set the birthday" and "Hide" are reachable, and "Hide this book" opens a plain confirm.
+  - Back from Settings (TestFlight build 1, "No cross or back button in settings", PR #546): open Settings from each entry point: the Book gear, a content-block link to Settings, and the child switcher's Add a child (which opens straight on that page). Each time, the first screen shows the chevron at the top left in the accent colour, labelled "Book" from the Book tab (else the tab it came from, or "Back"), and VoiceOver reads it as "Book, back, button". Go back three ways from that screen: the button, the left-edge swipe, and the VoiceOver two-finger Z (escape). Each returns to where Settings was opened. Inner pages (Appearance, Reminders) still go back to Settings. Repeat with Reduce Motion on and at AX5. Record any entry point or way back that fails; the two-finger Z on the Settings home is the one no unit test proves (`apps/mobile/test/settings-back.test.ts` pins the button).
 - **Expected:** All ten pass with no unlabelled element, no trapped focus and no truncated text at AX5 (letter text never capped, D-027).
 - **Record:** S1-23 rows V-01 to V-10.
 - **Update:** TDD 09 section 2 findings table (status), `docs/design/COMPONENT_LIBRARY.md` for component fixes.
@@ -426,7 +440,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** F09-REQ-016 and F09-REQ-024 in `docs/prd/v2/features/F09-book.md` (WP-F09-09 status) where a result differs.
 
 ### S1-33 The Keep sheet's buttons at large text (S22; #370, P6a critics' S1 and the #370 lenses)
-- **Needs:** a build where the next letter's Keep needs Plus: a phone past its free letters, without Plus.
+- **Needs:** a production-profile build only (bundle id `com.earlyletters.scribe`): development and preview builds count as alpha and never open the Keep sheet before letter 101 (S1-37), so this cannot run on build 2; that build exists after Mon 9 Nov at the earliest. Mark it not run, not failed, until then. On that build, a phone past its free letters, without Plus.
 - **Steps:** At AX3, then at AX5, on an SE 3 and on a 6.1-inch phone, open the Keep sheet from a letter's Keep in Review. Do it twice on each: once online, and once with Apple's store view unreachable (airplane mode, then tap See Plus so the sheet shows its offline note).
 - **Expected:**
   - "See Plus" and "Keep it here for now" are both fully on screen at the bottom and tappable, with nothing else pinned with them.
@@ -481,6 +495,33 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (h) While the request is executing the screen reads "Deletion in progress" and "Your account is being deleted now. This can take up to a day.", with "Sign out of this phone" (no alert) or, signed out, "Sign in": never a screen without a button. After the purge the phone opens on the welcome ("Begin the book" works) once 48 hours have passed since the date; until then a signed-out phone still shows the date and Sign in. With the clock set three days past the date and the phone signed out: the welcome.
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
+
+### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
+- **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
+- **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:
+  - (a) Type about 300 words as fast as you can, without looking at the screen for the last 100. Then read them back.
+  - (b) Misspell a word ("teh") and let autocorrect replace it with the space bar; misspell another and tap the underlined word to undo the correction.
+  - (c) Tap a QuickType suggestion mid-sentence, three times.
+  - (d) Switch to the Hindi keyboard (the globe key) and type a sentence, including a transliterated or multi-stage word if the layout offers it; switch back.
+  - (e) Tap the dictation key and say two sentences; stop dictation.
+  - (f) Paste a paragraph copied from Notes.
+  - (g) Drag the caret (press and hold the space bar) into the middle of the text, type a word there, and add a new line there with Return.
+  - (h) Send the app to the background mid-sentence, wait 30 s, return, and keep typing. Then close Write and open the draft again from Tonight.
+  - (i) Repeat (a) and (g) at AX5 text size.
+  - (j) The last keystrokes on every way out, four times, each on a fresh letter: type a sentence, and within half a second of the last key (no pause) do one of: tap Close; tap "Add to Asha's book"; tap "Keep private"; swipe the sheet down. Then reopen what was written (the draft from Tonight after Close or the swipe; the letter in the Book or in the private letters after a destination) and compare it word for word with what was typed.
+  - (k) First open: force-quit the app, reopen it, and open Write from Tonight as the first thing (do not touch the screen while the sheet rises). Repeat from Review with a recording (?draftId), and once at AX5.
+- **Expected:** no character is lost, doubled or reordered in any step; the caret never jumps (not to the end, not to the start) except where the person moves it; autocorrect, its undo bubble, QuickType, Hindi composition and dictation all behave as in Apple Notes; Return always adds a new line, never sends or closes; the line being written and the caret stay in view above the keyboard while writing on at the end; "Add to Asha's book" and "Keep private" both sit fully above the keyboard and QuickType bar; "Saved on this phone" appears after a pause; after (h) the words come back exactly as typed, the caret at the end; in (j) every word typed, the last one included, is there after each of the four ways out; in (k) the keyboard comes up by itself as the sheet settles (no tap needed, no visible delay), and on that very first open both "Add to Asha's book" and "Keep private" sit fully above the keyboard and its QuickType bar. Typing never feels slower than Notes on the SE 3.
+- **Record:** S1-36 rows (a) to (k): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
+- **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
+
+### S1-37 No letter limit in alpha (founder decision, 1 Nov 2026; PL-1, S1; `apps/mobile/src/lib/billing/alpha.ts`)
+- **Needs:** a TestFlight build of the `testflight` or `preview` profile (`.preview` bundle id) on a fresh install, and, after Mon 9 Nov, a TestFlight build of the `production` profile.
+- **Steps:** (a) Alpha build: on the Welcome screen read the line under the body. Set up Asha's book, then keep three letters, then a fourth (speak one, type the others), each from Review with words on screen. Open Settings and read the Plan row, then open Plan. (b) Production profile build: the same steps.
+- **Expected:**
+  - (a) Welcome, the Settings Plan row and the Plan screen say "Plus is not part of this test. Every letter is free while you test." No "See what Plus adds", no "Redeem a code". Every letter is kept and lands in the Book. No "That was your second free letter." toast and no Keep sheet.
+  - (b) Unchanged from today: Welcome says "Your first two letters are free.", the second letter shows the second-free toast, and the third letter's Keep opens the Keep sheet with See Plus.
+  - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
+- **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).

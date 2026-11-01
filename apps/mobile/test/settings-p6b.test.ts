@@ -98,7 +98,7 @@ describe('[S41] Plan', () => {
     }
     // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
-    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise\}>/);
+    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise \?\? undefined\}>/);
     expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
@@ -145,7 +145,7 @@ describe('[S41] Plan', () => {
   });
 
   it('types no price, trial length or countdown anywhere it can show (D-083)', () => {
-    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise]);
+    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise ?? '']);
     for (const l of [...lines, p.payment, p.restoreHelp, p.manageHelp, p.redeemHelp]) expect(l, l).not.toMatch(/\$|\bprice\b|\d+\s*(days?|months?) (free|left)/i);
   });
 });
