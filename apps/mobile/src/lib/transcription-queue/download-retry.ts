@@ -87,15 +87,18 @@ export class DownloadRetries<L extends string> {
   /** A download for this language failed. Schedules the next automatic retry and returns its delay, or null for none. */
   failed(language: L, reason: string): number | null {
     if (!isRetryableDownloadFailure(reason)) {
-      this.clear(language);
+      this.drop(language);
       return null;
     }
+    // Once the cap is hit, nothing schedules a stopped download again, whoever ran it (Review, a waiting letter, a
+    // language pick), until the person taps (asked) or a run succeeds.
+    if (reason === 'download_failed' && this.gaveUpOn.has(language)) return null;
     const now = this.ports.now();
     const prev = this.entries.get(language);
     const stopped = reason === 'download_failed' ? (prev?.stopped ?? 0) + 1 : 0;
     if (stopped > MAX_STOPPED_RUNS) {
       // The first failure is the person's own run; then MAX_STOPPED_RUNS automatic ones. Now it waits for a tap.
-      this.clear(language);
+      this.drop(language);
       this.gaveUpOn.add(language);
       return null;
     }
@@ -130,8 +133,14 @@ export class DownloadRetries<L extends string> {
     this.clear(language);
   }
 
+  /** Ends the chain and forgets a give-up (a success, a tap, the files removed, the queue stopped). */
   clear(language: L): void {
     this.gaveUpOn.delete(language);
+    this.drop(language);
+  }
+
+  /** Ends the scheduled chain only; a give-up stays until a tap or a success. */
+  private drop(language: L): void {
     const e = this.entries.get(language);
     if (e?.timer != null) this.ports.clearTimer(e.timer);
     this.entries.delete(language);

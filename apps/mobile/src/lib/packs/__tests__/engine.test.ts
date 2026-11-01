@@ -12,7 +12,7 @@ import * as fs from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { generateSigningKey, base64ToBytes, parsePackManifest, signDocument, type PackManifest } from '@scribe/api';
 import { ENDPOINT_CLASSES } from '@scribe/api';
-import { CELLULAR_FREE_BYTES, PackManager, type PackEnv, type PackFs, type PackHttp, type PackProgress } from '../engine';
+import { CELLULAR_FREE_BYTES, WASTED_CHUNKS_PER_RUN, PackManager, type PackEnv, type PackFs, type PackHttp, type PackProgress } from '../engine';
 import { SignedDocumentClient } from '../../remote/documents';
 import { MemoryDisk, MemoryFs, MemoryHttp, recordCalls, treeOf } from './memory-ports';
 import { bytesOf, CrashError, FakeNetwork, LocalHttp, MemoryKv, NodeFs, sha256, startRangeServer, tempRoot, type CrashPlan, type ServedFile } from './node-ports';
@@ -271,10 +271,18 @@ describe('a stalled request (TF1-DL, PR #541 reviews)', () => {
   });
 
   it('[TF1-DL] stops a run once stalled requests have lost two chunks of bytes, so a bad link never eats data', async () => {
-    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(5000) };
+    // Two mirrors: the attempt limit is maxAttempts x 3 hosts = 18 requests, so only the bytes cap can stop it sooner.
+    const pt: PackSpec = {
+      id: 'text-rules.pt',
+      version: 1,
+      body: bytesOf(5000),
+      mirrors: ['https://mirror-a.test/text-rules.pt/1/file.bin', 'https://mirror-b.test/text-rules.pt/1/file.bin'],
+    };
     let fetched = 0;
+    let calls = 0;
     const http: PackHttp = {
       async downloadRange(_url, _dest, start, end, opts) {
+        calls++;
         // Most of each request arrives, then it goes quiet: the bytes are lost with the request.
         const n = Math.floor((end - start + 1) * 0.9);
         fetched += n;
@@ -284,7 +292,11 @@ describe('a stalled request (TF1-DL, PR #541 reviews)', () => {
     };
     const r = await makeManager({ http, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt');
     expect(r).toEqual({ ok: false, reason: 'download_failed' });
-    expect(fetched).toBeLessThanOrEqual(3 * CHUNK);
+    const attemptLimit = ENDPOINT_CLASSES.pack_file.maxAttempts * 3;
+    expect(calls).toBeLessThan(attemptLimit); // stopped by the bytes cap, not the attempt limit
+    // At most WASTED_CHUNKS_PER_RUN chunks lost, plus the one request that crossed the line.
+    expect(fetched).toBeLessThanOrEqual((WASTED_CHUNKS_PER_RUN + 1) * CHUNK);
+    expect(fetched).toBeGreaterThan(WASTED_CHUNKS_PER_RUN * CHUNK);
   });
 
   it('[TF1-DL] still stops at once when the caller cancels', async () => {

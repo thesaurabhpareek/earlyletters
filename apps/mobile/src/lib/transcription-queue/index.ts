@@ -257,6 +257,9 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
  */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; automatic?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
+  // After the automatic tries stopped on a link that kept failing, only a tap (startSpeechDownload, which calls
+  // retries.asked first) starts it again: opening Review or a waiting letter does not.
+  if (retries.gaveUp(language)) return;
   const { automatic, ...rest } = opts;
   const r = await ensureSpeechFor(language, automatic ? { ...rest, allowCellularOnce: false, wifiOnly: true } : rest).catch(
     () => ({ ok: false as const, reason: 'download_failed' }),
