@@ -10,8 +10,10 @@
  *   provider.ts headers and body link, src/lib/notify/unsubscribe.ts `unsubscribeContact`.
  * - The IP address is held in memory only when someone joins or leaves the list (the rate limiters in handler.ts and
  *   unsubscribe-handler.ts, windows of 10 minutes at most, rate-limit.ts), and never stored or logged (log.ts).
- * - No cookies, no browser storage, no analytics (NEXT_PUBLIC_ANALYTICS is not set and WebAnalytics is not mounted),
- *   nothing loaded from another origin (Content-Security-Policy in next.config.ts).
+ * - No cookies, no analytics (NEXT_PUBLIC_ANALYTICS is not set and WebAnalytics is not mounted), nothing loaded from
+ *   another origin (Content-Security-Policy in next.config.ts). The one thing kept in the browser is the sound choice:
+ *   "on" or "off" under the key `el-ambient-sound`, written only when the visitor presses the sound button
+ *   (src/film/sound/AmbientSound.tsx `onToggle`), never sent anywhere. The page says so; test/legal.test.ts pins both.
  * - The services: Vercel (hosting, apps/web/vercel.json) and Resend (the list, the emails we send, and mail to the
  *   contact address: Resend receiving is enabled for earlyletters.com, apex MX at priority 9, per the brand review
  *   of 16 Oct 2026). Nothing else.
@@ -36,7 +38,7 @@ export function privacyCopy(publisher: Publisher): LegalPageCopy {
     metaTitle: `${NAME} Privacy Policy`,
     metaDescription: `How the ${NAME} website and its email list handle your information.`,
     title: 'Privacy Policy',
-    lastUpdated: '2026-10-16',
+    lastUpdated: '2026-11-01',
     intro: [
       `This policy covers the ${NAME} website, earlyletters.com, and its email list. The ${NAME} app is not out yet. It will have its own privacy policy when it launches.`,
     ],
@@ -69,6 +71,7 @@ export function privacyCopy(publisher: Publisher): LegalPageCopy {
               'We do not use analytics, advertising or tracking tools, and the website loads nothing from other sites.',
             ],
           },
+          'If you press the sound button, your browser remembers whether sound is on. It stays in your browser and is never sent to us.',
           'We do not track you, so a Do Not Track signal changes nothing here.',
         ],
       },

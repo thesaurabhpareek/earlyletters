@@ -61,13 +61,12 @@ If a recording or a library is ever added later, it needs its own licence note h
 - Reduced motion: never starts on its own, whatever was stored. The visitor presses the button.
 - The choice is remembered in `localStorage` (`el-ambient-sound`, the single value "on" or "off"), inside try/catch. It
   stays on the visitor's device and is never sent anywhere. The site's rule until now was "no browser storage"
-  (`test/legal.test.ts`, comment in `privacy-copy.ts`); the Privacy page itself says only "We do not use cookies",
-  which stays true. `legal.test.ts` now allows this one file and nothing else. The value is written only when a visitor
-  presses the sound button (`AmbientSound.tsx`, the two `writeChoice` calls in `onToggle`); a visitor who never presses
-  it stores nothing. The council recommends that the Privacy page say so in one sentence (PRV-3 has the wording); the
-  page is legal text, so adding it is the founder's decision, with counsel to confirm whether a notice is needed at all.
-  The comment at the top of `privacy-copy.ts` still says "no browser storage"; it is out of date and goes with that
-  change. To drop the storage, make `readChoice`/`writeChoice` no-ops and remove the allowance.
+  (`test/legal.test.ts`). `legal.test.ts` now allows this one file and nothing else. The value is written only when a
+  visitor presses the sound button (`AmbientSound.tsx`, the two `writeChoice` calls in `onToggle`); a visitor who never
+  presses it stores nothing. The Privacy page says so in one sentence, with the wording from the executive council
+  (PRV-3); the founder approved that sentence, and counsel must confirm it (the page is legal text, D-125). The test
+  "the Privacy page says what the code does" pins the sentence to the code.
+  To drop the storage, make `readChoice`/`writeChoice` no-ops and remove the allowance.
 - A hidden tab pauses it (fade out, then `suspend`); leaving the page closes the context; muting fades out, stops the
   oscillators and closes the context.
 - Only the film home page (`Film.tsx`) mounts it. `/privacy`, `/terms` and the sign-up pages never do.
