@@ -426,6 +426,19 @@ describe('[D-133] a kept note counts like a letter', () => {
   const OTHER_PARENT = 'acct-papa';
   const signIn = (id: string) => f.db.run("INSERT OR REPLACE INTO settings (key, value) VALUES ('sync.ownerId', ?)", id);
 
+  it('a note kept before this change counts after the upgrade: the next launch raises the mirror and the Keychain', async () => {
+    // Before D-133 a kept note was saved but never recorded: the mirror and the Keychain still read 0 for it.
+    entries.upsert(f.ctx, letter({ id: 'old-note', kind: 'note', finalText: 'Asha, you hummed at bath time.' }), defaults);
+    const kc = fakeKeychain();
+    configureLedgerStorage(kc.storage);
+    expect(ledger.readState(f.ctx).n).toBe(0);
+    expect(await syncLedger(dbAdapter())).toBe(1); // launch after the upgrade
+    expect(ledger.readState(f.ctx).n).toBe(1);
+    expect(kc.count()).toBe(1);
+    expect(await pressKeep(draft().id, FREE)).toBe('kept'); // the second free letter
+    expect(await pressKeep(draft().id, FREE)).toBe('held'); // the old note was the first
+  });
+
   it('a note kept from Review adds one, in the save transaction, and is in the letters present', () => {
     const d = noteDraft();
     keep(d.id);
