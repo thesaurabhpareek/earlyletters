@@ -12,6 +12,8 @@ Time: about 75 minutes of clicking for steps 1 to 8, plus Apple's waiting times 
 
 The alpha builds use the bundle id `com.earlyletters.scribe.preview` and its own App Store Connect app record ("Early Letters Preview", `docs/release/TESTFLIGHT.md` step 2). Because products cannot be repeated, Plus with the real product ids loads only in a TestFlight build of the `production` profile (bundle id `com.earlyletters.scribe`), which exists after Mon 9 Nov at the earliest (D-124 item 1 keeps `eas.json` unedited from Tue 3 Nov to Mon 9 Nov and any other production change waits for the go/no-go). Until then every Plus row runs against the StoreKit configuration file in Xcode and says "StoreKit file, not sandbox". A development build on the production bundle id is not a route: it would need an `eas.json` change, and nobody has shown it completes a sandbox purchase before the first production upload.
 
+**State read in App Store Connect on 1 Nov 2026** (by the founder): on "Early Letters: Memory Book" (Apple ID 6829377245), group `Plus` (Apple ID 22533462) holds `plus.monthly` (Apple ID 6829377487) and `plus.annual` (Apple ID 6829377668). Both are on level 1, with free introductory offers of 1 month and 2 months, availability United States only, and Family Sharing on. **Not set yet:** the Billing Grace Period (step 5), which waits for the founder's yes. Rows of the table below that this paragraph does not name (prices, display names, descriptions) were not part of that reading.
+
 | | Value | Must match |
 |---|---|---|
 | Subscription group | Reference name `Plus`, display name `Plus` | `APP_STORE_PLUS.group` in `packages/content/src/pricing.ts`; `apps/mobile/storekit/EarlyLetters.storekit` |
@@ -74,7 +76,7 @@ For each subscription: **V** (Set up introductory offers for auto-renewable subs
 1. **Apps** > the app > sidebar **Subscriptions** > the `Plus` group > the subscription.
 2. In **Subscription Prices**, click **View all Subscription pricing**, then **Set up Introductory Offer**.
 3. Select **United States**, click **Next**.
-4. Start date today, then the end date; click **Next**. Starting today begins the offer at once. **U** whether you may leave the end date open; if the screen needs one, pick the furthest date it allows and diary a check a month before it.
+4. Start date today, then the end date: choose **No End Date**; click **Next**. Starting today begins the offer at once. **V** (App Store Connect, 1 Nov 2026): the screen offers **No End Date**, so no end date or diary check is needed.
 5. Offer type **Free**; duration **1 Month** for `plus.monthly`, **2 Months** for `plus.annual`. Click **Next**, review, click **Confirm**.
 
 Apple's facts, **V** (same page): free-trial durations are 3 days, 1 or 2 weeks, 1, 2, 3 or 6 months, or 1 year, whatever the subscription's own length (so 1 and 2 months both exist); each person can use one introductory offer per subscription group, so trying monthly and then annual gives no second trial; an offer cannot be edited, only deleted and created again; changes can take up to 1 hour to reach the sandbox.
@@ -82,6 +84,8 @@ Apple's facts, **V** (same page): free-trial durations are 3 days, 1 or 2 weeks,
 The app never says "free" itself: Apple's sheet shows the trial only to people who are eligible (D-083).
 
 ## Step 5. Billing Grace Period
+
+**Not set on 1 Nov 2026: it waits for the founder's yes.** Do not set it before then; the values below are the proposal (D-048).
 
 **V** (Enable Billing Grace Period for auto-renewable subscriptions)
 1. **Apps** > the app > sidebar **Subscriptions**. In the **Billing Grace Period** section, click **Set Up Billing Grace Period**.
@@ -140,6 +144,8 @@ Apple's rule for that submission: "Your first auto-renewable subscription must b
 ## Step 10. Later: the production record
 
 Do not repeat steps 3 to 7 on another record: ids are unique across the account (observed 1 Nov, see the correction at the top), and Plus already lives on the production record. Continue with step 3.11 and step 9 there. The sandbox testers and the test family are account-wide and are reused. **U** whether Apple keeps sandbox purchase history per app.
+
+**Missing for the production upload:** `submit.production` in `apps/mobile/eas.json` has no `ios.ascAppId`; it will be 6829377245 (`docs/ops/RELEASE.md` shows the keys). Under D-124 item 1, `eas.json` is not edited between the freeze (Tue 3 Nov) and the go/no-go (Mon 9 Nov), and any `production` change waits until after the go/no-go. So the production build and the `ascAppId` edit both come after Mon 9 Nov.
 
 ## Step 11. Device run sheet D-1 to D-12 (WP-F14-12, the founder's run)
 
