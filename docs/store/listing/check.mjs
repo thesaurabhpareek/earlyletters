@@ -89,9 +89,7 @@ for (const [path, t] of copy) {
 }
 for (const [path, t] of [['apple.description', a.description], ['play.fullDescription', p.fullDescription]]) {
   const want = `${monthly} a month with a ${mTrial}-month free trial, or ${annual} a year with a ${aTrial}-month free trial`;
-  // The first store build's Apple description (packages/content store.en.ts) names no price: the price comes from App Store Connect.
-  const namesPrice = /\$\d/.test(t);
-  if ((path.startsWith('play') || namesPrice) && !t.includes(want)) fail(`${path}: pricing sentence does not match pricing.ts`);
+  if (!t.includes(want)) fail(`${path}: pricing sentence does not match pricing.ts`);
   if (!/first two letters are free/.test(t)) fail(`${path}: missing "first two letters are free"`);
 }
 

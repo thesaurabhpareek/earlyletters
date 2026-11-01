@@ -354,6 +354,8 @@ export const site = {
     on: 'Sound on',
     off: 'Sound off',
     start: 'Tap to start sound',
+    /** Shown in the footer before the credit lines of music that asks for one (generated from src/film/sound/tracks.ts). */
+    credit: 'Music',
   },
 
   /** The two quiet buttons that move one part of the film at a time. Labels are for screen readers and tooltips. */

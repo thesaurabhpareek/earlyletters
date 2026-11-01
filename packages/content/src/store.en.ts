@@ -36,17 +36,17 @@ export const storeListing = {
   appName: brand.storeName,
   subtitle: brand.subtitle,
   promotionalText:
-    "Talk to your child for a minute and keep it as a letter, in your words and your voice. Every fix is marked. Private by default: never sold, never used for ads.",
+    "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. Read it together for years.",
   keywords: "diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,dictation",
   description: `${brand.name} is the baby memory book you fill by talking.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. ${brand.name} keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
 
-EVERY CHANGE SHOWN
-Your words are written down on your phone. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. You can put any fix back with one tap, and we never rewrite your words.
+IT STAYS IN YOUR WORDS
+Your speech is written down on your phone. ${brand.name} fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
-The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. ${en.trust.voice}
+Each letter you speak keeps its original recording, unchanged. It stays on your phone, and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it. ${en.trust.voice}
 
 READ TOGETHER
 Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.
