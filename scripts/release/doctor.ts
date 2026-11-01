@@ -29,9 +29,11 @@
 //   ASC_API_ISSUER_ID     the issuer id from the same page (a team key; an individual key has no issuer id)
 //   ASC_API_KEY_P8_PATH   path to the downloaded AuthKey_<id>.p8 file (the file stays on your computer)
 //
-// The EAS Update channel row (RS-07, D-091) is a FAIL in every mode, alpha or --store: a build profile that sets
-// `channel` while expo-updates is not a dependency of apps/mobile/package.json stops a non-interactive `eas build`
-// (alpha build 1; #538). It shares its rule and wording with the store preflight (preflight-lib.mjs).
+// The EAS Update channel row (RS-07, D-091): a build profile that sets `channel` while expo-updates is not a
+// dependency of apps/mobile/package.json stops a non-interactive `eas build` (alpha build 1; #538). It shares its rule
+// and wording with the store preflight (preflight-lib.mjs). Every profile but production is a FAIL in every mode.
+// Production, which neither alpha build uses, is a WARN without --store (so the alpha doctor stays at 0 FAIL,
+// TESTFLIGHT.md step 5) and a FAIL with it.
 //
 // Scope: the two alpha builds (docs/release/TESTFLIGHT.md): the `.preview` app record and the `testflight` and
 // `preview` submit profiles. The production row is the store preflight (preflight-production.mjs, RT-REL-02,
@@ -130,7 +132,7 @@ export function productionFindings(results: PreflightResult[] | null, store: boo
   }
   const failed = results.filter((r) => r.level === 'FAIL');
   if (store) {
-    // update-channel is already its own repo row in every mode (updateChannelFindings): not repeated here.
+    // update-channel is already its own repo row (updateChannelFindings, a FAIL with --store): not repeated here.
     const out: Finding[] = results.filter((r) => r.id !== 'update-channel' && (r.level === 'FAIL' || r.level === 'UNVERIFIED' || r.level === 'WARN')).map((r) => ({ level: r.level, area: 'store', message: r.msg }));
     if (!failed.length) out.push({ level: 'PASS', area: 'store', message: `The store preflight (${SCRIPT}) passes every check of the production profile.` });
     return out;
@@ -171,7 +173,7 @@ export function repoFindings(
   } catch {
     add('FAIL', 'apps/mobile/eas.json is not valid JSON.');
   }
-  out.push(...updateChannelFindings(eas, files.mobilePackageJson));
+  out.push(...updateChannelFindings(eas, files.mobilePackageJson, production?.store ?? false));
   for (const profile of ['testflight', 'preview']) {
     const id = eas.submit?.[profile]?.ios?.ascAppId;
     if (id && /^\d+$/.test(String(id))) add('PASS', `eas.json submit.${profile} has ios.ascAppId.`);
@@ -192,12 +194,16 @@ export function repoFindings(
   return out;
 }
 
+/** The build profiles neither alpha build uses: a problem there is a WARN without --store, a FAIL with it. */
+export const STORE_ONLY_PROFILES = ['production'];
+
 /**
- * RS-07, D-091: one FAIL per eas.json build profile that sets an EAS Update `channel` while expo-updates is not a
- * dependency of apps/mobile/package.json, or one PASS. `mobilePackageJson` is the file's text; missing or unreadable
- * counts as no expo-updates, so the check fails closed.
+ * RS-07, D-091: one line per eas.json build profile that sets an EAS Update `channel` while expo-updates is not a
+ * dependency of apps/mobile/package.json, or one PASS. Each line is a FAIL, except a store-only profile (production)
+ * without `store`, which is a WARN. `mobilePackageJson` is the file's text; missing or unreadable counts as no
+ * expo-updates, so the check fails closed.
  */
-export function updateChannelFindings(eas: unknown, mobilePackageJson: string | undefined): Finding[] {
+export function updateChannelFindings(eas: unknown, mobilePackageJson: string | undefined, store = false): Finding[] {
   let pkg: unknown = null;
   try {
     pkg = JSON.parse(mobilePackageJson ?? '');
@@ -206,7 +212,13 @@ export function updateChannelFindings(eas: unknown, mobilePackageJson: string | 
   }
   const { withChannel, profiles } = updateChannelProblems(eas, pkg) as { hasUpdates: boolean; withChannel: string[]; profiles: string[] };
   const build = ((eas as { build?: Record<string, { channel?: unknown }> } | null)?.build ?? {}) as Record<string, { channel?: unknown }>;
-  if (profiles.length) return profiles.map((name) => ({ level: 'FAIL' as const, area: 'repo' as const, message: updateChannelMessage(name, build[name]?.channel) as string }));
+  if (profiles.length) {
+    return profiles.map((name): Finding => {
+      const message = updateChannelMessage(name, build[name]?.channel) as string;
+      if (store || !STORE_ONLY_PROFILES.includes(name)) return { level: 'FAIL', area: 'repo', message };
+      return { level: 'WARN', area: 'repo', message: `${message} Neither alpha build uses "${name}", so this is a WARN here; it is a FAIL with --store and in the store preflight (REL-06/RS-15).` };
+    });
+  }
   return [
     {
       level: 'PASS',
