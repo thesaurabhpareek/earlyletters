@@ -212,6 +212,19 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Record:** S1-15 row: download time on Wi-Fi, hash seconds, resume worked (yes or no).
 - **Update:** ADR 0016 Risks (URLSession Range across Hugging Face redirects; Hermes hash time), ADR 0015 section 9.
 
+### S1-15a TF1-DL First-run download card lines, stalls and resume (PR #541, TestFlight build 1 "Getting ready, 0%")
+- **Steps:** Fresh install, finish first run to "The book is open.", tap Download on Wi-Fi, keep the card on screen.
+  1. On a normal Wi-Fi network: watch the card from the tap to the end.
+  2. Turn Wi-Fi off mid-download (cellular only, "Use mobile data" off).
+  3. Turn a VPN on (any), on Wi-Fi, before tapping (a second fresh install, or after Remove in Storage). Note what the card says.
+  4. Mid-download, send the app to the background for 2 minutes, then return.
+  5. Slow Wi-Fi under 2 Mbps (Network Link Conditioner "3G" or a 1 Mbps profile on the router): let it run at least 10 minutes.
+  6. Settings > Storage, cancel or remove the model mid-download, then go back to a screen with the card or Review.
+  7. Book, Review (a recording waiting for its words) and Settings > Recordings while the model downloads or waits: the same rule applies there.
+- **Expected:** The card never shows "0%". Before bytes move: "Waiting to start", then "Downloading", then "Getting ready, n%" with a bar that moves. "Checking the download" and "Finishing" at the end, then "On this phone, 575 MB". Wi-Fi off: "Waits for Wi-Fi, 575 MB", no bar, no percent; it carries on by itself when Wi-Fi returns. Background and return: it carries on from where it was (the percent does not drop to the start). Slow Wi-Fi: the percent keeps moving and the download finishes, however long it takes. Any stop: a calm line with Try again ("Paused" after a cancel); after several automatic tries on a link that keeps stopping, "The download stopped. Tap Try again when the Wi-Fi is steady." VoiceOver announces a line that offers Try again once. Book, Review and Settings show their wait line, never 0%.
+- **Record:** S1-15a row: each step's lines as seen (no letter text). Step 3: did the card say "Waits for Wi-Fi" on Wi-Fi with a VPN (yes or no: confirms or clears the expo-network `UNKNOWN` hypothesis). Step 5: link speed and total minutes.
+- **Update:** If step 3 says yes: open an issue for `packs/expo-adapter.ts` `toConnection` (a Wi-Fi path that also uses an "other" interface reads `UNKNOWN`). If step 5 fails: STALL_MS and WASTED_CHUNKS_PER_RUN in `packs/engine.ts`.
+
 ### S1-16 Language packs on demand (decision 15, D-065)
 - **Steps:** Settings > Spoken language: add Portuguese. Then Storage: only `text-rules.pt` is new. Add Hindi as the primary: its text pack plus its speech model (the Hindi small model once hosted, else the shared one). Turn on the `packDownloads` kill switch in the staging config (RELEASE.md 9) and add French. Remove a pack in Storage.
 - **Expected:** Choosing a language downloads that language and nothing else; status words match the state (downloading, on this phone, waiting for Wi-Fi, paused); removing a pack keeps letters; English text rules are bundled (no download).

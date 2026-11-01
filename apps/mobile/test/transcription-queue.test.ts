@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { DictionaryTerm } from '@scribe/core';
 import {
@@ -5,6 +7,7 @@ import {
   DOWNLOAD_RETRY_DELAYS_MS,
   DownloadRetries,
   MAX_FULL_RETRIES_PER_DAY,
+  MAX_STOPPED_RUNS,
   downloadRetryDelayMs,
   isRetryableDownloadFailure,
 } from '../src/lib/transcription-queue/download-retry';
@@ -331,5 +334,59 @@ describe('[F05-U29] speech downloads that fail try again by themselves (download
       h.retries.failed('en', 'download_failed');
     }
     expect(h.requests.length).toBeGreaterThan(MAX_FULL_RETRIES_PER_DAY);
+  });
+});
+
+describe('[TF1-DL] a download that keeps stopping waits for a tap after MAX_STOPPED_RUNS automatic runs', () => {
+  it('stops scheduling, says it gave up, and a tap starts the count over', () => {
+    const h = retryHarness();
+    let delay = h.retries.failed('en', 'download_failed'); // the person's own run
+    for (let i = 0; i < MAX_STOPPED_RUNS; i++) {
+      expect(delay).not.toBeNull();
+      h.advance(delay!);
+      delay = h.retries.failed('en', 'download_failed');
+    }
+    expect(h.requests).toHaveLength(MAX_STOPPED_RUNS);
+    expect(delay).toBeNull();
+    expect(h.retries.gaveUp('en')).toBe(true);
+    h.advance(7 * DAY_MS);
+    expect(h.requests).toHaveLength(MAX_STOPPED_RUNS);
+    h.retries.asked('en');
+    expect(h.retries.gaveUp('en')).toBe(false);
+    expect(h.retries.failed('en', 'download_failed')).not.toBeNull();
+  });
+
+  it('after the cap, a run nobody tapped for (Review, a waiting letter) cannot start a new chain; only a tap or a success can', () => {
+    const h = retryHarness();
+    let delay = h.retries.failed('en', 'download_failed');
+    while (delay !== null) {
+      h.advance(delay);
+      delay = h.retries.failed('en', 'download_failed');
+    }
+    expect(h.retries.gaveUp('en')).toBe(true);
+    const runs = h.requests.length;
+    // Review opened, the run failed again: no automatic retry is scheduled, the give-up stays.
+    for (let i = 0; i < 3; i++) expect(h.retries.failed('en', 'download_failed')).toBeNull();
+    // Another failure kind in between (offline, then cancelled) does not reset it either.
+    h.retries.failed('en', 'offline');
+    h.retries.failed('en', 'cancelled');
+    expect(h.retries.failed('en', 'download_failed')).toBeNull();
+    h.advance(7 * DAY_MS);
+    expect(h.requests.length).toBeLessThanOrEqual(runs + 1); // at most the one offline retry, never a new chain
+    expect(h.retries.gaveUp('en')).toBe(true);
+    h.retries.succeeded('en');
+    expect(h.retries.gaveUp('en')).toBe(false);
+  });
+
+  it('the queue does not run a given-up download unless the person taps', () => {
+    const queue = readFileSync(join(__dirname, '..', 'src', 'lib', 'transcription-queue', 'index.ts'), 'utf8');
+    expect(queue).toMatch(/askedDownload\.add\(language\);[\s\S]{0,300}if \(retries\.gaveUp\(language\)\) return;/);
+    expect(queue).toMatch(/retries\.asked\(language\);[^\n]*\n\s*setSpeechDownloadChoice\('yes'\);/);
+  });
+
+  it('other failures in between start the stopped count over', () => {
+    const h = retryHarness();
+    for (let i = 0; i < 3 * MAX_STOPPED_RUNS; i++) h.retries.failed('en', i % 2 ? 'offline' : 'download_failed');
+    expect(h.retries.gaveUp('en')).toBe(false);
   });
 });

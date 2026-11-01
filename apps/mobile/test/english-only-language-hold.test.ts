@@ -50,6 +50,7 @@ vi.mock('../src/lib/models/speech-consent', () => ({
 vi.mock('../src/lib/models/speech-packs', () => ({
   bindSpeechPacks: () => {},
   combineProgress: () => null,
+  speechDownloadMotion: () => ({ progress: null, stage: null }),
   ensureSpeechFor: async (language: string) => {
     fake.downloads.push(language);
     return { ok: true };

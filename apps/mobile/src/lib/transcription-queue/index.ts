@@ -53,6 +53,7 @@ import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelI
 import {
   bindSpeechPacks,
   combineProgress,
+  speechDownloadMotion,
   ensureSpeechFor,
   installedPathsFor,
   onSpeechPacksBound,
@@ -63,6 +64,7 @@ import {
   type SpeechPackHost,
   type SpeechPackProgress,
 } from '../models/speech-packs';
+import type { DownloadStage } from '../models/speech-download.logic';
 import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
@@ -244,6 +246,7 @@ export function retryWords(id: string): void {
  * so it also records a yes. Nothing else may call this on its own.
  */
 export async function startSpeechDownload(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+  retries.asked(language); // a tap starts the automatic retries over
   setSpeechDownloadChoice('yes');
   await requestSpeechFor(language, opts);
 }
@@ -254,6 +257,9 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
  */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; automatic?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
+  // After the automatic tries stopped on a link that kept failing, only a tap (startSpeechDownload, which calls
+  // retries.asked first) starts it again: opening Review or a waiting letter does not.
+  if (retries.gaveUp(language)) return;
   const { automatic, ...rest } = opts;
   const r = await ensureSpeechFor(language, automatic ? { ...rest, allowCellularOnce: false, wifiOnly: true } : rest).catch(
     () => ({ ok: false as const, reason: 'download_failed' }),
@@ -279,19 +285,31 @@ const retries = new DownloadRetries<SpeechLanguage>({
  * `packsCopy.failures[code]` with Try again (`startSpeechDownload`) instead of a wait that never ends.
  */
 export function speechDownloadFailure(language: SpeechLanguage): string | null {
-  if (speechDownloadHold(language) !== null || speechDownloadProgress(language) !== null) return null;
+  if (speechDownloadHold(language) !== null) return null;
+  const motion = speechDownloadMotion(language, packProgress);
+  if (motion.progress !== null || motion.stage !== null) return null;
   const host = speechPackHost();
   for (const id of planFor([language]).packs) {
     if (host.packPath(id)) continue;
     const p = packProgress.get(id);
-    if (p?.phase === 'failed' && p.failure) return p.failure;
+    if (p?.phase === 'failed' && p.failure) {
+      // After MAX_STOPPED_RUNS automatic runs the retries wait for a tap: the line must not say "by itself".
+      return p.failure === 'download_failed' && retries.gaveUp(language) ? 'download_stopped' : p.failure;
+    }
+    // Stopped (Settings, or an abort nobody asked for): nothing restarts it, so it is shown with Try again.
+    if (p?.phase === 'cancelled') return 'cancelled';
   }
   return null;
 }
 
-/** Download progress (0..1) for a language, or null when nothing is downloading. */
+/** Download progress (0..1) for a language, or null when no bytes are moving (queued or waiting is not moving). */
 export function speechDownloadProgress(language: SpeechLanguage): number | null {
   return combineProgress(language, packProgress);
+}
+
+/** When no bytes are moving: a pack waiting its turn, being checked or finishing (said in words, never as 0%). */
+export function speechDownloadStage(language: SpeechLanguage): DownloadStage | null {
+  return speechDownloadMotion(language, packProgress).stage;
 }
 
 /** Why a language's download is waiting, if it is: Wi-Fi, space, offline. */
