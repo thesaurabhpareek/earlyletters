@@ -512,3 +512,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog lines.
 - Revisit when: #424 is picked up after 9 Nov. Karma
+
+### CR-46 Offline renewal grace is 7 days, from C-NFR-004 (1 Nov 2026, Karma via the coordinator, PR #517)
+- Question: how long does a payer keep Plus on this phone after the last verified expiry when StoreKit cannot confirm the renewal (offline: travel, poor signal)? Code kept it 1 day (`plan.logic.ts` `STILL_LISTED_MS`); PRD C-NFR-004 (`docs/prd/C-habits-pricing-settings.md`) says "The last known entitlement is cached for 7 days"; PRD v2 carries C-NFR-004 as "Rev" with no number (RT-SUB-13, FOUNDER_QUEUE T6).
+- Tier and type: T2 (app behaviour under a PRD requirement); clear.
+- Options considered: 1 day (code as it was); 7 days (the C-NFR-004 line); 16 days, to match Apple's Billing Grace Period (D-048).
+- Ruling: 7 days past the last verified expiry. After that, Plus is off for extras: a Keep beyond the free letters holds the letter, never loses it. A fresh StoreKit read that no longer lists the subscription turns Plus off at once; the 7 days never outlive Apple's answer.
+- Why: failing open for a payer is the promise (C-NFR-004, TDD 08 stale-cache rule). One day takes Plus from a paying parent on a weekend trip. Abuse is bounded: purchases stay Apple-only and verified on the device (ADR 0013), so the window only extends a subscription Apple listed at the last read, and only until the next read. 16 days copies a different mechanism: Apple's Billing Grace Period is a payment retry Apple reports with its own end date, which the code already honours (`gracePeriodExpiresAt`); it is not an offline cache.
+- Door: two-way.
+- Way back: change `STILL_LISTED_MS` (one constant) and its pin in `apps/mobile/test/billing-plan.test.ts`.
+- Revisit when: PRD v2 states its own number for C-NFR-004 Rev; or a device check (D-9, AL-09) shows StoreKit dropping a renewed subscription from `currentEntitlements` while offline, in which case the cache rule, not the window, needs work. Karma

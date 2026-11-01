@@ -99,26 +99,30 @@ async function readiness(): Promise<PlanReadiness> {
 /**
  * The decision under keepGateFor, which Review calls (M17: only with words on
  * screen). Call it after the recording is hashed and BEFORE saving. It also
- * heals the ledger (a reinstall or a backup restore). It first waits, briefly,
- * for the first StoreKit read (RT-PAY-17); on timeout it decides from the
- * cached snapshot. On `offer`, the caller opens the Keep sheet and returns
+ * heals the ledger (a reinstall or a backup restore). Only when the answer
+ * would be the Keep sheet does it wait, briefly, for the first StoreKit read
+ * (RT-PAY-17), then decide again; on timeout it decides from the cached
+ * snapshot. A free letter never waits. On `offer`, the caller opens the Keep sheet and returns
  * WITHOUT saving: the draft stays exactly where it is. On `hold` (no read and
  * no snapshot), the caller holds the letter and opens no sheet. Never throws;
  * an unreadable ledger counts as 0, the safe side.
  */
 export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> {
   const allowance = freeLettersAllowance();
-  const ready = readiness(); // runs while the ledger heals
   let n = 0;
   try {
     n = await syncLedger(ledgerDb());
   } catch {
     n = 0;
   }
-  const read = await ready;
-  const decision = decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
-  if (decision.kind === 'offer' && read === 'none') return { decision: { kind: 'hold', reason: 'plan_unread' }, lettersKept: n, allowance };
-  return { decision, lettersKept: n, allowance };
+  const decide = () => decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
+  const first = decide();
+  // Only an answer of "needs Plus" waits for StoreKit: a free letter, or Plus already known, keeps at once.
+  if (first.kind !== 'offer') return { decision: first, lettersKept: n, allowance };
+  const read = await readiness();
+  if (read === 'none') return { decision: { kind: 'hold', reason: 'plan_unread' }, lettersKept: n, allowance };
+  // The read may have landed while waiting (Plus on now): decide again from what StoreKit said.
+  return { decision: decide(), lettersKept: n, allowance };
 }
 
 /**

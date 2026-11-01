@@ -220,34 +220,51 @@ final class OnceResume: @unchecked Sendable {
 /// Finishes every verified transaction Apple delivers and reports a change.
 /// Unverified transactions are ignored and left unfinished (Apple's sample code).
 ///
-/// At start it also walks Transaction.unfinished (RT-PAY-17's launch half, RT-SUB-13):
-/// a purchase, renewal or Ask to Buy approval that arrived while the app was closed, or
-/// one whose finish() never ran (the app was killed mid-purchase), sits there until we
-/// finish it, and Apple redelivers it on every launch. Each verified one is finished;
-/// then one "update" event tells JavaScript to re-read Transaction.currentEntitlements
-/// (plan-store refreshPlan). Only that read grants Plus, and it reads verified
-/// transactions only, so an unverified one never grants anything and stays unfinished.
+/// At start it also walks Transaction.unfinished (RT-OFC-06, RT-SUB-13): a purchase,
+/// renewal or Ask to Buy approval that arrived while the app was closed, or one whose
+/// finish() never ran (the app was killed mid-purchase), stays unfinished until we finish
+/// it. Each verified one is finished; then one "update" event tells JavaScript to re-read
+/// Transaction.currentEntitlements (plan-store refreshPlan). Only that read grants Plus,
+/// and it reads verified transactions only, so an unverified one never grants anything
+/// and stays unfinished.
+///
+/// The two loops overlap on purpose. Apple's documentation for `Transaction.updates`
+/// says unfinished transactions are also delivered there once, right after launch
+/// (developer.apple.com/documentation/storekit/transaction/updates), and the walk is a
+/// belt for a listener that starts late. So each transaction id is finished at most once
+/// per process (`claim`): the walk skips an id the updates loop already took, and the
+/// updates loop skips the finish (never the change report) for an id the walk took. An
+/// update for an id seen before (a refund revokes the same transaction) still reports.
 final class TransactionListener: @unchecked Sendable {
   private let lock = NSLock()
   private var task: Task<Void, Never>?
   private var unfinishedTask: Task<Void, Never>?
+  private var finishedIds = Set<UInt64>()
+
+  /// True the first time an id is claimed in this process: only that caller finishes it.
+  private func claim(_ id: UInt64) -> Bool {
+    lock.lock()
+    defer { lock.unlock() }
+    return finishedIds.insert(id).inserted
+  }
 
   func start(onChange: @escaping (_ purchased: Bool) -> Void) {
     lock.lock()
     defer { lock.unlock() }
     guard task == nil else { return }
-    task = Task.detached(priority: .background) {
+    task = Task.detached(priority: .background) { [weak self] in
       for await result in Transaction.updates {
         guard case .verified(let transaction) = result else { continue }
-        await transaction.finish()
+        if self?.claim(transaction.id) ?? true { await transaction.finish() }
         onChange(Entitlements.isLive(transaction))
       }
     }
-    unfinishedTask = Task.detached(priority: .background) {
+    unfinishedTask = Task.detached(priority: .background) { [weak self] in
       var finishedAny = false
       for await result in Transaction.unfinished {
         if Task.isCancelled { return }
         guard case .verified(let transaction) = result else { continue }
+        guard self?.claim(transaction.id) ?? true else { continue }
         await transaction.finish()
         finishedAny = true
       }

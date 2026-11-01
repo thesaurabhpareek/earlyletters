@@ -47,7 +47,7 @@ Each row carries Karma's recommendation. Nothing here is settled until you answe
 | T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
 | T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
 | T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
-| T6 | Before the go/no-go | A payer whose renewal falls while offline keeps Plus for at most 1 day in code, against 7 days in the PRD (RT-SUB-13, C-NFR-004). This is technical, so Karma rules on it after reading the PRD line; it is listed here only so you see it | 0 | RT-SUB-13 |
+| T6 | Settled, nothing for you to do | Settled by CR-46 (1 Nov): a payer whose renewal falls while offline keeps Plus for 7 days past the last verified expiry, as C-NFR-004 says; after that the letter is held, never lost (RT-SUB-13). The code change is PR #517 | 0 | RT-SUB-13 |
 
 ## 1. Wave 0: this week, smallest first
 

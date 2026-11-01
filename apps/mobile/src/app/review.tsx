@@ -109,6 +109,8 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { billingCopy } from '@scribe/content';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
@@ -212,6 +214,7 @@ export default function Review() {
   const [saveFailed, setSaveFailed] = useState(false);
   // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
   const [gate, setGate] = useState<KeepGate | null>(null);
+  const toast = useToast();
   // The calm line on the saved card after the second free letter (once: the count passes it once).
   const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -448,8 +451,10 @@ export default function Review() {
     if (g.decision.kind === 'hold') {
       // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PAY-17): hold the letter exactly as
       // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
-      // it waiting; by the next Keep the read has landed and the gate decides.
+      // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
+      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses.
       holdOnce(holding, () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+      toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote });
       if (router.canGoBack()) router.back();
       else router.replace('/');
       return true;
