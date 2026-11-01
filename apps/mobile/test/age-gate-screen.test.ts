@@ -40,3 +40,29 @@ describe('[S01] [S02] Dynamic Type: every control on the gate stays reachable', 
     expect(gate).not.toMatch(/maxFontSizeMultiplier/);
   });
 });
+
+describe('[F01-REQ-002] [SR-C-04] the screen writes a No only from the confirm step (F01-U01)', () => {
+  const fn = (name: string) => {
+    const at = screen.indexOf(`const ${name} = `);
+    expect(at, `${name} exists`).toBeGreaterThan(0);
+    return screen.slice(at, screen.indexOf('\n  };', at));
+  };
+
+  it('Continue never stores a No: it asks continueGate, and a No opens the confirm step', () => {
+    const submit = fn('submit');
+    expect(submit).toMatch(/continueGate\(adult\)/);
+    expect(submit).not.toMatch(/answerAgeGate\(\s*(adult \?|'no')/);
+    expect(submit).toMatch(/setView\('confirm'\)/);
+  });
+
+  it('the confirm step offers "Yes, I am under 18" and Go back, each by id, inside the scroll', () => {
+    const confirm = fn('confirm');
+    expect(confirm).toMatch(/confirmGate\(choice\)/);
+    expect(confirm).toMatch(/setAdult\(step\.adult\)/);
+    for (const part of ['testID="gate.confirm"', '{g.confirmTitle}', 'g.confirmYes', 'g.confirmBack', 'testID="gate.confirm.yes"', 'testID="gate.confirm.back"']) {
+      const at = screen.indexOf(part);
+      expect(at, `${part} is on the gate`).toBeGreaterThan(0);
+      expect(at > screen.indexOf('<ScrollView') && at < screen.indexOf('</ScrollView>'), `${part} scrolls`).toBe(true);
+    }
+  });
+});

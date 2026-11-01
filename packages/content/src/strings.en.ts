@@ -1252,6 +1252,11 @@ export const en = {
     noButton: "No",
     // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop.
     stopTitle: "{app} is currently for adults 18 and over",
+    // The confirm step after No (F01-U01, F01-REQ-002, R3 DX-16): nothing is stored until the person confirms.
+    // Go back returns to the question with nothing selected.
+    confirmTitle: "You chose under 18. Is that right?",
+    confirmYes: "Yes, I am under 18",
+    confirmBack: "Go back",
     mistakeButton: "I answered by mistake",
   },
 } as const;
