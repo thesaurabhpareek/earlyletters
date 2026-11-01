@@ -274,7 +274,7 @@ export const site = {
     kicker: 'Welcome',
     headline: 'You are on the list.',
     intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. You will hear from us once more, at launch.`,
-    letterLabel: 'What a letter looks like',
+    letterLabel: 'A sample letter, written for this site',
     letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',
     letterFrom: 'From Papa',
@@ -365,6 +365,8 @@ export const site = {
   },
 
   footer: {
+    /** The letter in the film names a real child, so the site says plainly that any letter shown here is a sample. */
+    sampleNote: 'Any letter shown on this site is a sample, written for it.',
     /** The website's own footer line. Held out of public copy: the brand tagline waits on counsel (D-125). */
     tagline: 'In your own words.',
     contact: 'hello@earlyletters.com',
