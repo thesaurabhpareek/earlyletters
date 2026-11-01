@@ -1,0 +1,159 @@
+# PROPOSED WORKFLOW TEXT. NOT ACTIVE. This file lives under docs/ops/proposed/, where GitHub does not run it.
+# HV2-B18 (docs/agents/harness-v2/BACKLOG.md), requirement HV2-003, design REVIEW-GATE.md (RG-1 to RG-10).
+# Built on scripts/review-gate/decide.mjs (PR #559, HV2-B06), which does all the deciding. This file only fetches
+# the PR's comments, calls decide(), and writes a commit status named `review-gate` on the PR head.
+#
+# DO NOT APPLY BEFORE 10 NOV 2026. CR-22 and D-124 (with D-130) freeze `.github/**` until the go/no-go on Mon 9 Nov.
+# CR-5 keeps the hosted harness off; this runs no model and no secret, but it is a new workflow, so it needs a CTO
+# ruling first. Rollout:
+#   - Advisory first: from the day it is applied until 17 Nov 2026 the status is shown and NOT required.
+#   - Required from 17 Nov 2026 at the earliest, and only after it has reported correctly on at least five open PRs
+#     and three real merges (a required context that has never reported blocks every merge).
+#   - Required on `develop` only, as the compliance fence is (CR-32); `main` is unchanged.
+#
+# Trigger choice, and why:
+#   pull_request_target (opened, synchronize, reopened, ready_for_review), issue_comment (created, edited, deleted),
+#   workflow_dispatch, and a 30-minute schedule that backfills. All four take the workflow file from the DEFAULT branch
+#   (`develop`), never from the pull request: since 8 Dec 2025 GitHub does that for pull_request_target whatever the
+#   PR's base (github.blog changelog 2025-11-07; CR-23 second round and CR-32 in docs/agents/cto/RULINGS.md), and
+#   issue_comment and schedule always did. So a PR cannot edit the gate that judges it.
+#   Rejected: plain `pull_request`. It runs the workflow file as it exists in the PR, so a PR could ship a gate that
+#   always passes, and on fork PRs its token is read-only and cannot write a status.
+#   What makes pull_request_target safe here, as in compliance-fence.yml: (1) the job checks out the default branch only,
+#   never the PR head or merge ref, and runs no code from the PR; (2) PR text (title, body, comment bodies, branch names)
+#   is never placed in a `run:` line or any `${{ }}` expression: the script reads it from the REST API as data;
+#   (3) permissions are read-only plus statuses: write; (4) there are no secrets; (5) only comments from the repository
+#   owner's login count, and never a bot's (RG-6), so text typed by anyone else cannot make a pass.
+#   CR-31 is named in the request for this file but is not in docs/agents/cto/RULINGS.md on develop (the file goes
+#   CR-27 then CR-32); this choice rests on CR-23, CR-27 and CR-32 as filed. If CR-31 says otherwise, it governs.
+#
+# What this gate cannot prove (CR-32: a consistency gate, not a security boundary; CR-20):
+#   Every Claude session posts as the founder's one GitHub account, so any session, or the founder's token, can type a
+#   counted pass. The gate cannot tell a real review from a typed one. Both lenses are one model family, so Review A and
+#   Review B catch different checklist items, not different blind spots. It cannot judge depth: a quick PASS followed by
+#   a deep FAIL is covered only by the 180-second pending window, and a FAIL that lands after merge is not covered at
+#   all. A reviewer on a different account would change the first limit; a different model family would change the second.
+#   Neither exists yet. The gate catches honest mistakes only: a stale head, a short sha, a missing lens, a FAIL posted
+#   after a PASS, a merge during the pending window. A green status is a summary line and must never be called approval.
+#
+# It never merges and never approves: no merge call, no auto_merge, no label that merges (REVIEW-GATE.md section 4).
+#
+# Founder steps, on or after 10 Nov:
+#   1. CTO ruling (CR-5, CR-22). 2. Replace every TODO pin below with the full commit SHA you checked.
+#   3. Copy to .github/workflows/review-gate.yml in a PR into `develop` (T2). 4. Merge decide.mjs (PR #559) first.
+#   5. Run it with "Run workflow" on five open PRs. 6. Watch three real merges. 7. Not before 17 Nov: Settings, Rules,
+#      the `develop` rule, add the required status `review-gate` (exact name).
+# Way back: remove `review-gate` from the required checks (one click), then disable the workflow.
+name: review-gate
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, ready_for_review]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: "Pull request number to evaluate"
+        required: true
+  schedule:
+    - cron: "11,41 * * * *" # backfill: open PRs that have no status or an old pending one
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+  statuses: write
+
+concurrency:
+  # One run per PR; a newer comment restarts the window. Schedule runs share one group.
+  group: review-gate-${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr || 'sweep' }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: review-gate
+    # issue_comment fires for issues as well as pull requests; skip issues.
+    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Check out the default branch (the gate scripts only; never the pull request)
+        # TODO pin: replace the zeros with the full SHA of the actions/checkout release you checked.
+        uses: actions/checkout@0000000000000000000000000000000000000000 # TODO v-something; pin before enabling
+        with:
+          # No `ref`: every trigger above checks out the default branch.
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/review-gate
+            scripts/status/page.mjs
+            scripts/agents/verdicts.mjs
+            scripts/agents/lib.mjs
+          sparse-checkout-cone-mode: false
+
+      - name: Set 22 as the Node version (decide.mjs is plain ES modules)
+        # TODO pin: replace the zeros with the full SHA of the actions/setup-node release you checked.
+        uses: actions/setup-node@0000000000000000000000000000000000000000 # TODO v-something; pin before enabling
+        with:
+          node-version: "22"
+
+      - name: Decide and write the status
+        # TODO pin: replace the zeros with the full SHA of the actions/github-script release you checked.
+        uses: actions/github-script@0000000000000000000000000000000000000000 # TODO v-something; pin before enabling
+        env:
+          # Numbers from the event payload only; no PR text is read from the event.
+          EVENT_PR: ${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr || '' }}
+          OWNER_LOGIN: ${{ github.repository_owner }}
+          PENDING_SECONDS: "180"
+        with:
+          script: |
+            const { decide } = await import(`${process.env.GITHUB_WORKSPACE}/scripts/review-gate/decide.mjs`);
+            const { owner, repo } = context.repo;
+            const login = process.env.OWNER_LOGIN;
+            const pendingSeconds = Number(process.env.PENDING_SECONDS);
+            const sleep = (s) => new Promise((r) => setTimeout(r, s * 1000));
+            const post = (sha, state, description) =>
+              github.rest.repos.createCommitStatus({ owner, repo, sha, state, context: "review-gate", description: String(description).slice(0, 140) });
+
+            async function evaluate(number, { wait }) {
+              let head;
+              try {
+                const pr = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                if (pr.state !== "open") return;
+                head = pr.head.sha;
+                // Step 1: say pending before any computation, so an old success never outlives a new comment.
+                if (wait) await post(head, "pending", "review-gate: recomputing after a change");
+                for (let round = 0; round < 2; round += 1) {
+                  const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number: number, per_page: 100 });
+                  const commit = (await github.rest.repos.getCommit({ owner, repo, ref: head })).data;
+                  const result = decide({
+                    headSha: head, comments, now: new Date().toISOString(), pendingSeconds, owner: login,
+                    prNumber: number, headCommittedAt: commit.commit.committer?.date,
+                  });
+                  core.info(`#${number} ${head.slice(0, 7)} ${result.state}: ${result.reasons.join(" | ")}`);
+                  // Re-read the head: if it moved, a newer run owns the answer. Do not write over it.
+                  const now = (await github.rest.pulls.get({ owner, repo, pull_number: number })).data;
+                  if (now.state !== "open" || now.head.sha !== head) return;
+                  if (result.state === "pending" && wait && round === 0) {
+                    await post(head, "pending", result.description);
+                    await sleep(Math.min(pendingSeconds + 5, 200)); // let a late FAIL land, then recompute once
+                    continue;
+                  }
+                  await post(head, result.state, result.description);
+                  return;
+                }
+              } catch (e) {
+                // RG-8: any API or parse error is failure, never success. The error text is not copied into the status.
+                core.warning(`review-gate error on #${number}: ${e?.status ?? ""} ${e?.name ?? "error"}`);
+                if (head) await post(head, "failure", "review-gate: could not decide (API or parse error); treated as failure");
+              }
+            }
+
+            if (context.eventName === "schedule") {
+              const open = await github.paginate(github.rest.pulls.list, { owner, repo, state: "open", per_page: 100 });
+              for (const pr of open) await evaluate(pr.number, { wait: false }); // no sleeping in the sweep; the next run settles a pending window
+            } else {
+              const number = Number(process.env.EVENT_PR);
+              if (!Number.isInteger(number) || number < 1) { core.setFailed("no pull request number in the event"); return; }
+              await evaluate(number, { wait: true });
+            }
