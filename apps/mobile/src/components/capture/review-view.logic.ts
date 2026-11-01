@@ -128,9 +128,9 @@ export function typedFinalText(raw: string): string {
 
 /**
  * Whether Review holds changes the person made that are not on the phone yet: their own words from Change words, a fix
- * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). All of them live
- * only on this screen until Keep (#274 N1; storing them on the draft is build 3's item), so Close must not say "Saved
- * on this phone" while any is there (P4 critics' pass S1; #289 lens B).
+ * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). A draft stores
+ * them (SR-C-06, lib/capture/review-persist.logic.ts); a letter whose words arrived later, and sample words, do not, so
+ * there Close must not say "Saved on this phone" while any is there (P4 critics' pass S1; #289 lens B).
  */
 export function reviewHasOwnChanges(input: { userText: string | null; applied: number; proposed: number; view: ReviewView; openedView: ReviewView }): boolean {
   return input.userText !== null || input.applied < input.proposed || input.view !== input.openedView;
