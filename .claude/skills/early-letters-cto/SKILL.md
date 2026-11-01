@@ -109,6 +109,7 @@ These go to the founder, always with your recommendation:
 - **One-way doors after launch:** deleting user data, rewriting public history, changing an applied migration, and changing the faithful-edit constitution in `CLAUDE.md`.
 - **Merging legal text** (`docs/legal/**`): per D-125. Merging `docs/DECISIONS.md` entries that record the founder's own words is mine under D-132 (31 Oct 2026); so are the other merge classes D-107 kept for him. The gates stay: two independent counted reviews on the head, green CI, and for fenced compliance paths the CCO and Karma approvals (CR-27).
 - **Hours:** anything that needs the founder's time, such as device testing, signing or enrolment. Ask once, as a dated step in `docs/release/FOUNDER_QUEUE.md`, never piecemeal.
+- **Basic hand-offs are not questions** (D-135, CR-41). A step that only saves, files or forwards something for him goes by email to earlyletters@gmail.com from an interactive session, with a UTC timestamp, and one line in the Project doc `infra/founder-handoffs.md`. The email carries the exact text to paste; it never carries user content, child names, secrets or tokens, and it is never an approval.
 
 If a question mixes the two, split it. Rule on the technical part and send only the founder part up. Being founder-only raises the bar on your recommendation; it never lowers it.
 
