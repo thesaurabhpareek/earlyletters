@@ -1,6 +1,6 @@
 ---
 title: Counsel packet, Early Letters v1.0 (option B) and after
-version: 1.4.0
+version: 1.5.0
 status: for counsel
 date: 2026-10-16
 owner: founder
@@ -121,6 +121,11 @@ Cloudflare R2 arrives with PR #126 (signed remote config, pack manifest and cont
 - **Question.** Sign-in links and codes travel by email through Resend. Are they "account log-in" credentials under the CCPA's sensitive personal information definition, and does that change Resend's contract or the California disclosure?
 - **Default.** Treat them as sensitive; no change to the text. **Deadline.** T17.
 
+### Q57 (A). Sanctions: blocked places, and no name screening (D-131, D-137)
+- **Context.** We take no payments (Apple sells Plus) and offer the app only on the US storefront. Terms 2.4 asks every user to confirm they are not in an embargoed place and not on a US restricted-party list. Under D-131 a sign-up check (not yet live) refuses requests whose IP address maps to North Korea, Iran, Cuba, Syria, Russia or Belarus; the planned web contribution page also refuses Crimea, Sevastopol, Donetsk and Luhansk. Under D-137 we do not screen names against the SDN List or other restricted-party lists, because it would mean collecting legal names, and in practice dates of birth, that the product otherwise never needs. Our reading rests on OFAC FAQ 445 and A Framework for OFAC Compliance Commitments (a risk-based programme that "may include" list screening; read 1 Nov 2026). Privacy 12 discloses the check (D-136).
+- **Questions.** (a) Is the Terms confirmation plus the country block a reasonable programme for a free consumer service with no payments of its own, or must we screen names? If screening, against which lists and with what data. (b) Is the app subject to the EAR at all (15 CFR 734.7, "published")? (c) If it is: the 5D992.c self-classification and any 740.17 reporting; whether License Exception CCD (740.19) covers Russia and Belarus; whether blocking sign-up is enough when US-storefront downloads are not gated by place. (d) Kherson and Zaporizhzhia: block them on the web page too? (e) Is the Privacy 12 wording enough, and is a country derived in memory and not kept "collected" for the App Privacy label (we read it as not collected; label unchanged, CPrivO-2)?
+- **Default.** Country block as D-131, no name screening, Privacy 12 as drafted, label unchanged. **Deadline.** Before the sign-up check is switched on, and before any sign-in outside the family (T22).
+
 ## 4. Questions carried from PR #81 (Q32 to Q40)
 
 | # | #81 question | Status under option B | Default |
@@ -187,6 +192,7 @@ Full text is in this file's 1.0.0 version (git history). Only the change is show
 
 | Version | Date | Change |
 |---|---|---|
+| 1.5.0 | 2026-11-01 | Adds Q57 (sanctions: the D-131 country block, no name screening under D-137, the Privacy 12 country-check wording under D-136). Chief Legal Officer (Claude role, not a lawyer), CLO-3. |
 | 1.4.0 | 2026-10-31 | Terms and Subscription Terms are the plain-form 4.1.0 texts. The reviewers' notes that sat inside develop's 4.0.0 texts are carried here: Q41 gains the 31 Oct update (California notices without the amount, the two routes, Unverified items, price-change setting, grace period, federal status); Q40 gains the free-list notes (co-parent writing, the floor, binding promise). Full notes word for word in `CHANGES-2026-10-31.md`, last section. Version 1.4.0 because 1.3.0 is used (POLICY_VERSIONING 2.4). |
 | 1.3.0 | 2026-10-31 | Merge of develop (31 Oct) into the rebuilt packet of PR #163. Kept the 1.1.0 structure; the 1.2.0 product-paragraph prices (D-082) were already in it; the Q14 note on the Terms 4.0.0 free list is carried into the superseded-questions table. Version 1.3.0 because 1.1.0 and 1.2.0 are used (POLICY_VERSIONING 2.4). Also: version list in section 0 brought up to date; Privacy Policy 3.0.0 carries the D-116 exception to the 31-day erasure promise and a drafted "never for marketing" bullet, both unconfirmed; the packet's text about Terms 3.1.0 and Subscription Terms 3.1.0 is superseded by develop's 4.0.0 texts, whose content differs from the server-product wording the packet's questions were written against (see the PR body). |
 | 1.2.0 | 2026-10-31 | Product paragraph: Plus prices ($4.99, $49.99), plan names and membership scope per D-082 (review SUB-01, SUB-02). Q14: note on the Terms 4.0.0 free list. Version 1.2.0 because 1.1.0 was used by an unmerged draft on another branch (POLICY_VERSIONING 2.4). |

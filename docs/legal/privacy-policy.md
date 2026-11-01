@@ -22,6 +22,7 @@ This policy describes Early Letters as it is planned for the App Store. Not ever
 - **Build 2 (the family test build).** Servers are on: sign-in, sync, sharing a book with a co-parent, and deleting your account. Recording backup is off.
 - **Recording backup.** It is in no build yet. Section 4 takes effect only when it ships, and until then no recording is copied to our servers.
 - **Analytics.** There are none in any build.
+- **The country check at sign-up.** It is in no build yet. The part of section 12 about it takes effect only when it ships.
 
 ## 1. Who we are
 
@@ -39,7 +40,7 @@ Early Letters is run by [legal name], an individual based in California ("we", "
 
 **Emails and support.** The emails we send you, and anything you write to us. If you ask on our website to hear when the app is ready, we keep your email address for that until you unsubscribe.
 
-**Technical details.** When the app or website connects to our providers, they see your IP address and device type, as any website does.
+**Technical details.** When the app or website connects to our providers, they see your IP address and device type, as any website does. When you create an account, our server also uses that IP address to work out which country the request comes from (section 12).
 
 **What we do not collect.** We do not collect your location, contacts, photos, advertising ID or payment details. In no current build does the app send us usage analytics or crash reports. We never create a voiceprint or any other biometric identifier. Your reminder times stay on your phone. Your choices for each book, such as whether it appears in reminders, are kept with your book.
 
@@ -74,7 +75,7 @@ The sealed keys and the encrypted recordings are stored with Supabase. The recov
 
 ## 5. How we use your information
 
-We use it to keep your book and sync it; to sign you in and keep your account secure; to send the emails the service needs, such as sign-in codes and deletion notices; to remind you, on your phone, before Plus renews; to answer your messages; and to meet our legal duties. We may count how the service is used in totals, such as letters per week, but never report on one family.
+We use it to keep your book and sync it; to sign you in and keep your account secure; to send the emails the service needs, such as sign-in codes and deletion notices; to remind you, on your phone, before Plus renews; to answer your messages; to check that a new account is not being created from a place where US law restricts offering Early Letters (section 12); and to meet our legal duties. We may count how the service is used in totals, such as letters per week, but never report on one family.
 
 We never:
 
@@ -149,6 +150,8 @@ Traffic is encrypted in transit, and data on our servers is encrypted at rest. A
 
 The app is offered only on the United States App Store, and your information is stored in the United States.
 
+We do not offer Early Letters in places where US sanctions or export rules restrict it. When you create an account, our server uses the IP address of that request to work out which country it comes from, and refuses the sign-up if it comes from one of those places. We do not keep the IP address for this check. We keep only a daily count of checks and their results by country code, which does not identify you. The country lookup uses data from DB-IP (https://db-ip.com). A lookup can be wrong; if you think it was, write to us and we will look into it without asking where you are.
+
 ## 13. Changes to this policy
 
 If we make a change that matters to how your information is used, we will tell you in the app and by email at least 30 days before it takes effect, and ask for your agreement where the law requires.
@@ -163,6 +166,6 @@ If we ever close Early Letters, we will tell you at least 90 days ahead and keep
 
 | Version | Date | Change |
 |---|---|---|
-| 3.0.0 | 2026-10-31 | Says which builds of the app each part covers, and that server parts take effect only when the feature ships. Adds the letters of a parent who left a book, which stay theirs when the other parent deletes the book or their account, and the book entry we keep to label them; the 31-day erasure statement names that one exception. Says the in-app Delete account and withdraw controls are used where a build has them, and that email works in the meantime. Adds a line that what you put in your book is not used in our marketing without your written yes for that one use. Removes the link to the providers page, which the website no longer serves. |
+| 3.0.0 | 2026-10-31 | Says which builds of the app each part covers, and that server parts take effect only when the feature ships. Adds the letters of a parent who left a book, which stay theirs when the other parent deletes the book or their account, and the book entry we keep to label them; the 31-day erasure statement names that one exception. Says the in-app Delete account and withdraw controls are used where a build has them, and that email works in the meantime. Adds a line that what you put in your book is not used in our marketing without your written yes for that one use. Removes the link to the providers page, which the website no longer serves. Adds the country check at sign-up (sections 2, 5 and 12; D-136): the IP address is used to work out the country and is not kept for it; it takes effect when the check ships. |
 | 2.1.1 | 2026-10-31 | Wording only: the opening line describes Early Letters as the baby memory book you fill by talking, and no longer says "notes". No change to what we collect or do. |
 | 2.1.0 | 2026-10-16 | Covers accounts, sharing a book with a co-parent, how recording backup and the recovery key will work, and Plus reminders. |
