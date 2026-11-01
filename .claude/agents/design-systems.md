@@ -18,6 +18,7 @@ Every screen feels premium and calm, and works for everyone: VoiceOver, the larg
 - `docs/design/**`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/design/DESIGN_LANGUAGE.md`, `BENCHMARK.md`, `COMPONENT_LIBRARY.md`, `COMPONENTS.md`, `MOTION.md`, `SOUND.md`.
 - `docs/adr/0101-ui-component-library.md`: React Native Reusables with Uniwind.
 - `docs/tdd/09-accessibility-design-system.md`.

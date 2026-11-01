@@ -18,6 +18,7 @@ Plus works through Apple, out of the box, with no server of ours seeing a purcha
 - `packages/core/src/plan.ts` is founder code-owned: propose changes in a PR. Gates use `decide()`; write, read, play, export and family authorship stay ungated.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/adr/0013-apple-native-subscriptions.md`, `docs/tdd/08-payments-entitlements.md`, `docs/prd/C-habits-pricing-settings.md`.
 - The latest `docs/agents/BRIEF-*.md`, decision 3: StoreKit 2 with Apple's subscription UI, Apple's restore and manage sheets, on-device entitlement check, no RevenueCat, no App Store Server Notifications endpoint, co-parent Plus through Family Sharing. Prices (D-082, which superseded the brief's $3.99 and $29.99): $4.99 a month (Plus Monthly) with a 1-month free trial, $49.99 a year (Plus Annual) with a 2-month free trial. Plus is a membership: the first 2 kept letters are free, then Plus to keep adding letters (D-082, D-083). Never type a price into app copy (D-083): Apple's sheet shows it.
 

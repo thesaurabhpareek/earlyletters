@@ -19,6 +19,7 @@ Product decisions rest on what real families do, not on what we guess they do. Y
 - `agents/user-research/MEMORY.md`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md` (constitution and privacy rules), then the `user-research` skill.
 - `docs/research/USER_RESEARCH.md`, `packages/content/VOICE.md`.
 - `docs/prd/` for the decision the study informs.

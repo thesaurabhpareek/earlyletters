@@ -658,6 +658,7 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-135 | Founder hand-offs that only save, file or forward something go by email to earlyletters@gmail.com, recorded with a UTC timestamp in the Project doc `infra/founder-handoffs.md`, instead of a question to him. Karma and the harness are kept informed through this entry and Karma's skill | Decided (founder: the rule); limits by Karma (founder may reverse) | Yes | 2026-11-01 |
 | D-136 | The Privacy Policy says that sign-up uses the request's IP address to work out the country, refuses sign-up from the D-131 places, and does not store the IP for this (only daily counts by result, with the country code for refusals only). Takes effect when the check ships. The Chief Legal Officer drafts; Karma updates the docs | Decided (founder: the disclosure); text by the Chief Legal Officer, counsel must confirm | Yes | 2026-11-01 |
 | D-137 | No screening of names against OFAC or other restricted-party lists in v1.0 and its 1.0.x releases. The controls are the Terms 2.4 confirmation, the D-131 country block, the US-only storefront and a check on escalation with a match runbook. OFAC liability is strict, so this lowers cost, not exposure. Counsel confirms (COUNSEL_PACKET Q57) | Decided by the Chief Compliance Officer, Chief Legal Officer and Karma under the founder's delegation (founder may reverse); counsel must confirm | Yes | 2026-11-01 |
+| D-138 | Four calls from the build 1 audit: publish beta app Terms and Privacy (0.9.0) before build 2 signs anyone in; no paid backup for the alpha, use a free nightly encrypted dump; the agree line sits above the sign-in buttons; a 30-minute take uses 5% of battery or less on an SE 3 | Decided (founder) | Yes | 2026-11-01 |
 | D-139 | Positioning A: everywhere a parent reads first, Early Letters is introduced as letters to your child, in your own words and voice; the App Store name is "Early Letters: Baby Journal" and the subtitle "For parents who'd rather talk". Replaces the descriptor "the baby memory book you fill by talking" | Decided (founder, 1 Nov 2026) | Yes | 2026-11-01 |
 
 ### D-100 Server features are on in v1.0 (founder)
@@ -1072,6 +1073,14 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Revisit when:** we take a payment ourselves; the app opens outside the US storefront; the web contribution page lets people in without an account or from outside the US; any feature moves value between people (a gift, a printed book shipped abroad); OFAC issues guidance or an enforcement action about consumer apps; counsel says otherwise; or we learn a listed person uses the service.
 - **Counsel must confirm:** COUNSEL_PACKET Q57, with the D-131 counsel list.
 - **Owner:** founder; Chief Compliance Officer.
+### D-138 Four calls from the build 1 audit (founder, 1 Nov 2026, 15:40 UTC)
+- **Founder's answers** (to Karma's four questions, CR-47): "Publish beta texts (Recommended)"; "No backup for alpha but find a free path for me"; "Above the buttons (Recommended)"; "5% per 30 minutes (Recommended)".
+- **Decision:**
+  1. A beta version (0.9.0, marked as a test version for family testers) of the app's own Terms and Privacy Policy is published at a permanent URL before build 2 signs anyone in (BL-565). Counsel's Q31 still stands.
+  2. No paid backup for staging during the alpha. The backup is a free nightly encrypted dump kept in a private GitHub repository (`docs/ops/runbooks/staging-backup-free.md`, BL-566). Supabase Pro stays an option he can take later.
+  3. The agree line with versioned links sits directly above the sign-in buttons, as LEGAL-REQ-001 and the in-app disclosures say (BL-575). Counsel confirms the sign-in-wrap.
+  4. A 30-minute take with the screen on uses 5% of battery or less on an iPhone SE 3, as a number to measure against, not a release gate (BL-593).
+- **Owner:** founder; Karma.
 
 ### D-139 Positioning A: letters to your child, in your own words and voice (founder, 1 Nov 2026)
 - **Founder's words:** "I don't want this to just be a baby memory book. Think creatively how we explain our product." After the options and the question whether to merge PR #567: "Ok continue. Yes. A." ("Yes" answered the merge; "A" chose this option.)

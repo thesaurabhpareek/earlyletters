@@ -127,12 +127,17 @@ describe('[S40] Licenses', () => {
     expect(importers).toEqual([]);
   });
 
-  it('shows the hand-kept credits, the pack attributions word for word, and every notice in a virtualised list', () => {
-    expect(page).toMatch(/lib\.handKeptSections\.map/);
+  it('groups what ships by theme, each with its title and line, puts the pack attributions word for word after Speech, in a virtualised list', () => {
+    expect(page).toMatch(/lib\.notices\.themes\.map/);
+    expect(page).toMatch(/licences\.themes\[g\.id\]\.title/);
+    expect(page).toMatch(/licences\.themes\[g\.id\]\.line/);
     expect(page).toMatch(/licences\.packs\.map/);
-    expect(page).toMatch(/lib\.notices\.licences\.map/);
     expect(page).toMatch(/<SectionList\b/);
     expect(page).toMatch(/lib\.noticeText\(e\)/);
+    // A row opens to its version, copyright lines and full text.
+    expect(page).toMatch(/licences\.version\.replace\('\{version\}'/);
+    expect(page).toMatch(/row\.copyright/);
+    expect(page).not.toMatch(/handKeptSections|librariesTitle/);
     expect(licences.libraries).toBe('React Native, Expo and the other libraries in this app are open source. Each one is listed below with its license.');
   });
 });

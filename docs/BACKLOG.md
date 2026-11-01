@@ -84,6 +84,8 @@ Engineering is ahead of the founder path. The date is set by these, in this orde
 8. **Performance budgets.** If the task touches a budgeted path, the PR states the budget and how it was checked. Budgets: cold start p50 <= 1.2 s and p90 <= 2.0 s on iPhone SE 3; no awaited network or model load on launch; first-run screens interactive <= 300 ms; Settings < 300 ms; switch child p95 300 ms; local save p95 200 ms; Plus sheet under 1 s; **App Store download under 40 MB** (D-065, `docs/ops/APP_SIZE.md`; JS bytecode 6.2 MB today).
 9. **Accessibility.** Dynamic Type to AX5 without truncation (letter text never capped, D-027), VoiceOver labels, 44 pt targets, Reduce Motion honoured.
 10. **Scope.** One concern per PR.
+11. **Records.** Anything a person agrees to, declines or withdraws is written through the shared record builder and holds every PRIV-R21 field (`docs/engineering/07-privacy-engineering.md`); a test checks the row.
+12. **How it is written.** The item, PR body and acceptance criteria follow `docs/agents/COORDINATION.md` section 10: human voice, Given/When/Then with numbers, and the Shown, Records, Never and Decline lines for door features.
 
 ---
 
@@ -2520,6 +2522,412 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - **BL-560 The Plus line on Write.** Status: blocked (on #508). Owner: `mobile`. When: after #508 merges. Scope: the Write half of F14-REQ-040, the same standing line with no count and no button. Done when: the line shows on Write under the same rule as Tonight, with a test.
 - **BL-561 The age question and a thumb slip (SR-C-04).** Status: needs-founder. Needs counsel. Owner: CCO, then `regulatory-affairs` and `mobile`. Today a slip on No locks a parent out for 24 hours, until "I answered by mistake" appears. #521 added a confirm step after No, but writing nothing until the confirm breaks LEGAL-REQ-002's anti-retry rule (P0) and D-026, so it is held. Karma's recommendation: keep the immediate stop, and make "I answered by mistake" clearer and kinder. A confirm step needs a DECISIONS entry first, must treat both answers the same, and must record the first answer. Done when: the founder decides with counsel, and the chosen design passes a CCO review.
 - **BL-562 Data classification rows for the new local columns.** Status: needs-founder. Owner: `legal`; founder merges (docs/legal). When: with #522 and #520. Scope: four 4.5 rows for `drafts.review_put_back`, `review_view`, `review_text` (L4, the person's words) and `review_base` (L4, a hash of the words), as written in the data-steward review of #522. Also Privacy Policy lines 159 and 225, per the privacy review of #520. Done when: the founder merges the legal PR.
+
+## Robustness and compliance audit after build 1 (1 Nov 2026)
+
+Source: four read-only audits of `develop` at d6e83f9e on 1 Nov 2026, run for the founder after build 1 reached TestFlight (`regulatory-affairs` for the door and consent records, `security-architect` for accounts and the backend, `mobile` for robustness, speed and size, `data-architect` for data). Full findings with evidence: `docs/reviews/2026-11-01-robustness-compliance-audit.md`. Karma's ruling on order and owners: CR-47. Every item follows the requirement rules in `docs/prd/v2/11-requirement-rules-and-retro-changes.md` section 1 (Given/When/Then with a number or an observable state) and the voice rules in `docs/prd/v2/_AUTHORING.md` section 7. Anything that records what a person agreed to follows PRIV-R21 (`docs/engineering/07-privacy-engineering.md`).
+
+Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1** before any sign-in outside the family; **S2** before store submission; **S3** later. S0 items that change code during the freeze (Tue 3 Nov 13:00 UTC to Mon 9 Nov) go in only as S0 or S1 fixes under `docs/release/AUTOMATION.md` 0.2 item 17.
+
+### Build 2 blockers (S0)
+
+#### BL-563 Listen never sticks on "finishing" (APP-01)
+- Status: ready. Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
+- Who: `mobile`.
+- Problem: `apps/mobile/src/app/listen.tsx:134-144` calls `endTake` without a catch, and most callers use `void` (`finish` at :263 awaits nothing either). If `finalizeDraftAudio` throws (a full disk makes the SQLite write in `recorder.ts:150` throw), the screen stays on "finishing" and the only control left is "Let it go", which deletes the take (`listen.logic.ts:74-76`).
+- Requirement: every way out of a take reaches Review or Tonight within 3 s, and the take is kept.
+- Acceptance:
+  - Given the finalize step is forced to throw in a unit test, when Finish is tapped, then the screen leaves "finishing" within 3 s and the draft row is still there.
+  - Given an iPhone SE 3 with under 1 MB free, when Finish is tapped, then a screen appears that says the phone is full and offers Keep, and the take is kept.
+  - Given the "finishing" state, when the screen renders, then "Let it go" is not offered.
+- Tests: a `listen.logic` unit test named `[BL-563]`; one device row in `docs/qa/DEVICE_TEST_PLAN.md`.
+
+#### BL-564 Consent sheet links only to pages that exist (COMP-02)
+- Status: ready. Mode: agent. Owner: mobile engineer. Severity: S0. Area: front.
+- Who: `mobile`.
+- Problem: `apps/mobile/src/app/(auth)/sign-in/consent.tsx:296` opens `brand.web.healthPrivacy`, which returns 404 (checked 1 Nov 2026). The guard test `apps/mobile/test/privacy-documents.test.ts:22-44` checks only `settings/privacy.tsx`.
+- Requirement: the sheet shows Terms and Privacy only, unless counsel answers COUNSEL_PACKET Q32 the other way, and a test covers every legal link in the app.
+- Acceptance:
+  - Given any file in `apps/mobile/src`, when the tests run, then no `brand.web.*` legal link points at a route the website does not serve.
+  - Given the Terms step, when it renders, then it lists Terms and Privacy and nothing else.
+
+#### BL-565 Publish the app's own Terms and Privacy before build 2 signs anyone in (COMP-01)
+- Status: ready. Mode: agent. Owner: legal. Severity: S0. Area: legal. **Decided: publish (D-138 item 1).** COUNSEL_PACKET Q31 still asks counsel about draft text for testers; the founder merges legal text (D-125).
+- Who: `legal`, through the CLO; the website lane publishes.
+- Problem: the live /terms and /privacy say they do not cover the app (`apps/web/src/lib/legal/terms-copy.ts:24`, `privacy-copy.ts:1-3`), yet the app links to them at sign-in and in Settings. The app texts are drafts (`docs/legal/privacy-policy.md` 3.0.0, `terms-of-service.md` 4.1.0). Sign-in needs published `terms` and `sensitive-data` rows with a URL and hash (`docs/ops/AUTH_SETUP.md:34`, `supabase/APPLY.md:193`).
+- Requirement: a beta version of each app text (0.9.0 under POLICY_VERSIONING 2.4) is live at a permanent URL before the first build 2 sign-in, and each `policy_versions` row carries that URL and hash.
+- Acceptance:
+  - Given build 2, when a tester opens Terms or Privacy from the consent sheet, then the page is the app text and its version line equals the version recorded.
+  - Given `policy_versions`, when APPLY step 8.2 runs, then each URL returns 200 and the sha256 of the served text equals `content_sha256`.
+  - Given the D-129 outcome on 2 Nov, then the published build list says whether build 2 has Delete account.
+
+#### BL-566 Staging has a daily backup and one restore drill before real letters land (DATA-01)
+- Status: needs-founder (W0-17). Mode: human. Owner: platform. Severity: S0. Area: ops. **Decided: no paid backup; the free path (D-138 item 2).** Build it per `docs/ops/runbooks/staging-backup-free.md`: a nightly encrypted dump in a private GitHub repository, plus a monthly restore drill from the founder's Mac.
+- Who: `ops`.
+- Problem: staging will hold family letters in build 2. No backup tier is recorded (`docs/release/ENVIRONMENTS.md:70-75`), Free has no backups (supabase.com/docs/guides/platform/backups, read 1 Nov 2026), and the restore drill log is empty (`docs/ops/runbooks/restore-drill.md:27`). Storage objects are never in Supabase backups.
+- Requirement: before the first build 2 sign-in, staging has a backup under 24 hours old and one restore drill has passed on a synthetic project.
+- Acceptance:
+  - Given staging, when the founder opens Database > Backups (or the dump store), then a backup under 24 hours old is listed and the tier is written in ENVIRONMENTS.md.
+  - Given a synthetic Asha project restored from its own backup, when `restore-drill.ts --mode drill` runs, then the verdict is PASS with recovery under 4 hours, recorded in the drill log.
+  - Given two Asha phones, when the restore epoch is bumped on the restored copy, then both phones re-upload and no letter is missing.
+- Extends: BL-107, BL-247, DATA-REQ-030, DATA-REQ-031.
+
+#### BL-594 Edge Functions keep working when staging's legacy keys are switched off (SEC-01)
+- Status: ready. Mode: agent. Owner: security engineer, platform. Severity: S0. Karma's ruling (CR-47): until the code change lands, AF-06 keeps the legacy keys on staging; the founder does not deactivate them.
+- Who: `security` (code), `ops` (AF-06 text).
+- Problem: every function reads only `SUPABASE_SERVICE_ROLE_KEY` or `SUPABASE_ANON_KEY` (`supabase/functions/invite-redeem/handler.ts:104-105`, `apple-token/handler.ts:103,121`, `analytics-forget/handler.ts:83`, `subscription-status/handler.ts:115`, `purge-worker/config.ts:44`), while AF-06 says to deactivate the legacy keys on staging (`docs/release/AUTOMATION.md:322,413`). Supabase says those variables carry the legacy keys and lists `SUPABASE_SECRET_KEYS` and `SUPABASE_PUBLISHABLE_KEYS` for functions (supabase.com/docs/guides/api/api-keys and /functions/secrets, read 1 Nov 2026). Without the Apple token, deletion cannot revoke Sign in with Apple (Apple 5.1.1(v)).
+- Requirement: the functions read the new secret and publishable keys, with the legacy names as a fallback until they are gone.
+- Acceptance:
+  - Given staging with legacy keys deactivated, when apple-token gets a valid code, then it returns 204 and an `ops.apple_tokens` row exists.
+  - Given the same project, when invite-redeem gets a correct code, then it answers 200.
+  - Given a function with no usable key, when called, then it logs `code: config` and the post-deploy check fails.
+- Extends: AF-06, SEC-R04.
+
+### Front end (app)
+
+#### BL-567 Free space is watched during a take (APP-02)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S1.
+- Who: `mobile`.
+- Problem: free space is checked once at start (`free-space.ts:18`, `listen.tsx:150`); there is no length cap; a pack download can fill the disk mid-take.
+- Requirement: while recording, free space is polled at least every 10 s; under 20 MB the take finishes by itself and is kept; a pack download pauses while a take records.
+- Acceptance:
+  - Given an SE 3 under 20 MB free, when recording, then the take finishes by itself and plays back.
+  - Given a pack download running, when a take starts, then the download pauses and resumes after.
+- Extends: RT-REC-11, BL-432.
+
+#### BL-568 A global error handler that logs no content (APP-03)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S1.
+- Who: `mobile`.
+- Problem: no `ErrorUtils.setGlobalHandler` or rejection tracking in `apps/mobile/src`; only the root ErrorBoundary (`_layout.tsx:123`). A throw in a handler or timer is a hard crash in Release, and rejected promises vanish.
+- Requirement: a handler is installed before first render; it shows the recovery screen and records ids and error codes only (PRIV-R10).
+- Acceptance:
+  - Given a development build, when a timer throws, then the recovery screen shows.
+  - Given the test harness, when a throw is planted with Asha text in the message, then the captured log has no Asha text.
+- Extends: BL-370.
+
+#### BL-569 A letter the server refuses is never silently stuck on one phone (DATA-04)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, sync owner. Severity: S1.
+- Who: `mobile` with `sync`.
+- Problem: a permanent refusal (any 22xxx code, `sync/engine.ts:184-191`) moves the op to `rejected_writes` (`outbox.ts:987-993`); no screen shows it (`sync/index.ts:73`). The phone has no cap matching the server's 20000 and 40000 character limits (`20260930000000_scribe_core.sql:144-145`), and a NUL character fails with 22P05.
+- Requirement: refusals are prevented on the phone where possible and shown where not.
+- Acceptance:
+  - Given a typed letter of 20001 characters, when it is saved, then the phone stops it with a plain message and nothing reaches `rejected_writes`.
+  - Given a non-conflict `rejected_writes` row, when the person opens the Book or Settings, then one line says the letter is kept on this phone only, and export includes it.
+  - Given such a row, when the person signs out, then the confirm names the letters that stay on this phone only.
+  - Given text containing U+0000, then it is handled on the phone before the first save by a rule in `packages/core`, never refused by the server.
+- Extends: DATA-REQ-043.
+
+#### BL-570 The phone notices a damaged database and keeps the file (DATA-08)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S2.
+- Who: `mobile`.
+- Problem: no `quick_check` or `integrity_check` anywhere in `apps/mobile/src`; `store.ts:150-176` handles failures at open and migration only.
+- Requirement: corruption is detected once after each update and on SQLITE_CORRUPT; the file is copied aside, never deleted; recovery export is offered.
+- Acceptance:
+  - Given a corrupt `scribe.db` fixture, when the app launches, then the check fails, the file is copied aside and recovery export is offered.
+  - Given a healthy file, when the app first launches after an update, then the check runs once and takes under 200 ms for 2,000 letters on an SE 3.
+  - Given a signed-in person with a corrupt file, when recovery runs, then a fresh file re-pulls from the server and unsynced rows from the copy can be exported.
+- Extends: BL-134.
+
+#### BL-571 The Book does not re-read every letter on unrelated changes (APP-08)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S2.
+- Who: `mobile`.
+- Problem: `book.tsx:105` subscribes to every table, and `book.tsx:112` parses a settings JSON once per letter.
+- Requirement: a 60-letter chapter renders at p95 500 ms or less on an SE 3; no frame over 16.7 ms while scrolling 240 letters.
+- Acceptance:
+  - Given 2,000 Asha letters in a CI fixture, then listing a book has p95 of 50 ms or less.
+  - Given an SE 3 with 240 letters, when scrolling, then the frame log shows no frame over 16.7 ms.
+- Extends: BL-408, RT-BK-02.
+
+#### BL-572 Transcription waits while a new take records, and only real memory kills downgrade the model (APP-07, APP-12)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: speech engineer. Severity: S1.
+- Who: `speech`.
+- Problem: the queue pauses only in the background (`transcription-queue/index.ts:170-180`), so a large model can run while the next letter records on a 3 to 4 GB phone. Any kill during a job counts as a memory failure, and two move the phone to the compact model for good (`transcription-queue/index.ts:461-470` and `:522`, `tiers.ts:32`).
+- Requirement: the queue pauses during a take; only a jetsam or a model load failure counts toward the downgrade; a 2-minute letter transcribes in 30 s or less on an SE 3.
+- Acceptance:
+  - Given an XR or SE 2, when a take records during a job, then the job pauses and there is no jetsam.
+  - Given an iPhone 15, when the app is swiped away during 2 jobs, then the tier stays full.
+  - Given an SE 3, when a 2-minute letter is transcribed, then it takes 30 s or less.
+- Extends: BL-043, RT-WRD-03.
+
+#### BL-573 Re-consent sheet for a major policy change (COMP-10)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, content. Severity: S1.
+- Who: `mobile`, copy by `content`.
+- Problem: when Terms are not current, the sign-up sheet is reused with method `signin_sheet` (`consent.ts:108`), with no change summary, and "Not now" writes no decline (`consent.tsx:288`). The first counsel-approved 1.0.0 is major and forces re-consent on every tester (POLICY_VERSIONING 2.4, 6).
+- Requirement: a re-consent sheet per POLICY_VERSIONING section 6, recording per PRIV-R21.
+- Acceptance:
+  - Given a major `terms` version, when the app opens online, then the sheet shows `policy_versions.summary` and Agree records `reconsent_sheet`.
+  - Given Not now, when tapped, then a `decline` row is written, and record, read and export still work (PRIV-R09).
+- Extends: LEGAL-REQ-009.
+
+#### BL-574 Fix the backup consent before backup is ever switched on (COMP-11)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S2.
+- Who: `mobile`.
+- Problem: `apps/mobile/src/lib/backup/runtime.ts:308` sends `p_method: 'backup_sheet'`, which the table's check refuses (`20261002020000_data_governance.sql:632-634`), and `:311` hard-codes `ios`.
+- Requirement: backup consent uses `consent_sheet` with context mode `standard` (`docs/legal/POLICY_VERSIONING.md:414`) through the shared record builder (BL-577).
+- Acceptance:
+  - Given the backup sheet, when Agree is tapped against embedded Postgres, then one `backup` accept row exists with context mode `standard`.
+- Extends: LEGAL-REQ-061.
+
+### Sign-in, the account holder and consent records
+
+#### BL-575 Where the agree line sits at sign-in (COMP-05)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, content. Severity: S1. **Decided: above the buttons (D-138 item 3).** Counsel confirms the sign-in-wrap.
+- Who: `mobile`, copy by `content`.
+- Problem: Terms are shown after sign-in (`sign-in/index.tsx:10`); `apple.ts:55-61` creates the account, sends Apple's code and stores the Apple user id before any acceptance.
+- Requirement: the code and the two specs agree.
+- Acceptance:
+  - Given the sign-in sheet, when it renders, then the agree line with versioned links sits directly above the provider buttons (or both specs say "after sign-in", if the founder chooses that).
+  - Given the largest Dynamic Type, when rendered, then the line is fully visible next to the buttons.
+- Extends: LEGAL-REQ-001.
+
+#### BL-576 Record the Privacy Policy acknowledgment at sign-up (COMP-04)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, data architect, privacy engineer. Severity: S1.
+- Who: `mobile`; `data-architect` publishes the `privacy` version row.
+- Problem: `consent.ts:99` records `terms` or `sensitive-data` only; LEGAL-REQ-001 and POLICY_VERSIONING require a `privacy` acknowledge; APPLY.md:193 publishes no `privacy` version.
+- Acceptance:
+  - Given a new account, when Agree and continue succeeds, then exactly one `terms` accept row and one `privacy` acknowledge row exist with the same `client_recorded_at`.
+  - Given no published `privacy` version, when sign-in runs, then setup stops with `consent_unavailable`, as it does for Terms.
+- Extends: LEGAL-REQ-001.
+
+#### BL-577 Every consent record is complete and built in one place (COMP-03, COMP-09, DATA-05)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer, data architect, privacy engineer. Severity: S1: rows written in build 2 cannot be fixed later.
+- Who: `mobile` (builder), `data-architect` (migration), `privacy` (review).
+- Problem: the app sends no `rendered_sha256` and hard-codes locale `en` (`consent.ts:103-116`); `app_version` is the marketing version only, so build 1 and build 2 both record "1.0.0"; there is no OS version or `age_signal`; links open floating URLs, not the versioned URL (POLICY_VERSIONING.md:104).
+- Requirement: every act is written through one shared builder that fills every PRIV-R21 field; a new migration adds `app_build` and `os_major` and makes `rendered_sha256` and `locale` (now meaning the language of the text shown) NOT NULL for sheet methods. DATA_CLASSIFICATION 4.5 gains rows for `app_build` and `os_major` and the new meaning of `locale` (founder merge).
+- Acceptance:
+  - Given the sensitive-data sheet, when Agree is tapped, then `rendered_sha256` equals the bundled manifest hash for that version and locale.
+  - Given a bundled consent text whose hash is not in the manifest, when CI runs, then the build fails.
+  - Given any act, when recorded, then the row holds the build number, the OS major version and, for Terms, `age_signal`.
+  - Given the Terms step, when a link is tapped, then the URL opened is the `url` of the version being recorded.
+  - Given any caller in `apps/mobile`, then it uses the shared builder, and a contract test runs the builder against embedded Postgres.
+- Extends: LEGAL-REQ-001, LEGAL-REQ-002, POLICY_VERSIONING 7.1 and 9.2, PRIV-R06.
+
+#### BL-578 A deletion request can still find the person's pseudonymised consent rows (DATA-05)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect. Severity: S1.
+- Who: `data-architect`.
+- Problem: `finalize_account_deletion` nulls `deletion_requests.profile_id` and keeps no hash; the only link is the raw uuid in `purge_ledger`, trimmed at 60 days (`data_governance.sql:892`). After day 60 the request id in the receipt email cannot find the consent rows.
+- Acceptance:
+  - Given a completed deletion, when the service role looks up the request id, then `deletion_requests` holds the same peppered `subject_hash` and the lookup returns the consent rows.
+  - Given an Asha deletion and the clock moved 61 days, when the lookup runs, then it still returns the rows.
+
+#### BL-579 The phone keeps a small record of the Terms in force before any account (COMP-12)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: legal, mobile engineer. Severity: S2.
+- Who: `legal` decides notice-only or tap-to-accept with counsel; then `mobile`.
+- Problem: first run (`onboarding.tsx`) shows no Terms or Privacy line, while Terms 1.3 says use is acceptance; the phone cannot say which version applied when the person started.
+- Requirement: a line with versioned Terms and Privacy links appears before the first letter; the phone stores document, version, action, `rendered_sha256` and `client_recorded_at` only, uploads it unchanged at first sign-in, and deletes it on Erase everything. It needs a DATA_CLASSIFICATION 4.5 row.
+- Acceptance:
+  - Given first run, when the welcome shows, then the line appears before the first letter.
+  - Given that line shown or accepted, then the device record holds exactly those five fields, and the first sign-in uploads it with its original `client_recorded_at`.
+
+#### BL-580 Close the server account when the age step says No (COMP-07)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect, mobile engineer. Severity: S1. Counsel confirms.
+- Who: `data-architect`, then `mobile`.
+- Problem: a No at the age step signs out locally only (`machine.logic.ts:171`, `session-provider.tsx:308-321`); Privacy 8 and Terms 2.1 promise to close the account.
+- Acceptance:
+  - Given the age step, when No and Continue are tapped, then the server deletes the auth user and profile before the local sign-out.
+  - Given that deletion, then one `ops.audit_log` row with reason `under_18_closure` exists, with no age, name or email.
+- Extends: LEGAL-REQ-002; next to BL-551 but a different path.
+
+#### BL-581 Remove accounts that never accepted Terms or never verified their email (COMP-06)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect. Severity: S1.
+- Who: `data-architect`.
+- Problem: "Not now" at the Terms step records nothing (`consent.tsx:288`); email sign-in uses `shouldCreateUser: true` (`email.ts:37`), which creates an auth user before verification (engineering reading); no cleanup exists. LEGAL-REQ-001 says no server account exists without a Terms acceptance row.
+- Acceptance:
+  - Given an auth user with no `terms` accept and no content older than 7 days, when the daily worker runs, then the user and profile are deleted and a content-free count is logged.
+  - Given an unverified email sign-up older than 24 hours, when the worker runs, then it is deleted.
+  - Given the change ships, when DATA_CLASSIFICATION and Privacy 7 are read, then both state the 7-day and 24-hour windows (founder merge).
+- Extends: LEGAL-REQ-001, LEGAL-REQ-033.
+
+#### BL-582 Stop collecting Apple's full name, or give it a purpose (COMP-08)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: privacy engineer, mobile engineer. Severity: S1.
+- Who: `privacy` decides, `mobile` builds.
+- Problem: `apple.ts:51` requests FULL_NAME and `session-provider.tsx:479-486` writes it to `profiles.display_name`, which nothing shows except export; invites use `signs_as`. Apple 5.1.1(iii) asks apps to collect only what they need (read 1 Nov 2026).
+- Recommendation (CPrivO): stop requesting the name; clear existing values in a migration.
+- Acceptance:
+  - Given Sign in with Apple, when the request is built, then it asks for email only, unless a screen that shows the name has shipped.
+  - Given an existing `display_name` with no use, when the change ships, then a migration clears it, and Privacy 2 and DATA_CLASSIFICATION match.
+
+### Account security
+
+#### BL-595 Wrong email codes are limited per address on the server (SEC-02)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: security engineer. Severity: S1.
+- Who: `security`; the hosted values are a founder step.
+- Problem: the wrong-code count lives in the phone's memory (`apps/mobile/src/lib/auth/pending.ts:72,103-110`), so a restart or a direct API call skips it; the server limits verification per IP only (`supabase/config.toml:56,71,74`; supabase.com/docs/guides/auth/rate-limits, read 1 Nov 2026). Someone guessing from many IPs is never locked out of one address.
+- Requirement: before anyone outside the family signs in, 8-digit codes plus CAPTCHA on the code request, or a server-side limit on wrong codes per address.
+- Acceptance:
+  - Given 5 wrong codes for one address from 5 different IPs, when a 6th code arrives (even the right one), then it is refused for the rest of the window.
+  - Given the hosted project, when its auth settings are read back, then `otp_length` matches `EXPO_PUBLIC_EMAIL_OTP_LENGTH`.
+- Extends: review M4, BL-248.
+
+#### BL-596 During the alpha only listed family addresses can sign up (SEC-03)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect, security engineer. Severity: S1.
+- Who: `data-architect` with `security`.
+- Problem: staging has `enable_signup = true` (`supabase/config.toml:44,64`) and email sign-in creates users (`email.ts:37`); 100 emails an hour cover the whole project (`config.toml:54`). These are the repo's local settings; the hosted values are unverified. Anyone with the build 2 publishable key can create accounts on the project that holds family letters, or use up the email budget.
+- Requirement: while the alpha runs, the `before user created` hook refuses addresses not on a founder-held list stored as hashes; before outside sign-in, CAPTCHA is on for code requests.
+- Acceptance:
+  - Given an address not on the list, when sign-up is tried through the API, then the hook refuses it and no `auth.users` row exists.
+  - Given a listed address, when it signs up, then it succeeds.
+- Extends: PR #424 (same hook, a separate check), D-100.
+
+#### BL-597 Prove the "sign everyone out" switch (SEC-04)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, security engineer. Severity: S1.
+- Who: `ops` with `security`.
+- Problem: `docs/ops/SECURITY.md:93` says revoking the JWT signing key signs everyone out. Supabase says rotation signs no one out and does not say revoking ends refresh tokens (supabase.com/docs/guides/auth/signing-keys, read 1 Nov 2026; unverified). `forceReauthEpoch` is parsed (`packages/api/src/remote-config.ts:107`) but nothing in the app reads it.
+- Requirement: a rehearsed procedure ends every session for one person and for everyone, and the result is checked.
+- Acceptance:
+  - Given two signed-in Asha phones, when the procedure runs, then both phones' next refresh fails and they show signed out.
+  - Given `forceReauthEpoch` raised, when the app next reads remote config, then it signs out locally and keeps its letters.
+- Extends: BL-249, LEGAL-REQ-040.
+
+#### BL-598 A runbook for lost access and suspected takeover (SEC-05)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Who: `ops` with `support`.
+- Problem: no runbook in `docs/ops/runbooks` covers "I lost my email" or "someone is in my account"; editing an email in the dashboard by hand is a social-engineering path into a book.
+- Requirement: identity proof steps; support never changes an email or links an identity by hand; a suspected takeover means suspend (BL-552), end sessions (BL-597), then investigate.
+- Acceptance:
+  - Given a support request to change a sign-in email, when the runbook is followed, then nothing changes without confirmation from the existing address or provider.
+  - Given a reported takeover, when the runbook runs, then the account's sessions end and it is suspended within 4 hours of the report.
+
+#### BL-599 A test pins the Keychain class for the session (SEC-06)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: mobile engineer. Severity: S1.
+- Who: `mobile`.
+- Problem: `apps/mobile/src/lib/supabase/secure-storage.ts:23-25` sets `AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`, and no test checks it (IAM-R10 asked for one).
+- Acceptance:
+  - Given the native adapter, when setItem runs, then expo-secure-store gets `keychainAccessible: AFTER_FIRST_UNLOCK_THIS_DEVICE_ONLY`.
+  - Given getItem and removeItem, when they run, then they pass the same options.
+
+#### BL-600 Store builds refuse plain http (SEC-07)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: qa engineer, mobile engineer. Severity: S2.
+- Who: `qa` (CI check), `mobile` (parser).
+- Problem: nothing checks App Transport Security in the built Info.plist, and `parseSupabaseEnv` (`apps/mobile/src/lib/supabase/env.ts`) accepts `http://` local-network addresses in any build.
+- Acceptance:
+  - Given the Release build in `ios-compile.yml`, when its Info.plist is read with `plutil`, then it has neither `NSAllowsArbitraryLoads` true nor `NSExceptionAllowsInsecureHTTPLoads`.
+  - Given `EXPO_PUBLIC_APP_ENV` is preview or production, when the URL is http, then `parseSupabaseEnv` returns null.
+- Extends: SEC-R16.
+
+#### BL-601 Photo storage has a per-person limit and files tie to letters (SEC-08)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect. Severity: S2.
+- Who: `data-architect`.
+- Problem: the insert policy (`20261028000000_pg_temp_last_and_purged_photos.sql:88-96`) allows 10 MB files with no count limit and no check that the name is one of the author's letters.
+- Acceptance:
+  - Given an author at the quota, when they upload one more file, then Storage refuses it.
+  - Given a file name that is not one of the caller's letter ids, when it is inserted, then it is refused.
+
+#### BL-602 Chapter 05 says what the code actually enforces (SEC-09)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: security engineer. Severity: S2.
+- Who: `security-architect`.
+- Problem: `docs/engineering/05-identity-and-access.md` lines 39, 45, 51, 53 and 55 describe Google sign-in, apple-token and two tests as not built, and they are; `last_reviewed` is 3 Oct.
+- Acceptance:
+  - Given each IAM rule, when its "Enforced by" is checked by grep, then the file or test it names exists.
+  - Given a rule with no test, then it says "not yet".
+
+#### BL-603 Know what Supabase logs about the family on staging, and who can read it (SEC-10)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Who: `ops`.
+- Problem: the email link token travels in a GET query string (`apps/mobile/src/lib/auth/email.ts:82`); what Supabase logs and for how long is unverified; any session with the Supabase connector can read staging logs, and staging holds the family's data.
+- Acceptance:
+  - Given staging, when the founder reads back the log fields and retention, then they are recorded in `docs/legal/evidence/`.
+  - Given the alpha running, when the connector list is read, then no agent session can reach the staging organization.
+- Extends: AF-06, SR-12.
+
+### Data and database
+
+#### BL-583 One applied-migrations record per project (DATA-02)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, data architect. Severity: S1.
+- Who: `ops` (workflow), `data-architect` (format).
+- Problem: `.github/migrations-applied.txt` is one flat list (`early-letters` has files 1 and 2); staging gets 1 to 27 on 2 Nov; until a later PR records them, applied files can be edited without the guard failing.
+- Acceptance:
+  - Given `deploy-db.yml` has pushed to staging, when the job ends, then it fails if any version in staging's `schema_migrations` is missing from the staging list.
+  - Given a PR that edits a file applied on any project, when CI runs, then the migration guard fails.
+  - Given a new file that sorts before staging's newest applied version, when CI runs, then the guard fails.
+
+#### BL-584 An outside alert when purge or retention stops running (DATA-03)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Who: `ops`.
+- Problem: the purge runbook says a dead worker cannot alert (`purge-failing.md:4`); `smoke.ts:54-58` checks scheduling only at deploy; schedules are SQL run by hand.
+- Acceptance:
+  - Given no `purge_run` audit row for 2 hours, then the founder gets an alert from outside Supabase (a scheduled workflow reading a content-free health RPC).
+  - Given a failed `scribe-*` run in `cron.job_run_details`, then the same alert fires within 2 hours.
+  - Given a stubbed stale last run, when the checker runs, then it exits non-zero (unit test).
+
+#### BL-585 Audit and consent tables refuse rewrites and truncation (DATA-06)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect. Severity: S2.
+- Who: `data-architect`.
+- Problem: `audit_events` has no update or delete guard (`data_governance.sql:310`); `policy_acceptances` and `ops.audit_log` have no BEFORE TRUNCATE trigger, unlike `subscription_consents` and `escrow_unwraps`.
+- Acceptance:
+  - Given an UPDATE to `audit_events` other than finalize's nulling of actor and subject, then it fails with SCIMM.
+  - Given a TRUNCATE on `audit_events`, `policy_acceptances` or `ops.audit_log`, then it fails with SCIMM.
+  - Given the retention purge with `app.retention_purge` on, then the documented deletes still succeed.
+
+#### BL-586 Know whether Supabase Auth keeps IP addresses after a deletion (DATA-07)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, privacy engineer. Severity: S2.
+- Who: `ops`, `privacy`.
+- Problem: rows go to `auth.audit_log_entries` with user id, IP and user agent only when "Write audit logs to the database" is on (supabase.com/docs/guides/auth/audit-logs, read 1 Nov 2026); nothing records the setting or deletes those rows.
+- Acceptance:
+  - Given staging and production, then the toggle state is recorded in `docs/ops/SECURITY.md`.
+  - Given the toggle on, when a deletion completes, then `verify-deletion.ts` finds no `auth.audit_log_entries` or `auth.sessions` row (sessions hold an IP) with the old id.
+- Extends: OQ-5.
+
+#### BL-587 A rehearsed plan, or a decision, for alpha data when production opens (DATA-09)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, data architect. Severity: S2. The founder decides move or delete (ENVIRONMENTS.md:75).
+- Who: `ops`, `data-architect`.
+- Acceptance:
+  - Given the Asha fixture on one project, when moved to another, then letter counts, `raw_sha256` and consent rows match, and each phone resyncs with no duplicates.
+  - Given the pepper differs between projects, then pseudonymised rows still resolve, or the pepper is carried over as a documented step.
+
+### Speed, size and release evidence
+
+#### BL-588 Measure the launch and record budgets on a phone (APP-05, APP-06)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: human. Owner: qa engineer. Severity: S1.
+- Who: `qa`.
+- Problem: cold start p50 1.2 s and p90 2.0 s, warm 400 ms, first run 300 ms and tap-to-microphone p95 500 ms have no measurement (TDD 01 lines 60 and 69; DEVICE_TEST_PLAN S1-03 never ran).
+- Acceptance:
+  - Given an SE 3 in airplane mode, when cold started 10 times, then p50 is 1.2 s or less and p90 2.0 s or less.
+  - Given the same phone, when warm started 10 times, then p50 is 400 ms or less.
+  - Given permission granted, when Speak is tapped 20 times, then p95 from tap to the first meter value is 500 ms or less.
+- Extends: BL-044, BL-408.
+
+#### BL-589 Record build 1's download size and gate the bundle in CI (APP-10, APP-11)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform, design systems. Severity: S2.
+- Who: `ops`, with `design-systems` for fonts.
+- Problem: native size is "not measured yet" (`docs/ops/APP_SIZE.md`); CI has no size step. Measured this session in a Linux export, not a phone: Hermes bundle 9.18 MB against a 12 MB budget. Fonts ship twice (expo-font plugin plus `loadAsync`, about 1.37 MB), and `expo-glass-effect`, `@rn-primitives/portal` and `buffer` have no imports.
+- Acceptance:
+  - Given build 1's page in App Store Connect, when the size table is read, then the largest thinned variant is recorded in APP_SIZE.md and is under 40 MB.
+  - Given a PR that grows the Hermes bundle past 12 MB, then CI fails.
+  - Given an IPA, when its contents are listed, then each .ttf appears once; given a dependency with no import, when CI runs, then the check fails.
+- Extends: BL-392, BL-044, RT-REL-09.
+
+#### BL-590 Someone reads TestFlight crashes every day of the alpha, and source maps are kept (APP-04)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: platform. Severity: S1.
+- Who: `ops`.
+- Problem: crash reporting is off in v1.0 (D-095); TESTFLIGHT.md covers feedback only; nothing keeps Hermes source maps, so JS stacks cannot be read.
+- Acceptance:
+  - Given a deliberate crash in a development build on a phone, when the owner opens App Store Connect, then the crash shows within 24 hours and its JS frame maps to a file.
+  - Given a new build, when EAS finishes, then its source map is stored with the build number.
+  - Given the tester note, when a tester reads it, then it asks what they did before any "something went wrong" screen.
+- Extends: BL-021, RT-REL-15.
+
+#### BL-591 Kill-during-take on a real phone, with no word lost (APP-13)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: human. Owner: qa engineer. Severity: S1.
+- Who: `qa`.
+- Problem: the kill gate is simulator-only and accepts up to 5 s of lost tail (`e2e/kill/harness.mjs:23-24`); the promise is "zero, ever" (PRD 7.5).
+- Acceptance:
+  - Given an SE 3, when killed mid-take 50 times, then 50 takes are kept and the tail loss is reported at p50 and max.
+- Extends: BL-135.
+
+#### BL-592 Build 2 installs over build 1 and keeps every letter (APP-14)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: human. Owner: platform. Severity: S1.
+- Who: `ops`.
+- Problem: no tag marks build 1's commit, and nobody has installed build 2 over build 1 with letters in it.
+- Acceptance:
+  - Given build 1's commit, when `git ls-remote --tags` runs, then it shows the tag RELEASE.md names for build 1 (founder step: tag pushes are blocked for sessions).
+  - Given an SE 3 on build 1 with 5 letters and 1 waiting take, when build 2 installs from TestFlight, then all 6 open and the take plays.
+
+#### BL-593 A battery number for recording (APP-09)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: human. Owner: speech engineer. Severity: S3. **Decided: 5% or less for a 30-minute take on an SE 3, measured, not a gate (D-138 item 4).**
+- Who: `speech`.
+- Acceptance:
+  - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
 ## Appendix: TDD proposal to BL mapping
 
