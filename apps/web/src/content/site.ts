@@ -77,7 +77,7 @@ export const site = {
     writeToUs: 'Write to us any time:',
     shareCopied: 'Link copied',
     shareCopyFailed: 'This browser would not copy. Here is the address:',
-    shareHeading: 'Know a parent who would love this?',
+    shareHeading: 'Know another tired parent?',
     shareWhatsapp: 'WhatsApp',
     shareMessages: 'Messages',
     shareEmail: 'Email',
@@ -136,7 +136,7 @@ export const site = {
     s03: {
       label: 'Talking',
       headline: 'Talk like you normally do.',
-      support: 'Say it the way you would say it to Meera. Stop halfway, laugh, lose your thread.',
+      support: 'Say it the way you would say it to Meera, even if you lose your thread halfway.',
       appTo: 'To Meera',
       /** tonight.states.listening, listeningHint */
       appListening: 'Listening.',
@@ -158,7 +158,7 @@ export const site = {
     s05: {
       label: 'Your voice',
       headline: 'Your voice is kept too.',
-      support: 'Every letter you speak keeps its recording. One day Meera can hear exactly how you sounded tonight.',
+      support: 'Each spoken letter keeps its recording, tired end-of-day voice and all.',
       /** tonight.states.savedLetter */
       appKept: 'Signed and kept.',
     },
@@ -185,8 +185,8 @@ export const site = {
     },
     s08: {
       label: 'Languages',
-      headline: 'English first, more to follow.',
-      support: 'English first. Hindi, Spanish, Mandarin, French, Arabic and Portuguese follow, each once a native speaker has checked it.',
+      headline: 'Your language, in time.',
+      support: 'English at launch. Next are Hindi, Spanish, Mandarin, French, Arabic and Portuguese, each after a native speaker has read it.',
       /**
        * The same sentence in each v1.0 language (first verification pass: docs/web/copy/BR1-audit.md s2).
        * Every line needs a native speaker's sign-off before launch. Portuguese is Brazilian (voce).
@@ -209,7 +209,7 @@ export const site = {
         'No ads. We never sell your data.',
         'Your letters are never used to train AI.',
         'Export your letters whenever you want.',
-        'Delete any letter whenever you like.',
+        'Delete any letter, any time.',
       ],
     },
     s10: {
@@ -237,7 +237,7 @@ export const site = {
     s11: {
       label: 'Start tonight',
       headline: 'Tell Meera about today.',
-      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will tell you when it is ready.`,
+      supportPrelaunch: `${NAME} is coming to iPhone in the US. Leave your email and we will write when it is out.`,
       supportLive: 'On iPhone in the US. Your first two letters are free, and each takes about a minute.',
     },
   },
@@ -252,12 +252,12 @@ export const site = {
     quietButton: 'Save my place',
     sending: 'Saving',
     successTitle: 'Thank you, you are on the list.',
-    successBody: `Check your inbox for a hello. One more email comes when ${NAME} is ready.`,
-    success: `Thank you, you are on the list. Check your inbox for a hello. One more email comes when ${NAME} is ready.`,
+    successBody: `A hello is in your inbox now. After that, one email when ${NAME} is out.`,
+    success: `Thank you, you are on the list. A hello is in your inbox now. After that, one email when ${NAME} is out.`,
     /** Shown when the address is already on the list (the server says so; components/cta/NotifyForm.tsx). */
     alreadyTitle: 'You are already on the list.',
-    alreadyBody: `You do not need to do anything. We will write when ${NAME} is ready.`,
-    already: `You are already on the list. You do not need to do anything. We will write when ${NAME} is ready.`,
+    alreadyBody: `We already have your address, so there is nothing to do. We will write when ${NAME} is out.`,
+    already: `You are already on the list. We already have your address, so there is nothing to do. We will write when ${NAME} is out.`,
     error: 'That email does not look quite right. Could you check it and try again?',
     rateLimited: 'Please give it a minute, then try once more.',
     server: 'That did not go through on our side. Please try again in a moment.',
@@ -278,7 +278,7 @@ export const site = {
     preheader: 'A first look at a letter, and what happens next.',
     kicker: 'Welcome',
     headline: 'You are on the list.',
-    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. When it is ready, we will email you once more.`,
+    intro: `${NAME} is the baby memory book you fill by talking. It is coming to iPhone in the US. We will email you once more when it opens.`,
     letterLabel: 'What a letter looks like',
     letterTo: 'To Meera',
     letterMeta: 'Month 9, Tuesday night',
