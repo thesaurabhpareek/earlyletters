@@ -68,9 +68,11 @@ test('[J05d] a take of under a second', async ({ app, record }) => {
   await step('unhappy', 'Finished at once', 'Finish tapped straight after starting. The app keeps whatever was captured and opens Review; it does not refuse a short or empty take. ' + NOTE_WEB);
 });
 
-// Known failure on develop: #480 ("Array buffer allocation failed" at about 65 s on web), fixed by #532.
-// Remove this fixme when #532 merges.
-test.fixme('[J05e] a long take',async ({ app, record }) => {
+test('[J05e] a long take', async ({ app, record }) => {
+  // Known failure on develop: #480 ("Array buffer allocation failed" at about 65 s on web). #532 fixes it and removes
+  // this line in the same PR. Until then the test runs and is expected to fail; once it passes, the job goes red
+  // ("expected to fail, but passed") so the marker cannot be forgotten.
+  test.fail(true, 'Known failure #480, fixed by #532: remove this line in #532');
   test.setTimeout(150_000);
   const step = journey(record, 'J05', 'voice-capture', 9, 'J05-01');
   await firstRun(app);

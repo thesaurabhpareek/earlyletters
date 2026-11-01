@@ -2,8 +2,8 @@
 # Playwright: every flow in apps/mobile/e2e-web (about 90 tests, the J01 to J22 journeys and their unhappy paths).
 # A stand-in for a device, not a replacement (e2e-web/playwright.config.ts says what it cannot prove).
 #
-# When: on a pull request that changes the app's screens (apps/mobile/src/**), the flows themselves
-# (apps/mobile/e2e-web/**) or the words the app says (packages/content/**), and nightly. Not required for merging
+# When: on a pull request that changes anything the web export is built from (the paths below), and nightly.
+# Not required for merging
 # (it is not in the `required` job of ci.yml); a red run is read like any other check. GitHub runs the schedule only
 # once this file is on the default branch (main).
 #
@@ -21,13 +21,19 @@ name: Web journeys
 
 on:
   pull_request:
+    # Everything the web export is built from, when unsure included (Review B on #534): the whole app (its src, config,
+    # Metro and build files, assets, shims, web-preview and the flows themselves), every workspace package it imports
+    # (core, api, brand, design-tokens, content and the rest of packages/**), the lockfile and root package.json
+    # (an Expo or Playwright bump changes the bundle or the browser), and the setup action this job uses.
     paths:
-      - apps/mobile/src/**
-      - apps/mobile/e2e-web/**
-      - packages/content/**
+      - apps/mobile/**
+      - packages/**
+      - package.json
+      - package-lock.json
+      - .github/actions/setup/**
       - .github/workflows/web-journeys.yml
   schedule:
-    - cron: '41 10 * * *' # 10:41 UTC daily, after nightly.yml (03:41 in California during daylight time)
+    - cron: '41 10 * * *' # 10:41 UTC daily, after nightly.yml (02:41 in California in standard time, 03:41 in daylight time)
   workflow_dispatch:
 
 permissions:
