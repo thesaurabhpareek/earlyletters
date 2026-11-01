@@ -1213,7 +1213,7 @@ export const en = {
     emergency: "If you or your baby are in danger right now, call 911.",
     // Rows and their VoiceOver hints. Each row says what a tap does: the line's own row starts a call,
     // the Text row starts a message (F20-REQ-002).
-    textRow: "Text {number}",
+    textRow: "Send a text",
     callHint: "Starts a call.",
     textHint: "Starts a text message.",
     // When this device cannot call or text (an iPad, a phone with no SIM): the number to copy (F20-REQ-005).
