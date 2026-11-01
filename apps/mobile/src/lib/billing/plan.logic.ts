@@ -41,7 +41,7 @@ const DAY_MS = 86_400_000;
  * next check, at most this long after the last read. 7 days, from PRD C-NFR-004
  * (docs/prd/C-habits-pricing-settings.md: "The last known entitlement is cached
  * for 7 days."), carried into PRD v2 by F14-REQ-003 and 06-nfr ("C-NFR-004 Rev").
- * Failing open for a payer is the promise (Karma, CR-39; RT-SUB-13). A fresh
+ * Failing open for a payer is the promise (CR-46 in docs/agents/cto/RULINGS.md; RT-SUB-13). A fresh
  * read that no longer lists it turns Plus off at once, so this only matters
  * while the phone cannot read StoreKit again.
  */

@@ -101,11 +101,14 @@ describe('planFromSnapshot: StoreKit 2 -> PlanView', () => {
     expect(plusOn(p, at(7))).toBe(false);
   });
 
-  it('[C-NFR-004, RT-SUB-13] offline renewal grace is 7 days, pinned to the PRD line (CR-39: fail open for a payer)', () => {
+  it('[C-NFR-004, RT-SUB-13] offline renewal grace is 7 days, pinned to the PRD line (CR-46: fail open for a payer)', () => {
     expect(STILL_LISTED_MS).toBe(7 * 86_400_000);
     const prd = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'prd', 'C-habits-pricing-settings.md'), 'utf8');
     const line = prd.split('\n').find((l) => l.includes('**C-NFR-004'));
     expect(line).toContain('The last known entitlement is cached for 7 days.');
+    // The ruling that settles it (RT-SUB-13, FOUNDER_QUEUE T6).
+    const rulings = readFileSync(join(__dirname, '..', '..', '..', 'docs', 'agents', 'cto', 'RULINGS.md'), 'utf8');
+    expect(rulings).toMatch(/^### CR-46 Offline renewal grace is 7 days, from C-NFR-004/m);
     // A payer whose renewal has not reached this phone, offline for 6 days after the last read, still has Plus.
     const offline = planFromSnapshot(snap([tx({ expiresAt: at(-0.1) })], [status({ expiresAt: at(-0.1) })]));
     expect(plusOn(offline, at(6))).toBe(true);
