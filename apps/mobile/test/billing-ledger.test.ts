@@ -465,9 +465,17 @@ describe('[D-133] a kept note counts like a letter', () => {
   });
 
   it('kept from Review: a note whose machine words the author has not kept yet does not count', () => {
-    keep(noteDraft().id, { transcriptStatus: 'unreviewed' });
+    const d = noteDraft();
+    keep(d.id, { rawTranscript: '', finalText: '', transcriptStatus: 'waiting' });
+    // The machine's words arrive later and wait for the author (entries.ts WORDS_UNREVIEWED).
+    f.db.run('UPDATE entries SET final_text = ?, transcript_status = ? WHERE id = ?', 'Asha, you clapped.', entries.WORDS_UNREVIEWED, d.id);
+    ledger.recordKept(f.ctx, d.id, 0);
     expect(ledger.readState(f.ctx).n).toBe(0);
     expect(ledger.countPresent(f.ctx)).toBe(0);
+    // Kept from Review with the words on screen: it counts now.
+    expect(entries.markWordsReviewed(f.ctx, d.id)).toBe(true);
+    ledger.recordKept(f.ctx, d.id, 0);
+    expect(ledger.readState(f.ctx).n).toBe(1);
   });
 
   it('a quiet-day mark still never counts, and is never relabelled a note', () => {
