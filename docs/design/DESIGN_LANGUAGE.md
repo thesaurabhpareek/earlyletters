@@ -160,7 +160,7 @@ Apple's default Body is 17/22 (H1). Mukta sits small on its em, so UI styles are
 | `prompt` | Literata 400 | 24 / 32 | Title 3 | none (the prompt on Listen and Write) |
 | `nameField` | Literata 400 | 22 / 28 | Title 2 | none (the child's name as it is typed on first run: the book's title, S05) |
 | `promptHero` | Literata 400 | 28 / 36 | Title 1 | 1.8x (Tonight's prompt: the screen's one literary line, on the paper with no card) |
-| `numeral` | Literata 500, -0.5 | 64 / 64 | Large Title | 1.4x (a month opener's numeral in the Book; at its cap it is already 90 pt) |
+| `numeral` | Literata 500, +1 tracking, lining proportional figures | 64 / 96 | Large Title | 1.4x (a month opener's numeral in the Book; at its cap it is already 90 pt). The 96 pt line is taller than the face so iOS and the web centre it; the opener trims it to the figures' ink (`Text trim="figures"`, `tokens.fontMetrics`). Never negative tracking on figures: at -0.5 the 1 and 8 of "18" closed up in dark mode (TestFlight build 1) |
 
 **Faces are bundled (Oct 3 2026):** `packages/design-tokens/fonts`, subset with `build_fonts.py`: Mukta Regular / Medium / SemiBold (Latin, Latin Extended, Devanagari), Literata Regular (opsz 16) / Medium (opsz 30) / Italic (opsz 16) cut from the variable font, Tiro Devanagari Hindi Regular. 1.37 MB raw, 0.64 MB compressed. One family name per face; the `Text` component applies the face and never asks a custom font to synthesise weight or italics.
 
