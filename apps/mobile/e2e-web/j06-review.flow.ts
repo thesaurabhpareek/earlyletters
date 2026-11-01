@@ -34,7 +34,7 @@ test('[J06] review: the small fixes, put back, word for word, save to the book',
   await step('happy', 'Undo the put-back', 'Undo re-applies the small fix. Every edit is reversible both ways.');
 
   await app.getByRole('radio', { name: 'Exactly as said' }).click();
-  await expect(app.getByText('Exactly as you said it.')).toBeVisible();
+  await expect(app.getByText('Nothing was changed.')).toBeVisible();
   await step('happy', 'Exactly as said', 'One tap shows the words exactly as spoken, with their "um" and repeats; the screen says so. This is the view and the choice for this letter, until it is saved.');
   await app.getByRole('radio', { name: 'With small fixes' }).click();
   await expect(app.getByText(/small fixes/i).first()).toBeVisible();
