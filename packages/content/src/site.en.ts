@@ -3,7 +3,7 @@
 
 export const site = {
   hero: {
-    headline: "Remember and treasure every milestone",
+    headline: "Talk for a minute. Keep it for years.",
     subhead:
       "Early Letters is the baby memory book you fill by talking. Private by design: your letters stay on your phone, and every word is kept exactly as you said it, ready to read together for years.",
   },
@@ -11,7 +11,7 @@ export const site = {
   benefits: [
     {
       title: "Exactly as you said it",
-      body: "Transcription happens on your phone by default and only fixes microphone slips. We never rewrite your words. Every sentence is one you actually said.",
+      body: "Transcription happens on your phone by default and only fixes microphone slips. We never rewrite your words, so every sentence is one you actually said.",
     },
     {
       title: "Your voice, kept",
@@ -49,7 +49,7 @@ export const site = {
   },
   family: {
     title: "Room for everyone who loves {child}",
-    body: "Grandparents, aunts, uncles and close friends can add their own letters, from anywhere. Each letter is signed. Each author chooses what to share, and parents approve what goes into the book. It is a simple way for family far away to be part of the everyday.",
+    body: "Grandparents, aunts, uncles and close friends can add their own letters, from anywhere. Each letter is signed. Each author chooses what to share, and parents approve what goes into the book. Family far away can be part of an ordinary Tuesday.",
   },
   privacy: {
     title: "Our promise, in plain words",
@@ -75,7 +75,7 @@ export const site = {
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "That is completely fine. There is nothing to keep up with and nothing counting. On a quiet day you can tap \"Not much today\", or simply come back when you have something to say. Your book is still there.",
+      a: "Nothing is keeping count, so there is nothing to catch up on. On a quiet day you can tap \"Not much today\", or just come back when you have something to say. Your book is still there.",
     },
     {
       q: "Can grandparents add letters?",
@@ -100,13 +100,13 @@ export const site = {
   ],
   gift: {
     title: "A gift from the grandparents",
-    body: "Give Early Letters to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. It is a gift that keeps growing, one letter at a time.",
+    body: "Give Early Letters to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. The book fills one letter at a time.",
     cta: "Give Early Letters",
   },
   waitlist: {
     label: "Your email",
     button: "Tell me at launch",
-    success: "Thank you. We will write when Early Letters is ready for you.",
+    success: "Thank you. We will write to you when Early Letters launches.",
     error: "That did not go through. Please check your email address and try again.",
   },
 } as const;

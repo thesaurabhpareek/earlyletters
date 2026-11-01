@@ -8,7 +8,7 @@ export const book = {
   productName: "Early Letters: Year {n}",
   spine: "Early Letters  |  {child}  |  Year {n}",
   backCover:
-    "This book was spoken before it was written. Every letter inside comes from someone who loves {child}, said out loud on an ordinary day and kept exactly as they said it. Some are long. Some are a single line. Read them slowly, read them together, and come back to them whenever you like.",
+    "This book was spoken before it was written. Every letter inside comes from someone who loves {child}, said out loud on an ordinary day and kept exactly as they said it. Some run for pages and some are a single line. Read them slowly, or aloud together, and come back whenever you like.",
   dedication: "For {child}, from everyone who talked to you this year.",
   aboutThisBook: {
     title: "About this book",
