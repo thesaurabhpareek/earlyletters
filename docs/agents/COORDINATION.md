@@ -88,5 +88,6 @@ This covers every requirement, backlog item, spec row, design note and acceptanc
   - **Never:** what it must not collect or store (PRIV-R02, PRIV-R10 and the PRIV-R21 never-list).
   - **Decline and withdraw:** what happens on No, Not now and later withdrawal, and that export and deletion still work (PRIV-R09).
 - **Who writes what.** `product` writes the requirement and acceptance criteria; `design-systems` and `content` write the Shown line and its states, including the largest Dynamic Type; `mobile`, `sync` and `data-architect` write the Records line and the tests; `privacy`, `compliance-engineer` and `regulatory-affairs` review the Records and Never lines; `legal` confirms anything a user is promised, and the founder merges legal text (D-125). Partners and outside contributors follow the same rules.
+- **The customer's side, in the founder's voice.** Write what the parent or relative sees and does, in their words, then the check with numbers. Match the founder's plain, direct style in `docs/agents/FOUNDER_VOICE.md`. If a request is ambiguous, ask one short question before producing a polished answer.
 - **Evidence.** A fact about a law, Apple, a vendor or a device carries a source read that session and its date, or is marked unverified (`_AUTHORING.md` section 6).
 
