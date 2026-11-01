@@ -170,16 +170,16 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder steps still open (the signing keys and the production ascAppId); every other check passes', () => {
+  it('fails exactly the founder step still open (the production ascAppId); every other check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
     const results = productionChecks(readInputs(APP, shell)) as Result[];
     const failing = results.filter((r) => r.level === 'FAIL');
-    // signing-keys: packages/api/src/keys.ts is empty until the founder pastes the keys (PACKS_HOSTING.md step 1).
+    // signing-keys passes since #512 (el-2026-11 and el-2026-11-backup) and must stay passing.
     // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
     // asc-app-id from this set. project-id passes since #487 and must stay passing.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'signing-keys']);
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id']);
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
