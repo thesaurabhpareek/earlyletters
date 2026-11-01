@@ -1168,8 +1168,8 @@ describe('claims that must be true of what the first build does', () => {
     expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
   });
 
-  it('the site promises only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
+  it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
     const overclaim = /grammar|we was|misheard word/i;
-    expect(offenders(SITE, overclaim)).toEqual([]);
+    expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
   });
 });

@@ -58,7 +58,7 @@ export const pages = {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, we only fix small slips, like an um, a repeat or a misheard word, and mark each one. A small fix can also be a missing full stop or a one-word grammar slip like we was to we were. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "In practice, we take out the ums and accidental repeats, spell your names your way, and put in capital letters and full stops, and we mark each fix. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
           "Every fix is recorded and can be undone. Exactly what you said is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
           "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
@@ -114,7 +114,7 @@ export const pages = {
       {
         heading: "It stays in your words",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
           "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",
           "You do not need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
