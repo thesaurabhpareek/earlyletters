@@ -26,6 +26,11 @@
 //
 // Report mode (default) never exits non-zero. --check exits 1 when an ID is defined in two
 // specs or a cited ID is defined nowhere. Whether --check blocks merges is 07 Q8 (founder).
+// --scope b1 (HV2-012, EG-5/EG-6): lists the build-1 P0 requirement IDs and the ones no test title
+// cites. The scope is the IDs written anywhere in the rows of docs/qa/release-test-catalog.csv
+// whose release is B1 or both and whose priority is P0. With --check the uncited set may only
+// shrink against docs/qa/b1-p0-uncited.baseline (--baseline <file>, --catalog <file> override);
+// --update-baseline rewrites the baseline, and only when the new set is a subset of the old one.
 // --json prints the headline counts, duplicates and undefined IDs as one JSON object (for CI).
 
 import fs from 'node:fs';
@@ -502,13 +507,113 @@ export function renderTrace(m) {
   return L.join('\n');
 }
 
+/** RFC 4180 style CSV: quoted fields may hold commas, doubled quotes and newlines. */
+export function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let f = '';
+  let q = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"' && text[i + 1] === '"') { f += '"'; i++; } else if (c === '"') q = false; else f += c;
+    } else if (c === '"') q = true;
+    else if (c === ',') { row.push(f); f = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(f); f = '';
+      if (row.some((x) => x !== '')) rows.push(row);
+      row = [];
+    } else f += c;
+  }
+  if (f !== '' || row.length) { row.push(f); if (row.some((x) => x !== '')) rows.push(row); }
+  return rows;
+}
+
+/**
+ * Build-1 P0 scope from the release catalog: every requirement ID written in any cell of a row
+ * with priority P0 and release B1 or both. Returns the sorted IDs and how many in-scope rows
+ * name no requirement ID at all (most rows cite device-sheet ids like AL-01, not requirements).
+ */
+export function b1ScopeFromCatalog(csv) {
+  const rows = parseCsv(csv);
+  if (!rows.length) throw new Error('catalog is empty');
+  const head = rows[0];
+  const pi = head.indexOf('priority');
+  const ri = head.indexOf('release');
+  if (pi < 0 || ri < 0) throw new Error('catalog header lacks priority or release');
+  const ids = new Set();
+  let rowsInScope = 0;
+  let rowsWithoutId = 0;
+  for (const r of rows.slice(1)) {
+    if (r[pi] !== 'P0' || (r[ri] !== 'B1' && r[ri] !== 'both')) continue;
+    rowsInScope++;
+    const found = extractIds(r.join('\n'));
+    if (!found.length) rowsWithoutId++;
+    for (const id of found) ids.add(id);
+  }
+  return { ids: [...ids].sort(cmpId), rowsInScope, rowsWithoutId };
+}
+
+/** Baseline file: one ID per line, `#` lines are comments. */
+export function parseBaseline(text) {
+  return text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#')).sort(cmpId);
+}
+
+/**
+ * Ratchet: the uncited set may not gain an ID the baseline lacks (this also covers the count
+ * rising). IDs in the baseline that are now cited, or no longer in scope, are `stale`: the PR
+ * that cited them should lower the baseline file.
+ */
+export function ratchet(uncited, baseline) {
+  const base = new Set(baseline);
+  const cur = new Set(uncited);
+  return { added: uncited.filter((id) => !base.has(id)), stale: baseline.filter((id) => !cur.has(id)) };
+}
+
+function b1Scope({ repo, m, args, log }) {
+  const catalog = path.resolve(repo, args.catalog || 'docs/qa/release-test-catalog.csv');
+  const baselineFile = path.resolve(repo, args.baseline || 'docs/qa/b1-p0-uncited.baseline');
+  if (!exists(catalog)) { log(`trace --scope b1: catalog not found: ${catalog}`); return 2; }
+  const sc = b1ScopeFromCatalog(read(catalog));
+  const uncited = sc.ids.filter((id) => !(m.tests.get(id) && m.tests.get(id).size));
+  log(`trace --scope b1: ${sc.ids.length} requirement IDs in ${sc.rowsInScope} B1 or both P0 catalog rows; ` +
+    `${sc.ids.length - uncited.length} cited by a test title; ${uncited.length} uncited; ` +
+    `${sc.rowsWithoutId} of those rows name no requirement ID.`);
+  for (const id of uncited) log(`  uncited: ${id}`);
+  const hasBase = exists(baselineFile);
+  const base = hasBase ? parseBaseline(read(baselineFile)) : [];
+  const r = ratchet(uncited, base);
+  if (args.updateBaseline) {
+    if (hasBase && r.added.length) { log(`  baseline not updated: it would gain ${r.added.join(', ')}. The baseline may only shrink.`); return 1; }
+    fs.writeFileSync(baselineFile, BASELINE_HEAD + uncited.join('\n') + (uncited.length ? '\n' : ''));
+    log(`  baseline written: ${uncited.length} IDs.`);
+    return 0;
+  }
+  if (!args.check) return 0;
+  if (!hasBase) { log(`  FAIL: baseline file missing: ${path.relative(repo, baselineFile)}. Create it with --update-baseline.`); return 1; }
+  for (const id of r.stale) log(`  baseline lists ${id} but it is now cited or out of scope: remove it from the baseline in this PR.`);
+  if (r.added.length) {
+    for (const id of r.added) log(`  FAIL: ${id} is uncited and not in the baseline (baseline holds ${base.length}, now ${uncited.length}).`);
+    return 1;
+  }
+  return 0;
+}
+
+const BASELINE_HEAD = '# B1 P0 requirement IDs with no test title citing them (HV2-012). One per line.\n' +
+  '# This file may only shrink. Cite the ID in a test title as [ID] and delete the line.\n';
+
 function parseArgs(argv) {
-  const a = { check: false, write: true, out: null, repo: null, root: null, json: false };
+  const a = { check: false, scope: null, catalog: null, baseline: null, updateBaseline: false, write: true, out: null, repo: null, root: null, json: false };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--check') a.check = true;
     else if (v === '--no-write') a.write = false;
     else if (v === '--json') a.json = true;
+    else if (v === '--scope') a.scope = argv[++i];
+    else if (v === '--catalog') a.catalog = argv[++i];
+    else if (v === '--baseline') a.baseline = argv[++i];
+    else if (v === '--update-baseline') a.updateBaseline = true;
     else if (v === '--out') a.out = argv[++i];
     else if (v === '--repo') a.repo = argv[++i];
     else if (v === '--help' || v === '-h') a.help = true;
@@ -520,7 +625,8 @@ function parseArgs(argv) {
 
 export function main(argv = process.argv.slice(2), log = console.log) {
   const args = parseArgs(argv);
-  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>]'); return 0; }
+  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>] [--scope b1 [--catalog <csv>] [--baseline <file>] [--update-baseline]]'); return 0; }
+  if (args.scope && args.scope !== 'b1') throw new Error(`unknown scope ${args.scope} (only b1)`);
   const repo = path.resolve(args.repo || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
   const docsRoot = path.resolve(repo, args.root || (exists(path.join(repo, 'docs/prd/v2')) ? 'docs/prd/v2' : 'docs/prd'));
   const m = collect({ repo, docsRoot });
@@ -530,6 +636,10 @@ export function main(argv = process.argv.slice(2), log = console.log) {
     fs.writeFileSync(out, renderTrace(m) + '\n');
   }
   const failed = m.duplicates.length > 0 || m.undefinedIds.length > 0;
+  if (args.scope === 'b1') {
+    // The ratchet is its own check: duplicate and undefined IDs are the plain --check (EG-5).
+    return b1Scope({ repo, m, args, log });
+  }
   if (args.json) {
     log(JSON.stringify({
       layout: m.layout,

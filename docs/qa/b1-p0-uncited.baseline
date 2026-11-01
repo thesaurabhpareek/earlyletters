@@ -1,0 +1,16 @@
+# B1 P0 requirement IDs with no test title citing them (HV2-012). One per line.
+# This file may only shrink. Cite the ID in a test title as [ID] and delete the line.
+F01-REQ-003
+F04-REQ-011
+F05-REQ-014
+F08-REQ-003
+F12-REQ-011
+F12-REQ-013
+F13-REQ-013
+F13-REQ-018
+F13-REQ-024
+F17-REQ-002
+F17-REQ-027
+F17-REQ-028
+F18-REQ-003
+F20-REQ-021
