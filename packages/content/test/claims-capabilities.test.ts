@@ -260,9 +260,6 @@ function claims(p: Profile): Claim[] {
 type KnownViolation = Claim & { removedBy: string; reason: string };
 
 const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
-  // "Exactly as you said it" in the store build's first run (D-133 decision 2). PR #502 changes both lines.
-  { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
-  { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
 
   // "Only you and the people you invite": nobody can be invited in production.
   { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
@@ -285,7 +282,7 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
 ];
 
 /** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
-const KNOWN_VIOLATIONS_CAP = 17;
+const KNOWN_VIOLATIONS_CAP = 15;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
