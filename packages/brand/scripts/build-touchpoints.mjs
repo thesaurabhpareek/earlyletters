@@ -130,7 +130,7 @@ async function favicons() {
       { src: '/favicon/icon-192.png', sizes: '192x192', type: 'image/png' },
       { src: '/favicon/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
-    theme_color: C.paper,
+    theme_color: C.paperDark, // night colour (#516): the browser bar matches the dark film
     background_color: C.paper,
     display: 'browser',
   };
