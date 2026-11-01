@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.4.0
+version: 1.5.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.5.0
+    date: 2026-10-16
+    summary: Option B (founder, 15 Oct 2026). New section 4.3.1 classifies every table of the unapplied migration 20261015230000_backup_server.sql (branch feat/backup-server, first at commit 7a0f45d, re-read at ad222eb on 16 Oct: escrow_rotation_notices gains id and attempts and is deleted 90 days after sent_at; pending audio_blobs rows are swept after 24 hours), including escrow_rotation_notices, with the levels of its column comments and the retention PRD V2 F08 section 8 and F17 section 8.4 set. The `entry-audio` bucket (4.4) moves to v1.0. The planned `audio_blobs` and escrow rows of 4.3 are replaced by 4.3.1. Nothing else re-read in this pass.
   - version: 1.4.0
     date: 2026-10-03
     summary: Legal alignment (legal-alignment agent). Section 4.8 processors updated for v1.0 (sync on Supabase only, D-023; no crash SDK; Resend named; download host Cloudflare R2 candidate and Hugging Face, D-065, Q-001). Open issue 9 answered by app-store-privacy-labels.md 1.3.0. Note that the 1.3.0 summary below describes the alignment edits; the analytics owner's same-day regeneration (4.1 from migrations, 4.5 and 4.6 device keys, sync tables, packs, ops schema, ops-ledger, store_* removed, 4.9 insights) is also part of 1.3.0. Minor.
@@ -66,7 +69,7 @@ Rule for every PR: a new table, column, bucket, device column, SDK or analytics 
 | **Logging** | Allowed | Allowed (ids of operational records, enums, counts, durations) | Not in log streams (Supabase API, Edge Function, Vercel, Sentry). Person ids appear only in database audit tables (`audit_events`, planned `ops_audit_log`) | Never in any log, crash report, breadcrumb, error message, email subject, push payload or support prefill (LEGAL-REQ-014). Log canary scans for the fixture family "Asha" |
 | **Analytics** | n/a | Allowed only if in the typed catalogue (section 4.7) | Never | Never |
 | **URLs** | Allowed | Allowed | Never in paths or query strings; invite tokens only in URL fragments | Never; search queries go in request bodies |
-| **Retention** | While published; versions kept forever | 90 days to 24 months, per data-policy section 6 | Life of account; deleted or pseudonymised at account deletion except listed legal retention (consent 3 years, transactions 7 years) | Until its author deletes it (30-day tombstone, then purge), or the book's sole parent deletes the book, or the account is deleted |
+| **Retention** | While published; versions kept forever | 90 days to 24 months, per data-policy section 6 | Life of account; deleted or pseudonymised at account deletion except listed legal retention (consent 3 years, transactions 7 years) | Until its author deletes it (30-day tombstone, then purge), or the book's sole parent deletes the book, or the account is deleted. A book purged while a former member (who left, whose join was undone, or who was removed) still has letters, held drafts or recording backups in it keeps those rows with their author, and keeps the book row tombstoned with only the child's name, birth date and due date (`children.purged_at`, readable by no app role; 20261023010000, D-116) until nothing of theirs is left |
 | **Access** | Anyone | Staff with a need; users see their own (for example their audit and deletion rows) | RLS: the person themselves and co-members of the same child where the product needs it; service role only through named runbooks that write an audit row (LEGAL-REQ-025) | RLS: author for working material (`raw_transcript`, `raw_sha256`, `machine_edits`, `stt_meta`, versions, dictionary); book members read letters only through `book_entries` while the letter is in the book and the book is live; no staff tool shows L4; service-role access only through deletion, legal-process and safety runbooks with an audit row |
 | **Export** | n/a | Included where useful (dates, flags) | The person's own L3 (profile, signature, memberships) | Author exports all of their own L4; a book export contains other people's letters only as the book shows them, never their raw transcripts, edits or STT metadata (DATA-REQ-050, PRD K-09). Export files are plaintext by design and the export screen says so (DATA-REQ-056); server-built exports expire in 7 days |
 | **Deletion** | Unpublish by new version | Fixed retention by `purge_due()` | Deleted with the account, or pseudonymised (audit actor ids nulled, policy acceptances hashed with a pepper) | Tombstone 30 days, purge, Storage API deletion, off backups within 7 more days, processors within 45 days of request (data-policy section 5) |
@@ -184,6 +187,7 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `book_look` | L2 | theme enum |
 | `family_can_read` | L2 | sharing setting |
 | `hidden_at` | L2 | hide-book time |
+| `purged_at` | L2 | when the book was purged for its members while a former member's letters keep the row (20261023010000) |
 
 ##### `deletion_request_steps`
 
@@ -275,6 +279,17 @@ Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, found
 | `created_at` | L2 | system timestamp |
 | `machine_edits` | L4 | content: previous edit list |
 | `superseded_by` | L3 | person id; nulled at account deletion |
+
+##### `invite_redeem_failures`
+
+Added by `20261028010000_invite_redeem_by_code.sql`. Closed to every role; written only by `invite_redeem_by_code()`; rows older than 2 hours are deleted as new ones are written.
+
+| Column | Level | Note |
+|---|---|---|
+| `id` | L2 | internal id |
+| `scope` | L2 | enum (user, device, ip, global) |
+| `subject` | L3 | keyed hash (rotating key) of a person id, device id or client address; empty for global; never a raw id |
+| `at` | L2 | system timestamp |
 
 ##### `legal_holds`
 
@@ -543,11 +558,27 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
 | `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language) |
 | `member_return_links` (hashed bearer token) | Hash L3 |
-| `audio_blobs` (path, size, sha256, wrapped file key; v1.1 shared voice) | Wrapped key L4; sha256 of ciphertext L3; path L3 |
-| `child_key_grants`, escrow wraps | L4 |
+| `child_key_grants` (family members hearing each other's recordings; v1.1 shared voice) | L4 |
 | `waitlist` (web) | Email L3 |
 
 `ops_audit_log` (LEGAL-REQ-025) is built as `ops.audit_log` (4.1.2).
+
+### 4.3.1 Recording backup tables (migration `20261015230000_backup_server.sql`, branch `feat/backup-server` at ad222eb; not yet applied)
+
+Levels are the ones the migration's column comments set; every column has one. All tables have RLS on; clients read only their own rows, and only where the "Client access" column says so. Retention follows PRD V2 F08 section 8 and the F17 section 8.4 deletion matrix; the purge steps are in `backup_svc_sweep` (run daily by the purge worker). Re-read at ad222eb on 16 Oct 2026: only `escrow_rotation_notices` and the pending sweep changed since 7a0f45d. When the migration is applied, 4.1 is regenerated from its comments and these rows move there.
+
+| Table | Columns and levels | Client access | Retention |
+|---|---|---|---|
+| `backup_devices` | `device_id` L3 (random install id, not a hardware id), `profile_id` L3, `public_key` L3 (X25519 public key; the private key never leaves the device), `platform` L2, `enrolled_at` L2, `last_seen_at` L2, `revoked_at` L2, `revoked_reason` L2 | Owner read | Until account deletion (cascade) |
+| `child_keys` | `child_id` L3, `profile_id` L3, `key_version` L2, `escrow_wrap` **L4** (book key sealed to the escrow public key; opened only inside the escrow function), `escrow_key_version` L2, `key_check` L3, `created_at` L2, `rewrapped_at` L2 | Owner read of every column except `escrow_wrap` | Until account deletion, or the book's purge |
+| `audio_blobs` | `entry_id` L3, `child_id` L3, `author_id` L3, `object_path` L3 (ids only), `key_version` L2, `wrapped_file_key` **L4**, `cipher_sha256` L3 (of the ciphertext, never the original), `bytes` L2, `format_version` L2, `state` L2, `created_at`, `updated_at`, `confirmed_at` L2 | Owner read | As its object: until the letter is purged, the held letter is discarded, the backup is deleted, or the account is deleted. A `pending` row (upload reserved, never confirmed) is swept 24 hours after its last update; a row whose letter no longer exists is swept after 30 days. Each delete enqueues the exact object path and writes `purge_ledger` rows |
+| `backup_usage` | `profile_id` L3; `quota_bytes`, `used_bytes`, `begin_window_start`, `begin_window_hits`, `updated_at` L2 | Owner read | Until account deletion |
+| `restore_requests` | `id` L3, `profile_id` L3, `device_id` L3, `approved_by_device` L3, `stop_token_hash` L3; `state`, `requested_at`, `hold_until`, `notified_at`, `approved_at`, `released_at`, `cancelled_at`, `cancel_source`, `expired_at`, `request_id`, `stop_token_expires_at`, `stop_used_at` L2 | Owner read except `stop_token_hash` | 90 days after a final state; deleted at account deletion |
+| `restore_approvals` | `request_id` L3, `device_id` L3, `sealed_code` L3 (random code sealed to one enrolled device), `code_hash` L3; `created_at`, `used_at` L2 | Owner read except `code_hash` | With its restore request |
+| `escrow_unwraps` | `profile_id` L3 (null after deletion), `subject_hash` L3 (peppered hash of the deleted account id), `device_id` L3, `child_id` L3, `restore_request_id` L3; `id`, `key_version`, `escrow_key_version`, `reason`, `outcome`, `request_id`, `occurred_at` L2. Append-only; no content, no key bytes | Owner read of own rows | 24 months, pseudonymised at account deletion (named exception); daily copy in `ops-ledger/escrow/` 60 days. D-021 says 12 months for key-unwrap logs: open (COUNSEL_PACKET Q51) |
+| `escrow_rotation_notices` | `id` L2 (the notice, also the email idempotency key), `profile_id` L3; `to_version` L2 (escrow key version the account moved to), `created_at` L2, `attempts` L2 (failed sends), `sent_at` L2 (when the email went). One row per account per escrow key rotation, made with the account's first rewrapped key; retried until sent. No content | None (RLS on; table privileges revoked from anon, authenticated and the service role; reached only through the `escrow_rotation_notices_due` and `escrow_rotation_notice_sent` functions and the sweep) | Deleted 90 days after `sent_at` (`backup_svc_sweep`); an unsent row stays until it is sent; all rows go at account deletion (cascade on the profile). The rotation itself is recorded in `escrow_unwraps` (reason `rotation`), so the 90 days cover only the email record |
+
+The `backup` policy document (its own consent act) is a row in `policy_documents` created by the same migration; its acceptances are `policy_acceptances` rows (4.1).
 
 ### 4.4 Supabase Storage buckets
 
@@ -558,7 +589,7 @@ Registry in code: `supabase/functions/purge-worker/lib/buckets.ts` (every bucket
 | `entry-photos` | `{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}` (enforced by `entries_photo_path_scoped`) | Photos with letters | L4 (path itself L3) | Live, private |
 | `child-photos` | `{child_id}/{uuid}.{ext}` (`children_photo_path_scoped`) | Child profile photo | L4 | v1.0, private |
 | `ops-ledger` | `purges/YYYY-MM-DD.jsonl` | Ids of purged letters, books, people and objects, so a restore can replay deletions (DATA-REQ-030). No content | L3 | Created by migration 20261004200000; service role only (no policies); 60 days; excluded from the purge's own residue scans |
-| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of recordings (ADR 0006) | L4 | v1.1 (no audio upload in v1.0, decision 9) |
+| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of the owner's recordings (PRD V2 F08 6.5; ADR 0006 amendment pending) | L4 | v1.0 (option B): private bucket, 20 MB objects, `application/octet-stream`, owner-only policies, created by `20261015230000_backup_server.sql` on `feat/backup-server` (not yet applied). `purge-worker/lib/buckets.ts` still says `since: 'v1.1'`; that branch updates it |
 | `inbox` | `{child_id}/{contributor}/{entry_id}.enc` | Web contributor audio, encrypted in the browser | L4 | v1.1 |
 | `avatars` | `{profile_id}/{uuid}.{ext}` | Member photo | L3 | P1 |
 | `exports` | `{profile_id}/{export_id}.zip` | Server-built exports, 7 days | L4 | P1 (v1.0 exports are made on the phone) |
@@ -680,6 +711,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `sync.ownerId` | L3 | Person id that owns the local rows |
 | `sync.epoch`, `sync.epochStartedAt`, `sync.restoreAt`, `sync.pausedFor`, `sync.lastSyncedAt`, `sync.lastVerifyAt` | L2 | Sync state |
 | `accountDeletion.forgetPending` | L2 | Flag: analytics ids still to send to `analytics-forget` |
+| `accountDeletion.openRequest` | L3 | While a request to delete the account is open, and for a short wait after a cancel: its state (`scheduled`, `held`, `executing`, or `cancelled` while the book comes back, with the time of the cancel), the server's request id and its date (not on a `cancelled` note), and the id of the account it was made for (the auth user UUID, an L3 person id), so a phone with no book shows the deletion screen and not the first-run welcome, and so another account that signs in on the phone does not inherit it. Copied from the server's own answers (`deletion_requests`, the person's own rows). No name, letter or child. Stays on the phone, never sent. Cleared when a cancel goes through with a book listed; when a read of the server finds no request open and the phone either lists a book or holds no book the server has closed; when another account signs in; when its date has passed by more than 48 hours and the phone is signed out or the server did not say the request is still open (after the purge no read can succeed); and when a `cancelled` wait has lasted 15 minutes or the book is listed. Only a `scheduled` or `held` note, within its date, becomes the `cancelled` wait on a read that finds no request open, and only on a phone with no book that holds a book the server has closed (until the book returns or 15 minutes pass); an `executing` note, or one past its date by more than 48 hours, is simply cleared. The clearing runs while the first-run route is mounted (the deletion screen, the welcome, or a book arriving under it), on the Delete account page's own read, and by the 48-hour rule: a co-parent who keeps a book on the tabs keeps the note until one of those, and while a book is listed the note never counts (the tabs and Settings are reached as always) |
 | `scribe.analytics.consent` | L2 | Analytics choice: unknown, granted, denied |
 | `scribe.analytics.id`, `scribe.analytics.retired_ids` | L2 | Random analytics id and up to 20 retired ids, kept only for deletion (TRACKING_PLAN 7). Never sent anywhere except PostHog (after a yes) and `analytics-forget` |
 | `scribe.analytics.first_launch_at`, `scribe.analytics.last_active_at` | L2 | Device times used only to compute buckets (`days_since_install`, `days_since_last_open`); never sent raw |

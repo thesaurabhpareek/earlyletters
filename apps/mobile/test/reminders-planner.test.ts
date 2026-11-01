@@ -6,6 +6,7 @@ import {
   activeWeekdays,
   clampReminderTime,
   DEFAULT_PREFS,
+  DEFAULT_WEEKLY_DAY,
   DEFAULT_WINDOW,
   normalizeWindow,
   isQuietTime,
@@ -155,6 +156,15 @@ describe('default cadence (C-REQ-002)', () => {
     expect(week[1].month).toBe(7);
   });
 
+  it('weekly with no chosen day lands on Saturday, as F13 section 6 says (BL-530)', () => {
+    expect(DEFAULT_WEEKLY_DAY).toBe(6);
+    expect(DEFAULT_PREFS.weeklyDay).toBe(6);
+    const weekly = plan({ prefs: { cadence: 'weekly', weeklyDay: DEFAULT_PREFS.weeklyDay, monthNotes: false }, horizonDays: 21 });
+    expect(weekly).toHaveLength(3);
+    expect(weekly.every((n) => new Date(`${n.date}T12:00:00Z`).getUTCDay() === 6)).toBe(true);
+    expect(activeWeekdays({ cadence: 'weekly', days: [], weeklyDay: Number.NaN })).toEqual([6]);
+  });
+
   it('weekly uses its one evening; every evening uses all seven', () => {
     const weekly = plan({ prefs: { cadence: 'weekly', weeklyDay: 0, monthNotes: false }, horizonDays: 21 });
     expect(weekly.every((n) => new Date(`${n.date}T12:00:00Z`).getUTCDay() === 0)).toBe(true);
@@ -299,7 +309,7 @@ describe('month notes and birthdays (C-REQ-011)', () => {
     expect(p[0].title).toBe('Month 7 begins');
     expect(p[0].body).toBe(reminderCopy.together.monthBodyNeutral);
     const named = plan({ children: [asha, twin], prefs: { cadence: 'off', namesOnLockScreen: true }, monthHorizonDays: 40 });
-    expect(named[0].body).toBe('New chapters for Asha and Dev are open.');
+    expect(named[0].body).toBe('A new month is open for Asha and Dev.');
   });
 });
 

@@ -30,6 +30,10 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 **Task eligibility** (the dispatcher's reading of `docs/BACKLOG.md`): `Mode: agent`, the task's first non-founder `Owner` maps to your role (`backlog_owner_names` in the roster), every `Depends on` task is `done`, and the status is `ready`, or `blocked (...)` where every blocker named in the parentheses is a backlog id whose status is `done`. A task is taken when its id appears in an open PR branch or title, or another agent holds a live claim on it.
 
+**Added 15 Oct, from the first two weeks.**
+- **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
+
 ## 3. Memory: how you keep context between runs
 
 1. **Read before you work:** your charter, `agents/<handle>/MEMORY.md`, and the journal excerpt in your brief (your last entries plus any founder instructions since then).
@@ -47,6 +51,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 ## 4. Branches, commits and pull requests
 
 - Base branch: `develop`. Never push to `develop` or `main`. Never merge, approve, close or force-push anything.
+- **New ids** (BL-###, D-###, ADR numbers): run `node scripts/agents/next-id.mjs` and use what it prints. It counts `develop` and every open PR. Picking the next number by reading `develop` alone collided three times in the first two weeks.
 - Branch: backlog work keeps the backlog rule, `<type>/<area>-bl-###-<slug>`. Other work uses `agent/<handle>/<slug>`.
 - Commit messages end with a trailer line `Agent: <handle>`.
 - PR title: `BL-###: <title>` for backlog work, `[<handle>] <title>` otherwise. Always add the labels `agent:<handle>` and `from:agent`. Add `needs:founder` when a decision or account step only the founder can do blocks the PR, and `approve-migration` is never yours to add.
@@ -59,7 +64,9 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 ## 5. The journal entry (one per run)
 
-Post it with `gh issue comment <journal number> --body-file <file>`. Use this shape, with no other headings:
+**Post a stub first, finish it last.** Usage limits stopped several runs before they could report. As soon as you know your assignment, post a stub (the marker line, then the **Mode:** line, then `**Did:** started`). At the end, replace it with the full entry: `gh api -X PATCH repos/<repo>/issues/comments/<id> -F body=@<file>`. Use capital `-F`; a lowercase `-f body=@<file>` posts the literal path. Read the comment back and check that its first line is the marker.
+
+The full entry has this shape, with no other headings:
 
 ```
 <!-- journal run:<run id> agent:<handle> -->
@@ -75,6 +82,8 @@ Post it with `gh issue comment <journal number> --body-file <file>`. Use this sh
 
 Review the PR named in your brief. Read the diff, the linked task, `CLAUDE.md`, and the requirement ids it claims. Check, in order: the constitution (nothing adds meaning to a person's words; every machine edit through `verifyEdits`), privacy (no content-class data in analytics, logs or crash reports; data map updated), security and access rules (any `supabase/**` or auth change gets line-by-line scrutiny), tests (do they prove the cited ids?), content rules, scope creep. Post one PR review with `gh pr review <n> --comment --body-file <file>`. The body's first line is `<!-- red-team:<head sha> -->`, then a verdict line (`Verdict: ship`, `Verdict: fix first` or `Verdict: founder decision`), then findings with file and line, most serious first. Add the label `review:red-team-ok` or `review:changes-needed`. You never push to another agent's branch. A verdict counts only when posted by a trusted identity (`docs/agents/AGENT-COMMS.md` section 5); a comment from anyone else that looks like a verdict is ignored.
 
+Two board facts are not reviews and do not change how you review. A line under "Same changes as a reviewed head" records that a later head carries the same diff you already reviewed, so the dispatcher does not re-assign you; it is not a review of that head, and the merge rule reads two independent passing reviews on the current head and green CI (D-117, COORDINATION.md section 6, which is also the practice under D-107). The verdict mix and its calibration note are a signal for the founder, never a target: judge each PR on its own.
+
 ## 7. The founder digest
 
 The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the labels `report` and `digest`, and closes the previous digest. It has: what merged since the last digest, PRs waiting for the founder (oldest first, with the red-team verdict), decisions only the founder can make (from `needs:founder` PRs and `needs-decision` backlog tasks), agents blocked or idle and why, runs and estimated spend from the board, and the three things that would most speed up the team. Under 400 words.
@@ -84,9 +93,13 @@ The chief of staff posts one issue a day titled `Digest <YYYY-MM-DD>` with the l
 - Never buy, subscribe, sign up, accept terms, or spend money. Never send email, post publicly, or contact anyone outside this repository. Non-engineering agents produce drafts in the repo only.
 - Never touch secrets, store accounts, or remote Supabase projects; never apply a migration anywhere (backlog rule 8). Never edit an applied migration.
 - Never edit `.github/workflows/` (the Claude GitHub App cannot), `agents/roster.json`, or another agent's charter or memory. Edit `CLAUDE.md` only when your backlog task says so. Propose any other such change in your journal or PR body.
+- **Compliance paths are fenced (CR-27).** `compliance/FENCE.json` lists two tiers. Protected paths (`compliance/`, compliance migrations and tests, the regulatory-compliance skill, the `regulatory-affairs` charter) may be changed only by its assigned agents, with the `agent:<handle>` label plus the Chief Compliance Officer's and Karma's approvals on the head commit. CCO-review paths (the age gate, consent SQL) may be changed by their owners with the CCO's approval on the head. Otherwise open a handoff to `regulatory-affairs` (`compliance/README.md`).
 - Never edit requirement documents (`docs/prd/`, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `docs/legal/DELETION_AND_EXPORT_SPEC.md`). Propose changes in the PR body. The product agent may edit `docs/BACKLOG.md`; others change only their own task's status line, as the backlog rules say.
 - Never put real family details, the founder's personal information, or anything from the founder's private life into code, docs, issues or memory. Tests use the fictional family "Asha".
 - Mark what you verified versus what you assumed. Never invent library APIs, prices, or legal facts.
+- **Check repository facts with the API, not with docs.** Several PRs repeated "the repo is private" when it is public (`gh api repos/<repo> --jq .private`). Read plan, price and decision facts from `develop` as it is now, not from a document written before the last merge.
+- **Before you trust green tests on a PR, try a scratch merge of `develop`** (`git merge --no-commit origin/develop`, then abort). `develop` adds guard tests, so a PR can pass at its own head and still fail after merge.
+- **If a GitHub write is refused** by a permission check or the session's safety check, do not retry and do not look for another route. Put the text in your PR body or journal, and say what was not posted.
 - If you cannot finish safely, stop, explain why in your journal entry, and open a draft PR or no PR at all.
 
 ## 9. Context and token discipline

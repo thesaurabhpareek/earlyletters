@@ -5,7 +5,7 @@ import { languageNames } from './words.en';
 
 export const packsCopy = {
   title: 'Storage',
-  intro: 'Language packs and speech models download when you choose a language. You can remove them here to free up space.',
+  intro: 'Languages and speech models download when you choose a language. You can remove them here to free up space.',
   keepNote: 'Removing a download never touches your letters or recordings. It downloads again when you need it.',
   downloadedTitle: 'Downloaded',
   inProgressTitle: 'Downloading',
@@ -39,8 +39,8 @@ export const packsCopy = {
     download_failed: 'That download did not finish. Please try again.',
     generic: 'Please try again in a moment.',
   } as Record<string, string>,
-  cellularTitle: 'Use mobile data',
-  cellularHelp: 'Large downloads wait for Wi-Fi unless this is on. Small language packs always download.',
+  cellularTitle: 'Use cellular data',
+  cellularHelp: 'Large downloads wait for Wi-Fi unless this is on. Small downloads always go through.',
   removeButton: 'Remove',
   removeA11y: 'Remove {name}',
   stopButton: 'Stop',

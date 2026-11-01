@@ -54,6 +54,11 @@ yarn-error.*
 .env
 .env.*
 !.env.development
+# pack signing key and upload credentials, at any depth (docs/ops/PACKS_HOSTING.md); they belong in ~/.config/early-letters/
+signing.env
+*.signing.env
+r2.env
+*.r2.env
 .env*.local
 apps/*/.env
 credentials.json
@@ -92,4 +97,16 @@ packages/emails/out/
 # flows and travel as one zip (apps/mobile/e2e-web/support/pack-journey.sh), never as commits.
 # INDEX.md, steps/*.json and critiques/ stay tracked. See docs/release/journey/README.md.
 docs/release/journey/screens/**
+docs/release/journey/INDEX.text-only.md
 *.pdf
+
+# coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
+coverage/
+!/scripts/coverage/
+
+# web (from main, one-lineage merge)
+apps/web/.next*
+apps/web/next-env.d.ts
+apps/web/*.tsbuildinfo
+apps/web/e2e/.results/
+__pycache__/

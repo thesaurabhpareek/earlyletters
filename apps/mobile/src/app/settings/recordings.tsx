@@ -1,7 +1,13 @@
-import { useState } from 'react';
-import { Alert, ScrollView } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { useEffect, useState } from 'react';
+import { Alert, ScrollView, View } from 'react-native';
+import Svg, { Circle } from 'react-native-svg';
 import { DEFAULT_VIEW_SETTING, viewFromSetting } from '@/components/capture/review-view.logic';
+import { recordingsCard, speechRow, type SpeechRowState } from '@/components/settings/recordings.logic';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
+import { Text } from '@/components/ui/text';
+import { useTheme } from '@/lib/a11y';
+import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { countUnrecoverableTakes, getSetting, listOrphanAudio, setSetting } from '@/lib/store';
 import { authorSpeechLanguage } from '@/lib/models/author-language';
@@ -13,9 +19,10 @@ import { languageNames } from '@/lib/transcription-queue/copy';
 import { useWordsTick } from '@/lib/transcription-queue/use-words';
 
 /**
- * Recordings (PRD C C-REQ-018): honest about where audio lives. v1.0 has no
- * backup of our own and uploads no recordings (D-059, D-085), so this screen offers none and
- * says nothing about one arriving. A take a kill cut off that would not play is kept and listed
+ * Recordings (PRD C C-REQ-018; EXPERIENCE_PASS_2026-10 S42, package P6): honest about where audio lives. The card
+ * at the top reads backup's own state (components/settings/recordings.logic.ts): a build without backup, backup off,
+ * or backup on; the two option-B lines wait for counsel (C7), so a build with backup keeps today's card until then.
+ * No fact is said twice on the screen. A take a kill cut off that would not play is kept and listed
  * here (D-085). Recordings the launch sweep found with no
  * letter (before any book existed) are listed here, never deleted (TDD 01
  * 3.2.4).
@@ -32,11 +39,14 @@ export default function Recordings() {
   const o = pendingCopy.recordings;
   useWordsTick();
   const languages = languagesInUse();
+  const backupStatus = useBackupStatus();
+  const card = recordingsCard({ inBuild: backupInBuild(), status: backupStatus });
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      <ListSection title={r.title} footer={r.keepHelp}>
-        <ListRow title={r.onPhoneTitle} subtitle={r.onPhoneBody} />
+      <ListSection title={r.title} footer={card.footer ?? undefined}>
+        <ListRow title={card.title} subtitle={card.body} testID="recordings.card" />
+        {card.backupRow ? <ListRow title={card.backupRow} trailing="chevron" onPress={() => router.push('/settings/backup' as Href)} /> : null}
       </ListSection>
 
       {orphans > 0 && (
@@ -62,6 +72,14 @@ export default function Recordings() {
       </ListSection>
     </ScrollView>
   );
+}
+
+/** Backup's status kind, re-read when backup reports a change; null in a build without backup or before it knows. */
+function useBackupStatus(): string | null {
+  const read = () => loadBackup()?.backupView()?.status.kind ?? null;
+  const [status, setStatus] = useState<string | null>(read);
+  useEffect(() => loadBackup()?.subscribeBackup(() => setStatus(read())), []); // eslint-disable-line react-hooks/exhaustive-deps
+  return status;
 }
 
 /**
@@ -115,20 +133,19 @@ function SpeechRow({ language }: { language: SpeechLanguage }) {
   if (!asrId) return null;
   const mb = Math.round(plan.bytes / 1e6);
   const files = speechFiles(language, plan.packs);
-  const installed = files?.installed === true;
-  const progress = files?.progress ?? null;
-  const hold = files?.hold ?? null;
   const name = languageNames[language];
-
-  const subtitle = installed
-    ? fill(s.ready, { n: Math.round((SPEECH_MODELS[asrId].bytes + SPEECH_MODELS[VAD_MODEL_ID].bytes) / 1e6) })
-    : hold === 'waiting_for_wifi'
-      ? fill(s.waitingForWifi, { n: mb })
-      : hold === 'no_space'
-        ? fill(s.noSpace, { n: mb })
-        : progress !== null
-          ? fill(s.downloading, { n: Math.floor(progress * 100) })
-          : fill(s.absent, { n: mb });
+  const state: SpeechRowState = !files
+    ? { kind: 'unknown', mb }
+    : files.installed
+      ? { kind: 'here', mb: Math.round((SPEECH_MODELS[asrId].bytes + SPEECH_MODELS[VAD_MODEL_ID].bytes) / 1e6) }
+      : files.hold === 'waiting_for_wifi'
+        ? { kind: 'waitingForWifi', mb }
+        : files.hold === 'no_space'
+          ? { kind: 'noSpace', mb }
+          : files.progress !== null
+            ? { kind: 'downloading', fraction: files.progress }
+            : { kind: 'absent', mb };
+  const row = speechRow(state);
 
   const confirmRemove = () =>
     Alert.alert(fill(s.confirmTitle, { name }), fill(s.confirmBody, { name }), [
@@ -136,12 +153,54 @@ function SpeechRow({ language }: { language: SpeechLanguage }) {
       { text: s.confirmButton, style: 'destructive', onPress: () => void removeSpeechPack(asrId) },
     ]);
 
+  // One element for VoiceOver: the row is the button, its trailing word says what a tap does (S42).
   return (
     <ListRow
       title={name}
-      subtitle={subtitle}
-      onPress={!files ? undefined : installed ? confirmRemove : progress === null && hold === null ? () => void startSpeechDownload(language) : undefined}
-      accessibilityHint={installed ? s.removeHint : s.downloadHint}
+      subtitle={row.subtitle}
+      trailing={row.trailing ? <TrailingWord text={row.trailing} /> : row.percent !== null ? <ProgressRing percent={row.percent} /> : 'none'}
+      onPress={row.action === 'remove' ? confirmRemove : row.action === 'download' ? () => void startSpeechDownload(language) : undefined}
+      accessibilityHint={row.hint}
+      testID={`recordings.language.${language}`}
     />
+  );
+}
+
+/** The row's action in words, in accent, like an iOS Settings text button. Part of the row's one element. */
+function TrailingWord({ text }: { text: string }) {
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants">
+      <Text variant="body" tone="accent">
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** A small determinate ring beside "Getting ready, 40%": it steps with progress and never spins (Reduce Motion needs nothing). */
+function ProgressRing({ percent }: { percent: number }) {
+  const { c } = useTheme();
+  const size = 22;
+  const stroke = 2.5;
+  const r = (size - stroke) / 2;
+  const length = 2 * Math.PI * r;
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants" aria-hidden>
+      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.line} strokeWidth={stroke} fill="none" />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          stroke={c.accent}
+          strokeWidth={stroke}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${length} ${length}`}
+          strokeDashoffset={length * (1 - percent / 100)}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </Svg>
+    </View>
   );
 }

@@ -29,6 +29,7 @@ import {
   reminderWindows,
   subjectOf,
   trialDays,
+  trialDaysOf,
   type PlannedPlanReminder,
   type PlanReminderSubject,
 } from '../src/lib/billing/plan-reminders.logic';
@@ -194,6 +195,32 @@ describe('which reminders, by plan and trial length', () => {
   it('the first purchase day itself is not an anniversary', () => {
     const s = subject({ productId: 'plus.monthly', period: 'month', periodEnd: '2027-02-10T15:00:00Z', purchasedAt: '2027-01-10T15:00:00Z', originalPurchasedAt: '2027-01-10T15:00:00Z' });
     expect(plan(s, Date.parse('2027-01-10T16:00:00Z'))).toEqual([]);
+  });
+});
+
+describe('[SUB-05] a free period from an offer code gets the trial reminders, not renewal ones', () => {
+  const coded = (startIso: string, endIso: string, freePeriod: boolean) => {
+    const t = { productId: 'plus.monthly', expiresAt: endIso, purchasedAt: startIso, ownership: 'purchased' as const, environment: 'production' as const, isTrial: false, isUpgraded: false, offerType: 'offer_code' as const, freePeriod };
+    return planFromSnapshot(sanitizeSnapshot({ entitlements: [t], statuses: [{ ...t, state: 'subscribed', willAutoRenew: true }], checkedAt: startIso }));
+  };
+
+  it('1 month free (31 days or less): trial week and trial final', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-01-01T12:00:00.000Z', true);
+    expect(p.details.status).toBe('trial');
+    expect(offsetKinds(subjectOf(p))).toEqual(['trialWeek', 'trialFinal']);
+  });
+
+  it('3 months free (over 31 days): the long-trial notice, then trial final', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-03-01T12:00:00.000Z', true);
+    expect(p.details.status).toBe('trial');
+    expect(trialDaysOf(p)).toBeGreaterThan(LONG_TRIAL_DAYS);
+    expect(offsetKinds(subjectOf(p))).toEqual(['trialLong', 'trialFinal']);
+  });
+
+  it('a paid offer-code period is a plain monthly plan (no trial reminders)', () => {
+    const p = coded('2026-12-01T12:00:00.000Z', '2027-01-01T12:00:00.000Z', false);
+    expect(p.details.status).toBe('active');
+    expect(offsetKinds(subjectOf(p))).toEqual([]);
   });
 });
 

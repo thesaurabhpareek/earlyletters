@@ -1,0 +1,46 @@
+{
+  "id": "J21-21",
+  "journey": "co-parent-sharing",
+  "kind": "happy",
+  "title": "Invite a co-parent",
+  "note": "The sheet carries the book's cover: the invite is into this book. What the child calls them, in the letter face with the same ideas as first run, signs their letters, and the cover's foot line reads \"From Papa\" once the typing pauses. The invite is for this book only; the link works once, for 7 days.",
+  "from": "J21-20",
+  "shot": "screens/J21-21.png",
+  "route": "/invite/new",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Asha From Papa Invite Asha's co-parent They can write to Asha and read the whole book, from their own phone. What does Asha call them? Optional. It signs their letters. Mama Papa Amma Appa Mommy Daddy Ma Baba This invite is for Asha's book only. The link works once, for 7 days. You can cancel it any time. Share invite link",
+  "lines": [
+    "Close",
+    "Asha",
+    "From Papa",
+    "Invite Asha's co-parent",
+    "They can write to Asha and read the whole book, from their own phone.",
+    "What does Asha call them?",
+    "Optional. It signs their letters.",
+    "Mama",
+    "Papa",
+    "Amma",
+    "Appa",
+    "Mommy",
+    "Daddy",
+    "Ma",
+    "Baba",
+    "This invite is for Asha's book only.",
+    "The link works once, for 7 days. You can cancel it any time.",
+    "Share invite link"
+  ]
+}

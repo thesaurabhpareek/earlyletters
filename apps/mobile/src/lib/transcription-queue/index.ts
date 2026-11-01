@@ -19,11 +19,19 @@
  * - nobody spoke: a draft gets nothing (Review says so); a waiting letter
  *   gets '' (raw is what the recogniser heard in speech: nothing).
  * Sample words (development builds) are never stored.
+ *
+ * Languages this build does not hear yet (language-hold.ts: every language but English while the English-only
+ * switch is on, D-111 item 4) are set on the queue once, at start. A recording in one of them waits for its
+ * language: it is never handed to the recogniser, never fails and asks for no download, and Review and the letter
+ * page say so (`waitingForLanguageNote`). The stored choice is never changed, so in a build that hears the language
+ * the recording proceeds in its own language.
  */
 import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
+import { capabilities } from '../capabilities';
+import { removeWholeFrameCopies } from '../capture/adts-file';
 import {
   deleteSetting,
   dictionaryFor,
@@ -45,6 +53,7 @@ import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelI
 import {
   bindSpeechPacks,
   combineProgress,
+  speechDownloadMotion,
   ensureSpeechFor,
   installedPathsFor,
   onSpeechPacksBound,
@@ -55,6 +64,7 @@ import {
   type SpeechPackHost,
   type SpeechPackProgress,
 } from '../models/speech-packs';
+import type { DownloadStage } from '../models/speech-download.logic';
 import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
@@ -65,6 +75,7 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
+import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
   jobFailureOf,
@@ -78,6 +89,7 @@ import {
 } from './machine';
 
 export type { Job, JobPhase, QueueState } from './machine';
+export { waitingForLanguageNote } from './language-hold';
 
 let state: QueueState = initialQueue();
 let started = false;
@@ -147,6 +159,15 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   if (started) return stopTranscriptionQueue;
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
+  // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
+  // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
+  // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
+  try {
+    removeWholeFrameCopies(0);
+  } catch {
+    // the launch sweep removes it once it is an hour old
+  }
 
   const onApp = (s: AppStateStatus) => {
     if (s === 'active') {
@@ -211,6 +232,7 @@ export function requestWords(draftId: string): void {
   if (!d?.audioUri || d.rawTranscript != null) return;
   const language = rememberLetterLanguage(draftId);
   dispatch({ type: 'enqueue', id: draftId, kind: 'draft', language, capturedAt: d.createdAt });
+  if (state.onHold.includes(language)) return; // waits for its language: no download, and Review says so
   if (speechAutoStartAllowed()) void requestSpeechFor(language); // otherwise Review shows the ask
 }
 
@@ -224,6 +246,7 @@ export function retryWords(id: string): void {
  * so it also records a yes. Nothing else may call this on its own.
  */
 export async function startSpeechDownload(language: SpeechLanguage, opts: { allowCellularOnce?: boolean } = {}): Promise<void> {
+  retries.asked(language); // a tap starts the automatic retries over
   setSpeechDownloadChoice('yes');
   await requestSpeechFor(language, opts);
 }
@@ -234,6 +257,9 @@ export async function startSpeechDownload(language: SpeechLanguage, opts: { allo
  */
 export async function requestSpeechFor(language: SpeechLanguage, opts: { allowCellularOnce?: boolean; automatic?: boolean } = {}): Promise<void> {
   askedDownload.add(language);
+  // After the automatic tries stopped on a link that kept failing, only a tap (startSpeechDownload, which calls
+  // retries.asked first) starts it again: opening Review or a waiting letter does not.
+  if (retries.gaveUp(language)) return;
   const { automatic, ...rest } = opts;
   const r = await ensureSpeechFor(language, automatic ? { ...rest, allowCellularOnce: false, wifiOnly: true } : rest).catch(
     () => ({ ok: false as const, reason: 'download_failed' }),
@@ -259,19 +285,31 @@ const retries = new DownloadRetries<SpeechLanguage>({
  * `packsCopy.failures[code]` with Try again (`startSpeechDownload`) instead of a wait that never ends.
  */
 export function speechDownloadFailure(language: SpeechLanguage): string | null {
-  if (speechDownloadHold(language) !== null || speechDownloadProgress(language) !== null) return null;
+  if (speechDownloadHold(language) !== null) return null;
+  const motion = speechDownloadMotion(language, packProgress);
+  if (motion.progress !== null || motion.stage !== null) return null;
   const host = speechPackHost();
   for (const id of planFor([language]).packs) {
     if (host.packPath(id)) continue;
     const p = packProgress.get(id);
-    if (p?.phase === 'failed' && p.failure) return p.failure;
+    if (p?.phase === 'failed' && p.failure) {
+      // After MAX_STOPPED_RUNS automatic runs the retries wait for a tap: the line must not say "by itself".
+      return p.failure === 'download_failed' && retries.gaveUp(language) ? 'download_stopped' : p.failure;
+    }
+    // Stopped (Settings, or an abort nobody asked for): nothing restarts it, so it is shown with Try again.
+    if (p?.phase === 'cancelled') return 'cancelled';
   }
   return null;
 }
 
-/** Download progress (0..1) for a language, or null when nothing is downloading. */
+/** Download progress (0..1) for a language, or null when no bytes are moving (queued or waiting is not moving). */
 export function speechDownloadProgress(language: SpeechLanguage): number | null {
   return combineProgress(language, packProgress);
+}
+
+/** When no bytes are moving: a pack waiting its turn, being checked or finishing (said in words, never as 0%). */
+export function speechDownloadStage(language: SpeechLanguage): DownloadStage | null {
+  return speechDownloadMotion(language, packProgress).stage;
 }
 
 /** Why a language's download is waiting, if it is: Wi-Fi, space, offline. */

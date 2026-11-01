@@ -1,4 +1,4 @@
-import { btn, journey } from './support/app';
+import { btn, journey, selectedTab, tab } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 const NOTE_SEED = 'Words come from the seeded fictional family Asha (the web build has no speech model, so a real recording never gets words).';
@@ -10,21 +10,28 @@ async function openReview(app: import('@playwright/test').Page, kind: 'asha' | '
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();
 }
 
-test('[J06] review: what the machine tidied, put back, word for word, save to the book', async ({ app, record }) => {
+test('[J06] review: the small fixes, put back, word for word, save to the book', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 1, 'J05-03');
   await openReview(app);
-  await step('happy', 'Review, with a first-time note', 'The words as spoken, with each tidy-up quietly underlined, a count of small fixes, and a one-time note saying what was and was not done. ' + NOTE_SEED);
+  await expect(app.getByTestId('review.sheet')).toBeVisible();
+  await expect(app.getByText(/^To Asha · /i)).toBeVisible();
+  await expect(app.getByText(/^From Mama$/i)).toBeVisible();
+  await expect(app.getByTestId('review.trustLine')).toHaveCount(0);
+  await step('happy', 'Review, with a first-time note', 'The letter on a sheet with its header, "TO ASHA · MONTH N" and "FROM MAMA", each small fix marked in the words, in the letter\'s own face (taken-out words struck through, a name spelled your way shown after the word heard), the fixes behind one row (open from the start while a screen reader is on, which the web build always reports), and the registered one-time note. No reassurance line under the title (S17). ' + NOTE_SEED);
   await btn(app, 'Got it').click();
   await step('happy', 'First note dismissed', '"Got it" collapses the note for good.');
 
+  // The rows start open while a screen reader is on (P4 critics' pass S3), and the web build always reports one.
+  const count = app.getByTestId('review.count');
+  if (!(await app.getByTestId('review.fixRow').first().isVisible())) await count.click();
   await app.getByRole('button', { name: /Took out a sound/ }).first().click();
   await expect(btn(app, /Put it back/i)).toBeVisible();
-  await step('happy', 'Why was this changed?', 'Tapping a tidy-up (the underline or its row) says what kind of fix it was, shows the exact words said and the tidied version, and offers to put it back.');
+  await step('happy', 'Why was this changed?', 'Tapping a mark in the letter, or its row behind "N small fixes", opens a card under the mark\'s own line: what kind of fix it was, the exact words said and how it reads now, and an offer to put it back.');
   await btn(app, /Put it back/i).click();
   await expect(app.getByText(/put back/i).first()).toBeVisible();
   await step('happy', 'Put back', 'The original words return, marked for a moment, with Undo beside them.');
   await app.getByRole('button', { name: 'Undo', exact: true }).click();
-  await step('happy', 'Undo the put-back', 'Undo re-applies the tidy-up. Every edit is reversible both ways.');
+  await step('happy', 'Undo the put-back', 'Undo re-applies the small fix. Every edit is reversible both ways.');
 
   await app.getByRole('radio', { name: 'Exactly as said' }).click();
   await expect(app.getByText('Exactly as you said it.')).toBeVisible();
@@ -34,12 +41,16 @@ test('[J06] review: what the machine tidied, put back, word for word, save to th
   await step('happy', 'Back to small fixes', 'The same control returns to the words with each small fix marked. Every choice is reversible both ways.');
 
   await app.getByText('Change words', { exact: true }).click();
-  await step('happy', 'Change words', 'The person may edit any word themselves, in the letter face. Done returns.');
-  await app.getByText('Done', { exact: true }).click();
+  await step('happy', 'Change words', 'The person may change any word themselves, in place on the same sheet: no box inside the letter, the sheet\'s edge turns to the accent line, and Done sits in the header (S18).');
+  await btn(app, 'Done').first().click();
 
   await btn(app, /^Add to .*book/).click();
-  await expect(app.getByText(/Added to/)).toBeVisible();
-  await step('happy', 'Saved to the book', 'The letter settles into a card with "Added to Asha\'s book". Review closes by itself or on tap.', undefined, { settle: 120 });
+  await expect(app.getByTestId('review.saved.chip')).toHaveText(/^Kept in /);
+  await expect(app.getByText("Added to Asha's book.")).toBeVisible();
+  await step('happy', 'Saved: kept in its month', 'The save commits first, then the sheet files into its month: "Kept in Month N" under it and "Added to Asha\'s book." with a check, never ghosted words (S21).', undefined, { settle: 120 });
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
+  await expect(app.getByText('Read it back', { exact: true })).toHaveCount(0);
+  await step('happy', 'On the Book, on the new letter', 'Review dissolves onto the Book, which is already on the new letter under its month, with the arrival wash. Tonight is never seen in between (5.8 row 5).', undefined, { settle: 400 });
 });
 
 test('[J06b] keep the letter private', async ({ app, record }) => {
@@ -48,16 +59,16 @@ test('[J06b] keep the letter private', async ({ app, record }) => {
   await btn(app, 'Got it').click();
   await btn(app, 'Keep private').click();
   await expect(app.getByText(/Kept just for you/)).toBeVisible();
-  await step('happy', 'Kept private', 'The letter is saved outside the book. It is only on this phone and can be added later from the letter page.', undefined, { settle: 120 });
+  await step('happy', 'Kept private', 'The letter is saved outside the book, with the lock chip "Kept just for you.", then lands on the Book with its Private chip, as a kept letter does (S21).', undefined, { settle: 120 });
 });
 
 test('[J06c] close Review without saving: the recording is kept as a draft', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 12, 'J06-02');
   await openReview(app);
   await btn(app, 'Close').click();
-  await expect(app.getByText('A thought to start with', { exact: false }).first()).toBeVisible();
+  await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('Read it back').first()).toBeVisible();
-  await step('unhappy', 'Close without saving', 'Closing leaves the draft where it was: the "A letter is waiting to be read back" card is still on Tonight. Nothing is deleted. ("Let it go", the only delete, is a native confirm dialog that does not appear on web.)');
+  await step('unhappy', 'Close without saving', 'Closing leaves the draft where it was: its card is still on Tonight with "Read it back". Nothing is deleted. ("Let it go", the only delete, is a native confirm dialog that does not appear on web.)');
 });
 
 test('[J06e] Keep needs Plus past the free letters: the letter is held, never lost', async ({ app, record }) => {
@@ -67,17 +78,22 @@ test('[J06e] Keep needs Plus past the free letters: the letter is held, never lo
   await btn(app, 'Got it').click();
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This letter is safe on your phone. Come back to it once Plus is on.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await expect(app.getByText(/\$\d|free trial|email you/i)).toHaveCount(0);
   await step('unhappy', 'Keep needs Plus', 'Pressing Keep after the first two letters opens one calm sheet: "Keep adding to Asha\'s book", that the first two letters are kept and always will be, that this letter is safe on the phone, and a way to start Plus. No price, no trial length and no countdown (Apple\'s own sheet shows those). Nothing was saved yet. On web there is no StoreKit, so the sheet says Plus is not available on this device and has no "See Plus" or "Redeem a code" button. NEEDS A REAL IPHONE: See Plus, Redeem a code, Ask to Buy, offline.');
   await btn(app, 'Keep it here for now').click();
-  await expect(app.getByText('Read it back').first()).toBeVisible();
-  await step('happy', 'Kept here for now', 'The letter stays a draft: Tonight still shows "A letter is waiting to be read back" with the words exactly as they were. It can be played, read and exported from there, and kept once Plus is on.');
+  // S22: the draft is marked held (store.holdDraft), so Tonight's card says so (S09), with its words as they were.
+  await expect(app.getByText('Waiting to be kept.').first()).toBeVisible();
+  await expect(btn(app, /Keep it/).first()).toBeVisible();
+  await step('happy', 'Kept here for now', 'The letter stays a draft, marked held: its card on Tonight says "Waiting to be kept." with the words exactly as they were and "Keep it". It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).');
 });
 
 test('[J06d] a Review link with no draft', async ({ app, record }) => {
   const step = journey(record, 'J06', 'review-and-edits', 13, 'J06-01');
   await seeded(app, 'asha', '/review');
-  await expect(app.getByText(/Please try again/)).toBeVisible();
-  await step('unhappy', 'Review with no draft', 'If Review is opened with a draft that no longer exists (only reachable by a stale link) the app says the words are safe and offers Close. It is not reachable by tapping.');
+  await expect(app.getByText('Nothing to read back here', { exact: true })).toBeVisible();
+  await expect(app.getByText(/Something went wrong|try again/i)).toHaveCount(0);
+  await step('unhappy', 'Review with no draft', 'Opened by a stale link with nothing to read back: the page drawing, "Nothing to read back here", one way on, "Go to the book", and Close. No error, nothing to try again (S23).');
+  await btn(app, 'Go to the book').click();
+  await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
 });

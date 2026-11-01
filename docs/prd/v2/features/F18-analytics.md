@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Release | v1.0 gate (the learning loop runs from the first beta cohort; its absence never blocks a release) |
+| Release | v1.1 or later (D-124, 28 Oct 2026: D-095 stands, so `EXPO_PUBLIC_ANALYTICS` is off for the whole 1.0 line and the P0 rows below bind from the release that turns analytics on). Before that: the learning loop runs from tester feedback and consent-free App Store Connect numbers; its absence never blocks a release |
 | Priority and rank | P0, rank 19 (`05-feature-map.md` section 2) |
 | Personas | P1, P2 (as people who choose to share or not); the founder and agents as readers |
 | Existing IDs | PRD-REQ-001, PRD-REQ-016, PRD-REQ-017, PRD-REQ-018, C-REQ-034, C-NFR-005, C-NFR-009, B-NFR-001, A-NFR-002, A-NFR-012, LEGAL-REQ-003, LEGAL-REQ-012, LEGAL-REQ-014, LEGAL-REQ-015, LEGAL-REQ-016, LEGAL-REQ-017, LEGAL-REQ-029, LEGAL-REQ-031, LEGAL-REQ-033, LEGAL-REQ-043, DATA-REQ-004, DATA-REQ-033, DATA-REQ-062, K-01, D-003, D-070, D-080, D-081, ADR 0008, BL-020, BL-021, BL-023, BL-024, BL-235, BL-239, BL-250, BL-251, BL-252, BL-319 |
@@ -231,10 +231,10 @@ Status: **Built** (file), **Partly built**, or **Not built**, checked in code on
 | F18-REQ-028 | P0 | No content in analytics, crash reports or function logs (analytics slice of LEGAL-REQ-014; home F17) | Given the E2E suite at debug level, Then 0 fixture strings in payloads or logs | Partly built: function log canary (`supabase/functions/_shared/log/canary.test.ts`); app payload capture blocked (BL-239) | CR-010 |
 | LEGAL-REQ-015 | P0 | No safety tier in any event | Given the catalogue, Then no event or property names a tier | Built (no such event in `catalog.ts`) | CR-031 |
 | LEGAL-REQ-016 | P0 | No ad, attribution or tracking SDK; no AdSupport or ATT import | Given CI, Then a dependency denylist fails on the listed SDKs and imports | Not built (no denylist check found) | CR-014 |
-| LEGAL-REQ-043 | P0 | The privacy manifest's collected data types match what the build sends | Given a build with a PostHog key, Then `NSPrivacyCollectedDataTypes` lists the label's analytics types; given a build without, Then it may stay empty | Partly built: manifest present with `NSPrivacyCollectedDataTypes: []` (`apps/mobile/app.config.ts`) | CR-088 |
+| LEGAL-REQ-043 | P0 | The privacy manifest's collected data types match what the build sends | Given a build with a PostHog key, Then `NSPrivacyCollectedDataTypes` lists the label's analytics types; given a build without, Then it may stay empty | Partly built: manifest present with `NSPrivacyCollectedDataTypes: []` (generated in `apps/mobile/src/lib/privacy-manifest.ts`, wired through `app.config.ts`, #211) | CR-088 |
 | A-NFR-002 | P0 | Analytics never on the launch path | Given cold start, Then `startAnalytics` runs after the first frame, is not awaited, and makes no network call without consent | Built (`apps/mobile/src/app/_layout.tsx` `startServices`) | K-01 |
 | A-NFR-012 | P0 | No email, names, tokens or free text in events; Sentry strips token URLs | Given any string over 40 characters or PII-shaped, Then the event is dropped | Partly built: PostHog side built (`validate.ts`); Sentry side not built | K-01 |
-| B-NFR-001, C-NFR-005, C-REQ-034 | P0 | Children only as ordinals and buckets; a language only as one of 7 codes on `language_set` and `pack_download` | Given the catalogue test, Then no other event carries `lang` and no property holds a name | Built (`catalog.ts`, `test/domain.test.ts`) | K-01 |
+| B-NFR-001, C-REQ-034 | P0 | Children only as ordinals and buckets; a language only as one of 7 codes on `language_set` and `pack_download`. C-NFR-005 (no content in analytics or logs) is defined once, in F17 | Given the catalogue test, Then no other event carries `lang` and no property holds a name | Built (`catalog.ts`, `test/domain.test.ts`) | K-01 |
 | F18-REQ-001 | P0 | The PostHog SDK is never evaluated before a yes | Given consent unknown or denied, Then `posthog-sdk.ts` is not loaded (dynamic import count 0) and the app container has no PostHog file after a fresh install through first letter | Partly built: lazy adapter built (`index.ts`, `createLazyPostHogAdapter`); the container scan with the real SDK is BL-252 | LEGAL-REQ-003 |
 | F18-REQ-002 | P0 | A fresh random id per consent period; retired on withdrawal; at most 20 retired ids kept, only for deletion | Given grant, withdraw, grant, Then two different UUIDs and `analyticsIds()` returns both | Built (`packages/analytics/src/consent.ts`) | PRD-REQ-018 |
 | F18-REQ-003 | P0 | No consent ask and no Privacy switch in a build without a PostHog key | Given `EXPO_PUBLIC_POSTHOG_KEY` empty, Then `analyticsAskDueNow` returns not due with reason `no_provider` (new) and the switch row is hidden | Not built (the sheet shows today; `consent-ask.tsx` header says a yes sends nothing) | ROADMAP 6 cut |
@@ -378,7 +378,7 @@ Only for what is missing or partly built.
 | Q6 Linked or Not linked (Q-005) **[Counsel]** | Counsel; 29 Oct (default Linked) | Label, manifest |
 | Q7 The seven-code `lang` property (Q-004) **[Counsel]** | Counsel; 16 Oct (default ship) | Two events |
 | Q8 PostHog billing limit value | Founder; before C1 | Volume cap |
-| Q9 Does v1.0 ship with `EXPO_PUBLIC_ANALYTICS` on (this spec, D-003, B10) or off (PR #122 D-095, built by PR #118)? Spec default until answered: off, as `develop` is built; every requirement here then binds from v1.1 or from the build that turns it on | Founder; T02 | Sections 4, 7 and 12 of this spec; F17 Privacy screen; the privacy label (F21) |
+| Q9 Does v1.0 ship with `EXPO_PUBLIC_ANALYTICS` on (this spec, D-003, B10) or off? Answered by D-095 (delegated by the founder, 15 Oct, now on `develop`): off in every v1.0 profile; analytics returns with consent in v1.1. Built by PR #118; PR #125 also takes `posthog-react-native` out of the v1.0 bundle. Every requirement here binds from v1.1 or from the build that turns it on | Founder; T02 | Sections 4, 7 and 12 of this spec; F17 Privacy screen; the privacy label (F21) |
 
 | A | Assumption | How we validate |
 |---|---|---|

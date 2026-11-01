@@ -13,6 +13,8 @@
  *  - A co-parent gets Plus through Apple Family Sharing. That arrives as their
  *    own (familyShared) entitlement, so `coveredByOtherParent` is always false:
  *    no server tells one parent's phone about the other parent's purchase.
+ *    This follows D-053 ("A co-parent gets Plus through Family Sharing") and
+ *    Terms of Service 14.12 ("Who Plus covers").
  *  - Sandbox and Xcode transactions count (`isTester`). On the device a
  *    verified sandbox transaction exists only in TestFlight, a development
  *    build, or App Review, which buys in the sandbox; refusing it would show
@@ -23,6 +25,7 @@
 import { NO_PLAN, planActive, type PlanView } from '@scribe/core';
 import type {
   NativeEntitlementSnapshot,
+  NativeOfferType,
   NativeStatus,
   NativeTransaction,
   Ownership,
@@ -90,6 +93,7 @@ export const EMPTY_PLAN: PlanState = { view: NO_PLAN, details: NO_DETAILS, check
 
 const ENVIRONMENTS: ReadonlySet<string> = new Set(['production', 'sandbox', 'xcode']);
 const STATES: ReadonlySet<string> = new Set(['subscribed', 'inGracePeriod', 'inBillingRetryPeriod', 'expired', 'revoked', 'unknown']);
+const OFFER_TYPES: ReadonlySet<string> = new Set(['none', 'introductory', 'promotional', 'offer_code', 'win_back', 'other']);
 
 const isoOrUndefined = (v: unknown): string | undefined =>
   typeof v === 'string' && !Number.isNaN(Date.parse(v)) ? v : undefined;
@@ -113,6 +117,9 @@ function transactionOf(raw: unknown): NativeTransaction | null {
   if (purchasedAt) tx.purchasedAt = purchasedAt;
   if (originalPurchasedAt) tx.originalPurchasedAt = originalPurchasedAt;
   if (revokedAt) tx.revokedAt = revokedAt;
+  // SUB-05: how the period was offered, and whether it is free (an offer code's free months, not only a trial).
+  if (typeof r.offerType === 'string') tx.offerType = OFFER_TYPES.has(r.offerType) ? (r.offerType as NativeOfferType) : 'other';
+  if (typeof r.freePeriod === 'boolean') tx.freePeriod = r.freePeriod;
   return tx;
 }
 
@@ -218,7 +225,9 @@ export function planFromSnapshot(snap: NativeEntitlementSnapshot | null): PlanSt
       return rank(b) - rank(a);
     })[0];
     const untilAll = live.some((l) => l.until === null) ? null : Math.max(...live.map((l) => l.until as number));
-    const state: PlanStatus = best.inGrace ? 'grace' : best.tx.isTrial ? 'trial' : 'active';
+    // SUB-05: a free period is 'trial' whatever offer gave it (a free trial, or an offer code with free months), so the
+    // Plan screen says "free until", and the trial reminders (and the 17602(b)(1) notice over 31 days) follow it.
+    const state: PlanStatus = best.inGrace ? 'grace' : best.tx.isTrial || best.tx.freePeriod === true ? 'trial' : 'active';
     const willAutoRenew = best.status?.willAutoRenew ?? null;
     const periodEnd = best.tx.expiresAt ?? null;
     const cancelBy =

@@ -8,6 +8,10 @@
  * on the UI thread, in useFrameCallback using dt so 60 and 120 Hz match.
  * Reduce Motion: a static 2pt ring whose opacity steps 0.2/0.3/0.4, at most
  * one change per 400 ms, with 200 ms fades. Decorative for VoiceOver.
+ *
+ * `ready` (EXPERIENCE_PASS S12): Listening at rest before a take, the red circle with no aura and no ring. The
+ * circle is the start control there; listen.tsx lays the button over it, because this view is hidden from VoiceOver.
+ * Its values come from tokens.motion.breath and breathIdleMs (S11: 7.5 s, 8 breaths a minute); nothing is typed here.
  */
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { useEffect } from 'react';
@@ -26,7 +30,7 @@ import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import { FADE_MS } from '@/lib/motion';
 
-export type AuraState = 'idle' | 'listening' | 'paused' | 'processing';
+export type AuraState = 'ready' | 'idle' | 'listening' | 'paused' | 'processing';
 
 interface Props {
   state: AuraState;
@@ -52,12 +56,16 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
   const opacity = useSharedValue<number>(B.opacityMin);
   const listening = useSharedValue(state === 'listening');
   const paused = useSharedValue(state === 'paused');
+  const ready = useSharedValue(state === 'ready');
+  const processing = useSharedValue(state === 'processing');
   const reducedSV = useSharedValue(reduced);
   useEffect(() => {
     listening.value = state === 'listening';
     paused.value = state === 'paused';
+    ready.value = state === 'ready';
+    processing.value = state === 'processing';
     reducedSV.value = reduced;
-  }, [state, reduced, listening, paused, reducedSV]);
+  }, [state, reduced, listening, paused, ready, processing, reducedSV]);
 
   useFrameCallback((f) => {
     'worklet';
@@ -65,10 +73,19 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
     const dt = Math.min(f.timeSincePreviousFrame ?? 16, 64);
     t.value += dt;
     if (!listening.value) {
-      // paused, idle, processing: settle to rest, no decorative loop.
+      // paused, idle, processing: settle to rest, no decorative loop. Ready (S12): no aura at all.
       s.value += (0 - s.value) * (1 - Math.exp(-dt / B.releaseMs));
+      idleW.value = 0;
+      if (processing.value) {
+        // The take has ended (5.8 row 4): the glow releases from what is on screen (the voice, or the idle breath if
+        // the person was quiet), easing to rest over releaseMs (400 ms).
+        const k = Math.exp(-dt / B.releaseMs);
+        scale.value = 1 + (scale.value - 1) * k;
+        opacity.value = B.opacityMin + (opacity.value - B.opacityMin) * k;
+        return;
+      }
       scale.value = 1;
-      opacity.value = paused.value ? 0.12 : B.opacityMin;
+      opacity.value = ready.value ? 0 : paused.value ? 0.12 : B.opacityMin;
       return;
     }
     const a = Math.pow(Math.min(1, Math.max(0, (db.value - B.dbFloor) / (B.dbCeil - B.dbFloor))), B.gamma);
@@ -99,12 +116,12 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
     },
   );
 
-  const glowStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: opacity.value }));
+  const glowStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }], opacity: ready.value ? 0 : opacity.value }));
   const ringStyle = useAnimatedStyle(() => ({ opacity: ringOpacity.value }));
 
   return (
     <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ width: size * 1.2, height: size * 1.2, alignItems: 'center', justifyContent: 'center' }}>
-      {reduced ? (
+      {state === 'ready' ? null : reduced ? (
         <Animated.View
           style={[{ position: 'absolute', width: disc + 24, height: disc + 24, borderRadius: size, borderWidth: 2, borderColor: c.recording }, ringStyle]}
         />

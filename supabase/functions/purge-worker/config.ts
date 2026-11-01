@@ -57,6 +57,8 @@ export function readConfig(get: EnvGetter): { config: WorkerConfig | null; missi
   const keyId = v('APPLE_SIGNIN_KEY_ID');
   const privateKeyPem = get('APPLE_SIGNIN_PRIVATE_KEY') ?? '';
   const extraClients = v('APPLE_SERVICES_ID');
+  // The same list apple-token captures for (its "same list" test, PR #139). APPLE_EXTRA_CLIENT_IDS is read by
+  // neither function until both change together (docs/ops/AUTH_SETUP.md 2.7).
   const apple: AppleConfig | null = teamId && keyId && privateKeyPem.trim()
     ? { teamId, keyId, privateKeyPem, clientIds: [bundleId(), ...(extraClients ? [extraClients] : [])] }
     : null;

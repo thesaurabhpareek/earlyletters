@@ -42,7 +42,7 @@ Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict lo
 
 ### F1. First run, new parent (after Section A's intro; sign-up timing is A's call)
 Target: R1, first saved letter at ≤ 90 s median (USER_RESEARCH 6).
-1. **Who is this book for?** Name field (required, 1 to 60 characters, any script). Help: "First name, or the name you use at home."
+1. **Who is this book for?** Name field (required, 1 to 60 characters, any script). Placeholder: "First name, or a nickname" (EXPERIENCE_PASS S05: no help line under the field).
 2. **Birthday or Not here yet.** Segmented control. Birthday: date wheel, no future dates. Not here yet: due date wheel, today to +10 months.
    - Branch: "My partner already started one" → "Ask them to send you an invite from Family", then A's "I was invited" entry. Prevents duplicate books.
 3. **What does {child} call you?** `onboarding.signsAs.examples` chips or free text (1 to 30). Preview "From Papa". Required: every letter is signed.

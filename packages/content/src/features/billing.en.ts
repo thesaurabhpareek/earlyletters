@@ -24,7 +24,8 @@ export const billingCopy = {
   /** Marketing content above Apple's plan buttons (SubscriptionStoreView). */
   store: {
     title: 'Plus',
-    subtitle: 'A few extras for the books you keep.',
+    // Plus adds one thing in v1.0 (keeping more letters), so no "extras" (S41). The same words as settingsHome.planHelp.
+    subtitle: 'Your first two letters are free. Plus lets you keep adding letters.',
     features: [
       'Keep adding letters to every book, as many as you like.',
     ],
@@ -42,15 +43,36 @@ export const billingCopy = {
    */
   keepGate: {
     title: "Keep adding to {child}'s book",
-    body: 'Your first two letters are kept, and always will be. To add more, join Plus.',
-    heldNote: 'This letter is safe on your phone. Come back to it once Plus is on.',
+    body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
+    // heldNote, heldNoteSynced and offline promise the letter "waits on Tonight": P3 shows a card on Tonight for every
+    // draft (spec S09, S22). Written to the register row "Keep step and held letter" (#163, 3.1.0); counsel reads them
+    // (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing shows it until counsel has read it
+    // (apps/mobile plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED).
+    heldNote: 'This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.',
+    heldNoteSynced: 'This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.',
+    // The chip on the held letter's own card at the top of the sheet.
+    heldChip: 'Waiting',
     seePlus: 'See Plus',
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
-    lapsedBody: 'Plus has ended. Every letter stays yours to read, play and export. To add new ones, Plus can start again.',
-    offline: 'Plus needs the internet to start. Your letter stays safe on your phone until then.',
+    lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
+    offline: 'Plus needs a connection to start. This letter waits on Tonight, on this phone, exactly as it is.',
+    // A letter whose words arrived later reaches the sheet from its own page, through Review (task #53): it is already
+    // in the book or private, and only its words wait, on the letter itself, so neither line names Tonight or the
+    // phone. New for the content owner and counsel (C10), beside the "Keep step and held letter" register row.
+    heldNoteLetter: 'Your words stay with this letter, exactly as they are. Keep them whenever you like.',
+    offlineLetter: 'Plus needs a connection to start. Your words stay with this letter, exactly as they are.',
     secondFreeNote: 'That was your second free letter.',
     plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
+  },
+
+  /**
+   * Alpha builds only (TestFlight and development; founder, 1 Nov 2026, "No letter limit in alpha"). The Plus products
+   * cannot load in a test build, so wherever the store build offers Plus (the Welcome footnote, Settings Plan row, the
+   * Plan screen, the Keep sheet) an alpha build says this instead. Never shown in the App Store app.
+   */
+  alpha: {
+    note: 'Plus is not part of this test. Every letter is free while you test.',
   },
 
   /** The gate a person meets before Apple's store view. */
@@ -61,11 +83,17 @@ export const billingCopy = {
     isOn: 'Plus is on.',
   },
 
-  /** Settings, Plan (the path the Subscription Terms and plus.legal.cancel name). */
+  /**
+   * Settings, Plan (the path the Subscription Terms and plus.legal.cancel name).
+   * Registered disclosure text: docs/legal/in-app-disclosures.md section 3 quotes the `billingCopy.plan.*` row
+   * (Terms 14.6). Existing words change only through counsel with a version bump of that file, so the experience
+   * pass's new wording for payment, grace, retry and restoreFailed waits for counsel (spec S41). New keys
+   * (annual, restoreNone) are additions nothing shows yet; P6 switches the screen after counsel sees them.
+   */
   plan: {
     title: 'Plan',
     statusTitle: 'Plus',
-    off: 'Your first two letters are free. Plus lets you keep adding.',
+    off: 'Your first two letters are free. Plus lets you keep adding.', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (no status card when Plus is off)
     on: 'Plus is on.',
     trial: 'Plus is on, free until {date}.',
     trialCancelBy: 'Cancel by {cancelBy} and you pay nothing.',
@@ -74,8 +102,11 @@ export const billingCopy = {
     grace: 'There is a problem with the payment for Plus. Your letters are fine, and Plus stays on while Apple tries again.',
     retry: 'Apple could not take the payment for Plus, so Plus is paused. Every letter you have kept is safe.',
     shared: 'Shared with you through Apple Family Sharing.',
+    // Plan names equal the App Store Connect display names (D-077; BRAND.md glossary). `monthly` is held until P6:
+    // today's Plan screen shows it as the period beside `yearly`, so "Plus Monthly" would sit next to "Yearly".
     monthly: 'Monthly',
-    yearly: 'Yearly',
+    annual: 'Plus Annual',
+    yearly: 'Yearly', // retired by EXPERIENCE_PASS_2026-10; delete in P7 (replaced by `annual`)
     seePlans: 'See what Plus adds',
     redeem: 'Redeem a code',
     redeemHelp: 'Opens Apple\'s sheet for an offer code.',
@@ -84,9 +115,13 @@ export const billingCopy = {
     manageHelp: 'Change or cancel in Apple\'s subscriptions screen.',
     restore: 'Restore purchases',
     restoreHelp: 'Finds Plus bought with this Apple Account.',
+    // The Restore row's subtitle while it checks, and its result inline under the row (S41).
     restoring: 'Checking with the App Store',
     restored: 'Plus is on.',
+    // `restoreNone` is the S41 wording for this result; P6 moves the screen to it once counsel has seen it, and only
+    // then is restoreNothing retired.
     restoreNothing: 'No Plus was found for this Apple Account.',
+    restoreNone: 'This Apple Account has no Plus to restore.',
     restoreFailed: 'The App Store could not be reached. Please try again in a moment.',
     refund: 'Request a refund',
     refundHelp: 'Apple decides refunds. Your letters, recordings and books never change.',
@@ -112,12 +147,16 @@ export const billingCopy = {
     trialOneMonth: 'Plus is free until {date}, then it renews unless you cancel. You can change this in Settings, Plan.',
     trialMonths: 'Plus is free until {date}, then it renews unless you cancel. You can change this in Settings, Plan.',
     renews: 'If Plus is still set to renew, it renews on {date}. You can change this in Settings, Plan.',
-    yearly: 'A yearly note: Plus renews until you cancel. You can change this in Settings, Plan.',
+    yearly: 'A yearly reminder: Plus renews until you cancel. You can change this in Settings, Plan.',
   },
 
-  /** The same reminder inside the app: on the next open inside its window, and in Settings, Plan until the date passes. */
+  /**
+   * The same reminder inside the app: on the next open inside its window, and in Settings, Plan until the date passes.
+   * The `trial*` lines say "free until", never "trial", so they are also the words for a free period from an offer code
+   * (SUB-05: the plan state for a code's free period must be the free one, not "renews on").
+   */
   note: {
-    title: 'A note about Plus',
+    title: 'A reminder about Plus',
     trialOneMonth: 'Plus is free until {date}.',
     trialMonths: 'Plus is free until {date}.',
     renews: 'Plus renews on {date}.',
@@ -134,7 +173,7 @@ export const billingCopy = {
    * before the purchase and Apple's receipt holds it.
    */
   confirmation: {
-    title: 'Plus is on',
+    title: 'Thank you. Plus is on',
     planMonthly: 'Plus Monthly',
     planAnnual: 'Plus Annual',
     trial: 'Free until {date}. Then Plus renews until you cancel.',

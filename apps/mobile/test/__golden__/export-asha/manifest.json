@@ -1,6 +1,6 @@
 {
   "format": "early-letters-export",
-  "format_version": "1.1.0",
+  "format_version": "1.4.0",
   "generated_at": "2027-03-15T10:00:00.000Z",
   "app_version": "1.0.0",
   "engine_version": 3,
@@ -20,26 +20,26 @@
   "files": [
     {
       "path": "README.txt",
-      "bytes": 2111,
-      "sha256": "a5ee9e259b191f8705ccbedbaa7aebb394b276b2fd9f577e9e84bbccb1d5350c",
+      "bytes": 3058,
+      "sha256": "af214b35a32d30f5c8cbbbc96904ff516fcc770302359b3dc4d06c3bbde7b50b",
       "media_type": "text/plain; charset=utf-8"
     },
     {
       "path": "schema/export-v1.schema.json",
-      "bytes": 14612,
-      "sha256": "8730733787ce071042ddb801559bf2555ed3de60f6d2b920ffede87e2197d7de",
+      "bytes": 23377,
+      "sha256": "d95593c97c16adaa4bced5d0145e9ea4029b95c7911fc26454485dd62875aa92",
       "media_type": "application/json"
     },
     {
       "path": "book/Asha.pdf",
       "bytes": 95,
-      "sha256": "a4dd0a3822978876af5be15684b1511b9c376d520843190a365cb9b35d5762da",
+      "sha256": "4e3ab83bff125a130ef84e3da1059d48f70548c2f31ebf8dd8cf32cede5cfa09",
       "media_type": "application/pdf"
     },
     {
       "path": "book/Dev.pdf",
       "bytes": 95,
-      "sha256": "a26955d627d0078f3c84b97005b0b30ae6c758191449b81479c07d26d7756673",
+      "sha256": "e78518395d37644faac71970eceb2983add8338cb27a06161a4d9dd364e390b4",
       "media_type": "application/pdf"
     },
     {
@@ -86,8 +86,8 @@
     },
     {
       "path": "letters/Asha/2026-08/2026-08-10_e7.txt",
-      "bytes": 188,
-      "sha256": "b7ff64ffc91fb389aca0d824de0f82e3f99d5f8065192c4301c8b8fc7e5db0cb",
+      "bytes": 170,
+      "sha256": "21aaf2d3b26115c419e41302758def10c1d51e40d33bc01bfbd3722d8909adfa",
       "media_type": "text/plain; charset=utf-8"
     },
     {
@@ -159,19 +159,19 @@
     {
       "path": "data/children.json",
       "bytes": 604,
-      "sha256": "7811479c1ef932ead56320d8f5712450244610a82fcb81ad5ae0f028c75c78e2",
+      "sha256": "c9e82c83a243949112b37c0b92f58bfa882ee7e3883dcc1be3b50efecf295cd9",
       "media_type": "application/json"
     },
     {
       "path": "data/entries.json",
       "bytes": 13556,
-      "sha256": "9526bf6144137b81351e27b608e81bb403e9cf5d100246153ad55b1e592b316f",
+      "sha256": "54baa783aacf283642921e49edfd54c1ae35354df86fe831bb9b403a9a7765f7",
       "media_type": "application/json"
     },
     {
       "path": "data/account.json",
-      "bytes": 453,
-      "sha256": "28019e1fb9bf7bab1dc6f856278b54e106383c852fc8af1cac47893401f36802",
+      "bytes": 1291,
+      "sha256": "7e16b542eaadcce02dde1b4453881cd44a14be7d2ff3398b4674b51e5ed8b10d",
       "media_type": "application/json"
     }
   ]

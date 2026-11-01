@@ -68,7 +68,7 @@ The phone is offline-first and cannot be force-upgraded, so every server interfa
 
 ### Budgets and limits
 
-**API-R17 (MUST)** Every endpoint lists in the contract package its p95 client latency, server-time budget, payload cap and rate limit, taken from TDD 06 3.2; a new endpoint without them is not merged. *Why:* BRIEF decision 17. *Enforced by:* review; server-time budgets for queries are tested in `supabase/tests/perf.test.mjs` on develop.
+**API-R17 (MUST)** Every endpoint lists in the contract package its p95 client latency, server-time budget, payload cap and rate limit, taken from TDD 06 3.2; a new endpoint without them is not merged. *Why:* BRIEF decision 17. *Enforced by:* review; server-time budgets for queries are tested in `supabase/tests/perf.test.mjs` on the nightly only (D-114).
 
 **API-R18 (MUST)** Rate limits are enforced in the RPC or Edge Function (PostgREST has none of its own), keyed by user id or a hashed device id, and refusals raise `SCRAT`. *Why:* abuse and cost control; the invite limit already does this (`create_child_invite`). *Enforced by:* `SCRAT` on invites in `supabase/migrations/20261003000000_security_and_family.sql`; generic `rate_limits` table not yet (DOC-11).
 

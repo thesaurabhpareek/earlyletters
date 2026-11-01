@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://earlyletters.com/export-format/v1.schema.json",
   "title": "Early Letters export, format 1",
-  "description": "Schema for data/entries.json, data/children.json, data/account.json and manifest.json in an export.",
+  "description": "Schema for data/entries.json, data/children.json, data/account.json, data/other-versions.json (when present) and manifest.json in an export.",
   "$defs": {
     "audio": {
       "type": "object",
@@ -20,7 +20,7 @@
       "properties": {
         "path": {
           "type": "string",
-          "pattern": "^audio/[^/]+\\.m4a$"
+          "pattern": "^audio/[^/]+\\.(m4a|aac)$"
         },
         "sha256": {
           "type": "string",
@@ -41,7 +41,10 @@
           "const": "aac-lc"
         },
         "media_type": {
-          "const": "audio/mp4"
+          "enum": [
+            "audio/mp4",
+            "audio/aac"
+          ]
         },
         "integrity": {
           "enum": [
@@ -60,6 +63,32 @@
               "type": "null"
             }
           ]
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "media_type": {
+            "const": "audio/aac"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.aac$"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "pattern": "\\.m4a$"
+          }
         }
       }
     },
@@ -439,6 +468,66 @@
         }
       }
     },
+    "otherVersionsFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "format",
+        "versions"
+      ],
+      "properties": {
+        "schema_version": {
+          "type": "string",
+          "pattern": "^1\\.\\d+\\.\\d+$"
+        },
+        "format": {
+          "const": "early-letters-export"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "entry_id",
+              "reason",
+              "final_text",
+              "edit_level",
+              "machine_edits",
+              "kept_at"
+            ],
+            "properties": {
+              "entry_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "enum": [
+                  "conflict_copy"
+                ]
+              },
+              "final_text": {
+                "type": "string"
+              },
+              "edit_level": {
+                "type": "string"
+              },
+              "machine_edits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/edit"
+                }
+              },
+              "kept_at": {
+                "type": "string",
+                "minLength": 10
+              }
+            }
+          }
+        }
+      }
+    },
     "accountFile": {
       "type": "object",
       "additionalProperties": false,
@@ -515,6 +604,317 @@
               ]
             }
           }
+        },
+        "consent_history": {
+          "$ref": "#/$defs/consentHistory"
+        },
+        "profile": {
+          "$ref": "#/$defs/profile"
+        },
+        "dictionary": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/dictionaryTerm"
+          }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "read_at",
+        "display_name",
+        "signs_as",
+        "created_at"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "included",
+            "not_signed_in",
+            "different_account",
+            "unavailable"
+          ]
+        },
+        "read_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "display_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "signs_as": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "created_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "included"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "null"
+          },
+          "display_name": {
+            "type": "null"
+          },
+          "signs_as": {
+            "type": "null"
+          },
+          "created_at": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    "consentHistory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "read_at",
+        "current",
+        "acts"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "included",
+            "not_signed_in",
+            "different_account",
+            "unavailable"
+          ]
+        },
+        "read_at": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "current": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "document",
+              "version",
+              "action",
+              "at"
+            ],
+            "properties": {
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "at": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "acts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "document",
+              "version",
+              "action",
+              "method",
+              "surface",
+              "at",
+              "client_recorded_at",
+              "app_version",
+              "platform",
+              "locale",
+              "rendered_sha256",
+              "context"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "document": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "action": {
+                "enum": [
+                  "accept",
+                  "decline",
+                  "withdraw",
+                  "acknowledge"
+                ]
+              },
+              "method": {
+                "type": "string"
+              },
+              "surface": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string"
+              },
+              "client_recorded_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "app_version": {
+                "type": "string"
+              },
+              "platform": {
+                "enum": [
+                  "ios",
+                  "android",
+                  "web"
+                ]
+              },
+              "locale": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rendered_sha256": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^[0-9a-f]{64}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "context": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      },
+      "if": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "const": "included"
+          }
+        }
+      },
+      "then": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "string"
+          }
+        }
+      },
+      "else": {
+        "type": "object",
+        "properties": {
+          "read_at": {
+            "type": "null"
+          },
+          "current": {
+            "type": "array",
+            "maxItems": 0
+          },
+          "acts": {
+            "type": "array",
+            "maxItems": 0
+          }
+        }
+      }
+    },
+    "dictionaryTerm": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "child_id",
+        "term",
+        "kind",
+        "heard_as",
+        "source"
+      ],
+      "properties": {
+        "child_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "term": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "child",
+            "nickname",
+            "family",
+            "word",
+            "place",
+            "self"
+          ]
+        },
+        "heard_as": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source": {
+          "enum": [
+            "phone",
+            "server"
+          ]
         }
       }
     },

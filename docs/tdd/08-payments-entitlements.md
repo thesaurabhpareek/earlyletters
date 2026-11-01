@@ -1,5 +1,7 @@
 # TDD 08: Payments and entitlements
 
+> **Superseded in part (31 Oct 2026).** D-053 and D-080 replaced the server entitlement model described here: Plus is checked on the device (StoreKit 2), and it covers only the person who holds it. A co-parent gets Plus only through Apple Family Sharing (Terms 14.12). Rules below that say a book inherits Plus from any parent (K-28, R-3, `book_has_plus`, `coveredByOtherParent`) do not apply to the 1.0 line. The app follows this rule in `packages/core/src/plan.ts` (and `apps/mobile/src/lib/billing/plan.logic.ts`).
+
 Owner: staff engineer, payments and entitlements. Draft 1, 3 Oct 2026. Branch `develop`. Status: for founder, data architect (TDD 02), privacy (TDD 05) and counsel review.
 
 Reads: CLAUDE.md; PRD.md 1.2 (K-04, K-11, K-12, K-28, K-32, PRD-REQ-003, -015, -017, -020); PRD C (C-REQ-020 to -034, C-NFR-001 to -009); ADR 0007; subscription-terms.md 1.2.0; terms-of-service.md section 14; in-app-disclosures.md 1.2.0; memos/lawyer-1.md; ENGINEERING_REQUIREMENTS.md (LEGAL-REQ-029, -033, -046 to -050, -053, -054, -058); DATA_CLASSIFICATION.md; TRACKING_PLAN.md; `apps/mobile/src/lib/store.ts`, `read-together.ts`, `components/child/plus-gate.tsx`, `add-child-form.tsx`; TDD 01, 02, 05.
@@ -410,7 +412,7 @@ The Plus sheet is one component, `apps/mobile/src/components/plus/plus-sheet.tsx
 
 **Content (before the button)**
 1. What Plus adds, matching the Subscription Terms list exactly. The list is one string set in `packages/content`, and a test asserts equality with `subscription-terms.md` (Apple 3.1.2(c); counsel note in Subscription Terms).
-2. The promise line `plus.promise`: "Writing, reading, playing your recordings, export and family letters are free, always. Plus adds a few extras." (K-11)
+2. The promise line `billingCopy.store.promise` (registered; it was `plus.promise`, deleted in P7): "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus." (K-11)
 3. Two plan options. **Neither is preselected** (C-REQ-022). Each leads with the billed amount ("$29.99 a year") from `StoreProduct.priceString`; any free period is secondary text. A per-month equivalent of the annual price is not shown in v1 (Rec: it only adds review risk).
 4. Under the chosen plan: `plus.legal.renewTrial` when the store reports intro eligibility (`checkTrialOrIntroductoryPriceEligibility`), otherwise `plus.legal.renewNoTrial`. `{trialLength}` comes from the product's intro offer and `{cancelByDate}` is computed from it. No "free" word appears unless eligible (C-REQ-022, H2).
 5. `plus.legal.cancel`, then `plus.legal.agree` directly above the button (H3). The links `plus.legal.links` (Terms, Privacy, Subscription terms, Restore) open in-app.

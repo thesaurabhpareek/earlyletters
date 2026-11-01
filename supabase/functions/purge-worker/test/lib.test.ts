@@ -8,7 +8,7 @@ import { BUCKETS, mirrorPrefixes, ownedObjectAction, profilePrefixes, rehomedChi
 import { ServiceError, safeEqual } from '../lib/http.ts';
 import { readConfig } from '../config.ts';
 import { workerCopy } from '../copy.ts';
-import { alertEmail, contributorNoticeEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail } from '../emails.ts';
+import { alertEmail, deletionCancelledEmail, deletionCompletedEmail, deletionRequestedEmail, withoutPlusLine } from '../emails.ts';
 import { conditionsFromSla } from '../alerts.ts';
 import { appleTestKey, KEK } from './helpers.ts';
 
@@ -74,6 +74,9 @@ Deno.test('config: required secrets, Apple only when complete, budget bounds', (
   assert.deepEqual(full.apple!.clientIds, ['com.earlyletters.scribe', 'com.earlyletters.web']);
   assert.deepEqual(Object.keys(full.tokenKeks), ['1', '2']);
   assert.equal(full.budgetMs, 110_000);
+  // APPLE_EXTRA_CLIENT_IDS is not read: the worker revokes for exactly the list apple-token captures for (PR #139).
+  const more = readConfig(env({ ...base, APPLE_TEAM_ID: 'TEAM123456', APPLE_SIGNIN_KEY_ID: 'KEY1234567', APPLE_SIGNIN_PRIVATE_KEY: 'pem', APPLE_EXTRA_CLIENT_IDS: 'com.earlyletters.scribe.preview' })).config!;
+  assert.deepEqual(more.apple!.clientIds, ['com.earlyletters.scribe']);
 });
 
 Deno.test('safeEqual compares secrets without short-circuit on content', () => {
@@ -87,6 +90,9 @@ Deno.test('SLA counts map to alert kinds; a silent purge is an alert', () => {
   const zero = { tombstones_overdue: 0, requests_executing_over_24h: 0, requests_executing_over_7d: 0, steps_failed: 0, steps_retrying: 0, queue_stuck: 0, queue_attempts_high: 0, scheduled_overdue: 0, holds_past_review: 0, purge_run_age_minutes: 5 };
   assert.deepEqual(conditionsFromSla(zero), []);
   assert.deepEqual(conditionsFromSla({ ...zero, queue_stuck: 1, queue_attempts_high: 2, purge_run_age_minutes: null }), [['queue_stuck', 3], ['purge_silent', 1]]);
+  // BL-334: the fail-closed consent pepper names its own cause.
+  assert.deepEqual(conditionsFromSla({ ...zero, consent_pepper_missing: 1 }), [['pepper_missing', 1]]);
+  assert.deepEqual(conditionsFromSla({ ...zero, consent_pepper_missing: 0 }), []);
 });
 
 // The same character and tone rules as packages/content/test/rules.test.ts, for the worker's own copy.
@@ -97,7 +103,6 @@ Deno.test('every worker email follows the content rules and carries no content',
     deletionCancelledEmail({ reference: ref }),
     deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: false }),
     deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: null }),
-    contributorNoticeEmail({ scheduledFor: '2026-12-05T10:00:00Z' }),
     alertEmail({ conditions: [{ kind: 'request_stuck', count: 2 }], run: 'abcdefabcdef', at: new Date('2026-12-05T10:00:00Z') }),
   ];
   const strings = [...mails.flatMap((m) => [m.subject, m.text]), ...JSON.stringify(workerCopy).split('"')];
@@ -114,5 +119,40 @@ Deno.test('every worker email follows the content rules and carries no content',
   assert.ok(/If you have Plus[^\n]*Subscriptions/.test(mails[3].text), 'billing line when unknown');
   assert.ok(/If you have Plus/.test(mails[0].text), 'billing line on the scheduled receipt');
   assert.ok(mails.slice(0, 4).every((m) => m.text.includes(ref)));
-  assert.match(mails[0].text, /December 5, 2026/);
+  assert.match(mails[0].text, /Saturday, December 5, 2026/, 'dates carry the weekday (D-028, TPL-08)');
+});
+
+// TPL-02: the three deletion receipts come from packages/emails (generated/resend.ts): HTML with the inline
+// logo, the plain-text twin and the two logo attachments; no placeholder left in any part.
+Deno.test('[TPL-02] deletion emails carry HTML, the plain-text twin and the inline logo', () => {
+  const ref = '3c0ffee0-0000-4000-8000-000000000001';
+  const mails = [
+    deletionRequestedEmail({ scheduledFor: '2026-12-05T10:00:00Z', reference: ref }),
+    deletionCancelledEmail({ reference: ref }),
+    deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: null }),
+  ];
+  for (const m of mails) {
+    assert.ok(m.html && m.html.includes(ref), 'HTML part with the reference');
+    assert.match(m.html!, /src="cid:el-logo-light"/);
+    assert.match(m.html!, /src="cid:el-logo-dark"/);
+    assert.deepEqual(m.attachments!.map((a) => a.content_id).sort(), ['el-logo-dark', 'el-logo-light']);
+    assert.doesNotMatch(m.subject + m.text + m.html, /\{[a-zA-Z]\w*\}/, 'no unfilled placeholder');
+    assert.doesNotMatch(m.html!, /<img[^>]+src="https?:/, 'nothing loads from a server');
+  }
+  assert.match(mails[0].html!, /Saturday, December 5, 2026/);
+});
+
+Deno.test('[DATA-REQ-022] the Plus line leaves both parts when there was no subscription, and only then', () => {
+  const ref = '3c0ffee0-0000-4000-8000-000000000001';
+  const none = deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: false });
+  const had = deletionCompletedEmail({ completedAt: '2026-12-05T10:00:00Z', reference: ref, hadSubscription: true });
+  assert.doesNotMatch(none.text + none.html, /If you have Plus/);
+  assert.match(had.html!, /If you have Plus[^<]*Subscriptions/);
+  assert.match(had.text, /If you have Plus[^\n]*Subscriptions/);
+  // Exactly one paragraph went: the rest of the email is the same.
+  assert.equal((had.html!.match(/<p\b/g) ?? []).length - (none.html!.match(/<p\b/g) ?? []).length, 1);
+  assert.equal(none.text, had.text.replace(/If you have Plus[^\n]*\n\n/, ''));
+  // When the line cannot be found exactly once in each part, nothing is removed.
+  const odd = { subject: 's', text: 'If you have Plus, a.\n\nIf you have Plus, b.\n\n', html: '<p>If you have Plus, a.</p>' };
+  assert.deepEqual(withoutPlusLine(odd), odd);
 });

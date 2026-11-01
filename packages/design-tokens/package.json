@@ -9,7 +9,9 @@
   "license": "UNLICENSED",
   "scripts": {
     "build": "tsx src/build-css.ts",
+    "build:grain": "tsx src/build-grain.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -23,6 +25,8 @@
     "./tokens.native.css": "./dist/tokens.native.css",
     "./tokens.web.css": "./dist/tokens.web.css",
     "./fonts": "./fonts/index.ts",
-    "./fonts/*": "./fonts/*"
+    "./fonts/*": "./fonts/*",
+    "./textures": "./textures/index.ts",
+    "./textures/*": "./textures/*"
   }
 }

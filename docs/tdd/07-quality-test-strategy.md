@@ -329,10 +329,10 @@ Pre: Asha's book with a Mama letter and a Papa letter; signed in as Mama; online
 
 **E2E-09 Account deletion** (C-REQ-019, LEGAL-REQ-029, DATA-REQ-012, K-22)
 Pre: Mama is creator of Asha's book with co-parent Papa and contributor Nani; Mama holds a sandbox subscription.
-1. Settings, Your data, Delete account. Assert Export is offered first.
+1. Settings, Delete account. Assert Export is offered first.
 2. Continue; assert the subscription notice with a manage link appears before the final confirm.
 3. Assert the co-parent line says Mama's letters leave the shared book.
-4. Type to confirm. Assert the signed-out state and the 30-day undo message.
+4. Type to confirm. Assert the scheduled page: the date 30 days out, Cancel deletion and Sign out of this phone (S64; the app stays signed in until that tap).
 5. Sign in again within the window; tap Cancel deletion; assert letters are back.
 6. Repeat to completion with clock +31 days and the purge worker run; then run `ops/verify-deletion.mjs` against the local stack: no rows or objects for Mama except pseudonymised acceptances and the suppression hash; Papa still reads the book and Nani's letters remain.
 
@@ -464,7 +464,7 @@ Target: WCAG 2.2 AA on app, web page, legal pages, paywall and emails (LEGAL-REQ
 ### 7.1 Database access (extends TDD 02 section 8 and TDD 04 section 8)
 - **Generated access matrix (R, BL-Q09).** One table `supabase/tests/matrix.yaml`: roles {author, co-parent, contributor with `family_can_read` on and off, left member, removed member, stranger, anonymous web contributor, service} x objects {entries, book_entries, children, child_members, child_member_prefs, dictionary_terms, child_invites, deletion rows, audit_events, policy_acceptances, entitlements, each Storage bucket} x verbs {select, insert, update, delete, each RPC}. Expected outcome per cell. The runner fails if a new table, role or RPC has no row, so coverage cannot silently drop.
 - **Fixtures.** Asha's family: Mama and Papa (parents of Asha and Avi), Nani (contributor on Asha only), Dadi (contributor on Avi, `family_can_read` off), a stranger, an anonymous web contributor. The cross-child leak test runs in both directions.
-- **Harness fix (TDD 02 C18).** Apply Supabase's default grants to `anon` and `authenticated` before migrations, so a migration that forgets to revoke is caught.
+- **Harness fix (TDD 02 C18; updated 24 Oct 2026, #265).** The harness models Supabase's default privileges before the migrations: by default the world of every project created since 30 May 2026 (no SELECT, INSERT, UPDATE or DELETE on new tables, no USAGE or SELECT on sequences, no EXECUTE on functions for the API roles), so a migration that forgets a grant is caught; `SCRIBE_DEFAULT_GRANTS=legacy` models the old automatic grants, so one that forgets a revoke is caught (`supabase/tests/harness.mjs`).
 - **Clock-controlled retention.** `retention.test.mjs` with just-inside and just-past pairs for every LEGAL-REQ-033 and DATA-REQ-066 row (TDD 05 9.3).
 - **Migration upgrade test.** For each PR with a migration: apply main's migrations, load fixtures, apply the new one, rerun all suites. **F** Today tests apply all migrations to an empty database only.
 - **Sync parity (TC-15).** PowerSync sync rules evaluated in Node against the same fixtures; rows and columns per user must equal RLS results (TDD 02 8.1). **A** feasibility of running sync rules offline (TDD 02 SYNC-1).

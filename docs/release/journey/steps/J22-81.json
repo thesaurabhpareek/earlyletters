@@ -1,0 +1,38 @@
+{
+  "id": "J22-81",
+  "journey": "sign-in",
+  "kind": "happy",
+  "title": "The pause has ended",
+  "note": "Fifteen minutes after the fifth wrong code the field takes a code again and the paused line goes, with nothing to tap (no countdown on screen).",
+  "shot": "screens/J22-81.png",
+  "route": "/sign-in/code",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Not now Check your email A link and a code are on their way to mama@example.invalid . Tap the link on this phone, or type the code here. Code Send a new email Use a different email Trouble signing in? Continue",
+  "lines": [
+    "Not now",
+    "Check your email",
+    "A link and a code are on their way to",
+    "mama@example.invalid",
+    ".",
+    "Tap the link on this phone, or type the code here.",
+    "Code",
+    "Send a new email",
+    "Use a different email",
+    "Trouble signing in?",
+    "Continue"
+  ]
+}

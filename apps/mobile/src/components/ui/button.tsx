@@ -12,8 +12,12 @@
  *
  * Accessibility contract
  * - role button; disabled and busy in accessibilityState; label = visible text (2.5.3).
+ * - Loading ignores presses without being disabled, so VoiceOver hears "busy", not "dimmed"
+ *   (Pressable writes its `disabled` prop over accessibilityState; button.logic.ts). On the web,
+ *   aria-busy carries it, since react-native-web does not map accessibilityState.
  * - Heights are minimums: at AX sizes the label wraps and the button grows, never clips.
- * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity.
+ * - Disabled keeps AA text (textMuted on surface 5.11 / 7.65) instead of 40% opacity. A disabled
+ *   primary or secondary drops its fill for a 1 pt controlBorder outline (EXPERIENCE_PASS S01).
  * Motion: press scale 0.97 on `snappy`, from press-in (motion/press.ts). Controls never
  * animate in (MOTION principle 2): no entering prop here, ever.
  * Haptics: none by default. Pass `haptic` only where the press is an outcome (Speak,
@@ -27,6 +31,7 @@ import { tokens, type TypeToken } from '@scribe/design-tokens';
 import { AnimatedPressable, usePressScale } from '@/components/motion/press';
 import { Text, TextClassContext, TextVariantContext } from '@/components/ui/text';
 import { haptic as playHaptic, type HapticIntent } from '@/lib/haptics';
+import { pressableState } from './button.logic';
 import { useIsLargeText, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
 
@@ -73,6 +78,12 @@ const labelClass: Record<Variant, string> = {
 
 const labelToken = (size: Exclude<Size, 'default'>): TypeToken => (size === 'sm' ? 'labelSmall' : 'label');
 
+/**
+ * A filled button that is not ready yet (EXPERIENCE_PASS S01, S05, S19): a 1 pt controlBorder outline (3:1) with
+ * no fill and the label in textMuted (AA), so it reads as "waiting", not as a broken pale button.
+ */
+const DISABLED_FILLED = 'border border-input bg-transparent';
+
 export type ButtonProps = Omit<PressableProps, 'children' | 'style'> &
   React.RefAttributes<View> & {
     variant?: Variant | LegacyVariant | null;
@@ -117,7 +128,8 @@ function Button({
 }: ButtonProps) {
   const variant = canonical(v);
   const size = canonicalSize(s);
-  const inactive = !!disabled || !!loading;
+  const state = pressableState(disabled, loading, accessibilityState);
+  const inactive = !state.pressable;
   const press = usePressScale('control', !inactive);
   const iconColor = useIconColor(variant, disabled);
   const filled = variant === 'primary' || variant === 'secondary';
@@ -127,12 +139,13 @@ function Button({
     <TextClassContext.Provider value={cn(labelClass[variant], disabled && 'text-muted-foreground', 'text-center')}>
       <TextVariantContext.Provider value={labelToken(size)}>
         <AnimatedPressable
-          className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && 'bg-muted', className)}
+          className={cn(buttonVariants({ variant, size }), fullWidth && 'self-stretch', disabled && filled && DISABLED_FILLED, className)}
           style={[{ minHeight: BUTTON_MIN_HEIGHT[size] }, press.animatedStyle, style]}
           role="button"
-          disabled={inactive}
+          disabled={state.disabled}
           accessibilityLabel={accessibilityLabel ?? label}
-          accessibilityState={{ ...accessibilityState, disabled: !!disabled, busy: !!loading }}
+          accessibilityState={state.accessibilityState}
+          aria-busy={loading ? true : undefined}
           onPressIn={(e) => {
             press.onPressIn();
             if (haptic && !inactive) playHaptic(haptic);
@@ -142,7 +155,9 @@ function Button({
             press.onPressOut();
             onPressOut?.(e);
           }}
-          onPress={onPress}
+          onPress={(e) => {
+            if (!inactive) onPress?.(e);
+          }}
           {...props}>
           {loading ? (
             <ActivityIndicator color={iconColor} accessibilityElementsHidden importantForAccessibility="no" />

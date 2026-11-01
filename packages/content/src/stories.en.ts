@@ -34,10 +34,11 @@ export const onboardingStories: readonly StoryCard[] = [
   },
   {
     type: 'story',
-    id: 'story.exact.v1',
+    // v2 (LNG-18, 31 Oct 2026): one description of a small fix everywhere. v1 said "We fix slips of the tongue."
+    id: 'story.exact.v2',
     order: 2,
     headline: "Exactly as you said it.",
-    line: "We fix slips of the tongue. We never rewrite your words.",
+    line: "We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words.",
     visual: 'letter-underline',
   },
   {
@@ -54,6 +55,25 @@ export const onboardingStories: readonly StoryCard[] = [
     order: 4,
     headline: "Private to your family.",
     line: "Only you and the people you invite can read these letters. We never sell them or use them for ads.",
+    visual: 'two-hands',
+  },
+];
+
+/**
+ * New wording for a slot that already has a packaged card (docs/design/EXPERIENCE_PASS_2026-10.md, P0 rule 4).
+ * Not part of the fallback deck above, so the deck never shows two cards for one slot. Which card is served
+ * is a server-side decision (D-066) and a counsel item (claims registry, LEGAL-REQ-044).
+ *
+ * story.private.v2 fits v1.0 with server features on (D-100): sharing reaches the other parent only when they are
+ * invited (D-069), so it says who it is shared with and makes no claim about who can read or where letters are stored.
+ */
+export const alternateStories: readonly StoryCard[] = [
+  {
+    type: 'story',
+    id: 'story.private.v2',
+    order: 4,
+    headline: "Private by default.",
+    line: "Shared only with the other parent, if you invite them. Never sold, never used for ads.",
     visual: 'two-hands',
   },
 ];

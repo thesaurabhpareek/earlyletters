@@ -9,11 +9,11 @@ Labels: **Verified** (checked on an opened vendor page on 3 Oct 2026), **Assumpt
 
 | Domain | Serves | Mail |
 |---|---|---|
-| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/callback` and `/i/*` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
+| `earlyletters.com` | Website on Vercel (`/`, `/terms`, `/privacy`, `/health-privacy`, `/subprocessors`, later `/delete-account`), `/.well-known/` files, universal-link fallback pages `/auth/confirm`, `/auth/callback` and `/j` | Sends through Resend (`hello@`), receives at `hello@` (and the suggested `privacy@`, `security@`, `dmarc@`) |
 | `www.earlyletters.com` | Redirect to the apex | none |
 | `send.earlyletters.com` | Nothing on the web; Resend's return-path (bounce) domain | Resend bounces only |
-| `packs.earlyletters.com` | Language and model packs CDN (decision 15) | none |
 | `earlyletters.app` and `www.earlyletters.app` | Permanent redirect to `https://earlyletters.com` | none, and locked against spoofing (section 4) |
+| `packs.earlyletters.app` | Language packs, speech models and signed documents, on Cloudflare R2 (D-097, 15 Oct 2026; decision 15) | none |
 
 ## 2. Porkbun account and domain safety
 
@@ -78,14 +78,14 @@ Checks at each stage: send a magic link and a deletion receipt from staging to G
 | Nobody may send as .app | TXT | `@` | `v=spf1 -all` |
 | Spoofed mail is rejected | TXT | `_dmarc` | `v=DMARC1; p=reject; adkim=s; aspf=s` |
 | No DKIM keys | TXT | `*._domainkey` | `v=DKIM1; p=` (empty key, optional) |
-| Certificates | CAA | `@` | `0 issue "letsencrypt.org"`, `0 issuewild ";"` |
+| Certificates | CAA | `@` | `0 issue "letsencrypt.org"`, `0 issue "pki.goog"`, `0 issue "ssl.com"`, `0 issuewild ";"` (the two extra CAs are for the Cloudflare certificate of `packs.earlyletters.app`; see PACKS_HOSTING.md, "If earlyletters.app is not on Cloudflare yet", step 3) |
 
-In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website project as **redirects** to `https://earlyletters.com` (permanent, 308). `.app` is on the HSTS preload list, so browsers only ever use HTTPS for it (it is a property of the TLD). It must never serve the AASA file or any sign-in page: one link domain only (AUTH_SETUP 5.2).
+In Vercel, `earlyletters.app` and `www.earlyletters.app` are domains on the website project, and the site itself answers them with a permanent 308 to `https://earlyletters.com` (checked 1 Nov 2026: no domain-level redirect is set in Vercel, and none is needed). `.app` is on the HSTS preload list, so browsers only ever use HTTPS for it (it is a property of the TLD). It must never serve the AASA file or any sign-in page: one link domain only (AUTH_SETUP 5.2).
 
 ## 5. Vercel (website thread)
 
 - Domains on the project: `earlyletters.com` (primary), `www.earlyletters.com` (redirect to apex), `earlyletters.app` and `www.earlyletters.app` (redirect to `https://earlyletters.com`).
-- Serve the files in [well-known/](well-known/) exactly as section 7 and 8 say. Header rule (also in AUTH_SETUP 5.2):
+- Serve the files in [well-known/](well-known/) exactly as section 7 and 8 say. The AASA file is built by a route in `apps/web` that already answers `application/json` (AUTH_SETUP 5.2); the header rule below matters only if a file is ever served from `public/` instead:
   ```json
   { "headers": [
       { "source": "/.well-known/apple-app-site-association", "headers": [ { "key": "Content-Type", "value": "application/json" } ] },
@@ -93,12 +93,14 @@ In Vercel, add `earlyletters.app` and `www.earlyletters.app` to the website proj
   ] }
   ```
 - HSTS on every response: `Strict-Transport-Security: max-age=63072000; includeSubDomains`. Add `preload` and submit to hstspreload.org only after every subdomain you will ever use is HTTPS (it is hard to undo).
-- No analytics or log forwarding for paths under `/i/` and `/auth/` (tokens: AUTH_SETUP 5.3), and the website's own analytics follow decision 12 (opt-in, no cross-site tracking).
+- No analytics or log forwarding for paths under `/j`, `/auth/` and any older `/i/` link (tokens: AUTH_SETUP 5.3), and the website's own analytics follow decision 12 (opt-in, no cross-site tracking).
 - Vercel collects telemetry about deployments, not visitors; turn off any "Web Analytics" or "Speed Insights" unless the data map lists them.
 
-## 6. packs.earlyletters.com (language and model packs CDN)
+## 6. packs.earlyletters.app (language and model packs CDN)
 
-The platform owner picks the CDN (decision 15: Apple-hosted assets first, else cheap egress such as Cloudflare R2 or Hugging Face). DNS consequences, so the choice is made knowingly:
+**Decided (D-097, 15 Oct 2026, delegated by founder; DEBATES Q-001 option b):** `packs.earlyletters.app` on Cloudflare R2, option A below applied to `earlyletters.app`, not `earlyletters.com`. Only the redirect domain moves its DNS hosting to Cloudflare; `earlyletters.com` (website, Resend mail) stays at Porkbun. The app reads it as `EXPO_PUBLIC_DOCS_BASE_URL` (every `eas.json` profile) and `SELF_HOST_BASE` (`apps/mobile/src/lib/models/catalog.ts`); `scripts/packs/publish.ts` defaults to it.
+
+The table below is kept for the record. The platform owner picks the CDN (decision 15: Apple-hosted assets first, else cheap egress such as Cloudflare R2 or Hugging Face). DNS consequences, so the choice is made knowingly:
 
 | Option | DNS change | Notes |
 |---|---|---|
@@ -110,10 +112,10 @@ Founder: A gives one control panel and DNSSEC with low effort; B keeps everythin
 
 ## 7. Universal links and the AASA file
 
-- File: [well-known/apple-app-site-association](well-known/apple-app-site-association), identical to AUTH_SETUP 5.2. Replace `<TEAMID>` with the 10-character Team ID (Apple Developer > Membership) in all six places before publishing.
+- File: [well-known/apple-app-site-association](well-known/apple-app-site-association) is the reference copy of what the website's route serves (AUTH_SETUP 5.2). The route fills in the Team ID from the Vercel variable `APPLE_TEAM_ID`; nothing is pasted by hand.
 - Served at `https://earlyletters.com/.well-known/apple-app-site-association`, no extension, `application/json`, HTTPS, **no redirects** (Verified in AUTH_SETUP: Apple "Supporting associated domains").
-- Paths: `/auth/callback` (email sign-in; the token hash is in the fragment, never sent to the server) and `/i/*` (co-parent invites). Nothing else opens the app.
-- The app's entitlement is `applinks:earlyletters.com` (and `webcredentials:earlyletters.com` for passkeys, AUTH_SETUP 7). `earlyletters.app` is deliberately not associated.
+- Paths: `/auth/confirm` and `/auth/callback` (email sign-in) and `/j` (co-parent invites, `/j#t=<token>`; BL-348, decided 15 Oct 2026). In each the token is in the fragment, never sent to the server. Nothing else opens the app; the reference file is the list of record.
+- The app's entitlement is `applinks:earlyletters.com` (`webcredentials:earlyletters.com` joins with passkeys, AUTH_SETUP 7). `earlyletters.app` is deliberately not associated.
 - Check what Apple's CDN sees: `curl -s https://app-site-association.cdn-apple.com/a/v1/earlyletters.com` (Apple refreshes within about a day).
 - Android (later): `/.well-known/assetlinks.json` with the release signing certificate's SHA-256. Not at v1.0.
 
@@ -140,7 +142,7 @@ Never use any of these as the Porkbun, Apple or Supabase account login (section 
 
 ## 10. Auth redirects (summary; details in AUTH_SETUP 5.1)
 
-- Supabase Site URL `https://earlyletters.com`; Redirect URLs exactly `https://earlyletters.com/auth/callback` and `scribe://auth/callback`.
+- Supabase Site URL `https://earlyletters.com`; Redirect URLs exactly one: `https://earlyletters.com/auth/callback` (SIGN-09; `supabase/auth-email.md` 3.4). Never `scribe://auth/callback`: any app can claim the scheme.
 - Email templates build the link themselves; the custom scheme never carries a token (TDD 04 3.1.6).
 
 ## 11. Checks (run after any DNS change)
@@ -151,6 +153,7 @@ dig +short MX earlyletters.com; dig +short MX send.earlyletters.com
 dig +short TXT send.earlyletters.com; dig +short TXT resend._domainkey.earlyletters.com
 dig +short TXT _dmarc.earlyletters.com; dig +short CAA earlyletters.com
 dig +short MX earlyletters.app; dig +short TXT _dmarc.earlyletters.app
+dig +short NS earlyletters.app; dig +short DS earlyletters.app; dig +short CAA earlyletters.app; dig +short packs.earlyletters.app
 curl -sI https://earlyletters.app | grep -i '^location'                       # 308 to https://earlyletters.com
 curl -sI https://earlyletters.com/.well-known/apple-app-site-association     # 200, application/json, no redirect
 curl -s  https://earlyletters.com/.well-known/security.txt                   # Contact and Expires present

@@ -7,7 +7,9 @@
     "experiment": "tsx run.ts",
     "experiment:edits": "tsx edit-compare.ts",
     "gate": "tsx gate.ts",
+    "adts-parity": "tsx adts-parity.ts",
     "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

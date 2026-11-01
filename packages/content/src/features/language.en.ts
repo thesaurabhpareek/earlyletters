@@ -42,19 +42,25 @@ export const languageCopy = {
     paused: 'Downloads are paused for now',
     notReady: 'Not available yet',
     retry: 'Did not finish. Tap to try again.',
-    downloadNow: 'Download now on mobile data',
+    downloadNow: 'Download now on cellular data',
   },
   // D-074: what the machine changes is a "small fix".
   safeModeNote: 'Until it arrives, letters in {name} keep your words exactly as heard, with only punctuation fixed.',
+  // D-111 item 4 (N2 on #247, round 2 on #260): in builds that offer English only, a recording whose language was
+  // set to another is not heard in English; it waits for its language, and Review and the letter page say so with
+  // this line. No date is promised.
+  waitingForLanguage: 'This recording is waiting for its language. Other languages are coming in a later update.',
 
   picker: {
     title: 'Choose a language',
     close: 'Close',
     searchLabel: 'Search languages',
-    searchPlaceholder: 'Language',
-    none: 'No language matches that. These are the languages letters can be spoken in for now.',
+    searchPlaceholder: 'Find a language',
+    none: 'No match. Letters can be spoken in these seven languages for now.',
     chosenA11y: 'Already chosen',
     selectedA11y: 'Selected',
     rowHint: 'Chooses this language',
+    // D-111 item 4: builds that offer English only show this under the list. No date is promised.
+    englishOnly: 'Other languages are coming in a later update.',
   },
 } as const;

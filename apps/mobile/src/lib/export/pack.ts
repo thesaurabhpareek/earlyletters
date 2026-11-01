@@ -15,7 +15,7 @@
  */
 import { strToU8, Zip, ZipPassThrough } from 'fflate';
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, type Manifest, type ManifestFile } from './schema';
-import { dataFiles, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
+import { dataFiles, exporterRole, MEDIA, planExport, type AudioResult, type ExportSnapshot } from './build.logic';
 
 /** Below the 4 GiB limit of a ZIP without ZIP64, with room for headers. */
 export const MAX_EXPORT_BYTES = 3_900_000_000;
@@ -185,7 +185,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
       continue;
     }
     const sha256 = await deps.sha256(data);
-    await add(job.path, data, MEDIA.m4a, sha256);
+    await add(job.path, data, job.mediaType, sha256); // `audio/mp4` or `audio/aac`, as the recording is (ADR 0027)
     audioResults.set(job.entryId, { sha256, bytes: data.length });
     if (job.recordedSha256 && job.recordedSha256 !== sha256) mismatched.push(job.entryId);
     report('recordings', job.sizeHint ?? data.length);
@@ -208,7 +208,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     generated_at: snapshot.generatedAt,
     app_version: snapshot.appVersion,
     engine_version: snapshot.engineVersion,
-    scope: { exporter_role: 'parent', children: snapshot.children.length, include_recently_deleted: false },
+    scope: { exporter_role: exporterRole(snapshot.children), children: snapshot.children.length, include_recently_deleted: false },
     counts: {
       entries: entriesCount,
       audio: audioResults.size,

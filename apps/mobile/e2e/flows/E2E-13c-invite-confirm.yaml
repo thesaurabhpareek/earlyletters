@@ -6,6 +6,7 @@ name: E2E-13c Co-parent invite, confirm (simulator A)
 tags:
   - e2e-coparent
   - E2E-13
+  - p0-nightly
   - B-REQ-007
   - needs-backend
 ---

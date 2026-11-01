@@ -14,14 +14,14 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 ## Brand idea in one sentence
 
-Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice, kept exactly as you said it.
+Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice. It stays in your words.
 
 ## Do and don't
 
 | Do | Don't |
 | --- | --- |
 | "Tell {child} about today." | "Capture every precious moment." |
-| "Kept exactly as you said it." | "We shape your words into a story." |
+| "It stays in your words." | "We shape your words into a story." |
 | "On a quiet day, tap Not much today." | "It has been 5 days since your last letter." |
 | "Read together at bedtime." | "Unlock bedtime mode." |
 | "From Nani" | "Contributor: Grandmother" |
@@ -34,7 +34,7 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 ## The no-machine-writing rule
 
-We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
+We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." What a small fix is, said the same way everywhere: "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." Not "what the microphone got wrong" (an um is not the microphone's fault) and not "slips of the tongue".
 
 ## The app's own words
 
@@ -81,14 +81,14 @@ Family beyond the co-parent joins in v1.1. Until then this guidance applies to a
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
 - Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
-- Make them feel wanted, not managed: "Your stories belong in {child}'s book."
+- Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
 
 ## Saying what the product does today
 
 Only promise what the current build does. At v1.0 (docs/DECISIONS.md, 3 Oct 2026):
 - Family is the co-parent only (D-055). Grandparents, aunts and uncles are "coming in a later update", never "now".
-- Recordings stay on the phone that made them, and in that person's own iPhone backup. Nothing uploads them, so there is no backup feature, and a co-parent hears your voice only on your phone until v1.1 (D-059).
+- Recordings stay on the phone that made them, and in that person's own iPhone backup. A backup of your own recordings exists, behind a build flag that is off in the alpha, so nothing in the alpha uploads them and no copy promises it yet. A co-parent hears your voice only on your phone until v1.1 (D-059).
 - Read together plays the recordings on this phone, without a moving word highlight (D-059).
 - Seven spoken languages, one per letter (D-056).
 - The in-app "early version, can make mistakes" note stays; the store listing never says beta (D-060).
@@ -116,6 +116,18 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 **How it sounds.** One line per place, never a paragraph. State what we do, not what could go wrong. No locks, shields or "bank-level" anything. Never: hack, breach, leak, spy, steal, creepy, scary, "don't worry", "100%", "military-grade", "unhackable", "completely secure". Do not repeat the promise on screens where nobody is wondering; saying it too often sounds anxious.
 
 **Proof before words.** Every privacy claim is registered in `docs/legal/claims-registry.yaml` with counsel approval (LEGAL-REQ, ENGINEERING_REQUIREMENTS) before a public page or store listing goes live.
+
+## Words we lean on too much
+
+A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
+
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save, a crash, and the sign-in errors the S52 table leads with it).
+- **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
+- **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
+- **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
+- **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
+- **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
 
 ## How to write an email
 

@@ -33,14 +33,14 @@ const CODE_LABEL = "Or enter this code in the app";
 const NEVER_ASK = "We will never ask for this code by phone, text or chat.";
 
 export const authEmails = {
-  // Sent to the inbox owner when someone tries to create an account with an
-  // address that already has one. The app screen says only "check your email"
-  // either way, so the screen never reveals whether the account exists.
+  // Not applicable while sign-in is one passwordless call (signInWithOtp with shouldCreateUser: true): there is
+  // no sign-up branch, so no "create attempt" event exists and no sender is planned (SIGN-05, CATALOG section 4).
+  // Kept so a future sign-up flow has reviewed words. Supabase's magic_link email already covers a known address.
   'account-create-attempt': {
     id: 'account-create-attempt',
     subject: "You already have a book with us",
-    preheader: "Someone tried to start a new account with this email. Here is the way back in.",
-    heading: "Good news, your book is already here",
+    preheader: "Someone tried to start a new account with this email. Sign in instead.",
+    heading: "Your book is already here",
     body: [
       "Someone, most likely you, just tried to start a new account with {email}. There is already one, so we did not make a second.",
       "Easy to do on very little sleep. Your letters are right where you left them.",
@@ -76,11 +76,12 @@ export const authEmails = {
   'sign-in-link': {
     id: 'sign-in-link',
     subject: "Your sign-in link and code",
-    preheader: "Tap the link on this phone, or type the code on another. Both work for {expiresIn}.",
+    preheader: "Tap the link on the phone you asked from, or type the code. Both work for {expiresIn}.",
     heading: "Tap to open your book",
     body: [
-      "Tap the button on the phone where the app is open.",
-      "On a different device? Enter the code in the app instead.",
+      // SIGN-07: the link works only on the phone that asked for this email (ADR 0023), whatever the app's state.
+      "Tap the button on the phone you asked from.",
+      "On another device? Type the code in the app instead.",
       "The link and the code work once, for {expiresIn}.",
     ],
     cta: { label: "Sign in to my book", urlVar: "{signInUrl}" },
@@ -96,12 +97,12 @@ export const authEmails = {
   welcome: {
     id: 'welcome',
     subject: "Welcome. The first page is yours.",
-    preheader: "A minute of talking is plenty. Here is how to begin, and what we promise.",
+    preheader: "A minute of talking is plenty. How to begin, and what we promise.",
     heading: `Welcome to ${brand.name}`,
     body: [
-      "You are in. Here is all there is to it: open the app, tap the red circle and talk.",
+      "You are in. Open the app, tap the red circle and talk.",
       "A minute is plenty. A quiet day is fine too.",
-      "Every letter is kept exactly as you said it. Word for word fixes only small slips, marked so you can undo them. We never rewrite your words.",
+      "Every letter is kept as you said it. We only fix small slips, like an um, a repeat or a misheard word, and mark each one, so you can put it back. We never rewrite your words.",
       // The privacy promise, word for word (D-061, VOICE.md "How we talk about privacy": the welcome email says it once).
       en.trust.promise,
       "Only you, and your co-parent if you invite them, can read them in the app. Our staff look only in the rare cases our Privacy Policy describes.",
@@ -114,16 +115,17 @@ export const authEmails = {
     kind: 'transactional',
   },
 
-  // Requested from the app ("Trouble signing in?"). Same text whatever the
-  // address, so it never tells a stranger whether an account exists.
+  // Deferred (SIGN-05): no sender exists and the app's "Trouble signing in?" shows help text only; the expired
+  // path is "Send a new email", which sends sign-in-link again. Same text whatever the address, so it never tells a
+  // stranger whether an account exists.
   'sign-in-trouble': {
     id: 'sign-in-trouble',
-    subject: "Trouble signing in? Here is a fresh link",
-    preheader: "A fresh link, and the quick fixes for the usual snags.",
-    heading: "Let's get you back to your book",
+    subject: "A new sign-in link for you",
+    preheader: "A fresh link and code, and the quick fixes for the usual snags.",
+    heading: "Back to your book",
     body: [
-      "Here is a fresh link. Tap it on the phone where the app is open. It works once, for {expiresIn}.",
-      "If it opens on another device, type the code below in the app instead.",
+      "Tap the button on the phone you asked from. The link and the code work once, for {expiresIn}.",
+      "On another device? Type the code below in the app instead.",
       "Joined with Apple or Google? Use that button in the app. If you chose Hide My Email, your book is under Apple's private address, and Sign in with Apple takes you straight there.",
       "See an empty book? You may have signed in a different way from the first time. Sign out, then use the way you first joined: Apple, Google, or the same email.",
       "Looking for a password? There is not one, and we will never ask you for one.",
@@ -142,7 +144,7 @@ export const authEmails = {
   'apple-account-linked': {
     id: 'apple-account-linked',
     subject: "Sign in with Apple is now on your account",
-    preheader: "Just letting you know. If this was you, there is nothing else to do.",
+    preheader: "You can now sign in with your Apple Account. Not you? Reply with Not me.",
     heading: "Sign in with Apple was added",
     body: [
       `You can now sign in to ${brand.name} with your Apple Account, as well as with {email}.`,
@@ -158,7 +160,7 @@ export const authEmails = {
   'google-account-linked': {
     id: 'google-account-linked',
     subject: "Sign in with Google is now on your account",
-    preheader: "Just letting you know. If this was you, there is nothing else to do.",
+    preheader: "You can now sign in with your Google Account. Not you? Reply with Not me.",
     heading: "Sign in with Google was added",
     body: [
       `You can now sign in to ${brand.name} with your Google Account, as well as with {email}.`,
@@ -174,7 +176,7 @@ export const authEmails = {
   'passkey-added': {
     id: 'passkey-added',
     subject: "A passkey was added to your account",
-    preheader: "Just letting you know. If this was you, there is nothing else to do.",
+    preheader: "You can now sign in with a passkey on {device}. Not you? Reply with Not me.",
     heading: "A passkey was added",
     body: [
       `You can now sign in to ${brand.name} with a passkey on {device}, as well as with {email}.`,
@@ -189,7 +191,7 @@ export const authEmails = {
   'new-device-sign-in': {
     id: 'new-device-sign-in',
     subject: "A new sign-in to your account",
-    preheader: "If this was you, there is nothing to do. If not, here is the next step.",
+    preheader: "If this was you, there is nothing to do. If not, reply with Not me.",
     heading: "Did you just sign in on {device}?",
     body: [
       `Your ${brand.name} account was signed in on {device}, {when}.`,
@@ -243,7 +245,7 @@ export const authEmails = {
     id: 'reauthenticate-code',
     subject: "Your code to confirm account deletion",
     preheader: "Enter it in the app to finish. It works for {expiresIn}. Keep it to yourself.",
-    heading: "Here is your confirmation code",
+    heading: "Your confirmation code",
     body: [
       `You asked to delete your ${brand.name} account. To make sure it is really you, enter this code in the app.`,
       "Want a copy first? You can export every letter and recording, free, from Settings before you confirm.",

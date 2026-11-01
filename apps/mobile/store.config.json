@@ -1,0 +1,39 @@
+{
+  "configVersion": 0,
+  "apple": {
+    "info": {
+      "en-US": {
+        "title": "Early Letters: Memory Book",
+        "subtitle": "Baby journal in your own voice",
+        "description": "Early Letters is the baby memory book you fill by talking.\n\nTell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.\n\nYears from now, your child can read it, and hear how you sounded when you said it.\n\nIT STAYS IN YOUR WORDS\nYour words are written down on your phone, and the app only fixes small slips, like an um, a repeat or a name spelled your way. It never adds a word. Every change is marked, and you can put any of them back. We never rewrite your words, shorten them or write for you. A word can be misheard, so have a quick read before you keep a letter. Letters you type stay as you typed them.\n\nYOUR VOICE, KEPT\nEvery letter you speak keeps its recording, on your phone and in your iPhone's own backup if you use one. We never imitate your voice. Your original recording is always kept exactly as you made it.\n\nREAD TOGETHER AT BEDTIME\nOpen Read together and go through the book one letter at a time, oldest first. Listen to the letters you spoke, with the words on the screen. Typed letters are there too, ready to read aloud.\n\nA MINUTE IS PLENTY\nSome nights it is a sentence, some nights a long letter. Stuck for words? There is a question to begin with. If today was quiet, tap \"Not much today\" and that is enough. Nothing keeps score.\n\nA BOOK THAT GROWS BY MONTH\nEach letter goes into your child's month of age, so the book reads in order. Expecting? Start before the birth, in a part of the book called Before You. Twins or more each get their own book.\n\nNAMES SPELLED YOUR WAY\nAdd the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.\n\nPRIVATE BY DEFAULT\nYour letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. There is no account to make, and your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.\n\nREMINDERS, ONLY IF YOU WANT THEM\nReminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.\n\nTAKE IT WITH YOU\nExport your book any time, for free: your letters, your recordings and a PDF of the book.\n\nIN ENGLISH\nThis version writes down letters spoken in English. The speech model is a one-time download, on Wi-Fi unless you turn on cellular data, 575 MB on most iPhones and smaller on some, and you choose when it starts. Until it is ready, your recordings are kept and the words follow.\n\nPLUS\nYour first two letters are free, so you can see how it feels. To keep adding letters, choose Plus: $4.99 a month with the first month free, or $49.99 a year with the first 2 months free. The free months are for people new to Plus. One plan covers every child's book and works with Family Sharing. A new letter past the free two waits on your phone until you decide. Every letter you have kept stays yours to read, play and export, with or without Plus.\n\nPayment is charged to your Apple Account. Plus renews automatically unless you turn off renewal at least 24 hours before the end of the current period. Manage or cancel any time in your Apple Account settings.\n\nFor parents of babies and young children, from the first weeks to the first years.\n\nTerms of Use: https://earlyletters.com/terms\nPrivacy Policy: https://earlyletters.com/privacy",
+        "keywords": [
+          "diary",
+          "keepsake",
+          "newborn",
+          "toddler",
+          "child",
+          "parenting",
+          "audio",
+          "recorder",
+          "bedtime",
+          "mom",
+          "dad",
+          "private",
+          "talk",
+          "mama"
+        ],
+        "promoText": "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
+        "marketingUrl": "https://earlyletters.com",
+        "supportUrl": "https://earlyletters.com",
+        "privacyPolicyUrl": "https://earlyletters.com/privacy"
+      }
+    },
+    "categories": [
+      "LIFESTYLE"
+    ],
+    "release": {
+      "automaticRelease": false,
+      "phasedRelease": false
+    }
+  }
+}
