@@ -127,8 +127,8 @@
         "height": 630,
         "unit": "px"
       },
-      "bytes": 21837,
-      "sha256": "63908643c344ceacb95c3eb200e5334905ec2cbf5d731d9412fe8e09d0f3f0ff",
+      "bytes": 21874,
+      "sha256": "b73c4b9f3b3c192272004beb0f3212ae78d4ab17efc5e2635fb1664c2451a411",
       "copies": [
         "apps/web/public/og/og-image.png"
       ]
