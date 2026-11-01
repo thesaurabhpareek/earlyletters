@@ -296,3 +296,34 @@ describe('the screen uses them (source)', () => {
     expect(jsxText).toEqual([]);
   });
 });
+
+describe('a long take does not grow memory (#480)', () => {
+  const c = code(listen);
+  const body = c.slice(c.indexOf('export default function Listen()'));
+  // The store functions this screen imports, read from its import line.
+  const storeFns = (c.match(/import \{([^}]*)\} from '@\/lib\/store';/)?.[1] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  it('reads the active child once on mount, not on every render', () => {
+    // useAudioRecorderState re-renders this screen every 50 ms while recording. The active child is three synchronous
+    // database reads, and on web each one allocates a 1 MB SharedArrayBuffer (expo-sqlite WorkerChannel), which ran
+    // J05e out of memory at about 65 s.
+    expect(storeFns).toContain('getActiveChild');
+    expect(body).toMatch(/const \[child\] = useState\(getActiveChild\);/);
+    expect(body).not.toMatch(/getActiveChild\(\)/);
+  });
+
+  it('calls no store read in the render body (a lazy initializer, an effect or a handler instead)', () => {
+    // The render body is the component's top level: lines indented one level (two spaces). Hook callbacks,
+    // handlers and JSX sit deeper.
+    const topLevel = body
+      .split('\n')
+      .filter((l) => /^ {2}\S/.test(l))
+      .join('\n');
+    const reads = storeFns.filter((f) => /^(get|list|count|find|read)/.test(f));
+    expect(reads.length).toBeGreaterThan(0);
+    for (const f of reads) expect(topLevel, f).not.toMatch(new RegExp(`\\b${f}\\(`));
+  });
+});
