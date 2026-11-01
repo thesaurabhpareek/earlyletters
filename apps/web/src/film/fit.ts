@@ -82,3 +82,42 @@ export function useLetterFit({ frame, words, letter, hang, maxScale, w, h }: Opt
 
   return fit;
 }
+
+/** Air kept between the right edge of a leaning letter and the edge of the screen. */
+const EDGE_AIR = 8;
+
+/**
+ * The most the letter may be scaled by a camera lean (a macro) from its top-left corner before its words
+ * run past the right edge of the screen. A letter that is almost as wide as the phone has no room to grow by
+ * the full lean, so the lean is capped to what fits. It answers `lean` itself where the letter has room (wide
+ * screens, tall phones with narrow letters), so those screens are untouched.
+ *
+ * Measured in layout pixels (offsetWidth), so a running transform never feeds back into it.
+ */
+export function useLeanCap({ frame, letter, lean, w, h }: { frame: RefObject<HTMLElement | null>; letter: RefObject<HTMLElement | null>; lean: number; w: number; h: number }): number {
+  const [cap, setCap] = useState(lean);
+
+  useLayoutEffect(() => {
+    const frameEl = frame.current;
+    const letterEl = letter.current;
+    if (!frameEl || !letterEl) return;
+
+    const measure = () => {
+      const boxW = letterEl.offsetWidth;
+      if (!boxW) return;
+      // The letter is centred in the frame and the lean grows from its left edge.
+      const left = (frameEl.offsetWidth - boxW) / 2;
+      const room = (frameEl.offsetWidth - EDGE_AIR - left) / boxW;
+      const next = Math.max(1, Math.min(lean, Math.floor(room * 1000) / 1000));
+      setCap((p) => (p === next ? p : next));
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(letterEl);
+    ro.observe(frameEl);
+    return () => ro.disconnect();
+  }, [frame, letter, lean, w, h]);
+
+  return cap;
+}
