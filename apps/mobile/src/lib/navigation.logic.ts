@@ -44,3 +44,28 @@ export function presentationFor(ctx: NavContext): 'push' | 'modal' {
 
 /** Smallest the Close and Back controls may be (HIG 44 pt; tokens.target.min). */
 export const HEADER_TARGET = 44;
+
+/**
+ * A pushed route that is its own stack (Settings) has a first screen with no native back: iOS draws none on a
+ * stack's root, and the root stack's header is hidden (TestFlight build 1: "No cross or back button in settings").
+ * That screen gets the same chevron back, drawn by the navigation library's HeaderBackButton in the native header,
+ * when the stack it was pushed onto can go back. Every later screen keeps the native back to the screen before it.
+ */
+export function needsOuterBack(indexInStack: number, parentCanGoBack: boolean): boolean {
+  return indexInStack === 0 && parentCanGoBack;
+}
+
+/** The part of a navigation route the back label reads (react-navigation's state shape). */
+export type RouteLike = { name: string; state?: { index?: number; routes: readonly RouteLike[] } };
+
+/**
+ * The back label, as iOS writes it: the title of the screen it goes back to. From the tabs, the focused tab's title
+ * (`titles`, keyed by tab route name); anywhere else, or a tab we do not know, the fallback ("Back").
+ */
+export function outerBackLabel(previous: RouteLike | undefined, titles: Readonly<Record<string, string>>, fallback: string): string {
+  if (!previous || previous.name !== '(tabs)') return fallback;
+  // The tab navigator's state is filled in lazily: with none yet, the first tab (index) is the one showing.
+  const tabs = previous.state;
+  const focused = tabs ? tabs.routes[tabs.index ?? 0]?.name : 'index';
+  return (focused && titles[focused]) || fallback;
+}

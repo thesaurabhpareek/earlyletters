@@ -75,6 +75,7 @@ import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-d
 import { useFirstRunGate } from '@/lib/account-deletion';
 import { useWelcomeJoinWait } from '@/components/family/join-wait';
 import { familyCopy } from '@/lib/family/copy';
+import { PLUS_ALPHA, plusLineFor } from '@/lib/billing/alpha';
 
 type Step = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 const ORDER: Step[] = ['welcome', 'promise', 'child', 'signsAs', 'finish'];
@@ -334,7 +335,7 @@ function FirstRun() {
                   </Animated.View>
                   <Animated.View entering={enterAt(180)} style={{ marginTop: WELCOME.freeGap }}>
                     <Text variant="footnote" className="text-center">
-                      {o.welcome.freeLine}
+                      {plusLineFor(PLUS_ALPHA, o.welcome.freeLine)}
                     </Text>
                   </Animated.View>
                 </>

@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # Apple App Store listing, US English (v1.0.0)
 
 Generated from listing.json by render.mjs. Edit the JSON, run check.mjs, then render.mjs. Prices and trials come from apps/web/src/content/pricing.ts only.

@@ -23,6 +23,7 @@ import * as Network from 'expo-network';
 import { createSha256 } from '@scribe/api';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import type { Connection, NetworkPort, PackFs, PackHttp } from './engine';
+import { startStallTimer } from './stall-timer';
 
 const SLICE_BYTES = 1024 * 1024;
 const NATIVE_DIGEST_MAX_BYTES = 32 * 1024 * 1024;
@@ -196,23 +197,26 @@ export class ExpoPackFs implements PackFs {
 export const expoPackHttp: PackHttp = {
   async downloadRange(url, dest, start, end, opts) {
     const file = new File(dest);
-    // A per-request timeout on top of the caller's cancel signal.
+    // A stall timer on top of the caller's cancel signal: only a request with no new bytes for `stallMs` stops.
     const ctrl = new AbortController();
     const onAbort = () => ctrl.abort();
     opts.signal.addEventListener('abort', onAbort, { once: true });
-    const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs);
+    const stall = startStallTimer(opts.stallMs, () => ctrl.abort());
     try {
       await File.downloadFileAsync(url, file, {
         headers: { Range: `bytes=${start}-${end}`, 'Accept-Encoding': 'identity' },
         idempotent: true,
         signal: ctrl.signal,
-        onProgress: (p) => opts.onBytes?.(p.bytesWritten),
+        onProgress: (p) => {
+          stall.progress(p.bytesWritten);
+          opts.onBytes?.(p.bytesWritten);
+        },
       });
     } catch (e) {
       if (opts.signal.aborted) throw abortError();
       throw e;
     } finally {
-      clearTimeout(timer);
+      stall.stop();
       opts.signal.removeEventListener('abort', onAbort);
     }
   },

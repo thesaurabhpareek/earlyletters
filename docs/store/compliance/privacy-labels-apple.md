@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # App Privacy (nutrition label) answers: Apple App Store Connect
 
 How to use: App Store Connect, App, App Privacy. Choose the profile that matches the binary you upload (OPEN-01). The label is a legal representation; it must match the privacy policy the URL points to (OPEN-02) and the privacy manifest in the build (OPEN-19).

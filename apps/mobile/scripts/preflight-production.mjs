@@ -65,7 +65,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `shellEnv`: the environment this runs in (a local build reads it)
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
  *
- * Each result has an `id`: english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
+ * Each result has an `id`: app-env, english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
  * pack-manifest, privacy-manifest, version, project-id, asc-app-id, seams, secrets (and config when `expo config` failed).
  */
 export function productionChecks(input) {
@@ -77,6 +77,15 @@ export function productionChecks(input) {
   const shell = input.shellEnv ?? {};
   if (!prof) fail(`eas.json has no "${PROFILE}" build profile.`, 'profile');
   if (!cfg) fail(`\`expo config --type public\` did not evaluate with the ${PROFILE} profile's env${input.cfgError ? `: ${input.cfgError}` : ''}.`, 'config');
+
+  // Founder, 1 Nov 2026 ("No letter limit in alpha"; src/lib/billing/alpha.ts): every app env but production is an alpha
+  // build with no letter limit and no Plus offer. The store build must say production, and the evaluated config agree.
+  check(
+    env.EXPO_PUBLIC_APP_ENV === 'production' && (!cfg || cfg.extra?.appEnv === 'production'),
+    `${PROFILE} profile: EXPO_PUBLIC_APP_ENV=production (the store build, with the free-letter limit and Plus; config extra.appEnv production)`,
+    `${PROFILE} profile EXPO_PUBLIC_APP_ENV is ${JSON.stringify(env.EXPO_PUBLIC_APP_ENV)} (config extra.appEnv ${JSON.stringify(cfg?.extra?.appEnv)}); anything but "production" builds an alpha app with no letter limit and no Plus (billing/alpha.ts).`,
+    'app-env',
+  );
 
   // D-121 item 1: the first store build transcribes English only.
   check(
