@@ -7,7 +7,7 @@ export const en = {
   app: {
     name: "Early Letters",
     category: "memory book",
-    tagline: "Exactly as you said it.",
+    tagline: "It stays in your words.",
     oneLine: "Early Letters, the memory book you fill by talking.",
   },
 
