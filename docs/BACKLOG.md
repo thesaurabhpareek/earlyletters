@@ -2386,6 +2386,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 
 ### Compliance follow-ups (1 Nov 2026)
 - **BL-551 Support can open an account deletion for another person (`ops_open_account_deletion`).** Owner: `data-architect`. When: after the 9 Nov go/no-go, before any sign-in outside the family (D-121). Scope: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`, service role only, pinned `search_path`, explicit grants (and its line in `supabase/tests/grants.mjs`); writes `source='support'` (DATA-REQ-027) and a `support_access` audit event; reuses the same steps as `request_account_deletion`; idempotent on an open request; tests in `supabase/tests` that fail on today's code. Why: the underage runbook (`docs/ops/runbooks/underage-account.md` section 4) cannot keep the under-13 promise if the person does not delete the account themselves. No `under_18` audit value (CR-39).
+- **BL-552 Suspend sign-in for one account without deleting it.** Owner: `data-architect` with `security-architect`. When: before any sign-in outside the family (D-121). Scope: a service-role path that blocks one person's sign-in and sync and keeps all their data, reversible, audited, with a test; used by `docs/ops/runbooks/sanctions-match.md` (D-137) and any other legal hold that needs the account frozen.
 
 ## Appendix: TDD proposal to BL mapping
 
