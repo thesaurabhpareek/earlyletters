@@ -33,7 +33,7 @@ journal,diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,di
 ### Description (2775/4000)
 
 ```text
-Early Letters is the baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 

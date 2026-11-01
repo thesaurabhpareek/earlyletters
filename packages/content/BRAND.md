@@ -4,13 +4,15 @@ The name, store name, category, tagline and print title live in `packages/brand/
 
 ## Positioning statement
 
-For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice. It stays in your words, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+For parents of young children who would rather talk than write, Early Letters keeps letters to your child, in your own words and voice. You talk for a minute, or type, and each letter goes into your child's book with the recording beside it. Unlike fill-in-the-blank baby books, photo apps or journals that write for you, it never rewrites a word: every small fix is marked and can be undone. It stays in your words, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+
+Positioning A, founder decision D-139 (1 Nov 2026). It replaces the descriptor "the baby memory book you fill by talking" and the store name "Early Letters: Memory Book".
 
 ## Naming system
 
 - **Early Letters** is the brand. Never alone on first mention to a new audience.
-- **Early Letters + memory book** is how we introduce ourselves, with one descriptor only: "Early Letters, the baby memory book you fill by talking." Use at any first contact: App Store, homepage hero, ads.
-- **Early Letters: Memory Book** is the App Store name only.
+- **Early Letters + the descriptor** is how we introduce ourselves, with one descriptor only: "Early Letters: letters to your child, in your own words and voice." Use at any first contact: App Store description's first line, homepage, link previews, ads, the app's one-line description (`en.app.oneLine`). Where the name is already on screen (a logo, a title), the line stands alone: "Letters to your child, in your own words and voice."
+- **Early Letters: Baby Journal** is the App Store name only, with the subtitle "For parents who'd rather talk" (`packages/brand`). "Journal" is there for search; it never names the product in prose.
 - **Early Letters** alone is fine once context is set: after the hero, in email to existing users, in the app.
 - **Early Letters: Year One**, **Year Two**, and so on, name the printed books. No other book-line names.
 - **Notes** and **letters** are the two things people make. A note is quick. A letter is longer. Both live in the memory book.
@@ -82,8 +84,9 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Concept | Use | Banned in copy | Notes |
 |---|---|---|---|
 | The product | Early Letters (from `brand.name`) | EL, the app (as a name), Scribe, Lumira, Letters (alone) | Never typed in `packages/content/src`. |
-| Descriptor | "the baby memory book you fill by talking" | "the memory book you fill by talking", other variants | One descriptor everywhere. |
-| What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except about paper competitors), album, scrapbook | Store keywords may keep search terms. |
+| Descriptor | "letters to your child, in your own words and voice" (after the name: "Early Letters: letters to your child, in your own words and voice.") | "the baby memory book you fill by talking" and its variants (retired by D-139), other variants of the line | One descriptor everywhere. Enforced by `test/rules.test.ts`. |
+| App Store name and subtitle | "Early Letters: Baby Journal"; "For parents who'd rather talk" | "Early Letters: Memory Book" (retired by D-139) | From `brand.storeName` and `brand.subtitle` only. |
+| What the product makes | memory book; "the book" or "{child}'s book" after first mention | journal, diary, baby book (except about paper competitors), album, scrapbook | "Journal" is allowed in the store name, subtitle and keywords, for search only (D-139). Store keywords may keep other search terms. Prose keeps "book" and "letter". |
 | Printed product | Early Letters: Year One (from `brand.printTitle`) | yearbook, photo book | Not promised in v1.0. |
 | Longer piece someone makes | letter | entry, post, memory, story, journal entry | |
 | Short piece someone makes | note | quick entry, moment | Only ever something a person makes. |

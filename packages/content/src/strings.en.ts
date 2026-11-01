@@ -31,8 +31,8 @@ export const en = {
     name: "{app}",
     category: brand.category,
     tagline: brand.tagline,
-    // One descriptor everywhere (BRAND.md glossary).
-    oneLine: "{app}, the baby memory book you fill by talking.",
+    // One descriptor everywhere (BRAND.md glossary; positioning A, D-139).
+    oneLine: "{app}: letters to your child, in your own words and voice.",
   },
 
   common: {
@@ -66,8 +66,8 @@ export const en = {
     childFallback: "your child",
     welcome: {
       title: "{app}",
-      subtitle: "The baby memory book you fill by talking.",
-      body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+      subtitle: "Letters to your child, in your own words and voice.",
+      body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
       freeLine: "Your first two letters are free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",

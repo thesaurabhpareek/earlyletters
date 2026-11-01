@@ -10,12 +10,12 @@ Early Letters: Memory Book
 
 ### Short description (65/80)
 
-The baby memory book you fill by talking. It stays in your words.
+Letters to your child, in your own words and voice. It stays in your words.
 
 ### Full description (2615/4000)
 
 ```text
-Early Letters is the baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 
