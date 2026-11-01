@@ -11,7 +11,7 @@
 
 ---
 
-At the end of the day, you say a few words to your child. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
+At the end of the day, you say a few words to your child. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read and hear for years.
 
 > Asha, you laughed at the rain today. Your whole face did it. I wanted to remember the sound.
 >
@@ -23,8 +23,8 @@ At the end of the day, you say a few words to your child. A first laugh, a long 
 - **Only small fixes.** An um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. A microphone can mishear, so you read each letter before you keep it.
 - **Every change is marked.** You can see each fix, and put any of them back.
 - **Your voice is kept.** Each letter you speak keeps its original recording, unchanged.
-- **Speech is written down on your phone.** Letters you type stay exactly as you typed them.
-- **Nothing keeps score.** Some days you have a sentence, some days a long letter. Write when you have something to say.
+- **Typed letters stay as typed.** Letters you type stay exactly as you typed them.
+- **Nothing keeps score.** Some days you have a sentence, some days a long letter. Speak or type when you have something to say.
 
 ## Who it is for
 
@@ -40,7 +40,7 @@ To follow along, visit [earlyletters.com](https://earlyletters.com). To write to
 
 **The machine may remove and repair. It may never add meaning.**
 
-That one rule shapes everything here. When speech becomes text, the app may take out an um or a stumble, and set a name to the spelling you gave it. It may never add a word, and no feature may rewrite, summarize or shape what a person said. The first transcript of every recording is never changed. Each fix is stored beside it, checked by one guard that refuses any added word, and can be undone.
+That one rule shapes everything here. When speech becomes text, the app may take out an um or a stumble, and set a name to the spelling you gave it. It may never add a word, and no feature may rewrite, summarize or shape what a person said. The first words written down from every recording are never changed. Each fix is stored beside it, checked by one guard that refuses any added word, and can be undone.
 
 **Privacy, said plainly.**
 
@@ -84,6 +84,6 @@ npm run mobile         # start the iOS app
 
 Every change is a pull request into `develop`, and all tests pass before any commit. If a content rule test fails, fix the copy, not the test. Tests and fixtures use only the fictional family "Asha".
 
-Where things stand: the release record is [`docs/release/1.0.0.md`](docs/release/1.0.0.md), and decisions are logged in [`docs/DECISIONS.md`](docs/DECISIONS.md).
+Decisions are logged in [`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 This repository is public so the work can be seen. It is not open source: see [`LICENSE`](LICENSE).
