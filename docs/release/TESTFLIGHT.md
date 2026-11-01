@@ -1,6 +1,6 @@
 # TestFlight: the alpha in two builds (option B, D-106)
 
-Status: 30 Oct 2026. Apple Developer Program membership has been Active since 29 Oct 2026 (step 1 is done). Build 1 now waits on steps 3 and 4 and on the app record (step 2); the numeric Apple ID (`ios.ascAppId`) is needed only for builds from GitHub. "Where build 1 stands (30 Oct 2026)", the last section, has the preflight result and the order. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
+Last verified: 30 Oct 2026; this page is not a live status (see the pointer under "Where build 1 stands"). Apple Developer Program membership has been Active since 29 Oct 2026 (step 1 is done). Build 1 now waits on steps 3 and 4 and on the app record (step 2); the numeric Apple ID (`ios.ascAppId`) is needed only for builds from GitHub. "Where build 1 stands (30 Oct 2026)", the last section, has the preflight result and the order, as of 30 Oct. Owner: S20 (release). Replaces the 4 Oct "first on-device build" page.
 
 D-106 (founder, 15 Oct 2026): option B ships as an alpha, a TestFlight build with server features on against the staging Supabase project, for the founder's family and invited friends, target **Thu 29 Oct 2026** at the time. The dates now planned (`docs/release/AUTOMATION.md`, #267): build 1 Mon 26 Oct (passed with no build; it needs a new date); build 2 at the freeze, Tue 3 Nov 5:00 AM PT (D-089); go/no-go Mon 9 Nov. The freeze and the go/no-go were confirmed by the founder on 30 Oct (D-130; the freeze hour, 5:00 AM PT, is the coordinator's). It comes in two builds:
 
@@ -221,6 +221,8 @@ If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can hap
 - **At the end:** the founder steps above that are missing, or that it cannot see, by number and name.
 
 ## Where build 1 stands (30 Oct 2026)
+
+**Last verified 30 Oct 2026. This section is a snapshot, not a live status.** For where build 1 stands now, read the TODAY page (`docs/release/TODAY.md`, generated) or the pinned status issue (#pending, until the generator in open PR #565 is merged and the issue exists). No session has verified since 30 Oct whether any build has been made or uploaded, and this page does not claim it has.
 
 Step 1 is done (Apple Developer Program, Active as of 29 Oct 2026). No build has been made and nothing has been uploaded. What is left for build 1 is what steps 2, 3 and 4 hand over, and then step 5.
 
