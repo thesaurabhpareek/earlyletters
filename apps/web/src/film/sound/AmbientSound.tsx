@@ -27,7 +27,11 @@ import styles from './AmbientSound.module.css';
 
 const TICK_MS = 120;
 const GESTURES = ['pointerdown', 'touchend', 'keydown', 'click'] as const;
-const IGNORED_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Escape']);
+// Keys that are moving around the page, not asking for anything: they never start the sound.
+const IGNORED_KEYS = new Set([
+  'Shift', 'Control', 'Alt', 'Meta', 'CapsLock', 'Escape', 'Tab', ' ', 'Spacebar',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', 'Home', 'End',
+]);
 
 function storage(): Storage | null {
   try {
@@ -98,6 +102,8 @@ export function AmbientSound() {
     if (!wanted || playing) return;
     const onGesture = (e: Event) => {
       if (e.target instanceof Element && e.target.closest('[data-ambient-toggle]')) return; // the button decides for itself
+      // Someone filling in the sign-up form, or pressing its button, did not ask for sound: it starts on the next plain tap.
+      if (e.target instanceof Element && e.target.closest('form, input, textarea, select, [data-ambient-ignore]')) return;
       if (e.type === 'keydown' && IGNORED_KEYS.has((e as KeyboardEvent).key)) return;
       begin();
     };

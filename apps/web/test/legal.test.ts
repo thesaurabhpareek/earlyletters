@@ -98,6 +98,7 @@ describe('what the pages promise', () => {
       'Your email address and message, if you write to us.',
       'When you join or leave the list, we hold your IP address in memory for up to 10 minutes to block automated requests. We do not save it.',
       'We do not use cookies.',
+      'If you press the sound button, your browser remembers whether sound is on. It stays in your browser and is never sent to us.',
       'We do not track you, so a Do Not Track signal changes nothing here.',
       'We do not sell or rent your email address, or share it for advertising. We do not share your information with anyone else unless the law requires it.',
       'until you ask us to delete it',
@@ -196,7 +197,7 @@ describe('the home page sign-up note', () => {
   // and Resend stores the address, so "we never share it" would be untrue.
   it('names both emails and promises no selling and no advertising, not "never share"', () => {
     expect(site.notify.note).toBe(
-      `A welcome email now, and one more when ${site.brand.name} is ready. We never sell your address or share it for advertising, and every email has an unsubscribe link.`,
+      `You will get a short hello, then one email when ${site.brand.name} is ready. We never sell your address or share it for advertising. Every email has an unsubscribe link.`,
     );
     expect(site.notify.note).not.toMatch(/never share|^One email/i);
   });
@@ -233,10 +234,10 @@ function sourceFiles(dir = join(WEB, 'src')): string[] {
 }
 
 describe('the claims hold in the code', () => {
-  // RULE: "We do not use cookies" and nothing is kept in the browser.
-  // The one exception, by the founder's request (ambient sound PR): the sound button remembers a single value, "on" or
-  // "off", in localStorage on the visitor's own device. It is never sent anywhere and is not a cookie. Any other file
-  // using browser storage still fails here. Whether the Privacy page should say so is the founder's and legal's call.
+  // RULE: "We do not use cookies", and the only thing kept in the browser is the sound choice.
+  // The sound button remembers a single value, "on" or "off", in localStorage on the visitor's own device. It is never
+  // sent anywhere and is not a cookie. The Privacy page says so (one sentence, approved by the founder; counsel must
+  // confirm). Any other file using browser storage still fails here, and the next test pins the sentence to the code.
   const STORAGE_ALLOWED = new Set(['src/film/sound/AmbientSound.tsx']);
   it('no code sets a cookie or uses browser storage', () => {
     const offenders = sourceFiles()
@@ -249,6 +250,21 @@ describe('the claims hold in the code', () => {
     expect(src.match(/localStorage/g)?.length).toBe(1);
     expect(src).not.toMatch(/document\.cookie|sessionStorage|indexedDB/);
     expect(read('src/film/sound/ambient-map.ts')).toMatch(/v === 'on' \? true : v === 'off' \? false : null/);
+  });
+
+  it('the Privacy page says what the code does: the sound choice is written only when the button is pressed', () => {
+    const sentence = 'If you press the sound button, your browser remembers whether sound is on. It stays in your browser and is never sent to us.';
+    expect(pageText(privacy)).toContain(sentence);
+    const src = readFileSync(join(WEB, 'src/film/sound/AmbientSound.tsx'), 'utf8');
+    // Writes happen in exactly two places, both inside the button handler; reading on load never writes.
+    expect(src.match(/writeChoice\(/g)?.length).toBe(2);
+    const toggle = src.slice(src.indexOf('onToggle'));
+    expect(toggle.match(/writeChoice\(storage\(\), (true|false)\)/g)?.length).toBe(2);
+    expect(src.slice(0, src.indexOf('onToggle'))).not.toMatch(/writeChoice\(storage\(\)/);
+    // Nothing is sent: the stored value never reaches fetch, sendBeacon, a form or a URL.
+    expect(src).not.toMatch(/\bfetch\(|sendBeacon|XMLHttpRequest|WebSocket/);
+    // No other page claims the opposite.
+    for (const page of [privacy, terms]) expect(pageText(page)).not.toMatch(/no browser storage|nothing (is )?(stored|kept) in your browser/i);
   });
 
   // RULE: "We do not use analytics". Turning analytics on means changing the Privacy page first.

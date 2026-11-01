@@ -19,7 +19,7 @@ const copy = site.scenes.s10;
 
 export function S10Pricing() {
   return (
-    <Scene id="pricing" label={copy.label} tone="night" length={1.5} rest={0.5}>
+    <Scene id="pricing" label={copy.label} tone="night" length={2} rest={0.5}>
       <PricingStage />
     </Scene>
   );

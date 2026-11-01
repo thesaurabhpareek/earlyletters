@@ -65,7 +65,7 @@ function TalkStage() {
   const sheetY = useTransform(p, [0.74, 0.82], ['100%', '0%']);
   const grow = useTransform(p, [0.82, 0.94], [1, fill]);
   const chrome = useTransform(p, [0.84, 0.9], [1, 0]);
-  const phoneY = useTransform(p, narrow ? [0, 0.04, 0.72, 0.8] : [0, 1], narrow ? ['0svh', '9svh', '9svh', '0svh'] : ['0svh', '0svh']);
+  const phoneY = useTransform(p, narrow ? [0, 0.04, 0.72, 0.8] : [0, 1], narrow ? ['0svh', '13svh', '13svh', '0svh'] : ['0svh', '0svh']);
 
   const headOpacity = useTransform(p, narrow ? [0.03, 0.1, 0.32, 0.38] : [0.03, 0.1, 0.36, 0.42], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.03, 0.1], [16, 0]);
@@ -75,7 +75,7 @@ function TalkStage() {
   const cleanup = useTransform(p, [0.935, 0.95], [0, 1]);
 
   return (
-    <div className={stage.frame} data-resting={resting || undefined}>
+    <div className={stage.frame} data-resting={resting || undefined} style={{ ['--phone-w' as string]: `${width}px` }}>
       <motion.div className={stage.layer} style={{ opacity: spillOut }}>
         <LampLight intensity={spill} x="50%" y="52%" size={narrow ? '150vmax' : '95vmax'} warmth="recording" />
       </motion.div>
@@ -114,7 +114,7 @@ function TalkStage() {
       <Vignette strength={1} />
       <Grain tone="night" />
 
-      <motion.div className={styles.paper} style={{ opacity: cleanup }}>
+      <motion.div className={styles.paper} style={{ opacity: cleanup }} aria-hidden>
         <PaperLetter />
       </motion.div>
     </div>

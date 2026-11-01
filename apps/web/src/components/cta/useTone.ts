@@ -40,12 +40,12 @@ function sceneAt(offset: number): Geo | undefined {
   return pick && sy + offset < pick.bottom ? pick : undefined;
 }
 
-export function useToneAt(band: 'top' | 'bottom'): Tone {
+export function useToneAt(band: 'top' | 'middle' | 'bottom'): Tone {
   const [tone, setTone] = useState<Tone>('night');
   useEffect(() => {
     start();
     const read = () => {
-      const off = band === 'top' ? 32 : window.innerHeight - 40;
+      const off = band === 'top' ? 32 : band === 'middle' ? window.innerHeight / 2 : window.innerHeight - 40;
       const g = sceneAt(off);
       setTone(((g?.el.dataset.uiTone ?? g?.el.dataset.tone) as Tone | undefined) ?? 'night');
     };

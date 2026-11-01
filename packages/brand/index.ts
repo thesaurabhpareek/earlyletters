@@ -38,7 +38,7 @@ export const brand = {
   storeName: 'Early Letters: Memory Book',
   /** App Store subtitle, max 30 characters. */
   subtitle: 'Baby memory book in your voice',
-  tagline: 'Exactly as you said it.',
+  tagline: 'It stays in your words.',
   /** Printed product naming pattern. */
   printTitle: (year: number) => `Early Letters: Year ${year === 1 ? 'One' : year === 2 ? 'Two' : year === 3 ? 'Three' : year}`,
   publisher,

@@ -39,16 +39,18 @@ function EveningStage() {
   const { w } = useViewport();
   const pool = lampPool(w);
 
-  const heroOpacity = useTransform(p, [0, 0.14, 0.24], [1, 1, 0]);
+  const heroOpacity = useTransform(p, [0, 0.1, 0.2], [1, 1, 0]);
+  // Fully off (not just transparent) once it has left, so it can never show through the words.
+  const heroVisibility = useTransform(heroOpacity, (o) => (o <= 0.01 ? 'hidden' : 'visible'));
   const heroY = useTransform(p, [0.12, 0.26], [0, -48]);
   const heroScale = useTransform(p, [0.12, 0.26], [1, 0.965]);
 
   const windowDraw = useTransform(p, [0.16, 0.42], [0, 1]);
-  const windowOpacity = useTransform(p, [0.14, 0.18, 0.82, 0.96], [0, 1, 1, 0.22]);
+  const windowOpacity = useTransform(p, [0.2, 0.24, 0.82, 0.96], [0, 1, 1, 0.22]);
   const moon = useTransform(p, [0.3, 0.5], [0, 1]);
 
   const dateOpacity = useTransform(p, [0.3, 0.36, 0.74, 0.8], [0, 1, 1, 0]);
-  const headOpacity = useTransform(p, [0.34, 0.42, 0.75, 0.81], [0, 1, 1, 0]);
+  const headOpacity = useTransform(p, [0.36, 0.43, 0.75, 0.81], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.34, 0.42], [18, 0]);
   const supOpacity = useTransform(p, [0.4, 0.47, 0.76, 0.82], [0, 1, 1, 0]);
   const supY = useTransform(p, [0.4, 0.47], [12, 0]);
@@ -73,12 +75,14 @@ function EveningStage() {
         <Lamp draw={lampDraw} glow={glow} strokeWidth={1.5} />
       </div>
 
-      <motion.div className={styles.hero} style={{ opacity: heroOpacity, y: heroY, scale: heroScale }}>
+      <motion.div className={styles.hero} style={{ opacity: heroOpacity, visibility: heroVisibility, y: heroY, scale: heroScale }}>
         <h1 className={styles.h1}>
           <Wordmark />
         </h1>
         <p className={styles.line}>{site.brand.line}</p>
-        <span className={styles.cue} aria-hidden />
+        <span className={styles.cueLabel} aria-hidden>
+          {site.scrollNav.cue}
+        </span>
       </motion.div>
 
       <div className={styles.copy}>

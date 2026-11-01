@@ -17,7 +17,7 @@ export function Footer() {
           <p className={styles.mark}>
             <Wordmark />
           </p>
-          <p className={styles.tagline}>{siteCopy.footer.tagline}</p>
+          <p className={styles.tagline}>{site.footer.tagline}</p>
           <p className={styles.tagline}>{site.footer.sampleNote}</p>
         </div>
 

@@ -32,6 +32,20 @@ const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
+// Store text in every place a shopper reads it: the typed listing, listing.json (English fields only) and the screenshot captions.
+const REPO = join(__dirname, '..', '..', '..');
+const listingJson = () => JSON.parse(readFileSync(join(REPO, 'docs/store/listing/listing.json'), 'utf8'));
+function storeText(): Leaf[] {
+  const j = listingJson();
+  const { localisation: _skip, _comment: _c, ...rest } = j;
+  const caps = JSON.parse(readFileSync(join(REPO, 'docs/store/screenshots/captions.json'), 'utf8')) as { id: string; headline: string; sub: string }[];
+  return [
+    ...leaves(storeListing, 'store'),
+    ...leaves(rest, 'listing.json').filter((l) => !/availability$/.test(l.path)),
+    ...caps.flatMap((c) => [{ path: `captions.${c.id}.headline`, text: c.headline }, { path: `captions.${c.id}.sub`, text: c.sub }]),
+  ];
+}
+
 describe('characters', () => {
   it('has no em dashes, en dashes, curly quotes or ellipsis characters', () => {
     expect(offenders([...ALL, ...DOCS], /[—–‘’“”…]/)).toEqual([]);
@@ -139,5 +153,67 @@ describe('length limits', () => {
 describe('save failure reassurance', () => {
   it('tells people their words are safe on the phone', () => {
     expect(JSON.stringify(en.errors)).toMatch(/safe on this phone/i);
+  });
+});
+
+// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md).
+// Each rule names the decision it enforces. If one fails, fix the copy, not the test.
+describe('claims that must be true of what the first build does', () => {
+  it('never calls the fixes tidying (D-086: remove "Lightly tidied" and "Tidying" everywhere)', () => {
+    expect(offenders(ALL, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
+  });
+
+  it('the book never says nobody changed the words, or that every word is kept exactly as said', () => {
+    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes where a microphone/i;
+    expect(offenders(leaves(book, 'book'), bad)).toEqual([]);
+  });
+
+  it('"About this book" says what the engine does and no more (core EditType; D-133 true line)', () => {
+    const body = book.aboutThisBook.body;
+    expect(body).toMatch(/no word was added/);
+    expect(body).toMatch(/small fixes/);
+    expect(body).toMatch(/original recording is kept unchanged/);
+    expect(body).toMatch(/Typed letters are exactly as they were typed/);
+  });
+
+  it('status lines never promise a later update, say beta, or link a feature to Plus that D-111 made free', () => {
+    const status = [...leaves(en.settingsMore, 'settingsMore'), ...leaves(en.childrenExtra, 'childrenExtra'), ...leaves(en.familyTab, 'familyTab')];
+    expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
+  });
+
+  it('store text (listing, listing.json, screenshot captions) never says the words are kept exactly as said (D-133)', () => {
+    const t = storeText();
+    expect(offenders(t, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+  });
+
+  it('store text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
+    const t = storeText();
+    const bad = /invite|co-?parent|grandparent|aunt|uncle|from papa|nani|sync|vault|recovery key|cloud|bilingual|hindi|spanish|mandarin|french|arabic|portuguese|coming soon|later update|\bbeta\b|early access|family sharing|whole family|family book|printed|(?<!iphone's own )backup/i;
+    expect(offenders(t, bad)).toEqual([]);
+  });
+
+  it('store text carries the true line and the facts it rests on', () => {
+    const d = storeListing.description;
+    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
+    expect(d).toMatch(/IT STAYS IN YOUR WORDS/);
+    expect(d).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
+    expect(d).toMatch(/Letters you type stay exactly as you typed them\./);
+    expect(d).toMatch(/keeps its original recording, unchanged/);
+    expect(d).toMatch(/waits 30 days in Recently deleted/);
+    expect(storeListing.screenshotCaptions[1]).toBe('Every change is marked');
+  });
+
+  it('screenshot captions fit 40 characters and listing.json agrees with the app copy', () => {
+    for (const c of storeListing.screenshotCaptions) expect(c.length).toBeLessThanOrEqual(40);
+    const j = listingJson();
+    expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
+    expect(j.apple.keywords).toBe(storeListing.keywords);
+    expect(j.apple.whatsNew).toBe(storeListing.whatsNewV1);
+    expect(j.apple.description.startsWith(storeListing.description.split('\n\nYour first two letters are free')[0])).toBe(true);
+  });
+
+  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (D-121, D-126)', () => {
+    const first = leaves(site, 'site');
+    expect(offenders(first, /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i)).toEqual([]);
   });
 });

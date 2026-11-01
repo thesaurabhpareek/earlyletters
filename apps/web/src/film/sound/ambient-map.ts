@@ -18,8 +18,8 @@ export const AMBIENT_DEFAULT_ON = true;
 export const STORAGE_KEY = 'el-ambient-sound';
 
 /** The quiet resting level of the master gain, and the most scrolling can lift it to. Both stay well under 0.12. */
-export const MASTER_BASE = 0.08;
-export const MASTER_MAX = 0.11;
+export const MASTER_BASE = 0.24;
+export const MASTER_MAX = 0.35;
 
 export type SoundTone = 'night' | 'paper' | 'dusk';
 
@@ -29,26 +29,40 @@ export const midiToHz = (midi: number): number => 440 * Math.pow(2, (midi - 69) 
 
 /**
  * Four open, unhurried chords (MIDI notes, four voices each), no hard thirds: suspended and added-ninth shapes
- * that stay gentle whichever way they are joined. The film moves through them as the visitor moves down it.
+ * that stay gentle whichever way they are joined. They sit about an octave above the first version (lowest note
+ * around 260 Hz), where phone and laptop speakers can actually play them. The film moves through them as the
+ * visitor moves down it, by a slow crossfade between two voice banks (ambient-engine.ts), never by a pitch slide.
  */
 export const CHORDS: readonly (readonly [number, number, number, number])[] = [
-  [50, 57, 64, 69], // D  A  E  A   (D sus2)
-  [48, 55, 62, 67], // C  G  D  G   (C sus2)
-  [53, 60, 64, 69], // F  C  E  A   (F major 7, open)
-  [55, 62, 66, 71], // G  D  F# B   (G major 7)
+  [62, 69, 76, 81], // D  A  E  A   (D sus2)
+  [60, 67, 74, 79], // C  G  D  G   (C sus2)
+  [65, 72, 76, 81], // F  C  E  A   (F major 7, open)
+  [67, 74, 78, 83], // G  D  F# B   (G major 7)
 ];
 
-/** Semitones the whole chord leans by for the scene under the visitor: night lower and warmer, paper a touch brighter. */
-export const TONE_TRANSPOSE: Record<SoundTone, number> = { night: -2, dusk: 0, paper: 2 };
-/** Resting low-pass cutoff (Hz) per tone: the warm lid on the sound. */
-export const TONE_CUTOFF: Record<SoundTone, number> = { night: 380, dusk: 480, paper: 640 };
-/** How much of the high "air" voice (an octave above the top note) is let in per tone. */
-export const TONE_AIR: Record<SoundTone, number> = { night: 0, dusk: 0.2, paper: 0.4 };
+/** Resting low-pass cutoff (Hz) per tone: the warm lid on the sound. Tone changes brightness, never pitch. */
+export const TONE_CUTOFF: Record<SoundTone, number> = { night: 900, dusk: 1020, paper: 1200 };
+/** The high "air" voice (an octave above the chord's second note) at rest, per tone: night quieter, paper a touch brighter. */
+export const TONE_AIR: Record<SoundTone, number> = { night: 0.1, dusk: 0.14, paper: 0.18 };
+/** Resting reverb per tone: night a little roomier and softer. */
+export const TONE_REVERB: Record<SoundTone, number> = { night: 0.46, dusk: 0.42, paper: 0.36 };
+
+/**
+ * Level trim per chord, from measuring the live output: the same gain on every chord is not the same loudness (the
+ * higher voicings sit nearer the low-pass and the voice leading changes how the partials add), so each chord is
+ * trimmed to about the same RMS. Applied to the chord's voice bank, so it moves with the crossfade, not before it.
+ */
+export const CHORD_TRIM: readonly number[] = [1.8, 1.1, 1.6, 1.2];
+
+/** Seconds a chord change takes: the old voice bank fades out as the new one fades in (equal power). */
+export const CROSSFADE_SECONDS = 10;
+/** The sparse single tone: one every 20 to 40 s, a chord tone only, about -30 dBFS, 3 s attack, 6 s decay. */
+export const TONE_EVERY_SECONDS: readonly [number, number] = [20, 40];
 
 /** Scroll speed (px per second) to a 0..1 energy. Soft saturation, so a hard fling is not twice a firm scroll. */
 export function energyFromSpeed(pxPerSec: number): number {
   const s = Math.abs(pxPerSec);
-  return clamp01(1 - Math.exp(-s / 1500));
+  return clamp01(1 - Math.exp(-s / 900));
 }
 
 /**
@@ -72,33 +86,35 @@ export type AmbientInput = { energy: number; progress: number; tone: SoundTone }
 export type AmbientParams = {
   /** Low-pass cutoff in Hz. */
   cutoffHz: number;
-  /** Level of the whole pad (the node after the mix, before the fade). */
+  /** Level of the whole pad (the node after the mix, before the fade). Never above MASTER_MAX. */
   masterGain: number;
   /** How much of the soft reverb is let in, 0..1. */
   reverbWet: number;
   /** Frequencies of the four chord voices, Hz. */
   voicesHz: [number, number, number, number];
-  /** The high "air" voice: an octave above the top note, Hz, and how loud it is (0..0.5). */
+  /** The high "air" voice: an octave above the chord's second note, Hz, and how loud it is (0.1 to 0.25). */
   airHz: number;
   airGain: number;
-  /** Which chord this is, for tests. */
+  /** Which chord this is. The engine crossfades banks when it changes. */
   chord: number;
+  /** The level trim of that chord's voice bank. */
+  bankTrim: number;
 };
 
 export function ambientParams({ energy, progress, tone }: AmbientInput): AmbientParams {
   const e = clamp01(energy);
   const chord = chordIndexAt(progress);
-  const shift = TONE_TRANSPOSE[tone] ?? 0;
   const base = TONE_CUTOFF[tone] ?? TONE_CUTOFF.night;
-  const notes = CHORDS[chord].map((n) => midiToHz(n + shift)) as AmbientParams['voicesHz'];
+  const notes = CHORDS[chord].map((n) => midiToHz(n)) as AmbientParams['voicesHz'];
   return {
-    cutoffHz: lerp(base, base + 1400, Math.pow(e, 0.8)),
+    cutoffHz: lerp(base, base + 1500, Math.pow(e, 0.8)),
     masterGain: lerp(MASTER_BASE, MASTER_MAX, e),
-    reverbWet: lerp(0.4, 0.58, e),
+    reverbWet: lerp(TONE_REVERB[tone] ?? TONE_REVERB.night, 0.68, e),
     voicesHz: notes,
-    airHz: midiToHz(CHORDS[chord][3] + shift + 12),
-    airGain: (TONE_AIR[tone] ?? 0) * 0.5 + e * 0.1,
+    airHz: midiToHz(CHORDS[chord][1] + 12),
+    airGain: Math.min(0.25, lerp(TONE_AIR[tone] ?? TONE_AIR.night, 0.25, e)),
     chord,
+    bankTrim: CHORD_TRIM[chord] ?? 1,
   };
 }
 

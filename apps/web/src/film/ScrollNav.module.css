@@ -10,7 +10,7 @@
   align-items: center;
   justify-content: space-between;
   pointer-events: none;
-  transition: opacity 400ms var(--ease-standard);
+  transition: opacity 400ms var(--ease-standard), visibility 0s;
   --n-ink: var(--night-ink);
   --n-fill: rgba(28, 25, 22, 0.58);
   --n-line: rgba(242, 236, 228, 0.28);
@@ -20,8 +20,22 @@
   --n-fill: rgba(251, 248, 243, 0.82);
   --n-line: rgba(43, 39, 34, 0.26);
 }
+.nav[data-busy] {
+  opacity: 0.45;
+}
+/*
+ * Hidden at the end card: not just see-through but gone. visibility drops it from hit-testing, focus and the
+ * accessibility tree once the fade is done, and the buttons (which set pointer-events:auto themselves, so the
+ * group's pointer-events:none does not reach them) are switched off at once. Without this, an invisible Previous sat
+ * over the footer's Privacy link and part of the share icons.
+ */
 .nav[data-hidden] {
   opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 400ms var(--ease-standard), visibility 0s linear 400ms;
+}
+.nav[data-hidden] .btn {
   pointer-events: none;
 }
 .btn {
@@ -38,6 +52,10 @@
   /* No backdrop blur: a fixed blur over a scrolling page is re-drawn every frame and costs smoothness. */
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
+}
+.btn[data-off] {
+  visibility: hidden;
+  pointer-events: none;
 }
 .btn[data-end] {
   margin-left: auto;
@@ -69,7 +87,8 @@
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .nav {
+  .nav,
+  .nav[data-hidden] {
     transition: none;
   }
 }
