@@ -126,11 +126,33 @@ describe('[RT-PAY-17] the Keep gate waits for the first StoreKit read', () => {
   it('Review holds the letter on `hold` and draws the Keep sheet only on `offer`', () => {
     const review = readFileSync(join(__dirname, '..', 'src', 'app', 'review.tsx'), 'utf8');
     const hold = review.slice(review.indexOf("if (g.decision.kind === 'hold')"), review.indexOf('setGate(g);'));
-    expect(hold).toMatch(/holdOnce\(holding, \(\) => \(later \|\| !draft \? true : holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\)\)\)/);
+    expect(hold).toMatch(/holdWithoutSheet\(holding, \{\s*hold: \(\) => \(later \|\| !draft \? true : holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\)\),/);
     expect(hold).toMatch(/return true;/); // the caller returns without saving: nothing is kept, nothing is lost
     // It says so (Review B 2 on #517): the held line from the Keep sheet, on screen and to VoiceOver (the toast announces
     // once), before going back to Tonight.
-    expect(hold).toMatch(/toast\.show\(\{ message: later \? billingCopy\.keepGate\.heldNoteLetter : billingCopy\.keepGate\.heldNote \}\);\s*if \(router\.canGoBack\(\)\) router\.back\(\);/);
+    expect(hold).toMatch(/say: \(\) => toast\.show\(\{ message: later \? billingCopy\.keepGate\.heldNoteLetter : billingCopy\.keepGate\.heldNote \}\),/);
+    expect(hold).toMatch(/leave: \(\) => \(router\.canGoBack\(\) \? router\.back\(\) : router\.replace\('\/'\)\),/);
     expect(review).toMatch(/if \(gate && gate\.decision\.kind === 'offer' && phase !== 'saved'\)/);
+  });
+
+  it('a double tap on Keep during a hold: one hold, one held line, one way back (Review A nit on #517)', async () => {
+    const { holdWithoutSheet } = await import('../src/components/child/plus-gate.logic');
+    const guard = { current: false };
+    const hold = vi.fn(() => true);
+    const say = vi.fn();
+    const leave = vi.fn();
+    expect(holdWithoutSheet(guard, { hold, say, leave })).toBe('held');
+    expect(holdWithoutSheet(guard, { hold, say, leave })).toBe('again');
+    expect([hold.mock.calls.length, say.mock.calls.length, leave.mock.calls.length]).toEqual([1, 1, 1]);
+    // A hold that does not take still says where the letter is and leaves, once (the draft is still where it was).
+    const failed = { current: false };
+    const say2 = vi.fn();
+    const leave2 = vi.fn();
+    const boom = () => {
+      throw new Error('store');
+    };
+    expect(holdWithoutSheet(failed, { hold: boom, say: say2, leave: leave2 })).toBe('not_held');
+    expect(holdWithoutSheet(failed, { hold: boom, say: say2, leave: leave2 })).toBe('again');
+    expect([say2.mock.calls.length, leave2.mock.calls.length]).toEqual([1, 1]);
   });
 });
