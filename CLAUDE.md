@@ -52,7 +52,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
 - Safety tiers stay on the device; there is no server table for them.
-- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes). One exception, decided by the founder (D-118): the website copy in `apps/web/src/content/site.ts` names his child by first name "for now", and the guard allows that one spelling in that one file only. Review before the alpha link goes public.
+- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes). One exception, decided by the founder (D-118): the website copy in `apps/web/src/content/site.ts` names his child by first name "for now", and the guard allows that one spelling in that one file only. Review before the site is promoted or the alpha link goes public (D-118 review point, a coordinator proposal).
 
 ## Agents
 - How the harness works, end to end: `docs/agents/HARNESS.md`. The team (26 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.

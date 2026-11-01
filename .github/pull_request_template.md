@@ -16,7 +16,7 @@
 - [ ] Gates use `decide()` or `decideKeepLetter()` from `packages/core/src/plan.ts`; read, play, export, delete, restore and family authorship stay ungated, and capturing and typing never are: only the Keep step of a letter is (D-082)
 - [ ] Copy lives in `packages/content` and a failing content rule was fixed in the copy, not the test
 - [ ] No entry text, transcript, audio or child name in analytics, logs or crash reports
-- [ ] Tests and fixtures use the fictional family "Asha" only; no real family details anywhere (the one exception is the child's first name in `apps/web/src/content/site.ts`, D-118)
+- [ ] Tests and fixtures use the fictional family "Asha" only; no real family details anywhere
 - [ ] Database changes are a new migration file; no applied migration was edited (the migration guard checks this)
 - [ ] The public product name comes only from `packages/brand`
 
