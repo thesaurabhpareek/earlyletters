@@ -1,0 +1,79 @@
+# E2E-07  Add a child after first run: no gate. The form opens straight away,
+# the second book is created, and no Plus sheet appears.
+# Proves: F14-REQ-029 (books for more children have no Plus gate: 0 Plus sheets),
+# D-083 (one pool of 2 free letters across all books, so a second child needs no
+# extra gate), D-082 (Plus gates only keeping a new letter; this supersedes the
+# "second book is Plus" rule of PRD-REQ-015 for books you start later),
+# C-REQ-023 (the Plus sheet appears only at its trigger), PRD-REQ-012 (the
+# switcher lists both books; reached within 2 taps from the Book).
+# The Asha seed holds 5 letters, already past the 2 free ones, on a Free phone:
+# any Plus sheet seen here would be a gate that D-083 removed.
+# The first-run half (every child added in first run is free) is E2E-02.
+appId: ${APP_ID}
+name: E2E-07 Add a child, no gate
+tags:
+  - e2e
+  - E2E-07
+  - F14-REQ-029
+  - D-082
+  - D-083
+  - C-REQ-023
+  - PRD-REQ-012
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+# 1. From the Book: switcher (tap 1), Add a child (tap 2): the form, not a gate.
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.childSwitcher"
+- tapOn:
+    id: "switcher.addChild"
+- assertVisible:
+    id: "addChild.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+# 2. Add Avi's book: a name and a date are all it needs.
+- tapOn:
+    id: "addChild.name"
+- inputText: "Avi"
+- hideKeyboard
+- tapOn:
+    id: "addChild.bornToday"
+- tapOn:
+    id: "addChild.add"
+    enabled: true
+- assertNotVisible:
+    id: "plusGate.screen"
+# 3. The second book exists: the switcher lists two children.
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.childSwitcher"
+- assertVisible:
+    id: "switcher.child"
+    index: 0
+- assertVisible:
+    id: "switcher.child"
+    index: 1
+- tapOn:
+    id: "switcher.close"
+# 4. Settings, Add a child opens the same form with no gate, with two books
+#    already on the phone. Leave without adding a third.
+- runFlow: ../subflows/open-settings.yaml
+- assertVisible:
+    id: "settings.child"
+    index: 1
+- tapOn:
+    id: "settings.addChild"
+- assertVisible:
+    id: "addChild.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- runFlow: ../subflows/go-back.yaml
+- assertVisible:
+    id: "settings.screen"
+- stopApp

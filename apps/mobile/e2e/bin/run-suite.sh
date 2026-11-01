@@ -52,8 +52,8 @@ FLOWS=(
   E2E-03-speak-save-offline
   E2E-04-type-a-letter
   E2E-05-language-hindi-packs
-  E2E-06-read-together-plus-gate
-  E2E-07-add-child-plus-gate
+  E2E-06-read-together-no-gate
+  E2E-07-add-child-no-gate
   E2E-08-delete-and-undo
   E2E-09-account-deletion
   E2E-10-export
