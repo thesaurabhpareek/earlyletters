@@ -62,6 +62,8 @@ Build 2 adds: sign-in (`/(auth)/sign-in/*`), join, invite and leave (`/invite`, 
 
 Reached from the gear on Book. Section titles are as shown; a dash means no title.
 
+This table is today. From the 1 Dec build Settings regroups into five groups plus About (CDesO-1, F1): `screens/SETTINGS_AND_ACCOUNT.md` section 6 is the target, and this table changes with the code.
+
 | Section | Row | Opens |
 |---|---|---|
 | - | Plan (stays; the Terms name "Settings, Plan", ruling R-C) | Plus status, manage subscription, restore, redeem a code, request a refund, terms |
