@@ -179,6 +179,25 @@ describe('the last keystrokes inside the autosave pause are kept on every way ou
     expect(store.getDraft(id)).toBeNull();
   });
 
+  it('a recording draft (Write reached from Review with ?draftId=) is never deleted by Close, even with no words typed', () => {
+    const rec = store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: 'file:///asha/take-1.aac', audioDurationMs: 12_000, typedText: null }).id;
+    // Opened with nothing typed and closed at once.
+    const untouched = openWrite(rec);
+    expect(untouched.session.close()).toBe(true);
+    expect(store.getDraft(rec)).not.toBeNull();
+    expect(store.getDraft(rec)?.audioUri).toBe('file:///asha/take-1.aac');
+    // Words typed, written by a pause, then cleared to nothing inside the next pause and closed: still kept.
+    const cleared = openWrite(rec);
+    cleared.type('', 'Asha');
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    expect(typed(rec)).toBe('Asha');
+    cleared.session.change('');
+    expect(cleared.session.close()).toBe(true);
+    expect(store.getDraft(rec)).not.toBeNull();
+    expect(store.getDraft(rec)?.audioUri).toBe('file:///asha/take-1.aac');
+    // The same steps on a typed draft delete it (the other half of the rule, above): only the recording keeps it.
+  });
+
   it('words that cannot be written keep Write open on Close and on a destination, and nothing is lost', () => {
     const w = openWrite();
     w.type('', FIRST);
