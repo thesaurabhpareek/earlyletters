@@ -12,6 +12,7 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 | **Other threads** | Other chats (App Store setup, website, naming) | Work in their own area (see section 6); never push to `develop` or `main` |
 
 ## 2. Before you start: claim your area
+Claims now live in `docs/agents/CLAIMS.md` (live rows only, 72 h expiry); `BOARD.md` points to it and to `BOARD-ARCHIVE.md`. Where this section says `BOARD.md`, read `CLAIMS.md`.
 1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/BOARD.md`.
 2. Add a **claim** line to the "Active claims" table in `BOARD.md`: agent name or id, area, file globs, start time (UTC).
 3. If your globs overlap someone else's live claim, do not edit those files. Message the owner (`ListAgents`, then `SendMessage`) or note it on the board for the coordinator. Pick another slice of work meanwhile.
