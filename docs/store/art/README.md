@@ -15,13 +15,13 @@ The registry masters (`packages/brand/registry.json`, `packages/brand/assets/`) 
 | `icon/play-icon-512.png` | 512x512 | Google Play hi-res icon (opaque, square; Play applies its mask). Unmodified approved 512. |
 | `icon/ios-{180,167,152,120,87,80,76,60,58,40,29}.png` | as named | iOS and iPad icon sizes (opaque, no alpha, square). |
 | `icon/android-{192,144,96,72,48}.png` | as named | Legacy launcher densities (xxxhdpi to mdpi). |
-| `play/feature-graphic-1024x500.png` | 1024x500 | Play feature graphic, paper. Lockup + "Exactly as you said it." No price, ranking or promo text (Play rule). |
+| `play/feature-graphic-1024x500.png` | 1024x500 | Play feature graphic, paper. Lockup + the brand tagline "It stays in your words." (read from `packages/brand` at build time). No price, ranking or promo text (Play rule). |
 | `play/feature-graphic-1024x500-night.png` | 1024x500 | Same, night, for A/B or dark listing. |
 | `social/link-preview-paper-1200x630.png` | 1200x630 | Open Graph / Twitter large card, default. Content sits inside the centre 1000x500. |
 | `social/link-preview-night-1200x630.png` | 1200x630 | Night variant (campaign links). |
-| `social/link-preview-category-1200x630.png` | 1200x630 | Adds the category line "The baby memory book you fill by talking." for first contact (BRAND.md naming rule). |
+| `social/link-preview-category-1200x630.png` | 1200x630 | Adds the category line "The baby memory book you fill by talking." and "Your words. Your voice. Every change marked." for first contact (BRAND.md naming rule). |
 | `promo/promo-square-1080x1080-paper.png` | 1080x1080 | App Store / social promotional art, "Said once. Heard for years." |
-| `promo/promo-story-1080x1920-night.png` | 1080x1920 | 9:16 story / Apple promotional art, "Exactly as you said it." |
+| `promo/promo-story-1080x1920-night.png` | 1080x1920 | 9:16 story / Apple promotional art, "It stays in your words." |
 
 Copy uses only BRAND.md lines and the content rules (no em dashes, curly quotes, claims, price, or counts). App Store screenshots already exist in `docs/store/screenshots/` and were not touched.
 
@@ -49,7 +49,7 @@ Same cut serves App Store (15 to 30 s) and Play promo (YouTube, public or unlist
 | 1 | 0.0 to 2.5 | Paper card, approved symbol fades in over lockup | Brand lockup SVG | "Early Letters" | Paper |
 | 2 | 2.5 to 6.0 | Tonight screen, prompt card, thumb never shown; the Speak button pulses once (UI press state only) | Native capture, Tonight | Type card: "A minute is plenty." | Paper to dusk |
 | 3 | 6.0 to 11.0 | Listening: breathing glow, transcript lines arriving ("Mama pretended not to notice...") | Native capture, Listening | Type card: "Just talk." The words arriving are the caption | Night |
-| 4 | 11.0 to 14.5 | Review: the one small fix underlined, then Save. Show that nothing else changed | Native capture, Review | Type card: "Exactly as you said it." | Paper |
+| 4 | 11.0 to 14.5 | Review: the one small fix underlined, then Save. Show that every change is marked | Native capture, Review | Type card: "Every change is marked." | Paper |
 | 5 | 14.5 to 17.5 | Book: the letter settles into its month chapter; chapters scroll back | Native capture, Book | Type card: "A book that grows by month." | Paper warm |
 | 6 | 17.5 to 20.5 | Letter in night mode, Read together, highlight moving word by word | Native capture, Letter night | The highlight is the caption | Night + lamp |
 | 7 | 20.5 to 22.0 | Night card, lockup, tagline | Brand lockup SVG | "Said once. Heard for years." then lockup | Night |
@@ -61,7 +61,7 @@ Same cut serves App Store (15 to 30 s) and Play promo (YouTube, public or unlist
 | S1 | Lockup on paper, 1 s hold + 1.5 s fade | Render from approved SVG, ink on paper. No redraw. |
 | S2 | Tonight screen, 3.5 s, light mode | Device in light mode; status bar 9:41, full battery. |
 | S3 | Listening, 5 s, dark mode | Record real in-app flow with the Asha script; capture the live transcript, not a scripted overlay. |
-| S4 | Review, 3.5 s | Needs a letter that has exactly one allowed edit (EditType) so "nothing added" is visible truthfully. |
+| S4 | Review, 3.5 s | Needs a letter with one allowed edit (EditType) so "every change is marked" and "nothing added" are visible truthfully. |
 | S5 | Book/chapter, 3 s | Months with several signed letters; no counts of gaps, no streaks. |
 | S6 | Letter night, 3 s, Read together | Highlight must be real playback of the Asha sample. |
 | S7 | Closing card, 1.5 s | Render from approved lockup, night. |
