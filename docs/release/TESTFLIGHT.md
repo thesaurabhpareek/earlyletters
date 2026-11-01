@@ -181,7 +181,7 @@ In order of speed:
 
 ## What testers get
 
-Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Tonight (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit 2 purchases if step 2.5 is done.
+Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Tonight (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit purchases only through the Xcode StoreKit configuration file, never the sandbox (the products live on the production record, step 2.5).
 
 Build 1 only: no accounts, no sign-in, no sync, no co-parent sharing (the Family tab shows coming soon), no delete-account.
 
