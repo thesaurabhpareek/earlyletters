@@ -112,7 +112,9 @@ export async function buildSupabaseExport(): Promise<Map<string, string>> {
       api[`mailer_subjects_${m.type}`] = subject;
       api[`mailer_templates_${m.type}_content`] = html;
     } else {
-      toml.push(`[auth.email.notification.${m.type}]`, 'enabled = true', `subject = ${tomlString(subject)}`, `content_path = ${tomlString(contentPath)}`, '');
+      // The CLI's Go config loader reads notification content_path relative to supabase/, not the repo root.
+      const notificationPath = `./${relative(join(repoRoot, 'supabase'), file)}`;
+      toml.push(`[auth.email.notification.${m.type}]`, 'enabled = true', `subject = ${tomlString(subject)}`, `content_path = ${tomlString(notificationPath)}`, '');
       api[`mailer_notifications_${m.type}_enabled`] = true;
       api[`mailer_subjects_${m.type}_notification`] = subject;
       api[`mailer_templates_${m.type}_notification_content`] = html;

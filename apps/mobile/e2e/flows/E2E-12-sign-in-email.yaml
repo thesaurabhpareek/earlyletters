@@ -7,7 +7,12 @@
 # device checks (DEVICE_TEST_PLAN S1-06 to S1-09).
 # Link variant: set LINK=1 to open the universal link with the token hash
 # instead of typing the code. It works only when the AASA file is live on
-# earlyletters.com (Apple's CDN serves it to the simulator too).
+# earlyletters.com (Apple's CDN serves it to the simulator too), and only with
+# OTP_SOURCE=mailpit against a local stack that loads our templates (SIGN-02):
+# the link must be the one in the email the app itself asked for, which carries
+# this phone's PKCE challenge. Admin generate_link mints a fresh non-PKCE token
+# (and replaces the app's), whose link the app correctly refuses, so LINK=1 with
+# OTP_SOURCE=admin stops at once with that reason (fetch-otp.js, SIGN-03).
 appId: ${APP_ID}
 name: E2E-12 Sign in with email
 tags:
@@ -71,7 +76,8 @@ env:
           file: ../scripts/fetch-otp.js
           env:
             E2E_EMAIL: ${E2E_EMAIL}
-            OTP_SOURCE: ${OTP_SOURCE || "admin"}
+            OTP_SOURCE: ${OTP_SOURCE || "mailpit"}
+            OTP_PURPOSE: "link"
       - openLink: ${"https://earlyletters.com/auth/callback#token_hash=" + output.tokenHash + "&type=email"}
       - runFlow:
           when:

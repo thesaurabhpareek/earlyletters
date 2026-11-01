@@ -5,7 +5,7 @@
  *
  * An iOS Settings list (components/settings/plan.logic.ts): section Plus with "See what Plus adds" (or, with Plus
  * on, "Plus", its plan and dates) and the registered promise as its footer, once; then Manage subscription (only
- * with a subscription), Restore purchases with its result inline under it, Redeem a code, and the payment line as
+ * with their own subscription, never for Family Sharing), Restore purchases with its result inline under it, Redeem a code, and the payment line as
  * the footer. No lamp. Registered words are today's; the held switches after counsel are `HELD` in plan.logic.ts.
  *
  * Route: /settings/plus.
@@ -17,7 +17,7 @@ import { AppState, Linking, ScrollView, Share, View } from 'react-native';
 import { brand } from '@scribe/brand';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
-import { planScreen, restoreResult } from '@/components/settings/plan.logic';
+import { ownSubscription, planScreen, restoreResult } from '@/components/settings/plan.logic';
 import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import {
@@ -78,7 +78,7 @@ export default function PlanSettings() {
   // Restore's answer, shown under its own row (S41); a failure carries the warning mark.
   const [restored, setRestored] = useState<ReturnType<typeof restoreResult>>(null);
   // Set when Apple's offer code sheet was shown: a redeemed code arrives as an entitlement update,
-  // so Plus turning on afterwards is the redemption (D-081). A number-free event, no code is ever read.
+  // so Plus turning on afterwards is the redemption (D-053, Apple only). A number-free event, no code is ever read.
   const awaitingCode = useRef(false);
 
   useEffect(() => {
@@ -101,7 +101,8 @@ export default function PlanSettings() {
     }
   };
 
-  const ownPurchase = plan.details.ownership === 'purchased' && plan.details.status !== 'none';
+  // Only while the person's own subscription exists: not after an expiry or a refund (SUB-07).
+  const ownPurchase = ownSubscription(plan.details);
   // Plan reminders (G-15, a courtesy): the note open now, and a quiet row when notifications are off.
   const note = usePlanNote(plan);
   const screen = planScreen({

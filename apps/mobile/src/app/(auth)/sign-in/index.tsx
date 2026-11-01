@@ -71,7 +71,7 @@ export default function SignInSheet() {
   useEffect(() => {
     if (signedInAtOpen) return;
     track('auth_sheet_shown', { trigger });
-    // Keep the book after the first letter is this session's one ask (PRD-REQ-001).
+    // Keep the book (second letter, or the first save of a later session; lib/asks) is this session's one ask (PRD-REQ-001).
     if (trigger === 'first_letter') noteAskShown();
   }, [trigger]); // eslint-disable-line react-hooks/exhaustive-deps
 

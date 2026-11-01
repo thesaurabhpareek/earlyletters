@@ -6,8 +6,14 @@
  * Founder decisions (3 Oct 2026) encoded here:
  *  - Subscriptions are Apple only, StoreKit 2 direct. PlanView mirrors what
  *    StoreKit 2 and our server snapshot report; no third-party billing layer.
- *  - Plus is held per account and covers every book where the holder is a
- *    PARENT. Every member of a covered book gets its Plus features there.
+ *  - Plus belongs to the Apple Account that subscribed (Terms 14.12, D-053,
+ *    D-080): it reaches a co-parent only through Apple Family Sharing, which
+ *    arrives on their phone as their own (familyShared) entitlement. One
+ *    parent's Plus never covers another member of a shared book; a co-parent
+ *    outside the Apple family group needs their own subscription. This follows
+ *    D-053 ("A co-parent gets Plus through Family Sharing") and Terms of
+ *    Service 14.12 ("Who Plus covers"); it is not an open choice. TDD 08's
+ *    "another parent's Plus covers the book" (K-28, R-3) is superseded.
  *  - Membership (D-082, D-083, 4 Oct 2026): the first 2 letters kept per
  *    account are free, across every book; after that, keeping another letter
  *    needs Plus. Books are free to start (one pool of letters, not one gate
@@ -94,14 +100,17 @@ export interface DecideInput {
     roleInBook: 'parent' | 'contributor' | null;
     own: PlanView;
   };
-  /** The book this gate is about; null for account-level surfaces. */
-  book: { coveredByOtherParent: boolean } | null;
+  /**
+   * The book this gate is about; null for account-level surfaces. `coveredByOtherParent` is always false: another
+   * parent's Plus never covers this person (Terms 14.12, D-053, D-080); Family Sharing reaches them as `viewer.own`.
+   */
+  book: { coveredByOtherParent: false } | null;
   /** Who asked for a backup upload: a tap, or the background uploader. Defaults to 'user'. */
   initiatedBy?: 'user' | 'background';
 }
 
 export type Decision =
-  | { kind: 'allow'; via: 'plus_own' | 'plus_book' }
+  | { kind: 'allow'; via: 'plus_own' }
   | { kind: 'offer'; trigger: OfferTrigger; needsSignIn: boolean }
   | { kind: 'quiet'; reason: 'contributor' | 'first_run' | 'birthday' | 'free_background' | 'offline' };
 
@@ -186,8 +195,8 @@ export function decideKeepLetter(input: KeepLetterInput): KeepLetterDecision {
 /**
  * Decide the other Plus gates (backup upload, extra themes). The first
  * matching rule wins (TDD 08 2.2):
- *  1. The book has Plus (own Plus while a parent of it, or covered by the
- *     other parent).
+ *  1. Own Plus while a parent of the book (Family Sharing included; never
+ *     another member's Plus, Terms 14.12).
  *  2. backup_upload from the background uploader in a Free book: quiet.
  *  3. Suppressions: first run, birthday, contributor, offline.
  *  4. Otherwise offer, asking to sign in first when signed out.
@@ -195,13 +204,12 @@ export function decideKeepLetter(input: KeepLetterInput): KeepLetterDecision {
  * keep_letter, which has decideKeepLetter); callers treat a throw as quiet.
  */
 export function decide(input: DecideInput): Decision {
-  const { feature, viewer, book } = input;
+  const { feature, viewer } = input;
   if (!isGatedFeature(feature) || feature === 'keep_letter') throw new Error('decide: not a gated feature');
   const ownPlus = planActive(viewer.own, input.now);
 
-  // Plus is per account and covers books where the holder is a parent.
+  // Plus is the person's own (their Apple Account, or Apple Family Sharing), used in books they parent (Terms 14.12).
   if (ownPlus && viewer.roleInBook === 'parent') return { kind: 'allow', via: 'plus_own' };
-  if (book?.coveredByOtherParent) return { kind: 'allow', via: 'plus_book' };
   if (feature === 'backup_upload' && (input.initiatedBy ?? 'user') === 'background') {
     return { kind: 'quiet', reason: 'free_background' };
   }

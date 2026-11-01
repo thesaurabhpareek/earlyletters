@@ -1,5 +1,7 @@
 # TDD 08: Payments and entitlements
 
+> **Superseded in part (31 Oct 2026).** D-053 and D-080 replaced the server entitlement model described here: Plus is checked on the device (StoreKit 2), and it covers only the person who holds it. A co-parent gets Plus only through Apple Family Sharing (Terms 14.12). Rules below that say a book inherits Plus from any parent (K-28, R-3, `book_has_plus`, `coveredByOtherParent`) do not apply to the 1.0 line. The app follows this rule in `packages/core/src/plan.ts` (and `apps/mobile/src/lib/billing/plan.logic.ts`).
+
 Owner: staff engineer, payments and entitlements. Draft 1, 3 Oct 2026. Branch `develop`. Status: for founder, data architect (TDD 02), privacy (TDD 05) and counsel review.
 
 Reads: CLAUDE.md; PRD.md 1.2 (K-04, K-11, K-12, K-28, K-32, PRD-REQ-003, -015, -017, -020); PRD C (C-REQ-020 to -034, C-NFR-001 to -009); ADR 0007; subscription-terms.md 1.2.0; terms-of-service.md section 14; in-app-disclosures.md 1.2.0; memos/lawyer-1.md; ENGINEERING_REQUIREMENTS.md (LEGAL-REQ-029, -033, -046 to -050, -053, -054, -058); DATA_CLASSIFICATION.md; TRACKING_PLAN.md; `apps/mobile/src/lib/store.ts`, `read-together.ts`, `components/child/plus-gate.tsx`, `add-child-form.tsx`; TDD 01, 02, 05.

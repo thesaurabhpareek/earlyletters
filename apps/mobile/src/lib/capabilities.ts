@@ -92,8 +92,8 @@
  *                     environment variables when --environment is passed), not eas.json's
  *                     build profiles; that EAS Update behaviour was not checked against the
  *                     Expo docs. expo-updates is not installed today (docs/release/ENVIRONMENTS.md).
- *                     Production leaves it unset; English only there is a founder call (D-115
- *                     covers the English-only pack release, not this profile).
+ *                     Production sets it on too: the first store build is English only
+ *                     (D-121 item 1; D-124 item 1 lets this line land before the freeze).
  *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */

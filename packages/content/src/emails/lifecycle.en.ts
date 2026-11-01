@@ -22,8 +22,8 @@ export const lifecycleEmails = {
     id: 'welcome-family',
     // No {signsAs} in email: it can carry the child's name ("Asha's Nani"), and email copy never does (rules test).
     subject: "Welcome to the family book",
-    preheader: "{parentName} would love your letters in the book. Here is how to start.",
-    heading: "Your stories belong in this book",
+    preheader: "{parentName} would love your letters in the book. A minute is plenty.",
+    heading: "Your letters belong in this book",
     body: [
       "{parentName} is keeping a book of letters for a child you love, and would like yours in it.",
       `To write, open ${brand.name} and tap the red circle.`,

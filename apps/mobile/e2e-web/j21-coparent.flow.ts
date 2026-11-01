@@ -28,7 +28,7 @@ async function openOn(page: Page, path = '/') {
 
 /** Email sign-in through the mocked server, ending back on the sheet that asked for it. */
 async function signInWithEmail(page: Page, email: string) {
-  await btn(page, 'Continue with email').click();
+  await btn(page, 'Sign in with email').click();
   await page.getByLabel('Email', { exact: true }).fill(email);
   await btn(page, 'Send link').click();
   await page.getByLabel('Code', { exact: true }).fill('123456');
@@ -218,7 +218,7 @@ test('[J21f] invitee: a server that does not answer is said plainly, and Try aga
   await btn(app, 'Continue').click();
   await btn(app, 'Sign in').click();
   await signInWithEmail(app, 'papa@example.invalid');
-  await expect(app.getByText('That did not work this time. Try again.')).toBeVisible();
+  await expect(app.getByText('That did not go through. Try again.')).toBeVisible();
   down = false;
   await btn(app, 'Try again').click();
   await expect(app.getByText('Invited by Mama')).toBeVisible();

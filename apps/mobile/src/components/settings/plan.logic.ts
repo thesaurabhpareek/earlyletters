@@ -68,6 +68,15 @@ export function subscriptionExists(status: PlanDetails['status']): boolean {
   return status === 'trial' || status === 'active' || status === 'grace' || status === 'billing_retry';
 }
 
+/**
+ * The person's own subscription, which Apple lets them manage and ask a refund for (SUB-07): their own purchase
+ * (not Family Sharing) that still exists. After an expiry or a refund (`expired`, `revoked`) Apple has nothing to
+ * refund, so the refund and save-a-copy rows go away instead of doing nothing.
+ */
+export function ownSubscription(details: Pick<PlanDetails, 'status' | 'ownership'>): boolean {
+  return details.ownership === 'purchased' && subscriptionExists(details.status);
+}
+
 export type PlanScreen = {
   /** The first row when there is a status to say: "Plus", its sentences and the plan's name. Null when Plus is off. */
   status: { title: string; subtitle: string | null; value: string | null } | null;
@@ -114,7 +123,9 @@ export function planScreen(input: {
     status,
     seePlans,
     promise: billingCopy.store.promise,
-    manage: subscriptionExists(input.details.status),
+    // A Family Sharing member cannot change or cancel the organiser's plan in Apple's screen (SUB-08), so Manage is
+    // shown only for the person's own subscription; the status row already says it is shared with them.
+    manage: subscriptionExists(input.details.status) && input.details.ownership !== 'familyShared',
     redeem: !input.plusOn && available,
   };
 }

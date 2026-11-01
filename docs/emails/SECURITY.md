@@ -97,6 +97,8 @@ Facts (Resend API, read-only; DNS via `dns.google`):
 
 ### 3.3 PKCE: where it helps and where it does not
 
+**Superseded (SIGN-11, 31 Oct 2026):** ADR 0023 and BL-347 chose PKCE for email: the link is bound to the phone that asked (Keychain pending note plus `exchangeCodeForSession`), and the 6-digit code in the same email works on any device. The analysis below is kept as history.
+
 - `{{ .ConfirmationURL }}` plus PKCE (`flowType: 'pkce'`): Supabase redirects to `redirect_to?code=...`, and only the device holding the code verifier can exchange the code. That binds the link to the requesting phone, which blocks a stolen link on another device. But (a) the token is still spent by a scanner's GET before the person taps, and (b) it breaks the cross-device case that D-044 and PRD A F5.5 require. Rejected for email.
 - `token_hash` plus `verifyOtp` (chosen): prefetch-safe as long as no web page verifies, works on any device. Device binding is lost, but the 6-digit code in the same email is not device-bound either, so PKCE would not have raised the bar for an attacker who reads the email.
 - Supabase documents that a PKCE-flow project should put `{{ .TokenHash }}` in the template and call `verifyOtp({ token_hash, type: 'email' })` (Fact, `auth-email-passwordless`). Whether a PKCE-flow token hash can be verified on a device that did not start the flow is **UNVERIFIED**. Rec: initialise supabase-js in the app with `flowType: 'pkce'` (needed later for Android Apple OAuth), and add acceptance check "link requested on phone A, tapped on phone B" to `supabase/auth-email.md` section 8 before relying on cross-device links. If it fails, the code path still works.
@@ -115,7 +117,7 @@ Arithmetic for one targeted address, attacker using N distinct IPs, each at the 
 | 8 digits, 1 hour | 139,000 IPs |
 | 8 digits, 15 minutes | 556,000 IPs |
 
-**Rec for v1.0:** length **6** (D-044, brief), expiry **900 s**, so copy `{expiresIn}` is "15 minutes" (C1 placeholder; D2 export). This is a 4x reduction at zero UX cost for the normal path (auth email p90 30 s, A-NFR-004), and the expired path has its own email (`sign-in-trouble`). It amends PRD A F4's "expire in 1 hour" and A-REQ-018: **founder OK needed (Q2)**. Open question carried from TDD 04 OQ-S1: 8 digits is a config switch plus copy; it costs typing effort for grandparents. Rec: stay at 6 unless detection (below) ever fires.
+**Rec for v1.0:** length **6** (D-044, brief), expiry **900 s**, so copy `{expiresIn}` is "15 minutes" (C1 placeholder; D2 export). This is a 4x reduction at zero UX cost for the normal path (auth email p90 30 s, A-NFR-004). The expired path is "Send a new email" in the app, which sends a fresh `sign-in-link`; `sign-in-trouble` is deferred and sends nothing (SIGN-05). It amends PRD A F4's "expire in 1 hour" and A-REQ-018: **founder OK needed (Q2)**. Open question carried from TDD 04 OQ-S1: 8 digits is a config switch plus copy; it costs typing effort for grandparents. Rec: stay at 6 unless detection (below) ever fires.
 
 Layered controls (from TDD 04 3.1.4, kept): app-side lockout copy after 5 wrong codes (`auth.code.pause`, honest users only); a scheduled job that reads Auth logs for verify failures grouped by a hash of the email and pages the founder above 20 per address per hour, then `auth.admin.signOut(user, 'global')`; CAPTCHA on code **requests** if the public link launches (Q3).
 

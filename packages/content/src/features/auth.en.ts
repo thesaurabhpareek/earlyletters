@@ -34,8 +34,9 @@ export const authCopy = {
       sign_in: 'Sign in the same way as last time to see every letter.',
       settings: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
     },
-    google: 'Continue with Google',
-    email: 'Continue with email',
+    // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
+    google: 'Sign in with Google',
+    email: 'Sign in with email',
     passkey: 'Use a passkey',
     later: 'Not now',
     // Registered (in-app-disclosures.md 3a): word for word. Counsel's proposed line is C6.
@@ -54,7 +55,7 @@ export const authCopy = {
   },
 
   email: {
-    title: 'Continue with email',
+    title: 'Sign in with email',
     label: 'Email',
     placeholder: 'you@example.com',
     help: 'A link and a code arrive by email. No password to remember.',
@@ -82,7 +83,8 @@ export const authCopy = {
      * only typing a code is paused; the newest email's link still signs in (as `errors.wrong_code` says, the newest
      * email is the one that counts), and so do Apple and Google. Calm facts, no count of minutes left.
      */
-    pausedOtherWays: 'The link in the newest email still works, and so does signing in with Apple or Google.',
+    // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
+    pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
   },
 
   verify: {
@@ -117,16 +119,24 @@ export const authCopy = {
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Your letters are safe. You can try a code again in 15 minutes.',
-    rate_limited: 'Your letters are safe. Sign-in emails are paused for an hour. Use Apple or Google, or try again later.',
+    // SIGN-01. A 429 has more than one cause (the per-address wait between emails, the project's hourly email cap, the
+    // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
+    // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
+    // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
+    email_wait: "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    rate_limited: 'Your letters are safe. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
     not_available: "Your letters are safe. This way of signing in isn't available right now. Try another way.",
-    provider: 'Your letters are safe. That did not work this time. Try again, or try another way.',
+    provider: 'Your letters are safe. That sign-in did not finish. Try again, or try another way.',
     session_expired: 'Your letters are safe on this phone. Sign in again to keep sharing them.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
-    unknown: 'That did not work this time. Your letters are safe on this phone.',
+    unknown: 'That did not go through. Your letters are safe on this phone.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
+    // SIGN-06: the same refusal, reached after the link was already checked with the server (verify started), so the
+    // email's code may be spent too. Points to a new email, which always works, instead of the code.
+    other_phone_spent: 'This link was opened on a different phone. Send a new email, then use the link or code from it.',
     // Any account, this one included. Sign-out drops this phone's pending request, so the same link
     // never works after it; the code from the email does.
     already_signed_in: "You're already signed in on this phone. To use another account, sign out, then type the code from the email.",
@@ -194,9 +204,9 @@ export const authCopy = {
     passkeyFallbackName: 'Passkey',
     removePasskey: 'Remove',
     removePasskeyTitle: 'Remove this passkey?',
-    removePasskeyBody: 'You can still sign in with Apple, Google or email.',
+    removePasskeyBody: 'You can still sign in another way.',
     devicesTitle: 'Devices',
-    signOutOthers: 'Sign out of other devices',
+    signOutOthers: 'Sign out other devices',
     signOutOthersHelp: 'Other phones signed in to this account will need to sign in again.',
     signOutOthersDone: 'Other devices are signed out.',
     signOut: 'Sign out',

@@ -246,11 +246,11 @@ describe('[S59] failures are said plainly, and the person can always go on', () 
     expect(sheet).not.toMatch(/invite-redeem|functions\/v1|normaliseInviteCode|isInviteCode/);
   });
 
-  it('a server that does not answer (a 503, no SQLSTATE) is not final: "That did not work this time. Try again." and the link is kept', () => {
+  it('a server that does not answer (a 503, no SQLSTATE) is not final: "That did not go through. Try again." and the link is kept', () => {
     const unavailable = { message: 'Service Unavailable', code: '', details: null, hint: null, status: 503 };
     expect(inviteErrorKind(unavailable)).toBe('unknown');
     expect(FINAL_INVITE_ERRORS).not.toContain('unknown');
-    expect(joinFailure('unknown')).toEqual({ line: 'That did not work this time. Try again.', action: 'tryAgain' });
+    expect(joinFailure('unknown')).toEqual({ line: 'That did not go through. Try again.', action: 'tryAgain' });
     expect(joinPlan({ ...BASE, signedIn: true, error: 'unknown' })).toEqual({ view: 'failed', next: 'none' });
   });
 
