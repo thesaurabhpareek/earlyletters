@@ -26,7 +26,7 @@ Some compliance code cannot live in this folder, because its tools look elsewher
 ## Who may change protected paths
 Assigned agents (`FENCE.json`): `regulatory-affairs` (owner), `compliance-engineer`, `security-architect`, `data-architect`. A PR that touches a protected path needs:
 1. The label `agent:<handle>` for one of them. An interactive session working as one of these agents labels its PR the same way.
-2. Two comments from the repository owner's login (never a bot, so an unattended agent cannot approve its own PR), each with one line on its own naming the PR's current head commit:
+2. Two comments from the repository owner's login (never a bot, so an unattended agent cannot approve its own PR), each with one line on its own naming the PR's current head commit. The line may start with up to three spaces, as a Markdown heading may; four spaces or a tab make it a code block, and it does not count (CR-38):
    - `## CCO approval at <40-hex head sha>: APPROVED (CCO-<n>)`, posted by the Chief Compliance Officer after the compliance checklist below, with its ruling in `docs/agents/exec/RULINGS.md`;
    - `## Karma approval at <40-hex head sha>: APPROVED (CR-<n>)`, posted by Karma after the engineering checklist.
 3. Any new push invalidates both. They re-check and approve the new head.
