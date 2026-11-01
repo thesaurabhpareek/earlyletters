@@ -1,21 +1,23 @@
 /**
  * Licence notices for the shipped app, pure parts. The CLI is generate.mjs; the freshness
  * test is apps/mobile/test/licences.test.ts, which imports from here so the generator and the
- * test agree on what "the production dependency set" is.
+ * test agree on what ships.
  *
  * MIT, BSD, Apache and ISC all ask that the copyright and permission notice travel with the
- * code, so the app ships the LICENSE (and NOTICE) text of every production package, every
- * bundled font and every third-party native module, grouped by licence.
+ * code, so the app shows the LICENSE (and NOTICE) text of every npm package in the iOS binary,
+ * every bundled font, every native library compiled in, and every downloaded model, grouped by
+ * what it does for the parent (components.mjs THEMES).
  *
- * The production set is read from package-lock.json alone (no npm, no node_modules), so the
- * test can prove freshness in CI from the lockfile. The generator cross-checks that walk
- * against `npm ls --omit=dev --all` and stops if they disagree.
+ * What ships is decided in components.mjs and checked against package-lock.json alone (no npm,
+ * no node_modules), so the test proves it in CI. Build tools, web-only and type packages in the
+ * production tree are left out there, each with its reason. The generator also cross-checks the
+ * lockfile walk against `npm ls --omit=dev --all` and stops if they disagree.
  */
 import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
-/** @typedef {'library' | 'font' | 'native' | 'data' | 'vendored'} NoticeKind */
+/** @typedef {'library' | 'font' | 'native' | 'data' | 'vendored' | 'model' | 'artwork'} NoticeKind */
 /**
  * @typedef {object} LockPackage
  * @property {string} name     package name (aliases resolve to the real name)
@@ -79,7 +81,8 @@ export const EXPECTED_LICENCES = new Set([
   'Unlicense',
   'CC0-1.0',
   'OFL-1.1',
-  'Python-2.0',
+  'BSL-1.0',
+  'blessing',
   'MIT AND Apache-2.0',
   '(MIT OR Apache-2.0)',
   '(MIT OR CC0-1.0)',
@@ -98,6 +101,8 @@ const NAMES = {
   'CC-BY-4.0': 'Creative Commons Attribution 4.0',
   'MPL-2.0': 'Mozilla Public License 2.0',
   'OFL-1.1': 'SIL Open Font License 1.1',
+  'BSL-1.0': 'Boost Software License 1.0',
+  blessing: 'Public domain (SQLite blessing)',
   'Python-2.0': 'Python Software Foundation License 2.0',
   'GPL-2.0': 'GNU General Public License 2.0',
   'LGPL-3.0': 'GNU Lesser General Public License 3.0',
@@ -515,20 +520,174 @@ function byNameVersion(a, b) {
   return a.name.localeCompare(b.name, 'en') || (a.version ?? '').localeCompare(b.version ?? '', 'en', { numeric: true });
 }
 
+
 /**
- * The generated file: entries grouped by licence (largest group first), each entry pointing
- * at its notice in `texts` (identical texts are stored once).
- * @param {{ entries: NoticeInput[], dependencyHash: string }} input
+ * The npm packages in the iOS binary, read from package-lock.json and the table in components.mjs.
+ * Walks production edges (dependencies, optional, peer) from the app and through our own
+ * workspaces, descending only into PACKAGES. Every package met is either in PACKAGES (listed) or
+ * NOT_SHIPPED (left out, with a reason); anything else is `undecided`. Names in PACKAGES or keys
+ * in NOT_SHIPPED that the walk never meets come back too, so the table cannot keep stale rows.
+ * Host-specific build binaries are skipped (never in the app).
+ * @param {{ packages: Record<string, any> }} lock
+ * @param {{ packages: Record<string, string>, notShipped: Record<string, string>, workspace?: string }} table
  */
-export function buildNotices({ entries, dependencyHash: hash }) {
-  /** @type {Map<string, { id: string, name: string, entries: NoticeInput[] }>} */
-  const groups = new Map();
-  for (const e of entries) {
-    const id = e.licence ?? UNKNOWN;
-    if (!groups.has(id)) groups.set(id, { id, name: licenceName(id), entries: [] });
-    /** @type {any} */ (groups.get(id)).entries.push(e);
+export function shippedFromLock(lock, { packages: listed, notShipped, workspace = APP_WORKSPACE }) {
+  if (!lock || typeof lock !== 'object' || !lock.packages) throw new Error('not a lockfile v2 or v3: no "packages" map');
+  const P = lock.packages;
+  if (!P[workspace]) throw new Error(`the lockfile has no workspace entry for ${workspace}`);
+  /** @type {Map<string, LockPackage & { theme: string }>} */
+  const shipped = new Map();
+  /** @type {Map<string, Set<string>>} undecided name@version, from which dependents */
+  const undecided = new Map();
+  const metListed = new Set();
+  const metExcluded = new Set();
+  const visited = new Set();
+  const queue = [workspace];
+  while (queue.length) {
+    const from = /** @type {string} */ (queue.shift());
+    if (visited.has(from)) continue;
+    visited.add(from);
+    const pkg = P[from];
+    const bundled = new Set([...(pkg.bundleDependencies ?? []), ...(pkg.bundledDependencies ?? [])]);
+    const edges = [
+      ...Object.keys(pkg.dependencies ?? {}).map((n) => ({ name: n, optional: false })),
+      ...Object.keys(pkg.optionalDependencies ?? {}).map((n) => ({ name: n, optional: true })),
+      ...Object.keys(pkg.peerDependencies ?? {}).map((n) => ({ name: n, optional: true })),
+    ];
+    for (const edge of edges) {
+      if (bundled.has(edge.name)) continue;
+      const key = resolveFrom(P, from, edge.name);
+      if (!key) {
+        if (edge.optional) continue;
+        throw new Error(`${from || 'the root'} depends on ${edge.name}, which the lockfile does not resolve`);
+      }
+      const entry = P[key];
+      if (entry.link) {
+        if (!P[entry.resolved]) throw new Error(`${key} links to ${entry.resolved}, which the lockfile does not have`);
+        queue.push(entry.resolved);
+        continue;
+      }
+      if (Array.isArray(entry.os) || Array.isArray(entry.cpu)) continue;
+      const name = entry.name ?? edge.name;
+      const id = `${name}@${entry.version}`;
+      if (Object.hasOwn(notShipped, id)) {
+        metExcluded.add(id);
+        continue;
+      }
+      if (Object.hasOwn(notShipped, name)) {
+        metExcluded.add(name);
+        continue;
+      }
+      if (Object.hasOwn(listed, name)) {
+        metListed.add(name);
+        if (!shipped.has(key)) {
+          shipped.set(key, {
+            name,
+            version: entry.version,
+            path: key,
+            licence: typeof entry.license === 'string' && entry.license ? entry.license : null,
+            optional: !!entry.optional,
+            hostSpecific: false,
+            theme: listed[name],
+          });
+        }
+        queue.push(key);
+        continue;
+      }
+      if (!undecided.has(id)) undecided.set(id, new Set());
+      /** @type {Set<string>} */ (undecided.get(id)).add(P[from]?.name ?? from.split('node_modules/').pop() ?? from);
+    }
   }
-  const ordered = [...groups.values()].sort((a, b) => b.entries.length - a.entries.length || a.id.localeCompare(b.id, 'en'));
+  return {
+    /** One per lockfile path; shippedPackages() folds identical name@version copies. */
+    shipped,
+    undecided: [...undecided].map(([id, from]) => ({ id, from: [...from].sort() })).sort((a, b) => a.id.localeCompare(b.id, 'en')),
+    unreached: Object.keys(listed).filter((n) => !metListed.has(n)).sort(),
+    staleExclusions: Object.keys(notShipped).filter((k) => !metExcluded.has(k)).sort(),
+  };
+}
+
+/**
+ * Packages the bundler writes into every bundle (components.mjs INJECTED), resolved in the lockfile
+ * through the build packages named in `via`.
+ * @param {{ packages: Record<string, any> }} lock
+ * @param {{ name: string, via: string[], theme: string }[]} injected
+ * @returns {(LockPackage & { theme: string })[]}
+ */
+export function injectedPackages(lock, injected) {
+  return injected.map((inj) => {
+    let at = '';
+    for (const step of [...inj.via, inj.name]) {
+      const key = resolveFrom(lock.packages, at, step);
+      if (!key) throw new Error(`INJECTED ${inj.name}: ${step} does not resolve from ${at || 'the root'} in the lockfile; update scripts/licences/components.mjs`);
+      at = key;
+    }
+    const e = lock.packages[at];
+    return { name: inj.name, version: e.version, path: at, licence: typeof e.license === 'string' && e.license ? e.license : null, optional: false, hostSpecific: false, theme: inj.theme };
+  });
+}
+
+/**
+ * The problems in a shippedFromLock result, as sentences, or [] when the table matches the lockfile.
+ * @param {ReturnType<typeof shippedFromLock>} r
+ */
+export function tableProblems(r) {
+  const out = [];
+  for (const u of r.undecided) out.push(`${u.id} (needed by ${u.from.join(', ')}) is in the app's production tree but neither in PACKAGES (ships, with a theme) nor NOT_SHIPPED (with a reason) in scripts/licences/components.mjs`);
+  for (const n of r.unreached) out.push(`${n} is in PACKAGES in scripts/licences/components.mjs but the app no longer depends on it: remove it`);
+  for (const n of r.staleExclusions) out.push(`${n} is in NOT_SHIPPED in scripts/licences/components.mjs but nothing shipped depends on it any more: remove it`);
+  return out;
+}
+
+/**
+ * The copyright lines of a notice: lines that start with "Copyright" followed by a year, (c), ©
+ * or a name, de-duplicated, in order, before any notice for a bundled sub-component. The Apache
+ * template's "Copyright [yyyy] [name...]" is not one.
+ * Read from the text, never written: null when the text names none.
+ * @param {string | null} text
+ * @returns {string | null}
+ */
+export function copyrightOf(text) {
+  if (!text) return null;
+  // Notices for bundled sub-components follow a rule of = signs or "Files in x licensed as follows": the row names the component's own.
+  const own = text.split(/^(?:={10,}|Files in .* licensed as follows)\s*$/m)[0];
+  const lines = own
+    .split('\n')
+    .map((l) => l.replace(/^[\s*#/]+/, '').trim())
+    .filter((l) => /^copyright\b/i.test(l) && !/\[/.test(l) && !/^copyright (notice|holders?|owner|and|license|statement|law)/i.test(l) && /^copyright\s*(\(c\)|©|\d{4}|[A-Z])/i.test(l));
+  const unique = [...new Set(lines)];
+  return unique.length ? unique.join('\n') : null;
+}
+
+/**
+ * The non-npm components (components.mjs NON_NPM) with their licence texts read from third-party/.
+ * @param {string} dir  absolute path of scripts/licences/third-party
+ * @param {import('./components.mjs').NonNpm[]} list
+ */
+export function nonNpmEntries(dir, list) {
+  return list.map((c) => {
+    const path = join(dir, c.file);
+    if (!existsSync(path)) throw new Error(`${c.name}: its licence text ${c.file} is missing from scripts/licences/third-party`);
+    return { name: c.name, ...(c.version ? { version: c.version } : {}), kind: c.kind, licence: c.licence, text: normaliseText(readFileSync(path, 'utf8')), theme: c.theme };
+  });
+}
+
+/**
+ * An entry needs a person to look at it when its licence is not stated or not one we expect, or
+ * when a licence that asks for its notice to travel has no text to show.
+ * @param {{ licence: string | null, text: string | null }} e
+ */
+export function needsReview(e) {
+  if (!e.licence || !EXPECTED_LICENCES.has(e.licence)) return true;
+  return e.text === null && e.licence !== 'CC0-1.0' && e.licence !== 'Unlicense' && e.licence !== 'blessing';
+}
+
+/**
+ * The generated file: one group per theme in THEMES order, entries in name order, each with its
+ * licence, copyright line and notice (identical texts stored once).
+ * @param {{ entries: (NoticeInput & { theme: string })[], dependencyHash: string, themes: readonly string[] }} input
+ */
+export function buildNotices({ entries, dependencyHash: hash, themes }) {
   /** @type {string[]} */
   const texts = [];
   const index = new Map();
@@ -540,21 +699,30 @@ export function buildNotices({ entries, dependencyHash: hash }) {
     }
     return index.get(text);
   };
-  const licences = ordered.map((g) => ({
-    id: g.id,
-    name: g.name,
-    entries: g.entries.sort(byNameVersion).map((e) => ({
-      name: e.name,
-      ...(e.version ? { version: e.version } : {}),
-      kind: e.kind,
-      text: textId(e.text),
-      ...(e.noticeFrom ? { noticeFrom: e.noticeFrom } : {}),
-    })),
-  }));
+  for (const e of entries) if (!themes.includes(e.theme)) throw new Error(`${e.name} has theme "${e.theme}", which is not in THEMES`);
+  const groups = themes
+    .map((id) => ({
+      id,
+      entries: entries
+        .filter((e) => e.theme === id)
+        .sort(byNameVersion)
+        .map((e) => ({
+          name: e.name,
+          ...(e.version ? { version: e.version } : {}),
+          kind: e.kind,
+          licence: e.licence ?? UNKNOWN,
+          licenceName: e.licence ? licenceName(e.licence) : UNKNOWN,
+          copyright: copyrightOf(e.text),
+          text: textId(e.text),
+          ...(e.noticeFrom ? { noticeFrom: e.noticeFrom } : {}),
+          ...(needsReview(e) ? { review: true } : {}),
+        })),
+    }))
+    .filter((g) => g.entries.length > 0);
   return {
-    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of ${APP_WORKSPACE}), packages/design-tokens/fonts, apps/mobile/modules, packs and ${SHIMS}. After any dependency change run: ${COMMAND}`,
+    $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json and scripts/licences/components.mjs (what ships in the iOS app, by theme), packages/design-tokens/fonts, apps/mobile/modules, packs and ${SHIMS}. After any dependency change run: ${COMMAND}`,
     dependencyHash: hash,
-    licences,
+    themes: groups,
     texts,
   };
 }
@@ -563,50 +731,65 @@ export function buildNotices({ entries, dependencyHash: hash }) {
 export const serialise = (notices) => `${JSON.stringify(notices, null, 2)}\n`;
 
 /**
- * Everything the generated file is made from, read from a repo root: the lockfile's production
- * set, each package's notice in node_modules, the fonts, the native modules, packs/ and the
- * vendored files. generate.mjs writes or checks `json`; the tests run it on fixture repos to
- * prove that a change to any of those sources changes the file. Throws on anything the file
- * cannot be made from (an unresolvable lockfile, a font without its licence, a credited shim not
- * in VENDORED, a vendored file that no longer matches its notice).
+ * Everything the generated file is made from, read from a repo root. generate.mjs writes or
+ * checks `json`; the tests run it on fixture repos. Throws on anything the file cannot be made
+ * from: a lockfile the table does not match, a font without its licence, a credited shim not in
+ * VENDORED, a vendored file that no longer matches its notice, a missing third-party text.
  * @param {string} repo  absolute repo root
- * @param {{ vendored?: typeof VENDORED }} [options]
+ * @param {{ vendored?: typeof VENDORED, table?: { packages: Record<string, string>, notShipped: Record<string, string>, nonNpm: import('./components.mjs').NonNpm[], themes: readonly string[], upstreamNotices?: Record<string, { file: string, source: string }>, injected?: { name: string, via: string[], theme: string }[] }, thirdPartyDir?: string }} options
  */
-export function deriveNotices(repo, { vendored: vendoredList = VENDORED } = {}) {
+export function deriveNotices(repo, { vendored: vendoredList = VENDORED, table, thirdPartyDir } = {}) {
+  if (!table) throw new Error('deriveNotices needs the components table (scripts/licences/components.mjs)');
   const lock = JSON.parse(readFileSync(join(repo, 'package-lock.json'), 'utf8'));
   const all = productionPackages(lock, APP_WORKSPACE);
-  const shipped = shippedPackages(all);
   const hostSpecific = [...all.values()].filter((p) => p.hostSpecific);
   const own = workspaceNames(lock);
+  const walk = shippedFromLock(lock, { packages: table.packages, notShipped: table.notShipped });
+  const problems = tableProblems(walk);
+  if (problems.length) throw new Error(`what ships in the app is not decided for every package:\n  ${problems.join('\n  ')}`);
+  for (const p of injectedPackages(lock, table.injected ?? [])) walk.shipped.set(p.path, p);
+  const shipped = shippedPackages(walk.shipped);
+  const themeOf = new Map([...walk.shipped.values()].map((p) => [p.name, p.theme]));
   const hash = dependencyHash(shipped);
 
-  const libraries = inheritNotices(
-    shipped.map((p) => {
-      const pkgPath = join(repo, p.path, 'package.json');
-      const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, 'utf8')) : {};
-      return {
-        name: p.name,
-        version: p.version,
-        kind: /** @type {const} */ ('library'),
-        licence: p.licence,
-        text: licenceText(join(repo, p.path)),
-        repository: normaliseRepository(pkg.repository),
-      };
-    }),
-  );
+  // Texts are read across the whole production tree, so a package without its own licence file can
+  // still take its monorepo's notice from a sibling that does not ship (inheritNotices).
+  const shippedIds = new Set(dependencyIds(shipped));
+  const candidates = shippedPackages(all).filter((p) => !shippedIds.has(`${p.name}@${p.version}`));
+  const read = (/** @type {LockPackage} */ p) => {
+    const pkgPath = join(repo, p.path, 'package.json');
+    const pkg = existsSync(pkgPath) ? JSON.parse(readFileSync(pkgPath, 'utf8')) : {};
+    return { name: p.name, version: p.version, kind: /** @type {const} */ ('library'), licence: p.licence, text: licenceText(join(repo, p.path)), repository: normaliseRepository(pkg.repository) };
+  };
+  const pool = inheritNotices([...shipped.map(read), ...candidates.map(read)]);
+  const tpDir = thirdPartyDir ?? join(repo, 'scripts', 'licences', 'third-party');
+  const upstream = table.upstreamNotices ?? {};
+  const libraries = pool.slice(0, shipped.length).map((e) => {
+    const u = e.text === null ? upstream[e.name] : undefined;
+    const filled = u ? { text: normaliseText(readFileSync(join(tpDir, u.file), 'utf8')), noticeFrom: u.source } : {};
+    return { ...e, ...filled, theme: /** @type {string} */ (themeOf.get(e.name)) };
+  });
+  for (const name of Object.keys(upstream)) {
+    const e = pool.slice(0, shipped.length).find((x) => x.name === name);
+    if (!e) throw new Error(`${name} is in UPSTREAM_NOTICES (scripts/licences/components.mjs) but does not ship: remove it`);
+    if (e.text !== null) throw new Error(`${name} now ships its own licence file: remove it from UPSTREAM_NOTICES (scripts/licences/components.mjs)`);
+  }
+
   const fontsDir = join(repo, 'packages', 'design-tokens', 'fonts');
-  const fonts = existsSync(fontsDir) ? fontEntries(fontsDir) : [];
+  const fonts = (existsSync(fontsDir) ? fontEntries(fontsDir) : []).map((e) => ({ ...e, theme: 'look' }));
   const modulesDir = join(repo, APP_WORKSPACE, 'modules');
-  const native = existsSync(modulesDir) ? nativeModuleEntries(modulesDir) : { entries: [], own: [] };
-  const data = packDataEntries(join(repo, 'packs'));
-  const listed = new Set(vendoredList.map((v) => v.file));
-  const unlisted = creditedFiles(join(repo, SHIMS)).filter((f) => !listed.has(`${SHIMS}/${f}`));
+  const nativeRaw = existsSync(modulesDir) ? nativeModuleEntries(modulesDir) : { entries: [], own: [] };
+  const native = { own: nativeRaw.own, entries: nativeRaw.entries.map((e) => ({ ...e, theme: 'other' })) };
+  const data = packDataEntries(join(repo, 'packs')).map((e) => ({ ...e, theme: 'other' }));
+  const listedShims = new Set(vendoredList.map((v) => v.file));
+  const unlisted = creditedFiles(join(repo, SHIMS)).filter((f) => !listedShims.has(`${SHIMS}/${f}`));
   if (unlisted.length) {
     throw new Error(`${unlisted.map((f) => `${SHIMS}/${f}`).join(', ')} credit third-party code but are not in VENDORED (scripts/licences/lib.mjs). Add them, with the package whose licence file carries their notice.`);
   }
-  const vendored = vendoredEntries(repo, lock, vendoredList);
+  const vendored = vendoredEntries(repo, lock, vendoredList).map((e) => ({ ...e, theme: 'other' }));
+  const thirdParty = nonNpmEntries(tpDir, table.nonNpm);
 
-  const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored];
-  const notices = buildNotices({ entries, dependencyHash: hash });
-  return { lock, all, shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, entries, notices, json: serialise(notices) };
+  const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored, ...thirdParty];
+  const notices = buildNotices({ entries, dependencyHash: hash, themes: table.themes });
+  return { lock, all, walk, shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, thirdParty, entries, notices, json: serialise(notices) };
 }

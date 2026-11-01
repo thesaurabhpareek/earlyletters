@@ -1,80 +1,69 @@
 /**
- * Licence notices for every bundled library, font and vendored file, for the Licenses page
- * (EXPERIENCE_PASS_2026-10, package P6: apps/mobile/src/app/settings/licenses.tsx). MIT, BSD,
- * Apache and ISC ask for the notice to ship with the code; this is where the app gets it.
+ * Licence notices for everything in the iOS app, for the Licenses page
+ * (apps/mobile/src/app/settings/licenses.tsx). MIT, BSD, Apache and ISC ask for the notice to ship
+ * with the code; this is where the app gets it.
  *
  * The data is src/generated/licences.json, made by `npm run licences:generate -w @scribe/mobile`
- * after any dependency change (scripts/licences/generate.mjs). test/licences.test.ts runs the
- * generator's `--check`, so `npm test` fails while that file is missing, stale or edited by hand.
+ * (scripts/licences/generate.mjs) from package-lock.json and the table of what ships
+ * (scripts/licences/components.mjs): the npm packages in the iOS binary (not build tools, web-only
+ * or type packages), the native libraries compiled in, the fonts, the icon artwork and the speech
+ * models the app downloads. test/licences.test.ts runs the generator's `--check`, so `npm test`
+ * fails while that file is missing, stale or edited by hand, or while a shipped package has no theme.
  *
- * What a page should show:
- * - `handKeptSections`: the hand-kept credits from packages/content (speech models, the Phosphor
- *   icon artwork) with every item the generated list already carries taken out, so nothing is
- *   listed twice. The fonts come from the generated list, with the OFL text their licence asks
- *   for; content's Fonts section drops out here. Content can retire it once the Settings home
- *   accordion that still reads `licences.sections` is gone (P6).
- * - `licences.packs` from packages/content: the language pack attributions, word for word.
- * - `notices`: each group's `name` as a heading (largest group first), each entry's name and
- *   version, and its notice (`noticeText`) word for word. An entry with no text was published
- *   without a licence file: show its name and licence only. A group with id `UNKNOWN` (none
- *   today) states no licence; take its heading from packages/content, not from `name`.
- * Headings and every other word of copy come from packages/content. Several hundred entries and
- * about 570 KB of text: use a virtualised list and open one notice at a time. This module parses
- * the JSON when it is first imported, so import it from the Licenses page only (or require it
- * lazily there) to keep it off cold start.
+ * What a page should show: each theme in order, its title and line from packages/content
+ * (`licences.themes[id]`), then one row per entry (name and licence name); a row opens to its
+ * version, copyright lines and full notice. Every word of copy comes from packages/content, except
+ * each licence's own name and each component's name, version and copyright, which are the authors'.
+ * This module parses the JSON when it is first imported, so require it lazily from the Licenses page.
  */
-import { licences } from '@scribe/content';
 import raw from '../generated/licences.json';
 
-/** `vendored`: third-party code adapted into our own file (shims/), credited to the package it came from. */
-export type NoticeKind = 'library' | 'font' | 'native' | 'data' | 'vendored';
+/** `vendored`: third-party code inside another component; `model`: a downloaded speech model; `artwork`: the icon drawings. */
+export type NoticeKind = 'library' | 'font' | 'native' | 'data' | 'vendored' | 'model' | 'artwork';
+
+/** The theme ids, in page order (scripts/licences/components.mjs THEMES). */
+export type ThemeId = 'speech' | 'recording' | 'look' | 'framework' | 'storage' | 'account' | 'other';
 
 export interface NoticeEntry {
   name: string;
-  /** npm packages, native modules and vendored files have one; fonts do not. */
+  /** Fonts have none. Native pods resolved at build time show the major version range, e.g. "9.x". */
   version?: string;
   kind: NoticeKind;
-  /** Index into `Notices.texts`, or null when the package is published without a licence file. */
+  /** SPDX id or expression, e.g. "MIT"; `UNKNOWN` when none is stated. */
+  licence: string;
+  /** In plain words, e.g. "MIT License". The authors' name for their licence, not product copy. */
+  licenceName: string;
+  /** The copyright lines read from the notice, or null when it names none. */
+  copyright: string | null;
+  /** Index into `Notices.texts`, or null when no text exists (flagged `review` by the generator). */
   text: number | null;
-  /** Where the text was read from when not the entry's own folder: a sibling in the same repository, or the package vendored code came from. */
+  /** Where the text was read from when not the entry's own folder. */
   noticeFrom?: string;
+  /** The generator could not confirm the licence or its text; listed so a person looks at it. */
+  review?: true;
 }
 
 export interface NoticeGroup {
-  /** SPDX id or expression, e.g. "MIT" or "(MIT OR CC0-1.0)"; `UNKNOWN` when none is stated. */
-  id: string;
-  /** In plain words, e.g. "MIT License". The authors' name for their licence, not product copy. */
-  name: string;
+  id: ThemeId;
   entries: NoticeEntry[];
 }
 
 export interface Notices {
-  /** SHA-256 of the production dependency set the file was made from. */
+  /** SHA-256 of the npm packages in the iOS binary the file was made from. */
   dependencyHash: string;
-  /** Largest group first; entries in name order. */
-  licences: NoticeGroup[];
+  /** In theme order; entries in name order. */
+  themes: NoticeGroup[];
   /** Distinct notice texts, each stored once. */
   texts: string[];
 }
+
+/** The generated groups' licence id for "no licence stated" (scripts/licences/lib.mjs UNKNOWN). */
+export const UNKNOWN = 'UNKNOWN';
 
 export const notices: Notices = raw as unknown as Notices;
 
 /** A stable key for a row: `name@version`, or the name alone for a font. */
 export const noticeKey = (e: NoticeEntry): string => (e.version ? `${e.name}@${e.version}` : e.name);
 
-/** The entry's notice, word for word, or null when its package ships none. */
+/** The entry's notice, word for word, or null when there is none. */
 export const noticeText = (e: NoticeEntry): string | null => (e.text === null ? null : (notices.texts[e.text] ?? null));
-
-/** Names compared without case or spaces, so "Tiro Devanagari Hindi" matches however it is written. */
-const sameName = (s: string): string => s.toLowerCase().replace(/\s+/g, '');
-const generatedNames = new Set(notices.licences.flatMap((g) => g.entries.map((e) => sameName(e.name))));
-
-type HandKeptSection = (typeof licences.sections)[number];
-
-/**
- * The hand-kept sections from packages/content, less every item the generated list already
- * carries (today: the three fonts), and less any section left empty. One source per credit.
- */
-export const handKeptSections: HandKeptSection[] = licences.sections
-  .map((s) => ({ ...s, items: s.items.filter((it) => !generatedNames.has(sameName(it.name))) }))
-  .filter((s) => s.items.length > 0);
