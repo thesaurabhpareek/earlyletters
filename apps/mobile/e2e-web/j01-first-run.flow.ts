@@ -17,11 +17,11 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await btn(app, 'Continue').click();
 
   await expect(btn(app, 'Begin the book')).toBeVisible();
-  await expect(app.getByText('The baby memory book you fill by talking.')).toBeVisible();
+  await expect(app.getByText('Letters to your child, in your own words and voice.')).toBeVisible();
   await expect(app.getByText('Your first two letters are free.')).toBeVisible();
   // S03: the stacked lockup is the one logo (an image named for VoiceOver); the name is never typed on the screen.
   await expect(app.getByRole('img').first()).toBeVisible();
-  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about the voice, and "Your first two letters are free." (D-082). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
+  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about how it fills, and "Your first two letters are free." (D-082). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
   await expect(btn(app, 'I was invited')).toHaveCount(0);
   await expect(btn(app, 'I already have a book')).toHaveCount(0);
   await startOnboarding(app);

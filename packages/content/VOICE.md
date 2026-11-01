@@ -14,7 +14,7 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 ## Brand idea in one sentence
 
-Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice. It stays in your words.
+Early Letters: letters to your child, in your own words and voice. Parents fill the book by talking, or by typing. It stays in your words.
 
 ## Do and don't
 

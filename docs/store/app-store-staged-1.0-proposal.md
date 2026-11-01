@@ -26,10 +26,10 @@ Unchanged on purpose: name `Early Letters: Memory Book` (26 of 30), subtitle `Ba
 
 Keywords repeat no word from the name or subtitle, use no spaces and name no competitor. "Dictation" describes talking to write; check it against the final build's behaviour.
 
-## 3. Description (2557 / 4000)
+## 3. Description (2567 / 4000)
 
 ```text
-Early Letters is a baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
 

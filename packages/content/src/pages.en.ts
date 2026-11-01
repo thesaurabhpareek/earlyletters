@@ -44,12 +44,12 @@ export const pages = {
     path: "/about",
     title: `About ${brand.name}`,
     metaDescription:
-      `${brand.name} is the baby memory book you fill by talking. It stays in your words, private by default, made by an independent maker.`,
+      `${brand.name}: letters to your child, in your own words and voice. It stays in your words, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
         paragraphs: [
-          `${brand.name} is the baby memory book you fill by talking. Parents speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
+          `${brand.name} keeps letters to your child, in your own words and voice. Parents fill the book by talking, or by typing notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
           "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Mama or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
           `${brand.name} is for families in the United States. Accounts are for adults 18 and over.`,
         ],
@@ -277,7 +277,7 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: `This page is not in the book. Head back to ${brand.name}, the baby memory book you fill by talking.`,
+    metaDescription: `This page is not in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
     sections: [
       {
         heading: "We looked under every month. This page is not in the book.",

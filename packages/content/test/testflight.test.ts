@@ -76,7 +76,8 @@ describe('[RA-16-01] TestFlight texts: content rules', () => {
   });
 
   it('uses the glossary: one descriptor, "Not much today" in quotes, sign-in link, the other parent in prose', () => {
-    expect(testflightCopy.betaAppDescription.startsWith(`${brand.name}, the baby memory book you fill by talking.`)).toBe(true);
+    // D-139: the descriptor changed with the founder's positioning decision.
+    expect(testflightCopy.betaAppDescription.startsWith(`${brand.name}: letters to your child, in your own words and voice.`)).toBe(true);
     expect(offenders(ALL, /\b(?:the|a) memory book you fill by talking\b/i)).toEqual([]);
     expect(offenders(ALL, /(?<!")Not much today(?!")/)).toEqual([]);
     expect(offenders(ALL, /\b(magic link|log ?in|login|log out|co-?parent|partner|spouse|journal|diary|entry|entries|voice note)\b/i)).toEqual([]);
