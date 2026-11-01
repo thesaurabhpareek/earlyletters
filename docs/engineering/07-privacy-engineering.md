@@ -50,7 +50,7 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 
 **PRIV-R09 (MUST)** A consent version change follows POLICY_VERSIONING sections 5 and 6, and never gates export or deletion. *Why:* LEGAL-REQ-009. *Enforced by:* review (compliance-engineer); CI controls in POLICY_VERSIONING section 9 are `not yet`.
 
-**PRIV-R21 (MUST)** A record of what a person agreed to holds exactly these fields, built by one shared function on the phone and checked by the server. Added 1 Nov 2026 after the build 1 audit (CR-43, BL-577). It extends PRIV-R06 and does not replace it.
+**PRIV-R21 (MUST)** A record of what a person agreed to holds exactly these fields, built by one shared function on the phone and checked by the server. Added 1 Nov 2026 after the build 1 audit (CR-47, BL-577). It extends PRIV-R06 and does not replace it.
 
 | Field | Source | Why | Level |
 |---|---|---|---|

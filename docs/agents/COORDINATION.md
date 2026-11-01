@@ -77,7 +77,7 @@ This covers anything the founder reads: PR descriptions, reports, status updates
 - A decision for the founder comes with a recommendation and the date it's needed.
 - Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.
 
-## 10. Writing requirements (1 Nov 2026, CR-43)
+## 10. Writing requirements (1 Nov 2026, CR-47)
 This covers every requirement, backlog item, spec row, design note and acceptance criterion, from any agent, session or partner. Write it so a person reads it as written by a careful colleague, not a model.
 - **Voice.** `docs/prd/v2/_AUTHORING.md` section 7 and section 9 above. Plain words, short sentences, active voice, numbers instead of adjectives. No em dashes, en dashes, curly quotes, ellipsis characters or emoji. None of the banned words. No closing summary that repeats the item.
 - **Shape.** The requirement rules RR-1 to RR-13 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md` section 1, adopted with changes in D-123): one behaviour per id, Given/When/Then with a number or an observable state, the device it is checked on, the test that proves it, and who answers anything unknown, by when.
