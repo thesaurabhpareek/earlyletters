@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
 
 export const PROFILE = 'production';
 
@@ -59,13 +59,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `cfg`: `expo config --type public --json` with the production profile's env, or null when it did not evaluate
  * - `environmentsMd`: docs/release/ENVIRONMENTS.md
  * - `keysSource`: packages/api/src/keys.ts
+ * - `publishedSource`: supabase/functions/config/published.ts
  * - `versionJson`: apps/mobile/version.json, as text
  * - `appConfigSource`: apps/mobile/app.config.ts
  * - `shellEnv`: the environment this runs in (a local build reads it)
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
  *
  * Each result has an `id`: english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
- * privacy-manifest, version, project-id, asc-app-id, seams, secrets (and config when `expo config` failed).
+ * pack-manifest, privacy-manifest, version, project-id, asc-app-id, seams, secrets (and config when `expo config` failed).
  */
 export function productionChecks(input) {
   const { results, pass, fail, unverified, check } = createReport();
@@ -144,6 +145,15 @@ export function productionChecks(input) {
       'signing-keys',
     );
   }
+
+  // D-115, SR-C-01: keys alone are not enough. Without a published signed manifest the host answers 404, so the
+  // store build downloads no English pack and parents get no words.
+  check(
+    packManifestPublished(input.publishedSource ?? ''),
+    'a signed pack manifest is published in supabase/functions/config/published.ts (whether the host serves it is not checked here: `npx tsx scripts/packs/publish.ts verify`)',
+    'No signed pack manifest has been published (supabase/functions/config/published.ts is missing, or its PACK_MANIFEST is not a non-empty string): the store build would download no English pack, so recordings get no words (D-115, SR-C-01). Run `npx tsx scripts/packs/publish.ts release --key-file <signing.env> --models upstream`, then `upload`, and commit published.ts (docs/ops/PACKS_HOSTING.md steps 5 to 8).',
+    'pack-manifest',
+  );
 
   // App Store privacy manifest (ITMS-91053), and with servers off it declares no collected data.
   {
@@ -268,6 +278,7 @@ export function readInputs(mobileDir, shellEnv = process.env) {
     cfgError: cfg ? undefined : (r.stderr || r.stdout || '').trim().split('\n').slice(-3).join(' | '),
     environmentsMd: read(join(repo, 'docs/release/ENVIRONMENTS.md')),
     keysSource: read(join(repo, 'packages/api/src/keys.ts')),
+    publishedSource: read(join(repo, 'supabase/functions/config/published.ts')),
     versionJson: read(join(mobileDir, 'version.json')),
     appConfigSource: read(join(mobileDir, 'app.config.ts')),
     shellEnv,

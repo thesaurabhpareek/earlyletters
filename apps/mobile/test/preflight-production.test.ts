@@ -51,6 +51,7 @@ function good(): Input {
     },
     environmentsMd: ENVIRONMENTS,
     keysSource: KEYS,
+    publishedSource: "export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = '{\"fictional\":\"Asha\"}';\n",
     versionJson: '{ "version": "1.0.0" }\n',
     appConfigSource: "const { version } = JSON.parse(fs.readFileSync(path.join(ROOT, 'version.json'), 'utf8'));\nexport default () => ({ version: readVersion() });\n",
     shellEnv: { PATH: '/usr/bin' },
@@ -85,6 +86,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'status-report',
       'account-deletion',
       'signing-keys',
+      'pack-manifest',
       'privacy-manifest',
       'version',
       'project-id',
@@ -115,6 +117,15 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['signing-keys', 'no key (develop today)', { ...good(), keysSource: "export const TRUSTED_SIGNING_KEYS = [\n  // { keyId: 'el-2026-10', publicKey: 'x' },\n];\n" }],
     ['signing-keys', 'one key, no backup', { ...good(), keysSource: `export const TRUSTED_SIGNING_KEYS = [\n${key('asha-2026-10')}];\n` }],
     ['signing-keys', 'a repeated key id', { ...good(), keysSource: `export const TRUSTED_SIGNING_KEYS = [\n${key('asha-2026-10')}${key('asha-2026-10')}];\n` }],
+    ['pack-manifest', 'PACK_MANIFEST is null (develop today)', { ...good(), publishedSource: 'export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = null;\n' }],
+    ['pack-manifest', 'published.ts missing (read as empty)', { ...good(), publishedSource: '' }],
+    ['pack-manifest', 'no publishedSource at all', { ...good(), publishedSource: undefined }],
+    ['pack-manifest', 'null with no type annotation', { ...good(), publishedSource: 'export const PACK_MANIFEST = null;\n' }],
+    ['pack-manifest', 'null reformatted with a cast', { ...good(), publishedSource: 'export const PACK_MANIFEST =\n  null as string | null;\n' }],
+    ['pack-manifest', 'undefined', { ...good(), publishedSource: 'export const PACK_MANIFEST: string | undefined = undefined;\n' }],
+    ['pack-manifest', 'an empty string', { ...good(), publishedSource: "export const PACK_MANIFEST: string | null = '';\n" }],
+    ['pack-manifest', 'a value only in a comment', { ...good(), publishedSource: "// export const PACK_MANIFEST: string | null = '{\"x\":1}';\nexport const PACK_MANIFEST: string | null = null;\n" }],
+    ['pack-manifest', 'unparseable text', { ...good(), publishedSource: 'PACK_MANIFEST ??? {' }],
     ['privacy-manifest', 'no privacy manifest', withCfg((c) => delete c.ios.privacyManifests)],
     ['privacy-manifest', 'tracking true', withCfg((c) => (c.ios.privacyManifests.NSPrivacyTracking = true))],
     ['privacy-manifest', 'collected data with servers off', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = [{ NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress' }]))],
@@ -141,6 +152,13 @@ describe('one failing fixture per check: only that check FAILs', () => {
   it('covers every check with at least one fixture', () => {
     const passIds = (productionChecks(good()) as Result[]).filter((r) => r.level === 'PASS').map((r) => r.id);
     expect([...new Set(cases.map(([id]) => id))].sort()).toEqual([...passIds].sort());
+  });
+
+  it('pack-manifest passes on a published value, written the way scripts/packs/lib.ts writes it', () => {
+    const published = `export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = ${JSON.stringify(JSON.stringify({ fictional: 'Asha', packs: [] }))};\n`;
+    const results = productionChecks({ ...good(), publishedSource: published }) as Result[];
+    expect(results.find((r) => r.id === 'pack-manifest')?.level).toBe('PASS');
+    expect(fails({ ...good(), publishedSource: published })).toEqual([]);
   });
 
   it('the seam list is the e2e and web-preview flags', () => {
@@ -170,7 +188,7 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder step still open (the production ascAppId); every other check passes', () => {
+  it('fails exactly the founder steps still open (the production ascAppId and the pack manifest); every other check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
@@ -179,7 +197,9 @@ describe('the real repository', () => {
     // signing-keys passes since #512 (el-2026-11 and el-2026-11-backup) and must stay passing.
     // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
     // asc-app-id from this set. project-id passes since #487 and must stay passing.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id']);
+    // pack-manifest: PACK_MANIFEST is null on develop and packs.earlyletters.app answers 404. The founder's publish run
+    // (scripts/packs/publish.ts release, upload, then commit published.ts; PACKS_HOSTING.md steps 5 to 8) removes pack-manifest from this set.
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'pack-manifest']);
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
