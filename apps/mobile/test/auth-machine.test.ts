@@ -1,4 +1,6 @@
 import { AuthRetryableFetchError, createClient } from '@supabase/supabase-js';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   authReducer,
@@ -12,7 +14,7 @@ import {
   type AuthState,
   type SyncGate,
 } from '../src/lib/auth/machine.logic';
-import { authErrorKind, codeEntryPause, looksLikeEmail, normaliseCode } from '../src/lib/auth/errors.logic';
+import { authErrorKind, codeEntryPause, emailSendWaitMs, emailWaitKey, looksLikeEmail, normaliseCode } from '../src/lib/auth/errors.logic';
 import { authErrorMessage } from '../src/lib/auth/messages';
 
 const U = '0192f0aa-0000-7000-8000-000000000001';
@@ -222,8 +224,12 @@ describe('auth error kinds', () => {
   it('maps Supabase Auth codes to messages the screens have', () => {
     expect(authErrorKind({ code: 'otp_expired', status: 403 }, 'code')).toBe('wrong_code');
     expect(authErrorKind({ code: 'otp_expired', status: 403 }, 'link')).toBe('expired');
-    expect(authErrorKind({ code: 'over_email_send_rate_limit', status: 429 }, 'send')).toBe('rate_limited');
-    expect(authErrorKind({ status: 429 }, 'send')).toBe('rate_limited');
+    // SIGN-01: a 429 while sending is about emails; while checking a code or link no email was being sent.
+    expect(authErrorKind({ code: 'over_email_send_rate_limit', status: 429 }, 'send')).toBe('email_wait');
+    expect(authErrorKind({ status: 429 }, 'send')).toBe('email_wait');
+    expect(authErrorKind({ code: 'over_request_rate_limit', status: 429 }, 'code')).toBe('rate_limited');
+    expect(authErrorKind({ code: 'over_request_rate_limit', status: 429 }, 'link')).toBe('rate_limited');
+    expect(authErrorKind({ status: 429 }, 'code')).toBe('rate_limited');
     expect(authErrorKind({ code: 'email_address_invalid', status: 400 }, 'send')).toBe('invalid_email');
     expect(authErrorKind({ code: 'refresh_token_not_found' }, 'link')).toBe('session_expired');
     expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'Failed to fetch' }, 'send')).toBe('network');
@@ -250,13 +256,18 @@ describe('auth error kinds: a server that answered is not a connection that fail
     }
   });
 
-  it('it reads as "That did not work this time", the provider kind for Apple, Google and passkeys, unknown for the email steps', () => {
+  it('it reads as the provider kind for Apple, Google and passkeys, unknown for the email steps', () => {
     for (const status of SERVER_ERRORS) {
       expect(authErrorKind(retryable(status), 'provider'), String(status)).toBe('provider');
       expect(authErrorKind(retryable(status), 'passkey'), String(status)).toBe('provider');
       for (const context of ['send', 'code', 'link'] as const) expect(authErrorKind(retryable(status), context), `${status} in ${context}`).toBe('unknown');
     }
-    for (const context of CONTEXTS) expect(authErrorMessage(authErrorKind(retryable(503), context))).toContain('That did not work this time.');
+    // The words are the copy lane's (provider: "That sign-in did not finish.", unknown: "That did not go through."); here: the kinds' own lines.
+    for (const context of CONTEXTS) {
+      const kind = authErrorKind(retryable(503), context);
+      expect(authErrorMessage(kind)).toBe(authErrorMessage(context === 'provider' || context === 'passkey' ? 'provider' : 'unknown'));
+      expect(authErrorMessage(kind)).toMatch(/letters are safe/);
+    }
     // The old reading, which a 503 must no longer get.
     expect(authErrorMessage(authErrorKind(retryable(503), 'send'))).not.toMatch(/back online|Sign in/);
   });
@@ -273,7 +284,7 @@ describe('auth error kinds: a server that answered is not a connection that fail
     expect(authErrorKind({ name: 'AuthRetryableFetchError', message: 'x', status: 499 }, 'send')).toBe('network');
   });
 
-  it('holds against the pinned auth-js itself: a 503 answer is not "network", a rejected fetch is, a 429 stays rate_limited', async () => {
+  it('holds against the pinned auth-js itself: a 503 answer is not "network", a rejected fetch is, a 429 is email_wait on send (SIGN-01)', async () => {
     const auth = (fetchImpl: typeof fetch) =>
       createClient('https://asha-fixture.supabase.co', 'sb_publishable_asha_fixture', {
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
@@ -299,7 +310,8 @@ describe('auth error kinds: a server that answered is not a connection that fail
     expect(authErrorKind(offline, 'send')).toBe('network');
 
     const limited = (await answered(429).signInWithOtp({ email })).error;
-    expect(authErrorKind(limited, 'send')).toBe('rate_limited');
+    expect(authErrorKind(limited, 'send')).toBe('email_wait'); // SIGN-01: a 429 on send is about emails
+    expect(authErrorKind(limited, 'code')).toBe('rate_limited');
   });
 });
 
@@ -325,5 +337,35 @@ describe('code entry (A-REQ-027)', () => {
     expect(looksLikeEmail('asha.parent@example.com')).toBe(true);
     expect(looksLikeEmail('asha.parent@example')).toBe(false);
     expect(looksLikeEmail('not an email')).toBe(false);
+  });
+});
+
+describe('[SIGN-01] the client wait before another email to the same address', () => {
+  it('counts down from the last send, keyed by the address as Supabase compares it', () => {
+    expect(emailSendWaitMs(null, 1_000, 60_000)).toBe(0);
+    expect(emailSendWaitMs(1_000, 1_000, 60_000)).toBe(60_000);
+    expect(emailSendWaitMs(1_000, 31_000, 60_000)).toBe(30_000);
+    expect(emailSendWaitMs(1_000, 61_000, 60_000)).toBe(0);
+    expect(emailSendWaitMs(1_000, 90_000, 60_000)).toBe(0);
+    // A send time in the future (the clock moved back) never blocks.
+    expect(emailSendWaitMs(99_000, 1_000, 60_000)).toBe(0);
+    expect(emailSendWaitMs(Number.NaN, 1_000, 60_000)).toBe(0);
+    expect(emailWaitKey('  Mama@Example.invalid ')).toBe('mama@example.invalid');
+  });
+
+  it('the provider resends nothing inside the minute: it reopens the code screen with the first send\'s time', () => {
+    const provider = readFileSync(join(__dirname, '..', 'src', 'lib', 'auth', 'session-provider.tsx'), 'utf8');
+    const send = provider.slice(provider.indexOf('async sendEmailLink(email)'), provider.indexOf('async verifyEmailCode('));
+    expect(send).toMatch(/emailSendWaitMs\(last, Date\.now\(\), RESEND_WAIT_MS\) > 0 && last !== null\) \{\s*dispatch\(\{ type: 'EMAIL_SENT', at: last \}\);\s*return \{ ok: true \};/);
+    expect(send.indexOf('emailSendWaitMs(')).toBeLessThan(send.indexOf('await sendEmail('));
+  });
+
+  it('[SIGN-06] a PKCE refusal after GET /verify ran becomes other_phone_spent, whose screen offers a new email only', () => {
+    const provider = readFileSync(join(__dirname, '..', 'src', 'lib', 'auth', 'session-provider.tsx'), 'utf8');
+    expect(provider).toMatch(/const error: AuthErrorKind = kind === 'other_phone' \? 'other_phone_spent' : kind;/);
+    const verify = readFileSync(join(__dirname, '..', 'src', 'app', '(auth)', 'sign-in', 'verify.tsx'), 'utf8');
+    const spent = verify.slice(verify.indexOf(": error === 'other_phone_spent' ?"), verify.indexOf(": error === 'expired' ?"));
+    expect(spent).toMatch(/label=\{v\.newEmail\}/);
+    expect(spent).not.toMatch(/typeCode/);
   });
 });

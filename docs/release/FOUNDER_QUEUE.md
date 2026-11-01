@@ -90,7 +90,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 **W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by the go/no-go (Mon 9 Nov). Answered 30 Oct for the spend: no paid harness, `agents.yml` is not provisioned (D-127); trimming the roster is still open. Briefs: R1-09.
 
-**W0-13 Engage counsel and send one packet built from #163.** Open: #163 and #136 are open (REST, 28 Oct). Hours. Ask which texts apply to the alpha and the "Friends" group.
+**W0-13 Engage counsel and send one packet built from #163.** Open. #163 merged 1 Nov 05:54 UTC (d182e92): send `docs/legal/COUNSEL_PACKET.md` 1.5.0 from `develop`, which now includes Q57 (sanctions, the country check, no name screening; D-131, D-136, D-137). Hours. Ask which texts apply to the alpha and the "Friends" group.
 - Unblocks: legal pages in final form, Friends signing in, submission.
 - Same as: FT-03, FT-18, F07; feeds F22, FT-31, FT-33, FT-41, FT-46, FT-47.
 

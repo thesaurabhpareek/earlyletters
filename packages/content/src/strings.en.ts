@@ -62,6 +62,8 @@ export const en = {
   },
 
   onboarding: {
+    // SET-05: said where a step needs the child and no name is typed yet (onboarding.tsx used to type it).
+    childFallback: "your child",
     welcome: {
       title: "{app}",
       subtitle: "The baby memory book you fill by talking.",
@@ -95,6 +97,10 @@ export const en = {
       nameLabelMore: "Another child's name",
       // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
       namePlaceholder: "First name, or a nickname",
+      // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
+      // date field. No {child}: with twins the step has more than one name.
+      bornQuestion: "Here yet, or on the way?",
+      bornLabel: "Born",
       birthdayLabel: "Birthday",
       expectingLabel: "Not here yet",
       expectingHelp: "Letters written before the birth go in Before You.",
@@ -159,7 +165,7 @@ export const en = {
     // Shown as a card on Tonight after the first letter is saved, never during first run (PRD.md K-02).
     reminder: {
       title: "A gentle nudge, now and then?",
-      body: "A couple of evenings a week, at a time you pick. Never late at night.",
+      body: "A couple of evenings a week, at a time you pick, to add to {child}'s book. Never late at night.",
       yesEveningsButton: "Yes, evenings",
       pickTimeButton: "Pick a time",
       timeLabel: "Remind me at",
@@ -174,7 +180,7 @@ export const en = {
     invite: {
       title: "Writing this with someone?",
       body: "Invite {child}'s other parent to add letters of their own, each one signed.",
-      privacyNote: "Your private letters stay yours until you add them to the book.",
+      privacyNote: "Letters you keep private are for you alone. Only the ones you add to the book are shared.",
       addButton: "Invite co-parent",
       laterButton: "Maybe later",
     },
@@ -219,7 +225,7 @@ export const en = {
       paused: "Paused.",
       resumeButton: "Keep talking",
       stopButton: "Finish",
-      saving: "Keeping your words safe.",
+      saving: "Saving your words.",
       saved: "Saved, in your words.",
       savedLetter: "Signed and kept.",
       transcribing: "Writing down what you said.",
@@ -321,8 +327,8 @@ export const en = {
       button: "Go to the book",
     },
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
-    // The words are safe first, then what happened (VOICE).
-    saveFailed: "Your words are still here. That did not work this time.",
+    // What happened, then where the words are (LNG-05).
+    saveFailed: "That did not save. Your words are still here.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -599,7 +605,7 @@ export const en = {
       cardBody: "{signsAs} wrote to {child}. Would you like it in the book?",
       addButton: "Add to the book",
       keepAsideButton: "Keep it aside",
-      keepAsideHelp: "It stays safe, just outside the book. {signsAs} will not be told.",
+      keepAsideHelp: "It stays just outside the book. {signsAs} will not be told.",
       thankButton: "Send a thank you",
       thankMessage: "Your letter is in {child}'s book. Thank you, {signsAs}.",
       addedToast: "{signsAs}'s letter is in the book.",
@@ -617,13 +623,13 @@ export const en = {
   notifications: {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
-      { title: "Tonight's letter", body: "What made you smile today? Say it out loud and we will keep it." },
-      { title: "Dear {child},", body: "Your words, kept for {child}. Today, and long after." },
+      { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
+      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
       { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
-      { title: "A page for {weekday}", body: "Whatever today held, it belongs in {child}'s book." },
+      { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
     gentleReturn: {
       title: "{child}'s book is right here",
@@ -632,7 +638,7 @@ export const en = {
     // v1.1: familyLetter and familyAdded.
     familyLetter: {
       title: "A letter from {signsAs}",
-      body: "{signsAs} wrote something for {child}. Have a read.",
+      body: "{signsAs} wrote something for {child}. Take a look.",
     },
     familyAdded: {
       title: "Your letter is in the book",
@@ -659,19 +665,19 @@ export const en = {
     },
     letters50: {
       title: "50 letters.",
-      body: "Fifty small moments, kept in your own voice.",
+      body: "Fifty letters, kept in your words.",
     },
     letters100: {
       title: "100 letters.",
-      body: "A hundred times you stopped to tell {child} something. That is love, written down.",
+      body: "A hundred letters to {child}, every one in your words.",
     },
     letters365: {
       title: "365 letters.",
-      body: "A year's worth of your words for {child}. All the work, all the love, kept.",
+      body: "365 letters for {child}, in your words.",
     },
     firstMonthComplete: {
       title: "Month {month} is in the book now.",
-      body: "{count} letters and notes, ready for {child} to read one day.",
+      body: "{count} letters, there for {child} to read one day.",
       cta: "Read this month",
     },
     // v1.1.
@@ -685,7 +691,7 @@ export const en = {
     },
     monthSummary: "{count} letters this month",
     monthSummaryFamily: "{count} letters from family this month", // v1.1
-    dismissButton: "Lovely",
+    dismissButton: "Close",
   },
 
   settings: {
@@ -747,9 +753,9 @@ export const en = {
       orphansOne: "1 recording on this phone is not part of a letter yet. It stays on this phone.",
       orphansMany: "{count} recordings on this phone are not part of a letter yet. They stay on this phone.",
       // D-085: a take a kill cut off that would not open is kept, never dropped. Counts as a plain sentence.
-      unplayableTitle: "Takes that may not play",
-      unplayableOne: "This take may not play. Export keeps the file.",
-      unplayableMany: "{count} takes may not play. Export keeps the files.",
+      unplayableTitle: "Recordings that may not play",
+      unplayableOne: "This recording may not play. Export keeps the file.",
+      unplayableMany: "{count} recordings may not play. Export keeps the files.",
     },
     export: {
       title: "Export",
@@ -814,8 +820,10 @@ export const en = {
       offLabel: "Off",
       weeklyLabel: "Weekly",
       fewTimesLabel: "A few times a week",
+      // LNG-06 (31 Oct 2026): kept on purpose. PRD C-REQ-002 (P0) lists Every evening among the options; it labels the
+      // cadence a person chooses, not a rhythm the product sets, and `help` below no longer says "a few evenings".
       everyEveningLabel: "Every evening",
-      help: "A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
+      help: "A nudge in the evening, as often as you choose. Never late at night.",
     },
     privacyLine: "Private by default. You decide what goes in the book.",
     help: {
@@ -836,7 +844,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only fix what the microphone got wrong, and mark every fix.",
+    neverRewrite: "We never rewrite your words. We only fix small slips, like an um, a repeat or a misheard word, and mark each one, so you can put it back.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
@@ -996,7 +1004,7 @@ export const en = {
     },
     generic: {
       title: "Something went wrong",
-      body: "Your words are safe. Please try again.",
+      body: "Please try again. Nothing you saved has changed.",
     },
     // A screen could not draw (root error boundary). Calm, no codes, no stack.
     // Error and state titles carry no full stop.
@@ -1144,7 +1152,7 @@ export const en = {
     privacyLabel: "Privacy",
     // Language packs and speech files, downloaded only when needed (D-065).
     storageLabel: "Storage",
-    storageHelp: "Language packs and space on this phone.",
+    storageHelp: "Languages and space on this phone.",
     recordingsLabel: "Recordings",
     appearanceLabel: "Appearance",
     deleteAccountLabel: "Delete account",

@@ -1,0 +1,24 @@
+.rail {
+  position: fixed;
+  z-index: 10;
+  left: clamp(10px, 1.8vw, 26px);
+  top: 84px;
+  bottom: 28px;
+  width: 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--night-ink) 9%, transparent);
+  pointer-events: none;
+}
+.fill {
+  width: 100%;
+  height: 100%;
+  border-radius: 2px;
+  transform-origin: top;
+  background: linear-gradient(to bottom, #f3c98b, #f08c7c 50%, #8076e2);
+  box-shadow: 0 0 12px rgba(243, 201, 139, 0.45);
+}
+@media (max-width: 52rem) {
+  .rail {
+    display: none;
+  }
+}

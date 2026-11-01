@@ -13,7 +13,7 @@ Some compliance code cannot live in this folder, because its tools look elsewher
 - `supabase/migrations/*_compliance_*.sql`: the Supabase CLI only reads `supabase/migrations/`. Name new compliance migrations `*_compliance_*`; the content markers catch the rest.
 - `supabase/tests/compliance_*.test.mjs`: the database harness runs `supabase/tests/`.
 - `.claude/skills/regulatory-compliance/` and `.claude/agents/regulatory-affairs.md`: Claude Code loads skills and agents from `.claude/`. (The `infosec` skill is the CISO's and is not fenced here.)
-- `.github/workflows/compliance-fence.yml`: GitHub runs workflows from `.github/`, and for this trigger only from the default branch, `main`.
+- `.github/workflows/compliance-fence.yml`: GitHub runs workflows from `.github/`, and for this trigger only from the default branch (`develop` since the founder's settings run of 31 Oct 2026, CR-9).
 
 ## Two tiers
 | Tier | Paths | Who may change them | Needs on the head commit |
@@ -26,7 +26,7 @@ Some compliance code cannot live in this folder, because its tools look elsewher
 ## Who may change protected paths
 Assigned agents (`FENCE.json`): `regulatory-affairs` (owner), `compliance-engineer`, `security-architect`, `data-architect`. A PR that touches a protected path needs:
 1. The label `agent:<handle>` for one of them. An interactive session working as one of these agents labels its PR the same way.
-2. Two comments from the repository owner's login (never a bot, so an unattended agent cannot approve its own PR), each with one line on its own naming the PR's current head commit:
+2. Two comments from the repository owner's login (never a bot, so an unattended agent cannot approve its own PR), each with one line on its own naming the PR's current head commit. The line may start with up to three spaces, as a Markdown heading may; four spaces or a tab make it a code block, and it does not count (CR-39):
    - `## CCO approval at <40-hex head sha>: APPROVED (CCO-<n>)`, posted by the Chief Compliance Officer after the compliance checklist below, with its ruling in `docs/agents/exec/RULINGS.md`;
    - `## Karma approval at <40-hex head sha>: APPROVED (CR-<n>)`, posted by Karma after the engineering checklist.
 3. Any new push invalidates both. They re-check and approve the new head.
@@ -51,9 +51,9 @@ Karma posts the approval only after the CCO has approved the same head and all o
 - A ruling `CR-<n>` records the approval: what changed, why, and the way back.
 
 ## Limits (true today)
-- **Runs only from `main`.** GitHub takes a `pull_request_target` workflow from the default branch since 8 Dec 2025, so the check runs on PRs into `develop` only once this workflow file is also on `main`, which happens with the next release PR (docs/DEVELOPMENT.md). It reads the rules from each PR's base, so `develop`'s `FENCE.json` still governs.
-- **Advisory until required.** `develop` has no branch protection yet (checked 31 Oct 2026). The check blocks merges only once `compliance-fence` is a required status check, and it must not be made required before the workflow is on `main`, or every PR would wait forever.
+- **Runs from the default branch.** GitHub takes a `pull_request_target` workflow from the default branch (since 8 Dec 2025). The default branch is `develop` (CR-9, applied 31 Oct 2026), so the fence runs on every PR, and it reads the rules from each PR's base.
+- **Required on `develop` only** (CR-32, set 31 Oct 2026). Not on `main`: `main` has no `FENCE.json` yet, so the bootstrap path fails any PR into `main` that carries compliance paths, and the release PR from `develop` will. On `main` the check is advisory until the release lands a `FENCE.json` there.
 - **Text matching, not parsing.** Content markers catch a compliance table named in a diff in any case. SQL that builds a name from pieces at run time would slip past; review is the backstop.
 - **Not identity.** Every Claude session posts as the founder's account (CR-20). The label and the approvals prove that the procedure ran, not who ran it. The fix is the separate automation identity in CR-20 (after 9 Nov).
 - **Fails closed.** Any API error fails the check. The bootstrap path (a fixed path pattern) runs only when the base commit truly has no fence (HTTP 404), never on another error.
-- **First merge.** The fence cannot check its own first merge; Karma merges it under D-132 after two counted reviews. It starts running when the workflow reaches `main` with the next release PR from `develop`.
+- **First merge.** The fence could not check its own first merge (#425); Karma merged it under D-132 after two counted reviews.

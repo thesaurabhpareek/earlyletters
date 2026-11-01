@@ -12,13 +12,13 @@ export const reminderCopy = {
   neutral: {
     evening: [
       { title: 'A minute to write?', body: 'One thing about today is plenty. A sentence will do.' },
-      { title: "Tonight's letter", body: 'What made you smile today? Say it out loud and we will keep it.' },
-      { title: 'Dear little one,', body: 'Your words, kept. Today, and long after.' },
+      { title: 'A letter tonight?', body: 'What made you smile today? Say it out loud and keep it.' },
+      { title: 'Dear little one,', body: 'Anything to tell your little one today? A line or two is enough.' },
       { title: 'The house is quiet', body: 'A good moment for a few words to your little one.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
       { title: 'Your voice, kept', body: 'Talk for a minute. It will be heard one day, just as you said it.' },
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
-      { title: 'A page for {weekday}', body: 'Whatever today held, it belongs in the book.' },
+      { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
     // A month, never a "chapter" (BRAND.md glossary): the same words as the named version, without the name.
     monthOpen: { title: 'Month {month} begins', body: 'A new month in the book is open.' },

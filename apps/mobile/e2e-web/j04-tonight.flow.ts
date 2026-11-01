@@ -1,5 +1,5 @@
 import { PROMPTS } from '@scribe/content';
-import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter } from './support/app';
+import { CHILD, SIGNS_AS, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, tab, toChildStep, typeLetter, noRemindersAfterFirstLetter } from './support/app';
 import { expect, seeded, test } from './support/journey';
 
 /** The words of the seeded draft (src/dev/asha-seed.ts ASHA_REVIEW_RAW): the person's own, as spoken. */
@@ -97,6 +97,7 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await firstRun(app);
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
+  await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
   await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');
@@ -106,7 +107,7 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This one waits on this phone, on Tonight, exactly as it is, for as long as you like.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await btn(app, 'Keep it here for now').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();

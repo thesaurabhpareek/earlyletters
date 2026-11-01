@@ -118,6 +118,7 @@ import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
+import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
 import { useAuth } from '@/lib/auth/session-provider';
 import { afterLetterKept, type KeepGate } from '@/lib/billing';
 import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
@@ -405,11 +406,12 @@ export default function Review() {
 
   // Save: commit, haptic, then animate (MOTION principle 3). The saved moment (components/capture/saved-moment.tsx)
   // files the letter into its month and then lands on the Book (S21, 5.8 row 5).
-  // After the very first letter on this phone, someone signed out is offered an account (PRD A F3): the sign-in
-  // sheet rises over the Book once the letter is seen in its place, never in place of Review (5.8 row 5b), and
-  // "Not now" always works (the app is local-first).
+  // After the save, one ask at most, in the decided order (DR-12 B, F02 6.1, F13-REQ-023; lib/asks/next-ask.logic):
+  // the reminder card after the first letter, then Keep the book (the sign-in sheet, servers on and signed out) on
+  // the second letter or the first save of a later session. Either rises over the Book once the letter is seen in
+  // its place, never in place of Review (5.8 row 5b), and "Not now" / "No reminders" always work (local-first).
   const auth = useAuth();
-  const offerSignIn = useRef(false);
+  const askAfterLanding = useRef<NextAsk>(null);
   const left = useRef(false);
   const land = () => {
     if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
@@ -419,12 +421,14 @@ export default function Review() {
     // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
     setActiveChildId(child.id);
     router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
-    if (offerSignIn.current) {
+    if (askAfterLanding.current === 'keep_book') {
       setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
+    } else if (askAfterLanding.current === 'reminder_prime') {
+      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
     }
   };
   const finishSave = (inBook: boolean, firstLetter: boolean) => {
-    offerSignIn.current = firstLetter && auth.configured && auth.state.status === 'signedOut';
+    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');

@@ -160,7 +160,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-12 Supabase Auth: providers, SMTP, settings**
   - Time: 1.5 hours.
   - Cost: US $0.
-  - Steps: `docs/ops/AUTH_SETUP.md` in order: section 1 (sign-ups on, manual linking on, anonymous sign-ins **off**, confirm email on, JWT expiry 900 s); 2.6 (Apple provider: client IDs `com.earlyletters.scribe,com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`, no secret for native); 3.4 (Google provider after FT-15: web client id first, then iOS ids, web secret, **Skip nonce check on**); 4.2 (custom SMTP: `smtp.resend.com`, port 465, user `resend`, password = the SMTP key from FT-13, sender `hello@earlyletters.com`, 60-second interval); 4.3 (email rate limit about 100 an hour for TestFlight); 4.4 (OTP expiry 900, length 6 unless you choose 8 in FT-04 item 8); 5.1 (site URL `https://earlyletters.com`; redirect URLs exactly `https://earlyletters.com/auth/callback` and `scribe://auth/callback`); 6 (paste `supabase/templates/magic_link.html` into both Confirm signup and Magic Link, subject `Your sign-in link for Early Letters`). Leave Passkeys and CAPTCHA off for now.
+  - Steps: `docs/ops/AUTH_SETUP.md` in order: section 1 (sign-ups on, manual linking on, anonymous sign-ins **off**, confirm email on, JWT expiry 900 s); 2.6 (Apple provider: client IDs `com.earlyletters.scribe,com.earlyletters.scribe.preview,com.earlyletters.scribe.dev`, no secret for native); 3.4 (Google provider after FT-15: web client id first, then iOS ids, web secret, **Skip nonce check on**); 4.2 (custom SMTP: `smtp.resend.com`, port 465, user `resend`, password = the SMTP key from FT-13, sender `hello@earlyletters.com`, 60-second interval); 4.3 (email rate limit about 100 an hour for TestFlight); 4.4 (OTP expiry 900, length 6 unless you choose 8 in FT-04 item 8); 5.1 (site URL `https://earlyletters.com`; redirect URLs exactly one, `https://earlyletters.com/auth/callback`; SIGN-09); 6 (paste `supabase/templates/magic_link.html` into both Confirm signup and Magic Link, subject `Your sign-in link for Early Letters`). Leave Passkeys and CAPTCHA off for now.
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: all sign-in (AUTH_SETUP 11 device checks), C0 and C1; BL-053.
 
@@ -298,7 +298,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - By: recruited Fri 16 Oct; spot-check results Fri 23 Oct.
   - Blocks: FT-34 (which languages the listing names), CVL-01, CVL-03 and invite translations in v1.1 and v1.2.
 
-- [ ] **FT-28 Trademark knockout search ("Early Letters")**
+- [ ] **FT-28 Trademark knockout search ("Early Letters")** (search run 31 Oct 2026, result in D-134; which classes were searched and the file-or-not decision are not recorded, so it stays open)
   - Time: 2 hours.
   - Cost: US $0 for the search; counsel's opinion if anything turns up (FT-35).
   - Steps: compliance register CR-122 and `docs/backlog/future/04-growth-monetisation.md` G-02: search the USPTO trademark search for "EARLY LETTERS" and close variants in classes 9 (software), 42 (online services), 16 (printed books, for later print) and 41 (education, where the phonics apps sit); search the App Store for the name; note any live mark in those classes. If clear, decide whether to file (per class [U]).

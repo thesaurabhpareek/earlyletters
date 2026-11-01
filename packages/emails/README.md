@@ -5,14 +5,38 @@ Email component library, tokens and renderer. Quiet UI, loud letters: a warm pap
 - Components: `src/components` (lane D1). Tokens: `src/tokens.ts`.
 - Templates: `src/templates` (lane D2). Words: `@scribe/content` (`src/emails/*.en.ts`). Components contain no copy of their own; the footer and signature read `chrome.en.ts` (B3) and `legal.en.ts` (L2).
 - Logos: `packages/brand/assets/email` (B3), attached inline. Senders call `renderForResend(element)` (`src/send.ts`) and pass its `attachments` to Resend; `logo: 'text'` sends no image (Supabase Auth templates), `logo: 'remote'` loads the hosted copy from `https://earlyletters.com/email/` (off by default).
+- Supabase Auth templates are HTML only (Supabase Auth sends no plain-text part; accepted, TPL-10). The local stack loads them only once `supabase/templates/config.toml.snippet` is pasted into `supabase/config.toml` (server lane, TPL-12); until then local runs see Supabase's defaults.
+- Links: `src/links.ts` holds the default links (Help is the support mailbox; there is no /contact page) and the website route contract. A test fails when an email links to a page that is neither built nor listed as needed (TPL-06; docs/emails/CATALOG.md section 14).
 - Supabase Auth templates: `npm run export:supabase -w @scribe/emails` writes `supabase/templates/` (text wordmark); a test fails if the committed files drift.
 
 ```bash
 npm run build -w @scribe/emails          # render src/templates to out/
+npm run export:resend -w @scribe/emails  # regenerate generated/resend.ts for Edge Functions
 npx tsx scripts/render.ts --fixtures     # (in this folder) also render test/fixtures
 npx vitest run && npx tsc --noEmit       # tests and types
 open out/index.html                      # gallery: 375px light and dark frames side by side
 ```
+
+## Sending from an Edge Function (Deno)
+
+Deno cannot run this package, so `npm run export:resend -w @scribe/emails` renders every email our own functions send into `generated/resend.ts`: one self-contained module (no imports) with the HTML (inline logo by `cid:`), the plain text, the subject and the list of placeholders for each id, plus the two logo attachments and the default links. A test fails if the committed file drifts; rerun the export after any copy or component change. Supabase Auth's and the escrow function's emails are not in it (they have their own exports).
+
+```ts
+import { longDate, renderForResend, toResendPayload } from '../../../packages/emails/generated/resend.ts';
+
+const mail = renderForResend('account-deletion-scheduled', {
+  requestId, requestDate: longDate(requestedAt), deletionDate: longDate(deleteAt), // "Monday, November 2, 2026"
+});
+await fetch('https://api.resend.com/emails', {
+  method: 'POST',
+  headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'Idempotency-Key': key2 },
+  body: JSON.stringify(toResendPayload(mail, to)),
+});
+```
+
+- Every placeholder the email uses must have a value (`templates[id].placeholders`); `helpUrl`, `privacyUrl`, `appUrl`, `manageUrl` and `subscriptionTermsUrl` default from `meta.links`. A missing value throws, so no email leaves with a raw `{placeholder}`.
+- Values are HTML-escaped in the HTML part and left as they are in the text part and subject. A URL shown as text gets `<wbr>` break points so it wraps on a phone.
+- One message per request: Resend does not take inline attachments on the batch endpoint.
 
 ## Adding an email
 

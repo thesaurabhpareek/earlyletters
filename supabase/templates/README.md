@@ -24,7 +24,7 @@ OTP expiry, secure email change) is L3's runbook: `supabase/auth-email.md`.
 | `reauthentication.html` | `[auth.email.template.reauthentication]` | Reauthentication | `reauthenticate-code` | Code only; copy is specific to account deletion |
 | `identity_linked.html` | `[auth.email.notification.identity_linked]` | Sign-in method linked | `google-account-linked` if `.Provider` is `google`, else `apple-account-linked` | Go `{{ if }}` in both subject and body |
 | `email_changed.html` | `[auth.email.notification.email_changed]` | Email address changed | `email-changed-old-address` | `.OldEmail` previous, `.Email` new |
-| `config.toml.snippet` | | | | Paste under `[auth.email]` in `supabase/config.toml` (there is none yet) |
+| `config.toml.snippet` | | | | Source for the template blocks in `supabase/config.toml` (already there; `supabase/tests/auth_config.test.mjs` fails if subjects or files drift). Its notification paths use `./supabase/templates/`; config.toml uses `./templates/` (see Loading them) |
 | `management-api.json` | | | | Body for `PATCH /v1/projects/{ref}/config/auth` on the hosted project |
 
 Not used: `invite` (family invites are our own link or code, D-002, CATALOG E-3),
@@ -33,9 +33,32 @@ Not used: `invite` (family invites are our own link or code, D-002, CATALOG E-3)
 `identity_unlinked` is on with Supabase's default text until C1 writes a
 "sign-in method removed" email (L3's requirement).
 
-Not sent by Supabase (our Edge Function sends them through the Resend API, from
-the same React templates): `account-create-attempt`, `welcome`,
-`sign-in-trouble`, `new-device-sign-in`.
+Not sent by anything today (TPL-07, SIGN-05; 31 Oct 2026). There is no Edge
+Function that sends auth email, and none is planned for build 2:
+
+- `account-create-attempt` has no trigger. The app makes one passwordless call
+  (`signInWithOtp` with `shouldCreateUser: true`), so a known address gets
+  `magic_link` and a new one gets `confirmation`, with the same screen and
+  response either way. There is no separate sign-up to detect.
+- `sign-in-trouble` carries a live link and code. Only Supabase Auth can mint a
+  token bound to the app's PKCE request: an admin-generated link is not PKCE,
+  the app refuses it, and it replaces the token the app is waiting for. The one
+  correct sender is the Send Email Hook (`supabase/auth-email.md` section 7),
+  which v1.0 deliberately does not use, and even the hook cannot tell a
+  "trouble" request from a resend. The app's "Send a new email" is the expired
+  path today; it sends a fresh `magic_link`.
+- `welcome` and `new-device-sign-in` are 1.0 (not launch-blocking) and have no
+  sender either.
+
+Supabase Auth mail goes out through custom SMTP, which takes HTML only: these
+templates use the text wordmark (no inline logo, no attachments) and carry no
+plain-text part unless Supabase's mailer adds one (UNVERIFIED, TPL-10). Only
+email sent by our own functions through the Resend API can carry the inline
+logo (`renderForResend`).
+
+`email_change.html` links carry `type=email_change`, which the app does not
+accept yet (TPL-04, SIGN-10). Harmless while the app has no change-email screen;
+the app must accept that type before one ships.
 
 ## Variables
 
@@ -60,14 +83,18 @@ user-controlled text; L3 forbids it), `{{ .Provider }}` (used only in the
 `identity_linked` condition), `{{ .FactorType }}`, `{{ .Phone }}`, `{{ .OldPhone }}`.
 
 The link puts the token hash after `#`, so it never reaches a server or log.
-The app's universal link (or a small page at `/auth/callback`) must read the
-fragment and call `supabase.auth.verifyOtp({ token_hash, type })`. That route
-does not exist yet.
+The app's universal link reads the fragment and completes the PKCE sign-in
+(ADR 0023; `apps/mobile/src/lib/auth/email.ts`). The website page at
+`/auth/callback` verifies nothing and tells the person to type the code.
 
 ## Loading them
 
-Local (CLI): copy `config.toml.snippet` into `supabase/config.toml`; paths are
-relative to the repo root, as in the Supabase docs example.
+Local (CLI): `supabase/config.toml` loads every template and notification.
+Template paths are relative to the repo root (`./supabase/templates/...`), as
+in the Supabase docs example; notification paths are relative to `supabase/`
+(`./templates/...`) in the CLI's Go loader (checked at tag v2.119.0). The
+v2.119.0 binary accepts both forms for notifications, so config.toml uses the
+one that works in both.
 
 Hosted project: either paste each HTML file and subject into Authentication >
 Emails in the dashboard, or send `management-api.json` with

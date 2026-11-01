@@ -3,7 +3,7 @@
 Engineering notes, not legal advice. Confirm with counsel before changing what we block.
 
 ## What OFAC asks of a business like ours
-OFAC FAQ 445 (ofac.treasury.gov/faqs/445, read 31 Oct 2026): US persons must avoid unauthorized dealings with people on the SDN List and with comprehensively sanctioned jurisdictions. OFAC recommends "a tailored, risk-based compliance program", which may include list screening, and says no single program fits every business. OFAC publishes its lists free, in formats suitable for automated screening.
+A Framework for OFAC Compliance Commitments (ofac.treasury.gov/media/16331/download, read 1 Nov 2026) recommends a risk-based approach, with the company's size and sophistication as a factor, and the Enforcement Guidelines (31 CFR 501 Appendix A) weigh such a programme. OFAC civil liability is generally strict, and program rules bar services to a blocked person with no payment threshold, so a free account is not exempt. (OFAC FAQ 445, ofac.treasury.gov/faqs/445, says much the same, but it answers a question about the cyber-related program, E.O. 13694, so do not cite it as the general rule.) In short: US persons must avoid unauthorized dealings with people on the SDN List and with comprehensively sanctioned jurisdictions. OFAC recommends "a tailored, risk-based compliance program", which may include list screening, and says no single program fits every business. OFAC publishes its lists free, in formats suitable for automated screening.
 
 ## Our risk, in plain terms
 - We sell nothing directly. Subscriptions go through Apple's in-app purchase on the US storefront only (D-013, D-083: US only at launch).
@@ -12,7 +12,7 @@ OFAC FAQ 445 (ofac.treasury.gov/faqs/445, read 31 Oct 2026): US persons must avo
 
 ## What we do (CR-26; the country list is founder decision D-131)
 1. **Block places, not people.** At sign-up, Crimea, Donetsk and Luhansk are covered only by the Terms confirmation (country data cannot single them out). A `before user created` auth hook and the web contribution page (when it ships, D-055) check the request's country against `ops.restricted_jurisdictions` and refuse with a neutral, accessible message that does not dead-end (it says where to read more).
-2. **No name screening, as a default pending the founder and counsel.** Screening names would make us collect legal names we otherwise never need, which works against data minimisation and our privacy promises. With no payments through us and a US-only storefront, Karma's and the CCO's engineering reading is that the Terms attestation plus the country block is proportionate. But accepting that residual risk is the founder's call with counsel (CCO skill section 5), so it is listed under "Open for counsel" below. Revisit if we take payments directly, ship outside the US storefront, or counsel says otherwise.
+2. **No name screening (D-137, 1 Nov 2026; decided by the CCO, CLO and Karma under the founder's delegation; counsel confirms in COUNSEL_PACKET Q57).** Screening names would make us collect legal names, and in practice dates of birth to clear false matches, that we otherwise never need, which works against data minimisation and our privacy promises. With no payments through us and a US-only storefront, the Terms attestation plus the country block, a name check on a report or escalation, and the match runbook (`docs/ops/runbooks/sanctions-match.md`: suspend, never delete, counsel the same day, a report within 10 business days if due, 31 CFR 501.603) is our risk-based programme. It lowers cost, not exposure. Revisit if we take payments directly, ship outside the US storefront, let people use the web contribution page without an account or from outside the US, move value between people, see OFAC guidance or enforcement about consumer apps, learn that a listed person uses the service, or counsel says otherwise. The reasoning and the challenge are in CCO-5.
 3. **Log counts, not people.** A blocked request writes one increment to `ops.compliance_check_counts` (day, check, outcome, jurisdiction code). The IP is used in memory to find the country and is never stored.
 4. **Fail open when there is no answer.** No geo data, no IP, an unknown country, a lock during a geo load, or an internal error lets the sign-up through and counts `geo_unknown` or `error`. Blocking every sign-up because a file is late would be an outage, not a control. Data older than 45 days is still used, counted as `geo_stale`, and flagged in `ops_compliance_report`; there is no alert yet (not yet: ops alert).
 
@@ -38,10 +38,10 @@ OFAC FAQ 445 (ofac.treasury.gov/faqs/445, read 31 Oct 2026): US persons must avo
 | OpenSanctions | Not used | CC BY-NC 4.0; commercial use needs a paid licence | 31 Oct 2026 |
 
 ## Open for counsel
-- Name screening (item 2 above): whether the attestation plus the country block is enough. Founder decision with counsel; the default is no screening.
+- All of this section is COUNSEL_PACKET Q57 (1.5.0, on #163): name screening (item 2, D-137), the D-131 list, and whether the country check changes the App Privacy label (CPrivO-2).
 - D-131's counsel list: whether the app is subject to the EAR at all (734.7 "published"), CCD for Russia and Belarus, the 5D992.c self-classification and any 740.17 reporting, whether sign-up blocking is enough when US-storefront downloads are not gated, Kherson and Zaporizhzhia.
 - Terms 2.4 names "terrorist supporting" countries (Cuba, North Korea, Iran today); our list blocks all of them, so the Terms and the list agree.
-- Whether a refused sign-up's `block` count survives GoTrue's transaction is unverified (APPLY.md File 27, step 4).
+- Whether a refused sign-up's `block` count survives GoTrue's transaction is unverified (APPLY.md File 28, step 4).
 
 ## Known limits (say these out loud)
 - VPNs get around any IP block. OFAC expects reasonable effort, and the Terms attestation covers the rest.

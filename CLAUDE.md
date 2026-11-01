@@ -47,6 +47,7 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Never imply AI writes anything. We never rewrite.
 - Never gender the child; use `{child}`.
 - Celebrate what exists; never count gaps. No streaks, points or badges, ever.
+- Two vocabularies: internal terms (take, entry, draft, pack, `raw_transcript`) stay in code and specs; a parent only reads the words in the BRAND.md glossary and its internal-terms table (CR-25).
 
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.

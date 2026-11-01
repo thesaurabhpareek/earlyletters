@@ -310,7 +310,7 @@ Draft new strings:
 
 | Key | Copy |
 |---|---|
-| `reminder.prime` | "A gentle nudge, now and then?" / "A couple of evenings a week, at a time you pick. Never late at night." |
+| `reminder.prime` | "A gentle nudge, now and then?" / "A couple of evenings a week, at a time you pick, to add to {child}'s book. Never late at night." |
 | `plus.sheet` | "Plus, for {child}'s book" / "Backup for every recording, Read together, books for more children, and new covers. Writing, reading, playing your recordings, export and family letters are free, always." |
 | `plus.trialStart` | "Your free month starts today. Plus renews at {monthlyPrice} on {date} unless you cancel." |
 | `plus.trialEnding` | "Plus renews on {date}" / "{price} from then. Change or cancel any time in Settings." |

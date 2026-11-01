@@ -1,6 +1,6 @@
 # Early Letters
 
-A baby memory book you fill by talking. Exactly as you said it.
+A baby memory book you fill by talking. It stays in your words.
 
 Parents speak or type notes and letters to a child. The app transcribes on the phone, fixes only what the microphone or grammar got wrong, keeps the original recording, and files everything into a memory book by the child's month of age.
 

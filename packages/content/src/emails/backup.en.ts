@@ -14,7 +14,7 @@
  *   {when}       date and time of the event, in words, UTC ("Thursday, October 29, 2026 at 9:14 pm UTC")
  *   {device}     plain device name, "an iPhone"; never a model, name or location
  *   {holdUntil}  when the recordings start coming back if nobody approves sooner, same format as {when}
- *   {stopUrl}    the single-use stop link (earlyletters.com/stop with the token after #)
+ *   {stopUrl}    the single-use stop link, https://earlyletters.com/stop#<token> (page still to build, TPL-06)
  *   {expiresIn}  how long the stop link works, in words ("7 days", as the database sets it)
  *   {requestId}  a short reference for support, never a person or book id
  */
@@ -29,7 +29,7 @@ export const backupEmails = {
   'backup-restore-requested': {
     id: 'backup-restore-requested',
     subject: "A new iPhone asked for your recordings",
-    preheader: "If this was you, there is nothing to do. They start coming back by {holdUntil}.",
+    preheader: "If this was you, there is nothing to do. If not, you can stop it here.",
     heading: "Was this you?",
     body: [
       "On {when}, someone signed in to your account on {device} and asked for your recording backup.",

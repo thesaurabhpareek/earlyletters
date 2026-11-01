@@ -103,3 +103,10 @@ docs/release/journey/INDEX.text-only.md
 # coverage reports (npm run test:coverage); scripts/coverage is the tooling, not a report
 coverage/
 !/scripts/coverage/
+
+# web (from main, one-lineage merge)
+apps/web/.next*
+apps/web/next-env.d.ts
+apps/web/*.tsbuildinfo
+apps/web/e2e/.results/
+__pycache__/
