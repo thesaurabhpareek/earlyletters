@@ -98,6 +98,11 @@ export function planScreen(input: {
   /** The restore result on screen under its row ("Plus is on."), so the row never repeats it either. */
   restored?: string | null;
   longDate: (ymd: string) => string;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA): Plus products cannot load, so "See what Plus adds" becomes the note
+   * that Plus is not part of this test, and Redeem a code is not offered. Defaults to false, the store build.
+   */
+  alpha?: boolean;
 }): PlanScreen {
   const said = new Set([...input.noteLines, ...(input.restored ? [input.restored] : [])]);
   const line = input.line;
@@ -116,7 +121,9 @@ export function planScreen(input: {
   // Someone with Plus, or with a subscription Apple is retrying, is never offered it again.
   const seePlans = input.plusOn || subscriptionExists(input.details.status)
     ? null
-    : available
+    : input.alpha
+      ? ({ kind: 'unavailable', title: billingCopy.alpha.note } as const)
+      : available
       ? ({ kind: 'open', title: p.seePlans } as const)
       : ({ kind: 'unavailable', title: input.storeSupport === 'needs_ios_17' ? p.needsNewerIos : p.unavailable } as const);
   return {
@@ -126,7 +133,7 @@ export function planScreen(input: {
     // A Family Sharing member cannot change or cancel the organiser's plan in Apple's screen (SUB-08), so Manage is
     // shown only for the person's own subscription; the status row already says it is shared with them.
     manage: subscriptionExists(input.details.status) && input.details.ownership !== 'familyShared',
-    redeem: !input.plusOn && available,
+    redeem: !input.plusOn && available && !input.alpha,
   };
 }
 

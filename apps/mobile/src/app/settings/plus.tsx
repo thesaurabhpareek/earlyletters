@@ -28,6 +28,7 @@ import {
   manageSubscription,
   noteLines,
   PlanNoteBody,
+  PLUS_ALPHA,
   presentPlusStore,
   purchaseConfirmation,
   redeemOfferCode,
@@ -115,6 +116,7 @@ export default function PlanSettings() {
     // Nor what the restore result under its row says ("Plus is on.").
     restored: restored?.text ?? null,
     longDate: (ymd) => longDate(ymd),
+    alpha: PLUS_ALPHA,
   });
   const notifications = useNotificationsAllowed();
   const remindable = plan.plusOn && plan.details.ownership === 'purchased' && plan.details.willAutoRenew !== false && (plan.details.status === 'trial' || plan.details.status === 'active');

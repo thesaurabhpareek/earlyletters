@@ -51,7 +51,9 @@ const feedbackBlock = [
   `If you were invited as a friend: ${groupLines.friends}`,
 ].join('\n\n');
 
-const plusLine = 'After the first two letters, keeping another one asks for Plus. Purchases in this test cost nothing.';
+// Alpha builds have no letter limit and offer no Plus (founder, 1 Nov 2026; apps/mobile billing/alpha.ts). The last
+// sentence stays: the tester notice (5.1) asks every What to Test to say it.
+const plusLine = 'Plus is not part of this test, so every letter you keep is free. Purchases in this test cost nothing.';
 
 // The ask comes at the end of first run, and again in Review while words are waiting if the person chose "Not now"
 // (speechConsentCopy, features/speech.en.ts).
