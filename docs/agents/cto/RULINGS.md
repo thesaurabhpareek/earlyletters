@@ -447,7 +447,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: put the line back into BL-323's scope and BL-446's Overlap note.
 - Revisit when: BL-388 is picked up, or a data-access request asks for a deleted letter. Karma
 
-### CR-37 One release test plan on top of what exists; pipelines switch on in order, after the freeze (1 Nov 2026, Karma via session_01G82fpt)
+### CR-37 One release test plan on top of what exists; pipelines switch on in order, after the 9 Nov go/no-go unless Karma takes one in earlier (1 Nov 2026, Karma via session_01G82fpt)
 - Question: The founder asked to validate how many test cases we have and extend them for pre-release and production on iOS (phones, iOS versions, screen sizes, happy and unhappy paths, accessibility, dark mode, large text, every screen, Plus, offer codes, payments, sign-in), using what already exists, documented, with the pipelines tested too. Where does that live, and what switches on when?
 - Tier and type: T1 for the docs and the catalog test; each pipeline step it names is T2 (`.github/**`). Complicated.
 - Options considered: (a) a new standalone test plan that restates every case; (b) edit DEVICE_TEST_PLAN, the e2e README and the journey index in place to add the missing rows; (c) one umbrella plan plus a catalog that cites the existing ids and adds only the gaps, with a test that fails on a dead cite; (d) do nothing until the go/no-go.

@@ -32,7 +32,24 @@ const ENUMS: Record<string, string[]> = {
 };
 
 const BANNED = new RegExp('[' + [0x2013, 0x2014, 0x2018, 0x2019, 0x201c, 0x201d, 0x2026].map((c) => String.fromCharCode(c)).join('') + ']');
-const ALLOWED_FAMILY = /^(SR-[A-Z]-\d{2}|IMP-\d+|MOB-\d+|CR-\d+|C-NFR-\d{3}|F\d{2}-REQ-\d{3}|LEGAL-REQ-\d{3}|PRD-REQ-\d{3}|#\d+|none)$/;
+/** Ids from review docs outside the repo; each must be listed in the plan's section 9. */
+const OUTSIDE_ID = /^(SR-[A-Z]-\d{2}|IMP-\d+|MOB-\d+)$/;
+/** Requirement ids; each must appear somewhere under docs/. */
+const REQ_ID = /^(C-NFR-\d{3}|F\d{2}-REQ-\d{3}|LEGAL-REQ-\d{3}|PRD-REQ-\d{3})$/;
+/** Checked by format only: a GitHub PR or issue number, or an explicit none. */
+const ALLOWED_FAMILY = /^(#\d+|none)$/;
+
+/** Every text file under docs/, joined, for requirement-id lookups. */
+function readDocsTree(dir = join(ROOT, 'docs')): string {
+  let out = '';
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    const p = join(dir, e.name);
+    if (e.isDirectory()) out += readDocsTree(p);
+    // The catalog and its plan cite these ids themselves, so they cannot vouch for them.
+    else if (/\.(md|csv|ts|json)$/.test(e.name) && !/^(release-test-catalog\.csv|RELEASE_TEST_PLAN\.md)$/.test(e.name)) out += readFileSync(p, 'utf8') + '\n';
+  }
+  return out;
+}
 const PATH = /^[\w.@-]+(\/[\w.@()[\]-]+)+\/?$/;
 
 /** Splits a covered_by cell into tokens; "S1-23 V-06" is two ids. */
@@ -55,6 +72,10 @@ function makeResolver(): (t: string) => Kind {
   const decisions = read('docs/DECISIONS.md');
   const sheets = readdirSync(join(ROOT, 'docs/qa/run-sheets'));
   const s2Map = device.slice(device.indexOf('### S2-01 to S2-12'), device.indexOf('### S2-13'));
+  const plan = read('docs/qa/RELEASE_TEST_PLAN.md');
+  const outside = plan.slice(plan.indexOf('## 9. Ids that come from outside the repo'));
+  const rulings = read('docs/agents/cto/RULINGS.md');
+  let docsTree: string | null = null;
 
   return (t: string): Kind => {
     let m: RegExpMatchArray | null;
@@ -76,6 +97,12 @@ function makeResolver(): (t: string) => Kind {
     if (/^AL-\d{2}$/.test(t)) return sheets.some((f) => f.startsWith(`${t}-`)) ? 'id' : null;
     if (/^D-\d{1,2}b?$/.test(t)) return asc.includes(`| ${t} |`) ? 'id' : null;
     if (/^D-\d{3}$/.test(t)) return decisions.includes(`### ${t} `) ? 'id' : null;
+    if (OUTSIDE_ID.test(t)) return outside.includes(`| ${t} |`) ? 'id' : null;
+    if ((m = t.match(/^CR-(\d+)$/))) return rulings.includes(`### CR-${m[1]} `) ? 'id' : null;
+    if (REQ_ID.test(t)) {
+      docsTree ??= readDocsTree();
+      return new RegExp(`\\b${t}\\b`).test(docsTree) ? 'id' : null;
+    }
     if (ALLOWED_FAMILY.test(t)) return 'family';
     if (PATH.test(t)) return existsSync(join(ROOT, t)) ? 'path' : null;
     return null;
@@ -128,12 +155,22 @@ describe('[S19] release test catalog', () => {
     expect(bad).toEqual([]);
   });
 
+  it('marks a row automated only in the web lane, where a journey really runs it', () => {
+    // Plan section 2: status follows the row's own lane. A device, testflight or
+    // production row is planned until a person runs it; a maestro row is stale or
+    // planned until Maestro runs in CI.
+    const bad = rows
+      .filter((r) => col(r, 'status') === 'automated' && col(r, 'lane') !== 'web')
+      .map((r) => `${r[0]} is automated in the ${col(r, 'lane')} lane`);
+    expect(bad).toEqual([]);
+  });
+
   it('refuses a planted bad citation (self-check of the resolver)', () => {
     const resolve = makeResolver();
-    for (const t of ['E2E-99b', 'E2E-16', 'E2E-01c', 'S1-99', 'D-999', 'V-99', 'apps/mobile/test/nope.test.ts', 'plan.ts']) {
+    for (const t of ['E2E-99b', 'E2E-16', 'E2E-01c', 'S1-99', 'D-999', 'V-99', 'apps/mobile/test/nope.test.ts', 'plan.ts', 'SR-C-99', 'IMP-9999', 'MOB-999', 'CR-999', 'F99-REQ-999']) {
       expect(resolve(t), t).toBeNull();
     }
-    for (const t of ['E2E-01', 'E2E-01a', 'E2E-13c', 'J11-05', 'S2-07', 'V-06', '.github/workflows/ci.yml', 'SR-C-04', '#480']) {
+    for (const t of ['E2E-01', 'E2E-01a', 'E2E-13c', 'J11-05', 'S2-07', 'V-06', '.github/workflows/ci.yml', 'SR-C-04', 'IMP-67', 'CR-37', 'F14-REQ-040', '#480']) {
       expect(resolve(t), t).not.toBeNull();
     }
   });

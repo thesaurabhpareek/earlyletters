@@ -45,16 +45,16 @@ Status follows the row's own lane and Expected, not the best case it cites. A ro
 | Status | Rows | Meaning |
 |---|---|---|
 | covered | 6 | An automated test or workflow runs in CI today and proves the Expected |
-| automated | 16 | An automated case proves it when run (web journeys); no pipeline runs it yet |
-| planned | 93 | A case is written (Maestro, phone item, run sheet, StoreKit check) but has never run |
+| automated | 14 | An automated case proves it when run (web journeys); no pipeline runs it yet |
+| planned | 94 | A case is written (Maestro, phone item, run sheet, StoreKit check) but has never run |
 | partial | 32 | Part of the Expected is proven or written |
 | gap | 91 | No case anywhere; this plan adds it |
-| stale | 1 | The written case contradicts a decision (E2E-06) |
+| stale | 2 | The written case contradicts a decision (E2E-06, E2E-07) |
 | decision | 1 | Needs a decision before it can be a test (RT-A11Y-17, portrait lock against WCAG 1.3.4) |
 
 152 rows are P0. The P0 gaps cluster in five places: payments edge cases (failures, unfinished transactions, offline renewals, refunds, crossgrades, storefronts, production products and codes); the store submission itself (size, age rating, privacy label, subscriptions with 1.0, the early-version note); error states (words failures, kills in Review and while typing, recovery lines); accessibility on a phone (focus return, Display Zoom, Voice Control); and requirements that are not built (SR-C-02, 04, 06, 07, 08, 10, 16, Declared Age Range, Quiet this book).
 
-To add a case: add a row to `scripts/qa/release-catalog.rows.mjs`, run `node scripts/qa/release-catalog.mjs`, commit both. Never copy steps from another plan; cite its id in `covered_by`. `apps/mobile/test/qa-release-catalog.test.ts` fails if a cited id, journey step or path does not exist, if a token is free text, or if a covered row cites no test or workflow file.
+To add a case: add a row to `scripts/qa/release-catalog.rows.mjs`, run `node scripts/qa/release-catalog.mjs`, commit both. Never copy steps from another plan; cite its id in `covered_by`. `apps/mobile/test/qa-release-catalog.test.ts` fails if a cited id, journey step or path does not exist, if a token is free text, if a covered row cites no test or workflow file, or if a row outside the web lane is marked automated. An SR, IMP or MOB id must be listed in section 9; a CR id must be in `docs/agents/cto/RULINGS.md`; a requirement id (F##-REQ, C-NFR, LEGAL-REQ, PRD-REQ) must appear under `docs/`. A `#n` PR or issue number is checked by format only.
 
 ## 3. Phones, iOS versions and screen sizes
 
@@ -130,7 +130,7 @@ Open decision (RT-A11Y-17): the app is portrait-only, and WCAG 1.3.4 Orientation
 Facts to plan around:
 
 - The `.preview` TestFlight app and the App Store app have different bundle ids, so they are separate apps with separate data. A tester's letters do not move from TestFlight to the App Store app. Recommendation, founder decides the wording: tell testers to export first, and say nothing that suggests the letters carry over (RT-LCH-05).
-- Products exist only on the App Store Connect record they were created on. Until Plus products exist on the `.preview` record, the rows marked testflight or sandbox are blocked. They cannot quietly switch to the StoreKit file, because that file does not run in a TestFlight build.
+- Products exist only on the App Store Connect record they were created on, and a product id is unique across the whole developer account, so the `.preview` record can never carry the Plus products (App Store Connect refused them on 1 Nov). Sandbox purchases need a TestFlight build of the production profile, which D-124 item 1 holds until after the 9 Nov go/no-go. Until then the rows marked testflight or sandbox are blocked (RT-PAY-21). They cannot quietly switch to the StoreKit file, because that file does not run in a TestFlight build.
 - The most useful pre-release check: a TestFlight build of `com.earlyletters.scribe` buys the production record's products in the sandbox. That proves product ids, trials, grace, Family Sharing and sandbox codes before submission, and it is how App Review buys too (RT-PAY-21). The first subscriptions go in with the 1.0 binary (RT-REL-11).
 - App Review may use an iPad, and the app is iPhone-only, so it would run in compatibility mode (A). App Review's IPv6 network is the reason for RT-NET-01. Both run on the release candidate.
 - Phased release is not available for 1.0.0 (`docs/ops/RELEASE.md` 7.1). 1.0.0 is released by hand, with a 48 hour watch (RT-REL-06). Phased release starts with 1.0.1.
@@ -170,7 +170,8 @@ Before the go/no-go, on build 1. This needs a phone and a person (SR-B-06):
 - TF-04 smoke on D2 and a current phone (as written, item 6 does not apply to build 1).
 - AL-01, AL-02, AL-03 and AL-08 part A.
 - DL-06, the S1-23 VoiceOver walk and the S1-24 display settings.
-- The purchase rows that the StoreKit file can run in a development build: RT-PLS-01 to 09, RT-PAY-01, 04, 06, 17, RT-SUB-01, 03, 05, 06, RT-OFC-01, 02, 07.
+- The device-lane purchase rows, which the StoreKit file runs in a development build: RT-PLS-07 to 09, RT-PAY-06, 17, RT-OFC-07.
+- A rehearsal of the sandbox-lane rows with the StoreKit file in a development build: RT-PLS-01, 03, 05, 06, RT-PAY-01, 04, RT-SUB-01, 03, 05, 06, RT-OFC-01, 02. A rehearsal finds bugs early but does not change their status: they count only once a production-profile TestFlight build runs them in the sandbox, after 9 Nov (D-124 item 1, RT-PAY-21).
 
 Evidence files go in `docs/qa/evidence`, as the template says.
 
@@ -192,3 +193,36 @@ Build 2: the B2 rows, after the build 2 gates in ALPHA_GO_NO_GO.
 - I ran the unit tests and the web journeys on Linux. I did not run `npm run test:db`, any Mac job, or anything on a phone.
 - iOS 27 support details came from press coverage, not Apple's own page.
 - Four independent reviews (QA, payments, red team, design systems) were folded in on 1 Nov. Their findings that were founder decisions are listed in FOUNDER_QUEUE, not settled here.
+
+## 9. Ids that come from outside the repo
+
+Some rows cite ids from review documents that live in the founder's Project, not the repo. They are listed here so the catalog test can check each one, and so a reader can see what each means. An id not in this table fails the test.
+
+| Id | Source | What it asks for |
+|---|---|---|
+| SR-B-01 | Staged release requirements, 31 Oct | Every public claim is true of the build |
+| SR-B-02 | Staged release requirements, 31 Oct | A privacy policy and terms that cover the app |
+| SR-B-03 | Staged release requirements, 31 Oct | The privacy label is right |
+| SR-B-04 | Staged release requirements, 31 Oct | The age-range signal exists, or counsel has a written plan |
+| SR-B-05 | Staged release requirements, 31 Oct | A store-profile preflight exists |
+| SR-C-01 | Staged release requirements, 31 Oct | A parent gets words (signed packs) |
+| SR-C-02 | Staged release requirements, 31 Oct | VoiceOver never speaks into a recording |
+| SR-C-04 | Staged release requirements, 31 Oct | A thumb slip does not lock a parent out for a day (age gate confirm) |
+| SR-C-05 | Staged release requirements, 31 Oct | What the app says about recordings is true (microphone primer, purpose string) |
+| SR-C-06 | Staged release requirements, 31 Oct | Edits in Review survive a kill |
+| SR-C-07 | Staged release requirements, 31 Oct | Delete a book and erase everything, or the copy stops saying so |
+| SR-C-08 | Staged release requirements, 31 Oct | A parent knows about Plus before the third letter |
+| SR-C-09 | Staged release requirements, 31 Oct | Help always works (no phone line, mail fails) |
+| SR-C-10 | Staged release requirements, 31 Oct | A parent can fix a wrong date |
+| SR-C-11 | Staged release requirements, 31 Oct | The book as a PDF without an export and unzip |
+| SR-C-13 | Staged release requirements, 31 Oct | The first reminder is asked for at the right moment |
+| SR-C-14 | Staged release requirements, 31 Oct | A recording cannot silently fill the phone |
+| SR-C-15 | Staged release requirements, 31 Oct | A parent can teach the app a name |
+| SR-C-16 | Staged release requirements, 31 Oct | A kept note counts toward the free letters (D-133) |
+| SR-C-20 | Staged release requirements, 31 Oct | Account deleted elsewhere, and a new-sign-in email (build 2) |
+| SR-C-21 | Staged release requirements, 31 Oct | Co-parent push and the Leave path (build 2) |
+| IMP-47 | Retrospective, 28 Oct | Sync conflict copies are visible to a parent |
+| IMP-53 | Retrospective, 28 Oct | A launch check for the preview profile in CI |
+| IMP-55 | Retrospective, 28 Oct | A contract test that every RPC an Edge Function calls exists |
+| IMP-67 | Retrospective, 28 Oct | A claims test keyed to the capability flags |
+| MOB-09 | Mobile backlog (cited in `apps/mobile/src/lib/resilience/launch.logic.ts`) | The "update the app" screen when the database is newer than the app |
