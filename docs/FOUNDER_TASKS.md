@@ -298,7 +298,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - By: recruited Fri 16 Oct; spot-check results Fri 23 Oct.
   - Blocks: FT-34 (which languages the listing names), CVL-01, CVL-03 and invite translations in v1.1 and v1.2.
 
-- [ ] **FT-28 Trademark knockout search ("Early Letters")**
+- [ ] **FT-28 Trademark knockout search ("Early Letters")** (search run 31 Oct 2026, result in D-134; which classes were searched and the file-or-not decision are not recorded, so it stays open)
   - Time: 2 hours.
   - Cost: US $0 for the search; counsel's opinion if anything turns up (FT-35).
   - Steps: compliance register CR-122 and `docs/backlog/future/04-growth-monetisation.md` G-02: search the USPTO trademark search for "EARLY LETTERS" and close variants in classes 9 (software), 42 (online services), 16 (printed books, for later print) and 41 (education, where the phonics apps sit); search the App Store for the name; note any live mark in those classes. If clear, decide whether to file (per class [U]).
