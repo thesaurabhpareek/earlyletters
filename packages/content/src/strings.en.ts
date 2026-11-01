@@ -140,7 +140,7 @@ export const en = {
       night: "The house is quiet, {name}.",
       lateNight: "Still up, {name}. Take your time.",
     },
-    subtitle: "What do you want {child} to know about today?",
+    subtitle: "A few words for {child} will do.",
     promptLabel: "A thought to start with",
     newPromptButton: "Another thought",
     writeFreelyButton: "Just talk",
@@ -316,7 +316,7 @@ export const en = {
     },
     empty: {
       bookTitle: "The first page is waiting.",
-      bookBody: "Say one true thing about {child} today. That is how every book begins.",
+      bookBody: "Start small. What did {child} eat for breakfast, or refuse to?",
       bookCta: "Write a letter",
       chapterTitle: "Month {month} is open.",
       chapterBody: "Whatever you add this month lands here.",
@@ -385,7 +385,7 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We're making a book of letters for {child}, and I'd love yours in it. You just talk, in any language, and your voice is kept too. Get the app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
@@ -418,7 +418,7 @@ export const en = {
       title: "Your letters to {child}",
       inBookLabel: "In the book",
       waitingLabel: "With {inviter}",
-      emptyTitle: "Your first letter is waiting to be written.",
+      emptyTitle: "Your first letter can be one sentence.",
     },
   },
 
@@ -427,8 +427,8 @@ export const en = {
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "Tonight's letter", body: "What made you smile today? Say it out loud and we will keep it." },
       { title: "Dear {child},", body: "Your words, kept for {child}. Today, and long after." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
-      { title: "One small thing", body: "What did {child} do today that you want to remember?" },
+      { title: "The house is quiet", body: "Now that it is quiet, say a few words to {child}." },
+      { title: "One small thing", body: "What did {child} do today that made you stop and look?" },
       { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Whatever today held, it belongs in {child}'s book." },
@@ -447,11 +447,11 @@ export const en = {
     },
     monthOpen: {
       title: "Month {month} begins",
-      body: "A new chapter in {child}'s book is open.",
+      body: "A new chapter is open. What will {child} get up to?",
     },
     birthday: {
-      title: "A good day to read together",
-      body: "Want to read {child}'s letters together today?",
+      title: "It is {child}'s birthday",
+      body: "A lovely day to open the book and read the letters together.",
     },
   },
 
@@ -645,7 +645,7 @@ export const en = {
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
       remindersLabel: "Include {child} in my reminders",
-      remindersHelp: "Your reminder time is shared across your children. Notes about {child}'s months and birthday follow this switch.",
+      remindersHelp: "Your reminder time is the same for every child. This switch decides whether {child}'s month and birthday notes come along.",
       celebrationsLabel: "Pause celebrations for {child}",
       celebrationsHelp: "Only for you. Month notes, birthdays and milestones for {child} rest until you turn them back on.",
       familyLabel: "Who writes to {child}",

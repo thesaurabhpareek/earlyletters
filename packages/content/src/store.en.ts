@@ -9,7 +9,7 @@ export const storeListing = {
   appName: "Early Letters: Memory Book",
   subtitle: "Baby memory book in your voice",
   promotionalText:
-    "Talk to your child for a minute. Early Letters keeps every word exactly as you said it, with your voice, in a memory book you can read together for years.",
+    "Talk to your child for a minute. Early Letters keeps every word exactly as you said it, and your voice with it, in a book you can read together for years.",
   keywords:
     "journal,diary,keepsake,newborn,parents,milestones,family,grandparents,audio,bilingual,scrapbook",
   description: `Early Letters is a baby memory book you fill by talking.
@@ -26,7 +26,7 @@ READ TOGETHER
 Open any letter and it plays in the voice of the person who wrote it, while the words appear on the page. Listen together at bedtime. Your first 3 Read together sessions are free; after that, Read together is part of Plus. Every recording you have made stays playable.
 
 NOTES AND LETTERS
-Some days are a quick note. Some days are a proper letter. Both belong. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores. Come back whenever you like.
+Some days are a quick note, some days a proper letter, and both belong in the book. If today was quiet, tap "Not much today" and that is enough. There are no counters, no badges and no scores.
 
 A BOOK FOR THE WHOLE FAMILY
 Invite grandparents and close family to add their own letters from the app on their own phone, without a membership of their own. Each one is signed, like "From Papa" or "From Nani". You approve what goes into the book, and each author chooses what they share.
@@ -58,7 +58,7 @@ Early Letters is in beta. We are still building, and some things may change. You
   // last (beta) paragraph, in the v1.0 listing, because App Review 2.2 keeps betas on TestFlight.
   promotionalTextBeta: "Now in beta. Tell us what you think from Settings, Help and Legal, Support.",
   whatsNewV1:
-    "Hello. This is the first version of Early Letters. Talk or type a letter to your child, keep your voice with it, invite family, read together, and export your memory book as a PDF. Your first two letters are free.",
+    "Hello, and welcome to the first version of Early Letters. Talk or type a letter to your child and your voice is kept with it. Invite family to add theirs, read together at bedtime, and export the whole book as a PDF. Your first two letters are free.",
   screenshotCaptions: [
     "Talk to your child for a minute",
     "Kept exactly as you said it",
