@@ -38,6 +38,14 @@
   z-index: 3;
   pointer-events: none;
 }
+/* Narrow phones (320px): "Years from now" at the headline size is wider than the screen, wraps to two lines,
+   and once it is shrunk into the eyebrow slot its second line lands on the headline. Keep it on one line. */
+@media (max-width: 899px) {
+  .whenBig {
+    white-space: nowrap;
+    font-size: min(var(--s07-head), calc((100vw - 2 * var(--gutter)) / 7.6));
+  }
+}
 .lampLight {
   position: absolute;
   inset: -60% -10% -10% -10%;
