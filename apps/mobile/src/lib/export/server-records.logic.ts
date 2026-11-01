@@ -62,6 +62,33 @@ export async function allRows(page: (from: number, to: number) => PromiseLike<Re
   return { data: null, error: 'too_many_rows' };
 }
 
+/** The slice of a PostgREST query builder the reads use (supabase-js's, structurally; no React Native here). */
+interface PostgrestQuery extends PromiseLike<ReadResult> {
+  order(column: string, options?: { ascending?: boolean }): PostgrestQuery;
+  range(from: number, to: number): PostgrestQuery;
+  eq(column: string, value: string): PostgrestQuery;
+  limit(count: number): PostgrestQuery;
+  abortSignal(signal: AbortSignal): PostgrestQuery;
+}
+export interface PostgrestLike {
+  from(table: string): { select(columns: string): PostgrestQuery };
+}
+
+/**
+ * The reads against a Supabase client: the app's (device.ts) and the real-stack
+ * check's (apps/mobile/test/live/export-server-reads.live.ts) are this one.
+ */
+export function postgrestReader(sb: PostgrestLike): ServerRecordsReader {
+  return {
+    acts: (signal) =>
+      allRows((from, to) =>
+        sb.from('policy_acceptances').select(ACT_COLUMNS).order('accepted_at', { ascending: true }).order('id', { ascending: true }).range(from, to).abortSignal(signal),
+      ),
+    state: (signal) => allRows((from, to) => sb.from('my_policy_state').select(STATE_COLUMNS).order('document').range(from, to).abortSignal(signal)),
+    profile: async (signal, userId) => sb.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).limit(2).abortSignal(signal),
+  };
+}
+
 /** A profile with no values, and why. */
 export function noProfile(status: Exclude<ExportProfile['status'], 'included'>): ExportProfile {
   return { status, read_at: null, display_name: null, signs_as: null, created_at: null };

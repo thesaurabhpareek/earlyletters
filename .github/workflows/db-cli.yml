@@ -1,6 +1,7 @@
 # Real Supabase stack checks for database changes (CI-03). On pull requests
 # that touch supabase/**: start the local stack, rebuild it from every
 # migration with `supabase db reset`, lint the schema (fail on error level),
+# run the export's server reads over the stack's real API (BL-323, BL-529),
 # then run the PGlite access-rule suite, without Supabase's automatic grants and
 # again with the old ones. The nightly workflow calls this file
 # too (workflow_call). Not part of the `required` aggregator, because it only
@@ -13,6 +14,8 @@ on:
     paths:
       - 'supabase/**'
       - '.github/workflows/db-cli.yml'
+      - 'apps/mobile/src/lib/export/**'
+      - 'apps/mobile/test/live/**'
   workflow_call:
 
 concurrency:
@@ -45,6 +48,13 @@ jobs:
         run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
       - name: Rebuild from every migration
         run: supabase db reset --local
+      # The app's own export reader (server-records.logic.ts) against real GoTrue, PostgREST and the
+      # migrations' access rules: signed-in fictional users, own rows only. Blocking.
+      - name: Export reads over the real API (BL-323, BL-529)
+        run: |
+          eval "$(supabase status -o env | sed -n 's/^\(API_URL\|ANON_KEY\|SERVICE_ROLE_KEY\)=/export \1=/p')"
+          SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_KEY="$SERVICE_ROLE_KEY" \
+            SUPABASE_DB_CONTAINER=supabase_db_scribe npx tsx apps/mobile/test/live/export-server-reads.live.ts
       # Advisory until DB-17 is fixed: plpgsql_check reports 42P01 for a pg_temp table that a purge function creates at run time
       # (migration already applied, so it cannot be edited). `db reset` above is the blocking check.
       - name: Lint the schema (advisory)

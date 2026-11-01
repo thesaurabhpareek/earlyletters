@@ -28,7 +28,7 @@ import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
-import { ACT_COLUMNS, allRows, noConsentHistory, noProfile, PROFILE_COLUMNS, readServerRecords, STATE_COLUMNS, type ServerRecordsReader } from './server-records.logic';
+import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
@@ -151,18 +151,12 @@ function phoneDictionary(children: SnapshotChild[]): ExportDictionaryTerm[] {
   );
 }
 
-/** Own rows only: row-level security limits each read to the signed-in account. */
+/** Own rows only: row-level security limits each read to the signed-in account (server-records.logic.ts). */
 function supabaseReader(): ServerRecordsReader | null {
   const sb = getSupabaseOrNull();
-  if (!sb) return null;
-  return {
-    acts: (signal) =>
-      allRows((from, to) =>
-        sb.from('policy_acceptances').select(ACT_COLUMNS).order('accepted_at', { ascending: true }).order('id', { ascending: true }).range(from, to).abortSignal(signal),
-      ),
-    state: (signal) => allRows((from, to) => sb.from('my_policy_state').select(STATE_COLUMNS).order('document').range(from, to).abortSignal(signal)),
-    profile: async (signal, userId) => sb.from('profiles').select(PROFILE_COLUMNS).eq('id', userId).limit(2).abortSignal(signal),
-  };
+  // supabase-js's builder types are too deep to check structurally (TS2589); the real-stack check
+  // (apps/mobile/test/live/export-server-reads.live.ts) runs this same reader on a real supabase-js client.
+  return sb ? postgrestReader(sb as unknown as PostgrestLike) : null;
 }
 
 /** Adds the server's consent record and the person's profile to a snapshot (never throws; Stop ends the read at once; see server-records.logic.ts). */
