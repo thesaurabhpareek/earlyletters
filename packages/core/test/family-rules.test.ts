@@ -140,12 +140,11 @@ describe('Plus and the other parent (DR-03, D-080)', () => {
   it('[F11-REQ-017] a co-parent outside the payer\'s Apple Family is Free: the book is never covered by the other parent', () => {
     expect(bookPlanContext()).toEqual({ coveredByOtherParent: false });
     const coParent = { roleInBook: 'parent' as const, own: NO_PLAN };
-    expect(decide({ ...base, feature: 'backup_upload', viewer: coParent, book: bookPlanContext() })).toEqual({ kind: 'offer', trigger: 'backup', needsSignIn: false });
-    expect(decide({ ...base, feature: 'theme_extra', viewer: coParent, book: bookPlanContext() }).kind).toBe('offer');
+    expect(decide({ ...base, feature: 'theme_extra', viewer: coParent, book: bookPlanContext() })).toEqual({ kind: 'offer', trigger: 'themes', needsSignIn: false });
   });
 
   it('[F11-REQ-017] Plus that reaches the co-parent through Family Sharing is their own entitlement', () => {
     const shared: PlanView = { state: 'active', effectiveUntil: '2027-10-15T09:00:00.000Z', verifiedAt: NOW, environment: 'production', isTester: false };
-    expect(decide({ ...base, feature: 'backup_upload', viewer: { roleInBook: 'parent', own: shared }, book: bookPlanContext() })).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(decide({ ...base, feature: 'theme_extra', viewer: { roleInBook: 'parent', own: shared }, book: bookPlanContext() })).toEqual({ kind: 'allow', via: 'plus_own' });
   });
 });
