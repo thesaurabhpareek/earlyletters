@@ -3,7 +3,9 @@
 // fictional.
 import { generateKeyPairSync, verify } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
-import { appLookupPath, ascToken, checkApple, checkExpo, interpretAppLookup, PREVIEW_BUNDLE_ID, redact, render, repoFindings, signingKeyIds } from '../../../scripts/release/doctor';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { appLookupPath, ascToken, checkApple, checkExpo, interpretAppLookup, PREVIEW_BUNDLE_ID, redact, render, repoFindings, runProductionPreflight, signingKeyIds, updateChannelFindings } from '../../../scripts/release/doctor';
 
 const { privateKey, publicKey } = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
 const pem = privateKey.export({ type: 'pkcs8', format: 'pem' }).toString();
@@ -62,6 +64,74 @@ describe('signing keys, read like the preflight reads them', () => {
   it('ignores line and block comments', () => {
     expect(signingKeyIds("[\n  // { keyId: 'el-1', publicKey: 'x' },\n  /* { keyId: 'b' } */\n]")).toEqual([]);
     expect(signingKeyIds("[{ keyId: 'el-2026-10', publicKey: 'x' }, { keyId: \"el-2026-10-backup\", publicKey: 'y' }]")).toEqual(['el-2026-10', 'el-2026-10-backup']);
+  });
+});
+
+describe('EAS Update channel without expo-updates (RS-07, D-091, #538)', () => {
+  const eas = (profile?: string) => ({ build: { production: { autoIncrement: true }, testflight: { autoIncrement: true }, preview: { autoIncrement: true }, development: {}, ...(profile ? { [profile]: { autoIncrement: true, channel: profile } } : {}) } });
+  const pkg = (updates: boolean) => JSON.stringify({ name: '@scribe/mobile', dependencies: { expo: '~57.0.0', ...(updates ? { 'expo-updates': '~57.0.0' } : {}) } });
+  const levels = (f: ReturnType<typeof updateChannelFindings>) => f.map((x) => x.level);
+
+  it.each(['testflight', 'preview', 'development'])('FAILs a channel on %s (an alpha profile) with no expo-updates, with or without --store', (profile) => {
+    for (const store of [false, true]) {
+      const f = updateChannelFindings(eas(profile), pkg(false), store);
+      expect(levels(f)).toEqual(['FAIL']);
+      expect(f[0].message).toContain(`"${profile}"`);
+      expect(f[0].message).toContain('D-091');
+      expect(f[0].message).toContain('#538');
+    }
+  });
+  it('a channel on production with no expo-updates is a WARN in the alpha mode and a FAIL with --store', () => {
+    const alpha = updateChannelFindings(eas('production'), pkg(false));
+    expect(levels(alpha)).toEqual(['WARN']);
+    expect(alpha[0].message).toContain('"production"');
+    expect(alpha[0].message).toContain('--store');
+    const store = updateChannelFindings(eas('production'), pkg(false), true);
+    expect(levels(store)).toEqual(['FAIL']);
+    expect(store[0].message).toContain('"production"');
+  });
+  it('PASSes the same profiles with expo-updates', () => {
+    for (const profile of ['production', 'testflight']) for (const store of [false, true]) expect(levels(updateChannelFindings(eas(profile), pkg(true), store))).toEqual(['PASS']);
+  });
+  it('PASSes when no profile sets a channel', () => {
+    for (const store of [false, true]) expect(levels(updateChannelFindings(eas(), pkg(false), store))).toEqual(['PASS']);
+  });
+  it('fails closed when package.json is missing or unreadable', () => {
+    expect(levels(updateChannelFindings(eas('testflight'), undefined))).toEqual(['FAIL']);
+    expect(levels(updateChannelFindings(eas('production'), '{', true))).toEqual(['FAIL']);
+  });
+  it('repoFindings follows the mode: production is a WARN in the alpha scope and a FAIL with --store, and the --store rows do not repeat it', () => {
+    const files = { appConfig: '', easJson: JSON.stringify(eas('production')), keysTs: '', mobilePackageJson: pkg(false) };
+    const channel = (f: ReturnType<typeof repoFindings>) => f.filter((x) => x.message.includes('EAS Update')).map((x) => x.level);
+    const pre = [{ level: 'FAIL' as const, msg: 'channel', id: 'update-channel' }];
+    expect(channel(repoFindings(files))).toEqual(['WARN']);
+    expect(channel(repoFindings(files, false, { results: pre, store: false }))).toEqual(['WARN']);
+    const store = repoFindings(files, false, { results: pre, store: true });
+    expect(channel(store)).toEqual(['FAIL']);
+    expect(store.filter((x) => x.area === 'store' && x.message === 'channel')).toEqual([]);
+  });
+
+  describe('the real repository (eas.json build.production sets "channel": "production", no expo-updates)', () => {
+    // Wanted until REL-06/RS-15 removes the channel after the 9 Nov go/no-go (D-124 item 1): the alpha doctor stays
+    // at 0 FAIL (TESTFLIGHT.md step 5) with this one WARN, and the store lane (--store) FAILs on production. When
+    // RS-15 lands both become a PASS: change these expectations then, never before.
+    const root = join(__dirname, '..', '..', '..');
+    const read = (p: string) => readFileSync(join(root, p), 'utf8');
+    const files = () => ({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts'), mobilePackageJson: read('apps/mobile/package.json') });
+    const channel = (f: ReturnType<typeof repoFindings>) => f.filter((x) => x.message.includes('EAS Update'));
+
+    it('default (alpha) mode: 0 FAIL, and the production channel is a WARN', () => {
+      const f = repoFindings(files(), false, { results: runProductionPreflight(root), store: false });
+      expect(f.filter((x) => x.level === 'FAIL'), f.map((x) => `${x.level} ${x.message}`).join('\n')).toEqual([]);
+      expect(channel(f).map((x) => x.level)).toEqual(['WARN']);
+      expect(channel(f)[0].message).toContain('"production"');
+    }, 120_000);
+
+    it('--store: FAILs on the production channel', () => {
+      const f = repoFindings(files(), false, { results: runProductionPreflight(root), store: true });
+      expect(channel(f).map((x) => x.level)).toEqual(['FAIL']);
+      expect(channel(f)[0].message).toContain('"production"');
+    }, 120_000);
   });
 });
 

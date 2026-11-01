@@ -12,9 +12,9 @@
  * online and needs no secrets. It cannot see the EAS "production" environment on expo.dev; the UNVERIFIED lines
  * name what to check there by hand.
  *
- * Every check below is a FAIL when it does not hold. Today two of them FAIL by design until the founder steps are
- * done: the pack signing keys (packages/api/src/keys.ts is empty, docs/ops/PACKS_HOSTING.md step 1) and the App
- * Store Connect record (submit.production.ios.ascAppId), and extra.eas.projectId until step 3's PR.
+ * Every check below is a FAIL when it does not hold. On develop today two of them FAIL by design: the App Store
+ * Connect record (submit.production.ios.ascAppId, a founder step), and update-channel (the production profile sets
+ * "channel" without expo-updates; REL-06/RS-15 removes it after the 9 Nov go/no-go, D-124 item 1).
  *
  * Exit code: 1 if any FAIL, otherwise 0.
  */
@@ -22,7 +22,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys, updateChannelMessage, updateChannelProblems } from './preflight-lib.mjs';
 
 export const PROFILE = 'production';
 
@@ -64,9 +64,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `appConfigSource`: apps/mobile/app.config.ts
  * - `shellEnv`: the environment this runs in (a local build reads it)
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
+ * - `mobilePackage`: apps/mobile/package.json, parsed (absent or unreadable counts as no expo-updates)
  *
  * Each result has an `id`: app-env, english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
- * pack-manifest, privacy-manifest, version, project-id, asc-app-id, seams, secrets (and config when `expo config` failed).
+ * pack-manifest, privacy-manifest, version, project-id, update-channel, asc-app-id, seams, secrets (and config when
+ * `expo config` failed).
  */
 export function productionChecks(input) {
   const { results, pass, fail, unverified, check } = createReport();
@@ -204,6 +206,15 @@ export function productionChecks(input) {
     'project-id',
   );
 
+  // RS-07, D-091: a build profile that sets an EAS Update channel without expo-updates installed stops a
+  // non-interactive `eas build` (alpha build 1; #538). Every profile is checked, not only production: release-ios.yml
+  // and testflight.yml both build non-interactively. One FAIL per offending profile, each naming it.
+  {
+    const { withChannel, profiles } = updateChannelProblems(eas, input.mobilePackage);
+    if (profiles.length) for (const name of profiles) fail(updateChannelMessage(name, eas.build[name].channel), 'update-channel');
+    else pass(withChannel.length ? `expo-updates is a dependency, so the channel in ${withChannel.map((n) => `"${n}"`).join(', ')} can be configured (D-091)` : 'no eas.json build profile sets an EAS Update channel (D-091, #538)', 'update-channel');
+  }
+
   // The production App Store Connect record, so `eas submit --profile production` needs no prompt.
   {
     const id = eas.submit?.[PROFILE]?.ios?.ascAppId;
@@ -290,6 +301,13 @@ export function readInputs(mobileDir, shellEnv = process.env) {
     publishedSource: read(join(repo, 'supabase/functions/config/published.ts')),
     versionJson: read(join(mobileDir, 'version.json')),
     appConfigSource: read(join(mobileDir, 'app.config.ts')),
+    mobilePackage: (() => {
+      try {
+        return JSON.parse(read(join(mobileDir, 'package.json')));
+      } catch {
+        return null;
+      }
+    })(),
     shellEnv,
     envFiles: readdirSync(mobileDir)
       .filter((f) => f.startsWith('.env'))
