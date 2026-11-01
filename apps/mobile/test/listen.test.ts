@@ -262,7 +262,8 @@ describe('the screen uses them (source)', () => {
 
   it('[P4 critics S5] at accessibility sizes the clock and "Listening." are pinned with Pause and Finish, so the screen always says it is recording', () => {
     const block = c.slice(c.indexOf('const clockAndLine = ('), c.indexOf('return (', c.indexOf('const clockAndLine = (')));
-    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', 'accessibilityLiveRegion="polite"']) expect(block, part).toContain(part);
+    // The line is a live region whenever VoiceOver may speak; while a take captures it is off (SR-C-02, listen-voiceover.test.ts).
+    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', "accessibilityLiveRegion={speakable ? 'polite' : 'none'}"]) expect(block, part).toContain(part);
     const pinned = c.slice(c.indexOf('</ScrollView>'));
     expect(pinned).toMatch(/<View className="gap-2 px-5 pb-4">\s*\{large && clockAndLine\}\s*<ButtonRow>/);
     expect(c.match(/clockAndLine\}/g)).toHaveLength(2); // once in the room, once pinned: never both
@@ -278,7 +279,10 @@ describe('the screen uses them (source)', () => {
     expect(start).toMatch(/style=\{\{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC \/ 2 \}\}/);
     expect(c).toMatch(/<Text variant="headline" tone="muted" className="text-center" style=\{\{ fontVariant: \['tabular-nums'\] \}\} accessibilityLabel=\{elapsedA11y\}>/);
     const begin = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
-    expect(begin).toMatch(/AccessibilityInfo\.announceForAccessibility\(t\.listening\)/);
+    // "Listening." is offered to the gate, which drops it while the take is live (SR-C-02, B2-21): VoiceOver never
+    // speaks into a recording. The room's line and the red circle say it on screen.
+    expect(begin).toMatch(/announcer\.say\(t\.listening, \{ phase: 'recording', capturing: capturingNow\(\) \}\)/);
+    expect(begin).not.toMatch(/AccessibilityInfo/);
     expect(begin.indexOf("haptic('press')")).toBeGreaterThan(-1);
     expect(begin.indexOf("haptic('press')")).toBeLessThan(begin.indexOf("await setAudioMode('recording')"));
   });

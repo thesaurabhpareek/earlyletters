@@ -18,6 +18,12 @@
  * Controls never move between moments (MOTION principle 2, 5.8 rule 3): Pause and Finish hold their place from the
  * first frame (disabled before a take exists) and Let it go keeps its slot even when it is not offered.
  *
+ * Before any of these, the first tap on Speak meets our own short primer while iOS has not yet asked for the
+ * microphone (`permissionStep`, SR-C-05); "Continue" then opens the iOS question.
+ *
+ * VoiceOver never speaks into a take (`createListenAnnouncer`, SR-C-02, B2-21): every announcement is dropped or held
+ * while the recorder is capturing, and a held one is spoken once it has stopped.
+ *
  * Three causes, three screens (S13). `startBlocker` runs before the microphone: permission off, then a full phone.
  * `startFailure` names a start that threw: a take already running ends as an interruption and is kept; otherwise,
  * with permission granted, the microphone is busy (a call or another app holds the audio session), never "off".
@@ -31,7 +37,93 @@ export type MicProblem = 'denied' | 'busy' | 'full';
 /** The moments of the room itself (S11, S12). */
 export type RoomPhase = 'ready' | 'asking' | 'recording' | 'paused' | 'finishing';
 
-export type ListenPhase = RoomPhase | MicProblem;
+/** Our own short note before the iOS microphone question (SR-C-05, F04-REQ-034): its own screen, before any take. */
+export type PrimerPhase = 'primer';
+
+export type ListenPhase = RoomPhase | MicProblem | PrimerPhase;
+
+/** The microphone permission as expo-audio reports it (`PermissionResponse`): only the fields this screen reads. */
+export type MicPermission = { granted: boolean; status?: string };
+
+/**
+ * What the first step of a start does with the microphone permission (SR-C-05, F04-REQ-034, F04-REQ-047).
+ *
+ *   go      already allowed: start the take
+ *   primer  iOS has not asked yet and our note has not been shown for this start: show the primer, ask nothing
+ *   ask     ask iOS (after the primer, or when iOS already answered: then it returns at once and a no is "off")
+ *
+ * The primer is tied to the iOS answer, not to a stored flag: it shows exactly while iOS would still ask, so the
+ * first tap on Speak always meets it and no later tap does.
+ */
+export type PermissionStep = 'go' | 'primer' | 'ask';
+
+export function permissionStep(perm: MicPermission, primed: boolean): PermissionStep {
+  if (perm.granted) return 'go';
+  if (perm.status === 'undetermined' && !primed) return 'primer';
+  return 'ask';
+}
+
+/* ------------------------------------------------------------------ */
+/* Nothing spoken into a take (SR-C-02, F04-REQ-040, F04-REQ-041, B2-21) */
+/* ------------------------------------------------------------------ */
+
+/** What decides whether VoiceOver may speak: the room's moment and whether the recorder is capturing right now. */
+export type SpeakState = { phase: ListenPhase; capturing: boolean };
+
+/**
+ * VoiceOver may speak only while no take is capturing sound. `recording` never may; `paused` (and every other moment)
+ * may only once the recorder itself has stopped capturing, since iOS can still be writing for a moment after pause.
+ * Without headphones, anything VoiceOver says while capturing ends up in the letter (B2-21, never waived).
+ */
+export function maySpeak(s: SpeakState): boolean {
+  return s.phase !== 'recording' && !s.capturing;
+}
+
+/** While capturing: `drop` forgets the message (it is about the take in progress); `hold` keeps it for the next stop. */
+export type WhenCapturing = 'drop' | 'hold';
+
+export type ListenAnnouncer = {
+  /** Speak now if nothing is capturing; otherwise drop or hold it. */
+  say(message: string, s: SpeakState, whenCapturing?: WhenCapturing): void;
+  /** Call on every recorder status: speaks a held message once capturing has stopped; a resumed take drops it. */
+  settle(s: SpeakState): void;
+  /** Leaving the screen: a held message is never spoken elsewhere. */
+  clear(): void;
+};
+
+/**
+ * Every announcement Listen makes goes through this gate (listen.tsx never calls AccessibilityInfo itself), so no
+ * announcement is ever emitted while a take is recording. Only the newest held message is kept.
+ */
+export function createListenAnnouncer(speak: (message: string) => void): ListenAnnouncer {
+  let held: string | null = null;
+  return {
+    say(message, s, whenCapturing = 'drop') {
+      if (!message) return;
+      if (maySpeak(s)) {
+        held = null;
+        speak(message);
+      } else if (whenCapturing === 'hold') {
+        held = message;
+      }
+    },
+    settle(s) {
+      if (held === null) return;
+      if (s.phase === 'recording') {
+        held = null; // the take resumed: "Paused." is no longer true
+        return;
+      }
+      if (maySpeak(s)) {
+        const m = held;
+        held = null;
+        speak(m);
+      }
+    },
+    clear() {
+      held = null;
+    },
+  };
+}
 
 export function isMicProblem(phase: ListenPhase): phase is MicProblem {
   return phase === 'denied' || phase === 'busy' || phase === 'full';
@@ -93,8 +185,7 @@ export function startFailure(s: { takeBegun: boolean; granted: boolean | null })
   return s.granted === false ? 'denied' : 'busy';
 }
 
-/** The app came back to the front (S13): with permission now on, "The microphone is off" gives way to idle Listening. */
-export function afterForeground(phase: ListenPhase, granted: boolean): ListenPhase {
+/** The app came back to the front (S13): with permission now on, "The microphone is off" gives way to idle Listening. */export function afterForeground(phase: ListenPhase, granted: boolean): ListenPhase {
   return phase === 'denied' && granted ? 'ready' : phase;
 }
 
