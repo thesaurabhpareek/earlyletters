@@ -80,7 +80,7 @@ The compliance audit wrote the field list, its source, purpose and level, and th
 
 ## How everyone writes requirements from now on
 
-`docs/agents/COORDINATION.md` section 10. Human voice, Given/When/Then with numbers, and for anything a person agrees to, four extra lines: Shown, Records, Never, and Decline and withdraw. Every agent charter now points to it, and the backlog's Definition of Done has two new lines (11 Records, 12 How it is written).
+`docs/agents/COORDINATION.md` section 10. Human voice, Given/When/Then with numbers, and for anything a person agrees to, four extra lines: Shown, Records, Never, and Decline and withdraw. 25 of the 26 agent charters now point to it (the `regulatory-affairs` charter is fenced and follows separately), and the backlog's Definition of Done has two new lines (11 Records, 12 How it is written).
 
 ## Limits
 
