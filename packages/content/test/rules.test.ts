@@ -653,6 +653,40 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(storeListing, 'store'), /exactly as you said/i)).toEqual([]);
   });
 
+  // The store pack under docs/store (listing.json, screenshot captions) is what gets pasted into the consoles, so it
+  // carries the same claims as the typed listing (D-133, D-121, D-126). Localised drafts are held and not scanned.
+  const REPO = join(__dirname, '..', '..', '..');
+  const listingJson = () => JSON.parse(readFileSync(join(REPO, 'docs/store/listing/listing.json'), 'utf8'));
+  function storePackText(): Leaf[] {
+    const { localisation: _skip, _comment: _c, ...rest } = listingJson();
+    const caps = JSON.parse(readFileSync(join(REPO, 'docs/store/screenshots/captions.json'), 'utf8')) as { id: string; headline: string; sub: string }[];
+    return [
+      ...leaves(rest, 'listing.json').filter((l) => !/availability$/.test(l.path)),
+      ...caps.flatMap((c) => [{ path: `captions.${c.id}.headline`, text: c.headline }, { path: `captions.${c.id}.sub`, text: c.sub }]),
+    ];
+  }
+
+  it('store pack text never says the words are kept exactly as said (D-133, council Q6)', () => {
+    expect(offenders(storePackText(), /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+  });
+
+  it('store pack text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
+    const bad = /invite|co-?parent|grandparent|aunt|uncle|from papa|nani|sync|vault|recovery key|cloud|bilingual|hindi|spanish|mandarin|french|arabic|portuguese|coming soon|later update|\bbeta\b|early access|whole family|family book|printed|(?<!iphone's own )backup/i;
+    expect(offenders(storePackText(), bad)).toEqual([]);
+  });
+
+  it('listing.json carries the same Apple fields as the typed listing, and the tagline is the brand tagline', () => {
+    const j = listingJson();
+    expect(j.apple.name).toBe(storeListing.appName);
+    expect(j.apple.subtitle).toBe(storeListing.subtitle);
+    expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
+    expect(j.apple.keywords).toBe(storeListing.keywords);
+    expect(j.apple.whatsNew).toBe(storeListing.whatsNewV1);
+    expect(j.apple.description).toBe(storeListing.description);
+    expect(brand.tagline).toBe('It stays in your words.');
+    expect(j.googlePlay.shortDescription).toContain(brand.tagline);
+  });
+
   it('points the store listing at the live legal pages (D-063)', () => {
     expect(storeListing.description).toContain(brand.web.terms);
     expect(storeListing.description).toContain(brand.web.privacy);
