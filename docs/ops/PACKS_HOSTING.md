@@ -13,7 +13,7 @@ You need two things, both done below:
 
 ## Before you start
 
-- The repo on `develop`, where these commands are (`main`, the default branch, does not have them yet): `git clone https://github.com/thesaurabhpareek/earlyletters.git && cd earlyletters && git switch develop && git pull`, then `npm ci` at the repo root, with Node 22.5 or later (`node --version`).
+- The repo on `develop`, where these commands are (`develop` is the default branch since 1 Nov 2026; `main` is the live website and tagged releases and does not have them): `git clone https://github.com/thesaurabhpareek/earlyletters.git && cd earlyletters && git switch develop && git pull`, then `npm ci` at the repo root, with Node 22.5 or later (`node --version`).
 - A password manager.
 - A Cloudflare account with two-factor, with **`earlyletters.app` already an active zone in it** (D-097, `docs/ops/DOMAINS.md` section 6). If it is not active yet, start that first (see "If earlyletters.app is not on Cloudflare yet"): it is the only slow part.
 
@@ -174,7 +174,7 @@ gh pr create --base develop --fill
 
 (`remote-config.json` is listed even when unchanged: adding an unchanged file is harmless, and a kill switch you set must be in git, which is the audit log of what was served.)
 
-`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **It is merged before `eas build`**: it changes the app's trust root and release configuration. D-107 kept those as founder merges; under D-117's operating rule the coordinator merges it after two independent passing reviews on the current head and green CI, or you merge it yourself. No `gh`? `brew install gh && gh auth login`, or open the PR on github.com. After merging, start the build from `develop`: Actions > testflight > Run workflow, branch `develop`, once `develop` is the default branch (AF-05). Until then that button does not exist, so build from your own computer (`docs/release/TESTFLIGHT.md` step 5).
+`published.ts` is the counter the next release adds one to. If it is not committed, the next release reuses a version number with different content, and `upload` stops (phones would refuse it). **It is merged before `eas build`**: it changes the app's trust root and release configuration. D-107 kept those as founder merges; under D-117's operating rule the coordinator merges it after two independent passing reviews on the current head and green CI, or you merge it yourself. No `gh`? `brew install gh && gh auth login`, or open the PR on github.com. After merging, start the build from `develop`: Actions > testflight > Run workflow, branch `develop`. `develop` is the default branch, so the button should exist; if it does not appear, build from your own computer (`docs/release/TESTFLIGHT.md` step 5).
 
 ### 9. Verify
 
