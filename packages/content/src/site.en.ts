@@ -1,29 +1,36 @@
 // Website copy for Early Letters. {price} and {child} are placeholders.
 // v1 is digital only: no printed-book promises (PRD.md K-32).
+//
+// This file is a reference copy: the live site reads apps/web/src/content/site.ts, not this file.
+// It states what is true of the FIRST store build (D-121): on this phone only, English only, no sign-in, no
+// invite, no sync, no backup of our own, Plus on. Wording that belongs to a later 1.0.x release (family
+// invites, sync, backup, more languages, the gift) is not here until that release ships; the held lines are
+// listed in docs/exec-rulings-claims-trust-2026-11-01.md. The words about edits follow the founder's true
+// line (D-133): it stays in your words, every change is marked, the original recording is kept unchanged.
 
 export const site = {
   hero: {
     headline: "Talk for a minute. Keep it for years.",
     subhead:
-      "Early Letters is the baby memory book you fill by talking. Private by design: your letters stay on your phone, and every word is kept exactly as you said it, ready to read together for years.",
+      "Early Letters is the baby memory book you fill by talking. It stays in your words, and your letters stay on your iPhone.",
   },
   primaryCta: "Tell me at launch",
   benefits: [
     {
-      title: "Exactly as you said it",
-      body: "Transcription happens on your phone by default and only fixes microphone slips. We never rewrite your words, so every sentence is one you actually said.",
+      title: "It stays in your words",
+      body: "Transcription happens on your phone. We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one. You can put any fix back before you keep the letter. We never add a word.",
     },
     {
       title: "Your voice, kept",
-      body: "The original recording stays with each letter. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
+      body: "The original recording stays with each letter, on your phone. One day {child} can hear how you sounded, laughing at the same joke for the tenth time.",
     },
     {
       title: "A minute is plenty",
       body: "Say a few words at bedtime or in the car. On a quiet day, tap \"Not much today\". No counters, no badges, no scores. Just letters, whenever you have them.",
     },
     {
-      title: "The whole family, signed",
-      body: "Invite grandparents and close family to add letters of their own. Each one is signed, From Papa, From Nani, and you approve what goes in the book.",
+      title: "Yours to take with you",
+      body: "Export your letters, your recordings and a PDF of the book any time. Every letter you have made stays yours to export, with or without Plus.",
     },
   ],
   howItWorks: {
@@ -35,7 +42,7 @@ export const site = {
       },
       {
         title: "Read it back",
-        body: "See your words on the page. Fix a word if the microphone slipped. Nothing else changes.",
+        body: "See your words on the page, with each small fix marked. Put any one back. Nothing else changes.",
       },
       {
         title: "It joins the book",
@@ -45,45 +52,34 @@ export const site = {
   },
   readTogether: {
     title: "Read together",
-    body: "Open a letter and it plays in the voice of the person who wrote it, while the words appear on the page. Curl up together at bedtime and listen to Dadi tell the story of the first steps, again and again.",
-  },
-  family: {
-    title: "Room for everyone who loves {child}",
-    body: "Grandparents, aunts, uncles and close friends can add their own letters, from anywhere. Each letter is signed. Each author chooses what to share, and parents approve what goes into the book. Family far away can be part of an ordinary Tuesday.",
+    body: "Open a letter and it plays in the voice of the person who wrote it, while the words appear on the page. Curl up together at bedtime and listen to your own voice tell the story of the first steps, again and again.",
   },
   privacy: {
     title: "Our promise, in plain words",
     points: [
-      "Your letters are private by default. Only the family you invite can read what you add to the book.",
-      "We never rewrite your words. Transcription happens on your phone by default. If you ever choose cloud transcription, we ask first.",
-      "Your recordings stay on your phone unless you back them up or choose cloud transcription. Family can hear a recording once it is backed up.",
-      "Backups are encrypted on your phone first. We keep a recovery key so we can help you restore them, unless you choose Vault mode.",
+      "Your letters and recordings stay on your iPhone. They are not sent to us.",
+      "We never rewrite your words. Transcription happens on your phone.",
       "No ads. We never sell your data or share it with advertisers.",
       "Every letter you have made stays yours to export, at any time.",
-      "You can delete your own letters and recordings whenever you like.",
-      "Each child has their own book and their own family list. Inviting someone to one book does not open the others.",
+      "You can delete your own letters and recordings whenever you like. A deleted letter waits 30 days in Recently deleted, or you can erase it at once.",
     ],
   },
   faq: [
     {
       q: "Who can see my letters?",
-      a: "You and the family you invite. Letters are private by default, and you decide what goes into the book. When you sign in, your letters sync to our servers so your family and your next phone can read them. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. That access is restricted and logged.",
+      a: "Only you, on your phone. Letters and recordings stay on your iPhone and are not sent to us. If you use your iPhone's own backup, it holds them too.",
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone by default and only fixes microphone and grammar slips, like a misheard word or a missing period. It never changes what you meant or how you said it. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one so you can put it back. We never add a word, and your original recording is kept unchanged. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
       a: "Nothing is keeping count, so there is nothing to catch up on. On a quiet day you can tap \"Not much today\", or just come back when you have something to say. Your book is still there.",
     },
     {
-      q: "Can grandparents add letters?",
-      a: "Yes. Invite them and they can talk or type letters of their own in the app on their phone, signed with their name, like From Nani. They do not need a membership of their own, and parents approve family letters before they go into the book.",
-    },
-    {
       q: "Which languages can I use?",
-      a: "Speak the way your family speaks. Hindi, English, or both in the same sentence. Your words stay in the language you said them.",
+      a: "English first. Other languages arrive one at a time, each after a native speaker has read it. Your words stay in the language you said them.",
     },
     {
       q: "Can I get my memory book out?",
@@ -91,18 +87,13 @@ export const site = {
     },
     {
       q: "How much does it cost?",
-      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial, through the App Store in the US. One membership covers the whole family book, so grandparents add letters without one of their own. Plus also backs up every recording, opens Read together after the free sessions and covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
+      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial, through the App Store in the US. One membership covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter. It leaves your phone only if you back it up or choose cloud transcription. Family can hear a recording once it is backed up. Backups are encrypted on your phone first, and we keep a recovery key so we can help you restore them, unless you choose Vault mode. You can delete your recordings and letters whenever you like.",
+      a: "Each recording stays on your phone, attached to its letter, and is never altered. If you use your iPhone's own backup, it holds the recordings too. You can delete your recordings and letters whenever you like.",
     },
   ],
-  gift: {
-    title: "A gift from the grandparents",
-    body: "Give Early Letters to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. The book fills one letter at a time.",
-    cta: "Give Early Letters",
-  },
   waitlist: {
     label: "Your email",
     button: "Tell me at launch",
