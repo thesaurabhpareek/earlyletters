@@ -33,13 +33,13 @@
     {
       "path": "book/Asha.pdf",
       "bytes": 95,
-      "sha256": "a4dd0a3822978876af5be15684b1511b9c376d520843190a365cb9b35d5762da",
+      "sha256": "4e3ab83bff125a130ef84e3da1059d48f70548c2f31ebf8dd8cf32cede5cfa09",
       "media_type": "application/pdf"
     },
     {
       "path": "book/Dev.pdf",
       "bytes": 95,
-      "sha256": "a26955d627d0078f3c84b97005b0b30ae6c758191449b81479c07d26d7756673",
+      "sha256": "e78518395d37644faac71970eceb2983add8338cb27a06161a4d9dd364e390b4",
       "media_type": "application/pdf"
     },
     {
