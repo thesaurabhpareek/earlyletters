@@ -485,3 +485,20 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: stop sending; the Project log stays as the record.
 - Revisit when: the founder asks for a different inbox or channel. Karma
+
+### CR-42 What is still missing after the compliance decisions (1 Nov 2026, 06:10 UTC, Karma via the compliance session)
+- Question: the founder asked to document the decisions and find what is missing or an opportunity. What is missing, and in what order?
+- Tier and type: T1; complicated
+- Options considered: do the gaps now; record them with owners and order, and do only the docs now; leave them to the after-9-Nov list.
+- Ruling: record with owners now; do the docs now; build after the freeze. Found:
+  1. The app does not handle a refused sign-up: #424 refuses on the server, and the app would show a generic sign-in error with no DB-IP attribution. BL-553, before the hook is switched on.
+  2. The regulatory watch has no schedule, and the monthly state-tracker check is a manual habit. BL-554; until then the CCO checks before each submission.
+  3. Legal paperwork for the hook (data classification row, register CR-121, claims rows). BL-555, founder merge.
+  4. #424 uses APPLY.md File 27, which `develop` already has (`node scripts/agents/id-collisions.mjs`); it must become File 28 before it merges.
+  5. Founder queue W0-13 said #163 was open; it merged 1 Nov 05:54 UTC. Updated.
+  6. Opportunity, founder-only: a monthly cloud scheduled task that runs the watch and writes a Project doc. It is the first switch-on of an unattended lane, so it is his (section 2); offered, not done.
+  7. Known limit, unchanged: every fenced PR needs the founder to paste approvals, because sessions post as his account (CR-20). The machine-account question stays held until Tue 10 Nov.
+- Why: each gap blocks switching the hook on, and none blocks the go/no-go. Building now would add review load before the freeze (principle 4).
+- Door: two-way
+- Way back: delete the backlog lines.
+- Revisit when: #424 is picked up after 9 Nov. Karma
