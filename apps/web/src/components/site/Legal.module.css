@@ -1,18 +1,42 @@
 /*
  * Owner: E1 (web platform). The paper-tone reading page for /privacy and /terms.
  * Tokens come from app/globals.css; nothing here hardcodes a colour.
+ * The page follows the phone's theme: paper tokens in light, night tokens in dark. The rules below read only the
+ * local --legal-* roles, so each theme is one block of token mappings. Contrast (WCAG 2.2 AA, 4.5:1 for text):
+ * light ink 14.0, muted 5.5, link 5.5; dark ink 15.7, muted 8.0, link 8.4. Links stay underlined, so colour is
+ * never the only signal. Focus ring: light --focus 5.2, dark --night-accent 8.4.
  *
  * Layout: one three-column grid. Text sits in the middle column (max 34em).
  * The em unit is the same everywhere (set once on .frame), so the back link and the text line up.
  */
 .frame {
-  background: var(--paper);
-  color: var(--ink);
-  color-scheme: light;
+  --legal-bg: var(--paper);
+  --legal-ink: var(--ink);
+  --legal-muted: var(--ink-muted);
+  --legal-link: var(--accent);
+  --legal-focus: var(--focus);
+
+  background: var(--legal-bg);
+  color: var(--legal-ink);
+  color-scheme: light dark;
   font-family: var(--font-sans);
   font-size: clamp(1.0625rem, 1rem + 0.2vw, 1.1875rem);
   line-height: 1.65;
   min-height: 60dvh;
+}
+
+@media (prefers-color-scheme: dark) {
+  .frame {
+    --legal-bg: var(--night);
+    --legal-ink: var(--night-ink);
+    --legal-muted: var(--night-ink-muted);
+    --legal-link: var(--night-accent);
+    --legal-focus: var(--night-accent);
+  }
+}
+
+.frame :focus-visible {
+  outline-color: var(--legal-focus);
 }
 
 .bar,
@@ -37,7 +61,7 @@
   margin-left: -0.25em;
   padding: 0 0.75em 0 0.25em;
   justify-self: start;
-  color: var(--ink-muted);
+  color: var(--legal-muted);
   font-size: 0.95em;
   font-weight: 500;
   text-decoration: none;
@@ -46,7 +70,7 @@
 }
 
 .back:hover {
-  color: var(--ink);
+  color: var(--legal-ink);
 }
 
 .back svg {
@@ -75,7 +99,7 @@
 /* "Last updated", under the title. */
 .prose > .updated {
   margin-top: 0.6em;
-  color: var(--ink-muted);
+  color: var(--legal-muted);
   font-size: 0.92em;
 }
 
@@ -84,7 +108,7 @@
 .prose h2 {
   font-family: var(--font-serif);
   font-weight: 500;
-  color: var(--ink);
+  color: var(--legal-ink);
   text-wrap: balance;
 }
 
@@ -116,11 +140,11 @@
 }
 
 .prose li::marker {
-  color: var(--ink-muted);
+  color: var(--legal-muted);
 }
 
 .prose a {
-  color: var(--accent);
+  color: var(--legal-link);
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
   overflow-wrap: anywhere;
@@ -141,7 +165,12 @@
     display: none;
   }
 
+  /* Paper prints in the light tokens whatever the phone's theme. */
   .frame {
-    background: #fff;
+    --legal-bg: var(--surface-raised);
+    --legal-ink: var(--ink);
+    --legal-muted: var(--ink-muted);
+    --legal-link: var(--accent);
+    color-scheme: light;
   }
 }

@@ -302,3 +302,64 @@ describe('the claims hold in the code', () => {
     expect(read('src/lib/notify/provider.ts')).toMatch(/contacts\.create\(\{ email, segments: \[\{ id: config\.segmentId \}\] \}/);
   });
 });
+
+describe('theme (the pages follow the phone: paper in light, night in dark)', () => {
+  const css = read('src/components/site/Legal.module.css');
+  const globals = read('src/app/globals.css');
+  const layout = read('src/app/(legal)/layout.tsx');
+  const token = (name: string) => {
+    const m = globals.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+    if (!m) throw new Error(`no token --${name}`);
+    return m[1];
+  };
+  const luminance = (hex: string) => {
+    const [r, g, b] = [1, 3, 5].map((i) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const contrast = (a: string, b: string) => {
+    const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+    return (hi + 0.05) / (lo + 0.05);
+  };
+  /** The --legal-* roles each theme block maps to tokens. */
+  const roles = (block: string) =>
+    Object.fromEntries([...block.matchAll(/--legal-(\w+):\s*var\(--([\w-]+)\)/g)].map((m) => [m[1], m[2]]));
+  const light = roles(css.slice(css.indexOf('.frame {'), css.indexOf('@media (prefers-color-scheme: dark)')));
+  const darkStart = css.indexOf('@media (prefers-color-scheme: dark)');
+  const dark = roles(css.slice(darkStart, css.indexOf('}\n}', darkStart)));
+
+  it('does not force a light colour scheme on screen, and hardcodes no colour', () => {
+    const screen = css.slice(0, css.indexOf('@media print'));
+    expect(screen).not.toMatch(/color-scheme:\s*light\s*;/);
+    expect(screen).toMatch(/color-scheme:\s*light dark/);
+    expect(css).not.toMatch(/#[0-9a-fA-F]{3,8}\b|rgb\(|hsl\(/);
+  });
+
+  it('maps every role in both themes, to the paper tokens in light and the night tokens in dark', () => {
+    for (const role of ['bg', 'ink', 'muted', 'link', 'focus']) {
+      expect(light[role], `light ${role}`).toBeDefined();
+      expect(dark[role], `dark ${role}`).toMatch(/^night/);
+    }
+  });
+
+  it('body, muted text and links pass 4.5:1, and the focus ring 3:1, in both themes', () => {
+    for (const [name, theme] of [['light', light], ['dark', dark]] as const) {
+      const bg = token(theme.bg);
+      for (const role of ['ink', 'muted', 'link']) {
+        expect(contrast(token(theme[role]), bg), `${name} ${role}`).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(contrast(token(theme.focus), bg), `${name} focus`).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('keeps links underlined, so colour is never the only signal', () => {
+    expect(css).not.toMatch(/\.prose a\s*\{[^}]*text-decoration:\s*none/);
+  });
+
+  it('gives the browser bar a theme colour for each scheme', () => {
+    expect(layout).toMatch(/prefers-color-scheme: light\)', color: brand\.colors\.paper \}/);
+    expect(layout).toMatch(/prefers-color-scheme: dark\)', color: brand\.colors\.paperDark \}/);
+  });
+});
