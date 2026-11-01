@@ -33,8 +33,8 @@ type Over = Omit<Partial<DecideInput>, 'viewer'> & { viewer?: Partial<DecideInpu
 
 function input(over: Over = {}): DecideInput {
   const base: DecideInput = {
-    now: NOW, feature: 'theme_extra', surface: 'normal', isBirthday: false, signedIn: true, online: true,
-    viewer: { roleInBook: 'parent', own: NO_PLAN }, book: { coveredByOtherParent: false },
+    now: NOW, feature: 'backup_upload', surface: 'normal', isBirthday: false, signedIn: true, online: true,
+    viewer: { roleInBook: 'parent', own: NO_PLAN }, book: { coveredByOtherParent: false }, initiatedBy: 'user',
   };
   return { ...base, ...over, viewer: { ...base.viewer, ...(over.viewer ?? {}) } } as DecideInput;
 }
@@ -143,9 +143,9 @@ describe('freeLettersFrom: whole numbers between the default and the cap', () =>
     expect(freeLettersFrom(value)).toBe(expected);
   });
 
-  it('isGatedFeature names exactly the two gates, case-sensitively; backup is free (D-111 item 6)', () => {
-    expect(['keep_letter', 'theme_extra'].every(isGatedFeature)).toBe(true);
-    for (const f of ['Keep_Letter', 'KEEP_LETTER', 'read', 'write', 'export', 'backup_upload', '', ' keep_letter']) expect(isGatedFeature(f), f).toBe(false);
+  it('isGatedFeature names exactly the three gates, case-sensitively', () => {
+    expect(['keep_letter', 'backup_upload', 'theme_extra'].every(isGatedFeature)).toBe(true);
+    for (const f of ['Keep_Letter', 'KEEP_LETTER', 'read', 'write', 'export', '', ' keep_letter']) expect(isGatedFeature(f), f).toBe(false);
   });
 });
 
@@ -158,10 +158,20 @@ describe('decide: rule order when several rules apply (TDD 08 2.2)', () => {
     expect(decide(input({ surface: 'normal', online: false }))).toEqual({ kind: 'quiet', reason: 'offline' });
   });
 
-  it('online defaults to true when it is left out', () => {
+  it('[C-REQ-023] the background uploader in a Free book is quiet before every suppression, and allowed with the person\'s own Plus', () => {
+    expect(decide(input({ initiatedBy: 'background', surface: 'first_run', isBirthday: true }))).toEqual({ kind: 'quiet', reason: 'free_background' });
+    expect(decide(input({ initiatedBy: 'background', viewer: { own: plan() } }))).toEqual({ kind: 'allow', via: 'plus_own' });
+  });
+
+  it('only backups have a background path: a theme asked for "in the background" is an ordinary offer', () => {
+    expect(decide(input({ feature: 'theme_extra', initiatedBy: 'background' }))).toEqual({ kind: 'offer', trigger: 'themes', needsSignIn: false });
+  });
+
+  it('online defaults to true and initiatedBy to user when they are left out', () => {
     const i = input();
     delete (i as Partial<DecideInput>).online;
-    expect(decide(i)).toEqual({ kind: 'offer', trigger: 'themes', needsSignIn: false });
+    delete (i as Partial<DecideInput>).initiatedBy;
+    expect(decide(i)).toEqual({ kind: 'offer', trigger: 'backup', needsSignIn: false });
   });
 
   it('a contributor is never offered Plus, even signed out and online, in a book nobody covers', () => {
@@ -169,8 +179,8 @@ describe('decide: rule order when several rules apply (TDD 08 2.2)', () => {
   });
 
   it('with no book and no role (an account-level surface) a Free account is offered Plus and asked to sign in first when signed out', () => {
-    expect(decide(input({ viewer: { roleInBook: null }, book: null }))).toEqual({ kind: 'offer', trigger: 'themes', needsSignIn: false });
-    expect(decide(input({ viewer: { roleInBook: null }, book: null, signedIn: false }))).toEqual({ kind: 'offer', trigger: 'themes', needsSignIn: true });
+    expect(decide(input({ viewer: { roleInBook: null }, book: null }))).toEqual({ kind: 'offer', trigger: 'backup', needsSignIn: false });
+    expect(decide(input({ viewer: { roleInBook: null }, book: null, signedIn: false }))).toEqual({ kind: 'offer', trigger: 'backup', needsSignIn: true });
   });
 
   /**

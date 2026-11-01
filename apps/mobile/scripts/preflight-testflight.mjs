@@ -27,7 +27,6 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -51,7 +50,7 @@ if (!Object.hasOwn(ALPHA, PROFILE)) {
 }
 const SPEC = ALPHA[PROFILE];
 
-const { results, pass, warn, fail, unverified, check } = createReport();
+const results = [];
 const notes = [];
 /**
  * Founder steps (docs/release/TESTFLIGHT.md, same numbers and names). Each is `open` (seen missing here),
@@ -78,10 +77,37 @@ const step = (n, state, why) => {
   const rank = { done: 0, check: 1, open: 2 };
   if (!prev || rank[state] > rank[prev.state]) founder.set(n, { state, why });
 };
+const add = (level, msg) => results.push({ level, msg });
+const pass = (msg) => add('PASS', msg);
+const warn = (msg) => add('WARN', msg);
+const fail = (msg) => add('FAIL', msg);
+const unverified = (msg) => add('UNVERIFIED', msg);
+const check = (cond, good, problem) => (cond ? pass(good) : fail(problem));
 const read = (p) => readFileSync(p, 'utf8');
 
-/** Runs the Expo CLI found in this repo's node_modules (preflight-lib.mjs). */
-const expo = (args, cwd, env) => expoIn(MOBILE, args, cwd, env);
+/** Runs the Expo CLI found in this repo's node_modules (no network, no npx lookup). */
+function expo(args, cwd, env) {
+  let cli;
+  try {
+    cli = require.resolve('expo/bin/cli');
+  } catch {
+    return { status: 1, stdout: '', stderr: 'expo is not installed: run `npm install` at the repo root.' };
+  }
+  return spawnSync(process.execPath, [cli, ...args], {
+    cwd,
+    env: { ...process.env, CI: '1', EXPO_NO_TELEMETRY: '1', EXPO_NO_GIT_STATUS: '1', ...env },
+    encoding: 'utf8',
+    maxBuffer: 64 * 1024 * 1024,
+  });
+}
+
+function parseJsonOut(r) {
+  try {
+    return JSON.parse(r.stdout.slice(r.stdout.indexOf('{')));
+  } catch {
+    return null;
+  }
+}
 
 /** Every `<key>NAME</key>` in a plist, in order (enough for the checks below; not a plist parser). */
 const plistKeys = (text) => [...text.matchAll(/<key>([^<]+)<\/key>/g)].map((m) => m[1]);
@@ -261,7 +287,7 @@ if (cfg) {
 
   // Privacy manifest declared.
   const pm = cfg.ios?.privacyManifests;
-  check(privacyManifestDeclared(pm), `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories)`, 'No privacy manifest in the config (ios.privacyManifests), or tracking is not false.');
+  check(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0, `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories)`, 'No privacy manifest in the config (ios.privacyManifests), or tracking is not false.');
   // Collected data follows the build's switches (BL-349; src/lib/privacy-manifest.ts; S17 worksheet 3.2 and 3.4).
   const collected = (pm?.NSPrivacyCollectedDataTypes ?? []).map((c) => String(c.NSPrivacyCollectedDataType).replace('NSPrivacyCollectedDataType', ''));
   if (SERVER_ON)
@@ -342,7 +368,18 @@ try {
 // ---------------------------------------------------------------- 4a. no secret key in any EXPO_PUBLIC_ value (every profile)
 // Every EXPO_PUBLIC_ value the code names is inlined into the bundle whatever the server switch says, and both alpha
 // profiles read the same EAS "preview" environment. So a secret exported here fails build 1 as well as build 2.
-// secretKind (preflight-lib.mjs): 'secret key' or 'service_role key' when a value is one of Supabase's server keys.
+/** 'secret key' or 'service_role key' when a value is one of Supabase's server keys, otherwise null. */
+function secretKind(value) {
+  if (/^sb_secret_/.test(value)) return 'secret key';
+  if (/^eyJ/.test(value)) {
+    try {
+      if (JSON.parse(Buffer.from(value.split('.')[1] ?? '', 'base64url').toString('utf8')).role === 'service_role') return 'service_role key';
+    } catch {
+      /* not a readable JWT: not this check's business */
+    }
+  }
+  return null;
+}
 {
   const leaked = Object.entries(process.env)
     .filter(([k]) => k.startsWith('EXPO_PUBLIC_'))
@@ -450,7 +487,9 @@ let packMissing = false;
   const stepFourMissing = [];
   let keyIds = [];
   try {
-    ({ keySet, keyIds } = signingKeys(read(join(REPO, 'packages/api/src/keys.ts'))));
+    const keysSource = read(join(REPO, 'packages/api/src/keys.ts')).replace(/^\s*\/\/.*$/gm, '');
+    keySet = /^\s*\{[^}]*publicKey\s*:/m.test(keysSource);
+    keyIds = [...keysSource.matchAll(/keyId\s*:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
   } catch {
     /* treated as not set */
   }

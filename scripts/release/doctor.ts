@@ -1,7 +1,6 @@
 // Release doctor: one read-only command that says which connections of the alpha release pipeline work, and
 // which are missing, before anyone tries a build. It complements, and does not replace:
 //   - apps/mobile/scripts/preflight-testflight.mjs   the build configuration (never touches Apple or Expo)
-//   - apps/mobile/scripts/preflight-production.mjs   the store build configuration; the doctor runs it as its production row
 //   - scripts/release/github-settings.ts --verify    GitHub environments, branch protection and rulesets
 //   - scripts/ops/staging-smoke.ts                   the staging database and functions
 // This script covers what those leave out: the repository's Expo and App Store Connect wiring, and that the
@@ -13,7 +12,6 @@
 //
 //   npx tsx scripts/release/doctor.ts          # static checks, plus each live check whose variables are set
 //   npx tsx scripts/release/doctor.ts --live   # as above; a live check whose variable is missing, or a missing ascAppId, is FAIL
-//   npx tsx scripts/release/doctor.ts --store  # also gates the store build: each FAIL of the production preflight is a FAIL here
 //
 // A missing ascAppId is a WARN (a submit from your own computer does not need it, as the preflight says) and a FAIL
 // only under --live, which checks the GitHub workflow path.
@@ -30,9 +28,7 @@
 //   ASC_API_KEY_P8_PATH   path to the downloaded AuthKey_<id>.p8 file (the file stays on your computer)
 //
 // Scope: the two alpha builds (docs/release/TESTFLIGHT.md): the `.preview` app record and the `testflight` and
-// `preview` submit profiles. The production row is the store preflight (preflight-production.mjs, RT-REL-02,
-// RT-REL-13): without --store it is NOT NEEDED for the alpha and says how many of its checks fail and which; with
-// --store each of its FAILs is a FAIL here, and its UNVERIFIED lines are UNVERIFIED.
+// `preview` submit profiles. The production record and `submit.production` are reported as NOT NEEDED.
 //
 // Stays manual (the runbook says how; this script does not check them): the API key's role (App Manager), the
 // automatic-distribution setting of the TestFlight groups, the EAS environment variable names
@@ -55,7 +51,7 @@ import { fileURLToPath } from 'node:url';
 export type Level = 'PASS' | 'FAIL' | 'WARN' | 'UNVERIFIED' | 'NOT NEEDED';
 export interface Finding {
   level: Level;
-  area: 'repo' | 'expo' | 'apple' | 'store';
+  area: 'repo' | 'expo' | 'apple';
   message: string;
 }
 
@@ -106,48 +102,8 @@ export function signingKeyIds(keysTs: string): string[] {
   return [...code.matchAll(/keyId\s*:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
 }
 
-/** One result of apps/mobile/scripts/preflight-production.mjs (`--json`). */
-export interface PreflightResult {
-  level: 'PASS' | 'FAIL' | 'WARN' | 'UNVERIFIED';
-  msg: string;
-  id?: string;
-}
-
-/**
- * The production row: the store preflight's results, or null when it could not run. Without `store` (the alpha
- * scope) it is one NOT NEEDED line naming the checks that fail, or PASS when none does. With `store` each FAIL and
- * UNVERIFIED is its own line, and a preflight that could not run is a FAIL.
- */
-export function productionFindings(results: PreflightResult[] | null, store: boolean): Finding[] {
-  const SCRIPT = 'apps/mobile/scripts/preflight-production.mjs';
-  if (!results) {
-    return [{ level: store ? 'FAIL' : 'UNVERIFIED', area: 'store', message: `The store preflight (${SCRIPT}) did not run or printed no results: run \`npm run preflight:production -w @scribe/mobile\` to see why.` }];
-  }
-  const failed = results.filter((r) => r.level === 'FAIL');
-  if (store) {
-    const out: Finding[] = results.filter((r) => r.level === 'FAIL' || r.level === 'UNVERIFIED' || r.level === 'WARN').map((r) => ({ level: r.level, area: 'store', message: r.msg }));
-    if (!failed.length) out.push({ level: 'PASS', area: 'store', message: `The store preflight (${SCRIPT}) passes every check of the production profile.` });
-    return out;
-  }
-  if (!failed.length) return [{ level: 'PASS', area: 'store', message: `The store preflight (${SCRIPT}) passes every check of the production profile.` }];
-  return [
-    {
-      level: 'NOT NEEDED',
-      area: 'store',
-      message: `Production (the store build) is not used by either alpha build. Its preflight fails ${failed.length} check(s): ${failed.map((r) => r.id ?? r.msg).join(', ')}. Run \`npm run preflight:production -w @scribe/mobile\` for the reasons, or the doctor with --store to make them FAIL.`,
-    },
-  ];
-}
-
-/**
- * Static checks of the repository's own wiring. `files` is injected so tests need no disk. When `production` is
- * given (the store preflight's results), its row replaces the plain NOT NEEDED line for production.
- */
-export function repoFindings(
-  files: { appConfig: string; easJson: string; keysTs: string },
-  live = false,
-  production?: { results: PreflightResult[] | null; store: boolean },
-): Finding[] {
+/** Static checks of the repository's own wiring. `files` is injected so tests need no disk. */
+export function repoFindings(files: { appConfig: string; easJson: string; keysTs: string }, live = false): Finding[] {
   const out: Finding[] = [];
   const add = (level: Level, message: string) => out.push({ level, area: 'repo', message });
   const hasProject = /projectId\s*:\s*['"][0-9a-f-]{36}['"]/i.test(files.appConfig);
@@ -171,8 +127,7 @@ export function repoFindings(
     else if (id) add('FAIL', `eas.json submit.${profile} ios.ascAppId is not the numeric Apple id of the app record.`);
     else add(live ? 'FAIL' : 'WARN', `eas.json submit.${profile} has no ios.ascAppId. Needed only for the GitHub workflow's non-interactive submit (TESTFLIGHT.md step 2.4); not needed to submit from your own computer, which asks instead. Set it from the .preview record's Apple id (App Information).${live ? ' FAIL because --live checks the workflow path.' : ''}`);
   }
-  if (production) out.push(...productionFindings(production.results, production.store));
-  else add('NOT NEEDED', 'eas.json submit.production and the production app record (com.earlyletters.scribe) are not used by either alpha build.');
+  add('NOT NEEDED', 'eas.json submit.production and the production app record (com.earlyletters.scribe) are not used by either alpha build.');
 
   // The same rule as the preflight (preflight-testflight.mjs): none fails, one id warns (F19-REQ-002 asks for a
   // primary and a cold backup), a repeated id fails (only the first is ever used), two or more distinct ids pass.
@@ -199,25 +154,6 @@ export function redact(text: string, secrets: (string | undefined)[]): string {
   let out = text.replace(/Bearer\s+[A-Za-z0-9._~+/=-]+/gi, 'Bearer [hidden]');
   for (const s of secrets) if (s && s.length >= 6) out = out.split(s).join('[hidden]');
   return out;
-}
-
-/** Runs the store preflight with --json and returns its results, or null when it printed none it could read. */
-export function runProductionPreflight(root: string): PreflightResult[] | null {
-  const script = join(root, 'apps/mobile/scripts/preflight-production.mjs');
-  if (!existsSync(script)) return null;
-  let stdout = '';
-  try {
-    stdout = execFileSync(process.execPath, [script, '--json'], { cwd: join(root, 'apps/mobile'), encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 300_000, maxBuffer: 16 * 1024 * 1024 });
-  } catch (e) {
-    // Exit 1 means "a check failed"; the results are still on stdout.
-    stdout = String((e as { stdout?: unknown }).stdout ?? '');
-  }
-  try {
-    const parsed = JSON.parse(stdout.slice(stdout.indexOf('{'))) as { results?: unknown };
-    return Array.isArray(parsed.results) ? (parsed.results as PreflightResult[]) : null;
-  } catch {
-    return null;
-  }
 }
 
 const firstLine = (e: unknown) => (e instanceof Error ? e.message : String(e)).split('\n')[0];
@@ -274,11 +210,10 @@ export async function checkApple(
 
 async function main(argv: string[]) {
   const live = argv.includes('--live');
-  const store = argv.includes('--store');
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
   const read = (p: string) => (existsSync(join(root, p)) ? readFileSync(join(root, p), 'utf8') : '');
   const env: Env = { EXPO_TOKEN: process.env.EXPO_TOKEN, ASC_API_KEY_ID: process.env.ASC_API_KEY_ID, ASC_API_ISSUER_ID: process.env.ASC_API_ISSUER_ID, ASC_API_KEY_P8_PATH: process.env.ASC_API_KEY_P8_PATH };
-  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts') }, live, { results: runProductionPreflight(root), store });
+  const findings = repoFindings({ appConfig: read('apps/mobile/app.config.ts'), easJson: read('apps/mobile/eas.json'), keysTs: read('packages/api/src/keys.ts') }, live);
 
   const ran = [env.EXPO_TOKEN ? 'Expo (EXPO_TOKEN is set)' : '', env.ASC_API_KEY_ID && env.ASC_API_ISSUER_ID && env.ASC_API_KEY_P8_PATH ? 'Apple (the ASC_* variables are set)' : ''].filter(Boolean);
   console.log(ran.length ? `Running live checks because their variables are set: ${ran.join(', ')}.\n` : 'No live check variables are set: static checks only.\n');

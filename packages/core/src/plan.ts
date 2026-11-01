@@ -22,9 +22,6 @@
  *    are never gated: they are not members of GatedFeature, so a gate on them
  *    cannot compile (LEGAL-REQ-050). Nothing becomes unreadable when Plus
  *    lapses.
- *  - Recording backup is free and never a Plus feature (D-111 item 6,
- *    D-124 item 5): `backup_upload` is in FreeForever, next to restoring and
- *    downloading what was backed up.
  *  - The one deliberate exception to the old "writing is free forever" rule:
  *    the Keep step of a letter (`keep_letter`). Capturing, typing and drafts
  *    are never blocked, and a held draft stays on the phone untouched. Only
@@ -41,27 +38,21 @@ export type FreeForever =
   | 'invite'
   | 'download_backed_up_audio'
   | 'restore_backup'
-  | 'backup_upload'
   | 'delete';
 
 /** The only things Plus can gate. Adding to this list is a product decision, not a code change. */
-export type GatedFeature = 'keep_letter' | 'theme_extra';
+export type GatedFeature = 'keep_letter' | 'backup_upload' | 'theme_extra';
 
 /** Compile-time proof that no free-forever feature is gated. Breaks the build if the two ever overlap. */
 type Overlap = Extract<GatedFeature, FreeForever>;
 const NO_OVERLAP: [Overlap] extends [never] ? true : never = true;
 void NO_OVERLAP;
 
-export const GATED_FEATURES: readonly GatedFeature[] = ['keep_letter', 'theme_extra'];
+export const GATED_FEATURES: readonly GatedFeature[] = ['keep_letter', 'backup_upload', 'theme_extra'];
 export const FREE_FOREVER: readonly FreeForever[] = [
-  'read', 'play_recording', 'export', 'family_authors', 'invite', 'download_backed_up_audio', 'restore_backup', 'backup_upload', 'delete',
+  'read', 'play_recording', 'export', 'family_authors', 'invite', 'download_backed_up_audio', 'restore_backup', 'delete',
 ];
 
-/**
- * Why a Plus offer was shown. `'backup'` is kept only because analytics
- * (`OFFER_TRIGGERS` in domain.ts, `PLUS_TRIGGER`) mirrors these values: no gate
- * produces it any more, since backup is free (D-111 item 6).
- */
 export type OfferTrigger = 'keep_letter' | 'backup' | 'themes' | 'chapter_complete' | 'settings';
 
 /** Free letters per account, across every book (D-082; remote config `free_letters_allowance`, which may only raise it). */
@@ -114,14 +105,17 @@ export interface DecideInput {
    * parent's Plus never covers this person (Terms 14.12, D-053, D-080); Family Sharing reaches them as `viewer.own`.
    */
   book: { coveredByOtherParent: false } | null;
+  /** Who asked for a backup upload: a tap, or the background uploader. Defaults to 'user'. */
+  initiatedBy?: 'user' | 'background';
 }
 
 export type Decision =
   | { kind: 'allow'; via: 'plus_own' }
   | { kind: 'offer'; trigger: OfferTrigger; needsSignIn: boolean }
-  | { kind: 'quiet'; reason: 'contributor' | 'first_run' | 'birthday' | 'offline' };
+  | { kind: 'quiet'; reason: 'contributor' | 'first_run' | 'birthday' | 'free_background' | 'offline' };
 
 const OFFER_FOR: Record<Exclude<GatedFeature, 'keep_letter'>, OfferTrigger> = {
+  backup_upload: 'backup',
   theme_extra: 'themes',
 };
 
@@ -199,12 +193,13 @@ export function decideKeepLetter(input: KeepLetterInput): KeepLetterDecision {
 }
 
 /**
- * Decide the other Plus gates (extra themes). Backup is not one: it is free
- * (D-111 item 6). The first matching rule wins (TDD 08 2.2):
+ * Decide the other Plus gates (backup upload, extra themes). The first
+ * matching rule wins (TDD 08 2.2):
  *  1. Own Plus while a parent of the book (Family Sharing included; never
  *     another member's Plus, Terms 14.12).
- *  2. Suppressions: first run, birthday, contributor, offline.
- *  3. Otherwise offer, asking to sign in first when signed out.
+ *  2. backup_upload from the background uploader in a Free book: quiet.
+ *  3. Suppressions: first run, birthday, contributor, offline.
+ *  4. Otherwise offer, asking to sign in first when signed out.
  * Throws only on a programmer error (a feature that is not gated here, or
  * keep_letter, which has decideKeepLetter); callers treat a throw as quiet.
  */
@@ -215,6 +210,9 @@ export function decide(input: DecideInput): Decision {
 
   // Plus is the person's own (their Apple Account, or Apple Family Sharing), used in books they parent (Terms 14.12).
   if (ownPlus && viewer.roleInBook === 'parent') return { kind: 'allow', via: 'plus_own' };
+  if (feature === 'backup_upload' && (input.initiatedBy ?? 'user') === 'background') {
+    return { kind: 'quiet', reason: 'free_background' };
+  }
 
   if (input.surface === 'first_run') return { kind: 'quiet', reason: 'first_run' };
   if (input.isBirthday) return { kind: 'quiet', reason: 'birthday' };

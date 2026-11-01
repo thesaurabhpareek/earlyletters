@@ -11,14 +11,14 @@ Owner: S20 (release), founder for every dashboard. Updated 15 Oct 2026 for the a
 
 ## Build profiles and switches
 
-The server switch, `BACKUP`, `STATUS_REPORT` and `ANALYTICS` are written out in every profile of `apps/mobile/eas.json`. Two switches are not: `ENGLISH_ONLY` is written `on` in the two alpha profiles and in `production` (the first store build is English only, D-121 item 1), and is unset, hence off, in `development` and `e2e`, and `ACCOUNT_DELETION` (the Delete account row, founder, 30 Oct 2026) is written `on` in `development`, `e2e` and `production` and **left out of the two alpha profiles**, so a build made without it hides the row and the EAS `preview` environment can switch it on after the freeze (TESTFLIGHT.md step 9). It is in no `.env*` file; the preflight FAILs on one. `apps/mobile/test/config.test.ts`, `capabilities.test.ts` and `account-deletion-switch.test.ts` hold all of this. Only `on` is on (`apps/mobile/src/lib/capabilities.ts`); a build flag also needs the server switch.
+The server switch, `BACKUP`, `STATUS_REPORT` and `ANALYTICS` are written out in every profile of `apps/mobile/eas.json`. Two switches are not: `ENGLISH_ONLY` is written `on` in the two alpha profiles only (unset, hence off, elsewhere), and `ACCOUNT_DELETION` (the Delete account row, founder, 30 Oct 2026) is written `on` in `development`, `e2e` and `production` and **left out of the two alpha profiles**, so a build made without it hides the row and the EAS `preview` environment can switch it on after the freeze (TESTFLIGHT.md step 9). It is in no `.env*` file; the preflight FAILs on one. `apps/mobile/test/config.test.ts`, `capabilities.test.ts` and `account-deletion-switch.test.ts` hold all of this. Only `on` is on (`apps/mobile/src/lib/capabilities.ts`); a build flag also needs the server switch.
 
 | Profile | Use | Distribution | `EXPO_PUBLIC_APP_ENV` | Bundle id | EAS environment | `SERVER_FEATURES` | `BACKUP` | `STATUS_REPORT` | `ANALYTICS` | `ENGLISH_ONLY` | `ACCOUNT_DELETION` |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | `development` | dev client on the founder's desk | internal | `development` | `<id>.dev` | development | off | off | off | off | not written (off) | on |
 | `testflight` | **alpha build 1**, store lane after the R-17 flip | store (TestFlight) | `preview` | `<id>.preview` | preview | **off** until the R-17 gate (one-line flip, TESTFLIGHT.md) | off | off | off | on | **not written**: from the EAS `preview` environment, else off |
 | `preview` | **alpha build 2**, against staging | store (TestFlight) | `preview` | `<id>.preview` | preview | **on** | off | off | off | on | **not written**: from the EAS `preview` environment, else off (row hidden) |
-| `production` | the App Store app, later | store | `production` | `<id>` | production | off | off | off | off | on (D-121 item 1) | on (hide-until-proven is for the alpha only) |
+| `production` | the App Store app, later | store | `production` | `<id>` | production | off | off | off | off | not written (off) | on (hide-until-proven is for the alpha only) |
 
 The `e2e` simulator profile is not in this table: it is the development app env with `EXPO_PUBLIC_E2E=1`, servers off, and `ACCOUNT_DELETION` on.
 
@@ -32,7 +32,7 @@ Nothing secret is in the repository. The app's project values are public by desi
 
 | Value | Where | Who sets it | Notes |
 |---|---|---|---|
-| The server, backup, status report and analytics switches, `ENGLISH_ONLY` (alpha and production profiles) and `EXPO_PUBLIC_DOCS_BASE_URL` (`https://packs.earlyletters.app`, D-097) | `apps/mobile/eas.json`, per profile | PR (S20; flips are founder merges) | Not secret |
+| The server, backup, status report and analytics switches, `ENGLISH_ONLY` (alpha profiles) and `EXPO_PUBLIC_DOCS_BASE_URL` (`https://packs.earlyletters.app`, D-097) | `apps/mobile/eas.json`, per profile | PR (S20; flips are founder merges) | Not secret |
 | `EXPO_PUBLIC_ACCOUNT_DELETION` | alpha builds: the EAS environment `preview`, nowhere in the repository; `development`, `e2e` and `production`: `eas.json` | Founder, TESTFLIGHT.md step 9, only if the purge worker runs on staging and the sole-parent drill passes (D-129) | Not secret. Never in a `.env*` file (the preflight FAILs on it). Exactly `on`; anything else leaves the row hidden |
 | `EXPO_PUBLIC_SUPABASE_URL`, `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | EAS environment variables, environment `preview` (staging values), later `production` | Founder, TESTFLIGHT.md step 9 | Publishable (anon) key only. The `testflight` profile shares the `preview` environment; with its switch off it constructs no client, but the values are inlined in its bundle, so a secret key there would ship in build 1 too (the preflight fails on one in either profile) |
 | `EXPO_PUBLIC_EMAIL_OTP_LENGTH` | EAS environment variable, only if not 6 | Founder | Must equal Supabase's Email OTP length |

@@ -18,7 +18,6 @@ import {
   freeLettersFrom,
   GATED_FEATURES,
   isAllowed,
-  isGatedFeature,
   MAX_FREE_LETTERS,
   NO_PLAN,
   planActive,
@@ -57,6 +56,7 @@ function input(feature: OtherGate, over: Over = {}): DecideInput {
     online: true,
     viewer: { roleInBook: 'parent', own: FREE },
     book: { coveredByOtherParent: false },
+    initiatedBy: 'user',
   };
   return { ...base, ...over, viewer: { ...base.viewer, ...over.viewer } } as DecideInput;
 }
@@ -73,36 +73,40 @@ interface Row {
 }
 
 const TABLE: Row[] = [
-  // theme_extra (rows 1 to 10 were backup_upload until D-111 item 6 made backup free; rows 4 and 5 were backup-only and are retired)
-  { id: '1', rule: 'own Plus uses an extra theme', input: input('theme_extra', { viewer: { own: P } }), expected: allow('plus_own') },
+  // backup_upload
+  { id: '1', rule: 'own Plus backs up', input: input('backup_upload', { viewer: { own: P } }), expected: allow('plus_own') },
   // Terms 14.12: another parent's Plus never covers this person (rows 2 and 3 used to say it did).
-  { id: '2', rule: 'Free parent in a book whose other parent has Plus: their own offer (Terms 14.12)', input: input('theme_extra'), expected: offer('themes') },
-  { id: '3', rule: 'contributor in a book whose parent has Plus: quiet, not covered (Terms 14.12)', input: input('theme_extra', { viewer: { roleInBook: 'contributor' } }), expected: quiet('contributor') },
-  { id: '6', rule: 'signed out: sign in before the Plus sheet (R-1)', input: input('theme_extra', { signedIn: false }), expected: offer('themes', true) },
-  { id: '7', rule: 'contributor in a Free book: quiet, never a Plus sheet (R-2)', input: input('theme_extra', { viewer: { roleInBook: 'contributor' } }), expected: quiet('contributor') },
+  { id: '2', rule: 'Free parent in a book whose other parent has Plus: their own offer (Terms 14.12)', input: input('backup_upload'), expected: offer('backup') },
+  { id: '3', rule: 'contributor in a book whose parent has Plus: quiet, not covered (Terms 14.12)', input: input('backup_upload', { viewer: { roleInBook: 'contributor' } }), expected: quiet('contributor') },
+  { id: '4', rule: 'Free book, background uploader: quiet, audio stays on the phone', input: input('backup_upload', { initiatedBy: 'background' }), expected: quiet('free_background') },
+  { id: '5', rule: 'Free book, parent taps Turn on backup', input: input('backup_upload'), expected: offer('backup') },
+  { id: '6', rule: 'signed out: sign in before the Plus sheet (R-1)', input: input('backup_upload', { signedIn: false }), expected: offer('backup', true) },
+  { id: '7', rule: 'contributor in a Free book: quiet, never a Plus sheet (R-2)', input: input('backup_upload', { viewer: { roleInBook: 'contributor' } }), expected: quiet('contributor') },
   { id: '8', rule: 'contributor with own Plus in a Free book is not covered', input: input('theme_extra', { viewer: { roleInBook: 'contributor', own: P } }), expected: quiet('contributor') },
-  { id: '9', rule: 'birthday: no offer that day', input: input('theme_extra', { isBirthday: true }), expected: quiet('birthday') },
-  { id: '10', rule: 'offline: an offer becomes quiet', input: input('theme_extra', { online: false }), expected: quiet('offline') },
+  { id: '9', rule: 'birthday: no offer that day', input: input('backup_upload', { isBirthday: true }), expected: quiet('birthday') },
+  { id: '10', rule: 'offline: an offer becomes quiet', input: input('backup_upload', { online: false }), expected: quiet('offline') },
+
+  // theme_extra
   { id: '11', rule: 'Free parent taps an extra theme', input: input('theme_extra'), expected: offer('themes') },
   { id: '12', rule: 'lapsed with an extra theme: not allowed (render the default, keep the choice)', input: input('theme_extra', { viewer: { own: LAPSED } }), expected: offer('themes') },
 
   // plan state and cache (C-NFR-004)
-  { id: '13', rule: 'cache 9 days old, effectiveUntil ahead: fail open for payers', input: input('theme_extra', { viewer: { own: plan({ verifiedAt: NINE_DAYS_AGO }) } }), expected: allow('plus_own') },
-  { id: '14', rule: 'cache old, effectiveUntil passed, offline: Free, no offer until online', input: input('theme_extra', { online: false, viewer: { own: plan({ verifiedAt: NINE_DAYS_AGO, effectiveUntil: PAST }) } }), expected: quiet('offline') },
+  { id: '13', rule: 'cache 9 days old, effectiveUntil ahead: fail open for payers', input: input('backup_upload', { viewer: { own: plan({ verifiedAt: NINE_DAYS_AGO }) } }), expected: allow('plus_own') },
+  { id: '14', rule: 'cache old, effectiveUntil passed, offline: Free, no offer until online', input: input('backup_upload', { online: false, viewer: { own: plan({ verifiedAt: NINE_DAYS_AGO, effectiveUntil: PAST }) } }), expected: quiet('offline') },
   { id: '15', rule: 'sandbox entitlement, not a tester: Free', input: input('theme_extra', { viewer: { own: plan({ environment: 'sandbox' }) } }), expected: offer('themes') },
   { id: '16', rule: 'sandbox entitlement for a TestFlight tester counts', input: input('theme_extra', { viewer: { own: plan({ environment: 'sandbox', isTester: true }) } }), expected: allow('plus_own') },
-  { id: '17', rule: 'Xcode StoreKit test entitlement, not a tester: Free', input: input('theme_extra', { viewer: { own: plan({ environment: 'xcode' }) } }), expected: offer('themes') },
+  { id: '17', rule: 'Xcode StoreKit test entitlement, not a tester: Free', input: input('backup_upload', { viewer: { own: plan({ environment: 'xcode' }) } }), expected: offer('backup') },
   { id: '18', rule: 'refunded: Free immediately (C-REQ-029)', input: input('theme_extra', { viewer: { own: plan({ state: 'refunded' }) } }), expected: offer('themes') },
-  { id: '19', rule: 'revoked (Family Sharing removed): Free', input: input('theme_extra', { viewer: { own: plan({ state: 'revoked' }) } }), expected: offer('themes') },
+  { id: '19', rule: 'revoked (Family Sharing removed): Free', input: input('backup_upload', { viewer: { own: plan({ state: 'revoked' }) } }), expected: offer('backup') },
   { id: '20', rule: 'billing retry outside grace: Free extras', input: input('theme_extra', { viewer: { own: plan({ state: 'billing_retry' }) } }), expected: offer('themes') },
   { id: '21', rule: 'trial counts as Plus', input: input('theme_extra', { viewer: { own: TRIAL } }), expected: allow('plus_own') },
   { id: '22', rule: 'billing grace keeps Plus on (C-REQ-027)', input: input('theme_extra', { viewer: { own: GRACE } }), expected: allow('plus_own') },
-  { id: '23', rule: 'lifetime (no end date) counts', input: input('theme_extra', { viewer: { own: plan({ effectiveUntil: null }) } }), expected: allow('plus_own') },
-  { id: '24', rule: 'both parents hold Plus: each is allowed by their own (R-3)', input: input('theme_extra', { viewer: { own: P } }), expected: allow('plus_own') },
+  { id: '23', rule: 'lifetime (no end date) counts', input: input('backup_upload', { viewer: { own: plan({ effectiveUntil: null }) } }), expected: allow('plus_own') },
+  { id: '24', rule: 'both parents hold Plus: each is allowed by their own (R-3)', input: input('backup_upload', { viewer: { own: P } }), expected: allow('plus_own') },
   { id: '25', rule: 'first-run surface: quiet', input: input('theme_extra', { surface: 'first_run' }), expected: quiet('first_run') },
 ];
 
-describe('decide(): truth table for themes (TDD 08 2.3)', () => {
+describe('decide(): truth table for backup and themes (TDD 08 2.3)', () => {
   it('covers every gate decide() handles, with unique ids', () => {
     for (const f of GATED_FEATURES.filter((g) => g !== 'keep_letter')) expect(TABLE.some((r) => r.input.feature === f), f).toBe(true);
     expect(new Set(TABLE.map((r) => r.id)).size).toBe(TABLE.length);
@@ -113,7 +117,7 @@ describe('decide(): truth table for themes (TDD 08 2.3)', () => {
   });
 
   it('keep_letter is not decided here: it needs the letter count', () => {
-    expect(() => decide({ ...input('theme_extra'), feature: 'keep_letter' })).toThrow();
+    expect(() => decide({ ...input('backup_upload'), feature: 'keep_letter' })).toThrow();
   });
 });
 
@@ -197,28 +201,18 @@ describe('decideKeepLetter: the first 2 letters are free, then Plus', () => {
 });
 
 describe('free forever (LEGAL-REQ-050)', () => {
-  const NEVER_GATED = ['read', 'play_recording', 'export', 'delete', 'restore_backup', 'family_authors', 'invite', 'download_backed_up_audio', 'backup_upload'] as const;
+  const NEVER_GATED = ['read', 'play_recording', 'export', 'delete', 'restore_backup', 'family_authors', 'invite', 'download_backed_up_audio'] as const;
 
   it('reading, playing, exporting, deleting, restoring and family authorship are not gated features, at compile time and at run time', () => {
     for (const f of NEVER_GATED) {
       expect(FREE_FOREVER).toContain(f);
       expect((GATED_FEATURES as readonly string[]).includes(f)).toBe(false);
       // Run time: a caller that bypasses the types gets a programmer error, never a gate.
-      expect(() => decide({ ...input('theme_extra'), feature: f as unknown as GatedFeature })).toThrow();
+      expect(() => decide({ ...input('backup_upload'), feature: f as unknown as GatedFeature })).toThrow();
     }
     const read: FreeForever = 'read';
     // @ts-expect-error a free-forever feature cannot be passed to decide()
-    const bad: DecideInput = { ...input('theme_extra'), feature: read };
-    expect(() => decide(bad)).toThrow();
-  });
-
-  it('backup is free and never a Plus feature (D-111 item 6, D-124 item 5)', () => {
-    expect(FREE_FOREVER).toContain('backup_upload');
-    expect(isGatedFeature('backup_upload')).toBe(false);
-    expect(() => decide({ ...input('theme_extra'), feature: 'backup_upload' as unknown as GatedFeature })).toThrow();
-    const backup: FreeForever = 'backup_upload';
-    // @ts-expect-error backup_upload is free forever, so it cannot be passed to decide()
-    const bad: DecideInput = { ...input('theme_extra'), feature: backup };
+    const bad: DecideInput = { ...input('backup_upload'), feature: read };
     expect(() => decide(bad)).toThrow();
   });
 
@@ -230,21 +224,22 @@ describe('free forever (LEGAL-REQ-050)', () => {
   });
 
   it('the Plan state never hides anything: every gate list is only things Plus adds', () => {
-    expect([...GATED_FEATURES].sort()).toEqual(['keep_letter', 'theme_extra']);
+    expect([...GATED_FEATURES].sort()).toEqual(['backup_upload', 'keep_letter', 'theme_extra']);
   });
 });
 
 describe('decide(): properties over every combination', () => {
   const plans: PlanView[] = [FREE, P, GRACE, TRIAL, LAPSED, plan({ state: 'refunded' }), plan({ environment: 'sandbox' }), plan({ effectiveUntil: PAST })];
   const all: DecideInput[] = [];
-  for (const feature of ['theme_extra'] as const)
+  for (const feature of ['backup_upload', 'theme_extra'] as const)
     for (const own of plans)
       for (const roleInBook of ['parent', 'contributor', null] as const)
         for (const covered of [false] as const)
           for (const surface of ['first_run', 'normal'] as const)
             for (const isBirthday of [false, true])
               for (const signedIn of [false, true])
-                all.push(input(feature, { viewer: { roleInBook, own }, book: { coveredByOtherParent: covered }, surface, isBirthday, signedIn }));
+                for (const initiatedBy of ['user', 'background'] as const)
+                  all.push(input(feature, { viewer: { roleInBook, own }, book: { coveredByOtherParent: covered }, surface, isBirthday, signedIn, initiatedBy }));
 
   it('never offers on the first-run surface', () => {
     for (const i of all) if (i.surface === 'first_run') expect(decide(i).kind).not.toBe('offer');
@@ -294,7 +289,7 @@ describe('helpers', () => {
 describe('[Terms 14.12, D-053, D-080] Plus covers its holder, never another member of a shared book', () => {
   it('a Free co-parent or contributor is never allowed through someone else\'s Plus', () => {
     for (const roleInBook of ['parent', 'contributor', null] as const) {
-      for (const feature of ['theme_extra'] as const) {
+      for (const feature of ['backup_upload', 'theme_extra'] as const) {
         expect(decide(input(feature, { viewer: { roleInBook, own: FREE } })).kind, `${roleInBook} ${feature}`).not.toBe('allow');
       }
     }
