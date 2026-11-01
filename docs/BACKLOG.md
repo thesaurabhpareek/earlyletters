@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); the next block starts after BL-529.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); run `node scripts/agents/next-id.mjs` for the next free id.
 
 ---
 
@@ -520,6 +520,124 @@ D-053 (founder, 3 Oct): Apple only, on the device; no server sees purchases; no 
 | BL-214 | App Store notifications endpoint, `sync_plan`, reconcile | superseded (D-053) |
 | BL-217 | Purchase consent records | superseded (D-053; D-049 has no server to apply to; counsel question in Q-003) |
 | BL-218 | Notice scheduler and emails | superseded (D-053); replaced by BL-342 |
+
+---
+
+## M13. Reminders, nudges and photo moments
+
+Added 1 Nov 2026 by the reminders design effort (two product, two research, two design agents, ruled on by Karma). The design is `docs/design/NOTIFICATIONS.md`; the copy inventory is `docs/design/notifications/COPY_INVENTORY.md`; the setup journey is `docs/design/notifications/SETUP_JOURNEY.md`; the parent study is `docs/design/notifications/PARENT_STUDY_PLAN.md`; the evidence, with its grades, is `docs/research/NOTIFICATION_EVIDENCE_2026-11-01.md`. Spec: `docs/prd/v2/features/F13-prompts-reminders.md`. Nothing in this section has run on a phone.
+
+**What every agent on this section must hold to**
+1. **Reminders are local.** They are scheduled on the phone with expo-notifications (planner `apps/mobile/src/lib/reminders/planner.ts`, pure and tested). v1.0 has no remote push: nothing asks for a push token and `app.config.ts` strips `aps-environment`. Remote push is BL-546 and waits for servers (D-121). Do not add the entitlement or a token request in any other task.
+2. **Quiet window.** Nothing between 21:30 and 07:00 local (C-NFR-001, F13-REQ-019). One notification a day at most. A month or birthday message replaces that day's evening nudge. A new type replaces a slot; it never adds one.
+3. **Names stay off the lock screen** unless "Names in notifications" is on (D-025). Every row has a neutral variant, and the neutral one is the default. Festival names show only behind their own switch (BL-542). No letter text, ever.
+4. **The machine adds no meaning.** A photo is only what the parent picked. Never describe, caption, classify or guess from a photo; never read the library, including dates and counts; no scanning for trips or faces. Use the system picker. The library-reading "Tier C" in the copy inventory is not approved for any release. "Trip" appears only if the parent typed that label.
+5. **Traditions are chosen, never inferred.** No default selection. No religion from a region, a name or a language.
+6. **Copy** lives in `packages/content` only after every row passes `npm test` there (titles 40 characters at most, bodies 110, no exclamation marks, nothing on the fear, guilt, gap-count, AI, gender or internal-term lists). The inventory is a draft in `docs/` until then. No streaks, counts of days, "missed" or "it has been".
+7. **Evidence honesty.** Mark each claim verified, vendor claim or unverified. The best notification time for new parents has no public evidence; 8:30 PM is a hypothesis. Do not quote a figure you did not open.
+8. **Freeze.** Build 2 freeze is Tue 3 Nov 5:00 AM PT (13:00 UTC); after it only S0 and S1 fixes until the go/no-go on Mon 9 Nov (D-130). Tasks marked "1.0" (BL-530, BL-532, BL-535, BL-549) land before the freeze or move to 1.0.1; tasks marked "1.1" wait. BL-535 bumps `PROMPT_LIBRARY_VERSION` (3 today), so mind merge order.
+9. **Hard seasons.** A visible, always-reachable stop for all reminders is a v1.1 requirement (BL-538 is the timed version, not the stop; the master switch in Settings is the stop for 1.0). A loss path is also a v1.1 requirement: after pregnancy loss or a NICU stay, a parent must be able to stop everything and change or remove a date in a few taps, and milestone, birthday and expecting-book reminders must not fire on a date the parent has removed. Nothing is inferred; the planner cannot know. One tap stops everything. Never a countdown, nothing tied to a due date, and a research participant who finds a notification distressing halts it for everyone.
+
+### Version 1.0 (before the freeze, or 1.0.1)
+
+#### BL-530 Weekly reminders default to Saturday, as F13 says [Medium]
+- Status: ready. Mode: agent. Owner: reminders owner. Size: XS.
+- Satisfies: F13 section 6 ("Weekly fires on Saturday at the chosen time", K-03). Found by: reminders design effort, 1 Nov 2026.
+- Scope: `DEFAULT_WEEKLY_DAY` is 0 (Sunday) in `planner.ts`; the spec says Saturday. Set it to 6; update the table comment in `prefs.ts`, the settings screen default, and the tests that name the default. A phone that already stored a weekly day keeps it (the stored value wins).
+- Done when: a planner test with no stored weekly day fails on the old code and passes on the new; no other default changes.
+
+#### BL-531 Quiet hours are written once, not three times [Low]
+- Status: deferred (low value until the window is configurable; ruled by Karma 1 Nov 2026; revisit when FUTURE-REMOTE-WINDOW lands, i.e. when remote config can narrow the window). Mode: agent. Owner: content, reminders owner. Size: XS.
+- Satisfies: F13-REQ-019 (remote config may narrow the window inside 07:00 to 21:30, so no screen may hard-code it once that config exists).
+- Scope: `reminderCopy.settings.quietHelp` says "7 AM and 9:30 PM" and the reminder card caps its time picker at 21:30 in code (`reminder-prime-ask.tsx`). Read both from the planner window (`DEFAULT_WINDOW`, `formatReminderTime`). Adding placeholders to a copy line means updating the per-surface placeholder lists in `packages/content/test/rules.test.ts`, so do it when the remote window config lands, not in the freeze. Until then the window is fixed at 07:00 to 21:30 and the text is true.
+- Done when: changing `LATEST_MINUTES` in a test changes the help text and the picker limit; content tests pass.
+
+#### BL-532 The reminder card names the child [Medium]
+- Status: ready. Mode: agent. Owner: content, reminders owner. Size: XS.
+- Satisfies: the founder's ask on 1 Nov 2026 to make the setup personal with the child's name. In-app only; the lock screen stays neutral (rule 3).
+- Scope: change `onboarding.reminder.body` to use `{child}` (it has none today), add the placeholder to the `onboarding.reminder` entry in the per-surface placeholder lists in `packages/content/test/rules.test.ts` if that test needs it, and have the card fill it (it is shown only after a first letter, so a name exists). No new buttons. Copy presumes nothing about sleep or the household.
+- Done when: the card shows the name in a screen test; content tests pass; the neutral lock-screen copy is unchanged.
+
+#### BL-533 Reminders on a real phone, WP-F13-08 [High]
+- Status: needs-founder (a device operator; see `docs/FOUNDER_TASKS.md`). Mode: human. Owner: qa engineer. Size: S.
+- Satisfies: F13 device gate; `docs/qa/DEVICE_TEST_PLAN.md` S2-15.
+- Scope: on a TestFlight build, check: a reminder five minutes ahead fires with the phone locked; the app open shows none; a time-zone change keeps the wall-clock time; denied then Open Settings then allowed starts reminders by itself; Focus modes; 60 pending reminders is within iOS's 64; the lock screen shows neutral words; a tap opens Tonight (evening) or the Book (month or birthday); a real birthday and month-day fire; the card answers (yes, pick a time, no reminders) each leave the right state.
+- Done when: each item is recorded in the S2-15 row with pass or fail, and failures become BL tasks.
+
+#### BL-534 No prompt repeats within 365 days (F13-REQ-004, WP-F13-07) [High]
+- Status: needs-decision (D-130: this needs a local schema step, which after the freeze is an S0 or S1 fix only; founder or Karma to say 1.0 or 1.0.1). Mode: agent. Owner: mobile engineer. Size: M. Depends on: BL-530.
+- Satisfies: F13-REQ-004 (gate).
+- Scope: `AVOID_RECENT` is 10 in `packages/core/src/prompts.ts`. Keep a per-author, per-child prompt history (one row per local date shown or skipped) and make `selectPrompt` avoid keys shown in the last 365 days; say what happens when the pool is exhausted (F13 metrics: under 10% of evenings).
+- Done when: the property test over a simulated two-year history shows zero repeats in 365 days.
+
+#### BL-535 Twelve prompts for a book before the birth [Medium]
+- Status: ready. Mode: agent. Owner: content. Size: S.
+- Satisfies: F13-REQ-008 (at least 12 `before` prompts; 8 exist).
+- Scope: four more `before` prompts in `packages/content/src/prompts.ts`, bumping `PROMPT_LIBRARY_VERSION` to 4. They assume no birth, name no due date, week, hour or feeling, and presume nothing about the family. Keys are new; no old key is reused.
+- Done when: the `before` count test passes at 12 or more and all content rules pass.
+
+#### BL-549 Doc fixes from the reminders review [Low]
+- Status: ready. Mode: agent. Owner: reminders owner. Size: XS.
+- Scope: F13 still says co-parent letter pushes are in v1.0; servers are off (D-121), so move that line to v1.1 and point to BL-546. In R1 (`docs/research/`), the Calm figure (40% set a reminder, "almost 3x" retention) is a vendor claim from Amplitude's own case study, not a first-party fact.
+- Done when: both edits are made and nothing else changes.
+
+### Version 1.0.1 and 1.1
+
+#### BL-536 The reminder card offers a cadence and asks about bedtime [Medium]
+- Status: deferred (1.0.1 or 1.1; founder's scope call, `docs/design/NOTIFICATIONS.md` section 7). Mode: agent. Owner: design systems, reminders owner. Size: M. Depends on: BL-532.
+- Scope: per `SETUP_JOURNEY.md`: "About when does {child} fall asleep?" in rough bands (only the resulting time is stored), the cadence labels (Once a week, A few evenings a week, Every evening, No reminders), a time chip row seeded from the answer, the names switch (off), a live preview of the next real dates and words, the existing iOS pre-sheet, a confirmation and a denied variant. Test with five parents before keeping the sleep question (BL-547).
+- Done when: screen tests cover every state; VoiceOver and Dynamic Type pass; the cap of two showings ever still holds.
+
+#### BL-537 Back-off after unopened reminders (C-REQ-008) [Medium]
+- Status: deferred (1.1; the planner header lists it as later). Mode: agent. Owner: reminders owner. Size: M.
+- Scope: four unanswered reminders drop to weekly, four more leave only month-age messages plus one card with no numbers; any save restores (F13-U18).
+
+#### BL-538 Pause for a while [Low]
+- Status: needs-decision (S34 removed "Pause all reminders" as a duplicate of the master switch; a timed pause of 1 week, 2 weeks or until turned back on is a different thing). Mode: agent. Owner: reminders owner. Size: S.
+
+#### BL-539 Copy inventory, tranche 1: evening ideas, curiosity, gratitude, sensory [Medium]
+- Status: deferred (1.1). Mode: agent. Owner: content. Size: M. Depends on: BL-541.
+- Scope: move rows EV, CU, GR, SE from `COPY_INVENTORY.md` into `packages/content`, neutral and named, each passing `npm test`. Read the "exactly as it came out" wording against VOICE.md first (it describes speaking, and sits near the Word for word promise).
+
+#### BL-540 Copy inventory, tranche 2: month notes, age milestones, birthdays, seasons [Medium]
+- Status: deferred (1.1). Mode: agent. Owner: content. Size: M. Depends on: BL-541.
+- Scope: as BL-539 for the month, milestone (months 1 to 24), birthday and secular season rows; add an off switch for milestone rows inside "Month and birthday messages" for preterm and corrected-age families.
+
+#### BL-541 Sequencing rules in the planner [Medium]
+- Status: deferred (1.1). Mode: agent. Owner: reminders owner. Size: M.
+- Scope: the ten rules in `COPY_INVENTORY.md` section 3 (consecutive notifications differ in shape; no shape twice in a row; type budgets) as table-driven planner tests. A new type replaces a slot (rule 2 above). Variants must not reshuffle when the cadence changes (rotation is indexed by ordinal today).
+
+#### BL-542 Celebrations, opt-in [Medium]
+- Status: needs-decision (the founder approves the list and the lock-screen line; `NOTIFICATIONS.md` section 7 item 4). Mode: agent. Owner: content, reminders owner. Size: L.
+- Scope: a short list the parent picks from, default none; the parent confirms the date (lunar and Eid dates shift; we ship no date table that claims to know); the lock screen always says "A celebration today"; the festival name shows only behind a new "Show celebration names" switch; Mother's Day, Father's Day and due-date items are out. Needs a settings string and a reviewer per tradition for the copy.
+
+#### BL-543 Moments: a parent-set date and one nudge after [Medium]
+- Status: deferred (1.1). Mode: agent. Owner: reminders owner. Size: M. Depends on: BL-541.
+- Scope: "we are away 12 to 20 Dec" (a date range and an optional label the parent types). One local nudge follows. No permission needed. "Trip" appears only if the parent typed it.
+
+#### BL-544 Up to five photos on a letter, from the system picker [High]
+- Status: needs-decision (the founder's photo call, and the privacy and constitution check, `NOTIFICATIONS.md` section 5). Mode: agent. Owner: privacy engineer, mobile engineer. Size: L. Depends on: F46.
+- Scope: system picker only (no library permission, no scanning); 0 to 5 ordered photos; a private copy kept with the letter; export carries them; deleting a letter deletes the copies; removing one never touches the parent's Photos app; no sync promise while servers are off. Confirm on a device that the picker needs no prompt and what metadata a picked file carries (GPS) before any copy is stored. Privacy label stays "Data Not Collected" only if nothing leaves the phone.
+
+#### BL-545 Journaling Suggestions spike [Low]
+- Status: deferred (later; counsel and privacy first). Mode: pair. Owner: mobile engineer. Size: M.
+- Scope: Apple's Journaling Suggestions picker (iOS 17.2 or later, an Apple entitlement, a custom Swift module in Expo). Find out whether App Review grants the entitlement to a baby-memory app, and confirm that no notification can be triggered from it. Both are unverified.
+
+#### BL-546 Remote push foundation [High]
+- Status: blocked (servers are off in v1.0, D-121). Mode: agent. Owner: sync owner. Size: L.
+- Scope: the `aps-environment` entitlement, token registration, a sender, consent text, the privacy label, and the co-parent letter push (F11, M14) inside the planner's budget and quiet window. Until this is ruled in, no other task adds the entitlement.
+
+#### BL-547 Parent study: ten parents, two weeks [High]
+- Status: needs-founder (recruiting, incentive, the diary form tool, and counsel's read of a one-page parent consent; at most 5 of 10 from the founder's close circle). Mode: pair. Owner: user researcher. Size: M.
+- Scope: `PARENT_STUDY_PLAN.md`. Thresholds are written before the test. Adults only; no child is interviewed, photographed or named; stimuli are stock or synthetic.
+
+#### BL-548 Throwaway TestFlight build for the diary [Medium]
+- Status: blocked (after the go/no-go on Mon 9 Nov and BL-547's consent). Mode: agent. Owner: mobile engineer. Size: S. Depends on: BL-547.
+- Scope: a preview-bundle build with a hidden screen that schedules seven local notifications from a bundled file. Never reaches production. Fallback: the founder schedules the messages by hand.
+
+#### BL-550 Names-off property test over the inventory [Medium]
+- Status: deferred (with BL-539). Mode: agent. Owner: qa engineer. Size: S. Depends on: BL-539.
+- Scope: with "Names in notifications" off, no title or body of any planned notification contains any child's name; with the festival-name switch off, no title or body contains a festival name, whatever the names switch says; with a celebration row and both off, the lock screen says "A celebration today".
 
 ---
 
@@ -2383,6 +2501,13 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - Priority: Medium. Gate: before App Store submission.
 - Problem and evidence: the language review's rewrites for registered disclosure strings were not applied, because those words change only through counsel (`docs/legal/in-app-disclosures.md`). The keys and proposed rewrites are in `docs/reviews/2026-10-31/COUNSEL_LOCKED.md` (LNG-04, LNG-09, LNG-12, LNG-15, LNG-18).
 - Done when: counsel accepts or rejects each row; accepted rows change in `packages/content`, the disclosures file and its pinning tests in one PR with a version bump.
+
+### Compliance follow-ups (1 Nov 2026)
+- **BL-551 Support can open an account deletion for another person (`ops_open_account_deletion`).** Owner: `data-architect`. When: after the 9 Nov go/no-go, before any sign-in outside the family (D-121). Scope: a new migration with `public.ops_open_account_deletion(p_profile uuid, p_reason text, p_ticket text, p_skip_grace boolean)`, service role only, pinned `search_path`, explicit grants (and its line in `supabase/tests/grants.mjs`); writes `source='support'` (DATA-REQ-027) and a `support_access` audit event; reuses the same steps as `request_account_deletion`; idempotent on an open request; tests in `supabase/tests` that fail on today's code. Why: the underage runbook (`docs/ops/runbooks/underage-account.md` section 4) cannot keep the under-13 promise if the person does not delete the account themselves. No `under_18` audit value (CR-40).
+- **BL-553 The app handles a refused sign-up.** Owner: `mobile`, copy by `content`; CCO review (the sign-up path). When: before #424's hook is switched on. Scope: when sign-in fails with the hook's refusal (HTTP 403 from the `before user created` hook), show one neutral, accessible screen that does not dead-end: it says sign-up is not available where the person is, links to the Terms and to support, and never asks where they are; nothing is stored on the phone. Add the DB-IP attribution link (https://db-ip.com, CC BY 4.0) to `apps/mobile/src/app/settings/licenses.tsx`. A test for the refusal path. Why: #424 only refuses on the server; today the app would show a generic sign-in error (D-131, CCO README checklist, DB-IP licence).
+- **BL-554 Schedule the regulatory watch.** Owner: `regulatory-affairs` with `ops`. When: after #424 merges and the freeze ends. Scope: run `compliance/scripts/regulatory-watch.mjs` weekly (a GitHub Actions job with no secrets beyond the database write it needs, or the harness), and have a person or the CCO check the state age-assurance trackers in `references/checked-facts.md` monthly, with the date recorded. Until then the CCO checks both by hand before each submission (D-131 revisit). The first switch-on of an unattended lane is the founder's (CTO skill section 2).
+- **BL-555 Legal paperwork before the hook goes on.** Owner: `legal`, through the CLO; founder merges (D-125). When: with #424. Scope: a DATA_CLASSIFICATION row for `ops.compliance_check_counts` (L2, counts only, two years); compliance register CR-121 updated to D-131, D-137 and the match runbook; the claims register gets the Privacy 12 lines (IP not kept, counts by result) with their code evidence once the hook ships.
+- **BL-552 Suspend sign-in for one account without deleting it.** Owner: `data-architect` with `security-architect`. When: before any sign-in outside the family (D-121). Scope: a service-role path that blocks one person's sign-in and sync and keeps all their data, reversible, audited, with a test; used by `docs/ops/runbooks/sanctions-match.md` (D-137) and any other legal hold that needs the account frozen.
 
 ## Appendix: TDD proposal to BL mapping
 

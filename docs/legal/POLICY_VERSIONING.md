@@ -1,6 +1,6 @@
 # Policy Versioning and Consent Records
 
-Version 1.1.0, 3 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 1.3.0, 31 Oct 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; counsel decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
 
@@ -16,13 +16,14 @@ Every text a user is asked to accept, or is told about as a binding statement, i
 |---|---|---|---|---|
 | `terms` | Terms of Service | Agreement | Account holders | Yes, sign-in-wrap at account creation (PRD A-REQ-034) |
 | `privacy` | Privacy Policy | Notice | Everyone | Acknowledged with `terms` |
-| `health-privacy` | Consumer Health Data Privacy Policy (Washington MHMDA; separate document by law, register CR-031) | Notice | Everyone | Linked from website homepage and app |
+| `health-privacy` | Consumer Health Data Privacy Policy (Washington MHMDA, register CR-031). **Not published in v1.0** pending counsel (founder, 15 Oct 2026; COUNSEL_PACKET Q32): the Privacy Policy covers health details in its own section. If counsel says a separate document is required, it returns under this key | Notice | Everyone | Linked from website homepage and app, if published |
 | `sensitive-data` | Sensitive data consent text ("Letters may include health and other sensitive details about you and your child...") | Consent | Account holders | Yes, separate button (register CR-020, CR-031) |
 | `ai-processing` | Third-party AI consent (server transcription, edit pass) naming providers and purposes. **Not used in v1.0** (no third-party AI, D-059) | Consent | Account holders; web contributors if ever offered | Yes, explicit (Apple 5.1.2(i)) |
-| `analytics` | Usage analytics and crash reporting consent | Consent | Everyone on the app | Yes (Apple 5.1.1(ii)) |
-| `auto-renewal-terms` | Plus Subscription Terms (published at a URL, linked from the Plus marketing content). From 1.1.0 the purchase act happens in Apple's store view and is **not recorded by us** (D-053, ADR 0013; Q-003 memo): proof is Apple's transaction plus the per-release evidence pack (section 8) | Agreement | Purchasers | Yes, purchase is the act (California ARL), recorded by Apple |
+| `analytics` | Usage analytics and crash reporting consent. **Not used in v1.0** (no analytics SDK, D-095); returns in v1.1 | Consent | Everyone on the app | Yes (Apple 5.1.1(ii)) |
+| `auto-renewal-terms` | Plus Subscription Terms (published at a URL, linked from the Plus marketing content). The purchase act happens in Apple's store view (D-053, ADR 0013). From 1.2.0, for a signed-in purchaser, the first status report is to record the consent facts: product, offer type, the Subscription Terms version shown and the time (D-081; COUNSEL_PACKET Q41). Not built on 16 Oct 2026 | Agreement | Purchasers | Yes, purchase is the act (California ARL), recorded by Apple and, with an account, by the D-081 record |
+| `backup` | Recording backup consent: encrypted on the phone, a recovery key we hold under logged access (D-102). **v1.0** (option B, 15 Oct 2026; PRD V2 F08 6.5 A step 3); the document row is created by the backup migration on `feat/backup-server`, and the phone side is not built on 16 Oct 2026. Counsel decides whether `sensitive-data` covers it instead (COUNSEL_PACKET Q42) | Consent | Account holders turning on backup | Yes, the turn-on tap; withdrawal when backup is turned off |
 | `contributor-notice` | Web contribution page notice and terms for invitees without accounts. **Later than v1.0** (D-055) | Agreement + notice | Web contributors | Yes, "Send" with notice adjacent |
-| `backup-recovery` | Standard (escrow) versus Vault mode disclosure. **Later than v1.0** (no backup, D-059) | Acknowledgment | Users turning on backup | Yes, acknowledge (ADR 0006) |
+| `backup-recovery` | Standard (escrow) versus Vault mode choice. **Later than v1.0**: v1.0 offers Standard only, under the `backup` consent (F08; Vault mode is FUTURE T5-06) | Acknowledgment | Users choosing a backup mode | Yes, acknowledge (ADR 0006) |
 | `subprocessors` | List of service providers and processors | Notice | Public | No |
 | `pledge` | Shutdown and portability pledge (PRD C s.7 item; COMPETITIVE_RESEARCH s.7 item 6) | Commitment | Public | No |
 | `accessibility` | Accessibility statement | Notice | Public | No |
@@ -88,7 +89,7 @@ During the gap between `published_at` and `effective_at`, existing users remain 
 
 ## 4. Where documents are published
 
-Domain comes from `packages/brand` (`brand.web`): **earlyletters.com** (D-063). The founder fixed the floating URLs as https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors, plus /delete-account (D-042, D-063). The versioned and archive paths in the table below are a proposal for the website thread; agree them on the board before the first publish, and keep the four floating URLs exactly as decided.
+Domain comes from `packages/brand` (`brand.web`): **earlyletters.com** (D-063). The founder fixed the floating URLs as https://earlyletters.com/terms, /privacy, /health-privacy and /subprocessors, plus /delete-account (D-042, D-063). Since then the website has removed /health-privacy, /subprocessors and /delete-account and moved their content into /privacy (#169, as recorded in `apps/mobile/test/privacy-documents.test.ts`; not checked on `main` here), so only /terms and /privacy (and /subscription-terms once added) are live floating URLs. The versioned and archive paths in the table below are a proposal for the website thread; agree them on the board before the first publish, and keep the floating URLs that are still live exactly as decided.
 
 | URL | Content | Rules |
 |---|---|---|
@@ -97,7 +98,7 @@ Domain comes from `packages/brand` (`brand.web`): **earlyletters.com** (D-063). 
 | `https://<domain>/legal/<key>/<version>` | Permanent, immutable copy of that version | Never edited or removed. `noindex` not required. |
 | `https://<domain>/legal/<key>/changes` | Changelog for that document | Plain-language summaries first |
 | `https://<domain>/legal/<key>/<version>.md` | Raw source with frontmatter | For audit and archive |
-| `https://<domain>/delete-account` | Account and data deletion request page (Google Play requirement, register CR-091) | |
+| `https://<domain>/delete-account` | Account and data deletion request page (Google Play requirement, register CR-091). **Removed from the website; its content is in /privacy** (#169). Returns if Google Play ships | |
 | `https://<domain>/privacy-choices` | How to exercise rights and withdraw consents | |
 
 In-app links always open the **versioned** URL that applies to that user (or the version being offered), never the floating `/legal/<key>`, so the user reads exactly what they accept. The App Store and Play metadata privacy URLs use the floating URL.
@@ -408,9 +409,10 @@ Notes for the technical design agents:
 | Age confirmation (LEGAL-REQ-002) | recorded as part of `terms` acceptance | n/a | n/a | `{"age_attested":true,"age_signal":"declared_range|none"}` (no birth date) |
 | Sensitive-data consent | `sensitive-data` | accept / decline | `consent_sheet` | `{}` |
 | AI consent sheet (ARCH s.8) | `ai-processing` | accept / decline / withdraw | `consent_sheet` / `settings_toggle` | `{"scope":["transcribe","edit_pass"]}` |
-| Analytics consent | `analytics` | accept / decline / withdraw | `consent_sheet` / `settings_toggle` | `{"crash":true,"usage":true}` |
-| Plus purchase (Apple's store view) | `auto-renewal-terms` | not recorded by us in v1.0 (D-053; Q-003 memo C-5) | n/a | n/a |
-| Backup on (later than v1.0) | `backup-recovery` | acknowledge | `consent_sheet` | `{"mode":"standard|vault"}` |
+| Analytics consent (not in v1.0, D-095) | `analytics` | accept / decline / withdraw | `consent_sheet` / `settings_toggle` | `{"crash":true,"usage":true}` |
+| Plus purchase (Apple's store view) | `auto-renewal-terms` | with an account, recorded through the first D-080 status report as the D-081 consent facts, not through `record_policy_act` (COUNSEL_PACKET Q41) | n/a | n/a |
+| Backup on (v1.0) | `backup` | accept / withdraw | `consent_sheet` / `settings_toggle` | `{"mode":"standard"}` |
+| Backup mode choice (later than v1.0) | `backup-recovery` | acknowledge | `consent_sheet` | `{"mode":"standard|vault"}` |
 | Web contribution "Send" (later than v1.0) | `contributor-notice` | accept | `web_contributor_page` | `{"age_attested":true}` |
 | Re-consent sheet | changed document | accept / decline | `reconsent_sheet` | `{}` |
 
@@ -476,5 +478,7 @@ Roles: **Owner** (founder) keeps the register and calendar; **Approver** (counse
 
 | Version | Date | Change |
 |---|---|---|
+| 1.3.0 | 2026-10-31 | Patch, links only. Notes that /health-privacy, /subprocessors and /delete-account are no longer served by the website (content moved into /privacy, #169) so the floating-URL list and the delete-account row do not point readers at dead pages. No change to what is versioned or how. Version 1.3.0 because 1.2.0 is used (POLICY_VERSIONING 2.4). |
+| 1.2.0 | 2026-10-15 | Option B (founder, 15 Oct 2026): new `backup` consent key for v1.0 (F08 6.5 A step 3), with its 7.3 row; `backup-recovery` kept for the later mode choice; `analytics` not used in v1.0 (D-095); `auto-renewal-terms` recorded through the D-081 consent facts for signed-in purchasers; `health-privacy` not published in v1.0 pending counsel (Q32). Nothing else re-read in this pass; the SQL in section 7.2 does not yet list the `backup` key in `policy_documents` (a migration request to S02). |
 | 1.1.0 | 2026-10-03 | Draft frontmatter versions declared internal; published sequence 0.9.0 (beta) then 1.0.0 (DEBATES Q-009). Alignment with the founder decisions of 3 Oct 2026, second round. `ai-processing`, `contributor-notice` and `backup-recovery` marked not used in v1.0 (D-055, D-059). `auto-renewal-terms`: the purchase act is Apple's and not recorded by us (D-053, ADR 0013); the Plus row of 7.3 changed to match; proof is Apple's transaction plus the per-release evidence pack (Q-003 memo). Section 4 uses earlyletters.com and the four floating URLs decided in D-063. Sync note updated for D-023. SQL comment rules made ASCII. Version line added (the 2 Oct text is 1.0.0). |
 | 1.0.0 | 2026-10-02 | First version. |

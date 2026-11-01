@@ -90,7 +90,7 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 **W0-12 Five one-line scope decisions.** Open. 30 minutes. (a) analytics in v1.0, off or on with consent (D-095 says off, `docs/DECISIONS.md:590`); (b) the sync conflict note: build it, or descope and tell testers; (c) the `plan.ts` backup gate against D-111 item 6, fixed by the build thread; (d) task #53 recorded as a D-id; (e) the harness: provision or retire `agents.yml` and trim the roster, by the go/no-go (Mon 9 Nov). Answered 30 Oct for the spend: no paid harness, `agents.yml` is not provisioned (D-127); trimming the roster is still open. Briefs: R1-09.
 
-**W0-13 Engage counsel and send one packet built from #163.** Open: #163 and #136 are open (REST, 28 Oct). Hours. Ask which texts apply to the alpha and the "Friends" group.
+**W0-13 Engage counsel and send one packet built from #163.** Open. #163 merged 1 Nov 05:54 UTC (d182e92): send `docs/legal/COUNSEL_PACKET.md` 1.5.0 from `develop`, which now includes Q57 (sanctions, the country check, no name screening; D-131, D-136, D-137). Hours. Ask which texts apply to the alpha and the "Friends" group.
 - Unblocks: legal pages in final form, Friends signing in, submission.
 - Same as: FT-03, FT-18, F07; feeds F22, FT-31, FT-33, FT-41, FT-46, FT-47.
 
@@ -144,9 +144,9 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | Q3-06 | Production: the `com.earlyletters.scribe` record, App Privacy answers by hand, production Supabase in the separate organization, external test information (AUTOMATION "Production") | unverified | open | AF-40 to AF-43, FT-23, FT-43 (privacy answers) |
 | Q3-07 | v1.0 submission path; its 3 Oct dates have moved (`docs/release/ALPHA_PLAN.md:3`): FT-19 mailing address, FT-21 recordings, FT-26 C1 families, FT-27 reviewers, FT-28 and FT-35 trademark, FT-29 Small Business Program, FT-30 DPAs, FT-32 C1, FT-33 and FT-41 counsel, FT-34 languages, FT-36 support resources, FT-37 insurance, FT-38 screenshots, FT-40 C1 exit, FT-42 Hindi script (D-031 is Open, due 30 Oct, `docs/DECISIONS.md:215`), FT-43 listing, FT-44 release PR, FT-45 submit, FT-46 to FT-51 | per FT item | open | the FT ids named |
 | Q3-08 | Account hygiene: password manager and two-factor on every console (FT-02), Porkbun lock and DNSSEC (FT-05), DNS records (FT-14) | 3 h | unverified | FT-02, FT-05, FT-14 |
-| Q3-09 | Fri 13 Nov: decide the entity (individual or organization) before the production App Store record is created. The `com.earlyletters.scribe` record waits on this date (D-125) | 30 min | open | D-125 |
+| Q3-09 | Entity decision: made 31 Oct 2026 (D-134, individual account, no LLC now); the `com.earlyletters.scribe` record no longer waits. Counsel confirmation stays open under COUNSEL_PACKET Q47 | 0 | done | D-134 |
 | Q3-10 | Engage counsel and send the first-build question set from `docs/store/app-store-staged-1.0-proposal.md`. Promise wording stays out of the listing until counsel answers (D-125). B-fast on Mon 16 Nov needs your signed counsel deferral (D-121) | 1 h | open | D-121, D-125 |
-| Q3-11 | Ask Apple in writing whether an individual account converted to an organization keeps its apps. Their enrolment page says only "contact us" (unverified) | 15 min | open | D-125 |
+| Q3-11 | Ask Apple whether a converted account keeps its apps: not needed. Conversion is not the planned route; D-134 plans app transfer to a separately enrolled organization if one is ever formed (an app with one released version can be transferred, bundle id included). Whether conversion keeps apps stays unverified | 0 | not needed | D-134 |
 
 ---
 
