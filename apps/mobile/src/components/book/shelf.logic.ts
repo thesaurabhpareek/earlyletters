@@ -11,9 +11,9 @@
  * erase exists (WP-F16-13, F17-REQ-025): store.eraseEntry refuses in a sync build today, so the honest shelf shows
  * Restore and the date line, and the letter goes at the server purge.
  */
-import { dateLocale, isoOf, longDate } from '../../lib/dates';
+import { dateLocale, isMonthOnly, isoOf, longDate, monthOnlyDateline } from '../../lib/dates';
 import { SHELF_DAYS } from '../../lib/shelf-days';
-import type { Entry } from '../../lib/store';
+import type { Child, Entry } from '../../lib/store';
 import { letterWords } from './letter-words.logic';
 
 export { SHELF_DAYS };
@@ -51,7 +51,7 @@ export interface ShelfRowView {
   fullText: string | null;
   /** 'waiting' | 'nobodySpoke' | 'words' */
   words: ReturnType<typeof letterWords>;
-  /** "September 29, 2026": the day the letter is about. */
+  /** "September 29, 2026": the day the letter is about; "Sometime in Month 3" for a letter dated to a month only. */
   letterDate: string;
   /** The day it was deleted, in the phone's local day. */
   deletedDate: string;
@@ -63,7 +63,11 @@ export interface ShelfRowView {
   keptUntilDay: string;
 }
 
-export function shelfRow(e: Entry & { deletedAt: string }, locale?: string): ShelfRowView {
+/**
+ * `child` is the letter's book: a letter dated to a month only shows that month (F09-REQ-003), never the stored day,
+ * which is only where its month of age starts.
+ */
+export function shelfRow(e: Entry & { deletedAt: string }, locale?: string, child?: Pick<Child, 'birthday'> | null): ShelfRowView {
   const words = letterWords(e);
   const erases = new Date(Date.parse(e.deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
   const deletedISO = isoOf(new Date(e.deletedAt));
@@ -74,7 +78,7 @@ export function shelfRow(e: Entry & { deletedAt: string }, locale?: string): She
     words,
     excerpt: words === 'words' ? firstWords(e.finalText) || null : null,
     fullText: text || null,
-    letterDate: longDate(e.occurredOn, locale),
+    letterDate: isMonthOnly(e) && child ? monthOnlyDateline(child, e.occurredOn) : longDate(e.occurredOn, locale),
     deletedDate: longDate(deletedISO, locale),
     erasesDate: longDate(erasesISO, locale),
     deletedDay: monthDay(deletedISO, locale),

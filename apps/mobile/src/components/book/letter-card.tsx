@@ -32,7 +32,7 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf, isOwnEntry } from '@/components/child/child-store';
-import { datelineA11y, shortDateline } from './chapters';
+import { entryDateline, entryDatelineA11y } from './date-change.logic';
 import { AppNote } from './app-note';
 import { bookCopy } from './copy';
 import { cardLabel } from './letter-card.logic';
@@ -80,7 +80,8 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
   const fontScale = useFontScale();
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
-  const date = shortDateline(child, entry.occurredOn);
+  // A letter dated to a month shows the month only (F09-REQ-003), the same words as its page.
+  const date = entryDateline(child, entry);
   const spoken = entry.captureMode !== 'typed';
   const words = letterWords(entry);
   // No words to show (waiting for them, or no words in the recording): the app's own note, small and
@@ -91,7 +92,7 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
 
   const label = cardLabel({
     signature: signed ? signature : null,
-    dateline: datelineA11y(child, entry.occurredOn),
+    dateline: entryDatelineA11y(child, entry),
     text,
     inBook: entry.inBook,
     privateLabel: copy.book.privateLabel,

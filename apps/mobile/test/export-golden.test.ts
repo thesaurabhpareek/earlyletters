@@ -125,7 +125,7 @@ describe('Asha export (golden)', () => {
     const { zip } = await makeExport();
     const entries = JSON.parse(strFromU8(unzipSync(zip)['data/entries.json'])) as EntriesFile;
     expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
-    expect(entries.entries).toHaveLength(13);
+    expect(entries.entries).toHaveLength(14); // 13, plus e11 (month only) since 1.5.0
     const e2 = entries.entries.find((e) => e.id === 'e2')!;
     expect(e2.raw_transcript).toBe('Asha, um, you are four days old and the whole house is quiet.');
     expect(e2.final_text).toBe('Asha, you are four days old and the whole house is quiet.');
@@ -167,7 +167,7 @@ describe('Asha export (golden)', () => {
     expect(asha).not.toContain('Not much today');
     expect(asha).not.toContain('ordinary day');
     expect(asha).toContain('You laughed today. A real one.');
-    expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([8, 1]);
+    expect(planExport(ashaSnapshot()).books.map((b) => b.letters)).toEqual([9, 1]); // 8, plus e11 (month only, in the book) since 1.5.0
   });
 
   it('[LEGAL-REQ-034, G-19] account.json carries the consent choices on this phone (since 1.1.0)', async () => {
@@ -194,13 +194,35 @@ describe('Asha export (golden)', () => {
     expect(signedIn.consent_history).toEqual(consentHistory);
   });
 
-  it('[LEGAL-REQ-034, BL-529] account.json carries the profile, or why it is not here (schema 1.4.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.4.0');
+  it('[LEGAL-REQ-034, BL-529] account.json carries the profile, or why it is not here (since schema 1.4.0)', async () => {
     const signedOut = accountOf((await makeExport()).zip);
-    expect(signedOut.schema_version).toBe('1.4.0');
+    expect(signedOut.schema_version).toBe(EXPORT_SCHEMA_VERSION);
     expect(signedOut.profile).toEqual({ status: 'not_signed_in', read_at: null, display_name: null, signs_as: null, created_at: null });
     const profile = { status: 'included' as const, read_at: '2027-03-15T10:00:00.000Z', display_name: 'Mama', signs_as: 'Mama', created_at: '2026-03-01T00:00:00+00:00' };
     expect(accountOf((await makeExport({ ...ashaSnapshot(), signedIn: true, profile })).zip).profile).toEqual(profile);
+  });
+
+  it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.5.0');
+    const { zip } = await makeExport();
+    const files = unzipSync(zip);
+    const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
+    expect(entries.schema_version).toBe('1.5.0');
+    const e11 = entries.entries.find((e) => e.id === 'e11')!;
+    expect(e11).toMatchObject({ occurred_on: '2026-07-08', occurred_precision: 'month', text_file: 'letters/Asha/2026-07/2026-07_e11.txt' });
+    expect(entries.entries.find((e) => e.id === 'e3')!.occurred_precision).toBe('day');
+    // The letter file: the month only, no weekday and no day.
+    const text = strFromU8(files['letters/Asha/2026-07/2026-07_e11.txt']);
+    expect(text).toContain('Date: Sometime in Month 4');
+    expect(text).not.toMatch(/Wednesday|July 8|8 July/);
+    // The offline reader and the printable book's HTML.
+    const reader = strFromU8(files['index.html']);
+    const article = (html: string) => html.slice(html.indexOf('Sometime in Month 4') - 40, html.indexOf('you found your feet'));
+    expect(reader).toContain('<p class="date">Sometime in Month 4</p>');
+    expect(article(reader)).not.toMatch(/July|Wednesday/);
+    const book = [...renderedHtml.values()].find((h) => h.includes('you found your feet'))!;
+    expect(book).toContain('<p class="date">Sometime in Month 4</p>');
+    expect(article(book)).not.toMatch(/July|Wednesday/);
   });
 
   it('[BL-323] memberships and the manifest say the real role', async () => {
@@ -235,7 +257,7 @@ describe('Asha export (golden)', () => {
       expect(files[f.path].length, f.path).toBe(f.bytes);
     }
     expect(strFromU8(files['manifest.sha256'])).toBe(`${sha256Hex(files['manifest.json'])}  manifest.json\n`);
-    expect(manifest.counts).toEqual({ entries: 13, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
+    expect(manifest.counts).toEqual({ entries: 14, audio: 5, audio_missing: 2, audio_mismatch: 1, photos: 0, books: 2 });
     const check = await verifyExport(access(zip), result.manifest, result.manifestSha256, async (d) => sha256Hex(d));
     expect(check).toEqual({ ok: true, problems: [], filesChecked: Object.keys(files).length });
   });

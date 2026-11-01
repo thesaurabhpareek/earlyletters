@@ -31,4 +31,12 @@ describe('shelf rows', () => {
     expect(shelfRow({ ...base, id: 'e2', transcriptStatus: 'waiting', finalText: '' }, 'en-US').excerpt).toBeNull();
     expect(shelfRow({ ...base, id: 'e3', finalText: '  ' }, 'en-US').words).toBe('nobodySpoke');
   });
+
+  it('[F09-REQ-003] a letter dated to a month only shows that month, never the stored day', () => {
+    const asha = { birthday: '2026-03-13' };
+    const month = { ...base, id: 'e4', occurredOn: '2026-06-13', occurredPrecision: 'month' as const };
+    expect(shelfRow(month, 'en-US', asha).letterDate).toBe('Sometime in Month 3');
+    expect(shelfRow({ ...month, occurredOn: '2026-03-12' }, 'en-US', asha).letterDate).toBe('Before You');
+    expect(shelfRow({ ...base, id: 'e5' }, 'en-US', asha).letterDate).toBe('September 29, 2026');
+  });
 });
