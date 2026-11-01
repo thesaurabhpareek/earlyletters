@@ -53,7 +53,9 @@ describe('S20: a typed letter keeps from Write with one tap (the keep intent)', 
 
   it('Write arms it after the words are on the phone, then hands over to Review: no second Keep step', () => {
     const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
-    expect(keep).toMatch(/if \(!persist\(text\) \|\| !draftId\.current\) return;\s*armKeep\(draftId\.current, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: draftId\.current \} \}\)/);
+    // session.keep() writes the newest words and answers the draft, or null when they are not on the phone
+    // (write-session.logic.ts; run against the real store in test/write-session.test.ts).
+    expect(keep).toMatch(/const id = session\.keep\(\);\s*if \(!id\) return;\s*armKeep\(id, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: id \} \}\)/);
     expect(write).not.toMatch(/keepGateFor|keepLetterGate|saveLetterFromDraft|decideKeepLetter/);
   });
 
@@ -358,16 +360,18 @@ describe('S19: Write', () => {
   });
 
   it('words that cannot be written to this phone keep Write open; a pending autosave is written on any way out', () => {
+    // The rule itself (Close deletes an empty typed draft, keeps a recording draft, stays when the words cannot be
+    // written; Keep writes first; unmount flushes a pending write once) lives in write-session.logic.ts and runs with
+    // fake timers against the real store in test/write-session.test.ts, including the last keystrokes inside the pause.
     const close = write.slice(write.indexOf('const close = () =>'), write.indexOf('const keep = (inBook: boolean)'));
-    expect(close).toMatch(/else if \(text\.trim\(\) && !persist\(text\)\) return;\s*router\.back\(\);/);
-    expect(write).toMatch(/timer\.current = setTimeout\(\(\) => \{\s*timer\.current = null;\s*persist\(value\);/);
-    expect(write).toMatch(/latest\.current = value;/);
+    expect(close).toMatch(/if \(session\.close\(\)\) router\.back\(\);/);
+    expect(write).toMatch(/session\.change\(value\);/);
     // Unmount (a swipe down within the pause): the pending autosave is flushed with the newest words, not dropped.
-    expect(write).toMatch(/useEffect\(\s*\(\) => \(\) => \{\s*if \(timer\.current\) \{\s*clearTimeout\(timer\.current\);\s*timer\.current = null;\s*persistRef\.current\(latest\.current\);/);
-    // Close and Keep write now and disarm the timer, so the flush never writes twice or brings back a deleted draft.
-    expect(close).toMatch(/timer\.current = null;/);
+    expect(write).toMatch(/useEffect\(\(\) => \(\) => session\.unmount\(\), \[session\]\);/);
+    // One timer, in the session: Close and Keep disarm it there, so the flush never writes twice or brings back a deleted draft.
+    expect(write).not.toMatch(/setTimeout\(|clearTimeout\(/);
     const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
-    expect(keep).toMatch(/timer\.current = null;/);
+    expect(keep).toMatch(/session\.keep\(\)/);
   });
 
   it('the page is the keyboard\'s: uncontrolled, never written back into while typing or composing (TestFlight build 1, D-057)', () => {
@@ -381,14 +385,11 @@ describe('S19: Write', () => {
     expect(field).not.toMatch(/autoCorrect=|autoCapitalize=|spellCheck=|maxLength=|blurOnSubmit|submitBehavior|returnKeyType|keyboardType|smartInsertDelete/);
     expect(write).not.toMatch(/setNativeProps|\.setSelection\(|selection=\{/);
     // A keystroke renders Write only when the page goes from empty to words or back.
-    const onChange = write.slice(write.indexOf('const onChange = (value: string) =>'), write.indexOf('const persistRef'));
-    expect(onChange).toMatch(/if \(pageEmptinessChanged\(latest\.current, value\)\) setText\(value\);\s*latest\.current = value;/);
+    const onChange = write.slice(write.indexOf('const onChange = (value: string) =>'), write.indexOf('useEffect(() => () => session.unmount()'));
+    expect(onChange).toMatch(/if \(pageEmptinessChanged\(session\.latest\(\), value\)\) setText\(value\);\s*session\.change\(value\);/);
     expect(onChange.match(/setText\(/g)).toHaveLength(1);
-    // Close and Keep read the newest words, not a render's copy.
-    const close = write.slice(write.indexOf('const close = () =>'), write.indexOf('const keep = (inBook: boolean)'));
-    expect(close).toMatch(/const text = latest\.current;/);
-    const keep = write.slice(write.indexOf('const keep = (inBook: boolean)'), write.indexOf('if (!child) return null;'));
-    expect(keep).toMatch(/const text = latest\.current;/);
+    // Close and Keep read the newest words from the session, not a render's copy.
+    expect(write).not.toMatch(/persist\(text\)/);
   });
 
   it('nothing on Write reads the store on a render: the child and the draft are read once, when it opens', () => {
@@ -406,12 +407,12 @@ describe('S19: Write', () => {
     expect(field).toMatch(/scrollEnabled=\{false\}/);
     expect(field).toMatch(/className="mt-3 flex-none"\s*inputClassName="flex-none"/);
     expect(field).toMatch(/onContentSizeChange=\{onContentSizeChange\}/);
-    expect(write).toMatch(/if \(followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: latest\.current\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
+    expect(write).toMatch(/if \(followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
   });
 
   it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {
     // Every write goes through writeWords; its answer sets the autosave line, which the swipe reads.
-    const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const latest = useRef'));
+    const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const persistRef = useRef(persist)'));
     expect(persist).toMatch(/const r = writeWords\(\{ create, update: setDraftTyped \}, draftId\.current, value\);\s*draftId\.current = r\.draftId;/);
     expect(persist).toMatch(/if \(r\.saveState\) setSaveState\(r\.saveState\);/);
     expect(persist).toMatch(/if \(!r\.ok\) return false;/);

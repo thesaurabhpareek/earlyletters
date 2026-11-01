@@ -36,6 +36,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { createWriteSession } from '@/components/capture/write-session.logic';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
@@ -54,13 +55,12 @@ export default function Write() {
   const [child] = useState(getActiveChild);
   const [existing] = useState(() => (params.draftId ? getDraft(params.draftId) : null));
   const [initialText] = useState(existing?.typedText ?? '');
-  // The page is uncontrolled (pageEmptinessChanged): the words live in the input and in `latest` below. `text` is the
+  // The page is uncontrolled (pageEmptinessChanged): the words live in the input and in the session below. `text` is the
   // words as of the last pause or the last time the page went from empty to words or back; Write renders then, never
   // on each keystroke, and nothing is ever sent back into the input.
   const [text, setText] = useState(initialText);
   const [saveState, setSaveState] = useState<SaveState>('none');
   const draftId = useRef<string | null>(existing?.id ?? null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAnnounced = useRef(0);
 
   const promptKey = params.promptKey ?? existing?.promptKey ?? null;
@@ -87,43 +87,36 @@ export default function Write() {
     return true;
   };
 
-  // The words as last typed, for the unmount flush (a closure would hold an old copy).
-  const latest = useRef(initialText);
+  // The words between the keyboard and this phone (write-session.logic.ts): each keystroke lands there, a pause writes
+  // them, and every way out (Close, a destination, a swipe down) writes the newest words first, so the last keystrokes
+  // inside the pause are never dropped. `persist` is read through a ref: the session outlives the render that made it.
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+  const [session] = useState(() =>
+    createWriteSession(
+      {
+        persist: (value) => persistRef.current(value),
+        draftId: () => draftId.current,
+        // An empty typed draft is nothing; a recording draft is always kept.
+        hasRecording: (id) => !!getDraft(id)?.audioUri,
+        deleteDraft,
+      },
+      { initial: initialText },
+    ),
+  );
   const onChange = (value: string) => {
-    if (pageEmptinessChanged(latest.current, value)) setText(value);
-    latest.current = value;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => {
-      timer.current = null;
-      persist(value);
-    }, 500);
+    if (pageEmptinessChanged(session.latest(), value)) setText(value);
+    session.change(value);
   };
 
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
   // never dropped. After a write that did not go through, the swipe down is refused instead, as Close is (below).
-  const persistRef = useRef(persist);
-  persistRef.current = persist;
-  useEffect(
-    () => () => {
-      if (timer.current) {
-        clearTimeout(timer.current);
-        timer.current = null;
-        persistRef.current(latest.current);
-      }
-    },
-    [],
-  );
+  useEffect(() => () => session.unmount(), [session]);
 
+  // Words that cannot be written to this phone keep the sheet open, with "Not saved yet" on screen and said aloud:
+  // closing would lose them (S19).
   const close = () => {
-    const text = latest.current;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
-    // An empty typed draft is nothing; a recording draft is always kept.
-    if (draftId.current && !text.trim() && !getDraft(draftId.current)?.audioUri) deleteDraft(draftId.current);
-    // Words that cannot be written to this phone keep the sheet open, with "Not saved yet" on screen and said aloud:
-    // closing would lose them (S19).
-    else if (text.trim() && !persist(text)) return;
-    router.back();
+    if (session.close()) router.back();
   };
 
   // Android's back is Close (S19): it writes the words now, and stays on Write when they cannot be written to the
@@ -162,12 +155,10 @@ export default function Write() {
 
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
   const keep = (inBook: boolean) => {
-    const text = latest.current;
-    if (timer.current) clearTimeout(timer.current);
-    timer.current = null;
-    if (!persist(text) || !draftId.current) return;
-    armKeep(draftId.current, inBook);
-    router.replace({ pathname: '/review', params: { draftId: draftId.current } });
+    const id = session.keep();
+    if (!id) return;
+    armKeep(id, inBook);
+    router.replace({ pathname: '/review', params: { draftId: id } });
   };
 
   // At accessibility text sizes the autosave line has its own row under the header, where it can wrap, instead of
@@ -184,7 +175,7 @@ export default function Write() {
   const scroll = useRef<ScrollView>(null);
   const selectionEnd = useRef<number | null>(null);
   const onContentSizeChange = () => {
-    if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: latest.current.length })) scroll.current?.scrollToEnd({ animated: false });
+    if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
   };
 
   if (!child) return null;
