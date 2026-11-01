@@ -19,7 +19,16 @@ import { execFileSync } from 'node:child_process';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { uuidv7From } from '../../src/lib/db/repos/ids';
-import { postgrestReader, readServerRecords, type PostgrestLike } from '../../src/lib/export/server-records.logic';
+import {
+  ACT_COLUMNS,
+  PROFILE_COLUMNS,
+  STATE_COLUMNS,
+  postgrestReader,
+  readServerRecords,
+  type PostgrestLike,
+  type ReadResult,
+  type ServerRecordsReader,
+} from '../../src/lib/export/server-records.logic';
 
 const env = (k: string): string => {
   const v = process.env[k];
@@ -74,11 +83,29 @@ async function consent(sb: SupabaseClient, document: string, context: Record<str
   if (error) throw new Error(`record_policy_act ${document}: ${error.message}`);
 }
 
-const read = (o: { sb: SupabaseClient | null; uid: string | null; owner?: string | null; timeoutMs?: number }) =>
+/** The app's reader, keeping what the API sent before the export maps it (so a column on the wire is seen too). */
+type Wire = { acts: unknown[]; state: unknown[]; profile: unknown[] };
+function recording(inner: ServerRecordsReader, wire: Wire): ServerRecordsReader {
+  const keep = (into: unknown[]) => (res: ReadResult) => {
+    if (Array.isArray(res.data)) into.push(...res.data);
+    return res;
+  };
+  return {
+    acts: (signal) => inner.acts(signal).then(keep(wire.acts)),
+    state: (signal) => inner.state(signal).then(keep(wire.state)),
+    profile: (signal, userId) => inner.profile(signal, userId).then(keep(wire.profile)),
+  };
+}
+
+const read = (o: { sb: SupabaseClient | null; uid: string | null; owner?: string | null; timeoutMs?: number; wire?: Wire }) =>
   readServerRecords({
     authUserId: o.uid,
     ownerId: o.owner ?? null,
-    reader: o.sb ? postgrestReader(o.sb as unknown as PostgrestLike) : null,
+    reader: o.sb
+      ? o.wire
+        ? recording(postgrestReader(o.sb as unknown as PostgrestLike), o.wire)
+        : postgrestReader(o.sb as unknown as PostgrestLike)
+      : null,
     timeoutMs: o.timeoutMs ?? 10_000,
     now: () => new Date(),
   });
@@ -115,7 +142,14 @@ async function main() {
   check('co-parents can read each other\'s profile over the API (why the export filters by id)', (seen.data ?? []).length === 2, seen.error ?? seen.data?.length);
 
   // The export as A, through the app's own reader.
-  const r = await read({ sb: a.sb, uid: a.id, owner: a.id });
+  const wire: Wire = { acts: [], state: [], profile: [] };
+  const r = await read({ sb: a.sb, uid: a.id, owner: a.id, wire });
+  // What crossed the network, before the export maps it: exactly the named columns, never more.
+  const cols = (list: string) => list.split(',').map((c) => c.trim()).sort().join();
+  const rawKeys = (rows: unknown[]) => rows.map((x) => Object.keys(x as object).sort().join());
+  check('the API sent exactly ACT_COLUMNS for each act (no profile_id, subject_hash or retention columns)', wire.acts.length === 2 && rawKeys(wire.acts).every((k) => k === cols(ACT_COLUMNS)), rawKeys(wire.acts));
+  check('the API sent exactly STATE_COLUMNS for each current row', wire.state.length === 2 && rawKeys(wire.state).every((k) => k === cols(STATE_COLUMNS)), rawKeys(wire.state));
+  check('the API sent exactly PROFILE_COLUMNS, one row, A\'s', wire.profile.length === 1 && rawKeys(wire.profile)[0] === cols(PROFILE_COLUMNS) && (wire.profile[0] as { id?: string }).id === a.id, rawKeys(wire.profile));
   check('consent record included over the real API', r.consent.status === 'included', r.consent.status);
   check('it holds A\'s two acts, terms then sensitive-data', r.consent.acts.map((x) => x.document).join() === 'terms,sensitive-data', r.consent.acts.map((x) => x.document));
   check('the terms act carries the age attestation as stored', r.consent.acts[0]?.context?.age_attested === true, r.consent.acts[0]?.context);
@@ -143,6 +177,11 @@ async function main() {
   const noSession = await read({ sb: anon, uid: a.id, owner: a.id });
   check('a client with no session gets no record, never a partial or someone else\'s one', noSession.consent.status !== 'included' || (noSession.consent.acts.length === 0 && noSession.consent.current.length === 0), noSession.consent);
   check('and no profile', noSession.profile.status === 'unavailable', noSession.profile);
+  // Straight at each source as well, so one refused read cannot hide another that leaked.
+  for (const [table, columns] of [['policy_acceptances', ACT_COLUMNS], ['my_policy_state', STATE_COLUMNS], ['profiles', PROFILE_COLUMNS]] as const) {
+    const res = await anon.from(table).select(columns);
+    check(`a client with no session reads nothing from ${table}`, !!res.error || (res.data ?? []).length === 0, res.error?.code ?? res.data?.length);
+  }
 
   // The spelling list stays on the device: the API refuses the table to a signed-in person.
   const dict = await a.sb.from('dictionary_terms').select('term').limit(1);
