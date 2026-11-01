@@ -92,7 +92,7 @@ npx eas-cli@24.10.0 init            # creates or links the EAS project for slug 
 | Profile | Bundle id | Distribution | Use | Status |
 |---|---|---|---|---|
 | `development` | `com.earlyletters.scribe.dev` | internal (ad hoc, registered devices) | dev client on the founder's phones; device spikes with Instruments (S1-17) | exists |
-| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); StoreKit products only after TESTFLIGHT step 2.5 | exists |
+| `preview` | `com.earlyletters.scribe.preview` | store | alpha build 2, servers on against staging (`docs/release/TESTFLIGHT.md`, #145); no App Store products on this record: Plus lives on the production record only (TESTFLIGHT step 2.5) | exists |
 | `production` | `com.earlyletters.scribe` | store (default) | release candidates (internal TestFlight on the production record) and the App Store | exists, `autoIncrement: true` |
 | `testflight` | `com.earlyletters.scribe.preview` | store | C0 and C1 (preview lane, `docs/release/TESTFLIGHT.md`) | exists on `develop` (PR #100) |
 | `e2e` | `.preview` | simulator, `withoutCredentials` | Maestro suite (`EXPO_PUBLIC_E2E=1`) | requested (B-1) |
