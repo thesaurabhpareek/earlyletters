@@ -123,7 +123,9 @@ function writing(i: WordsInput): WordsCard {
     still: i.playing,
     title: total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing,
     body: i.hints.long ? copy.review.waitingLong : undefined,
-    bar: total > 1 ? done / total : undefined,
+    // The recogniser's own progress within each part when it reports it (whisper.rn), else a step per part; no bar
+    // before the first part starts (preparing: reading the recording, finding speech, opening the model).
+    bar: progress?.fraction !== undefined && total > 0 ? progress.fraction : total > 1 ? done / total : undefined,
     primary: null,
     quiet: i.hints.later ? 'later' : null,
   };
