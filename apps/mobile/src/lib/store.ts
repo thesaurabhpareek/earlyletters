@@ -23,6 +23,7 @@
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
+import { decideGate } from './age-gate.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
@@ -36,6 +37,7 @@ import {
   orphans,
   settings,
   uuidv7From,
+  wipe,
   type BaseDirection,
   type Child,
   type Draft,
@@ -101,6 +103,7 @@ export type { Table as StoreTable } from './db/repos';
 export { AudioMissingError } from './db/repos/letters';
 export { EntryTombstonedError } from './db/repos/entries';
 export type { DeletedEntry } from './db/repos/entries';
+export type { DeletedBook } from './db/repos/wipe';
 
 // ── Connection ───────────────────────────────────────────────────────────
 export const DB_FILE_NAME = 'scribe.db';
@@ -174,7 +177,32 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   }
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
+  if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
   return result;
+}
+
+/** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
+/** The 18+ stop record (age-gate.ts, D-026). Read here only so Erase everything keeps a stop still running. */
+const AGE_STOPPED_AT = 'ageGate.stoppedAt';
+
+export const SECURE_DELETE_VACUUM_SETTING = 'db.secureDeleteVacuumAt';
+
+/**
+ * Once, on the first open of a build with secure_delete (expo-adapter.ts OPEN_PRAGMAS), after the migrations and
+ * before any screen reads the store: VACUUM rebuilds the file, so words of letters erased by an earlier build no
+ * longer sit in free pages, then the WAL is truncated. The mark is written only after both, so a kill part way
+ * (VACUUM is atomic) simply runs it again at the next open. Erase everything removes the mark with every setting,
+ * so one more VACUUM runs on the next open; that is harmless. Never throws: a failure is retried next open.
+ */
+function vacuumOnceForSecureDelete(c: RepoContext): void {
+  try {
+    if (settings.getSetting(c, SECURE_DELETE_VACUUM_SETTING) !== null) return;
+    c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+    settings.setSetting(c, SECURE_DELETE_VACUUM_SETTING, c.now());
+  } catch {
+    // Disk full or busy: the app runs as before, and the next open tries again.
+  }
 }
 
 /** Closes the connection; the next call opens again. For tests and a future "reset this phone". */
@@ -712,7 +740,10 @@ export type AudioEraser = (uri: string | null, entryId: string) => void;
 
 /** The shelf: deleted letters of every book, newest deletion first. Each has `deletedAt`. */
 export function listDeleted(): entries.DeletedEntry[] {
-  return entries.listDeleted(ctx());
+  const c = ctx();
+  // A deleted book's letters wait inside it (Restore the book brings them all back), not one by one.
+  const gone = new Set(wipe.deletedIds(c));
+  return entries.listDeleted(c).filter((e) => !e.childId || !gone.has(e.childId));
 }
 
 /** The ISO time after which a letter deleted at `deletedAt` is erased by the launch purge. */
@@ -764,11 +795,14 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
   }
   let done = false;
   c.db.transaction(() => {
+    // D-103: a deleted letter still counts. Raise the mirror to every letter that counts before this one's row goes.
+    ledger.raiseTo(c, ledger.countPresent(c));
     done = entries.eraseRow(c, id);
     // One erase for the letter and for a waiting letter's held row alike: the server erases whichever it
     // holds, and the author's other phones erase their copy (never restorable there).
     if (done && (serverMayHold || heldOnServer)) enqueueEntryErase(c.db, id, bookId, enqueueContext(c));
   });
+  if (done) compactAfterErase(c);
   if (done) bus.emit('entries');
   if (done && (serverMayHold || heldOnServer)) signalOutbox();
   return done;
@@ -783,6 +817,7 @@ export function eraseEntry(id: string, eraseAudio: AudioEraser): boolean {
 export function finishServerErased(eraseAudio: AudioEraser): number {
   const c = ctx();
   let n = 0;
+  ledger.raiseTo(c, ledger.countPresent(c)); // D-103: the rows below still counted; the count stays
   for (const r of c.db.all<{ id: string; audio_uri: string | null }>(
     "SELECT id, audio_uri FROM entries WHERE sync_state = 'erased' AND deleted_at IS NOT NULL ORDER BY id",
   )) {
@@ -793,6 +828,7 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
     }
     if (entries.eraseRow(c, r.id)) n++;
   }
+  if (n > 0) compactAfterErase(c);
   if (n > 0) bus.emit('entries');
   return n;
 }
@@ -807,14 +843,21 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
  * many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
+  const c = ctx();
+  // A book erase a kill cut short is finished first, whatever the clock says: the person already asked for it.
+  for (const id of wipe.erasingIds(c)) eraseBook(id, eraseAudio);
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && nowMs < last) return 0;
-  const c = ctx();
   const cutoff = new Date(nowMs - SHELF_MS).toISOString();
   let erased = 0;
   for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
+  // Deleted books whose 30 days are over (F17 6.2 D step 6), on this phone's clock, like letters.
+  let books = 0;
+  for (const id of wipe.expiredIds(c, cutoff)) if (eraseBook(id, eraseAudio)) books += 1;
+  // After the 30-day erase, rebuild the file too (rare, and cheap at this size; PR #520 body has the numbers).
+  if (erased + books > 0) compactAfterErase(c, true);
   return erased;
 }
 
@@ -823,6 +866,149 @@ export function recordLaunch(nowMs: number): void {
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
   if (Number.isFinite(last) && last >= nowMs) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
+// ── After a hard erase (BL-387; privacy Review A on #520) ────────────────
+/**
+ * After rows were erased for good: the WAL is checkpointed and truncated, so the old page images of the erased rows
+ * leave `scribe.db-wal` (secure_delete, set at open, has already zeroed them in the database's pages). `full` (Erase
+ * everything) also runs VACUUM, which rebuilds the file and drops free pages written before secure_delete was on.
+ * Outside any transaction. Never throws: the rows are already gone, and the next erase or launch tries again.
+ */
+function compactAfterErase(c: RepoContext, full = false): void {
+  try {
+    if (full) c.db.exec('VACUUM');
+    c.db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+  } catch {
+    // A reader holds the WAL (rare on one connection); the next erase or the next checkpoint finishes it.
+  }
+}
+
+// ── Delete a book (BL-387; F17 6.2 D; DATA-REQ-014, F17-REQ-080) ──────────
+/**
+ * Whether this phone may delete a book or erase everything by itself: only while it has never signed in. After a
+ * sign-in the server holds the books too, and deletion goes through the server (request_book_deletion, account
+ * deletion), which this build does not offer from here (F17-REQ-026).
+ */
+export function localDeletionAllowed(): boolean {
+  return syncOwner(ctx().db) === null;
+}
+
+/**
+ * "Delete this book" on a phone that never signed in (F17 6.2 D, sole parent): the book leaves every list, Tonight
+ * and Export at once and waits in Recently deleted for 30 days, restorable exactly as it was; then the launch purge
+ * erases it for good (eraseBook). Nothing is queued or sent. False when the book does not exist, is already deleted,
+ * or the phone has signed in.
+ */
+export function deleteBook(id: string): boolean {
+  const c = ctx();
+  if (!localDeletionAllowed()) return false;
+  let done = false;
+  c.db.transaction(() => {
+    done = wipe.markDeleted(c, id);
+    if (done && settings.getSetting(c, 'activeChildId') === id) {
+      const next = children.listVisible(c)[0]?.id;
+      if (next) settings.setSetting(c, 'activeChildId', next);
+      else settings.deleteSetting(c, 'activeChildId');
+    }
+  });
+  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  return done;
+}
+
+/** Restore the book from Recently deleted: every letter, draft and choice comes back as it was. */
+export function restoreBook(id: string): boolean {
+  const done = wipe.unmarkDeleted(ctx(), id);
+  if (done) bus.emit('children', 'entries', 'drafts', 'settings');
+  return done;
+}
+
+/** Deleted books waiting in Recently deleted, newest deletion first. */
+export function listDeletedBooks(): wipe.DeletedBook[] {
+  return wipe.listDeleted(ctx());
+}
+
+/**
+ * Erase a deleted book for good: "Erase now" on the shelf, or the purge at day 30. The mark that the erase began is
+ * written first, then every recording file of the book goes (its letters, deleted ones too, and its drafts), then
+ * the rows in one transaction. A kill part way leaves the mark and rows whose files are gone; the next launch purge
+ * finishes it (purgeExpired). The sweep never sees a file without its row, so nothing comes back as a draft. A file
+ * that will not go stops the erase with the book still marked, for the next try. True when the book is gone.
+ */
+export function eraseBook(id: string, eraseAudio: AudioEraser): boolean {
+  const c = ctx();
+  if (!wipe.isDeleted(c, id)) return false;
+  wipe.markErasing(c, id);
+  for (const r of wipe.bookAudioRows(c, id)) {
+    try {
+      eraseAudio(r.audioUri, r.id);
+    } catch {
+      return false;
+    }
+  }
+  c.db.transaction(() => {
+    // D-103: the free-letter count never goes down, except on Erase everything. The book's letters are one of the
+    // ledger's three sources, so the mirror is first raised to every letter that counts now (ledger.countPresent,
+    // the same rule as the Keep gate, whichever kinds it counts), then the rows go. A mirror behind them (a backup
+    // restore before the launch heal, a note kept before notes counted) can no longer drop the count.
+    ledger.raiseTo(c, ledger.countPresent(c));
+    wipe.removeBook(c, id);
+  });
+  compactAfterErase(c);
+  bus.emit('children', 'entries', 'drafts', 'settings');
+  return true;
+}
+
+// ── Erase everything on this phone (BL-387; F17 6.2 F; DATA-REQ-024) ─────
+/** Removes every recording file, listening copy, temporary copy and export left on this phone. Throws when one will not go. */
+export type DeviceFilesEraser = () => void;
+
+/** Whether an Erase everything began and has not finished (a kill, or a file that would not go). */
+export function eraseEverythingPending(): boolean {
+  return settings.getSetting(ctx(), wipe.ERASE_EVERYTHING_SETTING) !== null;
+}
+
+/**
+ * Erase everything, the store's part (signed out only, F17 6.2 F step 1). In order:
+ *  1. the pending mark, so a kill at any later point is finished at the next launch (a mark is only ever written on
+ *     a phone that had not signed in);
+ *  2. each letter's and draft's recording, listening copy and temporary copies (`eraseAudio`);
+ *  3. every other recording file, listening copy, temporary copy and export left on the phone (`eraseFiles`);
+ *  4. every row of every table, settings included, in one transaction; the mark stays.
+ * The caller then clears the Keychain (the free-letter count goes after the rows, so a relaunch cannot raise it
+ * again from letters still present) and calls finishEraseEverything. Files go before rows, so the sweep never finds
+ * a recording without its row to bring back. Nothing is queued or sent.
+ * Returns 'signed_in' when the phone has signed in (nothing begun), 'incomplete' when a file would not go (the mark
+ * stays; a later try or the next launch finishes), 'erased' when the rows are gone.
+ */
+export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: DeviceFilesEraser): 'erased' | 'incomplete' | 'signed_in' {
+  const c = ctx();
+  if (!eraseEverythingPending()) {
+    if (!localDeletionAllowed()) return 'signed_in';
+    settings.setSetting(c, wipe.ERASE_EVERYTHING_SETTING, c.now());
+  }
+  try {
+    for (const r of wipe.allAudioRows(c)) eraseAudio(r.audioUri, r.id);
+    eraseFiles();
+  } catch {
+    return 'incomplete';
+  }
+  // LEGAL-REQ-002, D-026: an erase never ends the 24-hour age stop early. A stop still running is kept (it lives only
+  // in `settings`, never in the Keychain); an expired one goes with everything else.
+  const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
+  const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
+  compactAfterErase(c, true);
+  bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
+  return 'erased';
+}
+
+/** The last step of Erase everything: removes the pending mark. The phone is now as on first run. */
+export function finishEraseEverything(): void {
+  const c = ctx();
+  settings.deleteSetting(c, wipe.ERASE_EVERYTHING_SETTING);
+  compactAfterErase(c);
+  bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────

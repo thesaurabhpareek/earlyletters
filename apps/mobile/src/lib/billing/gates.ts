@@ -9,7 +9,7 @@
  * held letter is never lost.
  */
 import { decideKeepLetter, freeLettersFrom, type KeepLetterDecision } from '@scribe/core';
-import { ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
+import { eraseEverythingPending, ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
 import { clearLedger, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
 import { hasWords } from './letter-ledger.logic';
 import { getPlan } from './plan-store';
@@ -148,6 +148,9 @@ export async function eraseLetterLedger(): Promise<void> {
 /** At launch: make the Keychain and the database mirror agree (a reinstall or a backup restore). Never throws. */
 export async function startLetterLedger(): Promise<void> {
   try {
+    // An Erase everything still finishing (lib/erase-everything.ts) clears the count itself; healing now could
+    // write the old count back from the Keychain before it is removed (D-083).
+    if (eraseEverythingPending()) return;
     await syncLedger(ledgerDb());
   } catch {
     // Store not open yet; the gate heals it before it decides.

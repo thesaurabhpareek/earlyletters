@@ -13,7 +13,7 @@ import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
-import { listChildren, listHiddenChildren, subscribe, type Child } from '@/lib/store';
+import { listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -46,6 +46,7 @@ const ROUTES = {
   backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
+  erase: '/settings/erase',
   struggling: '/settings/struggling',
   licenses: '/settings/licenses',
 } as const;
@@ -111,6 +112,11 @@ export default function Settings() {
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
+        {/* Erase everything on this phone (BL-387, F17 6.2 F): last in Your data, only on a phone that never signed in
+            (signed in, F17-REQ-026 offers account deletion first; not built here). */}
+        {localDeletionAllowed() ? (
+          <ListRow title={copy.settings.erase.rowLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.erase)} testID="settings.erase" />
+        ) : null}
       </ListSection>
 
       {/* Delete account only while signed in: signed out there is no account here to delete (#358 review). And only in a build

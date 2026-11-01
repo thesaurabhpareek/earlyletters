@@ -32,6 +32,7 @@ export {
   currentPlan,
   disableReminders,
   enableReminders,
+  forgetReminders,
   getReminderPermission,
   needsPriming,
   rescheduleReminders,

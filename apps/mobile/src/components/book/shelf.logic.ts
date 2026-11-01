@@ -83,6 +83,15 @@ export function shelfRow(e: Entry & { deletedAt: string }, locale?: string): She
 }
 
 /**
+ * A deleted book on the shelf (BL-387, F17 6.2 D step 5): the same two days as a letter, the book's deletion time plus
+ * the shelf days, in the phone's own day. Never a count of letters or of days left.
+ */
+export function shelfBookDays(deletedAt: string, locale?: string): Pick<ShelfRowView, 'deletedDay' | 'keptUntilDay'> {
+  const erases = new Date(Date.parse(deletedAt) + SHELF_DAYS * 24 * 60 * 60 * 1000);
+  return { deletedDay: monthDay(isoOf(new Date(deletedAt)), locale), keptUntilDay: monthDay(isoOf(erases), locale) };
+}
+
+/**
  * The one date line under a shelf card: "Deleted October 13. Kept here until November 12." Built from the two keys
  * (`deletedOn` "Deleted {date}", `erasesOn` "Kept here until {date}"), each a sentence, so no word is new.
  */

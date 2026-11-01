@@ -805,7 +805,24 @@ export const en = {
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",
       bookConfirm: "Delete the book",
-      bookTypeToConfirmLabel: "Type {child}'s name to confirm",
+      // Rev (F17 6.2 D step 4, section 13 Q8): the same typed word as account deletion, not the child's name.
+      bookTypeToConfirmLabel: "Type delete to confirm",
+      bookTypeWord: "delete",
+      // BL-387, F17 6.2 D: a phone that never signed in. The book is only here, so the line names no server.
+      bookBodyThisPhone: "Every letter and recording in {child}'s book will be removed from this phone.",
+      // Child settings row (F17 6.2 D step 1), under Hide this book.
+      deleteBookRow: "Delete this book",
+      // Back out of the book delete flow.
+      bookKeep: "Keep the book",
+      bookDeletedToast: "{child}'s book is in Recently deleted.",
+      // Recently deleted: a deleted book waits as one card (F17 6.2 D step 5).
+      bookCardTitle: "{child}'s book",
+      restoreBookButton: "Restore the book",
+      bookRestoredToast: "{child}'s book is back.",
+      bookEraseNowTitle: "Erase {child}'s book now?",
+      bookEraseNowBody: "Every letter and recording in it is erased for good.",
+      bookErasedToast: "Book erased.",
+      bookEraseFailedToast: "The book was not erased. It is still in Recently deleted.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -813,6 +830,31 @@ export const en = {
       accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
       accountScheduledDateLabel: "Deletion date",
       cancelDeletionButton: "Cancel deletion",
+    },
+    // Erase everything on this phone (BL-387; F17 6.2 F step 1; DATA-REQ-024). Signed out only. Claims here are
+    // proven by apps/mobile/test/erase-all.test.ts (rows and files gone, no request sent, the free count reset).
+    erase: {
+      rowLabel: "Erase everything on this phone",
+      title: "Erase everything",
+      heading: "What is erased",
+      body: "Every book, letter and recording on this phone, and every setting. The app starts again from the beginning.",
+      // D-083: the free count starts again, because the person asked for deletion.
+      freeLetters: "Your free letters start again.",
+      // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
+      speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
+      onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
+      // Privacy Review A on #520: the same fact the deletion page states (pages.en.ts, "What stays").
+      backups: "Backups of this phone you already made, such as iCloud Backup, are not changed.",
+      confirmHeading: "Erase everything on this phone?",
+      confirmBody: "Nothing goes to Recently deleted, so this cannot be undone.",
+      typeLabel: "Type delete to confirm",
+      typeWord: "delete",
+      confirmButton: "Erase everything",
+      back: "Keep everything",
+      // A file would not go: the rows stay, and the next launch finishes (lib/erase-everything.ts).
+      incomplete: "Not everything was erased yet. Try again. The app also finishes the next time it opens.",
+      // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
+      signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
     reminders: {
       cadenceLabel: "Reminders",
