@@ -528,3 +528,21 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog section and the two standards in one revert.
 - Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma
+
+### CR-48 How a PR merges when no second session can post counted reviews (1 Nov 2026, Karma via the compliance session, with the CISO and CAIO)
+- Question: the founder said "Decide best path with executives, document and continue." The platform refuses an author session posting approvals, or having its own reviewer agents post them, as self-approval. No other session is running. How do the S0 fixes from CR-47 merge before the freeze?
+- Tier and type: T1 process, changing the D-132 merge gate for a limited time (the founder may reverse); complicated
+- Options considered: (a) wait for another session; (b) author-run reviewer agents pasted into the PR body as counted reviews (my first proposal); (c) a second session first, else the founder's own go naming the PR and its head sha, with author-run reviews as evidence only; (d) the founder merges every PR himself.
+- Ruling: (c), in this order.
+  1. A second Claude session posts the two counted reviews (CR-44). Opening one takes the founder about two minutes.
+  2. If none is available, the founder's own go, in chat or as a PR comment, naming one PR and its full head sha. A go for a class of work does not count, and a new push needs a new go.
+  3. Author-run reviewer agents are evidence, never "counted reviews". Each lens uses a fixed prompt committed before use (`docs/agents/review-prompts/`, to add), sees only the diff and the base files (no PR body, commit messages or review docs), is told to look for a reason to fail, and every run is logged in the PR body with its verdict, including FAILs; the first verdict on a sha stands. The body says the reviewers share the author's model family: independent in method, not in identity.
+  4. For code PRs, a test that fails on the base is the grader, and CI shows it.
+  5. Credentials, keys and auth code (BL-594) need path 1 or the founder's own review of the diff, not just his go.
+  6. `.github/**`, `supabase/migrations/**`, fenced compliance paths and `docs/legal/**` keep their own gates.
+  7. A second session reviews every PR merged under path 2 within 48 hours; a FAIL means revert.
+- Why: my first proposal (b) moved the refused self-approval from a comment into the PR body, which the CISO rejected as a workaround of a safety control (the CR-19 anti-pattern). The founder's own go on a sha is a human approval and stronger than any review this session can run. The CAIO's changes stop anchoring and rerun-until-PASS. #557 itself was merged from the founder's account at 15:58 UTC on its final head (e34d0be), before this ruling; item 7 applies to it.
+- Debate: CISO (Claude role): disagree with (b); agree with (c) and items 2, 5 and 7. CAIO (Claude role): agree with changes; items 3 and 4 are its changes.
+- Door: two-way
+- Way back: delete this ruling; CR-44 stands alone.
+- Revisit when: it expires at the build 2 freeze, Tue 3 Nov 13:00 UTC, or earlier if a second identity can post reviews (CR-20). Karma
