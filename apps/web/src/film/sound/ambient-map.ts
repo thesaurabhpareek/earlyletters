@@ -18,8 +18,8 @@ export const AMBIENT_DEFAULT_ON = true;
 export const STORAGE_KEY = 'el-ambient-sound';
 
 /** The quiet resting level of the master gain, and the most scrolling can lift it to. Both stay well under 0.12. */
-export const MASTER_BASE = 0.075;
-export const MASTER_MAX = 0.11;
+export const MASTER_BASE = 0.24;
+export const MASTER_MAX = 0.35;
 
 export type SoundTone = 'night' | 'paper' | 'dusk';
 

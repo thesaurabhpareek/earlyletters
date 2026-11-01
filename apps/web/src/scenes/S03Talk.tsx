@@ -65,7 +65,7 @@ function TalkStage() {
   const sheetY = useTransform(p, [0.74, 0.82], ['100%', '0%']);
   const grow = useTransform(p, [0.82, 0.94], [1, fill]);
   const chrome = useTransform(p, [0.84, 0.9], [1, 0]);
-  const phoneY = useTransform(p, narrow ? [0, 0.04, 0.72, 0.8] : [0, 1], narrow ? ['0svh', '9svh', '9svh', '0svh'] : ['0svh', '0svh']);
+  const phoneY = useTransform(p, narrow ? [0, 0.04, 0.72, 0.8] : [0, 1], narrow ? ['0svh', '13svh', '13svh', '0svh'] : ['0svh', '0svh']);
 
   const headOpacity = useTransform(p, narrow ? [0.03, 0.1, 0.32, 0.38] : [0.03, 0.1, 0.36, 0.42], [0, 1, 1, 0]);
   const headY = useTransform(p, [0.03, 0.1], [16, 0]);

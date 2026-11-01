@@ -111,6 +111,14 @@ export class AmbientEngine {
    */
   async start(initial: AmbientParams): Promise<boolean> {
     if (!audioSupported()) return false;
+    // iPhone Safari mutes Web Audio while the ringer switch is on silent, unless the page declares itself media
+    // playback (Safari 16.4+). Without this the page "plays" and nobody hears it.
+    try {
+      const nav = navigator as unknown as { audioSession?: { type: string } };
+      if (nav.audioSession) nav.audioSession.type = 'playback';
+    } catch {
+      /* unsupported: nothing to do */
+    }
     const w = window as unknown as { AudioContext?: AudioCtor; webkitAudioContext?: AudioCtor };
     if (!this.ctx || this.ctx.state === 'closed') {
       const Ctor = (w.AudioContext ?? w.webkitAudioContext) as AudioCtor;
@@ -190,7 +198,7 @@ export class AmbientEngine {
     osc.frequency.value = note;
     const env = ctx.createGain();
     env.gain.setValueAtTime(0, t);
-    // About -38 dBFS peak at the output (path gain about 0.75 x master 0.075). At -30 it lifted the pad by about 3 dB while it rang, which is not "very quiet".
+    // About -38 dBFS peak at the output (path gain about 0.75 x master 0.075 at the time; master is now 0.24, so +10 dB). At -30 it lifted the pad by about 3 dB while it rang, which is not "very quiet".
     env.gain.setTargetAtTime(0.2, t, 1.0); // reaches about 95 % at 3 s
     env.gain.setTargetAtTime(0, t + 3, 2.0); // gone by about 12 s after that
     osc.connect(env).connect(graph.lowpass);
