@@ -18,6 +18,12 @@
  * Controls never move between moments (MOTION principle 2, 5.8 rule 3): Pause and Finish hold their place from the
  * first frame (disabled before a take exists) and Let it go keeps its slot even when it is not offered.
  *
+ * Before any of these, the first tap on Speak meets our own short primer while iOS has not yet asked for the
+ * microphone (`permissionStep`, SR-C-05); "Continue" then opens the iOS question.
+ *
+ * VoiceOver never speaks into a take (`createListenAnnouncer`, SR-C-02, B2-21): every announcement is dropped or held
+ * while the recorder is capturing, and a held one is spoken once it has stopped.
+ *
  * Three causes, three screens (S13). `startBlocker` runs before the microphone: permission off, then a full phone.
  * `startFailure` names a start that threw: a take already running ends as an interruption and is kept; otherwise,
  * with permission granted, the microphone is busy (a call or another app holds the audio session), never "off".
@@ -31,7 +37,162 @@ export type MicProblem = 'denied' | 'busy' | 'full';
 /** The moments of the room itself (S11, S12). */
 export type RoomPhase = 'ready' | 'asking' | 'recording' | 'paused' | 'finishing';
 
-export type ListenPhase = RoomPhase | MicProblem;
+/** Our own short note before the iOS microphone question (SR-C-05, F04-REQ-034): its own screen, before any take. */
+export type PrimerPhase = 'primer';
+
+export type ListenPhase = RoomPhase | MicProblem | PrimerPhase;
+
+/** The microphone permission as expo-audio reports it (`PermissionResponse`): only the fields this screen reads. */
+export type MicPermission = { granted: boolean; status?: string };
+
+/**
+ * What the first step of a start does with the microphone permission (SR-C-05, F04-REQ-034, F04-REQ-047).
+ *
+ *   go      already allowed: start the take
+ *   primer  iOS has not asked yet and our note has not been shown for this start: show the primer, ask nothing
+ *   ask     ask iOS (after the primer, or when iOS already answered: then it returns at once and a no is "off")
+ *
+ * The primer is tied to the iOS answer, not to a stored flag: it shows exactly while iOS would still ask, so the
+ * first tap on Speak always meets it and no later tap does.
+ */
+export type PermissionStep = 'go' | 'primer' | 'ask';
+
+export function permissionStep(perm: MicPermission, primed: boolean): PermissionStep {
+  if (perm.granted) return 'go';
+  if (perm.status === 'undetermined' && !primed) return 'primer';
+  return 'ask';
+}
+
+/**
+ * The start path, from the tap to a live take (SR-C-05 primer, S13 blockers, SR-C-02 gate). Pure: every effect is
+ * injected, so the screen closing at any await is tested in Node (test/listen-voiceover.test.ts).
+ *
+ * The screen can close at any await (the iOS microphone prompt, the audio session, the draft write). After each one,
+ * `alive()` is asked again:
+ *   - gone before the gate is opened: nothing is opened (openTake never runs after unmount)
+ *   - gone after the gate opened but before the take began: the gate is closed and the session put back to idle
+ *   - gone after the take began: the gate is closed at once, then the take is kept (finalized) as any exit does
+ * So a screen that closes during a start can never leave the app silent (Review B on #523).
+ */
+export type StartDeps = {
+  alive: () => boolean;
+  getPermission: () => Promise<MicPermission>;
+  requestPermission: () => Promise<MicPermission>;
+  freeBytes: () => number | null;
+  /** The start haptic: before the session activates, since iOS mutes haptics while recording. */
+  pressHaptic: () => void;
+  setRecordingMode: () => Promise<void>;
+  setIdleMode: () => Promise<void>;
+  openTake: () => number;
+  closeTake: (token: number | null) => void;
+  /** The screen keeps the token, so its failure path and exits can close it. */
+  onToken: (token: number) => void;
+  begin: () => Promise<{ id: string }>;
+  /** Keep a take that began after the screen had gone (finalize with reason `dismiss`). */
+  keepOrphan: (draftId: string) => void;
+};
+
+export type StartOutcome =
+  | { kind: 'primer' }
+  | { kind: 'blocked'; problem: MicProblem }
+  | { kind: 'gone' }
+  | { kind: 'live'; token: number; draftId: string };
+
+export async function startTake(d: StartDeps, primed: boolean): Promise<StartOutcome> {
+  // Our own short primer first, while iOS has not asked yet (F04-REQ-034); iOS asks only after Continue.
+  const current = await d.getPermission();
+  if (!d.alive()) return { kind: 'gone' };
+  const step = permissionStep(current, primed);
+  if (step === 'primer') return { kind: 'primer' };
+  const perm = step === 'ask' ? await d.requestPermission() : current;
+  if (!d.alive()) return { kind: 'gone' }; // closed while the iOS prompt was up: nothing is opened
+  // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
+  const problem = startBlocker({ granted: perm.granted, freeBytes: d.freeBytes() });
+  if (problem) return { kind: 'blocked', problem };
+  d.pressHaptic();
+  // Silent from before the audio session and the microphone go live: `starting` is ON.
+  const token = d.openTake();
+  d.onToken(token);
+  await d.setRecordingMode();
+  if (!d.alive()) {
+    d.closeTake(token);
+    await d.setIdleMode().catch(() => {});
+    return { kind: 'gone' };
+  }
+  const draft = await d.begin();
+  if (!d.alive()) {
+    d.closeTake(token); // at once: the screen is gone, so nothing may keep the app silent
+    d.keepOrphan(draft.id);
+    return { kind: 'gone' };
+  }
+  return { kind: 'live', token, draftId: draft.id };
+}
+
+/* ------------------------------------------------------------------ */
+/* Nothing spoken into a take (SR-C-02, F04-REQ-040, F04-REQ-041, B2-21) */
+/* ------------------------------------------------------------------ */
+
+/** What decides whether VoiceOver may speak: the room's moment and whether the recorder is capturing right now. */
+export type SpeakState = { phase: ListenPhase; capturing: boolean };
+
+/**
+ * VoiceOver may speak only while no take is capturing sound. `recording` never may; `paused` (and every other moment)
+ * may only once the recorder itself has stopped capturing, since iOS can still be writing for a moment after pause.
+ * Without headphones, anything VoiceOver says while capturing ends up in the letter (B2-21, never waived).
+ */
+export function maySpeak(s: SpeakState): boolean {
+  return s.phase !== 'recording' && !s.capturing;
+}
+
+/** While capturing: `drop` forgets the message (it is about the take in progress); `hold` keeps it for the next stop. */
+export type WhenCapturing = 'drop' | 'hold';
+
+export type ListenAnnouncer = {
+  /** Speak now if nothing is capturing; otherwise drop or hold it. */
+  say(message: string, s: SpeakState, whenCapturing?: WhenCapturing): void;
+  /** Call on every recorder status: speaks a held message once capturing has stopped; a resumed take drops it. */
+  settle(s: SpeakState): void;
+  /** Leaving the screen: a held message is never spoken elsewhere. */
+  clear(): void;
+};
+
+/**
+ * Every announcement Listen makes goes through this gate (listen.tsx never calls AccessibilityInfo itself), so no
+ * announcement is ever emitted while a take is recording. Only the newest held message is kept.
+ */
+export function createListenAnnouncer(speak: (message: string) => void): ListenAnnouncer {
+  let held: string | null = null;
+  /** The moment a held line belongs to: it is spoken only if the room is still in that moment. */
+  let heldIn: ListenPhase | null = null;
+  return {
+    say(message, s, whenCapturing = 'drop') {
+      if (!message) return;
+      if (maySpeak(s)) {
+        held = null;
+        speak(message);
+      } else if (whenCapturing === 'hold') {
+        held = message;
+        heldIn = s.phase;
+      }
+    },
+    settle(s) {
+      if (held === null) return;
+      if (s.phase !== heldIn) {
+        // The room moved on (resumed, or Finish on the way to Review): "Paused." is no longer true, so it is dropped.
+        held = null;
+        return;
+      }
+      if (maySpeak(s)) {
+        const m = held;
+        held = null;
+        speak(m);
+      }
+    },
+    clear() {
+      held = null;
+    },
+  };
+}
 
 export function isMicProblem(phase: ListenPhase): phase is MicProblem {
   return phase === 'denied' || phase === 'busy' || phase === 'full';
@@ -74,6 +235,23 @@ export function listenRoom(phase: RoomPhase): {
     controls: phase === 'recording' || phase === 'paused',
     discard: phase === 'recording' || phase === 'paused' || phase === 'finishing',
   };
+}
+
+/**
+ * Every accessibility label the room exposes while a take can be live (07 quality bar: no Listen element changes its
+ * label while a take is live; F04-REQ-041). VoiceOver re-reads a focused element whose label changes, so while the
+ * recorder captures each label keeps the value it had when capture began (or, for an element that appeared during the
+ * take, the first value it showed). They catch up once capture stops.
+ *
+ *   clock       the elapsed time ("1 min 5 s recorded"); also Finish's hint
+ *   line        "Listening." / "Still here." / "Paused." (null when the room shows no line)
+ *   toggle      Pause / Keep talking: one label for the whole take, `listen.toggleA11y` (state is said by "Paused.")
+ */
+export type RoomLabels = { clock: string; line: string | null; toggle: string };
+
+export function stableLabels(next: RoomLabels, prev: RoomLabels | null, speakable: boolean): RoomLabels {
+  if (speakable || prev === null) return next;
+  return { clock: prev.clock, line: prev.line ?? next.line, toggle: prev.toggle };
 }
 
 /** Before the microphone goes live (S13): permission off first, then a phone with no room for a take. */

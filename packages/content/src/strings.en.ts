@@ -282,6 +282,17 @@ export const en = {
     discardBody: "It will be removed from this phone.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
+    // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
+    // it into the letter when it flips (F04-REQ-041); "Paused." is said once the recording has stopped.
+    toggleA11y: "Pause or keep talking",
+    // Our own short note before the iOS microphone question, shown once: the first tap on Speak, while iOS has not
+    // asked yet (SR-C-05, F04-REQ-034, F04-REQ-047). "Continue" opens the iOS question; "Type instead" is
+    // `errors.micDenied.typeButton`. The iOS purpose string itself is `permissions.microphone` (counsel's wording).
+    primer: {
+      title: "Your phone will ask about the microphone",
+      body: "{app} uses it to hear the letters you speak to {child}. It listens only while you record.",
+      continueButton: "Continue",
+    },
   },
 
   // Write screen (COMPONENTS 2.8).
