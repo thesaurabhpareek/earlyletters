@@ -13,8 +13,8 @@
 # features on) and serves them. The config reads PLAYWRIGHT_CHROMIUM_PATH, set here from Playwright itself.
 # On failure the HTML report, traces and screenshots (apps/mobile/e2e-web/.results) are kept for 14 days.
 #
-# Time: about 15 minutes for the flows on 2 workers (CI=1 sets 2), plus 3 to 5 for the exports; the timeout leaves
-# room for a slow runner. If it nears the timeout, shard (`playwright test --shard=1/2`) rather than raise it.
+# Time: on a 2-core container (1 Nov 2026) the three exports took about 5 minutes and the 90 flows 16 on 2 workers
+# (CI=1 sets 2); the timeout leaves room for a slow runner. retries is 0 (playwright.config.ts): a red flow is red. If it nears the timeout, shard (`playwright test --shard=1/2`) rather than raise it.
 #
 # Actions are pinned to commit SHAs (CI-06); the comment names the tag.
 name: Web journeys
