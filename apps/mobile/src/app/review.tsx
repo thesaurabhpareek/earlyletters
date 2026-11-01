@@ -100,7 +100,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
-import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
+import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -109,6 +109,8 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { billingCopy } from '@scribe/content';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
@@ -212,6 +214,7 @@ export default function Review() {
   const [saveFailed, setSaveFailed] = useState(false);
   // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
   const [gate, setGate] = useState<KeepGate | null>(null);
+  const toast = useToast();
   // The calm line on the saved card after the second free letter (once: the count passes it once).
   const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -445,6 +448,20 @@ export default function Review() {
     if (devPass.current) return false;
     const g = await keepSheetFor(wordsOnScreen);
     if (g === null) return false;
+    if (g.decision.kind === 'hold') {
+      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PAY-17): hold the letter exactly as
+      // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
+      // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
+      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses. A second
+      // tap does nothing (holdWithoutSheet: one hold, one line, one back). No letter_held event: that one counts holds
+      // chosen at the Keep sheet, and no sheet was shown here (keepSheetFor notes nothing for a hold either).
+      holdWithoutSheet(holding, {
+        hold: () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })),
+        say: () => toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote }),
+        leave: () => (router.canGoBack() ? router.back() : router.replace('/')),
+      });
+      return true;
+    }
     setGate(g);
     return true;
   };

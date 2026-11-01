@@ -20,7 +20,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 
 const store = await import('../src/lib/store');
-const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
+const { heldCardLabel, heldCardTilt, heldWords, holdOnce, keepSheetLayout, keepSheetView, sheetTap, storedWords, SYNCED_HELD_NOTE_CLEARED } = await import('../src/components/child/plus-gate.logic');
 const { draftCard } = await import('../src/components/tonight/draft-card.logic');
 const { letterHeader } = await import('../src/components/capture/review-view.logic');
 
@@ -95,6 +95,59 @@ describe('[S22] what the Keep sheet says', () => {
     }
     // The sheet types no number of its own: every word on it comes from packages/content.
     expect(code('components/child/plus-gate.tsx')).not.toMatch(/['"`][^'"`\n]*\$\{?\s*\d/);
+  });
+});
+
+describe('[RT-PAY-09, RT-OFC-06, RT-PLS-10] See Plus and Redeem a code offline, or when the code sheet fails', () => {
+  const online = async () => false;
+  const offline = async () => true;
+
+  it('offline: Apple\'s sheet is not opened, and our offline line shows (See Plus and Redeem a code)', async () => {
+    for (const tap of ['seePlus', 'redeem'] as const) {
+      const open = vi.fn(async () => 'dismissed' as const);
+      expect(await sheetTap(tap, { offline, open })).toEqual({ outcome: 'offline', note: 'offline' });
+      expect(open).not.toHaveBeenCalled();
+    }
+    expect(keepSheetView({ ...base, offline: true }).note).toBe(k.offline);
+    expect(k.offline).toMatch(/needs a connection to start/);
+  });
+
+  it('online: Apple\'s sheet opens, and only `unavailable` (offline line) or a failed code sheet (a calm line) say anything', async () => {
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'purchased' as const })).toEqual({ outcome: 'purchased', note: null });
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'dismissed' as const })).toEqual({ outcome: 'dismissed', note: null });
+    expect(await sheetTap('seePlus', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'presented' as const })).toEqual({ outcome: 'presented', note: null });
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
+    // Before this fix a failed code sheet showed nothing at all (RT-PLS-10).
+    expect(await sheetTap('redeem', { offline: online, open: async () => 'failed' as const })).toEqual({ outcome: 'failed', note: 'codeFailed' });
+  });
+
+  it('a network check that cannot answer counts as online; a sheet that throws reads as unavailable or failed', async () => {
+    const unsure = async (): Promise<boolean> => {
+      throw new Error('no network module');
+    };
+    expect(await sheetTap('seePlus', { offline: unsure, open: async () => 'dismissed' as const })).toEqual({ outcome: 'dismissed', note: null });
+    const boom = async (): Promise<'presented'> => {
+      throw new Error('sheet');
+    };
+    expect(await sheetTap('redeem', { offline: online, open: boom })).toEqual({ outcome: 'failed', note: 'codeFailed' });
+  });
+
+  it('the failed-code line is calm, from packages/content, and the offline line still wins over it', () => {
+    const note = keepSheetView({ ...base, codeFailed: true }).note;
+    expect(note).toBe(en.errors.generic.body);
+    expect(note).not.toMatch(/fail|error|lost|wrong/i);
+    expect(keepSheetView({ ...base, offline: true, codeFailed: true }).note).toBe(k.offline);
+    expect(keepSheetView({ ...base, codeFailed: true, storeSupport: 'needs_ios_17' }).note).toBe(billingCopy.gate.needsNewerIos);
+  });
+
+  it('the sheet runs both taps through sheetTap with the app\'s own network check', () => {
+    const gate = code('components/child/plus-gate.tsx');
+    expect(gate).toMatch(/import \{ expoNetwork \} from '@\/lib\/packs\/expo-adapter'/);
+    expect(gate).toMatch(/\(await expoNetwork\.connection\(\)\) === 'none'/);
+    expect(gate).toMatch(/sheetTap\('seePlus', \{ offline: offlineNow, open: presentPlusStore \}\)/);
+    expect(gate).toMatch(/sheetTap\('redeem', \{ offline: offlineNow, open: redeemOfferCode \}\)/);
+    expect(gate).not.toMatch(/await presentPlusStore\(\)|await redeemOfferCode\(\)/);
   });
 });
 

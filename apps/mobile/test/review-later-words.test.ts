@@ -23,7 +23,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
     throw new Error('native open must not be used in tests');
   },
 }));
-vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }) }));
+vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }), planReadiness: async () => 'read' }));
 vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
 
 const store = await import('../src/lib/store');
@@ -269,7 +269,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
     const gate = read('components/child/plus-gate.tsx');
     expect(gate).toMatch(/heldOn = 'tonight'/);
     // The words are chosen in plus-gate.logic.ts (P6, S22), which the sheet draws: signed in or out, online or off.
-    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, storeSupport: plan\.storeSupport \}\)/);
+    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, codeFailed, storeSupport: plan\.storeSupport \}\)/);
     const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
     for (const synced of [false, true]) {
       const base = { lapsed: false, heldOn: 'letter' as const, synced, storeSupport: 'available' as const };

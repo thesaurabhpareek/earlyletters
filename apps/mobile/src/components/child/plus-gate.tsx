@@ -36,9 +36,10 @@ import { billingCopy, presentPlusStore, redeemOfferCode, usePlan } from '@/lib/b
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
+import { expoNetwork } from '@/lib/packs/expo-adapter';
 import { useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { STANDARD_EASING, useMotion, useSheetMotion } from '@/lib/motion';
-import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, type HeldLetter, type HeldOn, type KeepSheetBlock, type KeepSheetLine } from './plus-gate.logic';
+import { heldCardLabel, heldCardTilt, heldWords, keepSheetLayout, keepSheetView, sheetTap, type HeldLetter, type HeldOn, type KeepSheetBlock, type KeepSheetLine, type SheetTapNote } from './plus-gate.logic';
 
 export type { HeldLetter } from './plus-gate.logic';
 
@@ -94,7 +95,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const layout = keepSheetLayout(ax);
   const title = React.useRef<RNText>(null);
   const [opening, setOpening] = React.useState(false);
-  const [offline, setOffline] = React.useState(false);
+  const [tapNote, setTapNote] = React.useState<SheetTapNote>(null);
   const continued = React.useRef(false);
   const awaitingCode = React.useRef(false);
 
@@ -103,7 +104,9 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   // Signed in with sync on, a held draft also goes up as an author-only row (store.holdDraft). The line that says so is
   // held for counsel (C10, plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED): until then the sheet shows heldNote.
   const synced = auth.configured && auth.state.status === 'ready' && auth.state.sync === 'on';
-  const view = keepSheetView({ lapsed, heldOn, synced, offline, storeSupport: plan.storeSupport });
+  const offline = tapNote === 'offline';
+  const codeFailed = tapNote === 'codeFailed';
+  const view = keepSheetView({ lapsed, heldOn, synced, offline, codeFailed, storeSupport: plan.storeSupport });
 
   const carryOn = () => {
     if (continued.current) return;
@@ -150,14 +153,20 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   }, [onDismiss]);
 
   // Opening Apple's sheet is navigation, not an outcome: no haptic (MOTION 6; P4 critics' pass L6).
+  // Offline (the app's own network check, lib/packs expoNetwork), Apple's sheet is not opened: our offline line shows
+  // instead of Apple's error (RT-PAY-09, RT-OFC-06). The rule lives in plus-gate.logic sheetTap, tested there.
+  const offlineNow = async () => (await expoNetwork.connection()) === 'none';
+
   const open = async () => {
     setOpening(true);
-    setOffline(false);
+    setTapNote(null);
     try {
       track('plus_offer_viewed', { trigger: 'keep_letter' });
-      const outcome = await presentPlusStore();
+      const tap = await sheetTap('seePlus', { offline: offlineNow, open: presentPlusStore });
+      // Offline is reported as before, as `unavailable`: Apple's sheet could not be used.
+      const outcome = tap.outcome === 'offline' ? 'unavailable' : tap.outcome;
       if (outcome !== 'busy') track('plus_offer_closed', { trigger: 'keep_letter', outcome });
-      if (outcome === 'unavailable') setOffline(true);
+      setTapNote(tap.note);
       if (outcome === 'purchased') carryOn();
     } finally {
       setOpening(false);
@@ -165,12 +174,12 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   };
 
   const redeem = async () => {
+    setTapNote(null);
     awaitingCode.current = true;
-    const outcome = await redeemOfferCode();
-    if (outcome !== 'presented') {
-      awaitingCode.current = false;
-      if (outcome === 'unavailable') setOffline(true);
-    }
+    // A failed code sheet says so calmly (RT-PLS-10); offline it is not opened at all.
+    const { outcome, note } = await sheetTap('redeem', { offline: offlineNow, open: redeemOfferCode });
+    if (outcome !== 'presented') awaitingCode.current = false;
+    setTapNote(note);
   };
 
   const enterSheet =

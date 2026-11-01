@@ -23,6 +23,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({ openNativeDb: () => { throw 
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: { state: 'none' }, details: {}, checkedAt: null }),
   refreshPlan: async () => {},
+  planReadiness: async () => 'read',
   startPlus: () => () => {},
   storeViewSupport: () => 'unsupported',
   subscribePlan: () => () => {},

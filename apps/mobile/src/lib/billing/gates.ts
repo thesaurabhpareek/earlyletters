@@ -12,7 +12,7 @@ import { decideKeepLetter, freeLettersFrom, type KeepLetterDecision } from '@scr
 import { ledgerDb, listChildren, listHiddenChildren, type Child } from '../store';
 import { clearLedger, lettersKept, mirrorLedger, syncLedger } from './letter-ledger';
 import { hasWords } from './letter-ledger.logic';
-import { getPlan } from './plan-store';
+import { getPlan, planReadiness, type PlanReadiness } from './plan-store';
 import { isJoinedBook as joined, plusOn, type BookFacts } from './plan.logic';
 
 /**
@@ -68,19 +68,44 @@ export function freeLettersAllowance(): number {
   return freeLettersFrom(allowanceNow());
 }
 
+/**
+ * How long the Keep gate waits for the first StoreKit read of this process before it decides from the cached
+ * snapshot (RT-PAY-17). Short: after launch the read has almost always landed, and the wait only runs until it does.
+ */
+export const KEEP_PLAN_WAIT_MS = 1000;
+
+/**
+ * The Keep step's answer: packages/core's decision, or `hold` when keeping would need Plus but the phone does not
+ * know yet whether this person has it (no StoreKit read and no cached snapshot, RT-PAY-17). On `hold` the letter is
+ * held exactly as it is and no Plus sheet opens: a payer is never shown "needs Plus" before Apple has answered.
+ */
+export type KeepGateDecision = KeepLetterDecision | { kind: 'hold'; reason: 'plan_unread' };
+
 export interface KeepGate {
-  decision: KeepLetterDecision;
+  decision: KeepGateDecision;
   /** Letters ever kept on this account (the largest of Keychain, database and letters present). */
   lettersKept: number;
   allowance: number;
 }
 
+async function readiness(): Promise<PlanReadiness> {
+  try {
+    return await planReadiness(KEEP_PLAN_WAIT_MS);
+  } catch {
+    return 'none';
+  }
+}
+
 /**
  * The decision under keepGateFor, which Review calls (M17: only with words on
  * screen). Call it after the recording is hashed and BEFORE saving. It also
- * heals the ledger (a reinstall or a backup restore). On `offer`, the caller
- * opens the Keep sheet and returns WITHOUT saving: the draft stays exactly
- * where it is. Never throws; an unreadable ledger counts as 0, the safe side.
+ * heals the ledger (a reinstall or a backup restore). Only when the answer
+ * would be the Keep sheet does it wait, briefly, for the first StoreKit read
+ * (RT-PAY-17), then decide again; on timeout it decides from the cached
+ * snapshot. A free letter never waits. On `offer`, the caller opens the Keep sheet and returns
+ * WITHOUT saving: the draft stays exactly where it is. On `hold` (no read and
+ * no snapshot), the caller holds the letter and opens no sheet. Never throws;
+ * an unreadable ledger counts as 0, the safe side.
  */
 export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> {
   const allowance = freeLettersAllowance();
@@ -90,8 +115,14 @@ export async function keepLetterGate(now: Date = new Date()): Promise<KeepGate> 
   } catch {
     n = 0;
   }
-  const decision = decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
-  return { decision, lettersKept: n, allowance };
+  const decide = () => decideKeepLetter({ now: now.toISOString(), plan: getPlan().view, lettersKept: n, allowance: allowanceNow() });
+  const first = decide();
+  // Only an answer of "needs Plus" waits for StoreKit: a free letter, or Plus already known, keeps at once.
+  if (first.kind !== 'offer') return { decision: first, lettersKept: n, allowance };
+  const read = await readiness();
+  if (read === 'none') return { decision: { kind: 'hold', reason: 'plan_unread' }, lettersKept: n, allowance };
+  // The read may have landed while waiting (Plus on now): decide again from what StoreKit said.
+  return { decision: decide(), lettersKept: n, allowance };
 }
 
 /**

@@ -1,0 +1,158 @@
+/// <reference types="node" />
+/**
+ * RT-PAY-17: the Keep gate never says "needs Plus" before StoreKit has answered. It waits, briefly, for the first
+ * entitlement read of this process (plan-store planReadiness, KEEP_PLAN_WAIT_MS); on timeout it decides from the cached
+ * snapshot; with no read and no snapshot it holds the letter and opens no Plus sheet. Free letters never wait on any of
+ * this. The plan store is a fake; the ledger is the real one over a fake database. Fictional Asha family only.
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { NO_PLAN, type PlanView } from '@scribe/core';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const h = vi.hoisted(() => ({
+  view: null as unknown as PlanView,
+  readiness: 'read' as 'read' | 'cached' | 'none' | 'no_store',
+  waits: [] as number[],
+  /** A slow StoreKit: planReadiness never answers (the real one would time out after KEEP_PLAN_WAIT_MS). */
+  slow: false,
+  /** Runs while the gate waits: a read that lands mid-wait. */
+  onWait: null as null | (() => void),
+  events: [] as { name: string; props: unknown }[],
+}));
+
+const counts = vi.fn(() => ({ recorded: 2, present: 2 }));
+vi.mock('../src/lib/store', () => ({
+  ledgerDb: () => ({ counts, raiseTo: () => {}, clear: () => {} }),
+  listChildren: () => [],
+  listHiddenChildren: () => [],
+}));
+vi.mock('../src/lib/billing/plan-store', () => ({
+  getPlan: () => ({ view: h.view, details: {}, checkedAt: null }),
+  planReadiness: async (ms: number) => {
+    h.waits.push(ms);
+    if (h.slow) return new Promise(() => {});
+    h.onWait?.();
+    return h.readiness;
+  },
+}));
+vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
+
+const { keepGateFor, keepLetterGate, KEEP_PLAN_WAIT_MS } = await import('../src/lib/billing/gates');
+const { keepSheetFor } = await import('../src/lib/billing/keep-step');
+const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledger');
+
+const NOW = new Date('2026-11-01T12:00:00.000Z');
+const PLUS: PlanView = { state: 'active', effectiveUntil: '2026-12-01T00:00:00.000Z', verifiedAt: '2026-10-20T00:00:00.000Z', environment: 'production', isTester: false };
+
+beforeEach(() => {
+  h.view = NO_PLAN;
+  h.readiness = 'read';
+  h.waits = [];
+  h.slow = false;
+  h.onWait = null;
+  h.events = [];
+  counts.mockReset().mockReturnValue({ recorded: 2, present: 2 });
+  configureLedgerStorage(null);
+});
+
+describe('[RT-PAY-17] the Keep gate waits for the first StoreKit read', () => {
+  it('asks the plan store to wait for the first read, with a short bounded timeout', async () => {
+    await keepLetterGate(NOW);
+    expect(h.waits).toEqual([KEEP_PLAN_WAIT_MS]);
+    expect(KEEP_PLAN_WAIT_MS).toBeGreaterThan(0);
+    expect(KEEP_PLAN_WAIT_MS).toBeLessThanOrEqual(1500);
+  });
+
+  it('StoreKit answered: the decision is as before (2 kept, no Plus: the Keep sheet)', async () => {
+    expect((await keepLetterGate(NOW)).decision).toEqual({ kind: 'offer', trigger: 'keep_letter', needsSignIn: false, lapsed: false });
+  });
+
+  it('timed out with a cached snapshot: decides from the cache, so a payer is never asked', async () => {
+    h.readiness = 'cached';
+    h.view = PLUS;
+    expect((await keepLetterGate(NOW)).decision).toEqual({ kind: 'allow', via: 'plus_own' });
+    // A cached Free plan is Apple's last answer: the sheet may open.
+    h.view = NO_PLAN;
+    expect((await keepLetterGate(NOW)).decision.kind).toBe('offer');
+  });
+
+  it('no read and no snapshot: the letter is held and no Plus sheet opens', async () => {
+    h.readiness = 'none';
+    const g = await keepLetterGate(NOW);
+    expect(g.decision).toEqual({ kind: 'hold', reason: 'plan_unread' });
+    expect(g.lettersKept).toBe(2);
+    // Through the Keep step: Review gets the hold (it holds the draft), and keep_gate_shown is not noted.
+    const step = await keepSheetFor('Asha, you clapped for the bus.');
+    expect(step?.decision.kind).toBe('hold');
+    expect(h.events.filter((e) => e.name === 'keep_gate_shown')).toEqual([]);
+  });
+
+  it('free letters never wait on the read: with 1 kept and StoreKit that never answers, the letter keeps at once', async () => {
+    h.slow = true; // a wait would never end, so this test would time out if a free letter waited
+    counts.mockReturnValue({ recorded: 1, present: 1 });
+    expect((await keepLetterGate(NOW)).decision).toMatchObject({ kind: 'allow', via: 'free_letters' });
+    expect(await keepSheetFor('Asha found the moon.')).toBeNull();
+    expect(h.waits).toEqual([]);
+  });
+
+  it('Plus already known from the cache never waits either', async () => {
+    h.slow = true;
+    h.view = PLUS;
+    expect((await keepLetterGate(NOW)).decision).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(h.waits).toEqual([]);
+  });
+
+  it('a read that lands during the wait and says Plus: the letter keeps, no sheet', async () => {
+    h.view = NO_PLAN;
+    h.onWait = () => {
+      h.view = PLUS;
+    };
+    expect((await keepLetterGate(NOW)).decision).toEqual({ kind: 'allow', via: 'plus_own' });
+    expect(h.waits).toEqual([KEEP_PLAN_WAIT_MS]);
+  });
+
+  it('no StoreKit on this device (Expo Go, web, Android): nothing to wait for, the decision is as before', async () => {
+    h.readiness = 'no_store';
+    expect((await keepLetterGate(NOW)).decision.kind).toBe('offer');
+  });
+
+  it('a save with no words still never asks anything (M17)', async () => {
+    h.readiness = 'none';
+    expect(await keepGateFor({ wordsOnScreen: '   ' })).toBeNull();
+    expect(h.waits).toEqual([]);
+  });
+
+  it('Review holds the letter on `hold` and draws the Keep sheet only on `offer`', () => {
+    const review = readFileSync(join(__dirname, '..', 'src', 'app', 'review.tsx'), 'utf8');
+    const hold = review.slice(review.indexOf("if (g.decision.kind === 'hold')"), review.indexOf('setGate(g);'));
+    expect(hold).toMatch(/holdWithoutSheet\(holding, \{\s*hold: \(\) => \(later \|\| !draft \? true : holdDraft\(draft\.id, \{ inBookChoice: heldInBook\.current \}\)\),/);
+    expect(hold).toMatch(/return true;/); // the caller returns without saving: nothing is kept, nothing is lost
+    // It says so (Review B 2 on #517): the held line from the Keep sheet, on screen and to VoiceOver (the toast announces
+    // once), before going back to Tonight.
+    expect(hold).toMatch(/say: \(\) => toast\.show\(\{ message: later \? billingCopy\.keepGate\.heldNoteLetter : billingCopy\.keepGate\.heldNote \}\),/);
+    expect(hold).toMatch(/leave: \(\) => \(router\.canGoBack\(\) \? router\.back\(\) : router\.replace\('\/'\)\),/);
+    expect(review).toMatch(/if \(gate && gate\.decision\.kind === 'offer' && phase !== 'saved'\)/);
+  });
+
+  it('a double tap on Keep during a hold: one hold, one held line, one way back (Review A nit on #517)', async () => {
+    const { holdWithoutSheet } = await import('../src/components/child/plus-gate.logic');
+    const guard = { current: false };
+    const hold = vi.fn(() => true);
+    const say = vi.fn();
+    const leave = vi.fn();
+    expect(holdWithoutSheet(guard, { hold, say, leave })).toBe('held');
+    expect(holdWithoutSheet(guard, { hold, say, leave })).toBe('again');
+    expect([hold.mock.calls.length, say.mock.calls.length, leave.mock.calls.length]).toEqual([1, 1, 1]);
+    // A hold that does not take still says where the letter is and leaves, once (the draft is still where it was).
+    const failed = { current: false };
+    const say2 = vi.fn();
+    const leave2 = vi.fn();
+    const boom = () => {
+      throw new Error('store');
+    };
+    expect(holdWithoutSheet(failed, { hold: boom, say: say2, leave: leave2 })).toBe('not_held');
+    expect(holdWithoutSheet(failed, { hold: boom, say: say2, leave: leave2 })).toBe('again');
+    expect([say2.mock.calls.length, leave2.mock.calls.length]).toEqual([1, 1]);
+  });
+});
