@@ -256,7 +256,8 @@ describe('[S43] Export', () => {
     expect(exportFailure('lowSpace')).toEqual({ title: exportCopy.screen.failedTitle, body: 'This phone needs more free space first.', action: 'again', label: 'Export again' });
     expect(exportFailure('other')).toEqual({ title: exportCopy.screen.failedTitle, body: exportCopy.screen.failedBody, action: 'again', label: 'Export again' });
     const screen = code('app/settings/export.tsx');
-    expect(screen).toMatch(/supportMailto\(copy\.settingsHome\.helpSubject\)/);
+    // mailTarget wraps supportMailto with the same subject, and falls back to the address to copy (F20-REQ-007).
+    expect(screen).toMatch(/mailTarget\(copy\.settingsHome\.helpSubject\)/);
     expect(screen).not.toMatch(/tooBigBody|\be\.body\b/);
   });
 
