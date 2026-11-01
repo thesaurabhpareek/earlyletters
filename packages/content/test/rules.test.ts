@@ -141,3 +141,34 @@ describe('save failure reassurance', () => {
     expect(JSON.stringify(en.errors)).toMatch(/safe on this phone/i);
   });
 });
+
+// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md).
+// Each rule names the decision it enforces. If one fails, fix the copy, not the test.
+describe('claims that must be true of what the first build does', () => {
+  it('never calls the fixes tidying (D-086: remove "Lightly tidied" and "Tidying" everywhere)', () => {
+    expect(offenders(ALL, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
+  });
+
+  it('the book never says nobody changed the words, or that every word is kept exactly as said', () => {
+    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes where a microphone/i;
+    expect(offenders(leaves(book, 'book'), bad)).toEqual([]);
+  });
+
+  it('"About this book" says what the engine does and no more (core EditType; D-133 true line)', () => {
+    const body = book.aboutThisBook.body;
+    expect(body).toMatch(/no word was added/);
+    expect(body).toMatch(/small fixes/);
+    expect(body).toMatch(/original recording is kept unchanged/);
+    expect(body).toMatch(/Typed letters are exactly as they were typed/);
+  });
+
+  it('status lines never promise a later update, say beta, or link a feature to Plus that D-111 made free', () => {
+    const status = [...leaves(en.settingsMore, 'settingsMore'), ...leaves(en.childrenExtra, 'childrenExtra'), ...leaves(en.familyTab, 'familyTab')];
+    expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
+  });
+
+  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (D-121, D-126)', () => {
+    const first = leaves(site, 'site');
+    expect(offenders(first, /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i)).toEqual([]);
+  });
+});

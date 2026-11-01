@@ -2,6 +2,13 @@
 
 Licence and provenance note. Code: `apps/web/src/film/sound/`.
 
+Status (1 Nov 2026, exec council, `docs/exec-rulings-claims-trust-2026-11-01.md` CLO-1, PRV-3). Counsel has not reviewed
+this note or the sound. Everything below is a statement of what the code does, checked against the files on `main`
+that day. Where an earlier version of this note drew a legal conclusion, it has been removed: whether the sound raises
+any copyright question is for counsel to say (counsel must confirm). The gain figures and measurements further down
+predate #472 and #475 (`MASTER_BASE` is now 0.24 and `MASTER_MAX` 0.35 in `ambient-map.ts`); the code is the source,
+and the table needs a fresh measurement before anyone quotes it.
+
 ## Where the sound comes from
 
 The sound is generated live, in the visitor's browser, by our own code using the Web Audio API.
@@ -32,9 +39,16 @@ about an octave above the first version (lowest note about 262 Hz) so phone and 
 Why it is ours: every pitch, detune, envelope and number is written in `ambient-map.ts` and `ambient-engine.ts`. The
 chords are four common shapes; nothing is taken from a recording, a library or a model.
 
-Because there is no third-party or machine-composed recording, there is no one else's copyright to licence, and no
-AI-music provenance question to answer. The chord notes are a handful of common intervals (suspended and added-ninth
-shapes); a set of pitches is not a protectable composition. The code is ours, UNLICENSED like the rest of `apps/web`.
+What can be said as fact, and is checked in the code: there is no audio file in `apps/web` (no mp3, wav, ogg, m4a, aac,
+flac or video), nothing is fetched or decoded (`fetch`, `decodeAudioData`, `new Audio` and `<audio>` do not appear in
+`src/film/sound/`), no audio package is a dependency, and no model of any kind is called. The reverb tail is made from
+seeded noise in `makeImpulse`. The chords are four common suspended and added-ninth shapes written in `ambient-map.ts`.
+The code is ours, UNLICENSED like the rest of `apps/web`. What those facts mean in law is not stated here.
+
+What the site says about it in public: nothing beyond the button's label. No page claims the sound is original, free of
+copyright or made without AI. A public claim would have to stay true for every later change and has not been reviewed
+by counsel, so the council held it (CMO-1, CLO-1). If someone asks, the sentence that is true and may be used is: "The
+sound is made live in your browser by our own code. It uses no recordings and no samples."
 
 If a recording or a library is ever added later, it needs its own licence note here first.
 
@@ -48,9 +62,12 @@ If a recording or a library is ever added later, it needs its own licence note h
 - The choice is remembered in `localStorage` (`el-ambient-sound`, the single value "on" or "off"), inside try/catch. It
   stays on the visitor's device and is never sent anywhere. The site's rule until now was "no browser storage"
   (`test/legal.test.ts`, comment in `privacy-copy.ts`); the Privacy page itself says only "We do not use cookies",
-  which stays true. `legal.test.ts` now allows this one file and nothing else. Whether the Privacy page should mention
-  the remembered sound choice is a founder and legal decision. To drop the storage, make `readChoice`/`writeChoice`
-  no-ops and remove the allowance.
+  which stays true. `legal.test.ts` now allows this one file and nothing else. The value is written only when a visitor
+  presses the sound button (`AmbientSound.tsx`, the two `writeChoice` calls in `onToggle`); a visitor who never presses
+  it stores nothing. The council recommends that the Privacy page say so in one sentence (PRV-3 has the wording); the
+  page is legal text, so adding it is the founder's decision, with counsel to confirm whether a notice is needed at all.
+  The comment at the top of `privacy-copy.ts` still says "no browser storage"; it is out of date and goes with that
+  change. To drop the storage, make `readChoice`/`writeChoice` no-ops and remove the allowance.
 - A hidden tab pauses it (fade out, then `suspend`); leaving the page closes the context; muting fades out, stops the
   oscillators and closes the context.
 - Only the film home page (`Film.tsx`) mounts it. `/privacy`, `/terms` and the sign-up pages never do.
