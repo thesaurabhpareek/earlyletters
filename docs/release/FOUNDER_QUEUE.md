@@ -36,6 +36,19 @@ Rows 7 and 8 both fall on Mon 2 Nov: about 6 hours, or 7 with the drill, before 
 
 The default branch stays `main` until row 7 (Mon 2 Nov; W0-09 waits; `docs/agents/cto/RULINGS.md` CR-2, which also says B2-22 needs it by the day build 2 is cut). The four questions only you could answer were put to you on 30 Oct and answered the same day: no paid harness (CR-5), the Privacy row shows On or Off in build 2 and the withdrawal comes before any friend signs in (BL-485 option (b)), the Delete account row is hidden in the alpha builds unless the purge worker and the sole-parent drill pass by Mon 2 Nov noon PT, and the freeze Tue 3 Nov with the go/no-go Mon 9 Nov. They are recorded in `docs/DECISIONS.md` as D-127 to D-130 (PR #406, merging with this one).
 
+## 0a. Release test decisions (Sun 1 Nov 2026, from `docs/qa/RELEASE_TEST_PLAN.md`, CR-37)
+
+Each row carries Karma's recommendation. Nothing here is settled until you answer.
+
+| # | By | Step | Minutes | Unblocks |
+|---|---|---|---|---|
+| T1 | Mon 9 Nov (go/no-go) | Decide which P0 gaps gate the 1 Dec submission. Karma recommends gating on every build 1 P0 row that protects a promise or a store duty (the RT-REL, RT-PRV, RT-AGE and RT-PAY-21 rows, plus RT-WRD-03, RT-LCH-09, RT-DSP-05 and RT-NET-01) and shipping the rest as known issues with owners (plan section 7) | 20 | A submission scope that can be met |
+| T2 | Fri 6 Nov | Device hours: borrow an iPhone XR, a 12 or 13 mini and an iPhone 11 for one session each, or name who runs them. Karma recommends borrowing; each hits a limit the SE 3 and a current phone cannot (plan section 3) | 15, plus the sessions | RT-WRD-03, RT-LCH-09 and the 414 pt and notch rows |
+| T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
+| T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
+| T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
+| T6 | Before the go/no-go | A payer whose renewal falls while offline keeps Plus for at most 1 day in code, against 7 days in the PRD (RT-SUB-13, C-NFR-004). This is technical, so Karma rules on it after reading the PRD line; it is listed here only so you see it | 0 | RT-SUB-13 |
+
 ## 1. Wave 0: this week, smallest first
 
 Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for these; only you can do them.
