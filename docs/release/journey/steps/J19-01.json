@@ -1,0 +1,31 @@
+{
+  "id": "J19-01",
+  "journey": "errors",
+  "kind": "unhappy",
+  "title": "Unknown route (404)",
+  "note": "A designed not-found screen replaces Expo Router's \"Unmatched Route\" page: the shared state screen with the window drawing, \"Nothing at this link\" and \"Your book is right where you left it.\", inside 20 pt gutters, with Back to Tonight full width at the bottom. It never shows or logs the address. Reached by a malformed or old link.",
+  "from": "J00-open",
+  "shot": "screens/J19-01.png",
+  "route": "/this-page-does-not-exist",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Nothing at this link Your book is right where you left it. Back to Tonight",
+  "lines": [
+    "Nothing at this link",
+    "Your book is right where you left it.",
+    "Back to Tonight"
+  ]
+}

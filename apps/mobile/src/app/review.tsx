@@ -1,64 +1,158 @@
 /**
  * Review (DESIGN_LANGUAGE 12, COMPONENTS 2.19, MOTION 5d and 5e).
  *
- * Shows what was said with every machine edit quietly underlined. Each edit
- * explains itself in plain words and can be put back (withoutEdit). The raw
+ * Shows what was said with every machine edit marked: removed words struck
+ * through, changed words dotted. Each fix explains itself in plain words and
+ * can be put back (withoutEdit). One control, "With small fixes | Exactly as
+ * said", is both the view and the choice for this letter until it is saved;
+ * choosing Exactly as said keeps the fixes in state, so it is reversible
+ * (D-086, review-view.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
- * entry locally first, then the success haptic, then the settle animation.
+ * entry locally first, then the success haptic, then the saved moment, which
+ * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
  *
  * Save is one transaction (DATA-REQ-048): the audio is hashed first, then
  * the letter is inserted and the draft removed together. When words are not
  * available (no transcriber, model not ready, failure) the parent can keep
  * the recording as a letter waiting for its words (TDD 03 FM-9). Sample
  * words (development builds) are never saved as a transcript.
+ *
+ * The Keep gate (D-082, D-083): the first 2 letters are free, then keeping another needs
+ * Plus. It runs here, at the Keep buttons (spoken or typed), after the recording is hashed
+ * and BEFORE anything is saved. M17 (D-103): it asks only when the letter's words are on
+ * screen; a voice kept without words never counts and never opens the sheet. When Plus is needed, the
+ * sheet opens and nothing is written: the draft stays exactly where it is, so a closed
+ * sheet, a kill or no network never loses a letter. After Plus starts, this same Review
+ * shows again and the person taps Keep themselves.
+ *
+ * A letter whose words arrived later (F14 6.1 :129, 6.2 B2): the letter page never counts its words and never
+ * shows a Plus sheet; it opens Review with the letter's `entryId` instead. The letter is already saved, so Review
+ * shows its words exactly as stored (no fix, no Change words), and the same Keep step decides: keepNeedsPlus, then
+ * keepReviewedWords counts it and puts it where the person chose, then countAfterSave (later-words.logic.ts).
+ *
+ * Words come from the transcription queue (src/lib/transcription-queue),
+ * never from a transcriber called here, so reopening Review never starts a
+ * second job (TDD 03 FM-18). Progress is honest: "Part 2 of 5" from the
+ * queue, or the language download's own percentage. While the author's
+ * language is still downloading, the voice can be kept now and its words
+ * follow when the phone is ready (ADR 0015).
  */
 import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
 import { router, useLocalSearchParams } from 'expo-router';
-import { PauseIcon, PlayIcon } from 'phosphor-react-native';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, TextInput, View, useColorScheme } from 'react-native';
-import Animated, { LinearTransition, useAnimatedStyle, useSharedValue, withDelay } from 'react-native-reanimated';
+import { CaretDownIcon } from 'phosphor-react-native/src/icons/CaretDown';
+import { CaretRightIcon } from 'phosphor-react-native/src/icons/CaretRight';
+import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
+import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
+import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
-  applyEdits,
-  faithfulClean,
-  normalizeChars,
+  describeEdit,
+  finalText as languageFinalText,
   segments as toSegments,
+  toNFC,
   withoutEdit,
   type Edit,
+  type EditKind,
   type EditLevel,
-  type EditType,
+  type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { laterWordsDraft } from '@/components/capture/later-words.logic';
+import { LetterSheet } from '@/components/capture/letter-sheet';
+import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
+import { monthFor } from '@/components/book/chapters';
+import {
+  DEFAULT_VIEW_SETTING,
+  arrivalParams,
+  countLine,
+  letterHeader,
+  primaryDestination,
+  reviewHasOwnChanges,
+  reviewHeading,
+  savePrimaryLabel,
+  savedMoment,
+  signInAfterLandingMs,
+  typedFinalText,
+  fixesInForce,
+  rowShows,
+  setAsideAtSave,
+  showViewControl,
+  viewFromSetting,
+  type ReviewView,
+} from '@/components/capture/review-view.logic';
+import { clockOf } from '@/components/tonight/draft-card.logic';
+import {
+  lengthA11y,
+  progressClock,
+  recordingKept,
+  stopLine,
+  takeFile,
+  waitingHints,
+  wordsActionLabel,
+  wordsCard,
+  type WordsAction,
+  type WordsCard,
+} from '@/components/capture/words-state.logic';
+import { isPreviewAudioPresent } from '@/dev/preview-audio';
+import { isOwnEntry } from '@/components/child/child-store';
+import { PlusGate } from '@/components/child/plus-gate';
+import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { Button, ButtonRow } from '@/components/ui/button';
+import { useUnlitRoom } from '@/components/ui/lamp';
+import { TextField } from '@/components/ui/text-field';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
+import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
+import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
+import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { ensureAudioHash } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
-import { ageText } from '@/lib/dates';
+import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
+import { clearReadItBack } from '@/lib/read-it-back';
+import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
+import { useAuth } from '@/lib/auth/session-provider';
+import { afterLetterKept, type KeepGate } from '@/lib/billing';
+import { countAfterSave, keepSheetFor } from '@/lib/billing/keep-step';
 import { useMotion } from '@/lib/motion';
 import {
   dictionaryFor,
   getChild,
   getDraft,
+  getEntry,
   getSetting,
+  holdDraft,
+  keepReviewedWords,
   listChildren,
+  listEntriesForChild,
+  listHiddenChildren,
   saveLetterFromDraft,
   saveVoiceOnlyFromDraft,
+  setActiveChildId,
   setDraftChild,
-  setDraftTranscript,
   setSetting,
   todayISO,
   type Draft,
 } from '@/lib/store';
-import { getTranscriber, TranscriberUnavailable } from '@/lib/transcribe';
+import { languageFor, requestWords, retryWords, sampleWordsFor, spokenFor, startSpeechDownload } from '@/lib/transcription-queue';
+import { showReviewAsk } from '@/lib/models/speech-consent.logic';
+import { speechAskFor, speechDownloadChoice } from '@/lib/models/speech-consent';
+import { formatBytes } from '@/lib/packs/copy';
+import { cleanSpoken, spokenEditLevel } from '@/lib/transcription-queue/clean';
+import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
+import { announce, useIsAccessibilitySize, useScreenReader, useTheme } from '@/lib/a11y';
+import { footerPlacement } from '@/lib/review-layout.logic';
 
-const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
+/** Labels per edit; `script` is a punctuation edit that only wrote characters in the author's script (core describeEdit). */
+const EDIT_COPY: Record<EditKind, keyof typeof copy.review.edits> = {
   filler: 'filler',
   false_start: 'falseStart',
   repeat: 'repeat',
@@ -66,27 +160,42 @@ const EDIT_COPY: Record<EditType, keyof typeof copy.review.edits> = {
   punctuation: 'punctuation',
   agreement: 'grammarSlip',
   paragraph: 'paragraph',
+  script: 'script',
 };
 
-/** Save sequence ceiling (MOTION 5e sequenceMaxMs); a tap skips it. */
-const SEQUENCE_MAX_MS = 900;
-/** How long the accentSoft wash stays on a restored span (MOTION 5d newMarkMs). */
-const NEW_MARK_MS = 1600;
-/** Destination chip fades in this long after the card starts settling (MOTION 5e). */
-const CHIP_DELAY_MS = 250;
-const STANDARD = tokens.motion.standard;
-/** Reflow spring on the motion token (never the library default). Skipped under Reduce Motion: instant height. */
-const REFLOW = LinearTransition.springify().stiffness(STANDARD.stiffness).damping(STANDARD.damping).mass(STANDARD.mass);
+/**
+ * Keep a letter whose words arrived later, after the gate allowed it: the review mark, the count and the place the
+ * person chose, in one transaction (store keepReviewedWords). Then the letter page's card goes. Throws when the
+ * letter no longer has words waiting (deleted, or kept on another screen), so Review says the save did not work.
+ */
+function keepLaterLetter(id: string, inBook: boolean): void {
+  if (!keepReviewedWords(id, inBook)) throw new Error('later_words_not_waiting');
+  clearReadItBack(id);
+}
 
-/** waiting: no words for this recording right now (no transcriber, model not ready, or it failed). */
+/** Any letter on this phone yet, in any book (hidden books count). */
+function hasAnyLetter(): boolean {
+  return [...listChildren(), ...listHiddenChildren()].some((c) => listEntriesForChild(c.id).length > 0);
+}
+
+/**
+ * transcribing: words for this recording are on their way (queued, being written down, waiting for the
+ * language download, failed or nobody spoke: WordsStatus shows which). waiting: the take is unrecoverable, either
+ * empty (no bytes) or with sound the phone could not open (words-state.logic `takeFile`).
+ */
 type Phase = 'transcribing' | 'ready' | 'waiting' | 'saved';
 
 export default function Review() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  const c = useTheme().c;
+  const inlineFooter = footerPlacement(useIsAccessibilitySize()) === 'inline';
   const r = copy.review;
   const motion = useMotion();
-  const { draftId } = useLocalSearchParams<{ draftId: string }>();
-  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : null));
+  // A room with no lamp (5.2): the light underneath leaves while Review is up and returns after (5.8 rows 4 and 4a).
+  useUnlitRoom();
+  const { draftId, entryId, stopped } = useLocalSearchParams<{ draftId?: string; entryId?: string; stopped?: string }>();
+  // A letter whose words arrived later, opened from the letter page (see the header); null for every draft.
+  const [later] = useState<Draft | null>(() => (!draftId && entryId ? laterWordsDraft(getEntry(entryId), isOwnEntry) : null));
+  const [draft, setDraft] = useState<Draft | null>(() => (draftId ? getDraft(draftId) : later));
   const [childId, setChildId] = useState(draft?.childId ?? '');
   const child = childId ? getChild(childId) : null;
 
@@ -97,70 +206,135 @@ export default function Review() {
   const [phase, setPhase] = useState<Phase>(
     typed || draft?.rawTranscript ? 'ready' : draft?.state === 'unrecoverable' ? 'waiting' : 'transcribing',
   );
-  const [waitReason, setWaitReason] = useState<'unavailable' | 'failed'>(draft?.state === 'unrecoverable' ? 'failed' : 'unavailable');
+  const language = draft ? languageFor(draft.id) : 'en';
+  const job = useWordsJob(phase === 'transcribing' ? draft?.id : null);
+  const download = useSpeechDownload(phase === 'transcribing' && job?.phase === 'waiting_for_pack' ? language : null);
   const [saveFailed, setSaveFailed] = useState(false);
+  // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
+  const [gate, setGate] = useState<KeepGate | null>(null);
+  // The calm line on the saved card after the second free letter (once: the count passes it once).
+  const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [voiceOnly, setVoiceOnly] = useState(false);
+  const [keptForWords, setKeptForWords] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
   const [isSample, setIsSample] = useState(false);
-  const [level, setLevel] = useState<EditLevel>(typed ? 'verbatim' : 'clean');
+  const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
   const [openEdit, setOpenEdit] = useState<number | null>(null);
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
   const [wash, setWash] = useState(false);
-  const [showOriginal, setShowOriginal] = useState(false);
+  // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
+  // The view Review opened with: choosing the other one is a change of the person's, kept only until Keep (S1).
+  const [openedView] = useState(view);
+  // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
+  const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
   const [userText, setUserText] = useState<string | null>(null);
-  const [soundsLikeMe, setSoundsLikeMe] = useState<boolean | null>(null);
+  const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
-  const attempt = useRef(0);
+  // The fix rows fold behind one disclosure row; every mark is also tappable in the letter (S17).
+  const [fixesOpen, setFixesOpen] = useState(false);
+  // With a screen reader on the rows are the path to every mark, so they start open (P4 critics' pass S3).
+  const screenReader = useScreenReader();
+  useEffect(() => {
+    if (screenReader) setFixesOpen(true);
+  }, [screenReader]);
+  // Did Write's "Add to the book" or "Keep private" send this typed letter here a moment ago? (S20) Looked at without
+  // spending it, so the first frame already holds the sheet still; spent once, in the effect below.
+  // While that one Keep runs, the sheet holds still; once the Plus sheet opens or the save does not work, this is the
+  // ordinary Review for the letter (the person taps Keep themselves after Plus starts, as everywhere else). No Close
+  // while it runs, by design: a typed letter has no recording to hash, and the gate reads this phone's own ledger.
+  const [keeping, setKeeping] = useState(() => typed && peekKeep(draftId) !== null);
 
   const dictionary = useMemo(
     () => (child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : []),
     [child?.name, child?.signsAs], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Clean once per raw transcript: the engine proposes, the verifier decides.
+  // The recording's language with the author's script (Chinese) and its installed text-rules pack (ADR 0014).
+  const letterLanguage = useMemo(() => spokenFor(language), [language]);
+  const rules = useMemo(() => rulesForLanguage(letterLanguage), [letterLanguage]);
+  const labelOf = (e: Edit) => r.edits[EDIT_COPY[describeEdit(e, rules)]];
+
+  // Clean once per raw transcript, in the recording's language: the engine proposes, the verifier decides.
+  // What the verifier refused is counted once at save (machine_edit_rejected: type, source, reason only).
+  const rejected = useRef<RejectedEdit[]>([]);
+  const reverted = useRef(0);
   useEffect(() => {
     if (!raw || typed) return;
-    setApplied(faithfulClean(raw, { level: 'clean', dictionary }).applied);
-  }, [raw, typed, dictionary]);
+    const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
+    rejected.current = result.rejected;
+    setApplied(result.applied);
+    setProposed(result.applied.length);
+  }, [raw, typed, dictionary, language, letterLanguage]);
 
-  // Transcribe a recording that has no transcript yet.
-  const transcribe = async () => {
-    if (!draft?.audioUri) return;
-    const n = ++attempt.current;
-    setPhase('transcribing');
-    try {
-      const t = await getTranscriber();
-      if (!t) throw new TranscriberUnavailable('model-missing');
-      const res = await t.transcribe({ audioUri: draft.audioUri, durationMs: draft.audioDurationMs, dictionary });
-      if (n !== attempt.current) return;
-      if (!t.isSample) setDraftTranscript(draft.id, res.raw); // raw is set once, never changed
-      setIsSample(t.isSample);
-      setRaw(res.raw);
-      setPhase('ready');
-    } catch (e) {
-      if (n !== attempt.current) return;
-      setWaitReason(e instanceof TranscriberUnavailable ? 'unavailable' : 'failed');
-      setPhase('waiting');
-    }
-  };
-
+  // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
-    if (phase === 'transcribing') transcribe();
+    if (phase === 'transcribing' && draft?.audioUri) requestWords(draft.id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Words arrived: the queue set the draft's raw transcript once (or, in development, sample words).
+  useEffect(() => {
+    if (phase !== 'transcribing' || !draft || job?.phase !== 'done' || job.outcome !== 'ok') return;
+    const samplePart = sampleWordsFor(draft.id);
+    const stored = getDraft(draft.id)?.rawTranscript ?? null;
+    const words = stored ?? samplePart?.raw ?? null;
+    if (!words) return;
+    setIsSample(!stored && !!samplePart);
+    setRaw(toNFC(words)); // the queue stores NFC; sample words get the same form
+    setWordsArrived(true); // the letter fades in once, never word by word (MOTION 5c)
+    setPhase('ready');
+  }, [phase, draft, job?.phase, job?.outcome]);
+
+  // The calm "could not write it down" card counts as a shown error (error_shown, once per failure).
+  useEffect(() => {
+    if (job?.phase === 'failed') track('error_shown', { code: 'transcription_failed' });
+  }, [job?.phase]);
+
+  // S14: how long the words have been on their way, and since the last sign of progress (a new part or phase).
+  // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
+  const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
+  const shownAt = useRef(Date.now());
+  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}`;
+  const progress = useRef({ key: progressKey, at: Date.now() });
+  progress.current = progressClock(progress.current, progressKey, Date.now());
+  const laterOffered = useRef(false);
+  const [, setWaitTick] = useState(0);
+  useEffect(() => {
+    if (!writingNow) return;
+    const id = setInterval(() => setWaitTick((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [writingNow]);
+
+  const tryAgain = () => {
+    if (!draft) return;
+    haptic('tap');
+    // retryWords also re-listens to a take where nobody spoke; requestWords joins a job that is already there.
+    if (job?.phase === 'failed' || (job?.phase === 'done' && job.outcome === 'no_speech')) retryWords(draft.id);
+    else requestWords(draft.id);
+  };
+
+  // "Record again": the take stays as a draft, untouched (the only path that deletes audio is a confirmed Discard).
+  const recordAgain = () => {
+    haptic('tap');
+    router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
+
   // Mini player for the recording ("Hear it").
-  const player = useAudioPlayer(draft?.audioUri ?? null);
+  // The web design preview's seeded recordings cannot load in a browser (always false on a phone).
+  const player = useAudioPlayer(draft?.audioUri && !isPreviewAudioPresent(draft.audioUri) ? draft.audioUri : null);
   const playStatus = useAudioPlayerStatus(player);
   const togglePlay = async () => {
     if (playStatus.playing) {
       player.pause();
       await setAudioMode('idle');
     } else {
+      track('review_action', { action: 'play_back' });
+      track('playback_started', { surface: 'review', author_relation: 'self', version: 'original' });
       await setAudioMode('playback');
       if (playStatus.didJustFinish || playStatus.currentTime >= playStatus.duration) player.seekTo(0);
       player.play();
@@ -172,76 +346,134 @@ export default function Review() {
   useEffect(() => () => void setAudioMode('idle').catch(() => {}), []);
 
   // Display: the person's words plus edits; a just-restored span is marked as an identity edit.
-  const marker = restored ? applied.length : null;
+  // In "Exactly as said" no fix is in force; the fixes themselves stay in `applied`, so the choice is reversible.
+  const inForce = useMemo(() => fixesInForce(view, applied), [view, applied]);
+  const marker = restored && view === 'fixes' ? applied.length : null;
   const segs = useMemo(() => {
-    const all = restored ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : applied;
-    return toSegments(raw, all);
-  }, [raw, applied, restored]);
-  const cleanedText = useMemo(() => normalizeChars(applyEdits(raw, applied)).trim(), [raw, applied]);
+    const all = restored && view === 'fixes' ? [...applied, { ...restored.edit, replacement: restored.edit.original }] : inForce;
+    return toSegments(raw, all, typed ? undefined : rules);
+  }, [raw, applied, inForce, restored, view, typed, rules]);
+  // Typed words are kept exactly as typed (S19; F04-REQ-012, F06-REQ-037): trimmed, no character swapped. Spoken text
+  // uses its language's final-text rule.
+  const cleanedText = useMemo(() => (typed ? typedFinalText(raw) : languageFinalText(raw, inForce, rules)), [raw, inForce, typed, rules]);
   const finalText = userText ?? cleanedText;
 
   const putBack = (index: number) => {
     const edit = applied[index];
-    const next = withoutEdit(raw, applied, index);
+    const next = withoutEdit(raw, applied, index, rules);
     haptic('tap');
+    reverted.current++;
+    track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
     setApplied(next.applied);
     setRestored({ edit, index });
     setOpenEdit(null);
     setWash(true);
-    setTimeout(() => setWash(false), NEW_MARK_MS);
+    setTimeout(() => setWash(false), 1600);
   };
 
   const undoPutBack = () => {
     if (!restored) return;
     haptic('tap');
+    reverted.current = Math.max(0, reverted.current - 1);
     const next = [...applied];
     next.splice(restored.index, 0, restored.edit);
     setApplied(next);
     setRestored(null);
   };
 
-  const wordForWord = () => {
+  /** The view control. Reversible: nothing is discarded by choosing Exactly as said. */
+  const chooseView = (next: ReviewView) => {
+    if (next === view) return;
     haptic('tap');
-    setApplied([]);
+    if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    setView(next);
     setRestored(null);
     setOpenEdit(null);
-    setLevel('verbatim');
+    setWash(false);
   };
 
   const pickChild = () => {
-    if (listChildren().length < 2 || !draft) return;
+    if (listChildren().length < 2 || !draft || later) return; // a saved letter stays in its book
     haptic('tap');
     setPickerOpen(true);
   };
   const chooseChild = (id: string) => {
     if (!draft) return;
+    track('review_action', { action: 'change_child' });
     setDraftChild(draft.id, id);
     setChildId(id);
   };
 
-  // Save: commit, haptic, then animate (MOTION principle 3).
-  const settle = useSharedValue(1);
-  const settleStyle = useAnimatedStyle(() => ({ transform: [{ scale: 0.9 + 0.1 * settle.value }], opacity: settle.value }));
-  const chipOpacity = useSharedValue(0);
-  const chipStyle = useAnimatedStyle(() => ({ opacity: chipOpacity.value }));
-  const finishSave = (inBook: boolean) => {
+  // Save: commit, haptic, then animate (MOTION principle 3). The saved moment (components/capture/saved-moment.tsx)
+  // files the letter into its month and then lands on the Book (S21, 5.8 row 5).
+  // After the save, one ask at most, in the decided order (DR-12 B, F02 6.1, F13-REQ-023; lib/asks/next-ask.logic):
+  // the reminder card after the first letter, then Keep the book (the sign-in sheet, servers on and signed out) on
+  // the second letter or the first save of a later session. Either rises over the Book once the letter is seen in
+  // its place, never in place of Review (5.8 row 5b), and "Not now" / "No reminders" always work (local-first).
+  const auth = useAuth();
+  const askAfterLanding = useRef<NextAsk>(null);
+  const left = useRef(false);
+  const land = () => {
+    if (left.current || !draft || !child) return; // the timer and a tap must not both navigate
+    left.current = true;
+    // The Book, on the book the letter was kept in (Review can move a draft to another book), on the new letter:
+    // one navigation back to the tabs selects the Book tab under Review as Review dissolves away over it, so Tonight
+    // is never seen between them (as Add a child returns to the Book, add-child-form.tsx). The Book reads and clears `arrived` (P5); `secondFree` asks it for the second-free toast (D-082).
+    setActiveChildId(child.id);
+    router.dismissTo({ pathname: '/book', params: arrivalParams({ entryId: draft.id, secondFree }) });
+    if (askAfterLanding.current === 'keep_book') {
+      setTimeout(() => router.push({ pathname: '/sign-in', params: { trigger: 'first_letter' } }), signInAfterLandingMs(motion.reduced));
+    } else if (askAfterLanding.current === 'reminder_prime') {
+      setTimeout(requestReminderPrime, signInAfterLandingMs(motion.reduced));
+    }
+  };
+  const finishSave = (inBook: boolean, firstLetter: boolean) => {
+    askAfterLanding.current = askAfterSave({ firstLetter, signInOffered: auth.configured && auth.state.status === 'signedOut' });
     haptic('success');
     setSavedTo(inBook ? 'book' : 'private');
     setPhase('saved');
-    settle.value = motion.spring(0, 'gentle');
-    chipOpacity.value = motion.reduced ? motion.fade(1) : withDelay(CHIP_DELAY_MS, motion.fade(1));
-    setTimeout(() => router.back(), SEQUENCE_MAX_MS);
+  };
+
+  // Development profile only (Expo Go has no StoreKit): lets the founder pass the sheet.
+  const devPass = useRef(false);
+  /**
+   * True when the Keep sheet opened instead: the caller returns without saving. Never throws.
+   * `wordsOnScreen` is the letter's words the person sees at this Keep (M17, D-103): `finalText`.
+   * The rule (no words on screen: no gate, no sheet) lives in lib/billing/keep-step.ts, tested there.
+   */
+  const keepNeedsPlus = async (wordsOnScreen: string): Promise<boolean> => {
+    if (devPass.current) return false;
+    const g = await keepSheetFor(wordsOnScreen);
+    if (g === null) return false;
+    setGate(g);
+    return true;
   };
 
   const saving = useRef(false);
+  // The destination the person chose at this Keep ("Add to the book" or "Keep private"): a letter held at the Keep
+  // sheet keeps it (F14 6.2 B step 2a; store.holdDraft), so Keep after Plus puts it where they asked.
+  const heldInBook = useRef<boolean | null>(null);
+  // "Keep it here for now" runs once (plus-gate.logic holdOnce).
+  const holding = useRef(false);
   const save = async (inBook: boolean) => {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
+    heldInBook.current = inBook;
     player.pause();
+    // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
+    // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
+    await setAudioMode('idle').catch(() => {});
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
-      saveLetterFromDraft(
+      if (await keepNeedsPlus(finalText)) {
+        saving.current = false; // held: the draft is untouched
+        return;
+      }
+      const firstLetter = !hasAnyLetter();
+      // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
+      if (later) keepLaterLetter(draft.id, inBook);
+      else saveLetterFromDraft(
         draft.id,
         {
           id: draft.id,
@@ -249,14 +481,14 @@ export default function Review() {
           occurredOn: draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO(),
           capturedAt: draft.createdAt,
           captureMode,
-          editLevel: level,
+          editLevel: view === 'exact' ? 'verbatim' : level,
           promptKey: draft.promptKey,
           engineVersion: ENGINE_VERSION,
           rawTranscript: raw,
-          machineEdits: applied,
+          machineEdits: inForce,
           finalText,
           inBook,
-          soundsLikeMe,
+          soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
           authorSignsAs: child.signsAs,
           audioUri: draft.audioUri,
@@ -266,9 +498,28 @@ export default function Review() {
         },
         audio.exists,
       );
-      finishSave(inBook);
+      // letter_saved went when the recording was kept; keeping its words later is not a second letter.
+      if (!later) trackLetterSaved({
+        mode: typed ? 'typed' : 'spoken',
+        inBook,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(draft.promptKey),
+        audioMs: draft.audioDurationMs,
+        wordCount: wordCountOf(finalText),
+        machineEdits: inForce.length,
+        editsReverted: reverted.current + setAsideAtSave(view, applied),
+        editsRejected: typed ? undefined : rejected.current.length,
+        engine: typed ? 'none' : 'on_device',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
+      if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
+      if (await countAfterSave(finalText)) setSecondFree(true);
+      finishSave(inBook, firstLetter);
     } catch {
       saving.current = false;
+      track('error_shown', { code: 'save_failed' });
       setSaveFailed(true); // the draft is intact; nothing was half-saved
     }
   };
@@ -278,22 +529,68 @@ export default function Review() {
     if (!draft || !child || saving.current) return;
     saving.current = true;
     player.pause();
+    await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
     try {
       const audio = await ensureAudioHash(draft);
+      // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
+      // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
+      // It counts later, at the save where its words are first on screen.
+      const firstLetter = !hasAnyLetter();
       const fresh = getDraft(draft.id) ?? draft;
       saveVoiceOnlyFromDraft(
         { ...fresh, audioSha256: audio.sha256, audioBytes: audio.bytes },
         { childId: child.id, authorSignsAs: child.signsAs, inBook: false, engineVersion: ENGINE_VERSION, audioExists: audio.exists },
       );
+      trackLetterSaved({
+        mode: 'spoken',
+        inBook: false,
+        childIndex: childIndexOf(child.id),
+        role: 'parent',
+        promptKind: promptKindOf(fresh.promptKey),
+        audioMs: fresh.audioDurationMs,
+        wordCount: 0,
+        machineEdits: 0,
+        editsReverted: 0,
+        engine: 'pending',
+        fromNotificationWithin2h: fromReminderWithin2h(),
+      });
       setDraft(fresh);
+      setKeptForWords(phase === 'transcribing' && job?.outcome !== 'no_speech');
       setVoiceOnly(true);
-      finishSave(false);
+      await afterLetterKept(); // never counted (M17), so never the second-free line or free_allowance_reached
+      finishSave(false, firstLetter);
     } catch {
       saving.current = false;
       setSaveFailed(true);
     }
   };
+
+  useEffect(() => {
+    if (gate || saveFailed) setKeeping(false);
+  }, [gate, saveFailed]);
+
+  /** The person's choice of where the letter goes; "Try again" after a failed save keeps it where they chose (S17). */
+  const lastDestination = useRef(true);
+  const keepTo = (inBook: boolean) => {
+    lastDestination.current = inBook;
+    void save(inBook);
+  };
+
+  // A typed letter keeping from Write (S20, 5.8 row 5a): the person already chose where it goes, so the one Keep step
+  // runs at once, with no "Read it back" screen. Only Write's tap arms it, for this draft (lib/capture/keep-intent.ts).
+  useEffect(() => {
+    const intent = consumeKeep(draftId);
+    if (intent && phase === 'ready' && typed) keepTo(intent.inBook);
+    else setKeeping(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // A save that did not work is said aloud as well as shown (iOS VoiceOver ignores live regions): the words are safe
+  // first, then what happened (S17, VOICE).
+  useEffect(() => {
+    if (saveFailed) announce(r.saveFailed);
+  }, [saveFailed, r.saveFailed]);
 
   const dismissFirstNote = () => {
     setSetting('review.firstNoteSeen', '1');
@@ -301,293 +598,418 @@ export default function Review() {
   };
 
   if (!draft || !child) {
+    // Opened with nothing to read back (a stale link, S23): not an error, nothing to try again. The page drawing,
+    // still; one way on to the book; Close in the header.
     return (
-      <SafeAreaView className="flex-1 items-center justify-center gap-4 bg-background px-5">
-        <Text className="text-center text-lg text-foreground">{copy.errors.generic.body}</Text>
-        <Button onPress={() => router.back()}>
-          <Text>{copy.common.closeButton}</Text>
-        </Button>
-      </SafeAreaView>
+      <StateScreen
+        kind="notFound"
+        title={r.noDraft.title}
+        header={<ModalHeader onClose={() => (router.canGoBack() ? router.back() : router.replace('/'))} />}
+        primary={{ label: r.noDraft.button, onPress: () => router.dismissTo('/book'), testID: 'review.noDraft.book' }}
+      />
     );
   }
 
-  const age = ageText(child, todayISO());
-  const dateline = age ? `${child.name} · ${age}` : child.name;
+  const line = countLine({ view, applied: applied.length, proposed, hasFixRules: spokenEditLevel(language) === 'clean' });
+  const countText =
+    line === 'count'
+      ? plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))
+      : line === 'afterUndo'
+        ? r.noChangesAfterUndo
+        : line === 'none'
+          ? r.noChanges
+          : r.noChangesNoRules; // 'noRules', and 'exact' (Exactly as said: the words are untouched)
+
+  // The letter sheet's header (S17): the month it files into, from the day it was said.
+  const occurredOn = draft.createdAt ? todayISO(new Date(draft.createdAt)) : todayISO();
+  const month = monthFor(child, occurredOn);
+  const header = letterHeader({ childName: child.name, signsAs: child.signsAs, month });
   const openE = openEdit !== null ? applied[openEdit] : null;
   const many = listChildren().length > 1;
 
-  if (phase === 'saved') {
+  // Review before the words are there (S14 to S16): one card, one primary, at most one quiet action.
+  const ask = job?.phase === 'waiting_for_pack' ? speechAskFor(language) : null;
+  const hints = waitingHints({ elapsedMs: Date.now() - shownAt.current, sinceProgressMs: Date.now() - progress.current.at, laterOffered: laterOffered.current });
+  // An unrecoverable take is empty only with no bytes (Tonight's rule); with bytes it is a kept recording the phone
+  // could not open (the launch sweep's unplayable take), never "Nothing was recorded".
+  const file = takeFile(draft);
+  if (writingNow && hints.later) laterOffered.current = true;
+  const card =
+    phase === 'transcribing' || phase === 'waiting'
+      ? wordsCard({
+          emptyFile: file === 'empty',
+          unreadable: file === 'unreadable',
+          job,
+          download: {
+            ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
+            progress: download.progress,
+            hold: download.hold,
+            lowSpace: ask?.kind === 'low_space',
+            // The size comes from this phone's plan, never a typed number (D-087).
+            size: ask ? formatBytes(ask.bytes) : '',
+            mb: ask ? Math.round(ask.bytes / 1e6) : 0,
+            neededSize: ask ? formatBytes(ask.neededBytes) : '',
+          },
+          hints,
+          playing: playStatus.playing,
+        })
+      : null;
+  // No sound to hear: the file is empty or missing (S16), so "Hear it" is not offered.
+  const hasSound = spoken && file !== 'empty' && !(job?.phase === 'failed' && job.failure === 'file_missing');
+  // "Everything before that is kept." only above a recording that was kept (S16).
+  const stopNote = stopLine({ stopped, recoveredAt: draft.recoveredAt, spoken, kept: recordingKept(card) });
+  const runWordsAction: Record<WordsAction, () => void> = {
+    retry: tryAgain,
+    keep: () => void keepRecordingOnly(),
+    type: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    // The person writes the words for this recording; the app never fills them in (S16).
+    write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
+    recordAgain,
+    download: () => void startSpeechDownload(language),
+    // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
+    cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
+    // Review closes; the queue carries on, and Tonight shows the recording waiting for its words (S14).
+    later: () => (router.canGoBack() ? router.back() : router.replace('/')),
+  };
+
+  // The Keep sheet rises over this Review (S22, 5.8 row 5c), drawn last in its screen; the letter stays underneath.
+  let keepSheet: ReactNode = null;
+  if (gate && gate.decision.kind === 'offer' && phase !== 'saved') {
+    keepSheet = (
+      <PlusGate
+        variant="keep_letter"
+        childName={child.name}
+        lapsed={gate.decision.lapsed}
+        lettersKept={gate.lettersKept}
+        heldOn={later ? 'letter' : 'tonight'}
+        // What waits is what is stored (the words Tonight's card and a reopened Review start from), never this Review's
+        // unsaved changes: a hold does not store them.
+        held={{ ...header, words: storedWords(later ?? getDraft(draft.id) ?? draft) }}
+        onHold={() => {
+          // "Keep it here for now" (F14 6.2 B step 2a): the draft stays exactly as it is, marked held, with the
+          // destination chosen at this Keep, so Tonight shows it as waiting to be kept. A later letter is saved already:
+          // only its words wait, on the letter, so there is no draft to hold. Once only (a double tap does nothing);
+          // a hold that does not take still closes, uncounted, and Tonight shows the draft as it was.
+          const outcome = holdOnce(holding, () => (later ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })));
+          if (outcome === 'again') return;
+          if (outcome === 'held') track('letter_held', { letters_kept: Math.min(1000, gate.lettersKept) });
+          router.back();
+        }}
+        onPlus={() => setGate(null)} // the same Review again; the person taps Keep
+        onDismiss={() => setGate(null)} // back to the letter, nothing held or kept
+        onContinueDev={
+          devShortcutsAllowed
+            ? () => {
+                devPass.current = true;
+                setGate(null);
+              }
+            : undefined
+        }
+      />
+    );
+  }
+
+  // One primary (56 pt), one quiet 44 pt: the footer is about 100 pt, not 130 (QA journey J06-01). While the
+  // letter is being edited the footer is just "Done", so the only way out of the most committing task is a primary.
+  const footerShell = (children: ReactNode) => (
+    <View className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}>{children}</View>
+  );
+  // "Add to Asha's book" (primary; "Add to the book" when the name makes it long) and "Keep private" (quiet). A save
+  // that did not work keeps the letter, says so directly above the primary, and the primary reads "Try again" (S17).
+  const footer =
+    phase === 'ready' && !isSample
+      ? footerShell(
+          editing ? (
+            <Button size="lg" fullWidth label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
+          ) : (
+            <>
+              {saveFailed && (
+                <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive" className="pb-1 text-center" testID="review.saveFailed">
+                  {r.saveFailed}
+                </Text>
+              )}
+              <Button size="lg" fullWidth onPress={() => keepTo(primaryDestination({ saveFailed, lastInBook: lastDestination.current }))} disabled={!finalText.trim()} testID="review.save.book">
+                <Text>{savePrimaryLabel({ childName: child.name, saveFailed })}</Text>
+              </Button>
+              {/* Stays after a failed save, so focus is never dropped and the other destination is one tap away (S17). */}
+              <Button variant="quiet" fullWidth onPress={() => keepTo(false)} disabled={!finalText.trim()} testID="review.save.private">
+                <Text>{r.destination.privateButton}</Text>
+              </Button>
+            </>
+          ),
+        )
+      : null;
+  // Sample words (development builds) are never saved: the footer keeps the recording itself. Every other state that
+  // can keep the recording carries "Keep the recording" in its own card (S15, S16), so there is never a second one here.
+  const keepFooter =
+    spoken && phase === 'ready' && isSample
+      ? footerShell(
+          <Button size="lg" fullWidth onPress={keepRecordingOnly} testID="review.keepVoice">
+            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
+          </Button>,
+        )
+      : null;
+
+  // The saved moment (S21), and, for a typed letter keeping from Write (S20), the same sheet holding still while the
+  // one Keep step runs: the moment starts from exactly what the person saw.
+  const keepingFromWrite = keeping && phase === 'ready' && !saveFailed && !gate;
+  if (phase === 'saved' || keepingFromWrite) {
+    const moment = savedMoment({ kind: voiceOnly ? 'voice' : savedTo === 'private' ? 'private' : 'book', childName: child.name, month, keptForWords });
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background px-5">
-        <Pressable onPress={() => router.back()} className="w-full" accessibilityRole="button" accessibilityLabel={copy.common.doneButton}>
-          <Animated.View style={settleStyle}>
-            <Card className="rounded-3xl border-0 bg-card p-6">
-              <Text className="font-serif text-xl leading-8 text-foreground" numberOfLines={4}>
-                {voiceOnly ? pendingCopy.book.waitingForWords : finalText}
-              </Text>
-            </Card>
-          </Animated.View>
-          <Animated.View style={chipStyle} className="mt-6 items-center" accessibilityLiveRegion="polite">
-            <Text className="text-lg text-success">
-              {voiceOnly
-                ? pendingCopy.review.voiceOnlyToast
-                : savedTo === 'book'
-                  ? fill(r.destination.addedToast, { child: child.name })
-                  : r.destination.privateToast}
-            </Text>
-          </Animated.View>
-        </Pressable>
+      <SafeAreaView className="flex-1 bg-background">
+        <SavedMoment
+          header={header}
+          words={voiceOnly ? pendingCopy.book.waitingForWords : finalText}
+          chip={moment.chip}
+          lock={moment.lock}
+          line={moment.line}
+          committed={phase === 'saved'}
+          onDone={land}
+        />
       </SafeAreaView>
     );
   }
 
+  // The open mark's card ("You said / Now it reads", Put it back): it opens under the line the mark ends on (S17,
+  // MOTION 5d; P4 critics' pass S8), so on a long letter it is never off screen below the last line.
+  const markCard = openE ? (
+    <Animated.View entering={FadeIn.delay(80).duration(160)} className="my-3 gap-2 rounded-2xl bg-muted p-4" testID="review.card">
+      <Text variant="labelSmall">{labelOf(openE).label}</Text>
+      <Text variant="subhead">{labelOf(openE).explain}</Text>
+      {/* You said / Now it reads: before and after, in the parent's own words (D-086). */}
+      {openE.original.trim() !== '' && (
+        <>
+          <Text variant="footnote">{r.cardYouSaid}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
+        </>
+      )}
+      {openE.replacement.trim() !== '' ? (
+        <>
+          <Text variant="footnote">{r.cardNowReads}</Text>
+          <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
+        </>
+      ) : (
+        <Text variant="footnote">{r.cardTakenOut}</Text>
+      )}
+      <ButtonRow>
+        <Button size="sm" onPress={() => putBack(openEdit!)} testID="review.card.putBack">
+          <Text>{r.undoEditButton}</Text>
+        </Button>
+        <Button size="sm" variant="quiet" onPress={() => setOpenEdit(null)}>
+          <Text tone="muted">{copy.common.closeButton}</Text>
+        </Button>
+      </ButtonRow>
+    </Animated.View>
+  ) : null;
+
   return (
     <SafeAreaView className="flex-1 bg-background">
-      <View className="flex-row items-center justify-between px-5 pt-2">
-        <Button variant="ghost" size="sm" className="-ml-4" onPress={() => router.back()} accessibilityHint={pendingCopy.write.savedOnPhone}>
-          <Text className="text-primary">{copy.common.closeButton}</Text>
-        </Button>
-        {spoken && (
-          <Button variant="ghost" size="sm" className="-mr-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
-            {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
-            <Text className="text-primary">{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
-          </Button>
-        )}
-      </View>
+      <ModalHeader
+        onClose={() => router.back()}
+        // Say what is true: the person's own changes (Change words, a fix put back, the other view) are only on this screen until Keep
+        // (P4 critics' pass S1; storing them on the draft is build 3's item, #274 N1).
+        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
+        leading={
+          editing ? (
+            // Done sits in the header while editing (S18), and above the keyboard on iOS.
+            <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
+          ) : hasSound ? (
+            <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
+              {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
+              <Text>{playStatus.playing ? copy.common.pauseButton : r.playButton}</Text>
+            </Button>
+          ) : null
+        }
+      />
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
-        <View className="gap-1">
-          <Pressable
-            onPress={pickChild}
-            disabled={!many}
-            accessibilityRole={many ? 'button' : 'text'}
-            accessibilityLabel={many ? fill(pendingCopy.review.toChildA11y, { child: child.name }) : undefined}
-            className="min-h-11 justify-center">
-            <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline.toUpperCase()}</Text>
-          </Pressable>
-          <Text role="heading" className="font-serif text-3xl leading-10 text-foreground">{r.title}</Text>
-          {!typed && phase === 'ready' && <Text className="text-base text-muted-foreground">{r.trustLine}</Text>}
-        </View>
-
-        {isSample && (
-          <View className="rounded-2xl border border-caution p-3">
-            <Text className="text-sm text-caution">{pendingCopy.review.sampleBanner}</Text>
-            <Text className="text-sm text-caution">{pendingCopy.review.sampleNotSaved}</Text>
-          </View>
-        )}
-
-        {firstNote && phase === 'ready' && (
-          <Animated.View entering={motion.enter()} layout={motion.reduced ? undefined : REFLOW}>
-            {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
-            <View className="gap-1 rounded-2xl bg-secondary py-3 pl-4 pr-2">
-              <View className="flex-row items-center justify-between gap-2">
-                <Text className="flex-1 text-base font-semibold text-foreground">{r.firstNote.title}</Text>
-                <Button variant="ghost" size="sm" onPress={dismissFirstNote}>
-                  <Text className="text-primary">{r.firstNote.dismissButton}</Text>
-                </Button>
-              </View>
-              <Text className="pr-2 text-sm leading-5 text-foreground">{r.firstNote.body}</Text>
-            </View>
-          </Animated.View>
-        )}
-
-        {phase === 'transcribing' && (
-          <Card className="items-center gap-2 rounded-3xl border-0 bg-card p-8" accessibilityLiveRegion="polite">
-            <Text className="text-lg text-muted-foreground">{copy.tonight.states.transcribing}</Text>
-          </Card>
-        )}
-
-        {phase === 'waiting' && (
-          <Card className="gap-3 rounded-3xl border-0 bg-card p-6" accessibilityLiveRegion="polite">
-            <Text role="heading" className="text-lg font-semibold text-foreground">
-              {waitReason === 'failed' ? copy.errors.transcriptionFailed.title : pendingCopy.review.waitingTitle}
-            </Text>
-            <Text className="text-base leading-6 text-foreground">
-              {waitReason === 'failed' ? copy.errors.transcriptionFailed.body : pendingCopy.review.waitingBody}
-            </Text>
-            <View className="flex-row flex-wrap gap-3">
-              {waitReason === 'failed' && draft.state !== 'unrecoverable' && (
-                <Button variant="secondary" onPress={transcribe}>
-                  <Text>{copy.errors.transcriptionFailed.button}</Text>
-                </Button>
-              )}
-              <Button variant="secondary" onPress={() => router.replace({ pathname: '/write', params: { draftId: draft.id } })}>
-                <Text>{copy.errors.micDenied.typeButton}</Text>
-              </Button>
-            </View>
-          </Card>
-        )}
-
-        {saveFailed && (
-          <Text className="text-base text-caution" accessibilityLiveRegion="assertive">
-            {copy.errors.generic.body}
+      {/* While words are changed the footer's Done rides above the keyboard (S18), and the letter scrolls clear of it. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <ScrollView className="flex-1" contentContainerClassName="gap-5 px-5 pb-6 pt-2" keyboardShouldPersistTaps="handled">
+          {/* The title, then the letter on its sheet. No reassurance line: the marks speak for themselves (S17). */}
+          <Text variant="title1" asHeading>
+            {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
-        )}
 
-        {phase === 'ready' && (
-          <>
-            <Animated.View layout={motion.reduced ? undefined : REFLOW}>
-              <Card className="gap-4 rounded-3xl border-0 bg-card p-5">
-                {editing ? (
-                  <TextInput
-                    className="min-h-40 font-serif text-xl leading-8 text-foreground"
-                    value={finalText}
-                    onChangeText={setUserText}
-                    multiline
-                    autoFocus
-                    textAlignVertical="top"
-                    accessibilityLabel={pendingCopy.write.label}
-                  />
-                ) : showOriginal ? (
-                  <View className="gap-2">
-                    <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{r.originalLabel.toUpperCase()}</Text>
-                    <Text className="font-serif text-xl leading-8 text-foreground" selectable>
-                      {raw}
-                    </Text>
-                  </View>
-                ) : userText !== null ? (
-                  <Text className="font-serif text-xl leading-8 text-foreground" selectable>
-                    {userText}
+          {isSample && (
+            <View className="rounded-2xl border border-caution p-3">
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleBanner}
+              </Text>
+              <Text variant="subhead" tone="caution">
+                {pendingCopy.review.sampleNotSaved}
+              </Text>
+            </View>
+          )}
+
+          {firstNote && phase === 'ready' && (
+            <Animated.View entering={motion.enter()} layout={motion.layout()}>
+              {/* Compact first-time note; "Got it" collapses it for good (review.firstNoteSeen). */}
+              <View className="gap-1 bg-secondary py-3 pl-4 pr-2" style={{ borderRadius: tokens.radius.lg }} testID="review.firstNote">
+                <View className="flex-row items-center justify-between gap-2">
+                  <Text variant="headline" className="flex-1">
+                    {r.firstNote.title}
                   </Text>
-                ) : (
-                  <Transcript
-                    segments={segs}
-                    openEdit={openEdit}
-                    restoredIndex={wash ? marker : null}
-                    onPressEdit={(i) => {
-                      if (i >= applied.length) return;
-                      haptic('tap');
-                      setOpenEdit(openEdit === i ? null : i);
-                    }}
-                  />
-                )}
-
-                {openE && !showOriginal && userText === null && (
-                  <Animated.View entering={motion.enter()} className="gap-2 rounded-2xl bg-muted p-4">
-                    <Text className="text-sm font-semibold text-foreground">{r.edits[EDIT_COPY[openE.type]].label}</Text>
-                    <Text className="text-base leading-6 text-foreground">{r.edits[EDIT_COPY[openE.type]].explain}</Text>
-                    <Text className="text-sm text-muted-foreground">{r.originalLabel}</Text>
-                    <Text className="font-serif text-lg text-foreground">"{openE.original.trim()}"</Text>
-                    {openE.replacement.trim() !== '' && (
-                      <>
-                        <Text className="text-sm text-muted-foreground">{r.tidiedLabel}</Text>
-                        <Text className="font-serif text-lg text-foreground">"{openE.replacement.trim()}"</Text>
-                      </>
-                    )}
-                    <View className="flex-row gap-3">
-                      <Button size="sm" onPress={() => putBack(openEdit!)}>
-                        <Text>{r.undoEditButton}</Text>
-                      </Button>
-                      <Button size="sm" variant="ghost" onPress={() => setOpenEdit(null)}>
-                        <Text className="text-muted-foreground">{copy.common.closeButton}</Text>
-                      </Button>
-                    </View>
-                  </Animated.View>
-                )}
-
-                {restored && (
-                  <View className="flex-row items-center gap-3" accessibilityLiveRegion="polite">
-                    <Text className="text-base text-muted-foreground">{pendingCopy.review.putBack}</Text>
-                    <Button size="sm" variant="ghost" onPress={undoPutBack}>
-                      <Text className="text-primary">{copy.common.undoButton}</Text>
-                    </Button>
-                    <Button size="sm" variant="ghost" onPress={() => setRestored(null)}>
-                      <Text className="text-muted-foreground">{copy.common.closeButton}</Text>
-                    </Button>
-                  </View>
-                )}
-              </Card>
-            </Animated.View>
-
-            {!typed && userText === null && !editing && (
-              <View className="gap-1">
-                <Text className="text-base text-muted-foreground">
-                  {applied.length === 0 ? r.noChanges : plural(applied.length, pendingCopy.review.changesLabelOne, fill(r.changesLabel, { count: applied.length }))}
+                  <Button variant="quiet" size="sm" label={r.firstNote.dismissButton} onPress={dismissFirstNote} testID="review.firstNote.dismiss" />
+                </View>
+                <Text variant="subhead" className="pr-2">
+                  {r.firstNote.body}
                 </Text>
-                {/* Every edit as a row: the VoiceOver path to the underlines (COMPONENTS 2.19). */}
-                {!showOriginal &&
-                  applied.map((e, i) => (
-                    <Pressable
-                      key={`${e.start}-${e.type}`}
-                      onPress={() => {
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Why the take stopped early (S14): leaving the app, a call or an alert, or the app closing. One honest line. */}
+          {stopNote && (
+            <Text variant="footnote" tone="muted" accessibilityLiveRegion="polite" testID="review.stopLine">
+              {stopNote}
+            </Text>
+          )}
+
+          {card && (
+            // The words are on their way, or they did not come (S14 to S16). The card enters just after Listen dissolves in (5.8 row 4).
+            <Animated.View entering={motion.enter(3)}>
+              <WordsStatus card={card} size={ask ? formatBytes(ask.bytes) : ''} lengthMs={draft.audioDurationMs} run={runWordsAction} />
+            </Animated.View>
+          )}
+
+          {/* A keep that did not work before the words were there: the words are safe first (VOICE), then what happened. */}
+          {saveFailed && phase !== 'ready' && (
+            <Text variant="subhead" tone="caution" accessibilityLiveRegion="assertive">
+              {r.saveFailed}
+            </Text>
+          )}
+
+          {phase === 'ready' && (
+            <>
+              {/* The letter on its sheet (S17), arriving with one fade when its words have just come (MOTION 5c). */}
+              <Animated.View layout={motion.layout()} entering={wordsArrived ? FadeIn.duration(tokens.motion.swapMs) : undefined}>
+                <LetterSheet
+                  header={header}
+                  editing={editing}
+                  onChangeBook={many && !later ? pickChild : undefined}
+                  changeLabel={fill(pendingCopy.review.toChildA11y, { child: child.name })}>
+                  {editing ? (
+                    // Edit in place on the same sheet (S18): no inner box, the caret in the letter face; the sheet's edge
+                    // is the accent line. The system draws Full Keyboard Access's own focus ring.
+                    <TextField
+                      variant="letter"
+                      label={pendingCopy.write.label}
+                      labelHidden
+                      value={finalText}
+                      onChangeText={setUserText}
+                      multiline
+                      autoFocus
+                      inputClassName="min-h-40"
+                      testID="review.editField"
+                    />
+                  ) : userText !== null ? (
+                    <Text variant="letterBody" selectable>
+                      {userText}
+                    </Text>
+                  ) : (
+                    // "With small fixes" and "Exactly as said" cross-fade (S17: 150 ms, swapMs; a fade is also the Reduce Motion form).
+                    <Animated.View key={view} entering={FadeIn.duration(tokens.motion.swapMs)}>
+                    <Transcript
+                      segments={segs}
+                      edits={view === 'fixes' ? applied : undefined}
+                      openEdit={openEdit}
+                      restoredIndex={wash ? marker : null}
+                      card={openE && view === 'fixes' ? markCard : null}
+                      accessibilityLabel={finalText}
+                      onPressEdit={(i) => {
+                        if (i >= applied.length) return;
                         haptic('tap');
                         setOpenEdit(openEdit === i ? null : i);
                       }}
-                      accessibilityRole="button"
-                      accessibilityHint={pendingCopy.review.editA11yHint}
-                      className="min-h-11 flex-row items-center gap-2">
-                      <Text className="text-sm font-medium text-foreground">{r.edits[EDIT_COPY[e.type]].label}</Text>
-                      <Text className="flex-1 text-sm text-muted-foreground" numberOfLines={1}>
-                        "{e.original.trim()}"
-                      </Text>
-                    </Pressable>
-                  ))}
-                <View className="flex-row flex-wrap gap-x-4">
-                  <Button variant="ghost" size="sm" className="px-0" onPress={() => setShowOriginal((v) => !v)}>
-                    <Text className="text-primary">{showOriginal ? r.showTidiedButton : r.showOriginalLink}</Text>
-                  </Button>
-                  {applied.length > 0 && (
-                    <Button variant="ghost" size="sm" className="px-0" onPress={wordForWord}>
-                      <Text className="text-primary">{r.undoAllButton}</Text>
-                    </Button>
+                    />
+                    </Animated.View>
                   )}
-                </View>
-              </View>
-            )}
 
-            {!isSample && (
-              <Button variant="ghost" size="sm" className="self-start px-0" onPress={() => setEditing((v) => !v)}>
-                <Text className="text-primary">{editing ? copy.common.doneButton : pendingCopy.review.editTextButton}</Text>
-              </Button>
-            )}
+                  {restored && (
+                    <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
+                      <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
+                      <Button size="sm" variant="quiet" onPress={undoPutBack}>
+                        <Text>{copy.common.undoButton}</Text>
+                      </Button>
+                      <Button size="sm" variant="quiet" onPress={() => setRestored(null)}>
+                        <Text tone="muted">{copy.common.closeButton}</Text>
+                      </Button>
+                    </View>
+                  )}
+                </LetterSheet>
+              </Animated.View>
 
-            {!typed && (
-              <View className="gap-3">
-                <Text className="text-lg text-foreground">{r.voiceCheck.question}</Text>
-                <View className="flex-row gap-3">
-                  {([true, false] as const).map((v) => (
-                    <Button
-                      key={String(v)}
-                      variant={soundsLikeMe === v ? 'default' : 'outline'}
-                      className="flex-1"
-                      accessibilityState={{ selected: soundsLikeMe === v }}
+              {!typed && userText === null && !editing && (
+                <View className="gap-3">
+                  {/* One control, both the view and the choice for this letter. Reversible until save. */}
+                  {showViewControl(proposed) && <ViewControl view={view} onChange={chooseView} />}
+                  {line === 'count' ? (
+                    // "2 small fixes": one disclosure row; the rows fold behind it, since every mark is tappable in the letter (S17).
+                    <Pressable
                       onPress={() => {
                         haptic('tap');
-                        setSoundsLikeMe(v);
-                      }}>
-                      <Text>{v ? r.voiceCheck.yesButton : r.voiceCheck.noButton}</Text>
-                    </Button>
-                  ))}
+                        setFixesOpen((o) => !o);
+                      }}
+                      accessibilityRole="button"
+                      accessibilityState={{ expanded: fixesOpen }}
+                      accessibilityLiveRegion="polite"
+                      className="min-h-12 flex-row items-center justify-between gap-3"
+                      testID="review.count">
+                      <Text variant="subhead">{countText}</Text>
+                      {fixesOpen ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+                    </Pressable>
+                  ) : (
+                    <Text variant="subhead" testID="review.count" accessibilityLiveRegion="polite">
+                      {countText}
+                    </Text>
+                  )}
+                  {/* Every fix as a row: the VoiceOver path to the marks (COMPONENTS 2.19). */}
+                  {view === 'fixes' && applied.length > 0 && fixesOpen && (
+                    <View>
+                      {applied.map((e, i) => (
+                        <FixRow
+                          key={`${e.start}-${e.type}`}
+                          label={labelOf(e).label}
+                          shows={rowShows(e)}
+                          open={openEdit === i}
+                          onPress={() => {
+                            haptic('tap');
+                            setOpenEdit(openEdit === i ? null : i);
+                          }}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
-                {soundsLikeMe === false && <Text className="text-base text-muted-foreground">{r.voiceCheck.noFollowUp}</Text>}
-                {soundsLikeMe === true && <Text className="text-base text-muted-foreground">{r.voiceCheck.thanks}</Text>}
-              </View>
-            )}
+              )}
 
-            <Text className="text-sm text-muted-foreground">{r.destination.privateHelp}</Text>
-          </>
-        )}
-      </ScrollView>
+              {/* A later letter's words are kept as they are stored: keeping them writes no words. */}
+              {!isSample && !editing && !later && (
+                <Button
+                  variant="quiet"
+                  size="sm"
+                  className="-ml-4 self-start"
+                  testID="review.edit"
+                  onPress={() => {
+                    track('review_action', { action: 'edit_text' });
+                    setEditing(true);
+                  }}>
+                  <Text>{pendingCopy.review.editTextButton}</Text>
+                </Button>
+              )}
 
-      {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll. */}
-      {phase === 'ready' && !isSample && (
-        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={() => save(true)} disabled={!finalText.trim() || editing} accessibilityHint={r.destination.title}>
-            <Text>{fill(r.destination.addButton, { child: child.name })}</Text>
-          </Button>
-          <Button variant="secondary" onPress={() => save(false)} disabled={!finalText.trim() || editing}>
-            <Text>{r.destination.privateButton}</Text>
-          </Button>
-        </View>
-      )}
-      {/* No words to save (or only sample words): keep the recording itself. */}
-      {spoken && (phase === 'waiting' || (phase === 'ready' && isSample)) && (
-        <View className="gap-2 border-t border-border bg-background px-5 pb-2 pt-3">
-          <Button size="lg" onPress={keepRecordingOnly} accessibilityHint={r.destination.privateHelp}>
-            <Text>{pendingCopy.review.voiceOnlyButton}</Text>
-          </Button>
-        </View>
-      )}
+              {/* Dynamic Type at accessibility sizes: the actions scroll with the letter instead of pinning over it. */}
+              {inlineFooter ? footer : null}
+            </>
+          )}
+          {inlineFooter ? keepFooter : null}
+        </ScrollView>
+
+        {/* Save is always on screen, in the thumb zone (DESIGN_LANGUAGE 1.2): a sticky footer, never at the end of a scroll.
+            At accessibility text sizes it moves into the scroll instead, so the letter keeps the screen. */}
+        {!inlineFooter && footer}
+        {!inlineFooter && keepFooter}
+      </KeyboardAvoidingView>
 
       <WhoseBookSheet
         visible={pickerOpen}
@@ -596,6 +1018,163 @@ export default function Review() {
         onSelect={chooseChild}
         onClose={() => setPickerOpen(false)}
       />
+      {keepSheet}
     </SafeAreaView>
+  );
+}
+
+/**
+ * "With small fixes | Exactly as said" (COMPONENTS 2.19, D-086 5.4). Full width under the card, 44 pt tall, pill
+ * shaped. Selected: accentSoft fill, accent edge (stroke.selected) and a check, so it never relies on colour alone.
+ * At accessibility text sizes the two options stack, full width, with no line limit, so neither label is cut
+ * (COMPONENTS 0.1; P4 critics' pass S4).
+ */
+function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: ReviewView) => void }) {
+  const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
+  const r = copy.review;
+  const options: { value: ReviewView; label: string }[] = [
+    { value: 'fixes', label: r.view.fixes },
+    { value: 'exact', label: r.view.exact },
+  ];
+  return (
+    <View className={stacked ? 'gap-2' : 'flex-row gap-2'} accessibilityRole="radiogroup" accessibilityLabel={r.view.a11y} testID="review.view">
+      {options.map((o) => {
+        const selected = view === o.value;
+        return (
+          <Pressable
+            key={o.value}
+            onPress={() => onChange(o.value)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected, checked: selected }}
+            accessibilityLabel={o.label}
+            testID={`review.view.${o.value}`}
+            className={stacked ? 'min-h-11 flex-row items-center justify-center gap-1.5 px-3 py-2' : 'min-h-11 flex-1 flex-row items-center justify-center gap-1.5 px-3 py-2'}
+            style={{
+              borderRadius: tokens.radius.pill,
+              backgroundColor: selected ? c.accentSoft : 'transparent',
+              borderWidth: selected ? tokens.stroke.selected : tokens.stroke.control,
+              borderColor: selected ? c.accent : c.controlBorder,
+            }}>
+            {selected && <CheckIcon size={16} color={c.accent} weight="bold" />}
+            <Text variant="labelSmall" numberOfLines={stacked ? undefined : 2} className="shrink" style={{ textAlign: 'center' }}>
+              {o.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
+  const { c } = useTheme();
+  const detail =
+    shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={detail ? `${label}, ${detail}` : label}
+      accessibilityHint={pendingCopy.review.editA11yHint}
+      accessibilityState={{ expanded: open }}
+      testID="review.fixRow"
+      className="min-h-12 flex-row items-center gap-3 py-1">
+      <Text variant="labelSmall">{label}</Text>
+      <Text
+        variant="footnote"
+        className="flex-1"
+        numberOfLines={1}
+        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+        {detail}
+      </Text>
+      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+    </Pressable>
+  );
+}
+
+/** Where each action's testID comes from (e2e flows and journey steps read them). */
+const WORDS_TEST_ID: Record<WordsAction, string> = {
+  retry: 'review.retry',
+  keep: 'review.keepVoice',
+  type: 'review.type',
+  write: 'review.write',
+  recordAgain: 'review.recordAgain',
+  download: 'review.getReady',
+  cellular: 'review.mobileData',
+  later: 'review.later',
+};
+
+/**
+ * Review before the words are there (S14 to S16), one calm card: no spinner, real numbers only. While the words are
+ * written down the moon breathes (still while "Hear it" plays) over the recording's length; every other state holds
+ * its drawing still. One primary, at most one quiet action (components/capture/words-state.logic.ts).
+ */
+function WordsStatus({ card, size, lengthMs, run }: { card: WordsCard; size: string; lengthMs: number | null; run: Record<WordsAction, () => void> }) {
+  // VoiceOver ignores live regions on iOS, so the state is said aloud: the card's own title (never the letter's words)
+  // once Review has dissolved in (VoiceOver's focus lands on "Hear it", not on the card), again on each change of state,
+  // and "Read it back later" when it appears (TDD 09 V1).
+  const said = useRef<{ state: string; later: boolean } | null>(null);
+  const title = useRef(card.title);
+  title.current = card.title;
+  const first = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (first.current) clearTimeout(first.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    const now = { state: card.state, later: card.quiet === 'later' };
+    const before = said.current;
+    said.current = now;
+    if (!before) {
+      first.current = setTimeout(() => {
+        first.current = null;
+        announce(title.current);
+      }, tokens.motion.route.dissolveMs);
+      return;
+    }
+    if (before.state !== now.state) {
+      if (first.current) clearTimeout(first.current);
+      first.current = null;
+      announce(card.title);
+    } else if (!before.later && now.later) announce(wordsActionLabel('later'));
+  }, [card.state, card.quiet, card.title]);
+  const action = (a: WordsAction | null) => (a ? { label: wordsActionLabel(a, size), onPress: run[a], testID: WORDS_TEST_ID[a] } : undefined);
+  const primary = action(card.primary);
+  const quiet = action(card.quiet);
+  const length = card.state === 'writing' ? clockOf(lengthMs) : null;
+  return (
+    <InlineState
+      kind={card.kind}
+      art={card.art}
+      still={card.still}
+      title={card.title}
+      body={card.body}
+      primary={primary}
+      quiet={quiet ? [quiet] : undefined}>
+      {length && (
+        <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }} accessibilityLabel={lengthA11y(lengthMs) ?? undefined}>
+          {length}
+        </Text>
+      )}
+      {card.note && <Text variant="footnote">{card.note}</Text>}
+      {card.bar !== undefined && <ProgressLine value={card.bar} />}
+    </InlineState>
+  );
+}
+
+/** A thin, determinate line: progress the parent can trust. */
+function ProgressLine({ value }: { value: number }) {
+  const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
+  return (
+    <View
+      className="h-1 w-full overflow-hidden rounded-full bg-muted"
+      accessibilityRole="progressbar"
+      accessibilityValue={{ min: 0, max: 100, now: pct }}>
+      <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />
+    </View>
   );
 }

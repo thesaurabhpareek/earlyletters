@@ -15,7 +15,7 @@ The machine may remove and repair. It may never add meaning.
 |---|---|
 | `apps/mobile` | Expo SDK 57 app: iOS first, Android later (Expo Router) |
 | `packages/core` | Faithful-edit engine, verifier, age math, prompt selection, safety tiers. Pure TS, no React Native |
-| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 104 prompts. `VOICE.md`, `BRAND.md` |
+| `packages/content` | Every word the product says (in-app, App Store, website, printed book) + 111 prompts. `VOICE.md`, `BRAND.md` |
 | `packages/design-tokens` | Colours, type, spacing, motion. One source for iOS and web |
 | `packages/brand` | Public name, store name, company, bundle ID |
 | `supabase/migrations` | Database schema and access rules |
@@ -23,13 +23,19 @@ The machine may remove and repair. It may never add meaning.
 | `experiments` | Mac kit to test speech models on real recordings |
 | `docs/ARCHITECTURE.md`, `docs/adr/` | System design and decision records |
 | `docs/design/` | Design language, benchmark, component library, component specs |
+| `docs/engineering/` | Engineering compendium: `PRINCIPLES.md` (one page) and chapters 01 to 10, each owned by a steward agent |
+| `packages/api` | Typed API contracts, signed manifests, latency budgets |
+| `packages/analytics`, `packages/emails` | Opt-in analytics allowlist and insights loop; React Email templates |
+| `packs/` | Language rule packs (data, downloaded on demand) |
+| `docs/agents/` | Agent brief, coordination rules, board, debates. Read `COORDINATION.md` before working |
 
 ## Commands
 ```bash
 npm install            # once, at the repo root
-npm test               # engine (237) + mobile (31) + content rules (16) + analytics (39) + tokens (4) + experiments (11); Node 22+
+npm test               # every workspace with a test script: core, mobile, api, analytics, content, brand, emails, design-tokens, experiments; Node 22.5+ (node:sqlite)
 npm run experiment     # speech-model test on your recordings (Mac; see experiments/README.md)
-npm run test:db        # access matrix, security, governance, classification, entitlements, purge, performance (8 files)
+npm run test:db        # database: access matrix, security, sync, governance, classification, ops, insights, performance (32 files)
+npm run test:functions # Edge Functions and ops scripts (Deno via npx)
 npm run typecheck
 npm run mobile         # start the iOS app
 ```
@@ -41,13 +47,26 @@ All tests must pass before any commit. If a content rule test fails, fix the cop
 - Never imply AI writes anything. We never rewrite.
 - Never gender the child; use `{child}`.
 - Celebrate what exists; never count gaps. No streaks, points or badges, ever.
+- Two vocabularies: internal terms (take, entry, draft, pack, `raw_transcript`) stay in code and specs; a parent only reads the words in the BRAND.md glossary and its internal-terms table (CR-25).
 
 ## Privacy rules
 - No entry text, transcript, audio or child name in analytics, logs or crash reports.
 - Safety tiers stay on the device; there is no server table for them.
-- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha".
+- Real family details never go in code, tests or fixtures. Tests use the fictional family "Asha". Enforced by `packages/content/test/no-real-family-data.test.ts` (stores only hashes).
+
+## Agents
+- How the harness works, end to end: `docs/agents/HARNESS.md`. The team (26 agents), engines, models and caps: `agents/roster.json`. Rules during a run: `docs/agents/OPERATING_MODEL.md`. How agents talk to each other: `docs/agents/AGENT-COMMS.md`.
+- Each agent's identity is `.claude/agents/<handle>.md` and its memory `agents/<handle>/MEMORY.md`. In an interactive session, ask for one by handle ("use the mobile agent").
+- Engineering standards: read `docs/engineering/PRINCIPLES.md` before any code, schema, API or data change; open a chapter only when your change touches it. Five steward agents own the chapters and review PRs in their domains.
+- Agents run through `.github/workflows/agents.yml`, on open-weight models by default (ADR 0018, ADR 0019): they never merge, never push to `develop` or `main`, and label their PRs `agent:<handle>`.
+
+## Saving work (every session, human or AI)
+- A usage limit can stop any session at any moment, and anything not pushed exists only in that session's workspace.
+- Commit and push work in progress at least every 30 minutes, and always before launching parallel agents: to your branch, or to `wip/<topic>` if it is not ready for a PR.
 
 ## Branches and commits
-- `main` is always releasable. Work on short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `exp/<what>` (experiments), `docs/<what>`.
+- `develop` is the integration branch and always green; `main` is live (website and tagged releases). Every change is a PR into `develop`. Full rules: `docs/DEVELOPMENT.md`.
+- Short branches: `feat/<area>-<what>`, `fix/<what>`, `chore/<what>`, `test/<what>`, `qa/<what>`, `exp/<what>` (experiments), `docs/<what>`.
 - One concern per pull request. Database changes ship as a new migration file; never edit a migration that has been applied.
-- Release tags: `ios-v<major>.<minor>.<patch>`.
+- Every new table, view, sequence or function in `public` carries its own grants in its own migration (default privileges are reset since `20261023060000`), and its grant goes in `supabase/tests/grants.mjs`.
+- Releases (ADR 0022, `docs/ops/RELEASE.md`): `release/<major>.<minor>` cut from `main` at freeze, fixes cherry-picked from `develop`. Version only in `apps/mobile/version.json` (after #109; until then `apps/mobile/app.config.ts:162`); build numbers only from EAS. `ios-v<x.y.z>-rc.<n>` builds a candidate, `ios-v<x.y.z>` marks the released one; tags never move.

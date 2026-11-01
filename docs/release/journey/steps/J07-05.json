@@ -1,0 +1,42 @@
+{
+  "id": "J07-05",
+  "journey": "typed-letter",
+  "kind": "unhappy",
+  "title": "Closed before finishing",
+  "note": "Closing keeps the words as a draft. Tonight now shows its card with the first words and \"Pick it up\".",
+  "from": "J07-01",
+  "shot": "screens/J07-05.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 0 days Good afternoon, Mama. Who came to meet Asha this week? What did they say? Another thought Friday You were so sleepy and then Pick it up Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 0 days",
+    "Good afternoon,",
+    "Mama.",
+    "Who came to meet Asha this week? What did they say?",
+    "Another thought",
+    "Friday",
+    "You were so sleepy and then",
+    "Pick it up",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

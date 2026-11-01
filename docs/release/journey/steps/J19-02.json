@@ -1,0 +1,34 @@
+{
+  "id": "J19-02",
+  "journey": "errors",
+  "kind": "unhappy",
+  "title": "Listen opened without a tap",
+  "note": "Opened by a link, a restored screen or a stale route (not by Speak), Listen waits at rest: the red circle and \"Tap the red circle and talk.\" (S12). The microphone is not touched until the circle is tapped. On a phone the scribe://listen link goes to Tonight instead.",
+  "from": "J19-01",
+  "shot": "screens/J19-02.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close To Asha Only you, until you add it to the book. Tap the red circle and talk. Pause Finish",
+  "lines": [
+    "Close",
+    "To Asha",
+    "Only you, until you add it to the book.",
+    "Tap the red circle and talk.",
+    "Pause",
+    "Finish"
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "id": "J03-07",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "One child's settings",
+  "note": "Name, date, signature, a reminders switch, and the co-parent row (\"Coming soon\"). The \"Family can read\" switch is hidden in v1.0 because it cannot be turned on. \"Hide this book\" is offered because there is more than one, in the plain text colour: nothing is deleted (its confirm dialog is native and does not appear on web).",
+  "from": "J03-06",
+  "shot": "screens/J03-07.png",
+  "route": "/settings/children/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Name and birthday Name Asha Birthday October 30, 2026 Sign my letters to Asha as Mama Include Asha in my reminders Month and birthday messages for Asha follow this switch. Write this book together Coming soon Sharing a book with a co-parent is coming in a later update. Hide this book Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted.",
+  "lines": [
+    "Asha's book",
+    "Name and birthday",
+    "Name",
+    "Asha",
+    "Birthday",
+    "October 30, 2026",
+    "Sign my letters to Asha as",
+    "Mama",
+    "Include Asha in my reminders",
+    "Month and birthday messages for Asha follow this switch.",
+    "Write this book together",
+    "Coming soon",
+    "Sharing a book with a co-parent is coming in a later update.",
+    "Hide this book",
+    "Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted."
+  ]
+}

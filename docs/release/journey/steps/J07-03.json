@@ -1,0 +1,31 @@
+{
+  "id": "J07-03",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Saved to the book, no Review",
+  "note": "One tap keeps a typed letter: no \"Read it back\" screen. The Keep step runs exactly as for a spoken letter, then the letter files into its month (S20, S21).",
+  "from": "J07-02",
+  "shot": "screens/J07-03.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha · The first weeks From Mama You put both hands on the window today and watched the rain.",
+  "lines": [
+    "To Asha · The first weeks",
+    "From Mama",
+    "You put both hands on the window today and watched the rain."
+  ]
+}

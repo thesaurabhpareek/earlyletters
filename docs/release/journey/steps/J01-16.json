@@ -1,0 +1,38 @@
+{
+  "id": "J01-16",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "The book is open, and one ask about the speech download",
+  "note": "The cover opens to its flyleaf, signed \"From Mama\", and the light comes up. One line, then one quiet card: \"Get your words ready\", the real size for this phone, a bordered \"Download on Wi-Fi\" and \"Not now\". The one filled button is \"Write the first one\". Nothing downloads until the person taps. The download itself is native and cannot run on web; on a phone this needs a real iPhone check.",
+  "from": "J01-15",
+  "shot": "screens/J01-16.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Asha From Mama The book is open. Say one thing about Asha today. That is a letter. Get your words ready Spoken letters are written down on this phone. One download of 575 MB, on Wi-Fi. Download on Wi-Fi Not now Write the first one",
+  "lines": [
+    "Back",
+    "Asha",
+    "From Mama",
+    "The book is open.",
+    "Say one thing about Asha today. That is a letter.",
+    "Get your words ready",
+    "Spoken letters are written down on this phone. One download of 575 MB, on Wi-Fi.",
+    "Download on Wi-Fi",
+    "Not now",
+    "Write the first one"
+  ]
+}

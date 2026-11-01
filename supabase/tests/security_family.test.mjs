@@ -6,6 +6,9 @@ import { createDb, users } from './harness.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { check, as, sys, one, fails, codeOf, done, publishPolicies, consent, newChild, invite, join } = h;
+// Test-only (20261023060000): these checks read book_entries' filter as each member. On a project only
+// sync_pull reads the view (a definer function, as the owner), so no client role holds SELECT on it.
+await sys(`grant select on public.book_entries to authenticated`);
 const { A, B, C, N, S, U, W } = users;
 const M = '88888888-8888-8888-8888-888888888888'; // Dada, a second family member
 const V = '99999999-9999-9999-9999-999999999999'; // signed in, Terms without age attestation
@@ -45,13 +48,19 @@ check('[B-REQ-007] the role must be explicit', (await codeOf(() => as(A, `select
 check('[LEGAL-REQ-024] the old one-argument invite function is gone', (await codeOf(() => as(A, `select public.create_child_invite($1::uuid)`, [CHILD]))) === '42883');
 check('child_invites.role has no default', (await sys(`select column_default from information_schema.columns where table_name='child_invites' and column_name='role'`)).rows[0].column_default === null);
 
+// D-069 (20261005000000): this book already has two parents, so a further
+// co-parent invite is refused (SCCAP; db_followup_family_cap.test.mjs). These
+// checks need one open co-parent invite, so the setting is raised just for it.
+await sys(`select set_config('app.max_parents_per_book', '3', false)`);
 const tParent = await invite(B, CHILD, 'parent');
+await sys(`select set_config('app.max_parents_per_book', '', false)`);
 const tFamily = await invite(A, CHILD, 'contributor');
 const life = async (t) => (await sys(`select round(extract(epoch from expires_at - created_at) / 86400) d from child_invites where token_hash = sha256(convert_to($1,'UTF8'))`, [t])).rows[0].d;
 check('[K-18] co-parent invites last 7 days, family invites 14', Number(await life(tParent)) === 7 && Number(await life(tFamily)) === 14);
 check('[B-NFR-002] only the token hash is stored', (await sys(`select 1 from child_invites where encode(token_hash,'hex')=$1`, [tFamily])).rows.length === 0);
-check('[S-9] invites are visible to parents only', (await as(A, 'select 1 from child_invites')).rows.length > 0
-  && (await as(N, 'select 1 from child_invites')).rows.length === 0);
+// 20261023060000: no client reads child_invites directly (sync_books and the invite RPCs are the paths).
+check('[S-9] invites are read by no client directly (42501), and the parent\'s are stored', (await sys(`select 1 from child_invites where invited_by = $1`, [B])).rows.length > 0
+  && (await codeOf(() => as(A, 'select 1 from child_invites'))) === '42501' && (await codeOf(() => as(N, 'select 1 from child_invites'))) === '42501');
 check('the inviter cannot accept their own invite', (await codeOf(() => as(B, `select public.accept_child_invite($1)`, [tParent]))) === 'SCINV');
 check('[LEGAL-REQ-001] accepting needs consent, and a refused accept does not use up the invite',
   (await codeOf(() => as(U, `select public.accept_child_invite($1)`, [tFamily]))) === 'SCCON'
@@ -118,7 +127,7 @@ check('a parent can later add a set-aside letter when they say what they saw',
   (await one(B, `select public.review_family_letter($1, 'added', 'set_aside') r`, [mSent])).r === 'added');
 await as(A, `select public.review_family_letter($1, 'set_aside', 'added')`, [mSent]);
 
-await as(A, `update children set family_can_read = true where id=$1`, [CHILD]);
+await as(A, `select public.book_update($1, '{"family_can_read": true}'::jsonb)`, [CHILD]);
 check('[B-REQ-011] family can read on: a contributor reads in-book letters, own letters, never others\' private or set-aside',
   (await ids(N)).join() === [aBook, bBook, nSent, nPrivate].sort().join() && !(await sees(N, aPrivate)) && !(await sees(N, mSent)));
 check('[B-REQ-011] another contributor\'s added letter is readable under the same rule', await sees(M, nSent));
@@ -153,7 +162,7 @@ const pA = await photoOf(A, aBook);
 const canSee = async (uid, p) => (await as(uid, `select 1 from storage.objects where name=$1`, [p])).rows.length === 1;
 check('[B F9] parents see the photo of a pending family letter; other family do not', (await canSee(B, pN)) && !(await canSee(M, pN)));
 check('[B-REQ-011] contributors see in-book photos only while family can read is on', await canSee(N, pA));
-await as(B, `update children set family_can_read = false where id=$1`, [CHILD]);
+await as(B, `select public.book_update($1, '{"family_can_read": false}'::jsonb)`, [CHILD]);
 check('[B-REQ-011] switching family can read off hides letters and photos from contributors',
   !(await canSee(N, pA)) && !(await sees(N, aBook)) && (await sees(B, aBook)));
 
@@ -180,9 +189,10 @@ check('[LEGAL-REQ-006] putting a letter in the book is refused', (await codeOf((
 check('[LEGAL-REQ-009] taking a letter out of the book still works', (await codeOf(() => as(B, `update entries set in_book=false where id=$1`, [bBook]))) === 'ok');
 check('[LEGAL-REQ-009] deleting a letter still works (PATCH and RPC)', (await codeOf(() => as(B, `update entries set deleted_at=now() where id=$1`, [bPrivate]))) === 'ok'
   && (await codeOf(() => as(B, `select public.delete_entry($1)`, [bBook]))) === 'ok');
-check('[LEGAL-REQ-006] dictionary terms are refused', (await codeOf(() => as(B, `insert into dictionary_terms (owner_id, term, kind) values ($1, 'Ashu', 'nickname')`, [B]))) === 'SCCON');
+// 20261023060000: no client writes dictionary_terms at all (the dictionary lives on the device).
+check('[LEGAL-REQ-006] dictionary terms are refused (no client may write them, 42501)', (await codeOf(() => as(B, `insert into dictionary_terms (owner_id, term, kind) values ($1, 'Ashu', 'nickname')`, [B]))) === '42501');
 check('[LEGAL-REQ-006] per-book prefs are refused', (await codeOf(() => as(B, `insert into child_member_prefs (child_id, profile_id, signs_as) values ($1, $2, 'Mumma')`, [CHILD, B]))) === 'SCCON');
-check('[LEGAL-REQ-006] book settings are refused', (await codeOf(() => as(B, `update children set nickname='Ashu' where id=$1`, [CHILD]))) === 'SCCON');
+check('[LEGAL-REQ-006] book settings are refused (book_update)', (await codeOf(() => as(B, `select public.book_update($1, '{"nickname": "Ashu"}'::jsonb)`, [CHILD]))) === 'SCCON');
 check('[LEGAL-REQ-006] photo uploads are refused', await fails(() => as(B, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [`${CHILD}/${B}/${bPrivate}.jpg`])));
 check('[LEGAL-REQ-006] invites are refused', (await codeOf(() => invite(B, CHILD, 'contributor'))) === 'SCCON');
 check('[LEGAL-REQ-006] reviews are refused', (await codeOf(() => as(B, `select public.review_family_letter($1, 'added')`, [nPending]))) === 'SCCON');

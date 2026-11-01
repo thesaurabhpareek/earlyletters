@@ -1,0 +1,30 @@
+{
+  "id": "J03-41",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "The book is back",
+  "note": "Avi's book is back on this phone, as it was. With no book hidden, the page says \"No hidden books.\"",
+  "from": "J03-40",
+  "shot": "screens/J03-41.png",
+  "route": "/settings/children/hidden",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Hidden books No hidden books.",
+  "lines": [
+    "Hidden books",
+    "No hidden books."
+  ]
+}

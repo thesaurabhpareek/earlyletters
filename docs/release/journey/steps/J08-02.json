@@ -1,0 +1,44 @@
+{
+  "id": "J08-02",
+  "journey": "quiet-day",
+  "kind": "happy",
+  "title": "Kept, with no guilt",
+  "note": "The link gives way to the Moon and one line, \"A quiet day, kept.\", with Undo beside it, and in the evening the lamp lowers to 70 percent: lights down. The app stores a mark for the day with no words at all: it never writes a sentence for the person. The mark is not counted as a letter.",
+  "from": "J08-01",
+  "shot": "screens/J08-02.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good evening, Mama. What little game do you two play right now? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type A quiet day, kept. Undo Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good evening,",
+    "Mama.",
+    "What little game do you two play right now?",
+    "Another thought",
+    "Saturday",
+    "0:31",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "A quiet day, kept.",
+    "Undo",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

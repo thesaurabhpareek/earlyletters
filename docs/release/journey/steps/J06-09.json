@@ -1,0 +1,31 @@
+{
+  "id": "J06-09",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Saved: kept in its month",
+  "note": "The save commits first, then the sheet files into its month: \"Kept in Month N\" under it and \"Added to Asha's book.\" with a check, never ghosted words (S21).",
+  "from": "J06-08",
+  "shot": "screens/J06-09.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha · Month 7 From Mama Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+  "lines": [
+    "To Asha · Month 7",
+    "From Mama",
+    "Asha, today you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too."
+  ]
+}

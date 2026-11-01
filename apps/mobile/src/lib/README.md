@@ -36,7 +36,10 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 | `listEntries()` | Same, for the active child (unchanged signature). |
 | `getEntry(id)` | |
 | `setEntryInBook(id, inBook)` | Add to book / make private. Never touches text. |
-| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only. |
+| `deleteEntry(id)` / `undeleteEntry(id)` | Tombstone only (the letter waits on the Recently deleted shelf). |
+| `listDeleted()` | The shelf, newest deletion first (`deletedAt`). |
+| `eraseEntry(id, eraser)` | Erase a deleted letter for good: the recording file first, then the row, idempotent; false for a live letter, a sync build, or a file that would not go. Native eraser: `capture/erase.ts`. |
+| `purgeExpired(nowMs, eraser)` / `recordLaunch(nowMs)` | Launch purge of letters deleted 30 days ago or more (D-085). No purge when sync is on or when the clock is earlier than the last recorded launch. |
 | `saveEntry(entry)` | Entries without a draft (Not much today, dev seed). `raw_transcript`, `captured_at` and audio never change after insert; `child_id` never changes once synced. |
 | `saveLetterFromDraft(draftId, entry, audioExists)` | Review's save: insert the letter and delete the draft in **one transaction** (DATA-REQ-048). Hash the audio first (`capture/recorder.ts` `ensureAudioHash`). Throws `AudioMissingError` for a spoken letter whose file is gone. |
 | `saveVoiceOnlyFromDraft(draft, opts)` | Keep a recording as a letter **waiting for its words**: `raw_transcript = final_text = ''`, `transcriptStatus = 'waiting'`, private by default. |
@@ -46,13 +49,13 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 
 ### Device settings
 `getSetting(key): string | null`, `setSetting(key, value)`. Keys in use:
-`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageGate.passed` (`1` after Yes, a boolean, never an age), `ageGate.stoppedAt` (only after No: the time of the No, for the 24-hour stop; DECISIONS D-026), `readTogether.sessions` (a count, see read-together.ts). `deleteSetting(key)` removes one.
+`activeChildId`, `appearance` (`system|light|dark`, applied in `app/_layout.tsx`), `readingSize`, `reminders.cadence`, `reminders.paused`, `review.firstNoteSeen`, `ageGate.passed` (`1` after Yes, a boolean, never an age), `ageGate.stoppedAt` (only after No: the time of the No, for the 24-hour stop; DECISIONS D-026), `letters.keptEver` (the letter ledger's database mirror, a JSON count; see billing/letter-ledger.logic.ts). Other modules keep their own keys (language, speech, packs, sync, reminders, analytics; DATA_CLASSIFICATION 4.5). `deleteSetting(key)` removes one.
 
-### Plus gates
-`newChildNeedsPlus()`: books made in first run are all free (twins or more); after that a new book needs Plus once you have started any book of your own (hidden ones count). `isJoinedBook(child)` (false until co-parent joining exists) keeps joined books out of the count.
+### Plus gates (in `billing/`, not here)
+Plus is StoreKit 2 on this phone through the plan engine (ADR 0013, founder decision 3); this file stays free of it. From `@/lib/billing`: `hasPlus()` (Plus on right now), `keepGateFor({ wordsOnScreen })` (D-082, D-083: the first 2 letters kept are free across every book, then Keep needs Plus; M17, D-103: null when no words are on screen, so that save never counts and never opens the sheet; async, heals the ledger, never throws), `lettersKeptNow()`, `eraseLetterLedger()` (Erase everything clears the count), `usePlan()` for screens, `redeemOfferCode()` (Apple's sheet). Starting a book and Read together are never gated. `startPlus()` and `startLetterLedger()` run at boot.
 
-### Not built yet (stubs with stable signatures)
-`currentUserId(): null`, `hasPlus(): false`, `listMembers(childId): []`. They become real with sign-in (PRD A), purchases (PRD C) and sync.
+### Account and members
+`currentUserId()`: the account that owns this phone's synced data (sync owner setting), or `null` before sign-in. `listMembers(childId)`: the book's other members as the server last listed them (sync), `[]` for a book only on this phone.
 
 ### Change events
 `subscribe(listener): unsubscribe` fires on any write (child switch, save, delete, setting).
@@ -68,10 +71,11 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 
 ## Capture (`capture/`)
 - `recorder.ts`: `beginTake(recorder, {childId, promptKey})` (prepare, draft row, record), `finalizeTake(recorder, draftId, reason, ms)` (stop, hash, mark ready; idempotent, so Finish, background, interruption and dismiss can all call it), `abandonTake` (confirmed Discard only), `ensureAudioHash(draft)`, `hashAudioFile`, `activeTakeId()`.
-- `sweep.logic.ts` (pure, tested) and `sweep.ts`: `runLaunchSweep()` once per process after the first frame. Finishes takes cut off by a kill, rebases paths after an iOS container move (matches by file name), re-attaches stray recordings to the active book as drafts or reports them when no book exists. Never deletes audio.
+- `sweep.logic.ts` (pure, tested) and `sweep.ts`: `runLaunchSweep()` once per process after the first frame. Finishes takes cut off by a kill, rebases paths after an iOS container move (matches by file name), re-attaches stray recordings to the active book as drafts or reports them when no book exists. Never deletes audio. A killed take is probed first (`probe.ts`): one that will not open is kept, hashed, marked `unrecoverable` and listed in Settings > Recordings. After the sweep, `erase.ts` `purgeShelfAtLaunch()` runs the 30 day shelf purge, never during a recording; a deleted letter whose file is already gone is not reported as missing.
 
 ## Other modules
 - `age-gate.logic.ts` (pure, tested) and `age-gate.ts`: `useAgeGate()` for the root layout, `answerAgeGate`, `reopenAgeGate`.
+- `capabilities.ts`: the build-time switch for server features (`EXPO_PUBLIC_SERVER_FEATURES=on`; on only in the `preview` alpha profile, off in `testflight`, `production` and `development` until the R-17 gate) and the build flags on top of it, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` (off in every profile; each needs the server switch too) and `EXPO_PUBLIC_ACCOUNT_DELETION` (the Delete account row and page; written `on` in the `development`, `e2e` and `production` profiles, left out of the two alpha profiles so it reads off unless the EAS `preview` environment sets it, and never in a `.env*` file; the open-request screen does not read it). `serverFeaturesEnabled()`, `capabilities.{signIn,sync,coParent,backup,statusReport,accountDeletion,analytics}`, and `mayRun(feature, config)`, the one check backup and status-report code calls: the build flag, then its remote kill switch (`backupUploads`, `escrow`, `statusReport`), which can pause a feature but never start one. Off: no Supabase client is constructed, `startSync()` returns at once, remote documents never fall back to the Supabase URL, sign-in, Account and Delete account are not offered, and every co-parent entry point shows coming soon (`family/entry.logic.ts`, `components/family/coparent-soon.tsx`; local flag `family.coParentNotify` via `family/coming-soon.logic.ts`). Remote config cannot change it.
 - `build-env.ts`: `APP_ENV` from `EXPO_PUBLIC_APP_ENV` (eas.json profile; `.env.development` locally) and `devShortcutsAllowed` (development profile AND `__DEV__`). Every dev bypass checks this, never `__DEV__` alone.
 - `model-files.ts`: Whisper models in Application Support, excluded from backup (ADR 0001) through `modules/scribe-files`; falls back to Documents/models without the native module.
 - `permission-copy.ts`: OS purpose strings (part of `pendingCopy`), read by `app.config.ts` at build time.
@@ -79,7 +83,12 @@ in `test/migrations.test.ts`, and add the column to DATA_CLASSIFICATION 4.5.
 - `transcribe.ts`: `Transcriber` interface and `getTranscriber()`. Adapters: `transcribe-whisper.ts` (dev build + model + decoder), `transcribe-sample.ts` (development profile only; Review never saves its words).
 - `dates.ts`: the one date format, via `Intl` in the device's English locale (en-US "Tuesday, September 29, 2026"; other English locales their own order; non-English falls back to en-GB): `dayDate(iso)`, `longDate(iso)`, `letterDateline(child, iso)` (age sentence from core), `ageText(child, iso)`, `isoOf(date)`. Never call `toLocaleDateString` in screens.
 - `copy.ts`: also `plural(count, one, other)` until content has plural forms.
-- `read-together.ts`: `FREE_READ_TOGETHER_SESSIONS` (3), `canStartReadTogether()`, `recordReadTogetherSession()`, `readTogetherSessions()`.
-- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`.
+- `billing/letter-ledger.ts`: the letter ledger (D-082, D-083): a never-decreasing count of letters ever kept. `lettersKept(db)` is the largest of the Keychain item, the database mirror (`letters.keptEver`) and the letters present; `saveLetterFromDraft` counts a kept letter in the same transaction (`db/repos/ledger.ts`); `syncLedger` at launch heals a reinstall or a backup restore; `clearLedger` is Erase everything. Holds a number only: no id, hash, timestamp or content.
+- `haptics.ts`: `haptic('tap' | 'press' | 'soft' | 'success' | 'warning')`; vocabulary and throttle in `haptics.shared.ts` (tested).
+- `a11y.ts`: `announce`, `useFocusOnMount`, `useTheme`, `useIsAccessibilitySize`, `useIsLargeText`; the pure thresholds (`isAccessibilitySize`, `isLargeText`, `FONT_SCALE`) live in `a11y.logic.ts` (tested).
+- `analytics/`: `track.ts` is what screens call (plus `childIndexOf`, `ordinalOf`, `promptKindOf`, `wordCountOf`, `fromReminderWithin2h`); `ask.ts` + `ask-sequencer.logic.ts` (tested) decide when the consent sheet appears, and `components/consent/consent-ask.tsx` (mounted in the root layout) shows it.
 - `motion.ts`: `useMotion()`, `useReducedMotion()`; never read Reduce Motion elsewhere.
 - `audio-mode.ts`: `setAudioMode('idle' | 'recording' | 'playback')`; always restore `idle`.
+
+## Boot (`app/_layout.tsx`)
+After the 18+ gate passes and after the first frame, once per process, each in its own try: `runLaunchSweep()`, then `startRemote()`, `startPacks()`, `startTranscriptionQueue()` (registers the speech plan as a pack language resolver), `startListeningCopies()`, `startSync()` (waits for a signed-in, consented session), `startPlus()`, `startReminders()`, `cleanupExports()`, `startAnalytics()` and `startAnalyticsObservers()` (nothing is sent before a yes). `UIProvider` wraps the gate and the app; `SessionProvider` wraps only the app, inside the gate.

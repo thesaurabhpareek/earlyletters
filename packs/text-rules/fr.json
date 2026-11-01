@@ -1,0 +1,520 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "fr",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "French",
+    "native": "Français"
+  },
+  "script": {
+    "primary": "Latn",
+    "variants": [],
+    "direction": "ltr",
+    "cased": true,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard Annex #15, Unicode Normalization Forms, https://unicode.org/reports/tr15/",
+        "French typography keeps no-break spaces before ; : ! ? and inside « » (see punctuation sources), so they survive the final text"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [],
+    "ignoreForMatching": [],
+    "foldForMatching": {},
+    "house": {
+      "dashes": "replace",
+      "dashTo": ", ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "keep"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Office québécois de la langue française, Vitrine linguistique, \"Espacement avant et après les signes de ponctuation\": no-break space before the colon and inside « »; before ; ! ? a fine space or none, https://vitrinelinguistique.oqlf.gouv.qc.ca/22039/la-typographie/espacement/espacement-avant-et-apres-les-signes-de-ponctuation-et-les-symboles",
+        "Imprimerie nationale, Lexique des règles typographiques en usage à l’Imprimerie nationale: espace fine insécable before ; ! ?",
+        "Region-safe rule: an existing space before ; ! ? becomes a narrow no-break space; a missing one is never added (Quebec omits it)"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?"
+    ],
+    "terminal": ".",
+    "openers": [],
+    "pairOpeners": false,
+    "quotes": [
+      "«",
+      "»"
+    ],
+    "commas": [],
+    "localForms": {},
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [
+      {
+        "mark": ";",
+        "space": "narrow",
+        "insert": false
+      },
+      {
+        "mark": "!",
+        "space": "narrow",
+        "insert": false
+      },
+      {
+        "mark": "?",
+        "space": "narrow",
+        "insert": false
+      },
+      {
+        "mark": ":",
+        "space": "nbsp",
+        "insert": true
+      }
+    ],
+    "spaceInsideGuillemets": true
+  },
+  "fillers": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Kosmala & Crible, \"The dual status of filled pauses\", Language and Speech (2021): \"euh\" is the main French filled pause; \"ben\" and \"bah\" are discourse markers and are kept, https://halshs.archives-ouvertes.fr/halshs-03225622"
+      ]
+    },
+    "auto": [
+      "euh",
+      "heu",
+      "euhm",
+      "hum",
+      "hmm"
+    ],
+    "suggest": [
+      "mm",
+      "mmh"
+    ]
+  },
+  "meaning": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Grevisse, Le Bon Usage: negation ne/n’ ... pas, jamais, rien, personne, aucun, plus; modal verbs pouvoir, devoir, falloir",
+        "Needs native review"
+      ]
+    },
+    "negations": [
+      "ne",
+      "pas",
+      "non",
+      "jamais",
+      "rien",
+      "personne",
+      "aucun",
+      "aucune",
+      "ni",
+      "nul",
+      "nulle",
+      "guère",
+      "sans"
+    ],
+    "negationSuffixes": [],
+    "negationPrefixes": [
+      "n'"
+    ],
+    "modals": [
+      "peut",
+      "peux",
+      "pouvons",
+      "pouvez",
+      "peuvent",
+      "pouvait",
+      "pouvais",
+      "pourrait",
+      "pourrais",
+      "pourrions",
+      "pourriez",
+      "pourraient",
+      "pu",
+      "doit",
+      "dois",
+      "devons",
+      "devez",
+      "doivent",
+      "devait",
+      "devais",
+      "devrait",
+      "devrais",
+      "devrions",
+      "devriez",
+      "devraient",
+      "dû",
+      "faut",
+      "fallait",
+      "faudra",
+      "faudrait"
+    ],
+    "numberWords": [
+      "zéro",
+      "un",
+      "une",
+      "deux",
+      "trois",
+      "quatre",
+      "cinq",
+      "six",
+      "sept",
+      "huit",
+      "neuf",
+      "dix",
+      "onze",
+      "douze",
+      "treize",
+      "quatorze",
+      "quinze",
+      "seize",
+      "vingt",
+      "trente",
+      "quarante",
+      "cinquante",
+      "soixante",
+      "cent",
+      "mille",
+      "million",
+      "demi",
+      "demie",
+      "premier",
+      "première",
+      "deuxième",
+      "troisième",
+      "second",
+      "seconde"
+    ],
+    "functionWords": [
+      "le",
+      "la",
+      "les",
+      "des",
+      "du",
+      "de",
+      "à",
+      "au",
+      "aux",
+      "en",
+      "dans",
+      "sur",
+      "sous",
+      "avec",
+      "pour",
+      "par",
+      "et",
+      "ou",
+      "mais",
+      "que",
+      "qui",
+      "si",
+      "ce",
+      "cet",
+      "cette",
+      "ces",
+      "je",
+      "me",
+      "te",
+      "se",
+      "il",
+      "elle",
+      "on",
+      "nous",
+      "vous",
+      "ils",
+      "elles",
+      "lui",
+      "leur",
+      "leurs",
+      "mon",
+      "ma",
+      "mes",
+      "ton",
+      "ta",
+      "tes",
+      "son",
+      "sa",
+      "ses",
+      "notre",
+      "nos",
+      "votre",
+      "vos",
+      "est",
+      "sont",
+      "était",
+      "a",
+      "ai",
+      "as",
+      "ont",
+      "avait",
+      "été",
+      "être",
+      "avoir",
+      "y"
+    ],
+    "pronouns": [
+      "moi",
+      "toi",
+      "eux",
+      "soi",
+      "mien",
+      "mienne",
+      "tien",
+      "tienne",
+      "sien",
+      "sienne",
+      "nôtre",
+      "vôtre",
+      "quelqu'un",
+      "tout",
+      "tous",
+      "toutes",
+      "chacun",
+      "chacune",
+      "quoi"
+    ],
+    "kinship": [
+      "maman",
+      "papa",
+      "mère",
+      "père",
+      "mamie",
+      "mamy",
+      "mémé",
+      "papi",
+      "papy",
+      "pépé",
+      "tante",
+      "tonton",
+      "tata",
+      "oncle",
+      "sœur",
+      "frère",
+      "bébé",
+      "fils",
+      "fille",
+      "cousin",
+      "cousine",
+      "mari",
+      "femme",
+      "nounou",
+      "parrain",
+      "marraine"
+    ],
+    "alwaysCapitalized": [],
+    "agreementGroups": [],
+    "tenseGroups": [
+      [
+        "est",
+        "était",
+        "fut",
+        "sera",
+        "serait"
+      ],
+      [
+        "a",
+        "avait",
+        "eut",
+        "aura",
+        "aurait"
+      ],
+      [
+        "va",
+        "allait",
+        "ira",
+        "irait"
+      ],
+      [
+        "fait",
+        "faisait",
+        "fera",
+        "ferait"
+      ],
+      [
+        "sont",
+        "étaient",
+        "seront",
+        "seraient"
+      ],
+      [
+        "ont",
+        "avaient",
+        "auront",
+        "auraient"
+      ]
+    ],
+    "agreementInflections": [],
+    "vowels": "aeiouyàâéèêëîïôûùüÿœæ",
+    "minStem": 3,
+    "tenseEndings": [],
+    "stemDropFinal": []
+  },
+  "repeats": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Doubled subject pronouns, articles and prepositions treated as stumbles (je je pense); \"la la la\" (singing) and \"non non\" never touched. Needs native review"
+      ]
+    },
+    "always": [
+      "le",
+      "les",
+      "de",
+      "des",
+      "du",
+      "et",
+      "un",
+      "une",
+      "je",
+      "il",
+      "elle",
+      "on",
+      "que",
+      "qui",
+      "en"
+    ],
+    "suggest": [
+      "tu",
+      "nous",
+      "vous",
+      "mon",
+      "ma",
+      "mes",
+      "ton",
+      "ta",
+      "ce",
+      "est"
+    ],
+    "dangling": [
+      "le",
+      "la",
+      "les",
+      "un",
+      "une",
+      "de",
+      "des",
+      "du",
+      "au",
+      "aux",
+      "à",
+      "en",
+      "dans",
+      "sur",
+      "avec",
+      "pour",
+      "par",
+      "et",
+      "ou",
+      "mais",
+      "que",
+      "mon",
+      "ma",
+      "mes",
+      "ton",
+      "ta",
+      "tes",
+      "son",
+      "sa",
+      "ses",
+      "notre",
+      "votre",
+      "leur",
+      "ce",
+      "cette",
+      "ces",
+      "parce"
+    ],
+    "verifierExtra": [],
+    "cleft": {
+      "words": [],
+      "openers": []
+    },
+    "subject": {
+      "words": [],
+      "objectVerbs": [],
+      "clauseLeads": [],
+      "discourseAfter": []
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "French orthography to sound, simplified: ph, ch, qu, gn, soft c, silent h (unverified against a names list)"
+      ]
+    },
+    "romanize": {},
+    "rewrite": [
+      {
+        "from": "eau",
+        "to": "o"
+      },
+      {
+        "from": "ph",
+        "to": "f"
+      },
+      {
+        "from": "ch",
+        "to": "S"
+      },
+      {
+        "from": "qu",
+        "to": "k"
+      },
+      {
+        "from": "gn",
+        "to": "n"
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "before": "eiy"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "x",
+        "to": "ks"
+      },
+      {
+        "from": "z",
+        "to": "s"
+      },
+      {
+        "from": "w",
+        "to": "v"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [],
+    "stripMarks": true,
+    "compareVowels": true
+  }
+}

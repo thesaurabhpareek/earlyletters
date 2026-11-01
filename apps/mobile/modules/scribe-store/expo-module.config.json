@@ -1,0 +1,9 @@
+{
+  "platforms": ["apple", "android"],
+  "apple": {
+    "modules": ["ScribeStoreModule"]
+  },
+  "android": {
+    "modules": ["expo.modules.scribestore.ScribeStoreModule"]
+  }
+}

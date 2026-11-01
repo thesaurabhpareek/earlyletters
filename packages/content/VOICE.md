@@ -4,7 +4,7 @@ Scope: every word outside the app.
 
 ## Who we talk to
 
-Parents of children from birth to five, usually tired, often holding someone. And the grandparents, aunts, uncles and close friends who love that child and want a way in. They are not looking for another task. They want to feel that the ordinary days counted.
+Parents of children from birth to five, usually tired, often holding someone. At v1.0 that means both parents: the one who starts the book and the co-parent they invite. From v1.1, also the grandparents, aunts, uncles and close friends who love that child and want a way in. They are not looking for another task. They want to feel that the ordinary days counted.
 
 ## Three tone words
 
@@ -14,14 +14,14 @@ Parents of children from birth to five, usually tired, often holding someone. An
 
 ## Brand idea in one sentence
 
-Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice, kept exactly as you said it.
+Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice. It stays in your words.
 
 ## Do and don't
 
 | Do | Don't |
 | --- | --- |
 | "Tell {child} about today." | "Capture every precious moment." |
-| "Kept exactly as you said it." | "We tidy your words into a story." |
+| "It stays in your words." | "We shape your words into a story." |
 | "On a quiet day, tap Not much today." | "It has been 5 days since your last letter." |
 | "Read together at bedtime." | "Unlock bedtime mode." |
 | "From Nani" | "Contributor: Grandmother" |
@@ -34,7 +34,22 @@ We speak about time, not endings. The promise is that {child} will read and hear
 
 ## The no-machine-writing rule
 
-We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, tidied or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." Transcription only fixes microphone and grammar slips.
+We do not write your letters, and our copy must never hint that we might. No naming the technology, and no words that suggest software wrote, improved, polished or dressed up a letter. The full banned list lives in the copy checker. What we can say, and should say often: "We never rewrite your words." What a small fix is, said the same way everywhere: "We only fix small slips, like an um, a repeat or a misheard word, and mark each one." Not "what the microphone got wrong" (an um is not the microphone's fault) and not "slips of the tongue".
+
+## The app's own words
+
+The app's own words are small and unsigned, and never sit in the letter's type. The Book shows only what a person said or typed, in the letter's serif, signed by them. When the app has to say something, such as "A quiet day" or "No words in this one. The recording is kept just as it is.", it uses the small muted note style and never a signature. "Not much today" stores a mark with no sentence (D-084); we never write a line for the person.
+
+## Word for word
+
+The edit feature is called **Word for word** (founder decision, Oct 3 2026, D-074; words settled in D-086). It removes an "um" or a stumble, fixes a misheard name, spelling, script and punctuation, and nothing else. Each of these is a **small fix**, shown in the letter as a mark the person can tap and put back. The view that keeps every um and false start is **Exactly as said**; the other is **With small fixes**.
+
+- "Word for word" is the feature's name. It appears only where the feature is named: the promise, Settings, the store and the website. Never as a caption on fixed text (the idiom means verbatim, and fixed text is not).
+- Name each fix by what happened, not by category: "Took out a sound", "Took out a restart", "Took out a repeat", "Spelled your way", "One word fixed", "New paragraph", "Punctuation", "Your script".
+- Say "Exactly as said" or "exactly what you said" only when the words really are untouched (the final words equal the raw words).
+- Words that arrive later arrive exactly as said and are never fixed unread.
+- Say: "Word for word", "small fixes", "every small fix is marked, and you can put it back".
+- Never say: tidy (in any form), cleaned up, polished, improved, corrected, edited (for what the machine does).
 
 ## The no-guilt rule
 
@@ -44,6 +59,8 @@ No fear, no pressure, no counting. No deadlines, no warnings about what might sl
 
 Families speak how they speak. Hindi and English in the same sentence is a feature, not an error. Never call it "mixed" or "broken" language. Never promise translation. Say: "Your words stay in the language you said them." Use examples from real code-switching families, and keep relationship names as families use them: Nani, Dadi, Papa, Amma.
 
+At v1.0 (founder, 3 Oct 2026, D-056) letters can be spoken in seven languages: English, Hindi, Spanish, Mandarin Chinese, French, Arabic and Portuguese, one language per letter, each written in its own script (Hindi in Devanagari, Arabic right to left, Chinese in characters). The app itself is in English. A mode for Hindi and English in one sentence comes in v1.1 (D-059). Until it ships, do not promise mixing languages in one sentence; the rest of this rule stands.
+
 ## How to write a notification
 
 - One idea, one line, under 60 characters if possible.
@@ -52,38 +69,94 @@ Families speak how they speak. Hindi and English in the same sentence is a featu
 - Always easy to ignore. One tap to "Not much today" is a complete answer.
 - At most one exclamation mark per month across all notifications.
 
-Good: "Nani wrote a letter to {child}."
+Good: "Anything to tell {child} today?"
 Good: "A minute before bed? {child}'s book is open."
 Bad: "7 days in a row. Keep it going."
 
 ## Writing for grandparents
 
+Family beyond the co-parent joins in v1.1. Until then this guidance applies to any first-time or less confident reader, and no public copy promises grandparent letters, approvals or gifts.
+
 - Bigger ideas, fewer words. One instruction per sentence.
 - Name the action plainly: "Tap the red circle and talk."
 - Avoid app terms like "sync" or "feed".
-- Reassure on privacy early: "Only the family you invite can see your letters."
-- Make them feel wanted, not managed: "Your stories belong in {child}'s book."
+- Reassure on privacy early: "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists."
+- Make them feel wanted, not managed: "Your letters belong in {child}'s book." (A person makes letters, never stories: BRAND.md glossary.)
 - Avoid "senior" or "elderly". They are Nani, Dada, Grandma, Pop.
+
+## Saying what the product does today
+
+Only promise what the current build does. At v1.0 (docs/DECISIONS.md, 3 Oct 2026):
+- Family is the co-parent only (D-055). Grandparents, aunts and uncles are "coming in a later update", never "now".
+- Recordings stay on the phone that made them, and in that person's own iPhone backup. A backup of your own recordings exists, behind a build flag that is off in the alpha, so nothing in the alpha uploads them and no copy promises it yet. A co-parent hears your voice only on your phone until v1.1 (D-059).
+- Read together plays the recordings on this phone, without a moving word highlight (D-059).
+- Seven spoken languages, one per letter (D-056).
+- The in-app "early version, can make mistakes" note stays; the store listing never says beta (D-060).
+
+## How we talk about privacy
+
+Parents must never doubt that their letters are private. We say so calmly, in the few places they might wonder, and we back every word with a real control (founder decision 11, D-061).
+
+**The promise.** One sentence, the same everywhere, word for word (`en.trust.promise`):
+"Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models."
+Short form for a row or a footer (`en.trust.short`): "Private by default. Never sold, never used for ads."
+The voice promise (`en.trust.voice`), said where a recording is made or kept: "We never imitate your voice. Your original recording is always kept exactly as you made it."
+
+**Where it appears, and only there:**
+
+| Place | What we say | Control behind it |
+| --- | --- | --- |
+| Onboarding story 4 | Only you and the people you invite can read these letters. | Per-book sharing |
+| Sign-in | Why an account helps, who can read, what the email is for (`trust.signIn`). | Sign in with Apple's Hide My Email; no passwords |
+| First recording, once | Words are written down on this phone; the recording stays with the letter; we never imitate your voice (`trust.firstRecording`). | On-device transcription; encrypted backup of the owner's recordings, for them alone (D-073 supersedes D-059's "no audio upload"); the original is never altered (D-058) |
+| Settings, Privacy | The promise at the top, then the switches (`trust.settings`, `settings.privacy`). | Analytics off by default, sync and sharing, export, delete |
+| Store listing and website | The promise in "Private by default". | Privacy Policy, privacy label |
+| Welcome email | The promise, once. | Same |
+
+**How it sounds.** One line per place, never a paragraph. State what we do, not what could go wrong. No locks, shields or "bank-level" anything. Never: hack, breach, leak, spy, steal, creepy, scary, "don't worry", "100%", "military-grade", "unhackable", "completely secure". Do not repeat the promise on screens where nobody is wondering; saying it too often sounds anxious.
+
+**Proof before words.** Every privacy claim is registered in `docs/legal/claims-registry.yaml` with counsel approval (LEGAL-REQ, ENGINEERING_REQUIREMENTS) before a public page or store listing goes live.
+
+## Words we lean on too much
+
+A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
+
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save, a crash, and the sign-in errors the S52 table leads with it).
+- **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
+- **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
+- **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
+- **"Plus is on."** A status, not a toast and a title as well. After a purchase: "Thank you. Plus is on".
+- **"kept" in toasts.** Vary it; three toasts in a row should not all end in "kept".
+- **Greeting-card cadence.** No aphorism endings ("That is love, written down"), no "not X, it is Y", no triplets that exist for rhythm ("no counters, no badges, no scores"), no "Just X" closers.
+
+## How to write an email
+
+- Transactional only, and only when something happened: a sign-in link or code, an invite, a security change, a deletion step, an export, a billing reminder the law asks for.
+- Subject says what happened, in plain words. Preview text adds the one useful next fact.
+- One action at most. Calm about security: "Did not ask for this? You can ignore it."
+- No child's name, no letter text, nothing from the book. Nothing loads from a server: the logo travels inside the email as an inline attachment, there are no web fonts, no tracking pixels and no tracked links.
+- Where an email states the privacy promise, it uses `en.trust` word for word (D-061).
+- Signed "Warmly," then the brand name. Every email has a plain-text version. Copy lives in `packages/content/src/emails/*.en.ts`, one file per group, each email an `EmailCopy` (`emails/types.ts`). Catalog: `docs/emails/CATALOG.md`.
 
 ## Mechanics
 
-- Straight quotes only. No em or en dashes. Use commas, periods or "to".
-- Three periods, never the single ellipsis character, and rarely at all.
+- Straight quotes only. No em or en dashes. Use commas, full stops or "to".
+- Three full stops, never the single ellipsis character, and rarely at all.
 - No emoji.
-- Use {child} in templates. Never "he", "she", "him" or "her" for the child.
+- Use {child} in templates. Never "he", "she", "him" or "her" for the child, or for anyone else in a string. Never "son", "daughter", "boy" or "girl" for the child.
 - No claims we cannot prove. No rankings, no ratings, no invented reviews.
 
-## Voice and motion pairing
+## What the checker also holds us to
 
-Words, haptics and motion should say the same quiet thing. Haptic names are the five intents in `apps/mobile/src/lib/haptics.ts`: `tap`, `press`, `soft`, `success`, `warning`. Motion stays slow and soft; never a bounce, never a celebration. When in doubt, use less.
+`test/rules.test.ts` enforces these too. If one fails, change the words, not the test.
 
-| Moment | Wording style | Haptic and motion feel |
-| --- | --- | --- |
-| Empty | An invitation, never a blank to fill. "Tell {child} about today." | No haptic. Content settles in gently; nothing pulses or nags. |
-| Saving | Present tense, plain, short. "Listening back to what you said." | `soft` when the take ends. A slow, steady fade, no spinner theatrics. |
-| Success | Say what is now true, then stop. "Kept in {child}'s book." | `success` once. A short, warm settle; no confetti, no counters. |
-| Error | Own it, then reassure. Say the words are safe before anything else. "That did not work this time." | `warning` only if the person must act, otherwise none. No shake, no red flash. |
-| Permission ask | Say why in one sentence, and that no is fine. | `tap` on the choice. No motion that rushes the decision. |
-| Quiet day | "Not much today" is a complete answer. No tally, no apology. | `tap`. The screen simply closes softly. |
-| First letter | Warm and small. Make it feel like the beginning, not an achievement. | `press` on the record button, `success` on keeping it. One calm moment, no fanfare. |
-| Long silence | Say nothing about the gap. If we speak at all, invite: "Anything to tell {child} today?" | No haptic, no badge, no change to the screen. The book looks the same as before. |
+- No daily rhythm in anything the product says about itself: no "daily", "every day", "every night" or "a few words a day". Prompts may ask about the child's own days. Reminders, notifications and moments never count days, runs or gaps.
+- Moments celebrate what exists. No comparisons, no totals per person, no mention of Plus.
+- The store and the website speak to adults. No "kids", no "for children", nothing that suggests a child uses the app alone. Adults doing things "on their own phone" is fine.
+- Digital only for now. No print, printed books, hard copies, photo books or ordering a copy. "Large print" as a reading size is fine.
+- No string says "beta" (D-060). The app keeps one quiet "early version, can make mistakes" note in Settings, About. The store listing also avoids "early version", "early access", "preview" and the like (App Review 2.2).
+- In the iOS app and its store listing, name only Apple platforms. No other phone platform, phone maker or app store.
+- If we ever talk about closing, the notice is 90 days, the same as the Terms and the Privacy Policy.
+- Exclamation marks are budgeted per surface, three in all: none in notifications, the store listing, emails, the book or prompts.
+- Claim only what ships: no word-by-word highlighting in Read together, and no family listening to each other's recordings, until v1.1.
+- The terms we use for each thing, and the words we never use, are in the glossary in BRAND.md.

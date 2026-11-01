@@ -1,39 +1,27 @@
-import { AccessibilityInfo, View } from 'react-native';
-import Animated from 'react-native-reanimated';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Text } from '@/components/ui/text';
+// web: later | android: same code
+/**
+ * Undo after a reversible action (COMPONENTS 2.14), as a thin wrapper over ui/Toast for
+ * screens that render it inline. Never times out (WCAG 2.2.1): Undo, Close or a swipe.
+ */
+import { Toast } from '@/components/ui/toast';
 import { copy } from '@/lib/copy';
-import { useMotion } from '@/lib/motion';
 
 interface Props {
   message: string;
   onUndo: () => void;
-  /** Close without undoing. The toast never times out (WCAG 2.2.1, COMPONENTS 2.14). */
+  /** Close without undoing. */
   onDismiss?: () => void;
+  bottomOffset?: number;
 }
 
-/** COMPONENTS.md 2.14: quiet confirmation with a 44pt Undo, announced to VoiceOver; stays until Undo or Close. */
-export function UndoToast({ message, onUndo, onDismiss }: Props) {
-  const insets = useSafeAreaInsets();
-  const { enter } = useMotion();
-  useEffect(() => {
-    AccessibilityInfo.announceForAccessibility(`${message} ${copy.common.undoButton}.`);
-  }, [message]);
+export function UndoToast({ message, onUndo, onDismiss, bottomOffset }: Props) {
   return (
-    <Animated.View entering={enter(0)} className="absolute inset-x-4" style={{ bottom: insets.bottom + 16 }} accessibilityLiveRegion="polite">
-      <View className="flex-row items-center justify-between gap-3 rounded-2xl bg-foreground py-2 pl-5 pr-2">
-        <Text className="flex-1 text-base text-background">{message}</Text>
-        <Button size="sm" variant="secondary" onPress={onUndo} accessibilityLabel={copy.common.undoButton}>
-          <Text>{copy.common.undoButton}</Text>
-        </Button>
-        {onDismiss && (
-          <Button size="sm" variant="ghost" onPress={onDismiss} accessibilityLabel={copy.common.closeButton}>
-            <Text className="text-background">{copy.common.closeButton}</Text>
-          </Button>
-        )}
-      </View>
-    </Animated.View>
+    <Toast
+      message={message}
+      action={{ label: copy.common.undoButton, onPress: onUndo }}
+      onDismiss={onDismiss}
+      onHide={() => {}}
+      bottomOffset={bottomOffset}
+    />
   );
 }

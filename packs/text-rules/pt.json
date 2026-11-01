@@ -1,0 +1,486 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "pt",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "Portuguese",
+    "native": "Português"
+  },
+  "script": {
+    "primary": "Latn",
+    "variants": [],
+    "direction": "ltr",
+    "cased": true,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard Annex #15, Unicode Normalization Forms, https://unicode.org/reports/tr15/",
+        "Brazilian and European spellings (fato/facto, bebê/bebé) are both kept as recognised; nothing respells between them"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [],
+    "ignoreForMatching": [],
+    "foldForMatching": {},
+    "house": {
+      "dashes": "replace",
+      "dashTo": ", ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "plain"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Acordo Ortográfico da Língua Portuguesa (1990), Base XXI on punctuation: Latin marks, no inverted opening marks",
+        "European Portuguese uses « » quotation marks; Brazilian Portuguese “ ”"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?"
+    ],
+    "terminal": ".",
+    "openers": [],
+    "pairOpeners": false,
+    "quotes": [
+      "«",
+      "»"
+    ],
+    "commas": [],
+    "localForms": {},
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [],
+    "spaceInsideGuillemets": false
+  },
+  "fillers": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Moniz, Mata & Viana, \"On filled-pauses and prolongations in European Portuguese\", Interspeech 2007, https://www.isca-archive.org/interspeech_2007/moniz07_interspeech.html (forms not listed in the abstract; spellings unverified)",
+        "Excludes é (is), né and tipo (discourse markers), aham (yes)"
+      ]
+    },
+    "auto": [
+      "hã",
+      "ãh",
+      "ahn",
+      "ãhn",
+      "hum",
+      "humm",
+      "hmm",
+      "uhm",
+      "ehm"
+    ],
+    "suggest": [
+      "mm",
+      "mmm"
+    ]
+  },
+  "meaning": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Cunha & Cintra, Nova Gramática do Português Contemporâneo: negation, modal verbs poder, dever, precisar",
+        "Both Brazilian and European forms listed. Needs native review (pt-BR and pt-PT)"
+      ]
+    },
+    "negations": [
+      "não",
+      "nao",
+      "nem",
+      "nunca",
+      "jamais",
+      "nada",
+      "ninguém",
+      "nenhum",
+      "nenhuma",
+      "tampouco",
+      "sem"
+    ],
+    "negationSuffixes": [],
+    "negationPrefixes": [],
+    "modals": [
+      "pode",
+      "posso",
+      "podes",
+      "podemos",
+      "podem",
+      "podia",
+      "podiam",
+      "poderia",
+      "poderíamos",
+      "poderiam",
+      "pôde",
+      "deve",
+      "devo",
+      "deves",
+      "devemos",
+      "devem",
+      "devia",
+      "deviam",
+      "deveria",
+      "deveríamos",
+      "deveriam",
+      "talvez",
+      "precisa",
+      "preciso",
+      "precisamos"
+    ],
+    "numberWords": [
+      "zero",
+      "um",
+      "uma",
+      "dois",
+      "duas",
+      "três",
+      "quatro",
+      "cinco",
+      "seis",
+      "sete",
+      "oito",
+      "nove",
+      "dez",
+      "onze",
+      "doze",
+      "treze",
+      "catorze",
+      "quatorze",
+      "quinze",
+      "dezesseis",
+      "dezasseis",
+      "dezessete",
+      "dezassete",
+      "dezoito",
+      "dezenove",
+      "dezanove",
+      "vinte",
+      "trinta",
+      "quarenta",
+      "cinquenta",
+      "sessenta",
+      "setenta",
+      "oitenta",
+      "noventa",
+      "cem",
+      "cento",
+      "mil",
+      "milhão",
+      "meio",
+      "meia",
+      "primeiro",
+      "primeira",
+      "segundo",
+      "segunda",
+      "terceiro",
+      "terceira"
+    ],
+    "functionWords": [
+      "o",
+      "a",
+      "os",
+      "as",
+      "uns",
+      "umas",
+      "de",
+      "do",
+      "da",
+      "dos",
+      "das",
+      "em",
+      "no",
+      "na",
+      "nos",
+      "nas",
+      "por",
+      "pelo",
+      "pela",
+      "para",
+      "pra",
+      "com",
+      "e",
+      "ou",
+      "mas",
+      "que",
+      "se",
+      "como",
+      "eu",
+      "tu",
+      "ele",
+      "ela",
+      "nós",
+      "vós",
+      "eles",
+      "elas",
+      "você",
+      "vocês",
+      "me",
+      "te",
+      "lhe",
+      "vos",
+      "meu",
+      "minha",
+      "meus",
+      "minhas",
+      "teu",
+      "tua",
+      "seu",
+      "sua",
+      "é",
+      "são",
+      "está",
+      "estão",
+      "era",
+      "foi",
+      "tem",
+      "há"
+    ],
+    "pronouns": [
+      "mim",
+      "ti",
+      "si",
+      "comigo",
+      "contigo",
+      "conosco",
+      "connosco",
+      "alguém",
+      "todos",
+      "todas",
+      "quem"
+    ],
+    "kinship": [
+      "mãe",
+      "mamãe",
+      "mamã",
+      "pai",
+      "papai",
+      "papá",
+      "avó",
+      "avô",
+      "vovó",
+      "vovô",
+      "vó",
+      "vô",
+      "tia",
+      "tio",
+      "irmã",
+      "irmão",
+      "bebê",
+      "bebé",
+      "filho",
+      "filha",
+      "prima",
+      "primo",
+      "marido",
+      "esposa",
+      "esposo",
+      "madrinha",
+      "padrinho",
+      "babá",
+      "ama"
+    ],
+    "alwaysCapitalized": [],
+    "agreementGroups": [],
+    "tenseGroups": [
+      [
+        "é",
+        "era",
+        "foi",
+        "será",
+        "seria"
+      ],
+      [
+        "está",
+        "estava",
+        "esteve",
+        "estará"
+      ],
+      [
+        "tem",
+        "tinha",
+        "teve",
+        "terá"
+      ],
+      [
+        "vai",
+        "ia",
+        "irá"
+      ],
+      [
+        "faz",
+        "fazia",
+        "fez",
+        "fará"
+      ],
+      [
+        "são",
+        "eram",
+        "foram",
+        "serão"
+      ]
+    ],
+    "agreementInflections": [],
+    "vowels": "aeiouáéíóúâêôãõ",
+    "minStem": 3,
+    "tenseEndings": [],
+    "stemDropFinal": []
+  },
+  "repeats": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Doubled articles, contractions and prepositions treated as stumbles; \"não não\" never touched. Needs native review"
+      ]
+    },
+    "always": [
+      "o",
+      "os",
+      "as",
+      "de",
+      "do",
+      "da",
+      "e",
+      "em",
+      "no",
+      "na",
+      "um",
+      "uma",
+      "que",
+      "com"
+    ],
+    "suggest": [
+      "eu",
+      "você",
+      "tu",
+      "ele",
+      "ela",
+      "meu",
+      "minha",
+      "se",
+      "me",
+      "te",
+      "é"
+    ],
+    "dangling": [
+      "o",
+      "a",
+      "os",
+      "as",
+      "um",
+      "uma",
+      "de",
+      "do",
+      "da",
+      "dos",
+      "das",
+      "em",
+      "no",
+      "na",
+      "com",
+      "por",
+      "pelo",
+      "pela",
+      "para",
+      "pra",
+      "e",
+      "ou",
+      "mas",
+      "que",
+      "meu",
+      "minha",
+      "seu",
+      "sua",
+      "porque"
+    ],
+    "verifierExtra": [],
+    "cleft": {
+      "words": [],
+      "openers": []
+    },
+    "subject": {
+      "words": [],
+      "objectVerbs": [],
+      "clauseLeads": [],
+      "discourseAfter": []
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Portuguese orthography to sound, simplified: lh, nh, ch, qu, gu, soft c, silent h (unverified against a names list)"
+      ]
+    },
+    "romanize": {},
+    "rewrite": [
+      {
+        "from": "lh",
+        "to": "ly"
+      },
+      {
+        "from": "nh",
+        "to": "ny"
+      },
+      {
+        "from": "ch",
+        "to": "S"
+      },
+      {
+        "from": "qu",
+        "to": "k",
+        "before": "ei"
+      },
+      {
+        "from": "gu",
+        "to": "g",
+        "before": "ei"
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "before": "eiy"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "x",
+        "to": "S"
+      },
+      {
+        "from": "z",
+        "to": "s"
+      },
+      {
+        "from": "w",
+        "to": "v"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [],
+    "stripMarks": true,
+    "compareVowels": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "<TEAMID>.com.earlyletters.scribe",
+          "<TEAMID>.com.earlyletters.scribe.preview"
+        ],
+        "components": [
+          { "/": "/auth/confirm" },
+          { "/": "/auth/confirm/" },
+          { "/": "/auth/callback" },
+          { "/": "/auth/callback/" },
+          { "/": "/j" },
+          { "/": "/j/" }
+        ]
+      }
+    ]
+  }
+}

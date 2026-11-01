@@ -1,0 +1,106 @@
+# E2E-04  Type a letter (offline), with Devanagari, and a kill right after Save.
+# Proves: K-14 (typed letters never get the "please have a read" card),
+# D-057 (typed text is never rewritten: the words come back exactly), B-NFR-007
+# (names and text in any script), A-REQ-030 (offline), DATA-REQ-048 (a kill
+# after Save leaves the letter exactly once).
+# Unicode typing on iOS goes through XCUITest typeText (Assumption: works for
+# Devanagari; Maestro documents the Unicode limit for Android only).
+appId: ${APP_ID}
+name: E2E-04 Type a letter
+tags:
+  - e2e
+  - E2E-04
+  - K-14
+  - D-057
+  - B-NFR-007
+  - A-REQ-030
+  - DATA-REQ-048
+env:
+  LETTER_ONE: "Asha, today you found your feet. आज तुमने अपने पैर खोजे।"
+  LETTER_TWO: "Asha, second note for the kill test. दूसरा पत्र।"
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_OFFLINE: "1"
+      E2E_SEED: "asha"
+- assertVisible:
+    id: "tonight.screen"
+# 1. Type, save, choose the book. No first-note card for typed letters.
+- tapOn:
+    id: "tonight.type"
+- assertVisible:
+    id: "write.screen"
+- tapOn:
+    id: "write.input"
+- inputText: ${LETTER_ONE}
+- tapOn:
+    id: "write.save"
+    enabled: true
+- assertVisible:
+    id: "review.screen"
+- assertNotVisible:
+    id: "review.firstNote"
+- tapOn:
+    id: "review.save.book"
+- extendedWaitUntil:
+    visible:
+      id: "tonight.screen"
+    timeout: 5000
+# 2. The letter reads back exactly as typed, Devanagari included.
+- tapOn:
+    id: "tab.book"
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.text"
+    text: ".*आज तुमने अपने पैर खोजे.*"
+- assertVisible:
+    text: ".*found your feet.*"
+- runFlow: ../subflows/go-back.yaml
+# 3. Kill right after Save: relaunch shows the second letter exactly once.
+- tapOn:
+    id: "tab.tonight"
+- tapOn:
+    id: "tonight.type"
+- tapOn:
+    id: "write.input"
+- inputText: ${LETTER_TWO}
+- tapOn:
+    id: "write.save"
+    enabled: true
+- tapOn:
+    id: "review.save.book"
+- stopApp
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+# If the kill landed before the save committed, the typed text is a draft on
+# Tonight ("waiting to be read back"): finish it. Either way it must end up once.
+- runFlow:
+    when:
+      visible:
+        id: "tonight.waiting"
+    commands:
+      - tapOn:
+          id: "tonight.waiting"
+      - tapOn:
+          id: "write.save"
+          enabled: true
+      - tapOn:
+          id: "review.save.book"
+      - extendedWaitUntil:
+          visible:
+            id: "tonight.screen"
+          timeout: 5000
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    text: ".*second note for the kill test.*"
+    index: 0
+- assertNotVisible:
+    text: ".*second note for the kill test.*"
+    index: 1
+- stopApp

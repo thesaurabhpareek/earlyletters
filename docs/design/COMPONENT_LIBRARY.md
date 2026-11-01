@@ -1,7 +1,62 @@
 # Component library decision: Early Letters
 
-Owner: design systems. Status: accepted (see `docs/adr/0101-ui-component-library.md`). Verified 2026-10-01. **Revised Oct 1 2026 for "Apple first now, Android later".**
+Owner: design systems. Status: accepted (see `docs/adr/0101-ui-component-library.md`). Verified 2026-10-01. **Revised Oct 1 2026 for "Apple first now, Android later". Revised Oct 3 2026 for founder decisions 1, 2 and 15 (section 0, which wins over anything below it).**
 Companions: `COMPONENTS.md` (component specs), `MOTION.md` (animation, haptics map), `DESIGN_LANGUAGE.md` (tokens, icons). Token values: `packages/design-tokens/src/tokens.ts` (designer-owned).
+
+## 0. Oct 3 2026 revision: standard libraries, built and measured
+
+Founder decisions (docs/agents/BRIEF-2026-10-03.md): 1 standard over custom, 2 premium quality from high-quality libraries (Reanimated, Gesture Handler, @gorhom/bottom-sheet, Apple-native views through Expo), 15 lean app (download under 40 MB, fonts subset).
+
+### 0.1 Libraries: decision, version, licence, size cost
+
+Versions are what `npx expo install` resolved for SDK 57 on 2026-10-03 (`apps/mobile/package.json`); licences and release dates from the npm registry the same day. Size = JavaScript we add, minified with esbuild 0.28 with React, React Native, Reanimated and Gesture Handler external (Hermes bytecode differs, but scales the same); native size is the source in the package (compiled binary is smaller).
+
+| Need | Decision | Version / licence / maintenance | Size cost | Status |
+|---|---|---|---|---|
+| Sheets | **@gorhom/bottom-sheet** `BottomSheetModal` behind our `ui/sheet.tsx` (replaces RN `Modal` sheets and the earlier "formSheet only" rule) | 5.2.14, MIT; latest release 2026-05-09; issue tracker active (newest issues Aug to Sep 2026, 9.1k stars, not archived; github.com/gorhom/react-native-bottom-sheet/issues read 2026-10-03). Depends on `@gorhom/portal` 1.0.14 (MIT) and `invariant` | **59.4 KB minified, 18.6 KB gzip** (bottom-sheet + portal + nanoid + invariant). No native code | **Adopted, built** |
+| Gestures | **react-native-gesture-handler** (sheet pan, toast swipe); `GestureHandlerRootView` lives in `UIProvider` | ~2.32.0 (SDK pin), MIT | 0 new (already installed) | Adopted |
+| Motion | **Reanimated 4** layout animations (`entering`, `exiting`, `LinearTransition`), springs from `tokens.motion` through `lib/motion.ts` | 4.5.1 (SDK pin), MIT | 0 new | Adopted |
+| Shared element transitions | Reanimated `sharedTransitionTag` | 4.5.1: still behind the static flag `ENABLE_SHARED_ELEMENT_TRANSITIONS: false` (`lib/module/featureFlags/staticFeatureFlags.js`) | n/a | **Not adopted** (not stable). Measured-rect transition stays the v1 plan (MOTION 5f) |
+| Materials | **expo-blur** `BlurView` behind `platform/blur-surface` (iOS and web preview; Android solid) | 57.0.3 (SDK pin), MIT | 1.9 KB JS; native: ios/ 24 KB, android/ 76 KB of source | **Adopted, built** (Book's inline title bar) |
+| Native controls | **@expo/ui** SwiftUI `Toggle` in `Host`, behind `platform/toggle.ios.tsx` (`tint`, `labelsHidden`, `accessibilityLabel/Hint` modifiers verified in 57.0.21 `build/swift-ui`) | 57.0.21 (SDK pin), MIT | 0 new | **Adopted, built** |
+| Haptics | **expo-haptics** behind `lib/haptics.ts` (iOS) and `lib/haptics.android.ts` (`performAndroidHapticsAsync`) | 57.0.3, MIT | 0 new | Adopted, built |
+| Fonts | Mukta, Literata, Tiro Devanagari Hindi, **bundled and subset** in `packages/design-tokens/fonts` (`build_fonts.py`, fontTools 4.62) | SIL OFL 1.1, no Reserved Font Names (each `OFL-*.txt` copyright line) | **1.37 MB raw, 0.64 MB compressed** for 7 faces; Tiro italic dropped (-220 KB) | Adopted, built |
+| Signature animations | **Reanimated + react-native-svg** `strokeDashoffset` (draw once) and opacity (breathe) | already installed | 0 new | Adopted |
+| Lottie | `lottie-react-native` 7.5.0 (Apache-2.0) | peer `@lottiefiles/dotlottie-react` | not measured: rejected | **Not adopted.** Every signature moment is a single-weight line drawing or a glow (CREATIVE 3, MOTION 5b, 5h); SVG + Reanimated already covers them with exact Reduce Motion control |
+| Skia | `@shopify/react-native-skia` 2.14.0 (SDK pin 2.6.2), MIT | 10.1 MB unpacked npm package plus per-platform native libraries | rejected | **Not adopted.** No moment needs per-pixel drawing; the listening glow is a static gradient moved by transform and opacity (MOTION 7) |
+| Primitives | **React Native Reusables** stays the base (`ui/text`, `ui/button`, `ui/card`, `ui/separator`, `ui/textarea` started as RNR copies) | `@rn-primitives/*` 1.5.x, MIT | 0 new | Unchanged |
+
+Net new JavaScript from this revision: about 61 KB minified (19 KB gzip). Net new assets: about 0.64 MB compressed fonts. Both are small against the 40 MB budget; the release-build download size must still be measured on device or in CI (not possible in this workspace).
+
+**Native alternative recorded, not chosen:** `@expo/ui/community/bottom-sheet` (in @expo/ui 57.0.21, already installed, zero cost) is an API-compatible replacement for @gorhom/bottom-sheet that presents a real SwiftUI sheet on iOS, a Material 3 sheet on Android and a vaul drawer on web (its README). Swapping is one import in `ui/sheet.tsx`. We use @gorhom because the founder named it, it renders our paper sheet identically on iOS, Android and the web preview, and we control its accessibility labels and Reduce Motion. If a device test prefers the system sheet feel, swap and re-test VoiceOver.
+
+**NativeTabs (Liquid Glass) is the next step, after a device spike.** In expo-router 57.0.24 it is still `expo-router/unstable-native-tabs`, and its web build is a text-only top tab list, so it cannot be previewed or verified here. JS tabs stay, polished (paper bar, 13 pt labels, Large Content Viewer on iOS).
+
+### 0.2 Facts found while building (verified in installed source)
+
+1. **@gorhom/bottom-sheet defaults are not accessible for us.** The sheet container is `accessible` with role `adjustable` and the English label "Bottom Sheet"; the handle and backdrop speak "Bottom sheet handle" / "Bottom sheet backdrop" (`src/components/*/constants.ts`). `ui/sheet.tsx` turns the container off as one element, hides the grabber from VoiceOver, labels the scrim "Close", adds a visible Close button, `accessibilityViewIsModal` and the escape gesture, and moves focus to the title.
+2. **Calling `dismiss()` on a sheet that was never presented breaks the next `present()`** (status goes to dismissing; 5.2.14 `BottomSheetModal.tsx` `handleDismiss`). `ui/sheet.tsx` only dismisses after a real open.
+3. **Reduce Motion:** the library defaults to `ReduceMotion.System`, which makes the sheet jump. We pass `overrideReduceMotion={ReduceMotion.Never}` and, when Reduce Motion is on, a 200 ms timing instead of the spring.
+4. **`dismissible={false}`** turns off pan, grabber, scrim tap, Close and escape, for permission priming and required choices. The library has no Android back handling of its own (no `BackHandler` in its source), so an Android back press does not close it either; verify when Android ships.
+5. **Reanimated 4.5.1 on web** pins any element whose entering animation is not a stock preset (custom `withInitialValues` or a `Keyframe`) to `position: absolute` after the animation ends (`layoutReanimation/web/componentUtils.js` `setElementAnimation` -> `setElementPosition`). `useMotion().enter()` uses the stock preset on web. Native is unaffected.
+6. **react-native-web has no `announceForAccessibilityWithOptions`.** `lib/a11y.ts` `announce()` falls back.
+7. **Uniwind `setTheme()` calls `Appearance.setColorScheme()`** (uniwind 1.12.1 `core/config/config.common.js`), so `useColorScheme()` in JS agrees with the CSS theme (closes the TDD 09 section 3.3 risk).
+8. **Uniwind `ScopedVariables`** overrides CSS variables for a subtree on native and web. `UIProvider` uses it to apply the Increase Contrast palette to every class-based colour in the app.
+9. **React Native logs only `RCTLogInfo` for an unknown `fontFamily` on iOS** (`React/Views/RCTFont.mm`), so referring to a face before it loads is safe.
+
+### 0.3 Where things are
+
+```
+packages/design-tokens/src/tokens.ts      colours (+ highContrast), type ramp, motion, target, stroke, focusRing
+packages/design-tokens/fonts/             7 subset TTFs, OFL licences, build_fonts.py, index.ts (fontAssets)
+apps/mobile/src/components/ui/            Text, Button, IconButton, ButtonRow, Card, TextField, ChoiceGroup, Chip,
+                                          ChipGroup, Sheet, ListSection, ListRow, ToggleRow, Toast, ToastHost,
+                                          EmptyState, LineArt, UIProvider, fonts; index.ts exports all of them
+apps/mobile/src/components/platform/      toggle (.ios SwiftUI / fallback RN Switch), blur-surface (.ios, .web, fallback)
+apps/mobile/src/components/motion/        press (usePressScale, AnimatedPressable), draw-on (DrawOnPath), breathe
+apps/mobile/src/lib/                      motion.ts, haptics.ts / haptics.android.ts / haptics.shared.ts, a11y.ts
+```
+`components/content-blocks` (platform agent) should import from `@/components/ui` only.
 
 ## 1. Decision in one paragraph
 
@@ -27,10 +82,10 @@ Companions: `COMPONENTS.md` (component specs), `MOTION.md` (animation, haptics m
 
 | Library | Runs in React Native? | Evidence |
 |---|---|---|
-| **Material UI** | **No. Web only.** | The "Supported platforms" page lists browsers (Edge, Firefox, Chrome, Safari) and server rendering only ([mui.com/…/supported-platforms](https://mui.com/material-ui/getting-started/supported-platforms/)). npm peers are `react-dom` and `@emotion/react` ([npm @mui/material 9.4.0](https://registry.npmjs.org/@mui/material)). |
+| **Material UI** | **No. Web only.** | The "Supported platforms" page lists browsers (Edge, Firefox, Chrome, Safari) and server rendering only ([mui.com/.../supported-platforms](https://mui.com/material-ui/getting-started/supported-platforms/)). npm peers are `react-dom` and `@emotion/react` ([npm @mui/material 9.4.0](https://registry.npmjs.org/@mui/material)). |
 | **Mantine** | **No. Web only.** | Install needs `react-dom` peer and PostCSS (`postcss-preset-mantine`) ([mantine.dev/getting-started](https://mantine.dev/getting-started/); [npm @mantine/core 9.6.3](https://registry.npmjs.org/@mantine/core)). A third-party `react-native-mantine` exists ([GitHub auronsan/react-native-mantine](https://github.com/auronsan/react-native-mantine), not opened, **Unverified**); it is not the Mantine team's work. |
 | **Ant Design** | **`antd` is web only.** A separate package, `@ant-design/react-native`, targets RN. | antd describes itself as "Enterprise-class UI designed for web applications" ([ant.design introduce](https://ant.design/docs/react/introduce)). `@ant-design/react-native` latest stable is 5.4.3 from 2025-08-11 ([npm](https://registry.npmjs.org/@ant-design/react-native)); README ([GitHub](https://github.com/ant-design/ant-design-mobile-rn)). |
-| **shadcn/ui** | **No. Web only** (Tailwind CSS + DOM primitives). Its React Native port is RNR. | shadcn docs: "This is not a component library. It is how you build your component library." Open code, edit the file ([ui.shadcn.com/docs](https://ui.shadcn.com/docs)). Expo: "Standard Tailwind CSS supports only web platform. For universal support, use … NativeWind or Uniwind" ([docs.expo.dev/guides/tailwind](https://docs.expo.dev/guides/tailwind.md)). RNR README: "Bringing shadcn/ui to React Native" ([GitHub README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). |
+| **shadcn/ui** | **No. Web only** (Tailwind CSS + DOM primitives). Its React Native port is RNR. | shadcn docs: "This is not a component library. It is how you build your component library." Open code, edit the file ([ui.shadcn.com/docs](https://ui.shadcn.com/docs)). Expo: "Standard Tailwind CSS supports only web platform. For universal support, use ... NativeWind or Uniwind" ([docs.expo.dev/guides/tailwind](https://docs.expo.dev/guides/tailwind.md)). RNR README: "Bringing shadcn/ui to React Native" ([GitHub README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). |
 
 **Plain answer:** none of the four runs in the mobile app (iOS or Android). All four are possible for the web app. We pick shadcn/ui for web because it has a real React Native sibling (RNR) with the same structure and naming, so the two apps read as one codebase.
 
@@ -40,7 +95,7 @@ Versions and licences from the npm registry `latest` endpoint, read 2026-10-01.
 
 | Candidate | Latest / license | Platforms (source) | Notes (source) |
 |---|---|---|---|
-| **React Native Reusables** | `@rn-primitives/*` 1.5.2, MIT | Native code shared by iOS and Android: component files branch only on `web` vs native (`Platform.select({ web: … })`); the one iOS-only line is `FullWindowOverlay` in `dialog.tsx` ([button.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/button.tsx), [dialog.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/dialog.tsx), [switch.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/switch.tsx)). The docs site did not render for us; an explicit "iOS and Android supported" statement is **Unverified**. | Copy-in, shadcn-style, MIT ([README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). Supports Nativewind and Uniwind ([installation](https://reactnativereusables.com/docs/installation), read in the first pass). |
+| **React Native Reusables** | `@rn-primitives/*` 1.5.2, MIT | Native code shared by iOS and Android: component files branch only on `web` vs native (`Platform.select({ web: ... })`); the one iOS-only line is `FullWindowOverlay` in `dialog.tsx` ([button.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/button.tsx), [dialog.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/dialog.tsx), [switch.tsx](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/packages/registry/src/uniwind/components/ui/switch.tsx)). The docs site did not render for us; an explicit "iOS and Android supported" statement is **Unverified**. | Copy-in, shadcn-style, MIT ([README](https://raw.githubusercontent.com/founded-labs/react-native-reusables/main/README.md)). Supports Nativewind and Uniwind ([installation](https://reactnativereusables.com/docs/installation), read in the first pass). |
 | **Uniwind** | 1.12.1, MIT; peers `react-native >=0.81`, `tailwindcss >=4` | "works with Expo, iOS, Android, tvOS and Web" ([llms.txt index](https://docs.uniwind.dev/llms.txt)); built-in `ios:` / `android:` / `web:` selectors ([platform selectors](https://docs.uniwind.dev/api/platform-select.md)) | Free tier: `group-*` "parsed but have no runtime effect" ([class-names](https://docs.uniwind.dev/class-names.md)). SDK 57 runtime **Unverified** until spike. |
 | **NativeWind** | 4.2.7, MIT (Tailwind v3); v5 RC is Tailwind v4 | "works with both Expo and framework-less React Native" ([installation](https://www.nativewind.dev/docs/getting-started/installation)) | "v4.2.7 adds Expo SDK 57 support" (same page). |
 | **HeroUI Native** | 1.0.10, Apache-2.0; peers include `@gorhom/bottom-sheet` ^5.2.9 | "We are focusing on mobile platforms (iOS and Android) at this time"; not for web ([quick start](https://heroui.com/docs/native/getting-started/quick-start)) | npm dependency, not owned source. |
@@ -56,7 +111,7 @@ Expo UI is a set of 1:1 mappings: "Components map one to one to their native cou
 
 | Our need | iOS: `@expo/ui/swift-ui` | Android: `@expo/ui/jetpack-compose` | Universal `@expo/ui`? |
 |---|---|---|---|
-| Switch | `<Toggle isOn onIsOnChange label />`, colour via `tint()` modifier ([toggle](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/toggle.md)) | `<Switch value onCheckedChange colors={{ checkedTrackColor, … }} />` ([switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/switch.md)) | **Yes**, `<Switch value onValueChange label />`, but no colour prop; colour only via platform `modifiers` ([universal switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/switch.md)) |
+| Switch | `<Toggle isOn onIsOnChange label />`, colour via `tint()` modifier ([toggle](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/toggle.md)) | `<Switch value onCheckedChange colors={{ checkedTrackColor, ... }} />` ([switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/switch.md)) | **Yes**, `<Switch value onValueChange label />`, but no colour prop; colour only via platform `modifiers` ([universal switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/switch.md)) |
 | Segmented control | `<Picker modifiers={[pickerStyle('segmented')]} selection onSelectionChange>` with `tag()`-ed `Text` children ([picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/picker.md)) | `<SingleChoiceSegmentedButtonRow>` of `<SegmentedButton selected onClick>` with `SegmentedButton.Label` ([segmentedbutton](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/segmentedbutton.md)) | **No.** Universal `Picker` has "menu and wheel appearances" only ([universal picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/universal/picker.md)) |
 | Alert | `<Alert>` with `Alert.Trigger` / `Alert.Actions` slots ([alert](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/alert.md)) | `<AlertDialog onDismissRequest>` with `.Title/.Text/.ConfirmButton/.DismissButton` slots ([alertdialog](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/alertdialog.md)) | No. We use RN `Alert.alert` instead (section 5) |
 | Long-press menu | `<ContextMenu>` "displays a menu when long-pressed" ([contextmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/contextmenu.md)) | Only `<DropdownMenu>`, "displays a dropdown menu when a trigger element is pressed" ([dropdownmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/dropdownmenu.md)) | No |
@@ -64,11 +119,11 @@ Expo UI is a set of 1:1 mappings: "Components map one to one to their native cou
 
 Both platforms require a `Host` wrapper ([compose usage](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose.md)). **Conclusion:** Expo UI is a good supplement on both platforms, but every use needs two files. That cost is why we keep it to three controls.
 
-**New Architecture:** "SDK 55 and later run entirely on the New Architecture… cannot be disabled" ([docs.expo.dev/guides/new-architecture](https://docs.expo.dev/guides/new-architecture.md)). Per-library New Arch support is **Unverified** beyond peer ranges; the spike (section 8) tests it.
+**New Architecture:** "SDK 55 and later run entirely on the New Architecture... cannot be disabled" ([docs.expo.dev/guides/new-architecture](https://docs.expo.dev/guides/new-architecture.md)). Per-library New Arch support is **Unverified** beyond peer ranges; the spike (section 8) tests it.
 
 ## 4. Scored comparison (Android-weighted)
 
-Score 1–5; weights sum to 100; total = Σ(score × weight) / 5. **Android parity** = the same component code renders correctly and feels acceptable on Android with no rewrite.
+Score 1 to 5; weights sum to 100; total = Σ(score × weight) / 5. **Android parity** = the same component code renders correctly and feels acceptable on Android with no rewrite.
 
 | Criterion (weight) | RNR + Uniwind | RNR + NativeWind 4 | gluestack v5 | HeroUI Native | Unistyles + own | Expo UI alone | Tamagui | RN Paper |
 |---|---|---|---|---|---|---|---|---|
@@ -100,14 +155,14 @@ Score 1–5; weights sum to 100; total = Σ(score × weight) / 5. **Android pari
 | `Toggle` | Expo UI SwiftUI `Toggle` + `tint(accent)` in `Host` | Expo UI Compose `Switch` with `colors` from tokens (`checkedTrackColor = accent`) | shadcn `Switch` | [toggle](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/toggle.md), [switch](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/switch.md) |
 | `SegmentedControl` | SwiftUI `Picker` + `pickerStyle('segmented')` | Compose `SingleChoiceSegmentedButtonRow` (Material 3 segmented buttons) | shadcn `ToggleGroup` | [picker](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/picker.md), [segmentedbutton](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/segmentedbutton.md) |
 | `ActionMenu` (letter long-press: share, edit, delete) | SwiftUI `ContextMenu` around the card | Long-press opens our `Sheet` (`fitToContents`) with a list of `ListRow`s. Compose `DropdownMenu` is tap-triggered, so not used | shadcn `ContextMenu` | [contextmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/swift-ui/contextmenu.md), [dropdownmenu](https://docs.expo.dev/versions/v57.0.0/sdk/ui/jetpack-compose/dropdownmenu.md) |
-| `sheetScreenOptions()` + `SheetBody` | `formSheet` with detents, `sheetGrabberVisible`, `sheetCornerRadius`; title may use the native header | Same `formSheet`; detents capped at 3; no grabber (iOS only); title rendered inside `SheetBody` because headers "will not render inside the sheet"; do **not** use `unstable_sheetFooter` (experimental) | shadcn `Drawer` / `Dialog` | [modals](https://docs.expo.dev/router/advanced/modals.md) |
+| `sheetScreenOptions()` + `SheetBody` (route-level sheets only; **in-context sheets use `ui/sheet.tsx` on @gorhom/bottom-sheet since Oct 3, section 0**) | `formSheet` with detents, `sheetGrabberVisible`, `sheetCornerRadius`; title may use the native header | Same `formSheet`; detents capped at 3; no grabber (iOS only); title rendered inside `SheetBody` because headers "will not render inside the sheet"; do **not** use `unstable_sheetFooter` (experimental) | shadcn `Drawer` / `Dialog` | [modals](https://docs.expo.dev/router/advanced/modals.md) |
 | `haptic(intent)` (`lib/haptics.*.ts`) | `expo-haptics` `selectionAsync` / `impactAsync` / `notificationAsync`; fire record-start haptic before the audio session starts | `performAndroidHapticsAsync(AndroidHaptics.*)`, mapping per MOTION section 6 (`Segment_Tick`, `Context_Click`, `Long_Press`, `Confirm`, `Reject`) | no-op | [haptics](https://docs.expo.dev/versions/v57.0.0/sdk/haptics.md) |
 | `BlurSurface` (CaptureBar, sticky chapter header) | `expo-blur` `BlurView`; Reduce Transparency → solid `surfaceRaised` | Solid `surfaceRaised` + `line` hairline (Android blur needs extra setup; not worth it) | CSS `backdrop-filter` | [blur-view](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view.md) |
 | `Icon` | `phosphor-react-native` | same file works (no split needed); listed so icon size and weight rules live in one place | `@phosphor-icons/react` | section 6 |
 
 **Not wrapped, because it is already cross-platform in one API:**
 - `confirm()` uses React Native `Alert.alert`: native alert on iOS and Android. Android allows at most three buttons, ignores `style: 'destructive'`, and is not cancelable by tapping outside unless `{ cancelable: true }` ([reactnative.dev/docs/alert](https://reactnative.dev/docs/alert)). So the confirm label must say the action ("Delete letter"), never rely on red.
-- Native tabs: `NativeTabs.Trigger.Icon src={require(…png)}` works on both ([native tabs](https://docs.expo.dev/router/advanced/native-tabs.md)); the current template already does this.
+- Native tabs: `NativeTabs.Trigger.Icon src={require(...png)}` works on both ([native tabs](https://docs.expo.dev/router/advanced/native-tabs.md)); the current template already does this.
 - Measured-rect letter open, Read together, breathing glow: plain Reanimated, same code (MOTION 5b, 5f, 5g).
 
 **Removed from v1:** Expo UI `Alert`, `ConfirmationDialog` and `Popover` (EditUnderline now expands inline per MOTION 5d).
@@ -116,16 +171,16 @@ Score 1–5; weights sum to 100; total = Σ(score × weight) / 5. **Android pari
 
 | Need | Choice | iOS + Android? / source |
 |---|---|---|
-| Animation | `react-native-reanimated` **4.5.1** + `react-native-worklets` 0.10.1 (SDK 57 pins) | Both. Pins from [bundledNativeModules.json](https://unpkg.com/expo@57.0.26/bundledNativeModules.json). All rules in `MOTION.md`: one `useMotion()` hook, measured-rect transitions (no shared-element transitions, no `Link.AppleZoom` in v1), **no Lottie or Rive in v1**. |
+| Animation | `react-native-reanimated` **4.5.1** + `react-native-worklets` 0.10.1 (SDK 57 pins) | Both. Pins from [bundledNativeModules.json](https://unpkg.com/expo@57.0.26/bundledNativeModules.json). All rules in `MOTION.md`: one `useMotion()` hook, measured-rect transitions (no shared-element transitions, no `Link.AppleZoom` in v1), **no Lottie, Rive or Skia in v1** (re-checked Oct 3, section 0). |
 | Gestures | `react-native-gesture-handler` ~2.32.0 (SDK pin) | Both. Scrubbing, toast swipe. |
-| Sheets | Expo Router `presentation: 'formSheet'` behind `sheetScreenOptions()` | Both, with Android limits ([modals](https://docs.expo.dev/router/advanced/modals.md)). No `@gorhom/bottom-sheet`. |
+| Sheets | **Oct 3:** `@gorhom/bottom-sheet` 5.2.14 behind `ui/sheet.tsx` for in-context sheets (section 0). Expo Router `formSheet` only for deep-linkable route sheets | Both. |
 | Lists | `@shopify/flash-list` 2.0.2 (SDK pin) | Both ([expo flash-list](https://docs.expo.dev/versions/v57.0.0/sdk/flash-list.md)). |
 | Icons | **Phosphor**: `phosphor-react-native` 3.0.6 (MIT, peers `react`, `react-native`, `react-native-svg`) and `@phosphor-icons/react` 2.1.10 (MIT) for web | Install is `phosphor-react-native react-native-svg`; MIT ([GitHub](https://github.com/duongdev/phosphor-react-native)). It draws through `react-native-svg`, whose platforms are `android, ios, macos, web, tvos` ([expo svg](https://docs.expo.dev/versions/v57.0.0/sdk/svg.md)); SDK pin 15.15.4. The package page makes no explicit platform statement, so "renders identically on Android" is **Unverified until the Android spike**, though it has no native code of its own. |
 | SF Symbols | **Not used.** `expo-symbols` renders SF Symbols on iOS and Material Symbols on Android, and a plain string name "renders only on iOS" ([symbols](https://docs.expo.dev/versions/v57.0.0/sdk/symbols.md)). If ever needed (for example a native menu item icon), only inside a `platform/` wrapper with `{ ios, android }` names. Template files using `SymbolView` (`collapsible.tsx`, `explore.tsx`, `app-tabs.web.tsx`) are deleted with the template. | |
 | Haptics | `expo-haptics` ~57.0.3 behind `haptic()` | Both. Note: expo-haptics adds the Android `VIBRATE` permission automatically even though `performAndroidHapticsAsync` does not need it ([haptics](https://docs.expo.dev/versions/v57.0.0/sdk/haptics.md)); removing it via app config is **Unverified**, check at Android setup. |
 | Native controls | `@expo/ui` ~57.0.21, only inside `platform/` | Both, two APIs (section 3.1). |
 | Audio | `expo-audio` ~57.0.5 | Metering on Android to be confirmed in the audio spike (MOTION open question 2). |
-| Blur | `expo-blur` ~57.0.3, iOS only via `BlurSurface` | "stable on Android, but some code changes are required" ([blur-view](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view.md)); we skip it on Android. |
+| Blur | `expo-blur` ~57.0.3 via `platform/blur-surface` (iOS and the web preview; installed Oct 3) | "stable on Android, but some code changes are required" ([blur-view](https://docs.expo.dev/versions/v57.0.0/sdk/blur-view.md)); we skip it on Android. |
 | Class utilities | `class-variance-authority`, `clsx`, `tailwind-merge`, `@rn-primitives/portal` | Platform-neutral JS ([RNR manual install](https://reactnativereusables.com/docs/installation/manual)). |
 | Web | Next.js + Tailwind v4 + shadcn/ui + `@phosphor-icons/react`; web animation library **Unverified**, choose later | [ui.shadcn.com/docs](https://ui.shadcn.com/docs) |
 
@@ -136,7 +191,7 @@ packages/design-tokens/
   src/tokens.ts          ← designer fills values (contract names below)
   scripts/build-css.ts   ← generates dist/tokens.css (Tailwind v4 @theme + light/dark)
   dist/tokens.css        ← imported by apps/ios/src/global.css AND apps/web/app/globals.css
-packages/ui-contract/    ← (optional later) shared TS prop types: ButtonVariant, ChipTone…
+packages/ui-contract/    ← (optional later) shared TS prop types: ButtonVariant, ChipTone...
 apps/ios/src/components/ui/*.tsx   ← RNR copies, edited
 apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant names
 ```
@@ -147,8 +202,8 @@ apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant nam
 |---|---|---|
 | colors `bg, surface, surfaceRaised, text, textMuted, accent, accentSoft, onAccent, line, focus, recording, success, caution` | `--color-bg`, `--color-surface`, `--color-surface-raised`, `--color-text`, `--color-text-muted`, `--color-accent`, `--color-accent-soft`, `--color-on-accent`, `--color-line`, `--color-focus`, `--color-recording`, `--color-success`, `--color-caution` | `bg-bg`, `bg-surface-raised`, `text-text`, `text-text-muted`, `bg-accent`, `text-on-accent`, `border-line` |
 | `space.0..12` (4pt) | Tailwind v4 `--spacing: 4px` | `p-4` = 16pt, `gap-3` = 12pt |
-| `radius.sm/md/lg/xl/pill` | `--radius-sm` … `--radius-pill` | `rounded-lg`, `rounded-pill` |
-| type styles | `--text-body`, `--text-body--line-height`, … plus `--font-letter` | `text-body`, `text-letter-body`, `font-letter` |
+| `radius.sm/md/lg/xl/pill` | `--radius-sm` ... `--radius-pill` | `rounded-lg`, `rounded-pill` |
+| type styles | `--text-body`, `--text-body--line-height`, ... plus `--font-letter` | `text-body`, `text-letter-body`, `font-letter` |
 | `elevation.0..3` | `--shadow-e1..3` (web); on iOS and Android read from `tokens.ts` directly (`boxShadow` style; Android rendering to be checked in Step 0b) | `shadow-e2` |
 | `motion.snappy/standard/gentle` | **JS only**: `tokens.motion.*` (spring configs) for Reanimated; web gets `--ease-*`/`--duration-*` | `withSpring(x, motion.gentle)` |
 
@@ -158,14 +213,14 @@ apps/web/components/ui/*.tsx       ← shadcn copies, edited to same variant nam
 ```css
 @theme {
   --spacing: 4px;
-  --radius-sm: …; --radius-pill: 999px;
+  --radius-sm: ...; --radius-pill: 999px;
   --text-body: 17px; --text-body--line-height: 22px;
-  --font-letter: "…";
+  --font-letter: "...";
 }
 @layer theme {
   :root {
-    @variant light { --color-bg: …; --color-text: …; /* all 13 */ }
-    @variant dark  { --color-bg: …; --color-text: …; }
+    @variant light { --color-bg: ...; --color-text: ...; /* all 13 */ }
+    @variant dark  { --color-bg: ...; --color-text: ...; }
   }
 }
 ```
@@ -227,7 +282,7 @@ Uniwind requires `@source` for files outside the CSS file's folder ([monorepos](
 | Risk | Likelihood / impact | Mitigation |
 |---|---|---|
 | Uniwind free has no `group-*` variants | Certain / low | Button reads `pressed` from `Pressable`; lint bans `group-` in `apps/ios`. |
-| Uniwind (1.x, one vendor) loses momentum | Low–med / med | Standard Tailwind classes; NativeWind v5 is a config swap. |
+| Uniwind (1.x, one vendor) loses momentum | Low to med / med | Standard Tailwind classes; NativeWind v5 is a config swap. |
 | RNR defaults are web-sized (h-10 = 40pt) | Certain / med | Edit every copy to `COMPONENTS.md` (min 44pt) before use. |
 | **Android wrapper files never get written, and iOS-only imports leak into screens** | Med / high | Lint ban (section 5); every `platform/` component ships a `.tsx` fallback so Android builds before its `.android.tsx` exists; the story screen shows each wrapper on both platforms. |
 | **Compose controls look Material, not like our brand** | Certain / low | Accepted: native chrome per MOTION principle 6. Colour them from tokens; our own surfaces stay identical. |
@@ -237,22 +292,3 @@ Uniwind requires `@source` for files outside the CSS file's folder ([monorepos](
 | Reanimated / gesture-handler past SDK pin | Med / high | `npx expo install --check` in CI. |
 | RN and web copies drift | Med / med | Shared prop types; parity header in each file. |
 | expo-audio metering differs on Android | Med / low | MOTION 5b fallback (idle breath); confirm in Step 0b. |
-
-## 10. LampWash and SheetScrim (lamp-light softness in the app)
-
-`components/ui/lamp-wash.tsx`: one static SVG radial glow, the website's lamp light. Decorative (not accessible, pointer-events none). Fades in once with `useMotion().fade`; under Reduce Motion it just appears. No blur, no loop.
-
-```tsx
-import { LampWash } from '@/components/ui/lamp-wash';
-// first child of the screen's root View, behind content:
-<LampWash anchor="top" intensity={0.8} tone="amber" />
-```
-
-- `intensity` 0..1, `anchor` `top | center`, `tone` `amber | rose | dusk`, optional `colors` override.
-- Light mode peaks at 0.08 opacity so text, textMuted and accent stay at 4.5:1 on every surface (`test/lamp-wash.test.ts`). Dark mode peaks at 0.42.
-- Colours default to the website hexes in `lamp-wash.logic.ts` (the only literals). When the `lamp`, `lampRose`, `lampDusk` colour tokens land, pass them via `colors` or replace the defaults.
-- One wash per screen. Never behind the capture surface (ListeningAura owns that glow).
-
-`components/ui/sheet-scrim.tsx`: the ink-tinted scrim for bottom sheets (ink in light, page colour in dark; never pure black). Sheets keep native swipe-to-dismiss.
-
-`Card` carries a 1px `line` border in dark mode and a warm (ink) shadow in light, none in dark (DESIGN_LANGUAGE elevation).

@@ -1,0 +1,33 @@
+{
+  "id": "J05-04",
+  "journey": "voice-capture",
+  "kind": "unhappy",
+  "title": "Microphone is off",
+  "note": "One calm state with the microphone glyph: \"The microphone is off\". Type instead first, Open Settings quiet, Close at the top right. Only a refused permission lands here (S13). The browser denial is simulated by refusing getUserMedia; on a phone it is iOS's permission state, and \"Open Settings\" is native and does nothing on web.",
+  "from": "J05-01",
+  "shot": "screens/J05-04.png",
+  "route": "/listen",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close The microphone is off Turn it on in Settings, or type this one. Type instead Open Settings",
+  "lines": [
+    "Close",
+    "The microphone is off",
+    "Turn it on in Settings, or type this one.",
+    "Type instead",
+    "Open Settings"
+  ]
+}

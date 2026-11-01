@@ -1,0 +1,32 @@
+{
+  "id": "J01-03",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Welcome",
+  "note": "The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about the voice, and \"Your first two letters are free.\" (D-082). One button: Begin the book. (\"I already have a book\" and \"I was invited\" sit under it in builds with sign-in; this build has server features off, so both are hidden.)",
+  "from": "J01-02",
+  "shot": "screens/J01-03.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "The baby memory book you fill by talking. A few words at a time, in your own voice. Kept for your child to read and hear for years. Your first two letters are free. Begin the book",
+  "lines": [
+    "The baby memory book you fill by talking.",
+    "A few words at a time, in your own voice. Kept for your child to read and hear for years.",
+    "Your first two letters are free.",
+    "Begin the book"
+  ]
+}

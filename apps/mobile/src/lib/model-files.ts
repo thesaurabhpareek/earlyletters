@@ -1,8 +1,12 @@
 /**
- * Where Whisper model files live (ADR 0001): Application Support/models,
- * excluded from iCloud backup, through the local ScribeFiles module
- * (modules/scribe-files). Without the module (Expo Go, web, Android for now)
- * it falls back to Documents/models, the previous location, and says so.
+ * Application Support/models, excluded from iCloud backup, through the local
+ * ScribeFiles module (modules/scribe-files). Without the module (Expo Go,
+ * web, Android for now) it falls back to Documents/models and says so.
+ *
+ * Since ADR 0015 speech models are packs installed by the platform pack
+ * engine (Application Support/packs). This folder is only where a developer
+ * copies a model by hand for a development build (models/speech-packs.ts
+ * checks its SHA-256 before use); store builds never read it.
  *
  * TODO(android): put models in Context.noBackupFilesDir (excluded from Auto
  * Backup) with an Android side for ScribeFiles before the Android release.

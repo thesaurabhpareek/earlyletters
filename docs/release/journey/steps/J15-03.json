@@ -1,0 +1,41 @@
+{
+  "id": "J15-03",
+  "journey": "export",
+  "kind": "unhappy",
+  "title": "Export with an empty book",
+  "note": "Nothing has been written yet, so \"Export everything\" waits, in the outline style, under the line \"You can export once the book has a letter.\" The page still says what an export would hold. There is no empty-export error to reach.",
+  "from": "J15-01",
+  "shot": "screens/J15-03.png",
+  "full": "screens/J15-03-full.png",
+  "route": "/settings/export",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Export Asha The export is made on this phone. It goes only where you send it. Not exported yet Save a copy of your book in Files or iCloud Drive. It is yours to keep. What is inside Every letter, as text Every recording on this phone, exactly as it was made A printable book for each child, by month A data file with your words as heard, every small fix, and the final text You can export once the book has a letter. Export everything",
+  "lines": [
+    "Export",
+    "Asha",
+    "The export is made on this phone. It goes only where you send it.",
+    "Not exported yet",
+    "Save a copy of your book in Files or iCloud Drive. It is yours to keep.",
+    "What is inside",
+    "Every letter, as text",
+    "Every recording on this phone, exactly as it was made",
+    "A printable book for each child, by month",
+    "A data file with your words as heard, every small fix, and the final text",
+    "You can export once the book has a letter.",
+    "Export everything"
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "J06-15",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Kept here for now",
+  "note": "The letter stays a draft, marked held: its card on Tonight says \"Waiting to be kept.\" with the words exactly as they were and \"Keep it\". It can be played, read and exported from there, and kept once Plus is on (5.8 row 5c).",
+  "from": "J06-14",
+  "shot": "screens/J06-15.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Waiting to be kept. Keep it Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good afternoon,",
+    "Mama.",
+    "What was cooking in your kitchen today?",
+    "Another thought",
+    "Friday",
+    "0:31",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Waiting to be kept.",
+    "Keep it",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

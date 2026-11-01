@@ -1,0 +1,37 @@
+{
+  "id": "J11-02",
+  "journey": "read-together",
+  "kind": "happy",
+  "title": "Next letter",
+  "note": "Next letter turns the page sideways (24 pt, a fade, no curl); Back one turns it back, and a swipe does the same. The dateline names the month first, then who wrote it: \"Month 2 · From Mama\".",
+  "from": "J11-01",
+  "shot": "screens/J11-02.png",
+  "route": "/read-together",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Month 2 · From Mama You laughed today. A real one. It sounded like a little hiccup that surprised you as much as it surprised me. From Mama Hear Mama 0:42 Keep playing Back one Next letter",
+  "lines": [
+    "Close",
+    "Month 2 · From Mama",
+    "You laughed today. A real one. It sounded like a little hiccup that surprised you as much as it surprised me.",
+    "From Mama",
+    "Hear Mama",
+    "0:42",
+    "Keep playing",
+    "Back one",
+    "Next letter"
+  ]
+}

@@ -1,0 +1,79 @@
+# Real Supabase stack checks for database changes (CI-03). On pull requests
+# that touch the paths below: start the local stack, rebuild it from every
+# migration with `supabase db reset`, lint the schema (fail on error level),
+# run the export's server reads over the stack's real API (BL-323, BL-529),
+# then run the PGlite access-rule suite, without Supabase's automatic grants and
+# again with the old ones. The nightly workflow calls this file
+# too (workflow_call). Not part of the `required` aggregator, because it only
+# runs on the paths below (supabase/**, the export reader and its live check).
+# Actions are pinned to commit SHAs (CI-06); the comment names the tag.
+name: DB CLI
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/db-cli.yml'
+      - 'apps/mobile/src/lib/export/**'
+      - 'apps/mobile/src/lib/db/repos/ids.ts'
+      # supabase-js range (the reader's query builder; device.ts casts it, so tsc cannot see a shape change).
+      # A lockfile-only bump is left to the nightly: on package-lock.json this would run on every dependency PR.
+      - 'apps/mobile/package.json'
+      - 'apps/mobile/test/live/**'
+  workflow_call:
+
+concurrency:
+  group: db-cli-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  CI: true
+  # Pinned so CI and DEPLOY.md agree. Bump deliberately, after reading the
+  # CLI changelog.
+  SUPABASE_CLI_VERSION: 2.119.0
+
+jobs:
+  db-cli:
+    name: supabase start, reset, lint
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+      - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+        with:
+          version: ${{ env.SUPABASE_CLI_VERSION }}
+      - name: Start the local stack (services the checks do not need are skipped)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Rebuild from every migration
+        run: supabase db reset --local
+      # The app's own export reader (server-records.logic.ts) against real GoTrue, PostgREST and the
+      # migrations' access rules: signed-in fictional users, own rows only. Blocking.
+      # The container name is supabase_db_<project_id> (supabase/config.toml).
+      - name: Export reads over the real API (BL-323, BL-529)
+        run: |
+          eval "$(supabase status -o env | sed -n 's/^\(API_URL\|ANON_KEY\|SERVICE_ROLE_KEY\)=/export \1=/p')"
+          SUPABASE_URL="$API_URL" SUPABASE_ANON_KEY="$ANON_KEY" SUPABASE_SERVICE_KEY="$SERVICE_ROLE_KEY" \
+            SUPABASE_DB_CONTAINER=supabase_db_scribe npx tsx apps/mobile/test/live/export-server-reads.live.ts
+      # Advisory until DB-17 is fixed: plpgsql_check reports 42P01 for a pg_temp table that a purge function creates at run time
+      # (migration already applied, so it cannot be edited). `db reset` above is the blocking check.
+      - name: Lint the schema (advisory)
+        continue-on-error: true
+        run: supabase db lint --local --level error --fail-on error
+      - name: Access rules, governance, classification, performance (PGlite)
+        run: npm run test:db
+      # The suite runs without Supabase's automatic grants by default (supabase/tests/harness.mjs). This step
+      # runs it again with the old ones, so the revokes stay proven for a project made with them (#265; about
+      # 205 s). The nightly job of the same name takes over once nightly.yml is on the default branch.
+      - name: Access rules under the old automatic grants (PGlite)
+        env:
+          SCRIBE_DEFAULT_GRANTS: legacy
+        run: npm run test:db
+      - name: Stop the stack
+        if: always()
+        run: supabase stop --no-backup || true

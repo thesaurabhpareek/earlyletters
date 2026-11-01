@@ -10,10 +10,14 @@
 //   anon         the `anon` role, no JWT
 // Expected values: a number = rows visible; 'ok' = succeeded (writes changed a
 // row); 'none' = no error but no row changed (RLS filtered it); otherwise the
-// SQLSTATE. Structural checks at the end fail when a table or function is
-// added without a matrix entry, a guard, or a restrictive anonymous policy.
+// SQLSTATE. Since 20261023060000 a role with no grant on a table gets 42501
+// (anon on everything but the published policy texts), in both default-grant
+// worlds (harness.mjs DEFAULT_GRANTS). Structural checks at the end fail when
+// a table or function is added without a matrix entry, a guard, a restrictive
+// anonymous policy, or a row in the grant list.
 // Fictional family "Asha" only (CLAUDE.md).
-import { createDb, users, uuid7 } from './harness.mjs';
+import { createDb, users, uuid7, EXPECTED_PROBE } from './harness.mjs';
+import { GRANTS, COLUMNS, grantRows } from './grants.mjs';
 
 const h = await createDb(process.argv.slice(2));
 const { db, check, as, sys, one, done, publishPolicies, consent, newChild, invite, join } = h;
@@ -43,9 +47,15 @@ const nAdded = await letter(N, true);
 await as(B, `select public.review_family_letter($1, 'added')`, [nAdded]);
 await as(A, `update entries set final_text = 'She walked to me.' where id=$1`, [aBook]);
 const photo = `${CHILD}/${A}/${aBook}.jpg`;
+// 20261016000000: one held draft of A's, and one marker, so "0 rows" means "denied", not "empty".
+const aHeld = '0192f000-0000-7000-8000-0000000000aa';
+await as(A, `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on, typed_text)
+  values ($1, $2, $3, 'held_letter', 'typed', now(), '2026-09-29', 'You smiled.')`, [aHeld, A, CHILD]);
+await sys(`insert into held_drafts_gone (id, author_id, child_id, gone) values ($1, $2, $3, 'discarded')`, ['0192f000-0000-7000-8000-0000000000ab', A, CHILD]);
 await as(A, `update entries set photo_path=$1 where id=$2`, [photo, aBook]);
 await as(A, `insert into storage.objects (bucket_id, name) values ('entry-photos', $1)`, [photo]);
-await as(A, `insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, CHILD]);
+// No app path writes dictionary_terms today (20261023060000 grants it to nobody), so the fixture row is the owner's insert.
+await sys(`insert into dictionary_terms (owner_id, child_id, term, kind) values ($1, $2, 'Asha', 'child')`, [A, CHILD]);
 for (const u of [A, B, N]) await as(u, `insert into child_member_prefs (child_id, profile_id, signs_as) values ($1, $2, 'Papa')`, [CHILD, u]);
 await sys(`insert into child_member_prefs (child_id, profile_id) values ($1, $2)`, [CHILD, W]);
 const token = await invite(A, CHILD, 'contributor');
@@ -56,9 +66,30 @@ await sys(`insert into purge_ledger (entity_type, entity_id) values ('entry', 'x
 await sys(`insert into storage_purge_queue (bucket_id, object_path, reason) values ('entry-photos', 'x/', 'orphan')`);
 const dreq = (await sys(`insert into deletion_requests (kind, profile_id, status, source, scheduled_for) values ('account', $1, 'cancelled', 'ios', now()) returning id`, [C])).rows[0].id;
 await sys(`insert into deletion_request_steps (request_id, step) values ($1, 'auth_user')`, [dreq]);
-await one(A, `select public.my_app_account_token()`);
-await sys(`select public.apply_store_transaction('00000000-0000-4000-8000-0000000000a1', 'SUBSCRIBED', null, now(), 'production', '2000000000000001',
-  (select app_account_token from app_account_tokens where profile_id=$1), 'el_plus_monthly_399', 'active', now() + interval '30 days')`, [A]);
+// One sync receipt and one rate window, both A's, so the own-rows rules are shown for others.
+// (Joining above counted against B's and N's "membership" windows; cleared so A's is the only row.)
+await sys(`delete from sync_rate_windows`);
+await sys(`insert into sync_op_receipts (op_id, profile_id) values ($1, $2)`, [uuid7(), A]);
+await sys(`insert into sync_rate_windows (profile_id, bucket, window_start, hits) values ($1, 'push', now(), 1)`, [A]);
+// One idempotency key, A's (20261005000000): the table is reached only through functions.
+await sys(`insert into idempotency_keys (profile_id, idem_key, fn, request_sha256, result) values ($1, $2, 'record_policy_act', '\\x00', '{}')`, [A, uuid7()]);
+// Backup (20261023000000, S05; behaviour in audio_backup*.test.mjs): one row of A's in every backup
+// table, so 0 rows for anyone else means denied. app.backup_enabled is unset here, so writes are SCBKO.
+const BDEV = uuid7();
+const BDEV2 = uuid7();
+const BHEX = (b, n) => `'\\x${b.repeat(n)}'::bytea`;
+const BPATH = `${CHILD}/${A}/${aBook}.m4a.enc`;
+await sys(`insert into backup_devices (device_id, profile_id, public_key, enrolled_at) values ($1, $3, ${BHEX('a1', 32)}, now() - interval '30 days'),
+  ($2, $3, ${BHEX('a2', 32)}, now() - interval '30 days')`, [BDEV, BDEV2, A]);
+await sys(`insert into child_keys (child_id, profile_id, key_version, escrow_wrap, escrow_key_version) values ($1, $2, 1, ${BHEX('01', 81)}, 1)`, [CHILD, A]);
+await sys(`insert into audio_blobs (entry_id, child_id, author_id, object_path, key_version, wrapped_file_key, bytes) values ($1, $2, $3, $4, 1, ${BHEX('cd', 60)}, 100)`, [aBook, CHILD, A, BPATH]);
+await sys(`insert into storage.objects (bucket_id, name) values ('entry-audio', $1)`, [BPATH]);
+const BREQ = (await sys(`insert into restore_requests (profile_id, device_id, hold_until, stop_token_hash, stop_token_expires_at)
+  values ($1, $2, now() + interval '1 day', ${BHEX('5a', 32)}, now() + interval '7 days') returning id`, [A, BDEV])).rows[0].id;
+await sys(`insert into restore_approvals (request_id, device_id, sealed_code, code_hash) values ($1, $2, ${BHEX('5c', 80)}, sha256(${BHEX('5d', 32)}))`, [BREQ, BDEV2]);
+await sys(`insert into escrow_unwraps (profile_id, device_id, child_id, key_version, escrow_key_version, reason, outcome, restore_request_id)
+  values ($1, $2, $3, 1, 1, 'restore', 'opened', $4)`, [A, BDEV, CHILD, BREQ]);
+await sys(`insert into escrow_rotation_notices (profile_id, to_version) values ($1, 2)`, [A]);
 
 const PERSONAS = ['parent', 'coparent', 'contributor', 'outsider', 'anonymous', 'anon'];
 const UID = { parent: A, coparent: B, contributor: N, outsider: C, anonymous: W };
@@ -83,32 +114,73 @@ async function attempt(persona, sql, params) {
 }
 
 //                                                               parent  coparent contrib outsider anonymous anon
+// 20261023060000: a grant exists only where a code path uses it today, so a table no path reads directly
+// (book_entries, child_invites, entry_versions, dictionary_terms, policy_documents, audit_events, sync_rate_windows,
+// backup_devices, backup_usage, restore_requests, restore_approvals, escrow_unwraps) is 42501 for every persona.
 const READS = [
-  ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, 0]],
-  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, 0]],
-  ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, 0]],
-  ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         [3, 3, 0, 0, 0, 0]],
-  ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, 0]],
-  ['book_entries', 'select 1 from book_entries where child_id=$1', [CHILD],           [4, 3, 2, 0, 0, '42501']],
-  ['entry_versions', 'select 1 from entry_versions', [],                              [1, 0, 1, 0, 0, 0]],
-  ['dictionary_terms', 'select 1 from dictionary_terms', [],                          [1, 0, 0, 0, 0, 0]],
-  ['child_member_prefs', 'select 1 from child_member_prefs', [],                      [1, 1, 1, 0, 0, 0]],
-  ['policy_acceptances', 'select 1 from policy_acceptances', [],                      [2, 2, 2, 2, 0, 0]],
+  ['profiles', 'select 1 from profiles', [],                                         [4, 4, 4, 1, 0, '42501']],
+  // 20261015000000 (G-08, review M1): column privileges; the anon role reads no column of children at all.
+  ['children', 'select 1 from children where id=$1', [CHILD],                         [1, 1, 1, 0, 0, '42501']],
+  ['children: name and nickname', 'select 1, name, nickname from children where id=$1', [CHILD], [1, 1, 1, 0, 0, '42501']],
+  // D-039: nobody reads the birth date or due date from the table; sync_pull / sync_books serve them by role.
+  ['children: date of birth', 'select 1, date_of_birth from children where id=$1', [CHILD], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['children: due date', 'select 1, due_date from children where id=$1', [CHILD],     ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_members', 'select 1 from child_members where child_id=$1', [CHILD],         [4, 4, 4, 0, 0, '42501']],
+  ['child_invites', 'select 1 from child_invites where child_id=$1', [CHILD],         ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['entries', 'select 1 from entries where child_id=$1', [CHILD],                     [2, 0, 2, 0, 0, '42501']],
+  ['book_entries', 'select 1 from book_entries where child_id=$1', [CHILD],           ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['entry_versions', 'select 1 from entry_versions', [],                              ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['dictionary_terms', 'select 1 from dictionary_terms', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_member_prefs', 'select 1 from child_member_prefs', [],                      [1, 1, 1, 0, 0, '42501']],
+  // 20261023050000: anon has no SELECT (row security gave it no row); signed-in people read their own acts.
+  ['policy_acceptances', 'select 1 from policy_acceptances', [],                      [2, 2, 2, 2, 0, '42501']],
   ['my_policy_state', 'select 1 from my_policy_state', [],                            [2, 2, 2, 2, 0, '42501']],
-  ['policy_documents', 'select 1 from policy_documents limit 1', [],                  [1, 1, 1, 1, 1, 1]],
+  ['policy_documents', 'select 1 from policy_documents limit 1', [],                  ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['policy_versions', 'select 1 from policy_versions limit 1', [],                    [1, 1, 1, 1, 1, 1]],
-  ['audit_events', `select 1 from audit_events where action='invite_created'`, [],    [3, 0, 0, 0, 0, 0]],
-  ['deletion_requests', 'select 1 from deletion_requests', [],                        [0, 0, 0, 1, 0, 0]],
-  ['deletion_request_steps', 'select 1 from deletion_request_steps', [],              [0, 0, 0, 0, 0, 0]],
-  ['legal_holds', 'select 1 from legal_holds', [],                                    [0, 0, 0, 0, 0, 0]],
-  ['purge_ledger', 'select 1 from purge_ledger', [],                                  [0, 0, 0, 0, 0, 0]],
-  ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    [0, 0, 0, 0, 0, 0]],
-  ['app_account_tokens', 'select 1 from app_account_tokens', [],                      [0, 0, 0, 0, 0, 0]],
-  ['store_subscriptions', 'select 1 from store_subscriptions', [],                    [0, 0, 0, 0, 0, 0]],
-  ['store_notifications', 'select 1 from store_notifications', [],                    [0, 0, 0, 0, 0, 0]],
+  ['audit_events', `select 1 from audit_events where action='invite_created'`, [],    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['deletion_requests', 'select 1 from deletion_requests', [],                        [0, 0, 0, 1, 0, '42501']],
+  ['deletion_request_steps', 'select 1 from deletion_request_steps', [],              ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['legal_holds', 'select 1 from legal_holds', [],                                    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['purge_ledger', 'select 1 from purge_ledger', [],                                  ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage_purge_queue', 'select 1 from storage_purge_queue', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Sync (20261004100000): epochs are the same two values for every signed-in person; receipts and rate windows are own rows only.
+  ['sync_epochs', 'select 1 from sync_epochs', [],                                    [1, 1, 1, 1, 0, '42501']],
+  ['sync_op_receipts', 'select 1 from sync_op_receipts', [],                          [1, 0, 0, 0, 0, '42501']],
+  ['sync_rate_windows', 'select 1 from sync_rate_windows', [],                        ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Idempotency keys (20261005000000): no client access at all; create_child_invite and record_policy_act use them.
+  ['idempotency_keys', 'select 1 from idempotency_keys', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Subscription status report (20261016001000, S06; behaviour in subscription_status.test.mjs): functions only, never read by the app (D-080 rule 4).
+  ['subscription_salts', 'select 1 from subscription_salts', [],                      ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_status', 'select 1 from subscription_status', [],                    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_consents', 'select 1 from subscription_consents', [],                ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['subscription_report_rates', 'select 1 from subscription_report_rates', [],        ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261028010000: guess counters for invite-redeem, written only by invite_redeem_by_code().
+  ['invite_redeem_failures', 'select 1 from invite_redeem_failures', [],              ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: in-book photo', 'select 1 from storage.objects where name=$1', [photo],  [1, 1, 0, 0, 0, 0]],
-  ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], [1, 1, 1, 0, 0, '42501']],
-  ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], [1, 0, 0, 0, 0, '42501']],
+  ['book_entries: pending family letter', 'select 1 from book_entries where id=$1', [nSent], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: private letter', 'select 1 from book_entries where id=$1', [aPrivate], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Backup (20261023000000): the owner's own rows only (F08-REQ-022); anon has no grant at all.
+  ['backup_devices', 'select 1 from backup_devices', [],                              ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_keys', 'select 1 from child_keys', [],                                      [1, 0, 0, 0, 0, '42501']],
+  ['audio_blobs', 'select 1 from audio_blobs', [],                                    [1, 0, 0, 0, 0, '42501']],
+  ['backup_usage', 'select 1 from backup_usage', [],                                  ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['restore_requests', 'select 1 from restore_requests', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['restore_approvals', 'select 1 from restore_approvals', [],                        ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['escrow_unwraps', 'select 1 from escrow_unwraps', [],                              ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['escrow_rotation_notices', 'select 1 from escrow_rotation_notices', [],            ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_keys: the escrow wrap', 'select escrow_wrap from child_keys', [],           ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage: backup object', 'select 1 from storage.objects where name=$1', [BPATH],  [1, 0, 0, 0, 0, 0]],
+  // 20261015030000 (F16-REQ-028): members read the date precision and direction; never the author layer.
+  ['book_entries: date precision and direction', 'select 1, occurred_precision, base_direction from book_entries where child_id=$1', [CHILD], ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['entries: author layer (own rows only)', 'select 1, author_edits, locked_spans, pack_ref from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, '42501']],
+  // 20261016000000 (WP-F16-17, M17): held drafts are the author's only, while a parent of the book; markers are
+  // reached only through sync_pull; the words version and the review mark are own-row columns.
+  ['held_drafts', 'select 1 from held_drafts', [],                                    [1, 0, 0, 0, 0, '42501']],
+  ['held_drafts_gone', 'select 1 from held_drafts_gone', [],                          ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['entries: words version and review mark (own rows only)', 'select 1, text_xid, words_reviewed_at from entries where child_id=$1', [CHILD], [2, 0, 2, 0, 0, '42501']],
+  ['book_entries: no review mark', 'select 1, words_reviewed_at from book_entries', [], ['42703', '42703', '42703', '42703', '42703', '42703']],
+  // The erasure record (review L on #208): definer code only, for every persona.
+  ['sync_private.entry_erasures', 'select 1 from sync_private.entry_erasures', [], ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
 const NEW_ID = '0192f000-0000-7000-8000-0000000000ff';
@@ -116,31 +188,78 @@ const insertLetter = (author) => [`insert into entries (id, child_id, author_id,
   values ('${NEW_ID}', '${CHILD}', '${author}', 'letter', '2026-09-29', now(), 'spoken', 1, 'x', 'x')`, []];
 const WRITES = [
   ['entries: insert own letter', null,                                                ['ok', 'ok', 'ok', '42501', 'SCANO', '42501']],
-  ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', 'none']],
-  ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', 'none']],
-  ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['none', 'none', 'none', 'none', 'none', 'none']],
-  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['ok', 'ok', 'SCPAR', 'none', 'none', 'none']],
+  ['entries: edit A\'s letter', `update entries set final_text='x' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
+  ['entries: set approval', `update entries set approval='added' where id='${nSent}'`, ['none', 'none', 'SCAPR', 'none', 'none', '42501']],
+  // 20261023060000: no role holds DELETE on entries (no policy allows it; Erase now and the purges are definer code).
+  ['entries: hard delete', `delete from entries where id='${aBook}'`,                  ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261023060000: no direct write to children (book edits go through the definer book_update(), G-08; the RPCS rows).
+  ['children: book settings', `update children set nickname='Ashu' where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // G-08: parents still write the dates directly (no read of the old value needed).
+  ['children: set due date', `update children set due_date='2025-05-01' where id='${CHILD}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // G-10 (review L1): receipts are written only by sync_op_claim(); clients cannot insert or delete them.
+  ['sync_op_receipts: insert own', `insert into sync_op_receipts (op_id, profile_id) values ('${uuid7()}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_op_receipts: delete own', `delete from sync_op_receipts where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // PR #32 DB-01: the reading views are read-only (a write through book_entries would run as its owner).
+  ['book_entries: update a letter', `update book_entries set final_text='x' where id='${aBook}'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['book_entries: delete a letter', `delete from book_entries where id='${aBook}'`,    ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // my_policy_state is not an updatable view at all (55000, before any privilege check); writes are revoked anyway.
+  ['my_policy_state: delete', `delete from my_policy_state`,                          ['55000', '55000', '55000', '55000', '55000', '55000']],
   ['children: insert directly', `insert into children (id, name, date_of_birth) values ('${uuid7()}', 'Asha', '2025-04-12')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_members: add self', `insert into child_members (child_id, profile_id) values ('${CHILD}', auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
+  // F11-REQ-011 (20261015020000): leave_child, remove_child_member and undo_parent_join are the only paths.
+  ['child_members: leave', `delete from child_members where child_id='${CHILD}' and profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_members: change own role', `update child_members set role='parent' where child_id='${CHILD}' and profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['child_invites: insert directly', `insert into child_invites (child_id, invited_by, token_hash, role) values ('${CHILD}', auth.uid(), '\\x00', 'parent')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['dictionary_terms: insert own', `insert into dictionary_terms (owner_id, term, kind) values (auth.uid(), 'Ashu', 'nickname')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', 'none']],
-  ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', 'none']],
+  // 20261023060000: no app path writes dictionary_terms today (the dictionary is on the device), so nobody holds a grant.
+  ['dictionary_terms: insert own', `insert into dictionary_terms (owner_id, term, kind) values (auth.uid(), 'Ashu', 'nickname')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['child_member_prefs: edit own', `update child_member_prefs set signs_as='Mumma' where child_id='${CHILD}' and profile_id = auth.uid()`, ['ok', 'ok', 'ok', 'none', 'none', '42501']],
+  ['profiles: edit own', `update profiles set signs_as='Papa' where id = auth.uid()`, ['ok', 'ok', 'ok', 'ok', 'none', '42501']],
   ['policy_acceptances: insert directly', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values (auth.uid(), 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['store_subscriptions: insert', `insert into store_subscriptions (original_transaction_id, profile_id, product_id, status, environment, last_signed_at) values ('9', auth.uid(), 'p', 'active', 'production', now())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
-  ['app_account_tokens: insert', `insert into app_account_tokens (profile_id) values (auth.uid())`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // 20261023050000 (review B G2 and G3 on #248): the consent tables' writes are revoked from the API roles, so
+  // what row security refused ('none') is now refused by privilege, and TRUNCATE and LOCK, which row security
+  // never sees, are refused too (before: 'ok' for everyone holding the default ALL).
+  ['policy_acceptances: update own act', `update policy_acceptances set action = 'decline' where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: delete own acts', `delete from policy_acceptances where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: truncate', `truncate policy_acceptances`,                     ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_acceptances: lock exclusively (MAINTAIN)', `lock table policy_acceptances in access exclusive mode`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: publish a version', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
+    values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: edit a version', `update policy_versions set summary = 'x'`,     ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: delete a version', `delete from policy_versions where version = '9.9.9'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_versions: lock exclusively (MAINTAIN)', `lock table policy_versions in access exclusive mode`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_documents: add a document', `insert into policy_documents (key, title, needs_affirmative_act) values ('matrix-doc', 'x', false)`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['policy_documents: delete a document', `delete from policy_documents where key = 'matrix-doc'`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['legal_holds: insert', `insert into legal_holds (scope, scope_id, reason_code, matter_ref, placed_by, review_by) values ('child', '${CHILD}', 'other', 'x', 'x', '2027-01-01')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
   ['storage: upload to own folder', null,                                             ['ok', 'ok', 'ok', '42501', '42501', '42501']],
+  // 20261005000000: a letter's language is the author's; rate counters change only through rate_hit().
+  ['entries: set language on A\'s letter', `update entries set language='hi' where id='${aBook}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
+  ['sync_rate_windows: reset own counter', `delete from sync_rate_windows where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['sync_rate_windows: lower own counter', `update sync_rate_windows set hits = 0 where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Backup (20261023000000): every write goes through a function; the log is never touched by a client.
+  ['audio_blobs: confirm own row directly', `update audio_blobs set state = 'confirmed' where author_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['escrow_unwraps: delete own log rows', `delete from escrow_unwraps where profile_id = auth.uid()`, ['42501', '42501', '42501', '42501', '42501', '42501']],
+  ['storage: delete own backup object', `delete from storage.objects where name = '${BPATH}'`, ['none', 'none', 'none', 'none', 'none', 'none']],
+  // 20261016000000 (WP-F16-17): a parent writes their own held drafts (sync_push runs as the caller); nobody
+  // deletes one directly (held.discard, Erase now and Keep are the paths); markers are definer-only.
+  ['held_drafts: insert own', `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+    values ('${NEW_ID}', auth.uid(), '${CHILD}', 'held_letter', 'typed', now(), '2026-09-29')`, ['ok', 'ok', '42501', '42501', 'SCANO', '42501']],
+  ['held_drafts: edit A\'s draft', `update held_drafts set typed_text = 'x' where id = '${aHeld}'`, ['ok', 'none', 'none', 'none', 'none', '42501']],
+  ['held_drafts: delete A\'s draft', `delete from held_drafts where id = '${aHeld}'`,   ['42501', '42501', '42501', '42501', '42501', '42501']],
+  // Review L 2: a held draft never takes an id that is a letter or another author's (one plain 22023 for
+  // the book's parents; anyone else gets what RLS would answer).
+  ['held_drafts: insert with another author\'s letter id', `insert into held_drafts (id, author_id, child_id, kind, capture_mode, created_at, occurred_on)
+    values ('${nAdded}', auth.uid(), '${CHILD}', 'held_letter', 'typed', now(), '2026-09-29')`, ['22023', '22023', '42501', '42501', 'SCANO', '42501']],
+  ['held_drafts_gone: write a marker', `insert into held_drafts_gone (id, author_id, child_id, gone) values ('${NEW_ID}', auth.uid(), '${CHILD}', 'erased')`, ['42501', '42501', '42501', '42501', '42501', '42501']],
 ];
 
-// A holds Plus in this fixture (see apply_store_transaction above), so A may start
-// another book; the no-Plus refusal (SCPLS) is covered in children_entitlements.test.mjs.
+// Plus is checked on the device only (ADR 0013, 20261004000000_plus_on_device_only.sql):
+// the server never refuses a book for Plus, so A may start another book here.
 const RPCS = [
   ['create_child', `select public.create_child('${uuid7()}', 'Asha', '2025-04-12')`,       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_first_run_children', `select public.create_first_run_children('[{"id": "${uuid7()}", "name": "Asha", "date_of_birth": "2025-04-12"}]')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['create_child_invite', `select public.create_child_invite('${CHILD}', 'contributor')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
-  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  // D-069 (20261005000000): the book already has two parents, so a further co-parent invite is SCCAP.
+  ['create_child_invite (parent role)', `select public.create_child_invite('${CHILD}', 'parent')`, ['SCCAP', 'SCCAP', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
   ['accept_child_invite', `select public.accept_child_invite('${token}')`,               ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
   ['revoke_invite', `select public.revoke_invite('${inviteId}')`,                        ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
   ['review_family_letter', `select public.review_family_letter('${nSent}', 'added')`,    ['ok', 'ok', 'P0002', 'P0002', 'SCANO', '42501']],
@@ -155,16 +274,51 @@ const RPCS = [
   ['record_policy_act', `select public.record_policy_act('privacy', '1.0.0', 'acknowledge', 'signin_sheet', 'auth.sheet', '1', 'ios')`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['policy_actions_needed', `select * from public.policy_actions_needed()`,              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
   ['my_sync_gate', `select * from public.my_sync_gate()`,                                ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['get_plan_state', `select * from public.get_plan_state()`,                            ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
-  ['my_app_account_token', `select public.my_app_account_token()`,                       ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Sync (20261004100000_sync_engine.sql; behaviour in sync_engine.test.mjs).
+  ['sync_books', `select public.sync_books()`,                                            ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['sync_pull', `select public.sync_pull('{}'::jsonb, 10)`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['sync_push', `select public.sync_push('[]'::jsonb)`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Membership and rate limits (20261005000000; behaviour in db_followup_family_cap.test.mjs).
+  // leave_child: a non-member gets 'not_member' (idempotent), so the outsider's call succeeds and changes nothing.
+  ['leave_child', `select public.leave_child('${CHILD}')`,                              ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['remove_child_member', `select public.remove_child_member('${CHILD}', '${N}')`,      ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  ['rate_hit', `select public.rate_hit('membership')`,                                  ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // Backup (20261023000000; behaviour in audio_backup*.test.mjs). The server switch is off here, so
+  // key storage and reservations are SCBKO for everyone; reading, discarding and deleting never are.
+  ['backup_register_device', `select public.backup_register_device('${uuid7()}', ${BHEX('b2', 32)})`, ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  ['backup_revoke_device', `select public.backup_revoke_device('${BDEV}')`,             ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_store_key', `select public.backup_store_key('${CHILD}', 1, 1, '{"suite": "hpke-x25519-sha256-aes256gcm", "enc": "${'A'.repeat(43)}=", "ct": "${'A'.repeat(64)}"}'::jsonb)`, ['SCBKO', 'SCBKO', 'SCBKO', 'SCBKO', 'SCANO', '42501']],
+  ['backup_begin', `select public.backup_begin('${aBook}', '${CHILD}', 100, 1, ${BHEX('cd', 60)})`, ['SCBKO', 'SCBKO', 'SCBKO', 'SCBKO', 'SCANO', '42501']],
+  ['backup_confirm', `select public.backup_confirm('${aPrivate}', ${BHEX('ef', 32)})`, ['P0002', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_discard', `select public.backup_discard('${aBook}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // backup_delete_all needs a sign-in in the last 10 minutes; these sessions carry no amr (SCSTP).
+  ['backup_delete_all', `select public.backup_delete_all(0)`,                           ['SCSTP', 'SCSTP', 'SCSTP', 'SCSTP', 'SCANO', '42501']],
+  ['backup_pending_requests', `select public.backup_pending_requests('${BDEV}')`,       ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_approve_request', `select public.backup_approve_request('${BREQ}', '${BDEV2}', ${BHEX('5d', 32)})`, ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  ['backup_cancel_request', `select public.backup_cancel_request('${BREQ}')`,           ['ok', 'P0002', 'P0002', 'P0002', 'SCANO', '42501']],
+  // 20261015000000 (behaviour in v1_gate_hardening.test.mjs). book_update: sync_push's book.update (G-08).
+  ['book_update', `select public.book_update('${CHILD}', '{"nickname": "Ashu"}')`,      ['ok', 'ok', 'SCPAR', 'P0002', 'SCANO', '42501']],
+  // The due date too: the path that replaced direct writes to children (20261023060000).
+  ['book_update (due date)', `select public.book_update('${CHILD}', '{"due_date": "2025-05-01"}')`, ['ok', 'ok', 'SCPAR', 'P0002', 'SCANO', '42501']],
+  // sync_op_claim: the caller's own op ids only (G-10).
+  ['sync_op_claim', `select public.sync_op_claim('${uuid7()}')`,                        ['ok', 'ok', 'ok', 'ok', 'SCANO', '42501']],
+  // 20261015010000: the same answers as accept_child_invite, before consent and without joining (G-13).
+  ['peek_invite', `select public.peek_invite('${token}')`,                              ['SCINV', 'SCINV', 'SCINV', 'ok', 'SCANO', '42501']],
+  // 20261015020000 (behaviour in v1_gate_coparent.test.mjs). Device-made invite id and hashes (F11-REQ-002).
+  ['create_child_invite (device id)', `select public.create_child_invite('${uuid7()}', '${CHILD}', 'contributor', sha256(convert_to('matrix-token', 'UTF8')))`, ['ok', 'ok', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  // 72-hour undo: only the parent whose invite was used (A invited N).
+  ['undo_parent_join', `select public.undo_parent_join('${CHILD}', '${N}')`,             ['ok', 'SCPAR', 'SCPAR', 'SCPAR', 'SCANO', '42501']],
+  // Subscription status report (20261016001000, S06): any full account may report its own purchase; anonymous sessions never. The server switch app.status_report_enabled is unset here, so it fails closed (SCKIL); behaviour with it on is in subscription_status.test.mjs.
+  ['status_salt', `select public.status_salt()`,                                        ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
+  ['status_report_store', `select public.status_report_store('{"schema_version": 1, "sub_ref": "${'a'.repeat(64)}", "environment": "sandbox", "plan": "annual", "trial_end": null, "renewal_date": "2027-03-01T10:00:00Z", "cancelled": false, "reported_at": "2026-10-15T10:00:00Z"}'::jsonb)`, ['SCKIL', 'SCKIL', 'SCKIL', 'SCKIL', 'SCANO', '42501']],
 ];
 // Boolean helpers about the caller, used by RLS: callable, but they answer only for the caller.
 const HELPERS = {
   'is_child_member(uuid)': [`select public.is_child_member('${CHILD}') v`, [true, true, true, false, true, '42501']],
   'is_child_parent(uuid)': [`select public.is_child_parent('${CHILD}') v`, [true, true, false, false, false, '42501']],
   'child_is_live(uuid)': [`select public.child_is_live('${CHILD}') v`, [true, true, true, true, true, '42501']],
+  'photo_entry_is_purged(text)': [`select public.photo_entry_is_purged('${CHILD}/${A}/${uuid7()}.jpg') v`, [false, false, false, false, false, '42501']],
   'can_read_entry_photo(text)': [`select public.can_read_entry_photo('${photo}') v`, [true, true, false, false, false, '42501']],
-  'book_has_plus(uuid)': [`select public.book_has_plus('${CHILD}') v`, [true, true, true, false, false, '42501']],
   'is_anonymous()': [`select public.is_anonymous() v`, [false, false, false, false, true, '42501']],
   'require_user()': [`select public.require_user() is not null v`, [true, true, true, true, 'SCANO', '42501']],
   'my_role_in(uuid)': [`select public.my_role_in('${CHILD}') v`, ['parent', 'parent', 'contributor', null, 'contributor', '42501']],
@@ -172,16 +326,54 @@ const HELPERS = {
   'can_write_content()': [`select public.can_write_content() v`, [true, true, true, true, false, '42501']],
   'require_content_consent()': [`select public.require_content_consent()::text = '' v`, [true, true, true, true, 'SCANO', '42501']],
   'is_valid_client_uuid7(uuid)': [`select public.is_valid_client_uuid7('${uuid7()}') v`, [true, true, true, true, true, '42501']],
+  // The entry-audio Storage policies (20261023000000): the only gate a signed URL passes. Writable is
+  // false for everyone here because the server switch is off.
+  'backup_object_writable(text)': [`select public.backup_object_writable('${BPATH}') v`, [false, false, false, false, false, '42501']],
+  'backup_object_readable(text)': [`select public.backup_object_readable('${BPATH}') v`, [true, false, false, false, false, '42501']],
+  // 20261015030000: backs the dictionary_terms.forms check, which runs as the writer; pure.
+  'dictionary_forms_valid(jsonb)': [`select public.dictionary_forms_valid(null) v`, [true, true, true, true, true, '42501']],
 };
 // Service role only (Edge Functions, cron, runbooks).
 const SERVICE_ONLY = [
   `select public.purge_due()`, `select public.prepare_account_purge('${dreq}')`, `select public.finalize_account_deletion('${dreq}', '{}')`,
-  `select public.apply_store_transaction(null, 'SUBSCRIBED', null, now(), 'production', '1', null, 'p', 'active', now())`,
-  `select public.has_plus('${A}')`, `select public.record_purge_attempt(1, true)`, `select public.record_deletion_step('${dreq}', 'auth_user', 'done')`,
+  `select public.record_purge_attempt(1, true)`, `select public.record_deletion_step('${dreq}', 'auth_user', 'done')`,
   `select * from public.content_gate_state('${A}')`, `select public.has_active_consent('${A}', 'terms')`,
-  `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-04-12', null, true)`,
+  `select public.audit('purge_run', null, null, null)`, `select public.create_child_row('${A}', '${uuid7()}', 'Asha', '2025-04-12', null)`,
   `select public.enqueue_storage_purge('entry-photos', 'x', false, 'orphan')`, `select public.is_held('child', '${CHILD}')`,
-  `select public.entry_is_held('${aBook}')`, `select public.store_environment_allowed('production')`, `select public.purge_backoff(1)`,
+  `select public.entry_is_held('${aBook}')`, `select public.purge_backoff(1)`,
+  `select public.sync_begin_epoch('drill', null)`, `select public.sync_housekeeping(now(), 10)`,
+  // Internal helpers (20261005000000): called only from security-definer functions.
+  `select public.max_parents_per_book()`, `select public.request_idempotency_key()`,
+  `select public.idempotency_claim('${A}', 'record_policy_act', '[]')`, `select public.idempotency_store('${A}', 'record_policy_act', '{}')`,
+  // Backup (20261023000000): internal helpers, the purge worker's and stop endpoint's functions, and
+  // the escrow_* functions (role escrow_svc only; its own grants are tested in audio_backup_escrow).
+  `select public.backup_switch_on('backup')`, `select public.backup_escrow_key_trusted(1)`, `select public.backup_account_deleting('${A}')`,
+  `select public.backup_entry_exists('${aBook}', '${A}', '${CHILD}')`, `select public.backup_row_held('${aBook}', '${A}', '${CHILD}')`, `select public.backup_forget_entry('${aBook}')`,
+  `select public.backup_session_live('${A}', '${uuid7()}')`, `select public.backup_recent_sign_in()`,
+  `select public.escrow_rotation_on(1, 2)`, `select public.escrow_approvers('${A}', '${BDEV}')`, `select public.escrow_long_hold('${A}', '${BDEV}')`,
+  `select public.escrow_require_session('${A}', '${uuid7()}')`,
+  `select public.backup_svc_sweep(now(), 1)`, `select public.backup_svc_unwraps_between(now(), now(), 1)`, `select public.backup_svc_stop(${BHEX('00', 32)})`,
+  `select public.escrow_require_on()`, `select public.escrow_request_context('${A}', '${BDEV}')`,
+  `select public.escrow_open_request('${A}', '${BDEV}', '${uuid7()}', '0123456789ab', ${BHEX('00', 32)}, '[]')`,
+  `select public.escrow_load_wraps('${A}', '${BDEV}', '${BREQ}', '${uuid7()}')`, `select public.escrow_record_unwraps('${A}', '${BDEV}', '${BREQ}', '[]', null)`,
+  `select public.escrow_set_request_state('${A}', '${BREQ}', 'notified')`, `select public.escrow_rotation_batch(1, 2)`,
+  `select public.escrow_rewrap_key('${A}', '${CHILD}', 1, 1, 2, ${BHEX('01', 81)}, null)`,
+  `select public.escrow_rotation_failed('${A}', '${CHILD}', 1, 1, 2, null)`, `select public.escrow_rotation_notices_due(2, 1)`, `select public.escrow_rotation_notice_sent('${uuid7()}', true)`,
+  // 20261015010000 (BL-334): pepper readiness for APPLY.md and ops checks.
+  `select public.consent_pepper_ready()`,
+  // The invite token shape check, used inside peek_invite and accept_child_invite.
+  `select public.invite_token_well_formed('x')`,
+  // 20261015020000: server config readers, the invite policy check, and code redemption (invite-redeem only).
+  `select public.contributors_enabled()`, `select public.family_share_consent_required()`,
+  `select public.invite_policy_checks('${A}', 'parent')`,
+  `select public.accept_child_invite_by_code('${C}', sha256(convert_to('x', 'UTF8')))`,
+  // Subscription status internals and the retention purge (20261016001000, S06).
+  `select public.subscription_rate_hit('${A}', 'report')`, `select public.subscription_report_switch()`, `select public.subscription_instant('"2026-10-15T10:00:00Z"'::jsonb, false)`,
+  `select public.subscription_retention_purge(now())`,
+  // 20261023010000: the book purge that keeps a former member's rows, and its author list (definer code only).
+  `select public.book_kept_authors('${CHILD}')`, `select public.purge_book_keep_authors('${CHILD}', array['${B}']::uuid[], 'child_purge', null)`,
+  // 20261023020000: whether a legal hold covers anything a book's purge deletes (definer code only).
+  `select public.book_purge_held('${CHILD}')`,
 ];
 
 const fmt = (v) => (v === null ? 'null' : String(v));
@@ -231,10 +423,186 @@ for (const sql of SERVICE_ONLY) {
   cells += 3;
   check(`service-only ${name}: refused for users, anonymous and anon`, got.every((g) => g === '42501') || console.log(`      got ${got}`));
 }
+// 20261023010000: those are not the service role's either (Supabase's old automatic grants gave it every new
+// function; with SCRIBE_DEFAULT_GRANTS=legacy, the nightly, these checks can fail; without the automatic grants the
+// revokes change nothing); 20261023020000 adds book_purge_held.
+for (const sig of ['public.book_kept_authors(uuid)', 'public.purge_book_keep_authors(uuid, uuid[], text, uuid)', 'public.book_purge_held(uuid)']) {
+  check(`internal ${sig}: not executable by service_role`,
+    !(await sys(`select has_function_privilege('service_role', $1::regprocedure, 'execute') x`, [sig])).rows[0].x);
+}
+
+// ── The service role (20261023010000, review A re-check on #178) ─────────
+// The consent records are append-only for the service role too. The row guards let a delete through
+// while app.retention_purge is on, which any session can set, and service_role bypasses RLS; so it
+// reads the records and every write is 42501, also with the setting on. Only the definer functions
+// (record_policy_act, the pseudonymisation triggers, the two retention purges, status_report_store) write.
+await sys(`insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_shown, shown_at)
+  values ($1, $2, 'plus.annual', 'introductory', '1.0.0', now())`, [A, 'a'.repeat(64)]);
+async function asService(sql, purge) {
+  await db.exec('begin');
+  try {
+    await db.exec('set local role service_role');
+    if (purge) await db.query(`select set_config('app.retention_purge', 'on', true)`);
+    const r = await db.query(sql);
+    return /^\s*(insert|update|delete)/i.test(sql) ? (r.affectedRows > 0 ? 'ok' : 'none') : /^\s*select\s+1\b/i.test(sql) ? r.rows.length : 'ok';
+  } catch (e) {
+    return e.code ?? 'error';
+  } finally {
+    await db.exec('rollback');
+  }
+}
+const SERVICE_ROLE = [
+  // label, sql, expected, with app.retention_purge on
+  // 20261023060000: no path reads a table with the service key, so it holds no table privilege at all.
+  ['policy_acceptances: read', 'select 1 from policy_acceptances limit 1', '42501'],
+  ['policy_acceptances: insert', `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform)
+    values ('${A}', 'terms', '1.0.0', 'accept', 'support_assisted', 'matrix', '1', 'ios')`, '42501'],
+  ['policy_acceptances: update', `update policy_acceptances set action = 'decline'`, '42501'],
+  ['policy_acceptances: delete', 'delete from policy_acceptances', '42501'],
+  ['policy_acceptances: delete with app.retention_purge on', 'delete from policy_acceptances', '42501', true],
+  ['policy_acceptances: truncate', 'truncate policy_acceptances', '42501'],
+  ['subscription_consents: read', 'select 1 from subscription_consents limit 1', '42501'],
+  ['subscription_consents: insert', `insert into subscription_consents (profile_id, sub_ref, product_id, offer_type, terms_shown, shown_at)
+    values ('${A}', '${'b'.repeat(64)}', 'plus.annual', 'none', '1.0.0', now())`, '42501'],
+  ['subscription_consents: update', `update subscription_consents set terms_shown = '9.9.9'`, '42501'],
+  ['subscription_consents: delete', 'delete from subscription_consents', '42501'],
+  ['subscription_consents: delete with app.retention_purge on', 'delete from subscription_consents', '42501', true],
+  ['subscription_consents: truncate', 'truncate subscription_consents', '42501'],
+  // 20261023050000 (review B G3 on #248): nor MAINTAIN, which allowed an exclusive lock that stalls every consent act.
+  ['policy_acceptances: lock exclusively (MAINTAIN)', 'lock table policy_acceptances in access exclusive mode', '42501'],
+  ['subscription_consents: lock exclusively (MAINTAIN)', 'lock table subscription_consents in access exclusive mode', '42501'],
+  ['policy_acceptances: nor a shared read lock (no privilege at all)', 'lock table policy_acceptances in access share mode', '42501'],
+  // Publishing is a SQL Editor insert as the owner (APPLY.md step 8.2), not the service key's.
+  ['policy_versions: publish a version', `insert into policy_versions (document, version, change_class, requires_reconsent, published_at, new_users_from, effective_at, content_sha256, url, summary)
+    values ('privacy', '1.0.1', 'patch', false, now(), now(), now(), '\\x00', 'https://example.invalid/privacy/1.0.1', 'x')`, '42501'],
+  // 20261023010000 and 20261023020000: the internal purge functions are not the service role's. The harness now
+  // grants every new function to anon, authenticated and service_role as hosted Supabase does, so these rows fail
+  // if a migration forgets the revoke from service_role.
+  ['book_kept_authors: execute', `select public.book_kept_authors('${CHILD}')`, '42501'],
+  ['purge_book_keep_authors: execute', `select public.purge_book_keep_authors('${CHILD}', array['${B}']::uuid[], 'child_purge', null)`, '42501'],
+  ['book_purge_held: execute', `select public.book_purge_held('${CHILD}')`, '42501'],
+];
+for (const [label, sql, expect, purge] of SERVICE_ROLE) {
+  const got = await asService(sql, purge);
+  cells++;
+  check(`service_role ${label}: expected ${fmt(expect)}`, fmt(got) === fmt(expect) || console.log(`      got ${fmt(got)}`));
+}
+const consentPrivs = (await sys(`select t || ' ' || p v from unnest(array['policy_acceptances', 'subscription_consents']) t
+  cross join unnest(array['INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+  where has_table_privilege('service_role', 'public.' || t, p) order by 1`)).rows.map((r) => r.v);
+for (const v of consentPrivs) console.log(`      service_role still holds: ${v}`);
+check('[#178 re-check, #248 G3] service_role holds no write, truncate, references, trigger or maintain privilege on either consent table',
+  consentPrivs.length === 0);
+check('[#178 re-check] the records are still there after every refused write', (await sys(`select
+  (select count(*) from policy_acceptances)::int > 0 and (select count(*) from subscription_consents)::int = 1 x`)).rows[0].x);
+
+// 20261023050000 (review B G2 on #248): what the API roles hold on the consent tables is exactly what a code path
+// uses: authenticated reads its own acts (my_policy_state is security_invoker) and both roles read the published
+// documents and versions. has_table_privilege, not information_schema, because role_table_grants hides MAINTAIN.
+const apiConsentPrivs = (await sys(`select r || ' ' || t || ' ' || p v from unnest(array['anon', 'authenticated']) r
+  cross join unnest(array['policy_acceptances', 'policy_documents', 'policy_versions', 'subscription_consents']) t
+  cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+  where has_table_privilege(r, 'public.' || t, p) order by 1`)).rows.map((r) => r.v);
+check('[#248 G2, 20261023060000] anon and authenticated hold SELECT only, and only where a path reads: '
+  + 'authenticated on policy_acceptances (my_policy_state), both on policy_versions, nobody on policy_documents or subscription_consents',
+  JSON.stringify(apiConsentPrivs) === JSON.stringify(['anon policy_versions SELECT',
+    'authenticated policy_acceptances SELECT', 'authenticated policy_versions SELECT'])
+  || console.log(`      got ${apiConsentPrivs.join(', ')}`));
+
+// ── The harness models the defaults it says it does (#261 F4; harness.mjs DEFAULT_GRANTS) ──────────────
+// Read before any migration, on a table, a sequence and a function revoked from PUBLIC, so the function half
+// cannot pass through PUBLIC's EXECUTE: 'none' (the default) gives the three roles only TRUNCATE, REFERENCES,
+// TRIGGER and MAINTAIN and sequence UPDATE, 'legacy' gives them everything.
+const probeWant = EXPECTED_PROBE[h.defaults.mode];
+check(`[#261 F4] the harness models the ${h.defaults.mode} default grants (a table, a sequence, a function revoked from PUBLIC)`,
+  ['anon', 'authenticated', 'service_role'].every((r) => JSON.stringify(h.defaults.probe[r]) === JSON.stringify(probeWant))
+  || console.log(`      got ${JSON.stringify(h.defaults.probe)}`));
+
+// ── Explicit grants (20261023060000) ─────────────────────────────────────
+// Every table, view and sequence in public: exactly the privileges in grants.mjs for the three roles, in both
+// worlds (S select, I insert, U update, D delete; nothing else, so no TRUNCATE, REFERENCES, TRIGGER or MAINTAIN).
+// A grant exists only where a code path uses it today (the migration header names each path).
+const LETTER = { SELECT: 'S', INSERT: 'I', UPDATE: 'U', DELETE: 'D', TRUNCATE: 'T', REFERENCES: 'R', TRIGGER: 'G', MAINTAIN: 'M' };
+const held = (await sys(`select r || ' ' || c.relname || ' ' || string_agg(p, ',' order by p) v
+  from pg_class c cross join unnest(array['anon', 'authenticated', 'service_role']) r
+  cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p
+  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p', 'v', 'm') and has_table_privilege(r, c.oid, p)
+  group by r, c.relname order by 1`)).rows.map((x) => {
+  const [role, rel, privs] = x.v.split(' ');
+  return `${role} ${rel} ${privs.split(',').map((q) => LETTER[q]).sort((a, b) => 'SIUDTRGM'.indexOf(a) - 'SIUDTRGM'.indexOf(b)).join('')}`;
+});
+const want = grantRows();
+for (const v of held.filter((x) => !want.includes(x))) console.log(`      held, not in the grant list: ${v}`);
+for (const v of want.filter((x) => !held.includes(x))) console.log(`      in the grant list, not held: ${v}`);
+check('[20261023060000] every public table and view grants anon, authenticated and service_role exactly the grant list',
+  JSON.stringify([...held].sort()) === JSON.stringify(want));
+const cols = (await sys(`select c.relname t, string_agg(a.attname, ',' order by a.attname) cs
+  from pg_class c join pg_attribute a on a.attrelid = c.oid and a.attnum > 0 and not a.attisdropped
+  where c.relnamespace = 'public'::regnamespace and c.relkind in ('r', 'p') and has_column_privilege('authenticated', c.oid, a.attnum, 'SELECT')
+    and not has_table_privilege('authenticated', c.oid, 'SELECT') group by 1 order by 1`)).rows;
+check('[20261023060000] authenticated reads only the listed columns of children and child_keys (no date of birth, due date or escrow wrap)',
+  JSON.stringify(cols.map((x) => [x.t, x.cs]).sort()) === JSON.stringify(Object.entries(COLUMNS).sort()) || console.log(`      got ${JSON.stringify(cols)}`));
+const seqPrivs = (await sys(`select count(*)::int n from pg_class c cross join unnest(array['public', 'anon', 'authenticated', 'service_role']) r
+  cross join unnest(array['USAGE', 'SELECT', 'UPDATE']) p
+  where c.relnamespace = 'public'::regnamespace and c.relkind = 'S' and r <> 'public' and has_sequence_privilege(r, c.oid, p)`)).rows[0].n;
+check('[20261023060000] no API role holds any privilege on a public sequence', seqPrivs === 0);
+// And later objects: a table, a sequence and a function (revoked from PUBLIC) created after every file give the
+// three roles nothing, whichever defaults the project started with.
+const after = await (async () => {
+  await db.exec('begin');
+  try {
+    await db.exec(`create table public.matrix_later (x int); create sequence public.matrix_later_seq;
+      create function public.matrix_later() returns int language sql as $$ select 1 $$;
+      revoke execute on function public.matrix_later() from public;`);
+    return (await sys(`select bool_or(has_table_privilege(r, 'public.matrix_later', p)) t,
+        bool_or(has_sequence_privilege(r, 'public.matrix_later_seq', 'USAGE') or has_sequence_privilege(r, 'public.matrix_later_seq', 'UPDATE')) q,
+        bool_or(has_function_privilege(r, 'public.matrix_later()', 'execute')) f
+      from unnest(array['anon', 'authenticated', 'service_role']) r
+      cross join unnest(array['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'TRUNCATE', 'REFERENCES', 'TRIGGER', 'MAINTAIN']) p`)).rows[0];
+  } finally {
+    await db.exec('rollback');
+  }
+})();
+check('[20261023060000] a table, sequence or function created after every file gives anon, authenticated and service_role nothing',
+  after.t === false && after.q === false && after.f === false || console.log(`      got ${JSON.stringify(after)}`));
+
+// ── invite_redeem_by_code (review B N8 on #138) ──────────────────────────
+// The RPC trusts p_user and its subject arrays (packages/api/src/server/family.ts), so only the
+// invite-redeem function, as service_role, may run it. 20261028010000 builds it. Every overload must be
+// closed to PUBLIC, anon and authenticated and open to service_role, and it is never an RPC or helper
+// of the matrix above. The two probes show the rule is not empty: Postgres's
+// default grant (PUBLIC) fails it, and the grants the migration must make pass it.
+const redeemFacts = async () => (await sys(`select coalesce(array_to_string(p.proacl, ','), '') acl,
+    has_function_privilege('anon', p.oid, 'execute') anon_x, has_function_privilege('authenticated', p.oid, 'execute') auth_x,
+    has_function_privilege('service_role', p.oid, 'execute') svc_x
+  from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname = 'invite_redeem_by_code'`)).rows;
+const redeemClosed = (rows) => rows.every((f) => !f.anon_x && !f.auth_x && f.svc_x && !/(^|,)=X/.test(f.acl));
+const redeemNow = await redeemFacts();
+if (!redeemNow.length) console.log('      invite_redeem_by_code is not defined yet; the rule holds for it once a migration adds it');
+check('[review B N8] invite_redeem_by_code: executable by service_role only, and not a client RPC or helper',
+  redeemClosed(redeemNow) && !RPCS.some((r) => r[0].split(' ')[0] === 'invite_redeem_by_code') && !Object.keys(HELPERS).some((s) => s.startsWith('invite_redeem_by_code(')));
+const redeemProbe = async (grants) => {
+  await db.exec('begin');
+  try {
+    await db.exec(`drop function if exists public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[])`);
+    await db.exec(`create function public.invite_redeem_by_code(p_user uuid, p_mode text, p_code_hash bytea, p_user_subjects text[],
+      p_device_subjects text[], p_ip_subjects text[]) returns jsonb language sql set search_path = pg_catalog, public, pg_temp as $$ select '{}'::jsonb $$`);
+    if (grants) await db.exec(grants);
+    return redeemClosed(await redeemFacts());
+  } finally {
+    await db.exec('rollback');
+  }
+};
+const SIG = 'public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[])';
+check('[review B N8] the rule refuses a version left with the default grant (PUBLIC can execute it)', (await redeemProbe(null)) === false);
+check('[review B N8] the rule passes a version revoked from public, anon and authenticated and granted to service_role',
+  (await redeemProbe(`revoke execute on function ${SIG} from public, anon, authenticated; grant execute on function ${SIG} to service_role;`)) === true);
 
 // "Family can read the book" on: contributors read in-book letters (B-REQ-011).
 await sys(`update children set family_can_read = true where id=$1`, [CHILD]);
-await run('read book_entries (family can read on)', () => ['select 1 from book_entries where child_id=$1', [CHILD]], [4, 3, 3, 0, 0, '42501']);
+// book_entries is read only by definer code (sync_pull) since 20261023060000; the setting's effect on what a member
+// pulls is in sync_engine.test.mjs and sync_v1_server.test.mjs.
+await run('read book_entries (family can read on)', () => ['select 1 from book_entries where child_id=$1', [CHILD]], ['42501', '42501', '42501', '42501', '42501', '42501']);
 await run('read storage: in-book photo (family can read on)', () => ['select 1 from storage.objects where name=$1', [photo]], [1, 1, 1, 0, 0, 0]);
 console.log(`      ${cells} matrix cells`);
 
@@ -245,6 +613,20 @@ const covered = new Set(READS.map((r) => r[0]));
 const missing = tables.filter((t) => !covered.has(t));
 for (const t of missing) console.log(`      no matrix row: public.${t}`);
 check('[LEGAL-REQ-024] every public table and view has a row in the access matrix', missing.length === 0);
+// PR #32 DB-01, R-17 review finding 4: Supabase's default privileges grant writes on every new
+// relation, and a view that runs as its owner would skip the base table's policies. No view in
+// any schema the migrations make is writable by an API role, at table or column level.
+const writableViews = (await sys(`
+  select n.nspname || '.' || c.relname || ' (' || r.rolname || ' ' || p.priv || ')' v
+    from pg_class c join pg_namespace n on n.oid = c.relnamespace
+    cross join (values ('anon'::text), ('authenticated')) r(rolname)
+    cross join (values ('INSERT'::text), ('UPDATE'), ('DELETE'), ('TRUNCATE')) p(priv)
+   where c.relkind in ('v', 'm') and n.nspname in ('public', 'ops', 'insights')
+     and (has_table_privilege(r.rolname, c.oid, p.priv)
+          or (p.priv in ('INSERT', 'UPDATE') and has_any_column_privilege(r.rolname, c.oid, p.priv)))
+   order by 1`)).rows.map((x) => x.v);
+for (const v of writableViews) console.log(`      writable view: ${v}`);
+check('[DB-01] no view is writable by anon or authenticated', writableViews.length === 0);
 
 const fns = (await sys(`select p.oid, p.proname || '(' || pg_get_function_identity_arguments(p.oid) || ')' sig, p.proname name,
     p.prosecdef secdef, p.prosrc src, coalesce(array_to_string(p.proconfig, ','), '') cfg,
@@ -266,6 +648,26 @@ const unguarded = fns.filter((f) => f.auth_x && rpcNames.has(f.name) && !/requir
 for (const f of unguarded) console.log(`      RPC without the anonymous guard: ${f.sig}`);
 check('[K-08] every RPC starts with require_user() or checks is_anonymous()', unguarded.length === 0);
 
+// sync_private (20261016000000, review L on #208): nothing for anon or PUBLIC; signed-in people only the
+// helpers sync_push and sync_pull call as the caller.
+const SYNC_PRIVATE_FOR_SIGNED_IN = ['dup_answer(uuid)', 'dup_outcome(uuid,uuid)', 'erase_entry(uuid)', 'erase_held(uuid)',
+  'held_discard(uuid,xid8)', 'held_dup(uuid,uuid)', 'held_id_taken(uuid)', 'held_on_hold(uuid)', 'held_state(uuid,boolean)',
+  'held_upsert(uuid,uuid,jsonb)', 'keep_check(uuid,uuid,text,xid8)', 'lock_letter_id(uuid)', 'note_answer(uuid,jsonb)',
+  'note_applied(uuid,uuid,boolean,boolean)', 'note_held(uuid,uuid,boolean)'];
+const sp = (await sys(`select p.proname || '(' || coalesce((select string_agg(format_type(t, null), ',' order by i)
+      from unnest(p.proargtypes::oid[]) with ordinality u(t, i)), '') || ')' sig,
+    has_function_privilege('authenticated', p.oid, 'execute') auth_x, has_function_privilege('anon', p.oid, 'execute') anon_x,
+    coalesce(array_to_string(p.proacl, ','), '') acl
+  from pg_proc p where p.pronamespace = 'sync_private'::regnamespace`)).rows
+  .map((f) => ({ ...f, sig: f.sig.replace(/character varying/g, 'varchar').replace(/ /g, '') }));
+const spSigned = sp.filter((f) => f.auth_x).map((f) => f.sig).sort();
+for (const f of spSigned.filter((x) => !SYNC_PRIVATE_FOR_SIGNED_IN.includes(x))) console.log(`      sync_private callable by authenticated, not in the allowlist: ${f}`);
+check('[review L] sync_private: signed-in people execute exactly the allowlisted helpers',
+  JSON.stringify(spSigned) === JSON.stringify([...SYNC_PRIVATE_FOR_SIGNED_IN].sort()));
+check('[review L] sync_private: nothing is executable by anon or PUBLIC, and anon has no usage on the schema',
+  sp.every((f) => !f.anon_x && !/(^|,)=X/.test(f.acl))
+  && !(await sys(`select has_schema_privilege('anon', 'sync_private', 'usage') x`)).rows[0].x);
+
 const policies = (await sys(`select tablename, permissive, array_to_string(roles, ',') roles, coalesce(qual, '') || coalesce(with_check, '') expr
   from pg_policies where schemaname = 'public'`)).rows;
 const clientTables = [...new Set(policies.filter((p) => p.permissive === 'PERMISSIVE' && p.roles.includes('authenticated')).map((p) => p.tablename))]
@@ -273,7 +675,11 @@ const clientTables = [...new Set(policies.filter((p) => p.permissive === 'PERMIS
 const unguardedTables = clientTables.filter((t) => !policies.some((p) => p.tablename === t && p.permissive === 'RESTRICTIVE' && /is_anonymous/.test(p.expr)));
 for (const t of unguardedTables) console.log(`      no restrictive anonymous policy: public.${t}`);
 check('[K-08] every client-visible table has a restrictive anonymous-session policy', clientTables.length >= 10 && unguardedTables.length === 0);
-check('[K-08] the photo bucket has a restrictive anonymous-session policy',
-  (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE' and qual ~ 'is_anonymous'`)).rows.length === 1);
+// One restrictive anonymous-session policy per client bucket (entry-audio added by 20261023000000).
+for (const bucket of ['entry-photos', 'entry-audio']) {
+  check(`[K-08] the ${bucket} bucket has a restrictive anonymous-session policy`,
+    (await sys(`select 1 from pg_policies where schemaname='storage' and tablename='objects' and permissive='RESTRICTIVE'
+      and qual ~ 'is_anonymous' and qual ~ $1`, [`'${bucket}'`])).rows.length === 1);
+}
 
 done();

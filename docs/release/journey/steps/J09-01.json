@@ -1,0 +1,37 @@
+{
+  "id": "J09-01",
+  "journey": "the-book",
+  "kind": "happy",
+  "title": "An empty book",
+  "note": "The closed cover named and signed in first run, one plain sentence, one action: \"Write a letter\". No counts, no gaps, nothing to fill in. With one book there is no \"For Asha\" row: \"Asha's book\" already says the name.",
+  "from": "J07-04",
+  "shot": "screens/J09-01.png",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha's book Asha From Mama The first page is waiting. Tell Asha one thing about today. Write a letter Tonight Book Family",
+  "lines": [
+    "Asha's book",
+    "Asha",
+    "From Mama",
+    "The first page is waiting.",
+    "Tell Asha one thing about today.",
+    "Write a letter",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

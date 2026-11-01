@@ -1,0 +1,43 @@
+{
+  "id": "J18-02",
+  "journey": "dark-mode",
+  "kind": "happy",
+  "title": "Tonight, dark",
+  "note": "Tonight at night: the dateline, the one question in the letter face, Speak and Type, and the card for the recording waiting on Review with \"Read it back\". (Seeded fictional family Asha.)",
+  "from": "J18-01",
+  "shot": "screens/J18-02.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good afternoon, Mama. What was cooking in your kitchen today? Another thought Friday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good afternoon,",
+    "Mama.",
+    "What was cooking in your kitchen today?",
+    "Another thought",
+    "Friday",
+    "0:31",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

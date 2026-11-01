@@ -1,0 +1,35 @@
+{
+  "id": "J07-02",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Typing, autosaved",
+  "note": "After a pause \"Saved on this phone\" appears and stays. Every pause saves a local draft, so a closed sheet or a crash loses nothing.",
+  "from": "J07-01",
+  "shot": "screens/J07-02.png",
+  "route": "/write",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Saved on this phone Close Asha · 0 days Who came to meet Asha this week? What did they say? You put both hands on the window today and watched the rain. Add to Asha's book Keep private",
+  "lines": [
+    "Saved on this phone",
+    "Close",
+    "Asha · 0 days",
+    "Who came to meet Asha this week? What did they say?",
+    "You put both hands on the window today and watched the rain.",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

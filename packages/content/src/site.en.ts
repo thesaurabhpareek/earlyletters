@@ -1,24 +1,39 @@
-// Website copy for Early Letters. {price} and {child} are placeholders.
+// Website copy. {child} is a placeholder; the web renders it as "your child".
 // v1 is digital only: no printed-book promises (PRD.md K-32).
-//
-// This file is a reference copy: the live site reads apps/web/src/content/site.ts, not this file.
-// It states what is true of the FIRST store build (D-121): on this phone only, English only, no sign-in, no
-// invite, no sync, no backup of our own, Plus on. Wording that belongs to a later 1.0.x release (family
-// invites, sync, backup, more languages, the gift) is not here until that release ships; the held lines are
-// listed in docs/exec-rulings-claims-trust-2026-11-01.md. The words about edits follow the founder's true
-// line (D-133): it stays in your words, every change is marked, the original recording is kept unchanged.
+// The brand name comes from packages/brand, never typed here (CLAUDE.md, D-076).
+// This is reference copy: the live site reads apps/web/src/content/site.ts, not this file.
+// It states only what is true of the FIRST store build (D-121): on this phone, English only, no sign-in,
+// no invite, no sync, no backup of our own. Co-parent, family, sync and other-language wording is held until
+// the release that ships it (D-126; docs/exec-rulings-claims-trust-2026-11-01.md, Q3 to Q6). Words about
+// edits follow the D-133 line (PR #439, open): it stays in your words, every change is marked, the recording is kept unchanged.
+// Read together plays recordings on this phone with no word highlight (D-059).
+// The privacy promise is `en.trust.promise` word for word (D-061). Legal pages: packages/brand
+// `web.*` (D-063).
+import { brand } from '@scribe/brand';
+import { plusPriceLine } from './pricing';
+import { en } from './strings.en';
+
+/** Plus prices as shown on the website (D-075, Brief decision 3). The App Store shows the localized price. */
+const price = plusPriceLine;
 
 export const site = {
-  hero: {
-    headline: "Talk for a minute. Keep it for years.",
-    subhead:
-      "Early Letters is the baby memory book you fill by talking. It stays in your words, and your letters stay on your iPhone.",
+  /** Open Graph and social card text: first contact, so it carries the descriptor (BRAND.md naming; brand review BRD-12). */
+  og: {
+    title: brand.name,
+    description: `${brand.name}, the baby memory book you fill by talking. ${brand.tagline}`,
   },
-  primaryCta: "Tell me at launch",
+  hero: {
+    headline: "Letters to your child, in your voice",
+    subhead:
+      `${brand.name} is the baby memory book you fill by talking. It stays in your words, and your letters stay on your iPhone.`,
+  },
+  primaryCta: "Join the waitlist",
+  price,
   benefits: [
     {
       title: "It stays in your words",
-      body: "Transcription happens on your phone. We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one. You can put any fix back before you keep the letter. We never add a word.",
+      // D-074: the edit feature is Word for word.
+      body: "Word for word: transcription happens on your phone. It takes out the ums and accidental repeats, spells your names your way, and marks each fix. You can undo any fix. We never rewrite your words.",
     },
     {
       title: "Your voice, kept",
@@ -26,7 +41,7 @@ export const site = {
     },
     {
       title: "A minute is plenty",
-      body: "Say a few words at bedtime or in the car. On a quiet day, tap \"Not much today\". No counters, no badges, no scores. Just letters, whenever you have them.",
+      body: "Say a few words at bedtime or in the car. On a quiet day, tap \"Not much today\". Nothing counts or scores you. Write when you have something to say.",
     },
     {
       title: "Yours to take with you",
@@ -38,11 +53,11 @@ export const site = {
     steps: [
       {
         title: "Talk or type",
-        body: "Tell {child} about today. A note or a long letter, both belong.",
+        body: "Tell {child} about today. A sentence or a long letter, both belong.",
       },
       {
         title: "Read it back",
-        body: "See your words on the page, with each small fix marked. Put any one back. Nothing else changes.",
+        body: "See your words on the page, with any small fix marked. Fix a word if one is wrong. Nothing else changes.",
       },
       {
         title: "It joins the book",
@@ -52,16 +67,19 @@ export const site = {
   },
   readTogether: {
     title: "Read together",
-    body: "Open a letter and it plays in the voice of the person who wrote it, while the words appear on the page. Curl up together at bedtime and listen to your own voice tell the story of the first steps, again and again.",
+    body: "Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page. Hear the night of the first steps again, as many times as {child} asks.",
   },
   privacy: {
     title: "Our promise, in plain words",
+    lead: en.trust.promise,
     points: [
       "Your letters and recordings stay on your iPhone. They are not sent to us.",
       "We never rewrite your words. Transcription happens on your phone.",
+      // D-085 (amends D-073): no backup of our own in v1.0.
+      "Your recordings stay on your phone, and in your iPhone's own backup if you use one.",
       "No ads. We never sell your data or share it with advertisers.",
-      "Every letter you have made stays yours to export, at any time.",
-      "You can delete your own letters and recordings whenever you like. A deleted letter waits 30 days in Recently deleted, or you can erase it at once.",
+      "You can export your book, free, at any time.",
+      "You can delete your own letters and recordings whenever you like.",
     ],
   },
   faq: [
@@ -71,33 +89,59 @@ export const site = {
     },
     {
       q: "Do you rewrite my words?",
-      a: "No. Transcription happens on your phone. We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one so you can put it back. We never add a word, and your original recording is kept unchanged. Every sentence in your book is one you actually said.",
+      a: "No. Transcription happens on your phone. Word for word takes out the ums and accidental repeats, spells your names your way, and marks each fix. It never adds a word. You can undo any fix, or choose Exactly as said to keep every word as it came. Every sentence in your book is one you actually said.",
     },
     {
       q: "What if I skip a few days, or a few weeks?",
-      a: "Nothing is keeping count, so there is nothing to catch up on. On a quiet day you can tap \"Not much today\", or just come back when you have something to say. Your book is still there.",
+      a: "That is fine. Nothing is counting. Tap \"Not much today\" on a quiet day, or come back when you have something to say. Your book is still there.",
     },
     {
       q: "Which languages can I use?",
-      a: "English first. Other languages arrive one at a time, each after a native speaker has read it. Your words stay in the language you said them.",
+      a: "English first. More languages follow one at a time, each after a native speaker has checked it. Your words stay in the language you said them, never translated.",
     },
     {
       q: "Can I get my memory book out?",
-      a: "Yes. Export it any time: your letters, your recordings and a PDF of the book. Every letter you have made stays yours to export, with or without Plus.",
+      a: "Yes. Export it any time, for free: your letters, your recordings and a PDF of the book.",
     },
     {
       q: "How much does it cost?",
-      a: "Your first two letters are free, so you can try it. After that, adding new letters needs Plus membership: $4.99 a month with a 1-month free trial, or $49.99 a year with a 2-month free trial, through the App Store in the US. One membership covers every child's book. Every letter you have made stays yours to read, play and export, even if you stop.",
+      // D-075: the website shows the price. D-085: no backup is claimed in v1.0.
+      a: `Your first two letters are free, across every book. After that, keeping another letter is part of Plus: ${price.monthly}, or ${price.annual}. Reading, playing your recordings, Read together and export are never locked away, with or without Plus. Starting a book for each child is free.`,
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone, attached to its letter, and is never altered. If you use your iPhone's own backup, it holds the recordings too. You can delete your recordings and letters whenever you like.",
+      a: "Each recording stays on your phone by default, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
     },
   ],
   waitlist: {
     label: "Your email",
-    button: "Tell me at launch",
-    success: "Thank you. We will write to you when Early Letters launches.",
+    button: "Join the waitlist",
+    success: `Thank you. We will write when ${brand.name} is ready for you.`,
     error: "That did not go through. Please check your email address and try again.",
   },
 } as const;
+
+/**
+ * v1.1 only. Not exported, never rendered on the site or in the store (Brief decision 5: family beyond the
+ * co-parent, and gifts, come later). Kept so the copy is ready when those features ship.
+ */
+const v1_1 = {
+  familyBenefit: {
+    title: "The whole family, signed",
+    body: "Invite grandparents and close family to add letters of their own. Each one is signed, From Papa, From Nani, and you approve what goes in the book.",
+  },
+  family: {
+    title: "Room for everyone who loves {child}",
+    body: "Grandparents, aunts, uncles and close friends can add their own letters, from anywhere. Each letter is signed. Each author chooses what to share, and parents approve what goes into the book. It is a simple way for family far away to be part of the everyday.",
+  },
+  faqGrandparents: {
+    q: "Can grandparents add letters?",
+    a: "Yes. Invite them and they can talk or type letters of their own in the free app on their phone, signed with their name, like From Nani. Parents approve family letters before they go into the book.",
+  },
+  gift: {
+    title: "A gift from the grandparents",
+    body: `Give ${brand.name} to a new family and add the first letter yourself. Tell {child} about the day you heard the news, or the lullaby you once sang to {child}'s parent, long ago. It is a gift that keeps growing, one letter at a time.`,
+    cta: `Give ${brand.name}`,
+  },
+} as const;
+void v1_1;

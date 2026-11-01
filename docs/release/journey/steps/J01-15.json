@@ -1,0 +1,49 @@
+{
+  "id": "J01-15",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Choose the spoken language",
+  "note": "A sheet lists the seven languages letters can be spoken in, each in its own script, with one check. Choosing one only stores it: nothing downloads from this sheet (D-087).",
+  "from": "J01-14",
+  "shot": "screens/J01-15.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Choose a language Close English Not on this phone, 575 MB हिन्दी Hindi Español Spanish Not on this phone, 575 MB 中文 Mandarin Chinese Not on this phone, 575 MB Français French Not on this phone, 575 MB العربية Arabic Not on this phone, 575 MB Português Portuguese Not on this phone, 575 MB",
+  "lines": [
+    "Choose a language",
+    "Close",
+    "English",
+    "Not on this phone, 575 MB",
+    "हिन्दी",
+    "Hindi",
+    "Español",
+    "Spanish",
+    "Not on this phone, 575 MB",
+    "中文",
+    "Mandarin Chinese",
+    "Not on this phone, 575 MB",
+    "Français",
+    "French",
+    "Not on this phone, 575 MB",
+    "العربية",
+    "Arabic",
+    "Not on this phone, 575 MB",
+    "Português",
+    "Portuguese",
+    "Not on this phone, 575 MB"
+  ]
+}

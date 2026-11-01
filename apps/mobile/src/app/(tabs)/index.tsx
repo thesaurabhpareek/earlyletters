@@ -1,176 +1,311 @@
+/**
+ * Tonight (EXPERIENCE_PASS_2026-10 S09 and S33, package P3; DESIGN_LANGUAGE 12): one question, every unfinished
+ * letter, and Speak and Type, in the lamp's light.
+ * Benchmarks (docs/design/BENCHMARK.md, "Screens"):
+ * - Things 3 "This Evening": time-of-day framing in the greeting.
+ * - The website hero on main: one serif line on the lamp light, the greeting's two-tone "Asha is / asleep." move.
+ * - Day One "On This Day": a month-old letter of the person's own, never a count.
+ * - Airbnb sticky CTA: Speak and Type as equal twins, pinned in the thumb zone.
+ *
+ * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
+ * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
+ * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals (or, when none is waiting,
+ * "A month ago"); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
+ * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
+ * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
+ *
+ * Light: the `tonight` lamp scene, its tones from the greeting's own daypart (gold in the morning, amber in the
+ * evening, a rose tail at night, a dusk tail late at night), breathing; persistKey "tabs", so a tab switch settles the
+ * light instead of cutting it (5.8 row 6). Under Listen or a letter it leaves and returns (useUnlitRoom in those
+ * rooms, rows 1 and 2); under Write's sheet it holds and pauses its breath (row 3a). Once today is kept as a quiet day,
+ * the evening light goes down to 70 percent (S33). Increase Contrast and Reduce Transparency: plain paper.
+ *
+ * Motion: the dateline, greeting, prompt and cards enter once per cold launch (280 ms, 30 ms stagger, MOTION 5a); a
+ * warm resume, a tab switch and a return from Listen, Review, Write or a letter move nothing (5.8 rule 2). Speak and
+ * Type never animate in (MOTION principle 2). "Another thought": the old prompt leaves (exitMs) and the new one rises
+ * in from when it is half gone. Reduce Motion: one 200 ms fade on a prompt change.
+ * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`, Not much today `soft`. Nothing else.
+ * Before the birth (a due date, no birthday) the dateline reads "Asha", the dot, "Before You" and the prompt comes from the set
+ * written for it; "Another thought" never shows the prompt that is on screen again (components/tonight/prompt.logic).
+ * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo. Nothing on Tonight counts:
+ * no totals, no days-since, no streak.
+ * Time: the day, the greeting's daypart, the lamp's tone and each card's dateline come from the moment the room was
+ * read (roomClock), and the room is read again on focus, on a change in the store and when the app comes back to the
+ * front, so none of them is left from before the app went to the background.
+ */
 import { Redirect, router, useFocusEffect } from 'expo-router';
-import { LampWash } from '@/components/ui/lamp-wash';
-import { MicrophoneIcon, PencilSimpleIcon } from 'phosphor-react-native';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Pressable, ScrollView, View, useColorScheme } from 'react-native';
-import Animated, { LinearTransition } from 'react-native-reanimated';
-import { ageOn, ENGINE_VERSION, renderTemplate, selectPrompt } from '@scribe/core';
+import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, ScrollView, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
+import { renderTemplate, selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
+import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
+import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
+import { DraftCard } from '@/components/tonight/draft-card';
+import {
+  draftCards,
+  greetingParts,
+  resumed,
+  resurfaced,
+  roomClock,
+  tonightArrival,
+  tonightDateline,
+  tonightLampIntensity,
+} from '@/components/tonight/draft-card.logic';
+import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
+import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
+import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
+import { Button, ButtonRow } from '@/components/ui/button';
+import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
-import { copy, fill, greetingKey, pendingCopy } from '@/lib/copy';
-import { ageText, dayDate } from '@/lib/dates';
+import { announce, useIsAccessibilitySize } from '@/lib/a11y';
+import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
+import { copy } from '@/lib/copy';
+import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { useMotion } from '@/lib/motion';
-import { getActiveChildId, getFamily, listDrafts, listEntries, saveEntry, subscribe, todayISO, uuidv7, type Draft, type Family } from '@/lib/store';
+import { STANDARD_EASING, useMotion } from '@/lib/motion';
+import { armListenStart } from '@/lib/resilience/start-intent';
+import { footerPlacement } from '@/lib/review-layout.logic';
+import {
+  deleteEntry,
+  getActiveChildId,
+  getFamily,
+  listDrafts,
+  listEntries,
+  saveEntry,
+  subscribe,
+  todayISO,
+  uuidv7,
+  type Draft,
+  type Entry,
+  type Family,
+} from '@/lib/store';
 
-const STANDARD = tokens.motion.standard;
-/** Layout spring on the motion token; skipped under Reduce Motion (the entering fade carries the change). */
-const REFLOW = LinearTransition.springify().stiffness(STANDARD.stiffness).damping(STANDARD.damping).mass(STANDARD.mass);
+const M = tokens.motion;
 
-const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+/**
+ * What Tonight shows: the book, every waiting draft (listDrafts, all of them), the book's entries, and the moment they
+ * were read. The day, the greeting's daypart, the lamp's tone and each card's dateline all come from `at`, so a room read
+ * again (on focus, on a change in the store, on coming back from the background) is never stale.
+ */
+type Room = { family: Family | null; drafts: Draft[]; entries: Entry[]; at: Date };
+
+function readRoom(): Room {
+  const childId = getActiveChildId();
+  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries(), at: new Date() };
+}
 
 export default function Tonight() {
-  const c = tokens[useColorScheme() === 'dark' ? 'dark' : 'light'];
-  const t = copy.tonight;
   const motion = useMotion();
-  const [family, setFamily] = useState<Family | null | undefined>(undefined);
+  const t = copy.tonight;
+  // Read on the first render, so the first painted frame has the lamp and the words: the light from "The book is
+  // open." never goes out on the way to Tonight (P1 on #221). Focus, the store and a resume read it again.
+  const [room, setRoom] = useState<Room | undefined>(readRoom);
+  // Prompt inputs are read on focus and on coming back to the front only, so a save or a quiet-day mark never swaps
+  // the prompt under the person.
   const [recent, setRecent] = useState<string[]>([]);
   const [daysSince, setDaysSince] = useState<number | null>(null);
   const [shuffle, setShuffle] = useState(0);
-  const [keptLine, setKeptLine] = useState(false);
-  const [waiting, setWaiting] = useState<Draft | null>(null);
+  // The prompt "Another thought" was last pressed on: it is left out of the next draw, so a press never repeats it.
+  const [leftKey, setLeftKey] = useState<string | null>(null);
+  // At accessibility text sizes Speak and Type follow the prompt inside the scroll instead of pinning (S1).
+  const inlineActions = footerPlacement(useIsAccessibilitySize()) === 'inline';
+  // The mark kept for today while its line is showing (so Undo knows what to remove).
+  const [keptMark, setKeptMark] = useState<string | null>(null);
+  // Tonight's lines enter once per cold launch, on the first render that shows them; a later mount, and a card that
+  // appears later (a typed draft when Write closes), is already in place.
+  const [arriving, setArriving] = useState(() => tonightArrival.pending());
+  // While a card's page is up (CardToPage), Tonight is hidden from screen readers under it.
+  const behind = useHiddenBehindCardPage();
 
-  const load = useCallback(() => {
-    setFamily(getFamily());
-    const childId = getActiveChildId();
-    setWaiting(childId ? (listDrafts(childId)[0] ?? null) : null);
-  }, []);
+  const load = useCallback(() => setRoom(readRoom()), []);
+  const focused = useRef(false);
 
-  // Child switcher (Mobile B) and saves elsewhere update Tonight live.
+  // Child switcher, saves, drafts and marks elsewhere update Tonight live.
   useEffect(() => subscribe(load), [load]);
+
+  // The room and the prompt's inputs, read again: on focus, and when the app comes back to the front.
+  const refresh = useCallback(() => {
+    load();
+    const entries = listEntries();
+    setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
+    setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
+  }, [load]);
 
   useFocusEffect(
     useCallback(() => {
-      load();
-      const entries = listEntries();
-      setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
-      setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
-      setKeptLine(false);
-    }, [load]),
+      focused.current = true;
+      refresh();
+      return () => {
+        focused.current = false;
+        // The kept line stays until Undo or until the person leaves Tonight (S33).
+        setKeptMark(null);
+      };
+    }, [refresh]),
   );
 
-  const today = todayISO();
-  const age = family?.childBirthday ? ageOn(family.childBirthday, today) : null;
+  // Back from the background (after midnight, or into another part of the day): the day, the greeting, the lamp's
+  // tone, the cards' datelines and the drafts are read again. A tab behind another one waits for its own focus.
+  useEffect(() => {
+    let last = AppState.currentState;
+    const sub = AppState.addEventListener('change', (next) => {
+      if (resumed(last, next) && focused.current) refresh();
+      last = next;
+    });
+    return () => sub.remove();
+  }, [refresh]);
+
+  useEffect(() => {
+    if (!room?.family || !arriving) return;
+    tonightArrival.done();
+    setArriving(false);
+  }, [room?.family, arriving]);
+
+  const clock = roomClock(room?.at ?? new Date());
+  const today = clock.today;
+  const family = room?.family;
+  const birthday = family?.childBirthday ?? null;
 
   const prompt = useMemo(
-    () =>
-      selectPrompt(
-        {
-          ageMonths: age && age.days >= 0 ? age.months : 0,
-          daysSinceLastEntry: daysSince,
-          hardStretch: false,
-          role: 'parent',
-          together: false,
-          recentKeys: recent,
-          seed: `${today}:${shuffle}`,
-        },
-        PROMPTS,
-      ),
-    [age?.months, daysSince, recent, today, shuffle],
+    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS),
+    [birthday, daysSince, recent, today, shuffle, leftKey],
   );
 
-  if (family === undefined) return null;
-  if (family === null) return <Redirect href="/onboarding" />;
+  const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
+  const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 
-  const child = family.childName;
-  const ageNow = ageText({ birthday: family.childBirthday }, today);
-  const dateline = (ageNow ? `${child} · ${ageNow}` : dayDate(today)).toUpperCase();
+  if (room === undefined) return null;
+  if (room.family === null) return <Redirect href="/onboarding" />;
+  const book = room.family;
+
+  const child = book.childName;
+  const daypart = clock.daypart;
+  const greeting = greetingParts(t.greeting[daypart], book.signsAs);
+  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the child;
+  // the day's date is only the function's fallback for its other caller, the Family tab.
+  const dateline = tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today));
+  // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
+  const lampLevel = tonightLampIntensity(daypart, !!markOn(room.entries, today));
+  const enter = (i: number) => (arriving ? motion.enter(i) : undefined);
+
+  // "Another thought": the old prompt leaves (exit), the new one rises in from when it is half gone. Reduce Motion: one fade.
+  const promptIn = motion.reduced
+    ? FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+    : FadeInDown.duration(M.enter.durationMs).delay(Math.round(M.exitMs / 2)).easing(STANDARD_EASING);
+  const promptOut = motion.reduced ? undefined : motion.leave();
+  // "Not much today": the link fades out over exitMs; the kept line fades in over fadeMs from when it is half gone.
+  const linkOut = FadeOut.duration(M.exitMs).reduceMotion(ReduceMotion.Never);
+  const lineIn = FadeIn.duration(M.fadeMs).delay(Math.round(M.exitMs / 2)).reduceMotion(ReduceMotion.Never);
 
   const keepNotMuch = () => {
-    const weekday = WEEKDAYS[new Date().getDay()];
-    const text = renderTemplate(copy.notMuch.template, { weekday, child });
-    saveEntry({
-      id: uuidv7(),
-      kind: 'not_much',
-      occurredOn: today,
-      capturedAt: new Date().toISOString(),
-      captureMode: 'typed',
-      editLevel: 'verbatim',
-      promptKey: null,
-      engineVersion: ENGINE_VERSION,
-      rawTranscript: text,
-      machineEdits: [],
-      finalText: text,
-      inBook: false,
-      soundsLikeMe: null,
-    });
+    // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
+    // Today by the clock at the tap, not the room's last read.
+    const day = todayISO();
+    const existing = markOn(listEntries(), day);
+    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });
+    if (!existing) saveEntry(mark);
     haptic('soft');
-    setKeptLine(true);
+    announce(copy.notMuch.savedToast);
+    setKeptMark(mark.id);
+  };
+
+  const undoNotMuch = () => {
+    if (keptMark) deleteEntry(keptMark);
+    setKeptMark(null);
   };
 
   const start = (mode: 'spoken' | 'typed') => {
-    haptic('press');
     const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
+    const active = getActiveChildId();
+    trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
+    if (mode === 'spoken') armListenStart(); // the tap that lets Listen start the microphone
     router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
   };
 
+  // Speak, Type and the quiet link: pinned under the scroll, or inline under the prompt at accessibility sizes.
+  const actions = (
+    <View className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}>
+      <ButtonRow>
+        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
+        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+      </ButtonRow>
+      {keptMark ? (
+        <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
+      ) : (
+        <Animated.View exiting={linkOut} className="self-center">
+          <Button variant="quiet" label={t.notMuchButton} onPress={keepNotMuch} accessibilityHint={copy.notMuch.confirmBody} />
+        </Animated.View>
+      )}
+    </View>
+  );
+
   return (
-    <SafeAreaView edges={['top']} className="flex-1 bg-background">
-      <LampWash anchor="top" intensity={0.8} />
-      <ScrollView contentContainerClassName="flex-grow gap-6 px-5 pb-8 pt-4">
-        <Animated.View entering={motion.enter(0)} className="gap-2">
-          <Text className="text-xs font-medium tracking-[1.5px] text-muted-foreground">{dateline}</Text>
-          <Text className="font-serif text-4xl leading-[44px] text-foreground">
-            {fill(t.greeting[greetingKey()], { name: family.signsAs })}
+    <SafeAreaView edges={['top']} className="flex-1 bg-background" {...behind}>
+      <Lamp scene="tonight" daypart={daypart} persistKey="tabs" intensity={lampLevel} />
+      <ScrollView className="flex-1" contentContainerClassName="px-5 pb-6 pt-5">
+        <Animated.View entering={enter(0)}>
+          <Text variant="letterDateline" caps accessibilityLabel={dateline.a11y}>
+            {dateline.text}
           </Text>
-          <Text className="text-lg leading-7 text-muted-foreground">{fill(t.subtitle, { child })}</Text>
         </Animated.View>
 
-        <Animated.View key={prompt.key} entering={motion.enter(1)} layout={motion.reduced ? undefined : REFLOW}>
-          <Card className="gap-4 rounded-3xl border-0 bg-card p-6 shadow-sm shadow-foreground/5 dark:border dark:border-border dark:shadow-none">
-            <Text className="text-xs font-medium tracking-[1.2px] text-muted-foreground">{t.promptLabel.toUpperCase()}</Text>
-            <Text className="font-serif text-2xl leading-9 text-foreground">{renderTemplate(prompt.text, { child })}</Text>
-            <Pressable
-              onPress={() => {
-                haptic('tap');
-                setShuffle((s) => s + 1);
-              }}
-              accessibilityRole="button"
-              className="h-11 justify-center self-start">
-              <Text className="text-base font-medium text-primary">{t.newPromptButton}</Text>
-            </Pressable>
-          </Card>
+        <Animated.View entering={enter(1)} className="mt-3">
+          <Text variant="title2" asHeading={1}>
+            {greeting.lead}
+            <Text variant="title2" tone="muted">
+              {greeting.rest}
+            </Text>
+          </Text>
         </Animated.View>
 
-        {waiting && (
-          <Pressable
-            onPress={() => router.push({ pathname: waiting.audioUri ? '/review' : '/write', params: { draftId: waiting.id } })}
-            accessibilityRole="button"
-            className="min-h-11 flex-row items-center justify-between gap-3 rounded-2xl bg-secondary px-4 py-3">
-            <Text className="flex-1 text-base text-foreground">{pendingCopy.tonight.waitingTitle}</Text>
-            <Text className="text-base font-medium text-primary">{copy.review.title}</Text>
-          </Pressable>
-        )}
+        {/* The one question on screen: the prompt, on the paper. Its old caps label is now only its hint. */}
+        <Animated.View entering={enter(2)} className="mt-6">
+          <Animated.View key={prompt.key} entering={shuffle === 0 ? undefined : promptIn} exiting={promptOut}>
+            <Text variant="promptHero" accessibilityHint={t.promptLabel}>
+              {renderTemplate(prompt.text, { child })}
+            </Text>
+          </Animated.View>
+          <Button
+            variant="quiet"
+            size="sm"
+            icon={ArrowsClockwiseIcon}
+            label={t.newPromptButton}
+            className="-ml-4 mt-3 self-start"
+            onPress={() => {
+              haptic('tap');
+              setLeftKey(prompt.key);
+              setShuffle((s) => s + 1);
+            }}
+          />
+        </Animated.View>
 
-        <View className="flex-1" />
+        {/* Dynamic Type at accessibility sizes: the actions scroll with the page, under the question, before the cards. */}
+        {inlineActions ? actions : null}
 
-        {/* Controls never animate in (MOTION principle 2): opaque and hittable from frame 1. */}
-        <View className="gap-3">
-          <View className="flex-row gap-3">
-            <Button size="capture" onPress={() => start('spoken')} accessibilityLabel={t.speakButton}>
-              <MicrophoneIcon color={c.onAccent} size={24} weight="fill" />
-              <Text>{t.speakButton}</Text>
-            </Button>
-            <Button size="capture" onPress={() => start('typed')} accessibilityLabel={t.typeButton}>
-              <PencilSimpleIcon color={c.onAccent} size={24} weight="fill" />
-              <Text>{t.typeButton}</Text>
-            </Button>
+        {cards.length > 0 ? (
+          <View className="mt-8 gap-3">
+            {cards.map((card, i) => (
+              <Animated.View key={card.id} entering={enter(3 + i)}>
+                <DraftCard card={card} onPress={() => router.push(card.route)} />
+              </Animated.View>
+            ))}
           </View>
-          {keptLine ? (
-            <Animated.View entering={motion.enter()} className="h-11 items-center justify-center">
-              <Text className="text-base text-success">{copy.notMuch.savedToast}</Text>
-            </Animated.View>
-          ) : (
-            <Button variant="ghost" onPress={keepNotMuch}>
-              <Text className="text-muted-foreground">{t.notMuchButton}</Text>
-            </Button>
-          )}
-        </View>
+        ) : monthAgo ? (
+          <Animated.View entering={enter(3)} className="mt-8">
+            <CardSource id={monthAgo.id}>
+              <ResurfacedCard card={monthAgo} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: monthAgo.id } })} />
+            </CardSource>
+          </Animated.View>
+        ) : null}
       </ScrollView>
+
+      {/* Pinned at the default sizes: Speak and Type are opaque and hittable from the first frame (MOTION principle 2). */}
+      {inlineActions ? null : actions}
     </SafeAreaView>
   );
 }

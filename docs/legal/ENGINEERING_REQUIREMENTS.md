@@ -1,12 +1,21 @@
 # Legal Engineering Requirements (`LEGAL-REQ-###`)
 
-Version 2.0.0, 4 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 2.2.0, 31 Oct 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. These requirements translate `compliance-register.md` into testable rules for the technical design and code. Where a requirement rests on an unverified legal reading it says so; build it anyway unless counsel removes it, because each one is cheap now and expensive after launch.
 
-**How to use this file.** Technical design agents and Claude Code sessions MUST satisfy every P0 requirement before public launch (TestFlight beyond the founding family counts as public). P1 requirements must be met before the feature they cover ships. Each requirement has acceptance criteria in Given/When/Then form that should become automated tests where the "Test" line says so. When a requirement conflicts with a PRD, this file wins until counsel or the founder decides otherwise; the conflict is listed in `compliance-register.md` s.4.
+**How to use this file.** Technical design agents and Claude Code sessions MUST satisfy every P0 requirement before public launch (TestFlight beyond the founding family counts as public). P1 requirements must be met before the feature they cover ships. Each requirement has acceptance criteria in Given/When/Then form that should become automated tests where the "Test" line says so. When a requirement conflicts with a PRD or a founder decision, this file wins until counsel decides otherwise: only counsel retires or relaxes a LEGAL-REQ, and a founder decision that collides with one becomes an open decision row with the legal default built until counsel answers (R4 PT-06; D-105). The conflict is listed in `compliance-register.md` s.4.
 
 **Release tiers (PRD.md 1.3 section 3.0, 3 Oct 2026).** A requirement tied to a feature binds the day that feature ships. The web contribution page moved to v1.1 (founder decision, PRD K-35), so LEGAL-REQ-010 and LEGAL-REQ-035 bind from v1.1, and the web parts of LEGAL-REQ-002, -005 and -014 apply from then; server transcription and the AI gateway are not in v1.0, so LEGAL-REQ-004, -005 and -020 bind when they ship. LEGAL-REQ-030 is met at v1.0 by a static page plus an email route, with the full web flow before Android (D-042). **Counsel to confirm these readings** (BL-104). Nothing here is dropped.
+
+**Second round of founder decisions (3 Oct 2026, D-051 to D-070).** Co-parent only (D-055): LEGAL-REQ-005, -010 and -035 bind when other family members or the web page ship. No audio leaves the phone, no backup, no photos, no cloud transcription in v1.0 (D-059): LEGAL-REQ-004, -005, -013, -020, -022(a) and -023 bind when the feature they cover ships. Apple-only Plus checked on the device with no server (D-053, ADR 0013): LEGAL-REQ-046 to -050 are rewritten below; -049 (per-purchase consent rows) is retired in favour of per-release evidence, pending counsel (Q-003 memo, COUNSEL_PACKET Q8). Sync is the outbox and cursor engine on Supabase (D-023): no PowerSync obligations remain.
+
+**Option B (founder, 15 Oct 2026; D-100 to D-108 in PR #128, D-093 to D-099 in PR #122; PRD V2 on branch `docs/prd-v2`).** Server features are on in v1.0: sign-in, sync, co-parent sharing with at most two parents per book, the owner's encrypted recording backup (free, opt-in) with an escrow key under logged access (D-102), and the subscription status report with reminder emails (D-080, D-081). No analytics SDK in v1.0 (D-095). Effects on this file, each marked "(1.3.0)" where it changes a requirement:
+- Bind in v1.0 now: LEGAL-REQ-022(a) and -023 (backup and escrow, rewritten for PRD V2 F08 6.5); -049 (restored as the D-081 consent record); -047 (two channels: phone and email).
+- Do not bind in v1.0, because the feature is absent: LEGAL-REQ-003 and -017 (analytics, D-095), -004, -005, -013, -020 (AI, photos), -010, -035 (web contributors). Each binds the day its feature ships.
+- New: LEGAL-REQ-061 (backup consent act), -062 (status report allowlist), -063 (new-device notice before any recording key is released), -064 (legal documents carry no stale prices or on-device claims).
+- Built and not built (checked 16 Oct 2026; COUNSEL_PACKET section 0 has the table). Not built yet: server pushes (-054), the new-device notice (-063), the status report and reminder emails (-047 email channel, -049, -062), and the phone side of backup (-022(a), -061). Each requirement still binds the day its feature ships; until then the published texts leave the feature out or say it is not available yet (-064).
+- The gate before any outside family signs in is PRD V2 09 R-17 (BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349); it is not repeated here.
 
 **Sources** are register rows (`CR-###`, which carry the citations [L#]) and repo documents. "Policy" means `POLICY_VERSIONING.md`.
 
@@ -36,6 +45,7 @@ Source: CR-019, CR-081; PRD A-REQ-034 (replace "stored on the profile" with `pol
 Source: CR-001, CR-004, CR-005, CR-006; conflicts with PRD A s.7(6) "no age gate". Neutral-screen requirement is a counsel question (register s.6 Q6).
 
 ### LEGAL-REQ-003 (P0) Analytics and crash reporting are opt-in
+*(1.3.0) v1.0 ships no analytics SDK and no consent sheet (D-095): `EXPO_PUBLIC_ANALYTICS` is off in every profile and the PostHog client is never constructed. The v1.0 test is that no request to an analytics or crash host leaves the phone at all. The text below binds the day analytics returns (v1.1).*
 No PostHog event and no Sentry event leaves the device until the user has made an explicit choice on a consent sheet (`analytics` document). The sheet appears at a calm moment after the first letter is saved (never before recording, never stacked on the sign-in or notification sheets). Declining has no effect on any feature, including Plus. Withdrawal in Settings > Privacy takes effect immediately and calls PostHog `optOut()` and disables Sentry.
 - Given a fresh install, When the user records, saves and reads a first letter without seeing the consent sheet, Then network inspection shows zero requests to PostHog or Sentry hosts.
 - Given the user declines, When they use every feature for a week, Then no analytics or crash request is sent, and no Plus feature is unavailable.
@@ -59,14 +69,14 @@ Audio and text from the web contribution page (PRD B F6) are transcribed only on
 Source: CR-085; register s.4 K7.
 
 ### LEGAL-REQ-006 (P0) Separate sensitive-data consent
-At account creation (after Terms, as a separate act, never pre-checked, never bundled into the Terms checkbox), the app asks for consent to process sensitive information the user may include in letters (health, including mental health, and other sensitive details about the user and their child), stating the only purpose (to keep and show their book), that it is never sold, shared for ads, or used to train models, and how to withdraw. Recorded as `sensitive-data`. If declined, the user can still use the app locally; server features that store their content (sync, backup, family) stay off, and the app says so plainly. Withdrawal follows the same rule and offers export and deletion.
+At account creation (after Terms, as a separate act, never pre-checked, never bundled into the Terms checkbox), the app asks for consent to process sensitive information the user may include in letters (health, including mental health, and other sensitive details about the user and their child), stating the only purpose (to keep and show their book), that it is shared with the co-parent they invite (1.3.0: the text names the co-parent, not "the family you choose"), that it is never sold, shared for ads, or used to train models, and how to withdraw. Recorded as `sensitive-data`. Recording backup has its own consent act (LEGAL-REQ-061), unless counsel rules that this one covers it (COUNSEL_PACKET Q42). If declined, the user can still use the app locally; server features that store their content (sync, backup, family) stay off, and the app says so plainly. Withdrawal follows the same rule and offers export and deletion.
 - Given a new account, When the user declines, Then no entry text, audio or photo of theirs is uploaded, and Settings shows how to turn sync on later.
 - Given withdrawal, When processed, Then sync of new content stops within one sync cycle and the user is offered export and "delete my synced letters".
 - Test: automated.
 Source: CR-020 (Connecticut sensitive-data consent; applies to any controller processing sensitive data from 1 Jul 2026), CR-022, CR-031 (MHMDA "separate and distinct" consents; consent cannot be bundled with general terms). Counsel to confirm whether MHMDA's "necessary to provide the requested service" exemption makes this unnecessary for Washington alone; Connecticut still needs it.
 
 ### LEGAL-REQ-007 (P0) Permission priming and accurate purpose strings
-Microphone, notifications and photo access are requested only at the moment of use, after an in-app explanation, with purpose strings approved by counsel and stored in `packages/content`. Photos use the system picker (no full-library permission). Contacts, location, tracking (ATT), Bluetooth and speech-recognition permissions are never requested.
+Microphone and notifications (and photo access, once photos ship) are requested only at the moment of use, after an in-app explanation, with purpose strings approved by counsel and stored in `packages/content`. Photos, when they ship, use the system picker (no full-library permission). Contacts, location, tracking (ATT), Bluetooth and speech-recognition permissions are never requested. (1.3.0) The microphone purpose string states only what the microphone is for and says nothing about where recordings are kept, because it is shown to every user whatever their backup setting (F08-REQ-036; labels 1.4.0 section 5). `NSFaceIDUsageDescription` is allowed only if the app lock ships, with a counsel-approved string (F17 Q3).
 - Given first launch, When the user reaches Tonight, Then no OS permission prompt has appeared.
 - Given the Info.plist and Android manifest, When CI inspects them, Then only `NSMicrophoneUsageDescription` (and photo-picker-compatible keys) and notification permission are present; any other permission key fails the build.
 - Given microphone denied, When the user taps record, Then a typed-entry path and an Open Settings link are offered, with no repeated OS prompt.
@@ -74,7 +84,7 @@ Microphone, notifications and photo access are requested only at the moment of u
 Source: CR-083 (Apple 5.1.1(iii),(iv)); PRD C-REQ-001; PRD B non-goals (no contacts, no location).
 
 ### LEGAL-REQ-008 (P0) Every consent is visible and withdrawable in two taps
-Settings > Privacy lists each consent (AI processing, sensitive data, analytics, backup mode) with its state, the version accepted, a link to the text, and a control to withdraw or grant. Settings > Legal lists Terms, Privacy Policy, Consumer Health Data Privacy Policy, Subprocessors, Accessibility statement, Licences, Legal-process guidelines, Portability pledge.
+Settings > Privacy lists each consent (1.3.0, in v1.0: sensitive data, and recording backup, which Settings > Storage and backup also controls; analytics returns in v1.1; AI processing and the backup mode choice when those features ship) with its state, the version accepted, a link to the text, and a control to withdraw or grant. Settings > Legal lists Terms, Privacy Policy, Subscription Terms, Subprocessors, Accessibility statement, Licences, Legal-process guidelines, Portability pledge; and the Consumer Health Data Privacy Policy only if counsel says a separate notice is required (1.3.0; COUNSEL_PACKET Q32).
 - Given any consent, When the user opens Settings, Then they can withdraw it in at most 2 taps and the change is recorded with `method='settings_toggle'`.
 - Test: automated UI.
 Source: CR-081, CR-082 (easy withdrawal), CR-031; PRD C-REQ-016 (add rows).
@@ -109,7 +119,7 @@ The server stores only fields listed in the data map (`docs/legal/data-map.yaml`
 - Test: automated (schema-to-data-map diff).
 Source: CR-083 (5.1.1(iii)), CR-022 (state minimisation), PRD B non-goals.
 
-### LEGAL-REQ-013 (P0) Strip location and device metadata from photos
+### LEGAL-REQ-013 (P1, binds when photos ship) Strip location and device metadata from photos
 Photos are re-encoded or stripped of EXIF/XMP GPS and device serial metadata on the device before upload or export to the server. The original stays only on the device.
 - Given a photo with GPS EXIF, When attached and synced, Then the stored object contains no GPS tags.
 - Test: automated (fixture image).
@@ -173,27 +183,30 @@ All network traffic uses TLS 1.2 or later; iOS App Transport Security has no exc
 Source: CR-110, CR-090 (Data safety "encrypted in transit").
 
 ### LEGAL-REQ-022 (P0) Encryption at rest
-(a) Audio uploaded to Storage is always client-encrypted (AES-256-GCM, per-file key, ADR 0006), including web contributor uploads (B-NFR-005). (b) On the device, the local database and audio files use iOS Data Protection at least "complete until first user authentication" and are excluded from iCloud device backup only where the ADR says so (model files). (c) Supabase Postgres and Storage encryption at rest is confirmed in writing from Supabase documentation (Unverified today) and recorded in the data map. (d) Whether the local database is encrypted (op-sqlite SQLCipher) is decided in Phase 0 and the privacy claims match the decision.
+(a) (1.3.0, binds in v1.0 when backup ships, D-100) Audio uploaded to the backup store (the private Supabase Storage bucket `entry-audio`, as PRD V2 F08 and the migration on `feat/backup-server` build it; the founder's list of 15 Oct named Cloudflare R2, and the founder confirms which) is always encrypted on the phone before upload: AES-256-GCM in 64 KiB segments with a per-file key, wrapped by a book key per (child, author, key version) held in the author's Keychain; the original's SHA-256 sits only inside the encrypted header; the server keeps the ciphertext hash, size and wrapped file key in `audio_blobs` (PRD V2 F08 6.5; ADR 0006 amendment pending). The same rule binds web contributor uploads when they ship (B-NFR-005). (b) On the device, the local database and audio files use iOS Data Protection at least "complete until first user authentication"; recordings and the database are included in the user's own device backup and speech models and packs are excluded (D-033). (c) Supabase Postgres and Storage encryption at rest is confirmed in writing from Supabase documentation (Unverified today) and recorded in the data map. (d) The local expo-sqlite database is not separately encrypted (no SQLCipher; security review 2026-10-04); privacy claims must not say the local database is encrypted beyond iOS Data Protection.
 - Given an uploaded audio object, When downloaded with service credentials, Then its bytes are not a valid M4A file without the key.
 - Test: automated.
 Source: CR-110, CR-017 (encryption relevant to breach liability), CR-010 (claims).
 
-### LEGAL-REQ-023 (P0) Escrow key controls
-The server escrow key that can unwrap Standard-mode child content keys is held only as an Edge Function secret, never in the database or its backups; every unwrap is logged (profile id, child id, reason code, time; no content); unwraps are rate-limited per child; the key can be rotated without user action; Vault-mode children are never escrowed.
-- Given a database dump, When searched, Then no escrow key material is present.
-- Given 100 unwraps for one child in an hour, When the next is requested, Then it is refused and an alert fires.
-- Test: automated.
-Source: CR-110, CR-017, CR-010 (escrow disclosure); ADR 0006.
+### LEGAL-REQ-023 (P0, v1.0 from the first build with backup) Escrow key controls
+*(1.3.0) Rewritten for option B and PRD V2 F08 6.5 C and G, which hold the one custody description; this requirement states what the legal texts rely on (Privacy Policy 2.1.0 section 4; Terms 3.1.0 section 7.2).* The escrow private key runs only as a function secret in the separate escrow project, alone with the `escrow` function, never in the main project, the database, its backups, a password manager or a networked file; two sealed paper copies are kept in two places and their seals checked every quarter. Every key the function opens writes one append-only `escrow_unwraps` row (profile, device, child, key version, reason `restore`, `rotation` or `legal`, outcome, request, time; no content, no key bytes), copied daily outside database backups. The account owner gets an email on every use, except a `legal` use a legal order forbids telling. A restore needs a sign-in within 10 minutes and a registered device, waits 72 hours when another enrolled device exists (24 hours when none) unless a device enrolled at least 7 days before the request approves (D-108), and is stopped by the Stop link or Not me. Limits: 3 new-device restores per account per 30 days, 20 opened keys per account per day. The key can be rotated without user action. The function returns keys only sealed to the requesting device. Vault mode, when it ships, is never escrowed.
+- Given the main project, When the release check lists its secrets and functions through the Management API, Then no secret name starts with `ESCROW_` and no function is named `escrow`; and the escrow project holds only the `escrow` function and the nine settings of F08-REQ-034 as amended (D-108).
+- Given any opened key, Then exactly one `escrow_unwraps` row exists and an email was queued to the account address, And an `UPDATE` or `DELETE` on that table by any role other than the two named exceptions fails.
+- Given a restore request on an account with an enrolled device, When 71 hours pass without approval, Then no key is released; When the Stop link button is posted, Then the request is cancelled and every session signed out, And loading the page alone changes nothing.
+- Given the fourth new-device restore in 30 days, Then it is refused with `SCRAT` and the founder is paged.
+- Test: automated (F08-REQ-029, -034, -042) plus the quarterly seal check written in `docs/runbooks/`.
+Source: CR-110, CR-017, CR-010 (escrow disclosure); ADR 0006; D-102; PRD V2 F08 6.5 C, G; R4 PT-02, PT-19.
 
 ### LEGAL-REQ-024 (P0) Access control is tested
-Every table has RLS enabled; every policy and security-definer function has an access test in `supabase/tests`; PowerSync Sync Streams have the parity test required by ADR 0004. The P0 security fix to `create_child_invite` (any member can mint a parent invite) and the other RLS deltas in PRD B s.5 land before any non-founder family data exists.
+Every table has RLS enabled; every policy and security-definer function has an access test in `supabase/tests`; the sync pull RPCs use the same `book_access` predicate as RLS and have access tests (D-023, D-024). The P0 security fix to `create_child_invite` (any member can mint a parent invite) and the other RLS deltas in PRD B s.5 land before any non-founder family data exists.
 - Given CI, When `npm run test:db` runs, Then all access tests and parity tests pass, and a table without RLS fails the build.
 - Test: automated.
 Source: CR-110; PRD B s.5 RLS mapping; ARCH s.8.
 
 ### LEGAL-REQ-025 (P0) Staff and service-role access is break-glass and logged
-No staff tool shows entry text, audio or photos. Service-role access to user content happens only through named runbooks (deletion, legal process, verified safety removal per PRD B F8.3), each run writes an audit row (operator, runbook, target ids, reason, time) to an append-only `ops_audit_log`, and access is limited to people who need it.
+No staff tool shows entry text, audio or photos. Service-role access to user content happens only through named runbooks (deletion, legal process, verified safety removal per PRD B F8.3), each run writes an audit row (operator, runbook, target ids, reason, time) to an append-only `ops_audit_log`, and access is limited to people who need it. (1.3.0) No product or legal text may say that every access is logged until three things hold (PRD V2 F17 8.2 item 6; R4 PT-03): database-level audit of service-role and dashboard sessions is live; the release check in LEGAL-REQ-023 passes; and a quarterly log review is written down. Until then the texts say only when we look at letters and who can (Privacy Policy 2.1.0 section 3), and claim no logging of staff access to letters.
 - Given a runbook execution, When it touches a user's rows, Then exactly one audit row exists and it contains no content.
+- Given `packages/content` and `docs/legal`, When the claims test runs, Then no string claims every access is logged while the F17 8.2 item 6 flag in the claims registry is false.
 - Test: automated for the runbook scripts; quarterly manual review of the log.
 Source: CR-031 (MHMDA access restricted to those who need it), CR-110, CR-112.
 
@@ -220,10 +233,10 @@ Source: CR-110 (reasonable security; amended COPPA rule's written-programme mode
 ## 4. Deletion, retention and export
 
 ### LEGAL-REQ-029 (P0) In-app account deletion, end to end
-Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere: Postgres rows (profiles cascade; entries, versions, dictionary, memberships), Storage objects (audio, photos, avatars, inbox), sync replicas if any (PowerSync buckets only if that engine is used, D-023), our App Store billing mapping (`app_account_tokens` deleted; `store_subscriptions` and auto-renewal consent rows pseudonymised; Apple keeps its own records as merchant of record, so no third-party billing call exists, ADR 0013), PostHog person (random id, deleted at request time through `analytics-forget`, TDD 05 X-02) and Sentry user context if any, email-provider contact (keeping only a hashed suppression entry), Sign in with Apple token revocation (A-NFR-011). Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes.
-- Given a fixture account with entries, audio, photos, a subscription and analytics, When deletion completes, Then a verification script finds no row or object referencing the profile id or analytics id in any system, except pseudonymised `policy_acceptances` and the hashed suppression entry.
-- Given a co-parent and contributors on the book, When one parent deletes, Then PRD B-REQ-016 rules apply (book stays for the other parent; contributors offered export).
-- Test: automated (deletion verification script across systems, run in staging).
+Settings > Your data > Delete account follows PRD C-REQ-019 (export offered first, subscription-billing notice with Apple's manage link, 30-day undo, type to confirm) and, when it completes, deletes or de-identifies the account everywhere. (1.3.0) The systems are those of PRD V2 F17 8.4 for the option B build: Postgres rows (profiles cascade; entries, versions, dictionary, memberships, `held_drafts`, `account_sessions_seen`, `push_tokens`, `notify_outbox`); backup objects in the backup store, `audio_blobs`, `child_keys`, `backup_devices` and `restore_requests` (after the phone has offered to bring recordings that exist only in backup, F08 6.5 D1); the D-080 status record; the stored Apple refresh token after revoking it with Apple (A-NFR-011, BL-330); any Resend contact. Plus is not touched: Apple holds it. Kept as named exceptions, each listed on the deletion screen, the web page and Privacy Policy 2.1.0 section 7: pseudonymised `policy_acceptances` and the D-081 consent record; pseudonymised `audit_events`, `ops.audit_log` and `escrow_unwraps`; the deletion record; a suppression hash; and, while a purchased subscription is still active, a billing-notice record (email, plan, next date) until it ends (counsel, COUNSEL_PACKET Q41 c). No analytics exist in v1.0 (D-095); when they return, PostHog events go through `analytics-forget` at request time. Consent records are pseudonymised, not deleted (Policy s.7.1). The user receives a confirmation email when deletion completes, and the app wipes local data after offering one more export (DATA-REQ-023).
+- Given a fixture account (the fictional Asha family) with entries, a co-parent book, backed-up recordings, a held letter and a status record, When deletion completes, Then a verification script finds no row or object referencing the profile id in any system, except the named exceptions above.
+- Given a co-parent on the book, When one parent deletes, Then the book stays for the other parent with their letters (DATA-REQ-012).
+- Test: automated (deletion verification script across systems, run in staging); `supabase/functions/purge-worker` tests.
 Source: CR-084 (Apple 5.1.1(v)), CR-091 (Play), CR-031 (MHMDA deletion flowed down to processors), CR-014.
 
 ### LEGAL-REQ-030 (P0) Web deletion request page
@@ -238,7 +251,7 @@ Source: CR-091 (Google Play web link requirement [L16]).
 | Letter or recording deleted by the author | Hidden from all members within one sync; hard-deleted from Postgres and Storage 30 days after deletion (undo window) |
 | Account or book deletion confirmed | Undo for 30 days; then hard delete from primary systems within 24 hours of the window ending |
 | Database and storage backups | Deleted data ages out of all backups within 35 days of the hard delete (backup retention must be configured to 30 days or less; Supabase backup retention Unverified) |
-| Processors (PostHog, Sentry, email provider; PowerSync only if used) | Deletion API calls issued within 24 hours of the hard delete (PostHog at request time, TDD 05 X-02); failures retried and alerted. Apple is not our processor for purchases (merchant of record); we delete our own mapping |
+| Processors (Supabase recovery project, Resend; PostHog from v1.1) | (1.3.0) The recovery project holds no user data of ours, only the escrow function and its secrets. No analytics in v1.0 (D-095); from v1.1 PostHog is deleted at request time (`analytics-forget`). Resend keeps no contacts in v1.0 and ages out sent-message data after 30 days, so the completion email remains until about day 60 (the stated exception, Privacy Policy section 10); failures retried and alerted. Apple is not our processor for purchases and we hold no purchase record |
 | Rights request by email or web (access, deletion, correction) | Acknowledged within 10 days; completed within 45 days (CCPA response window, Unverified statute text) |
 - Given the scheduled purge job, When it runs daily, Then it deletes every tombstone older than 30 days and logs counts only.
 - Given a processor deletion failure, When retries exhaust, Then an alert fires within 24 hours.
@@ -260,20 +273,28 @@ Each data category in the data map has a retention rule and a job or trigger tha
 | Tombstones | 30 days |
 | Invite tokens and codes (hashes), web return links once they exist | 90 days after use, revocation or expiry, whichever is first to end the link (`coalesce(revoked_at, accepted_at, expires_at)`; PRD K-18, K-41; D-020) |
 | Web contributor return links | Until revoked, or 24 months of inactivity with notice to the inviting parent (proposed) |
-| Ops audit log (`ops_audit_log`), security logs (`security_events`), key-unwrap logs | 12 months |
+| Ops audit log (`ops_audit_log`), security logs (`security_events`) | 12 months |
+| Recovery-key log (`escrow_unwraps`) and its daily copy | (1.3.0) 24 months, pseudonymised at account deletion; daily copies in `ops-ledger/escrow/` 60 days (PRD V2 F08 section 8). D-021 says 12 months for key-unwrap logs: counsel and the coordinator resolve the conflict (COUNSEL_PACKET Q51); the drafts follow PRD V2 |
 | Product and dispute audit events (`audit_events`, enum-only) | 24 months (DATA-REQ-066; D-021; both clocks listed in the Privacy Policy) |
-| Purchase ledger (`store_subscriptions`, no price or receipt) | 7 years, pseudonymised at account deletion |
-| Analytics events (PostHog) | Provider retention set to 12 months or less (setting Unverified) |
-| Crash reports (Sentry) | 90 days |
+| Backup objects, `audio_blobs`, `child_keys` | (1.3.0) Until the letter is erased, backup is turned off with delete, or the account is deleted; never by inactivity (F08 6.5 F) |
+| `backup_devices`; `restore_requests`; Stop-link tokens | (1.3.0) Account deletion; 90 days after a final state; 7 days or first use |
+| `account_sessions_seen` | (1.3.0) 90 days after the session ends; deleted at account deletion |
+| `push_tokens`; `notify_outbox` | (1.3.0) Sign-out, deletion, an APNs unregistered answer, or 90 days unseen; 7 days after sent |
+| Subscription status record (D-080) | (1.3.0) Life of the account; a billing-notice record until a purchased subscription ends, if counsel agrees (Q41) |
+| Purchase consent record (D-081) | (1.3.0) Life of the account plus 3 years, pseudonymised at deletion unless counsel requires it linked (Q41 e) |
+| Analytics events (PostHog, from v1.1) | Provider retention set to 12 months or less (setting Unverified) |
+| Crash reports (Sentry, when added; not in v1.0) | 90 days |
+| Emails sent through Resend | 30 days after sending (provider retention) |
+| Apple refresh token (`ops.apple_tokens`) | Until revoked at account deletion |
 | Policy acceptances | Account life + 3 years (pseudonymised after deletion) |
 | Email suppression hashes | Indefinitely (to honour opt-outs) |
-| Purchase disclosure records (ARL) | 3 years, or 1 year after the subscription ends, whichever is longer |
+| Purchase disclosure records (ARL) | (1.3.0) The D-081 consent record above, plus per-release evidence of the purchase screen (POLICY_VERSIONING 8) |
 - Given each rule, When its job runs in staging with time travel, Then data past retention is gone and data within retention is untouched.
 - Test: automated.
 Source: CR-084 (5.1.1(i) retention disclosure), CR-091, CR-050 (ARL records [L7]), CR-031.
 
 ### LEGAL-REQ-034 (P0) Export is complete, free and works offline
-Export everything (ARCH s.8; PRD C-REQ-017) produces a ZIP with every entry the user authored (raw transcript, edits, final text, timestamps), their audio and photos, the PDF book, and an `account.json` with their profile fields, memberships, dictionary terms, consent history (`my_policy_state` and full acceptance rows) and plan status. Works offline from local data and in every plan state, including when the user never subscribed or Plus has ended, and never needs Plus (4 Oct 2026: unchanged and restated for the membership model). A web-initiated access request produces the same ZIP by secure download link.
+Export everything (ARCH s.8; PRD C-REQ-017) produces a ZIP with every entry the user authored (raw transcript, edits, final text, timestamps), their audio and photos, the PDF book, and an `account.json` with their profile fields, memberships, dictionary terms, consent history (`my_policy_state` and full acceptance rows) and plan status. Works offline from local data and in every plan state. A web-initiated access request produces the same ZIP by secure download link.
 - Given a lapsed Free user offline, When they export, Then the ZIP contains all categories above and no Plus UI appears.
 - Test: automated (ZIP schema check).
 Source: CR-014, CR-022 (access and portability rights), CR-010 (claim "export everything any time").
@@ -295,7 +316,7 @@ Source: CR-014, CR-022, CR-031.
 ## 5. Breach response hooks
 
 ### LEGAL-REQ-037 (P0) Security event logging
-Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025), escrow unwraps (LEGAL-REQ-023), Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase, Vercel, App Store Connect, PostHog, Sentry, email provider), RLS-denied spikes. Retained 12 months.
+Log, without content: auth events (sign-in, failures, method linking), service-role and runbook use (LEGAL-REQ-025, `ops.audit_log`), escrow unwraps (LEGAL-REQ-023; v1.0 from the first backup build), restore requests and Stop-link uses, new-device sign-ins, Storage bulk reads and signed-URL creation counts per account, admin console logins (Supabase main and escrow projects, Vercel, App Store Connect, Resend, Porkbun, Cloudflare, Google Cloud; PostHog from v1.1), RLS-denied spikes. Retained 12 months (D-021), except `escrow_unwraps` (LEGAL-REQ-033).
 - Given each event type, When triggered in staging, Then a log entry with actor, action, target ids and time exists.
 - Test: automated.
 Source: CR-110, CR-111.
@@ -313,7 +334,7 @@ A runbook script, given an incident scope (tables, buckets, time window, child o
 Source: CR-017, CR-030, CR-101, CR-111.
 
 ### LEGAL-REQ-040 (P0) Kill switches
-Remote, audited switches to: revoke all sessions (force re-auth), disable the AI gateway, disable the web contribution page and return links, pause Storage signed-URL issuance, and rotate the escrow key. Local recording, reading and export keep working when any switch is on.
+Remote, audited switches to: revoke all sessions (force re-auth; the `forceReauthEpoch` remote-config field is parsed but not yet acted on, security review L3), pause sync, and pause pack downloads. (1.3.0) In v1.0 also: `backupUploads` (stop new backup uploads), `escrow` (stop every key release; the escrow project's own switch as well) and `statusReport` (stop the status report and the reminder emails it drives), per PRD V2 F19 WP-F19-16; and rotate the escrow key. When their features ship: disable the AI gateway, disable the web contribution page and return links, and pause Storage signed-URL issuance. Local recording, reading and export keep working when any switch is on.
 - Given each switch, When flipped in staging, Then the effect occurs within 5 minutes and local features still work offline.
 - Test: automated.
 Source: CR-110, CR-111.
@@ -341,7 +362,7 @@ The app ships a `PrivacyInfo.xcprivacy` covering collected data types and requir
 Source: CR-088 (Apple privacy manifest rules Unverified, not opened this session).
 
 ### LEGAL-REQ-044 (P0) Claims registry and content test
-Every privacy, security, AI or "free" claim in `packages/content` (app, website, store listing, emails) is registered in `docs/legal/claims-registry.yaml` with the data-map facts it relies on and counsel approval. `packages/content/test/rules.test.ts` gains a rule: strings containing privacy or security absolutes (for example "never leaves", "only on this phone", "only you", "encrypted", "end-to-end", "HIPAA", "free forever", "anonymous", "we never") fail unless the string key is in the registry. The claims in register s.3 are rewritten before launch.
+Every privacy, security, AI or "free" claim in `packages/content` (app, website, store listing, emails) is registered in `docs/legal/claims-registry.yaml` with the data-map facts it relies on and counsel approval. `packages/content/test/rules.test.ts` gains a rule: strings containing privacy or security absolutes (for example "never leaves", "only on this phone", "only you", "encrypted", "end-to-end", "HIPAA", "free forever", "anonymous", "we never") fail unless the string key is in the registry. The claims in register s.3 are rewritten before launch. (1.3.0) No string anywhere says "only your family's keys", "only you can play", or that we cannot read letters or listen to recordings (D-102); no string a person with backup on can see says recordings stay on the phone; the microphone string says nothing about where recordings are kept (LEGAL-REQ-007). PRD V2 F21 6.5 holds the v1.0 claims list until `claims-registry.yaml` exists (F21-REQ-028). The legal documents themselves are checked by LEGAL-REQ-064.
 - Given `settings.backup.honestNote` as written today, When the content test runs, Then it fails until rewritten and registered.
 - Given a registered claim whose underlying data-map fact changes (e.g. server ASR added to a default path), When CI runs, Then the claim is flagged for review.
 - Test: automated.
@@ -358,53 +379,54 @@ Source: CR-001, CR-002, CR-003 (COPPA directed-to-children factors [L1]; Apple 2
 ## 7. Subscriptions
 
 ### LEGAL-REQ-046 (P0) Paywall disclosures next to the button
-The Plus sheet shows, near the purchase button and readable at default text size: price, billing period, that it renews automatically until cancelled, the trial length and the date the first charge will occur (if eligible), what Plus includes, and how to cancel. No plan is preselected (PRD C-REQ-022). Prices come from the store (localized), never hardcoded.
-- Given an eligible user choosing Annual, When the sheet renders, Then the text includes "$29.99 a year", the trial end date computed from today, "renews automatically" and "cancel any time in Settings" (final words from content/counsel), and VoiceOver reads them with the button.
-- Test: automated snapshot + accessibility test.
-Source: CR-050 (ARL clear and conspicuous terms, express affirmative consent), CR-051 (ROSCA), CR-087 (Apple 3.1.2(c)).
+The purchase screen is Apple's `SubscriptionStoreView` (ADR 0013): Apple shows each plan's price, period and any free trial for eligible people, one subscribe button per plan (no plan preselected, PRD C-REQ-022), Restore, and the Terms and Privacy links (to https://earlyletters.com/terms and /privacy). Our marketing content above the plans states what Plus adds (1.3.0: keeping new letters after the first 2, D-082), that every letter a person keeps stays theirs to read, play and export with or without Plus, that plans renew automatically until cancelled at least 24 hours before the end, how to cancel, and Family Sharing (`billingCopy.store`). It never types a price, "free trial", "free months" or "we will email you" (D-083); Apple's view shows the price and any trial to eligible people. Nothing we add may make the free period more prominent than Apple's billed amount.
+- Given the store view on a release build, When rendered at the default and the largest Dynamic Type size, Then Apple's plans and all of our marketing content are visible and wrap without truncation, and VoiceOver reads them.
+- Given a non-eligible account (sandbox), Then nothing we show mentions a free trial.
+- Test: on-device check per release (screenshots into the evidence pack, POLICY_VERSIONING 8) plus a content test on `billingCopy.store`.
+Source: CR-050, CR-051 (ROSCA), CR-087 (Apple 3.1.2(c)); ADR 0013.
 
-### LEGAL-REQ-047 (P0) Notice timing engine
-*Revised 3 Oct 2026 per PRD.md 1.3 K-38 (TDD 05 X-06, TDD 08 4.3, Lawyer 1 H1).* Server-driven notices, recomputed from App Store snapshots (App Store Server Notifications V2 plus App Store Server API re-reads; ADR 0013), sent by email plus in-app card (one push only with the final trial notice), with idempotency keys. `E` = trial end or period end (App Store instant, UTC); `C` = cancel deadline = `E - 24h`. The windows are stored as data; nothing is ever sent outside its hard window, and a missed window alerts the founder instead of sending late. We do not store the user's state, so everyone gets the strictest window.
+### LEGAL-REQ-047 (P0) Notice timing engine (on the phone and by email)
+*(1.3.0) Option B adds a second channel. With an account, the D-080 status report lets the server email every notice in the table below, from the same windows, to the purchaser's account address (PRD V2 F14 6.6; `docs/emails/CATALOG.md` section 7); the server never sends outside a window, never sends unless the report's `environment` is production, projects the next renewal one period at a time while not cancelled, and every email says "If you have already cancelled, there is nothing to do." Notices key on the actual free period and offer type (introductory, promotional, offer code), not on the product (R4 PT-10). The phone reminders below were built in #121 and are described to people as a courtesy that can come late or not at all (D-094); whether the legally required notices may be described that way is COUNSEL_PACKET Q41 (a), and until counsel answers, the emails are built as the required channel. Phone reminder text carries the date and where to change the plan, never a price (D-083); emails carry the published price.* The original 3 Oct text follows, for the phone channel. The app schedules plan reminders as local notifications plus an in-app note (in Settings, Plan and on the next open inside the window), from StoreKit data on the phone: the entitlement's expiration date, `RenewalInfo.willAutoRenew` and the introductory-offer type. Only on phones where the transaction's ownership is `purchased` (family members through Family Sharing are not billed and get none). Recomputed on every launch and on every `Transaction.updates` event; all pending reminders are cancelled when auto-renew is off. The phone channel sends nothing off the phone; the status report is LEGAL-REQ-062. `E` = trial end or period end (UTC); `C` = cancel deadline = `E - 24h`. Windows are data; a missed window is skipped, never sent late.
 
-| Notice | Applies when | Target | Hard window | Required by |
+| Reminder | Applies when | Target | Hard window | Required by |
 |---|---|---|---|---|
-| Purchase or trial acknowledgment (terms, cancel instructions) | Purchase or trial start | Immediately | Within 1 hour | ARL acknowledgment (CR-050) |
-| Trial ending, 31 days or less | Monthly plan's 1-month trial that will renew | `E - 7d` | `[E-8d, E-5d]` | Courtesy (UR R16); Virginia "within 30 days" for a 31-day trial |
-| Trial ending, over 31 days | Annual plan's 2-month trial that will renew | `E - 18d` | `[E-21d, E-16d]` | ARL 3 to 21 days; NY 3 to 21 days before `C`; Terms "16 to 21 days" |
-| Trial ending, final | Every trial that will renew | `E - 4d 12h` | `[E-5d, E-4d]` | At least 3 days before `C` (Subscription terms; Utah) |
-| Annual renewal, long | Annual plan, will renew, not in a trial | `E - 30d 12h` | `[E-31d, E-30d]` | ARL 15 to 45; NY 15 to 45 before `C`; Virginia and Utah 30 to 60; Massachusetts at most 30 before `C` |
+| Purchase or trial confirmation (in app, with "Save a copy" through the share sheet) | Purchase or trial start | When Apple's sheet closes with `purchased` | Same session | CA 17602(a)(3) retained acknowledgment; MA calendar date to cancel by |
+| Trial ending, over 31 days | Annual plan's 2-month trial that will convert | `E - 18d` | `[E-21d, E-16d]` | CA (b)(1); NY 3 to 21 days before `C`; VA within 30 days of the end; UT at least 3 days; MA 5 to 30 before `C`; NYC |
+| Trial ending, 31 days or less | Monthly plan's 1-month trial that will convert | `E - 7d` | `[E-8d, E-5d]` | VA if over 30 days; UT; courtesy |
+| Trial ending, final | Every trial that will convert | `E - 4d 12h` | `[E-5d, E-4d]` | UT at least 3 days before expiry; courtesy |
+| Annual renewal, long | Annual plan, will renew, not in a trial | `E - 30d 12h` | `[E-31d, E-30d]` | UT 30 to 60 before renewal and MA at most 30 before `C` meet only here; CA 15 to 45; NY 15 to 45 before `C` |
 | Annual renewal, short | Annual plan, will renew | `E - 7d` | `[E-8d, E-6d]` | Courtesy |
-| Annual reminder for every active subscription, monthly included | Each subscription year | Anniversary | Same day | AB 2863 annual reminder [L7] |
-| Price increase | Approved increase, store opt-in consent only | `effective - 25d` | `[-30d, -7d]` | ARL [L7]; Lawyer 1 M1 |
+| Yearly reminder for every subscription, monthly included | Each subscription anniversary | Anniversary | Same day | CA 17602(h), read broadly |
+| Price increase | Never for existing subscribers ("keep current price" in App Store Connect) | n/a | n/a | CA (g); NY (c); NYC |
 
-- Given an annual subscription renewing on 1 March 00:00 UTC, When the scheduler runs, Then the long renewal notice is sent between 29 January 00:00 and 30 January 00:00 UTC, and a short notice between 21 and 23 February; none is sent outside its window.
-- Given a 2-month trial ending at `E`, When the scheduler runs, Then notices go inside `[E-21d, E-16d]` and `[E-5d, E-4d]`, and only the second carries a push.
-- Given the user turns auto-renew off, When the next scheduler run happens, Then every pending trial or renewal notice for that period is skipped.
-- Given a monthly subscriber for 12 months, When the anniversary arrives, Then one annual reminder email is sent.
-- Given push is off, Then email and in-app still go out.
-- Given the child's birthday falls inside a window, Then emails still go in the window, and a push or card avoids the birthday only if the window allows.
-- Test: automated (scheduler with clock control over a synthetic year, DST and leap-year cases).
-Source: CR-050, CR-051; register s.4 K1; Lawyer 1 H1; counsel confirms the table once (TDD 05 OQ-L7).
+- Given an annual subscription renewing on 1 March 00:00 UTC, When the app runs at any time before 29 January, Then a local notification is scheduled inside 29 January 00:00 to 30 January 00:00 UTC, and a short one inside 21 to 23 February; none outside its window.
+- Given a 2-month trial ending at `E`, Then reminders are scheduled inside `[E-21d, E-16d]` and `[E-5d, E-4d]`.
+- Given auto-renew turned off in Apple's settings, When the app next launches or receives `Transaction.updates`, Then every pending plan reminder is cancelled.
+- Given a family member (`familyShared`), Then no plan reminder is scheduled.
+- Given notifications are not allowed, Then the in-app note still appears in Settings, Plan and on the next open inside each window.
+- Given the child's birthday falls inside a window, Then the reminder still goes inside its window (no birthday shifting outside a window).
+- Test: automated (scheduler with clock control over a synthetic year, DST, leap day, trials of 28 to 31 and 59 to 62 days).
+Source: CR-050, CR-051, CR-052; Q-003 memo sections 4 and 5; ADR 0013.
 
 ### LEGAL-REQ-048 (P0) Cancellation is easy
-Settings > Plan shows the renewal date and a "Manage or cancel" button that opens the platform's subscription management (iOS `showManageSubscriptions`; Google Play deep link). Every notice email includes the same instructions and a link to a web page explaining how to cancel on each platform. Any retention offer appears alongside, never instead of, the cancel route.
+Settings > Plan shows the trial end or renewal date and a "Manage subscription" button that opens Apple's subscription management (`AppStore.showManageSubscriptions`). Every plan reminder and the purchase confirmation include the same instructions. No retention offer is shown before Apple's screen.
 - Given a subscriber, When they tap Manage or cancel, Then the system subscription sheet opens in one tap.
 - Test: automated UI.
 Source: CR-050 (online cancellation by a prominent direct link [L7]), CR-051.
 
-### LEGAL-REQ-049 (P0) Purchase consent records
-Every purchase start and completion writes a `policy_acceptances` row for `auto-renewal-terms` (`method='paywall_purchase'`, product id, intro-offer type, storefront in `context`), linked to the exact disclosure version shown. Retained per LEGAL-REQ-033.
-- Given a completed purchase, When the App Store notification is reconciled, Then exactly one `completed` acceptance row matches the App Store original transaction's product and time (± 10 minutes), alongside the `started` row written at purchase start (D-049; counsel to confirm the reading).
-- Test: automated.
-Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Policy s.7.3.
+### LEGAL-REQ-049 (P0, restored in 1.3.0) Purchase consent records
+*(1.3.0) Restored for option B (D-081; PRD V2 F14 "LEGAL-REQ-049 Rev"). For a signed-in purchaser, the first status report after a purchase or trial carries the consent facts: product, offer type, the Subscription Terms version shown (`none_outside_app` for an offer code redeemed outside the app), and the time; one record per original purchase, identified by `sub_ref` (a salted hash of the original transaction id, never the id in clear). Kept for the life of the account plus 3 years, pseudonymised at deletion, unless counsel requires it to stay linked for 3 years or 1 year after the contract ends (COUNSEL_PACKET Q41 e). A purchaser who never signs in has no record of ours; Apple's transaction and the evidence pack below are the proof for them.*
+- Given a signed-in purchase in the sandbox, When the first report reaches the server, Then exactly one consent record exists for that `sub_ref` with the four facts and no other field.
+The 3 Oct evidence pack stays for everyone: Apple's transaction record is the per-person proof; for each release the evidence pack (POLICY_VERSIONING 8) keeps screenshots of Apple's store view with our marketing content at default and largest text size, the Subscription Terms version and the `billingCopy.store` strings, so the exact disclosure shown to any purchaser can be reconstructed from the app version.
+- Given a release candidate, When the release checklist runs, Then `docs/legal/evidence/store/<version>/` holds the purchase-screen screenshots and the content hash of `billingCopy.store`.
+- Test: release checklist (manual).
+Source: CR-050 (consent records 3 years or 1 year after termination [L7]); Q-003 memo.
 
 ### LEGAL-REQ-050 (P0) Keep-and-leave promise enforced in code
-**[COUNSEL REVIEW, founder decision of 4 Oct 2026: rewritten. The old text said writing was never gated. Now only adding a new letter after the free allowance is gated (LEGAL-REQ-061). PRD C-NFR-004, C-REQ-017 and C-REQ-028 may still carry the old wording and are owned elsewhere.]**
-Reading, playback of recordings, export, deleting, and downloading already backed-up audio never call the entitlement service and never show a paywall. Letters already made stay readable, playable and exportable in every plan state. A lapse, refund or billing failure removes the ability to add new letters after the free allowance and Plus extras, and nothing else. Nothing is deleted because a plan lapsed or was never bought.
-- Given entitlement service unreachable and a lapsed account, When the user reads, plays, exports and deletes, Then all succeed with no Plus UI.
-- Given a lapsed account with more letters than the free allowance, When the user opens any existing letter, Then it is readable and playable.
+(1.3.0, D-082, D-083, D-103) Only the Keep step of a new letter after the person's first 2 kept letters consults the entitlement. Capturing, typing, reviewing, reading, playing recordings, Read together, starting a book, writing with a co-parent, recording backup and restore, export, deletion and restoring from Recently deleted never consult it and never show a paywall (`FreeForever` in `packages/core/src/plan.ts`; PRD V2 F14 section 4). A letter waiting at the Keep step is never discarded, hidden or truncated. A lapse, refund or billing failure only stops new keeps; every kept letter stays readable, playable and exportable.
+- Given StoreKit unavailable and a lapsed plan, When the user writes, reads, plays and exports, Then all succeed with no Plus UI.
 - Test: automated.
-Source: CR-012 (honouring "free" promises), CR-010, CR-132.
+Source: CR-012 (honouring "free" promises), CR-010.
 
 ---
 
@@ -428,13 +450,13 @@ Source: CR-070.
 ## 9. Messaging
 
 ### LEGAL-REQ-053 (P0) Email classification and CAN-SPAM controls
-Every email template in `packages/content` declares `class: transactional | commercial`. Commercial templates include a one-click unsubscribe, the company postal address and clear identification; unsubscribes are honoured immediately and kept as hashed suppression entries even after account deletion. Transactional templates (magic link, receipts, trial and renewal notices, policy-change notices, deletion confirmations) contain no promotional content beyond incidental branding. Subjects never include child names or letter text.
+Every email template in `packages/content` declares `class: transactional | commercial`. Commercial templates include a one-click unsubscribe, the company postal address and clear identification; unsubscribes are honoured immediately and kept as hashed suppression entries even after account deletion. Transactional templates (sign-in links and codes, new-device notices, backup restore and recovery-key notices, trial and renewal notices, cancelled and ended notices, policy-change notices, deletion confirmations) contain no promotional content beyond incidental branding and no Plus offer. Subjects never include child names or letter text. (1.3.0) Whether the website's "tell me when it is ready" emails are commercial, and so need the postal address, is COUNSEL_PACKET Q34; until then they carry it once the founder supplies one.
 - Given a commercial template without an unsubscribe link or postal address, When the content test runs, Then it fails.
 - Test: automated.
 Source: CR-060; CR-061.
 
 ### LEGAL-REQ-054 (P0) Push notifications carry no content and no promotions
-Push payloads contain no letter text, transcripts or audio references; child names only when the user setting allows (C-REQ-009); no promotional pushes in v1. Plan notices are transactional.
+Push payloads contain no letter text, transcripts or audio references; child names only when the user setting allows (C-REQ-009); no promotional pushes in v1. Plan notices are transactional. (1.3.0) The server-sent pushes planned for v1.0 are the co-parent letter notice (generic, no ids, F11) and the time-sensitive backup restore request (no ids, F08 6.5 C3); both pass the payload test. (16 Oct) Not built: `packages/api/src/server/push.ts` has payload shapes only, with no sender and no token table, so the published texts mention no push.
 - Given every push type, When payloads are generated in tests, Then none contains fixture letter text, and the name appears only when the setting is on.
 - Test: automated.
 Source: CR-061 (Apple 4.5.4), LEGAL-REQ-014.
@@ -461,7 +483,7 @@ Engineering provides a service-role script that can preserve a specific account'
 Source: CR-112, CR-113.
 
 ### LEGAL-REQ-058 (P0) Launch geography controls
-iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state except the storefront country that Apple reports on App Store transactions (stored with the entitlement, L2).
+iOS availability is set to the United States storefront only (Android likewise later). The website and app contain no EU/UK/India-targeted pricing, language or marketing. The web contribution page is reachable from any country but collects only what LEGAL-REQ-010 allows, sets no non-essential cookies, and stores no IP-derived location. No code stores a user's country or state. The storefront Apple reports stays on the phone (ADR 0013).
 - Given App Store Connect, When the release checklist runs, Then territory availability equals {United States} and the evidence is saved.
 - Given the web contribution page, When loaded, Then only strictly necessary cookies or storage are set.
 - Test: manual checklist + automated cookie check.
@@ -479,22 +501,37 @@ No integration with HealthKit, Health Connect, wearables, or structured health l
 - Test: automated.
 Source: CR-016, CR-030, CR-031.
 
-### LEGAL-REQ-061 (P0) Free allowance of 2 letters per account
-**[COUNSEL REVIEW, new 4 Oct 2026. Open edges not decided here: whether family letters count toward the 2; what a second child's book gets without Plus; how the count works before an account exists. See memos/pricing-change-2026-10-04.md.]**
-The first 2 letters per account are free. A letter is one saved entry, spoken or typed. After 2, saving a new letter requires an active Plus entitlement. Offering the Plus sheet at that point is the only effect; no existing letter is changed, hidden or locked. The count uses only a number, never content, and any server-side storage of it is added to the data map and Privacy Policy first. The Plus sheet says, near the purchase button, that new letters after the first 2 need Plus (with LEGAL-REQ-046).
-- Given an account with 1 saved letter, When the user saves a second, Then it saves with no paywall.
-- Given an account with 2 saved letters and no Plus, When the user tries to save a third, Then the Plus sheet is offered, and the first 2 letters stay readable, playable and exportable.
-- Given a Plus lapse, When the user views the book, Then every letter is readable and no letter is removed.
-- Test: automated (entitlement fixtures: new, 2 letters, trial, Plus, lapsed, refunded, billing retry, offline).
-Source: CR-132, CR-012, CR-050, Apple 3.1.1 and 3.1.2 (Unverified).
+---
 
-### LEGAL-REQ-062 (P0) Never discard an in-progress letter at the limit
-**[COUNSEL REVIEW, new 4 Oct 2026: this is the recommendation in subscription-terms.md Open questions, not a decided rule. Founder to confirm.]**
-If the free limit is reached while a letter is being recorded or typed, what the person just said or wrote is never lost or discarded. The recording and text are kept on the phone as a draft, the Plus sheet is offered calmly, and after the person subscribes the letter can be saved as it was. Declining Plus leaves the draft on the phone and the person can export or delete it. No countdown or urgency language.
-- Given a spoken letter in progress when the limit applies, When the user dismisses the Plus sheet, Then the audio and transcript are still on the phone and can be exported or deleted.
-- Given the user then subscribes, When they return, Then the letter saves without being recorded again.
-- Test: automated plus a manual script with the app force-quit at the paywall.
-Source: CR-132; the constitution in CLAUDE.md that nothing a person said is discarded by the machine.
+## 11. Option B additions (1.3.0, 15 Oct 2026)
+
+### LEGAL-REQ-061 (P0, v1.0 from the first backup build) Recording backup has its own consent act
+Backup is off until the owner turns it on, from one sheet that says, in words counsel approves: encrypted on this phone first; we keep a recovery key so recordings can come back on a new phone; we use it only through our recovery service, which logs every use and emails the owner each time; never listened to, sold or used to train models; other family members cannot hear these recordings yet (PRD V2 F08 6.5 A, 6.7). The tap records a `backup` accept act through `record_policy_act` (POLICY_VERSIONING 1.2.0). The server refuses `backup_begin` and `backup_store_key` without an active act (`SCCON`). Turning backup off records a withdraw act and offers keep or delete with nothing preselected; nothing that exists only in backup is deleted before the phone has offered to bring it here (F08 6.5 D). Counsel may rule that the sensitive-data consent covers backup instead (COUNSEL_PACKET Q42 d); until then this requirement stands.
+- Given a signed-in owner with no `backup` act, When the phone calls `backup_begin`, Then the server returns `SCCON` and stores nothing.
+- Given backup on and 3 recordings that exist only in backup, When the owner turns backup off and chooses delete, Then the phone first shows the count and the bring-here action, and no object is deleted until the person confirms that exact count.
+- Test: automated (F08-REQ-035, -039).
+Source: CR-031 (MHMDA; voice recordings in the biometric examples), CR-020; R4 PT-22; D-102.
+
+### LEGAL-REQ-062 (P0) The status report sends exactly the allowed fields
+The subscription status report (D-080) and its first-purchase consent facts (D-081) are an allowlist, typed in `packages/api`, sent to one authenticated, idempotent endpoint: plan, trial end date, renewal date, cancelled flag, `sub_ref`, `environment`; and once, product, offer type, Subscription Terms version, time. Never receipts, signed transactions, transaction ids in clear, prices, card or payment data, or `appAccountToken`. Only a phone whose transaction is `purchased` reports; Family Sharing members never do. The server never enforces Plus and never answers whether a person is a member.
+- Given the report schema, When a test adds any field outside the allowlist, Then the schema test fails.
+- Given a network capture of a sandbox purchase, Then the only request to our servers about it carries the allowlisted fields.
+- Test: automated (schema test; network capture in the release run).
+- Status (16 Oct): not built. The `subscription-status` handler is a shell and nothing is written; the published texts say our servers do not receive purchases until it ships.
+Source: CR-050, CR-088 (the label's Purchases row); R4 PT-07; PRD V2 F14 6.6.
+
+### LEGAL-REQ-063 (P0) A new device is announced before it can receive any recording key
+Every sign-in from a device the account has not used sends the new-device email with a Stop link before any escrow request from that device can be released (PRD V2 F02-REQ-017, F02-REQ-025; F08 6.5 C10). The Stop page is scanner-safe: loading it changes nothing; only its button acts.
+- Given a new device, When it signs in and immediately asks for recording keys, Then the email is queued first and the request is held per LEGAL-REQ-023.
+- Test: automated (F08-REQ-029, -042).
+- Status (16 Oct): not built. There is no `account_sessions_seen` table and no sender; the published texts do not mention the notice until it ships. Backup must not release a key to a new device before this ships, or counsel relaxes it.
+Source: CR-110; R4 PT-19.
+
+### LEGAL-REQ-064 (P0) The legal documents describe the build, not an earlier plan
+`docs/legal` carries no stale Plus prices and none of the on-device claims of the PR #81 drafts. A test in `packages/content/test/legal-docs.test.ts` fails when: a document outside a changelog section names the Plus prices that D-082 superseded; the no-data label answer appears outside the history sections of `app-store-privacy-labels.md`; a published document (Privacy Policy, Terms, Subscription Terms, service providers, delete-account page) makes one of the on-device claims of the PR #81 drafts (that nothing is collected, that there is no account) or breaks the D-102 wording rules (the exact patterns live in the test, so this file never repeats them); the Terms or Subscription Terms prices differ from `packages/content/src/pricing.ts`; a published document's version line, frontmatter version and newest changelog row differ; or any file in `docs/legal` holds a non-ASCII character. (Founder direction, 15 Oct 2026.) A published document also fails when it carries an internal reference (a decision, ADR, backlog, requirement or pull request id, the PRD, a TODO or a note for counsel), a placeholder other than the founder blanks [legal name], [mailing address], [county], [effective date] and [phone number], or the name of a product the build does not use (an analytics or crash service, a billing SDK, an AI provider, or Google while the build does not offer Sign in with Google). Published texts describe only what the code does, or say plainly that a feature is not available yet; a planned feature is added back, with notice, in the release that builds it (review of PR #163, 16 Oct 2026). Claims that a provider cannot open what it stores fail the test while the provider hosts the keys. The dated memos in `docs/legal/memos/` are records and are not checked for prices or claims.
+- Given a document that reintroduces a superseded price outside its changelog, When `npm test` runs, Then the test fails and names the file and line.
+- Test: automated.
+Source: CR-010 (FTC Act s.5 claims); R4 PT-01, PT-05; PRD V2 F21-REQ-013; D-082, D-102.
 
 ---
 
@@ -503,17 +540,17 @@ Source: CR-132; the constitution in CLAUDE.md that nothing a person said is disc
 | Register area | Requirements |
 |---|---|
 | Children and age (CR-001 to -006) | 002, 045, 059 |
-| FTC s.5 and claims (CR-010 to -012) | 009, 014, 016, 032, 034, 044, 050 |
+| FTC s.5 and claims (CR-010 to -012) | 009, 014, 016, 032, 034, 044, 050, 064 |
 | California and state privacy (CR-013 to -023) | 001, 003, 006, 008, 012, 013, 016, 029 to 036 |
-| Health data (CR-030 to -033) | 006, 015, 060 |
+| Health data (CR-030 to -033) | 006, 015, 060, 061 |
 | Voice and recording (CR-040 to -042) | 011, 018, 019 |
-| Subscriptions (CR-050 to -054) | 046 to 050 |
+| Subscriptions (CR-050 to -054) | 046 to 050, 062 |
 | Messaging (CR-060 to -062) | 053, 054 |
 | Accessibility (CR-070, -071) | 051, 052 |
 | Apple (CR-080 to -089) | 001, 003, 004, 007, 008, 029, 042, 043, 055, 056 |
 | Google Play (CR-090 to -094) | 029, 030, 041, 042, 045 |
 | International (CR-100 to -102) | 010, 058 |
-| Security and legal process (CR-110 to -114) | 014, 015, 021 to 028, 037 to 040, 056, 057 |
+| Security and legal process (CR-110 to -114) | 014, 015, 021 to 028, 037 to 040, 056, 057, 063 |
 
 ## Sources
 
@@ -523,6 +560,9 @@ Citations [L#] are listed with URLs in `compliance-register.md` (all opened 2 Oc
 
 | Version | Date | Change |
 |---|---|---|
-| 2.0.0 | 2026-10-04 | Founder decision of 4 Oct 2026 (membership model): LEGAL-REQ-050 rewritten (only adding new letters after the free allowance is gated); LEGAL-REQ-034 restated; new LEGAL-REQ-061 (free allowance of 2) and 062 (never discard an in-progress letter; recommendation pending founder). No IDs removed. **Major** (a requirement that said writing is never gated is replaced). Unpublished draft, no users bound; counsel to confirm. |
+| 2.2.0 | 2026-10-31 | Merge of develop (31 Oct 2026) into the option B text of PR #163. In the two paragraphs that both sides changed (LEGAL-REQ-046 and -050) the text of #163 was kept, because it already states the D-082 and D-083 position (first 2 letters free, only the Keep step consults the entitlement, no price typed in app copy) and also covers backup, restore and deletion, which develop's wording does not. Develop's header and changelog row 2.1.0 are kept. Version 2.2.0 because 1.3.0, 2.0.0 and 2.1.0 are used (POLICY_VERSIONING 2.4). Merge only; no requirement was added or retired. |
+| 2.1.0 | 2026-10-31 | 046 and 050 follow founder decision D-082 and D-083 (first two letters free, Plus gates only keeping later letters; Read together and new books free), replacing the 3 Oct description (writing and co-parent writing free; Read together after free sessions and books for more children as Plus extras). Review `docs/reviews/2026-10-31/subscriptions.md` SUB-02. Version 2.1.0 because 1.3.0 and 2.0.0 were used by unmerged drafts on other branches (POLICY_VERSIONING 2.4). Not a published document; no notice. |
+| 1.3.0 | 2026-10-15 | Option B (founder, 15 Oct 2026; D-100 to D-108; D-093 to D-099; PRD V2 F02, F08, F11, F14, F17, F18). Header: option B paragraph; only counsel retires or relaxes a LEGAL-REQ (R4 PT-06). 003: no analytics SDK in v1.0 (D-095). 006: consent names the co-parent; backup has its own act. 007: microphone string says nothing about where recordings are kept; Face ID only with the app lock. 008: v1.0 consents are sensitive data and backup. 022(a) and 023: bind in v1.0, rewritten to F08 6.5 (per-author keys, separate escrow project, append-only log, email per use, holds, Stop link, limits, release check). 025: no "every access is logged" claim until F17 8.2 item 6 holds. 029: deletion across every option B system with named exceptions. 031, 033: recovery project; retention rows for backup, devices, restore requests, sessions, push tokens, status and consent records; `escrow_unwraps` 24 months (conflict with D-021 flagged, COUNSEL_PACKET Q51). 037, 040: escrow, restore and new-device logging; `backupUploads`, `escrow`, `statusReport` kill switches. 044: D-102 wording bans. 046: Plus is keeping letters after 2; no prices typed by us (D-083). 047: second channel, emails from the status report; phone reminders a courtesy (D-094) pending Q41. 049: restored as the D-081 consent record. 050: only the Keep step after 2 letters is gated (D-082, D-103). 053, 054: v1.0 email and push types. New: 061 backup consent act, 062 status report allowlist, 063 new-device notice before key release, 064 legal documents test. Not a published document; no notice. 16 Oct (review of PR #163): build status lines for -047, -049, -054, -061, -062, -063; -023 follows D-108 (7-day approval device, nine settings); -064 adds "describe only what is built" and the provider-cannot-open check. |
+| 1.2.0 | 2026-10-03 | Alignment with the founder decisions of 3 Oct 2026, second round (D-051 to D-070). Release-tier paragraph for D-055 and D-059 (013, 022(a), 023 and the web and AI requirements bind when their features ship). 007 and 008 scoped to v1.0 permissions and consents. 022: device backup decided (D-033), no SQLCipher. 024: sync access tests replace PowerSync parity (D-023). 029 rewritten to the built purge worker (Apple token revocation, PostHog at request, Resend, no purchase mapping). 031 and 033: Resend 30-day exception; purchase ledger and ARL record rows removed. 037 consoles updated. 040: v1.0 switches, `forceReauthEpoch` gap (security review L3). 046 to 050 rewritten for Apple-only Plus on the device: Apple's store view (046), on-device reminder engine (047, Q-003), Apple's manage sheet (048), 049 retired for per-release evidence, 050 keep-and-leave without an entitlement service. 058: no storefront stored. Not a published document; no notice. |
 | 1.1.0 | 2026-10-03 | Alignment with PRD.md 1.3 (founder decisions of 3 Oct; `docs/DECISIONS.md`). Release-tier note: web-page requirements (010, 035 and web parts of 002, 005, 014) bind from v1.1; AI requirements (004, 005, 020) bind when the gateway ships; 030 reduced at v1.0 (D-042); counsel to confirm. RevenueCat removed (ADR 0013): 029 deletion steps, 031 processors, 037 consoles, 049 reconciliation, 058 storefront source. 033: invite hashes 90 days keyed on use, revocation or expiry (K-18, D-020); `audit_events` 24 months beside 12-month ops and security logs (D-021); purchase ledger 7 years. 047 rewritten to the K-38 hard windows (final trial notice at E-4d12h; annual renewal inside [E-31d, E-30d]; long trial inside [E-21d, E-16d]). Not a published document; no notice. |
 | 1.0.0 | 2026-10-02 | First version; 2 Oct revision of 002 for the 18+ entry gate. |

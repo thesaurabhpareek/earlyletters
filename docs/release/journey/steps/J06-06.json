@@ -1,0 +1,40 @@
+{
+  "id": "J06-06",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Exactly as said",
+  "note": "One tap shows the words exactly as spoken, with their \"um\" and repeats; the screen says so. This is the view and the choice for this letter, until it is saved.",
+  "from": "J06-05",
+  "shot": "screens/J06-06.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Hear it Close Read it back To Asha · Month 7 From Mama Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. With small fixes Exactly as said Exactly as you said it. Change words Add to Asha's book Keep private",
+  "lines": [
+    "Hear it",
+    "Close",
+    "Read it back",
+    "To Asha · Month 7",
+    "From Mama",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "With small fixes",
+    "Exactly as said",
+    "Exactly as you said it.",
+    "Change words",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

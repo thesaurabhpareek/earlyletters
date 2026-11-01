@@ -1,0 +1,79 @@
+# E2E-11  Analytics consent off by default, on, off again (Settings, Privacy).
+# Proves: PRD-REQ-016 and LEGAL-REQ-003 (off until the person says yes),
+# PRD-REQ-018 (withdrawing works in the session and survives a relaunch),
+# C-REQ-016 and LEGAL-REQ-008 (the switch is two taps from Settings).
+# The network half (zero PostHog or Sentry requests before consent and after
+# withdrawal) needs the optional proxy witness in README section 6.
+# PENDING (product gap): the consent sheet as the third ask (PRD-REQ-001) is not
+# mounted by any route yet; the block at the end is skipped until it is
+# (tag `pending-consent-sheet`; set CONSENT_SHEET=1 to run it).
+# Switch state is read with the `checked` selector on the iOS switch
+# (Assumption: Maestro reads UISwitch value as checked; check on the first run).
+appId: ${APP_ID}
+name: E2E-11 Analytics consent on and off
+tags:
+  - e2e
+  - E2E-11
+  - PRD-REQ-016
+  - PRD-REQ-018
+  - LEGAL-REQ-003
+  - LEGAL-REQ-008
+  - C-REQ-016
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.privacy"
+- assertVisible:
+    id: "privacy.screen"
+# 1. Off by default; nothing preselected.
+- assertVisible:
+    id: "privacy.analytics"
+    checked: false
+# 2. On, and still on after a relaunch.
+- tapOn:
+    id: "privacy.analytics"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: true
+- runFlow: ../subflows/relaunch.yaml
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.privacy"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: true
+# 3. Off again (withdrawal), and still off after a relaunch.
+- tapOn:
+    id: "privacy.analytics"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: false
+- runFlow: ../subflows/relaunch.yaml
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.privacy"
+- assertVisible:
+    id: "privacy.analytics"
+    checked: false
+# 4. PENDING: the consent sheet, never in the same session as another ask.
+- runFlow:
+    when:
+      true: ${CONSENT_SHEET == "1"}
+    commands:
+      - runFlow:
+          file: ../subflows/relaunch.yaml
+      - extendedWaitUntil:
+          visible:
+            id: "consentSheet.screen"
+          timeout: 10000
+      - assertNotVisible:
+          id: "signIn.sheet"
+      - tapOn:
+          id: "consentSheet.no"
+      - assertNotVisible:
+          id: "consentSheet.screen"
+- stopApp

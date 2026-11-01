@@ -88,13 +88,16 @@ export type RejectReason =
   | 'changes_number' // 1,000 -> 1.000, two -> too
   | 'changes_sentence_type' // "it." -> "it?", "!" removed
   | 'changes_quotes' // quotation marks added, removed or moved
+  | 'changes_invisible' // a direction mark, joiner or other invisible character added, removed or moved (F06-REQ-003)
   | 'case_change_not_allowed' // case changed anywhere but a word's first letter, or a capital that was not positional
   | 'case_change_not_sentence_start' // a capital where no sentence starts (will -> Will)
   | 'removes_negation' // a "repeat" or "false start" that only removes a negation (not not -> not)
   | 'repeat_is_emphasis' // very very, bye bye, come on come on: kept as said
   | 'false_start_complete_phrase' // the "restart" did not lead anywhere: I love you, I love you.
   | 'stt_fix_protected_word' // a pronoun, kinship word, number, negation or another dictionary term
-  | 'stt_fix_not_heard_as'; // not a learned mishearing, a case variant, or close in sound
+  | 'stt_fix_not_heard_as' // not a learned mishearing, a case variant, or close in sound
+  // Language packs (ADR 0014).
+  | 'not_vetted_for_language'; // this kind of edit needs a table this language's pack has not had signed off
 
 export interface RejectedEdit {
   edit: Edit;

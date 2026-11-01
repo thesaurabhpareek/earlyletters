@@ -1,0 +1,559 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "hi",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "Hindi",
+    "native": "हिन्दी"
+  },
+  "script": {
+    "primary": "Deva",
+    "variants": [],
+    "direction": "ltr",
+    "cased": false,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard Annex #15, Unicode Normalization Forms, https://unicode.org/reports/tr15/",
+        "Unicode CompositionExclusions.txt: U+0958..U+095F (nukta letters) decompose under NFC, https://www.unicode.org/Public/UCD/latest/ucd/CompositionExclusions.txt"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [],
+    "ignoreForMatching": [
+      "़"
+    ],
+    "foldForMatching": {
+      "ँ": "ं"
+    },
+    "house": {
+      "dashes": "replace",
+      "dashTo": ", ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "plain"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard, ch. 12.1 Devanagari: U+0964 DEVANAGARI DANDA marks the end of a sentence",
+        "Central Hindi Directorate, Manak Hindi Vartani (standard Hindi orthography): purna viram (।) as the full stop"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?",
+      "।",
+      "॥"
+    ],
+    "terminal": "।",
+    "openers": [],
+    "pairOpeners": false,
+    "quotes": [],
+    "commas": [],
+    "localForms": {
+      ".": "।"
+    },
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [],
+    "spaceInsideGuillemets": false
+  },
+  "fillers": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Hesitation sounds as written in Hindi transcripts; no corpus count found (unverified). Excludes हम (we), हाँ (yes), हूँ (am), आ (come)"
+      ]
+    },
+    "auto": [
+      "उम",
+      "उम्म",
+      "अम्म",
+      "हम्म",
+      "ह्म्म"
+    ],
+    "suggest": [
+      "अं"
+    ]
+  },
+  "meaning": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Kachru, Hindi (London Oriental and African Language Library, 2006): negation with nahin, na, mat; modality with sakna, chahiye, padna",
+        "Needs native review"
+      ]
+    },
+    "negations": [
+      "नहीं",
+      "नही",
+      "नहि",
+      "न",
+      "ना",
+      "मत",
+      "बिना",
+      "nahi",
+      "nahin",
+      "nahee",
+      "mat"
+    ],
+    "negationSuffixes": [],
+    "negationPrefixes": [],
+    "modals": [
+      "सकता",
+      "सकती",
+      "सकते",
+      "सका",
+      "सकी",
+      "सके",
+      "सकूँ",
+      "सकूं",
+      "सकेगा",
+      "सकेगी",
+      "सकेंगे",
+      "चाहिए",
+      "चाहिये",
+      "पड़ा",
+      "पड़ी",
+      "पड़े",
+      "पड़ेगा",
+      "पड़ेगी",
+      "पड़ता",
+      "पड़ती",
+      "शायद"
+    ],
+    "numberWords": [
+      "शून्य",
+      "एक",
+      "दो",
+      "तीन",
+      "चार",
+      "पाँच",
+      "पांच",
+      "छह",
+      "छः",
+      "सात",
+      "आठ",
+      "नौ",
+      "दस",
+      "ग्यारह",
+      "बारह",
+      "तेरह",
+      "चौदह",
+      "पंद्रह",
+      "सोलह",
+      "सत्रह",
+      "अठारह",
+      "उन्नीस",
+      "बीस",
+      "तीस",
+      "चालीस",
+      "पचास",
+      "साठ",
+      "सत्तर",
+      "अस्सी",
+      "नब्बे",
+      "सौ",
+      "हज़ार",
+      "हजार",
+      "लाख",
+      "करोड़",
+      "आधा",
+      "आधी",
+      "डेढ़",
+      "ढाई",
+      "पहला",
+      "पहली",
+      "दूसरा",
+      "दूसरी",
+      "तीसरा",
+      "तीसरी",
+      "दोनों",
+      "तीनों"
+    ],
+    "functionWords": [
+      "का",
+      "की",
+      "के",
+      "को",
+      "से",
+      "में",
+      "पर",
+      "ने",
+      "तक",
+      "और",
+      "या",
+      "लेकिन",
+      "कि",
+      "तो",
+      "भी",
+      "ही",
+      "है",
+      "हैं",
+      "था",
+      "थी",
+      "थे",
+      "हो",
+      "हूँ",
+      "हूं",
+      "मैं",
+      "मुझे",
+      "मेरा",
+      "मेरी",
+      "मेरे",
+      "हम",
+      "हमें",
+      "हमारा",
+      "हमारी",
+      "हमारे",
+      "तुम",
+      "तुम्हें",
+      "तुम्हारा",
+      "तुम्हारी",
+      "तुम्हारे",
+      "तू",
+      "तुझे",
+      "तेरा",
+      "तेरी",
+      "तेरे",
+      "आप",
+      "आपको",
+      "आपका",
+      "आपकी",
+      "आपके",
+      "वह",
+      "वो",
+      "वे",
+      "उस",
+      "उसे",
+      "उसका",
+      "उसकी",
+      "उसके",
+      "उन",
+      "उन्हें",
+      "उनका",
+      "उनकी",
+      "उनके",
+      "यह",
+      "ये",
+      "इस",
+      "इसे",
+      "इसका",
+      "इसकी",
+      "इसके",
+      "इन",
+      "इन्हें"
+    ],
+    "pronouns": [
+      "खुद",
+      "अपना",
+      "अपनी",
+      "अपने",
+      "कोई",
+      "सब",
+      "सभी",
+      "कौन",
+      "किसी",
+      "किसे",
+      "कुछ"
+    ],
+    "kinship": [
+      "माँ",
+      "मां",
+      "मम्मी",
+      "मम्मा",
+      "अम्मा",
+      "पापा",
+      "पिता",
+      "पिताजी",
+      "बाबा",
+      "नानी",
+      "नाना",
+      "दादी",
+      "दादा",
+      "नानू",
+      "बुआ",
+      "चाचा",
+      "चाची",
+      "मौसी",
+      "मौसा",
+      "मामा",
+      "मामी",
+      "ताऊ",
+      "ताई",
+      "भैया",
+      "भाई",
+      "दीदी",
+      "बहन",
+      "भाभी",
+      "जीजा",
+      "बेटा",
+      "बेटी",
+      "बच्चा",
+      "बच्ची",
+      "बच्चे",
+      "पति",
+      "पत्नी",
+      "mumma",
+      "mummy",
+      "papa",
+      "nani",
+      "nana",
+      "dadi",
+      "dada",
+      "maa"
+    ],
+    "alwaysCapitalized": [],
+    "agreementGroups": [],
+    "tenseGroups": [
+      [
+        "है",
+        "था",
+        "थी",
+        "होगा",
+        "होगी"
+      ],
+      [
+        "हैं",
+        "थे",
+        "थीं",
+        "होंगे",
+        "होंगी"
+      ],
+      [
+        "हूँ",
+        "हूं",
+        "था",
+        "थी"
+      ]
+    ],
+    "agreementInflections": [],
+    "vowels": "",
+    "minStem": 3,
+    "tenseEndings": [],
+    "stemDropFinal": []
+  },
+  "repeats": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Hindi reduplication is meaningful (धीरे धीरे, जल्दी जल्दी, बार बार, कभी कभी); only doubled postpositions and conjunctions are treated as stumbles. Needs native review"
+      ]
+    },
+    "always": [
+      "में",
+      "का",
+      "की",
+      "के",
+      "को",
+      "से",
+      "ने",
+      "और"
+    ],
+    "suggest": [
+      "मैं",
+      "हम",
+      "वो",
+      "वह",
+      "तो",
+      "कि"
+    ],
+    "dangling": [
+      "और",
+      "कि",
+      "लेकिन",
+      "या",
+      "अगर",
+      "क्योंकि"
+    ],
+    "verifierExtra": [],
+    "cleft": {
+      "words": [],
+      "openers": []
+    },
+    "subject": {
+      "words": [],
+      "objectVerbs": [],
+      "clauseLeads": [],
+      "discourseAfter": []
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "ISO 15919 / IAST consonant values, simplified to the Latin spellings Indian names use in English (unverified against a names list)"
+      ]
+    },
+    "romanize": {
+      "अ": "a",
+      "आ": "a",
+      "इ": "i",
+      "ई": "i",
+      "उ": "u",
+      "ऊ": "u",
+      "ऋ": "ri",
+      "ए": "e",
+      "ऐ": "ai",
+      "ओ": "o",
+      "औ": "au",
+      "ऑ": "o",
+      "ं": "n",
+      "ँ": "n",
+      "ः": "h",
+      "ऽ": "",
+      "्": "",
+      "़": ""
+    },
+    "abugida": {
+      "consonants": {
+        "क": "k",
+        "ख": "kh",
+        "ग": "g",
+        "घ": "gh",
+        "ङ": "n",
+        "च": "ch",
+        "छ": "chh",
+        "ज": "j",
+        "झ": "jh",
+        "ञ": "n",
+        "ट": "t",
+        "ठ": "th",
+        "ड": "d",
+        "ढ": "dh",
+        "ण": "n",
+        "त": "t",
+        "थ": "th",
+        "द": "d",
+        "ध": "dh",
+        "न": "n",
+        "प": "p",
+        "फ": "ph",
+        "ब": "b",
+        "भ": "bh",
+        "म": "m",
+        "य": "y",
+        "र": "r",
+        "ल": "l",
+        "ळ": "l",
+        "व": "v",
+        "श": "sh",
+        "ष": "sh",
+        "स": "s",
+        "ह": "h",
+        "क़": "q",
+        "ख़": "kh",
+        "ग़": "g",
+        "ज़": "z",
+        "ड़": "r",
+        "ढ़": "rh",
+        "फ़": "f",
+        "य़": "y"
+      },
+      "vowelSigns": {
+        "ा": "a",
+        "ि": "i",
+        "ी": "i",
+        "ु": "u",
+        "ू": "u",
+        "ृ": "ri",
+        "े": "e",
+        "ै": "ai",
+        "ो": "o",
+        "ौ": "au",
+        "ॅ": "e",
+        "ॉ": "o"
+      },
+      "virama": "्",
+      "inherent": "a",
+      "dropFinalInherent": true
+    },
+    "rewrite": [
+      {
+        "from": "chh",
+        "to": "C"
+      },
+      {
+        "from": "ch",
+        "to": "C"
+      },
+      {
+        "from": "sh",
+        "to": "S"
+      },
+      {
+        "from": "ph",
+        "to": "f"
+      },
+      {
+        "from": "kh",
+        "to": "k"
+      },
+      {
+        "from": "gh",
+        "to": "g"
+      },
+      {
+        "from": "jh",
+        "to": "j"
+      },
+      {
+        "from": "th",
+        "to": "t"
+      },
+      {
+        "from": "dh",
+        "to": "d"
+      },
+      {
+        "from": "bh",
+        "to": "b"
+      },
+      {
+        "from": "q",
+        "to": "k"
+      },
+      {
+        "from": "x",
+        "to": "ks"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "z",
+        "to": "j"
+      },
+      {
+        "from": "w",
+        "to": "v"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [],
+    "stripMarks": true,
+    "compareVowels": true
+  }
+}

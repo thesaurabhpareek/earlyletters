@@ -1,0 +1,36 @@
+{
+  "id": "J16-02",
+  "journey": "settings-and-help",
+  "kind": "happy",
+  "title": "Privacy",
+  "note": "No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.",
+  "from": "J16-01",
+  "shot": "screens/J16-02.png",
+  "route": "/settings/privacy",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Privacy What we never do We never show ads, and your letters are never used for advertising. We never sell your data. We never use your words, recordings or photos to train machine learning models. Our promises in full Privacy Policy Terms of Service",
+  "lines": [
+    "Privacy",
+    "What we never do",
+    "We never show ads, and your letters are never used for advertising.",
+    "We never sell your data.",
+    "We never use your words, recordings or photos to train machine learning models.",
+    "Our promises in full",
+    "Privacy Policy",
+    "Terms of Service"
+  ]
+}

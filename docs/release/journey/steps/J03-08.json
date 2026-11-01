@@ -1,0 +1,33 @@
+{
+  "id": "J03-08",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Another book is free",
+  "note": "Starting a book for another child opens the same step as first run, with no Plus gate (D-082, D-083): the first two letters are one pool across every book, and the gate is at Keep, not here. Nothing is chosen for the person: \"Add this book\" waits, and the line above it says why.",
+  "from": "J03-07",
+  "shot": "screens/J03-08.png",
+  "route": "/settings/children/new",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Add a child Who is this book for? Name Twins or more? Each child gets their own book. Add a name to continue.",
+  "lines": [
+    "Add a child",
+    "Who is this book for?",
+    "Name",
+    "Twins or more? Each child gets their own book.",
+    "Add a name to continue."
+  ]
+}

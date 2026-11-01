@@ -1,13 +1,40 @@
 /**
  * Brand and voice rules, enforced on every word the product says.
  * See VOICE.md. If a test here fails, fix the copy, not the test.
+ * A title that starts with an id in brackets proves that requirement (BACKLOG Definition of Done 1).
+ *
+ * Also scans feature-local copy files in the app (`apps/mobile/src/**` files
+ * named `copy.ts`, `*-copy.ts` or `*.copy.ts`): every string literal in them is
+ * product copy and obeys the same rules.
  */
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { basename, join, relative } from 'node:path';
+import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
-import { book, en, PROMPTS, site, storeListing } from '../src';
-// Copy that lives in the mobile app until it has a home here (apps/mobile/src/lib/copy.ts).
-import { pendingCopy } from '../../../apps/mobile/src/lib/copy';
+import { brand } from '@scribe/brand';
+import { faithfulClean, finalText, withoutEdit } from '@scribe/core';
+import {
+  accountEmails,
+  authEmails,
+  backupEmails,
+  billingEmails,
+  book,
+  emailChrome,
+  emailLegal,
+  en,
+  familyEmails,
+  features,
+  lifecycleEmails,
+  onboardingStories,
+  pages,
+  permissions,
+  PROMPTS,
+  site,
+  STORY_VISUALS,
+  storeListing,
+} from '../src';
+import { alternateStories } from '../src/stories.en';
+import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
 
 type Leaf = { path: string; text: string };
 
@@ -20,63 +47,143 @@ function leaves(value: unknown, path = ''): Leaf[] {
   return [];
 }
 
+// ---------------------------------------------------------------------------
+// Feature-local copy files in the app
+// ---------------------------------------------------------------------------
+
+const REPO = join(__dirname, '..', '..', '..');
+const APP_SRC = join(REPO, 'apps', 'mobile', 'src');
+const COPY_FILE = /^(copy|.+[.-]copy)\.ts$/;
+
+function copyFiles(dir: string): string[] {
+  let names: string[] = [];
+  try {
+    names = readdirSync(dir);
+  } catch {
+    return [];
+  }
+  return names.flatMap((name) => {
+    const full = join(dir, name);
+    if (name === 'node_modules' || name.startsWith('.')) return [];
+    if (statSync(full).isDirectory()) return copyFiles(full);
+    return COPY_FILE.test(name) ? [full] : [];
+  });
+}
+
+/** String literals that are values (not imports, types, keys or `require` paths). */
+function stringsIn(file: string): Leaf[] {
+  const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest, true);
+  const out: Leaf[] = [];
+  const where = (n: ts.Node) => `${relative(REPO, file)}:${source.getLineAndCharacterOfPosition(n.getStart()).line + 1}`;
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) || ts.isExportDeclaration(node) || ts.isTypeNode(node)) return;
+    const parent = node.parent;
+    const isKey =
+      parent &&
+      ((ts.isPropertyAssignment(parent) && parent.name === node) ||
+        (ts.isElementAccessExpression(parent) && parent.argumentExpression === node) ||
+        (ts.isCallExpression(parent) && ts.isIdentifier(parent.expression) && parent.expression.text === 'require'));
+    if (!isKey && (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node))) {
+      out.push({ path: where(node), text: node.text });
+    } else if (ts.isTemplateExpression(node)) {
+      out.push({ path: where(node), text: [node.head.text, ...node.templateSpans.map((s) => s.literal.text)].join(' ') });
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+  return out;
+}
+
+const APP_COPY_FILES = copyFiles(APP_SRC);
+const APP_COPY: Leaf[] = APP_COPY_FILES.flatMap(stringsIn);
+
+// Surfaces, for the rules that differ by surface. IN_APP is everything the iOS app shows; IN_APP plus STORE is
+// what Apple reviews as "app or metadata".
+const STORE = leaves(storeListing, 'store');
+const SITE = leaves(site, 'site');
+const BOOK = leaves(book, 'book');
+const PAGES = leaves(pages, 'pages');
+const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
+  { path: `story.${c.id}.headline`, text: c.headline },
+  { path: `story.${c.id}.line`, text: c.line },
+]);
+const PROMPT_LEAVES: Leaf[] = PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text }));
+const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...APP_COPY];
+
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
-  ...leaves(storeListing, 'store'),
-  ...leaves(site, 'site'),
-  ...leaves(book, 'book'),
-  ...leaves(pendingCopy, 'pending'),
-  ...PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text })),
+  ...STORE,
+  ...SITE,
+  ...BOOK,
+  ...leaves(permissions, 'permissions'),
+  ...leaves(features, 'features'),
+  ...PAGES,
+  ...STORIES,
+  ...PROMPT_LEAVES,
 ];
+/** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
+const EMAIL: Leaf[] = leaves(
+  { authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails, emailChrome, emailLegal },
+  'email',
+);
+/** Everything the rules below apply to: content, email copy and feature-local app copy. */
+const EVERY: Leaf[] = [...ALL, ...EMAIL, ...APP_COPY];
+/** What the public reads before installing: the store listing and the website. */
+const PUBLIC: Leaf[] = [...leaves(storeListing, 'store'), ...leaves(site, 'site'), ...leaves(pages, 'pages')];
 const DOCS = ['VOICE.md', 'BRAND.md'].map((f) => ({ path: f, text: readFileSync(join(__dirname, '..', f), 'utf8') }));
 
 const offenders = (items: Leaf[], re: RegExp) => items.filter((l) => re.test(l.text)).map((l) => `${l.path}: ${l.text}`);
 
-// Store text in every place a shopper reads it: the typed listing, listing.json (English fields only) and the screenshot captions.
-const REPO = join(__dirname, '..', '..', '..');
-const listingJson = () => JSON.parse(readFileSync(join(REPO, 'docs/store/listing/listing.json'), 'utf8'));
-function storeText(): Leaf[] {
-  const j = listingJson();
-  const { localisation: _skip, _comment: _c, ...rest } = j;
-  const caps = JSON.parse(readFileSync(join(REPO, 'docs/store/screenshots/captions.json'), 'utf8')) as { id: string; headline: string; sub: string }[];
-  return [
-    ...leaves(storeListing, 'store'),
-    ...leaves(rest, 'listing.json').filter((l) => !/availability$/.test(l.path)),
-    ...caps.flatMap((c) => [{ path: `captions.${c.id}.headline`, text: c.headline }, { path: `captions.${c.id}.sub`, text: c.sub }]),
-  ];
-}
-
 describe('characters', () => {
   it('has no em dashes, en dashes, curly quotes or ellipsis characters', () => {
-    expect(offenders([...ALL, ...DOCS], /[—–‘’“”…]/)).toEqual([]);
+    expect(offenders([...EVERY, ...DOCS], /[—–‘’“”…]/)).toEqual([]);
   });
 
   it('has no emoji', () => {
-    expect(offenders([...ALL, ...DOCS], /\p{Extended_Pictographic}/u)).toEqual([]);
+    expect(offenders([...EVERY, ...DOCS], /\p{Extended_Pictographic}/u)).toEqual([]);
   });
 
-  it('uses at most 3 exclamation marks across all product copy', () => {
-    const count = ALL.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
-    expect(count).toBeLessThanOrEqual(3);
+  // Per surface, so one surface's addition never fails another's (TDD 07 Q-17). The budgets add up to the
+  // old ceiling of 3 across all product copy, which still holds. Notifications get none: a template is sent
+  // again and again, and VOICE.md allows at most one exclamation mark a month across all notifications.
+  it('uses at most 3 exclamation marks across all product copy, within a budget per surface', () => {
+    const count = (items: Leaf[]) => items.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
+    const isNotification = (l: Leaf) => /^(en\.notifications|features\.reminders\.(neutral|together))\./.test(l.path);
+    const surfaces = {
+      notifications: IN_APP.filter(isNotification),
+      inApp: IN_APP.filter((l) => !isNotification(l)),
+      store: STORE,
+      site: [...SITE, ...PAGES],
+      book: BOOK,
+      emails: EMAIL,
+      prompts: PROMPT_LEAVES,
+    };
+    const budget = { notifications: 0, inApp: 2, store: 0, site: 1, book: 0, emails: 0, prompts: 0 };
+    // Every string sits in exactly one surface, so none escapes a budget.
+    expect(Object.values(surfaces).reduce((n, s) => n + s.length, 0)).toBe(EVERY.length);
+    for (const surface of Object.keys(budget) as (keyof typeof budget)[]) {
+      expect(count(surfaces[surface]), surface).toBeLessThanOrEqual(budget[surface]);
+    }
+    expect(count(EVERY)).toBeLessThanOrEqual(3);
   });
 });
 
 describe('no fear, guilt or loss', () => {
   const FEAR = /\b(too late|don'?t miss|you haven'?t|you forgot|streaks?|lost forever|regrets?|never get back|die|dies|died|dying|death|dead|passed away|when you'?re gone|if you'?re gone)\b/i;
   it('never uses fear, guilt or loss-aversion language', () => {
-    expect(offenders(ALL, FEAR)).toEqual([]);
+    expect(offenders(EVERY, FEAR)).toEqual([]);
   });
 });
 
 describe('no AI-writing claims', () => {
   const AI = /\b(AI|A\.I\.|artificial intelligence|smart|magic(al)?|generat(e|es|ed|ing)|polish(ed|es|ing)?|perfect(ed|s)?|enhanc(e|ed|es|ing))\b/;
   it('never implies the app writes for you', () => {
-    expect(offenders(ALL, AI)).toEqual([]);
+    expect(offenders(EVERY, AI)).toEqual([]);
   });
 
   it('only mentions rewriting to promise it never happens', () => {
     // A question ("Do you rewrite my words?") is fine; its answer must be a no.
-    const bad = ALL.filter(
+    const bad = EVERY.filter(
       (l) =>
         /\brewrit/i.test(l.text) &&
         !l.text.trim().endsWith('?') &&
@@ -92,11 +199,12 @@ describe('prompts', () => {
     expect(new Set(PROMPTS.map((p) => p.key)).size).toBe(PROMPTS.length);
   });
 
-  it('covers every kind and every age band', () => {
+  it('covers every kind, every age band and the before-birth set', () => {
     for (const kind of ['opening', 'gap', 'hard', 'family', 'together']) {
       expect(PROMPTS.some((p) => p.kind === kind), kind).toBe(true);
     }
-    for (const band of ['0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
+    // `before` is the set for a book whose child is not born yet (P3 critics' pass S2); its rules are in prompts.preBirth.test.ts.
+    for (const band of ['before', '0-3', '4-6', '7-9', '10-12', '13-18', '19-24', '25-36', '37-60']) {
       expect(PROMPTS.some((p) => p.band === band), band).toBe(true);
     }
   });
@@ -112,9 +220,17 @@ describe('prompts', () => {
   });
 
   it('uses only known placeholders', () => {
-    const allowed = new Set(['child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n']);
-    // Pending-copy only: {app} is filled from packages/brand at build time.
-    for (const p of ['app', 'minutes', 'seconds', 'letters', 'notes', 'a', 'b']) allowed.add(p);
+    // a, b: two names joined; minutes, seconds: elapsed time; letters, notes: counted phrases;
+    // app: the public name, filled from packages/brand (never typed in in-app copy);
+    // version, build: the app version row; date, reference, days, email: transactional emails;
+    // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
+    // readme; cancelBy: trial end; coParent: deletion summary.
+    const allowed = new Set([
+      'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
+      'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
+      'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
+      'percent', 'format', 'cancelBy', 'coParent',
+    ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
   });
@@ -137,7 +253,7 @@ describe('length limits', () => {
   });
 
   it('notifications fit on a lock screen', () => {
-    const n = leaves(en.notifications, 'notifications');
+    const n = [...leaves(en.notifications, 'notifications'), ...leaves(features.reminders.neutral, 'reminders.neutral'), ...leaves(features.reminders.together, 'reminders.together')];
     for (const l of n) {
       const limit = /title/i.test(l.path) ? 40 : 110;
       expect(l.text.length, l.path).toBeLessThanOrEqual(limit);
@@ -145,7 +261,7 @@ describe('length limits', () => {
   });
 
   it('buttons stay short', () => {
-    const buttons = ALL.filter((l) => /(button|cta|Button|Cta|Confirm)$/.test(l.path) || /\.(cta|button)\b/i.test(l.path));
+    const buttons = ALL.filter((l) => /(button|cta|Button|Cta)$/.test(l.path) || /\.(cta|button)\b/i.test(l.path));
     for (const b of buttons) expect(b.text.length, b.path).toBeLessThanOrEqual(22);
   });
 });
@@ -156,19 +272,911 @@ describe('save failure reassurance', () => {
   });
 });
 
-// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md).
-// Each rule names the decision it enforces. If one fails, fix the copy, not the test.
+// BL-118 rules (TDD 07 section 6). Each one guards a decision that copy alone cannot keep.
+
+describe('no daily rhythm, streaks or gap counts', () => {
+  // Reminders default to a few evenings a week; no string may promise or imply a daily rhythm (PRD.md K-03).
+  const DAILY =
+    /\b(daily|nightly|every (?:single )?(?:day|night)|each (?:day|night)|(?:once|twice|one|words?|minutes?|letters?|notes?|nudges?|reminders?) (?:a|per) (?:day|night))\b/i;
+  // Prompts are left out: they ask about the child's own days ("What does {child} do every day?"), which sets
+  // no rhythm for the parent. Everything the product says about itself is in scope.
+  const RHYTHM_CHECKED = EVERY.filter((l) => !l.path.startsWith('prompt.'));
+  // Anything that reminds, notifies or celebrates.
+  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path));
+  const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
+  // "one day" is left out on purpose: it means "someday", which VOICE.md's legacy rule asks for.
+  const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;
+
+  it('[C-REQ-005] no string promises a daily rhythm', () => {
+    expect(RHYTHM_CHECKED.length).toBe(EVERY.length - PROMPTS.length);
+    expect(offenders(RHYTHM_CHECKED, DAILY)).toEqual([]);
+  });
+
+  it('[C-REQ-005] the daily-rhythm pattern catches the likely slips and leaves "someday" alone', () => {
+    for (const s of ['A few words a day.', 'Every night, a letter.', 'Your nightly note', 'One a day is plenty.', 'Once per day', 'Every single day counts.']) {
+      expect(DAILY.test(s), s).toBe(true);
+    }
+    for (const s of ['One day your child can hear you say it.', 'Pick the evenings that suit you.', 'A few words at a time.']) {
+      expect(DAILY.test(s), s).toBe(false);
+    }
+  });
+
+  it('[C-REQ-005] reminder, notification and moment strings never count days, runs or gaps', () => {
+    expect(RHYTHM_SCOPE.length).toBeGreaterThan(30);
+    expect(offenders(RHYTHM_SCOPE, GAP)).toEqual([]);
+    expect(offenders(RHYTHM_SCOPE, DAY_COUNT)).toEqual([]);
+  });
+});
+
+describe('moments celebrate without comparing', () => {
+  const MOMENTS = IN_APP.filter((l) => l.path.startsWith('en.moments.'));
+  // Never celebrated: comparisons, speed, per-author totals and plan status (C-REQ-015). "Behind" and "best"
+  // count only in their comparing senses, so "the voice behind the letter" and "Best wishes" pass.
+  const COMPARE =
+    /\b(more than|most|fewer|less than|ahead|(?:fall(?:s|en|ing)?|fell|get(?:ting)?|left) behind|behind (?:on|schedule)|faster|fastest|quicker|slower|better|best(?! wishes)|than (?:you|others|anyone|before|last))\b/i;
+  const PLAN = /\b(Plus|trial|subscri\w*|premium|upgrade)\b/i;
+
+  it('[C-REQ-015] moment strings never compare, never count per author and never mention the plan', () => {
+    expect(MOMENTS.length).toBeGreaterThan(10);
+    expect(offenders(MOMENTS, COMPARE)).toEqual([]);
+    expect(offenders(MOMENTS, PLAN)).toEqual([]);
+    const perAuthor = MOMENTS.filter((l) => /\{count\}/.test(l.text) && /\{(signsAs|name|inviter)\}/.test(l.text));
+    expect(perAuthor.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[C-REQ-015] the comparison pattern skips "behind" and "best" when they do not compare', () => {
+    for (const s of ['The voice behind the letter.', 'Best wishes from all of us.']) expect(COMPARE.test(s), s).toBe(false);
+    for (const s of ['More than last month.', 'Do not fall behind.', 'Your best month yet.']) expect(COMPARE.test(s), s).toBe(true);
+  });
+});
+
+describe('adult audience', () => {
+  // The app is for adults; the store and the website never present it as for children or as something a child
+  // uses alone (LEGAL-REQ-045). App Review 2.3.8 reserves "For Kids" and "For Children" for the Kids Category.
+  // "On their own" counts only when a child is the subject, so adults doing things on their own phone pass.
+  const CHILD = String.raw`(?:\b(?:kids?|child|children|toddlers?|little ones?|bab(?:y|ies))\b|\{child\})`;
+  const CHILD_DIRECTED = new RegExp(
+    [
+      String.raw`\bkids?\b|\bkiddos?\b`,
+      String.raw`\bchildren'?s app\b`,
+      String.raw`\bfor (?:children|kids|babies|toddlers|little ones)\b`,
+      String.raw`\b(?:child|kid|baby|toddler)-?(?:friendly|safe)\b`,
+      String.raw`\bfor ages \d+`,
+      // A child as the one who uses the app.
+      String.raw`${CHILD} (?:can|could|will|gets? to|is able to|are able to) (?:tap|listen|play|use|record|explore|press|swipe)\b`,
+      String.raw`${CHILD}[^.!?]{0,60}\b(?:on (?:their|his|her) own|by (?:themselves|themself|himself|herself)|(?:all )?alone)\b`,
+      String.raw`\b(?:listen|play|tap|explore) alone\b`,
+      String.raw`\blet (?:them|your (?:child|children|little ones?|kids?)|\{child\}) (?:listen|use|play|tap|record|explore)\b`,
+    ].join('|'),
+    'i',
+  );
+
+  it('[LEGAL-REQ-045] store and website copy has no "kids" and no child-directed phrases', () => {
+    expect(offenders([...STORE, ...SITE], CHILD_DIRECTED)).toEqual([]);
+  });
+
+  it('[LEGAL-REQ-045] the pattern catches child-directed phrases and lets adult sentences pass', () => {
+    const caught = [
+      'Let them listen on their own.',
+      'Great for kids.',
+      'For Kids',
+      'A child-friendly app.',
+      'They can listen alone.',
+      "A children's app.",
+      'A memory book for babies.',
+      'Your toddler can tap to hear.',
+      '{child} can play the letters on their own.',
+    ];
+    for (const s of caught) expect(CHILD_DIRECTED.test(s), s).toBe(true);
+    const adult = [
+      'Invite your co-parent to write from the free app on their own iPhone.',
+      'Grandparents can add letters on their own, any time.',
+      'Over time it becomes a book your child can read, and hear, for years.',
+      'Each child gets their own book, with their own months.',
+      'For parents of babies and young children.',
+      'Our safety backups clear on their own within 7 days.',
+    ];
+    for (const s of adult) expect(CHILD_DIRECTED.test(s), s).toBe(false);
+  });
+});
+
+describe('digital only', () => {
+  // v1 is digital only: no printed books, print or ordering anywhere (PRD.md K-32). "Printable" passes: it
+  // describes the PDF book the export makes ("v1 has export and the PDF book", PRD.md), not a book we print.
+  const PRINT =
+    /\b(print(?:s|ed|ing|er|ers)?|hardcover|hardback|paperback|softcover|hard ?copy|hard ?copies|photo ?books?|physical (?:book|books|copy|copies)|order (?:(?:a|your|the|more|extra) )?(?:book|books|copy|copies)|shipping|ships to|delivered to your door)\b/i;
+  // The reading-size option, not a printed book. Allowed only at this path with this exact value.
+  const ALLOWED = new Map([['en.reader.sizes.largePrint', 'Large print']]);
+
+  it('[K-32] no product, store, website or book string mentions print or ordering a book', () => {
+    const hits = EVERY.filter((l) => PRINT.test(l.text) && ALLOWED.get(l.path) !== l.text);
+    expect(hits.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[K-32] the print pattern catches print promises and lets the PDF book pass', () => {
+    for (const s of ['Order a printed copy.', 'Keep a hard copy on the shelf.', 'A photo book of year one.', 'Printing opens soon.']) {
+      expect(PRINT.test(s), s).toBe(true);
+    }
+    expect(PRINT.test('A printable book for each child, by month (PDF).')).toBe(false);
+  });
+});
+
+describe('beta placement', () => {
+  // D-060 (founder, answers D-030): the beta runs on TestFlight, the store listing never says beta, and the app
+  // keeps one small "early version, can make mistakes" note. So no product string says "beta" at all. The store
+  // half, with the words that mean the same, is the D-060 test under "brand name and v1.0 claims" below.
+  // Which screen shows the About note is checked in apps/mobile, not here.
+  it('[K-13] no app, website, book or email string says "beta" (D-060)', () => {
+    expect(offenders(EVERY.filter((l) => !l.path.startsWith('store')), /\bbeta\b/i)).toEqual([]);
+  });
+
+  it('[K-13] Settings, About keeps the "early version, can make mistakes" note (D-060)', () => {
+    expect(en.settings.about.beta.label.length).toBeGreaterThan(0);
+    expect(en.settings.about.beta.body).toMatch(/\bearly version\b/i);
+    expect(en.settings.about.beta.body).toMatch(/\bmistakes?\b/i);
+  });
+});
+
+describe('Apple platforms only', () => {
+  // App Review 2.3.10 (read on developer.apple.com, 3 Oct 2026): "don't include names, icons, or imagery of
+  // other mobile platforms or alternative app marketplaces in your app or metadata, unless there is specific,
+  // approved interactive functionality." Scope: the iOS app and its store metadata; the website may differ.
+  // The list names the common ones; it is not exhaustive. "Google" alone stays allowed for Sign in with Google.
+  const OTHER_PLATFORMS =
+    /\b(android|google play|play store|galaxy store|samsung|huawei|google pixel|pixel (?:phone|\d+)|chromebooks?|chrome ?os|wear ?os|amazon appstore|appgallery|harmonyos|windows phone|blackberry|f-droid|aptoide|altstore|setapp|epic games store)\b/i;
+
+  it('[CR-131] the iOS app and its store metadata name no other mobile platform or app marketplace', () => {
+    expect(offenders([...IN_APP, ...STORE], OTHER_PLATFORMS)).toEqual([]);
+  });
+});
+
+describe('never gender anyone', () => {
+  // The child is always {child}; authors are {signsAs}. Prompts are checked above; this covers every string.
+  it('uses no gendered pronouns in any product, store, website, book or email string', () => {
+    expect(offenders(EVERY, /\b(she|he|her|him|his|hers|herself|himself)\b/i)).toEqual([]);
+  });
+
+  it('never calls the child a son, daughter, boy or girl', () => {
+    const CHILD_GENDERED = /\b(sons?|daughters?|baby (?:boy|girl)s?|little (?:boy|girl)s?|(?:your|our|my) (?:boy|girl)s?)\b/i;
+    expect(offenders(EVERY, CHILD_GENDERED)).toEqual([]);
+  });
+});
+
+describe('the 90-day pledge', () => {
+  // 90 days' notice with export working throughout, stated identically in Terms 17, Privacy Policy 18,
+  // the deletion spec and Settings, Help and Legal (PRD-REQ-009, PRD.md K-05).
+  // A shutdown notice needs the company as the one closing: "close family" or a Close button is not one.
+  const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const COMPANY = String.raw`(?:\b(?:we|us|the company|the service|the app|our (?:company|service|app))\b|\{app\}|\b${escape(brand.name)}\b)`;
+  const SHUT = new RegExp(
+    String.raw`${COMPANY}[^.!?]{0,40}?\b(?:close|closes|closing|shut(?:s|ting)? down|wind(?:s|ing)? down|cease operations|stop(?:s|ping)? operating|discontinu\w*)\b|\b(?:shutdown|wind-down)\b`,
+    'i',
+  );
+  // Day counts, written as digits, words or both ("ninety (90) days"), and month counts, which never equal the pledge.
+  const WORDS: Record<string, string> = { seven: '7', ten: '10', fourteen: '14', thirty: '30', sixty: '60', ninety: '90' };
+  const DAY_NUMBERS = /\b(\d+|seven|ten|fourteen|thirty|sixty|ninety)(?:\s*\(\d+\))?(?:-day|\s+(?:calendar\s+|business\s+)?days?)\b/gi;
+  const MONTHS = /\b(\d+|one|two|three|four|six|twelve)(?:\s*\(\d+\))?(?:-month|\s+months?)\b/gi;
+  const numbersIn = (text: string) => [
+    ...[...text.matchAll(DAY_NUMBERS)].map((m) => WORDS[m[1].toLowerCase()] ?? m[1]),
+    ...[...text.matchAll(MONTHS)].map((m) => `${m[1]} months`),
+  ];
+  const LEGAL_DIR = join(REPO, 'docs', 'legal');
+
+  it('[PRD-REQ-009] Settings, Help and Legal states the pledge: 90 days and export throughout', () => {
+    expect(en.settings.help.pledge).toMatch(/\b90 days\b/);
+    expect(en.settings.help.pledge).toMatch(/\bexport\b/i);
+  });
+
+  it('[PRD-REQ-009] every shutdown notice in copy says 90 days', () => {
+    const bad = EVERY.filter((l) => SHUT.test(l.text) && numbersIn(l.text).some((n) => n !== '90'));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('[PRD-REQ-009] the shutdown pattern needs the company as subject and reads every way of writing the number', () => {
+    expect(SHUT.test(en.settings.help.pledge)).toBe(true);
+    expect(SHUT.test('Invite grandparents and close family. Your trial ends after 30 days.')).toBe(false);
+    expect(SHUT.test('Close')).toBe(false);
+    expect(numbersIn('at least ninety (90) days')).toEqual(['90']);
+    expect(numbersIn('thirty days, or three months')).toEqual(['30', 'three months']);
+  });
+
+  it('[PRD-REQ-009] every shutdown notice in docs/legal says 90 days', () => {
+    // A line counts when it, or the heading of its section, talks about closing. Counsel notes are
+    // drafting comments, not statements, so they are skipped.
+    const files = readdirSync(LEGAL_DIR).filter((f) => f.endsWith('.md'));
+    const pledged = ['terms-of-service.md', 'privacy-policy.md', 'DELETION_AND_EXPORT_SPEC.md'];
+    expect(files).toEqual(expect.arrayContaining(pledged));
+    const bad: string[] = [];
+    const statements = new Map<string, number>();
+    for (const f of files) {
+      let heading = '';
+      readFileSync(join(LEGAL_DIR, f), 'utf8')
+        .split('\n')
+        .forEach((line, i) => {
+          if (/^#{1,6}\s/.test(line)) heading = line;
+          if (line.includes('[COUNSEL')) return;
+          if (!SHUT.test(line) && !SHUT.test(heading)) return;
+          const days = numbersIn(line);
+          if (days.length) statements.set(f, (statements.get(f) ?? 0) + 1);
+          if (days.some((n) => n !== '90')) bad.push(`${f}:${i + 1}: ${line.trim()}`);
+        });
+    }
+    // Each document that makes the pledge is still seen by the scan, so a narrowed pattern cannot go blind.
+    for (const f of pledged) expect(statements.get(f) ?? 0, f).toBeGreaterThanOrEqual(1);
+    expect(bad).toEqual([]);
+  });
+});
+
+describe('internal words stay inside (CR-25, BRAND.md internal terms)', () => {
+  // "Take your time" and "this can take a minute" are the verb and pass. Only the noun is an internal word.
+  const NUMBER_WORDS = 'two|three|four|five|six|seven|eight|nine|ten';
+  const TAKE_NOUN = new RegExp(
+    [
+      '\\b(?:a|an|this|that|each|every|one|per)\\s+take\\b', // singular determiners; "this takes a minute" is the verb
+      '\\b(?:the|your|any)\\s+takes?\\b',
+      `(?:\\b(?:these|those|many|some|all|both|several|${NUMBER_WORDS}|\\d+)|\\{count\\})\\s+takes\\b`,
+      '^takes\\s+(?:that|which|may|are|were)\\b', // a title that starts with the plural noun
+    ].join('|'),
+    'i',
+  );
+  // The export file data/entries.json is a format contract (D-096), so a file name is not a parent word.
+  const ENTRY = /(?<!data\/)\bentr(?:y|ies)\b(?!\.json)/i;
+  const DRAFT_NOUN = /\bdrafts\b|\b(?:a|an|the|your|each|this|that|any|saved|unsaved|as|in)\s+draft\b/i;
+  const PACK = /\b(?:language|languages|speech|text[\s-]+rules?|rule|model)[\s-]+packs?\b/i;
+
+  it('[CR-25] no parent-facing string calls a recording a take', () => {
+    expect(offenders(EVERY, TAKE_NOUN)).toEqual([]);
+  });
+
+  it('[CR-25] the take pattern catches the noun and leaves the verb alone', () => {
+    for (const noun of [
+      'This take may not play.',
+      'Check the take.',
+      '3 takes may not play.',
+      '{count} takes may not play.',
+      'Takes that may not play',
+      'Both takes are safe.',
+      'Seven takes are kept.',
+    ])
+      expect(TAKE_NOUN.test(noun), noun).toBe(true);
+    for (const verb of ['Take your time.', 'This can take a minute.', 'This takes a minute.', 'We take out small slips.', 'It takes effect on {date}.'])
+      expect(TAKE_NOUN.test(verb), verb).toBe(false);
+  });
+
+  it('[CR-25] the draft, entry and pack patterns catch the noun forms and leave file names alone', () => {
+    for (const bad of ['Your drafts', '2 drafts waiting', 'Save as draft', 'This draft is kept']) expect(DRAFT_NOUN.test(bad), bad).toBe(true);
+    for (const bad of ['Language-pack data', 'speech pack', 'text rules pack', 'Languages pack']) expect(PACK.test(bad), bad).toBe(true);
+    for (const bad of ['Your first entry', 'Entries']) expect(ENTRY.test(bad), bad).toBe(true);
+    for (const ok of ['data/entries.json', 'entries.json']) expect(ENTRY.test(ok), ok).toBe(false);
+  });
+
+  it('[CR-25] no parent-facing string says entry, draft (as a noun) or language pack', () => {
+    expect(offenders(EVERY, ENTRY)).toEqual([]);
+    expect(offenders(EVERY, DRAFT_NOUN)).toEqual([]);
+    expect(offenders(EVERY, PACK)).toEqual([]);
+  });
+
+  it('[CR-25] BRAND.md carries the internal-terms table, one row per internal word', () => {
+    const brand = DOCS.find((d) => d.path === 'BRAND.md')!.text;
+    expect(brand).toContain('## Internal terms, and what a parent sees instead');
+    for (const term of ['`raw_transcript`', '`EditType`', '| take |', '| entry |', '| draft |', '| held letter, Keep gate |', 'language pack', '`scribe`'])
+      expect(brand, term).toContain(term);
+  });
+});
+
+describe('brand name and v1.0 claims', () => {
+  it('never types the public name in in-app copy; uses {app} from packages/brand', () => {
+    expect(offenders(leaves(en, 'en'), new RegExp(brand.name, 'i'))).toEqual([]);
+    expect(offenders(leaves(permissions, 'permissions'), new RegExp(brand.name, 'i'))).toEqual([]);
+    expect(offenders(APP_COPY, new RegExp(brand.name, 'i'))).toEqual([]);
+    // Emails are rendered by packages/emails, not the app, so they build the name from `brand` in template
+    // literals (D-076); 'never types the brand name in packages/content/src' below checks their source.
+    expect(offenders(leaves(features, 'features'), new RegExp(brand.name, 'i'))).toEqual([]);
+  });
+
+  // D-085 amends D-073 for v1.0: our own encrypted backup needs sign-in and a server, so no Plus or store copy
+  // may claim backup until it ships. Themes, covers and vault mode are overclaims too.
+  // D-082 and D-083 (4 Oct 2026) replace D-053's rules: the first 2 letters are free, then Plus lets you keep adding;
+  // Read together has no limit and starting a book is free, so those are no longer claimed as Plus.
+  it('promises only what Plus gates in v1.0 (D-085, D-082): keeping more letters, no backup', () => {
+    // The Plan row's help line is scanned with the rest: it is where "keep adding letters" is said (settingsHome.planHelp).
+    const plus = [
+      ...leaves(features.billing, 'billing'),
+      ...leaves(en.plus, 'plus'),
+      ...leaves({ planHelp: en.settingsHome.planHelp }, 'settingsHome'),
+      ...leaves(storeListing, 'store'),
+    ];
+    // The registered promise (billingCopy.store.promise) is the Plan screen's footer and the store line; it carries the
+    // first two sentences that `plus.promise` repeated. `plus.promise` is deleted (P7).
+    const promise = features.billing.store.promise;
+    // The Plan help line must stay in the sweep below: deleting it from the array above would let a claim into it.
+    expect(plus.map((l) => l.path)).toContain('settingsHome.planHelp');
+    expect(offenders(plus, /\b(themes?|covers?|vault)\b/i).filter((o) => !/^store\.description/.test(o) || /Plus[^.]*\btheme/i.test(o))).toEqual([]);
+    // The two lines that carry the Plus promise (the registered sentences 1 and 2, and the Plan help line with sentence 3)
+    // never claim backup, and never claim what Plus no longer gates (D-085, D-082, D-083).
+    const PROMISES = [promise, en.settingsHome.planHelp];
+    for (const line of PROMISES) expect(line, line).not.toMatch(/backup/i);
+    expect(offenders(plus, /encrypted backup|back(s|ed)? (them |it |your recordings )?up\b|backed-up/i)).toEqual([]);
+    expect(promise).toMatch(/first two letters are free/);
+    expect(en.settingsHome.planHelp).toMatch(/keep adding letters/);
+    for (const line of PROMISES) expect(line, line).not.toMatch(/Read together|more children|more books|free, always/);
+    // Nothing may still claim a limit that no longer exists (D-083), or an unconditional "free, always".
+    expect(offenders(plus, /free, always|first book|more children|books for more|first 3|after the first/i)).toEqual([]);
+    // D-083: app copy never types a price, "free trial", "free months" or "we will email you" in the Keep gate or Plan rows.
+    // G-15 (15 Oct): the plan reminders, the in-app note and the purchase confirmation follow the same rule.
+    const keepAndPlan = [
+      ...leaves(features.billing.keepGate, 'keepGate'),
+      ...leaves(features.billing.plan, 'plan'),
+      ...leaves(features.billing.reminders, 'reminders'),
+      ...leaves(features.billing.note, 'note'),
+      ...leaves(features.billing.confirmation, 'confirmation'),
+    ];
+    expect(offenders(keepAndPlan, /\$\d|free trial|free months?|we will email|we'll email|\bprice\b/i)).toEqual([]);
+    // Reminders are a courtesy (decision of 15 Oct 2026): the confirmation says so, and never promises delivery.
+    expect(features.billing.confirmation.reminders).toMatch(/^As a courtesy/);
+    expect(features.billing.confirmation.reminders).toMatch(/can come late or not at all/);
+    expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
+  });
+
+  it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
+    // 2.2 covers "Demos, betas, and trial versions", so the listing also avoids the words that mean the same.
+    // The in-app "early version" note is the likeliest one to be pasted in by mistake.
+    const BETA_LIKE = /\b(beta|early version|early access|preview|pre-?release|demo|test (?:version|build)|trial version|work in progress)\b/i;
+    expect(offenders(STORE, BETA_LIKE)).toEqual([]);
+  });
+
+  it('makes no claim the v1.0 build cannot keep (D-055, D-056, D-059, D-073)', () => {
+    // No mixing languages in one sentence, no word highlight, no family listening. Owner-only encrypted backup
+    // ships in v1.0 (D-073 supersedes D-059's "no audio upload"), so backup wording is no longer blocked here.
+    const V1_OVERCLAIM = /\b(vault mode|one sentence|mid-sentence|any mix|words appear|highlight|20 languages|any language|hear each other|family can (hear|listen))/i;
+    expect(offenders([...leaves(storeListing, 'store'), ...leaves(site, 'site')], V1_OVERCLAIM)).toEqual([]);
+    // Family at launch is the co-parent only: the listing never promises grandparents or a web page.
+    const FAMILY = /\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i;
+    expect(offenders([...leaves(storeListing, 'store'), ...onboardingStories.map((c) => ({ path: c.id, text: `${c.headline} ${c.line}` }))], FAMILY)).toEqual([]);
+  });
+
+  it('names only the languages the first store build ships (D-121 item 1 English only; supersedes D-056 for the listing)', () => {
+    // Each other language returns to the listing in the release that passes its gate (D-125 item 2).
+    expect(storeListing.description).toContain('English');
+    const text = [storeListing.description, storeListing.promotionalText, storeListing.keywords, storeListing.whatsNewV1].join(' ');
+    for (const lang of ['Hindi', 'Spanish', 'Mandarin', 'French', 'Arabic', 'Portuguese', 'bilingual']) {
+      expect(text.toLowerCase(), lang).not.toContain(lang.toLowerCase());
+    }
+  });
+
+  it('promises no co-parent sharing, sign-in or invitation in the first store build (D-121, D-126)', () => {
+    const SHARING = /\b(co-parent|invite[sd]?|sign[- ]in|sync(s|ed)?|write it together|write together)\b/i;
+    expect(offenders(leaves(storeListing, 'store'), SHARING)).toEqual([]);
+  });
+
+  it('holds "exactly as you said it" out of the listing until counsel clears it (D-125 item 9)', () => {
+    expect(offenders(leaves(storeListing, 'store'), /exactly as you said/i)).toEqual([]);
+  });
+
+  // The store pack under docs/store (listing.json, screenshot captions) is what gets pasted into the consoles, so it
+  // carries the same claims as the typed listing (D-133, D-121, D-126). Localised drafts are held and not scanned.
+  const REPO = join(__dirname, '..', '..', '..');
+  const listingJson = () => JSON.parse(readFileSync(join(REPO, 'docs/store/listing/listing.json'), 'utf8'));
+  function storePackText(): Leaf[] {
+    const { localisation: _skip, _comment: _c, ...rest } = listingJson();
+    const caps = JSON.parse(readFileSync(join(REPO, 'docs/store/screenshots/captions.json'), 'utf8')) as { id: string; headline: string; sub: string }[];
+    return [
+      ...leaves(rest, 'listing.json').filter((l) => !/availability$/.test(l.path)),
+      ...caps.flatMap((c) => [{ path: `captions.${c.id}.headline`, text: c.headline }, { path: `captions.${c.id}.sub`, text: c.sub }]),
+    ];
+  }
+
+  it('store pack text never says the words are kept exactly as said (D-133, council Q6)', () => {
+    expect(offenders(storePackText(), /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+  });
+
+  it('store pack text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
+    const bad = /invite|co-?parent|grandparent|aunt|uncle|from papa|nani|sync|vault|recovery key|cloud|bilingual|hindi|spanish|mandarin|french|arabic|portuguese|coming soon|later update|\bbeta\b|early access|whole family|family book|printed|(?<!iphone's own )backup/i;
+    expect(offenders(storePackText(), bad)).toEqual([]);
+  });
+
+  it('listing.json carries the promotional text of the typed listing, and the tagline is the brand tagline', () => {
+    const j = listingJson();
+    expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
+    expect(brand.tagline).toBe('It stays in your words.');
+    expect(j.googlePlay.shortDescription).toContain(brand.tagline);
+  });
+
+  it('points the store listing at the live legal pages (D-063)', () => {
+    expect(storeListing.description).toContain(brand.web.terms);
+    expect(storeListing.description).toContain(brand.web.privacy);
+  });
+});
+
+describe('privacy reassurance (D-061)', () => {
+  it('says the promise word for word wherever it appears', () => {
+    const promise = en.trust.promise;
+    expect(en.trust.settings.body).toBe(promise);
+    expect(authEmails.welcome.body).toContain(promise);
+    // Any email line that states the promise states it word for word.
+    const stated = EMAIL.filter((l) => /never sell|never use them for ads|train machine learning/i.test(l.text));
+    expect(stated.length).toBeGreaterThan(0);
+    for (const l of stated) expect(l.text, l.path).toBe(promise);
+    expect(site.privacy.lead).toBe(promise);
+    expect(storeListing.description).toContain(promise);
+    expect(en.trust.settings.voice).toBe(en.trust.voice);
+    expect(storeListing.description).toContain(en.trust.voice);
+  });
+
+  it('never sounds fearful or absolute about security', () => {
+    const FEARFUL = /\b(hack(ed|ers?|s)?|breach(es)?|leak(s|ed)?|spy(ing)?|steal|creepy|scary|don'?t worry|military[- ]grade|bank[- ]level|unhackable|completely secure|end-to-end|HIPAA)\b|100%/i;
+    expect(offenders(EVERY, FEARFUL)).toEqual([]);
+  });
+
+  it('keeps each reassurance to one or two short sentences', () => {
+    const lines = [...leaves(en.trust, 'trust'), ...onboardingStories.map((c) => ({ path: c.id, text: c.line }))];
+    for (const l of lines) {
+      expect((l.text.match(/[.!?](\s|$)/g) ?? []).length, l.path).toBeLessThanOrEqual(2);
+      expect(l.text.length, l.path).toBeLessThanOrEqual(160);
+    }
+  });
+});
+
+describe('licences', () => {
+  it('carries every language pack attribution word for word', () => {
+    const dir = join(REPO, 'packs', 'text-rules');
+    const needed = readdirSync(dir)
+      .filter((f) => f.endsWith('.json'))
+      .flatMap((f) => (JSON.parse(readFileSync(join(dir, f), 'utf8')).attribution ?? []) as string[]);
+    expect(needed.length).toBeGreaterThan(0);
+    for (const line of needed) expect(features.licences.packs).toContain(line);
+  });
+});
+
+describe('onboarding story cards (server fallback, D-066)', () => {
+  it('fits the story block schema in packages/api', () => {
+    const ids = new Set<string>();
+    onboardingStories.forEach((c, i) => {
+      expect(c.type).toBe('story');
+      expect(c.id).toMatch(/^story\.[a-z-]+\.v\d+$/);
+      expect(ids.has(c.id), c.id).toBe(false);
+      ids.add(c.id);
+      expect(c.order).toBe(i + 1);
+      expect(c.headline.length, c.id).toBeLessThanOrEqual(80);
+      expect(c.line.length, c.id).toBeLessThanOrEqual(200);
+      expect(STORY_VISUALS).toContain(c.visual);
+      for (const m of `${c.headline} ${c.line}`.matchAll(/\{(\w+)\}/g)) expect(['child', 'app', 'signsAs']).toContain(m[1]);
+    });
+  });
+});
+
+describe('emails', () => {
+  const MAILS = [authEmails, accountEmails, backupEmails, billingEmails, familyEmails, lifecycleEmails].flatMap((g) => Object.values(g));
+
+  it('has a subject, preview and heading for every email, and short subjects', () => {
+    expect(MAILS.length).toBeGreaterThan(0);
+    for (const m of MAILS) {
+      expect(m.subject.length, m.id).toBeLessThanOrEqual(60);
+      expect(m.preheader.length, m.id).toBeLessThanOrEqual(90);
+      expect(m.heading.length, m.id).toBeGreaterThan(0);
+      expect(m.body.length, m.id).toBeGreaterThan(0);
+    }
+  });
+
+  it('never carries a child or letter placeholder', () => {
+    expect(offenders(EMAIL, /\{(child|signsAs|name|letters|notes)\}/)).toEqual([]);
+  });
+});
+
+describe('store listing document (docs/store/app-store.md)', () => {
+  const doc = readFileSync(join(REPO, 'docs', 'store', 'app-store.md'), 'utf8');
+  it('matches packages/content word for word (run scripts/brand/store-listing.ts)', () => {
+    for (const field of [storeListing.appName, storeListing.subtitle, storeListing.promotionalText, storeListing.keywords, storeListing.whatsNewV1, storeListing.description]) {
+      expect(doc).toContain(field);
+    }
+    for (const c of storeListing.screenshotCaptions) expect(doc).toContain(c);
+  });
+
+  it('keeps captions short enough for a frame', () => {
+    for (const s of storeListing.screenshots) {
+      expect(s.caption.length, s.id).toBeLessThanOrEqual(40);
+      expect(s.subline.length, s.id).toBeLessThanOrEqual(60);
+    }
+  });
+});
+
+describe('feature-local app copy files', () => {
+  it('finds the app copy files it checks', () => {
+    const names = APP_COPY_FILES.map((f) => basename(f));
+    expect(names).toContain('copy.ts');
+    expect(names).toContain('permission-copy.ts');
+  });
+
+  it('keeps the build-time permission string identical to packages/content', () => {
+    const file = APP_COPY_FILES.find((f) => basename(f) === 'permission-copy.ts');
+    expect(file).toBeDefined();
+    const texts = stringsIn(file!).map((l) => l.text);
+    expect(texts).toContain(permissions.microphone);
+  });
+});
+
+describe('English-only notices (D-111 item 4)', () => {
+  it('the picker line and the waiting-for-its-language line are in-app copy, so every rule here reads them', () => {
+    const paths = IN_APP.map((l) => l.path);
+    expect(paths).toContain('features.language.picker.englishOnly');
+    expect(paths).toContain('features.language.waitingForLanguage');
+  });
+});
+
+describe('support resources (D-034)', () => {
+  it('dials digits only and names each line', () => {
+    for (const r of en.struggling.resources) {
+      expect(r.tel).toMatch(/^\d{3,11}$/);
+      expect(r.name.length).toBeGreaterThan(0);
+      expect(r.how).toContain(r.tel.length === 3 ? r.tel : r.tel.slice(-4));
+    }
+  });
+});
+
+describe('brand name comes from packages/brand', () => {
+  // CLAUDE.md: the public name lives only in packages/brand. Copy uses `${brand.name}` (and friends), so a
+  // rename is one edit. Comments may name the product; string literals and template text may not.
+  const SRC = join(__dirname, '..', 'src');
+  const files = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((d) =>
+      d.isDirectory() ? files(join(dir, d.name)) : /\.tsx?$/.test(d.name) ? [join(dir, d.name)] : [],
+    );
+
+  /** Text of every string literal and template chunk in a file (comments are not tokens, so they are skipped). */
+  function literalText(file: string): Leaf[] {
+    const text = readFileSync(file, 'utf8');
+    const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest);
+    const scanner = ts.createScanner(ts.ScriptTarget.Latest, true, ts.LanguageVariant.Standard, text);
+    const out: Leaf[] = [];
+    const STRINGY = new Set([
+      ts.SyntaxKind.StringLiteral,
+      ts.SyntaxKind.NoSubstitutionTemplateLiteral,
+      ts.SyntaxKind.TemplateHead,
+      ts.SyntaxKind.TemplateMiddle,
+      ts.SyntaxKind.TemplateTail,
+    ]);
+    let depth = 0; // brace depth inside template substitutions
+    const stack: number[] = [];
+    for (let kind = scanner.scan(); kind !== ts.SyntaxKind.EndOfFileToken; kind = scanner.scan()) {
+      if (kind === ts.SyntaxKind.OpenBraceToken) depth++;
+      if (kind === ts.SyntaxKind.CloseBraceToken) {
+        if (stack.length && stack[stack.length - 1] === depth) {
+          kind = scanner.reScanTemplateToken(false);
+          if (kind === ts.SyntaxKind.TemplateTail) stack.pop();
+        } else depth--;
+      }
+      if (kind === ts.SyntaxKind.TemplateHead) stack.push(depth);
+      if (STRINGY.has(kind)) {
+        const line = ts.getLineAndCharacterOfPosition(source, scanner.getTokenStart()).line;
+        out.push({ path: `${relative(SRC, file)}:${line + 1}`, text: scanner.getTokenValue() });
+      }
+    }
+    return out;
+  }
+
+  it('never types the brand name in packages/content/src', () => {
+    const name = new RegExp(brand.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+    const bad = files(SRC).flatMap(literalText).filter((l) => name.test(l.text));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('still renders the brand name where copy names the product', () => {
+    // In-app copy carries {app}, filled from packages/brand when the app loads it (apps/mobile/src/lib/copy.ts).
+    expect(en.app.name.replaceAll('{app}', brand.name)).toBe(brand.name);
+    expect(storeListing.appName).toBe(brand.storeName);
+    expect(emailChrome.signature).toBe(`Warmly,\n${brand.name}`);
+  });
+});
+
+describe('glossary (BRAND.md)', () => {
+  const COPY = [...ALL, ...EMAIL];
+
+  it('calls the edit feature Word for word, never tidying', () => {
+    expect(offenders(COPY, /\btid(y|ied|ies|ying|ier)\b|\bcleaned up\b/i)).toEqual([]);
+  });
+
+  it('says "small fix", never edit, correct, clean or improve, where the app talks about its fixes (D-086)', () => {
+    const where = (l: Leaf) => /^(en\.review|en\.onboarding\.promise|en\.book\.provenance|features\.words|features\.speech)\b/.test(l.path);
+    const BANNED = /\bedit(s|ed|ing)?\b|\bcorrect(s|ed|ing|ion|ions)?\b|\bclean(s|ed|ing)?\b|\bimprov\w*/i;
+    expect(offenders(ALL.filter(where), BANNED)).toEqual([]);
+  });
+
+  it('uses "Word for word" only where the feature is named, never to caption fixed text (D-086)', () => {
+    const named = /^(en\.onboarding\.promise\b|en\.settings\.tidyLabel$|site\.|store\.|pages\.|email\.)/;
+    const bad = [...ALL, ...EMAIL].filter((l) => /word for word/i.test(l.text) && !named.test(l.path));
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    expect(en.review.view.exact).toBe('Exactly as said');
+    expect(en.review.view.fixes).toBe('With small fixes');
+    expect(en.book.provenance.spokenFixed).toBe('Spoken, with small fixes');
+  });
+
+  it('calls a month section of the book a month, never a chapter (BRAND.md; P6b critics\' S1)', () => {
+    expect(offenders(EVERY, /\bchapters?\b/i)).toEqual([]); // content, emails and feature-local app copy
+  });
+
+  it('names the subscription Plus only', () => {
+    expect(offenders(COPY, /Early Letters Plus|Book Plus|\b(Premium|Pro)\b|Plus Yearly/)).toEqual([]);
+    expect(offenders(COPY, new RegExp(`${brand.name} Plus`))).toEqual([]);
+  });
+
+  it('says Apple Account, never Apple ID or store account', () => {
+    expect(offenders(COPY, /\bApple ID\b|\bstore account\b|\biCloud account\b/i)).toEqual([]);
+  });
+
+  it('never calls a release a beta in store or website copy', () => {
+    expect(offenders(PUBLIC, /\bbeta\b/i)).toEqual([]);
+    expect(Object.keys(storeListing)).not.toContain('promotionalTextBeta');
+  });
+
+  it('keeps v1.0 public copy to the co-parent, with no gift or approval promises', () => {
+    expect(offenders(PUBLIC, /\bgifts?\b|\bapprov(e|es|ed|al)\b|\bcontributors?\b/i)).toEqual([]);
+    // D-055: other family may be named on the website only as "coming in a later update" (or asked about in an
+    // FAQ question whose answer says so), never as a v1.0 feature.
+    const later = /\b(later update|not yet|coming)\b/i;
+    const family = PUBLIC.filter((l) => /\bgrandparents?\b|\baunts?\b|\buncles?\b/i.test(l.text) && !(l.path.startsWith('site.') && (later.test(l.text) || l.text.trim().endsWith('?'))));
+    expect(family.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('makes no Hindi-English mixing or word highlighting claims (v1.1)', () => {
+    const COMMS = [...PUBLIC, ...EMAIL];
+    expect(offenders(COMMS, /\bboth in (one|the same) sentence\b|\bmid-sentence\b|\bhighlight/i)).toEqual([]);
+    expect(offenders(COMMS, /while the words appear/i)).toEqual([]);
+  });
+
+  it('uses "note" only for something people make, never for what we send', () => {
+    expect(offenders(EMAIL, /\bnotes?\b/i)).toEqual([]);
+  });
+
+  it('names the sign-in buttons as the providers do', () => {
+    expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
+  });
+
+  it('uses one descriptor', () => {
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
+    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The experience pass's rules, over the keys it touched (P0) and over each feature's copy file (P8a, P8b, P8c).
+// Their data is in test/support/copy-surfaces.ts. The scope of the P0 rules stays CHANGED + ADDED: widening "no we"
+// or "no on-device-only" to every string would fail on registered text, which only counsel may change.
+// ---------------------------------------------------------------------------
+
+/** The Asha fixtures (CLAUDE.md: tests use the fictional family "Asha"). */
+const P0_ASHA: Record<string, string> = {
+  app: brand.name,
+  child: 'Asha',
+  signsAs: 'Mama',
+  month: '7',
+  n: '60',
+  count: '5',
+  date: 'October 13',
+  size: '575 MB',
+  a: 'September 13',
+  b: 'October 12',
+};
+const p0Fill = (text: string, vars: Record<string, string> = P0_ASHA) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
+
+/** Words that say letters never leave the phone, that there are no accounts, or that nothing is shared. */
+const ON_DEVICE_ONLY =
+  /\b(?:stays? on (?:this|your|the) phone|stays? on it|never leaves?|only on (?:this|your) phone|from this phone|no accounts?|without an account|only you can read|no one else|nobody else)\b|\bnothing is sent anywhere\b/i;
+
+const P0_IN_APP: Leaf[] = [
+  ...leaves(en, 'en'),
+  ...leaves(permissions, 'permissions'),
+  ...leaves(features, 'features'),
+  ...leaves([...onboardingStories, ...alternateStories], 'stories'),
+];
+
+describe('[EXPERIENCE_PASS_2026-10 P0] rules on every string the pass touched', () => {
+  it('says "we" or "our" only inside the sanctioned promises (principle 2)', () => {
+    const SANCTIONED = [/we never rewrite your words\.?/gi, en.trust.promise, en.trust.voice];
+    const bad = TOUCHED.filter(
+      (l) => !P0_WE_ALLOWED.has(l.path) && /\b(?:we|our)\b/i.test(SANCTIONED.reduce<string>((t, s) => t.replace(s, ''), l.text)),
+    );
+    expect(bad.map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // Every allowed key is a touched key, so the list cannot hide a stale exception.
+    for (const key of P0_WE_ALLOWED) expect(ADDED.includes(key) || CHANGED.includes(key), key).toBe(true);
+  });
+
+  it('never says tidy, clean, correct, edit or improve (BRAND.md glossary)', () => {
+    const BANNED = /\btid(?:y|ied|ies|ying|ier)\b|\bclean\w*|\bcorrect\w*|\bedit\w*|\bimprov\w*/i;
+    expect(TOUCHED.filter((l) => BANNED.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
+    const buttons = TOUCHED.filter((l) => /(?:button|cta|action)(?:short)?$/i.test(l.path.split('.').pop()!));
+    expect(buttons.length).toBeGreaterThan(10);
+    for (const b of buttons) {
+      expect(b.text.length, b.path).toBeLessThanOrEqual(22);
+      expect(p0Fill(b.text).length, b.path).toBeLessThanOrEqual(22);
+    }
+  });
+
+  it('writes error and state titles without a full stop', () => {
+    const titles = [
+      ...leaves(en.errors, 'en.errors').filter((l) => l.path.endsWith('.title')),
+      ...TOUCHED.filter((l) => /^en\.review\.(missingFile|emptyTake|noDraft)\.title$|^en\.reader\.notFoundTitle$/.test(l.path)),
+    ];
+    expect(titles.length).toBeGreaterThan(10);
+    expect(titles.filter((l) => /\.\s*$/.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('agrees in number for twins: the plural keys use the plural verb (S06)', () => {
+    expect(en.onboarding.signsAs.titleMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAsMany).toMatch(/\{child\} call\b/);
+    expect(en.onboarding.signsAs.needSignsAs).toMatch(/\{child\} calls\b/);
+  });
+
+  it('never says or implies that letters stay on the phone, that there are no accounts, or no sharing (option B, D-100)', () => {
+    expect(TOUCHED.filter((l) => ON_DEVICE_ONLY.test(l.text)).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] rules across in-app copy', () => {
+  it('spells for the US storefront (D-087)', () => {
+    // The spec's list, plus the lowercase noun since `licences.libraries` changed (code names keep "licences").
+    const UK = [/\blicences?\b/i, /\bmobile data\b/i, /\bfull stops?\b/i, /\bstraight away\b/i, /\bmummy\b/i];
+    expect(P0_IN_APP.filter((l) => UK.some((re) => re.test(l.text))).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+  });
+
+  it('names the plans Plus Monthly and Plus Annual, as App Store Connect does (D-077)', () => {
+    expect(features.billing.plan.annual).toBe('Plus Annual');
+    expect(features.billing.confirmation.planMonthly).toBe('Plus Monthly');
+    expect(features.billing.confirmation.planAnnual).toBe('Plus Annual');
+    const named = P0_IN_APP.flatMap((l) => [...l.text.matchAll(/\bPlus (?:Monthly|Annual|Yearly|Year|Month)\w*/g)].map((m) => `${l.path}: ${m[0]}`));
+    expect(named.filter((n) => !/: Plus (?:Monthly|Annual)$/.test(n))).toEqual([]);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] story.private.v2 (P0 rule 4, option B)', () => {
+  const v1 = onboardingStories.find((c) => c.id === 'story.private.v1');
+  const v2 = alternateStories.find((c) => c.id === 'story.private.v2');
+
+  it('sits beside v1 in the same slot, and the packaged deck still serves v1', () => {
+    expect(v1).toBeDefined();
+    expect(v2).toBeDefined();
+    expect(v2!.order).toBe(v1!.order);
+    expect(v2!.visual).toBe(v1!.visual);
+    expect(onboardingStories.map((c) => c.id)).not.toContain('story.private.v2');
+  });
+
+  it('follows the story card and reassurance rules', () => {
+    const ids = [...onboardingStories, ...alternateStories].map((c) => c.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const c of alternateStories) {
+      expect(c.type).toBe('story');
+      expect(c.id).toMatch(/^story\.[a-z-]+\.v\d+$/);
+      expect(c.headline.length, c.id).toBeLessThanOrEqual(80);
+      expect(c.line.length, c.id).toBeLessThanOrEqual(160);
+      expect((c.line.match(/[.!?](\s|$)/g) ?? []).length, c.id).toBeLessThanOrEqual(2);
+      expect(STORY_VISUALS).toContain(c.visual);
+      for (const m of `${c.headline} ${c.line}`.matchAll(/\{(\w+)\}/g)) expect(['child', 'app', 'signsAs']).toContain(m[1]);
+      expect(`${c.headline} ${c.line}`).not.toMatch(/\b(grandparents?|nani|dadi|aunts?|uncles?|no app needed|from the web|web page)\b/i);
+    }
+  });
+
+  it('makes no claim about where letters are kept or who can read them, and has no "we"', () => {
+    const text = `${v2!.headline} ${v2!.line}`;
+    expect(text).not.toMatch(ON_DEVICE_ONLY);
+    expect(text).not.toMatch(/\bcan read\b|\bwe\b/i);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P0] the promise sample (S04)', () => {
+  it('gets exactly one filler and one repeat from the real engine, and puts back to the raw words', () => {
+    const raw = en.onboarding.promise.sampleRaw;
+    expect(raw).not.toMatch(/\{\w+\}/);
+    const out = faithfulClean(raw, { level: 'clean', dictionary: [] });
+    expect(out.rejected).toEqual([]);
+    expect(out.applied.map((e) => e.type).sort()).toEqual(['filler', 'repeat']);
+    let applied = out.applied;
+    while (applied.length) applied = withoutEdit(raw, applied, 0).applied;
+    expect(finalText(raw, applied)).toBe(raw);
+  });
+});
+
+describe('[EXPERIENCE_PASS_2026-10 P8] every feature copy file has per-surface rules, or says why not', () => {
+  it('has a row or an opt-out with a reason for every key of `features`, and keeps the three P8 rows', () => {
+    const rows = SURFACES.map((s) => s.feature as string);
+    const optOut = Object.keys(SURFACE_OPT_OUT);
+    expect(new Set(rows).size).toBe(rows.length);
+    for (const required of ['auth', 'family', 'accountDeletion']) expect(rows, required).toContain(required);
+    // A new copy file must join with one row, or say why not.
+    expect(Object.keys(features).filter((k) => !rows.includes(k) && !optOut.includes(k))).toEqual([]);
+    // An opt-out is for a file that exists and has no row, and it says why.
+    expect(optOut.filter((k) => !(k in features) || rows.includes(k))).toEqual([]);
+    for (const [k, why] of Object.entries(SURFACE_OPT_OUT)) expect(why!.trim().length, k).toBeGreaterThan(20);
+    // A row points at the copy it names.
+    for (const s of SURFACES) expect(s.copy, s.name).toBe(features[s.feature]);
+  });
+});
+
+describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as const))('%s', (_title, surface) => {
+  const ALL = leaves(surface.copy);
+  const paths = new Set(ALL.map((l) => l.path));
+  const line = (l: Leaf) => `${l.path}: ${l.text}`;
+  const placeholdersIn = (l: Leaf) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]!);
+  const fillWith = (text: string) => text.replace(/\{(\w+)\}/g, (m, k: string) => surface.vars[k] ?? m);
+  const sanctioned = (path: string, allowed: readonly string[] = [], prefixes: readonly string[] = []) =>
+    allowed.includes(path) || prefixes.some((p) => path.startsWith(p));
+
+  it('finds the copy it checks, and every exception it names is a real leaf, so none can go stale', () => {
+    expect(ALL.length).toBeGreaterThan(0);
+    const named = [
+      ...(surface.we.allowed ?? []),
+      ...surface.buttons,
+      ...(surface.filled ?? []),
+      ...Object.values(surface.placeholderOnly ?? {}).flat(),
+      ...surface.banned.flatMap((b) => [...(b.allowed ?? []), ...(b.only ?? []), ...(b.exactly ?? [])]),
+    ];
+    expect(named.filter((p) => !paths.has(p))).toEqual([]);
+    const prefixes = [...(surface.we.allowedPrefixes ?? []), ...surface.banned.flatMap((b) => b.allowedPrefixes ?? [])];
+    expect(prefixes.filter((p) => !ALL.some((l) => l.path.startsWith(p)))).toEqual([]);
+  });
+
+  it('says "we" or "our" only where the surface may (principle 2)', () => {
+    const bad = ALL.filter((l) => !sanctioned(l.path, surface.we.allowed, surface.we.allowedPrefixes) && surface.we.re.test(l.text));
+    expect(bad.map(line)).toEqual([]);
+  });
+
+  it('keeps every button label to 22 characters, as written and with the Asha fixtures', () => {
+    expect(surface.buttons.length).toBeGreaterThan(0);
+    // The list cannot fall behind the file: every leaf named ...Button or ...Cta is on it.
+    const named = ALL.filter((l) => /(?:button|cta)$/i.test(l.path.split('.').pop()!)).map((l) => l.path);
+    expect(named.filter((p) => !surface.buttons.includes(p))).toEqual([]);
+    for (const key of surface.buttons) {
+      const label = get(surface.copy, key);
+      expect(typeof label, key).toBe('string');
+      expect((label as string).length, key).toBeLessThanOrEqual(22);
+      expect(fillWith(label as string).length, key).toBeLessThanOrEqual(22);
+    }
+  });
+
+  it('uses only the placeholders this file may use, where it may use them', () => {
+    const used = ALL.flatMap((l) => placeholdersIn(l).map((name) => ({ path: l.path, name })));
+    expect(used.filter((u) => !surface.placeholders.includes(u.name)).map((u) => `${u.path}: {${u.name}}`)).toEqual([]);
+    for (const [name, where] of Object.entries(surface.placeholderOnly ?? {})) {
+      expect(used.filter((u) => u.name === name).map((u) => u.path).sort(), `{${name}}`).toEqual([...where].sort());
+    }
+    for (const key of surface.filled ?? []) expect(fillWith(get(surface.copy, key) as string), key).not.toMatch(/[{}]/);
+  });
+
+  for (const b of surface.banned) {
+    it(`never says ${b.name}, outside its named exceptions`, () => {
+      const pool = b.only ? ALL.filter((l) => b.only!.includes(l.path)) : ALL;
+      const hits = pool.filter((l) => b.re.test(l.text) && !sanctioned(l.path, b.allowed, b.allowedPrefixes));
+      // A claim that is true in one place only must be there, and nowhere else.
+      if (b.exactly) expect(hits.map((l) => l.path)).toEqual([...b.exactly]);
+      else expect(hits.map(line)).toEqual([]);
+    });
+  }
+
+  it('spells for the US storefront (D-087)', () => {
+    expect(offenders(ALL, surface.uk)).toEqual([]);
+  });
+});
+
+// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md), ported from main's
+// #485 onto develop's keys. Each rule names the ruling it enforces. If one fails, fix the copy, not the test.
 describe('claims that must be true of what the first build does', () => {
-  it('never calls the fixes tidying (D-086: remove "Lightly tidied" and "Tidying" everywhere)', () => {
-    expect(offenders(ALL, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
+  it('store text carries the D-133 line and never says words are kept exactly as said or promises any misheard word (#495, D-133)', () => {
+    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
+    expect(storeListing.description).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
+    expect(offenders(STORE, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|misheard word|grammar/i)).toEqual([]);
   });
 
-  it('the book never says nobody changed the words, or that every word is kept exactly as said', () => {
-    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes where a microphone/i;
-    expect(offenders(leaves(book, 'book'), bad)).toEqual([]);
+  it('never calls the fixes tidying (D-086, Q2)', () => {
+    expect(offenders(EVERY, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
   });
 
-  it('"About this book" says what the engine does and no more (core EditType; D-133 true line)', () => {
+  it('the book never says nobody changed the words, or that every word is kept exactly as said (Q1)', () => {
+    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes/i;
+    expect(offenders(BOOK, bad)).toEqual([]);
+  });
+
+  it('"About this book" says what the engine does and no more (Q1; core EditType; D-133 line)', () => {
     const body = book.aboutThisBook.body;
     expect(body).toMatch(/no word was added/);
     expect(body).toMatch(/small fixes/);
@@ -176,44 +1184,27 @@ describe('claims that must be true of what the first build does', () => {
     expect(body).toMatch(/Typed letters are exactly as they were typed/);
   });
 
-  it('status lines never promise a later update, say beta, or link a feature to Plus that D-111 made free', () => {
-    const status = [...leaves(en.settingsMore, 'settingsMore'), ...leaves(en.childrenExtra, 'childrenExtra'), ...leaves(en.familyTab, 'familyTab')];
+  it('status lines never promise a later update or say beta (Q4, D-060, D-126)', () => {
+    const status = [
+      ...leaves(en.settingsMore, 'settingsMore'),
+      ...leaves(en.childrenExtra, 'childrenExtra'),
+      ...leaves(en.familyTab, 'familyTab'),
+    ];
     expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
   });
 
-  it('store text (listing, listing.json, screenshot captions) never says the words are kept exactly as said (D-133)', () => {
-    const t = storeText();
-    expect(offenders(t, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
+    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
+    expect(offenders(SITE, held)).toEqual([]);
   });
 
-  it('store text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
-    const t = storeText();
-    const bad = /invite|co-?parent|grandparent|aunt|uncle|from papa|nani|sync|vault|recovery key|cloud|bilingual|hindi|spanish|mandarin|french|arabic|portuguese|coming soon|later update|\bbeta\b|early access|family sharing|whole family|family book|printed|(?<!iphone's own )backup/i;
-    expect(offenders(t, bad)).toEqual([]);
+  it('the website, book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
+    const retired = /exactly as (you said (it|them)|they were said|they said)/i;
+    expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
   });
 
-  it('store text carries the true line and the facts it rests on', () => {
-    const d = storeListing.description;
-    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
-    expect(d).toMatch(/IT STAYS IN YOUR WORDS/);
-    expect(d).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
-    expect(d).toMatch(/Letters you type stay exactly as you typed them\./);
-    expect(d).toMatch(/keeps its original recording, unchanged/);
-    expect(d).toMatch(/waits 30 days in Recently deleted/);
-    expect(storeListing.screenshotCaptions[1]).toBe('Every change is marked');
-  });
-
-  it('screenshot captions fit 40 characters and listing.json agrees with the app copy', () => {
-    for (const c of storeListing.screenshotCaptions) expect(c.length).toBeLessThanOrEqual(40);
-    const j = listingJson();
-    expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
-    expect(j.apple.keywords).toBe(storeListing.keywords);
-    expect(j.apple.whatsNew).toBe(storeListing.whatsNewV1);
-    expect(j.apple.description.startsWith(storeListing.description.split('\n\nYour first two letters are free')[0])).toBe(true);
-  });
-
-  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (D-121, D-126)', () => {
-    const first = leaves(site, 'site');
-    expect(offenders(first, /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i)).toEqual([]);
+  it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
+    const overclaim = /grammar|we was|misheard word/i;
+    expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
   });
 });

@@ -3,9 +3,6 @@
 Owner: Lead A. Draft v1, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict log** (K-01, K-07, K-08, K-11, K-15, K-16, K-24); [PRD.md](PRD.md) wins where they differ. iOS at launch, Android later; every requirement must work on both.
 Siblings: **B** (first-run profile, children, goals, co-parent and privacy, templates and themes), **C** (reminders, celebrations, preferences, settings, pricing, trial and paywall).
 > **PRD.md 1.3 (3 Oct 2026) overrides here:** v1.0 opens on one welcome screen, then the 18+ gate; the 4-story intro (A-REQ-003 to A-REQ-011) moves to v1.1 (D-043). Sign-in at v1.0 is Sign in with Apple and email link plus code; Google sign-in (A-REQ-017) and linking move to v1.1 (D-044). The "I was invited" path now serves Family contributors in the app (K-35). See PRD.md section 3.0.
-
-> **PRD.md 1.4 (4 Oct 2026, D-051) amends the pricing statements here.** Plus is now the membership that unlocks new letters: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book and family authors need none. Any line below that says free, free forever, always free or never paywalled for writing, family authors or first-run children is amended in place or read through D-051 and PRD-REQ-024 to -026. Open edges (family letters and the allowance, a second child's book, first-run children, offline counting) are in D-051 and are not decided here.
-
 Evidence keys: **UR** `docs/research/USER_RESEARCH.md`, **CR** `COMPETITIVE_RESEARCH.md`, **ARCH** `docs/ARCHITECTURE.md`, **DL** `docs/design/DESIGN_LANGUAGE.md`, **MO** `MOTION.md`, **CRE** `CREATIVE.md`, **CMP** `COMPONENTS.md`, **VOICE**/**BRAND** `packages/content/`. External sources [A#] at the end.
 
 ## 0. Key decisions
@@ -42,7 +39,7 @@ As a:
 ## 3. Flows
 
 ### F1. Cold start
-1. Native splash: `bg` paper (light #FBF8F3, dark #161412), centred envelope line mark, no text. (Scaffold splash is Expo blue #208AEF; replace.)
+1. Native splash: `bg` paper (light #FBF8F3, dark #161412), the brand symbol resolved from the registry context `app.splash` (`assetFor('app.splash')`: `logo.symbol.ink` on paper, `logo.symbol.reversed` on paperDark), centred, 96 pt, no text (docs/brand/BRAND_SYSTEM.md 2). (Scaffold splash is Expo blue #208AEF; replace.)
 2. Restore session from secure storage without network, read local state, render first route, hide splash.
 3. Branch: pending invite token → F7; signed in or has local letters → Tonight, no animation (MO §5a); first launch → step 4 then F2.
 4. Brand moment, first launch only: mark draws via `strokeDashoffset` (600 ms), "Letters for someone small." fades in; ≤ 900 ms total (MO §3 `sequenceMaxMs`); tap skips. Reduce Motion: drawing complete, 200 ms fade.
@@ -74,7 +71,7 @@ Order: iOS Apple, Google, Email; Android Google, Apple, Email. Equal button size
 - **After success:** has children → Tonight (or F6.3 if local data). No children and came via "Sign in" → card "No book here yet. Did you use a different way to sign in last time?" with **Try another way** and **Start a book**.
 
 ### F5. Magic link deep link
-1. Link: `https://<app domain>/auth/confirm?token_hash=<hash>&type=email`; domain from `packages/brand`.
+1. Link: `https://<app domain>/auth/callback?token_hash=<hash>&type=email`; domain from `packages/brand`.
 2. App installed → universal link or App Link opens app → `verifyOtp({ token_hash, type })` → F4 success.
 3. Opens in a browser (no app, mail in-app browser, desktop) → page **does not verify on load**, because mail scanners prefetch links and would burn the token. Page shows **Open Early Letters** (scheme fallback) and the code to type.
 4. Expired or used → expiry copy with one-tap resend to the same address.
@@ -88,7 +85,7 @@ Order: iOS Apple, Google, Email; Android Google, Apple, Email. Equal button size
 5. New phone: book shows immediately, letters arrive; audio restore per ARCH §8 and ADR 0006; pending audio shows "Preparing voice" (DL §12).
 
 ### F7. "I was invited"
-1. Entry: invite link `https://<app domain>/i/<token>`, story 4 button, or code screen.
+1. Entry: invite link `https://<app domain>/j#t=<token>`, story 4 button, or code screen.
 2. Link token goes to secure storage before any UI; stories are skipped.
 3. Without a link: "Paste the invite link or type the code", with a **Paste** button (clipboard read only on that tap) and a code field.
 4. Not signed in → F4 titled "Sign in to join the family book" (child name only if Lead B approves Q5).
@@ -123,7 +120,7 @@ Evidence: 1 UR §5 job 1; 2 BRAND pillar 1, CR §5 white space 1; 3 CR §4 prais
 P0 = launch blocker, P1 = launch target, P2 = later.
 
 **Launch**
-- **A-REQ-001 (P0) Branded splash.** Given a cold start, when the launch screen shows, then it uses paper background and envelope mark in the system appearance and matches the first frame without a jump (Android 12+: static splash-API icon).
+- **A-REQ-001 (P0) Branded splash.** Given a cold start, when the launch screen shows, then it uses the registry context `app.splash` (paper or paperDark background with `logo.symbol.ink` or `logo.symbol.reversed`) in the system appearance and matches the first frame without a jump (Android 12+: static splash-API icon).
 - **A-REQ-002 (P0) No blocking.** Given a cold start, when the first route lays out, then the splash hides; it never waits on network, model download or sync.
 - **A-REQ-003 (P1) Brand moment.** Given first launch, when the splash hides, then the mark draws in ≤ 900 ms; given a tap, then it ends; given Reduce Motion, then a 200 ms fade replaces it.
 
@@ -140,7 +137,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 **Account timing**
 - **A-REQ-012 (P0) Letter first.** Given Start a book, when the user completes B's profile and saves a letter, then no sign-in was required. *Revised Oct 2 2026 per PRD.md K-07:* the 18+ entry gate (PRD-REQ-019) comes before B's profile; it is a question, not a sign-in.
 - **A-REQ-013 (P0) Keep the book sheet.** Given the first letter committed, when the save animation ends, then the F3 sheet opens with Apple, Google, Email and Later.
-- **A-REQ-014 (P0) Later works.** Given Later, then record, review, save, book, Read together (within the free tries; revised Oct 2 2026 per PRD.md conflict log K-11) and PDF export work; the sheet returns only at F3.3 moments, max once a day. *Amended 4 Oct 2026 (D-051): "record, review, save" beyond the first 2 letters per account needs Plus; the in-progress letter is never discarded (PRD-REQ-024, -025). Reading, playing and export of existing letters stay open.*
+- **A-REQ-014 (P0) Later works.** Given Later, then record, review, save, book, Read together (within the free tries; revised Oct 2 2026 per PRD.md conflict log K-11) and PDF export work; the sheet returns only at F3.3 moments, max once a day.
 - **A-REQ-015 (P0) Re-ownership.** Given local data and a successful sign-in, then all local rows move to the user id in one transaction before sync; on failure nothing changes and Retry shows.
 
 **Methods**
@@ -152,7 +149,7 @@ P0 = launch blocker, P1 = launch target, P2 = later.
 - **A-REQ-021 (P1) Last method.** Given a prior sign-in on this install, then the sheet shows "Last time you used {method}." and no email is stored.
 
 **Links and limits**
-- **A-REQ-022 (P0) Universal and App Links.** Given the app is installed, when an auth or `/i/` link opens from Mail, Gmail, Outlook or Messages, then the app opens the right flow; AASA and `assetlinks.json` are served from the brand domain [A10].
+- **A-REQ-022 (P0) Universal and App Links.** Given the app is installed, when an auth or invite (`/j#t=<token>`) link opens from Mail, Gmail, Outlook or Messages, then the app opens the right flow; AASA and `assetlinks.json` are served from the brand domain [A10].
 - **A-REQ-023 (P0) Scanner-safe page.** Given a link opens in a browser, when the page loads, then no token is verified; Open in app and the code show.
 - **A-REQ-024 (P0) Expired link.** Given an expired or used token, then expiry copy and a one-tap resend show.
 - **A-REQ-025 (P0) Resend limits.** Given a sent email, then resend is disabled 60 s with "You can send another in a minute." (no ticking numbers); max 5 per address per hour.
@@ -185,7 +182,7 @@ Reference devices: iPhone SE (3rd gen) and a mid-tier 60 Hz Android (MO §7).
 - **A-NFR-009 Provider hygiene.** Hashed Apple nonce; Supabase verifies Google ID tokens; Apple `.p8` client secret rotated before its 6-month expiry, with a named owner [A5].
 - **A-NFR-010 Redirects.** Allowlist only the brand domain and app scheme. Scheme must change from scaffold `lumiraletters` (app.json) to one derived from `packages/brand`.
 - **A-NFR-011 Deletion.** Account deletion revokes Apple tokens via Apple's REST API [A7] (UI is C's).
-- **A-NFR-012 Analytics privacy.** No email, names, tokens or free text in events; random analytics id (ADR 0008); Sentry strips URLs containing `token_hash` or `/i/`.
+- **A-NFR-012 Analytics privacy.** No email, names, tokens or free text in events; random analytics id (ADR 0008); Sentry strips URLs containing `token_hash`, and invite links (`/j` with the token in the fragment as `t`: `/j#t=<token>`).
 - **A-NFR-013 Reliability.** Auth success (excluding cancels) ≥ 97% per method weekly; alert below 93%. A crash during sign-in never loses a local letter or invite token.
 - **A-NFR-014 Localization.** *Revised Oct 2 2026 per PRD.md conflict log K-24: en-US only at launch; the rest of this item is P2.* Entry strings in en-US, en-IN and Hindi (Devanagari), translated by a native speaker. Mukta covers both scripts (DL §3); layouts tolerate 40% longer strings; provider buttons use their own localized labels; code fields accept Devanagari digits.
 
@@ -266,9 +263,9 @@ Funnel by method (UR §2.3: no public benchmark).
 
 ## 12. Dependencies
 
-**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/i/<token>` format; Q5; notice placement consistent with §7.
+**Lead B:** first-run profile after Start a book (name, birth or due date, UR §6 R2), offline and pre-account; invitee welcome after F7.6 with Large Print offer; invite creation and `/j#t=<token>` format; Q5; notice placement consistent with §7.
 
-**Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet. *Amended 4 Oct 2026 (D-051): "Paywall never before the first letter" still holds; the paywall may now appear at the third new letter (PRD-REQ-024).*
+**Lead C:** settings account row, "Ways to sign in" host (A-REQ-019), sign-out guard (F6.4), account deletion with Apple token revocation (A-NFR-011), web deletion page for Play. Paywall never before the first letter or inside the sign-in sheet. Notification primer only after the first letter (UR §6 R7) and never stacked on the Keep the book sheet.
 
 **Engineering:** custom SMTP; AASA and `assetlinks.json` on apps/web (ADR 0010); Supabase manual linking on, OTP expiry 3600 s, redirect allowlist; Apple key rotation owner.
 

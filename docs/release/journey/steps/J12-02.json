@@ -1,0 +1,36 @@
+{
+  "id": "J12-02",
+  "journey": "plus",
+  "kind": "unhappy",
+  "title": "Restore purchases cannot reach the App Store",
+  "note": "Restore asks StoreKit; while it checks, the row reads \"Checking with the App Store\". With no store (web) the answer shows under the row, with the warning mark: the App Store could not be reached, try again in a moment. On a phone with no Plus purchase it would say none was found.",
+  "from": "J12-01",
+  "shot": "screens/J12-02.png",
+  "route": "/settings/plus",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Plan Plus Plus is not available on this device yet. Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Restore purchases Finds Plus bought with this Apple Account. The App Store could not be reached. Please try again in a moment. Apple handles payment for Plus. We never see your card details.",
+  "lines": [
+    "Plan",
+    "Plus",
+    "Plus is not available on this device yet.",
+    "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.",
+    "Restore purchases",
+    "Finds Plus bought with this Apple Account.",
+    "The App Store could not be reached. Please try again in a moment.",
+    "Apple handles payment for Plus. We never see your card details."
+  ]
+}

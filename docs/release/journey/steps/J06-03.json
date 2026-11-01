@@ -1,0 +1,55 @@
+{
+  "id": "J06-03",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "Why was this changed?",
+  "note": "Tapping a mark in the letter, or its row behind \"N small fixes\", opens a card under the mark's own line: what kind of fix it was, the exact words said and how it reads now, and an offer to put it back.",
+  "from": "J06-02",
+  "shot": "screens/J06-03.png",
+  "full": "screens/J06-03-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Hear it Close Read it back To Asha · Month 7 From Mama Asha, um, today you you held the spoon by yourself. Took out a sound An um or an uh, taken out. You said \" um, \" Taken out Put it back Close You mostly painted your face with it, but you were so so proud. I want you to know that I was too. With small fixes Exactly as said 2 small fixes Change words Add to Asha's book Keep private",
+  "lines": [
+    "Hear it",
+    "Close",
+    "Read it back",
+    "To Asha · Month 7",
+    "From Mama",
+    "Asha,",
+    "um,",
+    "today you",
+    "you",
+    "held the spoon by yourself.",
+    "Took out a sound",
+    "An um or an uh, taken out.",
+    "You said",
+    "\"",
+    "um,",
+    "\"",
+    "Taken out",
+    "Put it back",
+    "Close",
+    "You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "With small fixes",
+    "Exactly as said",
+    "2 small fixes",
+    "Change words",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

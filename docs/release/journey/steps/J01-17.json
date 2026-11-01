@@ -1,0 +1,35 @@
+{
+  "id": "J01-17",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "Not now is a calm answer",
+  "note": "The card folds to one line: \"Your voice is kept either way.\" The first Review will offer the same button if words are waiting.",
+  "from": "J01-16",
+  "shot": "screens/J01-17.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Asha From Mama The book is open. Say one thing about Asha today. That is a letter. Your voice is kept either way. Write the first one",
+  "lines": [
+    "Back",
+    "Asha",
+    "From Mama",
+    "The book is open.",
+    "Say one thing about Asha today. That is a letter.",
+    "Your voice is kept either way.",
+    "Write the first one"
+  ]
+}

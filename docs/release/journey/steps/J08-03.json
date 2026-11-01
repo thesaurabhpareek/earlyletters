@@ -1,0 +1,58 @@
+{
+  "id": "J08-03",
+  "journey": "quiet-day",
+  "kind": "happy",
+  "title": "A quiet day in the Book",
+  "note": "The Book shows one small row, \"A quiet day\", with the date: muted, unsigned, not a card and not a button into a letter. It is never counted, printed or read in Read together, and it hides on any day that has a letter.",
+  "from": "J08-02",
+  "shot": "screens/J08-03.png",
+  "full": "screens/J08-03-full.png",
+  "route": "/book",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Asha's book Read together This month 7 October 17 to November 16 Saturday, October 17, 2026 A quiet day Month 6 2 letters · From Mama September 17 to October 16 Tuesday, October 13, 2026 Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw. From Mama Thursday, September 24, 2026 From Mama Private 0:42 Month 5 1 letter · From Mama August 17 to September 16 Monday, August 17, 2026 So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama 0:42 Tonight Book Family",
+  "lines": [
+    "Asha's book",
+    "Read together",
+    "This month",
+    "7",
+    "October 17 to November 16",
+    "Saturday, October 17, 2026",
+    "A quiet day",
+    "Month",
+    "6",
+    "2 letters · From Mama",
+    "September 17 to October 16",
+    "Tuesday, October 13, 2026",
+    "Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw.",
+    "From Mama",
+    "Thursday, September 24, 2026",
+    "From Mama",
+    "Private",
+    "0:42",
+    "Month",
+    "5",
+    "1 letter · From Mama",
+    "August 17 to September 16",
+    "Monday, August 17, 2026",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "0:42",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

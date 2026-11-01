@@ -1,0 +1,35 @@
+{
+  "id": "J10-12",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Recently deleted",
+  "note": "Settings, Recently deleted lists the letter as a card: its first words in the letter face, ending in a fade, \"From Mama\", and one line: \"Deleted October 13. Kept here until November 12.\" Then Restore and Erase now. No countdown and no count. (Seeded fictional family Asha.)",
+  "from": "J10-01",
+  "shot": "screens/J10-12.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Recently deleted Letters you delete wait here for 30 days. So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Deleted October 30. Kept here until November 29. Restore Erase now",
+  "lines": [
+    "Recently deleted",
+    "Letters you delete wait here for 30 days.",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Deleted October 30. Kept here until November 29.",
+    "Restore",
+    "Erase now"
+  ]
+}

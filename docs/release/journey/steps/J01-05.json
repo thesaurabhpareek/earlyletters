@@ -1,0 +1,33 @@
+{
+  "id": "J01-05",
+  "journey": "first-run",
+  "kind": "unhappy",
+  "title": "Child step with no name",
+  "note": "Nothing typed yet. Continue waits, and a quiet line above it says why: \"Add a name to continue.\" The book cover beside the heading is blank. An empty name can never be saved.",
+  "from": "J01-04",
+  "shot": "screens/J01-05.png",
+  "route": "/onboarding",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Back Who is this book for? Name Add another child Add a name to continue.",
+  "lines": [
+    "Back",
+    "Who is this book for?",
+    "Name",
+    "Add another child",
+    "Add a name to continue."
+  ]
+}

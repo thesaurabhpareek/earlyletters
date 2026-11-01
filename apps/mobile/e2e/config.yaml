@@ -1,0 +1,20 @@
+# Maestro workspace config (Maestro CLI 2.11; docs.maestro.dev "Workspace
+# configuration"). Running the folder (`maestro test apps/mobile/e2e`) picks up
+# the single-simulator suite only. The co-parent flows (two simulators) and the
+# StoreKit flow (app run from Xcode) have their own entry points in bin/.
+# Subflows and scripts are not flows; they are reached only through runFlow and
+# runScript.
+flows:
+  - "flows/*"
+includeTags:
+  - e2e
+excludeTags:
+  - e2e-coparent
+  - storekit-xcode
+executionOrder:
+  continueOnFailure: true
+  flowsOrder:
+    - E2E-01a-age-gate-no
+    - E2E-01b-age-gate-yes
+# No testOutputDir here: bin/run-suite.sh writes artifacts outside the repo
+# (COORDINATION.md section 8: scratch output never goes in the repo).

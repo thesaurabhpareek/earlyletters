@@ -1,0 +1,32 @@
+{
+  "id": "J10-13",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "Restored",
+  "note": "Restore lifts the card out and puts the letter back in the book exactly as it was; the toast says \"Back in Asha's book.\" with \"Open\". The shelf is empty: the page drawing and \"No deleted letters.\", with no repeated heading.",
+  "from": "J10-12",
+  "shot": "screens/J10-13.png",
+  "route": "/settings/recently-deleted",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Recently deleted No deleted letters. Back in Asha's book. Open",
+  "lines": [
+    "Recently deleted",
+    "No deleted letters.",
+    "Back in Asha's book.",
+    "Open"
+  ]
+}

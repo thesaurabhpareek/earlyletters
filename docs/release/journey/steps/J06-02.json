@@ -1,0 +1,48 @@
+{
+  "id": "J06-02",
+  "journey": "review-and-edits",
+  "kind": "happy",
+  "title": "First note dismissed",
+  "note": "\"Got it\" collapses the note for good.",
+  "from": "J06-01",
+  "shot": "screens/J06-02.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Hear it Close Read it back To Asha · Month 7 From Mama Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. With small fixes Exactly as said 2 small fixes Took out a sound um, Took out a repeat you Change words Add to Asha's book Keep private",
+  "lines": [
+    "Hear it",
+    "Close",
+    "Read it back",
+    "To Asha · Month 7",
+    "From Mama",
+    "Asha,",
+    "um,",
+    "today you",
+    "you",
+    "held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "With small fixes",
+    "Exactly as said",
+    "2 small fixes",
+    "Took out a sound",
+    "um,",
+    "Took out a repeat",
+    "you",
+    "Change words",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

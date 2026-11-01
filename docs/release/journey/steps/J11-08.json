@@ -1,0 +1,37 @@
+{
+  "id": "J11-08",
+  "journey": "read-together",
+  "kind": "happy",
+  "title": "Read together skips quiet days",
+  "note": "A quiet-day mark is not a letter: it is never a page, never played and never read aloud, even a row an older build moved into the book. Only letters are pages. (Seeded fictional family Asha, with older-build rows.)",
+  "from": "J11-01",
+  "shot": "screens/J11-08.png",
+  "route": "/read-together",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close The first weeks · From Mama Asha, you are four days old and the whole house is quiet. Your Nani made dal and nobody ate it because we were all watching you sleep. From Mama Hear Mama 0:42 Keep playing Back one Next letter",
+  "lines": [
+    "Close",
+    "The first weeks · From Mama",
+    "Asha, you are four days old and the whole house is quiet. Your Nani made dal and nobody ate it because we were all watching you sleep.",
+    "From Mama",
+    "Hear Mama",
+    "0:42",
+    "Keep playing",
+    "Back one",
+    "Next letter"
+  ]
+}

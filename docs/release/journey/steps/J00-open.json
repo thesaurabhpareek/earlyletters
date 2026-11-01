@@ -1,0 +1,31 @@
+{
+  "id": "J00-open",
+  "journey": "first-run",
+  "kind": "happy",
+  "title": "The first thing anyone sees: one plain question",
+  "note": "The same neutral question for everyone, in the launch screen's lit room, with nothing preselected (LEGAL-REQ-002, PRD-REQ-019).",
+  "shot": "screens/J00-open.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Are you 18 or older? Yes No Continue",
+  "lines": [
+    "Are you 18 or older?",
+    "Yes",
+    "No",
+    "Continue"
+  ]
+}

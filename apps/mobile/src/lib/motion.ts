@@ -1,56 +1,159 @@
 /**
  * useMotion(): the one place screens learn about Reduce Motion (MOTION.md 4).
- * useReducedMotion() only reads the value at start, so we also subscribe to
- * AccessibilityInfo changes. Fallback is a 200 ms fade, never a jump.
+ * Every duration, spring and distance comes from tokens.motion; nothing is typed here.
+ *
+ * Reduce Motion rule: movement is replaced by a paired 200 ms fade (ReduceMotion.Never on
+ * the fade), never a jump on content that carries meaning. Pure decoration simply does
+ * not run. Reanimated's useReducedMotion() reads the value once at start, so we also
+ * subscribe to AccessibilityInfo changes (MOTION 4, M15, M16).
+ *
+ * routeTransitions / useRouteTransitions(): the screen-transition table (lib/transitions.logic.ts,
+ * EXPERIENCE_PASS 5.8, MOTION 5l) as the root stack's options; useSheetMotion() for the Sheet. Tabs
+ * keep the native swap; the lamp carries the change between rooms (components/ui/lamp.tsx).
  */
-import { useEffect, useState } from 'react';
-import { AccessibilityInfo } from 'react-native';
-import { Easing, FadeIn, FadeInDown, ReduceMotion, withSpring, withTiming } from 'react-native-reanimated';
-import type { MotionToken } from '@scribe/design-tokens';
-import { EASING_POINTS, ENTER, FADE_MS, enterDelayMs, springParams } from './motion.values';
+import { useEffect, useMemo, useState } from 'react';
+import { AccessibilityInfo, Platform } from 'react-native';
+import {
+  Easing,
+  FadeIn,
+  FadeInDown,
+  FadeOut,
+  FadeOutDown,
+  Keyframe,
+  LinearTransition,
+  ReduceMotion,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
+import { tokens, type MotionToken } from '@scribe/design-tokens';
+import { routeTransitions, sheetMotion, type RootRoute, type RouteOptions, type SheetMotion } from './transitions.logic';
 
-export { FADE_MS };
-export const STANDARD_EASING = Easing.bezier(...EASING_POINTS);
+const M = tokens.motion;
 
+export const FADE_MS = M.fadeMs;
+export const EXIT_MS = M.exitMs;
+export const STANDARD_EASING = Easing.bezier(...M.easing);
+
+/** Words leaving a step: up 8 pt (enter.dy) as they fade, over exitMs. */
+const LEAVE = new Keyframe({
+  0: { opacity: 1, transform: [{ translateY: 0 }] },
+  100: { opacity: 0, transform: [{ translateY: -M.enter.dy }], easing: STANDARD_EASING },
+}).duration(M.exitMs);
+
+let current = false;
+const listeners = new Set<(v: boolean) => void>();
+let subscribed = false;
+
+function ensureSubscribed() {
+  if (subscribed) return;
+  subscribed = true;
+  AccessibilityInfo.isReduceMotionEnabled()
+    .then((v) => set(v))
+    .catch(() => {});
+  AccessibilityInfo.addEventListener('reduceMotionChanged', set);
+}
+function set(v: boolean) {
+  if (v === current) return;
+  current = v;
+  listeners.forEach((l) => l(v));
+}
+
+/** Live Reduce Motion value (one shared subscription for the whole app). */
 export function useReducedMotion(): boolean {
-  const [reduced, setReduced] = useState(false);
+  ensureSubscribed();
+  const [reduced, setReduced] = useState(current);
   useEffect(() => {
-    let alive = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((v) => alive && setReduced(v));
-    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
+    listeners.add(setReduced);
+    setReduced(current);
     return () => {
-      alive = false;
-      sub.remove();
+      listeners.delete(setReduced);
     };
   }, []);
   return reduced;
 }
 
+/** Synchronous read for non-React code (haptics, imperative toasts). */
+export function isReducedMotion(): boolean {
+  ensureSubscribed();
+  return current;
+}
+
 export function springConfig(token: MotionToken) {
-  return { ...springParams(token), reduceMotion: ReduceMotion.System };
+  const s = M[token];
+  return { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System };
+}
+
+/** Layout transition on a spring token (cards reflowing, an inline card opening). */
+export function layoutSpring(token: MotionToken = 'standard') {
+  const s = M[token];
+  return LinearTransition.springify().stiffness(s.stiffness).damping(s.damping).mass(s.mass);
 }
 
 export function useMotion() {
   const reduced = useReducedMotion();
-  return {
-    reduced,
-    /** Token name of the website's SMOOTH spring, for scrubs and glow follow: spring(v, soft). */
-    soft: 'soft' as MotionToken,
-    /** Spring to a value on a motion token; under Reduce Motion, a 200 ms fade-like timing. */
-    spring: (to: number, token: MotionToken = 'standard') => {
-      'worklet';
-      return reduced
-        ? withTiming(to, { duration: FADE_MS, reduceMotion: ReduceMotion.Never })
-        : withSpring(to, springConfig(token));
-    },
-    fade: (to: number, duration: number = FADE_MS) => {
-      'worklet';
-      return withTiming(to, { duration, reduceMotion: ReduceMotion.Never });
-    },
-    /** Entering animation for content (never for controls; MOTION principle 2). */
-    enter: (index = 0) =>
-      reduced
-        ? FadeIn.duration(FADE_MS).reduceMotion(ReduceMotion.Never)
-        : FadeInDown.duration(ENTER.durationMs).delay(enterDelayMs(index)).easing(STANDARD_EASING),
-  };
+  return useMemo(
+    () => ({
+      reduced,
+      /** Spring to a value on a motion token; under Reduce Motion, a 200 ms timing instead. Worklet-safe. */
+      spring: (to: number, token: MotionToken = 'standard') => {
+        'worklet';
+        const s = M[token];
+        return reduced
+          ? withTiming(to, { duration: M.fadeMs, reduceMotion: ReduceMotion.Never })
+          : withSpring(to, { stiffness: s.stiffness, damping: s.damping, mass: s.mass, reduceMotion: ReduceMotion.System });
+      },
+      /** Opacity timing that always runs (it is the Reduce Motion fallback itself). */
+      fade: (to: number, duration: number = M.fadeMs) => {
+        'worklet';
+        return withTiming(to, { duration, easing: STANDARD_EASING, reduceMotion: ReduceMotion.Never });
+      },
+      /**
+       * Entering animation for content, never for controls (MOTION principle 2):
+       * opacity 0 to 1, y 8 to 0, 280 ms, staggered 30 ms for the first 6 items.
+       * Items beyond the stagger window get no entrance at all.
+       */
+      enter: (index = 0) => {
+        if (index >= M.staggerMax) return undefined;
+        if (reduced) return FadeIn.duration(M.fadeMs).reduceMotion(ReduceMotion.Never);
+        const base = FadeInDown.duration(M.enter.durationMs).delay(index * M.staggerMs).easing(STANDARD_EASING);
+        // Web (preview): Reanimated 4.5.1 pins elements with custom initial values to
+        // position:absolute after the animation (layoutReanimation/web componentUtils
+        // setElementAnimation -> setElementPosition), so web keeps the stock preset.
+        return Platform.OS === 'web' ? base : base.withInitialValues({ opacity: 0, transform: [{ translateY: M.enter.dy }] });
+      },
+      /** Exit for transient UI (toast, inline card): quicker than the entry, down toward where it sits. */
+      exit: () =>
+        reduced
+          ? FadeOut.duration(M.fadeMs).reduceMotion(ReduceMotion.Never)
+          : FadeOutDown.duration(M.exitMs).easing(STANDARD_EASING),
+      /**
+       * Content leaving a step (EXPERIENCE_PASS 5.5 "exit"): opacity to 0, y to -8, exitMs; the words go up and on.
+       * Reduce Motion, and the web preview (custom keyframes misbehave there, MOTION 9b): a fade of exitMs.
+       */
+      leave: () => (reduced || Platform.OS === 'web' ? FadeOut.duration(M.exitMs).reduceMotion(ReduceMotion.Never) : LEAVE),
+      /** Layout reflow; undefined under Reduce Motion (an instant reflow beats a fake fade). */
+      layout: (token: MotionToken = 'standard') => (reduced ? undefined : layoutSpring(token)),
+    }),
+    [reduced],
+  );
+}
+
+export type Motion = ReturnType<typeof useMotion>;
+
+/** The screen-transition table (EXPERIENCE_PASS 5.8, MOTION 5l): presentation and animation per root route. */
+export { routeTransitions, type RootRoute, type RouteOptions } from './transitions.logic';
+
+/**
+ * routeTransitions for the live Reduce Motion setting. The root layout spreads `routes[name]` into each
+ * Stack.Screen's options and types no presentation, animation or duration itself.
+ */
+export function useRouteTransitions(): Record<RootRoute, RouteOptions> {
+  const reduced = useReducedMotion();
+  return useMemo(() => routeTransitions(reduced), [reduced]);
+}
+
+/** The Sheet's open and close: the standard spring, or, under Reduce Motion, a fade with no travel. */
+export function useSheetMotion(): SheetMotion {
+  const reduced = useReducedMotion();
+  return useMemo(() => sheetMotion(reduced), [reduced]);
 }

@@ -1,0 +1,38 @@
+{
+  "id": "J10-01",
+  "journey": "letter-detail",
+  "kind": "happy",
+  "title": "A letter, as a page",
+  "note": "The page opens in the card's own column: the same dateline and words, then the rest of the letter, signed \"From Mama\" in italic. One pill player, one provenance line (\"Spoken, with small fixes. Recording kept on this phone.\"), \"Exactly as said\", and the actions below. No lamp: a voice plays here. (Seeded fictional family Asha; the seeded audio files do not exist, so the player is the closest honest state.)",
+  "from": "J09-03",
+  "shot": "screens/J10-01.png",
+  "route": "/letter/:id",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Aa Sunday, August 30, 2026 So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it. From Mama Hear Mama 0:42 Spoken, with small fixes. Recording kept on this phone. Exactly as said Make private Delete",
+  "lines": [
+    "Aa",
+    "Sunday, August 30, 2026",
+    "So it rained all morning so we sat by the window and you tried to catch the drops on the glass. You were so serious about it.",
+    "From Mama",
+    "Hear Mama",
+    "0:42",
+    "Spoken, with small fixes. Recording kept on this phone.",
+    "Exactly as said",
+    "Make private",
+    "Delete"
+  ]
+}

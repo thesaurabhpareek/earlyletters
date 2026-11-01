@@ -1,0 +1,31 @@
+{
+  "id": "J07-07",
+  "journey": "typed-letter",
+  "kind": "happy",
+  "title": "Kept private",
+  "note": "Keep private, from Write, keeps the letter outside the book with the lock chip, then lands on the Book with its Private chip. It can be added to the book later.",
+  "from": "J07-03",
+  "shot": "screens/J07-07.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "To Asha · The first weeks From Mama A private one, only for us.",
+  "lines": [
+    "To Asha · The first weeks",
+    "From Mama",
+    "A private one, only for us."
+  ]
+}

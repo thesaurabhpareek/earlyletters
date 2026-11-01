@@ -1,0 +1,41 @@
+{
+  "id": "J22-08",
+  "journey": "sign-in",
+  "kind": "unhappy",
+  "title": "A wrong code",
+  "note": "Six digits went on their own; the wrong code clears and the field takes focus again, with the line beside a mark. No shake, no red.",
+  "from": "J22-07",
+  "shot": "screens/J22-08.png",
+  "route": "/sign-in/code",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Not now Check your email A link and a code are on their way to mama@example.invalid . Tap the link on this phone, or type the code here. Code That code didn't match. Check the newest email, or send a new one. Send a new email You can send another in a minute. Use a different email Trouble signing in? Continue",
+  "lines": [
+    "Not now",
+    "Check your email",
+    "A link and a code are on their way to",
+    "mama@example.invalid",
+    ".",
+    "Tap the link on this phone, or type the code here.",
+    "Code",
+    "That code didn't match. Check the newest email, or send a new one.",
+    "Send a new email",
+    "You can send another in a minute.",
+    "Use a different email",
+    "Trouble signing in?",
+    "Continue"
+  ]
+}

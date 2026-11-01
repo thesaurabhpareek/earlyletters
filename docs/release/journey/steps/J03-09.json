@@ -1,0 +1,38 @@
+{
+  "id": "J03-09",
+  "journey": "children-and-books",
+  "kind": "happy",
+  "title": "Add a child starts with no date",
+  "note": "The birthday starts empty, so a seven-month-old is never saved as a newborn by a default nobody saw. \"Born today\" is a chip beside the date, one tap. The small book cover takes the name.",
+  "from": "J03-08",
+  "shot": "screens/J03-09.png",
+  "route": "/settings/children/new",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Add a child Who is this book for? Ravi Name Twins or more? Each child gets their own book. Birthday Not here yet Birthday Born today Choose Ravi's birthday to continue.",
+  "lines": [
+    "Add a child",
+    "Who is this book for?",
+    "Ravi",
+    "Name",
+    "Twins or more? Each child gets their own book.",
+    "Birthday",
+    "Not here yet",
+    "Birthday",
+    "Born today",
+    "Choose Ravi's birthday to continue."
+  ]
+}

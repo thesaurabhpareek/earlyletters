@@ -1,5 +1,7 @@
 # Store submission readiness and gap audit
 
+> **Lineage note (1 Nov 2026, PR #497).** This audit was written on `main` before `main` was merged into `develop`. Two files it cites, `docs/ops/OFFER_CODES.md` and `docs/legal/memos/pricing-change-2026-10-04.md`, came from `main`'s 3 to 4 Oct work and were not carried onto `develop`, which decided the same ground later (D-051 (main), D-052 (main), D-082 to D-085). Rows that cite them read as history; the current plan is `docs/prd/v2/` and `docs/release/`.
+
 Prepared 2026-10-28 by product operations. Scope: first submission to the Apple App Store (iOS, US only), then Google Play later.
 Plan of record for dates: `docs/ROADMAP.md` (submit Mon 11 Jan 2027, release week of 18 Jan 2027, buffer to 29 Jan).
 

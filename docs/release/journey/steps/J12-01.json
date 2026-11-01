@@ -1,0 +1,35 @@
+{
+  "id": "J12-01",
+  "journey": "plus",
+  "kind": "happy",
+  "title": "Plan: Plus is off",
+  "note": "An iOS Settings list. Section Plus: \"See what Plus adds\" (on web, where there is no StoreKit, the line \"Plus is not available on this device yet.\" in its place), with the promise as the footer, once: every letter kept stays readable, playable and exportable. Then Restore purchases, and the payment line as the footer. No price, no trial length, no count of what is left; Apple's own sheet shows those. Manage subscription shows only once a subscription exists. NEEDS A REAL IPHONE: See what Plus adds, Redeem a code, Manage subscription, and the plan names \"Plus Monthly\" and \"Plus Annual\" (held for counsel; \"Monthly\" and \"Yearly\" until then).",
+  "from": "J11-05",
+  "shot": "screens/J12-01.png",
+  "route": "/settings/plus",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Plan Plus Plus is not available on this device yet. Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus. Restore purchases Finds Plus bought with this Apple Account. Apple handles payment for Plus. We never see your card details.",
+  "lines": [
+    "Plan",
+    "Plus",
+    "Plus is not available on this device yet.",
+    "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.",
+    "Restore purchases",
+    "Finds Plus bought with this Apple Account.",
+    "Apple handles payment for Plus. We never see your card details."
+  ]
+}

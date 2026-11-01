@@ -1,7 +1,5 @@
 # TDD 07: Quality and test strategy
 
-> **Note, 4 Oct 2026 (D-051, `docs/DECISIONS.md`):** the founder changed the business model. Plus is now the membership that unlocks the product: the free version is the first 2 letters per account, then new letters need Plus; letters already made stay readable, playable and exportable; one membership covers the book. Anywhere this file treats writing as free or Plus as optional, that is superseded; open edges are listed in D-051 and not decided here. Test impact: free-tier tests and E2E-L need the letter-limit cases (TDD 08 section 14.2 item 6); rows 45 and 62 here are under review (D-051 edges 2, 5, 6).
-
 Owner: head of quality engineering. Version 0.1, 3 Oct 2026. Status: draft for founder and engineering review.
 Inputs read: `CLAUDE.md`, `docs/prd/PRD.md` 1.2 (section 6 checklist, section 7 budgets), PRD appendices A, B, C, `docs/legal/ENGINEERING_REQUIREMENTS.md`, `DATA_CLASSIFICATION.md`, `DELETION_AND_EXPORT_SPEC.md` (TC-01 to TC-20), `docs/analytics/TRACKING_PLAN.md`, `docs/BACKLOG.md`, TDDs 01 to 06, every test file in `packages/*/test`, `supabase/tests`, `experiments`, and `apps/mobile/src`.
 
@@ -331,10 +329,10 @@ Pre: Asha's book with a Mama letter and a Papa letter; signed in as Mama; online
 
 **E2E-09 Account deletion** (C-REQ-019, LEGAL-REQ-029, DATA-REQ-012, K-22)
 Pre: Mama is creator of Asha's book with co-parent Papa and contributor Nani; Mama holds a sandbox subscription.
-1. Settings, Your data, Delete account. Assert Export is offered first.
+1. Settings, Delete account. Assert Export is offered first.
 2. Continue; assert the subscription notice with a manage link appears before the final confirm.
 3. Assert the co-parent line says Mama's letters leave the shared book.
-4. Type to confirm. Assert the signed-out state and the 30-day undo message.
+4. Type to confirm. Assert the scheduled page: the date 30 days out, Cancel deletion and Sign out of this phone (S64; the app stays signed in until that tap).
 5. Sign in again within the window; tap Cancel deletion; assert letters are back.
 6. Repeat to completion with clock +31 days and the purge worker run; then run `ops/verify-deletion.mjs` against the local stack: no rows or objects for Mama except pseudonymised acceptances and the suppression hash; Papa still reads the book and Nani's letters remain.
 
@@ -466,7 +464,7 @@ Target: WCAG 2.2 AA on app, web page, legal pages, paywall and emails (LEGAL-REQ
 ### 7.1 Database access (extends TDD 02 section 8 and TDD 04 section 8)
 - **Generated access matrix (R, BL-Q09).** One table `supabase/tests/matrix.yaml`: roles {author, co-parent, contributor with `family_can_read` on and off, left member, removed member, stranger, anonymous web contributor, service} x objects {entries, book_entries, children, child_members, child_member_prefs, dictionary_terms, child_invites, deletion rows, audit_events, policy_acceptances, entitlements, each Storage bucket} x verbs {select, insert, update, delete, each RPC}. Expected outcome per cell. The runner fails if a new table, role or RPC has no row, so coverage cannot silently drop.
 - **Fixtures.** Asha's family: Mama and Papa (parents of Asha and Avi), Nani (contributor on Asha only), Dadi (contributor on Avi, `family_can_read` off), a stranger, an anonymous web contributor. The cross-child leak test runs in both directions.
-- **Harness fix (TDD 02 C18).** Apply Supabase's default grants to `anon` and `authenticated` before migrations, so a migration that forgets to revoke is caught.
+- **Harness fix (TDD 02 C18; updated 24 Oct 2026, #265).** The harness models Supabase's default privileges before the migrations: by default the world of every project created since 30 May 2026 (no SELECT, INSERT, UPDATE or DELETE on new tables, no USAGE or SELECT on sequences, no EXECUTE on functions for the API roles), so a migration that forgets a grant is caught; `SCRIBE_DEFAULT_GRANTS=legacy` models the old automatic grants, so one that forgets a revoke is caught (`supabase/tests/harness.mjs`).
 - **Clock-controlled retention.** `retention.test.mjs` with just-inside and just-past pairs for every LEGAL-REQ-033 and DATA-REQ-066 row (TDD 05 9.3).
 - **Migration upgrade test.** For each PR with a migration: apply main's migrations, load fixtures, apply the new one, rerun all suites. **F** Today tests apply all migrations to an empty database only.
 - **Sync parity (TC-15).** PowerSync sync rules evaluated in Node against the same fixtures; rows and columns per user must equal RLS results (TDD 02 8.1). **A** feasibility of running sync rules offline (TDD 02 SYNC-1).
@@ -560,7 +558,7 @@ Critical path: install (1.5) + mobile (4) = about 5.5 minutes worst case; typica
 - macOS (Xcode pinned): build or reuse the simulator `.app` keyed by `@expo/fingerprint` of native code, so JS-only changes skip the native build; run Maestro E2E-01 to E2E-14 on the SE and current-iPhone simulators; XCUITest accessibility audit; proxy assertions. **F/A** GitHub-hosted macOS runners do not run Docker, so the E2E backend is a dedicated cloud `e2e` Supabase project reset by script plus a PowerSync dev instance (**Q** cost; alternative is a self-hosted Mac mini running both).
 - Failures open an issue labelled by severity; a red nightly blocks G2.
 
-**`release.yml`** on `ios-v*` tags and `rc/*` branches: everything in nightly with no retries; EAS production build; privacy label and `PrivacyInfo.xcprivacy` generation and diff; bundle placeholder scan (`example.com`, scaffold scheme); evidence bundle (JUnit, proxy logs with Asha fixtures only, trace matrix) uploaded as an artifact and summarised in `docs/qa/evidence/`.
+**`release.yml`** on `ios-v*` tags and `rc/*` branches (amended by ADR 0022: built as `release-ios.yml` on `ios-v<x.y.z>-rc.<n>` tags on `release/*` branches; v1.0 runs its tests, typecheck, metadata drift and placeholder scan, and the rest of this list is not yet built): everything in nightly with no retries; EAS production build; privacy label and `PrivacyInfo.xcprivacy` generation and diff; bundle placeholder scan (`example.com`, scaffold scheme); evidence bundle (JUnit, proxy logs with Asha fixtures only, trace matrix) uploaded as an artifact and summarised in `docs/qa/evidence/`.
 
 ### 10.2 Caching
 | Cache | Key | Saves |

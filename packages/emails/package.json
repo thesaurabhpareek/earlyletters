@@ -1,0 +1,34 @@
+{
+  "name": "@scribe/emails",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Email template library. React Email components, light and dark, mobile first, plain-text twin for every email. Nothing loads from a server: the logo is an inline attachment, no web fonts, no tracking. Copy lives in @scribe/content.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsx scripts/render.ts",
+    "export:supabase": "tsx scripts/export-supabase.ts",
+    "test": "vitest run",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts",
+    "typecheck": "tsc --noEmit",
+    "export:escrow": "tsx scripts/export-escrow.ts",
+    "export:resend": "tsx scripts/export-resend.ts"
+  },
+  "dependencies": {
+    "@react-email/render": "^2.1.0",
+    "@scribe/brand": "*",
+    "@scribe/content": "*",
+    "@scribe/design-tokens": "*",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-email": "^6.11.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/react": "~19.2.2",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "vitest": "^3.2.7"
+  }
+}

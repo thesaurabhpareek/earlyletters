@@ -1,6 +1,6 @@
 /**
- * Generates CSS variables from tokens.ts for Uniwind (mobile) and, later,
- * shadcn/ui (web). Run: npm run build -w @scribe/design-tokens
+ * Generates CSS variables from tokens.ts for Uniwind (mobile) and shadcn/ui (web).
+ * Run: npm run build -w @scribe/design-tokens
  * The output is committed; a test fails if it drifts from tokens.ts.
  */
 import { writeFileSync, mkdirSync } from 'node:fs';
@@ -17,6 +17,9 @@ type ColorKey = keyof (typeof tokens)['light'];
  * shadcn/ui (web) components work without edits. Mapping to our tokens:
  * note shadcn's "accent" is a subtle hover wash, so OUR brand accent is
  * shadcn's "primary".
+ *
+ * `input` is the boundary of a control, so it maps to controlBorder (3:1, WCAG 1.4.11),
+ * not to the decorative `line` (1.26:1). `border` stays decorative (dividers, card edges).
  */
 const SHADCN: Record<string, ColorKey> = {
   background: 'bg',
@@ -33,20 +36,43 @@ const SHADCN: Record<string, ColorKey> = {
   'muted-foreground': 'textMuted',
   accent: 'accentSoft',
   'accent-foreground': 'text',
-  destructive: 'recording',
+  destructive: 'destructive',
+  'destructive-foreground': 'onDestructive',
   border: 'line',
-  input: 'line',
+  input: 'controlBorder',
   ring: 'focus',
 };
 /** Our names with no shadcn equivalent. */
-const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution'];
+const EXTRA: ColorKey[] = ['surface', 'surfaceRaised', 'recording', 'success', 'caution', 'controlBorder', 'editMark', 'onDestructive', 'scrim'];
 
-export function colorVars(mode: Mode): Record<string, string> {
-  const c = tokens[mode];
+export function colorVars(mode: Mode, highContrast = false): Record<string, string> {
+  const c: Record<ColorKey, string> = { ...tokens[mode], ...(highContrast ? tokens.highContrast[mode] : {}) };
   const out: Record<string, string> = {};
   for (const [name, key] of Object.entries(SHADCN)) out[name] = c[key];
   for (const key of EXTRA) out[kebab(key)] = c[key];
   return out;
+}
+
+const px = (n: number) => `${n}px`;
+
+/** Type ramp as Tailwind v4 theme variables: `text-letter-body`, `text-caption`, ... */
+function typeVars(): string {
+  return Object.entries(tokens.type)
+    .map(([name, t]) => {
+      const k = kebab(name);
+      return [
+        `  --text-${k}: ${px(t.fontSize)};`,
+        `  --text-${k}--line-height: ${px(t.lineHeight)};`,
+        `  --text-${k}--letter-spacing: ${px(t.letterSpacing)};`,
+      ].join('\n');
+    })
+    .join('\n');
+}
+
+function radiusVars(): string {
+  return Object.entries(tokens.radius)
+    .map(([k, v]) => `  --radius-${k}: ${v === 9999 ? '9999px' : `${v}px`};`)
+    .join('\n');
 }
 
 export function nativeCss(): string {
@@ -54,12 +80,6 @@ export function nativeCss(): string {
     Object.entries(colorVars(mode))
       .map(([k, v]) => `      --color-${k}: ${v};`)
       .join('\n');
-  const radii = Object.entries(tokens.radius)
-    .map(([k, v]) => `  --radius-${k}: ${v === 9999 ? '9999px' : `${v}px`};`)
-    .join('\n');
-  const atmosphere = Object.entries(tokens.atmosphere)
-    .map(([k, v]) => `  --color-${kebab(k)}: ${v};`)
-    .join('\n');
   return `/* GENERATED from packages/design-tokens/src/tokens.ts. Do not edit by hand. */
 @layer theme {
   :root {
@@ -74,80 +94,56 @@ ${block('dark')}
 }
 
 @theme {
-${radii}
-  /* lamp atmosphere (dark-mode glows and gradients only; never text) */
-${atmosphere}
+${radiusVars()}
+${typeVars()}
 }
 `;
 }
 
 /**
- * Web variable names (match apps/web/src/app/globals.css). Light values are the
- * unprefixed names, dark values are `--night-*`; lamp atmosphere is dark-only.
+ * Web flavour (shadcn convention: :root light, .dark class, plus prefers-color-scheme
+ * and prefers-contrast). Font stacks live here only: on native, faces are applied by
+ * the Text component (apps/mobile/src/components/ui/text.tsx) once the fonts load.
  */
-const WEB_LIGHT: Record<string, ColorKey> = {
-  paper: 'bg',
-  surface: 'surface',
-  'surface-raised': 'surfaceRaised',
-  ink: 'text',
-  'ink-muted': 'textMuted',
-  accent: 'accent',
-  'accent-soft': 'accentSoft',
-  'on-accent': 'onAccent',
-  line: 'line',
-  focus: 'focus',
-  recording: 'recording',
-  success: 'success',
-  caution: 'caution',
-};
-const WEB_DARK: Record<string, ColorKey> = {
-  night: 'bg',
-  'night-surface': 'surface',
-  'night-raised': 'surfaceRaised',
-  'night-ink': 'text',
-  'night-ink-muted': 'textMuted',
-  'night-accent': 'accent',
-  'night-accent-soft': 'accentSoft',
-  'night-on-accent': 'onAccent',
-  'night-line': 'line',
-  'night-focus': 'focus',
-  'night-recording': 'recording',
-  'night-success': 'success',
-  'night-caution': 'caution',
-};
-
-export function webColorVars(): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const [name, key] of Object.entries(WEB_LIGHT)) out[name] = tokens.light[key].toLowerCase();
-  for (const [name, key] of Object.entries(WEB_DARK)) out[name] = tokens.dark[key].toLowerCase();
-  out.dusk = tokens.atmosphere.duskSurface.toLowerCase();
-  out.lamp = tokens.atmosphere.lamp.toLowerCase();
-  out['lamp-gold'] = tokens.atmosphere.lampGold.toLowerCase();
-  out['lamp-rose'] = tokens.atmosphere.lampRose.toLowerCase();
-  out['lamp-dusk'] = tokens.atmosphere.lampDusk.toLowerCase();
-  return out;
-}
-
 export function webCss(): string {
-  const decl = (o: Record<string, string>) =>
-    Object.entries(o)
-      .map(([k, v]) => `  --${k}: ${v};`)
+  const block = (mode: Mode, hc = false, indent = '  ') =>
+    Object.entries(colorVars(mode, hc))
+      .map(([k, v]) => `${indent}--color-${k}: ${v};`)
       .join('\n');
-  const radii: Record<string, string> = {};
-  for (const [k, v] of Object.entries(tokens.radius)) radii[`radius-${k}`] = v === 9999 ? '9999px' : `${v}px`;
-  const { easing, reduceMotion, enter } = tokens.motion;
-  const motion: Record<string, string> = {
-    'ease-standard': `cubic-bezier(${easing.join(', ')})`,
-    'fade-ms': `${reduceMotion.durationMs}ms`,
-    'enter-ms': `${enter.durationMs}ms`,
-    'enter-dy': `${enter.dy}px`,
-    'stagger-ms': `${enter.staggerMs}ms`,
-  };
+  const f = tokens.fontFamily;
   return `/* GENERATED from packages/design-tokens/src/tokens.ts. Do not edit by hand. */
 :root {
-${decl(webColorVars())}
-${decl(radii)}
-${decl(motion)}
+${block('light')}
+}
+.dark {
+${block('dark')}
+}
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+${block('dark', false, '    ')}
+  }
+}
+@media (prefers-contrast: more) {
+  :root {
+${block('light', true, '    ')}
+  }
+  .dark {
+${block('dark', true, '    ')}
+  }
+}
+
+@theme {
+  --font-sans: ${f.webSans};
+  --font-serif: ${f.webSerif};
+  --spacing: 4px;
+${radiusVars()}
+${typeVars()}
+${Object.entries(tokens.elevation)
+  .map(([k, e]) => `  --shadow-e${k}: ${e.web};`)
+  .join('\n')}
+  --ease-standard: cubic-bezier(${tokens.motion.easing.join(', ')});
+  --duration-fade: ${tokens.motion.fadeMs}ms;
+  --duration-enter: ${tokens.motion.enter.durationMs}ms;
 }
 `;
 }
@@ -156,7 +152,6 @@ if (process.argv[1]?.endsWith('build-css.ts')) {
   const out = join(__dirname, '..', 'dist');
   mkdirSync(out, { recursive: true });
   writeFileSync(join(out, 'tokens.native.css'), nativeCss());
-  console.log('wrote dist/tokens.native.css');
   writeFileSync(join(out, 'tokens.web.css'), webCss());
-  console.log('wrote dist/tokens.web.css');
+  console.log('wrote dist/tokens.native.css and dist/tokens.web.css');
 }

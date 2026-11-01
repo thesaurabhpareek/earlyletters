@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { answerGate, decideGate, type GateDecision } from './age-gate.logic';
+import { clearPendingInvite } from './family/pending-invite';
 import { deleteSetting, getSetting, setSetting } from './store';
 
 // Keys from docs/DECISIONS.md D-026 (DATA_CLASSIFICATION 4.6, L2).
@@ -19,7 +20,10 @@ function readDecision(now = Date.now()): GateDecision {
   return r.decision;
 }
 
-/** Records the answer: a boolean for Yes, the time of a No. Nothing else is written. */
+/**
+ * Records the answer: a boolean for Yes, the time of a No. Nothing else is written.
+ * A No also drops an invite link that opened the app (it is never used by someone under 18).
+ */
 export function answerAgeGate(answer: 'yes' | 'no'): void {
   const s = answerGate(answer, Date.now());
   if (s.passed) {
@@ -28,6 +32,7 @@ export function answerAgeGate(answer: 'yes' | 'no'): void {
   } else {
     deleteSetting(PASSED);
     setSetting(STOPPED_AT, s.stoppedAt!);
+    void clearPendingInvite();
   }
 }
 

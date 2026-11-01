@@ -1,0 +1,31 @@
+{
+  "id": "J06-13",
+  "journey": "review-and-edits",
+  "kind": "unhappy",
+  "title": "Review with no draft",
+  "note": "Opened by a stale link with nothing to read back: the page drawing, \"Nothing to read back here\", one way on, \"Go to the book\", and Close. No error, nothing to try again (S23).",
+  "from": "J06-01",
+  "shot": "screens/J06-13.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Close Nothing to read back here Go to the book",
+  "lines": [
+    "Close",
+    "Nothing to read back here",
+    "Go to the book"
+  ]
+}

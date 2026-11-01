@@ -3,37 +3,70 @@
  * accidental repeats (decided in repeats.ts).
  */
 import type { Edit } from './types';
-import { FILLERS, tokens } from './text';
 import { findRepeats } from './repeats';
+import { ENGLISH_RULES, type LanguageRules } from './lang/engine';
+
+function escapeClass(chars: string): string {
+  return chars.replace(/[\\\]\[^-]/g, '\\$&');
+}
+
+/**
+ * What may follow a sentence's end mark before a filler that is a sentence of
+ * its own: invisible characters only. The ellipsis character ends a sentence
+ * here as "..." does. A closing quote or bracket does not: the mark before it
+ * belongs to the quoted or bracketed words, and the sentence around them may
+ * still be open ('Did she say "no." um?' keeps its "?"; #249 review F1).
+ */
+const AFTER_END = `\\p{Default_Ignorable_Code_Point}\\p{Bidi_Control}`;
 
 /**
  * "So um she, uh, walked" -> "So she walked".
  * Removes the filler plus one adjacent comma/space so punctuation stays tidy.
+ * Never part of a word: "uh-uh" (no), "mm-hmm" (yes) and "uh uh" stay as said.
+ * With `suggest`, returns the offered-only fillers instead ("mm" that may
+ * mean yes), never applied by the engine.
  */
-export function fillerEdits(raw: string): Edit[] {
+export function fillerEdits(raw: string, rules: LanguageRules = ENGLISH_RULES, suggest = false): Edit[] {
+  const R = rules;
+  const ends = escapeClass(R.sentenceEndChars);
+  const commas = escapeClass(R.commaChars);
+  const openers = escapeClass(R.openers);
+  // "um." after an invisible character or an ellipsis character that ends a sentence is a sentence of its
+  // own and goes with its end mark; engine 6 took "um" alone and left "waited...." (engine 7).
+  const sentenceStartRe = new RegExp(`(^|[${ends}\\u2026][${AFTER_END}]*\\s*)$`, 'u');
+  const terminalRe = new RegExp(`^[${ends}]+`);
+  const afterRe = new RegExp(`^[${commas}]?\\s*`);
+  const beforeRe = new RegExp(`[${commas}]?\\s*$`);
+  const endAheadRe = new RegExp(`[${ends}]`);
   const edits: Edit[] = [];
-  for (const t of tokens(raw)) {
-    if (!FILLERS.has(t.word.toLowerCase())) continue;
+  for (const t of R.tokens(raw)) {
+    if (suggest ? !R.isSuggestFiller(t.word) : !R.isFiller(t.word)) continue;
+    if (!R.standsAlone(raw, t.start, t.end)) continue; // 呃逆 is "hiccup", not a filler
+    if (R.fillerIsPartOfWord(raw, t.start, t.end)) continue; // "uh-uh" and "uh uh" are a spoken no (R-01 D6)
     let start = t.start;
     let end = t.end;
+    // Spanish: "¿eh?" carries its opening mark; it goes with the filler.
+    const opened = openers ? raw.slice(0, start).match(new RegExp(`[${openers}]+$`))?.[0] ?? '' : '';
     // A filler that is a whole sentence ("...door. Hmm.") goes with its
     // terminal punctuation and the space before it.
-    const isSentenceStart = /(^|[.!?]\s*)$/.test(raw.slice(0, start));
-    const terminal = raw.slice(end).match(/^[.!?]+/);
+    const isSentenceStart = sentenceStartRe.test(raw.slice(0, start - opened.length));
+    const terminal = raw.slice(end).match(terminalRe);
     if (isSentenceStart && terminal) {
+      start -= opened.length;
       const before = raw.slice(0, start).match(/\s*$/)![0];
       start -= before.length;
       end += terminal[0].length;
       edits.push({ type: 'filler', start, end, original: raw.slice(start, end), replacement: '', source: 'rule' });
       continue;
     }
+    if (opened) continue; // "¿eh, vienes?": the mark belongs to the question; leave the filler
     // swallow a trailing comma and the following whitespace: "um, she" -> "she"
-    const after = raw.slice(end).match(/^,?\s*/)![0];
+    const after = raw.slice(end).match(afterRe)![0];
     end += after.length;
     // if the filler ends a clause ("she, um. Then") keep the period: drop the
     // preceding ", " instead of the following space
-    if (after.length === 0 || /[.!?]/.test(raw[end] ?? '')) {
-      const before = raw.slice(0, start).match(/,?\s*$/)![0];
+    if (after.length === 0 || endAheadRe.test(raw[end] ?? '')) {
+      const before = raw.slice(0, start).match(beforeRe)![0];
       start -= before.length;
       end = t.end;
     }
@@ -48,8 +81,8 @@ export function fillerEdits(raw: string): Edit[] {
  * doubles ("I told you you were brave", "what it was was magic") are kept;
  * see repeats.ts for the full decision table.
  */
-export function repeatEdits(raw: string): Edit[] {
-  return findRepeats(raw)
+export function repeatEdits(raw: string, rules: LanguageRules = ENGLISH_RULES): Edit[] {
+  return findRepeats(raw, rules)
     .filter((f) => f.decision === 'auto')
     .map((f) => f.edit);
 }
@@ -59,8 +92,8 @@ export function repeatEdits(raw: string): Edit[] {
  * Never applied by the engine; the parent can accept one in review, and it
  * is then verified like any other edit (pass it in CleanOptions.ruleEdits).
  */
-export function repeatSuggestionEdits(raw: string): Edit[] {
-  return findRepeats(raw)
+export function repeatSuggestionEdits(raw: string, rules: LanguageRules = ENGLISH_RULES): Edit[] {
+  return findRepeats(raw, rules)
     .filter((f) => f.decision === 'suggest')
     .map((f) => f.edit);
 }

@@ -1,30 +1,97 @@
 {
   "cli": {
     "version": ">= 16.0.0",
-    "appVersionSource": "remote"
+    "appVersionSource": "remote",
+    "promptToConfigurePushNotifications": false
   },
   "build": {
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "development"
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on"
+      }
+    },
+    "e2e": {
+      "distribution": "internal",
+      "withoutCredentials": true,
+      "environment": "development",
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "development",
+        "EXPO_PUBLIC_E2E": "1",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on"
       }
     },
     "preview": {
-      "distribution": "internal",
+      "distribution": "store",
+      "autoIncrement": true,
+      "environment": "preview",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "preview"
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_SERVER_FEATURES": "on",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
       }
     },
     "production": {
       "autoIncrement": true,
+      "channel": "production",
+      "environment": "production",
       "env": {
-        "EXPO_PUBLIC_APP_ENV": "production"
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "production",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+      }
+    },
+    "testflight": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
+        "EXPO_PUBLIC_APP_ENV": "preview",
+        "EXPO_PUBLIC_SERVER_FEATURES": "off",
+        "EXPO_PUBLIC_BACKUP": "off",
+        "EXPO_PUBLIC_STATUS_REPORT": "off",
+        "EXPO_PUBLIC_ANALYTICS": "off",
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {},
+    "preview": {
+      "ios": {
+        "ascAppId": "6829163677"
+      }
+    },
+    "testflight": {
+      "ios": {
+        "ascAppId": "6829163677"
+      }
+    }
   }
 }

@@ -1,0 +1,91 @@
+# E2E-05  Spoken language: add Hindi, and the text-rules pack download states.
+# Hindi is added as a second language so only its text-rules pack (a few KB)
+# downloads; choosing Hindi as the primary language also starts its speech model
+# (about 191 MB, ADR 0015), which is DEVICE_TEST_PLAN S1-16, not a simulator job.
+# Proves: decision 15 / D-065 (a language's pack downloads only when chosen, is
+# listed in Storage and is removable), B-REQ-003 (Hindi is offered), ADR 0016
+# (offline and kill-switch states are shown in plain words, never an error).
+# Needs network for part 1: the packs host and the config function of the e2e
+# project. Status ids carry the state (TESTID_REQUESTS.md, Spoken language).
+appId: ${APP_ID}
+name: E2E-05 Hindi and pack download states
+tags:
+  - e2e
+  - E2E-05
+  - D-065
+  - B-REQ-003
+  - needs-network
+---
+# 1. Online: add Hindi; its pack goes from downloading to installed and shows in Storage.
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.language"
+- assertVisible:
+    id: "language.screen"
+- assertVisible:
+    id: "language.row.en.status.bundled"
+- tapOn:
+    id: "language.add"
+- assertVisible:
+    id: "languagePicker.sheet"
+- tapOn:
+    id: "languagePicker.option.hi"
+- assertVisible:
+    id: "language.row.hi"
+- extendedWaitUntil:
+    visible:
+      id: "language.row.hi.status.installed"
+    timeout: 60000
+- runFlow: ../subflows/go-back.yaml
+- tapOn:
+    id: "settings.storage"
+- assertVisible:
+    id: "storage.pack.text-rules.hi"
+# Only the chosen language: no other language's text rules were fetched.
+- assertNotVisible:
+    id: "storage.pack.text-rules.(es|zh|fr|ar|pt)"
+- stopApp
+# 2. Offline: the row says it is waiting for a connection (never a failure state).
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.language"
+- tapOn:
+    id: "language.add"
+- tapOn:
+    id: "languagePicker.option.hi"
+- extendedWaitUntil:
+    visible:
+      id: "language.row.hi.status.waiting-(offline|no_manifest)"
+    timeout: 15000
+- assertNotVisible:
+    id: "language.row.hi.status.installed"
+- stopApp
+# 3. Kill switch packDownloads on (remote config): downloads paused, no retry offered.
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_CONFIG: '{"killSwitches":{"packDownloads":true}}'
+- runFlow: ../subflows/open-settings.yaml
+- tapOn:
+    id: "settings.language"
+- tapOn:
+    id: "language.add"
+- tapOn:
+    id: "languagePicker.option.hi"
+- extendedWaitUntil:
+    visible:
+      id: "language.row.hi.status.waiting-downloads_paused"
+    timeout: 15000
+- assertNotVisible:
+    id: "language.row.hi.retry"
+- stopApp

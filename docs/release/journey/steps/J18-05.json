@@ -1,0 +1,49 @@
+{
+  "id": "J18-05",
+  "journey": "dark-mode",
+  "kind": "happy",
+  "title": "Review, dark",
+  "note": "Review at night: the first-time note, the letter on its sheet with each small fix marked in the words (taken-out words struck through), the two views, the row of small fixes, and \"Add to Asha's book\".",
+  "from": "J18-04",
+  "shot": "screens/J18-05.png",
+  "full": "screens/J18-05-full.png",
+  "route": "/review",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": true,
+  "text": "Hear it Close Read it back Please have a read Got it We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save. To Asha · Month 7 From Mama Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. With small fixes Exactly as said 2 small fixes Took out a sound um, Add to Asha's book Keep private",
+  "lines": [
+    "Hear it",
+    "Close",
+    "Read it back",
+    "Please have a read",
+    "Got it",
+    "We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.",
+    "To Asha · Month 7",
+    "From Mama",
+    "Asha,",
+    "um,",
+    "today you",
+    "you",
+    "held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "With small fixes",
+    "Exactly as said",
+    "2 small fixes",
+    "Took out a sound",
+    "um,",
+    "Add to Asha's book",
+    "Keep private"
+  ]
+}

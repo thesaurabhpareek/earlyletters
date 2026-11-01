@@ -1,0 +1,43 @@
+{
+  "id": "J08-04",
+  "journey": "quiet-day",
+  "kind": "unhappy",
+  "title": "Undo on the kept line",
+  "note": "Undo takes the mark back at once: the quiet link returns, the lamp comes back up, and nothing is left behind.",
+  "from": "J08-02",
+  "shot": "screens/J08-04.png",
+  "route": "/",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Asha · 7 months Good evening, Mama. What little game do you two play right now? Another thought Saturday 0:31 Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too. Read it back Speak Type Not much today Tonight Book Family",
+  "lines": [
+    "Asha · 7 months",
+    "Good evening,",
+    "Mama.",
+    "What little game do you two play right now?",
+    "Another thought",
+    "Saturday",
+    "0:31",
+    "Asha, um, today you you held the spoon by yourself. You mostly painted your face with it, but you were so so proud. I want you to know that I was too.",
+    "Read it back",
+    "Speak",
+    "Type",
+    "Not much today",
+    "Tonight",
+    "Book",
+    "Family"
+  ]
+}

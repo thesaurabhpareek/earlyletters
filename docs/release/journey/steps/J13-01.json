@@ -1,0 +1,31 @@
+{
+  "id": "J13-01",
+  "journey": "reminders",
+  "kind": "happy",
+  "title": "Reminders, off",
+  "note": "One switch and one plain line: a gentle nudge a few evenings a week, never late at night. Nothing is asked of the phone until the switch is turned on.",
+  "from": "J12-01",
+  "shot": "screens/J13-01.png",
+  "route": "/settings/reminders",
+  "viewport": {
+    "width": 402,
+    "height": 874
+  },
+  "safeArea": {
+    "appliedOnWeb": {
+      "top": 0,
+      "bottom": 0
+    },
+    "iphone17ProNominal": {
+      "top": 62,
+      "bottom": 34
+    }
+  },
+  "scrolls": false,
+  "text": "Reminders Reminders A gentle nudge a few evenings a week, at the time you choose. Never late at night.",
+  "lines": [
+    "Reminders",
+    "Reminders",
+    "A gentle nudge a few evenings a week, at the time you choose. Never late at night."
+  ]
+}

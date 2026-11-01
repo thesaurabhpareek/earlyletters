@@ -1,0 +1,505 @@
+{
+  "kind": "text-rules",
+  "schema": 1,
+  "language": "es",
+  "version": "1.0.0",
+  "engine": 1,
+  "name": {
+    "english": "Spanish",
+    "native": "Español"
+  },
+  "script": {
+    "primary": "Latn",
+    "variants": [],
+    "direction": "ltr",
+    "cased": true,
+    "segmentation": "space"
+  },
+  "attribution": [],
+  "normalization": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Unicode Standard Annex #15, Unicode Normalization Forms, https://unicode.org/reports/tr15/"
+      ]
+    },
+    "form": "NFC",
+    "dropFromFinal": [],
+    "ignoreForMatching": [],
+    "foldForMatching": {},
+    "house": {
+      "dashes": "replace",
+      "dashTo": ", ",
+      "quotes": "straight",
+      "ellipsis": "dots",
+      "spaces": "plain"
+    }
+  },
+  "punctuation": {
+    "review": {
+      "status": "cited",
+      "date": "2026-10-03",
+      "sources": [
+        "Real Academia Española, Diccionario panhispánico de dudas, \"signos de interrogación y exclamación\": opening marks are obligatory, go where the question or exclamation starts, and are followed by lowercase mid-sentence, https://www.rae.es/dpd/signos%20de%20interrogaci%C3%B3n%20y%20exclamaci%C3%B3n"
+      ]
+    },
+    "sentenceEnd": [
+      ".",
+      "!",
+      "?"
+    ],
+    "terminal": ".",
+    "openers": [
+      "¿",
+      "¡"
+    ],
+    "pairOpeners": true,
+    "quotes": [
+      "«",
+      "»"
+    ],
+    "commas": [],
+    "localForms": {},
+    "localFormsSwallowSpace": false,
+    "spaceBefore": [],
+    "spaceInsideGuillemets": false
+  },
+  "fillers": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Instituto Cervantes Observatorio, \"Qué decimos cuando no decimos nada\" (2022): Spanish filled pauses eh/em, ah/am, uh/um, https://cervantesobservatorio.fas.harvard.edu/es/informes/que-decimos-cuando-no-decimos-nada-claves-del-cambio-linguistico-inducido-por-contacto-en",
+        "\"eh\" is also a tag question (vale, ¿eh?) and \"mm\" can mean yes, so both are offered, never removed; \"este\" (also \"this\") is never a filler"
+      ]
+    },
+    "auto": [
+      "em",
+      "emm",
+      "ehm",
+      "mmm",
+      "um",
+      "uhm",
+      "uh"
+    ],
+    "suggest": [
+      "eh",
+      "mm"
+    ]
+  },
+  "meaning": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "RAE, Nueva gramática básica: negation, modal verbs (poder, deber), tense forms of ser, estar, tener, ir, hacer",
+        "Needs native review"
+      ]
+    },
+    "negations": [
+      "no",
+      "ni",
+      "nunca",
+      "jamás",
+      "nada",
+      "nadie",
+      "ninguno",
+      "ninguna",
+      "ningún",
+      "ningunos",
+      "ningunas",
+      "tampoco",
+      "sin"
+    ],
+    "negationSuffixes": [],
+    "negationPrefixes": [],
+    "modals": [
+      "puede",
+      "puedo",
+      "puedes",
+      "podemos",
+      "pueden",
+      "podía",
+      "podías",
+      "podían",
+      "podría",
+      "podrías",
+      "podríamos",
+      "podrían",
+      "pudo",
+      "pude",
+      "debe",
+      "debo",
+      "debes",
+      "debemos",
+      "deben",
+      "debía",
+      "debería",
+      "deberías",
+      "deberíamos",
+      "deberían",
+      "quizás",
+      "quizá",
+      "acaso"
+    ],
+    "numberWords": [
+      "cero",
+      "uno",
+      "una",
+      "un",
+      "dos",
+      "tres",
+      "cuatro",
+      "cinco",
+      "seis",
+      "siete",
+      "ocho",
+      "nueve",
+      "diez",
+      "once",
+      "doce",
+      "trece",
+      "catorce",
+      "quince",
+      "dieciséis",
+      "diecisiete",
+      "dieciocho",
+      "diecinueve",
+      "veinte",
+      "treinta",
+      "cuarenta",
+      "cincuenta",
+      "sesenta",
+      "setenta",
+      "ochenta",
+      "noventa",
+      "cien",
+      "ciento",
+      "mil",
+      "millón",
+      "medio",
+      "media",
+      "primero",
+      "primera",
+      "primer",
+      "segundo",
+      "segunda",
+      "tercero",
+      "tercera",
+      "tercer"
+    ],
+    "functionWords": [
+      "el",
+      "la",
+      "los",
+      "las",
+      "unos",
+      "unas",
+      "de",
+      "del",
+      "al",
+      "a",
+      "en",
+      "con",
+      "por",
+      "para",
+      "y",
+      "o",
+      "e",
+      "u",
+      "pero",
+      "que",
+      "si",
+      "como",
+      "lo",
+      "le",
+      "les",
+      "se",
+      "me",
+      "te",
+      "nos",
+      "os",
+      "mi",
+      "mis",
+      "tu",
+      "tus",
+      "su",
+      "sus",
+      "yo",
+      "tú",
+      "él",
+      "ella",
+      "nosotros",
+      "nosotras",
+      "vosotros",
+      "ellos",
+      "ellas",
+      "usted",
+      "ustedes",
+      "es",
+      "son",
+      "está",
+      "están",
+      "era",
+      "fue",
+      "ha",
+      "he",
+      "has",
+      "han",
+      "hay"
+    ],
+    "pronouns": [
+      "mío",
+      "mía",
+      "tuyo",
+      "tuya",
+      "suyo",
+      "suya",
+      "nuestro",
+      "nuestra",
+      "conmigo",
+      "contigo",
+      "mismo",
+      "misma",
+      "alguien",
+      "todos",
+      "todas",
+      "cualquiera",
+      "quién",
+      "quien"
+    ],
+    "kinship": [
+      "mamá",
+      "mami",
+      "madre",
+      "papá",
+      "papi",
+      "padre",
+      "abuela",
+      "abuelo",
+      "abuelita",
+      "abuelito",
+      "yaya",
+      "yayo",
+      "tía",
+      "tío",
+      "hermana",
+      "hermano",
+      "hermanita",
+      "hermanito",
+      "bebé",
+      "hijo",
+      "hija",
+      "prima",
+      "primo",
+      "esposo",
+      "esposa",
+      "marido",
+      "niñera",
+      "madrina",
+      "padrino",
+      "nana",
+      "tata"
+    ],
+    "alwaysCapitalized": [],
+    "agreementGroups": [],
+    "tenseGroups": [
+      [
+        "es",
+        "era",
+        "fue",
+        "será",
+        "sería"
+      ],
+      [
+        "está",
+        "estaba",
+        "estuvo",
+        "estará"
+      ],
+      [
+        "tiene",
+        "tenía",
+        "tuvo",
+        "tendrá"
+      ],
+      [
+        "va",
+        "iba",
+        "irá"
+      ],
+      [
+        "hace",
+        "hacía",
+        "hizo",
+        "hará"
+      ],
+      [
+        "son",
+        "eran",
+        "fueron",
+        "serán"
+      ],
+      [
+        "soy",
+        "fui",
+        "seré"
+      ]
+    ],
+    "agreementInflections": [],
+    "vowels": "aeiouáéíóú",
+    "minStem": 3,
+    "tenseEndings": [],
+    "stemDropFinal": []
+  },
+  "repeats": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Doubled articles, prepositions and conjunctions treated as stumbles; \"la la la\" (singing), \"no no\", \"muy muy\" never touched. Needs native review"
+      ]
+    },
+    "always": [
+      "el",
+      "los",
+      "las",
+      "de",
+      "del",
+      "y",
+      "en",
+      "un",
+      "una",
+      "que",
+      "con",
+      "por",
+      "para"
+    ],
+    "suggest": [
+      "yo",
+      "tú",
+      "mi",
+      "tu",
+      "su",
+      "se",
+      "me",
+      "te",
+      "lo",
+      "le",
+      "es",
+      "está"
+    ],
+    "dangling": [
+      "el",
+      "la",
+      "los",
+      "las",
+      "un",
+      "una",
+      "de",
+      "del",
+      "al",
+      "a",
+      "en",
+      "con",
+      "por",
+      "para",
+      "y",
+      "o",
+      "pero",
+      "que",
+      "mi",
+      "tu",
+      "su",
+      "mis",
+      "tus",
+      "sus",
+      "porque"
+    ],
+    "verifierExtra": [],
+    "cleft": {
+      "words": [],
+      "openers": []
+    },
+    "subject": {
+      "words": [],
+      "objectVerbs": [],
+      "clauseLeads": [],
+      "discourseAfter": []
+    },
+    "maxPhrase": 4
+  },
+  "phonetic": {
+    "review": {
+      "status": "draft",
+      "date": "2026-10-03",
+      "sources": [
+        "Spanish orthography to sound: ll/y, c/z/s (seseo), j and g before e/i, silent h, b/v (RAE Ortografía 2010, ch. I)"
+      ]
+    },
+    "romanize": {},
+    "rewrite": [
+      {
+        "from": "ch",
+        "to": "C"
+      },
+      {
+        "from": "ll",
+        "to": "y"
+      },
+      {
+        "from": "qu",
+        "to": "k"
+      },
+      {
+        "from": "gu",
+        "to": "g",
+        "before": "ei"
+      },
+      {
+        "from": "c",
+        "to": "s",
+        "before": "eiy"
+      },
+      {
+        "from": "c",
+        "to": "k"
+      },
+      {
+        "from": "z",
+        "to": "s"
+      },
+      {
+        "from": "g",
+        "to": "h",
+        "before": "ei"
+      },
+      {
+        "from": "j",
+        "to": "h"
+      },
+      {
+        "from": "x",
+        "to": "ks"
+      },
+      {
+        "from": "v",
+        "to": "b"
+      },
+      {
+        "from": "w",
+        "to": "b"
+      },
+      {
+        "from": "h",
+        "to": ""
+      }
+    ],
+    "vowels": "aeiouy",
+    "collapseDoubles": true,
+    "dropFinalAfterVowel": [],
+    "stripMarks": true,
+    "compareVowels": true
+  }
+}
