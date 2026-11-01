@@ -12,6 +12,7 @@ import { describe, expect, it } from 'vitest';
 import { draftCard, type DraftFields } from '../src/components/tonight/draft-card.logic';
 import {
   HELD_COLLAPSE_AT,
+  heldCountOf,
   heldRowAction,
   plusLine,
   plusLineShows,
@@ -132,6 +133,12 @@ describe('[F14-REQ-041] held letters fold into one row', () => {
     );
     expect(rows.map((r) => (r.kind === 'card' ? r.card.id : `held:${r.count}`))).toEqual(['typed-2', 'held:3', 'typed-1']);
     expect((rows[1] as HeldRow).title).toBe('3 letters waiting to be kept.');
+    expect((rows[1] as HeldRow).cards.map((c) => c.id)).toEqual(['held-3', 'held-2', 'held-1']);
+    expect(heldCountOf(rows)).toBe(3);
+  });
+
+  it('heldCountOf is 0 with no folded row', () => {
+    expect(heldCountOf(tonightRows(cards([draft('held-1', { held: true })])))).toBe(0);
   });
 
   it('no held letters: one row per card, unchanged', () => {
@@ -169,5 +176,10 @@ describe('[SR-C-08] Tonight wires both', () => {
     expect(screen).toMatch(/tonightRows\(cards\)/);
     expect(screen).toMatch(/<HeldRow /);
     expect(screen).not.toMatch(/cards\.map\(/);
+  });
+
+  it('closes the held list when the held count changes and when Tonight loses focus', () => {
+    expect(screen).toMatch(/useEffect\(\(\) => setHeldOpen\(false\), \[heldCount\]\)/);
+    expect(screen).toMatch(/useFocusEffect\(useCallback\(\(\) => \(\) => setHeldOpen\(false\), \[\]\)\)/);
   });
 });

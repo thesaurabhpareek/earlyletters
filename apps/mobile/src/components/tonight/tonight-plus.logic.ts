@@ -85,6 +85,12 @@ function heldRow(cards: DraftCard[]): HeldRow {
   return { kind: 'held', id: 'held', count: cards.length, title: fill(copy.tonight.draft.heldMany, { count: String(cards.length) }), cards };
 }
 
+/** How many letters the folded row holds; 0 when there is no folded row. Tonight closes the list when it changes. */
+export function heldCountOf(rows: readonly TonightRow[]): number {
+  for (const r of rows) if (r.kind === 'held') return r.count;
+  return 0;
+}
+
 /** The row's action, closed or open. */
 export function heldRowAction(open: boolean): string {
   return open ? copy.tonight.draft.heldHideButton : copy.tonight.draft.heldShowButton;
