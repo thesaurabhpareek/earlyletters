@@ -27,7 +27,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo as expoIn, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -482,7 +482,7 @@ let packMissing = false;
   // A host and a key are not enough: the signed manifest must have been published (scripts/packs/publish.ts) and uploaded.
   let manifestPublished = false;
   try {
-    manifestPublished = !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(read(join(REPO, 'supabase/functions/config/published.ts')));
+    manifestPublished = packManifestPublished(read(join(REPO, 'supabase/functions/config/published.ts')));
   } catch {
     /* treated as not published */
   }

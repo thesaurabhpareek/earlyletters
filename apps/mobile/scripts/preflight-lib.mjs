@@ -72,6 +72,14 @@ export function signingKeys(keysSource) {
   };
 }
 
+/**
+ * True when supabase/functions/config/published.ts holds a published signed pack manifest (scripts/packs/publish.ts
+ * writes it). While PACK_MANIFEST is null the host has nothing to serve, so no speech model or pack downloads (D-115).
+ */
+export function packManifestPublished(publishedSource) {
+  return !/PACK_MANIFEST\s*:\s*string\s*\|\s*null\s*=\s*null\s*;/.test(publishedSource);
+}
+
 /** True when an evaluated ios.privacyManifests says tracking false and declares at least one required-reason category. */
 export function privacyManifestDeclared(pm) {
   return Boolean(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0);
