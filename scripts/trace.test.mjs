@@ -7,6 +7,7 @@ import path from 'node:path';
 import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
   legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
+  parseCsv, b1ScopeFromCatalog, parseBaseline, ratchet,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -256,4 +257,90 @@ test('--no-write leaves the tree untouched', () => {
   const repo = fixtureRepo();
   main(['--repo', repo, '--no-write'], () => {});
   assert.ok(!fs.existsSync(path.join(repo, 'docs/TRACE.md')));
+});
+
+// --scope b1 (HV2-012): the B1 P0 scope from the release catalog and a ratchet that only shrinks.
+const CATALOG = [
+  'id,area,title,kind,priority,release,lane,covered_by,steps',
+  'RT-1,Launch,Gate,happy,P0,both,device,AL-01,"Gate per F01-REQ-001, then A-REQ-002"',
+  'RT-2,Launch,Later build,happy,P0,B2,device,AL-04,Cites F01-REQ-002 only in B2',
+  'RT-3,Launch,Minor,happy,P1,B1,device,AL-05,Cites LEGAL-REQ-014 but is P1',
+  'RT-4,Launch,No ids,happy,P0,B1,kill,x,"multi\nline, with a comma"',
+  '',
+].join('\n');
+
+function scopeRepo(baseline) {
+  const repo = fixtureRepo({ withV2: false });
+  fs.mkdirSync(path.join(repo, 'docs/qa'), { recursive: true });
+  fs.writeFileSync(path.join(repo, 'docs/qa/release-test-catalog.csv'), CATALOG);
+  if (baseline !== null) fs.writeFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), baseline);
+  return repo;
+}
+const scope = (repo, extra = [], logs = []) => main(['--repo', repo, '--no-write', '--scope', 'b1', ...extra], (l) => logs.push(l));
+
+test('parseCsv handles quotes, commas, newlines in fields and CRLF', () => {
+  assert.deepEqual(parseCsv('a,"b,c","d ""e"""\r\nx,"y\nz",\n'), [['a', 'b,c', 'd "e"'], ['x', 'y\nz', '']]);
+});
+
+test('[HV2-012] b1 scope takes IDs only from P0 rows with release B1 or both', () => {
+  const sc = b1ScopeFromCatalog(CATALOG);
+  assert.deepEqual(sc.ids, ['A-REQ-002', 'F01-REQ-001']);
+  assert.equal(sc.rowsInScope, 2);
+  assert.equal(sc.rowsWithoutId, 1);
+});
+
+test('[HV2-012] scope lists cited and uncited IDs and never fails without --check', () => {
+  const repo = scopeRepo(null);
+  const logs = [];
+  assert.equal(scope(repo, [], logs), 0);
+  assert.ok(logs[0].includes('2 requirement IDs') && logs[0].includes('2 cited by a test title') && logs[0].includes('0 uncited'));
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('no id', () => {});\n");
+  const l2 = [];
+  assert.equal(scope(repo, [], l2), 0);
+  assert.ok(l2.includes('  uncited: A-REQ-002') && l2.includes('  uncited: F01-REQ-001'));
+});
+
+test('[HV2-012] EG-6: a raised uncited set fails --check, the same set passes, a lowered set passes', () => {
+  const repo = scopeRepo('# header\nF01-REQ-001\n');
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('no id', () => {});\n");
+  const logs = [];
+  assert.equal(scope(repo, ['--check'], logs), 1);
+  assert.ok(logs.some((l) => l.includes('FAIL: A-REQ-002 is uncited and not in the baseline')));
+  fs.writeFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), 'A-REQ-002\nF01-REQ-001\n');
+  assert.equal(scope(repo, ['--check']), 0);
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('[F01-REQ-001] gate', () => {});\n");
+  const l3 = [];
+  assert.equal(scope(repo, ['--check'], l3), 0);
+  assert.ok(l3.some((l) => l.includes('baseline lists F01-REQ-001')));
+});
+
+test('[HV2-012] a swap (one cited, a different one uncited) still fails --check', () => {
+  const repo = scopeRepo('F01-REQ-001\n');
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('[F01-REQ-001] gate', () => {});\n");
+  fs.writeFileSync(path.join(repo, 'supabase/tests/x.test.mjs'), "check('nothing', true);\n");
+  assert.equal(scope(repo, ['--check']), 1);
+});
+
+test('[HV2-012] a missing baseline fails --check; --update-baseline writes only when the set shrinks', () => {
+  const repo = scopeRepo(null);
+  assert.equal(scope(repo, ['--check']), 1);
+  fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('no id', () => {});\n");
+  assert.equal(scope(repo, ['--update-baseline']), 0);
+  assert.deepEqual(parseBaseline(fs.readFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), 'utf8')), ['A-REQ-002', 'F01-REQ-001']);
+  assert.equal(scope(repo, ['--check']), 0);
+  fs.writeFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), 'F01-REQ-001\n');
+  assert.equal(scope(repo, ['--update-baseline']), 1);
+  assert.equal(fs.readFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), 'utf8'), 'F01-REQ-001\n');
+});
+
+test('ratchet reports added and stale IDs; unknown scope is an error', () => {
+  assert.deepEqual(ratchet(['B-REQ-001'], ['A-REQ-001']), { added: ['B-REQ-001'], stale: ['A-REQ-001'] });
+  assert.throws(() => main(['--scope', 'b2', '--no-write'], () => {}), /unknown scope/);
+});
+
+test('[HV2-012] --scope b1 --check is the ratchet only; duplicate or undefined IDs are the plain --check', () => {
+  const repo = scopeRepo('');
+  fs.writeFileSync(path.join(repo, 'docs/BACKLOG.md'), 'Also F77-REQ-123.\n');
+  assert.equal(scope(repo, ['--check']), 0);
+  assert.equal(main(['--repo', repo, '--no-write', '--check'], () => {}), 1);
 });
