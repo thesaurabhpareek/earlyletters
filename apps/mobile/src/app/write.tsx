@@ -23,7 +23,7 @@ import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } fr
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions } from 'react-native';
+import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
@@ -36,7 +36,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createWriteSession } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession } from '@/components/capture/write-session.logic';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
@@ -171,6 +171,14 @@ export default function Write() {
   const [sheetHeight, setSheetHeight] = useState(0);
   const keyboardOffset = sheetKeyboardOffset(screen.height, sheetHeight);
 
+  // The keyboard comes up once the sheet has measured itself, so the offset is in place before the keyboard moves
+  // (createFirstFocus; never autoFocus, which raced the measurement and could leave "Keep private" behind the keyboard).
+  const field = useRef<TextInput>(null);
+  const [firstFocus] = useState(() => createFirstFocus(() => field.current?.focus()));
+  useEffect(() => () => firstFocus.dispose(), [firstFocus]);
+  // After the commit that hands KeyboardAvoidingView the new offset, never in the same tick as the layout.
+  useEffect(() => firstFocus.measured(sheetHeight), [firstFocus, sheetHeight]);
+
   // The page grows with the words and the sheet scrolls, so the line being written stays in view above the keyboard.
   const scroll = useRef<ScrollView>(null);
   const selectionEnd = useRef<number | null>(null);
@@ -219,6 +227,7 @@ export default function Write() {
             </Text>
           )}
           <TextField
+            ref={field}
             variant="letter"
             label={pendingCopy.write.label}
             labelHidden
@@ -235,7 +244,6 @@ export default function Write() {
             onContentSizeChange={onContentSizeChange}
             scrollEnabled={false}
             placeholder={copy.tonight.typing.placeholder}
-            autoFocus
           />
         </ScrollView>
         {/* Stacked as Review's footer is: "Add to Asha's book" full width, "Keep private" quiet beneath, so the main

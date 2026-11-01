@@ -20,7 +20,7 @@ vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 
 const store = await import('../src/lib/store');
 const { writeWords } = await import('../src/components/capture/review-view.logic');
-const { createWriteSession, WRITE_AUTOSAVE_MS } = await import('../src/components/capture/write-session.logic');
+const { createFirstFocus, createWriteSession, WRITE_AUTOSAVE_MS, WRITE_FOCUS_FALLBACK_MS } = await import('../src/components/capture/write-session.logic');
 const { armKeep, consumeKeep, resetKeep } = await import('../src/lib/capture/keep-intent');
 
 const now = () => '2026-10-03T09:00:00.000Z';
@@ -194,6 +194,45 @@ describe('the last keystrokes inside the autosave pause are kept on every way ou
   });
 });
 
+describe('the keyboard comes up once, after the sheet has measured itself (PR #545 review A)', () => {
+  it('not before the height is known; once it is, at once and only once', () => {
+    const focus = vi.fn();
+    const f = createFirstFocus(focus);
+    f.measured(0); // the first render: not measured yet
+    expect(focus).not.toHaveBeenCalled();
+    f.measured(793);
+    expect(focus).toHaveBeenCalledTimes(1);
+    f.measured(560); // a later layout (the keyboard rising, a text size change) never refocuses
+    vi.advanceTimersByTime(WRITE_FOCUS_FALLBACK_MS * 4);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('when layout never reports, the keyboard still comes up after the fallback, once', () => {
+    const focus = vi.fn();
+    const f = createFirstFocus(focus);
+    vi.advanceTimersByTime(WRITE_FOCUS_FALLBACK_MS - 1);
+    expect(focus).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1);
+    expect(focus).toHaveBeenCalledTimes(1);
+    f.measured(793);
+    expect(focus).toHaveBeenCalledTimes(1);
+  });
+
+  it('a screen that goes away first never focuses', () => {
+    const focus = vi.fn();
+    const f = createFirstFocus(focus);
+    f.dispose();
+    vi.advanceTimersByTime(WRITE_FOCUS_FALLBACK_MS * 4);
+    f.measured(793);
+    expect(focus).not.toHaveBeenCalled();
+  });
+
+  it('the fallback is short: the keyboard is never noticeably late', () => {
+    expect(WRITE_FOCUS_FALLBACK_MS).toBeGreaterThan(0);
+    expect(WRITE_FOCUS_FALLBACK_MS).toBeLessThanOrEqual(500);
+  });
+});
+
 describe('write.tsx uses the session on every way out', () => {
   const code = readFileSync(join(__dirname, '..', 'src', 'app', 'write.tsx'), 'utf8')
     .replace(/\/\*[\s\S]*?\*\//g, '')
@@ -207,6 +246,12 @@ describe('write.tsx uses the session on every way out', () => {
     expect(code).toMatch(/useEffect\(\(\) => \(\) => session\.unmount\(\), \[session\]\);/);
     expect(code).toMatch(/onPress=\{\(\) => keep\(true\)\}/);
     expect(code).toMatch(/onPress=\{\(\) => keep\(false\)\}/);
+    // The keyboard: no autoFocus; the field is focused through its ref after the commit that carries the sheet's height.
+    expect(code).not.toMatch(/autoFocus/);
+    expect(code).toMatch(/<TextField\s+ref=\{field\}/);
+    expect(code).toMatch(/const \[firstFocus\] = useState\(\(\) => createFirstFocus\(\(\) => field\.current\?\.focus\(\)\)\);/);
+    expect(code).toMatch(/useEffect\(\(\) => \(\) => firstFocus\.dispose\(\), \[firstFocus\]\);/);
+    expect(code).toMatch(/useEffect\(\(\) => firstFocus\.measured\(sheetHeight\), \[firstFocus, sheetHeight\]\);/);
     // One timer, in the session: the screen keeps none of its own.
     expect(code).not.toMatch(/setTimeout\(|clearTimeout\(/);
   });

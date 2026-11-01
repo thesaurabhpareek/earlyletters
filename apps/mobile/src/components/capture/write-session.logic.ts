@@ -88,3 +88,50 @@ export function createWriteSession(
     },
   };
 }
+
+/**
+ * How long Write waits for its sheet to measure itself before it raises the keyboard anyway (PR #545 review A).
+ * Layout normally reports within a frame or two; this only covers a layout that never comes.
+ */
+export const WRITE_FOCUS_FALLBACK_MS = 400;
+
+export type FirstFocus = {
+  /** The sheet measured itself: raise the keyboard now, once. */
+  measured: (sheetHeight: number) => void;
+  /** The screen is going away: never focus after it. */
+  dispose: () => void;
+};
+
+/**
+ * Write raises the keyboard itself, once, after its sheet has measured itself, and never through autoFocus (PR #545
+ * review A). RN 0.86's KeyboardAvoidingView computes its padding when the keyboard moves and when its own height
+ * changes, not when `keyboardVerticalOffset` changes; a keyboard raised by autoFocus before the sheet's height (and so
+ * its offset, sheetKeyboardOffset) is known kept the too-small padding, and "Keep private" could sit behind the
+ * keyboard on first open. If layout never reports, the keyboard still comes up after `fallbackMs`.
+ */
+export function createFirstFocus(focus: () => void, opts: { fallbackMs?: number; timers?: Timers } = {}): FirstFocus {
+  const timers: Timers = opts.timers ?? { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
+  let done = false;
+  let fallback: unknown = null;
+  const once = () => {
+    if (done) return;
+    done = true;
+    if (fallback !== null) timers.clear(fallback);
+    fallback = null;
+    focus();
+  };
+  fallback = timers.set(() => {
+    fallback = null;
+    once();
+  }, opts.fallbackMs ?? WRITE_FOCUS_FALLBACK_MS);
+  return {
+    measured(sheetHeight) {
+      if (sheetHeight > 0) once();
+    },
+    dispose() {
+      done = true;
+      if (fallback !== null) timers.clear(fallback);
+      fallback = null;
+    },
+  };
+}
