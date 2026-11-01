@@ -75,10 +75,11 @@ export const en = {
     },
 
     promise: {
-      title: "Exactly as you said it.",
-      // S04, directly under the title: the sanctioned promise word for word, then the two other claims. The title
-      // ("Exactly as you said it.") carries "every sentence is one you said", so it is not said twice.
-      body2: "We never rewrite your words, shorten them or write for you.",
+      title: "It stays in your words.",
+      // S04, directly under the title: the true promise (D-133), then the two other claims. The title and this line
+      // are the sanctioned sentence, "It stays in your words. Every change is marked, and your original recording is
+      // kept unchanged." Every build uses it, the alpha included (founder, 31 Oct 2026).
+      body2: "Every change is marked, and your original recording is kept unchanged. We never rewrite your words, shorten them or write for you.",
       // The promise specimen (S04). The sample's raw words are cleaned at runtime by the real engine in packages/core,
       // verifyEdits included, and render whatever it returns. They are fictional and name no child.
       sampleLabel: "For example",
@@ -338,10 +339,10 @@ export const en = {
     changesLabel: "{count} small fixes",
     changesLabelOne: "1 small fix",
     // Zero fixes, three honest wordings.
-    noChanges: "Nothing to fix. This is exactly what you said.",
-    noChangesAfterUndo: "Every fix put back. This is exactly what you said.",
+    noChanges: "Nothing to fix here.",
+    noChangesAfterUndo: "Every fix put back.",
     // A language with no fix rules yet: never a "nothing needed fixing" claim there.
-    noChangesNoRules: "Exactly as you said it.",
+    noChangesNoRules: "Nothing was changed.",
     originalLabel: "Exactly what you said",
     cardYouSaid: "You said",
     cardNowReads: "Now it reads",
@@ -405,7 +406,7 @@ export const en = {
     },
     lock: {
       button: "Keep this as said",
-      explain: "Locked phrases stay exactly as you said them, slips and all.",
+      explain: "Locked phrases are never fixed, slips and all.",
       lockedLabel: "Kept as said",
       unlockButton: "Allow small fixes",
     },
