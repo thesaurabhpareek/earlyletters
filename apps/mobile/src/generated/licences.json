@@ -1,6 +1,6 @@
 {
   "$comment": "GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json (production tree of apps/mobile), packages/design-tokens/fonts, apps/mobile/modules, packs and apps/mobile/shims. After any dependency change run: npm run licences:generate -w @scribe/mobile",
-  "dependencyHash": "449ada5259580ef9bd062fc332c7a3ba1c4a100d479e8995a010df2f39c221db",
+  "dependencyHash": "3bdd5a37282bc891e965c622b1f5697f5c1199d78c458c1af9d594813a8223b4",
   "licences": [
     {
       "id": "MIT",
@@ -1710,6 +1710,12 @@
         {
           "name": "expo-build-properties",
           "version": "57.0.22",
+          "kind": "library",
+          "text": 6
+        },
+        {
+          "name": "expo-clipboard",
+          "version": "57.0.2",
           "kind": "library",
           "text": 6
         },

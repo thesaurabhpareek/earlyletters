@@ -103,7 +103,8 @@ describe('[S40] If you are struggling', () => {
     expect(en.struggling.resources).toHaveLength(3);
     expect(page).toMatch(/\{s\.body\}/);
     expect(page).toMatch(/s\.resources\.map\(\(r\) => \(\s*<ListRow key=\{r\.tel\} title=\{r\.name\} subtitle=\{r\.how\}/);
-    expect(page).toMatch(/Linking\.openURL\(`tel:\$\{r\.tel\}`\)/);
+    // The call goes through help-links.logic.ts (tel:${r.tel}, with the copy fallback: RT-SET-02, F20-REQ-005).
+    expect(page).toMatch(/onPress=\{\(\) => link\.open\(callTarget\(r\)\)\}/);
     expect(page).toMatch(/\{s\.emergency\}/);
     expect(en.struggling.emergency).toBe('If you or your baby are in danger right now, call 911.');
   });

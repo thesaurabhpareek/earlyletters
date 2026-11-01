@@ -2,10 +2,12 @@ import Constants from 'expo-constants';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useEffect, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
-import { brand, supportMailto } from '@scribe/brand';
+import { ScrollView, View } from 'react-native';
+import { brand } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
+import { useHelpLink } from '@/components/settings/help-fallback';
+import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
 import { accountSubtitle } from '@/components/settings/settings-home.logic';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -75,6 +77,8 @@ export default function Settings() {
   const version = Constants.expoConfig?.version ?? '';
   const build = Constants.expoConfig?.ios?.buildNumber ?? '';
   const versionValue = build ? fill(h.versionValue, { version, build }) : version;
+  // Help writes to us; with no Mail account the address shows to copy (F20-REQ-007).
+  const help = useHelpLink();
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
@@ -122,7 +126,7 @@ export default function Settings() {
       ) : null}
 
       <ListSection title={h.sections.help}>
-        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => void Linking.openURL(supportMailto(h.helpSubject))} />
+        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => help.open(mailTarget(h.helpSubject))} testID="settings.help" />
         <ListRow title={copy.struggling.title} trailing="chevron" accessibilityHint={h.strugglingA11yHint} onPress={go(ROUTES.struggling)} testID="settings.struggling" />
         <ListRow accessibilityRole="link" title={h.termsLabel} trailing="chevron" onPress={openWeb(brand.web.terms)} />
         <ListRow accessibilityRole="link" title={h.privacyPolicyLabel} trailing="chevron" onPress={openWeb(brand.web.privacy)} />
@@ -139,6 +143,7 @@ export default function Settings() {
           <Text variant="footnote">{copy.settings.about.beta.body}</Text>
         </View>
       </View>
+      {help.sheet}
     </ScrollView>
   );
 }

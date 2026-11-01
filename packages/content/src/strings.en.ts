@@ -1201,6 +1201,24 @@ export const en = {
     emergency: "If you or your baby are in danger right now, call 911.",
   },
 
+  // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
+  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  helpLinks: {
+    // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
+    callHint: "Starts a call.",
+    callHintNoPhone: "Shows the number to call from a phone or copy.",
+    // When this device cannot call: the number to copy.
+    noCallTitle: "Call from a phone",
+    noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    copyNumber: "Copy number",
+    numberCopied: "Number copied",
+    // When Mail cannot open: our address to copy.
+    noMailTitle: "Write to us",
+    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    copyAddress: "Copy address",
+    addressCopied: "Address copied",
+  },
+
   // Calm privacy reassurance (D-061). One promise, said the same way wherever a parent might
   // wonder, and backed by real controls in Settings, Privacy. Never fearful, never long, never more
   // than one line in a place. The store listing and website use `trust.promise` word for word.
