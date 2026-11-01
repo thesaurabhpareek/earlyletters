@@ -591,7 +591,7 @@ export const en = {
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
       howStep1: "Tap the red circle and talk, in the language you speak.",
-      howStep2: "Your words are kept exactly as you said them.",
+      howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your recording is kept on your phone too, so one day {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -1121,7 +1121,8 @@ export const en = {
       dark: "Dark",
     },
     // No "beta" in app copy: the only release-stage note is About's "early version" (D-060, K-13).
-    remindersNotYet: "Your choice is saved. Reminders start in a coming update.",
+    // Q4 (exec rulings 1 Nov 2026): say what this version does, promise no update.
+    remindersNotYet: "Reminders are not on in this version.",
     legalTitle: "Legal",
     versionLabel: "Version",
   },

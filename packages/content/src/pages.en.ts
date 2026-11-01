@@ -44,7 +44,7 @@ export const pages = {
     path: "/about",
     title: `About ${brand.name}`,
     metaDescription:
-      `${brand.name} is the baby memory book you fill by talking. Your words kept exactly as you said them, private by default, made by an independent maker.`,
+      `${brand.name} is the baby memory book you fill by talking. It stays in your words, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
@@ -95,7 +95,7 @@ export const pages = {
     path: "/why",
     title: `Why ${brand.name}`,
     metaDescription:
-      `Most of what a family says to a small child is said once. ${brand.name} keeps those words exactly as they were said, in the voice that said them.`,
+      `Most of what a family says to a small child is said once. ${brand.name} keeps those words, and the voice that said them.`,
     sections: [
       {
         heading: "Said once",
@@ -112,7 +112,7 @@ export const pages = {
         ],
       },
       {
-        heading: "Exactly as you said it",
+        heading: "It stays in your words",
         paragraphs: [
           "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
           "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",

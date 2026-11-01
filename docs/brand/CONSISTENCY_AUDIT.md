@@ -113,7 +113,7 @@ One term per concept. Banned synonyms must not appear in user-facing copy (app, 
 | Privacy promise | private by default; "only the family you invite" | secure vault, military-grade, 100% private | "Vault mode" is a feature name; capital V. |
 | Release state | early version | beta (in app and store), preview, alpha | TestFlight is the only beta (Brief 10). |
 | Email sign-off | "Warmly," then "Early Letters" | The Early Letters Team, Love, Cheers, Best | `chrome.en.ts:58`. |
-| Footer line | "Early Letters. Exactly as you said it." | other tagline variants | |
+| Footer line | "Early Letters. It stays in your words." | other tagline variants | |
 
 ## 3. Founder decisions needed
 
