@@ -3,6 +3,12 @@
 Code: `apps/web/src/film/sound/` (`tracks.ts`, `ambient-engine.ts`, `ambient-map.ts`, `AmbientSound.tsx`). Files: `apps/web/public/audio/`.
 Tests: `test/tracks.test.ts`, `test/ambient-map.test.ts`, `e2e/ambient-sound.e2e.ts`.
 
+Status (1 Nov 2026, from the exec council, `docs/exec-rulings-claims-trust-2026-11-01.md` CLO-1, PRV-3). Counsel has not
+reviewed this note or the sound. This note states what the code does and what was read; it draws no legal conclusion.
+The Privacy page says in one sentence that pressing the sound button stores one on/off value on the visitor's device
+(PRV-3, wording approved by the founder, counsel must confirm); the test "the Privacy page says what the code does" pins it
+to the code, which this change leaves as it was (two `writeChoice` calls in `AmbientSound.tsx`, no new storage).
+
 ## What it is
 
 The film plays one real, openly licensed recording (calm piano or ambient), hosted on our own origin, on a seamless loop.

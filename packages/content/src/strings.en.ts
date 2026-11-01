@@ -7,7 +7,7 @@ export const en = {
   app: {
     name: "Early Letters",
     category: "memory book",
-    tagline: "Exactly as you said it.",
+    tagline: "It stays in your words.",
     oneLine: "Early Letters, the memory book you fill by talking.",
   },
 
@@ -40,7 +40,7 @@ export const en = {
 
     promise: {
       title: "Exactly as you said it.",
-      body: "We tidy what the microphone got wrong. A stray \"um\", a misheard name, a missing comma.",
+      body: "We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one.",
       body2: "We never rewrite, shorten or write for you. Every sentence is one you said.",
       recordingTitle: "Your voice stays too",
       // First run only: backup cannot be on yet, so "on this phone" is true here (lawyer-2 H4).
@@ -140,7 +140,7 @@ export const en = {
       night: "The house is quiet, {name}.",
       lateNight: "Still up, {name}. Take your time.",
     },
-    subtitle: "What do you want {child} to know about today?",
+    subtitle: "A few words for {child} will do.",
     promptLabel: "A thought to start with",
     newPromptButton: "Another thought",
     writeFreelyButton: "Just talk",
@@ -199,14 +199,14 @@ export const en = {
 
   review: {
     title: "Read it back",
-    subtitle: "Here is what you said, lightly tidied.",
+    subtitle: "Here is what you said, with small fixes marked.",
     trustLine: "We only fixed what got in the way of your words. Nothing added.",
     changesLabel: "{count} small fixes",
-    noChanges: "Word for word. Nothing needed fixing.",
+    noChanges: "Nothing to fix. This is exactly what you said.",
     showOriginalLink: "Show exactly what I said",
-    showTidiedButton: "Show tidied version",
+    showTidiedButton: "Show with small fixes",
     originalLabel: "Exactly what you said",
-    tidiedLabel: "Lightly tidied",
+    tidiedLabel: "Now it reads",
     undoEditButton: "Put it back",
     undoAllButton: "Keep it word for word",
     edits: {
@@ -296,7 +296,7 @@ export const en = {
     signature: "From {signsAs}",
     together: "From {signsAs} and {child}",
     provenance: {
-      spokenTidied: "Spoken, lightly tidied",
+      spokenTidied: "Spoken, with small fixes",
       spokenExact: "Spoken, word for word",
       typed: "Typed",
     },
@@ -316,7 +316,7 @@ export const en = {
     },
     empty: {
       bookTitle: "The first page is waiting.",
-      bookBody: "Say one true thing about {child} today. That is how every book begins.",
+      bookBody: "Start small. What did {child} eat for breakfast, or refuse to?",
       bookCta: "Write a letter",
       chapterTitle: "Month {month} is open.",
       chapterBody: "Whatever you add this month lands here.",
@@ -385,7 +385,7 @@ export const en = {
     },
     shareMessage: {
       imessage: "Hi {signsAs}, it's {inviter}. I'm keeping a memory book of letters for {child}, and I'd love yours in it. Just talk, and your words and voice are kept for {child}. This link opens the app on your iPhone, or helps you get it:",
-      whatsapp: "{signsAs}, it's {inviter}. We are making a book of letters for {child}. Will you add yours? You just talk, in any language. Your voice is kept too. Get the app and join here:",
+      whatsapp: "{signsAs}, it's {inviter}. We're making a book of letters for {child}, and I'd love yours in it. You just talk, in any language, and your voice is kept too. Get the app and join here:",
       short: "{inviter} would love your letters in {child}'s book.",
     },
     contributorWelcome: {
@@ -393,7 +393,7 @@ export const en = {
       body: "{inviter} is keeping a book of letters for {child}. Yours can be part of it.",
       howTitle: "How it works",
       howStep1: "Tap the microphone and talk, in any language.",
-      howStep2: "Your words are kept exactly as you said them.",
+      howStep2: "It stays in your words. Every change is marked, and your original recording is kept unchanged.",
       howStep3: "{inviter} adds your letter to {child}'s book.",
       voiceNote: "Your voice is kept too, so {child} can hear you tell it.",
       privacyNote: "Only {child}'s parents see your letters until they go in the book.",
@@ -418,7 +418,7 @@ export const en = {
       title: "Your letters to {child}",
       inBookLabel: "In the book",
       waitingLabel: "With {inviter}",
-      emptyTitle: "Your first letter is waiting to be written.",
+      emptyTitle: "Your first letter can be one sentence.",
     },
   },
 
@@ -427,8 +427,8 @@ export const en = {
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "Tonight's letter", body: "What made you smile today? Say it out loud and we will keep it." },
       { title: "Dear {child},", body: "Your words, kept for {child}. Today, and long after." },
-      { title: "The house is quiet", body: "A good moment for a few words to {child}." },
-      { title: "One small thing", body: "What did {child} do today that you want to remember?" },
+      { title: "The house is quiet", body: "Now that it is quiet, say a few words to {child}." },
+      { title: "One small thing", body: "What did {child} do today that made you stop and look?" },
       { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Whatever today held, it belongs in {child}'s book." },
@@ -447,11 +447,11 @@ export const en = {
     },
     monthOpen: {
       title: "Month {month} begins",
-      body: "A new chapter in {child}'s book is open.",
+      body: "A new chapter is open. What will {child} get up to?",
     },
     birthday: {
-      title: "A good day to read together",
-      body: "Want to read {child}'s letters together today?",
+      title: "It is {child}'s birthday",
+      body: "A lovely day to open the book and read the letters together.",
     },
   },
 
@@ -509,10 +509,10 @@ export const en = {
     birthdayLabel: "Birthday",
     dictionaryLabel: "Names and words",
     dictionaryHelp: "Spelled your way, every time.",
-    tidyLabel: "Tidying",
-    tidyOn: "Lightly tidied",
-    tidyOff: "Word for word",
-    tidyHelp: "Word for word keeps every um and false start. Either way, we never rewrite.",
+    tidyLabel: "Word for word",
+    tidyOn: "Small fixes, marked",
+    tidyOff: "Exactly as said",
+    tidyHelp: "Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words.",
     // Show onPhone* only while backup is off; show backedUp* while it is on (lawyer-2 H4, register s.3 row 16).
     recordings: {
       title: "Recordings",
@@ -582,7 +582,7 @@ export const en = {
         exportCta: "Export a copy",
       },
     },
-    neverRewrite: "We never rewrite your words. We only tidy what the microphone got wrong.",
+    neverRewrite: "We never rewrite your words. We only fix small slips, like an um, a repeated word or a name spelled your way, and we mark each one so you can put it back.",
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
@@ -645,7 +645,7 @@ export const en = {
       detailsLabel: "Name and birthday",
       signsAsLabel: "Sign my letters to {child} as",
       remindersLabel: "Include {child} in my reminders",
-      remindersHelp: "Your reminder time is shared across your children. Notes about {child}'s months and birthday follow this switch.",
+      remindersHelp: "Your reminder time is the same for every child. This switch decides whether {child}'s month and birthday notes come along.",
       celebrationsLabel: "Pause celebrations for {child}",
       celebrationsHelp: "Only for you. Month notes, birthdays and milestones for {child} rest until you turn them back on.",
       familyLabel: "Who writes to {child}",
@@ -754,7 +754,7 @@ export const en = {
     familyCanReadHelp: "Family see the letters you add to {child}'s book. This starts once family can join.",
     plusGateTitle: "Plus covers every child's book",
     plusCta: "See what Plus adds",
-    plusNotYet: "Plus is not open yet in the beta.",
+    plusNotYet: "Plus is not available in this version.",
   },
 
   familyTab: {
@@ -762,7 +762,7 @@ export const en = {
     youLabel: "You",
     emptyTitle: "Just you, for now.",
     emptyBody: "Letters are lovelier with more voices.",
-    inviteNeedsSignIn: "Inviting family needs an account, so they can write from their own phone. Sign in arrives in a coming update.",
+    inviteNeedsSignIn: "Inviting family needs an account, so they can write from their own phone. This version has no accounts.",
     rolesTitle: "Two ways to join",
     coParentLabel: "Co-parent",
     coParentBody: "Writes, reads the whole book, and chooses which family letters go in.",
@@ -774,7 +774,7 @@ export const en = {
     accountTitle: "Account",
     signedOutLabel: "Not signed in",
     // signedOutHelp and deleteAccountNotYet are removed in the release that ships sign-in (lawyer-2 H4).
-    signedOutHelp: "Your letters and recordings are kept on this phone for now. Sign in arrives in a coming update.",
+    signedOutHelp: "Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one.",
     appearanceTitle: "Appearance",
     themeLabel: "Theme",
     themes: {
@@ -782,10 +782,10 @@ export const en = {
       light: "Light",
       dark: "Dark",
     },
-    exportNotYet: "Export arrives in a coming beta update.",
-    deleteAccountNotYet: "Accounts arrive with sign in. Until then, deleting the app removes its letters and recordings from this phone.",
-    backupNotYet: "Backup arrives with Plus, later in the beta.",
-    remindersNotYet: "Your choice is saved. Reminders start in a coming beta update.",
+    exportNotYet: "Export is not available in this version.",
+    deleteAccountNotYet: "There is no account in this version. Deleting the app removes its letters and recordings from this phone.",
+    backupNotYet: "Encrypted backup is not available in this version.",
+    remindersNotYet: "Your choice is saved. Reminders are not on in this version.",
     legalTitle: "Legal",
     versionLabel: "Version",
   },
