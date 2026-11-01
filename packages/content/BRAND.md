@@ -4,7 +4,7 @@ The name, store name, category, tagline and print title live in `packages/brand/
 
 ## Positioning statement
 
-For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice, exactly as you said them, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice. It stays in your words, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
 
 ## Naming system
 
@@ -20,7 +20,7 @@ For parents of young children, Early Letters is the baby memory book you fill by
 
 ## Messaging pillars
 
-### 1. Exactly as you said it
+### 1. It stays in your words
 Your words, never ours.
 - On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
