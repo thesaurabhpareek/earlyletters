@@ -375,15 +375,19 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 ### S1-30 Licenses: the page opens and scrolls, and cold start does not move (S40; P6a, #312)
 - **Steps:**
   - (a) On the SE 3, with the S1-03 method, run 10 cold starts on the build before the Licenses page (develop at 49e3d93) and 10 on this one.
-  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the 565 KB list there and only there.
+  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the list (about 205 KB since #550: what ships in the iOS app, grouped by theme) there and only there.
   - (c) Fling to the end of the list and back. Open one notice and close it.
   - (d) Repeat (c) at AX5, then with VoiceOver on: the group headings are headings, and each package row reads its name and its licence.
+  - (e) Tap a row (for example whisper.cpp and ggml under Speech), then tap a second row; tap a Language data line; then turn VoiceOver on and double-tap a row twice.
+  - (f) Switch to dark mode (Settings > Display & Brightness > Dark) and repeat (c) and (e).
 - **Expected:**
   - (a) Cold start p50 and p90 are within 50 ms of the build before, and inside the S1-03 budget, because nothing reads the list at launch.
   - (b) The page opens with no visible stall. Over about 300 ms on the SE 3 is a finding; its follow-up, already listed on #312, is to move `licences.json` to an on-demand asset.
   - (c) The list scrolls smoothly, with no blank rows after a fling.
   - (d) Nothing is truncated.
-- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
+  - (e) One row is open at a time: the second tap closes the first. An open row shows its version, its copyright lines and the full license text, which scrolls to its end (the Apache 2.0 texts are the longest). A Language data line opens to the full OpenCC Apache 2.0 text, or the pinyin-data MIT and Unicode License v3 texts. VoiceOver reads each row as a button with its name and license, and reads "expanded" and "collapsed" as it opens and closes.
+  - (f) In dark mode each group's card has its border (the dark-only `dark:border-*` classes), text and chevrons are readable, and the open text keeps its contrast.
+- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no; one-at-a-time and expanded state yes or no; dark mode yes or no.
 - **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
 ### S1-31 Settings: Plan, Reminders, Recordings, Export, Privacy and Appearance (S34, S41 to S45; P6b, #313)

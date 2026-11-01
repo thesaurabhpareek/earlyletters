@@ -102,6 +102,7 @@ const NAMES = {
   'MPL-2.0': 'Mozilla Public License 2.0',
   'OFL-1.1': 'SIL Open Font License 1.1',
   'BSL-1.0': 'Boost Software License 1.0',
+  'Unicode-3.0': 'Unicode License v3',
   blessing: 'Public domain (SQLite blessing)',
   'Python-2.0': 'Python Software Foundation License 2.0',
   'GPL-2.0': 'GNU General Public License 2.0',
@@ -673,6 +674,40 @@ export function nonNpmEntries(dir, list) {
 }
 
 /**
+ * The language pack attributions (packs/text-rules/*.json `attribution`, each line once, in file
+ * order) with the licence texts PACK_NOTICES assigns them. Throws when a line matches no row or
+ * several, when a row matches no line, or when a text file is missing: a pack's data cannot ship
+ * without its licence text.
+ * @param {string} packsDir  absolute path of packs/text-rules
+ * @param {string} tpDir     absolute path of scripts/licences/third-party
+ * @param {{ match: string, licences: string[], files: { file: string, source: string }[] }[]} rows
+ * @returns {{ attribution: string, licences: string[], texts: string[] }[]}
+ */
+export function packNotices(packsDir, tpDir, rows) {
+  const lines = [];
+  if (existsSync(packsDir)) {
+    for (const f of readdirSync(packsDir).filter((n) => n.endsWith('.json')).sort((a, b) => a.localeCompare(b, 'en'))) {
+      for (const line of JSON.parse(readFileSync(join(packsDir, f), 'utf8')).attribution ?? []) if (!lines.includes(line)) lines.push(line);
+    }
+  }
+  const used = new Set();
+  const out = lines.map((attribution) => {
+    const hits = rows.filter((r) => attribution.includes(r.match));
+    if (hits.length !== 1) throw new Error(`pack attribution "${attribution}" matches ${hits.length} rows of PACK_NOTICES (scripts/licences/components.mjs); it needs exactly one, with its licence texts`);
+    used.add(hits[0].match);
+    const texts = hits[0].files.map((t) => {
+      const path = join(tpDir, t.file);
+      if (!existsSync(path)) throw new Error(`PACK_NOTICES ${hits[0].match}: ${t.file} is missing from scripts/licences/third-party`);
+      return normaliseText(readFileSync(path, 'utf8'));
+    });
+    return { attribution, licences: hits[0].licences, texts };
+  });
+  const unused = rows.filter((r) => !used.has(r.match)).map((r) => r.match);
+  if (unused.length) throw new Error(`PACK_NOTICES rows ${unused.join(', ')} match no pack attribution: remove them from scripts/licences/components.mjs`);
+  return out;
+}
+
+/**
  * An entry needs a person to look at it when its licence is not stated or not one we expect, or
  * when a licence that asks for its notice to travel has no text to show.
  * @param {{ licence: string | null, text: string | null }} e
@@ -685,9 +720,10 @@ export function needsReview(e) {
 /**
  * The generated file: one group per theme in THEMES order, entries in name order, each with its
  * licence, copyright line and notice (identical texts stored once).
- * @param {{ entries: (NoticeInput & { theme: string })[], dependencyHash: string, themes: readonly string[] }} input
+ * Language pack attributions follow, each with the indexes of its licence texts.
+ * @param {{ entries: (NoticeInput & { theme: string })[], dependencyHash: string, themes: readonly string[], packs?: { attribution: string, licences: string[], texts: string[] }[] }} input
  */
-export function buildNotices({ entries, dependencyHash: hash, themes }) {
+export function buildNotices({ entries, dependencyHash: hash, themes, packs = [] }) {
   /** @type {string[]} */
   const texts = [];
   const index = new Map();
@@ -719,10 +755,12 @@ export function buildNotices({ entries, dependencyHash: hash, themes }) {
         })),
     }))
     .filter((g) => g.entries.length > 0);
+  const packRows = packs.map((p) => ({ attribution: p.attribution, licences: p.licences.map(licenceName), texts: p.texts.map((t) => /** @type {number} */ (textId(t))) }));
   return {
     $comment: `GENERATED FILE, do not edit. Made by scripts/licences/generate.mjs from package-lock.json and scripts/licences/components.mjs (what ships in the iOS app, by theme), packages/design-tokens/fonts, apps/mobile/modules, packs and ${SHIMS}. After any dependency change run: ${COMMAND}`,
     dependencyHash: hash,
     themes: groups,
+    packs: packRows,
     texts,
   };
 }
@@ -736,7 +774,7 @@ export const serialise = (notices) => `${JSON.stringify(notices, null, 2)}\n`;
  * from: a lockfile the table does not match, a font without its licence, a credited shim not in
  * VENDORED, a vendored file that no longer matches its notice, a missing third-party text.
  * @param {string} repo  absolute repo root
- * @param {{ vendored?: typeof VENDORED, table?: { packages: Record<string, string>, notShipped: Record<string, string>, nonNpm: import('./components.mjs').NonNpm[], themes: readonly string[], upstreamNotices?: Record<string, { file: string, source: string }>, injected?: { name: string, via: string[], theme: string }[] }, thirdPartyDir?: string }} options
+ * @param {{ vendored?: typeof VENDORED, table?: { packages: Record<string, string>, notShipped: Record<string, string>, nonNpm: import('./components.mjs').NonNpm[], themes: readonly string[], upstreamNotices?: Record<string, { file: string, source: string }>, injected?: { name: string, via: string[], theme: string }[], packNotices?: { match: string, licences: string[], files: { file: string, source: string }[] }[] }, thirdPartyDir?: string }} options
  */
 export function deriveNotices(repo, { vendored: vendoredList = VENDORED, table, thirdPartyDir } = {}) {
   if (!table) throw new Error('deriveNotices needs the components table (scripts/licences/components.mjs)');
@@ -790,6 +828,7 @@ export function deriveNotices(repo, { vendored: vendoredList = VENDORED, table, 
   const thirdParty = nonNpmEntries(tpDir, table.nonNpm);
 
   const entries = [...libraries, ...fonts, ...native.entries, ...data, ...vendored, ...thirdParty];
-  const notices = buildNotices({ entries, dependencyHash: hash, themes: table.themes });
+  const packs = packNotices(join(repo, 'packs', 'text-rules'), tpDir, table.packNotices ?? []);
+  const notices = buildNotices({ entries, dependencyHash: hash, themes: table.themes, packs });
   return { lock, all, walk, shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, thirdParty, entries, notices, json: serialise(notices) };
 }

@@ -5,7 +5,8 @@
  * What it shows (lib/licences.ts says what a page must): a short intro, then what ships in the iOS app grouped by
  * what it does for the parent (Speech, Recording and audio, Look and feel, App framework, Storage and data, Signing
  * in, Everything else), each group with one line on what it is for, and the language pack attributions word for
- * word after Speech. One row per component: its name and license. A row opens, one at a time, to its version, its
+ * word after Speech, each opening to the full texts of the licences it names (OpenCC's Apache 2.0, pinyin-data's
+ * MIT, Unicode License v3). One row per component: its name and license. A row opens, one at a time, to its version, its
  * copyright lines and the full license text, word for word. The list is generated from the lockfile and
  * scripts/licences/components.mjs, so it carries nothing the app does not ship. About 150 rows and 190 KB of text:
  * the list is virtualised and lib/licences (which parses the JSON) is required here, when the page opens, never at
@@ -25,7 +26,7 @@ import { useTheme } from '@/lib/a11y';
 import type * as Licences from '@/lib/licences';
 
 type Row =
-  | { kind: 'line'; key: string; text: string }
+  | { kind: 'line'; key: string; text: string; licence: string | null; notice: string | null }
   | { kind: 'notice'; key: string; name: string; version?: string; licence: string; copyright: string | null; text: string | null };
 type Section = { key: string; title: string; line: string; data: Row[] };
 
@@ -48,7 +49,10 @@ function sectionsFrom(lib: typeof Licences): Section[] {
     key: 'packs',
     title: licences.packsTitle,
     line: licences.packsLine,
-    data: licences.packs.map((text, i) => ({ kind: 'line' as const, key: `pack:${i}`, text })),
+    data: licences.packs.map((text, i) => {
+      const n = lib.packNotice(text);
+      return { kind: 'line' as const, key: `pack:${i}`, text, licence: n?.licences ?? null, notice: n?.text ?? null };
+    }),
   };
   // The language data sits with Speech, the part of the app it serves.
   const at = themes.findIndex((s) => s.key === 'theme:speech') + 1;
@@ -98,11 +102,27 @@ export default function LicensesScreen() {
 function LicenceRow({ row, open, onToggle }: { row: Row; open: boolean; onToggle: () => void }) {
   const { c } = useTheme();
   if (row.kind === 'line') {
+    // A language pack attribution, word for word; it opens to the full texts of the licences it names.
     return (
-      <View className="px-4 py-3">
-        <Text variant="subhead" selectable>
-          {row.text}
-        </Text>
+      <View>
+        <Pressable
+          onPress={onToggle}
+          role="button"
+          accessibilityLabel={row.licence ? `${row.text}, ${row.licence}` : row.text}
+          accessibilityState={{ expanded: open }}
+          className={`min-h-11 flex-row items-center gap-3 px-4 py-3 active:bg-secondary${Platform.OS === 'web' ? ' outline-none focus-visible:bg-secondary' : ''}`}>
+          <Text variant="subhead" className="flex-1">
+            {row.text}
+          </Text>
+          {open ? <CaretDownIcon size={16} color={c.textMuted} weight="bold" /> : <CaretRightIcon size={16} color={c.textMuted} weight="bold" />}
+        </Pressable>
+        {open ? (
+          <View className="px-4 pb-4">
+            <Text variant="footnote" tone="default" selectable>
+              {row.notice ?? licences.noText}
+            </Text>
+          </View>
+        ) : null}
       </View>
     );
   }

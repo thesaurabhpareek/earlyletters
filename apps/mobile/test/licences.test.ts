@@ -17,7 +17,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { licences as content } from '@scribe/content';
-import { INJECTED, NON_NPM, NOT_SHIPPED, PACKAGES, TABLE, THEMES, UPSTREAM_NOTICES } from '../../../scripts/licences/components.mjs';
+import { INJECTED, NON_NPM, NOT_SHIPPED, PACK_NOTICES, PACKAGES, TABLE, THEMES, UPSTREAM_NOTICES } from '../../../scripts/licences/components.mjs';
 import {
   COMMAND,
   OUTPUT,
@@ -38,6 +38,7 @@ import {
   needsReview,
   normaliseRepository,
   normaliseText,
+  packNotices,
   productionPackages,
   resolveFrom,
   serialise,
@@ -47,7 +48,7 @@ import {
   vendoredEntries,
   workspaceNames,
 } from '../../../scripts/licences/lib.mjs';
-import { noticeKey, noticeText, notices, type Notices } from '../src/lib/licences';
+import { noticeKey, noticeText, notices, packNotice, type Notices } from '../src/lib/licences';
 import { SPEECH_MODELS, VAD_MODEL_ID, WHISPER_CPP_BUILD } from '../src/lib/models/catalog';
 
 const REPO = join(__dirname, '..', '..', '..');
@@ -192,7 +193,7 @@ describe('what ships that npm does not list (components.mjs NON_NPM)', () => {
   });
 
   it('keeps one licence text per third-party file, each used, none missing', () => {
-    const used = new Set([...NON_NPM.map((c) => c.file), ...Object.values(UPSTREAM_NOTICES).map((u) => u.file)]);
+    const used = new Set([...NON_NPM.map((c) => c.file), ...Object.values(UPSTREAM_NOTICES).map((u) => u.file), ...PACK_NOTICES.flatMap((p) => p.files.map((f) => f.file))]);
     expect(readdirSync(THIRD_PARTY).sort()).toEqual([...used].sort());
     for (const c of NON_NPM) expect(c.source.length, c.name).toBeGreaterThan(10);
   });
@@ -357,6 +358,37 @@ describe('the generated notices file (src/generated/licences.json)', () => {
       expect(e!.licence).toBe(v.licence);
       expect(n.texts[e!.text!], v.file).toBe(vendoredEntries(REPO, lockfile(), [v])[0].text);
     }
+  });
+});
+
+describe('the language pack attributions carry the full texts of the licences they name', () => {
+  it('every attribution line on the page opens to its licence texts: OpenCC Apache 2.0, pinyin-data MIT, Unicode License v3', () => {
+    expect(content.packs.length).toBeGreaterThan(0);
+    for (const line of content.packs) {
+      const n = packNotice(line);
+      expect(n, line).not.toBeNull();
+      expect(n!.text.length, line).toBeGreaterThan(500);
+    }
+    const opencc = packNotice(content.packs.find((l) => l.includes('OpenCC'))!)!;
+    expect(opencc.licences).toBe('Apache License 2.0');
+    expect(opencc.text).toMatch(/^Apache License\nVersion 2\.0, January 2004/);
+    const pinyin = packNotice(content.packs.find((l) => l.includes('pinyin-data'))!)!;
+    expect(pinyin.licences).toBe('MIT License, Unicode License v3');
+    expect(pinyin.text).toMatch(/Copyright \(c\) 2016 mozillazg/);
+    expect(pinyin.text).toMatch(/UNICODE LICENSE V3[\s\S]*COPYRIGHT AND PERMISSION NOTICE/);
+  });
+
+  it('stops the generator on an attribution with no licence row, and on a row no attribution uses', () => {
+    const dir = tempDir();
+    mkdirSync(join(dir, 'packs'));
+    mkdirSync(join(dir, 'tp'));
+    writeFileSync(join(dir, 'tp', 'a.txt'), 'MIT License\n\nCopyright (c) 2026 Asha Data\n');
+    writeFileSync(join(dir, 'packs', 'en.json'), JSON.stringify({ attribution: ['Words from asha-data, MIT License.'] }));
+    const row = { match: 'asha-data', licences: ['MIT'], files: [{ file: 'a.txt', source: 'fixture' }] };
+    expect(packNotices(join(dir, 'packs'), join(dir, 'tp'), [row])).toEqual([{ attribution: 'Words from asha-data, MIT License.', licences: ['MIT'], texts: ['MIT License\n\nCopyright (c) 2026 Asha Data\n'] }]);
+    expect(() => packNotices(join(dir, 'packs'), join(dir, 'tp'), [])).toThrow(/matches 0 rows of PACK_NOTICES/);
+    expect(() => packNotices(join(dir, 'packs'), join(dir, 'tp'), [row, { ...row, match: 'gone' }])).toThrow(/gone match no pack attribution/);
+    expect(() => packNotices(join(dir, 'packs'), join(dir, 'tp'), [{ ...row, files: [{ file: 'missing.txt', source: 'x' }] }])).toThrow(/missing\.txt/);
   });
 });
 

@@ -319,7 +319,7 @@ export const NON_NPM = [
  * @type {Record<string, { file: string, source: string }>}
  */
 export const UPSTREAM_NOTICES = {
-  'metro-runtime': { file: 'metro.txt', source: 'https://github.com/facebook/metro/blob/v0.84.6/LICENSE (package.json repository: react/metro, packages/metro-runtime)' },
+  'metro-runtime': { file: 'metro.txt', source: 'https://github.com/facebook/metro/blob/v0.84.5/LICENSE (the version Metro injects; package.json repository: react/metro, packages/metro-runtime)' },
   'standard-navigation': { file: 'standard-navigation.txt', source: 'https://github.com/react-navigation/standard-navigation/blob/main/LICENSE (package.json repository)' },
 };
 
@@ -332,5 +332,24 @@ export const UPSTREAM_NOTICES = {
  */
 export const INJECTED = [{ name: 'metro-runtime', via: ['metro'], theme: 'framework' }];
 
+/**
+ * The licence texts for the language pack data (packs/text-rules/*.json `attribution`), shown
+ * under each attribution line on the Licenses page. `match` is a word the attribution line
+ * contains; every line must match exactly one row and every row at least one line (lib.mjs
+ * packNotices). Texts copied word for word from `source` into third-party/.
+ * @type {{ match: string, licences: string[], files: { file: string, source: string }[] }[]}
+ */
+export const PACK_NOTICES = [
+  { match: 'OpenCC', licences: ['Apache-2.0'], files: [{ file: 'opencc.txt', source: 'https://github.com/BYVoid/OpenCC/blob/master/LICENSE (no NOTICE file upstream)' }] },
+  {
+    match: 'pinyin-data',
+    licences: ['MIT', 'Unicode-3.0'],
+    files: [
+      { file: 'pinyin-data.txt', source: 'https://github.com/mozillazg/pinyin-data/blob/master/LICENSE' },
+      { file: 'unicode-v3.txt', source: 'https://www.unicode.org/license.txt (Unicode License v3, covers the Unihan kMandarin data)' },
+    ],
+  },
+];
+
 /** Everything above, as lib.mjs deriveNotices takes it. */
-export const TABLE = { packages: PACKAGES, notShipped: NOT_SHIPPED, nonNpm: NON_NPM, themes: THEMES, upstreamNotices: UPSTREAM_NOTICES, injected: INJECTED };
+export const TABLE = { packages: PACKAGES, notShipped: NOT_SHIPPED, nonNpm: NON_NPM, themes: THEMES, upstreamNotices: UPSTREAM_NOTICES, injected: INJECTED, packNotices: PACK_NOTICES };

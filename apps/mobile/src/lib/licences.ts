@@ -12,7 +12,8 @@
  *
  * What a page should show: each theme in order, its title and line from packages/content
  * (`licences.themes[id]`), then one row per entry (name and licence name); a row opens to its
- * version, copyright lines and full notice. Every word of copy comes from packages/content, except
+ * version, copyright lines and full notice. The language pack attribution lines open to the full
+ * texts of the licences they name (`packNotice`). Every word of copy comes from packages/content, except
  * each licence's own name and each component's name, version and copyright, which are the authors'.
  * This module parses the JSON when it is first imported, so require it lazily from the Licenses page.
  */
@@ -53,6 +54,8 @@ export interface Notices {
   dependencyHash: string;
   /** In theme order; entries in name order. */
   themes: NoticeGroup[];
+  /** The language pack attributions (packs/text-rules), each with its licence names and the indexes of its full texts. */
+  packs: { attribution: string; licences: string[]; texts: number[] }[];
   /** Distinct notice texts, each stored once. */
   texts: string[];
 }
@@ -67,3 +70,13 @@ export const noticeKey = (e: NoticeEntry): string => (e.version ? `${e.name}@${e
 
 /** The entry's notice, word for word, or null when there is none. */
 export const noticeText = (e: NoticeEntry): string | null => (e.text === null ? null : (notices.texts[e.text] ?? null));
+
+/**
+ * The licence names and full texts for one language pack attribution line (packages/content
+ * `licences.packs`, word for word from the packs), or null when the generated file has none for it.
+ */
+export const packNotice = (attribution: string): { licences: string; text: string } | null => {
+  const p = notices.packs.find((x) => x.attribution === attribution);
+  if (!p) return null;
+  return { licences: p.licences.join(', '), text: p.texts.map((i) => notices.texts[i]).join('\n') };
+};
