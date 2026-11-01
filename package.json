@@ -8,7 +8,7 @@
     "experiments"
   ],
   "scripts": {
-    "test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
+    "test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs scripts/release/setup-steps.test.mjs scripts/release/setup-state.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
     "test:coverage": "node scripts/coverage/run.mjs",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "mobile": "npm run start -w @scribe/mobile",
@@ -16,6 +16,7 @@
     "test:db:perf": "node supabase/tests/run.mjs perf",
     "test:functions": "npx -y deno@2.9.6 test --no-prompt --allow-read --sloppy-imports supabase/functions/purge-worker supabase/functions/analytics-forget supabase/functions/apple-token supabase/functions/_shared supabase/functions/invite-redeem supabase/functions/subscription-status supabase/functions/escrow scripts/ops",
     "experiment": "npm run experiment -w @scribe/experiments --",
+    "release:ready": "node scripts/release/setup-state.mjs",
     "experiment:edits": "npm run experiment:edits -w @scribe/experiments --"
   },
   "engines": {

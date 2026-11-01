@@ -1,5 +1,10 @@
 # Founder queue: every step only you can do, in one order
 
+**Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
+- `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
+- `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
+- If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
+
 Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
 
 - **Wave 0: 10 of 15 open, 3 partly done, 2 done** (counts of 30 Oct; W0-14 moved from open to partly done). Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on), item 6 (secret scanning and push protection are on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, is done on 29 Oct; b to f are open).
