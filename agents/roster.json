@@ -372,7 +372,7 @@
       "handle": "user-research",
       "title": "User Researcher",
       "department": "product",
-      "backlog_owner_names": [],
+      "backlog_owner_names": ["user researcher"],
       "kind": "worker",
       "daily_runs": 0,
       "wip_limit": 1
