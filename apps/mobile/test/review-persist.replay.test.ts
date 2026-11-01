@@ -1,7 +1,7 @@
 /// <reference types="node" />
 /**
- * Replay (SR-C-06, CR-39; RT-REV-02, RT-REV-07): a seeded random run of Review — fixes put back and undone, the view
- * switched, the person's words typed with pauses, Done — writes through the real store over a file on disk
+ * Replay (SR-C-06, CR-39; RT-REV-02, RT-REV-07): a seeded random run of Review (fixes put back and undone, the view
+ * switched, the person's words typed with pauses, Done) writes through the real store over a file on disk
  * (node:sqlite, as store.shelf.test.ts), and at a seeded random moment every bit of in-memory state is dropped: no
  * flush, no unmount, the store closed as a kill leaves it. The database is opened again from the file and Review's
  * mount is rebuilt exactly as review.tsx does it (restorable, a fresh verified clean, restoreApplied). The final text

@@ -234,9 +234,10 @@ export default function Review() {
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
   const [wash, setWash] = useState(false);
   // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
-  const [openedView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
-  // The view the person chose before, if any; otherwise the Settings default (Word for word switch).
-  const [view, setView] = useState<ReviewView>(() => saved?.view ?? openedView);
+  // The view the person chose on an earlier visit (SR-C-06), else the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(() => saved?.view ?? (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
+  // The view Review opened with: choosing the other one is a change of the person's, kept on the draft until Keep (S1).
+  const [openedView] = useState(view);
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
@@ -305,14 +306,17 @@ export default function Review() {
       writer.flush();
     };
   }, [writer]);
-  const changeWords = (text: string) => {
-    setUserText(text);
-    writer.text(text);
-  };
-  const doneEditing = () => {
-    writer.flush();
-    setEditing(false);
-  };
+  // Every change of the person's words goes to the draft (debounced); the words restored on mount are already there.
+  const lastWords = useRef(userText);
+  useEffect(() => {
+    if (userText === lastWords.current) return;
+    lastWords.current = userText;
+    writer.text(userText);
+  }, [userText, writer]);
+  // Done writes the words at once.
+  useEffect(() => {
+    if (!editing) writer.flush();
+  }, [editing, writer]);
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
@@ -769,7 +773,7 @@ export default function Review() {
     phase === 'ready' && !isSample
       ? footerShell(
           editing ? (
-            <Button size="lg" fullWidth label={copy.common.doneButton} onPress={doneEditing} testID="review.edit.done" />
+            <Button size="lg" fullWidth label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.done" />
           ) : (
             <>
               {saveFailed && (
@@ -858,18 +862,14 @@ export default function Review() {
           writer.flush();
           router.back();
         }}
-        // Say what is true: the person's own changes (Change words, a fix put back, the other view) are on the draft
-        // (SR-C-06), so "Saved on this phone" holds; only a letter whose words arrived later, or sample words, keep
-        // them on this screen alone (P4 critics' pass S1).
-        closeHint={
-          (later || isSample) && reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView })
-            ? undefined
-            : pendingCopy.write.savedOnPhone
-        }
+        // The person's own changes (Change words, a fix put back, the other view) are written to the draft as they
+        // happen (SR-C-06), but the hint still steps aside while any is there (P4 critics' pass S1): whether Close
+        // should now say "Saved on this phone" over them is a design and copy call, handed off (W6b PR).
+        closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
         leading={
           editing ? (
             // Done sits in the header while editing (S18), and above the keyboard on iOS.
-            <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={doneEditing} testID="review.edit.doneHeader" />
+            <Button variant="quiet" size="sm" className="-ml-4" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="review.edit.doneHeader" />
           ) : hasSound ? (
             <Button variant="quiet" size="sm" className="-ml-4" onPress={togglePlay} accessibilityLabel={playStatus.playing ? copy.common.pauseButton : r.playButton}>
               {playStatus.playing ? <PauseIcon color={c.accent} size={20} weight="fill" /> : <PlayIcon color={c.accent} size={20} />}
@@ -953,7 +953,7 @@ export default function Review() {
                       label={pendingCopy.write.label}
                       labelHidden
                       value={finalText}
-                      onChangeText={changeWords}
+                      onChangeText={setUserText}
                       multiline
                       autoFocus
                       inputClassName="min-h-40"
