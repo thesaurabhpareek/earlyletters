@@ -10,10 +10,11 @@
  * Look (S08): a quiet card under "The book is open." (`accentSoft`, radius md, 16 pt padding): the title in
  * `headline`, one footnote line, then a bordered "Download on Wi-Fi" and a quiet "Not now" side by side at their
  * own widths (stacked at accessibility sizes). The screen's one filled button stays "Write the first one". After a choice the card
- * folds to one line on `standard`: "Getting ready" with a thin determinate line (and the percent once the download
- * moves), or "Your voice is kept either way."
+ * folds to one line on `standard`: "Getting ready, 40%" with a thin determinate line (track `controlBorder`) only
+ * while bytes move; a wait (Wi-Fi, space, its turn), a check or a failure (with Try again) is said in words, never
+ * as 0% (speech-consent-card.logic.ts). Or "Your voice is kept either way."
  */
-import { speechConsentCopy, speechSettingsCopy } from '@scribe/content';
+import { speechConsentCopy } from '@scribe/content';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -25,9 +26,10 @@ import type { SpeechLanguage } from '@/lib/models/catalog';
 import { setSpeechDownloadChoice, speechAskFor, speechDownloadChoice, type SpeechDownloadChoice } from '@/lib/models/speech-consent';
 import { installedPathsFor } from '@/lib/models/speech-packs';
 import { useMotion } from '@/lib/motion';
-import { formatBytes } from '@/lib/packs/copy';
+import { formatBytes, packsCopy } from '@/lib/packs/copy';
 import { startSpeechDownload } from '@/lib/transcription-queue';
 import { useSpeechDownload } from '@/lib/transcription-queue/use-words';
+import { consentLine, doneLine } from './speech-consent-card.logic';
 
 /** True when this phone already has everything the language needs to write words down. */
 function onThisPhone(language: SpeechLanguage): boolean {
@@ -62,7 +64,14 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
   // The words are already on this phone: nothing to ask.
   if (ready) return null;
 
-  const percent = download.progress === null ? null : Math.min(99, Math.max(0, Math.floor(download.progress * 100)));
+  // A percent and the bar only while bytes move; a wait, a check or a failure is said in words (consentLine).
+  const mb = Math.round(ask.bytes / 1e6);
+  // Once every file is here the line says so, instead of the line said at the tap (re-read on each download tick).
+  const line = choice === 'yes' && onThisPhone(language) ? doneLine(mb) : consentLine(download, mb);
+  const retry = () => {
+    announce(t.chosenYes);
+    void startSpeechDownload(language);
+  };
   return (
     <Animated.View layout={motion.layout('standard')} className="gap-2 rounded-md bg-secondary p-4" testID="speech.card">
       {choice === null ? (
@@ -88,11 +97,22 @@ export function SpeechConsentCard({ language }: { language: SpeechLanguage }) {
         </>
       ) : choice === 'yes' ? (
         <View className="gap-2" accessibilityLiveRegion="polite">
-          {/* VoiceOver hears this once, from the progress line below, with its value. */}
-          <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no">
-            {percent === null ? t.chosenYes : fill(speechSettingsCopy.downloading, { n: percent })}
-          </Text>
-          <ProgressLine value={percent ?? 0} label={percent === null ? t.chosenYes : fill(speechSettingsCopy.downloading, { n: percent })} />
+          {line.bar === null ? (
+            <Text variant="callout">{line.text}</Text>
+          ) : (
+            <>
+              {/* VoiceOver hears this once, from the progress line below, with its value. */}
+              <Text variant="callout" accessibilityElementsHidden importantForAccessibility="no">
+                {line.text}
+              </Text>
+              <ProgressLine value={Math.floor(line.bar * 100)} label={line.text} />
+            </>
+          )}
+          {line.retry ? (
+            <View className="items-start">
+              <Button variant="outline" size="sm" label={packsCopy.retryButton} onPress={retry} />
+            </View>
+          ) : null}
         </View>
       ) : (
         <Text variant="callout" accessibilityLiveRegion="polite">
@@ -111,7 +131,7 @@ function ProgressLine({ value, label }: { value: number; label: string }) {
       accessibilityRole="progressbar"
       accessibilityLabel={label}
       accessibilityValue={{ min: 0, max: 100, now: value }}
-      className="h-1 overflow-hidden rounded-full bg-border">
+      className="h-1 overflow-hidden rounded-full bg-input">
       <View className="h-1 rounded-full bg-primary" style={{ width: `${value}%` }} />
     </View>
   );

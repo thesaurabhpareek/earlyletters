@@ -53,6 +53,7 @@ import { SPEECH_LANGUAGES, SPEECH_MODELS, type SpeechLanguage, type SpeechModelI
 import {
   bindSpeechPacks,
   combineProgress,
+  speechDownloadMotion,
   ensureSpeechFor,
   installedPathsFor,
   onSpeechPacksBound,
@@ -63,6 +64,7 @@ import {
   type SpeechPackHost,
   type SpeechPackProgress,
 } from '../models/speech-packs';
+import type { DownloadStage } from '../models/speech-download.logic';
 import { releaseContexts, whisperModule } from '../models/whisper-runtime';
 import { TranscriberUnavailable, TranscriptionAborted, type TranscribeResult, type Transcriber } from '../transcribe';
 import { createSampleTranscriber } from '../transcribe-sample';
@@ -279,7 +281,9 @@ const retries = new DownloadRetries<SpeechLanguage>({
  * `packsCopy.failures[code]` with Try again (`startSpeechDownload`) instead of a wait that never ends.
  */
 export function speechDownloadFailure(language: SpeechLanguage): string | null {
-  if (speechDownloadHold(language) !== null || speechDownloadProgress(language) !== null) return null;
+  if (speechDownloadHold(language) !== null) return null;
+  const motion = speechDownloadMotion(language, packProgress);
+  if (motion.progress !== null || motion.stage !== null) return null;
   const host = speechPackHost();
   for (const id of planFor([language]).packs) {
     if (host.packPath(id)) continue;
@@ -289,9 +293,14 @@ export function speechDownloadFailure(language: SpeechLanguage): string | null {
   return null;
 }
 
-/** Download progress (0..1) for a language, or null when nothing is downloading. */
+/** Download progress (0..1) for a language, or null when no bytes are moving (queued or waiting is not moving). */
 export function speechDownloadProgress(language: SpeechLanguage): number | null {
   return combineProgress(language, packProgress);
+}
+
+/** When no bytes are moving: a pack waiting its turn, being checked or finishing (said in words, never as 0%). */
+export function speechDownloadStage(language: SpeechLanguage): DownloadStage | null {
+  return speechDownloadMotion(language, packProgress).stage;
 }
 
 /** Why a language's download is waiting, if it is: Wi-Fi, space, offline. */

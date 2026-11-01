@@ -630,7 +630,10 @@ export class PackManager {
         this.emit({ id: entry.id, version: entry.version, phase: 'downloading', bytesDone: have, bytesTotal: entry.bytes });
       } catch (e) {
         fs.remove(chunk);
-        if (isAbort(e) || signal.aborted) throw new PackError('cancelled');
+        // Only the caller's own signal is a cancel. An AbortError without it is the adapter's per-request timeout
+        // (a slow chunk, or a request the system froze while the app was away): a failed attempt, retried below,
+        // never a silent "cancelled" that nothing retries.
+        if (signal.aborted) throw new PackError('cancelled');
         if (e instanceof PackError) throw e;
         attempt++;
         host = (host + 1) % hosts.length;

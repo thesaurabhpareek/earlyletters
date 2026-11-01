@@ -211,6 +211,41 @@ describe('resume', () => {
   });
 });
 
+describe('a timed-out request', () => {
+  it('[TF1-DL] is a failed attempt that is retried, never a silent cancel', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
+    const memory = new MemoryHttp({ [`/${pt.id}/1/file.bin`]: { body: pt.body } }, disk);
+    let timeouts = 1;
+    const http: PackHttp = {
+      async downloadRange(url, dest, start, end, opts) {
+        // The adapter's own timer fired: an AbortError while the caller's signal is not aborted.
+        if (timeouts-- > 0) throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+        return memory.downloadRange(url, dest, start, end, opts);
+      },
+    };
+    const phases: string[] = [];
+    const m = makeManager({ http, manifest: async () => manifestOf([pt]) });
+    m.onProgress((p) => phases.push(p.phase));
+    const r = await m.ensurePack('text-rules.pt');
+    expect(r.ok).toBe(true);
+    expect(phases).not.toContain('cancelled');
+    expect(phases.at(-1)).toBe('installed');
+  });
+
+  it('[TF1-DL] still stops at once when the caller cancels', async () => {
+    const pt: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2500) };
+    const ctrl = new AbortController();
+    const http: PackHttp = {
+      async downloadRange() {
+        ctrl.abort();
+        throw Object.assign(new Error('aborted'), { name: 'AbortError' });
+      },
+    };
+    const r = await makeManager({ http, manifest: async () => manifestOf([pt]) }).ensurePack('text-rules.pt', { signal: ctrl.signal });
+    expect(r).toEqual({ ok: false, reason: 'cancelled' });
+  });
+});
+
 describe('integrity', () => {
   useRangeServer();
 
