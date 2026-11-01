@@ -1,0 +1,126 @@
+/* The share row: quiet, muted marks on the night palette. Icons are currentColor; nothing here is brand-coloured. */
+.wrap {
+  width: 100%;
+  max-width: 24rem;
+  margin: clamp(14px, 2.4svh, 28px) auto 0;
+  text-align: center;
+}
+.heading {
+  margin: 0 0 6px;
+  font: 400 15px/1.35 var(--font-sans);
+  color: var(--night-ink-muted);
+}
+.channels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  min-height: 44px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.item {
+  display: grid;
+}
+.channel {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 44px;
+  border-radius: 999px;
+  color: var(--night-ink-muted);
+  text-decoration: none;
+  transition: color 160ms, background-color 160ms, transform 160ms var(--ease-standard);
+}
+.channel:hover {
+  color: var(--night-ink);
+  background: color-mix(in srgb, var(--night-ink) 9%, transparent);
+}
+.channel:active,
+.pill:active {
+  transform: scale(0.96);
+}
+.channel:focus-visible,
+.pill:focus-visible {
+  outline: 2px solid var(--night-accent);
+  outline-offset: 2px;
+}
+.actions {
+  margin-top: 2px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--night-ink-muted);
+  font: 500 15px/1 var(--font-sans);
+  cursor: pointer;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--night-ink) 22%, transparent);
+  transition: color 160ms, box-shadow 160ms, transform 160ms var(--ease-standard);
+}
+.pill svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.pill:hover {
+  color: var(--night-ink);
+  box-shadow: inset 0 0 0 1px var(--night-accent);
+}
+/* Short phones: the film's last card is tight, so the line above the icons gives way first. */
+@media (max-height: 640px) {
+  .heading {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .channel,
+  .pill {
+    transition: none;
+  }
+  .channel:active,
+  .pill:active {
+    transform: none;
+  }
+}
+@media (forced-colors: active) {
+  .channel,
+  .pill {
+    color: LinkText;
+  }
+  .pill {
+    color: ButtonText;
+    border: 1px solid ButtonText;
+    box-shadow: none;
+  }
+  .channel:hover,
+  .pill:hover {
+    color: Highlight;
+    background: transparent;
+  }
+  .channel:focus-visible,
+  .pill:focus-visible {
+    outline-color: Highlight;
+  }
+}
+
+/* The address shown when the browser will not copy: easy to select by hand, never wider than the screen. */
+.address {
+  user-select: all;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
