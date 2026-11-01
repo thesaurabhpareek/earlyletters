@@ -565,7 +565,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: each item is recorded in the S2-15 row with pass or fail, and failures become BL tasks.
 
 #### BL-534 No prompt repeats within 365 days (F13-REQ-004, WP-F13-07) [High]
-- Status: needs-decision (D-130: this needs a local schema step, which after the freeze is an S0 or S1 fix only; founder or Karma to say 1.0 or 1.0.1). Mode: agent. Owner: mobile engineer. Size: M. Depends on: BL-530.
+- Status: superseded (by BL-671: CPO-6 restates F13-REQ-004, and the release map puts the history in 1.0.1, F11). Mode: agent. Owner: mobile engineer. Size: M. Depends on: BL-530.
 - Satisfies: F13-REQ-004 (gate).
 - Scope: `AVOID_RECENT` is 10 in `packages/core/src/prompts.ts`. Keep a per-author, per-child prompt history (one row per local date shown or skipped) and make `selectPrompt` avoid keys shown in the last 365 days; say what happens when the pool is exhausted (F13 metrics: under 10% of evenings).
 - Done when: the property test over a simulated two-year history shows zero repeats in 365 days.
@@ -2520,6 +2520,557 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 - **BL-560 The Plus line on Write.** Status: blocked (on #508). Owner: `mobile`. When: after #508 merges. Scope: the Write half of F14-REQ-040, the same standing line with no count and no button. Done when: the line shows on Write under the same rule as Tonight, with a test.
 - **BL-561 The age question and a thumb slip (SR-C-04).** Status: needs-founder. Needs counsel. Owner: CCO, then `regulatory-affairs` and `mobile`. Today a slip on No locks a parent out for 24 hours, until "I answered by mistake" appears. #521 added a confirm step after No, but writing nothing until the confirm breaks LEGAL-REQ-002's anti-retry rule (P0) and D-026, so it is held. Karma's recommendation: keep the immediate stop, and make "I answered by mistake" clearer and kinder. A confirm step needs a DECISIONS entry first, must treat both answers the same, and must record the first answer. Done when: the founder decides with counsel, and the chosen design passes a CCO review.
 - **BL-562 Data classification rows for the new local columns.** Status: needs-founder. Owner: `legal`; founder merges (docs/legal). When: with #522 and #520. Scope: four 4.5 rows for `drafts.review_put_back`, `review_view`, `review_text` (L4, the person's words) and `review_base` (L4, a hash of the words), as written in the data-steward review of #522. Also Privacy Policy lines 159 and 225, per the privacy review of #520. Done when: the founder merges the legal PR.
+
+## M14. Account, Settings and experience (1 Nov 2026)
+
+Added 1 Nov 2026 by `product` from two programs the founder ruled on that day. Both programs' files live outside this repo (the founder's Project mirror); paths below are relative to that `proposals/` folder.
+- **Account program** (`proposals/account-security/`: BRIEF, security, legal-consent, journeys, settings-ia, design, content, council). Founder decisions F1 to F4 (Project doc `infra/exec-rulings-2026-11-01-account-security.md`, mirrored in `account-security/council.md`): F1 the first store build stays on-device and adds the protections; F2 a neutral Yes/No age question plus an unticked Terms box; F3 one optional "Your name" at sign-in. F4 (D-033, recordings in the iPhone's own backup) is listed as decided in the wave 3 brief; this lane could not open the Project doc to read which option, so every item that rests on it also waits for the drill (CCO-8). PL-1 (no letter limit in alpha builds) shipped in PR #552.
+- **Experience program** (`proposals/v1-experience/`: BRIEF, competitors, plus, memories, daily-home, library, illustration, auth-emails-profile, motion, council). Founder decisions F5 to F11 all as recommended; the release map is `v1-experience/council.md` Part 3 (F11). OTA (EAS Update) is planned for 1.0.x only.
+- **Earlier proposals** cited by file name: engagement, book-page, reminders-settings, privacy-settings, struggling-page, speech-model-size, motion-haptics-finish, wait-product, wait-content, wait-design, review-progress-and-player.
+
+Codes: F1 to F11 founder; PL-n Plus lane; CPO-n, CDesO-n, CPrivO-n, CCO-n, CLO-n, CISO-n, CMO-n, CBO-n, CFO-n, CAIO-n executive rulings (Claude roles, not licensed professionals; counsel confirms legal items); CR-43, CR-44 Karma. These codes are provisional where the councils say so.
+
+**Rules for every item in M14**
+1. **Merge window.** Behaviour changes merge after the 9 Nov go/no-go (D-130). A "1 Dec" item that has not merged by **Fri 20 Nov** moves to 1.0.1 (F11). Docs-only items can merge now.
+2. **Spending rule (founder, 1 Nov 2026).** No spending increases now. Free tiers up to about 1,000 active users are fine; when two options work, take the one with the higher free limit. Every item that touches a vendor names its free-tier option and the user count at which paid would be needed. The clinician reviewer (F7) and the illustrator commission (F9) are **deferred by this rule**: facts stay out, and new drawings are hand-coded SVG in the house style or wait.
+3. **Flags.** `needs-counsel` (counsel must confirm; ride the counsel packet, CLO-4, CLO-6); `needs-founder` (an account, a device, a vendor, a secret or a decision only the founder makes); `native-build` (a new native module or Info.plist key, so it needs a new binary and cannot ride an OTA).
+4. **Constitution and content rules** hold everywhere: nothing written, chosen or personalised from a parent's words (CAIO-1); no counts, streaks or badges (CPO-7); fictional family only (Asha).
+5. Owners are owner names from `agents/roster.json`, with the agent handle in brackets.
+
+### 1 Dec (first store build)
+
+#### BL-621 App lock: Face ID or passcode, lock screen and app switcher cover
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`), security engineer (`security`). Milestone: M14. Size: M. Depends on: none.
+- Release: 1 Dec. Flags: native-build (`expo-local-authentication`, MIT, Expo-maintained, no vendor cost).
+- Why: F1, CISO-1 (`account-security/security.md` 2 is the spec), J2 and J4 in `account-security/journeys.md`. Satisfies: F17-REQ-008 to F17-REQ-011.
+- Acceptance: a pure lock-policy module, table-tested: locks on cold start and after `background` longer than the chosen grace (Immediately, 1 minute default, 5 or 15 minutes); `inactive` alone never locks; never locks during a take and never stops or discards audio (F17-U23); with no device passcode the switch cannot turn on; a removed passcode turns the lock off and says so once (F17-U21). The cover is drawn on `inactive` so the switcher snapshot shows only the mark. The lock screen has one labelled Unlock button and prompts once, never in a loop. No app PIN.
+
+#### BL-622 App lock page in Settings and one offer at the end of first run
+- Status: blocked (BL-621, BL-636). Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`), content. Milestone: M14. Size: S. Depends on: BL-621, BL-636.
+- Release: 1 Dec.
+- Why: CPO-2 (offered once, equal weight, off until turned on), CDesO-1 (a row on Settings home and in Privacy, one setting), Karma tie-break 1 (while off, Privacy says anyone who can unlock the iPhone can open the book). Design 2.3 and 2.5.
+- Acceptance: the offer shows once after "The book is open", with "Not now" at equal weight, and never again; the first letter is still reachable inside the PS1 90-second path with the offer skipped; the page has "Lock with Face ID" (or Touch ID or Passcode by device), "Require after", and the line that reminders never show a name while the lock is on; both rows read and write one stored value.
+
+#### BL-623 The Face ID purpose string and its preflight check
+- Status: needs-founder (counsel approves the string, LEGAL-REQ-007). Mode: pair. Owner: content, mobile engineer (`mobile`), legal. Milestone: M14. Size: XS. Depends on: BL-621.
+- Release: 1 Dec; if counsel has not approved by Fri 20 Nov, the lock moves to the first 1.0.x and the rest of 1 Dec ships (F1 default). Flags: needs-counsel, native-build.
+- Why: CLO-4 (content 3 option 2 recommended, option 1 alternate). Satisfies: LEGAL-REQ-007.
+- Acceptance: `NSFaceIDUsageDescription` comes from `packages/content` through the config plugin; `preflight-testflight.mjs` and the LEGAL-REQ-007 manifest test know the new key and fail without it.
+
+#### BL-624 Export asks again when the lock is on
+- Status: blocked (BL-621). Mode: agent. Owner: security engineer (`security`), mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: BL-621.
+- Release: 1 Dec. Why: `account-security/security.md` 6 row 2 (Export sends the whole book).
+- Acceptance: with the lock on, Export calls device authentication before it builds the ZIP; a cancel builds nothing; with the lock off nothing changes; unit test for each.
+
+#### BL-625 Names stay off notifications while the lock is on
+- Status: blocked (BL-621). Mode: agent. Owner: reminders owner (`mobile`). Milestone: M14. Size: XS. Depends on: BL-621.
+- Release: 1 Dec. Why: council section 4 ("F17-REQ-015 ships with the lock"); M13 rule 3. Satisfies: F17-REQ-015.
+- Acceptance: a planner test shows that with the lock on and "Names in notifications" on, every scheduled title and body is the neutral variant; turning the lock off restores the parent's choice.
+
+#### BL-626 Before you begin: neutral age question plus an unticked Terms box
+- Status: blocked (BL-636). Mode: agent. Owner: mobile engineer (`mobile`), content (with `compliance-engineer` review). Milestone: M14. Size: S. Depends on: BL-636.
+- Release: 1 Dec. Flags: needs-counsel (Q-B enforceability, Q-D "agree" or "acknowledge"; the screen itself is decided, F2).
+- Why: F2, CCO-6, `account-security/legal-consent.md` 2 and 5, design 2.1. Satisfies: LEGAL-REQ-002, PRD-REQ-019 (see Requirement changes).
+- Acceptance: one screen replaces the gate screen; nothing preselected; No goes to today's stop path whatever the box says; Yes without a tick records nothing and says why above Continue; the box is at least 44 pt and VoiceOver reads "checkbox, not checked"; both links open; every existing LEGAL-REQ-002 and `age-gate.test.ts` assertion passes unchanged; no route renders before it passes (E2E-01a, E2E-01b). BL-561 stays separate.
+
+#### BL-627 The phone keeps a small record of the Terms it agreed to
+- Status: blocked (BL-626). Mode: agent. Owner: mobile engineer (`mobile`), privacy engineer (`privacy`). Milestone: M14. Size: S. Depends on: BL-626.
+- Release: 1 Dec. Why: CPrivO-3 (L2, never logged), `account-security/legal-consent.md` 3. Related: BL-579 (#557).
+- Acceptance: a local row `{version, acceptedAt, surface, appVersion, textSha256}` is written only on Continue with Yes and the box ticked; age stays a timeless boolean; a test proves the row never reaches a log, crash report or analytics call; nothing leaves the phone.
+
+#### BL-628 Existing build 1 installs see Before you begin once
+- Status: needs-founder (counsel Q-C). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: XS. Depends on: BL-627.
+- Release: 1 Dec. Flags: needs-counsel. Why: `account-security/legal-consent.md` 3 and 6.
+- Acceptance: an install with no Terms row sees the screen once after the update, with `beforeBegin.returningTitle`; an install with a current row never does; tested.
+
+#### BL-629 Where your letters live
+- Status: blocked (BL-636). Mode: agent. Owner: mobile engineer (`mobile`), privacy engineer (`privacy`), content. Milestone: M14. Size: S. Depends on: BL-636.
+- Release: 1 Dec. Flags: the iPhone backup row waits for BL-630 (CCO-8).
+- Why: CDesO-1, CPrivO-4 (no "copy you saved with Export" restore claim; use `whereLive.footer`), CCO-8, `account-security/settings-ia.md` 4, design 2.7. Replaces the Recordings page's storage card.
+- Acceptance: the page shows "On this phone", the three recovery lines with their state (iPhone backup, last export date with Export your book, "coming in an update" for backup to us), counts for recordings without a letter only when above 0, and "Erase everything on this phone" at the bottom; every new line is in the claims registry (BL-637); no line says the iPhone backup brings the book back until BL-630 has passed.
+
+#### BL-630 iCloud restore drill on a real iPhone
+- Status: needs-founder (two iPhones and an Apple Account). Mode: human. Owner: qa engineer (`qa`). Milestone: M14. Size: S. Depends on: none.
+- Release: before 1 Dec. Why: CCO-8, F4, `account-security/security.md` 3(a) and 6 row 3.
+- Acceptance: the Asha book (letters, recordings, the age answer) is restored on a second iPhone from an iCloud backup and through Quick Start; recordings play; the result, with build number and iOS version, is recorded in `docs/qa/DEVICE_TEST_PLAN.md`. If it fails, BL-629's backup row stays off and the founder hears the same day.
+
+#### BL-631 Your words: a two-choice page instead of the "Word for word" switch
+- Status: blocked (BL-636). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: BL-636.
+- Release: 1 Dec. Why: CDesO-1, `account-security/settings-ia.md` 1 problem 3 and 4, F17 6.1 "Your words" row.
+- Acceptance: a picker with "Small fixes, marked" and "Exactly as said", each with one line, and the footer "Either way, we never rewrite your words."; it writes the same stored value the switch wrote (a migration test proves an old value maps to the same choice); VoiceOver reads it as a two-option picker; the Recordings page no longer holds it.
+
+#### BL-632 Storage: one row per language, the detector folded in, true names
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Why: `account-security/settings-ia.md` 4, `speech-model-size.md` "Storage page bug" (both rows read "All languages, Speech model").
+- Acceptance: no intro paragraph; "Space used" header; one row per language with size and Remove; the detector's size counted once and named in the footer if shared; download controls exist only here (Recordings links to Storage when a language is missing); no two rows share a label or a VoiceOver Remove label (test).
+
+#### BL-633 Settings home in five groups
+- Status: blocked (BL-622, BL-629, BL-631). Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`), content. Milestone: M14. Size: M. Depends on: BL-622, BL-629, BL-631, BL-636.
+- Release: 1 Dec. Why: CDesO-1, CCO-9, CDesO-2, CLO-5, Karma tie-breaks 2 and 6; `account-security/settings-ia.md` 3, design 2.6.
+- Acceptance: header card (signs-as and "On this phone" in build 1; opens Plan), then Children, Writing (Spoken language, Your words, Reminders, Appearance), Your letters (Where your letters live, Export your book, Recently deleted, Storage), Privacy and security (App lock, Privacy), Help and legal (Help, If you are struggling, Legal), About; a Plan row stays one tap from home in both builds (CCO-9 test); version row `{version} ({build})`, the registered early note unchanged, sign-off "Made with care in California"; build 1 home has 13 rows with one child; `settingsHome.test.ts` and J16 fixtures updated in the same PR.
+
+#### BL-634 Privacy page in three sections with true lines
+- Status: blocked (BL-636). Mode: agent. Owner: privacy engineer (`privacy`), mobile engineer (`mobile`), content. Milestone: M14. Size: M. Depends on: BL-636.
+- Release: 1 Dec. Why: CPrivO-5 ("only you, on this phone" is false for passcode holders), `privacy-settings.md` 3 and PRs A to C.
+- Acceptance: `trust.promise` replaces `NeverList`; three sections with variants from `capabilities` and sync status; the lock-off line from BL-622; tests: no entry text in notifications (Asha fixture), no screen string outside `packages/content`; every new line in the claims registry (BL-637).
+
+#### BL-635 Reminders in Settings: no pre-sheet, the explanation before the switch
+- Status: ready. Mode: agent. Owner: reminders owner (`mobile`), content. Milestone: M14. Size: M. Depends on: none.
+- Release: 1 Dec. Why: CDesO-3, CCO-10, CPO-3 (rescopes BL-536; bedtime waits for BL-547), `reminders-settings.md` 5 items 1, 2, 6 and 7.
+- Acceptance: the Settings pre-sheet and confirm screen are gone; the explanation footer is visible before the switch, with a test (LEGAL-REQ-007); the Next line comes from the planner; `ReminderPrimingSheet` is retired; M13 rules 1, 2, 3, 6 and 9 still hold.
+
+#### BL-636 Account and Settings words into packages/content
+- Status: ready. Mode: agent. Owner: content. Milestone: M14. Size: M. Depends on: none.
+- Release: 1 Dec (strings land unused first). Why: `account-security/content.md` 4 and 8.
+- Acceptance: new keys in `strings.en.ts` (`beforeBegin`, `settingsHome`, `whereLive`, `yourWords`, `storage`, `erase`) and a new `features/app-lock.en.ts` with its `copy-surfaces.ts` row; counsel-locked keys (content 7) are not shipped as final; `npm test -w @scribe/content` passes; no rule is loosened.
+
+#### BL-637 Claims registry rows for the new privacy and recovery lines
+- Status: needs-founder (docs/legal is founder-merged). Mode: agent. Owner: legal. Milestone: M14. Size: S. Depends on: BL-636.
+- Release: 1 Dec. Flags: needs-counsel for `privacy.footerPrivate` (Q43). Why: CPrivO-5, LEGAL-REQ-044, `account-security/content.md` 7.
+- Acceptance: one registry row per new line (`privacy.whoLockOn.*`, `whoLockOff`, `whereLive.*`, `erase.*`) with its code evidence; the claims test reads them.
+
+#### BL-638 Counsel packet: account and experience questions
+- Status: needs-founder (counsel engagement, W0-13). Mode: pair. Owner: legal (with `regulatory-affairs`). Milestone: M14. Size: S. Depends on: none.
+- Release: before 20 Nov. Flags: needs-counsel. Why: CLO-4, CLO-6.
+- Acceptance: the packet holds Q-A to Q-F, the Face ID string, the setup line under auto-renewal laws, `plan.ended`, the held note, the welcome email's CAN-SPAM class, the Copyright Office reading on drawings, the profile policy line; each has an owner item here.
+
+#### BL-639 Listing: no memory, fact, streak or "delete everything" claim the build cannot keep
+- Status: ready. Mode: agent. Owner: legal (with `marketing`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec (listing, no binary change). Why: CMO-1, NAQ-2, CPrivO-1, `privacy-settings.md` PR D.
+- Acceptance: the 1 Dec listing and `store.config.json` contain no memory, fact or "No streaks" line; the "delete everything" sentence uses the `apple.md` wording until Erase everything (BL-640) has merged and been checked on a phone; the claims test passes.
+
+#### BL-640 Erase everything on this phone, as the account program designed it
+- Status: in-review (PR #520). Mode: agent. Owner: mobile engineer (`mobile`), privacy engineer (`privacy`). Milestone: M14. Size: M. Depends on: none.
+- Release: 1 Dec. Why: J5 in `account-security/journeys.md`, design 2.12. Satisfies: DATA-REQ-024, WP-F17-15.
+- Acceptance: when #520 merges, check it against design 2.12: Export offered first; "Erase" second and never default; device authentication after the confirm; app returns to Before you begin with settings and reminders cleared; a failure shows one line and Try again. Any gap becomes a new item.
+
+#### BL-641 VoiceOver and AX5 walk over every new screen, plus the lock on a device
+- Status: needs-founder (a device operator). Mode: human. Owner: qa engineer (`qa`). Milestone: M14. Size: S. Depends on: BL-621, BL-626, BL-633.
+- Release: before 1 Dec. Why: council section 4 (S1-23).
+- Acceptance: S1-23 rows recorded for Before you begin, the lock offer, lock screen, App lock page, Settings home, Where your letters live, Your words, Storage, Privacy; lock checks: Face ID lockout falls back to passcode, passcode removed turns the lock off with one line, switcher shows the cover, Spotlight "Asha" finds nothing.
+
+#### BL-642 Notes for Review and the privacy label for the 1 Dec build
+- Status: ready. Mode: agent. Owner: privacy engineer (`privacy`), legal. Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: council section 4 (Notes for Review name the lock and Before you begin; build 1 label unchanged, CPrivO confirms at submission).
+- Acceptance: the review notes in `docs/store/` name the lock and Before you begin; a line records that on-device data is not "collected" (Apple App Privacy details, read 1 Nov) and the label is unchanged.
+
+#### BL-643 Held letters export with their audio (PL-2) [P0]
+- Status: ready. Mode: agent. Owner: export owner (`mobile`), payments engineer (`payments`), qa engineer (`qa`). Milestone: M14. Size: M. Depends on: none.
+- Release: 1 Dec, P0 before Plus is on in a store build (F5). Why: PL-2, CPO-8, `v1-experience/plus.md` 6. Satisfies: F14-REQ-039 (device half).
+- Acceptance: with 2 held letters, "Export everything" holds `waiting/` with 2 text and 2 audio files whose hashes equal the originals; works offline and when lapsed; `lib/export/device.ts` no longer exports entries only.
+
+#### BL-644 A held letter opens read-only with its player (PL-2)
+- Status: ready. Mode: agent. Owner: payments engineer (`payments`), mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec, P0. Why: PL-2. Satisfies: F14-REQ-039 (device half), PRD-REQ-025.
+- Acceptance: tapping a held card opens a page with the words and the player and no Keep path except See Plus; the draft row and audio stay byte-identical (test); the held note promises export only after BL-643 passes (CCO-12).
+
+#### BL-645 Settings header shows the plan state (PL-3)
+- Status: blocked (BL-633). Mode: agent. Owner: payments engineer (`payments`), content. Milestone: M14. Size: S. Depends on: BL-633.
+- Release: 1 Dec. Why: F5, CDesO-6, `v1-experience/plus.md` 3.
+- Acceptance: a six-state table test (off, trial, active, grace, shared, lapsed) maps to "Free", "Plus" or "Plus, shared"; no value has a digit; `planHelp` shows only on Free.
+
+#### BL-646 Plan page: What Plus includes, and an ended row (PL-4)
+- Status: ready. Mode: agent. Owner: payments engineer (`payments`), content. Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Flags: needs-counsel (`plan.ended`, CLO-6). Why: CDesO-6 (Apple 3.1.2(c), 5.6), PL-4.
+- Acceptance: the features list renders before Apple's sheet; an expired plan shows "Plus ended on {date}" and no sales sentence; Manage opens Apple's screen in one tap; no save offer, countdown or "Are you sure"; E2E-14 restore passes.
+
+#### BL-647 The setup line and the letter-2 line (PL-5)
+- Status: needs-founder (counsel reads the setup line, CLO-6). Mode: agent. Owner: content, payments engineer (`payments`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Flags: needs-counsel. Why: F5, PL-5.
+- Acceptance: setup shows the F5 line once, with no price and no trial wording; the letter-2 toast shows once at ledger 2 with Plus off, never with Plus, never at 3, never in alpha (PR #552 test kept); content rules pass.
+
+#### BL-648 Retire the dead Plus copy (PL-8)
+- Status: ready. Mode: agent. Owner: content. Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: PL-8, D-083.
+- Acceptance: `keepGate.plusIsOn`, `plus.renewAnnual`, `plus.renewMonthly` are removed; a rule test fails on any app string that names a trial length.
+
+#### BL-649 Held letters as one row, with no number
+- Status: blocked (on #508). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: F5 (the branch's "{count} letters waiting" is refused), CDesO-4 and daily-home D-B1 ("Also waiting", no number). Changes F14-REQ-041 (see Requirement changes). The Write half of the Plus line is BL-560.
+- Acceptance: after #508 merges, Tonight shows the Plus line only after the allowance is used, with no count and no button; held letters are one row with no number; a test fails on any digit in either.
+
+#### BL-650 Memory card: Not today and a Settings switch
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`), content. Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Why: F6, CDesO-5, CR-43, `v1-experience/memories.md` 5 and 7.
+- Acceptance: the "A month ago" card has "Not today" (a local per-date flag; the card stays hidden for that local date) and a "Memories on Tonight" switch, on by default; Listen never autoplays; the card enters on cold launch only; haptic `soft` on Not today; VoiceOver custom action; tests for each.
+
+#### BL-651 The letter page opens with cardToPage (motion step 1)
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8, `v1-experience/motion.md` 1.4 and 4.
+- Acceptance: `letter/[id]` uses `cardToPage`; Reduce Motion gives a fade; `transitions.test.ts` covers it; device check in BL-656.
+
+#### BL-652 One haptic at the start of listening, none on pause (motion step 2)
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8, `v1-experience/motion.md` 1.2.
+- Acceptance: a source scan finds no `haptic(` between start and stop in `listen.tsx` other than the start; MOTION 6 row updated.
+
+#### BL-653 Listen stops re-rendering 20 times a second (motion step 3)
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8.
+- Acceptance: the level and clock move on the UI thread or through shared values; a render-count test over 2 simulated seconds shows at most a few React renders; the Energy Log comparison is in BL-656.
+
+#### BL-654 Splash fades into Tonight (motion step 5)
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8, `v1-experience/motion.md` 1.1.
+- Acceptance: the splash hides with a `fadeMs` fade on cold launch only; Reduce Motion hides it at once; tested with a mocked `SplashScreen`.
+
+#### BL-655 ProgressLine in components/ui (motion step 8)
+- Status: ready. Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8 (track contrast, the "still" state that does not tell the truth).
+- Acceptance: determinate only, `scaleX`; track contrast passes the tokens test in both themes; no number; one component replaces the copies in first run and Review.
+
+#### BL-656 Press timing token and token drift (motion step 6)
+- Status: ready. Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec. Why: CDesO-8.
+- Acceptance: `press.dimMs` (90) is a token; the literals at `press.ts`, `letter/[id].tsx`, `review.tsx`, `toast.tsx`, `join-ask.tsx` are replaced; a source scan fails on literal ms or spring constants outside `tokens.ts`.
+
+#### BL-657 Motion device checklist and Instruments on SE 3 (motion step 10)
+- Status: needs-founder (an iPhone SE 3 and a 120 Hz Pro). Mode: human. Owner: design systems (`design-systems`), qa engineer (`qa`). Milestone: M14. Size: S. Depends on: BL-651, BL-652, BL-653, BL-654.
+- Release: late Nov. Why: CDesO-8, `v1-experience/motion.md` 3.
+- Acceptance: each of the five moments checked at default, Reduce Motion, Reduce Transparency, AX5, VoiceOver and Low Power Mode, in both themes; no hitch over one frame and hitch ratio under 5 ms/s on SE 3; Energy Log for a 10-minute take before and after BL-653; results in the journal and DEVICE_TEST_PLAN.
+
+#### BL-658 PressableFeedback and a lint against raw Pressable (motion step 4)
+- Status: ready. Mode: agent. Owner: design systems (`design-systems`), mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: BL-656.
+- Release: 1 Dec if merged by Fri 20 Nov, else 1.0.1 (F11).
+- Acceptance: one primitive (controls 0.97, cards 0.98, rows opacity 0.9, from current value within one frame); every raw `Pressable` migrated; a lint fails on a new one.
+
+#### BL-659 Decide how a Book excerpt ends: fade, word-aware fade, or system truncation
+- Status: needs-decision (CDesO; founder if the design officer asks). Mode: pair. Owner: design systems (`design-systems`). Milestone: M14. Size: XS. Depends on: none.
+- Release: before BL-660. Why: `book-page.md` 1 ("`ExcerptFade` fades the last 40 percent of line two, which lands inside a word") and 2; logged 1 Nov.
+- Acceptance: one option is chosen and written into COMPONENTS 2.5 with its reason: (a) keep the fade as is, (b) a word-aware fade over the last whole word only, (c) system `numberOfLines` truncation. The pick says how it carries every word to VoiceOver (D-027) and how it behaves at AX5.
+
+#### BL-660 Book excerpt ends on a whole word, with a voice marker
+- Status: blocked (BL-659). Mode: agent. Owner: design systems (`design-systems`), mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-659.
+- Release: 1 Dec if merged by Fri 20 Nov, else 1.0.1 (F11). Why: `book-page.md` 4 step 4.
+- Acceptance: the excerpt follows BL-659's pick; italic signature; a quiet "Voice {duration}" marker with its VoiceOver label; tests: excerpt logic, `transitions.test.ts` column case, AX5 snapshot.
+
+#### BL-661 Retire the count moments (CPO-7)
+- Status: ready. Mode: agent. Owner: content, mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec. Why: CPO-7 (a reward for a total is a badge).
+- Acceptance: `letters10` to `letters365` (`strings.en.ts:662-674`) and every caller are removed; a rule test fails on any moment keyed on a count of letters or days.
+
+#### BL-662 Wait and Review state lines
+- Status: ready. Mode: agent. Owner: content, mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-655.
+- Release: 1 Dec. Why: release map row "Wait and Review state lines"; `wait-product.md` (one system of waiting states), `wait-content.md` 1 and addendum, `review-progress-and-player.md` 2.
+- Acceptance: one family of state lines shared by first run and Review, from `packages/content`; each line has its truth check from `wait-content.md`; rules test passes; no percentage before bytes move (matches #541).
+
+#### BL-663 Drawing reuses: envelopeOpen and readingLamp
+- Status: ready. Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec if merged by Fri 20 Nov. Why: CDesO-7, `v1-experience/illustration.md` 3 rows 6 and 8.
+- Acceptance: first letter saved uses `envelopeOpen` (draws once, ever); Read together empty uses `readingLamp` instead of `moon`; no drawing on controls, Plus, the letter page or notifications; the stroke-window test is kept.
+
+#### BL-664 Design docs: memory card, memory room, motion moments
+- Status: ready. Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: S. Depends on: none.
+- Release: now (docs). Why: CDesO-5, CDesO-7, CDesO-8; `memories.md` 8 step 1, `motion.md` 4 step 9, `illustration.md` 2.
+- Acceptance: COMPONENTS has "Memory card" and "Memory room"; MOTION.md 5a, 5f and 6 match the motion spec, with the visionOS note on the 0.2 Hz caution; the illustration style guide is in DESIGN_LANGUAGE; COMPONENTS PNG drift fixed.
+
+### 1.0.1
+
+#### BL-665 Tonight's slot selector in packages/core
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: none.
+- Why: CDesO-4, CR-43 (pure and table-tested), Karma tie-breaks 1 and 2; `daily-home.md` 2 and 4.
+- Acceptance: a pure function returns the one card or nothing, first match wins: waiting draft (newest only), occasion, memory, small thought, empty; thoughts at most 3 evenings in 7 and never on a first-back or lighter evening; memories at most one a day, a letter not twice in 7 days, three Not todays in a row drop to weekly for 30 days; no facts; at most six tappable things above the tab bar (table test).
+
+#### BL-666 Closure line after a letter is kept, and daypart tags
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: BL-665.
+- Why: CDesO-4, `daily-home.md` 5 and 6.
+- Acceptance: after a letter is kept the question gives way to one closure line and the card shows today's letter; no "come back tomorrow"; prompts carry `anytime` or `evening`, and evening-worded prompts never show before 6 PM (test).
+
+#### BL-667 Sixty small thoughts
+- Status: deferred (1.0.1). Mode: agent. Owner: content. Milestone: M14. Size: M. Depends on: none.
+- Why: CPO-9, CMO-1 (small thought 11 cut), CAIO-1 (hand-written), `library.md` 3.
+- Acceptance: 60 thoughts in `packages/content` with keys and bands; the advice and pressure word list from `library.md` 4 runs over them; content rules pass; none is personalised.
+
+#### BL-668 Keep out of memories, and the hard filter
+- Status: deferred (1.0.1). Mode: agent. Owner: data architect (`data-architect`), mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: none.
+- Why: CDesO-5, CPrivO-7, `memories.md` 5 and 8 step 2.
+- Acceptance: a local `excludedFromMemories` column (migration with a test) and a per-letter action on the letter page and the card; `resurfaced()` never returns a hard-prompt, kept-out, private or quiet letter, nor one by an author who left the book, nor a pre-birth letter unless its switch is on (off by default); same card all day; no repeat in 7 days.
+
+#### BL-669 The memory card opens with cardToPage, in the letter column
+- Status: deferred (1.0.1). Mode: agent. Owner: design systems (`design-systems`), mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-651.
+- Why: CDesO-5, `motion.md` 4 step 7. Acceptance: the card's words sit in the letter column so they carry into the page; Reduce Motion fades; transitions test.
+
+#### BL-670 Another thought on Write and Listen
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`). Milestone: M14. Size: S. Depends on: BL-671.
+- Why: CDesO-9 context, `engagement.md` 3 option A and BL-E1, BL-E2.
+- Acceptance: screen tests for the swap; no immediate repeat over 20 presses; hidden after typing and while recording; back when the field is empty; VoiceOver announces once and keeps focus; Reduce Motion swap is instant; `tap` haptic, never while recording; draws count as shown (CPO-6).
+
+#### BL-671 Prompt history and the CPO-6 repeat rule
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: M. Depends on: none.
+- Why: CPO-6, which restates F13-REQ-004 (see Requirement changes). Replaces BL-534's done-when.
+- Acceptance: a per-author, per-child local history; a property test over a simulated two-year history shows no key twice in 365 days while unseen keys remain; after that, least recently shown, never within 120 days; Another thought draws count as shown; Tonight always has a question (F13-U22 restated).
+
+#### BL-672 Replace the weak prompts
+- Status: deferred (1.0.1). Mode: agent. Owner: content. Milestone: M14. Size: S. Depends on: none.
+- Why: CPO-9, `library.md` 1 (audit of the 111 prompts). Acceptance: each prompt the audit marks weak is replaced under a new key; no key is reused; `PROMPT_LIBRARY_VERSION` bumped; content rules pass.
+
+#### BL-673 Grow the first-year questions to about 220
+- Status: deferred (1.0.1). Mode: agent. Owner: content. Milestone: M14. Size: L (one PR per band). Depends on: BL-672.
+- Why: CPO-9 (rotation arithmetic for the CPO-6 rule). Acceptance: the year-one pool reaches about 220; each PR adds one band; the CPO-6 property test passes at 4 and 7 evenings a week.
+
+#### BL-674 Waiting letters after purchase (PL-6)
+- Status: deferred (1.0.1). Mode: agent. Owner: payments engineer (`payments`). Milestone: M14. Size: S. Depends on: BL-649.
+- Why: PL-6. Satisfies: F14-REQ-041. Acceptance: 3 held, buy: the offer shows once; keep one: 2 held; kill and relaunch: no duplicates; each letter still needs its own Keep.
+
+#### BL-675 Book cover band and chapter headings in words
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`). Milestone: M14. Size: M. Depends on: BL-660.
+- Why: `book-page.md` 4 steps 5 and 6. Acceptance: age line, full-width Read together, gear moved; VoiceOver order (E2E-15); chapter heading "{n} months"; the lit card retired; count line moved to the Months sheet.
+
+#### BL-676 Months sheet and sticky compact headers
+- Status: deferred (1.0.1). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: BL-675.
+- Why: `book-page.md` 4 step 8. Acceptance: jump to a month with a cross-fade, no animated scroll; the 1,200-letter perf fixture (F09-U02) stays within budget.
+
+#### BL-677 Point glyphs to Phosphor Light, and the together stroke table
+- Status: deferred (1.0.1). Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: S. Depends on: none.
+- Why: CDesO-7. Acceptance: controls stay Phosphor Regular; point glyphs use Phosphor Light; `together` is a stroke table that the line-art test reads.
+
+#### BL-678 Spike: CSS :active press with the cardToPage hold
+- Status: deferred (1.0.1). Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: S. Depends on: BL-658.
+- Why: `motion.md` 4 step 11. Acceptance: a written result (adopt or not) with a measured frame time on SE 3.
+
+### 1.1
+
+Sign-in returns in 1.1 (D-121 step (a)). D8 in `v1-experience/council.md` lists what must be true first (CR-43).
+
+#### BL-679 Hosted Auth email limits for real families
+- Status: needs-founder (Supabase dashboard, FT-12). Mode: human. Owner: security engineer (`security`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1.1 (before sign-in widens past the family). Why: D8, `auth-emails-profile.md` 2 (hosted projects start at 30 emails an hour for the whole project; built-in sender 2 an hour). Custom SMTP is BL-360.
+- Vendor and free tier: Resend free plan, 3,000 emails a month and 100 a day (resend.com/pricing, read 1 Nov 2026); Supabase custom SMTP is on the Supabase free plan (supabase.com/pricing, read 1 Nov 2026). The council's "near 100 an hour" cannot hold on the free plan: 100 a day binds first. Sign-in mail is sent per new sign-in, not per day of use, so at the founder's 1,000 active users the monthly cap holds; paid (Resend Pro) would be needed on any day with more than about 50 new sign-ins (two emails each with a resend), or past about 3,000 sign-ins a month [A: this lane's estimate, not measured].
+- Acceptance: the hosted limit is set to fit 100 a day and recorded in AUTH_SETUP 4.3 with the date; a daily-send count is visible to the founder.
+
+#### BL-680 Google sign-in configured end to end
+- Status: needs-founder (Google Cloud console, EAS secrets, FT-15). Mode: human. Owner: security engineer (`security`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1.1. Why: D8, `auth-emails-profile.md` 1. Vendor: Google sign-in has no per-user fee.
+- Acceptance: consent screen published; one web client and one iOS client per bundle id; `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `_IOS_CLIENT_ID` set for `preview` and `production`; Skip nonce recorded as accepted in L11 pending BL-697.
+
+#### BL-681 Unit tests for the Google sign-in adapter
+- Status: deferred (1.1). Mode: agent. Owner: auth owner (`security`). Milestone: M14. Size: S. Depends on: none.
+- Why: D8, `auth-emails-profile.md` 3. Acceptance: `auth-google.test.ts` with the module mocked covers cancel, `IN_PROGRESS`, missing `idToken`, a Supabase error passing through with Google sign-out still run, configure once, and the button hidden without both ids.
+
+#### BL-682 test:auth against local Supabase and Mailpit
+- Status: deferred (1.1). Mode: agent. Owner: auth owner (`security`), qa engineer (`qa`). Milestone: M14. Size: M. Depends on: none.
+- Why: D8, `auth-emails-profile.md` 3. Acceptance: `npm run test:auth` covers both subjects, code verify, `GET /verify` 303 with `?code=`, right and wrong PKCE verifier, `over_email_send_rate_limit`, `otp_expired`, links only to earlyletters.com, no `{child}`; replaces E2E-12 LINK=1.
+
+#### BL-683 AUTH_SETUP section 11 on a device
+- Status: needs-founder (preview build, founding family's phones). Mode: human. Owner: qa engineer (`qa`). Milestone: M14. Size: M. Depends on: BL-680.
+- Release: 1.1. Why: D8. Acceptance: 11.1 to 11.10 recorded pass or fail, including Mail code AutoFill, Gmail and Outlook apps, Hide My Email relay delivery, and Google after Apple with the real address.
+
+#### BL-684 noBook names every way this build offers
+- Status: deferred (1.1). Mode: agent. Owner: content, auth owner (`security`). Milestone: M14. Size: XS. Depends on: none.
+- Why: D8. Acceptance: the `noBook` line is built from the methods this build shows; a test per build profile.
+
+#### BL-685 A screen for a phone whose book belongs to another account
+- Status: deferred (1.1). Mode: agent. Owner: mobile engineer (`mobile`), sync owner (`sync`). Milestone: M14. Size: S. Depends on: none.
+- Why: D8, ADR 0023, `auth-emails-profile.md` 1 (owner mismatch is unspecified). Acceptance: on owner mismatch sync stops and one screen offers sign out, with no data change; tested.
+
+#### BL-686 One sign-in email for everyone
+- Status: deferred (1.1). Mode: agent. Owner: content, auth owner (`security`). Milestone: M14. Size: S. Depends on: none.
+- Why: D8, `auth-emails-profile.md` 4. Acceptance: `verify-email` uses the `sign-in-link` words; the new preheader; a plain-text part exists; no child name; email tests pass.
+
+#### BL-687 Sign out on every device, and a step-up before it
+- Status: deferred (1.1). Mode: agent. Owner: security engineer (`security`), mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: none.
+- Why: Karma tie-break 3 (LNG-14 label, plus "Sign out every device" once `scope: 'global'` exists), `security.md` 6 row 5, design 3.6. Acceptance: a global sign-out exists beside "others"; a step-up if the session is older than 10 minutes; the outbox drains first; tests.
+
+#### BL-688 Session inactivity timeout, or a free alternative
+- Status: needs-founder (spending rule). Mode: pair. Owner: security engineer (`security`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1.1. Why: CFO-1, `security.md` 4 (refresh tokens never expire unless a timeout is set).
+- Vendor and free tier: Supabase session timeouts are "Not included in free"; they need Pro (supabase.com/pricing, read 1 Nov 2026). The free plan includes 50,000 monthly active users, so users are not what forces paid here; the feature is. Free alternative: the app signs out a session unused for 180 days on next launch, plus the step-up of BL-687 for Export, deletion and restore. Under the spending rule, build the free alternative and revisit the Pro feature when another need moves the project to Pro.
+- Acceptance: the founder picks; the free path has a test with a mocked clock.
+
+#### BL-689 Optional "Your name" at sign-in (F3)
+- Status: needs-founder (counsel Q-E, Q-F). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: none.
+- Release: 1.1. Flags: needs-counsel. Why: F3, CPrivO-3, CCO-7, `legal-consent.md` 4, design 3.3.
+- Acceptance: one optional field after sign-in, prefilled from Apple or Google, editable, skippable; absent from the device-only build; included in Export; Privacy Policy line 33 change drafted for legal (founder merges).
+
+#### BL-690 Upload the phone's Terms record at first sign-in
+- Status: deferred (1.1). Mode: agent. Owner: data architect (`data-architect`), security engineer (`security`). Milestone: M14. Size: S. Depends on: BL-627.
+- Flags: needs-counsel (Q-C). Why: `legal-consent.md` 3. Related: BL-577 (#557).
+- Acceptance: a migration adds method `device_first_run` with grants and its line in `supabase/tests/grants.mjs`; `record_policy_act` accepts a backdated `p_client_recorded_at` (DB test); an older version shows today's Terms sheet.
+
+#### BL-691 Account page for signed-in builds
+- Status: deferred (1.1). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: BL-633, BL-687, BL-689.
+- Why: CDesO-1, `settings-ia.md` 3, design 3.4. Acceptance: Plan, Your name, Ways to sign in, Sync, Sign out on every device, Sign out, Delete account alone at the bottom; the header card opens it; rows render from cache; offline actions show one line.
+
+#### BL-692 Device authentication before the old phone approves a restore
+- Status: deferred (1.1, with owner backup). Mode: agent. Owner: security engineer (`security`). Milestone: M14. Size: S. Depends on: none.
+- Why: CISO-1. Acceptance: approving a restore request calls device authentication; cancel approves nothing; tested.
+
+#### BL-693 Ask for the passcode once after Face ID enrolment changes
+- Status: deferred (1.1 native batch). Mode: agent. Owner: security engineer (`security`), mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-621.
+- Flags: native-build. Why: CISO-1 (`biometricsChanged` only with a native check), J2. Acceptance: a native check of `evaluatedPolicyDomainState`; after a change the next unlock needs the passcode once; device test.
+
+#### BL-694 Welcome email at "Keep in this account" (F10)
+- Status: needs-founder (counsel classifies it, CLO-6). Mode: agent. Owner: content, legal. Milestone: M14. Size: S. Depends on: BL-360.
+- Release: 1.1. Flags: needs-counsel. Why: F10, CMO-1 (no "kept as you said it" until the registry allows it), `auth-emails-profile.md` 4.
+- Vendor and free tier: rides the same Resend free plan as BL-679 (3,000 a month, 100 a day); one email per new owner, never to co-parents, so it adds about one send per new account. CFO-2: volume past the free plan is a founder cost line.
+- Acceptance: sent once per account, never to a co-parent; no child name, no tracking; treated as commercial until counsel rules; email tests pass.
+
+#### BL-695 New memory types and their order in packages/core
+- Status: deferred (1.1). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: M. Depends on: BL-668, BL-547.
+- Why: CDesO-5, F6, `memories.md` 2 and 8 step 3. Acceptance: types and priority ladder table-tested; chosen by date, age and parent marks only, never by reading words (CPrivO-7); a type any BL-547 parent finds distressing is off.
+
+#### BL-696 The memory room and the memory prompt kind
+- Status: deferred (1.1). Mode: agent. Owner: mobile engineer (`mobile`), design systems (`design-systems`), content. Milestone: M14. Size: M. Depends on: BL-695.
+- Why: CDesO-5 (no Memories tab in 1.x), `memories.md` 4 and 7. Acceptance: the room opens from the card only; `useUnlitRoom`; VoiceOver order as specified; AX5 stacks; a `memory` prompt kind in the library.
+
+#### BL-697 CISO review: skip-nonce (L11) and code length
+- Status: needs-decision (CISO). Mode: pair. Owner: security engineer (with `security-architect`). Milestone: M14. Size: XS. Depends on: none.
+- Release: before 1.1. Why: D8. Acceptance: a written ruling on Skip nonce for Google on iOS and on 6 or 8 digits.
+
+#### BL-698 Month-day and birthday questions
+- Status: deferred (1.1). Mode: agent. Owner: content, mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: BL-540, BL-665.
+- Why: CPO-9, `engagement.md` BL-E5, `daily-home.md` 4. Acceptance: a `month` and an `occasion` kind picked only on the child's month-day or birthday (core test); honours the celebrations switch (BL-542); library version bumped.
+
+#### BL-699 You page with your birthday and anniversary (F8)
+- Status: deferred (1.1). Mode: agent. Owner: data architect (`data-architect`), mobile engineer (`mobile`), privacy engineer (`privacy`). Milestone: M14. Size: M. Depends on: none.
+- Why: F8, CPrivO-7, `auth-emails-profile.md` 5. Acceptance: a one-row local `parent_profile` table; month and day only; device-only, never synced, never in a notification or email; never asked at setup, no completion nudge; removing a date deletes it everywhere; Export includes it; no relationship field.
+
+#### BL-700 The on-day card for a parent's date
+- Status: deferred (1.1). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: BL-699, BL-665.
+- Why: F8. Acceptance: one card on the day with a library prompt; "Not this year" and "Don't show this again"; owner only; no countdown; tested.
+
+#### BL-701 New drawings, hand-coded in the house style
+- Status: deferred (1.1; spending rule: no commission). Mode: agent. Owner: design systems (`design-systems`). Milestone: M14. Size: M. Depends on: BL-677.
+- Flags: needs-counsel (whether SVG paths written by an agent are protectable, CLO-6 Copyright Office reading; CAIO-1 says generated images are for exploration only). Why: F9 deferred by the spending rule; CDesO-7; `illustration.md` 2 to 5.
+- Acceptance: `pressedPage`, `letterStack`, `candle`, `underline`, `twoShoes` as SVG masters in the existing eight's style (1.75 pt monoline, two tones, 96 pt minimum); `line-art.test.ts` registry, density and banned-surface checks; or the item waits if counsel says ownership is unclear.
+
+#### BL-702 Illustrator commission (F9)
+- Status: deferred (spending rule, 1 Nov 2026). Mode: human. Owner: founder (with `legal`). Milestone: M14. Size: S. Depends on: none.
+- Why: F9 approved, then held by the spending rule. Acceptance: revisit only when the founder lifts the rule; then two quotes, an assignment and moral-rights waiver (CLO-6).
+
+#### BL-703 Held letters sync, and the Family Sharing line (PL-7)
+- Status: deferred (1.1). Mode: agent. Owner: payments engineer (`payments`), sync owner (`sync`). Milestone: M14. Size: L (split server and client). Depends on: BL-643.
+- Why: PL-7, D-121 order. Satisfies: F14-REQ-039 (server half), F14-REQ-028. Acceptance: F14-REQ-039's two-phone check; solo book has no Family line, shared book shows it before See Plus.
+
+#### BL-704 Native batch for the 1.1 build
+- Status: deferred (1.1 build). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: M. Depends on: none.
+- Flags: native-build. Why: CR-43, release map "Native batch". Acceptance: NativeTabs spike result, native sheet A/B result, keyboard test, `LSApplicationQueriesSchemes` for BL-724, and BL-693 ride one build.
+
+#### BL-705 OTA updates for 1.0.x only
+- Status: needs-decision (a DECISIONS entry first, per `docs/ops/RELEASE.md` "If OTA is adopted later"). Mode: pair. Owner: platform (`ops`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1.0.x. Flags: native-build (adds `expo-updates`). Why: wave 3 brief ("OTA (EAS Update) planned for 1.0.x only"); D-091 today says no OTA in v1.0.
+- Vendor and free tier: Expo free plan, EAS Update for 1,000 monthly active users (a user who downloads at least one update in the month), unlimited updates, 100 GiB bandwidth (expo.dev/pricing, read 1 Nov 2026). Paid would be needed past 1,000 updating users a month; no alternative found with a higher free limit for Expo apps in this lane.
+- Acceptance: the decision entry; `runtimeVersion` policy; rollout from 10%; never changes consent, gates, paywall or data collection by OTA (RELEASE.md).
+
+### 1.2
+
+#### BL-706 Opt-in memory notifications: A year ago, Birthday
+- Status: deferred (1.2). Mode: agent. Owner: reminders owner (`mobile`), content, privacy engineer (`privacy`). Milestone: M14. Size: M. Depends on: BL-547, BL-695.
+- Why: F6, CDesO-5, M13 rules. Acceptance: off by default; local only; takes the one daily slot; no letter text, names only with the names switch; a participant who finds it distressing halts it for everyone.
+
+#### BL-707 This time last year, and firsts
+- Status: deferred (1.2). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: M. Depends on: BL-547, BL-695.
+- Why: release map; `engagement.md` 4 rows 4 and 6 (BK-05). Acceptance: firsts are parent-set tags only, never expected by age; the list shows the parent's words; tested.
+
+#### BL-708 A lighter stretch, chosen by the parent
+- Status: deferred (1.2). Mode: agent. Owner: content, mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-547.
+- Why: `engagement.md` BL-E4, `daily-home.md` 4. Acceptance: only the parent starts it; seven days, ends silently; no memories, thoughts or facts while on; five study parents have read the words.
+
+#### BL-709 Clinician reviewer for facts and the struggling page (F7)
+- Status: deferred (spending rule, 1 Nov 2026; facts stay out). Mode: human. Owner: founder (with `legal`). Milestone: M14. Size: S. Depends on: none.
+- Why: F7 approved, then held by the spending rule. BL-105 is affected the same way. Acceptance: revisit only when the founder lifts the rule.
+
+#### BL-710 Gentle facts behind a test and a reviewer record
+- Status: deferred (spending rule; blocked by BL-709). Mode: agent. Owner: content, legal (with `compliance-engineer`). Milestone: M14. Size: M. Depends on: BL-709.
+- Why: F7, CCO-12, `library.md` 4 and 5. Acceptance: `facts.test.ts` (publisher allowlist, https sources, reviewer record, no `before` band, pressure words) and a release gate 12 months after `verifiedOn`; no fact ships without both.
+
+#### BL-711 Small thoughts to 120
+- Status: deferred (1.2). Mode: agent. Owner: content. Milestone: M14. Size: M. Depends on: BL-667.
+- Why: CPO-9. Acceptance: 120 thoughts; same tests as BL-667.
+
+### Later and ongoing
+
+#### BL-712 On this day list, sealed letters, synced dates
+- Status: deferred (later; each needs its own CPrivO ruling). Mode: agent. Owner: founder (drafted by `product`). Milestone: M14. Size: L. Depends on: none.
+- Why: release map "Later"; `engagement.md` 4 row 9 (BK-03). Acceptance: split into items when a ruling exists.
+
+#### BL-713 Interview guide for the engagement questions
+- Status: blocked (BL-547). Mode: pair. Owner: user researcher (`user-research`). Milestone: M14. Size: XS. Depends on: BL-547.
+- Release: now to 1.2. Why: `engagement.md` BL-E6; BL-547 gates every 1.2 row. Acceptance: `PARENT_STUDY_PLAN.md` asks about Another thought, the question on the letter page, a year ago, firsts, memory warm or sad, and the Plus gate ("what happens to your third letter?"), with thresholds written before the study.
+
+#### BL-714 The question on the letter page (proposed D-138)
+- Status: needs-decision (D-138). Mode: agent. Owner: mobile engineer (`mobile`), content. Milestone: M14. Size: S. Depends on: none.
+- Release: 1.0.1 once D-138 is entered. Why: CDesO-9, CAIO consulted. Acceptance: an unsigned `AppNote` above the words; never in Read together, export prose or print (tests on each).
+
+### Follow-ups logged 1 Nov 2026
+
+#### BL-715 Write saves the last keystrokes when the app goes to the background
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec window (D-130). Found by: PR #545 reviews (finding 2 at 2686ccc; carried at 9b13d36). Satisfies: F04-REQ-011 ("immediately on AppState inactive or background").
+- Acceptance: an `AppState` listener flushes the 500 ms debounce on `inactive` and `background`; a fake-timer test proves typed words reach the store when the app backgrounds and is killed inside the pause; matches Review's flush (PR #522).
+
+#### BL-716 Review: keyboard offset in the sheet, and the controlled field
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: none.
+- Release: 1 Dec window. Found by: PR #545 reviews (`review.tsx:826`, KeyboardAvoidingView in a sheet with no offset; `:898`, `value={finalText}`).
+- Acceptance: the field stays visible above the keyboard on first open (test with a measured offset as in Write); IME and dictation are not replaced mid-composition (an uncontrolled field, or a test proving the controlled one keeps marked text); device row added to S1-36.
+
+#### BL-717 Clearing the typed words on a recording draft is saved on Close
+- Status: ready. Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Release: 1 Dec window. Found by: PR #545 reviews (finding 3 at 2686ccc; write-session `!io.hasRecording(id)` untested).
+- Acceptance: on a draft with audio, clearing the text and tapping Close keeps the recording and stores empty typed text; a test with `audioUri` set fails if the recording draft is deleted or the old text stays.
+
+#### BL-718 Licences: VoiceOver reads the licence names twice
+- Status: blocked (on #550). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Found by: PR #550 reviews (`licenses.tsx:112`, the pack line's label appends `row.licence`). Acceptance: each line's accessibility label names each licence once (test).
+
+#### BL-719 The speech download's give-up survives a relaunch, or the header says it does not
+- Status: ready. Mode: agent. Owner: speech engineer (`speech`), mobile engineer (`mobile`). Milestone: M14. Size: XS. Depends on: none.
+- Found by: PR #541 review (`gaveUpOn` lives in memory, `download-retry.ts`; `clearAll()` does not clear it although the header says stopping the queue clears retries).
+- Acceptance: either the give-up is stored per language (MMKV) with a test across a simulated relaunch, or the header at `download-retry.ts:21-23` says a relaunch starts the count over; either way `clearAll()` and its comment agree (test).
+
+#### BL-720 Gate the two remaining Manage subscription buttons on alpha
+- Status: ready. Mode: agent. Owner: payments engineer (`payments`). Milestone: M14. Size: XS. Depends on: none.
+- Found by: PR #552 review nit 1 (`plan-notice.tsx:108` PlanNoticeHost and `delete-account.tsx:270-281` call `manageSubscription()` gated only on plan data).
+- Acceptance: both are hidden when `PLUS_ALPHA`; a source pin in `billing-alpha.test.ts` fails if any StoreKit call is reachable in alpha.
+
+#### BL-721 Supabase manual linking: config and docs disagree
+- Status: ready. Mode: agent. Owner: auth owner (`security`). Milestone: M14. Size: XS. Depends on: none.
+- Release: before sign-in widens (1.1); alpha build 2 has sign-in, so sooner is better. Found by: `auth-emails-profile.md` 1. Evidence: `supabase/config.toml:47` `enable_manual_linking = false`; `docs/ops/AUTH_SETUP.md:30` says on; A-REQ-019 needs it on for Ways to sign in.
+- Acceptance: one value, chosen with its reason (on only when A-REQ-019 ships, or on now); config.toml, AUTH_SETUP and the hosted setting (founder step, recorded) agree.
+
+#### BL-722 DMARC is p=none; the docs say quarantine
+- Status: needs-founder (DNS at the registrar, FT-14). Mode: human. Owner: security engineer (`security`). Milestone: M14. Size: XS. Depends on: none.
+- Found by: `auth-emails-profile.md` 2 (dns.google read 1 Nov: `p=none; rua=mailto:hello@...`); `docs/ops/AUTH_SETUP.md:128` says `p=quarantine`, then `reject`.
+- Vendor and free tier: DNS only, no cost; reports to a `dmarc@` alias, not the support inbox.
+- Acceptance: two weeks of reports read, then `quarantine`, then `reject` after two clean weeks; `rua` moved to `dmarc@`; AUTH_SETUP states the live value and date.
+
+#### BL-723 "Trouble signing in?" names only the ways this build offers
+- Status: ready. Mode: agent. Owner: content, auth owner (`security`). Milestone: M14. Size: S. Depends on: none.
+- Release: alpha build 2 window and 1.1. Why: D8, BL-475 point 3 (this item carries out its answer), `auth-emails-profile.md` 2.
+- Acceptance: the help text is built from the methods this build shows (a test per profile: no Google line when Google is hidden); "write to us" is a mailto button; content rules pass.
+
+#### BL-724 Trouble signing in: open the person's own mail app
+- Status: deferred (1.1 native batch). Mode: agent. Owner: mobile engineer (`mobile`). Milestone: M14. Size: S. Depends on: BL-723, BL-704.
+- Flags: native-build (`LSApplicationQueriesSchemes`, CR-43). Acceptance: "Open Mail" offers installed mail apps (Apple Mail, Gmail, Outlook) and falls back to Apple Mail; tested with mocked `canOpenURL`.
+
+#### BL-725 F08 lines 23 and 187 match the code
+- Status: needs-founder (a requirement document edit). Mode: pair. Owner: security engineer (`security`). Milestone: M14. Size: XS. Depends on: none.
+- Why: CISO-2. Evidence: `docs/prd/v2/features/F08-recordings.md:23` ("No backup code exists") is stale since PR #151; `:187` says "if it has none (the only phone was lost), 24 hours", but a lost phone is a device seen in 90 days, so the code gives 72 hours (`backup_server.sql:84-88`, `escrow/restore.ts:7-8`).
+- Acceptance: the text in Requirement changes row 6 is applied; nothing else in F08 changes.
+
+#### BL-726 docs/ROADMAP.md says 2 Nov
+- Status: ready. Mode: agent. Owner: founder (drafted by `product`). Milestone: M14. Size: XS. Depends on: none.
+- Why: `docs/ROADMAP.md` still leads with "submit in the week of Mon 2 Nov 2026"; D-121 moved the first store build to Tue 1 Dec, and F11 set a 20 Nov cut-off.
+- Acceptance: the roadmap's top states 1 Dec submission, the 9 Nov go/no-go, the 20 Nov cut-off and the 1.0.1, 1.1, 1.2 order from F11, each with its source; dates match `docs/release/1.0.0.md`.
+
+### Requirement changes (drafts for the founder; requirement documents are not edited by agents)
+
+A decision below changes what a requirement says. Each row cites the file and line on `develop` at b79982d0. LEGAL-REQ rows are in `docs/legal/` (founder-owned; counsel confirms).
+
+| # | Requirement (file:line) | Today | Change | Decision |
+|---|---|---|---|---|
+| 1 | F13-REQ-004 (`docs/prd/v2/features/F13-prompts-reminders.md:272`), metric `:43`, Q1 `:401` | No key twice to the same author and child within 365 days | "No key twice in 365 days while unseen keys remain; then least recently shown, never within 120 days; Another thought draws count as shown." Q1 is answered by this rule | CPO-6, CPO-9 |
+| 2 | F13-U22 (`F13-prompts-reminders.md:188`) | Pool exhausted: no prompt | Pool exhausted: the least recently shown key outside 120 days; Tonight always has a question | CPO-6 |
+| 3 | F14 6.1 A (`docs/prd/v2/features/F14-plus.md:152-159`) and 6.4 (`:280`) | No Plus words at setup; Plan says `billingCopy.plan.off` | Add row 0: one setup line said once, no price, no trial, no button (not an offer, so 6.4 and C-REQ-023 still hold); row 2 extends `secondFreeNote`; row 3 becomes the header status ("Free", "Plus", "Plus, shared") and "What Plus includes" before Apple's sheet, with an ended row | F5, CDesO-6, PL-3 to PL-5 |
+| 4 | F14-REQ-040 (`F14-plus.md:427`, `:158`) | Standing line on Tonight and Write once the allowance is used | Unchanged in words; confirmed by F5: nothing about Plus on Tonight before the allowance is used | F5 |
+| 5 | F14-REQ-041 (`F14-plus.md:428`, `:166`) | One row "3 letters waiting" in plural form | One row with no number ("Also waiting" pattern) | F5, CDesO-4 |
+| 6 | F08 (`docs/prd/v2/features/F08-recordings.md:23`, `:187`) | Line 23 "No backup code exists"; line 187 "(the only phone was lost), 24 hours" | Line 23 names the backup server merged in PR #151, off in every profile; line 187: "if it has none (no other enrolled device seen in 90 days), 24 hours; a lost phone counts as seen, so its hold is 72 hours" | CISO-2 |
+| 7 | LEGAL-REQ-002 (`docs/legal/ENGINEERING_REQUIREMENTS.md:36-45`) | Neutral 18+ question before first use; 24 h anti-retry | Wording and tests unchanged. Add one note: on the device path the same screen carries an unticked Terms box; No goes to the stop whatever the box says; Yes without the box records nothing | F2, CCO-6 |
+| 8 | PRD-REQ-019 (`docs/prd/PRD.md:281`) | Neutral question, Yes stored as a boolean | Add: "with an unticked Terms of Service box on the same screen; the phone keeps a local Terms record (version, time, text hash), never logged" | F2, CPrivO-3 |
+| 9 | LEGAL-REQ-001 (`ENGINEERING_REQUIREMENTS.md:28-34`) | Terms acceptance at account creation only | Add a criterion: a device Terms record is uploaded at first sign-in with method `device_first_run` if its version is current (counsel Q-C) | F2, `legal-consent.md` 3 |
+| 10 | F04-REQ-027 (`docs/prd/v2/features/F04-capture.md:335`) | One row per waiting draft up to 2, then collapsed | Tonight's card shows the newest draft only, with "Also waiting" and no number; every draft one tap from the list | CDesO-4 |
+| 11 | F17 lock (`docs/prd/v2/features/F17-settings-privacy.md:59`, `:163`) | Off by default; a switch in Privacy | Off until turned on, offered once at the end of first run at equal weight; a row on Settings home and in Privacy, one setting | CPO-2, CDesO-1 |
+| 12 | F02 6.1 step 3 (`docs/prd/v2/features/F02-account.md:122`) | Apple's full name saved once to `display_name` | One optional "Your name", prefilled from Apple or Google, editable, skippable; never in the device-only build | F3 |
 
 ## Appendix: TDD proposal to BL mapping
 
