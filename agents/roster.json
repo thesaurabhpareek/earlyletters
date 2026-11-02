@@ -38,7 +38,7 @@
     "daily_runs": 1,
     "wip_limit": 1,
     "$comment": "An agent without engine, model or max_budget_usd takes the engine's defaults. effort is optional and passed to the engine (OpenCode --variant, Claude Code --effort).",
-    "engine": "opencode"
+    "engine": "claude-code"
   },
   "departments": {
     "engineering": "1f6feb",
@@ -64,7 +64,7 @@
       "daily_runs": 4,
       "wip_limit": 1,
       "max_turns": 60,
-      "model": "openrouter/z-ai/glm-5.2",
+      "model": "claude-sonnet-5-5",
       "max_budget_usd": 3
     },
     {
