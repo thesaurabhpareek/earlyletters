@@ -53,8 +53,8 @@ Scope is what this release can carry: alpha build 1's go/no-go rows, the founder
 
 | Item | PR, head | Review A (correctness) | Review B (tests) | Merge |
 |---|---|---|---|---|
-| BL-563 Listen stuck on finishing | #595, 8ba2a711e079ebf85a55298e5d726954dbb97135 | PASS; merge clean; new tests fail on base; non-blocking: no "kept" line after a failed or timed-out save | see section 4 | founder go on this sha, or a second session posts both reviews (CR-48) |
-| BL-564 consent sheet 404 link | #589, b981beeb22bd76bbbe9c9cf95886f44e381ce122 | PASS; merge clean; new test fails on base; leftover unused `brand.web.healthPrivacy` | see section 4 | as above |
+| BL-563 Listen stuck on finishing | #595, 8ba2a711e079ebf85a55298e5d726954dbb97135 | PASS; merge clean; new tests fail on base; non-blocking: no "kept" line after a failed or timed-out save | PASS; clean on 29dcd7d8; new tests fail without the fix; typecheck clean | founder go on this sha, or post both reviews (section 4) |
+| BL-564 consent sheet 404 link | #589, b981beeb22bd76bbbe9c9cf95886f44e381ce122 | PASS; merge clean; new test fails on base; leftover unused `brand.web.healthPrivacy` | PASS; clean; content 280/280; new BL-564 tests fail without the fix; gap: no content test that `healthLink` is retired | as above |
 | BL-594 function keys | branch `fix/functions-bl-594-new-keys` | not reviewed: keys and auth need the founder's own read (CR-48 item 5) | n/a | founder |
 
 ### 2.4 Production (CR-49)
@@ -68,6 +68,26 @@ Scope is what this release can carry: alpha build 1's go/no-go rows, the founder
 ### 2.5 Build 2 and beyond (blocked, not this release)
 
 S-50 where staging lives (a spend decision, founder), S-51 to S-54 (staging, auth, EAS `preview` variables, purge worker), D-129 Delete account row (the noon PT Mon 2 Nov drill deadline cannot be met without staging, so the row stays hidden by default).
+
+## 4. The S0 reviews, ready to post (CR-48 path 1)
+
+Run by this session, which did not author either PR, through two separate reviewer agents that saw only the diff and the base files, each told to look for a reason to fail. They share the author's model family: independent in method, not in identity. They count only once posted on the PR against the same head sha; a new push needs new reviews.
+
+#595, BL-563, head 8ba2a711e079ebf85a55298e5d726954dbb97135:
+```
+## Review A at 8ba2a711e079ebf85a55298e5d726954dbb97135: PASS
+Correctness and safety. finishWithin turns a throwing or hanging save into {ok:false}; endTake leaves Listen without deleting anything, so the take survives both paths (sweep on next launch; finalizing map keeps the job). Let it go is gone during finishing. New tests fail on base. Merge with develop: clean. Non-blocking: no "kept" line after a failed save; an open Discard alert when backgrounding starts finishing can still delete (pre-existing).
+## Review B at 8ba2a711e079ebf85a55298e5d726954dbb97135: PASS
+Tests and regression. Merged onto develop 29dcd7d8 cleanly; mobile tests green apart from a worktree-only licences setup artefact (42/42 in the real checkout); typecheck clean. Reverting the source fix fails "finishing offers no discard" and "the screen waits through finishWithin and never deletes the draft".
+```
+
+#589, BL-564, head b981beeb22bd76bbbe9c9cf95886f44e381ce122:
+```
+## Review A at b981beeb22bd76bbbe9c9cf95886f44e381ce122: PASS
+Correctness and content rules. The consent sheet opens only brand.web.terms and brand.web.privacy, both served; /health-privacy is a removed route and the policy docs agree it is not published in v1.0. Content tests 280/280. New test fails on base. Merge with develop: clean. Leftover: brand.web.healthPrivacy and settings.privacy.healthPrivacyLink are defined but unused.
+## Review B at b981beeb22bd76bbbe9c9cf95886f44e381ce122: PASS
+Tests and regression. Merged onto develop cleanly; content 280/280; typecheck clean. Reverting the fix fails both [BL-564] tests. Gap: no content test asserts healthLink is retired; the guard is the mobile removed-route scan.
+```
 
 ## 3. Build 9
 
