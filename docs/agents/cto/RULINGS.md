@@ -528,3 +528,15 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog section and the two standards in one revert.
 - Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma
+
+### CR-49 The next TestFlight build goes from `develop` on the Mac now; the S0 fixes follow in another build; nothing new ships to production today (2 Nov 2026, Karma via release session earlyletters-d9)
+- Question: make build 9 now, or wait for the S0 fixes; can this session count as CR-48's second session; what does "production" mean today?
+- Tier and type: T1 (servers-off build to the internal Family group, two-way); clear
+- Options considered: (a) wait for #595, #589 and BL-594, then build once; (b) build 9 now from `develop`, build 10 when the S0 fixes merge; (c) build from a local merge of unmerged PRs; (d) do nothing.
+- Ruling: (b). Build 9 is the `testflight` profile at `develop` 29dcd7d8, only after the full harness, `doctor.ts` and `preflight:testflight` show 0 FAIL, then `eas submit` with the stored key. (c) is refused: a build traces to a commit on `develop`. This session did not author #595 or #589, so it runs two lens reviews on their exact heads; they count only when posted on GitHub against that sha (CR-48 path 1). Here they are evidence the founder can post. BL-594 still needs the founder's own read of the diff (CR-48 item 5). The only production surface live today is the website, deployed from `main` by Vercel; #549 and #573 are on `main`, so "deploy" means verifying the live site serves `main`'s tip. No Supabase production exists, and the store lane waits for 9 Nov (D-106, D-124).
+- Why: build 8 has the 0% download stall (#541), which blocks words entirely; build 9 fixes it and is no worse on BL-563. Expo is on the Free plan, 1 of 30 builds used this cycle, no overage (`eas account:usage`, read 2 Nov). Cost of delay is a broken first run for the family each day.
+- Stops: any FAIL or red test; any change to EAS env vars, credentials or App Store Connect; staging (spend, S-50); any `ios-v*` tag (setup retro section 0 item 6); the `preview` profile.
+- Door: two-way
+- Way back: expire build 9 in App Store Connect; build 8 stays.
+- Revisit when: #595 and #589 merge (then build 10, before Tue 3 Nov 13:00 UTC).
+- Note: CR-48 is used twice on open branches (#592 and #591); this one is CR-49. Karma
