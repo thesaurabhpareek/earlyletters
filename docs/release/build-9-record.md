@@ -91,4 +91,31 @@ Tests and regression. Merged onto develop cleanly; content 280/280; typecheck cl
 
 ## 3. Build 9
 
-See section 5 for the build id, submit result and post-release checks.
+## 5. Outcome and post-release checks (2 Nov 2026)
+
+| Check | Result |
+|---|---|
+| EAS build | `97a29ea8-d4b1-4b0c-9296-3aa05b2d181c`, FINISHED 07:21 UTC; profile `testflight`; 1.0.0 (9); commit 29dcd7d8; same distribution certificate and profile as build 8 |
+| Submit | `eas submit --id 97a29ea8...` exit 0; submission `69e125ae-5493-4a76-8173-e9588f846119`; uploaded to App Store Connect record 6829163677 (`.preview`); Apple processing |
+| Bundle and version | `com.earlyletters.scribe.preview`, 1.0.0, 9 |
+| Entitlements | no `aps-environment`; data protection `NSFileProtectionCompleteUntilFirstUserAuthentication`; `get-task-allow` false; Sign in with Apple and `applinks:earlyletters.com` as in build 8 |
+| Size | IPA 25.8 MB (record only, B1-12; the store download size comes from App Store Connect) |
+| Privacy manifest | `PrivacyInfo.xcprivacy` present |
+| JS bundle (Hermes strings) | trusted key `el-2026-11` and `packs.earlyletters.app` present; no Supabase project URL, no `service_role`; the `sb_secret_`, `*.supabase.co` and `expo-updates` hits are library strings; the one `googleusercontent` id is `expo-linking`'s own list of Expo Go URL schemes (`node_modules/expo-linking/src/Schemes.ts:46`), not a sign-in client |
+| Third review set (second session) | #595 and #589 PASS on both lenses; CI on both heads green including `required` (one skipped simulator build) |
+
+Left to the founder: add build 9 to the "Family" internal group once processing ends, paste `whatToTest.build1`, read Apple's processing email for ITMS-91053 (B1-10), then the phone rows B1-4 to B1-8.
+
+## 6. Founder approvals recorded (2 Nov 2026, in chat to the release session)
+
+The founder approved every pending recommendation of Karma and the executive team. Settled by that, as recommended in `docs/release/FOUNDER_QUEUE.md` section 0a:
+- T1: gate the 1 Dec submission on the build 1 P0 rows that protect a promise or a store duty (RT-REL, RT-PRV, RT-AGE, RT-PAY-21, plus RT-WRD-03, RT-LCH-09, RT-DSP-05, RT-NET-01); ship the rest as known issues with owners.
+- T2: borrow an iPhone XR, a 12 or 13 mini and an iPhone 11 for one session each by Fri 6 Nov.
+- T3: one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08), before the 1.0 release. Not executed now.
+- T4: one line in What to Test and the release notes telling testers to export first, because the store app is a separate app.
+- T5: list the portrait lock as a known gap in the accessibility statement for 1.0, with counsel.
+
+Not settled by a blanket approval:
+- merges under CR-48, which need a go naming the PR and its head sha;
+- BL-594, which needs the founder's own read of the diff;
+- S-50, which has no recorded recommendation, is a spend decision and needs an account sign-up only the founder can do.
