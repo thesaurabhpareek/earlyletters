@@ -48,8 +48,8 @@
  * page's own opening is hidden until the move settles, and then VoiceOver and TalkBack focus move to the element
  * the page gave `focus` (its dateline or heading).
  *
- * Package P5 switches the letter route to this (ROUTES['letter/[id]'] = 'cardToPage') when the page mounts
- * CardToPage; until then the letter keeps the native push. Pure parts: lib/transitions.logic.ts.
+ * The letter route is presented for this (ROUTES['letter/[id]'] = 'cardToPage': a transparent modal with no native
+ * move or header), so the grow is the only move. Pure parts: lib/transitions.logic.ts.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
@@ -472,8 +472,9 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   return (
     <CardPageContext.Provider value={ctx}>
-      {/* Modal for screen readers: only the page is reachable while it is up (the Book also hides itself). */}
-      <View style={StyleSheet.absoluteFill} accessibilityViewIsModal aria-modal>
+      {/* Modal for screen readers: only the page is reachable while it is up (the Book also hides itself). VoiceOver's
+          escape (two-finger scrub) closes it the way Back does: a transparent modal has no native escape of its own. */}
+      <View style={StyleSheet.absoluteFill} accessibilityViewIsModal aria-modal onAccessibilityEscape={close}>
         {/* The veil: the page's paper over the whole Book, one layer (the Book's words and light leave, never cut). */}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: c.bg }, veilStyle]} />
         <Animated.View pointerEvents="none" style={[{ position: 'absolute' }, paper]} />

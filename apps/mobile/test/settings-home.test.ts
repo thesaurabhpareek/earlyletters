@@ -30,7 +30,9 @@ describe('[S40] Settings home', () => {
     const about = home.indexOf('copy.settings.about.title');
     expect(about).toBeGreaterThan(-1);
     const uses = [...home.matchAll(/copy\.settings\.about\.beta\.(\w+)/g)];
-    expect(uses.map((m) => m[1])).toEqual(['label', 'body']);
+    // The body only: the "Early version" heading is not part of the registered note and is not shown, so About says
+    // "early" once (founder, 8 Nov 2026; CLO-5).
+    expect(uses.map((m) => m[1])).toEqual(['body']);
     for (const m of uses) expect(m.index!).toBeGreaterThan(about);
     // Unstyled: no tinted card, no accent caps label.
     expect(home).not.toMatch(/rounded-lg bg-secondary|tone="accent" caps/);
@@ -41,9 +43,11 @@ describe('[S40] Settings home', () => {
     expect(others).toEqual([]);
   });
 
-  it('says the short privacy line once, as the Your data footer, and drops the page footer', () => {
-    expect(home.match(/copy\.trust\.short/g)).toHaveLength(1);
-    expect(home).toMatch(/<ListSection title=\{h\.sections\.data\} footer=\{copy\.trust\.short\}>/);
+  it('leaves the short privacy line to Settings, Privacy, where it is said once as the last line (design.md 2.11)', () => {
+    expect(home).not.toMatch(/copy\.trust\.short/);
+    const privacy = code('app/settings/privacy.tsx');
+    expect(privacy.match(/copy\.trust\.short/g)).toHaveLength(1);
+    expect(privacy).toMatch(/<ListSection title=\{p\.documentsTitle\} footer=\{copy\.trust\.short\}>/);
     expect(home).not.toMatch(/neverRewrite/);
   });
 
@@ -103,7 +107,8 @@ describe('[S40] If you are struggling', () => {
     expect(en.struggling.resources).toHaveLength(3);
     expect(page).toMatch(/\{s\.body\}/);
     expect(page).toMatch(/s\.resources\.map\(\(r\) => \(\s*<ListRow key=\{r\.tel\} title=\{r\.name\} subtitle=\{r\.how\}/);
-    expect(page).toMatch(/Linking\.openURL\(`tel:\$\{r\.tel\}`\)/);
+    // The call goes through help-links.logic.ts (tel:${r.tel}, with the copy fallback: RT-SET-02, F20-REQ-005).
+    expect(page).toMatch(/onPress=\{\(\) => link\.open\(callTarget\(r\)\)\}/);
     expect(page).toMatch(/\{s\.emergency\}/);
     expect(en.struggling.emergency).toBe('If you or your baby are in danger right now, call 911.');
   });

@@ -209,7 +209,7 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 | Moment | iOS (`expo-haptics`) | Android (`AndroidHaptics`) |
 |---|---|---|
 | Record start / stop | `impactAsync(Light)` | `Context_Click` |
-| Pause / resume | `selectionAsync()` | `Segment_Tick` |
+| Pause / resume | none: nothing vibrates between record start and stop | none |
 | Save letter | `notificationAsync(Success)` | `Confirm` |
 | Discard (confirmed) | `notificationAsync(Warning)` | `Reject` |
 | Put it back, pick alternative | `selectionAsync()` | `Segment_Tick` |
@@ -218,6 +218,8 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 | Playback, highlight, milestones, tabs | none | none |
 
 iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a haptic always accompanies a visible change.
+
+One start tick per take, counting Speak's: Speak plays it and the start it opens plays none, the microphone primer's Continue included; Listen plays it for a tap on its own circle, Continue when the circle opened the primer, or Try again after a blocker (`components/capture/start-tick.logic.ts`). The stop tick plays after the session ends. Nothing plays while the recorder records: iOS mutes it, and the microphone would hear it (`test/recording-haptics.test.ts`).
 
 ## 7. Performance rules
 
