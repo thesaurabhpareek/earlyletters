@@ -573,13 +573,13 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: the property test over a simulated two-year history shows zero repeats in 365 days.
 
 #### BL-535 Twelve prompts for a book before the birth [Medium]
-- Status: ready. Mode: agent. Owner: content. Size: S.
+- Status: in-review (PR #604). Mode: agent. Owner: content. Size: S.
 - Satisfies: F13-REQ-008 (at least 12 `before` prompts; 8 exist).
 - Scope: four more `before` prompts in `packages/content/src/prompts.ts`, bumping `PROMPT_LIBRARY_VERSION` to 4. They assume no birth, name no due date, week, hour or feeling, and presume nothing about the family. Keys are new; no old key is reused.
 - Done when: the `before` count test passes at 12 or more and all content rules pass.
 
 #### BL-549 Doc fixes from the reminders review [Low]
-- Status: ready. Mode: agent. Owner: reminders owner. Size: XS.
+- Status: in-review (PR #605). Mode: agent. Owner: reminders owner. Size: XS.
 - Scope: F13 still says co-parent letter pushes are in v1.0; servers are off (D-121), so move that line to v1.1 and point to BL-546. In R1 (`docs/research/`), the Calm figure (40% set a reminder, "almost 3x" retention) is a vendor claim from Amplitude's own case study, not a first-party fact.
 - Done when: both edits are made and nothing else changes.
 

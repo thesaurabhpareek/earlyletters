@@ -68,7 +68,9 @@ export const en = {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
       body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
-      freeLine: "Your first two letters are free.",
+      // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
+      // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
+      freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -171,8 +173,6 @@ export const en = {
       timeLabel: "Remind me at",
       noneOption: "No reminders",
       noneHelp: "You can write whenever you like.",
-      permissionTitle: "A few evenings a week",
-      permissionBody: "Just a nudge. You can change the time or turn it off any time.",
       cta: "Set reminder",
     },
 
@@ -244,6 +244,11 @@ export const en = {
     // `book.waitingForWords`; read back reuses `tonight.afterSave.reviewButton`.
     draft: {
       held: "Waiting to be kept.",
+      // Two or more held letters fold into one row on Tonight that opens their list (F14-REQ-041). One held letter
+      // keeps its own card, so this line is only ever plural.
+      heldMany: "Letters waiting to be kept.",
+      heldShowButton: "Show them",
+      heldHideButton: "Hide them",
       // Not "Kept": that is the Keep step's word, and this card is not kept yet.
       swept: "Recorded before the app closed.",
       typedA11y: "A letter you started, {date}.",
@@ -282,6 +287,17 @@ export const en = {
     discardBody: "It will be removed from this phone.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
+    // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
+    // it into the letter when it flips (F04-REQ-041); "Paused." is said once the recording has stopped.
+    toggleA11y: "Pause or keep talking",
+    // Our own short note before the iOS microphone question, shown once: the first tap on Speak, while iOS has not
+    // asked yet (SR-C-05, F04-REQ-034, F04-REQ-047). "Continue" opens the iOS question; "Type instead" is
+    // `errors.micDenied.typeButton`. The iOS purpose string itself is `permissions.microphone` (counsel's wording).
+    primer: {
+      title: "Your phone will ask about the microphone",
+      body: "{app} uses it to hear the letters you speak to {child}. It listens only while you record.",
+      continueButton: "Continue",
+    },
   },
 
   // Write screen (COMPONENTS 2.8).
@@ -539,6 +555,9 @@ export const en = {
     dateline: {
       monthOnly: "Sometime in Month {month}",
       monthOnlyNewborn: "Sometime in the first weeks",
+      // The age sentence after the day for a letter the Book files in Before You: no birthday yet, or a day before
+      // it. Never an age counted from a due date (QE-01).
+      beforeBirth: "Before {child} was born.",
     },
     changeDate: {
       // {label} is the month's name in the book: "Month 2", "The first weeks" or "Before You".
@@ -748,11 +767,12 @@ export const en = {
     birthdayLabel: "Birthday",
     dictionaryLabel: "Names and words",
     dictionaryHelp: "Spelled your way, every time.",
-    // D-074: the edit feature is "Word for word"; its changes are small fixes, marked and undoable.
-    tidyLabel: "Word for word",
+    // D-074: the edit feature's changes are small fixes, marked and undoable. The Settings switch is labelled with
+    // what On means, `tidyOn` (founder, build 1: "Word for word" read as the opposite of what On does), and the
+    // footer names both choices. `tidyOff` names the Off choice and the 1 Dec two-choice picker.
     tidyOn: "Small fixes, marked",
     tidyOff: "Exactly as said",
-    tidyHelp: "Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words.",
+    tidyHelp: "With this on, new letters open with small fixes marked, and you can put any of them back. With it off, they open Exactly as said, with every um and false start. Either way, we never rewrite your words.",
     // D-085 (amends D-073): v1.0 has no backup of our own; onPhone* is the honest line. Our encrypted backup,
     // with its strings, returns with sign-in and a server (v1.1).
     recordings: {
@@ -859,6 +879,8 @@ export const en = {
       title: "About",
       // In-app only (Brief decision 10). The store listing and website never say "beta".
       beta: {
+        // Not shown since 8 Nov 2026 (founder: About said "early" three times). It is a heading, not part of the
+        // registered note (in-app-disclosures.md section 1); the body below is the note. K-13 still pins the key.
         label: "Early version",
         // D-030: no beta line in the store listing; this small in-app note stays until the founder ends it.
       body: "{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
@@ -1168,7 +1190,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082
+    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082; under the Plan row only while Plus is off (PL-3)
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
@@ -1187,8 +1209,12 @@ export const en = {
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
     versionLabel: "Version",
-    // "1.0.0 (42)": app version and build number.
+    // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
+    // registered note under About already says it once (CLO-5, 1 Nov 2026).
     versionValue: "{version} ({build})",
+    // The last line of Settings, under About (CDesO-2, 1 Nov 2026). Text only; no emoji. Fallback if the place
+    // ever stops being true: "Made with care".
+    signOff: "Made with care in California",
     strugglingA11yHint: "Shows free, confidential support lines.",
   },
 
@@ -1220,6 +1246,24 @@ export const en = {
       },
     ],
     emergency: "If you or your baby are in danger right now, call 911.",
+  },
+
+  // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
+  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  helpLinks: {
+    // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
+    callHint: "Starts a call.",
+    callHintNoPhone: "Shows the number to call from a phone or copy.",
+    // When this device cannot call: the number to copy.
+    noCallTitle: "Call from a phone",
+    noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    copyNumber: "Copy number",
+    numberCopied: "Number copied",
+    // When Mail cannot open: our address to copy.
+    noMailTitle: "Write to us",
+    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    copyAddress: "Copy address",
+    addressCopied: "Address copied",
   },
 
   // Calm privacy reassurance (D-061). One promise, said the same way wherever a parent might

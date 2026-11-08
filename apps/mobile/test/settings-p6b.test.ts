@@ -32,11 +32,14 @@ const screen = (over: Partial<Parameters<typeof planScreen>[0]> = {}) =>
   planScreen({ line: off, details: none, plusOn: false, storeSupport: 'available', noteLines: [], longDate, ...over });
 
 describe('[S41] Plan', () => {
-  it('Plus off: no status card, "See what Plus adds" first, the registered promise as the footer once, no Manage', () => {
+  it('Plus off: no status card, "See what Plus adds" first, the F5 line as the footer once (not the promise), no Manage', () => {
     const s = screen();
     expect(s.status).toBeNull();
     expect(s.seePlans).toEqual({ kind: 'open', title: 'See what Plus adds' });
-    expect(s.promise).toBe(billingCopy.store.promise);
+    // F5 (founder, 1 Nov 2026): Plus never had, the setup line is the footer; the promise would repeat its first sentence.
+    expect(s.freeLine).toBe(billingCopy.membership.line);
+    expect(s.promise).toBeNull();
+    expect(s.includes).toEqual({ title: 'What Plus includes', items: billingCopy.store.features });
     expect(s.manage).toBe(false);
     expect(s.redeem).toBe(true);
     // No StoreKit on this device (the web preview, an old iOS): the line that says why, and no Redeem.
@@ -90,7 +93,7 @@ describe('[S41] Plan', () => {
       { s: screen({ restored: HELD.restoreNothing }), note: [], restore: HELD.restoreNothing },
     ];
     for (const { s, note, restore } of states) {
-      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
+      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, s.freeLine, ...(s.includes?.items ?? []), p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
         .filter((x): x is string => !!x)
         .flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
@@ -98,7 +101,7 @@ describe('[S41] Plan', () => {
     }
     // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
-    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise \?\? undefined\}>/);
+    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.freeLine \?\? screen\.promise \?\? undefined\}>/);
     expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
@@ -145,7 +148,15 @@ describe('[S41] Plan', () => {
   });
 
   it('types no price, trial length or countdown anywhere it can show (D-083)', () => {
-    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise ?? '']);
+    const ended = screen({ details: { status: 'expired', period: 'month', ownership: 'purchased', periodEnd: '2026-11-13T12:00:00.000Z' } });
+    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' }), ended].flatMap((s) => [
+      s.status?.subtitle ?? '',
+      s.seePlans?.title ?? '',
+      s.promise ?? '',
+      s.freeLine ?? '',
+      s.includes?.title ?? '',
+      ...(s.includes?.items ?? []),
+    ]);
     for (const l of [...lines, p.payment, p.restoreHelp, p.manageHelp, p.redeemHelp]) expect(l, l).not.toMatch(/\$|\bprice\b|\d+\s*(days?|months?) (free|left)/i);
   });
 });
@@ -183,7 +194,9 @@ describe('[S34] Reminders', () => {
     expect(remindersTurnedOnInSettings(null, 'granted', prefs(true))).toBe(false);
     expect(remindersTurnedOnInSettings('denied', 'granted', prefs(false))).toBe(false);
     const screen = code('app/settings/reminders.tsx');
-    expect(screen).toMatch(/toast\.show\(\{ message: s\.onToast \}\)/);
+    // The toast says "Reminders are on." and, since the inline page (reminders-settings.md 2), the Next line after it
+    // (turnOnOutcome; test/reminders-inline.test.ts pins the words).
+    expect(screen).toMatch(/toast\.show\(\{ message: turnOnOutcome\(\{ permission: p, scheduled: \{ ok: true \} \}/);
     expect(screen).toMatch(/LinearTransition\.duration\(tokens\.motion\.enter\.durationMs\)/);
     expect(screen).toMatch(/motion\.reduced \? undefined : LinearTransition/);
     expect(screen).toMatch(/<WarningCircleIcon size=\{20\} color=\{c\.caution\}/);
@@ -192,7 +205,18 @@ describe('[S34] Reminders', () => {
 
   it('says "message", never "note", for what the app sends, and counts no days or runs', () => {
     const s = reminderCopy.settings;
-    const shown = [s.enabledLabel, s.howOftenTitle, s.eveningsTitle, s.timeTitle, s.quietHelp, s.lateNightClamp, s.monthNotesLabel, s.monthNotesHelp, s.namesHelpOn, s.namesHelpOff, s.deniedTitle, s.deniedBody, s.openSettingsButton, s.onToast, en.settings.reminders.help];
+    // Everything the page draws (app/settings/reminders.tsx), the toasts and announcements included.
+    const p = reminderCopy.priming;
+    const shown = [
+      s.enabledLabel, en.settings.reminders.help, p.quietLine, p.privacyLine, s.savesAsYouGo, s.previewTitle,
+      s.nextLine.replace('{weekday}', 'Tuesday').replace('{time}', '8:30 PM'), s.saved, s.notSendingYet, s.scheduleFailed,
+      s.quietDelivery, s.howOftenTitle, s.eveningsTitle, s.timeTitle, en.settings.reminders.timeLabel, s.quietHelp, s.lateNightClamp,
+      s.monthNotesLabel, s.monthNotesHelp, s.birthDateNote, en.settings.privacy.lockScreenLabel, s.namesHelpOn, s.namesHelpOff,
+      s.lockNames, s.deniedTitle, s.deniedBody, s.openSettingsButton, s.onToast, s.changeButton,
+    ];
+    const screen = code('app/settings/reminders.tsx') + code('components/settings/reminders.logic.ts');
+    for (const k of ['savesAsYouGo', 'previewTitle', 'nextLine', 'saved', 'notSendingYet', 'scheduleFailed', 'quietDelivery', 'birthDateNote', 'lockNames']) expect(screen, k).toMatch(new RegExp(`s\\.${k}\\b`));
+    expect(screen).toMatch(/en\.settings\.reminders\.help/);
     for (const l of shown) expect(l, l).not.toMatch(/\bnotes?\b/i);
     const sent = [...reminderCopy.neutral.evening.flatMap((v) => [v.title, v.body]), reminderCopy.neutral.monthOpen.title, reminderCopy.neutral.monthOpen.body, reminderCopy.together.monthTitle];
     for (const l of [...shown, ...sent]) expect(l, l).not.toMatch(/\b\d+\s*(?:days?|evenings?|nights?|in a row|times?)\b|\bstreak|\bmissed\b/i);
@@ -256,7 +280,8 @@ describe('[S43] Export', () => {
     expect(exportFailure('lowSpace')).toEqual({ title: exportCopy.screen.failedTitle, body: 'This phone needs more free space first.', action: 'again', label: 'Export again' });
     expect(exportFailure('other')).toEqual({ title: exportCopy.screen.failedTitle, body: exportCopy.screen.failedBody, action: 'again', label: 'Export again' });
     const screen = code('app/settings/export.tsx');
-    expect(screen).toMatch(/supportMailto\(copy\.settingsHome\.helpSubject\)/);
+    // mailTarget wraps supportMailto with the same subject, and falls back to the address to copy (F20-REQ-007).
+    expect(screen).toMatch(/mailTarget\(copy\.settingsHome\.helpSubject\)/);
     expect(screen).not.toMatch(/tooBigBody|\be\.body\b/);
   });
 

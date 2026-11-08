@@ -14,7 +14,7 @@ import {
   type InstalledPack,
   type PackProgress,
 } from '@/lib/packs';
-import { formatBytes, packsCopy as t } from '@/lib/packs/copy';
+import { formatBytes, packName, packsCopy as t } from '@/lib/packs/copy';
 import { getPackManifest } from '@/lib/remote';
 import { track } from '@/lib/analytics/track';
 
@@ -29,15 +29,9 @@ import { track } from '@/lib/analytics/track';
 
 const ACTIVE: PackProgress['phase'][] = ['queued', 'waiting_for_wifi', 'downloading', 'verifying', 'installing', 'cancelled', 'failed'];
 
-function packName(p: { kind: string; language: string }): string {
-  const language = t.languages[p.language] ?? p.language;
-  const kind = (t.kinds as Record<string, string>)[p.kind] ?? p.kind;
-  return `${language}, ${kind}`;
-}
-
 function nameFor(id: string): string {
   const entry = getPackManifest()?.packs.find((e) => e.id === id);
-  return entry ? packName(entry) : id;
+  return entry ? packName(entry) : (t.names[id] ?? id);
 }
 
 function progressLine(p: PackProgress): string {

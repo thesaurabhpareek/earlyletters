@@ -19,30 +19,63 @@
  * arrives (S11). The room's rules are pure in components/capture/listen.logic.ts; the three start problems
  * (off, in use, full) in components/capture/mic-state.logic.ts.
  */
-import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
+import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { MicrophoneSlashIcon } from 'phosphor-react-native/src/icons/MicrophoneSlash';
 import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, AppState, Linking, Platform, Pressable, ScrollView, View } from 'react-native';
+import { Alert, AppState, Linking, Platform, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
-import { afterForeground, elapsedClock, finishWithin, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
+import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
+import { useRecorderClock } from '@/components/capture/use-recorder-clock';
+import {
+  afterForeground,
+  createListenAnnouncer,
+  elapsedClock,
+  finishWithin,
+  isMicProblem,
+  listenRoom,
+  maySpeak,
+  startTake,
+  promptLine,
+  reviewParams,
+  stableLabels,
+  startFailure,
+  type ListenPhase,
+  type RoomLabels,
+} from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
+import { createStartTick } from '@/components/capture/start-tick.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
-import { StateScreen } from '@/components/ui/state-screen';
+import { StateGlyph, StateScreen } from '@/components/ui/state-screen';
+import { STATE_LAYOUT } from '@/components/ui/state-screen.logic';
 import { Text } from '@/components/ui/text';
-import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
+import { announce, useFocusOnMount, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { setAudioMode } from '@/lib/audio-mode';
+import {
+  CAPTURE_HEARTBEAT_MS,
+  closeTake,
+  confirmLive,
+  finishTake,
+  heartbeat,
+  openTake,
+  pauseConfirmed,
+  pauseTake,
+  resetCapture,
+  resumeTake,
+  setRecorderProbe,
+} from '@/lib/speech-gate';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
@@ -68,7 +101,11 @@ export default function Listen() {
   const p = pendingCopy.listen;
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
-  const child = getActiveChild();
+  // Read once on mount, never per render: the recorder state below re-renders this screen about once a second, and
+  // the active child is three database reads. On web each synchronous read holds a 1 MB shared buffer, so reading it
+  // per render ran a long take out of memory at about a minute (#480); on a phone it was wasted work. The book a take
+  // is for cannot change while Listen is open.
+  const [child] = useState(getActiveChild);
   const reduced = useReducedMotion();
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
@@ -82,13 +119,21 @@ export default function Listen() {
     // The OS or media services ended the take (TDD 03 FM-1): keep what exists.
     if (s.hasError || s.mediaServicesDidReset) setInterrupted(true);
   });
-  const status = useAudioRecorderState(recorder, 50); // 20 Hz metering (MOTION 5b)
-  const db = useSharedValue(-160);
+  // The clock, the minute line and the 5 s mark: read every 250 ms, re-rendered only when the shown second (or the
+  // recorder's state) changes. The level never goes through this state (below).
+  const status = useRecorderClock(recorder);
+  const db = useSharedValue(METER_SILENT);
+  const savedMark = useRef(0);
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
   const tapped = useRef<boolean | null>(null);
   if (tapped.current === null) tapped.current = consumeListenStart();
+  // One start tick per take, counting Speak's (start-tick.logic): the start Speak opened plays none, its primer's
+  // Continue included; a start after a blocker or a failure is a new tap and plays it.
+  const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
+  /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
+  const labelsRef = useRef<RoomLabels | null>(null);
   const mounted = useRef(true);
   useEffect(
     () => () => {
@@ -107,25 +152,86 @@ export default function Listen() {
     }
   }, [phase]);
 
-  // Metering into the UI thread; never setState per frame.
+  // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
+  // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
   useEffect(() => {
-    db.value = phase === 'recording' && typeof status.metering === 'number' ? status.metering : -160;
-  }, [status.metering, phase, db]);
+    db.value = METER_SILENT;
+    if (phase !== 'recording') return;
+    const read = setInterval(() => {
+      let metering: number | undefined;
+      try {
+        metering = recorder.getStatus().metering;
+      } catch {}
+      db.value = meterDb(metering);
+    }, METER_MS);
+    return () => {
+      clearInterval(read);
+      db.value = METER_SILENT;
+    };
+  }, [phase, recorder, db]);
 
-  // Announce elapsed time once a minute, not every second (COMPONENTS 2.18).
+  // VoiceOver never speaks into a take (SR-C-02, F04-REQ-040, B2-21 never waived): without headphones its voice would
+  // be in the letter. Every line this screen says goes through the gate in listen.logic, which drops or holds it while
+  // the recorder is capturing and speaks a held one once capture has stopped. `recorder.isRecording` reads the native
+  // recorder; the polled status can lag, so either one saying "capturing" is enough to stay silent.
+  const announcer = useRef(createListenAnnouncer((m) => announce(m))).current;
+  const capturingNow = (): boolean => {
+    let live = false;
+    try {
+      live = recorder.isRecording;
+    } catch {}
+    return live || status.isRecording === true;
+  };
+  // The app-wide gate (lib/speech-gate.ts), so no toast or other `announce()` anywhere in the app speaks into the take.
+  // Its state machine is keyed to this take's token: this screen opens, pauses, resumes, finishes and closes it; a
+  // status poll can only confirm ON for the open take (never turn it off, never on after the end). The one way off
+  // during a take is a pause the person made, once the recorder has really stopped writing.
+  const takeToken = useRef<number | null>(null);
+  useEffect(() => {
+    const capturing = capturingNow();
+    if (capturing) confirmLive(takeToken.current);
+    else if (phase === 'paused') pauseConfirmed(takeToken.current);
+    announcer.settle({ phase, capturing });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, phase]);
+  useEffect(() => () => announcer.clear(), [announcer]);
+  // The heartbeat keeps an open take fresh (STALE_CAPTURE_MS). When it goes stale the gate asks this recorder's native
+  // state through the probe, and lifts only on a positive "not recording" once the take is past its live part (fails
+  // closed). Both stop with the screen; unmount's resetCapture() is what ends the silence when the screen goes.
+  useEffect(() => {
+    setRecorderProbe(() => {
+      try {
+        return recorder.isRecording;
+      } catch {
+        return null;
+      }
+    });
+    const id = setInterval(() => heartbeat(takeToken.current), CAPTURE_HEARTBEAT_MS);
+    return () => {
+      clearInterval(id);
+      setRecorderProbe(null);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Elapsed time once a minute, not every second (COMPONENTS 2.18), offered to the gate: a minute only passes while
+  // recording, so it is dropped, and the clock's label carries the time at the next pause (F04-U30).
   useEffect(() => {
     const minute = Math.floor(status.durationMillis / 60000);
     if (phase === 'recording' && minute > announcedMinute.current) {
       announcedMinute.current = minute;
-      AccessibilityInfo.announceForAccessibility(fill(p.elapsedA11y, { minutes: minute, seconds: 0 }));
+      announcer.say(fill(p.elapsedA11y, { minutes: minute, seconds: 0 }), { phase, capturing: capturingNow() });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status.durationMillis, phase, p.elapsedA11y]);
 
   // Elapsed time to the draft every 5 s, so a take recovered after a kill has a length.
   useEffect(() => {
     if (status.durationMillis > 0) lastDuration.current = status.durationMillis;
     const id = takeId.current;
-    if (id && phase === 'recording' && Math.floor(status.durationMillis / 5000) !== Math.floor((status.durationMillis - 50) / 5000)) {
+    const mark = id && phase === 'recording' ? progressMark(savedMark.current, status.durationMillis) : null;
+    if (id && mark !== null) {
+      savedMark.current = mark;
       setRecordingProgress(id, status.durationMillis);
     }
   }, [status.durationMillis, phase]);
@@ -135,10 +241,13 @@ export default function Listen() {
     const id = takeId.current;
     if (!id || ended.current) return;
     ended.current = true;
+    const token = takeToken.current;
+    finishTake(token); // ON until the recorder has stopped, even from paused
     setPhase('finishing');
     // Never stuck here (BL-563): a save that throws (a full disk) or hangs still leaves within FINISH_TIMEOUT_MS, and
-    // the take is kept; the launch sweep finishes it if this did not.
-    const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current));
+    // the take is kept; the launch sweep finishes it if this did not. The gate closes only when the save has settled
+    // (the recorder has stopped), never on the timeout: leaving Listen unmounts it, and unmount always resets the gate.
+    const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current).finally(() => closeTake(token)));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
     const draft = kept.ok ? kept.value : null;
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
@@ -147,28 +256,45 @@ export default function Listen() {
     else router.replace('/');
   };
 
-  const start = async () => {
+  /** `primed`: the person has just read our primer and tapped Continue, so iOS may ask now (SR-C-05). */
+  const start = async (primed: boolean) => {
     if (!child) return;
-    const perm = (await getRecordingPermissionsAsync()).granted ? { granted: true } : await requestRecordingPermissionsAsync();
-    // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
-    const blocked = startBlocker({ granted: perm.granted, freeBytes: freeBytesNow() });
-    if (blocked) {
-      setPhase(blocked);
-      return;
+    // The whole path is listen.logic `startTake`: the primer before iOS asks (the purpose string iOS shows is
+    // `permissions.microphone`, counsel's wording, untouched here), the S13 blockers, and the gate opened before the
+    // microphone goes live. The screen closing at any await (the iOS prompt included) never leaves the gate open.
+    const out = await startTake(
+      {
+        alive: () => mounted.current,
+        getPermission: getRecordingPermissionsAsync,
+        requestPermission: requestRecordingPermissionsAsync,
+        freeBytes: freeBytesNow,
+        pressHaptic: () => startTick.press(() => haptic('press')),
+        setRecordingMode: () => setAudioMode('recording'),
+        setIdleMode: () => setAudioMode('idle'),
+        openTake,
+        closeTake,
+        onToken: (token) => {
+          takeToken.current = token;
+        },
+        begin: async () => beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null }),
+        keepOrphan: (draftId) => {
+          // The screen went away while the take was starting: keep what exists, as any other exit does.
+          ended.current = true;
+          void finalizeTake(recorder, draftId, 'dismiss', 0);
+        },
+      },
+      primed,
+    );
+    if (out.kind === 'primer') return setPhase('primer');
+    if (out.kind === 'blocked') {
+      startTick.reset(); // the start Speak opened ended here; Try again is the parent's own
+      return setPhase(out.problem);
     }
-    // Haptic before the session activates: iOS mutes haptics while recording.
-    haptic('press');
-    await setAudioMode('recording');
-    const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
-    if (!mounted.current) {
-      // The screen went away while the take was starting: keep what exists, as any other exit does.
-      ended.current = true;
-      void finalizeTake(recorder, draft.id, 'dismiss', 0);
-      return;
-    }
-    takeId.current = draft.id;
+    if (out.kind === 'gone') return;
+    takeId.current = out.draftId;
     setPhase('recording');
-    AccessibilityInfo.announceForAccessibility(t.listening);
+    // The take is live, so the gate drops this: the red circle and the system microphone indicator say it instead.
+    announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
   };
 
   /** Whether the microphone is allowed now; null when the system cannot say. */
@@ -180,13 +306,20 @@ export default function Listen() {
     }
   };
 
-  const begin = () => {
+  // `begin` is handed to onPress, which passes an event, so it takes no argument; Continue on the primer has its own.
+  const begin = () => startFromTap(false);
+  const continueAfterPrimer = () => startFromTap(true);
+
+  const startFromTap = (primed: boolean) => {
     setPhase('asking');
-    start().catch(async () => {
+    start(primed).catch(async () => {
+      startTick.reset(); // a retry after a busy microphone is a new tap
       // A take that began ends as an interruption and is kept; before that, a granted microphone is busy, never "off" (S13).
       const failure = startFailure({ takeBegun: takeId.current !== null, granted: await grantedNow() });
       if (failure === 'interrupted') void endTake('interruption');
       else {
+        // No take began: the start's token is closed, so the app may speak on the busy or off screen.
+        closeTake(takeToken.current);
         await setAudioMode('idle').catch(() => {});
         setPhase(failure);
       }
@@ -229,7 +362,7 @@ export default function Listen() {
     } catch {}
     if (live) seenLive.current = true;
     else if (seenLive.current) setInterrupted(true);
-  }, [status.durationMillis, phase, recorder]);
+  }, [status.durationMillis, status.isRecording, phase, recorder]);
 
   useEffect(() => {
     if (interrupted && (phase === 'recording' || phase === 'paused')) void endTake('interruption');
@@ -245,22 +378,29 @@ export default function Listen() {
         ended.current = true;
         void finalizeTake(recorder, id, 'dismiss', lastDuration.current);
       }
+      // Unmount always forces the gate off, whatever state the take was in (Review B on #523): with the screen gone,
+      // nothing can keep the app silent. The recorder is being stopped above; the screen leaving is the take's end.
+      resetCapture();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
+  // No haptic: nothing vibrates between record start and stop (MOTION 6; iOS mutes it, and the microphone would hear it).
   const togglePause = () => {
-    haptic('tap');
     if (phase === 'recording') {
+      pauseTake(takeToken.current); // still ON until the recorder has really stopped (pauseConfirmed)
       recorder.pause();
       seenLive.current = false;
       setPhase('paused');
-      AccessibilityInfo.announceForAccessibility(t.paused);
+      // Held until the recorder has really stopped capturing, then spoken once (F04-U30); a quick resume drops it.
+      announcer.say(t.paused, { phase: 'paused', capturing: capturingNow() }, 'hold');
     } else if (phase === 'paused') {
+      resumeTake(takeToken.current); // silent before the microphone is live again
       recorder.record();
       setPhase('recording');
-      AccessibilityInfo.announceForAccessibility(t.listening);
+      // Live again, so the gate drops this.
+      announcer.say(t.listening, { phase: 'recording', capturing: capturingNow() });
     }
   };
 
@@ -277,8 +417,14 @@ export default function Listen() {
           ended.current = true;
           trackCaptureDiscarded({ mode: 'spoken', stage: 'listening', audioMs: lastDuration.current || null });
           const uri = recorder.uri;
-          if (id) await abandonTake(recorder, id);
-          else await setAudioMode('idle').catch(() => {});
+          const token = takeToken.current;
+          finishTake(token);
+          try {
+            if (id) await abandonTake(recorder, id);
+            else await setAudioMode('idle').catch(() => {});
+          } finally {
+            closeTake(token);
+          }
           // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
           // haptics while recording.
           haptic('warning');
@@ -301,6 +447,12 @@ export default function Listen() {
 
   if (!child) return null;
 
+  if (phase === 'primer') {
+    // Our own short note before the iOS question (SR-C-05, F04-REQ-034), in the same one-state layout as the three
+    // start problems: nothing is recorded or asked until Continue. Typing stays an equal way (Type instead).
+    return <MicPrimer childName={child.name} onContinue={continueAfterPrimer} onType={typeInstead} onClose={close} />;
+  }
+
   if (isMicProblem(phase)) {
     const v = micStateView(phase);
     const run: Record<MicAction, () => void> = { type: typeInstead, settings: () => void Linking.openSettings(), tryAgain: begin };
@@ -321,12 +473,23 @@ export default function Listen() {
   const room = listenRoom(phase);
   const quiet = phase === 'recording' && (status.metering ?? -160) < -50 && status.durationMillis > 8000;
   const prompt = promptLine(promptKey, PROMPTS);
-  const elapsedA11y = fill(p.elapsedA11y, {
-    minutes: Math.floor(status.durationMillis / 60000),
-    seconds: Math.floor(status.durationMillis / 1000) % 60,
-  });
   // While iOS asks and the take starts there is nothing to tap, so no hint (5.8 row 1: the room arrives at rest).
   const line = room.line === 'none' ? null : room.line === 'readyHint' ? p.ready.hint : room.line === 'paused' ? t.paused : quiet ? t.stillHere : t.listening;
+  // While capturing nothing on this screen changes what VoiceOver reads (07 line 276, F04-REQ-041): the live region is
+  // off, and every label (the clock, Finish's hint, the line, Pause / Keep talking) holds still; they catch up once
+  // capture stops (listen.logic `stableLabels`).
+  const speakable = maySpeak({ phase, capturing: capturingNow() });
+  const labels = stableLabels(
+    {
+      clock: fill(p.elapsedA11y, { minutes: Math.floor(status.durationMillis / 60000), seconds: Math.floor(status.durationMillis / 1000) % 60 }),
+      line,
+      toggle: p.toggleA11y,
+    },
+    labelsRef.current,
+    speakable,
+  );
+  labelsRef.current = labels;
+  const elapsedA11y = labels.clock;
 
   // The clock and the room's line: in the room, or pinned with the controls at accessibility sizes (S5).
   const clockAndLine = (
@@ -337,9 +500,9 @@ export default function Listen() {
           {elapsedClock(status.durationMillis)}
         </Text>
       )}
-      <View className="items-center px-8" accessibilityLiveRegion="polite">
+      <View className="items-center px-8" accessibilityLiveRegion={speakable ? 'polite' : 'none'}>
         {line !== null ? (
-          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center">
+          <Text variant="callout" tone={room.line === 'readyHint' ? 'muted' : undefined} className="text-center" accessibilityLabel={labels.line ?? line}>
             {line}
           </Text>
         ) : null}
@@ -417,6 +580,7 @@ export default function Listen() {
             disabled={!room.controls}
             onPress={togglePause}
             label={phase === 'paused' ? t.resumeButton : copy.common.pauseButton}
+            accessibilityLabel={labels.toggle}
           />
           <Button size="lg" disabled={!room.controls} onPress={finish} label={t.stopButton} accessibilityHint={elapsedA11y} />
         </ButtonRow>
@@ -433,6 +597,38 @@ export default function Listen() {
             </Button>
           </View>
         )}
+      </View>
+    </SafeAreaView>
+  );
+}
+
+/**
+ * Our own short note before the iOS microphone question (SR-C-05, F04-REQ-034). The state layout of S13 (glyph in its
+ * soft circle, title2, body, Close top right), with one difference from StateScreen: Continue and Type instead are the
+ * same variant and size, since typing is an equal way to write (DESIGN_LANGUAGE principle 5). VoiceOver starts on the
+ * heading: the red circle that had focus is gone. Nothing is asked or recorded until Continue.
+ */
+function MicPrimer({ childName, onContinue, onType, onClose }: { childName: string; onContinue: () => void; onType: () => void; onClose: () => void }) {
+  const pr = pendingCopy.listen.primer;
+  const heading = useRef<RNText>(null);
+  useFocusOnMount(heading);
+  return (
+    <SafeAreaView className="flex-1 bg-background" testID="listen.primer">
+      <ModalHeader onClose={onClose} />
+      <ScrollView className="flex-1" contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', paddingHorizontal: STATE_LAYOUT.gutter }}>
+        <View className="items-center gap-4">
+          <StateGlyph icon={MicrophoneIcon} />
+          <Text ref={heading} variant={STATE_LAYOUT.title} asHeading className="text-center" testID="listen.primer.title">
+            {pr.title}
+          </Text>
+          <Text variant={STATE_LAYOUT.body} tone="muted" className="text-center">
+            {fill(pr.body, { child: childName })}
+          </Text>
+        </View>
+      </ScrollView>
+      <View className="gap-2 px-5 pb-4">
+        <Button variant="secondary" size="lg" fullWidth label={pr.continueButton} onPress={onContinue} testID="listen.primer.continue" />
+        <Button variant="secondary" size="lg" fullWidth label={copy.errors.micDenied.typeButton} onPress={onType} testID="listen.primer.type" />
       </View>
     </SafeAreaView>
   );
