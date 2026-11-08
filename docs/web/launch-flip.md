@@ -23,9 +23,11 @@ Status: built, OFF. With `NEXT_PUBLIC_APP_STORE_URL` unset (today) the site is e
 4. Open the PR (T2, two independent reviews on the final head). Merge.
 5. Vercel > Settings > Environment Variables, Production only: `NEXT_PUBLIC_APP_STORE_URL` (the bare link, no quotes), `NEXT_PUBLIC_APP_STORE_BADGE=1`, and `NEXT_PUBLIC_APPLE_PROVIDER_TOKEN` if you have it. Leave `LAUNCH_REHEARSAL` unset.
 6. Redeploy production without the build cache. Variables are read at build time; editing alone changes nothing.
-7. Read the build log. There must be no `[launch] ... ignored` line and no `[launch] The launch switch is on ... but the launch is not ready`. The build stops by itself if the badge file is missing, is not an SVG, is a stand-in, contains script, if `NEXT_PUBLIC_APP_STORE_BADGE` is not 1, if `SITE_MODE` is not film, or if the committed QR is empty or opens a different link than this deployment's `ct=web-qr` link.
+7. Read the build log. There must be no `[launch] ... ignored` line and no `[launch] The launch switch is on ... but the launch is not ready`. On Vercel production builds (and with `LAUNCH_STRICT=1`) the build stops by itself if the badge file is missing, is not an SVG, is a stand-in, contains script, if `NEXT_PUBLIC_APP_STORE_BADGE` is not 1, if `SITE_MODE` is not film, or if the committed QR is empty or opens a different link than this deployment's `ct=web-qr` link.
 8. Checks on the live site: section 9 of `docs/ops/WEBSITE_RUNBOOK.md`; the badge shows on a phone; a laptop shows the QR with "Scan with your iPhone camera." and "Open the App Store"; every App Store link starts with `https://apps.apple.com/`; scan the QR from the laptop screen with an iPhone and the product page opens; tap the badge on a real iPhone.
 9. Campaign links: App Store Connect shows a token only after 24 hours or more of data, and only once it has 5 first-time downloads. Tokens: `web-header`, `web-pill`, `web-start`, `web-footer`, `web-qr`, plus `web-hero`, `web-end` and `email-launch` for the helper in `apps/web/src/lib/campaign.ts`.
+
+The CI job "Build (live, launch-day rehearsal)" in `web.yml` builds with a placeholder link and no artwork. It is not a Vercel production build, so there the same findings print as `[launch]` warnings and the build still passes, which keeps proving the App Store branch compiles.
 
 ## Checks before the PR: the rehearsal
 

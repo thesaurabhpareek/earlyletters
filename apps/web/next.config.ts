@@ -81,7 +81,10 @@ function assertLaunchReady(): void {
   const gate = checkLaunchGate({ env: process.env, badgeFile, qr: STORE_QR, qrHref: appStoreHref('qr') });
   if (!gate.launch) return;
   for (const note of gate.notes) console.warn(`[launch] ${note}`);
-  if (gate.problems.length) throw new Error(launchGateMessage(gate.problems));
+  if (gate.problems.length) {
+    if (gate.strict) throw new Error(launchGateMessage(gate.problems));
+    console.warn(`${launchGateMessage(gate.problems)}\n[launch] Not enforced here (not a Vercel production build, LAUNCH_STRICT is not 1).`);
+  }
 }
 assertLaunchReady();
 

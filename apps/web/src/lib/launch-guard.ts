@@ -6,6 +6,10 @@
  * link is valid this gate also demands everything the launch needs, and the build stops with a message that says what
  * is missing. With the link unset or invalid nothing is checked: the live site is untouched.
  *
+ * Enforced (the build stops) on Vercel production builds (VERCEL_ENV=production) and whenever LAUNCH_STRICT=1. Anywhere else,
+ * for example the CI build that rehearses the live branch with a placeholder link and no artwork, the same findings are
+ * only warnings, so that rehearsal keeps proving the App Store branch compiles.
+ *
  * Pure: the environment and the files arrive as arguments, so every branch is tested (test/launch-guard.test.ts).
  */
 import { checkAppStoreUrl } from './launch';
@@ -30,11 +34,12 @@ export type LaunchGateInput = {
   qrHref: string;
 };
 
-export type LaunchGateResult = { launch: boolean; rehearsal: boolean; problems: string[]; notes: string[] };
+export type LaunchGateResult = { launch: boolean; rehearsal: boolean; strict: boolean; problems: string[]; notes: string[] };
 
 export function checkLaunchGate({ env, badgeFile, qr, qrHref }: LaunchGateInput): LaunchGateResult {
   const url = checkAppStoreUrl(env.NEXT_PUBLIC_APP_STORE_URL);
-  const result: LaunchGateResult = { launch: url.ok, rehearsal: false, problems: [], notes: [] };
+  const strict = env.VERCEL_ENV === 'production' || env.LAUNCH_STRICT === '1';
+  const result: LaunchGateResult = { launch: url.ok, rehearsal: false, strict, problems: [], notes: [] };
   if (!url.ok) return result; // prelaunch (or an invalid link, which launch.ts reports on its own): nothing to demand
 
   const rehearsal = env.LAUNCH_REHEARSAL === '1';

@@ -11,7 +11,7 @@ const QR_HREF = `${URL_OK}?pt=123456&ct=web-qr`;
 const QR_OK = { url: QR_HREF, dim: 49, path: 'M4 4h7v1h-7z' };
 // A believable stand-in for Apple's file: an SVG of about the right size. It is not Apple's artwork.
 const BIG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 40"><path d="${'M0 0h1v1z'.repeat(250)}"/></svg>`;
-const READY = { NEXT_PUBLIC_APP_STORE_URL: URL_OK, NEXT_PUBLIC_APP_STORE_BADGE: '1', SITE_MODE: 'film', NEXT_PUBLIC_APPLE_PROVIDER_TOKEN: '123456' };
+const READY = { LAUNCH_STRICT: '1', NEXT_PUBLIC_APP_STORE_URL: URL_OK, NEXT_PUBLIC_APP_STORE_BADGE: '1', SITE_MODE: 'film', NEXT_PUBLIC_APPLE_PROVIDER_TOKEN: '123456' };
 
 const gate = (env: Record<string, string | undefined>, badgeFile: string | null = BIG_SVG, qr = QR_OK) =>
   checkLaunchGate({ env, badgeFile, qr, qrHref: QR_HREF });
@@ -19,7 +19,7 @@ const gate = (env: Record<string, string | undefined>, badgeFile: string | null 
 describe('flip off: nothing is demanded', () => {
   it('passes with the link unset, empty or invalid, even with no badge file and no QR', () => {
     for (const NEXT_PUBLIC_APP_STORE_URL of [undefined, '', '  ', 'https://testflight.apple.com/join/abc', 'not a url']) {
-      expect(gate({ NEXT_PUBLIC_APP_STORE_URL }, null, EMPTY_STORE_QR)).toEqual({ launch: false, rehearsal: false, problems: [], notes: [] });
+      expect(gate({ NEXT_PUBLIC_APP_STORE_URL }, null, EMPTY_STORE_QR)).toEqual({ launch: false, rehearsal: false, strict: false, problems: [], notes: [] });
     }
   });
 
@@ -87,6 +87,16 @@ describe('flip on', () => {
     expect(r.problems).toEqual([]);
     expect(r.notes.join('\n')).toContain('provider token');
     expect(gate({ ...env, NEXT_PUBLIC_APP_STORE_URL: `${URL_OK}?pt=555` }).notes).toEqual([]);
+  });
+});
+
+describe('strict or not', () => {
+  it('is strict on a Vercel production build or with LAUNCH_STRICT=1, and only warns elsewhere', () => {
+    expect(gate(READY).strict).toBe(true);
+    expect(gate({ NEXT_PUBLIC_APP_STORE_URL: URL_OK, VERCEL_ENV: 'production' }).strict).toBe(true);
+    const ci = gate({ NEXT_PUBLIC_APP_STORE_URL: URL_OK }, null, EMPTY_STORE_QR);
+    expect(ci.strict).toBe(false);
+    expect(ci.problems.length).toBeGreaterThan(0); // still reported, so the build log shows them
   });
 });
 

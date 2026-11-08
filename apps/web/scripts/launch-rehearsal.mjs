@@ -60,6 +60,7 @@ export async function launchRehearsal() {
     NEXT_PUBLIC_APP_STORE_URL: STORE,
     NEXT_PUBLIC_APPLE_PROVIDER_TOKEN: '100000',
     NEXT_PUBLIC_APP_STORE_BADGE: '1',
+    LAUNCH_STRICT: '1',
   };
   delete base.LAUNCH_REHEARSAL;
   delete base.VERCEL_ENV;
