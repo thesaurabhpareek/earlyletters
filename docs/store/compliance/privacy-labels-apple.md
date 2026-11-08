@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # App Privacy (nutrition label) answers: Apple App Store Connect
 
 How to use: App Store Connect, App, App Privacy. Choose the profile that matches the binary you upload (OPEN-01). The label is a legal representation; it must match the privacy policy the URL points to (OPEN-02) and the privacy manifest in the build (OPEN-19).
@@ -48,7 +50,7 @@ Valid only when the features exist (sign-in, sync, family, Plus, opt-in analytic
 | Sensitive Info | Sensitive Info | Yes | Yes | App Functionality | `children.due_date`: Apple lists pregnancy or childbirth information here. No biometric data is collected (no voiceprints or face templates, LEGAL-REQ-019) | OPEN-24: remove if due-date mode does not ship |
 | Contacts | Contacts | No | | | Never requested | |
 | User Content | Photos or Videos | Yes **only if photo attach ships** | Yes | App Functionality | Bucket `entry-photos`, `entries.photo_path`, `children.photo_path` exist in migrations; the mobile app has no photo picker today | OPEN-27 |
-| User Content | Audio Data | Yes **only if recordings upload** | Yes | App Functionality | The migrations contain no audio bucket or audio column (`entries.audio_kept_on_device` only). D-032 (shared voice, Plus backup) is "recommended, needs founder OK, wait". On-device-only transcription does not count as collection | OPEN-14 |
+| User Content | Audio Data | Yes **only if recordings upload** | Yes | App Functionality | The migrations contain no audio bucket or audio column (`entries.audio_kept_on_device` only). D-032 (shared voice, Plus backup) was "recommended, needs founder OK, wait"; backup is now free (D-111 item 6, D-124 item 5). On-device-only transcription does not count as collection | OPEN-14 |
 | User Content | Other User Content | Yes | Yes | App Functionality | `entries.final_text`, `raw_transcript`, `machine_edits`, `stt_meta`, `prompt_key`; `entry_versions`; `dictionary_terms`; child name, nickname, birthday (`children`); `child_invites.signs_as`; family relationships (`child_members`) | Confirm |
 | User Content | Emails or Text Messages, Customer Support, Gameplay | No | | | Support is by email outside the app | |
 | Browsing / Search History | all | No | | | In-app search is local | |

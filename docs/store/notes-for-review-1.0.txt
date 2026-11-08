@@ -1,0 +1,31 @@
+Early Letters is a baby memory book that parents fill by talking. A parent speaks or types a short letter to their child. The app writes the speech down on the phone, marks each small fix it makes (a stray "um", a repeated word, a missing full stop) and lets the parent put any fix back. Letters are filed by the child's month of age. This is not a health, medical or development-tracking app.
+
+NO ACCOUNT
+This version has no sign-in, so no demo account is needed. Everything is stored on the device.
+
+QUICK PATH (about 3 minutes)
+1. Launch and answer "Are you 18 or older?" with Yes. The app is for adults. No pauses the app for 24 hours unless you tap "I answered by mistake".
+2. Start a book for a demo child, for example "Asha". Any past birthday works.
+3. Tonight tab: tap Type, write a sentence and keep it. It appears in the Book tab under the right month. Tap it to read it.
+4. Tonight tab: tap Speak. The microphone permission is asked here, not at launch. Record a sentence and stop.
+
+SPEECH MODEL (one-time download, data only)
+At the end of setup the app offers a one-time download of the English speech model. It shows the size first: about 575 MB, or 190 MB on phones with less memory. It waits for Wi-Fi unless cellular data is on, and starts only after the person agrees, from Hugging Face (huggingface.co), and each file is checked against a fixed SHA-256 hash. The model is data, not code. Speech is then written down on the phone; no audio or text leaves the device. Until the model is ready, a spoken letter is kept with its recording and the words follow. Typed letters need no download.
+
+PLUS (auto-renewable subscription, group "Plus")
+Plus Monthly (plus.monthly) $4.99 with a 1-month free trial; Plus Annual (plus.annual) $49.99 with a 2-month free trial. The first 2 letters kept are free; keeping more needs Plus. Letters already kept stay readable, playable and exportable without Plus. To reach the sheet: keep two typed letters, then try to keep a third, or open Settings, Plan. The sheet is Apple's subscription view with Restore Purchases, Terms of Use and Privacy Policy. Settings, Plan also has Restore purchases, Manage subscription and Redeem a code. Please use a sandbox account. Plus is checked on the device with StoreKit.
+
+CODE THAT IS SWITCHED OFF IN THIS BUILD (2.3.1(a), 2.5.19)
+The binary also contains code for later updates: sign-in (Sign in with Apple, email link), sync, co-parent sharing, recording backup, a subscription status email, account deletion for accounts, and opt-in analytics. All of it is off at build time in this version: EXPO_PUBLIC_SERVER_FEATURES, EXPO_PUBLIC_BACKUP, EXPO_PUBLIC_STATUS_REPORT and EXPO_PUBLIC_ANALYTICS are off. Nothing in the app reaches it, no account is created, and no remote setting can turn it on. Each feature will be described in the Notes for Review of the update that turns it on.
+[FOUNDER, KEEP ONE LINE: "The Family tab and invite screens are not shown in this version." (if the D-126 change is in the build) OR "The Family tab shows a short note that writing a book together comes in a later update. It has no buttons and no feature behind it." (D-126 fallback)]
+
+NETWORK REQUESTS IN THIS VERSION
+1. Signed settings files from packs.earlyletters.app (our host): app settings, the list of downloadable files and the English text bundle. They carry no user data. The settings can only pause downloads or make the free allowance larger; they cannot add features.
+2. The speech model files from huggingface.co, after the person agrees.
+3. Apple's StoreKit for Plus.
+[FOUNDER: delete this line after a proxy capture of the release build shows nothing else.]
+
+OTHER
+Reminders are off until the person turns them on in Settings; notification permission is asked then. [VERIFY on the release build: also after a Plus purchase (plan reminders, D-094)?] Settings, "If you are struggling" lists free US support lines as call links. It is a referral list, not medical advice.
+
+Contact: hello@earlyletters.com

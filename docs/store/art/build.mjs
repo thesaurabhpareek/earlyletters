@@ -18,6 +18,11 @@ if (L.paths.length !== 2) throw new Error('lockup shape changed');
 const fav = readFileSync(join(root, 'apps/web/public/favicon/favicon.svg'), 'utf8');
 const FAV = { vb: /viewBox="([^"]+)"/.exec(fav)[1], d: /<path d="([^"]+)"/.exec(fav)[1] };
 
+// The public tagline is read from packages/brand, never retyped here (CLAUDE.md). D-133: "It stays in your words."
+const TAG = /tagline:\s*'([^']+)'/.exec(readFileSync(join(root, 'packages/brand/index.ts'), 'utf8'))?.[1];
+if (!TAG || /exactly as you said/i.test(TAG)) throw new Error('brand tagline missing or still the held line');
+const TAG_BREAK = TAG.replace(/^(\S+ \S+ \S+ )/, "$1<br>"); // "It stays in<br>your words." for the story card
+
 const fontDir = (p) => pathToFileURL(join(root, 'node_modules', p)).href;
 const fonts = `
 @font-face{font-family:Literata;font-weight:200 900;font-style:normal;src:url(${fontDir('@fontsource-variable/literata/files/literata-latin-opsz-normal.woff2')})}
@@ -45,16 +50,16 @@ const jobs = [];
 const add = (file, w, h, th, body) => jobs.push({ file, w, h, html: page(w, h, T[th], body(T[th])) });
 
 // Google Play feature graphic (1024x500). Lockup + tagline. No price, ranking or promo text (Play policy).
-add('play/feature-graphic-1024x500.png', 1024, 500, 'paper', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">Exactly as you said it.</div></div>`);
-add('play/feature-graphic-1024x500-night.png', 1024, 500, 'night', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">Exactly as you said it.</div></div>`);
+add('play/feature-graphic-1024x500.png', 1024, 500, 'paper', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">${TAG}</div></div>`);
+add('play/feature-graphic-1024x500-night.png', 1024, 500, 'night', t => `<div class=c>${lockup(t.ink, 120)}<div class=tag style="font-size:40px;margin-top:36px">${TAG}</div></div>`);
 // Link previews (Open Graph / Twitter large card), 1200x630. Safe area: content inside the centre 1000x500.
-const og = t => `<div class=c>${lockup(t.ink, 130)}<div class=tag style="font-size:40px;margin-top:34px">Exactly as you said it.</div></div>`;
+const og = t => `<div class=c>${lockup(t.ink, 130)}<div class=tag style="font-size:40px;margin-top:34px">${TAG}</div></div>`;
 add('social/link-preview-paper-1200x630.png', 1200, 630, 'paper', og);
 add('social/link-preview-night-1200x630.png', 1200, 630, 'night', og);
-add('social/link-preview-category-1200x630.png', 1200, 630, 'paper', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-family:Literata;font-size:46px;font-weight:500;margin-top:44px">The baby memory book you fill by talking.</div><div class=tag style="font-size:34px;margin-top:18px">Your words. Your voice. Kept as said.</div></div>`);
+add('social/link-preview-category-1200x630.png', 1200, 630, 'paper', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-family:Literata;font-size:46px;font-weight:500;margin-top:44px">The baby memory book you fill by talking.</div><div class=tag style="font-size:34px;margin-top:18px">Your words. Your voice. Every change marked.</div></div>`);
 // App Store promotional artwork (type only; real-UI screenshots live in docs/store/screenshots)
 add('promo/promo-square-1080x1080-paper.png', 1080, 1080, 'paper', t => `<div class=c>${lockup(t.ink, 120)}<div style="margin-top:70px;font-size:92px;font-weight:500;line-height:1.12">Said once.<br>Heard for years.</div><div style="font-family:Mukta;font-size:34px;color:${t.muted};margin-top:36px">Early Letters, the baby memory book you fill by talking.</div></div>`);
-add('promo/promo-story-1080x1920-night.png', 1080, 1920, 'night', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-size:104px;font-weight:500;margin-top:90px;line-height:1.12">Exactly as<br>you said it.</div><div style="font-family:Mukta;font-size:38px;color:${t.muted};margin-top:48px;max-width:760px">Early Letters, the baby memory book you fill by talking.</div></div>`);
+add('promo/promo-story-1080x1920-night.png', 1080, 1920, 'night', t => `<div class=c>${lockup(t.ink, 110)}<div style="font-size:104px;font-weight:500;margin-top:90px;line-height:1.12">${TAG_BREAK}</div><div style="font-family:Mukta;font-size:38px;color:${t.muted};margin-top:48px;max-width:900px">Early Letters, the baby memory book you fill by talking.</div></div>`);
 
 mkdirSync(join(here, '_src'), { recursive: true });
 const b = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || undefined });

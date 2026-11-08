@@ -14,14 +14,14 @@ Parents of children from birth to five, usually tired, often holding someone. At
 
 ## Brand idea in one sentence
 
-Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice, kept exactly as you said it.
+Early Letters is the memory book you fill by talking: letters to your child, in your own words and your own voice. It stays in your words.
 
 ## Do and don't
 
 | Do | Don't |
 | --- | --- |
 | "Tell {child} about today." | "Capture every precious moment." |
-| "Kept exactly as you said it." | "We shape your words into a story." |
+| "It stays in your words." | "We shape your words into a story." |
 | "On a quiet day, tap Not much today." | "It has been 5 days since your last letter." |
 | "Read together at bedtime." | "Unlock bedtime mode." |
 | "From Nani" | "Contributor: Grandmother" |

@@ -35,3 +35,17 @@
   display: flex;
   justify-content: center;
 }
+/* Short phones (320x568, 375x667): the card is taller than the screen, so the headline slides under the header and
+   the Copy link button ends up against the footer. Keep it between the header and the footer with tighter gaps. */
+@media (max-height: 700px) {
+  .card {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 58px);
+    padding-bottom: 14px;
+  }
+  .action {
+    margin-top: 12px;
+  }
+  .action > form {
+    padding-block: 4px;
+  }
+}

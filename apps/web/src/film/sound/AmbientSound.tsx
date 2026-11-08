@@ -12,6 +12,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { site } from '@/content/site';
 import { useToneAt } from '@/components/cta/useTone';
 import { AmbientEngine, audioSupported } from './ambient-engine';
+import { chosenTrack } from './tracks';
 import {
   ambientParams,
   asTone,
@@ -71,7 +72,7 @@ export function AmbientSound() {
     });
   }, []);
 
-  const engine = useCallback(() => (engineRef.current ??= new AmbientEngine(sync)), [sync]);
+  const engine = useCallback(() => (engineRef.current ??= new AmbientEngine(sync, chosenTrack())), [sync]);
 
   /** Must run inside a gesture handler. */
   const begin = useCallback(() => {

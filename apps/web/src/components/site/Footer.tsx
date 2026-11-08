@@ -7,9 +7,11 @@ import Link from 'next/link';
 import { Wordmark } from '@/components/brand/Wordmark';
 import { site } from '@/content/site';
 import { siteCopy } from '@/lib/legal/site-copy';
+import { credits } from '@/film/sound/tracks';
 import styles from './Footer.module.css';
 
 export function Footer() {
+  const musicCredits = credits();
   return (
     <footer className={styles.footer}>
       <div className={styles.inner}>
@@ -37,6 +39,21 @@ export function Footer() {
             ))}
           </ul>
         </nav>
+
+        {musicCredits.length > 0 && (
+          <p className={styles.credit} data-music-credit>
+            {site.sound.credit}:{' '}
+            {musicCredits.map((c, i) => (
+              <span key={c.id}>
+                {i > 0 && '; '}
+                <a className={styles.link} href={c.href} target="_blank" rel="noopener noreferrer">
+                  {c.text}
+                </a>{' '}
+                ({c.licence})
+              </span>
+            ))}
+          </p>
+        )}
       </div>
     </footer>
   );

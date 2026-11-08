@@ -65,14 +65,14 @@ ${d.localisation.storefrontNote}
 
 ## Languages
 
-The site lists seven speech languages: English, Hindi, Spanish, Mandarin, French, Arabic, Portuguese (Brazilian). The app UI is English only at v1.0.
+Build 1 is English only (D-115, D-121). No store text names another language until its native reviewer has signed it with name and date (D-125 item 2).
 
 ## Phases
 
 1. v1.0: en-US only. Ship the approved English listing.
 2. After launch: add es-MX, fr-FR and pt-BR subtitle and promotional text first, each reviewed by a native speaker who is also a parent. Description translations come after that.
 3. Hindi, Simplified Chinese and Arabic: after a native review and the Hindi script decision (D-031). Arabic needs a right-to-left screenshot check.
-4. Never machine-translate the description without review. The brand never promises translation of a person's words ("Your words stay in the language you said them").
+4. Never machine-translate the description without review. Never promise a language the build does not do.
 
 ## Draft translations, all need native review
 

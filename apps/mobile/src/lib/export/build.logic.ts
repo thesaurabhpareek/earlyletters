@@ -29,7 +29,7 @@ import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
 import { copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
-import { dayDate, letterDateline } from '../dates';
+import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly } from '../dates';
 import type { Child, Entry } from '../store';
 import { exportCopy } from './copy';
 import {
@@ -185,8 +185,10 @@ export function recordingFileOf(audioUri: string | null | undefined): { extensio
 
 export const audioPath = (entryId: string, audioUri?: string | null) => `audio/${entryId}${recordingFileOf(audioUri).extension}`;
 
-export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn'>): string {
-  return `letters/${folder}/${e.occurredOn.slice(0, 7)}/${e.occurredOn.slice(0, 10)}_${e.id}.txt`;
+export function letterPath(folder: string, e: Pick<Entry, 'id' | 'occurredOn' | 'occurredPrecision'>): string {
+  // A month-only letter's name carries no day: its stored day is only where its month of age starts (1.5.0).
+  const day = isMonthOnly(e) ? e.occurredOn.slice(0, 7) : e.occurredOn.slice(0, 10);
+  return `letters/${folder}/${e.occurredOn.slice(0, 7)}/${day}_${e.id}.txt`;
 }
 
 /** Oldest first, the way a book reads. */
@@ -242,11 +244,11 @@ export function audioMissingReason(e: SnapshotEntry): 'not_on_this_device' | nul
 function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): string {
   const l = exportCopy.letterFile;
   // A quiet-day mark: the date and the label only. No author, no words, no signature (D-084).
-  if (quiet(e)) return `${l.date}: ${letterDateline(child, e.occurredOn, locale)}\n\n${copy.book.quietDay.label}\n`;
+  if (quiet(e)) return `${l.date}: ${entryLetterDateline(child, e, locale)}\n\n${copy.book.quietDay.label}\n`;
   const lines = [
     `${l.to}: ${child.name}`,
     `${l.from}: ${signsAsOf(e, child)}`,
-    `${l.date}: ${letterDateline(child, e.occurredOn, locale)}`,
+    `${l.date}: ${entryLetterDateline(child, e, locale)}`,
   ];
   if (!waiting(e)) lines.push(`${l.how}: ${provenance(e)}`);
   if (spoken(e)) {
@@ -309,7 +311,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
             .map((e) => {
               if (quiet(e)) {
                 return `<article class="mark">
-<p class="date">${escapeHtml(dayDate(e.occurredOn, snapshot.locale))} &middot; ${escapeHtml(copy.book.quietDay.label)}</p>
+<p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))} &middot; ${escapeHtml(copy.book.quietDay.label)}</p>
 <p class="file"><a href="${encodeURI(letterPath(folders.get(child.id)!, e))}">${escapeHtml(letterPath(folders.get(child.id)!, e))}</a></p>
 </article>`;
               }
@@ -322,7 +324,7 @@ function indexHtml(snapshot: ExportSnapshot, folders: Map<string, string>): stri
                     : '';
               const body = waiting(e) ? `<p class="note">${escapeHtml(exportCopy.letterFile.waitingForWords)}</p>` : paragraphs(e.finalText);
               return `<article>
-<p class="date">${escapeHtml(dayDate(e.occurredOn, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
+<p class="date">${escapeHtml(entryDayDate(child, e, snapshot.locale))}${e.inBook ? '' : ` <span class="tag">${escapeHtml(r.privateLabel)}</span>`}</p>
 ${body}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
 ${audio}
@@ -391,7 +393,7 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
       const letters = ch.entries
         .map(
           (e) => `<article>
-<p class="date">${escapeHtml(letterDateline(child, e.occurredOn, locale))}</p>
+<p class="date">${escapeHtml(entryLetterDateline(child, e, locale))}</p>
 ${paragraphs(e.finalText)}
 <p class="sig" dir="auto">${escapeHtml(fill(copy.book.signature, { signsAs: signsAsOf(e, child) }))}</p>
 </article>`,
@@ -537,6 +539,7 @@ export async function dataFiles(
       author: { signs_as: signsAsOf(e, child), is_exporter: e.own },
       kind: e.kind,
       occurred_on: e.occurredOn,
+      occurred_precision: isMonthOnly(e) ? 'month' : 'day',
       captured_at: e.capturedAt,
       capture_mode: e.captureMode,
       edit_level: e.editLevel,

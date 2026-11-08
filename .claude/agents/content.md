@@ -17,6 +17,7 @@ Every word in the app, the App Store, the website and the printed book sounds li
 - `packages/brand/**` values are founder decisions: propose changes, do not make them.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `packages/content/VOICE.md`, `BRAND.md`, `test/rules.test.ts`.
 - `docs/legal/in-app-disclosures.md` and `docs/legal/compliance-register.md`: what we may and may not claim.
 

@@ -124,7 +124,7 @@ Set `tabBarButtonTestID` per screen: `tab.tonight`, `tab.book`, `tab.family`. Th
 `readTogether.screen`, `readTogether.close`, `readTogether.next`, `readTogether.previous`, `readTogether.finish`, `readTogether.again`, `readTogether.empty`; `plusGate.screen`, `plusGate.subscribe`, `plusGate.note`, `plusGate.notNow`. Flows: 06, 07, 14.
 
 ### Add a child (`components/child/add-child-form.tsx`)
-`addChild.screen`, `addChild.name`, `addChild.when` (ChoiceGroup), `addChild.save`. Flows: 07.
+`addChild.screen`, `addChild.name`, `addChild.when` (ChoiceGroup), `addChild.bornToday` (the Born today chip), `addChild.add` (the primary; the app's id, first requested as `addChild.save`). Flows: 07.
 
 ### Family and invites (`app/(tabs)/family.tsx`, `app/invite/*`)
 | testID | Element | Flows |

@@ -56,7 +56,7 @@
       "url": "/favicon/site.webmanifest",
       "format": "webmanifest",
       "bytes": 371,
-      "sha256": "d3d56d028d37497ff01b748b8cdb74222b584558b6aa191d253809545e7aa450",
+      "sha256": "4a66e1e620eaa77f37f71c1637c02f9b950b7716ad5f01d8196d160bd3e80255",
       "copies": [
         "apps/web/public/favicon/site.webmanifest"
       ]

@@ -1,5 +1,10 @@
 # Founder queue: every step only you can do, in one order
 
+**Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
+- `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
+- `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
+- If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
+
 Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
 
 - **Wave 0: 10 of 15 open, 3 partly done, 2 done** (counts of 30 Oct; W0-14 moved from open to partly done). Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on), item 6 (secret scanning and push protection are on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, is done on 29 Oct; b to f are open).
@@ -35,6 +40,19 @@ The coordinator's proposed order for the weekend, from `docs/release/TESTFLIGHT.
 Rows 7 and 8 both fall on Mon 2 Nov: about 6 hours, or 7 with the drill, before build 1's spill-over, with the freeze the next morning. If that is too much, row 8 moves to Tue 3 Nov and Wed 4 Nov, row 9 (build 2) moves with it because steps 6 to 9 are build 2's prerequisites, and the go/no-go on Mon 9 Nov still has room; the cost is that the Delete account row then stays hidden (D-129 needs the purge worker and the drill by Mon 2 Nov noon PT).
 
 The default branch stays `main` until row 7 (Mon 2 Nov; W0-09 waits; `docs/agents/cto/RULINGS.md` CR-2, which also says B2-22 needs it by the day build 2 is cut). The four questions only you could answer were put to you on 30 Oct and answered the same day: no paid harness (CR-5), the Privacy row shows On or Off in build 2 and the withdrawal comes before any friend signs in (BL-485 option (b)), the Delete account row is hidden in the alpha builds unless the purge worker and the sole-parent drill pass by Mon 2 Nov noon PT, and the freeze Tue 3 Nov with the go/no-go Mon 9 Nov. They are recorded in `docs/DECISIONS.md` as D-127 to D-130 (PR #406, merging with this one).
+
+## 0a. Release test decisions (Sun 1 Nov 2026, from `docs/qa/RELEASE_TEST_PLAN.md`, CR-37)
+
+Each row carries Karma's recommendation. Nothing here is settled until you answer.
+
+| # | By | Step | Minutes | Unblocks |
+|---|---|---|---|---|
+| T1 | Mon 9 Nov (go/no-go) | Decide which P0 gaps gate the 1 Dec submission. Karma recommends gating on every build 1 P0 row that protects a promise or a store duty (the RT-REL, RT-PRV, RT-AGE and RT-PAY-21 rows, plus RT-WRD-03, RT-LCH-09, RT-DSP-05 and RT-NET-01) and shipping the rest as known issues with owners (plan section 7) | 20 | A submission scope that can be met |
+| T2 | Fri 6 Nov | Device hours: borrow an iPhone XR, a 12 or 13 mini and an iPhone 11 for one session each, or name who runs them. Karma recommends borrowing; each hits a limit the SE 3 and a current phone cannot (plan section 3) | 15, plus the sessions | RT-WRD-03, RT-LCH-09 and the 414 pt and notch rows |
+| T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
+| T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
+| T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
+| T6 | Before the go/no-go | A payer whose renewal falls while offline keeps Plus for at most 1 day in code, against 7 days in the PRD (RT-SUB-13, C-NFR-004). This is technical, so Karma rules on it after reading the PRD line; it is listed here only so you see it | 0 | RT-SUB-13 |
 
 ## 1. Wave 0: this week, smallest first
 
@@ -106,6 +124,10 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 
 ---
 
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
+
 ## 2. Next: build 2 and the alpha
 
 Order follows TESTFLIGHT "What each build needs". Status for each is unverified unless stated.
@@ -120,9 +142,9 @@ Order follows TESTFLIGHT "What each build needs". Status for each is unverified 
 | Q2-06 | Website links: Vercel `APPLE_TEAM_ID`, `IOS_BUNDLE_ID`, then the two `curl` checks (TESTFLIGHT step 10) | 15 min | sign-in and invite links opening the app | #144 merged into `main` (TESTFLIGHT step 10); the Vercel values and the checks unverified | F15, FT-31 (well-known part) |
 | Q2-07 | Staging function secrets and deploys (`apple-token`, `purge-worker`, `config`, `content`), purge schedule (TESTFLIGHT step 12; `docs/ops/SECURITY.md` 1.1) | 1 h | Delete account in build 2 | unverified; each function's health path answers 200 (AUTOMATION 0.2 row 12) | FT-11, F17, AF-13 (functions) |
 | Q2-08 | Escrow parts 1 and 2 (`docs/ops/BACKUP_RUNBOOK.md` B2 to B7) | 2.5 h | restore through escrow | unverified; whether build 2 still needs it: ask the build thread | F18, F20 |
-| Q2-09 | Plus in the sandbox, optional: Paid Apps agreement, tax and bank; `plus.monthly`, `plus.annual` on the `.preview` record (TESTFLIGHT step 2.5) | 1 h 45 min | Plus checks | unverified | FT-06, FT-09, F14 |
+| Q2-09 | Plus in the sandbox, optional: Paid Apps agreement, tax and bank; `plus.monthly`, `plus.annual` exist on the production record only; `.preview` cannot carry them (TESTFLIGHT step 2.5, 1 Nov correction) | 1 h 45 min | Plus checks | unverified | FT-06, FT-09, F14 |
 | Q2-10 | Build 2: `preflight:alpha`, build `preview`, submit, add to "Family" only (TESTFLIGHT step 11) | 20 min | the alpha with servers | open | F24 |
-| Q2-11 | Drills on real phones: AUTH_SETUP section 11 and two-phone sync (F19); backup drill (F23); build 2 checks StoreKit D-1 to D-12 and the SE 3 kill subset (F25) | 7 h | go/no-go evidence | unverified | F19, F23, F25, FT-22, FT-39 |
+| Q2-11 | Drills on real phones: AUTH_SETUP section 11 and two-phone sync (F19); backup drill (F23); build 2 checks the SE 3 kill subset (F25); StoreKit D-1 to D-12 need a TestFlight build of the `production` profile after Mon 9 Nov (1 Nov correction, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md`), not build 2 | 5 h | go/no-go evidence | unverified | F19, F23, F25, FT-22, FT-39 |
 | Q2-12 | Mac kit run for ADR 0027 V3 and V4: `npm run adts-parity -w @scribe/experiments` (`experiments/README.md` section 8) | unverified | ADR 0027 | open (BOARD line 85, by Fri 30 Oct) | BOARD line 85 |
 | Q2-13 | Delete the scratch branch `exp/plant-launch-throw` by hand (#285 closed) | 1 min | tidy branches | open: the branch exists (REST, 28 Oct) | BOARD line 85 |
 | Q2-14 | R-17 sign-off: read `docs/security/REVIEW_R17_CHECKLIST.md` and the staging `test:db` evidence; record "R-17 passed" | 30 min | Friends may sign in (D-100) | open; a D-id records it | F21 |

@@ -81,3 +81,9 @@
     display: none;
   }
 }
+
+/* Music credit line: only present when a track's licence asks for one (generated from the track list). */
+.credit {
+  margin: 0;
+  font-size: 0.9rem;
+}
