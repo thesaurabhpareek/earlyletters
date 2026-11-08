@@ -219,10 +219,9 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
   });
 
   for (const env of APP_ENVS) {
-    it(`profile "${env}" sets EXPO_PUBLIC_APP_ENV, channel and EAS environment to ${env}`, () => {
+    it(`profile "${env}" sets EXPO_PUBLIC_APP_ENV and EAS environment to ${env}`, () => {
       const p = eas.build[env];
       expect(p.env?.[KEY]).toBe(env);
-      expect(p.channel).toBe(env);
       expect(p.environment).toBe(env);
     });
   }
@@ -314,7 +313,6 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     it('is a store build that is a preview build in every other respect', () => {
       expect(tf.distribution).toBe('store');
       expect(tf.env?.[KEY]).toBe('preview');
-      expect(tf.channel).toBe('preview');
       expect(tf.environment).toBe('preview');
     });
 
@@ -361,14 +359,18 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     });
   });
 
-  it('builds 1 and 2 may share the "preview" update channel only while the app has no update client', () => {
-    // The switches are inlined at bundle time, so an over-the-air update made for build 2 (servers on) would turn
-    // servers on in build 1 if both listened on one channel. Today nothing listens: expo-updates is not installed.
-    // Adding it means giving testflight and preview their own channels first.
+  it('no over-the-air updates in v1.0 (D-091): no update client, and no build profile names an update channel', () => {
+    // A "channel" on a build profile makes `eas build` install and configure expo-updates (EAS Update), which D-091
+    // rules out for v1.0. It did exactly that on the first local testflight build (1 Nov 2026). The switches are
+    // also inlined at bundle time, so a shared channel would let an update made for build 2 (servers on) reach build 1.
+    // production keeps its channel only until the post-9-Nov production edit (D-124 item 1, S-12b) removes it.
     const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as Record<string, Record<string, string> | undefined>;
     const hasUpdates = ['dependencies', 'devDependencies'].some((k) => pkg[k]?.['expo-updates'] !== undefined);
-    const shared = eas.build.testflight.channel === eas.build.preview.channel;
-    expect(hasUpdates && shared, 'expo-updates is installed: give testflight and preview their own channels').toBe(false);
+    expect(hasUpdates, 'expo-updates is installed, against D-091').toBe(false);
+    const withChannel = Object.entries(eas.build as Record<string, { channel?: string }>)
+      .filter(([name, p]) => p.channel !== undefined && name !== 'production')
+      .map(([name]) => name);
+    expect(withChannel, 'these profiles name an update channel; eas build would install expo-updates (D-091)').toEqual([]);
   });
 
   it('production stays off (store submission is re-planned after the alpha, D-106)', () => {

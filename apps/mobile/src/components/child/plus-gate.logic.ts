@@ -47,6 +47,12 @@ export type KeepSheetInput = {
   /** "See Plus" answered that the store could not be reached. */
   offline: boolean;
   storeSupport: StoreViewSupport;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA, from the bundle's APP_ENV): Plus products cannot load there, so the
+   * sheet offers no store and its body is the note that Plus is not part of this test (`alpha.note`), with no Plus
+   * wording (no body, no lapsed line, no store note). Reached only past MAX_FREE_LETTERS (100). Defaults to false.
+   */
+  alpha?: boolean;
 };
 
 export type KeepSheetView = {
@@ -68,14 +74,17 @@ export const SYNCED_HELD_NOTE_CLEARED = false;
 const k = billingCopy.keepGate;
 const g = billingCopy.gate;
 
-export function keepSheetView({ lapsed, heldOn, synced, offline, storeSupport }: KeepSheetInput): KeepSheetView {
+export function keepSheetView({ lapsed, heldOn, synced, offline, storeSupport, alpha = false }: KeepSheetInput): KeepSheetView {
   const onLetter = heldOn === 'letter';
+  const heldNote = onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote;
+  // Alpha: no store, no Plus wording; the body is the alpha note and nothing sits under the buttons.
+  if (alpha) return { body: billingCopy.alpha.note, heldNote, note: null, canOpenStore: false };
   const canOpenStore = storeSupport === 'available';
   const note =
     storeSupport === 'needs_ios_17' ? g.needsNewerIos : storeSupport === 'unsupported' ? g.unavailable : offline ? (onLetter ? k.offlineLetter : k.offline) : null;
   return {
     body: lapsed ? k.lapsedBody : k.body,
-    heldNote: onLetter ? k.heldNoteLetter : synced && SYNCED_HELD_NOTE_CLEARED ? k.heldNoteSynced : k.heldNote,
+    heldNote,
     note,
     canOpenStore,
   };

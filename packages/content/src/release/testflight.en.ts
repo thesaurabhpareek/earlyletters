@@ -51,7 +51,9 @@ const feedbackBlock = [
   `If you were invited as a friend: ${groupLines.friends}`,
 ].join('\n\n');
 
-const plusLine = 'After the first two letters, keeping another one asks for Plus. Purchases in this test cost nothing.';
+// Alpha builds have no letter limit and offer no Plus (founder, 1 Nov 2026; apps/mobile billing/alpha.ts). The last
+// sentence stays: the tester notice (5.1) asks every What to Test to say it.
+const plusLine = 'Plus is not part of this test, so every letter you keep is free. Purchases in this test cost nothing.';
 
 // The ask comes at the end of first run, and again in Review while words are waiting if the person chose "Not now"
 // (speechConsentCopy, features/speech.en.ts).
@@ -97,7 +99,7 @@ function build2Text(withDeleteRow: boolean): string {
   ].join('\n\n');
 }
 
-const describeApp = `It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`;
+const describeApp = `It keeps letters to your child, in your own words and voice: you tell your child something about the day, and it keeps your words and your recording as a letter.`;
 const earlyTest = 'It is an early test version, so it can make mistakes, and it will change. You must be 18 or older to take part.';
 
 export const testflightCopy = {
@@ -112,7 +114,7 @@ export const testflightCopy = {
    * invitation, read by Beta App Review). The same for every build on the record, so it says only what both builds do.
    */
   betaAppDescription: [
-    `${brand.name}, the baby memory book you fill by talking.`,
+    `${brand.name}: letters to your child, in your own words and voice.`,
     'Tap the red circle and tell your child something about today. Your words are written down on your phone and kept as a letter, exactly as you said them, with the recording beside it. Small slips, like an um or a word said twice, are marked, and you can put any of them back.',
     'Letters gather in your child\'s book, month by month, to read and hear together for years. You can also type a letter, or tap "Not much today" on a quiet day.',
     'This is an early test version for a small group of family and friends. It can make mistakes, and it will change. You must be 18 or older to take part. Purchases in this test cost nothing.',

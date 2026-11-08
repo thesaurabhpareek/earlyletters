@@ -1,0 +1,51 @@
+/* S11: the end card. */
+.card {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 var(--gutter);
+  text-align: center;
+  color: var(--night-ink);
+  z-index: 3;
+}
+.card > div {
+  width: 100%;
+  min-width: 0;
+  max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.card h2 {
+  font-size: clamp(40px, 6vw, 96px);
+}
+@media (max-width: 360px), (max-height: 600px) {
+  .card h2 {
+    font-size: clamp(30px, 9.4vw, 38px);
+  }
+}
+.card p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.action {
+  margin-top: clamp(28px, 4svh, 44px);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+/* Short phones (320x568, 375x667): the card is taller than the screen, so the headline slides under the header and
+   the Copy link button ends up against the footer. Keep it between the header and the footer with tighter gaps. */
+@media (max-height: 700px) {
+  .card {
+    padding-top: calc(env(safe-area-inset-top, 0px) + 58px);
+    padding-bottom: 14px;
+  }
+  .action {
+    margin-top: 12px;
+  }
+  .action > form {
+    padding-block: 4px;
+  }
+}

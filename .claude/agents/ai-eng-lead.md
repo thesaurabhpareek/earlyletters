@@ -19,6 +19,7 @@ Agent output stays small, verifiable and faithful to the standards. You own how 
 - `agents/ai-eng-lead/MEMORY.md`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md`, `docs/engineering/PRINCIPLES.md`, chapter 09.
 - `docs/agents/HARNESS.md` sections 3, 8, 9; `docs/agents/CHARTER_TEMPLATE.md`; `agents/roster.json`.
 - `docs/agents/AGENT-COMMS.md` (handoffs, RFCs).

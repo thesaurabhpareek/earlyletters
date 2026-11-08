@@ -156,7 +156,7 @@ The logo is one colour: ink on light, inkDark on dark. The accent symbol (`logo.
 | `font.devanagari` | Tiro Devanagari Hindi | Devanagari runs inside letters and the book | UI (Mukta covers it) |
 | `font.*.web*` | Literata, Mukta (latin woff2) | Email and the website, served from `/fonts/` (context `email.type`) | Anything off earlyletters.com |
 
-**Tagline.** One treatment wherever the tagline stands on its own (OG image, video end card, Play feature graphic, press): Literata 400 italic, `inkMuted` (`inkMutedDark` on dark), centred under the stacked lockup, set at 0.5 x the wordmark's em, baseline 0.68 em below the lockup's box (`taglineLockup()` in `build-touchpoints.mjs`). In running text (the email footer, a web page) it inherits the surrounding style. The words never change: "Exactly as you said it." 
+**Tagline.** One treatment wherever the tagline stands on its own (OG image, video end card, Play feature graphic, press): Literata 400 italic, `inkMuted` (`inkMutedDark` on dark), centred under the stacked lockup, set at 0.5 x the wordmark's em, baseline 0.68 em below the lockup's box (`taglineLockup()` in `build-touchpoints.mjs`). In running text (the email footer, a web page) it inherits the surrounding style. The words never change: "It stays in your words." 
 
 Quiet UI, loud letters (DESIGN_LANGUAGE.md). Size EB Garamond at 1.2 times what you would give Literata, because of its smaller x-height.
 
@@ -194,7 +194,7 @@ Warm, calm, literary lightly. A kind friend, not a brand. Time and love, never e
 | Accent symbol alone as the one warm moment on a page | Two-colour lockup (accent mark plus ink name) |
 | One logo per screen or page section | Logo in the nav bar and the hero and the footer of one screen |
 | "We never rewrite your words." next to the mark | Sparkles, wands, "AI-powered", "magic" near the mark or in a tagline |
-| The tagline exactly: "Exactly as you said it." | Rewording it per surface |
+| The tagline exactly: "It stays in your words." | Rewording it per surface |
 | Stacked lockup centred on the paywall, once | The app icon tile used as a logo inside the app |
 | The small-cut pair as the end-of-letter mark on a printed page (still opening quotes) | Closing quotation marks, a speech bubble, or the mark rotated |
 | The small cut as a section break in the book or PDF, once per page | The mark as a bullet, a list marker, a pattern or a site divider |

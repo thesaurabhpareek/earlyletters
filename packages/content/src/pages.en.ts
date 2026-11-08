@@ -44,12 +44,12 @@ export const pages = {
     path: "/about",
     title: `About ${brand.name}`,
     metaDescription:
-      `${brand.name} is the baby memory book you fill by talking. Your words kept exactly as you said them, private by default, made by an independent maker.`,
+      `${brand.name}: letters to your child, in your own words and voice. It stays in your words, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
         paragraphs: [
-          `${brand.name} is the baby memory book you fill by talking. Parents speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
+          `${brand.name} keeps letters to your child, in your own words and voice. Parents fill the book by talking, or by typing notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
           "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Mama or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
           `${brand.name} is for families in the United States. Accounts are for adults 18 and over.`,
         ],
@@ -58,7 +58,7 @@ export const pages = {
         heading: "We never rewrite your words",
         paragraphs: [
           "This is the rule everything else is built on. Software may remove and repair. It may never add meaning.",
-          "In practice, we only fix small slips, like an um, a repeat or a misheard word, and mark each one. A small fix can also be a missing full stop or a one-word grammar slip like we was to we were. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
+          "In practice, we take out the ums and accidental repeats, spell your names your way, and put in capital letters and full stops, and we mark each fix. We call this Word for word. You can see every fix on the page and undo it. Choose Exactly as said in Settings and every um and false start stays. Nothing is added, nothing is summarized, and no sentence is reworded.",
           "Every fix is recorded and can be undone. Exactly what you said is kept unchanged with each letter, and Show exactly what I said brings it back whenever you like.",
           "Speak English, Hindi, Spanish, Mandarin Chinese, French, Arabic or Portuguese. Your words stay in the language you said them.",
         ],
@@ -95,7 +95,7 @@ export const pages = {
     path: "/why",
     title: `Why ${brand.name}`,
     metaDescription:
-      `Most of what a family says to a small child is said once. ${brand.name} keeps those words exactly as they were said, in the voice that said them.`,
+      `Most of what a family says to a small child is said once. ${brand.name} keeps those words, and the voice that said them.`,
     sections: [
       {
         heading: "Said once",
@@ -112,9 +112,9 @@ export const pages = {
         ],
       },
       {
-        heading: "Exactly as you said it",
+        heading: "It stays in your words",
         paragraphs: [
-          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We only fix small slips, like an um, a repeat or a misheard word, and mark each one. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
+          "At the centre of everything is one promise: we never rewrite your words. We do not make them neater. We take out the ums and accidental repeats and spell your names your way, and we mark each fix. Every fix can be undone. The sentence that ends up in the book is one you actually said.",
           "The way you say a thing is part of what you mean: the sentence you started twice, the way you always say the name. Smooth that out and it is easier to read, and less true.",
           "You do not need to say it well. An ordinary day, said your way, is the one worth keeping.",
         ],
@@ -277,7 +277,7 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: `This page is not in the book. Head back to ${brand.name}, the baby memory book you fill by talking.`,
+    metaDescription: `This page is not in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
     sections: [
       {
         heading: "We looked under every month. This page is not in the book.",

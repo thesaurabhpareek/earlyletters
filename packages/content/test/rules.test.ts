@@ -653,6 +653,35 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(leaves(storeListing, 'store'), /exactly as you said/i)).toEqual([]);
   });
 
+  // The store pack under docs/store (listing.json, screenshot captions) is what gets pasted into the consoles, so it
+  // carries the same claims as the typed listing (D-133, D-121, D-126). Localised drafts are held and not scanned.
+  const REPO = join(__dirname, '..', '..', '..');
+  const listingJson = () => JSON.parse(readFileSync(join(REPO, 'docs/store/listing/listing.json'), 'utf8'));
+  function storePackText(): Leaf[] {
+    const { localisation: _skip, _comment: _c, ...rest } = listingJson();
+    const caps = JSON.parse(readFileSync(join(REPO, 'docs/store/screenshots/captions.json'), 'utf8')) as { id: string; headline: string; sub: string }[];
+    return [
+      ...leaves(rest, 'listing.json').filter((l) => !/availability$/.test(l.path)),
+      ...caps.flatMap((c) => [{ path: `captions.${c.id}.headline`, text: c.headline }, { path: `captions.${c.id}.sub`, text: c.sub }]),
+    ];
+  }
+
+  it('store pack text never says the words are kept exactly as said (D-133, council Q6)', () => {
+    expect(offenders(storePackText(), /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|word for word/i)).toEqual([]);
+  });
+
+  it('store pack text promises only what build 1 does: no invites, family, sync, backup of our own, other languages, coming soon or beta (D-121, D-126, D-060)', () => {
+    const bad = /invite|co-?parent|grandparent|aunt|uncle|from papa|nani|sync|vault|recovery key|cloud|bilingual|hindi|spanish|mandarin|french|arabic|portuguese|coming soon|later update|\bbeta\b|early access|whole family|family book|printed|(?<!iphone's own )backup/i;
+    expect(offenders(storePackText(), bad)).toEqual([]);
+  });
+
+  it('listing.json carries the promotional text of the typed listing, and the tagline is the brand tagline', () => {
+    const j = listingJson();
+    expect(j.apple.promotionalText).toBe(storeListing.promotionalText);
+    expect(brand.tagline).toBe('It stays in your words.');
+    expect(j.googlePlay.shortDescription).toContain(brand.tagline);
+  });
+
   it('points the store listing at the live legal pages (D-063)', () => {
     expect(storeListing.description).toContain(brand.web.terms);
     expect(storeListing.description).toContain(brand.web.privacy);
@@ -902,9 +931,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
   });
 
+  // Deliberate rule change, founder decision D-139 (positioning A, 1 Nov 2026): the descriptor is now "letters to your
+  // child, in your own words and voice", and the old one ("the baby memory book you fill by talking") is retired.
   it('uses one descriptor', () => {
-    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
-    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}: letters to your child, in your own words and voice.`);
+    expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
+    expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
 });
 
@@ -1126,5 +1158,56 @@ describe.each(SURFACES.map((s) => [`[${s.tag}] rules over ${s.name}`, s] as cons
 
   it('spells for the US storefront (D-087)', () => {
     expect(offenders(ALL, surface.uk)).toEqual([]);
+  });
+});
+
+// Claims and trust (exec council, 1 Nov 2026; docs/exec-rulings-claims-trust-2026-11-01.md), ported from main's
+// #485 onto develop's keys. Each rule names the ruling it enforces. If one fails, fix the copy, not the test.
+describe('claims that must be true of what the first build does', () => {
+  it('store text carries the D-133 line and never says words are kept exactly as said or promises any misheard word (#495, D-133)', () => {
+    expect(storeListing.promotionalText).toMatch(/It stays in your words\. Every change is marked, and your original recording is kept unchanged\./);
+    expect(storeListing.description).toMatch(/It never adds a word\. Every change is marked, and you can put any of them back\./);
+    expect(offenders(STORE, /exactly as (you|they|i|it was) (said|spoke|told)|kept as (you )?said|every (single )?word|misheard word|grammar/i)).toEqual([]);
+  });
+
+  it('never calls the fixes tidying (D-086, Q2)', () => {
+    expect(offenders(EVERY, /\btid(y|ied|ies|ying|ier)\b/i)).toEqual([]);
+  });
+
+  it('the book never says nobody changed the words, or that every word is kept exactly as said (Q1)', () => {
+    const bad = /nobody tidied|nothing was reworded|exactly as they said|kept as it was said|only changes were small fixes/i;
+    expect(offenders(BOOK, bad)).toEqual([]);
+  });
+
+  it('"About this book" says what the engine does and no more (Q1; core EditType; D-133 line)', () => {
+    const body = book.aboutThisBook.body;
+    expect(body).toMatch(/no word was added/);
+    expect(body).toMatch(/small fixes/);
+    expect(body).toMatch(/original recording is kept unchanged/);
+    expect(body).toMatch(/Typed letters are exactly as they were typed/);
+  });
+
+  it('status lines never promise a later update or say beta (Q4, D-060, D-126)', () => {
+    const status = [
+      ...leaves(en.settingsMore, 'settingsMore'),
+      ...leaves(en.childrenExtra, 'childrenExtra'),
+      ...leaves(en.familyTab, 'familyTab'),
+    ];
+    expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
+  });
+
+  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
+    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
+    expect(offenders(SITE, held)).toEqual([]);
+  });
+
+  it('the website, book and email never repeat the retired tagline (Q6; the in-app headline stays under D-125 item 9)', () => {
+    const retired = /exactly as (you said (it|them)|they were said|they said)/i;
+    expect(offenders([...SITE, ...PAGES, ...BOOK, ...EMAIL], retired)).toEqual([]);
+  });
+
+  it('the site and pages promise only the fixes the first build makes: ums, repeats and family names, not grammar or any misheard word (Q5 row 1)', () => {
+    const overclaim = /grammar|we was|misheard word/i;
+    expect(offenders([...SITE, ...PAGES], overclaim)).toEqual([]);
   });
 });

@@ -18,6 +18,7 @@ Set and hold the security standard for Early Letters: only the right member of t
 - `agents/security-architect/MEMORY.md`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - The `infosec` skill (`.claude/skills/infosec/SKILL.md`): threat-model method, checks by layer, open-source tools and their licences.
 - `CLAUDE.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 4 and 17), your two chapters.
 - `docs/tdd/04-security-identity.md`, `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ-001, -002, -021 to -027, -037, -040), `docs/DECISIONS.md` (D-006, D-020, D-024, D-026, D-039, D-041, D-044).

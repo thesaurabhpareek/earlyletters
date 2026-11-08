@@ -212,6 +212,19 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Record:** S1-15 row: download time on Wi-Fi, hash seconds, resume worked (yes or no).
 - **Update:** ADR 0016 Risks (URLSession Range across Hugging Face redirects; Hermes hash time), ADR 0015 section 9.
 
+### S1-15a TF1-DL First-run download card lines, stalls and resume (PR #541, TestFlight build 1 "Getting ready, 0%")
+- **Steps:** Fresh install, finish first run to "The book is open.", tap Download on Wi-Fi, keep the card on screen.
+  1. On a normal Wi-Fi network: watch the card from the tap to the end.
+  2. Turn Wi-Fi off mid-download (cellular only, "Use mobile data" off).
+  3. Turn a VPN on (any), on Wi-Fi, before tapping (a second fresh install, or after Remove in Storage). Note what the card says.
+  4. Mid-download, send the app to the background for 2 minutes, then return.
+  5. Slow Wi-Fi under 2 Mbps (Network Link Conditioner "3G" or a 1 Mbps profile on the router): let it run at least 10 minutes.
+  6. Settings > Storage, cancel or remove the model mid-download, then go back to a screen with the card or Review.
+  7. Book, Review (a recording waiting for its words) and Settings > Recordings while the model downloads or waits: the same rule applies there.
+- **Expected:** The card never shows "0%". Before bytes move: "Waiting to start", then "Downloading", then "Getting ready, n%" with a bar that moves. "Checking the download" and "Finishing" at the end, then "On this phone, 575 MB". Wi-Fi off: "Waits for Wi-Fi, 575 MB", no bar, no percent; it carries on by itself when Wi-Fi returns. Background and return: it carries on from where it was (the percent does not drop to the start). Slow Wi-Fi: the percent keeps moving and the download finishes, however long it takes. Any stop: a calm line with Try again ("Paused" after a cancel); after several automatic tries on a link that keeps stopping, "The download stopped. Tap Try again when the Wi-Fi is steady." VoiceOver announces a line that offers Try again once. Book, Review and Settings show their wait line, never 0%.
+- **Record:** S1-15a row: each step's lines as seen (no letter text). Step 3: did the card say "Waits for Wi-Fi" on Wi-Fi with a VPN (yes or no: confirms or clears the expo-network `UNKNOWN` hypothesis). Step 5: link speed and total minutes.
+- **Update:** If step 3 says yes: open an issue for `packs/expo-adapter.ts` `toConnection` (a Wi-Fi path that also uses an "other" interface reads `UNKNOWN`). If step 5 fails: STALL_MS and WASTED_CHUNKS_PER_RUN in `packs/engine.ts`.
+
 ### S1-16 Language packs on demand (decision 15, D-065)
 - **Steps:** Settings > Spoken language: add Portuguese. Then Storage: only `text-rules.pt` is new. Add Hindi as the primary: its text pack plus its speech model (the Hindi small model once hosted, else the shared one). Turn on the `packDownloads` kill switch in the staging config (RELEASE.md 9) and add French. Remove a pack in Storage.
 - **Expected:** Choosing a language downloads that language and nothing else; status words match the state (downloading, on this phone, waiting for Wi-Fi, paused); removing a pack keeps letters; English text rules are bundled (no download).
@@ -223,6 +236,12 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Expected:** A 2-minute letter in 30 s or less and 2% battery or less on SE 3 (PRD 7.7, marked Unverified there); no jetsam kill on 4 GB phones with turbo, else the phone moves to the compact tier after 2 failures (`MEMORY_FAILURES_BEFORE_COMPACT`); `Device.totalMemory` on SE 3 and 12 is above 3.4e9 (else `FULL_TIER_MIN_RAM_BYTES` is wrong).
 - **Record:** S1-17 table in the evidence file: phone x language x length -> seconds, peak MB, thermal state.
 - **Update:** ADR 0015 section 9 item 4 and 6 (resident memory estimates), ADR 0001, `lib/models/tiers.ts` comment ("U: from published device specs"), PRD 7.7. If a language is too slow on SE 3: ROADMAP section 4 cut (small model or hold the language back) and the store listing language list.
+
+### S1-17a TF1-DECODE Review's writing-down progress (PR #542, TestFlight build 1 "Part 1 of 3" with an empty bar)
+- **Steps:** Model already on the phone. Record a letter of about 1 minute (three parts) and Finish; stay on Review and watch it until the words appear. Repeat with a 20 s letter (one part). On one run, Hear it while it writes. Then a development build attached to Xcode or Safari Web Inspector: set a breakpoint or a temporary `console.log` of the numbers only (no text) in the `within` callback of `lib/transcribe-whisper.ts`, and record a third letter.
+- **Expected:** While the model opens and speech is found: "Writing down what you said." with no bar. From the first part on, "Part n of 3" and a thin bar on a visible `controlBorder` track that fills smoothly within each part and never moves back; the single-part letter also gets a bar. "Read it back later" appears only after 15 s with no whole-percent change. If whisper.rn's `onProgress` never fires on iOS: the words still say "Part n of 3", there is no bar during part 1, and the bar steps at 1/3 and 2/3. It is never an empty bar that sits still.
+- **Record:** S1-17a row: did whisper.rn `onProgress` fire on iOS (yes or no, and roughly how many calls per part); seconds in "Writing down what you said." before Part 1 (model load plus speech finding) on the full and compact model; whether the bar ever moved back.
+- **Update:** If `onProgress` never fires: note it in ADR 0015 section 9 and drop the per-call wiring in `transcribe-whisper.ts`. If the preparing stage is long: the design lane decides words for it (no progress callback exists for model load in whisper.rn 0.7.4).
 
 ### S1-18 Transcription spot check
 - **Steps:** For each language, one scripted letter with the child's name, a family name and a number. Open Review.
@@ -266,7 +285,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - When a row opens its card, note where focus goes: the card opens inside the letter, under the mark's line, and nothing moves focus to it (lens B B7). Record whether the card's "Put it back" can be reached without hunting.
   - Keep, then listen: "Kept in Month N. Added to Asha's book." is said once, in full, before the Book; the Book comes as the sentence ends (at least 3 s, at most about 8 s). Record whether iOS's `announcementFinished` fires for that sentence word for word: if every save waits the full 8 s, it does not (S6, lens A A3).
   - Start "Hear it", then Keep while it plays: the same sentence is said at once, not held until the Book (S6, lens B B4).
-- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review:
+- **V-06 Sheets (Keep the book, sign-in, Terms, sensitive data, Plus gate):** focus moves to the sheet title; the escape gesture closes. The Keep needs Plus sheet (P6a, S22), from a third letter's Keep in Review, on a production-profile build only (bundle id `com.earlyletters.scribe`): development and preview builds count as alpha and never open the Keep sheet before letter 101 (S1-37), so this cannot run on build 2; that build exists after Mon 9 Nov at the earliest. Mark it not run, not failed, until then:
   - Focus lands on "Keep adding to Asha's book". At the default text size, swiping back reaches the held letter, which sits above the title. At accessibility sizes the held letter follows the words, so swiping forward reaches it after the body (#370). Either way it is one element ("To Asha, Month 7", its words, "From Mama", "Waiting"). Nothing of Review behind the sheet is reachable. The escape gesture returns to the letter in Review with nothing held or kept.
   - "Keep it here for now" closes the sheet and Review; Tonight's card for that letter reads "Waiting to be kept." and "Keep it".
   - Double-tap "Keep it here for now" quickly: you stay on Tonight, with one card for the letter. The second tap must not land on the tab bar under the sheet's bottom edge. On the web it lands on the Book tab. On iOS the sheet's dismiss animation probably swallows it, but that is unverified, so record where the second tap goes (#312 lens B delta).
@@ -275,6 +294,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **V-08 Book and letter:** chapter headers read title, count and authors; the letter reads date, text, signature; Delete then Undo announced.
 - **V-09 Read together:** Previous, Next and Close reachable; playback state announced.
 - **V-10 Settings:** each row reads label and value; every consent row is two taps from Settings; "If you are struggling" is reachable. P6a (S40, S46, S47): "If you are struggling" and Licenses push their own pages; each support line reads its name and how to reach it and starts a call; the early-version note is read once, after Version; Add a child reads its heading first, the waiting "Add this book" as dimmed with its reason as the hint, and a tap on it says the reason and moves focus to the empty field; the due-date card's "Set the birthday" and "Hide" are reachable, and "Hide this book" opens a plain confirm.
+  - Back from Settings (TestFlight build 1, "No cross or back button in settings", PR #546): open Settings from each entry point: the Book gear, a content-block link to Settings, and the child switcher's Add a child (which opens straight on that page). Each time, the first screen shows the chevron at the top left in the accent colour, labelled "Book" from the Book tab (else the tab it came from, or "Back"), and VoiceOver reads it as "Book, back, button". Go back three ways from that screen: the button, the left-edge swipe, and the VoiceOver two-finger Z (escape). Each returns to where Settings was opened. Inner pages (Appearance, Reminders) still go back to Settings. Repeat with Reduce Motion on and at AX5. Record any entry point or way back that fails; the two-finger Z on the Settings home is the one no unit test proves (`apps/mobile/test/settings-back.test.ts` pins the button).
 - **Expected:** All ten pass with no unlabelled element, no trapped focus and no truncated text at AX5 (letter text never capped, D-027).
 - **Record:** S1-23 rows V-01 to V-10.
 - **Update:** TDD 09 section 2 findings table (status), `docs/design/COMPONENT_LIBRARY.md` for component fixes.
@@ -375,21 +395,25 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 ### S1-30 Licenses: the page opens and scrolls, and cold start does not move (S40; P6a, #312)
 - **Steps:**
   - (a) On the SE 3, with the S1-03 method, run 10 cold starts on the build before the Licenses page (develop at 49e3d93) and 10 on this one.
-  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the 565 KB list there and only there.
+  - (b) After a fresh cold start, open Settings > Licenses for the first time, and time from the tap to the list on screen. `lib/licences` reads the list (about 205 KB since #550: what ships in the iOS app, grouped by theme) there and only there.
   - (c) Fling to the end of the list and back. Open one notice and close it.
   - (d) Repeat (c) at AX5, then with VoiceOver on: the group headings are headings, and each package row reads its name and its licence.
+  - (e) Tap a row (for example whisper.cpp and ggml under Speech), then tap a second row; tap a Language data line; then turn VoiceOver on and double-tap a row twice.
+  - (f) Switch to dark mode (Settings > Display & Brightness > Dark) and repeat (c) and (e).
 - **Expected:**
   - (a) Cold start p50 and p90 are within 50 ms of the build before, and inside the S1-03 budget, because nothing reads the list at launch.
   - (b) The page opens with no visible stall. Over about 300 ms on the SE 3 is a finding; its follow-up, already listed on #312, is to move `licences.json` to an on-demand asset.
   - (c) The list scrolls smoothly, with no blank rows after a fling.
   - (d) Nothing is truncated.
-- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no.
+  - (e) One row is open at a time: the second tap closes the first. An open row shows its version, its copyright lines and the full license text, which scrolls to its end (the Apache 2.0 texts are the longest). A Language data line opens to the full OpenCC Apache 2.0 text, or the pinyin-data MIT and Unicode License v3 texts. VoiceOver reads each row as a button with its name and license, and reads "expanded" and "collapsed" as it opens and closes.
+  - (f) In dark mode each group's card has its border (the dark-only `dark:border-*` classes), text and chevrons are readable, and the open text keeps its contrast.
+- **Record:** S1-30 row: cold start p50 and p90 in ms, before and after, 10 samples each; first open in ms; smooth scroll yes or no; AX5 and VoiceOver yes or no; one-at-a-time and expanded state yes or no; dark mode yes or no.
 - **Update:** `docs/ops/APP_SIZE.md` if the start time moves; the follow-up line on #312.
 
 ### S1-31 Settings: Plan, Reminders, Recordings, Export, Privacy and Appearance (S34, S41 to S45; P6b, #313)
-- **Needs:** a development build with StoreKit sandbox (S2-01's setup) for (a); any build for (b) to (f).
+- **Needs:** for (a), the StoreKit configuration file in a development build, or the production-profile TestFlight build after Mon 9 Nov (S2-01's setup); any build for (b) to (f).
 - **Steps:**
-  - (a) **Plan.** With Plus off: the first row is "See what Plus adds", and it opens Apple's subscription view. Buy in the sandbox, then come back. With the plan note open (inside its window): the renewal date is said once, and in a trial the free-until date is said once. Tap Restore purchases on an account with Plus, then on one without. A family-shared plan, if a drill family has one.
+  - (a) **Plan.** With Plus off: the first row is "See what Plus adds", and it opens Apple's subscription view. Buy (StoreKit file, or the sandbox on the production TestFlight build), then come back. With the plan note open (inside its window): the renewal date is said once, and in a trial the free-until date is said once. Tap Restore purchases on an account with Plus, then on one without. A family-shared plan, if a drill family has one.
   - (b) **Reminders.** Turn reminders on and deny notifications. Tap Open Settings, allow, and come back. On a phone that had "Pause all reminders" on in an earlier build: read Settings home's Reminders row and the Reminders switch, then turn the switch on.
   - (c) **Recordings.** With English not on the phone, tap the language row. Let it download, then tap it again. Off Wi-Fi, and with the disk nearly full, read the row.
   - (d) **Export.** On a book with a twin, read the cover at the top. Fill the disk and export. On a book too big for one file, if a drill fixture has one, tap "Write to us".
@@ -426,7 +450,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** F09-REQ-016 and F09-REQ-024 in `docs/prd/v2/features/F09-book.md` (WP-F09-09 status) where a result differs.
 
 ### S1-33 The Keep sheet's buttons at large text (S22; #370, P6a critics' S1 and the #370 lenses)
-- **Needs:** a build where the next letter's Keep needs Plus: a phone past its free letters, without Plus.
+- **Needs:** a production-profile build only (bundle id `com.earlyletters.scribe`): development and preview builds count as alpha and never open the Keep sheet before letter 101 (S1-37), so this cannot run on build 2; that build exists after Mon 9 Nov at the earliest. Mark it not run, not failed, until then. On that build, a phone past its free letters, without Plus.
 - **Steps:** At AX3, then at AX5, on an SE 3 and on a 6.1-inch phone, open the Keep sheet from a letter's Keep in Review. Do it twice on each: once online, and once with Apple's store view unreachable (airplane mode, then tap See Plus so the sheet shows its offline note).
 - **Expected:**
   - "See Plus" and "Keep it here for now" are both fully on screen at the bottom and tappable, with nothing else pinned with them.
@@ -482,6 +506,47 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
 
+### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
+- **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
+- **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:
+  - (a) Type about 300 words as fast as you can, without looking at the screen for the last 100. Then read them back.
+  - (b) Misspell a word ("teh") and let autocorrect replace it with the space bar; misspell another and tap the underlined word to undo the correction.
+  - (c) Tap a QuickType suggestion mid-sentence, three times.
+  - (d) Switch to the Hindi keyboard (the globe key) and type a sentence, including a transliterated or multi-stage word if the layout offers it; switch back.
+  - (e) Tap the dictation key and say two sentences; stop dictation.
+  - (f) Paste a paragraph copied from Notes.
+  - (g) Drag the caret (press and hold the space bar) into the middle of the text, type a word there, and add a new line there with Return.
+  - (h) Send the app to the background mid-sentence, wait 30 s, return, and keep typing. Then close Write and open the draft again from Tonight.
+  - (i) Repeat (a) and (g) at AX5 text size.
+  - (j) The last keystrokes on every way out, four times, each on a fresh letter: type a sentence, and within half a second of the last key (no pause) do one of: tap Close; tap "Add to Asha's book"; tap "Keep private"; swipe the sheet down. Then reopen what was written (the draft from Tonight after Close or the swipe; the letter in the Book or in the private letters after a destination) and compare it word for word with what was typed.
+  - (k) First open: force-quit the app, reopen it, and open Write from Tonight as the first thing (do not touch the screen while the sheet rises). Repeat from Review with a recording (?draftId), and once at AX5.
+- **Expected:** no character is lost, doubled or reordered in any step; the caret never jumps (not to the end, not to the start) except where the person moves it; autocorrect, its undo bubble, QuickType, Hindi composition and dictation all behave as in Apple Notes; Return always adds a new line, never sends or closes; the line being written and the caret stay in view above the keyboard while writing on at the end; "Add to Asha's book" and "Keep private" both sit fully above the keyboard and QuickType bar; "Saved on this phone" appears after a pause; after (h) the words come back exactly as typed, the caret at the end; in (j) every word typed, the last one included, is there after each of the four ways out; in (k) the keyboard comes up by itself as the sheet settles (no tap needed, no visible delay), and on that very first open both "Add to Asha's book" and "Keep private" sit fully above the keyboard and its QuickType bar. Typing never feels slower than Notes on the SE 3.
+- **Record:** S1-36 rows (a) to (k): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
+- **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
+
+### S1-37 No letter limit in alpha (founder decision, 1 Nov 2026; PL-1, S1; `apps/mobile/src/lib/billing/alpha.ts`)
+- **Needs:** a TestFlight build of the `testflight` or `preview` profile (`.preview` bundle id) on a fresh install, and, after Mon 9 Nov, a TestFlight build of the `production` profile.
+- **Steps:** (a) Alpha build: on the Welcome screen read the line under the body. Set up Asha's book, then keep three letters, then a fourth (speak one, type the others), each from Review with words on screen. Open Settings and read the Plan row, then open Plan. (b) Production profile build: the same steps.
+- **Expected:**
+  - (a) Welcome, the Settings Plan row and the Plan screen say "Plus is not part of this test. Every letter is free while you test." No "See what Plus adds", no "Redeem a code". Every letter is kept and lands in the Book. No "That was your second free letter." toast and no Keep sheet.
+  - (b) Unchanged from today: Welcome says "Your first two letters are free.", the second letter shows the second-free toast, and the third letter's Keep opens the Keep sheet with See Plus.
+  - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
+- **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
+
+### S1-38 Book month card type: the numeral and one left edge (founder report on TestFlight build 1, "18 is merging. Font alignment can be cleaner."; PR #544)
+- **Needs:** a build with PR #544; the founder's iPhone and the SE 3; Asha's book seeded with letters in the current month and at least one past month, and a month of age of 10 or more (two figures, ideally 18 or 11). Fictional family only (Asha, Papa).
+- **Steps:** open the Book tab and look at the current month's lit card and one past month's opener, in each of:
+  - (a) Light, text size Default. (b) Dark, Default. (c) Light, xxxLarge. (d) Dark, xxxLarge. (e) Light, AX5. (f) Dark, AX5. (g) Dark, AX5, Increase Contrast on. (h) Light, Default, Increase Contrast on.
+- **Expected:** in every case:
+  - the two figures (for example "18") read as two separate figures, with clear white between their ink, never touching;
+  - the kicker ("THIS MONTH" or "MONTH"), the numeral and the meta line ("1 letter · From Papa") and the date range start on one left edge (the numeral's ink is not visibly right of the kicker);
+  - the gap from the kicker down to the top of the numeral and from the numeral's foot down to the meta line look even, and the numeral's top never touches the kicker;
+  - in the lit card, the kicker and numeral start at the same left edge as the dateline and words of the letter cards below it (36 pt from the screen edge);
+  - at AX5 the numeral stops growing at its cap (about 90 pt), and the meta line and range wrap and are never cut;
+  - with Increase Contrast, the lit card has a plain 1 pt edge and no glow, with the same alignment.
+- **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
+- **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
@@ -494,8 +559,8 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 ## Part 2. Money, account and notifications (session 2, can follow on the next days)
 
 ### S2-01 to S2-12 StoreKit and Apple's sheets
-Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4). The ASC table uses D-7 to D-10 twice (F: 15 Oct); the first four of those rows get their own ids here: S2-18 = the first D-7 (delete and reinstall, record whether the Keychain count survives), S2-19 = the first D-8 (iCloud restore keeps the free count), S2-20 = the first D-9 (airplane mode at the Keep sheet), S2-21 = the first D-10 (redeem an offer code). (S2-17 is the plan reminders item below.) Request to S06: renumber the ASC table so each check has one id.
-- **Bundle id:** products exist only on the app record they were created on. A TestFlight build from the `testflight` profile is `com.earlyletters.scribe.preview` (F: `docs/release/TESTFLIGHT.md`), so either the products are set up on that record too, or S2-01 to S2-20 run against the StoreKit configuration file in a development build and every row says "StoreKit file, not sandbox".
+Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` step 11, in that order, with a TestFlight build of the production profile (bundle id `com.earlyletters.scribe`, after Mon 9 Nov, D-124 item 1; the `.dev` and `.preview` ids have no products, so use the StoreKit file for those). Map: S2-01 = D-1 (gate then Apple's sheet; neither plan selected, C-REQ-022), S2-02 = D-2 (monthly trial), S2-03 = D-3 (Read together with Plus), S2-04 = D-4 (Manage subscription), S2-05 = D-5 (Restore on a second iPhone within 10 s, C-REQ-020), S2-06 = D-6 (Family Sharing: the co-parent gets Plus, D-053), S2-07 = D-7 (refund sheet), S2-08 = D-8 (airplane mode with Plus), S2-09 = D-9 (expiry: everything keeps working, LEGAL-REQ-050), S2-10 = D-10 (AX5 and VoiceOver on the sheet), S2-11 = D-11 (dark mode), S2-12 = D-12 (iOS 16 device only if the target stays 16.4). The ASC table uses D-7 to D-10 twice (F: 15 Oct); the first four of those rows get their own ids here: S2-18 = the first D-7 (delete and reinstall, record whether the Keychain count survives), S2-19 = the first D-8 (iCloud restore keeps the free count), S2-20 = the first D-9 (airplane mode at the Keep sheet), S2-21 = the first D-10 (redeem an offer code). (S2-17 is the plan reminders item below.) Request to S06: renumber the ASC table so each check has one id.
+- **Bundle id:** products exist only on the production record `com.earlyletters.scribe`; product ids are unique across the account, so the `.preview` record cannot carry copies (observed 1 Nov 2026, `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` correction). A TestFlight build from the `testflight` profile is `com.earlyletters.scribe.preview` (F: `docs/release/TESTFLIGHT.md`), so S2-01 to S2-20 run against the StoreKit configuration file in a development build and every row says "StoreKit file, not sandbox", until a TestFlight build of the production bundle id exists, after Mon 9 Nov (D-124 item 1).
 - **Record:** the evidence file (S2-01 to S2-12) and the date and build in the ASC doc's table.
 - **Update:** `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md` (turn its U marks into V where the sheet confirms them); ADR 0013 "verify on device" for C-REQ-022.
 - Note (V): apps installed from TestFlight use the sandbox automatically, and subscriptions renew every day, up to 6 times in a week, whatever their length (Apple, "Testing subscriptions and In-App Purchases in TestFlight"). Billing retry needs a Sandbox Apple Account's settings.

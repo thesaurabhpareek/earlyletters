@@ -11,7 +11,7 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 
 | Component | Import | Key props | Accessibility built in |
 |---|---|---|---|
-| `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale` | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis |
+| `Text` | `@/components/ui` | `variant` (ramp: display, hero, title1, title2, headline, body, callout, subhead, footnote, caption, label, labelSmall, letterBody, letterDateline, signature, prompt, promptHero, nameField, numeral; old shadcn names still work), `tone` (default, muted, accent, destructive, success, caution, inverse...), `caps`, `asHeading`, `scale`, `trim` (`figures`) | caps from tokens only (body and letter text uncapped to AX5); `caps` keeps the spoken name in sentence case; bundled face, no synthesis; figure features from the token (`fontVariant`); `trim="figures"` pulls the line box in to the figures' ink (`text-trim.logic.ts`, needs `tokens.fontMetrics` for the face) |
 | `Button` | same | `variant` primary, secondary, outline, quiet, destructive (old: default, ghost, link); `size` sm, md, lg, capture, icon; `label`, `icon` (Phosphor component), `loading`, `fullWidth`, `haptic` | min heights not fixed heights (grows at AX); label is the accessible name; busy and disabled states; press scale 0.97 |
 | `IconButton` | same | `icon`, `label` (required), `variant` plain, tinted, filled; `size` sm (hitSlop to 44), md, lg; `selected`, `color` | Large Content Viewer on iOS |
 | `ButtonRow` | same | children | side by side, stacks from xxxLarge text |
@@ -167,10 +167,13 @@ type TextProps = RNTextProps & {
   weight?: 'regular' | 'medium' | 'semibold';  // only where the style allows
   asHeading?: 1 | 2 | 3;                       // sets role="header"
   selectable?: boolean;                        // true for letterBody
+  scale?: number;                              // Reading Size, letter styles only
+  trim?: 'figures';                            // line box trimmed to lining figures (numeral)
 };
 ```
 - **Mapping:** `display/title1/title2` → heading roles when `asHeading` is set. `letterBody` uses `font-letter` with a generous line height. `letterDateline` uses small caps-like tracking and the `textMuted` tone. `maxFontSizeMultiplier`: 2.0 for `letterBody`/`body`/`callout`, 1.5 for others, 1.3 for `display`.
 - **States:** none. **Haptics:** none. **Motion:** none.
+- **Figures:** a style that sets numbers carries its figure features in the token (`numeral`: lining, proportional) and never negative tracking (`packages/design-tokens/test/fonts.test.ts` measures the 1 and 8 of "18" in the bundled face). `trim="figures"` is text-box-trim for numerals: with the line at least as tall as the face, iOS and the web both centre the face, so the margins from `tokens.fontMetrics` (ascent, descent, figure height, figure side bearing) leave exactly the figures' ink, scaled with Dynamic Type up to the style's cap. The left margin removes the figure's side bearing so a large numeral starts on the same optical edge as the small text beside it.
 - **A11y:** never truncate `letterBody`; `numberOfLines` is allowed only for previews and must have a full-text `accessibilityLabel`.
 - **Builds on:** RNR `text.tsx` (`TextClassContext` kept; variants replaced with our 11 styles). Web: a `Text` component that renders `p`/`h1..h3`/`span` with the same variant classes.
 - **Android later:** same code. Bundle Mukta, Literata and Tiro as app fonts (no system fallback differences); check Devanagari matras and line height on Android, and the 1.08x Tiro factor.
@@ -488,23 +491,25 @@ type EditUnderlineProps = {
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
 - **Android later:** same code. Check nested-`Text` press targets and the dotted underline (`textDecorationStyle` support on Android is **Unverified**; fall back to an SVG or border underline under the span).
 
-### 2.20 MonthChapterHeader
-- **Purpose:** the book is organised by month of age. Each month opens like a chapter.
+### 2.20 MonthOpener (was MonthChapterHeader)
+- **Purpose:** the book is organised by month of age. Each month opens like a chapter of a printed book (EXPERIENCE_PASS S26). Built: `components/book/month-opener.tsx`; the words come from `openerOf` in `components/book/chapters.ts`.
 ```ts
-type MonthChapterHeaderProps = {
-  monthIndex: number;                           // 0 = birth month
-  label: string;                                // "Month 4"
-  dateRange: string;                            // "March 12 to April 11"
-  count: { notes: number; letters: number };
-  coverPhoto?: { uri: string; blurhash?: string };
-  sticky?: boolean;                             // compact sticky version in the list
+type Opener = {
+  kicker: string | null;     // "Month", or "This month" on the current one; caps by style
+  numeral: string | null;    // "7"; null for "The first weeks" and "Before You"
+  name: string | null;       // "The first weeks" / "Before You", in title1, in place of the numeral
+  line: string;              // "2 letters · From Mama" (no count of gaps)
+  lineSpoken: string;        // "2 letters, from Mama"
+  range: string | null;      // "September 13 to October 12"
+  a11yLabel: string;         // "This month, Month 7. 2 letters, from Mama. September 13 to October 12"
+  lit: boolean;              // the current month
 };
 ```
-- **Variants:** `full` (large `title1`, cover photo, counts), `sticky` (one line, `headline`, blur background).
-- **A11y:** `role="header"`; label "Month 4, March 12 to April 11, 6 notes and 2 letters." Counts are words, not just numerals with icons.
-- **Haptics:** none. **Motion:** `full` → `sticky` cross-fade driven by scroll position (Reanimated `useAnimatedScrollHandler`). Reduce Motion means a hard switch.
-- **Builds on:** FlashList sticky headers + Text + PhotoFrame; `sticky` background via `platform/blur-surface`. First Book view per session: cover settles opacity 0.6→1, y 6→0 on `gentle` (MOTION 5a). Web: `<h2>` with `position: sticky`.
-- **Android later:** same code; sticky background is solid on Android.
+- **Type and rhythm:** kicker `letterDateline` caps; numeral `numeral` with `trim="figures"`; line `footnote`; range `letterDateline`. With the numeral trimmed to its ink the gaps are the spacing scale: `space.1` from the kicker to the numeral, `space.2` from the numeral to the line (`gap-1` plus `pt-1`), `space.1` to the range. All four share one optical left edge (the trim removes the numeral's side bearing, under 3 pt at its cap).
+- **Variants:** plain (on the paper at the gutter, a hairline above every opener but the first, `space.6` under it); lit (the current month): a `radius.lg` card with a 1 pt edge in the lamp's amber at 40 percent and a still gold radial inside; its side padding is `CARD_TEXT_INSET - gutter - edge` (15 pt), so its words start 36 pt from the screen edge, where a letter card's words start. Increase Contrast or Reduce Transparency: a plain 1 pt `line` edge and no light.
+- **A11y:** one element, `role="header"`, the composed label above (the separator is never spoken). Dynamic Type: the numeral caps at 1.4x (90 pt) and the trim follows the cap; the kicker reaches 2.4x; the line and range are uncapped.
+- **Haptics:** none. **Motion:** none; the opener is still (the first Book view settles the header only, MOTION 5a).
+- **Android later:** same code; check the trim against Android's own line placement (RN Android does not centre the face the way iOS and CSS do; **Unverified**).
 
 ### 2.21 AudioPlayer
 - **Purpose:** play the original recording of a note or letter.
