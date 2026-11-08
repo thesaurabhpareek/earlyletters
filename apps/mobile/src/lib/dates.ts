@@ -59,7 +59,7 @@ export function longDate(iso: string, locale?: string): string {
  * before it) reads "Before Asha was born.", the same test the Book uses (`isBeforeBirth`). A due date is never an age
  * anchor: past the due date with no birthday set, the letter is still before birth (QE-01).
  */
-export function letterDateline(child: Pick<Child, 'name' | 'birthday' | 'dueDate'>, iso: string, locale?: string): string {
+export function letterDateline(child: Pick<Child, 'name' | 'birthday'>, iso: string, locale?: string): string {
   const day = dayDate(iso, locale);
   if (isBeforeBirth(child.birthday, iso)) return `${day}. ${fill(copy.book.dateline.beforeBirth, { child: child.name })}`;
   // Core gives "<date>. <Age sentence>."; keep its age sentence, use the locale date.
@@ -85,7 +85,7 @@ export const isMonthOnly = (e: { occurredPrecision?: string | null }): boolean =
 
 /** The full dateline for a letter: letterDateline for a day, the month only for a month-only letter. */
 export function entryLetterDateline(
-  child: Pick<Child, 'name' | 'birthday' | 'dueDate'>,
+  child: Pick<Child, 'name' | 'birthday'>,
   e: { occurredOn: string; occurredPrecision?: string | null },
   locale?: string,
 ): string {
