@@ -456,7 +456,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
-    if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    // A kept note counts like a letter (D-133); only a quiet-day mark is never asked.
+    if (e.kind !== 'not_much') ledger.recordKept(c, draftId, keychainFloor());
     // A held draft kept at last (Keep after Plus): the letter replaces its held row on the server (same id).
     dropQueuedHeldUpsert(c.db, draftId);
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
