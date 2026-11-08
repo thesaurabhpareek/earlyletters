@@ -22,7 +22,6 @@ import {
   checkDueDate,
   checkSignsAs,
   clampText,
-  latestDueDate,
   nearLimit,
   textLength,
 } from '@scribe/core';
@@ -35,6 +34,7 @@ import { TextField } from '@/components/ui/text-field';
 import { copy, fill } from '@/lib/copy';
 import { todayISO, type Child } from '@/lib/store';
 import { DateField } from './date-field';
+import { dateRange } from './date-field.logic';
 
 export type ChildPatch = Partial<Pick<Child, 'name' | 'birthday' | 'dueDate' | 'signsAs'>>;
 
@@ -120,7 +120,7 @@ export function DateEditor({ child, onSave, onCancel }: EditorProps) {
         <Text variant="labelSmall" tone="muted">
           {label}
         </Text>
-        <DateField label={label} chooseLabel={copy.onboarding.child.chooseDate} value={draft} onChange={setDraft} startISO={today} min={born ? undefined : today} max={born ? today : latestDueDate(today)} />
+        <DateField label={label} chooseLabel={copy.onboarding.child.chooseDate} value={draft} onChange={setDraft} startISO={today} {...dateRange(born ? 'born' : 'due', today)} />
       </View>
       <Hint>{draft === null && !original ? null : problem}</Hint>
       <Actions canSave={check.ok && check.value !== original} onCancel={onCancel} onSave={() => check.ok && onSave(born ? { birthday: check.value } : { dueDate: check.value })} />
@@ -142,7 +142,7 @@ export function BornEditor({ child, onSave, onCancel }: EditorProps) {
         <Text variant="labelSmall" tone="muted">
           {label}
         </Text>
-        <DateField label={label} chooseLabel={copy.onboarding.child.chooseDate} value={draft} onChange={setDraft} startISO={bornPickerStart(child.dueDate, today)} max={today} />
+        <DateField label={label} chooseLabel={copy.onboarding.child.chooseDate} value={draft} onChange={setDraft} startISO={bornPickerStart(child.dueDate, today)} {...dateRange('born', today)} />
       </View>
       <Hint>{problem ?? e.keepNote}</Hint>
       <Actions saveLabel={e.confirm} canSave={!!result && result.ok} onCancel={onCancel} onSave={() => result && result.ok && onSave(result.patch)} />

@@ -289,3 +289,17 @@ describe('[#53] the letter page and Review are wired this way', () => {
     expect(between(review, 'const save = async', 'const keepRecordingOnly = async')).toMatch(/if \(!later\) trackLetterSaved\(\{/);
   });
 });
+
+describe('[D-133] a note whose words arrived later is kept from Review and counts like a letter', () => {
+  it('Review opens for the note, and its Keep counts it', async () => {
+    const d = store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: `file:///Documents/${newId()}.m4a`, audioDurationMs: 9000 });
+    expect(store.setDraftKind(d.id, 'note')).toBe(true);
+    store.saveVoiceOnlyFromDraft({ ...d, audioSha256: 'a'.repeat(64), audioBytes: 12000 }, { childId: asha, authorSignsAs: 'Mama', inBook: false, engineVersion: 5 });
+    expect(store.getEntry(d.id)?.kind).toBe('note');
+    expect(counted()).toBe(0);
+    wordsArrive(d.id, 'Asha, you found the moon.');
+    expect(laterWordsDraft(store.getEntry(d.id), own)).not.toBeNull();
+    expect((await reviewKeep(d.id, true)).outcome).toBe('kept');
+    expect(counted()).toBe(1);
+  });
+});
