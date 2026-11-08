@@ -447,6 +447,16 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Way back: put the line back into BL-323's scope and BL-446's Overlap note.
 - Revisit when: BL-388 is picked up, or a data-access request asks for a deleted letter. Karma
 
+### CR-37 One release test plan on top of what exists; pipelines switch on in order, after the 9 Nov go/no-go unless a step closes a store-path item (1 Nov 2026, Karma via session_01G82fpt)
+- Question: The founder asked to validate how many test cases we have and extend them for pre-release and production on iOS (phones, iOS versions, screen sizes, happy and unhappy paths, accessibility, dark mode, large text, every screen, Plus, offer codes, payments, sign-in), using what already exists, documented, with the pipelines tested too. Where does that live, and what switches on when?
+- Tier and type: T1 for the docs and the catalog test; each pipeline step it names is T2 (`.github/**`). Complicated.
+- Options considered: (a) a new standalone test plan that restates every case; (b) edit DEVICE_TEST_PLAN, the e2e README and the journey index in place to add the missing rows; (c) one umbrella plan plus a catalog that cites the existing ids and adds only the gaps, with a test that fails on a dead cite; (d) do nothing until the go/no-go.
+- Ruling: (c). `docs/qa/RELEASE_TEST_PLAN.md` holds the inventory, the phone and iOS matrix, the display and accessibility matrix, pre-release against production, and pipeline status. `docs/qa/release-test-catalog.csv` (240 rows after four independent reviews on 1 Nov, written from `scripts/qa/release-catalog.rows.mjs`) cites existing cases and adds 92 gap rows. `apps/mobile/test/qa-release-catalog.test.ts` keeps it honest: every cited id, journey step and path must resolve, and a covered row must cite a test or workflow. The founder-only parts (which gaps gate submission, device hours, the real-money purchase and production code, tester wording, the WCAG 1.3.4 claim) are recommendations in `docs/release/FOUNDER_QUEUE.md` section 0a, not rulings. Pipelines switch on in this order, each its own PR with two reviews: web journeys in CI; E2E-06 and E2E-07 rewritten to D-082; the 108 missing testIDs; Maestro on the simulator reusing the e2e app `kill-harness.yml` already builds; the preview-profile launch check; then `testflight.yml`'s first run after the founder's Expo steps. None merges before the 9 Nov go/no-go unless it closes a store-path item (SR-B-08); web journeys in CI and the E2E-06 and E2E-07 rewrites do, so they may land before the 3 Nov freeze.
+- Why: (a) creates a second source of truth (principle 2). (b) spreads one concern across four owners' files during a freeze. (d) leaves the go/no-go without a device list. Checked on 1 Nov: 5,811 unit tests pass on 0f99975; `lint-flows.mjs --app` reports 108 of 136 flow ids missing from the app; `docs/qa/evidence` holds no evidence; `testflight.yml` has never run; ci, ios-compile, kill-harness and nightly are green. Return: the founder gets one list for the go/no-go and nobody re-writes existing cases; risk: a docs PR plus one test, no product code.
+- Door: two-way.
+- Way back: revert the PR; the existing plans are untouched.
+- Revisit when: the web journeys run in CI, or the first device evidence file lands. Karma
+
 ### CR-38 The export's real-stack check merges before the freeze, keeps its SQL fixture, and the hosted test waits on staging (1 Nov 2026, Karma via session_01JQRV3b, PR #476)
 - Question: (1) May #476, which adds a blocking step to `.github/workflows/db-cli.yml`, merge before the build 2 freeze (Tue 3 Nov 13:00 UTC, D-130)? (2) Should its co-parent fixture use the real invite flow instead of an owner-run insert into `child_members`? (3) The founder asked for a test "with live server": is the local stack in CI enough for BL-323 and BL-529, and what goes to him?
 - Tier and type: T2 (a `.github/**` change); clear.
@@ -456,3 +466,65 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way.
 - Way back: revert the `db-cli.yml` step (one commit); the script and `postgrestReader` can stay, since `device.ts` uses `postgrestReader` with no behaviour change.
 - Revisit when: `scribe-staging` exists (point the check at it, with the fixture SQL sent over a pooler URL instead of `docker exec`); or the step fails on a PR that does not touch the export (a mobile dependency bump included). Karma
+### CR-39 Fence approval lines may start with up to three spaces (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+- Question: on #443 the founder's approval comments failed the fence because each line began with three spaces copied from my indented instructions. Do we loosen the match or keep it?
+- Tier and type: T2 (the fence is fenced, CR-27); clear
+- Options considered: keep the match and only fix how lines are handed over; accept any leading whitespace; accept up to three spaces, the most a Markdown heading may carry.
+- Ruling: accept up to three leading spaces (`^ {0,3}## ...`) in both approval patterns in `compliance/FENCE.json`, with tests in `compliance/fence/fence.test.mjs`. Four spaces or a tab is a code block in Markdown and stays refused. It ships in one fenced PR with the `regulatory-compliance` skill refresh (stale rows found on 1 Nov), so the founder posts approvals once. Hand-overs also stop indenting the lines (D-135 email carries them flush left).
+- Why: the lines still count only from the owner's login and only on the head SHA. One new exposure, found in review: every session posts as the owner (CR-20), so an indented approval line inside an instruction comment on a PR would now count, as a flush-left one already did. So sessions never post approval lines, or instructions containing them, as PR comments; they go by email (D-135) and the founder posts them himself. A rule a person must remember failed once already; the machine should accept what GitHub renders as the same heading. Return: no repeat of a failed check. Risk: 1x2.
+- Door: two-way
+- Way back: revert the two patterns in `FENCE.json`.
+- Revisit when: an approval is ever counted that the owner did not mean to post. Karma
+
+### CR-40 No new audit value for under-18 closures; the support deletion function stays after 9 Nov (1 Nov 2026, 05:19 UTC, Karma via the compliance session, with the CDO's data-model view)
+- Question: the underage runbook (#451) listed two gaps for `data-architect`: a service-role `ops_open_account_deletion`, and an `under_18` value in `ops.audit_log`. Build both now?
+- Tier and type: T2; clear
+- Options considered: build both now as a draft; add only the enum value; drop the enum and keep the function after 9 Nov.
+- Ruling: no `under_18` value. `ops.audit_log.runbook` already has `under_13` (`20261004200000_ops_deletion_worker.sql:38`), and a 13 to 17 closure is a `deletion` row with reason code `under_18_closure`, which the reason check already accepts. The runbook is corrected. `ops_open_account_deletion` stays after the 9 Nov go/no-go and before any sign-in outside the family (D-121), as BL-551, owner `data-architect`.
+- Why: an enum value that duplicates what the reason code says is a migration with no new information. The function has no cost of delay until someone outside the family can sign in, and building it now adds review load before the go/no-go (principle 4).
+- Door: two-way
+- Way back: add the value in a new migration if a report needs it.
+- Revisit when: BL-551 starts, or the first non-family sign-in is scheduled. Karma
+
+### CR-41 How a basic hand-off is emailed (1 Nov 2026, 05:19 UTC, Karma via the compliance session)
+- Question: D-135 says save-and-forward steps go by email to earlyletters@gmail.com with a timestamp. What exactly does a session do?
+- Tier and type: T1; clear
+- Options considered: email only; email plus a repo PR per send; email plus one line in a Project log.
+- Ruling: an interactive session sends one email through the Gmail connector to earlyletters@gmail.com, subject `[Early Letters] <what> <UTC timestamp>`, body in plain text: what it is, why, the exact text to save or paste (flush left), links to the PRs or docs, and what happens by default if nothing is done. It then appends one line to the Project doc `infra/founder-handoffs.md` (UTC time, subject, PRs). Founder tasks with a row in `docs/release/FOUNDER_QUEUE.md` get the timestamp at the next docs PR that touches the queue; no PR per email. Unattended runs never send: they write the line with "to send" and the next interactive session sends it.
+- Why: one record people already read (the Project docs), no new register in the repo, and nothing an unattended run could misuse.
+- Door: two-way
+- Way back: stop sending; the Project log stays as the record.
+- Revisit when: the founder asks for a different inbox or channel. Karma
+- Amended (1 Nov 2026, Karma via the RS-04 session; setup retro #569, rows RS-03 and RS-04): the body's first line is the citation line from CTO skill section 3, naming the checks run before sending: the Project doc `infra/setup-record.md`, PRs from the last 24 hours, and the coordination docs, for example "Checked: setup-record (S-37 open), PRs since 09:00 UTC, coordination docs." Once `npm run release:ready -- --step <S-id>` exists, its output replaces it. An email without the line is not sent, and its `infra/founder-handoffs.md` line quotes it. If the step is a wall (`docs/agents/WALLS.md`), the email carries the one-action hand-off from WALLS.md section 3. Why: on 1 Nov this path skipped the check, and three emails (06:19, 07:30, 07:35 UTC) asked him to redo a finished key ceremony.
+
+### CR-42 What is still missing after the compliance decisions (1 Nov 2026, 06:10 UTC, Karma via the compliance session)
+- Question: the founder asked to document the decisions and find what is missing or an opportunity. What is missing, and in what order?
+- Tier and type: T1; complicated
+- Options considered: do the gaps now; record them with owners and order, and do only the docs now; leave them to the after-9-Nov list.
+- Ruling: record with owners now; do the docs now; build after the freeze. Found:
+  1. The app does not handle a refused sign-up: #424 refuses on the server, and the app would show a generic sign-in error with no DB-IP attribution. BL-553, before the hook is switched on.
+  2. The regulatory watch has no schedule, and the monthly state-tracker check is a manual habit. BL-554; until then the CCO checks before each submission.
+  3. Legal paperwork for the hook (data classification row, register CR-121, claims rows). BL-555, founder merge.
+  4. #424 uses APPLY.md File 27, which `develop` already has (`node scripts/agents/id-collisions.mjs`); it must become File 28 before it merges.
+  5. Founder queue W0-13 said #163 was open; it merged 1 Nov 05:54 UTC. Updated.
+  6. Opportunity, founder-only: a monthly cloud scheduled task that runs the watch and writes a Project doc. It is the first switch-on of an unattended lane, so it is his (section 2); offered, not done.
+  7. Known limit, unchanged: every fenced PR needs the founder to paste approvals, because sessions post as his account (CR-20). The machine-account question stays held until Tue 10 Nov.
+- Why: each gap blocks switching the hook on, and none blocks the go/no-go. Building now would add review load before the freeze (principle 4).
+- Door: two-way
+- Way back: delete the backlog lines.
+- Revisit when: #424 is picked up after 9 Nov. Karma
+
+### CR-47 The build 1 robustness and compliance audit: order, owners and four founder questions (1 Nov 2026, Karma via the compliance session)
+- Question: the founder asked for the compliance agents to find every gap in robustness, security, data, speed, size and the door, and to turn them into a detailed backlog with strict consent records. What goes first, and what is his?
+- Tier and type: T1 for the backlog and the standards; T3 items sent to him; complicated
+- Options considered: fix everything now; backlog everything and fix nothing before the freeze; backlog everything, and fix only the S0 items that change code, as freeze exceptions.
+- Ruling: the third. 41 items, BL-563 to BL-603, in `docs/BACKLOG.md` with owners and Given/When/Then acceptance; full findings in `docs/reviews/2026-11-01-robustness-compliance-audit.md`.
+  - S0 code fixes (BL-563 Listen stuck on finishing, BL-564 the 404 legal link, BL-594 function keys) go to the build thread as freeze exceptions (AUTOMATION 0.2 item 17), each with two counted reviews.
+  - BL-594 interim: until the functions read the new keys, AF-06 keeps the legacy keys on staging. The founder does not deactivate them.
+  - Consent records follow PRIV-R21 (new). Every requirement follows COORDINATION section 10 (new); 25 of 26 charters point to it. The `regulatory-affairs` charter is a fenced path (CR-27), so its line follows in a fenced PR with the CCO and Karma approvals.
+  - Four founder questions: publish beta app texts before build 2 signs anyone in (BL-565), the staging backup (BL-566, spend), where the agree line sits (BL-575), and a battery number (BL-593).
+- Why: S0 items can lose a take, leave a dead legal link at the moment of agreement, or break sign-in and Apple token capture on staging; everything else has no cost of delay before the go/no-go and would add review load (principle 4). Records written in build 2 cannot be fixed later, so BL-577 is S1 and first after the go/no-go.
+- Debate: self-challenged only, and the four audits challenged each other's areas. Objection: S1 items such as BL-596 (open sign-up on staging) matter during the family alpha. Answer: row-level security already keeps strangers out of the family's books; the exposure is the email budget and stray accounts, which BL-581 and BL-596 close before anyone outside the family is invited.
+- Door: two-way
+- Way back: delete the backlog section and the two standards in one revert.
+- Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma

@@ -26,7 +26,7 @@ test('[J13b] the reminder card after the first letter (C-REQ-001 Rev, DR-12 B): 
   await firstRun(app);
   await typeLetter(app, 'You held the spoon by yourself today.');
   await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toBeVisible({ timeout: 8000 });
-  await expect(app.getByText('A couple of evenings a week, at a time you pick. Never late at night.')).toBeVisible();
+  await expect(app.getByText(/A couple of evenings a week, at a time you pick, to add to .+'s book\. Never late at night\./)).toBeVisible();
   for (const b of ['Yes, evenings', 'Pick a time', 'No reminders']) await expect(btn(app, b)).toBeVisible();
   await step('happy', 'After the first letter', 'Over the Book, once the letter is in its place: the reminder card, the first ask after the first letter. Nothing was asked before it, and no OS prompt has appeared anywhere.');
 

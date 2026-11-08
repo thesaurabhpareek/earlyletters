@@ -43,7 +43,8 @@ export interface Job {
   attempts: number;
   /** When a failed job may run again by itself (ms since epoch); null: only on the next launch or a manual retry. */
   retryAt: number | null;
-  progress: { done: number; total: number } | null;
+  /** Parts done of total; `fraction` (0..1) when the recogniser reports within a part. */
+  progress: { done: number; total: number; fraction?: number } | null;
   outcome?: 'ok' | 'no_speech';
   failure?: JobFailure;
 }
@@ -63,7 +64,7 @@ export type QueueEvent =
   | { type: 'packs'; ready: SpeechLanguage[] }
   | { type: 'onHold'; languages: SpeechLanguage[] }
   | { type: 'start'; id: string }
-  | { type: 'progress'; id: string; done: number; total: number }
+  | { type: 'progress'; id: string; done: number; total: number; fraction?: number }
   | { type: 'finish'; id: string; outcome: 'ok' | 'no_speech' }
   | { type: 'fail'; id: string; failure: JobFailure; now: number }
   | { type: 'interrupt'; id: string }
@@ -136,7 +137,14 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
     case 'progress': {
       const j = s.jobs[e.id];
       if (!j || j.phase !== 'running') return s;
-      return put(s, { ...j, progress: { done: Math.max(0, e.done), total: Math.max(0, e.total) } });
+      const progress: NonNullable<Job['progress']> = { done: Math.max(0, e.done), total: Math.max(0, e.total) };
+      if (e.fraction !== undefined && Number.isFinite(e.fraction)) {
+        // Never moves backwards (a part decoded again, a loop retry): the bar only rises.
+        progress.fraction = Math.max(j.progress?.fraction ?? 0, Math.min(1, Math.max(0, e.fraction)));
+      } else if (j.progress?.fraction !== undefined) {
+        progress.fraction = j.progress.fraction; // a new part's start keeps the share reached so far
+      }
+      return put(s, { ...j, progress });
     }
     case 'finish': {
       const j = s.jobs[e.id];

@@ -664,6 +664,29 @@ export function setEntryInBook(id: string, inBook: boolean): boolean {
   return done;
 }
 
+const OCCURRED: FieldGroup[] = ['occurred_on'];
+
+/**
+ * Change the date of one's own letter (F09-REQ-004; F04-REQ-015 rules, components/book/date-change.logic.ts). One local
+ * transaction (F09-U03: the letter is in one chapter, never two or none): the date and its precision, and with sync on
+ * the `occurred_on` field group in the outbox, which also carries the precision (wire contract 20261015030000). The
+ * words, raw_transcript and the free-letter ledger are never touched. False for a missing, deleted or quiet-day row,
+ * or a letter someone else wrote.
+ */
+export function setEntryDate(id: string, occurredOn: string, precision: OccurredPrecision): boolean {
+  const c = ctx();
+  let done = false;
+  c.db.transaction(() => {
+    done = entries.setOccurred(c, id, occurredOn, precision, syncOwner(c.db));
+    if (done) enqueueEntryUpsert(c.db, id, OCCURRED, enqueueContext(c));
+  });
+  if (done) {
+    bus.emit('entries');
+    signalOutbox();
+  }
+  return done;
+}
+
 /** Tombstone, never a hard delete (matches the server schema). The server clock sets the real deleted_at. */
 export function deleteEntry(id: string): void {
   const c = ctx();
