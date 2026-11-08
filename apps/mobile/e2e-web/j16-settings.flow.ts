@@ -52,7 +52,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await app.getByText('Lines in other countries', { exact: true }).click();
   await expect(app.getByText('United Kingdom', { exact: true })).toBeVisible();
   await expect(app.getByText('Find a free helpline near you', { exact: true })).toBeVisible();
-  await step('happy', 'Lines in other countries', 'Every region held (United States, Canada, United Kingdom, Ireland, Australia, New Zealand, India), each with its emergency number and its lines, then the directory.');
+  await step('happy', 'Lines in other countries', 'Every region held (United States, Canada, United Kingdom, Australia, New Zealand, India), each with its emergency number and its lines, then the directory.');
   await app.goBack();
   await app.goBack();
 

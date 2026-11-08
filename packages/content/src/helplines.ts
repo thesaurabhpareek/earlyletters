@@ -16,7 +16,7 @@
  * and the `how` line shows them word for word.
  */
 
-export type HelplineRegion = 'US' | 'CA' | 'GB' | 'IE' | 'AU' | 'NZ' | 'IN';
+export type HelplineRegion = 'US' | 'CA' | 'GB' | 'AU' | 'NZ' | 'IN';
 
 /**
  * One official page a line's words rest on. `readOn` is the day we read it. `datedOn` is the page's own date when it
@@ -121,7 +121,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'GB',
     country: 'United Kingdom',
-    emergency: { tel: '999', shown: '999', sources: [{ url: 'https://www.nhs.uk/nhs-services/mental-health-services/where-to-get-urgent-help-for-mental-health/', readOn: ON, supports: 'Call 999 or go to A&E' }], verifiedOn: ON },
+    emergency: { tel: '999', shown: '999', sources: [{ url: 'https://www.nhs.uk/nhs-services/mental-health-services/where-to-get-urgent-help-for-mental-health/', readOn: ON, datedOn: '2026-10-23', supports: 'Call 999 or go to A&E' }], verifiedOn: ON },
     lines: [
       {
         id: 'gb.samaritans',
@@ -135,33 +135,11 @@ export const HELPLINES: readonly RegionHelplines[] = [
       },
     ],
   },
-  {
-    region: 'IE',
-    country: 'Ireland',
-    emergency: { tel: '112', shown: '112 or 999', sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }], verifiedOn: ON },
-    lines: [
-      {
-        id: 'ie.samaritans',
-        name: 'Samaritans',
-        how: 'Call 116 123. Free and confidential, any time.',
-        tel: '116123',
-        telShown: '116 123',
-        free: true,
-        sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }],
-        verifiedOn: ON,
-      },
-      {
-        id: 'ie.textaboutit',
-        name: 'Text About It',
-        how: 'Text HELLO to 50808. Free, any time.',
-        sms: '50808',
-        smsShown: '50808',
-        free: true,
-        sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }],
-        verifiedOn: ON,
-      },
-    ],
-  },
+  // Ireland is held (CCO-11). Its three claims (112 or 999, Samaritans 116 123, Text About It) rest only on the HSE
+  // page, which says "Page last reviewed: 28/05/2025", 164 days before it was read on 8 Nov 2026: past the 90-day
+  // window. Text About It's own site says "Text TALK to 50808" in its body but "Hello" in its description and gives
+  // HELLO only for another number, so the keyword could not be confirmed either. A phone set to Ireland gets the
+  // general emergency words and Find A Helpline. It returns with a page reviewed inside the window.
   {
     region: 'AU',
     country: 'Australia',
@@ -237,6 +215,41 @@ export function allHelplineSources(): { what: string; verifiedOn: string; source
     ]),
     ...HELPLINE_DIRECTORY.sources.map((source) => ({ what: 'directory', verifiedOn: HELPLINE_DIRECTORY.verifiedOn, source })),
   ];
+}
+
+/**
+ * The freshness rule (CCO-11), pure so a test can run it on real data and on fixtures. Returns what is wrong, empty
+ * when all is well, for `today` (YYYY-MM-DD):
+ *  - the line's own `verifiedOn` is not a date, is in the future, or is older than HELPLINE_MAX_AGE_DAYS;
+ *  - a source's `readOn` is not a date, is in the future, is older than the window, or is before the claim's
+ *    `verifiedOn` (a claim cannot be newer than the reading it rests on);
+ *  - a source with its own date (`datedOn`) is later than it was read, or is older than the window measured from
+ *    `readOn`: a page nobody has reviewed in 90 days cannot show a line is current, however recently it was read.
+ * Measured against `readOn`, never against `verifiedOn`, so an old `verifiedOn` cannot hide a stale page.
+ */
+export type SourceCheck = { what: string; verifiedOn: string; source: HelplineSource };
+export function helplineProblems(items: readonly SourceCheck[], today: string): string[] {
+  const ISO = /^\d{4}-\d{2}-\d{2}$/;
+  const day = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
+  const age = (from: string, to: string) => (day(to) - day(from)) / 86_400_000;
+  const out: string[] = [];
+  for (const { what, verifiedOn, source: s } of items) {
+    const dates = [['verifiedOn', verifiedOn], ['readOn', s.readOn], ...(s.datedOn ? [['datedOn', s.datedOn]] : [])] as const;
+    const bad = dates.filter(([, d]) => !ISO.test(d) || Number.isNaN(day(d)));
+    for (const [k, d] of bad) out.push(`${what}: ${k} "${d}" is not a YYYY-MM-DD date`);
+    if (bad.length) continue;
+    if (!/^https:\/\/\S+$/.test(s.url)) out.push(`${what}: source "${s.url}" is not an https URL`);
+    if (age(verifiedOn, today) < 0) out.push(`${what}: verifiedOn ${verifiedOn} is in the future`);
+    else if (age(verifiedOn, today) > HELPLINE_MAX_AGE_DAYS) out.push(`${what}: verifiedOn ${verifiedOn} is more than ${HELPLINE_MAX_AGE_DAYS} days old`);
+    if (age(s.readOn, today) < 0) out.push(`${what}: ${s.url} readOn ${s.readOn} is in the future`);
+    else if (age(s.readOn, today) > HELPLINE_MAX_AGE_DAYS) out.push(`${what}: ${s.url} was read on ${s.readOn}, more than ${HELPLINE_MAX_AGE_DAYS} days ago`);
+    if (age(verifiedOn, s.readOn) < 0) out.push(`${what}: ${s.url} was read on ${s.readOn}, before the claim of ${verifiedOn}`);
+    if (s.datedOn) {
+      if (age(s.datedOn, s.readOn) < 0) out.push(`${what}: ${s.url} is dated ${s.datedOn}, after it was read`);
+      else if (age(s.datedOn, s.readOn) > HELPLINE_MAX_AGE_DAYS) out.push(`${what}: ${s.url} is dated ${s.datedOn}, more than ${HELPLINE_MAX_AGE_DAYS} days before it was read`);
+    }
+  }
+  return out;
 }
 
 /**

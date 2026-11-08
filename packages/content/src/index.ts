@@ -13,5 +13,5 @@ export { onboardingStories, STORY_VISUALS } from './stories.en';
 export type { StoryCard, StoryVisual } from './stories.en';
 export * from './features';
 export { testflightCopy } from './release/testflight.en';
-export { allHelplineSources, HELPLINE_DIRECTORY, HELPLINE_MAX_AGE_DAYS, HELPLINES, helplinesDueOn, helplinesFor } from './helplines';
-export type { Helpline, HelplineRegion, HelplineSource, RegionHelplines } from './helplines';
+export { allHelplineSources, HELPLINE_DIRECTORY, helplineProblems, HELPLINE_MAX_AGE_DAYS, HELPLINES, helplinesDueOn, helplinesFor } from './helplines';
+export type { Helpline, HelplineRegion, HelplineSource, RegionHelplines, SourceCheck } from './helplines';

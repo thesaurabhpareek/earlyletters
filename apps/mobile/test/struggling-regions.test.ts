@@ -38,14 +38,13 @@ describe('the page by region', () => {
   it('a region we hold: its emergency number to call, then its lines', () => {
     const us = localLines('US')!;
     expect(emergencyLine(us)).toEqual({ label: 'Call 911', target: { kind: 'call', url: 'tel:911', value: '911' } });
-    const ie = localLines('IE')!;
-    expect(emergencyLine(ie).label).toBe('Call 112 or 999');
-    expect(emergencyLine(ie).target?.url).toBe('tel:112');
     expect(emergencyLine(localLines('GB')).label).toBe('Call 999');
+    expect(emergencyLine(localLines('AU')).target?.url).toBe('tel:000');
   });
 
   it('any other region, or none: the general words and nothing to dial', () => {
-    for (const r of ['DE', 'FR', null]) {
+    // Ireland is held (HSE page last reviewed 28/05/2025; Text About It keyword unconfirmed): it gets the general words.
+    for (const r of ['DE', 'FR', 'IE', null]) {
       expect(localLines(r)).toBeNull();
       expect(emergencyLine(localLines(r))).toEqual({ label: en.struggling.emergencyLocal, target: null });
     }
@@ -58,7 +57,7 @@ describe('the page by region', () => {
     expect(india.lines).toEqual([]);
     expect(emergencyLine(india).label).toBe('Call 112');
     expect(showDirectory(india)).toBe(true);
-    for (const r of ['US', 'CA', 'GB', 'IE', 'AU', 'NZ']) expect(showDirectory(localLines(r)), r).toBe(false);
+    for (const r of ['US', 'CA', 'GB', 'AU', 'NZ']) expect(showDirectory(localLines(r)), r).toBe(false);
   });
 
   it('Lines in other countries lists every region we hold', () => {
@@ -74,8 +73,8 @@ describe('the page by region', () => {
   });
 
   it('a text-only line gets Text alone, a call-only line Call alone', () => {
-    const ie = localLines('IE')!;
-    expect(lineActions(ie.lines.find((l) => l.id === 'ie.textaboutit')!).map((a) => a.kind)).toEqual(['text']);
-    expect(lineActions(ie.lines.find((l) => l.id === 'ie.samaritans')!).map((a) => a.kind)).toEqual(['call']);
+    const textOnly = { id: 't', name: 'A text line', how: 'Text 50808.', sms: '50808', smsShown: '50808', free: false, sources: [], verifiedOn: '2026-11-08' };
+    expect(lineActions(textOnly).map((a) => a.kind)).toEqual(['text']);
+    expect(lineActions(localLines('GB')!.lines[0]).map((a) => a.kind)).toEqual(['call']);
   });
 });
