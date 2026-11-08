@@ -23,8 +23,8 @@ files are superseded. Run `eas metadata:push` only from a `store.config.json` re
 
 | Field | Value for 1.0 | Status |
 |---|---|---|
-| Name | From `packages/brand` `storeName` (26 of 30) | READY; positioning decision pending with the founder |
-| Subtitle | From `packages/brand` `subtitle` (30 of 30) | READY; positioning decision pending with the founder |
+| Name | "Early Letters: Baby Journal" from `packages/brand` `storeName` (27 of 30), positioning A (D-139) | READY in the repo; the App Store Connect app name is changed by the founder, or with his login, before submission |
+| Subtitle | "For parents who'd rather talk" from `packages/brand` `subtitle` (29 of 30), D-139 | READY |
 | Bundle ID | `com.earlyletters.scribe` from the EAS `production` profile. TestFlight build 1 is on the `.preview` record and cannot be submitted to this record | READY |
 | SKU, Apple ID | `scribe-001`, 6829377245. Add `ascAppId` to `eas.json` `submit.production` after the go/no-go (Mon 9 Nov) | READY |
 | Primary language | English (U.S.) (D-121) | READY |
@@ -166,10 +166,10 @@ category; Apple's 2026 holiday schedule; anything that needs the release build.
 
 Draft description:
 
-Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows the positioning the founder chooses.
+Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows positioning A (D-139).
 
 ```text
-Early Letters is a baby memory book that parents fill by talking. At the end of the day a parent tells their child one thing about it, in a sentence or a few minutes. The app writes the words down on the iPhone, keeps the recording beside them, and files the letter by the child's month of age. Years later the child can read it, and hear how their parent sounded when they said it.
+Early Letters keeps letters to your child, in your own words and voice. At the end of the day a parent tells their child one thing about it, in a sentence or a few minutes. The app writes the words down on the iPhone, keeps the recording beside them, and files the letter by the child's month of age. Years later the child can read it, and hear how their parent sounded when they said it.
 
 What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a name spelled the family's way, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
 
