@@ -260,7 +260,9 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
     app.getByText('Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.'),
   ).toBeVisible();
   await expect(app.getByText('By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.')).toBeVisible();
-  for (const doc of ['Terms of Service', 'Privacy Policy', 'Consumer Health Data Privacy Policy']) await expect(app.getByRole('link', { name: doc, exact: true })).toBeVisible();
+  for (const doc of ['Terms of Service', 'Privacy Policy']) await expect(app.getByRole('link', { name: doc, exact: true })).toBeVisible();
+  // BL-564: the website serves only these two; the sheet must not link to a page it took down.
+  await expect(app.getByRole('link', { name: 'Consumer Health Data Privacy Policy', exact: true })).toHaveCount(0);
   await step('happy', 'Terms', 'The registered words as they are, each document a row that opens in the in-app browser, and the agree line right above "Agree and continue" (LEGAL-REQ-001).');
 
   await btn(app, 'Agree and continue').click();
