@@ -18,8 +18,8 @@ import { describe, expect, it } from 'vitest';
 const BETA = join(__dirname, '..', '..', '..', 'docs', 'legal', 'beta');
 
 const FILES = {
-  terms: { file: 'terms-0.9.0.md', sha256: '8da3bd2c3704df292302fc4ad42eb26712b142bb87e5cde3e2ad6e656c5b0af1' },
-  privacy: { file: 'privacy-0.9.0.md', sha256: 'bcfd060320c89e46feda4f10dc7cc4cdc7905898e72c4ce51c5ce1247bbfd284' },
+  terms: { file: 'terms-0.9.0.md', sha256: 'dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1' },
+  privacy: { file: 'privacy-0.9.0.md', sha256: '4fdaa6d33a7e1a68a065351935ddc58871a28a98afef62424e4193adabd4a2c9' },
 } as const;
 
 const raw = (file: string) => readFileSync(join(BETA, file));
@@ -33,6 +33,8 @@ const offenders = (t: string, re: RegExp) =>
     .map((l, i) => ({ l, n: i + 1 }))
     .filter(({ l }) => re.test(l))
     .map(({ l, n }) => `${n}: ${l.trim()}`);
+
+const linesWith = (t: string, re: RegExp) => t.split('\n').filter((l) => re.test(l));
 
 describe('beta legal texts 0.9.0 (BL-565)', () => {
   for (const [key, { file, sha256 }] of Object.entries(FILES)) {
@@ -87,11 +89,70 @@ describe('beta legal texts 0.9.0 (BL-565)', () => {
         for (const l of lines) expect(l).toMatch(/\b90 days\b/);
       });
 
+      it('[BL-565] says near the top which test build it describes: the second (servers on), when it is available; the first keeps everything on the phone', () => {
+        const top = b.split('\n## ')[0];
+        expect(top).toMatch(/second test build, the one with our servers on, and (?:apply|applies) when that build is available to you/);
+        expect(top).toMatch(/first test build, with servers off, keeps everything on your phone/);
+      });
+
+      it('[BL-565] uses no internal word a parent never reads (CR-25): entry, raw transcript, pack', () => {
+        expect(offenders(b, /\bentr(?:y|ies)\b|\braw[_ ]transcript\b|\bpacks?\b/i)).toEqual([]);
+      });
+
+      it('[BL-565] makes no claim the founder has not stated or the app cannot back: no "individual based in California", no re-agree in the app', () => {
+        expect(offenders(b, /individual based in California/i)).toEqual([]);
+        expect(offenders(b, /agree to that version in the app|ask you to agree in the app/i)).toEqual([]);
+      });
+
+      it('[BL-565] leaving a book and undoing a join are said to be not in the app yet (LEAVE_BOOK_OFFERED is false; nothing calls undo_parent_join)', () => {
+        const lines = linesWith(b, /\bleave a book\b|\bleaving a book\b|\bundo the join\b|\bundoing a join\b/i);
+        if (key === 'terms') expect(lines.length).toBeGreaterThanOrEqual(4);
+        for (const l of lines) expect(l).toMatch(/not in the (?:test )?app yet|when that is available in the app/);
+      });
+
       it('[BL-565] the served text is the one recorded in policy_versions (immutable once published)', () => {
         expect(createHash('sha256').update(raw(file)).digest('hex')).toBe(sha256);
       });
     });
   }
+
+  it('[BL-565] every email route is said to be done by hand (no built mechanism): delete account, withdraw sync, other requests', () => {
+    const terms = body(text(FILES.terms.file));
+    const privacy = body(text(FILES.privacy.file));
+    const routes = [
+      ...linesWith(terms, /To delete your account, email/),
+      ...linesWith(privacy, /^- \*\*Your account\.\*\*/),
+      ...linesWith(privacy, /withdraw your agreement at any time by emailing us/),
+      ...linesWith(privacy, /otherwise, email hello@earlyletters\.com/),
+    ];
+    expect(routes.length).toBe(4);
+    for (const l of routes) expect(l).toMatch(/by hand/);
+  });
+
+  it('[BL-565] the Privacy Policy says the email provider keeps the completion email, so the address is held about 60 days (data-policy.md "one stated exception")', () => {
+    const b = body(text(FILES.privacy.file));
+    expect(b).toMatch(/our email provider, which keeps each email it sends for 30 days/);
+    expect(b).toMatch(/We send an email when your deletion finishes, so that email, and your address on it, stays with the email provider for up to 30 days after that, about 60 days after your request/);
+  });
+
+  it('[BL-565] what is not running yet is marked planned: GitHub copies, deletion times, keeping periods, storage in the United States, deletion by the 30-day rule', () => {
+    const privacy = body(text(FILES.privacy.file));
+    const terms = body(text(FILES.terms.file));
+    for (const l of linesWith(privacy, /^\| GitHub\b/)) expect(l).toMatch(/\(planned\)/);
+    expect(privacy).not.toMatch(/your information is stored in the United States/);
+    expect(privacy).toMatch(/We plan to store your information in the United States/);
+    const section7 = privacy.slice(privacy.indexOf('## 7.'), privacy.indexOf('## 8.'));
+    expect(section7).toMatch(/are planned: they apply once the scheduled deletion on our test server is running/);
+    for (const l of linesWith(section7, /\b(?:31|38|45) days\b/)) expect(l).toMatch(/Once the scheduled deletion on our test server is running/);
+    expect(section7).toMatch(/we plan to keep only these/);
+    expect(linesWith(terms, /^10\.1 /).join('\n')).toMatch(/Deletion is planned to take effect after 30 days/);
+  });
+
+  it('[BL-565] the alpha letter allowance matches the alpha decision text: Plus not part of the test, every letter free, the build keeps up to 100 (alpha.ts MAX_FREE_LETTERS)', () => {
+    const terms = body(text(FILES.terms.file));
+    expect(terms).toMatch(/is not part of this test/);
+    expect(terms).toMatch(/every letter you keep is free, and the test app lets you keep up to 100/);
+  });
 
   it('[BL-565] the Privacy Policy names every service that handles a tester\'s information', () => {
     const b = body(text(FILES.privacy.file));
