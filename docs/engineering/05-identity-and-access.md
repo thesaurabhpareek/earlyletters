@@ -107,7 +107,7 @@ revoke insert, update, delete, truncate, references, trigger on public.<view> fr
 
 Mobile auth code: keep it under `apps/mobile/src/lib/auth/` (session storage in `lib/supabase/secure-storage.ts`) so the dispatcher routes the PR to security-architect (`review_paths` in `agents/roster.json`). Never read the session in a screen; go through the auth module (`useAuth`).
 
-Account recovery and suspected takeover: `docs/ops/runbooks/account-recovery.md` (BL-598). Support never changes a sign-in email or links an identity by hand.
+Account recovery and suspected takeover: `docs/ops/runbooks/account-recovery.md` (BL-598, pending PR #620). Support never changes a sign-in email or links an identity by hand.
 
 ## Exceptions
 
