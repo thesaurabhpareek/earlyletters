@@ -23,8 +23,9 @@ import { lockScreenNamesOn } from '@/lib/reminders';
  *
  * - Top: `trust.promise`, word for word, plain text, no icon (D-061; VOICE.md: no locks, no shields). It replaces
  *   the "What we never do" list, whose third line named photos, a feature v1.0 does not have (M13 rule 4).
- * - Where your book is kept: P2 (sync off) or P2b (sync on), the sync row when the build has sync (D-128), P3, and
- *   P4 or the usage switch (capabilities.analytics; P4 only where the build cannot collect, D-095).
+ * - Where your book is kept: P2 (no sync, or sync status 'off') or P2b (status 'on'), none while unknown or signed
+ *   out; the iPhone backup line (CCO-8 wording, same as Where your letters live); P3; P4 or the usage switch
+ *   (capabilities.analytics; P4 only where the build cannot collect, D-095); the sync row when the build has sync.
  * - Who can see it: the plain fact while there is no app lock (`whoLockOff`); Names in notifications, which opens
  *   Reminders; P8 as the footer. APP_LOCK_ROW: feat/mobile-app-lock adds its row and the `whoLockOn` lines here.
  * - What you can do: Export your book, Recently deleted, Delete account (build 2, D-129), and P9 in a build with no
@@ -47,7 +48,7 @@ export default function PrivacySettings() {
   const child = getActiveChild()?.name ?? consentCopy.childFallback;
   const page = privacyPage({
     sync: capabilities.sync,
-    syncOn: sensitive.status === 'on',
+    syncStatus: sensitive.status,
     analytics: capabilities.analytics,
     accountDeletion: capabilities.accountDeletion && auth.signedIn,
     signIn: capabilities.signIn,
@@ -80,6 +81,7 @@ export default function PrivacySettings() {
           {page.facts.map((key) => (
             <ListRow key={key} title={p[key]} testID={`privacy.fact.${key}`} />
           ))}
+          <ListRow title={p.iphoneBackupTitle} subtitle={p.iphoneBackup} testID="privacy.iphoneBackup" />
         </ListSection>
 
         {/* Sync and family sharing (build 2, D-128): read-only, no withdrawal yet (BL-485). */}
@@ -106,7 +108,7 @@ export default function PrivacySettings() {
           {/* APP_LOCK_ROW: feat/mobile-app-lock adds "App lock, On or Off" here and swaps whoLockOff for whoLockOn. */}
           <ListRow
             title={p.lockScreenLabel}
-            value={names ? copy.settings.privacy.sensitiveOn : copy.settings.reminders.offLabel}
+            value={names ? p.namesValueOn : p.namesValueOff}
             trailing="chevron"
             onPress={go('/settings/reminders')}
             testID="privacy.names"

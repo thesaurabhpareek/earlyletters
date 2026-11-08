@@ -18,7 +18,9 @@ const code = (rel: string) =>
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 const screen = code('app/settings/privacy.tsx');
 const p = en.settings.privacy;
-const build1 = { sync: false, syncOn: false, analytics: false, accountDeletion: false, signIn: false };
+const build1 = { sync: false, syncStatus: 'signed_out' as const, analytics: false, accountDeletion: false, signIn: false };
+/** A servers-on build (the `preview` profile): sync, sign-in and analytics capabilities on. */
+const preview = { ...build1, sync: true, signIn: true, analytics: true, accountDeletion: true };
 
 describe('[CPrivO-5] Settings > Privacy', () => {
   it('opens with trust.promise word for word, as plain text before any section, and no lock or shield icon', () => {
@@ -35,21 +37,49 @@ describe('[CPrivO-5] Settings > Privacy', () => {
 
   it('build 1 (servers and analytics off): on this phone and not sent to us, speech on this phone, no reports, no account', () => {
     expect(privacyPage(build1)).toEqual({ facts: ['keptOnPhone', 'speechOnPhone', 'noReports'], syncRow: false, analyticsSwitch: false, noAccountLine: true, deleteAccountRow: false });
-    expect(p.keptOnPhone).toBe("Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one. They are not sent to us.");
+    expect(p.keptOnPhone).toBe('Your letters and recordings are kept on this phone. They are not sent to us.');
     expect(p.speechOnPhone).toBe('Your speech is written down on this phone.');
     expect(p.noReports).toBe('This version collects no usage or crash reports.');
     expect(p.noAccount).toBe('There is no account in this version. Deleting the app removes its letters and recordings from this phone.');
   });
 
-  it('"not sent to us" never shows while sync is on, and "no reports" never shows in a build with the usage switch', () => {
-    const on = privacyPage({ ...build1, sync: true, syncOn: true, signIn: true, analytics: true, accountDeletion: true });
-    expect(on.facts).toEqual(['keptSynced', 'speechOnPhone']);
-    expect(on).toMatchObject({ syncRow: true, analyticsSwitch: true, noAccountLine: false, deleteAccountRow: true });
-    // Sync in the build but not on (signed out, declined, unknown): the phone-only line is the true one.
-    expect(privacyPage({ ...build1, sync: true, syncOn: false, signIn: true }).facts[0]).toBe('keptOnPhone');
+  it('"not sent to us" shows only with no sync in the build, or a sync status of exactly off (CTO ruling, 8 Nov)', () => {
+    // No sync in the build: whatever the status reads, nothing can have reached us.
+    for (const syncStatus of ['on', 'off', 'unknown', 'signed_out'] as const) expect(privacyPage({ ...build1, syncStatus }).facts[0], syncStatus).toBe('keptOnPhone');
+    // Sync in the build, consent declined ('off'): nothing was ever sent.
+    expect(privacyPage({ ...preview, syncStatus: 'off' }).facts).toEqual(['keptOnPhone', 'speechOnPhone']);
+    // Sync on: the synced line, never "not sent to us".
+    expect(privacyPage({ ...preview, syncStatus: 'on' }).facts).toEqual(['keptSynced', 'speechOnPhone']);
+    expect(privacyPage({ ...preview, syncStatus: 'on' })).toMatchObject({ syncRow: true, analyticsSwitch: true, noAccountLine: false, deleteAccountRow: true });
     expect(p.keptSynced).toMatch(/on our servers/);
-    expect(screen).toMatch(/syncOn: sensitive\.status === 'on'/);
+    expect(screen).toMatch(/syncStatus: sensitive\.status,/);
     expect(screen).toMatch(/analytics: capabilities\.analytics/);
+  });
+
+  it('status unknown (not read yet, offline): no location line, neither "not sent to us" nor the synced line', () => {
+    const page = privacyPage({ ...preview, syncStatus: 'unknown' });
+    expect(page.facts).toEqual(['speechOnPhone']);
+    expect(page.facts).not.toContain('keptOnPhone');
+    expect(page.facts).not.toContain('keptSynced');
+  });
+
+  it('signed out in a sync build (a parent may have synced, then signed out): no location line', () => {
+    const page = privacyPage({ ...preview, syncStatus: 'signed_out' });
+    expect(page.facts).toEqual(['speechOnPhone']);
+    expect(page.syncRow).toBe(true);
+  });
+
+  it('the iPhone backup line is the CCO-8 recordings-only wording, on every build, and the same words as Where your letters live', () => {
+    expect(p.iphoneBackupTitle).toBe('iPhone backup');
+    expect(p.iphoneBackup).toBe('Includes your recordings, if iCloud Backup is on.');
+    expect(screen).toMatch(/<ListRow title=\{p\.iphoneBackupTitle\} subtitle=\{p\.iphoneBackup\}/);
+    // No location line repeats a backup claim of its own.
+    for (const l of [p.keptOnPhone, p.keptSynced]) expect(l, l).not.toMatch(/backup/i);
+  });
+
+  it('Names in notifications reads its own On and Off words, not the sync status words', () => {
+    expect(screen).toMatch(/value=\{names \? p\.namesValueOn : p\.namesValueOff\}/);
+    expect(screen).not.toMatch(/copy\.settings\.privacy\.sensitiveOn|reminders\.offLabel/);
   });
 
   it('who can see it: the plain fact while there is no app lock, never "Only you" (content 7, LEGAL-REQ-044)', () => {

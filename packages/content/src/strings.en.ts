@@ -882,6 +882,9 @@ export const en = {
       sensitiveOff: "Off, kept on this phone",
       sensitiveSignedOut: "Not signed in",
       lockScreenLabel: "Names in notifications",
+      // The Names in notifications row's value on Privacy: its own words, not the sync status words.
+      namesValueOn: "On",
+      namesValueOff: "Off",
       promiseTitle: "Our promise",
       // Shown above the switches. The promise itself is `trust.promise`.
       controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
@@ -889,10 +892,17 @@ export const en = {
       // (`trust.promise`) at the top, then facts, then controls, then the documents. Every line below is a privacy
       // statement for the claims registry (LEGAL-REQ-044) once it exists; `legal` reviews them before release.
       whereTitle: "Where your book is kept",
-      // P2, sync off (every build 1 profile: SERVER_FEATURES off). Ruled shape: exec Q4 signedOutHelp, Q5 row 5.
-      keptOnPhone: "Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one. They are not sent to us.",
+      // P2. Shown only where nothing can have reached us: a build without sync (every build 1 profile: SERVER_FEATURES
+      // off), or a sync build whose status is exactly 'off' (consent declined, nothing ever sent). Never while the
+      // status is unknown or signed out (CTO ruling, 8 Nov 2026: a parent who synced and signed out has letters on our
+      // servers). The backup clause moved to its own line, worded as on Where your letters live (CCO-8).
+      keptOnPhone: "Your letters and recordings are kept on this phone. They are not sent to us.",
       // P2b, sync on (build 2, D-128): text syncs, recordings do not while owner backup is off.
-      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings stay on this phone and in your iPhone's own backup, if you use one.",
+      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings are kept on this phone.",
+      // The iPhone backup, one wording on both pages (CTO ruling, 8 Nov 2026): CCO-8's recordings-only variant
+      // (content.md 1 item 14) until the device restore drill passes. Same words as whereLive.iphoneBackup.
+      iphoneBackupTitle: "iPhone backup",
+      iphoneBackup: "Includes your recordings, if iCloud Backup is on.",
       // P3: on-device speech (ADR 0015); Privacy Policy 2.
       speechOnPhone: "Your speech is written down on this phone.",
       // P4: shown only in a build without the analytics switch (capabilities.analytics off, D-095); no crash SDK.

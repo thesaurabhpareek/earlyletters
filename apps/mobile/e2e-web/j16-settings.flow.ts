@@ -27,7 +27,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await expect(app.getByText('What we never do', { exact: false })).toHaveCount(0);
   await expect(app.getByText('Anyone who can unlock this iPhone can open the book.', { exact: true })).toBeVisible();
   await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
-  await step('happy', 'Privacy', 'The promise word for word at the top, with no icon. Where your book is kept (on this phone and in the iPhone backup, not sent to us; speech written down on this phone; no usage or crash reports), Who can see it (anyone who can unlock this iPhone; Names in notifications; notifications never show the words), What you can do (Export, Recently deleted; no account in this version), then the Privacy Policy and Terms, and the short privacy line last.');
+  await step('happy', 'Privacy', 'The promise word for word at the top, with no icon. Where your book is kept (on this phone, not sent to us; iPhone backup includes your recordings, if iCloud Backup is on; speech written down on this phone; no usage or crash reports), Who can see it (anyone who can unlock this iPhone; Names in notifications; notifications never show the words), What you can do (Export, Recently deleted; no account in this version), then the Privacy Policy and Terms, and the short privacy line last.');
   await app.goBack();
 
   await app.getByText('Appearance', { exact: true }).first().click();
