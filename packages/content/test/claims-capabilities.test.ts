@@ -351,7 +351,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
     const keys = cachedSurfaces(profile).map((l) => l.path);
     expect(keys.filter((k) => k.startsWith('web.site.scenes.')).length).toBeGreaterThan(50);
     expect(keys.some((k) => k.startsWith('web:scenes/S04Exact.tsx'))).toBe(true);
-    expect(keys.some((k) => k.startsWith('web:lib/legal/legal-copy.ts'))).toBe(true);
+    expect(keys.some((k) => k.startsWith('web:lib/legal/privacy-copy.ts'))).toBe(true);
     expect(keys.some((k) => k.startsWith('features.billing.'))).toBe(true);
     expect(keys.some((k) => k.startsWith('site.')), 'site.en.ts is not shipped, so it is not read').toBe(false);
   });

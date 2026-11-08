@@ -3,7 +3,8 @@
  *
  * The files are the texts themselves, copied byte for byte from docs/legal/beta (BL-565). They are never edited: a change
  * is a new version at a new path (docs/legal/POLICY_VERSIONING.md). The site serves the raw bytes at /legal/<doc>/<version>.md
- * and renders the body (frontmatter removed) at /legal/<doc>/<version>, and at /terms and /privacy for the current version.
+ * and renders the body (frontmatter removed) at /legal/<doc>/<version>. The floating /terms and /privacy are the website's
+ * own short pages (terms-copy.ts, privacy-copy.ts) and do not read these files (founder decision, 8 Nov 2026: versioned only).
  * The sha256 of the raw bytes is what `policy_versions.content_sha256` records, so nothing here may change a byte.
  */
 import { readFileSync, statSync } from 'node:fs';
@@ -21,9 +22,6 @@ import { siteOrigin } from './origin';
 
 export const legalDocs = ['terms', 'privacy'] as const;
 export type LegalDoc = (typeof legalDocs)[number];
-
-/** The version the floating /terms and /privacy show. Raising it needs a new file and a new set of pins. */
-export const currentVersion = '0.9.0';
 
 export interface LegalFrontmatter {
   title: string;
@@ -70,7 +68,7 @@ export function splitFrontmatter(text: string): { front: string; body: string } 
   return { front: match[1], body: text.slice(match[0].length).replace(/^\n+/, '') };
 }
 
-export function readLegalSource(doc: LegalDoc, version: string = currentVersion): LegalSource {
+export function readLegalSource(doc: LegalDoc, version: string): LegalSource {
   if (!/^\d+\.\d+\.\d+$/.test(version)) throw new Error(`Not a version: ${version}`);
   const raw = readFileSync(join(contentDir(), doc, `${version}.md`));
   const { front, body } = splitFrontmatter(raw.toString('utf8'));

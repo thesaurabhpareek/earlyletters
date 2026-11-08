@@ -12,20 +12,22 @@ url: https://earlyletters.com/legal/privacy/0.9.0
 
 Version 0.9.0, a test version.
 
-**This is a test version of our Privacy Policy, for family members testing the Early Letters app through Apple's TestFlight. It has not had a full legal review yet. A reviewed version will replace it, and we will tell you in the app before it applies to you.** It describes only what the test app and our website do today. Where something is planned but not in the app yet, it says so.
+**This is a test version of our Privacy Policy, for family members testing the Early Letters app through Apple's TestFlight. It has not had a full legal review yet. A reviewed version will replace it, and we will tell you in the app before it applies to you.**
+
+This policy describes the second test build, the one with our servers on, and applies when that build is available to you. The first test build, with servers off, keeps everything on your phone. Where something is planned but not in the app yet, it says so.
 
 Early Letters keeps letters to your child, in your own words and voice. Parents speak or type letters to their child. This policy explains what Early Letters collects, how we use it, who can see it, and the choices you have. It covers the test versions of the Early Letters app for iPhone that we share through TestFlight, and our website, earlyletters.com, with its email list.
 
 ## Which test builds this covers
 
-- **The first test build.** There is no sign-in. Your letters and recordings stay on your phone, and the app sends nothing about them to us. The parts of this policy about our servers do not apply to it.
-- **The second test build.** You can sign in, sync your book to our test server, and share a book with your child's other parent. Recordings are not uploaded.
+- **The first test build.** There is no sign-in. Your letters and recordings stay on your phone, except anything you choose to send as TestFlight feedback, such as a screenshot, and the app sends nothing about them to us. The parts of this policy about our servers do not apply to it.
+- **The second test build.** When it is available, you can sign in, sync your book to our test server, and share a book with your child's other parent. Recordings are not uploaded.
 
 **Not in the app yet.** None of these is in any test build: recording backup, buying Plus, usage analytics or crash reporting by the app, a check of your country at sign-up, sign-in with any service other than Apple or email, and a switch in the app to withdraw your agreement to sync. If one of them is added, we will update this policy first.
 
 ## 1. Who we are
 
-Early Letters is run by its founder, an individual based in California ("we", "us"). Write to us at hello@earlyletters.com.
+Early Letters is run by its founder ("we", "us"). Write to us at hello@earlyletters.com.
 
 ## 2. What we collect
 
@@ -81,12 +83,12 @@ Reminders on your phone show your child's name only if you turn that on. An invi
 | Company | What it does for us |
 |---|---|
 | Supabase | Our test server: database, sign-in and server functions |
-| GitHub | Stores the encrypted nightly backup of our test server's database. Each copy is kept for 7 days. GitHub holds only the encrypted file; the key that opens it stays with us |
-| Cloudflare R2 | Delivers the app's settings and the language and speech files it downloads |
-| Resend | Sends our emails, receives mail sent to our address, and stores our email list |
+| GitHub (planned) | Will store the encrypted nightly backup of our test server's database, once that backup is running. Each copy will be kept for 7 days. GitHub will hold only the encrypted file; the key that opens it will stay with us |
+| Cloudflare R2 | Delivers the app's settings and the language files it downloads |
+| Resend | Sends our emails, may receive mail sent to our address, and stores our email list |
 | Vercel | Hosts our website |
 
-Each handles your information only to provide its service to us. Some speech model files are downloaded straight from Hugging Face, a public model library, which sees your IP address and the file requested.
+Each handles your information only to provide its service to us. The speech model files the test app downloads come straight from Hugging Face, a public model library, which sees your IP address and the file requested.
 
 Apple provides TestFlight, Sign in with Apple and iPhone backups under its own terms and privacy policy.
 
@@ -94,17 +96,17 @@ We will update this list before a new provider receives letters or recordings.
 
 ## 7. How long we keep things, and deleting
 
-*The parts about our servers apply when you sign in and sync, in the second test build. Otherwise everything is on your phone and you delete it there.*
+*The parts about our servers apply when you sign in and sync, in the second test build. Otherwise everything is on your phone and you delete it there. The deletion times and keeping periods below for our servers are planned: they apply once the scheduled deletion on our test server is running.*
 
 We keep your book until you delete it or your account. We never delete it because you stopped using the app.
 
 - **A letter.** Deleting a letter moves it to Recently deleted for 30 days, so you can restore it. Then it is erased. You can also erase it at once.
-- **Your account.** Email us from the address on your account and we will start the deletion. If your test build shows Delete account in Settings, you can start it there instead. You have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the book entry described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. Our email provider keeps each email it sends for 30 days.
-- **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted, except for the entry described next.
-- **Letters of someone who left a book.** If a parent left a book, or their joining was undone, before the other parent deleted the book or their own account, that person's letters and their letters waiting to be kept are not deleted with it. They stay theirs. To label those letters we keep the book's entry, with the child's name, birth date and due date, and we clear its nickname, photo and other details. Nothing in the app can read that entry today. We delete it when nothing of theirs is left in it.
+- **Your account.** Email us from the address on your account and we will start the deletion by hand. If your test build shows Delete account in Settings, you can start it there instead. Once the scheduled deletion on our test server is running, you have 30 days to change your mind. We then erase your information from our live systems within 31 days of your request, apart from the record of the book described under "Letters of someone who left a book" below, from our backups within 38 days, and our providers erase it within 45 days. The exception is our email provider, which keeps each email it sends for 30 days. We send an email when your deletion finishes, so that email, and your address on it, stays with the email provider for up to 30 days after that, about 60 days after your request.
+- **Shared books.** Deleting your account removes your letters from every book. A book you share stays with your co-parent. A book where you are the only parent is deleted, except for the record of the book described next.
+- **Letters of someone who left a book.** If a parent left a book, or their joining was undone, before the other parent deleted the book or their own account, that person's letters and their letters waiting to be kept are not deleted with it. They stay theirs. To label those letters we keep a record of the book, with the child's name, birth date and due date, and we clear its nickname, photo and other details. Nothing in the app can read that record today. We delete it when nothing of theirs is left in it.
 - **When the test ends.** The test server is separate from the App Store version. We will tell you before it is closed. Letters on your phone stay there, and export keeps working.
 
-After your account is deleted, we keep only these, and none of them holds your letters or recordings:
+After your account is deleted, we plan to keep only these, and none of them holds your letters or recordings:
 
 - records of what you agreed to, for 3 years, without your name or email;
 - activity logs, for 24 months, without your name or email;
@@ -122,11 +124,11 @@ Early Letters is for adults. You must be 18 or older to use it or to take part i
 
 *This section applies when you sign in and sync, in the second test build.*
 
-Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step. If you choose to keep your book on your phone, syncing and sharing stay off. You can withdraw your agreement at any time by emailing us; the test app shows in Settings, Privacy whether syncing is on, but has no switch to turn it off yet. Withdrawing stops syncing, and we offer to delete what was synced. We never use health details for advertising, and we never try to work out anything about anyone's health.
+Letters can mention health, and a due date shows a pregnancy. We treat everything in a letter as private. Before your book first syncs, we ask for your agreement in a separate step. If you choose to keep your book on your phone, syncing and sharing stay off. You can withdraw your agreement at any time by emailing us, and we will do it by hand; the test app shows in Settings, Privacy whether syncing is on, but has no switch to turn it off yet. Withdrawing stops syncing, and we offer to delete what was synced. We never use health details for advertising, and we never try to work out anything about anyone's health.
 
 ## 10. Your rights
 
-Wherever you live in the United States, you can ask to see, export, correct or delete your information, and you can withdraw an agreement you gave. Use the control in the app where your build has one; otherwise, email hello@earlyletters.com. We may confirm it is you by sending a code to the email on your account. We reply within 45 days, and may extend once by 45 days if we tell you why. You can use an authorized agent. If we refuse a request, reply with "Appeal" in the subject and we will look again; if we still refuse, we will tell you how to contact your state attorney general. We will never treat you differently for using these rights.
+Wherever you live in the United States, you can ask to see, export, correct or delete your information, and you can withdraw an agreement you gave. Use the control in the app where your build has one; otherwise, email hello@earlyletters.com and we will do it by hand. We may confirm it is you by sending a code to the email on your account. We reply within 45 days, and may extend once by 45 days if we tell you why. You can use an authorized agent. If we refuse a request, reply with "Appeal" in the subject and we will look again; if we still refuse, we will tell you how to contact your state attorney general. We will never treat you differently for using these rights.
 
 **California.** We do not sell or share personal information, and we have not done so in the past 12 months. We use sensitive information only to provide the service. Because we do not sell or share personal information or track you, a Global Privacy Control or Do Not Track signal changes nothing here. Section 2 lists what we collect, and section 6 who receives it.
 
@@ -136,7 +138,7 @@ Traffic is encrypted in transit, and data on our servers is encrypted at rest. A
 
 ## 12. Where Early Letters is offered
 
-The test is for people in the United States, and your information is stored in the United States.
+The test is for people in the United States. We plan to store your information in the United States.
 
 ## 13. Changes to this policy
 

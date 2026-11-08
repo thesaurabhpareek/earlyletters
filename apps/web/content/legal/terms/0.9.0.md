@@ -12,7 +12,9 @@ url: https://earlyletters.com/legal/terms/0.9.0
 
 Version 0.9.0, a test version.
 
-**This is a test version of our Terms, for family members testing the Early Letters app through Apple's TestFlight. It has not had a full legal review yet. A reviewed version will replace it, and we will ask you to agree to that version in the app before it applies to you.** These Terms describe only what the test app does today. Where something is planned but not in the app yet, they say so.
+**This is a test version of our Terms, for family members testing the Early Letters app through Apple's TestFlight. It has not had a full legal review yet. A reviewed version will replace it, and we will tell you in the app before it applies to you.**
+
+These Terms describe the second test build, the one with our servers on, and apply when that build is available to you. The first test build, with servers off, keeps everything on your phone. Where something is planned but not in the app yet, these Terms say so.
 
 ## The short version
 
@@ -23,13 +25,13 @@ This is a summary. The full terms below are what count.
 - We never rewrite your words. The app fixes only small slips, and you can see and undo every fix.
 - This is a test. Plus is not offered in it, and nothing in it costs money.
 - The test app and its server are separate from the App Store version. Letters written in the test do not move across on their own.
-- Co-parents are equals. Neither can delete the other's letters, and after the first 72 hours neither can remove the other.
+- Co-parents are equals. Neither can delete the other's letters, and after the first 72 hours neither can remove the other. Undoing a join in the first 72 hours is not in the app yet.
 - If we ever close Early Letters, we will give you at least 90 days' notice and a way to take everything with you.
 - The test app can make mistakes and will change. Export a copy now and then.
 
 ## 1. The agreement
 
-1.1 Early Letters is run by its founder, an individual based in California ("we", "us"). Write to us at hello@earlyletters.com.
+1.1 Early Letters is run by its founder ("we", "us"). Write to us at hello@earlyletters.com.
 
 1.2 These Terms are an agreement between you and us about the test versions of the Early Letters app for iPhone that we share through TestFlight, and our website, earlyletters.com (together, the "Service"). Our Privacy Policy, version 0.9.0 (https://earlyletters.com/legal/privacy/0.9.0), is part of them.
 
@@ -47,11 +49,11 @@ This is a summary. The full terms below are what count.
 
 ## 3. Your account
 
-3.1 You can write and keep letters on your phone without an account. To sync your book, use a second phone or share a book, you need one. In the second test build you can sign in with Apple, or with a link and code we email you. The first test build has no sign-in.
+3.1 You can write and keep letters on your phone without an account. To sync your book, use a second phone or share a book, you need one. In the second test build, when it is available, you can sign in with Apple, or with a link and code we email you. The first test build has no sign-in.
 
 3.2 Keep your phone and email secure. You are responsible for what happens through your account unless it is our fault. If you think someone else has used your account, tell us right away.
 
-3.3 An invite link or code works once and expires after 7 days. Share it only with the person it is for. If the wrong person joins, the parent who sent the invite can undo the join within 72 hours.
+3.3 An invite link or code works once and expires after 7 days. Share it only with the person it is for. If the wrong person joins, the parent who sent the invite can undo the join within 72 hours, when that is available in the app.
 
 3.4 An account is for one person.
 
@@ -61,7 +63,7 @@ This is a summary. The full terms below are what count.
 
 4.2 A letter is private to its author until the author adds it to the book. No one can edit or delete another person's letters. After the first 72 hours, neither parent can remove the other.
 
-4.3 A parent can leave a book at any time and chooses whether to leave their letters in it or take them out. Letters already on the other parent's phone or in an export cannot be taken back.
+4.3 Leaving a book is not in the test app yet. When it is, a parent can leave a book at any time and chooses whether to leave their letters in it or take them out. Letters already on the other parent's phone or in an export cannot be taken back.
 
 4.4 We do not decide custody or family disputes, and we will not move or hand over one parent's letters at the other's request. We act on a valid court order that is properly served and that we can verify. If someone's safety is at risk, contact us; after checking, we may limit a person's access to a book.
 
@@ -97,7 +99,7 @@ This is a summary. The full terms below are what count.
 
 ## 8. Plus, and what stays free
 
-8.1 Plus, our optional paid membership, is not part of this test. The test app does not sell it, and nothing in the test costs money. While you test, you can keep up to 100 letters without Plus.
+8.1 Plus, our optional paid membership, is not part of this test. The test app does not sell it, and nothing in the test costs money. While you test, every letter you keep is free, and the test app lets you keep up to 100.
 
 8.2 These parts of Early Letters are free, in the test and for as long as we operate the Service: reading every letter you have kept and playing its recordings, and exporting everything. Deleting your account is free too.
 
@@ -109,7 +111,7 @@ Do not use the Service to break the law; to harass, deceive or impersonate anyon
 
 ## 10. Ending
 
-10.1 You can stop testing, leave a book or ask us to delete your account at any time. To delete your account, email hello@earlyletters.com from the address on your account. If your test build shows Delete account in Settings, you can start it there instead. Deletion takes effect after 30 days, during which you can change your mind. The Privacy Policy, section 7, says what is deleted and when.
+10.1 You can stop testing or ask us to delete your account at any time, and you can leave a book when that is available in the app. To delete your account, email hello@earlyletters.com from the address on your account and we will do it by hand. If your test build shows Delete account in Settings, you can start it there instead. Deletion is planned to take effect after 30 days, during which you can change your mind. The Privacy Policy, section 7, says what is deleted and when.
 
 10.2 We may suspend or end your account if you seriously or repeatedly break these Terms, if the law requires it, or if your use puts a child, another person or the Service at real risk. Where we can, we will tell you why first. Your letters stay on your phone, and you can still export them.
 
@@ -149,7 +151,7 @@ If you break section 9 on purpose and someone brings a claim against us because 
 
 ## 17. Changes to these Terms
 
-The reviewed version of these Terms will replace this test version. Before it, or any other change that affects your rights or how we use Your Content, applies to you, we will tell you in the app, and by email if you have an account, and ask you to agree in the app. Small changes, such as fixing typos, take effect when posted. Export and deletion never depend on accepting new Terms.
+The reviewed version of these Terms will replace this test version. Before it, or any other change that affects your rights or how we use Your Content, applies to you, we will tell you in the app, and by email if you have an account. Small changes, such as fixing typos, take effect when posted. Export and deletion never depend on accepting new Terms.
 
 ## 18. Apple
 

@@ -14,10 +14,10 @@ import { legalRawResponse } from '../src/lib/legal/serve';
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex');
 
-/** From the body of PR 616 (BL-565), the table for APPLY step 8.2. */
+/** The same values as packages/content/test/legal-beta.test.ts (PR 616, BL-565) and its APPLY step 8.2 table. */
 const PINNED = {
-  terms: '8da3bd2c3704df292302fc4ad42eb26712b142bb87e5cde3e2ad6e656c5b0af1',
-  privacy: 'bcfd060320c89e46feda4f10dc7cc4cdc7905898e72c4ce51c5ce1247bbfd284',
+  terms: 'dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1',
+  privacy: '4fdaa6d33a7e1a68a065351935ddc58871a28a98afef62424e4193adabd4a2c9',
 } as const;
 
 describe('[BL-565] the served 0.9.0 text', () => {
