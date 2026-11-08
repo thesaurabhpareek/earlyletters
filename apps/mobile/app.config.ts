@@ -4,8 +4,8 @@
  * app.json (lumira-letters, Expo-blue splash, default microphone string).
  *
  * Identity comes from packages/brand only: name, scheme, bundle id, colours.
- * No public name is typed in this file (CLAUDE.md). The microphone purpose
- * string comes from src/lib/permission-copy.ts (part of pendingCopy; text
+ * No public name is typed in this file (CLAUDE.md). The microphone and Face ID
+ * purpose strings come from src/lib/permission-copy.ts (part of pendingCopy; text
  * from docs/legal/app-store-privacy-labels.md 4, counsel review pending).
  *
  * Build profile (eas.json `env.EXPO_PUBLIC_APP_ENV`, POPS-02): development
@@ -123,6 +123,8 @@ type PrivacyManifestModule = typeof import('./src/lib/privacy-manifest');
 const { privacyManifest } = loadTs<PrivacyManifestModule>('./src/lib/privacy-manifest.ts');
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
+/** NSFaceIDUsageDescription for the app lock (F1; security.md section 2). Draft pending counsel (LEGAL-REQ-007, F17 Q3). */
+const faceId = permissionCopy.faceId.replace('{app}', brand.name);
 
 /**
  * The marketing version (CFBundleShortVersionString, versionName) lives only in version.json, shared by
@@ -205,6 +207,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
+      // Declared so Linking.canOpenURL answers for them (Apple requires declared schemes; that tel and mailto need it
+      // is to be confirmed by the S1-23 V-10 device check). The crisis lines (tel) and Write to us (mailto) ask it
+      // first, then show the number or address to copy when the device reports it cannot (F20-REQ-005, F20-REQ-007).
+      LSApplicationQueriesSchemes: ['tel', 'mailto'],
     },
     // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
     usesAppleSignIn: true,
@@ -263,6 +269,10 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       },
     ],
     'expo-apple-authentication',
+    // App lock (F1, CPO-2, CISO-1): Face ID, Touch ID or the iPhone passcode before the book opens. The plugin
+    // writes NSFaceIDUsageDescription (and Android's biometric permissions for later). Off until the parent turns
+    // it on; the purpose string is the only permission it adds (preflight LEGAL-REQ-007 check).
+    ['expo-local-authentication', { faceIDPermission: faceId }],
     // Brand fonts embedded at build time (no runtime load on launch). The list is
     // @scribe/design-tokens/fonts `fontFiles` (repo-root paths); its .ttf requires are
     // Metro assets, so they are stubbed here.

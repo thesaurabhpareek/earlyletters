@@ -52,6 +52,7 @@ import { track } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { letterDateline } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { clearReadItBack, isReadItBack } from '@/lib/read-it-back';
 import {
@@ -584,7 +585,7 @@ function WaitingCard({ entry, kind, onWrite }: { entry: Entry; kind: WordsCardKi
           : download.hold === 'no_space'
             ? wordsCopy.pack.noSpace
             : p !== null
-              ? fill(wordsCopy.pack.progress, { n: Math.floor(p * 100) })
+              ? downloadingLine(p, (n) => fill(wordsCopy.pack.progress, { n }))
               : fill(wordsCopy.pack.sizeLine, { size: Math.round(planFor([language]).bytes / 1e6) })
         : null;
 

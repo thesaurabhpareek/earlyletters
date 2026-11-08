@@ -30,7 +30,6 @@ vi.mock('expo-notifications', () => ({
   setNotificationHandler: () => {},
   addNotificationResponseReceivedListener: () => ({ remove: () => {} }),
 }));
-vi.mock('../src/lib/reminders/priming-sheet', () => ({ ReminderPrimingSheet: () => null }));
 
 const store = await import('../src/lib/store');
 const reminders = await import('../src/lib/reminders');
