@@ -8,9 +8,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { authCopy, billingCopy, en, licences } from '@scribe/content';
-import { accountSubtitle, headerCard, planRowFor } from '../src/components/settings/settings-home.logic';
-import { EMPTY_PLAN } from '../src/lib/billing/plan.logic';
+import { authCopy, en, licences } from '@scribe/content';
+import { accountSubtitle, headerCard } from '../src/components/settings/settings-home.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -88,7 +87,9 @@ describe('[S40] Settings home', () => {
   });
 
   it('keeps the P8 seams: Account (the header card), Back up my recordings and Delete account, each behind its capability', () => {
-    expect(home).toMatch(/onPress=\{go\(card\.route === 'account' \? ROUTES\.account : ROUTES\.plan\)\}/);
+    // Account: the header card, only in a build with sign-in (headerCard gives a route only then).
+    expect(home).toMatch(/onPress=\{card\.route \? go\(ROUTES\.account\) : undefined\}/);
+    expect(headerCard({ signIn: false, status: 'ready', provider: 'apple', signsAs: 'Mama' }).route).toBeNull();
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
     expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
   });
@@ -110,34 +111,32 @@ describe('[S40] Settings home', () => {
 });
 
 describe('[CCO-9, CDesO-1] Settings home regroup (settings-ia.md 3; SETTINGS_AND_ACCOUNT.md 6)', () => {
-  const NOW = '2026-11-08T12:00:00.000Z';
-  const offPlan = EMPTY_PLAN;
-  const free = planRowFor(offPlan, NOW, false);
-  const alpha = planRowFor(offPlan, NOW, true);
-  const base = { signIn: false, status: 'signedOut' as const, provider: null, signsAs: 'Mama', plan: free };
+  const base = { signIn: false, status: 'signedOut' as const, provider: null, signsAs: 'Mama' };
 
-  it('without sign-in the header card is the Plan row: name, On this phone, the Plan row value and line, opens Plan', () => {
-    expect(free).toEqual({ subtitle: en.settingsHome.planHelp, value: 'Free' });
-    expect(headerCard(base)).toEqual({ title: 'Mama', subtitle: 'On this phone', value: 'Free', hint: 'Opens Plan.', route: 'plan', footer: en.settingsHome.planHelp, planRow: false });
-    expect(headerCard({ ...base, plan: { subtitle: undefined, value: 'Plus, shared' } })).toMatchObject({ value: 'Plus, shared', footer: undefined });
-    // No name yet: the card is the Plan row by its own name (CCO-9, "Settings, Plan").
-    for (const signsAs of ['', '   ', null, undefined]) expect(headerCard({ ...base, signsAs }).title).toBe(en.settingsHome.planLabel);
+  it('a row labelled Plan sits directly under the header card in every build, one tap from home (CCO-9; CTO ruling 8 Nov)', () => {
+    // Drawn with no condition: the store build, the alpha builds and the signed-in build all have it.
+    expect(home).toMatch(/testID="settings\.headerCard"\s*\/>\s*<ListRow title=\{h\.planLabel\} subtitle=\{planRowView\.subtitle\} value=\{planRowView\.value\} trailing="chevron" onPress=\{go\(ROUTES\.plan\)\} testID="settings\.plan" \/>/);
+    expect(home).not.toMatch(/planRow \?|card\.planRow/);
+    expect(en.settingsHome.planLabel).toBe('Plan');
+    expect(home).toMatch(/plan: '\/settings\/plus'/);
+    // The Plan row is the only way to Plan from home, and nothing else names it.
+    expect(home.match(/ROUTES\.plan\b/g)?.length).toBe(1);
   });
 
-  it('in alpha the card shows no plan status and the alpha note sits under it (#552)', () => {
-    expect(headerCard({ ...base, plan: alpha })).toMatchObject({ value: undefined, footer: billingCopy.alpha.note, route: 'plan' });
+  it('without sign-in (store and testflight builds) the card is the name and "On this phone", with no plan words, and opens nothing', () => {
+    expect(headerCard(base)).toEqual({ title: 'Mama', subtitle: 'On this phone', route: null, hint: undefined });
+    for (const signsAs of ['', '   ', null, undefined]) expect(headerCard({ ...base, signsAs })).toEqual({ title: 'On this phone', subtitle: undefined, route: null, hint: undefined });
+    expect(home).toMatch(/trailing=\{card\.route \? 'chevron' : 'none'\}/);
+    expect(home).toMatch(/onPress=\{card\.route \? go\(ROUTES\.account\) : undefined\}/);
+    // The plan status is said once, on the Plan row, not on the card as well.
+    expect(home.slice(home.indexOf('testID="settings.headerCard"') - 400, home.indexOf('testID="settings.headerCard"'))).not.toMatch(/planRowView/);
   });
 
-  it('with sign-in the card opens Account and the Plan row, unchanged, sits right under it (CCO-9)', () => {
-    const signedIn = headerCard({ ...base, signIn: true, status: 'ready', provider: 'apple' });
-    expect(signedIn).toEqual({ title: 'Mama', subtitle: authCopy.account.signedInWith.apple, value: undefined, hint: 'Opens Account.', route: 'account', footer: undefined, planRow: true });
+  it('with sign-in (preview) the card opens Account with the sign-in line', () => {
+    expect(headerCard({ ...base, signIn: true, status: 'ready', provider: 'apple' })).toEqual({ title: 'Mama', subtitle: authCopy.account.signedInWith.apple, route: 'account', hint: 'Opens Account.' });
     expect(headerCard({ ...base, signIn: true }).subtitle).toBe(authCopy.account.signedOutTitle);
     expect(headerCard({ ...base, signIn: true, signsAs: '' }).title).toBe(en.settingsHome.accountLabel);
-    expect(home).toMatch(/\{card\.planRow \? \(\s*<ListRow title=\{h\.planLabel\} subtitle=\{planRowView\.subtitle\} value=\{planRowView\.value\} trailing="chevron" onPress=\{go\(ROUTES\.plan\)\} testID="settings\.plan" \/>/);
-    expect(home).toMatch(/plan: planRowView,/);
-    expect(home).toMatch(/plan: '\/settings\/plus'/);
-    // Plan is one tap from home in both builds: the card opens Plan, or the Plan row does.
-    expect(home.match(/ROUTES\.plan\b/g)?.length).toBe(2);
+    expect(home).toMatch(/account: '\/settings\/account'/);
   });
 
   it('draws the five groups in order, then About, with every row develop has', () => {
@@ -148,6 +147,9 @@ describe('[CCO-9, CDesO-1] Settings home regroup (settings-ia.md 3; SETTINGS_AND
     expect(en.children.settings.sectionTitle).toBe('Children');
     expect(en.settingsHome.sections).toMatchObject({ writing: 'Writing', letters: 'Your letters', privacy: 'Privacy and security', help: 'Help and legal', about: 'About' });
     expect(home).not.toMatch(/h\.sections\.data\b|h\.sections\.account\b/);
+    // Retired with the regroup: no screen reads them, so they are gone from content.
+    expect((en.settingsHome.sections as Record<string, unknown>).data).toBeUndefined();
+    expect((en.settingsHome.sections as Record<string, unknown>).account).toBeUndefined();
     const between = (a: string, b: string) => home.slice(home.indexOf(a), home.indexOf(b));
     const writing = between('h.sections.writing', 'h.sections.letters');
     for (const r of ['h.languageLabel', 'h.yourWords', 'h.remindersLabel', 'h.appearanceLabel']) expect(writing, r).toContain(r);

@@ -29,9 +29,10 @@ import { backupCopy } from '@scribe/content';
  * Regrouped (proposals/account-security/settings-ia.md 3 and design.md 2.6; docs/design/screens/SETTINGS_AND_ACCOUNT.md
  * 6; rulings CDesO-1, CCO-9; founder: build 12): a header card, then five groups and About.
  * - Header card (settings-home.logic.ts headerCard): the name the person signs as, if any; "On this phone" (or the
- *   sign-in line). Without sign-in it is the Plan row: it opens Plan and carries the plan status (planRowFor: Free,
- *   Plus or Plus, shared; the alpha note in alpha), so Plan stays one tap from home (CCO-9, the "Settings, Plan" path
- *   the Plus legal text names). With sign-in it opens Account, and the Plan row sits directly under it.
+ *   sign-in line). With sign-in it opens Account; without, it opens nothing.
+ * - The Plan row directly under the card in every build (planRowFor: Free, Plus or Plus, shared, with its line; the
+ *   alpha note in alpha). It is the "Settings, Plan" path the Terms, the Subscription Terms and the plan reminder
+ *   name for cancelling and refunds (CCO-9; settings-ia.md 3 [F]; CTO ruling 8 Nov 2026).
  * - Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live,
  *   Export your book, Recently deleted, Back up when in the build, Storage); Privacy and security (App lock, Privacy);
  *   Help and legal (Help, If you are struggling, Legal: one page for the Terms, the Privacy Policy and Licenses).
@@ -101,26 +102,22 @@ export default function Settings() {
     status: auth.state.status,
     provider: auth.account.provider,
     signsAs: getActiveChild()?.signsAs,
-    plan: planRowView,
   });
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      {/* Header card (CCO-9): the Plan row without sign-in (opens Plan, plan status, the plan line or alpha note under
-          it); with sign-in it opens Account and the Plan row sits right under it. */}
-      <ListSection footer={card.footer}>
+      {/* Header card, then the Plan row in every build (CCO-9, settings-ia.md 3 [F]; CTO ruling 8 Nov 2026): the Terms
+          and Subscription Terms send people to "Settings, Plan", so a row labelled Plan is always here, one tap from home. */}
+      <ListSection>
         <ListRow
           title={card.title}
           subtitle={card.subtitle}
-          value={card.value}
-          trailing="chevron"
+          trailing={card.route ? 'chevron' : 'none'}
           accessibilityHint={card.hint}
-          onPress={go(card.route === 'account' ? ROUTES.account : ROUTES.plan)}
+          onPress={card.route ? go(ROUTES.account) : undefined}
           testID="settings.headerCard"
         />
-        {card.planRow ? (
-          <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
-        ) : null}
+        <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
       </ListSection>
 
       <ListSection title={copy.children.settings.sectionTitle}>

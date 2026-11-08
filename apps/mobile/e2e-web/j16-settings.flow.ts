@@ -24,12 +24,13 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
   expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
-  // Regroup (settings-ia.md 3, CCO-9): the header card is the Plan row in this build, and says where the book is kept.
+  // Regroup (settings-ia.md 3, CCO-9): the header card says where the book is kept; the Plan row sits under it.
   await expect(app.getByTestId('settings.headerCard').getByText('On this phone', { exact: true })).toBeVisible();
+  await expect(app.getByTestId('settings.plan').getByText('Plan', { exact: true })).toBeVisible();
   await expect(app.getByText('Your letters', { exact: true })).toBeVisible();
   await expect(app.getByText('Privacy and security', { exact: true })).toBeVisible();
   await expect(app.getByTestId('settings.appLock')).toBeVisible();
-  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
+  await step('happy', 'Settings', 'A header card (the name the parent signs as, and On this phone), then the Plan row right under it (the plan status, or in alpha the alpha note), then five groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.
@@ -80,5 +81,5 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   await expect(btn(app, /^Delete account/)).toHaveCount(0);
   await expect(app.getByTestId('settings.about.beta').getByText(EARLY_BODY)).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
-  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with the Plan row right under it (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
+  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with the Plan row right under it, as in every build (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });

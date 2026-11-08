@@ -1204,26 +1204,25 @@ export const en = {
   },
 
   // Settings home (PRD C, C-REQ-016; regrouped 8 Nov 2026 per proposals/account-security settings-ia.md 3, CDesO-1,
-  // CCO-9): a header card (opens Plan in a build without sign-in, Account with it; its plan status is the Plan row's,
-  // billingCopy.membership.status), then Children, Writing, Your letters, Privacy and security, Help and legal, About.
-  // Words from account-security/content.md 4.6.
+  // CCO-9; settings-ia.md 3 [F] read literally, CTO ruling 8 Nov 2026): a header card (the name and "On this phone",
+  // or the sign-in line; it opens Account with sign-in and nothing without), then the Plan row under it in every build
+  // (the "Settings, Plan" path the Terms and Subscription Terms name), then Children, Writing, Your letters, Privacy
+  // and security, Help and legal, About. Words from account-security/content.md 4.6. Removed with the regroup:
+  // settingsHome.sections.account ("Account") and sections.data ("Your data"), no longer read.
   settingsHome: {
     sections: {
-      account: "Account",
       writing: "Writing",
       plus: "Plus",
-      // Retired from home by the regroup (8 Nov 2026); kept until the dead-copy sweep.
-      data: "Your data",
       letters: "Your letters",
       privacy: "Privacy and security",
       help: "Help and legal",
       about: "About",
     },
     // Header card (content 4.6). Build without sign-in: "On this phone"; signed in or out lines reuse
-    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; its hint says where it goes.
+    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; with sign-in its hint says it
+    // opens Account. Without sign-in the card opens nothing: the Plan row under it is the one way to Plan.
     cardOnPhone: "On this phone",
     cardHint: {
-      plan: "Opens Plan.",
       account: "Opens Account.",
     },
     legalLabel: "Legal",

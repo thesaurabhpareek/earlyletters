@@ -710,16 +710,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - A letter let go before the export is not in it.
 - **Record:** S1-110 rows (a) to (c): phone, iOS version, build number and profile; the list of files under `waiting/`; the shasum line for one recording; screenshots with Asha only.
 
-### S1-95 Settings home, regrouped: header card and five groups (settings-ia.md 3; CDesO-1, CCO-9; branch feat/mobile-settings-regroup)
-- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book set up as Mama; then the production-profile build of build 12 for (f); any phone; Larger Text at AX5 and VoiceOver.
-- **Steps:** (a) Open Settings. Read the card at the top, then each group heading and its rows top to bottom. (b) Tap the card. (c) Go back, tap Legal, then each of its three rows. (d) At AX5, read the card and every row. (e) With VoiceOver, swipe from the card to the last line. (f) On the production-profile build, read the card with Plus off.
+### S1-95 Settings home, regrouped: header card, the Plan row and five groups (settings-ia.md 3; CDesO-1, CCO-9; branch feat/mobile-settings-regroup)
+- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book set up as Mama; the production-profile build of build 12 for (f); any phone; Larger Text at AX5 and VoiceOver.
+- **Steps:** (a) Open Settings. Read the card at the top, the row under it, then each group heading and its rows top to bottom. (b) Tap the card, then tap Plan. (c) Go back, tap Legal, then each of its three rows. (d) At AX5, read the card and every row. (e) With VoiceOver, swipe from the card to the last line. (f) On the production-profile build, read the Plan row with Plus off, then follow "Settings, Plan, Manage subscription" as the Subscription Terms write it.
 - **Expected:**
-  - (a) The card reads "Mama", then "On this phone", with no plan status word; "Plus is not part of this test. Every letter is free while you test." sits under it. Then: Children (Asha, Add a child); Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock with On or Off, then Privacy); Help and legal (Help, If you are struggling, Legal); About (version, the early-version note, the sign-off). No Account or Delete account rows, and no "Private by default" line on home.
-  - (b) The card opens Plan in one tap (CCO-9, "Settings, Plan").
+  - (a) The card reads "Mama", then "On this phone", with no chevron and no plan word. Directly under it, a row labelled "Plan" with "Plus is not part of this test. Every letter is free while you test." Then: Children (Asha, Add a child); Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock with On or Off, then Privacy); Help and legal (Help, If you are struggling, Legal); About (version, the early-version note, the sign-off). No Account or Delete account rows, and no "Private by default" line on home.
+  - (b) Tapping the card does nothing. Plan opens in one tap (CCO-9, "Settings, Plan").
   - (c) Legal lists Terms of Service, Privacy Policy and Licenses. The two documents open in the in-app browser; Licenses opens its own page.
   - (d) Nothing truncates; the card grows and its lines stack.
-  - (e) The card is one element, read as the name, "On this phone", the plan status when there is one, and its hint "Opens Plan."; each group heading is a heading.
-  - (f) The card's value reads "Free" and "Your first two letters are free. Plus lets you keep adding letters." sits under it.
+  - (e) The card is one element, read as the name and "On this phone", not as a button; Plan is read as a button with its value; each group heading is a heading.
+  - (f) The Plan row reads "Plan", value "Free", and "Your first two letters are free. Plus lets you keep adding letters." Settings, Plan, Manage subscription reaches Apple's subscription page in the steps the Subscription Terms write.
 - **Record:** S1-95 rows (a) to (f) with the build number, profile, phone, iOS version and text size; screenshots with Asha only.
 - **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 6 where a result differs.
 
