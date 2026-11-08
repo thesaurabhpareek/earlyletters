@@ -63,6 +63,7 @@ export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 
 let activeTake: string | null = null;
 const finalizing = new Map<string, Promise<Draft | null>>();
+const takeListeners = new Set<(live: boolean) => void>();
 
 /** Every change goes through here, so capture/busy.ts (the transcription queue's pause, BL-572) always knows. */
 function setActiveTake(id: string | null): void {
@@ -73,6 +74,28 @@ function setActiveTake(id: string | null): void {
 /** The draft a live recording session owns (the launch sweep never touches it). */
 export function activeTakeId(): string | null {
   return activeTake;
+}
+
+/**
+ * Called with true when a take begins and false once it is finalized (kept) or abandoned. The app lock uses it so it
+ * never fires during a take, paused included, and applies once the take is safely kept (security.md section 2).
+ */
+export function onActiveTakeChange(listener: (live: boolean) => void): () => void {
+  takeListeners.add(listener);
+  return () => takeListeners.delete(listener);
+}
+
+function setActiveTake(id: string | null): void {
+  const was = activeTake !== null;
+  activeTake = id;
+  if (was === (id !== null)) return;
+  for (const l of [...takeListeners]) {
+    try {
+      l(id !== null);
+    } catch {
+      // A listener never stops a take from being kept.
+    }
+  }
 }
 
 function hex(buf: ArrayBuffer): string {

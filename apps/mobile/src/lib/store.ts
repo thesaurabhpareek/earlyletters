@@ -23,6 +23,7 @@
 import * as Crypto from 'expo-crypto';
 import type { DictionaryTerm, Edit, EditLevel } from '@scribe/core';
 import { keychainFloor, type LedgerDb } from './billing/letter-ledger';
+import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './capture/review-persist.logic';
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
@@ -456,7 +457,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).
-    if (e.kind === 'letter') ledger.recordKept(c, draftId, keychainFloor());
+    // A kept note counts like a letter (D-133); only a quiet-day mark is never asked.
+    if (e.kind !== 'not_much') ledger.recordKept(c, draftId, keychainFloor());
     // A held draft kept at last (Keep after Plus): the letter replaces its held row on the server (same id).
     dropQueuedHeldUpsert(c.db, draftId);
     enqueueEntryUpsert(c.db, draftId, ALL_GROUPS, enqueueContext(c));
@@ -821,19 +823,35 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
 }
 
 /**
- * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when `nowMs` is earlier than the latest recorded launch (a phone
- * clock moved back). When the build syncs, the server's clock rules every
- * letter it holds (spec 2.2 step 7), so only letters it never held, or no
- * longer holds, with nothing queued for them, are erased here, with nothing
- * sent; otherwise they would wait in Recently deleted forever. Returns how
- * many letters were erased.
+ * Launch purge: erases letters that have waited SHELF_DAYS or more. Deleting
+ * is a promise ("Kept here until <day>"), so the phone clock is never trusted
+ * further than it has been seen before (QE-05):
+ *
+ * - The purge counts time by the latest recorded launch, not by the clock now.
+ *   A clock that jumped ahead (a wrong date, a manual change, a restore onto
+ *   another phone) erases nothing more at that launch than the previous
+ *   launch would have; a letter is erased only once two launches agree it has
+ *   waited its 30 days. Failing toward keeping costs at most one launch of
+ *   delay.
+ * - With no readable record of an earlier launch (a first launch, or a damaged
+ *   setting) nothing is erased at that launch, because the clock has not been
+ *   seen before. The launch is recorded after the purge, so the next launch
+ *   purges as usual.
+ * - A clock earlier than the latest recorded launch (moved back) purges
+ *   nothing at that launch (DL-04). `recordLaunch` then stores that earlier
+ *   time, so a clock corrected after running ahead resumes purging at the next
+ *   launch instead of waiting for real time to pass the stored future date.
+ *
+ * When the build syncs, the server's clock rules every letter it holds (spec
+ * 2.2 step 7), so only letters it never held, or no longer holds, with nothing
+ * queued for them, are erased here, with nothing sent; otherwise they would
+ * wait in Recently deleted forever. Returns how many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && nowMs < last) return 0;
+  if (!Number.isFinite(last) || nowMs < last) return 0;
   const c = ctx();
-  const cutoff = new Date(nowMs - SHELF_MS).toISOString();
+  const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
   for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
@@ -841,11 +859,28 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   return erased;
 }
 
-/** Writes the launch time for the purge's clock guard. Never moves backwards. */
+/**
+ * Writes this launch's time for the purge's clock guard, after the purge. It
+ * follows the clock both ways: forward, so the next launch can confirm a jump;
+ * back, so a clock corrected after running ahead does not block the purge
+ * until real time catches up with a date it never reached (QE-05).
+ */
 export function recordLaunch(nowMs: number): void {
-  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && last >= nowMs) return;
+  if (!Number.isFinite(nowMs)) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
+/**
+ * The launch purge, then this launch's record, in that order. The purge reads
+ * the previous launch's stamp, so recording first would make every purge count
+ * time by the clock now and disable the QE-05 guard. `alsoErase` runs between
+ * the two (letters the server erased); its count is added. Returns how many
+ * letters were erased.
+ */
+export function purgeThenRecordLaunch(nowMs: number, eraseAudio: AudioEraser, alsoErase: () => number = () => 0): number {
+  const n = purgeExpired(nowMs, eraseAudio) + alsoErase();
+  recordLaunch(nowMs);
+  return n;
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────
@@ -971,6 +1006,35 @@ export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
  */
 export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): boolean {
   return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
+}
+
+/** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
+export function listWaitingForExport(): Draft[] {
+  return drafts.listForExport(ctx());
+}
+
+/**
+ * Review's own choices on this draft (v9; SR-C-06, CR-39): the fixes put back, the view, the person's words from
+ * Change words, and the fingerprint of the words they were made on. Null for a missing draft. Read on Review's mount
+ * (lib/capture/review-persist.logic `restorable`).
+ */
+export function getDraftReview(id: string): ReviewSaved | null {
+  const r = drafts.getReview(ctx(), id);
+  if (!r) return null;
+  return { putBack: parsePutBack(r.putBack), view: parseView(r.view), text: r.text, base: r.base };
+}
+
+/**
+ * Writes part of Review's choices on the draft, with `base` (wordsBase of the words Review shows). Local only: it
+ * never queues a sync op, never changes raw_transcript or typed_text, and emits nothing (no list shows these).
+ * Cleared at Keep (the draft row goes) and at Let it go (beginDiscard). False for a missing draft or one being let go.
+ */
+export function setDraftReview(id: string, base: string, patch: ReviewPatch): boolean {
+  return drafts.setReview(ctx(), id, base, {
+    putBack: patch.putBack === undefined ? undefined : JSON.stringify(patch.putBack),
+    view: patch.view,
+    text: patch.text,
+  });
 }
 
 /** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */

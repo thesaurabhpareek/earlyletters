@@ -224,12 +224,12 @@ describe('prompts', () => {
     // app: the public name, filled from packages/brand (never typed in in-app copy);
     // version, build: the app version row; date, reference, days, email: transactional emails;
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
-    // readme; cancelBy: trial end; coParent: deletion summary.
+    // readme; cancelBy: trial end; coParent: deletion summary; time: a reminder time ("8:30 PM").
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent',
+      'percent', 'format', 'cancelBy', 'coParent', 'time',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);
@@ -618,6 +618,70 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
+    // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
+    // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
+    // in-app-disclosures.md (experience-pass.test.ts pins them word for word); nothing else may join them.
+    const REGISTERED_UNTIL_COUNSEL = new Set(['en.plus.legal.renewAnnual', 'en.plus.legal.renewMonthly']);
+    const PERIOD = String.raw`(day|week|month|year)s?`;
+    const COUNT = String.raw`(a|an|one|two|three|four|six|seven|twelve|fourteen|thirty|first|\d+)`;
+    const TRIAL_LENGTH = new RegExp(
+      [
+        // "Free for 2 months", "free for a month"
+        String.raw`\bfree for ${COUNT}[- ]?${PERIOD}\b`,
+        // "a month free", "the first month free", "2 months free", "first 2 months free", "your first month is free",
+        // "a free month", "two free months", "7-day free trial", "14 days free"
+        String.raw`\b${COUNT}(\s+\d+)?[- ]+(free\s+)?${PERIOD}('s)?\s+(is\s+|are\s+)?(free|trial)\b`,
+        String.raw`\b${COUNT}\s+free\s+${PERIOD}\b`,
+        // "a free month" said any way, "free months"
+        String.raw`\bfree\s+${PERIOD}\b`,
+        // "Free trial: 1 month", "trial of 30 days", "free for one month"
+        String.raw`\b(free\s+)?trial\b[^.]{0,12}?\b${COUNT}[- ]?${PERIOD}\b`,
+      ].join('|'),
+      'i',
+    );
+    // The phrases it must catch (review A on #641), and what it must leave alone.
+    for (const phrase of [
+      'Free for 2 months, then $49.99 a year.',
+      'Try a month free.',
+      'Get the first month free.',
+      'A free month for new members.',
+      'Two free months with Plus Annual.',
+      'The first 2 months free.',
+      '3 months free.',
+      'Your first month is free.',
+      'Free trial: 1 month.',
+      'A 7-day free trial.',
+      '14 days free.',
+      'Free for one month.',
+    ]) expect(phrase, phrase).toMatch(TRIAL_LENGTH);
+    for (const fine of [
+      'Your first two letters are free.',
+      'Reading, listening and your copy stay free.',
+      'Every letter and recording, free, any time.',
+      'Plus is on, free until {date}.',
+      'Asha is 3 months old.',
+    ]) expect(fine, fine).not.toMatch(TRIAL_LENGTH);
+    expect(offenders(IN_APP.filter((l) => !REGISTERED_UNTIL_COUNSEL.has(l.path)), TRIAL_LENGTH)).toEqual([]);
+    // The rule bites: the retired lines would fail it.
+    for (const k of REGISTERED_UNTIL_COUNSEL) expect(IN_APP.find((l) => l.path === k)?.text ?? '', k).toMatch(TRIAL_LENGTH);
+    // The dead line PL-8 retires stays gone.
+    expect((features.billing.keepGate as Record<string, unknown>).plusIsOn).toBeUndefined();
+    // F5: one setup line, word for word, at setup and on Plan.
+    const m = features.billing.membership;
+    expect(m.line).toBe('Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.');
+    expect(en.onboarding.welcome.freeLine).toBe(m.line);
+    expect(features.billing.keepGate.secondFreeNote).toBe('That was your second free letter. Whenever you are ready, Plus keeps the book growing.');
+    // No count, countdown, price or trial wording in any F5 line (CDesO-6: Free, Plus, Plus, shared).
+    const f5 = [...leaves(m, 'membership'), { path: 'keepGate.secondFreeNote', text: features.billing.keepGate.secondFreeNote }];
+    // Only the {date} placeholder itself is set aside (its value is a calendar date on Plan); a digit anywhere else,
+    // even in a line that also holds {date}, still fails.
+    const withoutDate = f5.map((l) => ({ ...l, text: l.text.split('{date}').join('') }));
+    expect(offenders(withoutDate, /\d|\$|\bprice\b|free trial|free months?|\b(left|remaining|until)\b|\{(?!date\})[^}]*\}/i)).toEqual([]);
+    expect(f5.filter((l) => l.text.includes('{date}')).map((l) => l.path)).toEqual(['membership.ended']);
+    expect(Object.values(m.status)).toEqual(['Free', 'Plus', 'Plus, shared']);
+  });
+
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
     // 2.2 covers "Demos, betas, and trial versions", so the listing also avoids the words that mean the same.
     // The in-app "early version" note is the likeliest one to be pasted in by mistake.
@@ -931,9 +995,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
   });
 
+  // Deliberate rule change, founder decision D-139 (positioning A, 1 Nov 2026): the descriptor is now "letters to your
+  // child, in your own words and voice", and the old one ("the baby memory book you fill by talking") is retired.
   it('uses one descriptor', () => {
-    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
-    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}: letters to your child, in your own words and voice.`);
+    expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
+    expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
 });
 

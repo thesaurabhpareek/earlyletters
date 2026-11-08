@@ -32,6 +32,7 @@ const { configureLedgerStorage } = await import('../src/lib/billing/letter-ledge
 const { allowanceSourceFor, isAlphaBuild, plusLineFor } = await import('../src/lib/billing/alpha');
 const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
 const { planScreen } = await import('../src/components/settings/plan.logic');
+const { planRow } = await import('../src/components/settings/settings-home.logic');
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -165,7 +166,15 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
     expect(plusLineFor(true, en.settingsHome.planHelp)).toBe(NOTE);
     expect(plusLineFor(false, en.settingsHome.planHelp)).toBe(en.settingsHome.planHelp);
     expect(read('src/app/onboarding.tsx')).toMatch(/plusLineFor\(PLUS_ALPHA, o\.welcome\.freeLine\)/);
-    expect(read('src/app/settings/index.tsx')).toMatch(/subtitle=\{plusLineFor\(PLUS_ALPHA, h\.planHelp\)\}/);
+    // F5 (PL-3): the Plan row reads planRow, which gives the alpha note and no plan value in alpha.
+    expect(read('src/app/settings/index.tsx')).toMatch(/planRowFor\(plan, new Date\(\)\.toISOString\(\), PLUS_ALPHA\)/);
+    expect(read('src/app/settings/index.tsx')).toMatch(/subtitle=\{planRowView\.subtitle\} value=\{planRowView\.value\}/);
+    for (const plusOn of [false, true]) {
+      for (const familyShared of [false, true]) {
+        expect(planRow({ alpha: true, plusOn, familyShared })).toEqual({ subtitle: NOTE, value: undefined });
+      }
+    }
+    expect(planRow({ alpha: false, plusOn: false, familyShared: false })).toEqual({ subtitle: en.settingsHome.planHelp, value: 'Free' });
   });
 
   it('Keep sheet (reached in alpha only past 100 letters): the alpha note as its body, no store and no Plus wording', () => {
@@ -196,11 +205,12 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
     for (const st of states) {
       for (const storeSupport of ['available', 'needs_ios_17', 'unsupported'] as const) {
         const s = planScreen({ ...st, storeSupport, noteLines: [], longDate, alpha: true } as Parameters<typeof planScreen>[0]);
-        expect(s).toEqual({ status: null, seePlans: { kind: 'unavailable', title: NOTE }, promise: null, manage: false, redeem: false, alpha: true });
+        expect(s).toEqual({ status: null, seePlans: { kind: 'unavailable', title: NOTE }, promise: null, freeLine: null, includes: null, manage: false, redeem: false, alpha: true });
       }
     }
     const storeBuild = planScreen({ ...states[0], storeSupport: 'available', noteLines: [], longDate } as Parameters<typeof planScreen>[0]);
-    expect(storeBuild).toMatchObject({ seePlans: { kind: 'open', title: billingCopy.plan.seePlans }, promise: billingCopy.store.promise, redeem: true, alpha: false });
+    // The store build, Plus never had: the F5 line is the footer in place of the promise (F5, PL-4).
+    expect(storeBuild).toMatchObject({ seePlans: { kind: 'open', title: billingCopy.plan.seePlans }, promise: null, freeLine: billingCopy.membership.line, redeem: true, alpha: false });
   });
 
   it('Settings, Plan in alpha renders the note row alone: no purchase, restore, redeem, manage or refund control, no payment line', () => {

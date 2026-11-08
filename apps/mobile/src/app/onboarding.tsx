@@ -38,11 +38,13 @@ import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, latestDueDate, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { LockOffer } from '@/components/app-lock/lock-offer';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
+import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
 import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
@@ -426,8 +428,7 @@ function FirstRun() {
                               value={expecting ? dueDate : birthday}
                               onChange={expecting ? setDueDate : setBirthday}
                               startISO={today}
-                              min={expecting ? today : undefined}
-                              max={expecting ? latestDueDate(today) : today}
+                              {...dateRange(expecting ? 'due' : 'born', today)}
                             />
                           </View>
                         </View>
@@ -510,6 +511,9 @@ function FirstRun() {
                   <View className="self-stretch">
                     <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
                   </View>
+                  {/* The app lock, offered once with two equal buttons and off until turned on (F1, CPO-2). Hidden on a
+                      phone with no passcode (components/app-lock/lock-offer.tsx). */}
+                  <LockOffer child={child} />
                 </>
               )}
             </Animated.View>
