@@ -83,15 +83,15 @@ function useBackupStatus(): string | null {
 }
 
 /**
- * "Word for word" (D-086): the default for new letters. On: small fixes, marked, each one tappable and
- * reversible. Off: new letters open as "Exactly as said". Review's own control still changes any single letter.
+ * The default for new letters (D-086). On: small fixes, marked, each one tappable and reversible. Off: new letters
+ * open as "Exactly as said". The label names what On means and the section footer names both choices, so the
+ * label never flips with the value (founder, build 1). Review's own control still changes any single letter.
  */
 function WordForWordSwitch() {
   const [fixes, setFixes] = useState(() => viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)) === 'fixes');
   return (
     <ToggleRow
-      title={copy.settings.tidyLabel}
-      description={fixes ? copy.settings.tidyOn : copy.settings.tidyOff}
+      title={copy.settings.tidyOn}
       value={fixes}
       onValueChange={(on) => {
         setFixes(on);

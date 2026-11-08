@@ -31,8 +31,8 @@ export const en = {
     name: "{app}",
     category: brand.category,
     tagline: brand.tagline,
-    // One descriptor everywhere (BRAND.md glossary).
-    oneLine: "{app}, the baby memory book you fill by talking.",
+    // One descriptor everywhere (BRAND.md glossary; positioning A, D-139).
+    oneLine: "{app}: letters to your child, in your own words and voice.",
   },
 
   common: {
@@ -66,8 +66,8 @@ export const en = {
     childFallback: "your child",
     welcome: {
       title: "{app}",
-      subtitle: "The baby memory book you fill by talking.",
-      body: "A few words at a time, in your own voice. Kept for {child} to read and hear for years.",
+      subtitle: "Letters to your child, in your own words and voice.",
+      body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
       freeLine: "Your first two letters are free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
@@ -748,11 +748,12 @@ export const en = {
     birthdayLabel: "Birthday",
     dictionaryLabel: "Names and words",
     dictionaryHelp: "Spelled your way, every time.",
-    // D-074: the edit feature is "Word for word"; its changes are small fixes, marked and undoable.
-    tidyLabel: "Word for word",
+    // D-074: the edit feature's changes are small fixes, marked and undoable. The Settings switch is labelled with
+    // what On means, `tidyOn` (founder, build 1: "Word for word" read as the opposite of what On does), and the
+    // footer names both choices. `tidyOff` names the Off choice and the 1 Dec two-choice picker.
     tidyOn: "Small fixes, marked",
     tidyOff: "Exactly as said",
-    tidyHelp: "Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words.",
+    tidyHelp: "With this on, new letters open with small fixes marked, and you can put any of them back. With it off, they open Exactly as said, with every um and false start. Either way, we never rewrite your words.",
     // D-085 (amends D-073): v1.0 has no backup of our own; onPhone* is the honest line. Our encrypted backup,
     // with its strings, returns with sign-in and a server (v1.1).
     recordings: {
@@ -1263,6 +1264,24 @@ export const en = {
       },
     ],
     emergency: "If you or your baby are in danger right now, call 911.",
+  },
+
+  // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
+  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  helpLinks: {
+    // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
+    callHint: "Starts a call.",
+    callHintNoPhone: "Shows the number to call from a phone or copy.",
+    // When this device cannot call: the number to copy.
+    noCallTitle: "Call from a phone",
+    noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    copyNumber: "Copy number",
+    numberCopied: "Number copied",
+    // When Mail cannot open: our address to copy.
+    noMailTitle: "Write to us",
+    noMailBody: "Mail did not open on this device. Copy our address and write from any email app.",
+    copyAddress: "Copy address",
+    addressCopied: "Address copied",
   },
 
   // Calm privacy reassurance (D-061). One promise, said the same way wherever a parent might
