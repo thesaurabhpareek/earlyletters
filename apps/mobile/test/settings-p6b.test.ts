@@ -183,7 +183,9 @@ describe('[S34] Reminders', () => {
     expect(remindersTurnedOnInSettings(null, 'granted', prefs(true))).toBe(false);
     expect(remindersTurnedOnInSettings('denied', 'granted', prefs(false))).toBe(false);
     const screen = code('app/settings/reminders.tsx');
-    expect(screen).toMatch(/toast\.show\(\{ message: s\.onToast \}\)/);
+    // The toast says "Reminders are on." and, since the inline page (reminders-settings.md 2), the Next line after it
+    // (turnOnOutcome; test/reminders-inline.test.ts pins the words).
+    expect(screen).toMatch(/toast\.show\(\{ message: turnOnOutcome\(\{ permission: p, scheduled: \{ ok: true \} \}/);
     expect(screen).toMatch(/LinearTransition\.duration\(tokens\.motion\.enter\.durationMs\)/);
     expect(screen).toMatch(/motion\.reduced \? undefined : LinearTransition/);
     expect(screen).toMatch(/<WarningCircleIcon size=\{20\} color=\{c\.caution\}/);
