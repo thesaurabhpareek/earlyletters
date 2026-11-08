@@ -1,16 +1,18 @@
 import Constants from 'expo-constants';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Linking, ScrollView, View } from 'react-native';
 import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
-import { accountSubtitle } from '@/components/settings/settings-home.logic';
+import { accountSubtitle, planRow } from '@/components/settings/settings-home.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
-import { PLUS_ALPHA, plusLineFor } from '@/lib/billing/alpha';
+import { getPlan, subscribePlan } from '@/lib/billing';
+import { plusOn } from '@/lib/billing/plan.logic';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
@@ -76,12 +78,16 @@ export default function Settings() {
   const version = Constants.expoConfig?.version ?? '';
   const build = Constants.expoConfig?.ios?.buildNumber ?? '';
   const versionValue = build ? fill(h.versionValue, { version, build }) : version;
+  // F5, PL-3: Free, Plus or Plus, shared (store build); the alpha note only in an alpha build (#552). The cached plan
+  // startPlus() keeps current: this row reads it and never asks StoreKit itself.
+  const plan = useSyncExternalStore(subscribePlan, getPlan, getPlan);
+  const planRowView = planRow({ alpha: PLUS_ALPHA, plusOn: plusOn(plan, new Date().toISOString()), familyShared: plan.details.ownership === 'familyShared' });
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <ListSection title={capabilities.signIn ? h.sections.account : undefined}>
         {capabilities.signIn ? <ListRow title={h.accountLabel} subtitle={account} trailing="chevron" onPress={go(ROUTES.account)} /> : null}
-        <ListRow title={h.planLabel} subtitle={plusLineFor(PLUS_ALPHA, h.planHelp)} trailing="chevron" onPress={go(ROUTES.plan)} />
+        <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
       </ListSection>
 
       <ListSection title={copy.children.settings.sectionTitle}>

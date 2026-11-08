@@ -618,6 +618,28 @@ describe('brand name and v1.0 claims', () => {
     expect(offenders(keepAndPlan, /\b(we will|will always) remind\b|\bguarantee/i)).toEqual([]);
   });
 
+  it('[F5, PL-8] no app string names a trial length; the F5 lines say what is true and count nothing', () => {
+    // D-083: trial eligibility varies, so "a month free" can be false; Apple's sheet shows the trial to those it applies to.
+    // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
+    // in-app-disclosures.md (experience-pass.test.ts pins them word for word); nothing else may join them.
+    const REGISTERED_UNTIL_COUNSEL = new Set(['en.plus.legal.renewAnnual', 'en.plus.legal.renewMonthly']);
+    const TRIAL_LENGTH = /\b(free for|\d+|one|two|three|seven|fourteen)[- ]?(\d+ )?(day|week|month|year)s?(?:'s)? (free|trial)\b|\bfree for (a|an|one|two|\d+) (day|week|month|year)s?\b|\b(free|trial) (for )?(a|an|one|two|\d+) (day|week|month|year)s?\b/i;
+    expect(offenders(IN_APP.filter((l) => !REGISTERED_UNTIL_COUNSEL.has(l.path)), TRIAL_LENGTH)).toEqual([]);
+    // The rule bites: the retired lines would fail it.
+    for (const k of REGISTERED_UNTIL_COUNSEL) expect(IN_APP.find((l) => l.path === k)?.text ?? '', k).toMatch(TRIAL_LENGTH);
+    // The dead line PL-8 retires stays gone.
+    expect((features.billing.keepGate as Record<string, unknown>).plusIsOn).toBeUndefined();
+    // F5: one setup line, word for word, at setup and on Plan.
+    const m = features.billing.membership;
+    expect(m.line).toBe('Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.');
+    expect(en.onboarding.welcome.freeLine).toBe(m.line);
+    expect(features.billing.keepGate.secondFreeNote).toBe('That was your second free letter. Whenever you are ready, Plus keeps the book growing.');
+    // No count, countdown, price or trial wording in any F5 line (CDesO-6: Free, Plus, Plus, shared).
+    const f5 = [...leaves(m, 'membership'), { path: 'keepGate.secondFreeNote', text: features.billing.keepGate.secondFreeNote }];
+    expect(offenders(f5, /\d|\$|\bprice\b|free trial|free months?|\b(left|remaining)\b/i).filter((o) => !o.includes('{date}'))).toEqual([]);
+    expect(Object.values(m.status)).toEqual(['Free', 'Plus', 'Plus, shared']);
+  });
+
   it('[K-13] has no beta wording in the store listing (D-060, App Review 2.2)', () => {
     // 2.2 covers "Demos, betas, and trial versions", so the listing also avoids the words that mean the same.
     // The in-app "early version" note is the likeliest one to be pasted in by mistake.
