@@ -13,7 +13,7 @@
  *
  * "Another thought" passes the prompt that was on screen as an exclusion, so a press never shows the same one again.
  */
-import { ageOn, isBeforeBirth, type SelectInput } from '@scribe/core';
+import { ageOn, isBeforeBirth, selectPrompt, type Prompt, type SelectInput } from '@scribe/core';
 import { copy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 
@@ -47,6 +47,10 @@ export function tonightPromptInput(a: {
   recentKeys: string[];
   shuffle: number;
   leftKey: string | null;
+  /** Every prompt already shown in this sheet (Write), also left out; Tonight passes none. */
+  shownKeys?: readonly string[];
+  /** Keeps Write's draws apart from Tonight's for the same day and press count. */
+  seedTag?: string;
 }): SelectInput {
   const stage = tonightStage(a.birthday, a.today);
   return {
@@ -57,7 +61,38 @@ export function tonightPromptInput(a: {
     role: 'parent',
     together: false,
     recentKeys: a.recentKeys,
-    seed: `${a.today}:${a.shuffle}`,
-    excludeKeys: a.leftKey ? [a.leftKey] : [],
+    seed: a.seedTag ? `${a.today}:${a.seedTag}:${a.shuffle}` : `${a.today}:${a.shuffle}`,
+    excludeKeys: [...new Set([...(a.leftKey ? [a.leftKey] : []), ...(a.shownKeys ?? [])])],
   };
+}
+
+/**
+ * "Another thought" on Write (engagement.md section 3, Option A; BL-E1). The same input and the same selectPrompt as
+ * Tonight, so the two never disagree about what fits this child; every line comes from the hand-written library.
+ *
+ * Every prompt already shown in this sheet is left out of the next draw, so nothing comes back until the pool is
+ * used up. When every one that fits has been shown, it quietly starts over (nothing ever says "no more"), still never
+ * showing the prompt that is on screen. No counter and no limit. `shown` is the keys in the order they were shown,
+ * the one on screen last; the result's `shown` is the list to keep for the next press.
+ */
+export function anotherThought(
+  a: { birthday: string | null; today: string; daysSinceLastEntry: number | null; recentKeys: string[]; shown: readonly string[]; press: number },
+  library: readonly Prompt[],
+): { prompt: Prompt; shown: string[] } {
+  const onScreen = a.shown.length ? a.shown[a.shown.length - 1] : null;
+  const base = { birthday: a.birthday, today: a.today, daysSinceLastEntry: a.daysSinceLastEntry, recentKeys: a.recentKeys, shuffle: a.press, leftKey: onScreen, seedTag: 'write' };
+  const next = selectPrompt(tonightPromptInput({ ...base, shownKeys: a.shown }), library);
+  if (!a.shown.includes(next.key)) return { prompt: next, shown: [...a.shown, next.key] };
+  // Every prompt that fits has been shown: start over, leaving out only the one on screen.
+  const again = selectPrompt(tonightPromptInput(base), library);
+  return { prompt: again, shown: onScreen && onScreen !== again.key ? [onScreen, again.key] : [again.key] };
+}
+
+/**
+ * Whether Write offers "Another thought" (engagement.md section 3, "Steps aside"): only for a new letter that opened
+ * with a prompt, and only while the page is empty. A letter already under way (a draft, or a recording's words being
+ * typed from Review) keeps the question it was started with. Hidden, not moved: the screen keeps its space.
+ */
+export function anotherThoughtShown(a: { hasPrompt: boolean; continuingDraft: boolean; empty: boolean }): boolean {
+  return a.hasPrompt && !a.continuingDraft && a.empty;
 }

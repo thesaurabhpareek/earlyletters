@@ -19,7 +19,7 @@ import { localDeletionAllowed } from '@/lib/store';
 const PAGE = 'gap-7 px-5 pb-12 pt-4';
 
 /**
- * Settings > Your data > Erase everything on this phone (design 2.12; BL-387; F17 6.2 F; DATA-REQ-024, F14-REQ-026).
+ * Settings > Your letters > Erase everything on this phone (design 2.12; BL-387; F17 6.2 F; DATA-REQ-024, F14-REQ-026).
  * Signed out only. Step 1 says what is erased and what stays, with Export your book first. Step 2 is the system
  * confirm (wipe.logic.ts eraseConfirmDialog: Keep everything first as cancel, "Erase" second and destructive, never
  * the default) with a warning haptic. Then the Erasing screen, with no way out until the erase ends: no back button,
