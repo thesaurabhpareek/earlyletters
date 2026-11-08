@@ -528,3 +528,14 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog section and the two standards in one revert.
 - Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma
+
+### CR-52 The three consent-record PRs: rerun the database job, merge in order after the go/no-go (8 Nov 2026, Karma via the approvals thread session)
+- Question: #634 (BL-577), #636 (BL-578) and #637 (BL-585) wait on the founder's CCO approval lines, and two of them failed the database job. What does each need, and in what order do they land?
+- Tier and type: T1 for the rerun and the order; the merges themselves stay T2 (database, D-041); clear.
+- Options considered: patch the database workflow; rerun the failed job and change nothing; hold all three until after the go/no-go and do nothing today; post only the #634 line now.
+- Ruling: rerun, no code change. The "supabase start, reset, lint" job on #634 (head 786ef15d) and #636 (head e484c84b) failed inside supabase/setup-cli when its Bun download from github.com returned HTTP 504 three times (job logs 128682204059 and 128683300289). No migration ran, so the job says nothing about the SQL. The same job passed on #637 (head dd95a923), which has the same setup. The three CCO lines can be posted now on the current heads, then `karma:approved` added to each so the fence re-runs (a comment alone does not re-run it, compliance-fence.yml lines 21 to 23). Merge order is #634, #636, #637, after the build 2 go/no-go (CR-47: BL-577 is S1 and first after it). All three take APPLY.md file numbers 29 to 31, so #636 and #637 will need a rebase after #634; that moves their heads, voids their CCO lines and reviews, and the compliance session re-issues the lines.
+- Why: the failure is a third-party download timeout, not this repo (principle 5, read from the logs); posting on the current heads costs three comments and records the CCO-13 review where the fence reads it. Still needed before any merge, on the final head: a red-team review, two counted reviews, the founder's `approve-migration` label (D-041) and the founder naming the PR and sha in chat. The DATA_CLASSIFICATION rows go to `docs/legal/` (D-125), and hosted apply and `app.consent_fields_required` stay founder steps; I hold those for merge time, since nothing is lost by waiting.
+- Door: two-way.
+- Way back: a rerun changes nothing; a CCO line voids itself on the next push; the label is removed in one call.
+- Revisit when: the rerun fails again at the same step (then pin or cache Bun as a proposal under docs/ops/proposed/, no .github edit before 9 Nov), or a head moves.
+- Note on the number: next-id.mjs does not support CR yet; CR-51 is the highest in open PRs (#613), and the Project docs infra/cto-rulings-* were not read in this session. Karma
