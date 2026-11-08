@@ -226,22 +226,23 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Update:** If step 3 says yes: open an issue for `packs/expo-adapter.ts` `toConnection` (a Wi-Fi path that also uses an "other" interface reads `UNKNOWN`). If step 5 fails: STALL_MS and WASTED_CHUNKS_PER_RUN in `packs/engine.ts`.
 
 ### S1-15b TF1-WAIT First-run wait: the bar, the "start now" line and VoiceOver (PR #626, founder's TestFlight report)
-- **Steps:** Fresh install, finish first run to "The book is open.", tap Download on Wi-Fi, keep the card on screen. Phones: iPhone SE (3rd generation) and one Pro Max size.
+- **Needs:** a TestFlight build of the `testflight` profile (servers off, English speech model downloads on first run); a throttled link so the download lasts several minutes (Network Link Conditioner "3G" profile, or a 1 Mbps profile on the router); iPhone SE (3rd generation, `se3`) and one larger-screen iPhone. Steps 3 to 6 each need a download still running, so start each of them on the throttled link.
+- **Steps:** Fresh install, finish first run to "The book is open.", tap Download, keep the card on screen.
   1. Watch the first minute of the download.
-  2. Settings > Accessibility > Motion > Reduce Motion on; repeat step 1 (a second fresh install, or after Remove in Storage).
-  3. VoiceOver on; focus the card and leave it for 2 minutes.
-  4. Settings > Display and Text Size > Larger Text, largest accessibility size (AX5); return to the card.
-  5. Turn Wi-Fi off mid-download; then on.
-  6. With the download still running, tap "Write the first one", type a line, then Speak and record 20 s; Finish and Keep.
+  2. A second fresh install (the card appears only at the end of first run, so Remove in Storage does not bring it back): Settings > Accessibility > Motion > Reduce Motion on; repeat step 1.
+  3. A third fresh install: VoiceOver on before tapping Download; then focus the card, swipe to the bar and leave it for 2 minutes.
+  4. A fourth fresh install: Settings > Accessibility > Display & Text Size > Larger Text, Larger Accessibility Sizes, the largest size (AX5), before tapping Download; look at the card while the download runs.
+  5. Wi-Fi hold: on a running download, turn Wi-Fi off (cellular only, "Use mobile data" off), wait a minute, turn it on. Stop: on a running download, Settings > Storage, cancel the download, then go back to the card.
+  6. Last, because it leaves the card: with a download still running (start again if needed), tap "Write the first one"; tap Type, type a line, Save. Then tap Speak and record 20 s; Finish and "Keep it". Then open the Book and Review and look for the wait line.
 - **Expected:**
-  1. Under the card's line: "You can start now. Your voice is kept, and the words follow." The bar's track is visible from the start; the fill grows smoothly with the percent. Below 1% no number shows and the bar may look empty: that is expected (the fill is the true fraction, a fraction of a point wide). From 1% the fill is visible and moves.
+  1. Under the card's line: "You can start now. Your voice is kept, and the words follow." At "Waiting to start" no bar is drawn. Once bytes move the bar appears and its fill grows smoothly with the percent. Below 1% no number shows and the fill is a sliver (the true fraction, a fraction of a point wide): that is expected. From 1% the fill is clearly visible and moves.
   2. With Reduce Motion on, the fill steps instead of gliding.
   3. VoiceOver says the state once when it changes (for example "Downloading", then "Almost ready. Checking the download."), never each new percent. Focusing the bar reads its label and, from 1%, the percent.
-  4. At AX5 the "start now" line wraps in full, with nothing cut off, and the card scrolls; the pinned button stays reachable.
-  5. Wi-Fi off: the Wi-Fi wait line, and the "start now" line stays. A stop shows "The download stopped." with its reason and Try again once; the "start now" line is hidden while stopped.
-  6. Typing and recording both work while the download runs. The recorded letter waits for its words and gets them once the download finishes.
+  4. At AX5 the "start now" line wraps in full, with nothing cut off, and the card scrolls; the pinned button stays reachable. The footnote is visible only while the words are not here yet, so check it during the download.
+  5. Wi-Fi off: the Wi-Fi wait line ("Waits for Wi-Fi"), the "start now" line stays, and the download carries on by itself when Wi-Fi returns; this is a hold, not a stop. Cancel from Storage: the card shows "Paused" with Try again; with VoiceOver on, the change is announced once with its Try again line. A failure stop ("The download stopped." with its reason and Try again) is not something a tester can make on demand; it is covered by S1-15a step 5. The "start now" line is hidden while stopped.
+  6. Typing and recording both work while the download runs. The recorded letter waits for its words and gets them once the download finishes. Book and Review show their wait line, never 0%.
 - **Record:** S1-15b row: each step pass or fail, phone model and iOS version (no letter text). Step 1: the percent at which the fill first became visible.
-- **Update:** If step 4 clips: `components/onboarding/speech-consent-card.tsx` footnote. If step 6 fails: the "start now" line is not true on this build; remove `speechConsentCopy.startNow` from the card before the next build.
+- **Update:** If step 4 clips: `apps/mobile/src/components/speech/speech-consent-card.tsx` footnote. If step 6 fails: the "start now" line is not true on this build; remove `speechConsentCopy.startNow` from the card before the next build.
 
 ### S1-16 Language packs on demand (decision 15, D-065)
 - **Steps:** Settings > Spoken language: add Portuguese. Then Storage: only `text-rules.pt` is new. Add Hindi as the primary: its text pack plus its speech model (the Hindi small model once hosted, else the shared one). Turn on the `packDownloads` kill switch in the staging config (RELEASE.md 9) and add French. Remove a pack in Storage.
