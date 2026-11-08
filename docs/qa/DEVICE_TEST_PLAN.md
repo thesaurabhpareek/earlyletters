@@ -542,6 +542,507 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 
 ---
 
+## Part 1b. 1 Dec and 1.0.1: account and experience items (S1-50 to S1-74)
+
+Written 1 to 8 Nov 2026 by `qa` from the founder's decisions F1 to F11 and PL-1 (`infra/exec-rulings-2026-11-01-account-security.md`; the two council files of 1 Nov, account and experience) and the release map in the experience council's Part 3. Nothing here is built yet: every item is **planned** and runs on the first build that carries the change. The ids start at S1-50 so they cannot meet the S1-38 to S1-4x numbers other branches are adding at the same time.
+
+Every item lists its **Owner** (the agent that builds the change and fixes a failure) and its **Basis** (the decision codes and requirement ids it proves). Automatable halves of the same items are rows in `docs/qa/release-test-catalog.csv` (areas Lock, Before you begin, Where letters live, Your words, Erase, Settings 1 Dec, Reminders 1 Dec, Privacy page, Helplines, Held letters, Plus lines, Memory card, Motion, Prompts, and the rows whose area ends in 1.0.1); each item below names its rows.
+
+Shared setup for every item: the fictional family only (Asha, Mama, Papa); a production-profile build unless the item says otherwise; run on the SE 3 and one current phone (REF), plus the SE 2 (Touch ID, D1 in RELEASE_TEST_PLAN section 3) where an item says Touch ID. "The matrix" means: VoiceOver on (the S1-23 rules: focus, labels, escape), text size AX5, Reduce Motion on, Dark appearance, and Increase Contrast once. "Low storage" means the phone filled as in S1-14 (under 1 GB, then under 50 MB). "Offline" means airplane mode with Wi-Fi off.
+
+### 1 Dec: account items (F1)
+
+If counsel has not approved the Face ID purpose string by Fri 20 Nov, the lock moves to the first 1.0.x and S1-50 to S1-55 run on that build instead (F1 default). S1-56 to S1-61 ship on 1 Dec either way.
+
+### S1-50 App lock: the offer, the page, and when it locks (1 Dec; F1, CPO-2, CISO-1, CDesO-1; F17-REQ-008, F17-REQ-010, F17-REQ-011)
+- **Owner:** mobile (lock), security (policy), content (lines).
+- **Needs:** a build with the lock module; a phone with Face ID and a passcode; the SE 2 or SE 3 for Touch ID; a third phone, or the same phone later, with no passcode set.
+- **Steps:**
+  - (a) Fresh install. Pass Before you begin, set up Asha's book, reach "The book is open". Read the lock offer. Tap Not now. Open Settings: read the App lock row on home and in Privacy.
+  - (b) Fresh install again; at the offer tap Turn on Face ID. Answer the system Face ID permission alert with Allow. Repeat on another install with Don't Allow.
+  - (c) Settings, App lock: turn the switch off, then on. Choose each "Ask again after" value.
+  - (d) Grace, lock on, value "After 1 minute": send the app to the background for 50 s and return; then for 70 s and return. Value "Immediately": background for 2 s and return. Value "After 5 minutes": 4 min 50 s, then 5 min 10 s. Force-quit and cold start under each value.
+  - (e) Inactive never locks, value Immediately: pull down Control Centre and the notification shade; take a screenshot; let a call banner come in and decline it; open the share sheet from Export and leave it open for 2 minutes.
+  - (f) No passcode set: run (a) on the phone with no passcode. Then open Settings, App lock.
+  - (g) Touch ID (SE): run (a) and (b).
+  - (h) The matrix, on the offer card and the App lock page.
+- **Expected:**
+  - (a) The offer shows once, after "The book is open", never before the first letter path. Turn on and Not now have equal weight (same size and style). After Not now nothing is stored as a refusal, the lock is off, and the App lock row reads Off in both places. One setting: changing it in one place changes the other (CDesO-1, tie-break 6).
+  - (b) Allow: success haptic, the toast "Face ID lock is on." and the lock is on. Don't Allow: the lock is on with the passcode, and the line "Face ID is off for {app} in iPhone Settings, so your passcode opens the book." shows ({app} is the name from `packages/brand`). No error haptic.
+  - (c) Turning on and turning off each ask the device first (system sheet with "Confirm it is you to turn on the lock" or "Confirm it is you to turn off the lock"). Cancel leaves the switch where it was. The choices show only while the lock is on; "After 1 minute" is the default.
+  - (d) 50 s: no cover. 70 s: cover. Immediately: cover on any return from the background. 4 min 50 s: no cover; 5 min 10 s: cover. Cold start: cover under every value. No letter, name or child row is drawn before the device says yes (F17-REQ-008).
+  - (e) None of these locks the app; the share sheet stays usable for the whole 2 minutes.
+  - (f) No offer card at all. The App lock switch is disabled with "This iPhone has no passcode. Set one in iPhone Settings, then turn on the lock here."
+  - (g) Every line says Touch ID, not Face ID.
+  - (h) Nothing truncated at AX5 (buttons stack, value under title). VoiceOver reads the offer title first, both buttons as buttons, the switch with its state and the hint "Asks you to confirm it is you first."; each grace choice reads selected or not. Reduce Motion: the card arrives by fade. Dark: every control edge visible.
+- **Record:** S1-50 rows (a) to (h): phone, iOS, text size, VoiceOver yes or no, the measured seconds in (d), pass or fail.
+- **Catalog:** RT-LOCK-01 to 06, RT-LOCK-10, RT-LOCK-13.
+
+### S1-51 Lock screen and the app switcher cover (1 Dec; F1, CISO-1; F17-REQ-008, F17-REQ-009)
+- **Owner:** mobile, design-systems.
+- **Needs:** S1-50 done with the lock on, value Immediately; at least 3 kept letters, one private letter, one draft typed on Write.
+- **Steps:**
+  - (a) On each of Tonight, an open letter, Review with words, Write with typed words, the Book, Read together and Settings: swipe up to the app switcher and hold. Take a screenshot of the switcher each time.
+  - (b) Return from the switcher. Watch the Face ID sheet. Succeed. Time from success to the screen (screen recording at 60 fps).
+  - (c) Return and Cancel the system sheet. Then tap Unlock. Then cancel again and wait 30 s.
+  - (d) The matrix on the lock screen. With VoiceOver, swipe through every element of the cover.
+  - (e) Search Spotlight for "Asha" and for a word from a letter while the app is locked.
+- **Expected:**
+  - (a) Every switcher card shows the cover: the background and the mark only, no letter words, no child name, no age line. It is drawn at once (no fade a snapshot could catch). F17-REQ-009.
+  - (b) The system sheet appears once on its own. Content within 1 s of success; the cover fades out over `fadeMs`; no haptic.
+  - (c) After Cancel only Unlock and the cover remain; the system sheet never reopens by itself, never loops. Unlock opens it again.
+  - (d) VoiceOver: focus on Unlock; hint "Opens the book with Face ID."; the cover reads only the app name. AX5: Unlock fully visible. Reduce Motion: no movement, the fade only. Dark and light: the mark readable, Unlock contrast passes.
+  - (e) Nothing from the app (F17-REQ-007).
+- **Record:** S1-51 rows (a) to (e) with the switcher screenshots (Asha only) and the measured time in (b).
+- **Catalog:** RT-LOCK-02, RT-LOCK-11, RT-LOCK-13.
+
+### S1-52 Face ID fallbacks: lockout, biometrics changed, passcode removed (1 Dec; F1, CISO-1; F17-REQ-008)
+- **Owner:** mobile, security.
+- **Needs:** S1-50 with the lock on; a second face (Alternate Appearance) or a second finger available to enrol; permission to remove the passcode for a few minutes on a test phone.
+- **Steps:**
+  - (a) Fail Face ID on purpose (cover the camera, or another face) until iOS asks for the passcode. Enter it.
+  - (b) Lockout: keep failing until biometrics are locked out (iOS then needs the passcode for Face ID in general).
+  - (c) Biometrics changed: in iOS Settings set up an Alternate Appearance (or add a finger on Touch ID). Return to the app.
+  - (d) Face ID permission turned off for the app in iOS Settings, Face ID and Passcode, Other Apps, after the lock is on. Return.
+  - (e) Passcode removed: iOS Settings, Turn Passcode Off. Return to the app. Then set a passcode again and return.
+  - (f) VoiceOver on during (a) and (e).
+- **Expected:**
+  - (a) The system passcode screen appears; the app never shows a PIN of its own. Entering it opens the book.
+  - (b) The same: passcode, then the book. No app error line, no error haptic.
+  - (c) Record what happens. Expected for 1 Dec: the passcode policy still opens the book; the app shows the "Face ID changed" line only if the native check shipped (CISO-1); without it, no line. Either way the book is never wiped and no letter is lost.
+  - (d) The passcode opens the book and the "Face ID is off for {app}" line shows once.
+  - (e) The lock turns itself off and says once: "The lock is off because this iPhone has no passcode. Set one to turn the lock on again." (F17-U21). Setting a passcode again does not turn the lock back on by itself; the App lock page offers it. Reminders' names row is enabled again only because the lock is off.
+  - (f) The passcode screen and the one-time line are each read once.
+- **Record:** S1-52 rows (a) to (f); for (c) write down exactly what showed.
+- **Catalog:** RT-LOCK-05, RT-LOCK-06.
+
+### S1-53 Never during recording (1 Dec; F1; security.md 2; F17-U23, F17-REQ-008)
+- **Owner:** mobile.
+- **Needs:** lock on, value Immediately; English words on the phone.
+- **Steps:**
+  - (a) Speak, talk for 20 s, press the side button to lock the iPhone for 60 s, unlock the phone, carry on talking, Finish.
+  - (b) Speak, go to the Home Screen for 2 minutes, come back, Finish.
+  - (c) Speak, then receive a phone call (second phone) and answer it; hang up after 30 s; return.
+  - (d) Speak, then pause and resume twice, then Finish; feel for haptics.
+  - (e) Speak for 2 minutes with Low Power Mode on and the lock on; Finish; keep the letter.
+  - (f) Type on Write, send the app to the background for 2 minutes mid-sentence, return.
+- **Expected:**
+  - (a), (b) No cover appears while capture runs; the recording keeps going and the clock is right; after Finish the lock applies at the next return from the background (or at once if the grace has passed, per the policy row in RT-LOCK-03). The take is whole.
+  - (c) The take is kept (LEGAL-REQ-011 behaviour unchanged); the cover is drawn while inactive; after unlock the app is on Review with the saved take (F17-U23).
+  - (d) No haptic of the lock lands between start and stop, and no pause or resume tick (motion step 2).
+  - (e) The letter keeps with its words.
+  - (f) The cover shows on return; after unlock Write has every word typed and the caret at the end (S1-36 (h) still holds).
+- **Record:** S1-53 rows (a) to (f): take length against the clock, pass or fail.
+- **Catalog:** RT-LOCK-03.
+
+### S1-54 Export asks again (1 Dec; F1; security backlog 2; LEGAL-REQ-034)
+- **Owner:** mobile, security.
+- **Needs:** lock on; 5 letters with recordings.
+- **Steps:**
+  - (a) Settings, Export your book. Succeed at the system sheet. Save to Files.
+  - (b) Export again and Cancel the system sheet.
+  - (c) Export with the share sheet left open for 3 minutes (value Immediately), then save.
+  - (d) Turn the lock off; Export.
+  - (e) Low storage: export with under 50 MB free, after the device says yes.
+  - (f) Offline: export.
+  - (g) The matrix on the reason sheet and the Export screen.
+- **Expected:**
+  - (a) The system sheet reads "Confirm it is you to export your book" before any ZIP is built; then the share sheet. The ZIP opens on a Mac (S1-21).
+  - (b) Cancel builds no ZIP, leaves nothing in the cache, shows no error.
+  - (c) No lock while the share sheet is open; the save works.
+  - (d) No system sheet; Export works as today.
+  - (e) The existing low-space failure names its cause and offers Export again; nothing half-written is left.
+  - (f) Export needs no network and works.
+  - (g) VoiceOver reads the reason; nothing truncated at AX5.
+- **Record:** S1-54 rows (a) to (g).
+- **Catalog:** RT-LOCK-07.
+
+### S1-55 Lock and reminders: names hidden, opening from a notification (1 Dec; F1; F17-REQ-015, LEGAL-REQ-054; F17-U22)
+- **Owner:** mobile.
+- **Needs:** reminders on with "Names in notifications" on; a reminder time 2 minutes ahead; then lock on.
+- **Steps:**
+  - (a) Turn the lock on. Open Settings, Reminders.
+  - (b) Wait for the reminder on the Lock Screen and in Notification Centre. Read it.
+  - (c) Tap it with the app killed, then with the app in the background.
+  - (d) Turn the lock off and wait for the next reminder.
+- **Expected:**
+  - (a) "Names in notifications" reads off and cannot be changed, with "Names stay hidden while App lock is on." The App lock page footer reads "When the lock is on, reminders never show a name."
+  - (b) No child name and no letter words in title or body (F17-REQ-015, LEGAL-REQ-054).
+  - (c) Cover first; after unlock the app opens where the reminder points (F17-U22).
+  - (d) The parent's earlier choice (names on) returns; the reminder may carry the name.
+- **Record:** S1-55 rows (a) to (d), a Lock Screen screenshot (Asha fixture).
+- **Catalog:** RT-LOCK-08, RT-RMD-07.
+
+### S1-56 Before you begin: the age question, the unticked box, the No path (1 Dec; F2, CCO-6, CLO-4, CPrivO-3; LEGAL-REQ-002, LEGAL-REQ-001; D-026)
+- **Owner:** mobile, content; legal reads the result (counsel Q-A to Q-C).
+- **Needs:** fresh installs; a second phone or reinstall for the No path; a TestFlight build 1 install that already passed the old gate, for (h).
+- **Steps:**
+  - (a) Fresh install, open. Read the screen without touching it.
+  - (b) Tap Continue with nothing chosen.
+  - (c) Tap Yes, leave the box unticked, tap Continue.
+  - (d) Tick the box, tap Continue.
+  - (e) Fresh install: tap No, tick the box, Continue. Relaunch. Move the clock 23 h, then 25 h, relaunch each time.
+  - (f) Fresh install: tap No with the box unticked, Continue.
+  - (g) Fresh install: tap the Terms link, come back; tap the Privacy link, come back. Then offline, tap each link.
+  - (h) Update the build 1 install that passed the old gate to this build.
+  - (i) The matrix. VoiceOver: swipe the whole screen in order.
+- **Expected:**
+  - (a) "Are you 18 or older?", Yes and No with neither selected, the box unticked, both links, Continue enabled.
+  - (b) "Choose Yes or No." above Continue, announced; nothing stored.
+  - (c) "Check the box to continue." above Continue; focus moves to the box; nothing stored (no `ageGate.passed`, no Terms row).
+  - (d) Welcome follows. Stored: `ageGate.passed` as a boolean with no time, and one local Terms row (version, time, surface, app version, text hash) that is never logged (RT-BYB-03 proves the record).
+  - (e) The stop screen (`ageGate.stopTitle`, "{app} is currently for adults 18 and over") whatever the box said; at 23 h still stopped; at 25 h "I answered by mistake" shows (D-026). Nothing but the stop time is stored.
+  - (f) Same as (e).
+  - (g) Each link opens the in-app browser and returns to the screen with the answer and the box as they were. Offline, the browser shows its own error; the screen state is kept; Continue still works without a network.
+  - (h) The one-time agreement screen (title "Before you continue") with only the box and Continue; the age is not asked again. If counsel Q-C has not answered by the build, record that this screen is absent and file it.
+  - (i) VoiceOver order: question (heading), Yes, No, the box ("checkbox, not checked", then "checked"), Terms link, Privacy link, the reason line when shown (read as it appears), Continue. Each link has the hint "Opens in a browser inside the app." The box row is at least 44 pt tall. AX5: nothing truncated, Continue reachable by scroll. Reduce Motion: the reason line fades only. Dark: the box edge visible (3:1).
+- **Record:** S1-56 rows (a) to (i), with screenshots of (a), (c), (e).
+- **Catalog:** RT-BYB-01 to RT-BYB-07.
+
+### S1-57 Where your letters live (1 Dec; F1, F4, CPrivO-4, CCO-8, CLO-5; LEGAL-REQ-044; D-033, D-126)
+- **Owner:** mobile, content, privacy.
+- **Needs:** a book with 5 letters, one recording without a letter and one recording that may not play (S1-31's seed), no export yet; the DL-03 restore drill result.
+- **Steps:**
+  - (a) Settings, Where your letters live. Read every line.
+  - (b) Tap How to check.
+  - (c) Tap Export your book, finish an export, come back.
+  - (d) Remove the orphan and the unplayable recording (or use a book with none) and come back.
+  - (e) Offline: open the page and tap How to check.
+  - (f) The matrix.
+- **Expected:**
+  - (a) "On this phone": "Your letters and recordings are kept on this iPhone." The iPhone backup row reads "Includes your letters and recordings, if iCloud Backup is on." only if DL-03 passed; if DL-03 failed or did not run, it reads "Includes your recordings, if iCloud Backup is on." (CCO-8). The export row reads "Save a copy any time." and the nudge shows. "Encrypted backup: Not in this version". The footer: "Your iPhone backup brings the book to a new iPhone. An export is a copy to open and keep. We hold no copy." No "lost", "stolen", "coming" or "coming soon" anywhere. No On or Off is shown for iCloud Backup (the app cannot read it). Erase everything on this phone is the last row and is not the large button.
+  - (b) Apple's help page opens in the in-app browser.
+  - (c) "Last export: {date}" with today's date; the nudge is gone.
+  - (d) The two rows are gone when their counts are 0.
+  - (e) The page renders fully; How to check shows the browser's own error.
+  - (f) VoiceOver reads each row with its value; How to check has the hint "Opens Apple's help page."; AX5 stacks value under title, nothing truncated; Dark readable.
+- **Record:** S1-57 rows (a) to (f) and which backup line showed, with the DL-03 result.
+- **Catalog:** RT-WLL-01 to RT-WLL-04.
+
+### S1-58 Your words: two choices, one meaning (1 Dec; F1, CDesO-1; D-086)
+- **Owner:** mobile, content.
+- **Needs:** English words on the phone; a phone upgraded from a build that had the "Word for word" switch Off, and one with it On.
+- **Steps:**
+  - (a) Settings, Your words. Read the page.
+  - (b) Choose "Exactly as said". Speak a letter with an um and a repeat ("Asha, um, you you held the spoon").
+  - (c) Choose "Small fixes, marked". Speak the same letter.
+  - (d) Open a letter kept before the change.
+  - (e) On each upgraded phone, open Your words first.
+  - (f) The matrix.
+- **Expected:**
+  - (a) Two choices, each with one line; the example sentence in letter type with one marked fix; the footer "Either way, we never rewrite your words."
+  - (b) Review shows every um and repeat, no marks.
+  - (c) Review shows the fixes marked, each with Put it back.
+  - (d) Unchanged: the setting never touches kept letters or `raw_transcript`.
+  - (e) The old switch's value is the selected choice (On is "Small fixes, marked", Off is "Exactly as said").
+  - (f) VoiceOver reads each choice as selected or not and announces the change; tap haptic once; AX5 nothing truncated; Dark readable.
+- **Record:** S1-58 rows (a) to (f).
+- **Catalog:** RT-YWD-01, RT-YWD-02.
+
+### S1-59 Erase everything on this phone, two steps (1 Dec; F1, CPrivO-1, NAQ-2; WP-F17-15; F17-REQ-012 pattern)
+- **Owner:** mobile, data-architect, content.
+- **Needs:** a build with PR #520 (or its successor); a book with 2 children, 10 letters with recordings, 1 draft, reminders on, the lock on, Appearance Dark, an export done; a second install with no passcode for (g).
+- **Steps:**
+  - (a) Where your letters live, Erase everything on this phone. Read step 1. Tap Export your book, then come back.
+  - (b) Tap Erase everything; at the dialog tap Cancel.
+  - (c) Again; at the dialog tap Erase; at the device sheet Cancel.
+  - (d) Again; Erase; succeed at the device sheet. Watch the screen to the end.
+  - (e) After (d): check Settings (it should be first run), iOS Settings, General, iPhone Storage for the app's size, Notification Centre for scheduled reminders the next evening, and Files for the export.
+  - (f) Kill the app during "Erasing" (second run of (d)); relaunch.
+  - (g) No passcode on the phone: run (d).
+  - (h) Low storage: run (d) under 50 MB free.
+  - (i) The matrix on both steps and the Erasing screen.
+- **Expected:**
+  - (a) "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy." "Save a copy first?" with Export your book; Export opens and returns here.
+  - (b), (c) Nothing is erased; every letter, setting and reminder is still there.
+  - (d) The dialog "Erase everything on this phone?" with "This cannot be undone.", Erase second and never the default, warning haptic; then the device sheet "Confirm it is you to erase everything on this phone"; then "Erasing" with no way out; then Before you begin, with "Everything on this phone is erased." announced.
+  - (e) No letters, children, drafts or recordings; the app's Documents size is back to the install size plus any kept speech model (record whether models are kept); no reminder arrives; the lock is off; Appearance is back to System; the export in Files is untouched.
+  - (f) On relaunch the erase finishes or "Erasing did not finish. Try again." shows; never a half book with letters missing their recordings.
+  - (g) Record what the device step does with no passcode (security 2 has no rule for it). Expected and to confirm with security: the two in-app steps still guard it; the erase never runs without both.
+  - (h) The erase completes (erasing frees space).
+  - (i) VoiceOver: the step 1 title is a heading; the dialog's buttons read in order with Erase last; AX5: Export your book comes first and nothing truncates; Reduce Motion: no slide; Dark: the destructive colour has words and an icon, not colour alone.
+- **Record:** S1-59 rows (a) to (i), the app size before and after.
+- **Catalog:** RT-ERS-01 to RT-ERS-05.
+
+### S1-60 Settings, regrouped (1 Dec; F1, CDesO-1, CDesO-2, CCO-9, CLO-5; LEGAL-REQ-062)
+- **Owner:** mobile, content.
+- **Needs:** one child; then two children; Plus off, then Plus on (sandbox) for the header value.
+- **Steps:**
+  - (a) Open Settings. Count the rows. Read the header card and each group heading.
+  - (b) Tap the header card.
+  - (c) Open Legal; open each of Terms of Service, Privacy Policy and Licenses.
+  - (d) Read the About group and the last line.
+  - (e) Add a second child; read Children.
+  - (f) Storage: read the page with one language; start a second language download; go offline mid-download; remove a language.
+  - (g) Look for Delete account and the old Recordings row.
+  - (h) The matrix, and from each way in to Settings (the Book gear, a content link, Add a child), the back chevron (S1-23 V-10 still holds).
+- **Expected:**
+  - (a) Header card: "Mama", "On this phone", trailing "Free". Groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); About. 13 rows with one child in build 1.
+  - (b) Plan opens in one tap (CCO-9: "Settings, Plan" stays true).
+  - (c) Each opens its page; Licenses scrolls (S1-30).
+  - (d) Version reads `{version} ({build})` with the build from the binary; "early" appears once, in the registered note (CLO-5); the last line is "Made with care in California" with the heart icon hidden from VoiceOver (CDesO-2).
+  - (e) Both children listed with Add a child.
+  - (f) "Space used" with one row per language and its size; no row reads "All languages, Speech model"; the shared detector is in the language's size and, with two languages, the footer "Includes {size} shared by all languages."; the download shows its progress in place of the size; offline shows "Downloads need a connection. Try again once you are online."; Remove asks "Remove English from this phone?" and letters stay. Language download is offered only here.
+  - (g) Neither appears in build 1.
+  - (h) VoiceOver: the header card is one element ("Mama. On this phone. Plan, Free", hint "Opens Plan."); group headings are headings; AX5 values stack under titles, nothing truncates; Dark readable.
+- **Record:** S1-60 rows (a) to (h), the row count, a screenshot of home at default size and at AX5.
+- **Catalog:** RT-SIA-01 to RT-SIA-05.
+
+### S1-61 Reminders without the pre-sheet: all 11 states (1 Dec; CDesO-3, CCO-10, CPO-3; LEGAL-REQ-007, LEGAL-REQ-054; M13 rules 1 to 3)
+- **Owner:** mobile, content.
+- **Needs:** one install that has never asked for notifications (state 1), reset between runs by deleting and reinstalling; a book with a birth date and one without; a second phone where Deliver Quietly can be set.
+- **Steps and expected, one per state** (the table in `reminders-settings.md` 2):
+  - (1) **Never asked.** Open Settings, Reminders. Expected: switch off; the footer lines visible before touching anything ("Notifications never show what you write." among them, CCO-10). Tap the switch: the iOS alert comes straight away, no sheet of ours.
+  - (2) **Allowed.** Allow. Expected: the switch stays on; choices appear under it; "Changes save as you go."; the preview card with real words and no name; "Next: {day} at {time}". Change the time: the Next line changes (cross-fade) and VoiceOver says "Saved. Next: {day} at {time}." once, after the last change.
+  - (3) **Denied now.** Reinstall, tap the switch, Don't Allow. Expected: the switch stays on; the card "Notifications are off" with Open Settings; "Not sending yet."; the choices still editable.
+  - (4) **Denied before.** Leave and come back. Expected: the same, and no alert.
+  - (5) **Back from iPhone Settings.** Tap Open Settings, allow, return. Expected: "Reminders are on." once; the card collapses; the Next line appears and is announced.
+  - (6) **Provisional or Deliver Quietly.** In iOS Settings set the app to Deliver Quietly. Expected: counted as allowed; a note that they skip the Lock Screen (record whether it matches what iOS does).
+  - (7) **Scheduling failure.** Not reachable by hand on a healthy phone; proved by RT-RMD-05. On the phone, record that no failure line shows when scheduling works.
+  - (8) **No name or birth date.** On the book without a birth date. Expected: the preview is neutral; the month row reads "Starts once a birth date is added."
+  - (9) **Reduce Motion.** Change the time and the cadence. Expected: fades only, no layout slide.
+  - (10) **AX5.** Expected: preview, Next and help wrap, never truncate; the time row stacks; the evening chips wrap; every target at least 44 pt.
+  - (11) **VoiceOver after the alert.** With VoiceOver, run (1) to (3). Expected: focus stays on the switch after the alert; the result is announced; the denied card is next in swipe order.
+  - Also: (12) Dark mode on every state above; (13) the card after the first letter: "Yes, evenings" raises the alert then the toast "Reminders are on. Next: {day} at {time}." with Change; "Pick a time" opens this page with the switch on; denied shows "Notifications are off" with Open Settings; (14) offline: every state works (local only, M13 rule 1); (15) lock on: names off and disabled (S1-55).
+- **Record:** S1-61 rows (1) to (15): pass or fail, the Next line text, a screenshot of (2) and (3).
+- **Catalog:** RT-RMD-01 to RT-RMD-08.
+
+### S1-62 Privacy page: three sections, every claim true (1 Dec; CPrivO-5, CPrivO-1, NAQ-2; LEGAL-REQ-044; D-061, D-095)
+- **Owner:** privacy, mobile, content.
+- **Needs:** the lock off, then on; the App Privacy Report on (iOS Settings, Privacy and Security).
+- **Steps:**
+  - (a) Settings, Privacy, lock off. Read every line top to bottom.
+  - (b) Turn the lock on; read "Who can see it" again.
+  - (c) Tap each row: Names in notifications, App lock, Export your book, Recently deleted, Erase everything, Privacy Policy, Terms of Service.
+  - (d) After a session with first run, a letter and an export, open the App Privacy Report for the app.
+  - (e) The matrix.
+- **Expected:**
+  - (a) The promise word for word at the top (D-061), plain text, no lock or shield icons. "Where your book is kept": "Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one. They are not sent to us."; "Your speech is written down on this phone."; "This version collects no usage or crash reports." "Who can see it" with the lock off: "Anyone who can unlock this iPhone can open the book." Never "Only you". "Notifications never show the words of a letter." "What you can do": Export, Recently deleted, Erase everything. No "yet" anywhere. Footer "Private by default. Never sold, never used for ads."
+  - (b) "You, after Face ID or your passcode." (Touch ID variant on the SE).
+  - (c) Each opens its page; Names in notifications opens Reminders.
+  - (d) No network contact by the app except the in-app browser pages opened in (c) and the speech model host (RT-PRV-01).
+  - (e) VoiceOver reads section headings as headings; AX5 nothing truncated; Dark readable.
+- **Record:** S1-62 rows (a) to (e) and the App Privacy Report screenshot.
+- **Catalog:** RT-PRP-01 to RT-PRP-05.
+
+### S1-63 If you are struggling: lines for the phone's region (1 Dec; CCO-11; F20-REQ-001, F20-REQ-002, F20-REQ-003, F20-REQ-005; struggling-page.md 2 and 3)
+- **Owner:** mobile, content, support; the founder ticks FT-36.
+- **Needs:** a phone with a SIM; an iPad or a phone with no SIM (D10); iOS Settings, General, Language and Region to change the region. Do not complete a call or text: cancel at the Phone or Messages screen.
+- **Steps:**
+  - (a) Region United States. Open the page.
+  - (b) Tap Call on each line; cancel. Tap Text on each line that has one; cancel.
+  - (c) Change the region to Canada, United Kingdom, Ireland, Australia, New Zealand and India in turn; open the page each time.
+  - (d) Change the region to Germany.
+  - (e) Tap "Lines in other countries".
+  - (f) On the iPad, tap Call.
+  - (g) Offline, open the page.
+  - (h) The matrix.
+- **Expected:**
+  - (a) The emergency line first ("In danger right now?" with Call 911), then NMMH, 988 and PSI, each with Call and Text, then "Lines in other countries", then "Nothing on this page is recorded or sent."
+  - (b) Each opens Phone or Messages with the number filled in and never dials or sends by itself.
+  - (c) Each region shows its own emergency number and only the lines whose source and `verifiedOn` exist in the table; a line that was not verified is not shown (CCO-11 holds unread lines: PANDA, Canada's cost).
+  - (d) "Call your local emergency number." and "Find a free helpline near you", which opens findahelpline.com in the in-app browser.
+  - (e) The regions listed, each with its lines.
+  - (f) "Number copied" shows and the number is on the clipboard (F20-REQ-005).
+  - (g) The page renders; the phone and copy actions work; only the directory link needs a network.
+  - (h) VoiceOver reads each line's name and how (call, text, hours); the emergency line first; AX5 the buttons stack; Dark readable.
+- **Record:** S1-63 rows (a) to (h), the region list checked, and the release date for F20-REQ-003.
+- **Catalog:** RT-HLP-01 to RT-HLP-05.
+
+### 1 Dec: experience items (F5, F6, F11)
+
+### S1-64 Held letters readable, playable, exportable (1 Dec, P0; PL-2, F5, CCO-12; F14-REQ-039 device half)
+- **Owner:** payments, mobile; qa signs the hash check.
+- **Needs:** a production-profile TestFlight build (Plus on, sandbox tester with no Plus; S1-37 (b)); a Mac with `shasum`.
+- **Steps:**
+  - (a) Keep 2 letters. Speak a third, keep: at the Keep sheet tap Keep it here for now. Type a fourth and hold it the same way.
+  - (b) Open each held letter from Tonight.
+  - (c) Play the held spoken letter to the end; scrub; play again offline.
+  - (d) Export your book. AirDrop the ZIP to the Mac. Unzip. Compare `shasum -a 256` of each held recording and text file with the manifest.
+  - (e) Offline: export again.
+  - (f) Buy Plus in the sandbox; let it lapse (sandbox renewal times); after the lapse open, play and export the held letters again.
+  - (g) Low storage: export with the held letters.
+  - (h) Read the held note on the Keep sheet.
+  - (i) The matrix on the held letter page.
+- **Expected:**
+  - (a) Both held letters stay on Tonight; nothing is lost.
+  - (b) A read-only page with the words and, for the spoken letter, the player. No edit, no way to keep it into the book without Plus.
+  - (c) Plays fully online and offline.
+  - (d) The ZIP has a `waiting/` folder with 2 text files and 1 recording (the typed letter has none); every hash equals the manifest and the originals (F14-REQ-039).
+  - (e) Same ZIP contents offline.
+  - (f) After the lapse every held and kept letter still opens, plays and exports.
+  - (g) The low-space failure names its cause; nothing is half-written.
+  - (h) "This letter is safe on this phone. You can read it, play it and export it, and keep it whenever you like." Only if (d) passed; if PL-2 slips, the note does not say "export" (F5 default, CCO-12).
+  - (i) VoiceOver reads the held page title, the words in full and the player state; AX5 never truncates letter text (D-027); Reduce Motion fade only; Dark readable.
+- **Record:** S1-64 rows (a) to (i), the hash list (file names and hashes only, no letter text).
+- **Catalog:** RT-HELD-01 to RT-HELD-05.
+
+### S1-65 Plus lines and status, and the Tonight line after the allowance (1 Dec; F5, CDesO-6, CBO-1, CLO-6; PL-3, PL-4, PL-5, PL-8; F14-REQ-040, F14-REQ-018)
+- **Owner:** payments, content, mobile.
+- **Needs:** production-profile build; sandbox testers: one with no Plus, one subscribing, one in a Family Sharing group with Plus.
+- **Steps:**
+  - (a) Fresh install: read Welcome.
+  - (b) Keep letter 1; open Settings. Keep letter 2; watch the Book.
+  - (c) Before letter 3: open Tonight and Write.
+  - (d) Open Settings, Plan, without tapping anything else.
+  - (e) Subscribe (sandbox); open Tonight, Write, Settings, Plan.
+  - (f) Let the subscription lapse; open Plan and Tonight.
+  - (g) Family Sharing tester: Settings header and Plan.
+  - (h) The matrix on Plan and on the Tonight line.
+- **Expected:**
+  - (a) "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free." No price, no trial length.
+  - (b) Header trailing value "Free"; Plan help "Two letters free, then Plus to keep adding." After letter 2, once: "That was your second free letter. Whenever you are ready, Plus keeps the book growing." Not on letter 1, not again.
+  - (c) One standing line on Tonight (above Speak) and on Write: "Adding new letters to the book needs Plus. Recording, reading and export are always free." No number, no button, no "{count} letters waiting". Before letter 2 is kept the line is absent.
+  - (d) "What Plus includes" readable before Apple's sheet opens; Manage, Restore, Redeem, Refund, Save a copy; no countdown, no save offer, no "Are you sure?".
+  - (e) Header "Plus"; the Tonight and Write line gone; Plan shows the plan name and "Free until {date}" or "Renews on {date}".
+  - (f) Plan: "Plus ended on {date}. Every letter you kept is still yours." and no sales sentence; header "Free"; the Tonight line back.
+  - (g) Header "Plus, shared"; "Shared with you through Apple Family Sharing"; no Manage or Refund.
+  - (h) No digit in any header value; VoiceOver reads the header value; AX5 nothing truncated; Dark readable.
+- **Record:** S1-65 rows (a) to (h), screenshots of (c), (d), (f).
+- **Catalog:** RT-PLN-01 to RT-PLN-06.
+
+### S1-66 The memory card: Not today and the Settings switch (1 Dec; F6, CDesO-5, CR-43 as ruled in the experience council)
+- **Owner:** mobile, design-systems.
+- **Needs:** a book with a kept letter dated 30 days ago (letter date set on the phone, or the phone's date moved forward 30 days with automatic time off); one recording on that letter.
+- **Steps:**
+  - (a) Cold launch. Read Tonight.
+  - (b) Tap Not today on the card.
+  - (c) Send to the background, return; force-quit and cold launch the same day.
+  - (d) Move the date one day on; cold launch.
+  - (e) Settings: turn "Memories on Tonight" off; go back to Tonight; cold launch. Turn it on again.
+  - (f) Open the card; play the recording.
+  - (g) Leave the app open across midnight into a day when a memory qualifies; return without a cold launch; then cold launch.
+  - (h) The matrix on the card.
+- **Expected:**
+  - (a) The card "A month ago" with the letter's first lines (fade on a whole word, no ellipsis), and a 44 pt Not today.
+  - (b) The card leaves; nothing replaces it; soft haptic; VoiceOver announces it once.
+  - (c) The card stays gone all that day (a local per-date flag).
+  - (d) The card may show again if a letter qualifies.
+  - (e) Off: no card on any day. On: cards return. The switch is on by default.
+  - (f) The letter opens; Listen never starts on its own (CDesO-5); no music, no Ken Burns, no drawing.
+  - (g) Without a cold launch nothing pops in; the card enters only in the cold-launch stagger.
+  - (h) VoiceOver: the card is one element with the kicker, author and date, hint "Opens the memory", and a custom action Not today; the x is also its own button. AX5: Not today becomes a text row; nothing truncates. Reduce Motion: fade only, the space closes at once. Dark: the kicker passes 4.5:1.
+- **Record:** S1-66 rows (a) to (h).
+- **Catalog:** RT-MEM-01 to RT-MEM-05.
+
+### S1-67 Motion fixes, the late November checklist (1 Dec; CDesO-8, F11; motion.md 3 and 4)
+- **Owner:** design-systems, mobile.
+- **Needs:** the SE 3 and a 120 Hz Pro; both themes; Xcode Instruments on a Mac.
+- **Steps:**
+  - (a) Book: open a letter, then Back, ten times.
+  - (b) Tonight: tap Speak; feel for haptics until the clock runs. In Listen, pause and resume twice in a 2-minute take; Finish.
+  - (c) Instruments, Energy Log and Time Profiler: a 10-minute take on the SE 3.
+  - (d) Force-quit; cold launch; watch the splash become Tonight (screen recording).
+  - (e) Watch every `ProgressLine` (download, export, Review's words) in light and dark.
+  - (f) Press Another thought 10 times quickly.
+  - (g) Instruments, Animation Hitches: the five moments (launch, start listening, keeping, opening a letter, a memory).
+  - (h) Repeat (a), (b), (d), (f) with Reduce Motion, Reduce Transparency, AX5, VoiceOver and Low Power Mode, one at a time.
+  - (i) If `PressableFeedback` merged by 20 Nov: press every control on Tonight, Book, Settings; with Reduce Motion.
+- **Expected:**
+  - (a) The paper grows from the card (`cardToPage`); never a slide and a grow together; the card's words travel whole; VoiceOver lands on the dateline.
+  - (b) One light tick at start, one at Finish, none between (no pause or resume tick).
+  - (c) Listen does not re-render at 20 Hz (record renders per second before and after); energy impact no worse than before the fix.
+  - (d) The splash fades into Tonight; no cut, no flash; dark and light.
+  - (e) The track is visible (3:1 both themes); no number or percent on the line; the line never says "still" while work is moving.
+  - (f) The prompt stays legible; never two prompts at once; one tap haptic each.
+  - (g) No hitch over one frame; hitch ratio under 5 ms/s.
+  - (h) Reduce Motion: the hand-off fade, no travel; Low Power Mode: motion coherent, haptics muted by iOS; AX5 and VoiceOver: nothing lost.
+  - (i) Every press answers within one frame; Reduce Motion an opacity dip only.
+- **Record:** S1-67 rows (a) to (i), Instruments numbers, the two screen recordings.
+- **Catalog:** RT-MOT-01 to RT-MOT-07.
+
+### S1-68 Pregnancy prompts, the wait lines, drawings and what is gone (1 Dec; CPO-7, CDesO-7, CMO-1; F13-REQ-008; BL-535)
+- **Owner:** content, mobile.
+- **Needs:** a book set up before the birth (due date only); a fresh install on a phone with no speech model; a book with 10 kept letters.
+- **Steps:**
+  - (a) Pre-birth book: open Tonight on 14 evenings (move the date), and press Another thought 5 times each evening. Write down the keys or the lines shown.
+  - (b) Fresh install: speak a first letter while the speech model downloads; read the wait and Review state lines.
+  - (c) Keep letter 10 and letter 11.
+  - (d) Look at each screen with a drawing (the reuses `envelopeOpen` and `readingLamp`, if merged by 20 Nov).
+  - (e) The matrix on (a) and (b).
+- **Expected:**
+  - (a) Only `before` prompts; at least 12 different ones over the fortnight; none mentions a due date, weeks, labour or a countdown (F13-REQ-008).
+  - (b) Only the lines in `wait-content.md` 1 and 2; no time estimate; nothing that says it works offline or in the background (both unverified).
+  - (c) No count moment ("10 letters.") anywhere: no toast, no screen, no badge (CPO-7).
+  - (d) One drawing per screen at most; never on a control, Plus, the letter page or a notification.
+  - (e) VoiceOver reads each line once; AX5 nothing truncated; Dark readable.
+- **Record:** S1-68 rows (a) to (e) with the list of prompt keys seen.
+- **Catalog:** RT-PRM-01, RT-PRM-02, RT-CNT-01, RT-WAIT-01, RT-DRW-01.
+
+### 1.0.1 items (release map, F11)
+
+### S1-69 Tonight 1.0.1: one question, one card or nothing, the closure line, dayparts (1.0.1; CDesO-4, F6, CPO-8; CR-43)
+- **Owner:** mobile, content, product.
+- **Needs:** books for each state: first day; a waiting draft and a second draft; a month-day; a memory-eligible letter; none of these (thought or empty); after 5 days away. Phone clock moved for 9 AM, 7 PM and 10 PM.
+- **Steps:**
+  - (a) Open Tonight in each state at 7 PM.
+  - (b) Keep a letter; return to Tonight.
+  - (c) The normal book at 9 AM, 7 PM and 10 PM.
+  - (d) Over 7 evenings, count the evenings with a small thought.
+  - (e) Count the tappable things above the tab bar in each state; read every number on screen.
+  - (f) The matrix in (a) and (b).
+- **Expected:**
+  - (a) Dateline, greeting, one question with Another thought, then at most one card in the ladder order: the newest draft with a quiet "Also waiting" (no number), else an occasion, else a memory, else a small thought, else nothing. No fact ever (F7). After a break: the gap prompt and no card.
+  - (b) The closure line ("Today is in Asha's book." or content's final line) replaces the question; the card shows today's letter; never "come back tomorrow"; no haptic.
+  - (c) 9 AM: no "tonight" or "today" line that does not fit the morning; 10 PM: no card except a waiting draft.
+  - (d) At most 3 in 7; none on the first evening back.
+  - (e) At most six tappable things; no number but the child's age.
+  - (f) VoiceOver announces the closure line once and focus stays; the card never announces itself; AX5 actions inline under the prompt; Reduce Motion one fade.
+- **Record:** S1-69 rows (a) to (f).
+- **Catalog:** RT-SLB-01 to RT-SLB-05.
+
+### S1-70 Memories 1.0.1: Keep out of memories, the hard filter, opening the card (1.0.1; CDesO-5, CPrivO-7, Karma tie-break 1)
+- **Owner:** mobile, data-architect, design-systems.
+- **Needs:** memory-eligible letters: one written to a hard prompt, one private, one quiet day, one by Papa who has left the book (build 2 only, skip in build 1), one before the birth.
+- **Steps:**
+  - (a) On a day the card shows, open its VoiceOver actions and choose Keep out of memories; then undo from the toast. Choose it again.
+  - (b) Open the letter in the Book: find Keep out of memories in its menu; turn it off.
+  - (c) Move the date through the eligible windows for each special letter.
+  - (d) Tap Not today three days running; then watch 30 days.
+  - (e) Open the card (the paper grows from it, with its column).
+  - (f) The matrix.
+- **Expected:**
+  - (a) The card leaves; the undo toast stays until dismissed; undo brings it back; tap haptic.
+  - (b) Reversible; the Book never changes.
+  - (c) The hard, private, quiet and departed-author letters never resurface; the pre-birth letter only with its switch on (off by default).
+  - (d) Memories drop to weekly for 30 days; never the same letter twice in 7 days.
+  - (e) `cardToPage` from the card; its lines carry; no slide.
+  - (f) As S1-66 (h).
+- **Record:** S1-70 rows (a) to (f).
+- **Catalog:** RT-MEM-06 to RT-MEM-09.
+
+### S1-71 Another thought on Write and Listen; the question on the letter page (1.0.1; CDesO-9, CAIO-1)
+- **Owner:** mobile, design-systems, content.
+- **Steps:** (a) Open Write and Listen from Tonight; press Another thought on each. (b) Keep the letter; open it in the Book; then Read together; then Export and open the ZIP; then the PDF. (c) The matrix.
+- **Expected:** (a) The question changes in place; focus stays on the button; the take or the typed words are untouched. (b) The question shows above the words on the letter page as an unsigned app note; it is absent from Read together, the export prose and the PDF. (c) VoiceOver reads the note as the app's, not the parent's; AX5 nothing truncated.
+- **Record:** S1-71 rows (a) to (c).
+- **Catalog:** RT-ANT-01, RT-ANT-02.
+
+### S1-72 Waiting letters after a purchase (1.0.1; PL-6; F14-REQ-041)
+- **Owner:** payments.
+- **Needs:** production-profile build; 3 held letters; sandbox tester with no Plus.
+- **Steps:** (a) Subscribe from the Keep sheet. (b) Read the offer; keep one letter from it. (c) Force-quit; relaunch. (d) Offline relaunch.
+- **Expected:** (a) The purchase confirmation, then one offer "Keep the letters that are waiting". (b) Each letter still needs its own Keep; after one, 2 remain held. (c) No second offer, no duplicates. (d) Same, offline.
+- **Record:** S1-72 rows (a) to (d).
+- **Catalog:** RT-WTL-01.
+
+### S1-73 Book page 1.0.1: cover band, chapters, Months sheet, glyphs (1.0.1; book-page.md 2 and 4; F09-U02 fixture)
+- **Owner:** design-systems, mobile.
+- **Needs:** the 1,200-letter perf fixture build; a small book of 5 letters.
+- **Steps:** (a) Open the Book on the SE 3; scroll from top to end; open the Months sheet and jump to month 3. (b) Read a letter card: excerpt end, voice marker. (c) The matrix.
+- **Expected:** (a) No hitch over one frame; sticky headers; the Months sheet jumps without a blank. (b) The excerpt ends on a whole word; the voice marker is a glyph plus a word ("Voice 1:06"), never a play button. (c) AX5: the cover band stacks; VoiceOver reads chapter title and authors; Dark readable.
+- **Record:** S1-73 rows (a) to (c), Instruments hitch numbers.
+- **Catalog:** RT-BKP-01, RT-BKP-02.
+
+### S1-74 Questions over a year: no repeats, weak ones gone (1.0.1; CPO-6, CPO-9; F13-REQ-004; BL-534)
+- **Owner:** content, mobile.
+- **Steps:** (a) With the phone's date moved forward a day at a time for 30 evenings, open Tonight and press Another thought twice each evening; write down the keys. (b) Read for the retired weak prompts (motor milestones, first words).
+- **Expected:** (a) No key twice in the 30 evenings for the same child and author. (b) None of the retired keys shows. The full year is proved in RT-HIST-01; this item checks that the phone reads the same history.
+- **Record:** S1-74 rows (a) and (b), the key list.
+- **Catalog:** RT-HIST-01 to RT-HIST-03.
+
+---
+
 ## Part 2. Money, account and notifications (session 2, can follow on the next days)
 
 ### S2-01 to S2-12 StoreKit and Apple's sheets
