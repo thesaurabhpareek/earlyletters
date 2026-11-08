@@ -506,6 +506,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
 
+### S1-83 Listen follows the voice without re-rendering 20 times a second (founder report on TestFlight build 1; listening-cue.md; branch fix/mobile-listen-metering)
+- **Needs:** a build with fix/mobile-listen-metering; the SE 3 on battery and a 120 Hz iPhone (Pro); Asha's book; a quiet room. For (e), a Mac with Xcode Instruments and a development build of the same commit.
+- **Steps:**
+  - (a) Tonight > Speak. Talk normally for 20 s, then softly, then stay quiet for 15 s, then talk again.
+  - (b) Watch the clock for one minute while talking.
+  - (c) Tap Pause for 10 s, then Resume, then Finish.
+  - (d) Settings > Accessibility > Motion > Reduce Motion on: repeat (a).
+  - (e) Instruments, Time Profiler and Energy Log: a 10-minute take on the SE 3 with this build and with build 1 (or develop before this branch); note JS thread CPU and the energy impact for each.
+- **Expected:** (a) the glow behind the red circle swells with the voice within a fraction of a second, grows less when soft, and after about half a second of quiet turns to a slow breath (never still, never a warning); talking again brings it back to the voice. The red circle never moves. (b) The clock steps once a second, never skips or repeats a second. (c) Paused: the glow is still and dim; Resume brings it back; Finish opens Review. (d) The ring steps in strength with the voice, no swelling. (e) Lower JS CPU and energy impact than before; record the numbers either way. If the glow only ever breathes and never follows the voice, the metering is not arriving: note it as a fail and say so.
+- **Record:** S1-83 rows (a) to (e): phone, iOS version, pass or fail, and for (e) JS thread CPU percent and energy impact before and after.
+
 ### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
 - **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
 - **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:
@@ -570,6 +581,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c): the take from (a) is there as an unfinished letter ("Recorded before the app closed." or Read it back), opens in Review, and plays its sound up to the point the disk filled; nothing was deleted. If the recording file could not be written at all, Review says so in its own words and never claims a recording is kept.
 - **Record:** S1-39 rows (a) to (c): phone, iOS version, build number, free space before stop, take length, seconds from stop to the next screen, the screen reached, and for (c) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
 - **Not covered:** a line on Tonight saying the take was kept after a failed finish (follow-up: needs a new content key from `content`; today it returns home without a toast).
+
+### S1-81 Opening a letter from the Book: one move, card to page (founder report on TestFlight build 1; MOTION 5f, EXPERIENCE_PASS 5.8 row 7; branch fix/mobile-letter-open-motion)
+- **Needs:** a build with fix/mobile-letter-open-motion; the SE 3 and a 120 Hz iPhone (Pro); a book with at least six letters of different lengths (Asha only), one short enough to show whole on its card; light and dark mode.
+- **Steps:**
+  - (a) On the Book, tap a letter card in the middle of the screen. Watch the open, then tap Back. Repeat for the top card, the bottom card and the short letter. Record a screen recording of each on the SE 3.
+  - (b) Open a letter, then swipe down on the page's top bar. Open one more and scroll the Book far enough that its card is off screen before going back (open, Back, scroll, open the next).
+  - (c) Settings > Accessibility > Motion > Reduce Motion on: repeat (a) once.
+  - (d) Larger Text at AX5 (Reading Size larger than the card's, if offered): repeat (a) once.
+  - (e) VoiceOver on: open a letter from the Book, then Back. Open it again, swipe right past the end of the letter, then close it with the escape gesture (two-finger scrub, a Z).
+  - (f) Tonight's "A month ago" card, if shown, and Settings > Recently deleted > Open: open a letter from each; with VoiceOver on, swipe past the end of each.
+- **Expected:** (a) the card holds its press, the Book goes under the page's paper, and the paper grows from the card into the page; no sideways slide at any point, nothing moves twice, no native header or back arrow flashes at the top; the card's words stay still on their way (never re-wrap or jump); Back carries them back into the card. (b) The swipe closes the page the same way; with the card off screen the page fades instead. (c) and (d) one short cross-fade each way, nothing slides or grows. (e) VoiceOver lands on the dateline, reads the letter once, and never reaches the Book or the tab bar behind the page; the escape gesture closes the page the same way Back does. (f) The page fades in whole (no card to grow from), with no slide, and Back returns to where it came from; VoiceOver never reaches the tab bar or the Recently deleted list behind it. No hitch longer than one frame on the SE 3.
+- **Record:** S1-81 rows (a) to (f): phone, iOS version, text size, Reduce Motion yes or no, pass or fail, and for a fail what moved; the screen recordings of (a) on the SE 3.
 
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
