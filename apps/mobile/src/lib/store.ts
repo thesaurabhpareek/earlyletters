@@ -825,12 +825,16 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
  * is a promise ("Kept here until <day>"), so the phone clock is never trusted
  * further than it has been seen before (QE-05):
  *
- * - The purge counts time by the earlier of the clock now and the latest
- *   recorded launch. A clock that jumped ahead (a wrong date, a manual change,
- *   a restore onto another phone) erases nothing more at that launch than the
- *   previous launch would have; a letter is erased only once two launches
- *   agree it has waited its 30 days. Failing toward keeping costs at most one
- *   launch of delay.
+ * - The purge counts time by the latest recorded launch, not by the clock now.
+ *   A clock that jumped ahead (a wrong date, a manual change, a restore onto
+ *   another phone) erases nothing more at that launch than the previous
+ *   launch would have; a letter is erased only once two launches agree it has
+ *   waited its 30 days. Failing toward keeping costs at most one launch of
+ *   delay.
+ * - With no readable record of an earlier launch (a first launch, or a damaged
+ *   setting) nothing is erased at that launch, because the clock has not been
+ *   seen before. The launch is recorded after the purge, so the next launch
+ *   purges as usual.
  * - A clock earlier than the latest recorded launch (moved back) purges
  *   nothing at that launch (DL-04). `recordLaunch` then stores that earlier
  *   time, so a clock corrected after running ahead resumes purging at the next
@@ -843,10 +847,9 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && nowMs < last) return 0;
-  const seenMs = Number.isFinite(last) ? Math.min(nowMs, last) : nowMs;
+  if (!Number.isFinite(last) || nowMs < last) return 0;
   const c = ctx();
-  const cutoff = new Date(seenMs - SHELF_MS).toISOString();
+  const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
   for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
@@ -863,6 +866,19 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
 export function recordLaunch(nowMs: number): void {
   if (!Number.isFinite(nowMs)) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
+}
+
+/**
+ * The launch purge, then this launch's record, in that order. The purge reads
+ * the previous launch's stamp, so recording first would make every purge count
+ * time by the clock now and disable the QE-05 guard. `alsoErase` runs between
+ * the two (letters the server erased); its count is added. Returns how many
+ * letters were erased.
+ */
+export function purgeThenRecordLaunch(nowMs: number, eraseAudio: AudioEraser, alsoErase: () => number = () => 0): number {
+  const n = purgeExpired(nowMs, eraseAudio) + alsoErase();
+  recordLaunch(nowMs);
+  return n;
 }
 
 // ── Drafts (capture in progress) ─────────────────────────────────────────
