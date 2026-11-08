@@ -1,6 +1,6 @@
 /**
- * The database side of the letter ledger (D-082, D-083): the mirror in
- * settings key `letters.keptEver`, and the count of letters present. Pure
+ * The database side of the letter ledger (D-082, D-083, D-133): the mirror in
+ * settings key `letters.keptEver`, and the count of letters and notes present. Pure
  * functions over a SqlDb like every repository; the Keychain side and the max
  * rule live in lib/billing/letter-ledger.ts. Rules and the three sources are
  * described in lib/billing/letter-ledger.logic.ts.
@@ -27,8 +27,10 @@ export function readState(ctx: RepoContext): LedgerState {
 
 /**
  * The M17 ledger query (D-103, drafted as D-092 in PR #128; F14-REQ-036,
- * F14-REQ-037): letters present in the database that count toward the free
- * letters. A row counts only when all three hold:
+ * F14-REQ-037): letters and notes present in the database that count toward
+ * the free letters. A kept note counts like a letter (D-133, 31 Oct; SR-C-16):
+ * Review's note-or-letter choice must never be a way past the Keep gate. A row
+ * counts only when all three hold:
  *   own      its author is this phone's account (`sync.ownerId`), or it has no
  *            author (made on this phone before any sign-in). The other parent's
  *            synced letters never count, and never raise the mirror or Keychain.
@@ -41,12 +43,14 @@ export function readState(ctx: RepoContext): LedgerState {
  *            'unreviewed' until then, entries.ts).
  * Spoken or typed, in the Book or private, including the delete window (the
  * ledger never decreases). Quiet-day marks (`not_much`) and drafts never count.
+ * The kind test names the two kinds that count rather than excluding the mark,
+ * so a kind added later counts only when someone decides it should.
  *
  * Known gap (PR body, requests to S02 and S07): the server row carries no
  * review mark, so on a second phone of the same author a pulled letter whose
  * machine words are still unreviewed reads as kept.
  */
-export const COUNTED_LETTERS_SQL = `kind = 'letter'
+export const COUNTED_LETTERS_SQL = `kind IN ('letter', 'note')
   AND (author_id IS NULL OR author_id = ?)
   AND transcript_status IS NULL
   AND trim(final_text) <> ''`;
@@ -56,14 +60,14 @@ export function countPresent(ctx: RepoContext): number {
   return ctx.db.all<{ t: string | null }>(`SELECT final_text AS t FROM entries WHERE ${COUNTED_LETTERS_SQL}`, owner).filter((r) => hasWords(r.t)).length;
 }
 
-/** Whether one letter counts by the rule above (the save path asks before recording it). */
+/** Whether one letter or note counts by the rule above (the save path asks before recording it). */
 export function counts(ctx: RepoContext, id: string): boolean {
   const owner = settings.getSetting(ctx, OWNER_SETTING) ?? '';
   return hasWords(ctx.db.get<{ t: string | null }>(`SELECT final_text AS t FROM entries WHERE id = ? AND ${COUNTED_LETTERS_SQL}`, id, owner)?.t);
 }
 
 /**
- * Counts one kept letter, inside the caller's transaction (the letter is
+ * Counts one kept letter or note, inside the caller's transaction (the row is
  * already written, so `present` includes it). Idempotent per id. A row that does
  * not count by the M17 rule (another author's, no words yet, words not yet
  * reviewed, a quiet-day mark) changes nothing.
