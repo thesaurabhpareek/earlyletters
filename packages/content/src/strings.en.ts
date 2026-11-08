@@ -242,6 +242,11 @@ export const en = {
     // `book.waitingForWords`; read back reuses `tonight.afterSave.reviewButton`.
     draft: {
       held: "Waiting to be kept.",
+      // Two or more held letters fold into one row on Tonight that opens their list (F14-REQ-041). One held letter
+      // keeps its own card, so this line is only ever plural.
+      heldMany: "Letters waiting to be kept.",
+      heldShowButton: "Show them",
+      heldHideButton: "Hide them",
       // Not "Kept": that is the Keep step's word, and this card is not kept yet.
       swept: "Recorded before the app closed.",
       typedA11y: "A letter you started, {date}.",
@@ -548,6 +553,9 @@ export const en = {
     dateline: {
       monthOnly: "Sometime in Month {month}",
       monthOnlyNewborn: "Sometime in the first weeks",
+      // The age sentence after the day for a letter the Book files in Before You: no birthday yet, or a day before
+      // it. Never an age counted from a due date (QE-01).
+      beforeBirth: "Before {child} was born.",
     },
     changeDate: {
       // {label} is the month's name in the book: "Month 2", "The first weeks" or "Before You".
