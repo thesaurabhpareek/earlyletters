@@ -43,6 +43,14 @@ export function localLines(region: string | null): RegionHelplines | null {
   return helplinesFor(region);
 }
 
+/**
+ * Whether the page offers Find A Helpline: when the phone's region has no lines we hold, including a region whose
+ * lines are held until they can be read again (India's Tele-MANAS, CCO-11), so it never shows an emergency number alone.
+ */
+export function showDirectory(local: RegionHelplines | null): boolean {
+  return !local || local.lines.length === 0;
+}
+
 /** "Lines in other countries": every region we hold, in the table's order. */
 export function otherCountries(): readonly RegionHelplines[] {
   return HELPLINES;

@@ -112,11 +112,13 @@ describe('[S40] If you are struggling', () => {
     // help-links.logic.ts with the copy fallback (RT-SET-02, F20-REQ-005).
     expect(page).toMatch(/const local = localLines\(usePhoneRegion\(\)\)/);
     expect(page).toMatch(/onPress=\{\(\) => link\.open\(emergency\.target!\)\}/);
-    expect(en.struggling.emergencyTitle).toBe('In danger right now?');
+    // The baby is named, as the earlier line did (nomenclature audit R-F).
+    expect(en.struggling.emergencyTitle).toBe('Are you or your baby in danger right now?');
   });
 
   it('a region we hold no lines for gets the directory and the general emergency words, never a guessed number', () => {
-    expect(page).toMatch(/\{local \? null : \(\s*<ListRow\s+title=\{s\.directory\}/);
+    expect(page).toMatch(/\{showDirectory\(local\) \? \(\s*<ListRow\s+title=\{s\.directory\}/);
+    expect(page).toMatch(/\{local && local\.lines\.length > 0 \? \(/);
     expect(page).toMatch(/WebBrowser\.openBrowserAsync\(HELPLINE_DIRECTORY\.url\)/);
     expect(page).toMatch(/\{emergency\.label\}/);
   });

@@ -45,7 +45,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   // S40: a row that pushes its own page, never an accordion inside the list.
   await app.getByText('If you are struggling', { exact: true }).click();
   await expect(app.getByText('The early months ask a lot of anyone.', { exact: false })).toBeVisible();
-  await expect(app.getByText('In danger right now?', { exact: true })).toBeVisible();
+  await expect(app.getByText('Are you or your baby in danger right now?', { exact: true })).toBeVisible();
   await expect(app.getByText('Lines in other countries', { exact: true })).toBeVisible();
   await expect(app.getByText('Nothing on this page is recorded or sent.', { exact: true })).toBeVisible();
   await step('happy', 'If you are struggling', 'Always available, never behind a flag, one tap from Settings: its own page with the emergency line first, then the lines for the phone\'s own region, each with Call and Text (a region with no lines held shows "Call your local emergency number." and Find a free helpline near you), then Lines in other countries and "Nothing on this page is recorded or sent." No drawing, no light, no motion.');

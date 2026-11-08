@@ -1,9 +1,11 @@
 /**
  * Helplines on "If you are struggling", by the phone's own region (struggling-page.md section 2; CCO-11; F20-REQ-003).
  *
- * Every line carries the official page its words were read from (`sourceUrl`) and the day that was done
- * (`verifiedOn`). test/helplines.test.ts fails when a line has no source or was verified more than 90 days ago, so
- * a stale number cannot ship quietly: support re-reads each source every release and the founder signs off (FT-36).
+ * Every line carries the official pages its words were read from (`sources`, each with the day it was read and,
+ * where the page states one, its own date) and the day the line was checked (`verifiedOn`). test/helplines.test.ts
+ * fails when a line has no source, a reading is older than HELPLINE_MAX_AGE_DAYS (the day is `helplinesDueOn()`),
+ * a line claims a check newer than its sources, or a dated source is too old to show the line is current. Support
+ * re-reads each source every release and the founder signs off (FT-36).
  * A line or claim we could not read on its own official page is not here (CCO-11: unread lines are held). Only a
  * line whose source says it is free has `free: true`, and only those say "free".
  *
@@ -16,6 +18,17 @@
 
 export type HelplineRegion = 'US' | 'CA' | 'GB' | 'IE' | 'AU' | 'NZ' | 'IN';
 
+/**
+ * One official page a line's words rest on. `readOn` is the day we read it. `datedOn` is the page's own date when it
+ * states one (a press release, a "last updated"); a page with no date of its own is evidence only of the day it was
+ * read. A dated page older than the freshness window cannot back a line's claim that it is current
+ * (helplines.test.ts), which is why a three-year-old press release alone cannot carry a line.
+ */
+export type HelplineSource = { url: string; readOn: string; datedOn?: string; supports: string };
+
+/** How long a reading stays good (CCO-11): a line is re-read within this many days, or the test fails. */
+export const HELPLINE_MAX_AGE_DAYS = 90;
+
 export type Helpline = {
   id: string;
   name: string;
@@ -26,8 +39,9 @@ export type Helpline = {
   sms?: string;
   smsShown?: string;
   free: boolean;
-  sourceUrl: string;
-  /** YYYY-MM-DD, the day the official page was read. */
+  /** The official pages its words rest on; every claim in `how` is backed by one of them. */
+  sources: readonly HelplineSource[];
+  /** YYYY-MM-DD, the day the line was last checked against all its sources. */
   verifiedOn: string;
 };
 
@@ -35,7 +49,7 @@ export type RegionHelplines = {
   region: HelplineRegion;
   /** The country as a heading on "Lines in other countries". */
   country: string;
-  emergency: { tel: string; shown: string; sourceUrl: string; verifiedOn: string };
+  emergency: { tel: string; shown: string; sources: readonly HelplineSource[]; verifiedOn: string };
   lines: readonly Helpline[];
 };
 
@@ -45,7 +59,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'US',
     country: 'United States',
-    emergency: { tel: '911', shown: '911', sourceUrl: 'https://www.911.gov/', verifiedOn: ON },
+    emergency: { tel: '911', shown: '911', sources: [{ url: 'https://www.911.gov/', readOn: ON, supports: 'Call 911 in an emergency' }], verifiedOn: ON },
     lines: [
       {
         id: 'us.nmmh',
@@ -56,7 +70,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '18338526262',
         smsShown: '1-833-852-6262',
         free: true,
-        sourceUrl: 'https://mchb.hrsa.gov/national-maternal-mental-health-hotline',
+        sources: [{ url: 'https://mchb.hrsa.gov/national-maternal-mental-health-hotline', readOn: ON, supports: 'Call or text 1-833-852-6262; free, confidential, 24/7, English and Spanish' }],
         verifiedOn: ON,
       },
       {
@@ -68,7 +82,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '988',
         smsShown: '988',
         free: true,
-        sourceUrl: 'https://988lifeline.org/get-help/',
+        sources: [{ url: 'https://988lifeline.org/', readOn: ON, supports: 'Call or text 988; available 24/7/365; free and confidential' }, { url: 'https://988lifeline.org/get-help/', readOn: ON, supports: 'Dial 988 and then press 2 for Spanish' }],
         verifiedOn: ON,
       },
       {
@@ -80,7 +94,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '18009444773',
         smsShown: '1-800-944-4773',
         free: false,
-        sourceUrl: 'https://postpartum.net/get-help/',
+        sources: [{ url: 'https://postpartum.net/get-help/', readOn: ON, datedOn: '2026-09-22', supports: 'Call or text 1-800-944-4773; leave a message and a volunteer returns your call or text; not a crisis line' }],
         verifiedOn: ON,
       },
     ],
@@ -88,7 +102,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'CA',
     country: 'Canada',
-    emergency: { tel: '911', shown: '911', sourceUrl: 'https://988.ca/', verifiedOn: ON },
+    emergency: { tel: '911', shown: '911', sources: [{ url: 'https://988.ca/', readOn: ON, supports: 'Call or text 9-8-8, 24 hours a day, every day of the year; call 9-1-1 if your safety is at risk' }], verifiedOn: ON },
     lines: [
       {
         id: 'ca.988',
@@ -99,7 +113,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '988',
         smsShown: '988',
         free: false,
-        sourceUrl: 'https://988.ca/',
+        sources: [{ url: 'https://988.ca/', readOn: ON, supports: 'Call or text 9-8-8, 24 hours a day, every day of the year; call 9-1-1 if your safety is at risk' }],
         verifiedOn: ON,
       },
     ],
@@ -107,7 +121,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'GB',
     country: 'United Kingdom',
-    emergency: { tel: '999', shown: '999', sourceUrl: 'https://www.nhs.uk/nhs-services/mental-health-services/where-to-get-urgent-help-for-mental-health/', verifiedOn: ON },
+    emergency: { tel: '999', shown: '999', sources: [{ url: 'https://www.nhs.uk/nhs-services/mental-health-services/where-to-get-urgent-help-for-mental-health/', readOn: ON, supports: 'Call 999 or go to A&E' }], verifiedOn: ON },
     lines: [
       {
         id: 'gb.samaritans',
@@ -116,7 +130,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         tel: '116123',
         telShown: '116 123',
         free: true,
-        sourceUrl: 'https://www.samaritans.org/',
+        sources: [{ url: 'https://www.samaritans.org/', readOn: ON, supports: 'Call 116 123 for free, 24 hours a day, 365 days a year' }],
         verifiedOn: ON,
       },
     ],
@@ -124,7 +138,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'IE',
     country: 'Ireland',
-    emergency: { tel: '112', shown: '112 or 999', sourceUrl: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', verifiedOn: ON },
+    emergency: { tel: '112', shown: '112 or 999', sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }], verifiedOn: ON },
     lines: [
       {
         id: 'ie.samaritans',
@@ -133,7 +147,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         tel: '116123',
         telShown: '116 123',
         free: true,
-        sourceUrl: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/',
+        sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }],
         verifiedOn: ON,
       },
       {
@@ -143,7 +157,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '50808',
         smsShown: '50808',
         free: true,
-        sourceUrl: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/',
+        sources: [{ url: 'https://www2.hse.ie/mental-health/services-support/get-urgent-help/', readOn: ON, supports: 'Phone 112 or 999; Samaritans freephone 116 123, 24 hours, confidential; Text About It, free, 24 hours, HELLO to 50808' }],
         verifiedOn: ON,
       },
     ],
@@ -151,7 +165,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'AU',
     country: 'Australia',
-    emergency: { tel: '000', shown: '000', sourceUrl: 'https://www.lifeline.org.au/crisis-support/', verifiedOn: ON },
+    emergency: { tel: '000', shown: '000', sources: [{ url: 'https://www.lifeline.org.au/crisis-support/', readOn: ON, supports: 'Triple Zero (000); call 13 11 14, text 0477 13 11 14, 24/7; free and confidential calls' }], verifiedOn: ON },
     lines: [
       {
         id: 'au.lifeline',
@@ -162,7 +176,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '0477131114',
         smsShown: '0477 13 11 14',
         free: true,
-        sourceUrl: 'https://www.lifeline.org.au/crisis-support/',
+        sources: [{ url: 'https://www.lifeline.org.au/crisis-support/', readOn: ON, supports: 'Triple Zero (000); call 13 11 14, text 0477 13 11 14, 24/7; free and confidential calls' }],
         verifiedOn: ON,
       },
       {
@@ -172,7 +186,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         tel: '1300726306',
         telShown: '1300 726 306',
         free: false,
-        sourceUrl: 'https://panda.org.au/',
+        sources: [{ url: 'https://panda.org.au/', readOn: ON, supports: '1300 726 306, open 7 days a week; not a crisis service; expecting and new families' }],
         verifiedOn: ON,
       },
     ],
@@ -180,7 +194,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'NZ',
     country: 'New Zealand',
-    emergency: { tel: '111', shown: '111', sourceUrl: 'https://1737.org.nz/', verifiedOn: ON },
+    emergency: { tel: '111', shown: '111', sources: [{ url: 'https://1737.org.nz/', readOn: ON, supports: 'Call or text 1737, free, 24/7, trained counsellors; call 111 in immediate danger' }], verifiedOn: ON },
     lines: [
       {
         id: 'nz.1737',
@@ -191,7 +205,7 @@ export const HELPLINES: readonly RegionHelplines[] = [
         sms: '1737',
         smsShown: '1737',
         free: true,
-        sourceUrl: 'https://1737.org.nz/',
+        sources: [{ url: 'https://1737.org.nz/', readOn: ON, supports: 'Call or text 1737, free, 24/7, trained counsellors; call 111 in immediate danger' }],
         verifiedOn: ON,
       },
     ],
@@ -199,24 +213,40 @@ export const HELPLINES: readonly RegionHelplines[] = [
   {
     region: 'IN',
     country: 'India',
-    emergency: { tel: '112', shown: '112', sourceUrl: 'https://112.gov.in/', verifiedOn: ON },
-    lines: [
-      {
-        id: 'in.telemanas',
-        name: 'Tele-MANAS',
-        how: 'Call 14416 or 1800-89-14416. Free, any time, in over 20 languages.',
-        tel: '14416',
-        telShown: '14416',
-        free: true,
-        sourceUrl: 'https://pib.gov.in/PressReleasePage.aspx?PRID=1919200',
-        verifiedOn: ON,
-      },
-    ],
+    emergency: { tel: '112', shown: '112', sources: [{ url: 'https://112.gov.in/', readOn: ON, supports: '112, the Pan-India single emergency number' }], verifiedOn: ON },
+    // Tele-MANAS (14416) is held (CCO-11): no official page dated 2025 or 2026 could be read on 8 Nov 2026. The
+    // portal (telemanas.mohfw.gov.in) refuses automated reads, and the newest official text found was a PIB release
+    // of 24 Apr 2023. It comes back with a current official source. Until then India has 112 and the directory.
+    lines: [],
   },
 ];
 
 /** Every other region: the Find A Helpline directory (ThroughLine), whose listed helplines verify their own entries. */
-export const HELPLINE_DIRECTORY = { url: 'https://findahelpline.com/', sourceUrl: 'https://findahelpline.com/', verifiedOn: ON } as const;
+export const HELPLINE_DIRECTORY: { url: string; sources: readonly HelplineSource[]; verifiedOn: string } = {
+  url: 'https://findahelpline.com/',
+  sources: [{ url: 'https://findahelpline.com/', readOn: ON, supports: 'Free, anonymous and confidential helplines; partners verify their information directly' }],
+  verifiedOn: ON,
+};
+
+/** Every source on this page: the lines, the emergency numbers and the directory. */
+export function allHelplineSources(): { what: string; verifiedOn: string; source: HelplineSource }[] {
+  return [
+    ...HELPLINES.flatMap((r) => [
+      ...r.emergency.sources.map((source) => ({ what: `${r.region}.emergency`, verifiedOn: r.emergency.verifiedOn, source })),
+      ...r.lines.flatMap((l) => l.sources.map((source) => ({ what: l.id, verifiedOn: l.verifiedOn, source }))),
+    ]),
+    ...HELPLINE_DIRECTORY.sources.map((source) => ({ what: 'directory', verifiedOn: HELPLINE_DIRECTORY.verifiedOn, source })),
+  ];
+}
+
+/**
+ * The day by which every source must be read again (YYYY-MM-DD): the oldest reading plus HELPLINE_MAX_AGE_DAYS.
+ * Computed from the data, so the release calendar and the test agree; helplines.test.ts fails after it.
+ */
+export function helplinesDueOn(): string {
+  const oldest = Math.min(...allHelplineSources().map((s) => Date.parse(`${s.source.readOn}T00:00:00Z`)));
+  return new Date(oldest + HELPLINE_MAX_AGE_DAYS * 86_400_000).toISOString().slice(0, 10);
+}
 
 /** The lines for a region, or null when the region is not one we have read lines for. */
 export function helplinesFor(region: string | null | undefined): RegionHelplines | null {

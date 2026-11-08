@@ -2,7 +2,7 @@
  * Settings, If you are struggling (D-034; EXPERIENCE_PASS_2026-10 S40; struggling-page.md section 3): its own page,
  * one tap from Settings home, never behind a flag. The emergency line comes first, then the lines for the phone's
  * own region (packages/content helplines.ts, each with its source and the day it was read), each a card with Call
- * and Text. A phone set to a region we hold no lines for gets the general emergency words and the Find A Helpline
+ * and Text. A phone set to a region we hold no lines for (or whose lines are held) gets the general emergency words and the Find A Helpline
  * directory. "Lines in other countries" lists every region we hold, for travellers and phones set elsewhere.
  *
  * A tap opens Phone or Messages and never dials by itself; where it cannot open, the same tap shows the number to
@@ -17,7 +17,7 @@ import { useHelpLink, usePhoneAbility } from '@/components/settings/help-fallbac
 import { rowHint } from '@/components/settings/help-links.logic';
 import { HelplineCard } from '@/components/settings/helpline-card';
 import { usePhoneRegion } from '@/components/settings/phone-region';
-import { emergencyLine, localLines } from '@/components/settings/struggling.logic';
+import { emergencyLine, localLines, showDirectory } from '@/components/settings/struggling.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ListRow, ListSection } from '@/components/ui/list-row';
@@ -49,7 +49,7 @@ export default function StrugglingScreen() {
           <Text variant="body">{emergency.label}</Text>
         )}
       </Card>
-      {local ? (
+      {local && local.lines.length > 0 ? (
         <View className="gap-3">
           {local.lines.map((line) => (
             <HelplineCard key={line.id} line={line} open={link.open} callHint={rowHint(can)} />
@@ -57,7 +57,7 @@ export default function StrugglingScreen() {
         </View>
       ) : null}
       <ListSection>
-        {local ? null : (
+        {showDirectory(local) ? (
           <ListRow
             title={s.directory}
             subtitle={s.directoryBody}
@@ -67,7 +67,7 @@ export default function StrugglingScreen() {
             onPress={() => void WebBrowser.openBrowserAsync(HELPLINE_DIRECTORY.url)}
             testID="struggling.directory"
           />
-        )}
+        ) : null}
         <ListRow title={s.otherCountries} trailing="chevron" onPress={() => router.push(ELSEWHERE_ROUTE as Href)} testID="struggling.elsewhere" />
       </ListSection>
       <Text variant="subhead" tone="muted" className="px-1">

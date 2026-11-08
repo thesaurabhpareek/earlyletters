@@ -1298,18 +1298,20 @@ export const en = {
     footer: "Either way, we never rewrite your words.",
   },
 
-  // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
-  // on mchb.hrsa.gov, 988lifeline.org and postpartum.net. Clinician and counsel to review the wording.
-  // Scope (D-087): the app ships in the US storefront only (LEGAL-REQ-058), so the list says it is for the
-  // United States and nothing picks lines by region. FOUNDER TASK (FT-36): before submit, check primary
-  // sources (988lifeline.org, postpartum.net) including the 988 language options. Only after that check
-  // may the 988 line below say "Press 2 for Spanish, or say your language to reach an interpreter."
-  // Do NOT add that sentence on the strength of search snippets.
+  // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
+  // flag. The lines are picked by the phone's own region (struggling-page.md section 2; CCO-11): helplines.ts holds
+  // them for US, CA, GB, IE, AU, NZ and IN, each with the official pages it rests on and the day they were read, and
+  // helplines.test.ts fails when a reading passes 90 days (`helplinesDueOn()`). Any other region gets the general
+  // emergency words and Find A Helpline. This replaces D-087's "keep the US list with a clear scope line"; the
+  // amendment is the founder's (see PR #675). FT-36: the 988 line says "Press 2 for Spanish", read on
+  // 988lifeline.org/get-help on 8 Nov 2026; interpreters are not described there, so they stay out. Clinician
+  // (BL-105) and counsel (Q25) review the wording and the non-US lines before a public release. The words below are
+  // pinned exactly in test/helplines.test.ts, so none changes unnoticed.
   struggling: {
     title: "If you are struggling",
     // struggling-page.md section 4 working copy; the lines themselves live in helplines.ts with their sources.
     body: "The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",
-    emergencyTitle: "In danger right now?",
+    emergencyTitle: "Are you or your baby in danger right now?",
     emergencyCall: "Call {n}",
     emergencyLocal: "Call your local emergency number.",
     call: "Call",
@@ -1325,7 +1327,7 @@ export const en = {
   },
 
   // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
-  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  // `struggling.*` is founder-owned (FT-36); these words are about the tap, not the lines.
   helpLinks: {
     // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
     callHint: "Starts a call.",

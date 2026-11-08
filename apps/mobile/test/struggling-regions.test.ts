@@ -5,7 +5,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { en, HELPLINES } from '@scribe/content';
-import { emergencyLine, lineActions, localLines, otherCountries, phoneRegion, regionFromLocale } from '../src/components/settings/struggling.logic';
+import { emergencyLine, lineActions, localLines, otherCountries, phoneRegion, regionFromLocale, showDirectory } from '../src/components/settings/struggling.logic';
 
 describe('regionFromLocale', () => {
   it.each([
@@ -49,6 +49,16 @@ describe('the page by region', () => {
       expect(localLines(r)).toBeNull();
       expect(emergencyLine(localLines(r))).toEqual({ label: en.struggling.emergencyLocal, target: null });
     }
+  });
+
+  it('the directory shows where we hold no lines, including India while Tele-MANAS is held, never beside held lines', () => {
+    expect(showDirectory(localLines('DE'))).toBe(true);
+    expect(showDirectory(localLines(null))).toBe(true);
+    const india = localLines('IN')!;
+    expect(india.lines).toEqual([]);
+    expect(emergencyLine(india).label).toBe('Call 112');
+    expect(showDirectory(india)).toBe(true);
+    for (const r of ['US', 'CA', 'GB', 'IE', 'AU', 'NZ']) expect(showDirectory(localLines(r)), r).toBe(false);
   });
 
   it('Lines in other countries lists every region we hold', () => {
