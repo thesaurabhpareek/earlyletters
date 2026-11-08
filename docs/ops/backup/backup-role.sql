@@ -24,7 +24,7 @@
 -- only if that answer holds.
 --
 -- No password is in this file. You set it in step 4, and it goes only into
--- the private repository's STAGING_DB_URL secret.
+-- the private repository's BACKUP_DB_URL secret.
 
 -- 0. Who you are, and which Postgres this is. Expect: postgres | false | true | 17
 select r.rolname, r.rolsuper, r.rolbypassrls, current_setting('server_version_num')::int / 10000 as major

@@ -3,7 +3,7 @@
 The founder chose, on 1 Nov 2026, no paid backup for the alpha and asked for a free path. This is that path. Owner: `ops`; `privacy` reviews; the founder does the account steps. Built in the BL-566 PR; nothing in it has run against staging or GitHub yet (agents never touch hosted projects or accounts).
 
 The three files:
-- `docs/ops/backup/staging-backup.yml`: the workflow, copied unchanged into the private repository.
+- `docs/ops/proposed/workflows/supabase-backup.yml`: the workflow, copied unchanged into the private repository. It backs up one project, named by the `BACKUP_TARGET` variable (`prod` by default; `staging` for staging). Production on the Free plan: `docs/ops/runbooks/free-tier-ops.md`.
 - `docs/ops/backup/backup-role.sql`: the read-only role, run once in staging's SQL Editor.
 - `scripts/ops/restore-check.ts`: the row count at the end of the monthly drill.
 
@@ -30,14 +30,14 @@ Every night a GitHub Actions job in a separate **private** repository dumps the 
 2. On GitHub: create a **private** repository `earlyletters-backups` (a README is fine).
 3. In Supabase staging, SQL Editor, as `postgres`: run `docs/ops/backup/backup-role.sql` one numbered block at a time and compare each answer with the comment under it. Block 0 tells you staging's Postgres major version; if it is not 17, change `PG_MAJOR` in the workflow before step 5. Block 2A gives the role `pg_read_all_data`. If Supabase refuses it ("permission denied to grant role"), run block 2B instead and keep its list of "NOT granted" schemas for step 4.
 4. Give the role a password and login (block 4 of the SQL file; `\password` from psql on the Mac is best). In the new repository, Settings > Secrets and variables > Actions:
-   - Secret `STAGING_DB_URL`: the **session pooler** string (Connect > Session pooler, port 5432) with the user changed to `scribe_backup.<project-ref>` and your password: `postgresql://scribe_backup.<project-ref>:<password>@<pooler host>:5432/postgres?sslmode=require`. Not the transaction pooler (6543): the job refuses it.
+   - Variable `BACKUP_TARGET`: `staging`. Secret `BACKUP_DB_URL`: the **session pooler** string (Connect > Session pooler, port 5432) with the user changed to `scribe_backup.<project-ref>` and your password: `postgresql://scribe_backup.<project-ref>:<password>@<pooler host>:5432/postgres?sslmode=require`. Not the transaction pooler (6543): the job refuses it.
    - Secret `BACKUP_AGE_RECIPIENT`: the `age1` line.
    - Only if you ran block 2B: variable `DUMP_EXCLUDE_SCHEMAS` with the "NOT granted" schema names, separated by spaces. If `auth` is among them, the backup has no accounts: letters restore, sign-ins do not. Tell `ops` before the first build 2 sign-in.
-5. Copy `docs/ops/backup/staging-backup.yml` to `.github/workflows/staging-backup.yml` in the new repository and commit it to its default branch (scheduled runs only start from there).
-6. Run it once by hand (Actions > Nightly staging backup > Run workflow). Check: the run is green, its summary shows "Row counts in this dump", and one artifact named `staging-<time>.pgc.age` is listed. Then do the first restore drill below the same day.
+5. Copy `docs/ops/proposed/workflows/supabase-backup.yml` to `.github/workflows/supabase-backup.yml` in the new repository and commit it to its default branch (scheduled runs only start from there).
+6. Run it once by hand (Actions > Nightly Supabase backup > Run workflow). Check: the run is green, its summary shows "Row counts in this dump", and one artifact named `staging-<time>.pgc.age` is listed. Then do the first restore drill below the same day.
 
 ## The workflow
-It is `docs/ops/backup/staging-backup.yml`. In order, it:
+It is `docs/ops/proposed/workflows/supabase-backup.yml`. In order, it:
 1. Installs `age` and the Postgres client whose major version is `PG_MAJOR` (from the PostgreSQL project's apt repository if Ubuntu's own does not carry it) and checks `pg_dump --version`.
 2. Refuses to go on, before any dump, if: the URL is not `postgres://`, does not use TLS or is the transaction pooler; the server's major version (`show server_version_num`) differs from `PG_MAJOR` (pg_dump cannot dump a newer server, so this is the version check); or the role is a superuser, cannot bypass row-level security, can write to `entries`, or does not start read only.
 3. Dumps the whole database (`pg_dump --format=custom`), with owners and grants recorded, minus the table data listed above.

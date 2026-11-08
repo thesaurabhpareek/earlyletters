@@ -1,0 +1,90 @@
+# Weekly Supabase Free plan usage check for scribe-prod: database size, Storage bytes and accounts signed
+# in during the last 30 days, against the Free plan limits read on supabase.com/pricing on 8 Nov 2026
+# (500 MB database, 1 GB file storage, 50,000 MAU). An `ops-alert` issue opens at 80% of any of them,
+# or when a number cannot be read. Egress (5 GB) cannot be read from Postgres: the run summary says
+# NOT CHECKED, and the founder reads it on the dashboard (Organization > Usage).
+#
+# This file does NOT run in the earlyletters repository. Copy it unchanged to
+# `.github/workflows/supabase-free-limits.yml` in the PRIVATE repository `earlyletters-backups`.
+# Runbook: docs/ops/runbooks/free-tier-ops.md.
+#
+# It reads with the same read-only role and secret as the nightly backup (BACKUP_DB_URL,
+# docs/ops/backup/backup-role.sql) and prints numbers only (scripts/ops/free-limits.ts).
+#
+# Secrets: BACKUP_DB_URL (shared with supabase-backup.yml).
+# Variables: PROD_PROJECT_REF, EARLYLETTERS_SHA (shared with supabase-keepalive.yml).
+#
+# Pins (checked 8 Nov 2026): actions/checkout 11bd71901bbe5b1630ceea73d27597364c9af683 = v4.2.2,
+# actions/setup-node 49933ea5288caeca8642d1e84afbd3f7d6820020 = v4.4.0.
+
+name: Supabase Free plan limits
+
+on:
+  schedule:
+    - cron: '23 16 * * 1'   # Mondays 16:23 UTC: 9:23 AM in California in summer, 8:23 AM in winter
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-free-limits
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      PG_MAJOR: '17'
+    steps:
+      - name: The pinned commit is a full sha
+        env:
+          SHA: ${{ vars.EARLYLETTERS_SHA }}
+        run: '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Set the EARLYLETTERS_SHA variable to a full 40-character commit"; exit 1; }'
+      - name: Install the Postgres client
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          if ! apt-cache policy "postgresql-client-$PG_MAJOR" | grep -Eq 'Candidate: [0-9]'; then
+            sudo apt-get install -y -qq postgresql-common
+            sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+            sudo apt-get update -qq
+          fi
+          sudo apt-get install -y -qq --no-install-recommends "postgresql-client-$PG_MAJOR"
+          echo "/usr/lib/postgresql/$PG_MAJOR/bin" >> "$GITHUB_PATH"
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: thesaurabhpareek/earlyletters
+          ref: ${{ vars.EARLYLETTERS_SHA }}
+          persist-credentials: false
+          sparse-checkout: scripts/ops
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Read usage (numbers only)
+        env:
+          LIMITS_DB_URL: ${{ secrets.BACKUP_DB_URL }}
+          PROJECT_REF: ${{ vars.PROD_PROJECT_REF }}
+        run: node scripts/ops/free-limits.ts --project-ref "$PROJECT_REF" --alert-percent 80 --summary "$GITHUB_STEP_SUMMARY"
+
+  alert:
+    needs: check
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the ops-alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: 'Supabase Free plan usage at 80% or unreadable'
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create ops-alert --color B60205 --description 'Production operations alert' 2>/dev/null || true
+          body="A Free plan limit is at 80% or more, or a number could not be read: $RUN_URL (the run summary has the numbers). Decide with ops before it reaches 100%: what to trim, or a paid plan. Check egress on the dashboard too."
+          n=$(gh issue list --label ops-alert --state open --json number,title --jq ".[] | select(.title == \"$TITLE\") | .number" | head -n1)
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$TITLE" --label ops-alert --body "$body"; fi
