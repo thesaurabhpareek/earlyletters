@@ -161,6 +161,16 @@ export function markHeld({ db }: RepoContext, id: string, inBookChoice: boolean 
   return changes(db) === 1;
 }
 
+/**
+ * Every letter waiting on this phone for the export (PL-2, schema 1.6.0): every draft, in every book, that is not
+ * still recording and not being let go. Oldest first, the way the export lists them.
+ */
+export function listForExport({ db }: RepoContext): Draft[] {
+  return db
+    .all<DraftRow>(`SELECT ${COLS} FROM drafts WHERE state NOT IN ('recording', 'discarding') ORDER BY created_at, id`)
+    .map(fromRow);
+}
+
 /** Held drafts, newest first; for one book when `childId` is given (Tonight's one held row, F14-REQ-041). */
 export function listHeld({ db }: RepoContext, childId?: string): Draft[] {
   const rows = childId === undefined

@@ -975,6 +975,11 @@ export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): b
   return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
 }
 
+/** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
+export function listWaitingForExport(): Draft[] {
+  return drafts.listForExport(ctx());
+}
+
 /**
  * Review's own choices on this draft (v9; SR-C-06, CR-39): the fixes put back, the view, the person's words from
  * Change words, and the fingerprint of the words they were made on. Null for a missing draft. Read on Review's mount
