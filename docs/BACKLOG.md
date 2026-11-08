@@ -579,7 +579,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: the `before` count test passes at 12 or more and all content rules pass.
 
 #### BL-549 Doc fixes from the reminders review [Low]
-- Status: ready. Mode: agent. Owner: reminders owner. Size: XS.
+- Status: in-review (PR #605). Mode: agent. Owner: reminders owner. Size: XS.
 - Scope: F13 still says co-parent letter pushes are in v1.0; servers are off (D-121), so move that line to v1.1 and point to BL-546. In R1 (`docs/research/`), the Calm figure (40% set a reminder, "almost 3x" retention) is a vendor claim from Amplitude's own case study, not a first-party fact.
 - Done when: both edits are made and nothing else changes.
 
