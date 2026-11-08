@@ -2,7 +2,7 @@
 // fetch and psql are stubbed, as in smoke.test.ts. Run: npx -y deno@2.9.6 test --no-prompt --allow-read --sloppy-imports scripts/ops
 import assert from 'node:assert/strict';
 import { judge, KEEPALIVE_PATH, runKeepalive, type KeepaliveDeps } from '../lib/keepalive.ts';
-import { LIMITS, METRIC_SQL, METRICS, readingOf, refOfDbTarget, reportLines, runFreeLimits, type FreeLimitsDeps } from '../lib/free-limits.ts';
+import { LIMITS, METRIC_SQL, METRICS, SIGNINS_SQL, readingOf, refOfDbTarget, reportLines, runFreeLimits, type FreeLimitsDeps } from '../lib/free-limits.ts';
 import type { SqlOutcome } from '../lib/smoke.ts';
 import { dbTargetOf } from '../lib/target.ts';
 
@@ -107,6 +107,7 @@ function db(answers: Partial<Record<string, SqlOutcome>>) {
   const deps: FreeLimitsDeps = {
     sql: () => (sql) => {
       asked.push(sql);
+      if (sql === SIGNINS_SQL) return Promise.resolve(answers.signins ?? { ok: false, kind: 'sql', sqlstate: '42501' });
       const m = METRICS.find((k) => METRIC_SQL[k] === sql);
       return Promise.resolve(m && answers[m] ? answers[m]! : { ok: false, kind: 'sql', sqlstate: '42501' });
     },
@@ -122,13 +123,14 @@ async function limits(args: string[], vars: Record<string, string>, deps: FreeLi
 const LVARS = { LIMITS_DB_URL: POOLED };
 
 Deno.test('[free-tier] limits: under 80% everywhere is OK, numbers only, egress says NOT CHECKED', async () => {
-  const w = db({ database: num(120_000_000), storage: num(0), mau: num(240) });
+  const w = db({ database: num(120_000_000), mau: num(240), signins: num(180) });
   const r = await limits(['--project-ref', REF, '--summary', 'sum.md'], LVARS, w.deps);
   assert.equal(r.code, 0);
-  assert.deepEqual(w.asked, METRICS.map((m) => METRIC_SQL[m]));
+  assert.deepEqual(w.asked, [...METRICS.map((m) => METRIC_SQL[m]), SIGNINS_SQL]);
   assert.match(r.out, /OK {7}database size \(limit 500 MB\): 120\.0 MB, 24%/);
-  assert.match(r.out, /file storage \(limit 1 GB\): 0\.0 MB, 0%/);
-  assert.match(r.out, /accounts signed in, last 30 days \(limit 50,000 MAU\): 240, 0\.5%/);
+  assert.match(r.out, /upper bound of monthly active users \(limit 50,000\): 240, 0\.5%/);
+  assert.match(r.out, /INFO {5}accounts that signed in during the last 30 days: 180 \(a lower bound of MAU/);
+  assert.match(r.out, /NOT CHECKED {2}file storage \(limit 1 GB\): this role cannot read Storage/);
   assert.match(r.out, /NOT CHECKED {2}egress/);
   assert.match(r.out, /\nOK: every number is under the alert line$/);
   assert.equal(w.summaries.length, 1);
@@ -136,20 +138,20 @@ Deno.test('[free-tier] limits: under 80% everywhere is OK, numbers only, egress 
 });
 
 Deno.test('[free-tier] limits: 80% of any limit alerts (exit 1), and the threshold can be lowered', async () => {
-  const atLine = await limits(['--project-ref', REF], LVARS, db({ database: num(400_000_000), storage: num(10), mau: num(1) }).deps);
+  const atLine = await limits(['--project-ref', REF], LVARS, db({ database: num(400_000_000), mau: num(1) }).deps);
   assert.equal(atLine.code, 1);
   assert.match(atLine.out, /ALERT {4}database size/);
   assert.match(atLine.out, /ALERT: database at or above 80%/);
 
-  const storage = await limits(['--project-ref', REF, '--alert-percent', '50'], LVARS, db({ database: num(1), storage: num(600_000_000), mau: num(1) }).deps);
-  assert.equal(storage.code, 1);
-  assert.match(storage.out, /ALERT: storage at or above 50%/);
+  const accounts = await limits(['--project-ref', REF, '--alert-percent', '50'], LVARS, db({ database: num(1), mau: num(26_000) }).deps);
+  assert.equal(accounts.code, 1);
+  assert.match(accounts.out, /ALERT: mau at or above 50%/);
 });
 
 Deno.test('[free-tier] limits: an unreadable number or no connection is exit 2, never silently OK', async () => {
-  const denied = await limits(['--project-ref', REF], LVARS, db({ database: num(1), mau: num(1) }).deps);
+  const denied = await limits(['--project-ref', REF], LVARS, db({ database: num(1) }).deps);
   assert.equal(denied.code, 2);
-  assert.match(denied.out, /UNREAD {3}file storage \(limit 1 GB\): could not be read \(SQLSTATE 42501\)/);
+  assert.match(denied.out, /UNREAD {3}accounts, an upper bound of monthly active users \(limit 50,000\): could not be read \(SQLSTATE 42501\)/);
 
   const gone: FreeLimitsDeps = { sql: () => () => Promise.resolve({ ok: false, kind: 'connect' }) };
   const r = await limits(['--project-ref', REF], LVARS, gone);
@@ -165,7 +167,7 @@ Deno.test('[free-tier] limits: refuses a URL for another project, a missing ref,
     [{}, ['--project-ref', REF], /LIMITS_DB_URL is not set/],
     [LVARS, ['--project-ref', REF, '--alert-percent', '0'], /--alert-percent must be/],
   ] as const) {
-    const w = db({ database: num(1), storage: num(1), mau: num(1) });
+    const w = db({ database: num(1), mau: num(1) });
     const r = await limits([...args], vars, w.deps);
     assert.equal(r.code, 2);
     assert.match(r.out, why);
@@ -178,7 +180,7 @@ Deno.test('[free-tier] limits: the project ref is read from the backup role pool
   assert.equal(refOfDbTarget(t), REF);
   assert.equal(refOfDbTarget(dbTargetOf(`postgresql://u:p@db.${REF}.supabase.co:5432/postgres`).target!), REF);
   assert.equal(refOfDbTarget(dbTargetOf('postgresql://u.x:p@example.org:5432/postgres').target!), null);
-  assert.deepEqual([LIMITS.database.limit, LIMITS.storage.limit, LIMITS.mau.limit], [500_000_000, 1_000_000_000, 50_000]);
+  assert.deepEqual([LIMITS.database.limit, LIMITS.mau.limit], [500_000_000, 50_000]);
   assert.deepEqual(readingOf('mau', { ok: true, text: 'abc' }), { metric: 'mau', value: null, sqlstate: undefined });
   assert.equal(reportLines([{ metric: 'database', value: 499_999_999, percent: 100 }], 80).over[0], 'database');
 });

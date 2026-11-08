@@ -6,11 +6,19 @@
  * file storage "1 GB included", egress "5 GB included", "50,000 monthly active users". The limits
  * are written in decimal units here (500 MB = 500,000,000 bytes), which can only make the alert early.
  *
- * Three numbers come from Postgres, as the read-only backup role (docs/ops/backup/backup-role.sql):
- * database size, the bytes of every Storage object (metadata only) and accounts signed in during the
- * last 30 days (an approximation of Supabase's MAU, which may also count token refreshes: UNVERIFIED).
- * Egress cannot be read from Postgres and is reported NOT CHECKED: the founder reads it on the
- * dashboard (Organization > Usage).
+ * Two numbers are alert lines, both read as the narrow backup role (docs/ops/backup/backup-role.sql, which
+ * cannot read Storage, sessions or the Vault, on purpose):
+ *   - database size: the sum of pg_database_size over every database the role may connect to. Supabase
+ *     measures "all databases in your Postgres cluster" (supabase.com/docs/guides/platform/database-size,
+ *     read 8 Nov 2026); a database the role cannot connect to is left out, so this can understate (UNVERIFIED
+ *     whether the role sees them all on the hosted cluster).
+ *   - accounts: every row of auth.users. Supabase counts as a monthly active user each distinct user who
+ *     "sign[s] in or refresh[es] their token" in the billing cycle (supabase.com/docs/guides/platform/
+ *     manage-your-usage/monthly-active-users, read 8 Nov 2026); the role cannot read sessions, so a refresh-only
+ *     user cannot be seen. Total accounts is an UPPER bound of MAU (every active user is an account), so the
+ *     alert can come early but never late. The sign-ins in the last 30 days are printed as the lower bound.
+ * Storage bytes and egress cannot be read as this role and are reported NOT CHECKED: the founder reads them on
+ * the dashboard (Organization > Usage). Storage stays small only while recording backup is off.
  *
  * It prints numbers and percentages only: never a row, a URL or a psql message. Each statement runs
  * read only (lib/psql.ts). Exit 0 all under the alert line, 1 at or above it, 2 usage, no connection
@@ -20,21 +28,21 @@ import { parseArgs } from './cli.ts';
 import type { SqlOutcome, SqlRunner } from './smoke.ts';
 import { dbTargetOf, type DbTarget } from './target.ts';
 
-export const METRICS = ['database', 'storage', 'mau'] as const;
+export const METRICS = ['database', 'mau'] as const;
 export type Metric = (typeof METRICS)[number];
 
 export const LIMITS: Record<Metric, { limit: number; unit: 'bytes' | 'users'; label: string }> = {
   database: { limit: 500_000_000, unit: 'bytes', label: 'database size (limit 500 MB)' },
-  storage: { limit: 1_000_000_000, unit: 'bytes', label: 'file storage (limit 1 GB)' },
-  mau: { limit: 50_000, unit: 'users', label: 'accounts signed in, last 30 days (limit 50,000 MAU)' },
+  mau: { limit: 50_000, unit: 'users', label: 'accounts, an upper bound of monthly active users (limit 50,000)' },
 };
 
 /** Fixed statements: nothing from the command line reaches the SQL. */
 export const METRIC_SQL: Record<Metric, string> = {
-  database: 'select pg_database_size(current_database())',
-  storage: "select coalesce(sum((metadata->>'size')::bigint), 0) from storage.objects",
-  mau: "select count(*) from auth.users where last_sign_in_at > now() - interval '30 days'",
+  database: "select coalesce(sum(pg_database_size(datname)), 0)::bigint from pg_database where has_database_privilege(datname, 'CONNECT')",
+  mau: 'select count(*) from auth.users',
 };
+/** Printed, never alerted on: the lower bound of MAU. */
+export const SIGNINS_SQL = "select count(*) from auth.users where last_sign_in_at > now() - interval '30 days'";
 
 export const DEFAULT_ALERT_PERCENT = 80;
 export const USAGE = 'Usage: LIMITS_DB_URL=postgres://... node scripts/ops/free-limits.ts --project-ref <ref> [--alert-percent 80] [--summary <file>]';
@@ -63,7 +71,7 @@ function human(metric: Metric, value: number): string {
   return `${(value / 1_000_000).toFixed(1)} MB`;
 }
 
-export function reportLines(readings: Reading[], alertPercent: number): { lines: string[]; over: Metric[]; unread: Metric[] } {
+export function reportLines(readings: Reading[], alertPercent: number, signins?: number | null): { lines: string[]; over: Metric[]; unread: Metric[] } {
   const lines: string[] = [];
   const over: Metric[] = [];
   const unread: Metric[] = [];
@@ -77,6 +85,8 @@ export function reportLines(readings: Reading[], alertPercent: number): { lines:
     if (hit) over.push(r.metric);
     lines.push(`${hit ? 'ALERT ' : 'OK    '}   ${LIMITS[r.metric].label}: ${human(r.metric, r.value)}, ${r.percent}%`);
   }
+  if (typeof signins === 'number') lines.push(`INFO     accounts that signed in during the last 30 days: ${signins.toLocaleString('en-US')} (a lower bound of MAU: token refreshes are not visible)`);
+  lines.push('NOT CHECKED  file storage (limit 1 GB): this role cannot read Storage; read Organization > Usage on the Supabase dashboard');
   lines.push('NOT CHECKED  egress (limit 5 GB): read Organization > Usage on the Supabase dashboard');
   return { lines, over, unread };
 }
@@ -129,7 +139,9 @@ export async function runFreeLimits(args: string[], env: (name: string) => strin
     }
     readings.push(r);
   }
-  const rep = reportLines(readings, alertPercent);
+  const si = await run(SIGNINS_SQL);
+  const signins = si.ok && /^\d{1,15}$/.test(si.text) ? Number(si.text) : null;
+  const rep = reportLines(readings, alertPercent, signins);
   io.print(`Supabase Free plan usage, alert at ${alertPercent}% (numbers only):`);
   for (const l of rep.lines) io.print(`  ${l}`);
   const verdict = rep.unread.length ? 'UNREAD: a number could not be read; fix the role grants (docs/ops/backup/backup-role.sql)'

@@ -1,21 +1,27 @@
-# Weekly Supabase Free plan usage check for scribe-prod: database size, Storage bytes and accounts signed
-# in during the last 30 days, against the Free plan limits read on supabase.com/pricing on 8 Nov 2026
-# (500 MB database, 1 GB file storage, 50,000 MAU). An `ops-alert` issue opens at 80% of any of them,
-# or when a number cannot be read. Egress (5 GB) cannot be read from Postgres: the run summary says
-# NOT CHECKED, and the founder reads it on the dashboard (Organization > Usage).
+# Weekly Supabase Free plan usage check for scribe-prod, against the Free plan limits read on
+# supabase.com/pricing on 8 Nov 2026. Two numbers come from Postgres: database size (summed over every
+# database the role can connect to, as Supabase measures it; limit 500 MB) and the number of accounts (an
+# upper bound of the 50,000 monthly active users, since Supabase also counts token refreshes and this role
+# cannot see sessions). An `ops-alert` issue opens at 80% of either, or when a number cannot be read.
+# File storage (1 GB) and egress (5 GB) cannot be read as this narrow role: the run summary says NOT CHECKED,
+# and the founder reads both on the dashboard (Organization > Usage) every Monday when the issue or the
+# summary appears. This workflow is run in CI only through the unit tests and
+# supabase/tests/free_limits_sql.test.mjs (the SQL as the backup role); it has not run on GitHub.
 #
 # This file does NOT run in the earlyletters repository. Copy it unchanged to
 # `.github/workflows/supabase-free-limits.yml` in the PRIVATE repository `earlyletters-backups`.
 # Runbook: docs/ops/runbooks/free-tier-ops.md.
 #
 # It reads with the same read-only role and secret as the nightly backup (BACKUP_DB_URL,
-# docs/ops/backup/backup-role.sql) and prints numbers only (scripts/ops/free-limits.ts).
+# docs/ops/backup/backup-role.sql: no blanket read role, no sessions, no Storage, no Vault). Two workflows
+# share that one credential, so a leak of it is a leak of both; it is rotated on the dates in
+# docs/security/SECRETS_REVIEW.md 4.2b. It prints numbers only (scripts/ops/free-limits.ts).
 #
 # Secrets: BACKUP_DB_URL (shared with supabase-backup.yml).
 # Variables: PROD_PROJECT_REF, EARLYLETTERS_SHA (shared with supabase-keepalive.yml).
 #
-# Pins (checked 8 Nov 2026): actions/checkout 11bd71901bbe5b1630ceea73d27597364c9af683 = v4.2.2,
-# actions/setup-node 49933ea5288caeca8642d1e84afbd3f7d6820020 = v4.4.0.
+# Pins (checked 8 Nov 2026): actions/checkout 3d3c42e5aac5ba805825da76410c181273ba90b1 = v7.0.1,
+# actions/setup-node 820762786026740c76f36085b0efc47a31fe5020 = v7.0.0.
 
 name: Supabase Free plan limits
 
@@ -53,13 +59,13 @@ jobs:
           fi
           sudo apt-get install -y -qq --no-install-recommends "postgresql-client-$PG_MAJOR"
           echo "/usr/lib/postgresql/$PG_MAJOR/bin" >> "$GITHUB_PATH"
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: thesaurabhpareek/earlyletters
           ref: ${{ vars.EARLYLETTERS_SHA }}
           persist-credentials: false
           sparse-checkout: scripts/ops
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
       - name: Read usage (numbers only)

@@ -26,8 +26,8 @@
 #                                  scripts/ops this runs (pinned: a later push to that repository changes nothing here)
 #
 # Pins (checked 8 Nov 2026; the same pins the earlyletters workflows use):
-#   actions/checkout 11bd71901bbe5b1630ceea73d27597364c9af683 = v4.2.2
-#   actions/setup-node 49933ea5288caeca8642d1e84afbd3f7d6820020 = v4.4.0
+#   actions/checkout 3d3c42e5aac5ba805825da76410c181273ba90b1 = v7.0.1
+#   actions/setup-node 820762786026740c76f36085b0efc47a31fe5020 = v7.0.0
 
 name: Supabase keep-alive
 
@@ -52,13 +52,13 @@ jobs:
         env:
           SHA: ${{ vars.EARLYLETTERS_SHA }}
         run: '[[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Set the EARLYLETTERS_SHA variable to a full 40-character commit"; exit 1; }'
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: thesaurabhpareek/earlyletters
           ref: ${{ vars.EARLYLETTERS_SHA }}
           persist-credentials: false
           sparse-checkout: scripts/ops
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
       - name: One database read against production

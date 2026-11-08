@@ -29,8 +29,8 @@ Drill log (append one line per drill):
 
 Free nightly backup drills (BL-566, monthly, `staging-backup-free.md`; counts only, never content):
 
-| Date | Backup run (UTC) | Restore errors ignored | entries | policy_acceptances | deletion_requests | Verdict |
-|---|---|---|---|---|---|---|
+| Date | Backup run (UTC) | Restore errors (expected: 1, "schema public already exists") | Tables compared | Policies | Verdict |
+|---|---|---|---|---|---|
 
 ## Part 2. A real restore (corruption, bad migration, operator error)
 

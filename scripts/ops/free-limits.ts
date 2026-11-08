@@ -1,5 +1,5 @@
 /**
- * Weekly Supabase Free plan usage check (database size, Storage bytes, monthly sign-ins) against
+ * Weekly Supabase Free plan usage check (database size across all databases, accounts as an upper bound of MAU) against
  * scribe-prod, as the read-only backup role. Run by docs/ops/proposed/workflows/supabase-free-limits.yml.
  *
  *   LIMITS_DB_URL='postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require' \
