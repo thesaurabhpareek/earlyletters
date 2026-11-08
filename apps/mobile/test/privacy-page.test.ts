@@ -18,9 +18,9 @@ const code = (rel: string) =>
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 const screen = code('app/settings/privacy.tsx');
 const p = en.settings.privacy;
-const build1 = { sync: false, syncStatus: 'signed_out' as const, analytics: false, accountDeletion: false, signIn: false };
+const build1 = { sync: false, syncStatus: 'signed_out' as const, analytics: false, signIn: false };
 /** A servers-on build (the `preview` profile): sync, sign-in and analytics capabilities on. */
-const preview = { ...build1, sync: true, signIn: true, analytics: true, accountDeletion: true };
+const preview = { ...build1, sync: true, signIn: true, analytics: true };
 
 describe('[CPrivO-5] Settings > Privacy', () => {
   it('opens with trust.promise word for word, as plain text before any section, and no lock or shield icon', () => {
@@ -36,7 +36,7 @@ describe('[CPrivO-5] Settings > Privacy', () => {
   });
 
   it('build 1 (servers and analytics off): on this phone and not sent to us, speech on this phone, no reports, no account', () => {
-    expect(privacyPage(build1)).toEqual({ facts: ['keptOnPhone', 'speechOnPhone', 'noReports'], syncRow: false, analyticsSwitch: false, noAccountLine: true, deleteAccountRow: false });
+    expect(privacyPage(build1)).toEqual({ facts: ['keptOnPhone', 'speechOnPhone', 'noReports'], syncRow: false, analyticsSwitch: false, noAccountLine: true });
     expect(p.keptOnPhone).toBe('Your letters and recordings are kept on this phone. They are not sent to us.');
     expect(p.speechOnPhone).toBe('Your speech is written down on this phone.');
     expect(p.noReports).toBe('This version collects no usage or crash reports.');
@@ -50,7 +50,9 @@ describe('[CPrivO-5] Settings > Privacy', () => {
     expect(privacyPage({ ...preview, syncStatus: 'off' }).facts).toEqual(['keptOnPhone', 'speechOnPhone']);
     // Sync on: the synced line, never "not sent to us".
     expect(privacyPage({ ...preview, syncStatus: 'on' }).facts).toEqual(['keptSynced', 'speechOnPhone']);
-    expect(privacyPage({ ...preview, syncStatus: 'on' })).toMatchObject({ syncRow: true, analyticsSwitch: true, noAccountLine: false, deleteAccountRow: true });
+    expect(privacyPage({ ...preview, syncStatus: 'on' })).toMatchObject({ syncRow: true, analyticsSwitch: true, noAccountLine: false });
+    // D-129: Delete account is linked from Settings home only, never from Privacy.
+    expect(screen).not.toMatch(/delete-account|deleteAccount/);
     expect(p.keptSynced).toMatch(/on our servers/);
     expect(screen).toMatch(/syncStatus: sensitive\.status,/);
     expect(screen).toMatch(/analytics: capabilities\.analytics/);
