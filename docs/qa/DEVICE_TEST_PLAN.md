@@ -698,6 +698,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - VoiceOver on the Plan row reads "Plan", then the line under it when there is one, then "Free" (or "Plus").
 - **Record:** S1-111 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of Welcome, the Plan row and Plan at each step, with Asha only.
 
+### S1-142 The Plus line on Write (BL-560; F14-REQ-040, F04-REQ-045; founder decision F5; branch feat/mobile-bl560-write-plus-line)
+- **Needs:** (a) to (c) a build of the `production` profile on a fresh install, Plus off, with Asha's book; a sandbox Apple Account for (c). (d) a TestFlight build of the `testflight` profile with 3 or more of Mama's letters kept.
+- **Steps:** (a) Production, one letter kept: tap Type on Tonight; look above "Add to Asha's book". Close. (b) Keep a second letter. Tap Type again; type a few words; look at the same place, with the keyboard up, in light and dark. Then Larger Text at AX5: open Write again and look at the footer with the keyboard up. VoiceOver on: swipe from the page to the two buttons. (c) Start Plus in Apple's sheet (sandbox); open Write. (d) Testflight: open Write.
+- **Expected:**
+  - (a) No Plus line on Write.
+  - (b) "Adding new letters to the book needs Plus. Recording, reading and export are always free." in small muted type, centred, above the two buttons, with the same words as Tonight's line. No number, no price, nothing to press. It appears with Write, not after a moment's delay, and typing is not slowed. At AX5 the line wraps with no word cut, and both buttons stay above the keyboard. VoiceOver reads the line, then "Add to Asha's book", then "Keep private".
+  - (c) No line.
+  - (d) Alpha: no line, at any count.
+- **Record:** S1-142 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of the Write footer in (b) at default size and at AX5, with Asha only.
+
 ### S1-132 StoreKit robustness: unfinished transactions, the Keep step waits for StoreKit, offline at See Plus, and offline across a renewal (PR #517; RT-PAY-17, RT-PLS-10, RT-PAY-09, RT-OFC-06, RT-SUB-13; CR-46)
 - **Why a device row:** the native change (`apps/mobile/modules/scribe-store/ios/ScribeStoreModule.swift`, the `Transaction.unfinished` walk at start and the per-id `claim` in the `Transaction.updates` loop) runs in no Node test. CTO ruling (8 Nov): for native StoreKit code in an alpha build, this row is the evidence; a Swift unit test is not required for tonight.
 - **Needs:** (a) to (c): a development build run from Xcode with the StoreKit configuration file `apps/mobile/storekit/EarlyLetters.storekit` selected in the scheme (Xcode's Transaction Manager works only there; every record says "StoreKit file, not sandbox"). (d) to (f): a TestFlight build of the `production` profile (after Mon 9 Nov; the `.preview` bundle id loads no products) on a drill phone and a drill Apple Account (AL-09 "Drill identities"), or the same development build. Asha's book with exactly 2 of Mama's own letters kept with words, Plus off, unless a row says otherwise.
