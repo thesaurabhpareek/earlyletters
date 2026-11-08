@@ -13,3 +13,5 @@ export { onboardingStories, STORY_VISUALS } from './stories.en';
 export type { StoryCard, StoryVisual } from './stories.en';
 export * from './features';
 export { testflightCopy } from './release/testflight.en';
+export { HELPLINES, HELPLINE_DIRECTORY, helplinesFor } from './helplines';
+export type { Helpline, HelplineRegion, RegionHelplines } from './helplines';

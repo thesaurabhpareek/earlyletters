@@ -1307,25 +1307,21 @@ export const en = {
   // Do NOT add that sentence on the strength of search snippets.
   struggling: {
     title: "If you are struggling",
-    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential. They are for people in the United States.",
-    resources: [
-      {
-        name: "National Maternal Mental Health Hotline",
-        how: "Call or text 1-833-852-6262, any time, in English or Spanish.",
-        tel: "18338526262",
-      },
-      {
-        name: "988 Lifeline",
-        how: "Call or text 988, any time.",
-        tel: "988",
-      },
-      {
-        name: "Postpartum Support International",
-        how: "Call 1-800-944-4773 and a trained volunteer calls you back.",
-        tel: "18009444773",
-      },
-    ],
-    emergency: "If you or your baby are in danger right now, call 911.",
+    // struggling-page.md section 4 working copy; the lines themselves live in helplines.ts with their sources.
+    body: "The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",
+    emergencyTitle: "In danger right now?",
+    emergencyCall: "Call {n}",
+    emergencyLocal: "Call your local emergency number.",
+    call: "Call",
+    text: "Text",
+    callA11y: "Call {name}",
+    textA11y: "Text {name}",
+    directory: "Find a free helpline near you",
+    directoryBody: "A directory of verified lines in many countries.",
+    otherCountries: "Lines in other countries",
+    otherCountriesBody: "If you are travelling, or your phone is set to somewhere you are not.",
+    emergencyIn: "Emergency: {n}",
+    privacy: "Nothing on this page is recorded or sent.",
   },
 
   // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
@@ -1337,6 +1333,11 @@ export const en = {
     // When this device cannot call: the number to copy.
     noCallTitle: "Call from a phone",
     noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    // When this device cannot send a text: the number to copy.
+    noTextTitle: "Text from a phone",
+    noTextBody: "Messages did not open on this device. Copy the number and use it on a phone.",
+    textHint: "Opens Messages, or shows the number to copy.",
+    webHint: "Opens the directory in a browser.",
     copyNumber: "Copy number",
     numberCopied: "Number copied",
     // When Mail cannot open: our address to copy.
