@@ -44,8 +44,9 @@ export const storeListing = {
   subtitle: brand.subtitle,
   promotionalText:
     "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
-  keywords: "diary,keepsake,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,private,talk,mama",
-  description: `${brand.name} is the baby memory book you fill by talking.
+  // D-139: no word from the name or subtitle; "memory" and "book" keep those searches matching. 100 of 100 bytes.
+  keywords: "diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",
+  description: `${brand.name}: letters to your child, in your own words and voice.
 
 Tell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.
 

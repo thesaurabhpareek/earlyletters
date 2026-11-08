@@ -144,7 +144,8 @@ const BL_488: Record<string, string> = {
 
 /**
  * Registered disclosure text, word for word (in-app-disclosures.md 3a, and S55's `consent.terms.*`, KEEP verbatim under
- * LEGAL-REQ-001 and -006). `consent.terms.healthLink` stays until #163 lands (the coordinator's ruling, 28 Oct).
+ * LEGAL-REQ-001 and -006). `consent.terms.healthLink` came out with BL-564 (1 Nov 2026): #163 merged, the website serves no
+ * /health-privacy page, and the sheet links to the Terms and the Privacy Policy only.
  */
 const REGISTERED: Record<string, string> = {
   'sheet.privacy': 'Only you and the people you invite can read your letters. We never sell them or use them for ads.',
@@ -156,7 +157,6 @@ const REGISTERED: Record<string, string> = {
   'consent.terms.agreeLine': 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
   'consent.terms.termsLink': 'Terms of Service',
   'consent.terms.privacyLink': 'Privacy Policy',
-  'consent.terms.healthLink': 'Consumer Health Data Privacy Policy',
   'consent.terms.agree': 'Agree and continue',
   'consent.terms.notNow': 'Not now',
 };
