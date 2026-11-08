@@ -2564,6 +2564,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 #### BL-566 Staging has a daily backup and one restore drill before real letters land (DATA-01)
 - Status: needs-founder (W0-17). Mode: human. Owner: platform. Severity: S0. Area: ops. **Decided: no paid backup; the free path (D-138 item 2).** Build it per `docs/ops/runbooks/staging-backup-free.md`: a nightly encrypted dump in a private GitHub repository, plus a monthly restore drill from the founder's Mac.
 - Who: `ops`.
+- Built (8 Nov 2026, PR #622, draft): the workflow for the private repository (`docs/ops/backup/staging-backup.yml`), the read-only role (`docs/ops/backup/backup-role.sql`) and the drill's row count (`scripts/ops/restore-check.ts`); the runbook points at them. Left: the founder's steps 1 to 6 (W0-17) and the first drill. Unverified until they run: whether Supabase lets `postgres` grant `pg_read_all_data`, the session pooler user form for a custom role, staging's Postgres major version.
 - Problem: staging will hold family letters in build 2. No backup tier is recorded (`docs/release/ENVIRONMENTS.md:70-75`), Free has no backups (supabase.com/docs/guides/platform/backups, read 1 Nov 2026), and the restore drill log is empty (`docs/ops/runbooks/restore-drill.md:27`). Storage objects are never in Supabase backups.
 - Requirement: before the first build 2 sign-in, staging has a backup under 24 hours old and one restore drill has passed on a synthetic project.
 - Acceptance:
