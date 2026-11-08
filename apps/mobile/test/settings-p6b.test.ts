@@ -5,7 +5,7 @@
  * use of the rules is pinned in their source. Registered words are pinned word for word in
  * packages/content/test/experience-pass.test.ts; here they are read as they are. Fixtures: the fictional family Asha.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
@@ -249,9 +249,9 @@ describe('[S42] Recordings', () => {
       const sentences = [c.body, c.footer].filter((x): x is string => !!x).flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(sentences.length).toBe(new Set(sentences).size);
     }
-    const screen = code('app/settings/recordings.tsx');
-    expect(screen).not.toMatch(/r\.keepHelp/);
-    expect(screen).toMatch(/<ListSection title=\{r\.title\} footer=\{card\.footer \?\? undefined\}>/);
+    // The Recordings page is gone (8 Nov 2026): Where your letters live says where the book is kept
+    // (test/where-live.test.ts). recordingsCard stays for the backup build's held lines (C7).
+    expect(existsSync(join(SRC, 'app/settings/recordings.tsx'))).toBe(false);
   });
 
   it('the language row is actionable when the model is missing, and shows its progress while it downloads', () => {
@@ -270,7 +270,8 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
     expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
-    expect(code('app/settings/recordings.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
+    // The row moved to Storage with the language download (settings-ia.md 4).
+    expect(code('components/settings/speech-row.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
   });
 });
 
@@ -314,15 +315,11 @@ describe('[S43] Export', () => {
 });
 
 describe('[S44] Privacy', () => {
-  it('the never-lines are a plain list with a glyph each, not rows, with their registered words', () => {
-    const list = code('components/consent/never-list.tsx');
-    expect(list).not.toMatch(/ListRow|ListSection/);
-    expect(list).toMatch(/consentCopy\.never\.map/);
-    // LockSimple: the icon section 5.4 lists for S44 (the coordinator's ruling on #313).
-    expect(list).toMatch(/import \{ LockSimpleIcon \} from 'phosphor-react-native\/src\/icons\/LockSimple';/);
-    expect(list).toMatch(/<LockSimpleIcon size=\{20\} color=\{c\.textMuted\} \/>/);
-    expect(list).not.toMatch(/Prohibit/);
-    expect(code('app/settings/privacy.tsx')).toMatch(/<NeverList \/>/);
+  it('the never-list is gone: the promise opens the page, with no lock icon (CPrivO-5, VOICE.md)', () => {
+    expect(existsSync(join(SRC, 'components/consent/never-list.tsx'))).toBe(false);
+    const screen = code('app/settings/privacy.tsx');
+    expect(screen).not.toMatch(/NeverList|consentCopy\.never|Lock\w*Icon|Shield/);
+    expect(screen).toMatch(/\{copy\.trust\.promise\}/);
   });
 });
 
