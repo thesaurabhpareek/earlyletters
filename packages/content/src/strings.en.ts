@@ -242,6 +242,11 @@ export const en = {
     // `book.waitingForWords`; read back reuses `tonight.afterSave.reviewButton`.
     draft: {
       held: "Waiting to be kept.",
+      // Two or more held letters fold into one row on Tonight that opens their list (F14-REQ-041). One held letter
+      // keeps its own card, so this line is only ever plural.
+      heldMany: "Letters waiting to be kept.",
+      heldShowButton: "Show them",
+      heldHideButton: "Hide them",
       // Not "Kept": that is the Keep step's word, and this card is not kept yet.
       swept: "Recorded before the app closed.",
       typedA11y: "A letter you started, {date}.",
@@ -280,6 +285,17 @@ export const en = {
     discardBody: "It will be removed from this phone.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
+    // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
+    // it into the letter when it flips (F04-REQ-041); "Paused." is said once the recording has stopped.
+    toggleA11y: "Pause or keep talking",
+    // Our own short note before the iOS microphone question, shown once: the first tap on Speak, while iOS has not
+    // asked yet (SR-C-05, F04-REQ-034, F04-REQ-047). "Continue" opens the iOS question; "Type instead" is
+    // `errors.micDenied.typeButton`. The iOS purpose string itself is `permissions.microphone` (counsel's wording).
+    primer: {
+      title: "Your phone will ask about the microphone",
+      body: "{app} uses it to hear the letters you speak to {child}. It listens only while you record.",
+      continueButton: "Continue",
+    },
   },
 
   // Write screen (COMPONENTS 2.8).
@@ -537,6 +553,9 @@ export const en = {
     dateline: {
       monthOnly: "Sometime in Month {month}",
       monthOnlyNewborn: "Sometime in the first weeks",
+      // The age sentence after the day for a letter the Book files in Before You: no birthday yet, or a day before
+      // it. Never an age counted from a due date (QE-01).
+      beforeBirth: "Before {child} was born.",
     },
     changeDate: {
       // {label} is the month's name in the book: "Month 2", "The first weeks" or "Before You".
