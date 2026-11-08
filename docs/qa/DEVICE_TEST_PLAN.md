@@ -677,6 +677,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-97b rows (a) to (d) with the build number, phone and iOS version; for (a) the percent at Stop and the percent shown a few seconds after Download; if you tried it with a recording waiting, the row after you leave the app and come back (it can be back on "Getting ready, n%" with Stop); screenshots with Asha only.
 - **Update:** If (a) starts again from 0 after the percent had passed 3%: `apps/mobile/src/lib/packs/engine.ts` `cancel` and `download` (the `.part` file in staging). If a stopped download starts again by itself with no recording waiting: `lib/transcription-queue/index.ts` `refreshReady`. `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 9 where a result differs.
 
+### S1-141 The early-version note in the store build (BL-607; D-060, D-030; branch test/mobile-bl607-store-early-note)
+- **Needs:** a build of the `production` profile and a TestFlight build of the `testflight` profile, each with Asha's book.
+- **Steps:** (a) In each build: Settings, scroll to About; read the version row and the note under it. (b) Larger Text at AX5 in the production build: the same. (c) VoiceOver on: swipe from the version row to the sign-off.
+- **Expected:**
+  - (a) Both builds show the same note, word for word: "{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then." with the app's name. No "Early version" heading; the version row reads "{version} ({build})".
+  - (b) The whole note wraps; no word is cut off.
+  - (c) VoiceOver reads the version row, then the note as one element, then the sign-off.
+  - If the founder has amended D-060 for the store build before this row is run, stop and record "superseded".
+- **Record:** S1-141 rows (a) to (c): phone, iOS version, build number and profile; one screenshot of About per build, with Asha only.
+
 ### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
 - **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
 - **Steps:** (a) Alpha: read the line under the Welcome body; open Settings and read the Plan row; open Plan. (b) Production, Plus off: read the Welcome line; set up Asha's book; keep a first and then a second letter (each with words on screen) and read the toast on the Book; open Settings and read the Plan row; open Plan and read every section. (c) Start Plus Monthly in Apple's sheet (sandbox); come back to Settings and read the Plan row, then Plan. (d) Let the sandbox subscription lapse (cancel, then wait for the sandbox renewal period to end); read the Plan row and Plan.
