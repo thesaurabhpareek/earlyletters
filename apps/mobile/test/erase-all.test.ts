@@ -15,8 +15,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { accountDeletionCopy, en } from '@scribe/content';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { eraseNoteKeys } from '../src/components/settings/wipe.logic';
-import { showSubscriptionNotice } from '../src/lib/account-deletion/logic';
+import { erasePlusLineShows, eraseNoteKeys, type ErasePlan } from '../src/components/settings/wipe.logic';
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
@@ -963,26 +962,56 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     for (const label of [e.button, e.exportButton, e.confirmButton, e.back]) expect(label.length, label).toBeLessThanOrEqual(22);
   });
 
-  it('the notes read: backups, this phone only, speech, then (store build, Plus renewing) the Plus line, then (store build) free letters', () => {
-    expect(eraseNoteKeys({ alpha: false, plusRenews: true })).toEqual(['backups', 'onThisPhone', 'speechStays', 'plusStays', 'freeLetters']);
-    expect(eraseNoteKeys({ alpha: false, plusRenews: false })).toEqual(['backups', 'onThisPhone', 'speechStays', 'freeLetters']);
+  // The device's Plus state as usePlan().details holds it (lib/billing/plan.logic.ts PlanDetails): status, willAutoRenew, ownership.
+  const PLANS = {
+    none: { status: 'none', willAutoRenew: null, ownership: null },
+    purchased: { status: 'active', willAutoRenew: true, ownership: 'purchased' },
+    trial: { status: 'trial', willAutoRenew: null, ownership: 'purchased' },
+    billingRetry: { status: 'billing_retry', willAutoRenew: null, ownership: 'purchased' },
+    ending: { status: 'active', willAutoRenew: false, ownership: 'purchased' },
+    expired: { status: 'expired', willAutoRenew: false, ownership: 'purchased' },
+    refunded: { status: 'refunded', willAutoRenew: null, ownership: 'purchased' },
+    revoked: { status: 'revoked', willAutoRenew: null, ownership: 'purchased' },
+    // Ownership not read (the guard is only for Family Sharing; the Plus line is the default for Plus that will renew).
+    ownerUnread: { status: 'active', willAutoRenew: true, ownership: null },
+    familyShared: { status: 'active', willAutoRenew: true, ownership: 'familyShared' },
+    familySharedUnknown: { status: 'active', willAutoRenew: null, ownership: 'familyShared' },
+    familySharedTrial: { status: 'trial', willAutoRenew: null, ownership: 'familyShared' },
+  } satisfies Record<string, ErasePlan>;
+  const shows = (alpha: boolean, plan: ErasePlan) => eraseNoteKeys({ alpha, plan }).includes('plusStays');
+
+  it('the notes read: backups, this phone only, speech, then (store build, own Plus renewing) the Plus line, then (store build) free letters', () => {
+    expect(eraseNoteKeys({ alpha: false, plan: PLANS.purchased })).toEqual(['backups', 'onThisPhone', 'speechStays', 'plusStays', 'freeLetters']);
+    expect(eraseNoteKeys({ alpha: false, plan: PLANS.none })).toEqual(['backups', 'onThisPhone', 'speechStays', 'freeLetters']);
   });
 
-  it('the Plus line is hidden in alpha, hidden when Plus is off, shown when Plus is on in the store build (the account-deletion screen\'s signal)', () => {
-    const none = { status: 'none', willAutoRenew: null };
-    const active = { status: 'active', willAutoRenew: true };
-    const notRenewing = { status: 'active', willAutoRenew: false };
-    const expired = { status: 'expired', willAutoRenew: false };
-    const shows = (alpha: boolean, plan: { status: string; willAutoRenew: boolean | null }) => eraseNoteKeys({ alpha, plusRenews: showSubscriptionNotice(plan) }).includes('plusStays');
-    expect([shows(true, active), shows(true, none)]).toEqual([false, false]); // alpha: never
-    expect([shows(false, none), shows(false, expired), shows(false, notRenewing)]).toEqual([false, false, false]); // store build, Plus off or ending: no
-    expect(shows(false, active)).toBe(true); // store build, Plus on and renewing
-    expect(shows(false, { status: 'trial', willAutoRenew: null })).toBe(true);
-    // The page asks exactly that, from the device's plan, and from nothing a person can set.
+  it('the Plus line: hidden in alpha whatever the plan, hidden when Plus is off or ending, shown when the person\'s own Plus is on and renewing in the store build', () => {
+    // Alpha: never, even with the plan that shows it in the store build.
+    for (const [name, plan] of Object.entries(PLANS)) expect([name, erasePlusLineShows({ alpha: true, plan }), shows(true, plan)]).toEqual([name, false, false]);
+    // Store build, no Plus or Plus that is ending: no.
+    for (const name of ['none', 'expired', 'refunded', 'revoked', 'ending'] as const) expect([name, erasePlusLineShows({ alpha: false, plan: PLANS[name] })]).toEqual([name, false]);
+    // Store build, the person's own Plus on and renewing (or not yet known to be ending): yes.
+    for (const name of ['purchased', 'trial', 'billingRetry', 'ownerUnread'] as const) expect([name, erasePlusLineShows({ alpha: false, plan: PLANS[name] }), shows(false, PLANS[name])]).toEqual([name, true, true]);
+  });
+
+  it('[family member] Plus through Family Sharing never shows the Plus line: someone else is billed, so "Billing continues through Apple until you cancel" would be false for them', () => {
+    for (const name of ['familyShared', 'familySharedUnknown', 'familySharedTrial'] as const) {
+      expect([name, erasePlusLineShows({ alpha: false, plan: PLANS[name] }), shows(false, PLANS[name])]).toEqual([name, false, false]);
+      // The rest of the page is as for anyone in the store build.
+      expect(eraseNoteKeys({ alpha: false, plan: PLANS[name] })).toEqual(['backups', 'onThisPhone', 'speechStays', 'freeLetters']);
+    }
+    // Only the ownership differs from the purchased plan that shows it.
+    expect(erasePlusLineShows({ alpha: false, plan: { ...PLANS.purchased, ownership: 'familyShared' } })).toBe(false);
+    expect(erasePlusLineShows({ alpha: false, plan: PLANS.purchased })).toBe(true);
+  });
+
+  it('the page asks exactly that of the device\'s plan (usePlan), through the pure function, and from nothing a person can set', () => {
     const s = screen();
-    expect(s).toMatch(/const plusRenews = showSubscriptionNotice\(usePlan\(\)\.details\);/);
-    expect(s).toMatch(/import \{ showSubscriptionNotice \} from '@\/lib\/account-deletion\/logic';/);
+    expect(s).toMatch(/const plan = usePlan\(\);/);
+    expect(s).toMatch(/eraseNoteKeys\(\{ alpha: PLUS_ALPHA, plan: plan\.details \}\)/);
     expect(s).toMatch(/import \{ usePlan \} from '@\/lib\/billing';/);
+    // The decision lives in wipe.logic.ts: the page holds no plan or ownership test of its own.
+    expect(s).not.toMatch(/familyShared|willAutoRenew|showSubscriptionNotice|\.status\b/);
   });
 
   it('the page draws the body, then the notes in that order, then the Export card, then the button; every note is the muted note style, none is body weight', () => {
@@ -1000,11 +1029,11 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     // One list drawn once: the order on screen and the order VoiceOver reads are the same list. The page names no note itself.
     expect(s).toMatch(/\{notes\.map\(\(k\) => \(\s*<Text key=\{k\} variant="subhead" tone="muted">\s*\{e\[k\]\}\s*<\/Text>\s*\)\)\}/);
     expect(s).not.toMatch(/\be\.(backups|onThisPhone|speechStays|plusStays|freeLetters)\b/);
-    expect(s).toMatch(/const notes = eraseNoteKeys\(\{ alpha: PLUS_ALPHA, plusRenews \}\);/);
+    expect(s).toMatch(/const notes = eraseNoteKeys\(\{ alpha: PLUS_ALPHA, plan: plan\.details \}\);/);
   });
 
   it('every note key names a string, and each is one plain sentence or two with the content rules\' characters', () => {
-    for (const k of eraseNoteKeys({ alpha: false, plusRenews: true })) {
+    for (const k of eraseNoteKeys({ alpha: false, plan: PLANS.purchased })) {
       const line = e[k];
       expect(typeof line, k).toBe('string');
       expect(line, k).not.toMatch(/[^\x20-\x7e]/);

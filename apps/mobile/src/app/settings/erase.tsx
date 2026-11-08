@@ -9,7 +9,6 @@ import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { ErrorLine } from '@/lib/auth/ui';
 import { announce, useTheme } from '@/lib/a11y';
-import { showSubscriptionNotice } from '@/lib/account-deletion/logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { usePlan } from '@/lib/billing';
 import { copy } from '@/lib/copy';
@@ -39,8 +38,8 @@ export default function EraseEverything() {
   const erasing = phase === 'erasing';
   const erasingRef = useRef(false);
   erasingRef.current = erasing;
-  // The same signal as Settings > Delete account's Plus card: Plus that will renew, or not yet known.
-  const plusRenews = showSubscriptionNotice(usePlan().details);
+  // The device's Plus state, for the Plus line (wipe.logic.ts erasePlusLineShows: the Delete account screen's signal, and not Family Sharing).
+  const plan = usePlan();
 
   // Android's back does nothing while erasing (the native stack's swipe is off below; this holds the hardware key).
   useFocusEffect(
@@ -84,7 +83,7 @@ export default function EraseEverything() {
     Alert.alert(d.title, d.body, d.buttons);
   };
 
-  const notes = eraseNoteKeys({ alpha: PLUS_ALPHA, plusRenews });
+  const notes = eraseNoteKeys({ alpha: PLUS_ALPHA, plan: plan.details });
 
   return (
     <ScrollView key="review" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">

@@ -1,6 +1,7 @@
 /**
  * Rules for the Delete this book and Erase everything screens (BL-387; F17 6.2 D, 6.2 F). Pure, no React Native.
  */
+import { showSubscriptionNotice } from '@/lib/account-deletion/logic';
 
 /** The typed confirm: the word, any case, spaces around it ignored (the same rule as account deletion). */
 export function typedWordMatches(typed: string, word: string): boolean {
@@ -32,17 +33,35 @@ export function eraseConfirmDialog(
 /** The notes under the body on the Erase everything page, each a key of `copy.settings.erase`. */
 export type EraseNoteKey = 'backups' | 'onThisPhone' | 'speechStays' | 'plusStays' | 'freeLetters';
 
+/** What the page reads of the device's Plus state (a `PlanDetails` from `usePlan().details` has all three). */
+export interface ErasePlan {
+  status: string;
+  willAutoRenew: boolean | null;
+  /** 'familyShared' when the Plus on this phone is another person's, shared through Family Sharing. */
+  ownership: string | null;
+}
+
+/**
+ * Whether the Plus line ("Erasing does not cancel Plus. Billing continues through Apple until you cancel.") is shown.
+ * Only in the store build, never in an alpha build whatever the plan reads; and only while this person's own Plus will
+ * renew: the account-deletion screen's signal (`showSubscriptionNotice`: not none, expired, revoked or refunded, and
+ * not known to be ending), and not Plus shared through Family Sharing, where someone else is billed and the line
+ * would be false (settings/plan.logic.ts reads `ownership === 'familyShared'` the same way).
+ */
+export function erasePlusLineShows(o: { alpha: boolean; plan: ErasePlan }): boolean {
+  return !o.alpha && showSubscriptionNotice(o.plan) && o.plan.ownership !== 'familyShared';
+}
+
 /**
  * Erase everything, step 1: which notes the page shows under the body, in the order they are read and drawn
  * (council on #520, founder decision of 8 Nov; one list, so the visual order and the VoiceOver order cannot differ).
  * What stays comes first and together: backups and saved exports, this phone only, the speech model. Then, in the
- * store build only: the Plus line, and only while Plus will renew (the account-deletion screen's signal,
- * `showSubscriptionNotice`), and last the free-letters line. In an alpha build (no letter limit, Plus products cannot
- * load, `PLUS_ALPHA`) neither is ever shown.
+ * store build only: the Plus line (`erasePlusLineShows`), and last the free-letters line. In an alpha build (no letter
+ * limit, Plus products cannot load, `PLUS_ALPHA`) neither is ever shown.
  */
-export function eraseNoteKeys(o: { alpha: boolean; plusRenews: boolean }): EraseNoteKey[] {
+export function eraseNoteKeys(o: { alpha: boolean; plan: ErasePlan }): EraseNoteKey[] {
   const keys: EraseNoteKey[] = ['backups', 'onThisPhone', 'speechStays'];
-  if (!o.alpha && o.plusRenews) keys.push('plusStays');
+  if (erasePlusLineShows(o)) keys.push('plusStays');
   if (!o.alpha) keys.push('freeLetters');
   return keys;
 }
