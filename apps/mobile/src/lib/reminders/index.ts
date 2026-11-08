@@ -2,11 +2,10 @@
  * Reminders (PRD C F1, F2, C-REQ-001 to -011): local notifications only.
  *
  * For the coordinator: call `startReminders()` once at boot (root layout,
- * after the store is ready). For the priming card after the first letter
- * (C-REQ-001), on "Yes, evenings": if `await needsPriming()`, show
- * `<ReminderPrimingSheet>` and call `enableReminders()` from its one button;
- * otherwise call `enableReminders()` straight away. For the Settings home
- * row: `remindersSummary()`.
+ * after the store is ready). Both doors that turn reminders on (the Settings
+ * switch and the card after the first letter, C-REQ-001) call
+ * `turnOnReminders()`, which goes straight to the iOS alert: there is no sheet
+ * in front of it (CDesO-3). For the Settings home row: `remindersSummary()`.
  */
 import { copy } from '../copy';
 import { reminderCopy } from './copy';
@@ -26,18 +25,24 @@ export {
   type ReminderTime,
   type ReminderWindow,
 } from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, readPrefs, writePrefs } from './prefs';
-export { ReminderPrimingSheet } from './priming-sheet';
+export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writePrefs } from './prefs';
 export {
   currentPlan,
   disableReminders,
   enableReminders,
   forgetReminders,
   getReminderPermission,
-  needsPriming,
+  getReminderPermissionDetail,
+  intendedPlan,
+  lastScheduleResult,
+  nextReminder,
   rescheduleReminders,
   startReminders,
+  subscribeScheduleResult,
+  turnOnReminders,
   type ReminderPermission,
+  type ScheduleResult,
+  type TurnOnResult,
 } from './scheduler';
 
 /** "8:30 PM" (en-US) or "20:30" (en-GB), in the device's English locale. */

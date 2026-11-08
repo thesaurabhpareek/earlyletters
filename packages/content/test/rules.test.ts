@@ -224,12 +224,12 @@ describe('prompts', () => {
     // app: the public name, filled from packages/brand (never typed in in-app copy);
     // version, build: the app version row; date, reference, days, email: transactional emails;
     // label, duration, elapsed, total: player VoiceOver; size, percent: downloads; format: export
-    // readme; cancelBy: trial end; coParent: deletion summary.
+    // readme; cancelBy: trial end; coParent: deletion summary; time: a reminder time ("8:30 PM").
     const allowed = new Set([
       'child', 'name', 'signsAs', 'count', 'month', 'weekday', 'year', 'inviter', 'price', 'n',
       'a', 'b', 'minutes', 'seconds', 'letters', 'notes', 'app', 'version', 'build',
       'date', 'reference', 'days', 'email', 'label', 'duration', 'elapsed', 'total', 'size',
-      'percent', 'format', 'cancelBy', 'coParent',
+      'percent', 'format', 'cancelBy', 'coParent', 'time',
     ]);
     const unknown = ALL.flatMap((l) => [...l.text.matchAll(/\{(\w+)\}/g)].map((m) => m[1])).filter((p) => !allowed.has(p));
     expect([...new Set(unknown)]).toEqual([]);

@@ -171,8 +171,6 @@ export const en = {
       timeLabel: "Remind me at",
       noneOption: "No reminders",
       noneHelp: "You can write whenever you like.",
-      permissionTitle: "A few evenings a week",
-      permissionBody: "Just a nudge. You can change the time or turn it off any time.",
       cta: "Set reminder",
     },
 
