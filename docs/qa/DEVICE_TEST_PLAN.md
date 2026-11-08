@@ -221,9 +221,27 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
   5. Slow Wi-Fi under 2 Mbps (Network Link Conditioner "3G" or a 1 Mbps profile on the router): let it run at least 10 minutes.
   6. Settings > Storage, cancel or remove the model mid-download, then go back to a screen with the card or Review.
   7. Book, Review (a recording waiting for its words) and Settings > Recordings while the model downloads or waits: the same rule applies there.
-- **Expected:** The card never shows "0%". Before bytes move: "Waiting to start", then "Downloading", then "Getting ready, n%" with a bar that moves. "Checking the download" and "Finishing" at the end, then "On this phone, 575 MB". Wi-Fi off: "Waits for Wi-Fi, 575 MB", no bar, no percent; it carries on by itself when Wi-Fi returns. Background and return: it carries on from where it was (the percent does not drop to the start). Slow Wi-Fi: the percent keeps moving and the download finishes, however long it takes. Any stop: a calm line with Try again ("Paused" after a cancel); after several automatic tries on a link that keeps stopping, "The download stopped. Tap Try again when the Wi-Fi is steady." VoiceOver announces a line that offers Try again once. Book, Review and Settings show their wait line, never 0%.
+- **Expected:** The card never shows "0%". Before bytes move: "Waiting to start", then "Downloading", then "Getting ready, n%" with a bar that moves. "Almost ready. Checking the download." and "Finishing" at the end, then "On this phone, 575 MB". Wi-Fi off: "Waits for Wi-Fi, 575 MB", no bar, no percent; it carries on by itself when Wi-Fi returns. Background and return: it carries on from where it was (the percent does not drop to the start). Slow Wi-Fi: the percent keeps moving and the download finishes, however long it takes. Any stop: a calm line with Try again ("Paused" after a cancel); after several automatic tries on a link that keeps stopping, "The download stopped. Tap Try again when the Wi-Fi is steady." VoiceOver announces each change of state once, never each percent; a stop is announced once, with its Try again line. Book, Review and Settings show their wait line, never 0%.
 - **Record:** S1-15a row: each step's lines as seen (no letter text). Step 3: did the card say "Waits for Wi-Fi" on Wi-Fi with a VPN (yes or no: confirms or clears the expo-network `UNKNOWN` hypothesis). Step 5: link speed and total minutes.
 - **Update:** If step 3 says yes: open an issue for `packs/expo-adapter.ts` `toConnection` (a Wi-Fi path that also uses an "other" interface reads `UNKNOWN`). If step 5 fails: STALL_MS and WASTED_CHUNKS_PER_RUN in `packs/engine.ts`.
+
+### S1-15b TF1-WAIT First-run wait: the bar, the "start now" line and VoiceOver (PR #626, founder's TestFlight report)
+- **Steps:** Fresh install, finish first run to "The book is open.", tap Download on Wi-Fi, keep the card on screen. Phones: iPhone SE (3rd generation) and one Pro Max size.
+  1. Watch the first minute of the download.
+  2. Settings > Accessibility > Motion > Reduce Motion on; repeat step 1 (a second fresh install, or after Remove in Storage).
+  3. VoiceOver on; focus the card and leave it for 2 minutes.
+  4. Settings > Display and Text Size > Larger Text, largest accessibility size (AX5); return to the card.
+  5. Turn Wi-Fi off mid-download; then on.
+  6. With the download still running, tap "Write the first one", type a line, then Speak and record 20 s; Finish and Keep.
+- **Expected:**
+  1. Under the card's line: "You can start now. Your voice is kept, and the words follow." The bar's track is visible from the start; the fill grows smoothly with the percent. Below 1% no number shows and the bar may look empty: that is expected (the fill is the true fraction, a fraction of a point wide). From 1% the fill is visible and moves.
+  2. With Reduce Motion on, the fill steps instead of gliding.
+  3. VoiceOver says the state once when it changes (for example "Downloading", then "Almost ready. Checking the download."), never each new percent. Focusing the bar reads its label and, from 1%, the percent.
+  4. At AX5 the "start now" line wraps in full, with nothing cut off, and the card scrolls; the pinned button stays reachable.
+  5. Wi-Fi off: the Wi-Fi wait line, and the "start now" line stays. A stop shows "The download stopped." with its reason and Try again once; the "start now" line is hidden while stopped.
+  6. Typing and recording both work while the download runs. The recorded letter waits for its words and gets them once the download finishes.
+- **Record:** S1-15b row: each step pass or fail, phone model and iOS version (no letter text). Step 1: the percent at which the fill first became visible.
+- **Update:** If step 4 clips: `components/onboarding/speech-consent-card.tsx` footnote. If step 6 fails: the "start now" line is not true on this build; remove `speechConsentCopy.startNow` from the card before the next build.
 
 ### S1-16 Language packs on demand (decision 15, D-065)
 - **Steps:** Settings > Spoken language: add Portuguese. Then Storage: only `text-rules.pt` is new. Add Hindi as the primary: its text pack plus its speech model (the Hindi small model once hosted, else the shared one). Turn on the `packDownloads` kill switch in the staging config (RELEASE.md 9) and add French. Remove a pack in Storage.
