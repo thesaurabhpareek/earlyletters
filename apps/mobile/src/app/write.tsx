@@ -15,16 +15,26 @@
  *   fails shows "Not saved yet" in the same place and is tried again on the next pause. Neither is a status colour:
  *   this is lit paper (D-110).
  *
+ * "Another thought" (engagement.md section 3, Option A; BL-E1): the quiet Tonight control under the prompt, for a new
+ * letter that opened with one. A press swaps the line in place from the hand-written library, never one already shown
+ * in this sheet until all that fit are used up (components/tonight/prompt.logic.ts `anotherThought`, Tonight's own
+ * selectPrompt input). The old line fades out over exitMs, the new one fades in where it stood, and the field slides
+ * with the height change; Reduce Motion swaps at once with no slide. `tap` haptic; VoiceOver hears the new line once
+ * and focus stays on the button. It fades out at the first character and comes back when the page is empty again,
+ * holding its space so nothing moves near the cursor. The letter keeps the question showing when its words are first
+ * saved.
+ *
  * Typed letters skip Review (S20). A destination tap saves the words, then hands the letter to Review's one Keep step
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
  */
 import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
+import { ArrowsClockwiseIcon } from 'phosphor-react-native/src/icons/ArrowsClockwise';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions, type TextInput } from 'react-native';
-import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
@@ -37,10 +47,13 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
+import { anotherThought, anotherThoughtShown } from '@/components/tonight/prompt.logic';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
-import { createDraft, deleteDraft, getActiveChild, getDraft, setDraftTyped, todayISO } from '@/lib/store';
+import { haptic } from '@/lib/haptics';
+import { useMotion } from '@/lib/motion';
+import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
 
 const ANNOUNCE_EVERY_MS = 10_000;
 
@@ -63,8 +76,16 @@ export default function Write() {
   const draftId = useRef<string | null>(existing?.id ?? null);
   const lastAnnounced = useRef(0);
 
-  const promptKey = params.promptKey ?? existing?.promptKey ?? null;
+  // The question on screen. It starts as the one Tonight or the draft carried; "Another thought" may swap it while the
+  // page is empty, and the one showing when the words are first saved is the one the letter keeps.
+  const [promptKey, setPromptKey] = useState<string | null>(params.promptKey ?? existing?.promptKey ?? null);
   const prompt = promptKey ? PROMPTS.find((p) => p.key === promptKey) : undefined;
+  // Every prompt shown in this sheet, in order (the one on screen last), and how many presses so far.
+  const shownKeys = useRef<string[]>(promptKey ? [promptKey] : []);
+  const presses = useRef(0);
+  // What the next draw needs to know about this child's letters, read from the store on the first press only, never
+  // when Write opens or on a keystroke.
+  const history = useRef<{ recentKeys: string[]; daysSinceLastEntry: number | null } | null>(null);
 
   /** Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so. */
   const persist = (value: string): boolean => {
@@ -161,6 +182,37 @@ export default function Write() {
     [navigation],
   );
 
+  const motion = useMotion();
+  const swapPrompt = () => {
+    if (!child) return;
+    // The question belongs to the words: a typed draft emptied back to nothing is nothing (as on Close), so it goes
+    // and the next words start a letter that keeps the new question. The button is only offered on a new letter
+    // (`!existing`), so this draft was made on this page, typed, with no recording.
+    if (!existing && draftId.current && !session.latest().trim()) {
+      try {
+        deleteDraft(draftId.current);
+        draftId.current = null;
+      } catch {
+        // Kept as it is: the draft keeps its first question.
+      }
+    }
+    const today = todayISO();
+    if (!history.current) {
+      const entries = listEntriesForChild(child.id);
+      history.current = {
+        recentKeys: entries.map((e) => e.promptKey).filter((k): k is string => !!k),
+        daysSinceLastEntry: entries[0] ? Math.floor((Date.parse(today) - Date.parse(entries[0].occurredOn)) / 864e5) : null,
+      };
+    }
+    presses.current += 1;
+    const next = anotherThought({ birthday: child.birthday, today, ...history.current, shown: shownKeys.current, press: presses.current }, PROMPTS);
+    shownKeys.current = next.shown;
+    haptic('tap');
+    setPromptKey(next.prompt.key);
+    // Said once; focus stays on the button so a second double-tap swaps again.
+    announce(renderTemplate(next.prompt.text, { child: child.name }));
+  };
+
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
   const keep = (inBook: boolean) => {
     const id = session.keep();
@@ -193,6 +245,17 @@ export default function Write() {
   const onContentSizeChange = () => {
     if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
   };
+
+  // "Another thought" fades out at the first character and back in when the page is empty again, keeping its space.
+  const offerAnother = anotherThoughtShown({ hasPrompt: !!prompt, continuingDraft: !!existing, empty: !text.trim() });
+  const anotherOpacity = useSharedValue(offerAnother ? 1 : 0);
+  useEffect(() => {
+    anotherOpacity.value = motion.reduced ? (offerAnother ? 1 : 0) : withTiming(offerAnother ? 1 : 0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
+  }, [offerAnother, motion.reduced, anotherOpacity]);
+  const anotherStyle = useAnimatedStyle(() => ({ opacity: anotherOpacity.value }));
+  const promptOut = motion.reduced ? undefined : FadeOut.duration(tokens.motion.exitMs).reduceMotion(ReduceMotion.Never);
+  const promptIn = motion.reduced ? undefined : FadeIn.duration(tokens.motion.fadeMs).delay(Math.round(tokens.motion.exitMs / 2)).reduceMotion(ReduceMotion.Never);
+  const promptLayout = motion.reduced ? undefined : LinearTransition.duration(tokens.motion.enter.durationMs);
 
   if (!child) return null;
   const age = ageText(child, todayISO());
@@ -230,10 +293,18 @@ export default function Write() {
           </Text>
           {prompt && (
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
-            <Text variant="prompt" tone="muted" testID="write.prompt">
-              {renderTemplate(prompt.text, { child: child.name })}
-            </Text>
+            <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>
+              <Text variant="prompt" tone="muted" testID="write.prompt">
+                {renderTemplate(prompt.text, { child: child.name })}
+              </Text>
+            </Animated.View>
           )}
+          {prompt && !existing ? (
+            // Hidden, not moved: the button keeps its place while words are on the page, so nothing shifts near the cursor.
+            <Animated.View layout={promptLayout} style={anotherStyle} pointerEvents={offerAnother ? 'auto' : 'none'} accessibilityElementsHidden={!offerAnother} importantForAccessibility={offerAnother ? 'auto' : 'no-hide-descendants'}>
+              <Button variant="quiet" size="sm" icon={ArrowsClockwiseIcon} label={copy.tonight.newPromptButton} className="-ml-4 self-start" onPress={swapPrompt} testID="write.anotherThought" />
+            </Animated.View>
+          ) : null}
           <TextField
             ref={field}
             variant="letter"
