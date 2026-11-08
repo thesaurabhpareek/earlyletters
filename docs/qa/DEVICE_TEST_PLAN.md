@@ -696,6 +696,19 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - If the founder has amended D-060 for the store build before this row is run, stop and record "superseded".
 - **Record:** S1-141 rows (a) to (c): phone, iOS version, build number and profile; one screenshot of About per build, with Asha only.
 
+### S1-152 "Another thought" on Write (engagement.md section 3, Option A; BL-E1; branch feat/mobile-write-another-thought)
+- **Needs:** a TestFlight build with this branch; Asha's book with at least one letter; VoiceOver, AX5 and Reduce Motion for (e) and (f).
+- **Steps:** (a) Tonight: note the prompt, tap Type. On Write, tap Another thought five times, slowly. (b) Type one word. Delete it. Tap Another thought once more, then type a short letter and Add to Asha's book. Open the letter in the Book. (c) Keep tapping Another thought on a new Write (about 30 times). (d) From Review, open Type for a recording whose words could not be written down (or open a typed draft from Tonight's draft card). (e) VoiceOver on: swipe from the top of Write, double-tap Another thought, then double-tap again without moving. (f) Reduce Motion on, then AX5: tap Another thought.
+- **Expected:**
+  - (a) The keyboard stays up and the cursor stays in the field. Each tap: one light tap haptic, the old line fades out and a new one fades in where it stood, and the field slides down or up with the new height instead of jumping. Never the same line twice in a row; no count or "no more" anywhere.
+  - (b) At the first character Another thought fades out but its space stays (the field does not move); when the word is deleted it fades back. The kept letter's question (if the letter page shows one) is the one on screen when the words were typed, not the one Write opened with.
+  - (c) No line comes back until many different ones have shown; it never stops offering one.
+  - (d) No Another thought: a letter already under way keeps its question.
+  - (e) Order: dateline, prompt, Another thought, the page. The new line is read once; focus stays on Another thought, so a second double-tap swaps again.
+  - (f) Reduce Motion: the line swaps at once with no slide. AX5: the button wraps under the prompt, its label is never cut, and it is at least 44 pt tall.
+- **Record:** S1-152 rows (a) to (f): phone, iOS version, build number, text size; a screen recording of (a) and (b) with Asha only.
+- **Update:** `apps/mobile/src/app/write.tsx` (the swap, the fade, the space kept) and `components/tonight/prompt.logic.ts` `anotherThought` (the draw).
+
 ### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
 - **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
 - **Steps:** (a) Alpha: read the line under the Welcome body; open Settings and read the Plan row; open Plan. (b) Production, Plus off: read the Welcome line; set up Asha's book; keep a first and then a second letter (each with words on screen) and read the toast on the Book; open Settings and read the Plan row; open Plan and read every section. (c) Start Plus Monthly in Apple's sheet (sandbox); come back to Settings and read the Plan row, then Plan. (d) Let the sandbox subscription lapse (cancel, then wait for the sandbox renewal period to end); read the Plan row and Plan.
