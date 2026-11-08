@@ -573,7 +573,7 @@ Added 1 Nov 2026 by the reminders design effort (two product, two research, two 
 - Done when: the property test over a simulated two-year history shows zero repeats in 365 days.
 
 #### BL-535 Twelve prompts for a book before the birth [Medium]
-- Status: ready. Mode: agent. Owner: content. Size: S.
+- Status: in-review (PR #604). Mode: agent. Owner: content. Size: S.
 - Satisfies: F13-REQ-008 (at least 12 `before` prompts; 8 exist).
 - Scope: four more `before` prompts in `packages/content/src/prompts.ts`, bumping `PROMPT_LIBRARY_VERSION` to 4. They assume no birth, name no due date, week, hour or feeling, and presume nothing about the family. Keys are new; no old key is reused.
 - Done when: the `before` count test passes at 12 or more and all content rules pass.

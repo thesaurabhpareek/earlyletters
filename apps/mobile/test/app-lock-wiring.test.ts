@@ -156,7 +156,10 @@ describe('names in notifications are forced off while the lock is on (F17-REQ-01
   it('the Reminders switch is disabled with the lock line', () => {
     const page = code('src/app/settings/reminders.tsx');
     expect(page).toContain('disabled={lockOn}');
-    expect(page).toContain('appLockCopy.reminders.lockNames');
+    // The lock line comes from #624's namesRow (reminderCopy.settings.lockNames), fed the real lock state.
+    expect(page).toContain('const names = namesRow(prefs.namesOnLockScreen, lockOn);');
+    expect(page).toContain('description={names.help}');
+    expect(page).not.toMatch(/APP_LOCK_ON/);
   });
 });
 

@@ -171,8 +171,6 @@ export const en = {
       timeLabel: "Remind me at",
       noneOption: "No reminders",
       noneHelp: "You can write whenever you like.",
-      permissionTitle: "A few evenings a week",
-      permissionBody: "Just a nudge. You can change the time or turn it off any time.",
       cta: "Set reminder",
     },
 
@@ -860,6 +858,8 @@ export const en = {
       title: "About",
       // In-app only (Brief decision 10). The store listing and website never say "beta".
       beta: {
+        // Not shown since 8 Nov 2026 (founder: About said "early" three times). It is a heading, not part of the
+        // registered note (in-app-disclosures.md section 1); the body below is the note. K-13 still pins the key.
         label: "Early version",
         // D-030: no beta line in the store listing; this small in-app note stays until the founder ends it.
       body: "{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then.",
@@ -1188,8 +1188,12 @@ export const en = {
     // US spelling on screen; the key keeps its old name so nothing breaks.
     licencesLabel: "Licenses",
     versionLabel: "Version",
-    // "1.0.0 (42)": app version and build number.
+    // "1.0.0 (42)": app version and build number, read from the installed app. "early" is not added here: the
+    // registered note under About already says it once (CLO-5, 1 Nov 2026).
     versionValue: "{version} ({build})",
+    // The last line of Settings, under About (CDesO-2, 1 Nov 2026). Text only; no emoji. Fallback if the place
+    // ever stops being true: "Made with care".
+    signOff: "Made with care in California",
     strugglingA11yHint: "Shows free, confidential support lines.",
   },
 

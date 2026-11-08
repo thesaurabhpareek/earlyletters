@@ -39,7 +39,6 @@ const raw = {
   turnOffReason: 'Confirm it is you to turn off the lock',
   exportReason: 'Confirm it is you to export your book',
   settingsHome: { appLock: 'App lock', appLockOn: 'On', appLockOff: 'Off' },
-  reminders: { lockNames: 'Names stay hidden while App lock is on.' },
 } as const;
 
 export const appLockCopy: typeof raw = withBrandName(raw);

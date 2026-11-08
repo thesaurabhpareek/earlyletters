@@ -2,7 +2,9 @@ import { btn, journey } from './support/app';
 import { expect, seeded, test } from './support/journey';
 import { MAMA, mockServer } from './support/mock-server';
 
+// The "Early version" heading is gone (founder, 8 Nov 2026; CLO-5): the registered note says "early" once.
 const EARLY = 'Early version';
+const SIGN_OFF = 'Made with care in California';
 const EARLY_BODY = /is an early version, and it can make mistakes\. Some things may change\. Export a copy of your letters now and then\./;
 
 test('[J16] settings: home, privacy, appearance, help, licenses, about', async ({ app, record }) => {
@@ -11,14 +13,17 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await expect(app.getByText('Version', { exact: true })).toBeVisible();
   // S40: the early-version note sits only under About, as its footer, after the version row; the privacy line once.
   const about = app.getByTestId('settings.about.beta');
-  await expect(about.getByText(EARLY, { exact: true })).toBeVisible();
   await expect(about.getByText(EARLY_BODY)).toBeVisible();
-  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
+  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
+  // The sign-off is the last line, under the note (CDesO-2).
+  await expect(app.getByTestId('settings.signOff')).toHaveText(SIGN_OFF);
+  const signOffBox = await app.getByTestId('settings.signOff').boundingBox();
   await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is said once, under Your data, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
+  expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
+  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is said once, under Your data, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
@@ -58,7 +63,7 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
   // runs the row's condition for signed in, signed out and server features off).
   await expect(btn(app, /^Delete account/)).toHaveCount(0);
-  await expect(app.getByTestId('settings.about.beta').getByText(EARLY, { exact: true })).toBeVisible();
-  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
+  await expect(app.getByTestId('settings.about.beta').getByText(EARLY_BODY)).toBeVisible();
+  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
   await step('happy', 'Settings, server features on', 'With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });
