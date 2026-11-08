@@ -677,6 +677,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-97b rows (a) to (d) with the build number, phone and iOS version; for (a) the percent at Stop and the percent shown a few seconds after Download; if you tried it with a recording waiting, the row after you leave the app and come back (it can be back on "Getting ready, n%" with Stop); screenshots with Asha only.
 - **Update:** If (a) starts again from 0 after the percent had passed 3%: `apps/mobile/src/lib/packs/engine.ts` `cancel` and `download` (the `.part` file in staging). If a stopped download starts again by itself with no recording waiting: `lib/transcription-queue/index.ts` `refreshReady`. `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 9 where a result differs.
 
+### S1-141 The early-version note in the store build (BL-607; D-060, D-030; branch test/mobile-bl607-store-early-note)
+- **Needs:** a build of the `production` profile and a TestFlight build of the `testflight` profile, each with Asha's book.
+- **Steps:** (a) In each build: Settings, scroll to About; read the version row and the note under it. (b) Larger Text at AX5 in the production build: the same. (c) VoiceOver on: swipe from the version row to the sign-off.
+- **Expected:**
+  - (a) Both builds show the same note, word for word: "{app} is an early version, and it can make mistakes. Some things may change. Export a copy of your letters now and then." with the app's name. No "Early version" heading; the version row reads "{version} ({build})".
+  - (b) The whole note wraps; no word is cut off.
+  - (c) VoiceOver reads the version row, then the note as one element, then the sign-off.
+  - If the founder has amended D-060 for the store build before this row is run, stop and record "superseded".
+- **Record:** S1-141 rows (a) to (c): phone, iOS version, build number and profile; one screenshot of About per build, with Asha only.
+
 ### S1-152 "Another thought" on Write (engagement.md section 3, Option A; BL-E1; branch feat/mobile-write-another-thought)
 - **Needs:** a TestFlight build with this branch; Asha's book with at least one letter; VoiceOver, AX5 and Reduce Motion for (e) and (f).
 - **Steps:** (a) Tonight: note the prompt, tap Type. On Write, tap Another thought five times, slowly. (b) Type one word. Delete it. Tap Another thought once more, then type a short letter and Add to Asha's book. Open the letter in the Book. (c) Keep tapping Another thought on a new Write (about 30 times). (d) From Review, open Type for a recording whose words could not be written down (or open a typed draft from Tonight's draft card). (e) VoiceOver on: swipe from the top of Write, double-tap Another thought, then double-tap again without moving. (f) Reduce Motion on, then AX5: tap Another thought.
@@ -700,6 +710,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (d) The Plan row: "Free". Plan: "Plus ended on {the day it ended}. Every letter you kept is still yours." No Welcome line, no promise, no Manage; "See what Plus adds" is there.
   - VoiceOver on the Plan row reads "Plan", then the line under it when there is one, then "Free" (or "Plus").
 - **Record:** S1-111 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of Welcome, the Plan row and Plan at each step, with Asha only.
+
+### S1-142 The Plus line on Write (BL-560; F14-REQ-040, F04-REQ-045; founder decision F5; branch feat/mobile-bl560-write-plus-line)
+- **Needs:** (a) to (c) a build of the `production` profile on a fresh install, Plus off, with Asha's book; a sandbox Apple Account for (c). (d) a TestFlight build of the `testflight` profile with 3 or more of Mama's letters kept.
+- **Steps:** (a) Production, one letter kept: tap Type on Tonight; look above "Add to Asha's book". Close. (b) Keep a second letter. Tap Type again; type a few words; look at the same place, with the keyboard up, in light and dark. Then Larger Text at AX5: open Write again and look at the footer with the keyboard up. VoiceOver on: swipe from the page to the two buttons. (c) Start Plus in Apple's sheet (sandbox); open Write. (d) Testflight: open Write.
+- **Expected:**
+  - (a) No Plus line on Write.
+  - (b) "Adding new letters to the book needs Plus. Recording, reading and export are always free." in small muted type, centred, above the two buttons, with the same words as Tonight's line. No number, no price, nothing to press. It appears with Write, not after a moment's delay, and typing is not slowed. At AX5 the line wraps with no word cut, and both buttons stay above the keyboard. VoiceOver reads the line, then "Add to Asha's book", then "Keep private".
+  - (c) No line.
+  - (d) Alpha: no line, at any count.
+- **Record:** S1-142 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of the Write footer in (b) at default size and at AX5, with Asha only.
 
 ### S1-132 StoreKit robustness: unfinished transactions, the Keep step waits for StoreKit, offline at See Plus, and offline across a renewal (PR #517; RT-PAY-17, RT-PLS-10, RT-PAY-09, RT-OFC-06, RT-SUB-13; CR-46)
 - **Why a device row:** the native change (`apps/mobile/modules/scribe-store/ios/ScribeStoreModule.swift`, the `Transaction.unfinished` walk at start and the per-id `claim` in the `Transaction.updates` loop) runs in no Node test. CTO ruling (8 Nov): for native StoreKit code in an alpha build, this row is the evidence; a Swift unit test is not required for tonight.
