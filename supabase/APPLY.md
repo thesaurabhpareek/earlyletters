@@ -1182,3 +1182,15 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 31: the audit and consent tables refuse rewrites and truncation (8 Nov 2026, data-architect, BL-585)
+
+`20261108020000_audit_append_only.sql`. Before this file `audit_events` had no row guard, and `policy_acceptances` and `ops.audit_log` had no truncate guard (a row guard never stops TRUNCATE). No API role holds these privileges; the guards protect against the owner's own paths (a migration, a definer function, the SQL Editor).
+
+What it changes:
+- **`audit_events`**: UPDATE and DELETE fail with SCIMM, except `finalize_account_deletion` nulling the purged person as actor or as a `profile` or `membership` subject (nothing else in the row may change), and the 24-month retention delete while `app.retention_purge` is on.
+- **`purge_due`** turns `app.retention_purge` on before its `audit_events` delete instead of after it. Nothing else in it changes.
+- **TRUNCATE** fails with SCIMM on `audit_events`, `policy_acceptances` and `ops.audit_log`, as on `subscription_consents`.
+- Tests: `audit_append_only` (new).
+
+**Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.
