@@ -74,7 +74,7 @@ Checked against `origin/develop` at ed16ca3 (13 Oct, after PRs #86, #91, #100, #
 | Item | State on 31 Oct | What changes |
 |---|---|---|
 | Alpha dates | **Decided (D-130, founder, 30 Oct).** Build 2 freeze Tue 3 Nov 2026 at 5:00 AM PT (the hour is the coordinator's); go/no-go Mon 9 Nov 2026. The freeze rule (no workflow, `eas.json` or `app.config.ts` change except an S0 or S1 fix) runs Tue 3 Nov to Mon 9 Nov | Section 1.3's "proposed" alpha dates and D-124's Thu 5 Nov are superseded |
-| First store build | Staged and on-device only (D-121); target submission Tue 1 Dec 2026. The production App Store record waits for the individual or entity call by Fri 13 Nov (D-125 item 6) | Header note above; the full-scope dates below are not re-dated line by line |
+| First store build | Staged and on-device only (D-121); target submission Tue 1 Dec 2026. The publisher call is made: individual account, no LLC (D-134, 31 Oct); Karma creates the production record after the 9 Nov go/no-go (D-124 item 1) | Header note above; the full-scope dates below are not re-dated line by line |
 | Build 2 scope calls | Invites are link-only (D-120). The Privacy sync row shows On or Off (D-128, built by #408). Delete account is hidden unless `EXPO_PUBLIC_ACCOUNT_DELETION` is on (D-129, built by #409) | F11 and F17 notes |
 | Store build scope | No "coming soon" co-parent surface while server features are off (D-126); lands after the go/no-go | F11, F21 notes |
 | Decisions log | `docs/DECISIONS.md` on `develop` now runs to D-130 | `_AUTHORING.md` M31 to M43 |
