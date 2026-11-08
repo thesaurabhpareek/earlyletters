@@ -623,7 +623,45 @@ describe('brand name and v1.0 claims', () => {
     // The two registered Plus-sheet lines that still name one are retired only through counsel and a version bump of
     // in-app-disclosures.md (experience-pass.test.ts pins them word for word); nothing else may join them.
     const REGISTERED_UNTIL_COUNSEL = new Set(['en.plus.legal.renewAnnual', 'en.plus.legal.renewMonthly']);
-    const TRIAL_LENGTH = /\b(free for|\d+|one|two|three|seven|fourteen)[- ]?(\d+ )?(day|week|month|year)s?(?:'s)? (free|trial)\b|\bfree for (a|an|one|two|\d+) (day|week|month|year)s?\b|\b(free|trial) (for )?(a|an|one|two|\d+) (day|week|month|year)s?\b/i;
+    const PERIOD = String.raw`(day|week|month|year)s?`;
+    const COUNT = String.raw`(a|an|one|two|three|four|six|seven|twelve|fourteen|thirty|first|\d+)`;
+    const TRIAL_LENGTH = new RegExp(
+      [
+        // "Free for 2 months", "free for a month"
+        String.raw`\bfree for ${COUNT}[- ]?${PERIOD}\b`,
+        // "a month free", "the first month free", "2 months free", "first 2 months free", "your first month is free",
+        // "a free month", "two free months", "7-day free trial", "14 days free"
+        String.raw`\b${COUNT}(\s+\d+)?[- ]+(free\s+)?${PERIOD}('s)?\s+(is\s+|are\s+)?(free|trial)\b`,
+        String.raw`\b${COUNT}\s+free\s+${PERIOD}\b`,
+        // "a free month" said any way, "free months"
+        String.raw`\bfree\s+${PERIOD}\b`,
+        // "Free trial: 1 month", "trial of 30 days", "free for one month"
+        String.raw`\b(free\s+)?trial\b[^.]{0,12}?\b${COUNT}[- ]?${PERIOD}\b`,
+      ].join('|'),
+      'i',
+    );
+    // The phrases it must catch (review A on #641), and what it must leave alone.
+    for (const phrase of [
+      'Free for 2 months, then $49.99 a year.',
+      'Try a month free.',
+      'Get the first month free.',
+      'A free month for new members.',
+      'Two free months with Plus Annual.',
+      'The first 2 months free.',
+      '3 months free.',
+      'Your first month is free.',
+      'Free trial: 1 month.',
+      'A 7-day free trial.',
+      '14 days free.',
+      'Free for one month.',
+    ]) expect(phrase, phrase).toMatch(TRIAL_LENGTH);
+    for (const fine of [
+      'Your first two letters are free.',
+      'Reading, listening and your copy stay free.',
+      'Every letter and recording, free, any time.',
+      'Plus is on, free until {date}.',
+      'Asha is 3 months old.',
+    ]) expect(fine, fine).not.toMatch(TRIAL_LENGTH);
     expect(offenders(IN_APP.filter((l) => !REGISTERED_UNTIL_COUNSEL.has(l.path)), TRIAL_LENGTH)).toEqual([]);
     // The rule bites: the retired lines would fail it.
     for (const k of REGISTERED_UNTIL_COUNSEL) expect(IN_APP.find((l) => l.path === k)?.text ?? '', k).toMatch(TRIAL_LENGTH);
@@ -636,7 +674,11 @@ describe('brand name and v1.0 claims', () => {
     expect(features.billing.keepGate.secondFreeNote).toBe('That was your second free letter. Whenever you are ready, Plus keeps the book growing.');
     // No count, countdown, price or trial wording in any F5 line (CDesO-6: Free, Plus, Plus, shared).
     const f5 = [...leaves(m, 'membership'), { path: 'keepGate.secondFreeNote', text: features.billing.keepGate.secondFreeNote }];
-    expect(offenders(f5, /\d|\$|\bprice\b|free trial|free months?|\b(left|remaining)\b/i).filter((o) => !o.includes('{date}'))).toEqual([]);
+    // Only the {date} placeholder itself is set aside (its value is a calendar date on Plan); a digit anywhere else,
+    // even in a line that also holds {date}, still fails.
+    const withoutDate = f5.map((l) => ({ ...l, text: l.text.split('{date}').join('') }));
+    expect(offenders(withoutDate, /\d|\$|\bprice\b|free trial|free months?|\b(left|remaining|until)\b|\{(?!date\})[^}]*\}/i)).toEqual([]);
+    expect(f5.filter((l) => l.text.includes('{date}')).map((l) => l.path)).toEqual(['membership.ended']);
     expect(Object.values(m.status)).toEqual(['Free', 'Plus', 'Plus, shared']);
   });
 

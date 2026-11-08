@@ -7,11 +7,10 @@ import { brand, supportMailto } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
-import { accountSubtitle, planRow } from '@/components/settings/settings-home.logic';
+import { accountSubtitle, planRowFor } from '@/components/settings/settings-home.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { getPlan, subscribePlan } from '@/lib/billing';
-import { plusOn } from '@/lib/billing/plan.logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
@@ -81,7 +80,7 @@ export default function Settings() {
   // F5, PL-3: Free, Plus or Plus, shared (store build); the alpha note only in an alpha build (#552). The cached plan
   // startPlus() keeps current: this row reads it and never asks StoreKit itself.
   const plan = useSyncExternalStore(subscribePlan, getPlan, getPlan);
-  const planRowView = planRow({ alpha: PLUS_ALPHA, plusOn: plusOn(plan, new Date().toISOString()), familyShared: plan.details.ownership === 'familyShared' });
+  const planRowView = planRowFor(plan, new Date().toISOString(), PLUS_ALPHA);
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">

@@ -13,8 +13,9 @@ import { describe, expect, it } from 'vitest';
 import { billingCopy, en } from '@scribe/content';
 import { plusLineFor } from '../src/lib/billing/alpha';
 import { planScreen } from '../src/components/settings/plan.logic';
-import { planRow } from '../src/components/settings/settings-home.logic';
-import type { PlanLine } from '../src/lib/billing/plan.logic';
+import { planRow, planRowFor } from '../src/components/settings/settings-home.logic';
+import { EMPTY_PLAN, planFromSnapshot, type PlanLine } from '../src/lib/billing/plan.logic';
+import type { NativeEntitlementSnapshot, NativeStatus, NativeTransaction } from '../modules/scribe-store/types';
 
 const SRC = join(__dirname, '..', 'src');
 const code = (rel: string) =>
@@ -65,6 +66,40 @@ describe('[F5, PL-3] the Settings Plan row', () => {
 
   it('no value holds a digit, a countdown or a price', () => {
     for (const v of Object.values(m.status)) expect(v, v).not.toMatch(/\d|\$|left|until|days?/i);
+  });
+
+  it('[PL-3] six plan states, read from StoreKit snapshots the way the phone reads them, each give the right row', () => {
+    const NOW = '2026-10-03T12:00:00.000Z';
+    const at = (days: number) => new Date(Date.parse(NOW) + days * 86_400_000).toISOString();
+    const tx = (over: Partial<NativeTransaction> = {}): NativeTransaction => ({
+      productId: 'plus.monthly', expiresAt: at(20), purchasedAt: at(-10), ownership: 'purchased', environment: 'production', isTrial: false, isUpgraded: false, ...over,
+    });
+    const st = (over: Partial<NativeStatus> = {}): NativeStatus => ({ ...tx(), state: 'subscribed', willAutoRenew: true, ...over });
+    const snap = (entitlements: NativeTransaction[], statuses: NativeStatus[]): NativeEntitlementSnapshot => ({ entitlements, statuses, checkedAt: NOW });
+    const states = {
+      off: EMPTY_PLAN,
+      trial: planFromSnapshot(snap([tx({ productId: 'plus.annual', isTrial: true, expiresAt: at(60) })], [st({ productId: 'plus.annual', isTrial: true, expiresAt: at(60) })])),
+      active: planFromSnapshot(snap([tx()], [st()])),
+      // Apple's billing grace: the period ended, Apple is retrying and Plus stays on until the grace end.
+      grace: planFromSnapshot(snap([tx({ expiresAt: at(-1) })], [st({ expiresAt: at(-1), state: 'inGracePeriod', gracePeriodExpiresAt: at(5) })])),
+      shared: planFromSnapshot(snap([tx({ ownership: 'familyShared' })], [st({ ownership: 'familyShared' })])),
+      // Lapsed: no entitlement, StoreKit says expired.
+      lapsed: planFromSnapshot(snap([], [st({ state: 'expired', expiresAt: at(-3), willAutoRenew: false })])),
+    };
+    expect(states.trial.view.state).toBe('trial');
+    expect(states.grace.view.state).toBe('grace');
+    expect(states.lapsed.details.status).toBe('expired');
+    const rows = Object.fromEntries(Object.entries(states).map(([k, plan]) => [k, planRowFor(plan, NOW, false)]));
+    expect(rows).toEqual({
+      off: { subtitle: en.settingsHome.planHelp, value: 'Free' },
+      trial: { subtitle: undefined, value: 'Plus' },
+      active: { subtitle: undefined, value: 'Plus' },
+      grace: { subtitle: undefined, value: 'Plus' },
+      shared: { subtitle: undefined, value: 'Plus, shared' },
+      lapsed: { subtitle: en.settingsHome.planHelp, value: 'Free' },
+    });
+    // Alpha: every state reads the alpha note and no value.
+    for (const plan of Object.values(states)) expect(planRowFor(plan, NOW, true)).toEqual({ subtitle: NOTE, value: undefined });
   });
 
   it('the row keeps its place and title, and reads the cached plan without asking StoreKit', () => {

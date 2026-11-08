@@ -167,7 +167,7 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
     expect(plusLineFor(false, en.settingsHome.planHelp)).toBe(en.settingsHome.planHelp);
     expect(read('src/app/onboarding.tsx')).toMatch(/plusLineFor\(PLUS_ALPHA, o\.welcome\.freeLine\)/);
     // F5 (PL-3): the Plan row reads planRow, which gives the alpha note and no plan value in alpha.
-    expect(read('src/app/settings/index.tsx')).toMatch(/planRow\(\{ alpha: PLUS_ALPHA,/);
+    expect(read('src/app/settings/index.tsx')).toMatch(/planRowFor\(plan, new Date\(\)\.toISOString\(\), PLUS_ALPHA\)/);
     expect(read('src/app/settings/index.tsx')).toMatch(/subtitle=\{planRowView\.subtitle\} value=\{planRowView\.value\}/);
     for (const plusOn of [false, true]) {
       for (const familyShared of [false, true]) {

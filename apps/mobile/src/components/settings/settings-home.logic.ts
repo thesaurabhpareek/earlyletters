@@ -6,6 +6,7 @@
  */
 import { authCopy, billingCopy } from '@scribe/content';
 import type { AuthState } from '@/lib/auth/machine.logic';
+import { plusOn, type PlanState } from '@/lib/billing/plan.logic';
 import { copy } from '@/lib/copy';
 
 export type SignInProvider = 'apple' | 'google' | 'email' | 'other' | null;
@@ -30,4 +31,13 @@ export function planRow(input: { alpha: boolean; plusOn: boolean; familyShared: 
   const s = billingCopy.membership.status;
   if (!input.plusOn) return { subtitle: copy.settingsHome.planHelp, value: s.free };
   return { subtitle: undefined, value: input.familyShared ? s.shared : s.plus };
+}
+
+/**
+ * The Plan row from the plan itself (PL-3): what Settings home draws. Plus is on by the same rule as the Keep step and
+ * Plan (`plusOn`: trial, active and Apple's grace before their end); "shared" is Family Sharing. So off, trial, active,
+ * grace, shared and lapsed each read the same here as everywhere else.
+ */
+export function planRowFor(plan: PlanState, now: string, alpha: boolean): ReturnType<typeof planRow> {
+  return planRow({ alpha, plusOn: plusOn(plan, now), familyShared: plan.details.ownership === 'familyShared' });
 }
