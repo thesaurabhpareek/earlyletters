@@ -539,6 +539,9 @@ export const en = {
     dateline: {
       monthOnly: "Sometime in Month {month}",
       monthOnlyNewborn: "Sometime in the first weeks",
+      // The age sentence after the day for a letter the Book files in Before You: no birthday yet, or a day before
+      // it. Never an age counted from a due date (QE-01).
+      beforeBirth: "Before {child} was born.",
     },
     changeDate: {
       // {label} is the month's name in the book: "Month 2", "The first weeks" or "Before You".
