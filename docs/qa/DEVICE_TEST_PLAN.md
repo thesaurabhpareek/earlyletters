@@ -535,6 +535,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-36 rows (a) to (k): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
 - **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
 
+### S1-82 One tick to start a recording, one to stop, none between (founder report on TestFlight build 1; MOTION 6; branch fix/mobile-recording-haptics)
+- **Needs:** a build with fix/mobile-recording-haptics; the SE 3 and the founder's iPhone; Settings > Sounds & Haptics > System Haptics on; Low Power Mode off; Asha's book.
+- **Steps:**
+  - (a) On Tonight tap Speak, with a finger resting lightly on the phone's back. Count the taps felt until the clock shows 0:03.
+  - (b) Record 2 minutes, tapping Pause and then Resume three times along the way, then Finish.
+  - (c) Open Listen and tap Close at rest; open it from Speak with the microphone off in Settings > Privacy > Microphone, turn it back on, return and tap the red circle (or Try again).
+  - (d) Play back the letter from (b) in Review, listening around each pause and resume and the last second before Finish.
+  - (e) Fresh install (or Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy): set up Asha's book, tap Speak, read the microphone note and tap Continue, allow the microphone in the iOS question, and count the taps felt until the clock shows 0:03.
+- **Expected:** (a) exactly one light tap, as Speak is let go, and none as Listen opens or the microphone starts. (b) no tap at any Pause or Resume; one light tap after Finish, as Review comes. (c) the circle or Try again plays one tap, before recording starts. (d) no click or buzz on the recording.
+- **Record:** S1-82 rows (a) to (e): phone, iOS version, taps felt in (a), taps felt in (b) during the take and at Finish, pass or fail for (c) and (d), taps felt in (e) (expected: one, as Speak is let go; none at Continue).
+
 ### S1-37 No letter limit in alpha (founder decision, 1 Nov 2026; PL-1, S1; `apps/mobile/src/lib/billing/alpha.ts`)
 - **Needs:** a TestFlight build of the `testflight` or `preview` profile (`.preview` bundle id) on a fresh install, and, after Mon 9 Nov, a TestFlight build of the `production` profile.
 - **Steps:** (a) Alpha build: on the Welcome screen read the line under the body. Set up Asha's book, then keep three letters, then a fourth (speak one, type the others), each from Review with words on screen. Open Settings and read the Plan row, then open Plan. (b) Production profile build: the same steps.
@@ -615,6 +626,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (d) Nothing truncates; each choice is read with its state ("selected"); the example is read once, with the taken-out words named.
 - **Record:** S1-97 rows (a) to (d) with the build number, phone and iOS version; screenshots with Asha only.
 - **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` sections 7 to 9 (PR #596) where a result differs.
+
+### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
+- **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
+- **Steps:** (a) Alpha: read the line under the Welcome body; open Settings and read the Plan row; open Plan. (b) Production, Plus off: read the Welcome line; set up Asha's book; keep a first and then a second letter (each with words on screen) and read the toast on the Book; open Settings and read the Plan row; open Plan and read every section. (c) Start Plus Monthly in Apple's sheet (sandbox); come back to Settings and read the Plan row, then Plan. (d) Let the sandbox subscription lapse (cancel, then wait for the sandbox renewal period to end); read the Plan row and Plan.
+- **Expected:**
+  - (a) Welcome, the Plan row and Plan say only "Plus is not part of this test. Every letter is free while you test." The Plan row has no Free or Plus value. Plan has no "What Plus includes", no Restore, no Redeem, no Manage. Unchanged from S1-37 (a).
+  - (b) Welcome: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free." No toast after letter 1. After letter 2, once, with no button: "That was your second free letter. Whenever you are ready, Plus keeps the book growing." The Plan row: "Free" at the right, with "Your first two letters are free. Plus lets you keep adding letters." under the title. Plan: "See what Plus adds" with the Welcome line under it (not "Every letter you keep stays yours..."), then "What Plus includes" with "Keep adding letters to every book, as many as you like." No number, price or trial length anywhere.
+  - (c) The Plan row: "Plus" and no line under it ("Plus, shared" for a Family Sharing member). Plan: the status row with its dates, the promise under it, "What Plus includes".
+  - (d) The Plan row: "Free". Plan: "Plus ended on {the day it ended}. Every letter you kept is still yours." No Welcome line, no promise, no Manage; "See what Plus adds" is there.
+  - VoiceOver on the Plan row reads "Plan", then the line under it when there is one, then "Free" (or "Plus").
+- **Record:** S1-111 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of Welcome, the Plan row and Plan at each step, with Asha only.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).

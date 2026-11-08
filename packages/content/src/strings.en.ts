@@ -68,7 +68,9 @@ export const en = {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
       body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
-      freeLine: "Your first two letters are free.",
+      // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
+      // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
+      freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -1224,7 +1226,7 @@ export const en = {
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082
+    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082; under the Plan row only while Plus is off (PL-3)
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
