@@ -312,7 +312,8 @@ describe('wiring: every announcement passes the gate', () => {
     expect(l).toMatch(/pauseTake\(takeToken\.current\);\s*recorder\.pause\(\);/);
     expect(l).toMatch(/resumeTake\(takeToken\.current\);\s*recorder\.record\(\);/);
     // Off only when the take ends, keyed to its token.
-    expect(l).toMatch(/finishTake\(token\);\s*setPhase\('finishing'\);[\s\S]{0,200}draft = await finalizeTake\(recorder, id, reason, lastDuration\.current\);\s*\} finally \{\s*closeTake\(token\);/);
+    // Finish closes the gate when the save settles, kept or failed, inside BL-563's finishWithin (never on its timeout).
+    expect(l).toMatch(/finishTake\(token\);\s*setPhase\('finishing'\);\s*const kept = await finishWithin\(finalizeTake\(recorder, id, reason, lastDuration\.current\)\.finally\(\(\) => closeTake\(token\)\)\);/);
     expect(l).toMatch(/finishTake\(token\);\s*try \{\s*if \(id\) await abandonTake\(recorder, id\);[\s\S]{0,120}\} finally \{\s*closeTake\(token\);/);
     // Unmount: always off, last thing in the cleanup.
     expect(l).toMatch(/void finalizeTake\(recorder, id, 'dismiss', lastDuration\.current\);\s*\}\s*resetCapture\(\);\s*\},/);

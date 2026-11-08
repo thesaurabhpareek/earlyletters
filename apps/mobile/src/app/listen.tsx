@@ -38,6 +38,7 @@ import {
   afterForeground,
   createListenAnnouncer,
   elapsedClock,
+  finishWithin,
   isMicProblem,
   listenRoom,
   maySpeak,
@@ -215,16 +216,16 @@ export default function Listen() {
     const token = takeToken.current;
     finishTake(token); // ON until the recorder has stopped, even from paused
     setPhase('finishing');
-    let draft: Awaited<ReturnType<typeof finalizeTake>>;
-    try {
-      draft = await finalizeTake(recorder, id, reason, lastDuration.current);
-    } finally {
-      closeTake(token); // the recorder has stopped: the app may speak again (on Review); a late poll cannot undo this
-    }
+    // Never stuck here (BL-563): a save that throws (a full disk) or hangs still leaves within FINISH_TIMEOUT_MS, and
+    // the take is kept; the launch sweep finishes it if this did not. The gate closes only when the save has settled
+    // (the recorder has stopped), never on the timeout: leaving Listen unmounts it, and unmount always resets the gate.
+    const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current).finally(() => closeTake(token)));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
+    const draft = kept.ok ? kept.value : null;
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
     if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   /** `primed`: the person has just read our primer and tapped Continue, so iOS may ask now (SR-C-05). */
