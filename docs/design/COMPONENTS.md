@@ -60,11 +60,13 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 Mapping follows MOTION section 6.
 | Intent | iOS (`expo-haptics`) | Android (`performAndroidHapticsAsync`) | Used for |
 |---|---|---|---|
-| `tap` | `selectionAsync()` | `Segment_Tick` | Chip toggle, Put it back, Reading Size, speed, pause/resume |
-| `press` | `impactAsync(Light)` | `Context_Click` | Record start/stop, Speak/Type |
-| `soft` | `impactAsync(Soft)` | `Long_Press` | Letter long-press menu, "Not much today" |
-| `success` | `notificationAsync(Success)` | `Confirm` | Letter saved |
+| `tap` | `selectionAsync()` | `Segment_Tick` | Chip toggle, Put it back, Reading Size, speed, a choice changed (Your words, the agreement box) |
+| `press` | `impactAsync(Light)` | `Context_Click` | Speak/Type (the one capture start), record stop |
+| `soft` | `impactAsync(Soft)` | `Long_Press` | Letter long-press menu, "Not much today", a memory's "Not today" |
+| `success` | `notificationAsync(Success)` | `Confirm` | Letter saved, app lock turned on |
 | `warning` | `notificationAsync(Warning)` | `Reject` | Destructive confirm shown, discard confirmed |
+
+Nothing fires between record start and stop: pause and resume are silent (CDesO-8, MOTION 6). Code still plays `tap` there and a second `press` when Listen auto-starts (`listen.tsx:250`, `:156`); both go in MOTION 5n row 2.
 None on playback, highlight, milestones, tabs, sheets opening, scroll, or keystrokes; never more than once in 100ms. A haptic always accompanies a visible change (iOS mutes it in Low Power Mode and while recording, MOTION section 6).
 
 ### 0.3 Motion (from MOTION.md)
@@ -102,7 +104,7 @@ Airbnb's public material on its Design Language System (DLS) describes one share
 | **Sheets** (filters, details) | Native detents, grabber, content scrolls inside the sheet, background dims progressively | **Sheet** (Expo Router form sheet with detents; Android bottom sheet) |
 | **Chips** (categories, filters) | Horizontally scrolling pills, selected = filled ink, haptic tick, icon + label | **Chip** (month filters, author filters, tags) |
 | **Sticky CTA** (Reserve bar) | Bottom bar that stays above safe area, price on left, one strong button on right, hairline top border | **CaptureBar** (Speak / Type equal weight, "Not much today" quiet) and `StickyFooter` slot in **Sheet** |
-| **Section headers** with large type | Calm hierarchy, lots of whitespace | **MonthChapterHeader** |
+| **Section headers** with large type | Calm hierarchy, lots of whitespace | **MonthOpener** (2.20) |
 | **Wishlist heart** micro-interaction | Instant optimistic toggle, small spring, undo via toast | **IconButton** + **Toast (undo)** |
 | Listing open | Card grows into the detail screen | **LetterCard** measured-rect open (MOTION 5f) |
 | **Skeletons** while loading | Shapes match final layout, no spinners in feeds | `loading` state on Card / LetterCard / PhotoFrame |
@@ -444,7 +446,7 @@ type ListeningAuraProps = {
 - **A11y:** decorative (`accessible={false}`). The state is conveyed by the CaptureBar button label and a live caption ("Listening... 0:42"). Reduce Motion: static 2pt ring; opacity steps 0.2/0.3/0.4 with 200ms fades, at most one change per 400ms (MOTION 5b).
 - **Haptics:** none from the aura. `press` on record start fires before the audio session activates and on stop after it ends (owned by CaptureBar).
 - **Motion:** MOTION 5b exactly: dB → `a` (floor −55, ceiling −10, gamma 0.6), asymmetric smoothing (attack 80ms, release 400ms) in `useFrameCallback` using `dt`. Colour is the `recording` terracotta (which means "listening", DESIGN_LANGUAGE section 2), never an error colour.
-- **Builds on:** Reanimated 4 + one pre-rendered 240pt radial PNG behind the 120pt mic disc (no per-frame gradient, no Skia, no `expo-linear-gradient`). Metering from the `expo-audio` recorder (`isMeteringEnabled` → `metering` dBFS, normalised in `lib/audio-level.ts`). Web: CSS radial gradient + Web Audio `AnalyserNode` (later).
+- **Builds on:** Reanimated 4 + one `react-native-svg` `RadialGradient` circle (240 pt, `recording` at stop opacities 1, 0.55, 0) behind the 120 pt mic disc, drawn once per mount; only its wrapper's `transform` and `opacity` animate (`components/capture/listening-aura.tsx`). No image file, no per-frame gradient, no Skia, no `expo-linear-gradient`. (Corrected 1 Nov 2026: this line used to say a pre-rendered PNG; the code has always drawn SVG.) Metering from the `expo-audio` recorder (`isMeteringEnabled` → `metering` dBFS, normalised in `lib/audio-level.ts`). Web: CSS radial gradient + Web Audio `AnalyserNode` (later).
 - **Android later:** same code. Confirm expo-audio metering rate and dBFS range on Android (MOTION open question 2); if coarse, the idle breath carries it. Target 60fps on a mid-tier Android.
 
 ### 2.18 CaptureBar
@@ -488,23 +490,26 @@ type EditUnderlineProps = {
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
 - **Android later:** same code. Check nested-`Text` press targets and the dotted underline (`textDecorationStyle` support on Android is **Unverified**; fall back to an SVG or border underline under the span).
 
-### 2.20 MonthChapterHeader
-- **Purpose:** the book is organised by month of age. Each month opens like a chapter.
+### 2.20 MonthOpener (was MonthChapterHeader; rewritten 1 Nov 2026 to match what is built)
+- **Purpose:** a chapter of the Book opens like a page in a printed book, not a feed's section header (EXPERIENCE_PASS S26). `components/book/month-opener.tsx`, data from `components/book/chapters.ts`.
 ```ts
-type MonthChapterHeaderProps = {
-  monthIndex: number;                           // 0 = birth month
-  label: string;                                // "Month 4"
-  dateRange: string;                            // "March 12 to April 11"
-  count: { notes: number; letters: number };
-  coverPhoto?: { uri: string; blurhash?: string };
-  sticky?: boolean;                             // compact sticky version in the list
-};
+interface Opener {             // components/book/chapters.ts, openerOf(chapter)
+  kicker: string | null;       // "This month", "Month" above a numeral, or null; shown in caps by style
+  numeral: string | null;      // "7"; null for "The first weeks" and "Before You"
+  name: string | null;         // "The first weeks" or "Before You", in place of the numeral
+  line: string;                // "2 letters · From Mama"; '' when the month has no letters
+  lineSpoken: string;          // the same line without the separator: "2 letters, from Mama"
+  range: string | null;        // the month's dates
+  a11yLabel: string;           // the whole opener as one header
+  lit: boolean;                // the current month
+}
+function MonthOpener(props: { opener: Opener; first: boolean }): JSX.Element;
 ```
-- **Variants:** `full` (large `title1`, cover photo, counts), `sticky` (one line, `headline`, blur background).
-- **A11y:** `role="header"`; label "Month 4, March 12 to April 11, 6 notes and 2 letters." Counts are words, not just numerals with icons.
-- **Haptics:** none. **Motion:** `full` → `sticky` cross-fade driven by scroll position (Reanimated `useAnimatedScrollHandler`). Reduce Motion means a hard switch.
-- **Builds on:** FlashList sticky headers + Text + PhotoFrame; `sticky` background via `platform/blur-surface`. First Book view per session: cover settles opacity 0.6→1, y 6→0 on `gentle` (MOTION 5a). Web: `<h2>` with `position: sticky`.
-- **Android later:** same code; sticky background is solid on Android.
+- **Look:** kicker in `letterDateline` caps; the numeral in `numeral` (Literata 500, 64/64, cap 1.4x) or the name in `title1`; the line in `footnote`; the dates in `letterDateline`. A hairline in `line` sits above every opener but the first. The current month is lit: a `radius.lg` card with a 1 pt edge in `atmosphere.tone.amber` at 40 percent and a still gold radial inside at the scheme's peak times 0.5 (reading colours hold 4.5:1 at the full peak). Increase Contrast and Reduce Transparency: a plain 1 pt `line` edge, no light. A current month with no letters stands alone with no line.
+- **Not built, and not planned for v1.0:** a cover photo (no photos in v1.0, M13 rule 4), sticky headers (`stickySectionHeadersEnabled={false}` in `(tabs)/book.tsx`), a `full`/`sticky` pair and its scroll cross-fade. The count is a fact in words in one line, never a separate numeral or icon (DESIGN_LANGUAGE principle 4).
+- **A11y:** one element per opener, `role="header"`, label `a11yLabel` ("This month, Month 7. 2 letters, from Mama. September 13 to October 12"); the parts are not reachable on their own.
+- **Haptics:** none. **Motion:** none; nothing moves, including the lit card's light. The Book's first view per session is MOTION 5a's.
+- **Web:** same component (react-native-svg web). **Android later:** same code.
 
 ### 2.21 AudioPlayer
 - **Purpose:** play the original recording of a note or letter.
@@ -548,7 +553,7 @@ type ReadTogetherPlayerProps = {
 
 ### 2.23 PhotoFrame
 - **Purpose:** photos within letters and cards. It should feel like a printed photo in a book, not a gallery tile.
-- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4 to 16:9), `cover` (MonthChapterHeader), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
+- **Variants:** `card` (top of LetterCard, 4:3), `inline` (inside a letter, natural aspect clamped 3:4 to 16:9), `cover` (not used in v1.0), `polaroid` (white mat + caption, for the book/PDF look). Multi-photo uses paging with dots.
 ```ts
 type PhotoFrameProps = {
   photos: { uri: string; blurhash?: string; alt?: string; width?: number; height?: number }[];
@@ -577,11 +582,80 @@ type PhotoFrameProps = {
 - **A11y:** decorative (hidden) unless given `accessibilityLabel`, then one image. Its type does not grow with Dynamic Type: it is artwork with a measured layout, like the app icon, and the same name is always real, scalable text on the screen around it.
 - **Android later:** same code.
 
+## 2b. Components for the 1 Dec build (specified 1 Nov 2026)
+
+Screens that use them: `screens/SETTINGS_AND_ACCOUNT.md`, `screens/TONIGHT_AND_MEMORIES.md`. Sources: `proposals/account-security/design.md` 1 and 4, `proposals/reminders-settings.md`, `proposals/review-progress-and-player.md` 1, `proposals/v1-experience/motion.md` 2, `memories.md` 4 and 7; rulings CDesO-2, CDesO-5, CDesO-8, F1, F6, F11. Strings are keys from `proposals/account-security/content.md`; none is typed in a component. Not built yet: each lands in `components/ui` after 9 Nov with a story in `(dev)/components.tsx` (light, dark, AX5).
+
+### 2.25 AgreementRow (Before you begin)
+- **Purpose:** an unticked clickwrap box with one sentence (F2, LEGAL-REQ-002 unchanged, CCO-6).
+```ts
+type AgreementRowProps = { label: string; checked: boolean; onChange: (v: boolean) => void; invalid?: boolean };
+```
+- **Look:** a 24 pt square box, `radius.sm`, 1 pt `controlBorder` edge (3.62 / 4.47 on `bg`); ticked, `accent` fill with a Phosphor Check Bold 16 in `onAccent` (5.82 / 8.11). The sentence in `body`, wrapping beside the box, which stays top-aligned. The whole row is the target, at least 44 pt.
+- **Links are never inside the label.** Terms and Privacy are their own `Button quiet` links below the row: a link inside a checkbox label cannot be reached with VoiceOver.
+- **A11y:** `role="checkbox"`, `accessibilityState.checked`, label = the sentence. `invalid` moves focus to the row; the screen's reason line carries the words (on the gate: `text` plus icon, never a status colour).
+- **Haptics:** `tap` on change. **Motion:** fill and check cross-fade on `snappy`; Reduce Motion `fadeMs`.
+- **Builds on:** `Pressable` through `PressableFeedback` (row), Phosphor. Web: shadcn `Checkbox` + `Label`. **Android later:** same code.
+
+### 2.26 PrivacyCover (app lock)
+- **Purpose:** what the app switcher and the lock screen show while the lock is on (F17-REQ-009, CISO-1).
+```ts
+type PrivacyCoverProps = { children?: React.ReactNode }; // the lock screen passes Unlock and its state line
+```
+- **Look:** opaque `bg`, the splash's symbol alone, centred (registry context `app.splash`, so the cover matches launch). Nothing else: no child name, no letter, no lamp.
+- **Timing:** drawn on AppState `inactive` with no animation, so the system snapshot never catches content. Removed after a successful unlock with one `fadeMs` fade; content is back within 1 s. Never shown during a take or with the share sheet open.
+- **A11y:** `accessibilityViewIsModal`; the cover is one element reading `appLock.coverLabel`; focus goes to Unlock when present.
+- **Haptics:** none. **Reduce Motion:** the removal fade stays (it is opacity only). **Android later:** `FLAG_SECURE` is the platform's own version; check on device.
+
+### 2.27 SignOff (Settings home)
+- **Purpose:** the last line of Settings (CDesO-2): `settingsHome.signOff`, fallback "Made with care" if legal prefers no place.
+- **Look:** centred `footnote` in `textMuted` (5.51 / 8.01 on `bg`), a Phosphor Heart Regular 16 in `textMuted` before the text. No emoji; the heart is the icon.
+- **A11y:** the heart is hidden; the text is one plain element. At AX5 the text wraps under the heart, centred.
+- **Haptics, motion:** none. Not tappable.
+
+### 2.28 ProgressLine (one progress component)
+- **Purpose:** the only progress bar in the app, for work with a real number (bytes, parts done). Replaces the private copies in `components/speech/speech-consent-card.tsx:107` and `app/review.tsx` (`WordsStatus`). 1 Dec (F11, CDesO-8).
+```ts
+type ProgressLineProps = { value?: number; label: string }; // value 0..1; no value, no bar
+```
+- **Look:** 6 pt tall, `radius.pill`. The track is a 1 pt `controlBorder` outline over the surface it sits on (3.83 / 4.08 on `surfaceRaised`, 3.62 / 4.47 on `bg`), so its end is visible; the fill inside it is `accent` (5.82 / 7.64 on `surfaceRaised`). **Correction to `review-progress-and-player.md`:** a filled `controlBorder` track under an `accent` fill gives fill against track 1.52:1 light and 1.87:1 dark, under the 3:1 non-text minimum, so the track is an outline, not a fill. Increase Contrast: `tokens.highContrast` swaps both.
+- **No `value`:** no bar. The honest "indeterminate" is the step in words plus `InlineState`'s moon, breathing only while work runs (`still: playing || phase !== 'running'`, a fix for `words-state.logic.ts`, `mobile`).
+- **A11y:** `role="progressbar"`, label constant, `accessibilityValue` `{ min: 0, max: 100, now }`. Progress is not announced on every step; the screen announces the outcome once.
+- **Motion:** the fill moves by `scaleX` from the leading edge on `snappy`; Reduce Motion steps. Never a number rolling, never a shimmer.
+- **Tokens test (with the build):** add fill-on-surface and outline-on-surface pairs, both themes, to `packages/design-tokens/test/tokens.test.ts`.
+
+### 2.29 PressableFeedback (one press primitive)
+- **Purpose:** every tappable surface shows the press the same way (MOTION 5n row 7). 1 Dec only if merged by Fri 20 Nov, else 1.0.1 (F11).
+```ts
+type PressableFeedbackProps = PressableProps & {
+  kind: 'control' | 'card' | 'row';    // 0.97 scale, 0.98 scale, opacity 0.9
+  accessibilityRole: AccessibilityRole; // required
+  accessibilityLabel: string;           // required
+  haptic?: HapticIntent;                // none by default (MOTION 6)
+};
+```
+- **Behaviour:** wraps `usePressScale()` (`components/motion/press.ts`) on `snappy`, from the current value, within one frame of touch-down. A `card` inside a `CardSource` hands its press to the page (`PressHoldContext`, MOTION 5f). `hitSlop` brings anything smaller to 44 pt.
+- **Reduce Motion:** no scale; an opacity dip over `motion.press.dimMs` 90 (new token; a literal in `press.ts:46` today, MOTION 5n row 6).
+- **Migration:** the raw `Pressable`s in `(tabs)/_layout.tsx:48`, `child-switcher.tsx:43`, `(tabs)/family.tsx:73`, `review.tsx:948,1045`, `transcript.tsx:152`, `letter-sheet.tsx:57`, `settings/reminders.tsx:219`, `reminder-prime-ask.tsx:110`, `language-picker.tsx:163`, `settings/licenses.tsx:132`. Then a source scan bans raw `Pressable` outside `components/ui` and `components/motion`.
+
+### 2.30 NotificationPreview (Reminders)
+- **Purpose:** "How it will look" in Settings, Reminders (CDesO-3): the first planned reminder's real words from `planReminders`, neutral unless names are on (M13 rule 3). Never a picture of the iOS alert.
+```ts
+type NotificationPreviewProps = { title: string; body: string };
+```
+- **Look:** `Card outlined` (1 pt `line`, decorative) on `surfaceRaised`; title in `headline`, body in `body`, both `text`. No app icon, no time stamp, no lock screen chrome.
+- **A11y:** one element: section title, then title and body. **Motion:** a new plan cross-fades at `swapMs`; Reduce Motion the same fade. **AX5:** wraps, never truncates. **Haptics:** none.
+
+### 2.31 ResurfacedCard, the memory card (Tonight)
+- **Built:** `components/tonight/resurfaced-card.tsx`: `Card` `radius.md`, the kicker in `caption` caps, two lines of `ExcerptFade` in the letter face, a 3 pt `accent` left rule (decorative), one VoiceOver element with the card's `a11yLabel`.
+- **Adds for 1 Dec (F6, CDesO-5):** a "Not today" `IconButton` `sm` `plain` (Phosphor X Bold 16, `textMuted`, 44 pt hit) in the kicker row; the same as a custom VoiceOver action; at AX5 it becomes a full-width `Button quiet` row under the excerpt. `onNotToday` sets a local flag for today's date (CR-43). States, motion and VoiceOver: `screens/TONIGHT_AND_MEMORIES.md` section 2. Haptic `soft` on Not today; none on open.
+- **1.0.1:** the letter's `CardText` column so its words carry into the page (MOTION 5f), the signature, a voice marker (glyph and duration, not a play button), "Keep out of memories". **Never:** autoplay, music, Ken Burns, a drawing, a glow or a badge.
+
 ## 3. Build order (smallest set that ships the capture loop)
 
 1. Text, Button, IconButton, Card (foundation; edit RNR copies to spec).
 2. CaptureBar, ListeningAura, TextArea, Toast (the capture loop).
-3. LetterCard, Signature/Avatar, PhotoFrame, MonthChapterHeader, EmptyState (the book).
+3. LetterCard, Signature/Avatar, PhotoFrame, MonthOpener, EmptyState (the book).
 4. AudioPlayer, EditUnderline, ReadTogetherPlayer (trust + Read together).
 5. ListRow, Toggle, SegmentedControl, Chip, TextField, Sheet, Dialog (settings, family, filters).
 

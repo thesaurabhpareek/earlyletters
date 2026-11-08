@@ -1,6 +1,6 @@
 # Early Letters: Design Language
 
-v0.3, 2026-10-16 (v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`, the icon tile colours and `destructive`; v0.3, the experience pass P1: section 2b Atmosphere, the `promptHero` and `numeral` type tokens, the 7.5 s idle breath, and the book cover and website drawings in section 9). Tokens: `@scribe/design-tokens`; brand values: `packages/brand/index.ts`; brand assets: `docs/brand/BRAND_SYSTEM.md` and `packages/brand/registry.ts`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
+v0.4, 2026-11-01 (v0.4: section 7 icon weights and sizes as built, section 9 the illustration style guide (CDesO-7), section 12 rewritten to what is built; v0.3 2026-10-16; v0.1 2026-10-01; v0.2 adds section 2a Brand mark, `accentDeep`, the icon tile colours and `destructive`; v0.3, the experience pass P1: section 2b Atmosphere, the `promptHero` and `numeral` type tokens, the 7.5 s idle breath, and the book cover and website drawings in section 9). Tokens: `@scribe/design-tokens`; brand values: `packages/brand/index.ts`; brand assets: `docs/brand/BRAND_SYSTEM.md` and `packages/brand/registry.ts`. Sources S1 to S10, H1 to H6 are listed in `BENCHMARK.md`. **(opinion)** marks judgement.
 
 ## 1. Principles
 
@@ -99,7 +99,7 @@ Full rules: [docs/brand/BRAND_SYSTEM.md](../brand/BRAND_SYSTEM.md). Assets: `pac
 - **EB Garamond is for the wordmark only** (and brand display set as artwork: book covers, gift cards, OG image). Never UI, buttons, letters or body text; the app's type stays Mukta, Literata and Tiro (section 3).
 - **Colour:** the logo is one colour, `ink` on light and `inkDark` on dark. `logo.symbol.accent` is the one warm brand moment allowed on paper. Never two-colour lockups, an accent wordmark, accentDark on paper, or a gradient anywhere except the app icon tile and the atmosphere lamp (section 2b), which never sits inside, behind or around the mark (BRAND_SYSTEM 4, D-109).
 - **Icon colours:** default tile gradient `tileTop` #9A613C to `tileBottom` #7F4F30 (`accentDeep`) with a `mark` #FBF8F3 (paper, never pure white); dark tile #2C2926 to #1F1B18 with an #D9A47E mark; tinted is the mark shape only. Values in `brand.icon` and `tokens.icon`; icon only, never UI.
-- **One logo per screen.** In the app: splash (symbol alone), the age question (the opening pair, `app.brand-device`), welcome (stacked lockup, 96 pt, `app.welcome`), a small header where one is needed (small-cut lockup, 20 to 26 pt, `app.header`), paywall (stacked lockup, once), Settings > About. Navigation bars keep the system title. The small-cut symbol at the head of the book cover is a book mark on a book surface (section 9), as on the printed cover and spine.
+- **One logo per screen.** In the app: splash (symbol alone), the age question (the opening pair, `app.brand-device`), welcome (stacked lockup, 96 pt, `app.welcome`), a small header where one is needed (small-cut lockup, 20 to 26 pt, `app.header`), paywall (stacked lockup, once), Settings > About, the app lock cover (the splash's symbol alone, `PrivacyCover`, COMPONENTS 2.26). Navigation bars keep the system title. The small-cut symbol at the head of the book cover is a book mark on a book surface (section 9), as on the printed cover and spine.
 - **Illustration is not the mark.** Line drawings (section 9, CREATIVE.md 3) may show envelopes, lamps, moons and pages; none of them stands in for the logo or sits locked up with the wordmark.
 
 ## 2b. Atmosphere: the lamp
@@ -189,8 +189,17 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 ## 7. Iconography
 
 **Phosphor Icons**, MIT: `phosphor-react-native` 3.0.6 (MIT) and `@phosphor-icons/react` 2.1.10 (MIT), verified on the npm registry and the [Phosphor](https://github.com/phosphor-icons/homepage/blob/master/LICENSE) and [phosphor-react-native](https://github.com/duongdev/phosphor-react-native/blob/main/LICENSE) LICENSE files. Same glyph set on iOS and web.
-- Weight **Regular** for UI, **Light** at 32pt+, **Fill** only for selected tab and active play state.
-- Sizes 20 (inline), 24 (default), 28 (tab bar), 32 (Speak/Type).
+Weights and sizes as built (corrected 1 Nov 2026; the earlier lines said Regular everywhere, 28 pt tabs and 32 pt Speak/Type, which the code never did):
+
+| Weight | Where | Sizes |
+|---|---|---|
+| **Regular** (default) | Unselected tab icons, button icons, inline markers on cards (microphone, moon), the reminder bell | 14 to 28 pt |
+| **Bold** | Small status and affordance glyphs that sit beside Mukta 500 labels: checks, carets, warnings, the lock, plus (27 uses) | 12 to 22 pt |
+| **Fill** | The selected tab, Speak and Type (in the 64 pt capture button), play and pause in players, a done check, the Apple logo | 18 to 28 pt |
+| **Light** | The `StateScreen` glyph (40 pt in a 72 pt `accentSoft` circle); from 1.0.1 the point glyphs beside a drawing (CDesO-7) | 40 pt |
+
+- Sizes: 25 pt tab bar, 28 pt in the capture button, 20 pt in `md` and `lg` buttons (18 in `sm`), 14 to 16 pt inline markers, 44 pt on Listen's mic disc. Every icon-only control keeps a 44 pt target.
+- Controls stay a small Phosphor set at 16 to 28 pt; a sketch line does not read at that size. "Not typical icons" (founder, 1 Nov) means illustration (section 9), not controls.
 - System chrome may use SF Symbols (H4); app UI doesn't mix sets. Key glyphs: Microphone, PencilSimple, Moon, BookOpen, UsersThree, Play.
 
 ## 8. Motion
@@ -209,6 +218,8 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 ## 9. Imagery
 
 - **No stock baby photos, anywhere.** Typography, paper tone and the family's own photos only.
+- **Illustration style guide** (CDesO-7, `proposals/v1-experience/illustration.md` 2): one pen, **1.75 pt on screen** at any size (`penWidth()`), round caps and joins, no fills, hatching or varied weight; 2 to 8 strokes, under about 1,200 units of length in a 160-unit box, at least 30 percent empty; drawn in the order a hand would. Two tones at most: the line in `textMuted`, one `accentSoft` wash; never `accent` for a line. Tokens swap the colours in dark; never invert. Sizes 96 (inline, still), 168 (a whole-screen state), 200 to 232 (a hero moment); nothing under 96; at AX5 the drawing keeps its size and text flows below it. One drawing per screen, never on a screen with the logo. **Never on:** the tab bar, buttons, rows, nav bars, Settings, Listen, Review editing, the letter page, Plus and the paywall, notifications, profile. Every shipped path is drawn by a person; generated images are for exploration only (CAIO-1).
+- **1 Dec uses reuses only** (F9 commissions five new drawings for 1.1): `envelopeOpen` draws once on the Book's first-letter note; `readingLamp` replaces `moon` on Read together's empty state, so the moon means only "the end". Both only if merged by Fri 20 Nov (F11). `together` stays on the Family tab and is split into a stroke table in 1.0.1.
 - Sparse single-weight line drawings in `textMuted` (envelope, moon, lamp, page). No faces, no mascot. Drawings are illustration only; the brand mark is the quotation pair (section 2a) and a drawing never replaces it. The website's in-house drawings are ported as stroke tables (`components/ui/line-art.data.ts`): the crescent moon, the bedside lamp, the night window and the reading lamp, drawn stroke by stroke the way the site draws them. No attribution duty.
 - **The book cover** (`components/book/book-cover.tsx`, COMPONENTS 2.24): the journey's one object. A 3:4 paper card (`surfaceRaised`, `radius.md`, elevation 1; a 1 pt `line` edge in dark and under Increase Contrast) with the registry's small-cut symbol at its head as a book mark, the child's name in Literata Medium, centred, at most three lines, and "From Mama" in Literata Italic on its foot line. Sizes 88 x 116 (first run), 96 x 128 (Add a child, Export), 132 x 176 (the book opens), 160 x 214 (the empty Book). A name sets itself like a book title: at 17 pt on the smallest cover, smaller (down to the 13 pt floor) when a word would otherwise break, then it wraps at spaces, then it ends in a fade. Never an ellipsis glyph, never a changed letter. Open, it shows the flyleaf: the name small at the top, one hairline where the first letter will go, "From Mama" at the foot. No image files.
 - **Excerpts fade** (`components/motion/excerpt-fade.tsx`): a person's words cut to a few lines end in a fade over the last 40 percent of the final line, into the card's own colour, never an ellipsis glyph; the whole text stays readable to VoiceOver.
@@ -230,55 +241,37 @@ Warm ink-tinted shadows. `0` flat (lists, reading); `1` resting cards (y2/6/6%);
 
 ## 12. Screens
 
-Navigation: three tabs, **Tonight · Book · Family**, single-word labels, always visible (H4). Capture is not a tab (H4: tabs navigate, not act); it lives on Tonight.
+Rewritten 1 Nov 2026 to describe what is built on `develop` (the v0.1 text described a prompt card, `title1` greeting, a "Done" button and chapter covers that were never built). Visible names live in `IA.md` and `packages/content`; this section gives structure only. Full screen specs for the 1 Dec changes: `screens/SETTINGS_AND_ACCOUNT.md` and `screens/TONIGHT_AND_MEMORIES.md`.
 
-### Onboarding
-- **Purpose**: name the child, set birth date (powers month-of-age chapters), choose who can hear letters, write the first letter.
-- **Layout**: small-cut lockup (registry context `app.header`, section 2a) above an optional line drawing (illustration, never the mark); `display` "Letters for someone small"; then one step per screen: child's name, birth date (wheel), privacy line ("Only people you invite can read or hear these"); ends in Tonight with the first prompt.
-- **Primary action**: pill button "Continue", full width, bottom, 56pt.
-- **Empty state**: n/a. Account creation after the first saved letter **(opinion)**.
+Navigation: tabs **Tonight · Book**, plus **Family** in builds with servers on (D-126 hides it in the store build); single-word labels, always visible (H4). Capture is not a tab (H4: tabs navigate, not act); it lives on Tonight. Settings opens from the gear on the Book.
+
+### Before you begin and first run
+- **Before you begin** (1 Dec, F2): the neutral 18+ question and an unticked Terms box on one screen, `gate` lamp. Then first run, one step per screen in one lit room (`firstRun`): welcome (stacked lockup), the promise, the child's name (typed in the letter face onto a `BookCover`), what the child calls you, "The book is open." with the app lock offer (1 Dec, CPO-2). Primary action: a full-width 56 pt pill at the bottom.
 
 ### Tonight (capture home)
-- **Purpose**: write tonight's letter in under 10 seconds.
-- **Layout**: `letterDateline` "Month 4 · Week 2 · Tuesday"; `title1` serif greeting "Good evening"; prompt card (`surfaceRaised`, `radius.lg`, `callout`), swipe or "Another prompt"; spacer; **Speak and Type** twin pill buttons, side by side, identical width, 64pt height, same `accent` fill, same weight, icon above label; below them a "One month ago" resurfaced letter card when available.
-- **Primary action**: Speak or Type (equal).
-- **Empty state**: no history yet; the prompt card reads "Tell Asha about today. It can be one sentence."
+- **Purpose:** write tonight's letter in under 10 seconds.
+- **Layout as built:** the dateline in `letterDateline` caps ("Asha · 7 months"); the greeting in `title2`, two tones; the prompt in `promptHero` on the paper with no card; "Another thought" (`Button quiet sm`); then one card per waiting draft, or "A month ago" when none waits; Speak and Type pinned below as twin `Button primary` `capture` (64 pt, icon above label, equal width); "Not much today" quiet under them. At accessibility sizes Speak and Type ride inline under the prompt. `tonight` lamp by daypart.
+- **As ruled (CDesO-4, F6):** one question plus at most one card; the card ladder and closure line arrive in 1.0.1. 1 Dec adds Not today and a Settings switch to the memory card, and the Plus line after the allowance (F5).
+- **Empty state:** the first-day prompt; never a count.
 
-### Listening (recording)
-- **Purpose**: capture voice calmly; give confidence it's working.
-- **Layout**: full-screen modal. Top: "To Asha" + audience line (`footnote`). Center: breathing glow. Below: elapsed time (tabular `headline`), last two transcript lines in `letterBody` `textMuted`. Bottom: Pause (secondary) and **Done** (primary); "Discard" confirms.
-- **Primary action**: Done.
-- **Empty state**: "Listening... take your time." Mic denied: calm card offering Type.
+### Listen
+- Full-screen room, unlit (`useUnlitRoom`). "To {child}" at the top; the `ListeningAura` behind the mic disc; the clock in tabular figures; Pause and Finish; "Let it go" confirms before it deletes. Microphone denied: a calm state that offers Type.
 
 ### Review
-- **Purpose**: confirm the transcript, fix a few words, save.
-- **Layout**: dateline; transcript in `letterBody` on `surfaceRaised`. Low-confidence words: **quiet underline**, 1.5pt dotted `accent` at 60%, 3pt below baseline. Tap: medium-detent sheet (H3) with alternatives + "Play this part". Edited words: hairline `textMuted` underline this session only. Mini-player, "Add a photo", bottom bar "Save letter" (primary), "Edit text".
-- **Primary action**: Save letter (success haptic, gentle settle into the Book).
-- **Empty state**: no words caught: "Your recording is still saved." Offer Play or Type.
+- The words in `letterBody`; machine edits marked with `EditUnderline` (COMPONENTS 2.19) with Put it back; the views "With small fixes" and "Exactly as said"; the player on the original recording; "Keep it" as the primary. Words on their way: `InlineState` with `ProgressLine` only when there is a real number (COMPONENTS 2.28).
 
-### Book (month chapters)
-- **Purpose**: browse the child's life by month of age.
-- **Layout**: `display` "Asha's Book"; chapter covers newest first (`radius.lg`, "Month 4" `title2`, "12 letters · from Mama, Papa, Nani" `footnote`). Inside: month heading as typographic divider (S8); letter cards (`radius.md`, `elevation.1`): dateline, two-line serif excerpt, author, play + duration.
-- **Primary action**: open a letter.
-- **Empty state**: current month cover in paper tone: "Month 1 is waiting for its first letter." with a link to Tonight. Never a count of missed days.
+### Book
+- Header "{child}'s book", Read together, then chapters newest first, each opened by a `MonthOpener` (COMPONENTS 2.20; no cover photos, no sticky headers); letter cards with dateline, an excerpt that fades, signature, Private and length; quiet-day rows. Empty: the `lg` book cover and one line with "Write a letter". Never a count of missed days.
 
-### Letter reading view
-- **Purpose**: read one letter as a page.
-- **Layout**: 20pt gutter, chrome fades on scroll. Dateline; "From Papa"; optional photo; `letterBody`; italic sign-off. Floating pill player (`elevation.2`): play, scrubber, "Read together". "Aa" opens Reading Size sheet (medium detent, grabber, H3).
-- **Primary action**: Play.
-- **Empty state**: typed letter hides the player; processing shows "Preparing voice...".
+### Letter page and Read together
+- **Letter page:** opens from its card (MOTION 5f; the switch to `cardToPage` is a 1 Dec step). Dateline, the whole letter in `letterBody` at the reader's Reading Size, signature, the player ("Hear {signsAs}"), Read together. No lamp, no drawing.
+- **Read together:** chrome-free, Large Print by default, the current word under an `accentSoft` wash with no dimming of the rest, the line held at 40 percent, page turns between letters (MOTION 5g, 5m), `readTogether` dusk pool at night.
 
-### Read together
-- **Purpose**: parent and child (or a grandparent) listen to the author's voice while words highlight.
-- **Layout**: chrome-free; Reading Size Large by default; current word `accentSoft` wash, no dimming of other words (low vision). Current line held at 40% height. Bottom: 64pt play/pause, back 10s, speed 0.75x/1x, previous/next letter.
-- **Primary action**: Play/Pause.
-- **Empty state**: typed-only letter: "This letter was typed. Read it aloud together." with the text shown and no highlight.
+### Family (servers on only)
+- "Who writes to {child}"; members and invites. In the store build the tab is hidden (D-126).
 
-### Family invite
-- **Purpose**: bring in a partner and grandparents as writers or readers.
-- **Layout**: `title1` "Who writes to Asha?"; members (initials, name, "Can write"/"Can read"). Invite sheet: name, relationship chips (Nani, Dadi, Nana, Dada, Grandma, Grandpa, Other), role, "Larger letters for them" (default on for grandparents **(opinion)**), share via Messages/WhatsApp. Invitee lands on the child's name and photo at Large Print.
-- **Primary action**: Invite someone.
-- **Empty state**: "Just you, for now. Letters are lovelier with more voices." plus Invite.
+### Settings
+- Five groups plus About from 1 Dec (CDesO-1): `screens/SETTINGS_AND_ACCOUNT.md` section 6.
 
 ## 13. Open questions
 

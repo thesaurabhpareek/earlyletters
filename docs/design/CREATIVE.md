@@ -44,7 +44,7 @@ The mark (BRAND_SYSTEM.md 1) is the only brand device: a large and a small openi
 ### Illustration
 Line drawings are illustration, not the brand mark. They may show any object (envelope, lamp, moon, page, window), never stand in for the logo, never sit locked up with the wordmark, and never reshape a quotation mark into an object. Where a surface needs to say "Early Letters", it uses the mark from the registry; where it needs to set a mood, it may use a drawing. The web scroll film (`docs/web`, branch `feat/web-scroll-film`, another lane) draws a window, lamp, moon, envelope and page: that is allowed under this rule, and the film's brand moment is still the quotation mark from `web.header` or the symbol, not an envelope.
 - **Motif:** single-line drawings of the objects of a letter and a night (a page, a lamp, a moon, a window). One drawing per screen at most.
-- **Line:** single weight, 1.5pt at a 24pt artboard (2pt on store art), round caps. Ink `inkMuted` #6B645B on paper #FBF8F3; dark #B3AA9E on #161412. One optional `accentSoft` #F1E6DC wash behind the main object.
+- **Line:** single weight, 1.75 pt on screen at any size in the app (`penWidth()`, DESIGN_LANGUAGE 9; corrected 1 Nov 2026 from 1.5 pt, which the code never shipped), 2pt on store art, round caps. Ink `inkMuted` #6B645B on paper #FBF8F3; dark #B3AA9E on #161412. One optional `accentSoft` #F1E6DC wash behind the main object.
 - **No faces, no mascot, no drawn babies.** Objects imply people: glasses on an open book, shoes by a door, a dupatta over a chair arm. Drawn from real homes.
 - **Never:** wax seals, quills, ribbons, sparkles, confetti.
 - One SVG master for iOS and Android.

@@ -1,6 +1,6 @@
 # Early Letters: Motion System
 
-v0.2, 2026-10-16 (v0.2, the experience pass P1: lamp scenes in 5k, the screen-transition standard in 5l, the page turn in 5m, the `file`, `pageTurn`, `cover` and `cardToPage` tokens, `breathIdleMs` 7500). Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; contradicts neither. **(opinion)** marks judgement. Apple first, Android later, one codebase (Reanimated 4.5.1, Expo Router 57, RN 0.86.3).
+v0.3, 2026-11-01 (v0.3: 5n, the 1 Dec changes; 5a splash fade; 5b and 6 one start haptic, none between start and stop; 5b SVG and the 0.2 Hz citation corrected. v0.2, 2026-10-16: the experience pass P1: lamp scenes in 5k, the screen-transition standard in 5l, the page turn in 5m, the `file`, `pageTurn`, `cover` and `cardToPage` tokens, `breathIdleMs` 7500). Extends `DESIGN_LANGUAGE.md` section 8 and `tokens.motion`; contradicts neither. **(opinion)** marks judgement. Apple first, Android later, one codebase (Reanimated 4.5.1, Expo Router 57, RN 0.86.3).
 
 ## 1. Benchmark
 
@@ -70,7 +70,7 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 `S`/`St`/`G` = snappy/standard/gentle springs. RM = Reduce Motion fallback. Transform and opacity unless noted. Android = identical code unless stated.
 
 ### (a) App open, book cover
-- Cold launch only; warm resume does nothing. Tonight renders complete; only dateline, greeting, prompt card `enter` (opacity 0→1, y 8→0, 30 ms stagger, under 400 ms). Speak/Type static.
+- Cold launch only; warm resume, tab return and a return from Listen or a letter do nothing. The splash hides with a `fadeMs` fade (`SplashScreen.setOptions({ fade: true, duration })`, iOS; 5n row 5; it cuts today). Tonight renders complete; only the dateline, greeting, prompt and the one card (a draft or the memory) `enter` (opacity 0 to 1, y 8 to 0, 280 ms, 30 ms stagger, done by 370 ms) while the lamp arrives over `lamp.arriveMs`. Speak, Type and the tab bar are opaque and hittable from frame 1. A memory card that qualifies mid-session waits for the next cold launch (CR-43).
 - First Book tab view per session: child's-name cover settles, opacity 0.6→1, y 6→0, `G`. No curl.
 - Haptic none. RM: one 200 ms fade. Android: keep the Android 12+ splash icon static.
 
@@ -80,9 +80,9 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
   1. `a = clamp((db + 55) / 45, 0, 1) ** 0.6` (quiet speech still moves it).
   2. Asymmetric smoothing: `tau = a > s ? 80 : 400`; `s += (a - s) * (1 - exp(-dt / tau))`. Uses `dt`, so 60 and 120 Hz match.
   3. `scale = 1 + 0.18 s`, `opacity = 0.18 + 0.22 s`.
-  4. Idle: when `s < 0.05` for 600 ms, weight `w` ramps to 1 over 600 ms; `b = 0.5 - 0.5 cos(2πt / breathIdleMs)` with `breathIdleMs` 7500 (8 breaths a minute, 0.13 Hz, under HIG Motion's 0.2 Hz caution); `scale = max(1 + 0.18 s, 1 + 0.05 w b)`. Speech always wins; a pause never looks broken.
-- Visual: pre-rendered 240 pt radial PNG in `recording` colour behind the 120 pt mic disc; no per-frame gradient, no Skia.
-- Haptic: `recordStart` before the audio session activates, `recordStop` after it ends (iOS mutes haptics during recording unless explicitly allowed).
+  4. Idle: when `s < 0.05` for 600 ms, weight `w` ramps to 1 over 600 ms; `b = 0.5 - 0.5 cos(2πt / breathIdleMs)` with `breathIdleMs` 7500 (8 breaths a minute, 0.13 Hz). Citation corrected 1 Nov 2026: HIG Motion's caution against sustained oscillation "around 0.2 Hz" is written under Platform considerations, visionOS (read 1 Nov 2026), not for iPhone. The 7.5 s breath stands on its own reasons (Calm's slowest pace, M10; low amplitude, opacity-led) and stays well away from 0.2 Hz anyway; `scale = max(1 + 0.18 s, 1 + 0.05 w b)`. Speech always wins; a pause never looks broken.
+- Visual: one `react-native-svg` `RadialGradient` circle, 240 pt, in `recording` colour behind the 120 pt mic disc, drawn once; only its wrapper's transform and opacity animate. No image file, no per-frame gradient, no Skia. (Corrected 1 Nov 2026: this line said PNG; the code draws SVG.)
+- Haptic: one `press` at start, on Speak (Tonight), before the audio session activates; Listen plays it only on its own mic button (a retry), never again on auto-start. One `press` at stop, after the session ends. Nothing between start and stop: no pause or resume tick (CDesO-8; 5n row 2).
 - RM: static 2 pt ring; opacity steps 0.2/0.3/0.4 at `s` 0.15/0.5, 200 ms fades, max one change per 400 ms; label "Listening".
 
 ### (c) Speech becoming words
@@ -121,7 +121,8 @@ Android cross-check (M14): `snappy` (damping ratio ~1.0) ≈ M3 fast spatial, `s
 - Haptic none. RM: wash jumps (DESIGN_LANGUAGE spec); scroll pages: line past 75% height jumps to 25%.
 
 ### (h) Milestones: first letter, 100 letters, first grandparent letter
-- An inline note card in the Book at that letter's place, never a modal. Line drawing (envelope, moon; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Asha's first letter. From Papa, Month 2." / "One hundred letters for Asha." / "Nani wrote to Asha."
+- An inline note card in the Book at that letter's place, never a modal. Line drawing (`envelopeOpen` for the first letter from 1 Dec, DESIGN_LANGUAGE 9; `react-native-svg`) draws once via `strokeDashoffset` over 1.2 s, then text fades in: "Asha's first letter. From Papa, Month 2." / "Nani wrote to Asha."
+- Count moments ("One hundred letters", `letters10` to `letters365`) are retired and never ship (CPO-7, 1 Nov 2026): a reward for a total is a badge.
 - Once per reader, no sound, no extra haptic (save already gave `success`), no push.
 - RM: drawing shown complete, 200 ms text fade.
 
@@ -200,6 +201,23 @@ Presentation and animation per route live in one table, `routeTransitions` (`lib
 - The leaving page takes no touches and is hidden from VoiceOver, TalkBack and, on the web, the accessibility tree (`aria-hidden`); the buttons stay the screen's own (every gesture has a button).
 - Reduce Motion: a 200 ms cross-fade; the page does not follow the finger. Haptic: none (playback has none).
 
+### (n) The 1 Dec motion changes (CDesO-8, F11; specified 1 Nov 2026)
+JS only, no native module; behaviour lands after the 9 Nov go/no-go (D-130). Source: `proposals/v1-experience/motion.md` 1 and 4. Every row gets the device checklist below.
+
+| Row | Change | Owner | When |
+|---|---|---|---|
+| 1 | `letter/[id]` moves from `push` to the table's `cardToPage` (`lib/transitions.logic.ts:52`), so a slide and a grow never run together | mobile | 1 Dec |
+| 2 | One start haptic (drop Listen's auto-start `press`, `listen.tsx:156`) and no pause or resume `tap` (`listen.tsx:250`); a source scan bans `haptic(` between start and stop | mobile | 1 Dec |
+| 3 | Stop Listen's 20 Hz React re-render: metering writes a shared value, the aura reads it on the UI thread (section 7, rule 1) | mobile | 1 Dec |
+| 4 | `ProgressLine` in `components/ui` (COMPONENTS 2.28): determinate only, `scaleX` on `snappy`, steps under Reduce Motion; the moon breathes only while work runs | design systems, mobile | 1 Dec |
+| 5 | Splash fade into Tonight (5a) | mobile | 1 Dec |
+| 6 | Token drift: `motion.press.dimMs` 90 replaces the literal in `press.ts:46`; literals in `letter/[id].tsx:95,212`, `review.tsx:776,885`, `toast.tsx:91,95`, `join-ask.tsx:64` move to tokens | design systems | 1 Dec |
+| 7 | `PressableFeedback` (COMPONENTS 2.29) and the raw `Pressable` migration | design systems, mobile | 1 Dec if merged by Fri 20 Nov, else 1.0.1 |
+| 8 | Memory card "Not today": fades over `exitMs`, the space closes on `standard`; Reduce Motion `fadeMs`, the space closes at once. No loop, glow, pulse or lamp change on the card | mobile | 1 Dec |
+| 9 | The card's `CardText` column so its words carry (5f); CSS `:active` press spike | design systems | 1.0.1 |
+
+**Device checklist** (iPhone SE 3 and a 120 Hz Pro, both themes, late Nov; results in the journal): each 5a, 5b, 5e, 5f and memory moment at default, Reduce Motion, Reduce Transparency, AX5 and VoiceOver; Low Power Mode; one start tick; no tick in a 2-minute take with a pause; no slide-plus-grow; Another thought pressed 10 times stays legible. Instruments: Animation Hitches on SE 3 (no hitch over one frame, hitch ratio under 5 ms/s); Energy Log for a 10-minute take before and after row 3.
+
 ## 6. Haptics map
 
 **Policy (Oct 3 2026): a haptic marks an outcome, never a navigation.** `Button` plays no haptic by default; a call site passes `haptic` only where the press is an outcome (Speak / Type start a capture, Save, Delete). Continue, Back, Close, tab changes, sheet opening and scrolling are silent. `success` and `warning` are never dropped by the 100 ms throttle (`lib/haptics.shared.ts`). Android mapping is built (`lib/haptics.android.ts`).
@@ -209,12 +227,16 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 | Moment | iOS (`expo-haptics`) | Android (`AndroidHaptics`) |
 |---|---|---|
 | Record start / stop | `impactAsync(Light)` | `Context_Click` |
-| Pause / resume | `selectionAsync()` | `Segment_Tick` |
+| Pause / resume | none (CDesO-8, 1 Nov 2026: nothing vibrates between record start and stop; was `selectionAsync()`) | none |
 | Save letter | `notificationAsync(Success)` | `Confirm` |
 | Discard (confirmed) | `notificationAsync(Warning)` | `Reject` |
 | Put it back, pick alternative | `selectionAsync()` | `Segment_Tick` |
 | Reading Size, speed | `selectionAsync()` | `Segment_Tick` |
-| Long press letter | `impactAsync(Soft)` | `Long_Press` |
+| Long press letter, "Not much today", a memory's "Not today" | `impactAsync(Soft)` | `Long_Press` |
+| A choice changed (Your words, the agreement box, an answer pill) | `selectionAsync()` | `Segment_Tick` |
+| App lock turned on | `notificationAsync(Success)` | `Confirm` |
+| Erase everything, Remove a language (confirm shown) | `notificationAsync(Warning)` | `Reject` |
+| Unlock, a memory opening, a setting toggled, Continue | none | none |
 | Playback, highlight, milestones, tabs | none | none |
 
 iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a haptic always accompanies a visible change.
