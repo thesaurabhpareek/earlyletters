@@ -18,6 +18,11 @@
  * Typed letters skip Review (S20). A destination tap saves the words, then hands the letter to Review's one Keep step
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
+ *
+ * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
+ * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.
+ * Never in an alpha build (PLUS_ALPHA; Karma ruling on #508). Letters kept is read once when Write opens and never
+ * awaited: until it is read the line is absent, so the first frame and typing never wait on it.
  */
 import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
@@ -37,6 +42,9 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
+import { PlusLine } from '@/components/tonight/plus-line';
+import { plusLineShows } from '@/components/tonight/tonight-plus.logic';
+import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
@@ -62,6 +70,20 @@ export default function Write() {
   const [saveState, setSaveState] = useState<SaveState>('none');
   const draftId = useRef<string | null>(existing?.id ?? null);
   const lastAnnounced = useRef(0);
+
+  // Plus (F14-REQ-040): the plan from usePlan, and letters kept read once when Write opens (never awaited). Null until
+  // read, so the line never shows on a guess. Not read again while typing: a Keep from Write leaves Write.
+  const plan = usePlan();
+  const [lettersKept, setLettersKept] = useState<number | null>(null);
+  useEffect(() => {
+    let live = true;
+    void lettersKeptNow().then((n) => {
+      if (live) setLettersKept(n);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const promptKey = params.promptKey ?? existing?.promptKey ?? null;
   const prompt = promptKey ? PROMPTS.find((p) => p.key === promptKey) : undefined;
@@ -198,6 +220,7 @@ export default function Write() {
   const age = ageText(child, todayISO());
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const empty = !text.trim();
+  const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   const status =
     saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
@@ -257,6 +280,12 @@ export default function Write() {
         {/* Stacked as Review's footer is: "Add to Asha's book" full width, "Keep private" quiet beneath, so the main
             action never breaks over two lines (P4 critics' pass S2). */}
         <View className="gap-1 border-t border-border bg-background px-5 pb-2 pt-3">
+          {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
+          {showPlusLine ? (
+            <View className="pb-1">
+              <PlusLine />
+            </View>
+          ) : null}
           <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
           <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
         </View>
