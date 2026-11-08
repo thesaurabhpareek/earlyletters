@@ -1182,3 +1182,16 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 30: a deletion request id still finds the person's pseudonymised consent rows (8 Nov 2026, data-architect, BL-578)
+
+`20261108010000_deletion_subject_hash.sql`. Before this file `finalize_account_deletion` nulled the request's `profile_id` and kept no hash; the only link from a request to the consent rows was the raw account id in `purge_ledger`, which is trimmed after 60 days. From day 61 the request id in the receipt email found nothing, though the rows are kept 3 years.
+
+What it changes:
+- **`deletion_requests.subject_hash`** (L3): the same peppered SHA-256 as the consent rows, set when the request completes (and on the person's earlier completed or cancelled requests). It goes with the request after 3 years, as the consent rows do.
+- **`finalize_account_deletion`** refuses (55000, nothing changed) when `app.consent_pepper` is missing or short, like the pseudonymise triggers. Otherwise unchanged.
+- **`public.ops_deletion_consent_records(p_request)`**, service role only: the request's status and dates and the person's rows in `policy_acceptances` and `subscription_consents`, without account id or hash. An unknown id or a book request is P0002. The runbook that calls it writes its own `ops.audit_log` row (`ops_audit_write`).
+- An index on `policy_acceptances (subject_hash)` for pseudonymised rows.
+- Tests: `deletion_subject_hash` (new); `grants.mjs` lists the new service-role function.
+
+**Apply** after file 29 (or file 27; they touch different objects). Adds one column, one index and one function; redefines `finalize_account_deletion`. Deletions completed before this file keep no hash; for those under 60 days old, `purge_ledger` still holds the id. **Check:** `select public.consent_pepper_ready();` is true first; then `select public.ops_deletion_consent_records('<a completed request id>');` from the SQL Editor returns its rows. **Rollback:** see the file header.
