@@ -194,6 +194,16 @@ To be renamed `db-production` (SR-2). Approver; tag `db-v*` only. Workflow: S20.
 |---|---|---|---|---|---|
 | `SUPABASE_DB_URL_PROD` | `deploy-db.yml`, job `deploy to production` | As staging, for production | yearly; on suspicion | As staging | As staging |
 
+### 4.2b The private backup repository `earlyletters-backups` (BL-566, D-138)
+
+Not a GitHub environment of this repository: a separate private repository, so its Actions secrets are readable only by that repository's writers (the founder). Added by the BL-566 PR (#622). Owner: founder. Store: the repository's Actions secrets, and the password manager (the password, the age private key and its paper copy). Dates are written by the founder at the time of setting, in section 11, as dates only.
+
+| Name | Read by | Scope it must have | Rotate | A leak shows as | Revoke and replace |
+|---|---|---|---|---|---|
+| `STAGING_DB_URL` (renamed `BACKUP_DB_URL` by the free-tier PR #685, which also points a second project at it) | `staging-backup.yml`, steps "Check the connection" and "Dump, check, count, encrypt" | Session-pooler URL for the role `scribe_backup` from `docs/ops/backup/backup-role.sql`: read only, `BYPASSRLS` (so a dump holds every family's letters), connection limit 2, no `pg_read_all_data`, no read of `auth.sessions`, `auth.refresh_tokens`, `auth.one_time_tokens` or the Vault (checked by `supabase/tests/backup_role.test.mjs` and by the job each night). It still reads every family's data and the consent pepper (a database setting): treat the URL like a key to the letters | every 180 days: first due 180 days after the day the password is set (the founder records both dates in section 11); at once on suspicion, and at once if the password was typed in the SQL Editor (its query history keeps it) | No GitHub pattern for a Postgres URL [V3]. Unknown connections in the project's Postgres logs (1 day on Free); a `scribe_backup` session outside 10:00 to 11:00 UTC | Supabase: `\password scribe_backup` from psql, update the secret, run the workflow once. To stop it at once: `alter role scribe_backup nologin;` |
+| `BACKUP_AGE_RECIPIENT` | same | The founder's age PUBLIC key (`age1...`). Not a secret in itself; a secret only so the file name of the key is not advertised | none; replace if the private key is lost or copied | n/a | New `age-keygen`; older artifacts need the older private key until they expire (7 days) |
+| The age private key (`~/.config/earlyletters/backup-key.txt`) | the founder's Mac only, for the monthly drill | Never in GitHub. One paper copy with the escrow papers | on suspicion of copy; after any laptop loss | n/a | New key as above |
+
 ### 4.3 `testflight`
 
 Approver until AF-21, then none; ref `develop` only. Workflow: S20.
@@ -510,6 +520,7 @@ Log (dates, names and settings only, never a value):
 |---|---|---|
 | 16 Oct 2026 | Review written; settings read back as in section 2 | S01 |
 | 23 Oct 2026 | Owners and dates added; staging rows set to `develop` only; settings re-read (sections 3 and 8.1) | coordinator's fix agent, for S01 |
+| 8 Nov 2026 | Section 4.2b added: the backup repository's database URL, age key and recipient (owner, store, rotation every 180 days). Set date and first due date: pending the founder, to be written here as dates | `ops` (BL-566 review; `security` to confirm) |
 
 ## 12. Sources
 

@@ -6,23 +6,25 @@
 #
 # Every night it: installs the Postgres client matching staging's major
 # version; refuses to go on if the server's major differs, the URL is not
-# TLS or not the session pooler, or the role can write; dumps the whole
-# database with pg_dump (custom format) as the read-only role from
-# docs/ops/backup/backup-role.sql; proves the dump reads back (pg_restore
-# --list, then every data block read to /dev/null); counts the rows of three
-# tables inside the dump; encrypts it with age to the founder's public key;
-# deletes the plain dump; and keeps only the encrypted file, as an artifact,
-# for 7 days.
+# TLS or not the session pooler, the role can write, or the role can read a
+# sign-in credential (sessions, refresh tokens, one-time tokens, vault) or
+# holds a blanket read role; dumps the schemas public, ops, insights,
+# sync_private and auth (only the accounts' data from auth) with pg_dump
+# (custom format) as the read-only role from docs/ops/backup/backup-role.sql;
+# proves the dump reads back (pg_restore --list, then every data block read
+# to /dev/null); checks that the tables the product depends on have data
+# sections and that the dump holds the row security policies and grants;
+# prints each required table's row count; encrypts it with age to the
+# founder's public key; deletes the plain dump; and keeps only the encrypted
+# file, as an artifact, for 7 days.
 #
-# The log shows versions, sizes, exit codes and three row counts. Never a
-# row, a URL or a password (GitHub also masks the secrets).
+# The log shows versions, sizes, exit codes and row counts. Never a row, a
+# host, a role name, a URL or a password (GitHub also masks the secrets, and
+# a connection failure is printed as one category, not as the driver's text).
 #
 # Secrets (Settings > Secrets and variables > Actions > Secrets):
 #   STAGING_DB_URL        postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require
 #   BACKUP_AGE_RECIPIENT  the founder's age public key, the line starting age1
-# Variables (same page, Variables tab; optional):
-#   DUMP_EXCLUDE_SCHEMAS  space-separated schema names the role could not be
-#                         granted (backup-role.sql block 2B only). Empty by default.
 #
 # Third-party actions are pinned to a full commit sha. Checked 8 Nov 2026 with
 # `git ls-remote https://github.com/actions/upload-artifact refs/tags/v7*`:
@@ -78,56 +80,95 @@ jobs:
           case "$DB_URL" in *sslmode=disable*|*sslmode=allow*|*sslmode=prefer*) echo "::error::STAGING_DB_URL must use TLS (sslmode=require)"; exit 1 ;; esac
           # The transaction pooler (6543) cannot hold pg_dump's one long snapshot; the session pooler (5432) can.
           case "$DB_URL" in *:6543/*) echo "::error::STAGING_DB_URL is the transaction pooler (6543); use the session pooler (5432)"; exit 1 ;; esac
-          export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-backup
-          num=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c 'show server_version_num')
+          # Keep the host and the role name out of the log: GitHub masks the whole secret, not the pieces of it.
+          rest="${DB_URL#*://}"; userinfo="${rest%%@*}"; hostport="${rest#*@}"
+          SAFE_USER="${userinfo%%:*}"; SAFE_HOST="${hostport%%[:/?]*}"
+          echo "::add-mask::$SAFE_USER"
+          echo "::add-mask::$SAFE_HOST"
+          # safe CMD...: runs a command; if it fails, prints one category for a connection problem, or the
+          # driver's lines with the host and role blotted out, and returns the failure. Sourced by later steps.
+          cat > "$RUNNER_TEMP/safe.sh" <<'SAFE'
+          safe() {
+            local err rc=0
+            err=$(mktemp)
+            "$@" 2>"$err" || rc=$?
+            if [ "$rc" -ne 0 ]; then
+              if grep -qiE 'connection to server|FATAL|could not (translate|connect)|timeout expired|server closed|SSL' "$err"; then
+                if grep -qi 'password authentication failed' "$err"; then why='the password was rejected'
+                elif grep -qi 'tenant or user not found' "$err"; then why='the pooler does not know this project ref or role'
+                elif grep -qi 'timeout expired' "$err"; then why='the connection timed out'
+                elif grep -qi 'could not translate host' "$err"; then why='the host name did not resolve'
+                elif grep -qiE 'too many connections|remaining connection slots|connection limit' "$err"; then why='the role connection limit or the pooler is full'
+                elif grep -qi 'ssl' "$err"; then why='a TLS problem'
+                else why='another connection error'; fi
+                echo "::error::Could not connect: $why. The driver's text is not printed, to keep the host and role out of the log." >&2
+              else
+                sed -e "s|${SAFE_HOST:-@@none@@}|<host>|g" -e "s|${SAFE_USER:-@@none@@}|<role>|g" "$err" | head -20 >&2
+              fi
+              rm -f "$err"
+              return "$rc"
+            fi
+            rm -f "$err"
+          }
+          SAFE
+          . "$RUNNER_TEMP/safe.sh"
+          export SAFE_USER SAFE_HOST PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-backup
+          num=$(safe "$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c 'show server_version_num')
           major=$(( num / 10000 ))
           echo "Server major version: $major (client $PG_MAJOR)"
           if [ "$major" != "$PG_MAJOR" ]; then
             echo "::error::Staging runs Postgres $major but this job installs the $PG_MAJOR client. Set PG_MAJOR to $major in this file."
             exit 1
           fi
-          # Expect: f t f on (not superuser, bypasses RLS so the dump is whole, cannot write, read only by default).
-          facts=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -F ' ' -d "$DB_URL" -c "
+          # Expect: f t f on f 0 t. Not a superuser; bypasses RLS so the dump is whole; cannot write; read only by
+          # default; holds no blanket read role (pg_read_all_data); can read none of the sign-in credentials or the
+          # vault; can read the accounts table (without it a restore has families and nobody to own them).
+          facts=$(safe "$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -F ' ' -d "$DB_URL" -c "
             select r.rolsuper, r.rolbypassrls,
                    has_table_privilege('public.entries', 'insert, update, delete, truncate'),
-                   current_setting('default_transaction_read_only')
+                   current_setting('default_transaction_read_only'),
+                   pg_has_role(current_user, 'pg_read_all_data', 'member'),
+                   (select count(*) from pg_class c join pg_namespace n on n.oid = c.relnamespace
+                     where (n.nspname || '.' || c.relname) in ('auth.sessions', 'auth.refresh_tokens', 'auth.one_time_tokens', 'auth.flow_state',
+                      'auth.mfa_factors', 'auth.mfa_challenges', 'auth.mfa_amr_claims', 'auth.saml_relay_states', 'auth.audit_log_entries',
+                      'vault.secrets', 'vault.decrypted_secrets') and has_table_privilege(c.oid, 'select')),
+                   has_table_privilege('auth.users', 'select')
               from pg_roles r where r.rolname = current_user")
-          echo "Role facts (superuser, bypassrls, can write entries, read only): $facts"
-          [ "$facts" = "f t f on" ] || { echo "::error::The backup role is not the read-only role from backup-role.sql (expected: f t f on)"; exit 1; }
+          echo "Role facts (superuser, bypassrls, can write entries, read only, blanket read role, readable credential tables, can read accounts): $facts"
+          [ "$facts" = "f t f on f 0 t" ] || { echo "::error::The backup role is not the narrow read-only role from backup-role.sql (expected: f t f on f 0 t). Nothing was dumped."; exit 1; }
 
       - name: Dump, check, count, encrypt
         env:
           DB_URL: ${{ secrets.STAGING_DB_URL }}
           RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
-          DUMP_EXCLUDE_SCHEMAS: ${{ vars.DUMP_EXCLUDE_SCHEMAS }}
         run: |
           set -euo pipefail
           umask 077
           [[ "$RECIPIENT" =~ ^age1[02-9ac-hj-np-z]{58}$ ]] || { echo "::error::BACKUP_AGE_RECIPIENT is not an age public key (age1...)"; exit 1; }
-          excludes=()
-          for s in ${DUMP_EXCLUDE_SCHEMAS:-}; do
-            [[ "$s" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || { echo "::error::DUMP_EXCLUDE_SCHEMAS holds something that is not a schema name"; exit 1; }
-            excludes+=("--exclude-schema=$s")
-          done
+          rest="${DB_URL#*://}"; userinfo="${rest%%@*}"; hostport="${rest#*@}"
+          export SAFE_USER="${userinfo%%:*}" SAFE_HOST="${hostport%%[:/?]*}"
+          . "$RUNNER_TEMP/safe.sh"
           export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-backup
+          # Which schemas to dump: the product's own, and Auth for the accounts. Everything else (vault, cron, net,
+          # storage, extensions) is not dumped and the role cannot read it. Of Auth, only users and identities are
+          # dumped: every other Auth table is excluded by name (sessions, refresh tokens and one-time tokens are live
+          # sign-ins; a restore signs everyone in again, which is fine). Excluding the data is not enough: pg_dump
+          # takes a lock on every table it lists, and the lock needs SELECT, which the role does not have.
+          schemas=$(safe "$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c "
+            select string_agg('--schema=' || nspname, ' ' order by nspname) from pg_namespace
+             where nspname in ('public', 'ops', 'insights', 'sync_private', 'auth')")
+          case " $schemas " in *" --schema=public "*" --schema=auth "*|*" --schema=auth "*" --schema=public "*) ;; *) echo "::error::public or auth is missing from the database"; exit 1 ;; esac
+          read -ra schema_args <<< "$schemas"
+          auth_skip=$(safe "$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c "
+            select string_agg('--exclude-table=auth.' || quote_ident(c.relname), ' ' order by c.relname)
+              from pg_class c join pg_namespace n on n.oid = c.relnamespace
+             where n.nspname = 'auth' and c.relkind in ('r', 'p', 'v', 'm', 'f', 'S') and c.relname not in ('users', 'identities')")
+          read -ra skip_args <<< "${auth_skip:-}"
           stamp=$(date -u +%Y%m%dT%H%MZ)
-          # Whole database, with owners and grants recorded (a real restore needs the grants; the drill
-          # skips them with pg_restore --no-owner --no-privileges). Live login secrets are left out
-          # (sessions, refresh and one-time tokens: a restore signs everyone out, which is fine), and so
-          # are the Auth audit log, HTTP responses kept by pg_net, cron run history and Vault ciphertext.
-          "$PGBIN/pg_dump" --format=custom --compress=6 --lock-wait-timeout=60s \
-            --exclude-table-data='auth.sessions' \
-            --exclude-table-data='auth.refresh_tokens' \
-            --exclude-table-data='auth.one_time_tokens' \
-            --exclude-table-data='auth.flow_state' \
-            --exclude-table-data='auth.mfa_challenges' \
-            --exclude-table-data='auth.mfa_amr_claims' \
-            --exclude-table-data='auth.saml_relay_states' \
-            --exclude-table-data='auth.audit_log_entries' \
-            --exclude-table-data='net._http_response' \
-            --exclude-table-data='cron.job_run_details' \
-            --exclude-table-data='vault.secrets' \
-            "${excludes[@]}" \
+          # Owners, row security policies and grants are recorded (a real restore needs them; the drill skips
+          # owners and grants with pg_restore --no-owner --no-privileges).
+          safe "$PGBIN/pg_dump" --format=custom --compress=6 --lock-wait-timeout=60s \
+            "${schema_args[@]}" "${skip_args[@]}" \
             -d "$DB_URL" -f dump.pgc
           # Proves the archive reads back. --list reads the catalogue only and catches a truncated file;
           # the full read to /dev/null decompresses every data block and catches corrupt table data,
@@ -137,15 +178,32 @@ jobs:
           "$PGBIN/pg_restore" --list dump.pgc > toc.txt
           timeout 600 "$PGBIN/pg_restore" -f /dev/null dump.pgc
           echo "Dump: $(stat -c %s dump.pgc) bytes, $(grep -vc '^;' toc.txt) catalogue entries"
-          for t in entries policy_acceptances deletion_requests; do
-            grep -Eq "TABLE DATA public $t " toc.txt || { echo "::error::The dump has no data section for public.$t"; exit 1; }
+          # Tables the product cannot work without. Each needs a data section in the dump (a table the role
+          # could not read stops pg_dump itself; this catches a table that was never there).
+          required="public.entries public.entry_versions public.children public.child_members public.profiles public.policy_acceptances public.deletion_requests public.purge_ledger public.sync_epochs auth.users"
+          for t in $required; do
+            schema="${t%%.*}"; name="${t#*.}"
+            grep -Eq "TABLE DATA $schema $name " toc.txt || { echo "::error::The dump has no data section for $t"; exit 1; }
           done
+          # Row level security policies and grants must be in the dump, or a restore opens every table to everyone
+          # or to no one (the policies are the access rules).
+          policies=$(grep -c ' POLICY ' toc.txt || true)
+          grants=$(grep -c ' ACL ' toc.txt || true)
+          echo "Dump holds $policies policies and $grants grant entries"
+          [ "$policies" -ge 1 ] || { echo "::error::The dump holds no row level security policies"; exit 1; }
+          [ "$grants" -ge 1 ] || { echo "::error::The dump holds no grants (ACL entries)"; exit 1; }
           # Rows inside this very dump (COPY text format keeps one row per line). Counts only.
           count_rows() {
-            "$PGBIN/pg_restore" --data-only --schema=public --table="$1" -f - dump.pgc \
+            "$PGBIN/pg_restore" --data-only --schema="$1" --table="$2" -f - dump.pgc \
               | awk '/^COPY /{c=1; next} c && /^\\\.$/{c=0; next} c{n++} END{print n+0}'
           }
-          counts="entries=$(count_rows entries),policy_acceptances=$(count_rows policy_acceptances),deletion_requests=$(count_rows deletion_requests)"
+          counts=""
+          for t in $required; do
+            n=$(count_rows "${t%%.*}" "${t#*.}")
+            [[ "$n" =~ ^[0-9]+$ ]] || { echo "::error::Could not count the rows of $t in the dump"; exit 1; }
+            counts="${counts}${t}=${n},"
+          done
+          counts="${counts%,}"
           echo "Row counts in this dump: $counts"
           age -r "$RECIPIENT" -o "staging-$stamp.pgc.age" dump.pgc
           shred -u dump.pgc
@@ -155,7 +213,8 @@ jobs:
           {
             echo "### Staging backup $stamp"
             echo "- Encrypted file: \`staging-$stamp.pgc.age\`, $(stat -c %s "staging-$stamp.pgc.age") bytes, kept 7 days"
-            echo "- Row counts in this dump: \`$counts\` (the restore drill's \`--expect\`)"
+            echo "- Row counts of the required tables in this dump: \`$counts\`"
+            echo "- The restore drill compares EVERY table with the dump itself (\`scripts/ops/dump-manifest.ts\`), not only these"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove any plain dump left by a failed step
