@@ -159,6 +159,14 @@ describe('Plus surfaces in alpha say Plus is not part of this test, and offer no
     expect(NOTE).not.toMatch(/\d|\$|trial|[–—‘’“”…]/);
   });
 
+  it('Erase everything in alpha: the free-letters-start-again line is left out (#552; Review A on #520)', () => {
+    const src = read('src/app/settings/erase.tsx');
+    expect(src).toMatch(/import \{ PLUS_ALPHA \} from '@\/lib\/billing\/alpha';/);
+    // The line renders only in the store build; it is never shown unguarded.
+    expect(src).toMatch(/\{PLUS_ALPHA \? null : <Text variant="body">\{e\.freeLetters\}<\/Text>\}/);
+    expect(src.match(/e\.freeLetters/g)).toHaveLength(1);
+  });
+
   it('Welcome footnote and Settings Plan row: the note in alpha, the store words otherwise', () => {
     expect(plusLineFor(true, en.onboarding.welcome.freeLine)).toBe(NOTE);
     expect(plusLineFor(false, en.onboarding.welcome.freeLine)).toBe(en.onboarding.welcome.freeLine);

@@ -13,6 +13,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { en } from '@scribe/content';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -221,6 +222,29 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
     expect([f.a1, f.a2, f.draft].some(has)).toBe(false);
     expect(db.get('SELECT id FROM children WHERE id = ?', f.asha)).toBeNull();
     expect(app.store.listChildren().map((c) => c.name)).toEqual(['Avi']);
+  });
+
+  it('Erase now that fails: the book leaves Recently deleted at once and the next launch finishes it, as the toast says (Review A on #520)', async () => {
+    let app = await launch();
+    const f = family(app);
+    app.store.deleteBook(f.asha);
+    // A recording that will not go: Erase now returns false with the erase already begun.
+    expect(app.store.eraseBook(f.asha, () => { throw new Error('file would not go'); })).toBe(false);
+    // The shelf re-reads at once (recently-deleted.tsx): the card is gone and Restore is no longer offered.
+    expect(app.store.listDeletedBooks()).toEqual([]);
+    expect(app.store.restoreBook(f.asha)).toBe(false);
+    // So the toast must not say the book is still in Recently deleted; it says the app finishes at the next open.
+    const toast = en.settings.delete.bookEraseFailedToast;
+    expect(toast).not.toMatch(/Recently deleted/);
+    expect(toast).toMatch(/next time it opens/);
+    expect(readFileSync(join(__dirname, '..', 'src/app/settings/recently-deleted.tsx'), 'utf8')).toMatch(
+      /eraseDeletedBook\(b\.id\) \? d\.bookErasedToast : d\.bookEraseFailedToast/,
+    );
+    // And it does: the next launch erases the book.
+    app = await launch();
+    expect(app.store.listChildren().map((c) => c.name)).toEqual(['Avi']);
+    await app.sweep.runLaunchSweep();
+    expect(db.get('SELECT id FROM children WHERE id = ?', f.asha)).toBeNull();
   });
 
   it('a kill part way through the erase: the next launch finishes it, the sweep re-attaches nothing, and Restore is no longer offered', async () => {

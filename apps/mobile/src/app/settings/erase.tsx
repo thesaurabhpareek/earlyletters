@@ -9,6 +9,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ErrorLine } from '@/lib/auth/ui';
 import { useTheme } from '@/lib/a11y';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { copy } from '@/lib/copy';
 import { eraseEverything } from '@/lib/erase-everything';
 import { haptic } from '@/lib/haptics';
@@ -104,7 +105,8 @@ export default function EraseEverything() {
           {e.heading}
         </Text>
         <Text variant="body">{e.body}</Text>
-        <Text variant="body">{e.freeLetters}</Text>
+        {/* #552, F5: no letter limit in alpha, so the free-letter line is left out there. */}
+        {PLUS_ALPHA ? null : <Text variant="body">{e.freeLetters}</Text>}
         <Text variant="subhead" tone="muted">
           {e.speechStays}
         </Text>

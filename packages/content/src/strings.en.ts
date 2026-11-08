@@ -843,7 +843,8 @@ export const en = {
       bookEraseNowTitle: "Erase {child}'s book now?",
       bookEraseNowBody: "Every letter and recording in it is erased for good.",
       bookErasedToast: "Book erased.",
-      bookEraseFailedToast: "The book was not erased. It is still in Recently deleted.",
+      // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
+      bookEraseFailedToast: "The book was not erased yet. The app finishes the next time it opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
