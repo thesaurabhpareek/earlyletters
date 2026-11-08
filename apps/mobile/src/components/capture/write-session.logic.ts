@@ -8,7 +8,8 @@
  *   keep Write open (false), so they are never lost.
  * - "Add to Asha's book" and "Keep private" (`keep`): the words are written now, then the draft is handed to Review;
  *   null when they could not be written (Write stays, "Not saved yet" shows).
- * - A swipe down or any other unmount (`unmount`): a pending write is written now with the newest words.
+ * - A swipe down or any other unmount (`unmount`): a pending write, or one that did not go through, is written now with
+ *   the newest words.
  * - The app leaving the foreground (`background`, on AppState `inactive` or `background`; QE-06): the newest words are
  *   written now, because iOS pauses timers in the background and may end the app before the pause ever fires. A write
  *   that did not go through is tried again here too. Words already on the phone are not written twice.
@@ -39,7 +40,7 @@ export type WriteSession = {
   close: () => boolean;
   /** A destination tap: the draft to keep, or null to stay on Write. */
   keep: () => string | null;
-  /** The screen is going away: write any pending words now. */
+  /** The screen is going away: write any pending words, and any not yet on this phone, now. */
   unmount: () => void;
   /** The app is leaving the foreground: write any words not yet on this phone now. */
   background: () => void;
@@ -100,7 +101,7 @@ export function createWriteSession(
       return io.draftId();
     },
     unmount() {
-      if (timer === null) return;
+      if (timer === null && !unsaved) return;
       cancel();
       write(latest);
     },

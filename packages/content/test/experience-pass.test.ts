@@ -211,14 +211,9 @@ const REGISTERED: Record<string, Text> = {
  * does for every app copy file.
  */
 const CONSENT_COPY_FILE = join(__dirname, '..', '..', '..', 'apps', 'mobile', 'src', 'components', 'consent', 'copy.ts');
-const CONSENT_NEVER = {
-  neverTitle: 'What we never do',
-  never: [
-    'We never show ads, and your letters are never used for advertising.',
-    'We never sell your data.',
-    'We never use your words, recordings or photos to train machine learning models.',
-  ],
-};
+// Retired 8 Nov 2026 (CPrivO-5): Settings, Privacy opens with `trust.promise` word for word instead, and the third
+// line named photos, which v1.0 does not have. The pin now holds that the lines stay gone.
+const CONSENT_NEVER = {};
 
 function consentNeverLines(): { neverTitle?: string; never?: string[] } {
   const source = ts.createSourceFile(CONSENT_COPY_FILE, readFileSync(CONSENT_COPY_FILE, 'utf8'), ts.ScriptTarget.Latest, true);
@@ -291,7 +286,7 @@ describe('[EXPERIENCE_PASS_2026-10 P0] keys', () => {
     expect(consent.filter((k) => !(k in REGISTERED))).toEqual([]);
   });
 
-  it('leaves the consentCopy never-lines in apps/mobile untouched (P0 rule 3), read without importing the app', () => {
+  it('keeps the retired consentCopy never-lines out of apps/mobile (CPrivO-5), read without importing the app', () => {
     expect(existsSync(CONSENT_COPY_FILE), CONSENT_COPY_FILE).toBe(true);
     expect(consentNeverLines()).toEqual(CONSENT_NEVER);
   });

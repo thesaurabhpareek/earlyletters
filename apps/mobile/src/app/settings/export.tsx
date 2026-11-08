@@ -16,6 +16,7 @@ import { mailTarget } from '@/components/settings/help-links.logic';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { confirmForExport, whileSharing } from '@/lib/app-lock/controller';
 import { trackExportCompleted, trackExportFailed, trackExportStarted } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import {
@@ -103,6 +104,9 @@ export default function ExportScreen() {
   }, []);
 
   const start = async () => {
+    // App lock on: the device confirms it is them before the whole book is packed (security backlog 2,
+    // `appLock.exportReason`). Cancel leaves the page as it was, silently.
+    if (!(await confirmForExport())) return;
     haptic('press');
     const startedAt = Date.now();
     trackExportStarted({ letters: summary?.letters ?? 0 });
@@ -148,7 +152,8 @@ export default function ExportScreen() {
       } catch {
         // the date is a courtesy; the export goes ahead
       }
-      await shareExport(result, e.title);
+      // The lock never falls due while the share sheet is open (security.md section 2).
+      await whileSharing(() => shareExport(result, e.title));
     } finally {
       pending.current = null;
       setState({ kind: 'shared' });

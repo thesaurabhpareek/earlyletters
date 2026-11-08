@@ -11,6 +11,8 @@ import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
 import { accountSubtitle, planRowFor } from '@/components/settings/settings-home.logic';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import { useAppLock } from '@/lib/app-lock/controller';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { getPlan, subscribePlan } from '@/lib/billing';
@@ -26,16 +28,18 @@ import { backupCopy } from '@scribe/content';
  * one tap from here, and every row pushes its own page, like iOS Settings: no accordion opens inside the list.
  * Rows (coordinator, 3 Oct 2026): Account, Plan, Spoken language, Reminders, Export your book, Privacy, Storage,
  * Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, If you are struggling, Licenses, version.
- * "Settings, Plan" is the path the Plus legal text names.
+ * "Settings, Plan" is the path the Plus legal text names. 8 Nov 2026 (settings-ia.md 4): Where your letters live replaces
+ * Recordings, and Your words (the two named choices that replace the Word for word switch) follows Spoken language.
  *
- * Said once each: the short privacy line is the footer of Your data (`trust.short`), and the early-version note
- * (`settings.about.beta.body`, registered text, D-060, K-13) is the footer of About, word for word, unstyled, with no
- * heading of its own, so About says "early" once (CLO-5). Then the sign-off, text only (CDesO-2).
+ * Said once each: the short privacy line (`trust.short`) is the last line of Settings, Privacy (CPrivO-5, design.md
+ * 2.11), and the early-version note (`settings.about.beta.body`, registered text, D-060, K-13) is the footer of About,
+ * word for word, unstyled, with no heading of its own, so About says "early" once (CLO-5). Then the sign-off, text
+ * only (CDesO-2).
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling"
  * is always here, never behind a flag (D-034).
  *
  * Seams for P8 (option B): the Account row (top of the first section, signed in or out, with the way the person signs
- * in as its subtitle, P8a's request on #310), the Back up my recordings row (Your data, after Recordings) and Delete
+ * in as its subtitle, P8a's request on #310), the Back up my recordings row (Your data, after Where your letters live) and Delete
  * account (its own section above Help) are drawn here, each behind its capability; P8 asks for anything more (S40:
  * Delete account signed in only) and P6 makes it in this file.
  */
@@ -47,8 +51,10 @@ const ROUTES = {
   export: '/settings/export',
   recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
+  appLock: '/settings/app-lock',
   storage: '/settings/storage',
-  recordings: '/settings/recordings',
+  whereLive: '/settings/where-letters-live',
+  yourWords: '/settings/your-words',
   backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
@@ -77,6 +83,7 @@ export default function Settings() {
   const h = copy.settingsHome;
   // Signed in: "Signed in with Apple" (or Google, email) under Account; signed out: what the row is for (S40, #310).
   const auth = useAuth();
+  const lockOn = useAppLock().enabled;
   const account = accountSubtitle({ status: auth.state.status, provider: auth.account.provider });
   const version = Constants.expoConfig?.version ?? '';
   // The build number from the installed binary (EAS sets it remotely, so the config never has it). null on web.
@@ -112,15 +119,25 @@ export default function Settings() {
 
       <ListSection title={h.sections.writing}>
         <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
+        <ListRow title={h.yourWords} trailing="chevron" onPress={go(ROUTES.yourWords)} testID="settings.yourWords" />
         <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
         <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
 
-      <ListSection title={h.sections.data} footer={copy.trust.short}>
+      <ListSection title={h.sections.data}>
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
+        {/* App lock (F1; SETTINGS_AND_ACCOUNT.md section 6): its value says On or Off. Moves into Privacy and security
+            with the Settings regroup. */}
+        <ListRow
+          title={appLockCopy.settingsHome.appLock}
+          value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+          trailing="chevron"
+          onPress={go(ROUTES.appLock)}
+          testID="settings.appLock"
+        />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
-        <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
+        <ListRow title={h.whereLive} trailing="chevron" onPress={go(ROUTES.whereLive)} testID="settings.whereLive" />
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />

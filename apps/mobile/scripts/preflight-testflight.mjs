@@ -27,7 +27,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo as expoIn, extraPermissions, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -250,14 +250,18 @@ if (cfg) {
     `config extra says backup=${cfg.extra?.backup}, statusReport=${cfg.extra?.statusReport}, which does not follow the profile's switches.`,
   );
 
-  // Permissions: the microphone string, and nothing else asked for.
-  const audio = (cfg.plugins ?? []).find((p) => Array.isArray(p) && p[0] === 'expo-audio')?.[1] ?? {};
+  // Permissions (LEGAL-REQ-007): the microphone, notifications (no Info.plist key) and Face ID for the app lock; nothing else.
+  const pluginOptions = (name) => (cfg.plugins ?? []).find((p) => Array.isArray(p) && p[0] === name)?.[1] ?? {};
+  const audio = pluginOptions('expo-audio');
   const mic = String(audio.microphonePermission ?? '');
-  check(mic.length > 20 && !/\{app\}|TODO|example\.com|Allow \$\(PRODUCT_NAME\)/.test(mic), `microphone purpose string: "${mic}"`, `Microphone purpose string is missing, default or holds a placeholder (got "${mic}").`);
+  check(purposeStringProblem(mic) === null, `microphone purpose string: "${mic}"`, `Microphone purpose string is missing, default or holds a placeholder (got "${mic}").`);
   check(audio.enableBackgroundRecording === false && audio.enableBackgroundPlayback === false, 'no background audio modes (LEGAL-REQ-011)', 'Background audio is on: it must stay off (LEGAL-REQ-011).');
+  // App lock (F1): without this option the plugin writes its own default ("Allow $(PRODUCT_NAME) to use Face ID").
+  const faceId = String(pluginOptions('expo-local-authentication').faceIDPermission ?? '');
+  check(purposeStringProblem(faceId) === null, `Face ID purpose string (app lock): "${faceId}"`, `Face ID purpose string is missing, the library default or holds a placeholder (got "${faceId}"). It comes from src/lib/permission-copy.ts faceId (LEGAL-REQ-007, F17 Q3).`);
   const asked = JSON.stringify([cfg.ios?.infoPlist ?? {}, cfg.plugins ?? []]);
-  const extraPerms = [...new Set(asked.match(/(camera|photo|photos|location|contacts|faceID|bluetooth|calendars|speechRecognition|userTracking|notifications?)Permission|NS[A-Za-z]+UsageDescription/g) ?? [])];
-  check(extraPerms.length === 0, 'config asks for no permission besides the microphone', `Config names other permissions: ${extraPerms.join(', ')}. Every unused permission is a question App Review will ask.`);
+  const extraPerms = extraPermissions(asked);
+  check(extraPerms.length === 0, 'config asks for no permission besides the microphone, notifications and Face ID (app lock)', `Config names other permissions: ${extraPerms.join(', ')}. Every unused permission is a question App Review will ask.`);
 
   // Privacy manifest declared.
   const pm = cfg.ios?.privacyManifests;
@@ -556,7 +560,12 @@ if (ios) {
     usage = usage.filter((k) => k !== 'NSLocalNetworkUsageDescription');
     notes.push('The generated Info.plist holds NSLocalNetworkUsageDescription (and a Bonjour entry) from expo-dev-client. A build phase ("Strip Local Network Keys for Release") removes them from the Release app that TestFlight gets; the phase is present, but the stripped result is UNVERIFIED until the first build is inspected. If App Review or a tester ever sees a local-network prompt, remove expo-dev-client from the testflight build.');
   }
-  check(usage.length === 1 && usage[0] === 'NSMicrophoneUsageDescription', 'generated Info.plist asks for the microphone only (NSMicrophoneUsageDescription; the dev-client local-network key is stripped from Release)', `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected only NSMicrophoneUsageDescription.`);
+  const usageProblems = plistUsageProblems(usage);
+  check(
+    usageProblems.missing.length === 0 && usageProblems.extra.length === 0,
+    `generated Info.plist asks for the microphone and Face ID only (${REQUIRED_PLIST_USAGE.join(', ')}; the dev-client local-network key is stripped from Release)`,
+    `Generated Info.plist has usage strings: ${usage.join(', ') || 'none'}. Expected exactly ${REQUIRED_PLIST_USAGE.join(' and ')} (missing: ${usageProblems.missing.join(', ') || 'none'}; extra: ${usageProblems.extra.join(', ') || 'none'}).`,
+  );
   const modes = /<key>UIBackgroundModes<\/key>\s*<array>([\s\S]*?)<\/array>/.exec(ios.plist)?.[1];
   check(!modes, 'generated Info.plist has no UIBackgroundModes', `Generated Info.plist declares background modes (${modes?.replace(/\s+/g, ' ').trim()}); LEGAL-REQ-011 says none.`);
   check(plistValue(ios.plist, 'ITSAppUsesNonExemptEncryption') === 'false', 'generated Info.plist: ITSAppUsesNonExemptEncryption = false', 'Generated Info.plist lacks ITSAppUsesNonExemptEncryption=false.');

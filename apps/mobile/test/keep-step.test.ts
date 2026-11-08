@@ -16,7 +16,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
     throw new Error('native open must not be used in tests');
   },
 }));
-vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }) }));
+vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: h.view, details: {}, checkedAt: null }), planReadiness: async () => 'read' }));
 vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
 
 const store = await import('../src/lib/store');
