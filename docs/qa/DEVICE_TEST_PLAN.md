@@ -547,6 +547,15 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
 
+### S1-39 Full disk and a long take: finishing never sticks, and the take is kept (BL-563, S0; PR #595)
+- **Needs:** a build with PR #595; the SE 3; Asha's book; a way to fill the disk (large videos or a filler file through Files) and Settings > General > iPhone Storage to read free space. Fictional family only (Asha).
+- **Steps:** (a) Fill the disk until iPhone Storage shows under 1 MB free (if iOS frees space on its own, fill again just before stopping). Start a letter and talk, or leave a radio on, for 30 minutes, then tap stop. Note the seconds from stop to the next screen and what that screen is. (b) On the same phone with the disk still full, try once more with a 1 minute take. (c) Free a few GB, force-quit the app and open it again. Read Tonight's unfinished letters, then open the card.
+- **Expected:**
+  - (a) and (b): within about 3 s of stop the screen leaves "finishing" on its own and lands on Review, or, if the save failed, on Tonight (home); never a screen that stays on finishing, and "Let it go" never shows while finishing. No crash.
+  - (c): the take from (a) is there as an unfinished letter ("Recorded before the app closed." or Read it back), opens in Review, and plays its sound up to the point the disk filled; nothing was deleted. If the recording file could not be written at all, Review says so in its own words and never claims a recording is kept.
+- **Record:** S1-39 rows (a) to (c): phone, iOS version, build number, free space before stop, take length, seconds from stop to the next screen, the screen reached, and for (c) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
+- **Not covered:** a line on Tonight saying the take was kept after a failed finish (follow-up: needs a new content key from `content`; today it returns home without a toast).
+
 ### S1-81 Opening a letter from the Book: one move, card to page (founder report on TestFlight build 1; MOTION 5f, EXPERIENCE_PASS 5.8 row 7; branch fix/mobile-letter-open-motion)
 - **Needs:** a build with fix/mobile-letter-open-motion; the SE 3 and a 120 Hz iPhone (Pro); a book with at least six letters of different lengths (Asha only), one short enough to show whole on its card; light and dark mode.
 - **Steps:**
