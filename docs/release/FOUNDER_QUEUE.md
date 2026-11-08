@@ -5,7 +5,6 @@
 - `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
 - If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
 
-
 **This file is a list of steps, not a live status.** For where things stand now, read the TODAY page (`docs/release/TODAY.md`, generated) or the pinned status issue (#pending, until the generator in open PR #565 is merged and the issue exists). If this file and the TODAY page disagree, the TODAY page wins.
 
 Last verified: 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct), read against `origin/develop` at 6bfb94a9 and GitHub REST. The only later re-read was on 30 Oct and covered one item (W0-14a). Nothing below has been re-verified since; no session has verified that build 1 is on TestFlight.
