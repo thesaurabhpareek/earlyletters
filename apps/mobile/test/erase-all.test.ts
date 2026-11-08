@@ -583,6 +583,18 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     expect(keys).not.toMatch(/secureStorage|SecureStore/);
   });
 
+  it('Erase never deletes the backup book keys or the device key (data design 1 Nov, section 4; security 3(b))', () => {
+    // Book keys are synchronizable iCloud Keychain items: deleting them here would delete them on every device and
+    // break restore. Only Delete account removes them. Erase reaches the Keychain only through the named
+    // this-device-only keys in erase-everything.ts and the ledger, never through the backup KeyVault.
+    const paths = ['src/lib/erase-everything.ts', 'src/lib/db/repos/wipe.ts', 'src/lib/store.ts', 'src/lib/billing/letter-ledger.ts'];
+    for (const p of paths) {
+      const s = src(p);
+      expect([p, /from '[^']*\/backup(?:\/|')/.test(s)]).toEqual([p, false]);
+      expect([p, /deleteBookKeys|deleteDeviceKey|KeyVault/.test(s)]).toEqual([p, false]);
+    }
+  });
+
   it("age-gate.ts's subscription returns the unsubscribe as the effect's cleanup, and the unsubscribe stops it", async () => {
     expect(src('src/lib/age-gate.ts')).toMatch(/useEffect\(\(\) => subscribeTo\('settings', refresh\), \[refresh\]\);/);
     const app = await launch();
