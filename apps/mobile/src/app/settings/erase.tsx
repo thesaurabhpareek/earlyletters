@@ -1,14 +1,14 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useCallback, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert, BackHandler, Platform, ScrollView, View } from 'react-native';
+import { Alert, BackHandler, Platform, ScrollView, View } from 'react-native';
 import { eraseConfirmDialog, runEraseEverything, type ErasePhase } from '@/components/settings/wipe.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { ErrorLine } from '@/lib/auth/ui';
-import { useTheme } from '@/lib/a11y';
+import { announce, useTheme } from '@/lib/a11y';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { copy } from '@/lib/copy';
 import { eraseEverything } from '@/lib/erase-everything';
@@ -73,7 +73,7 @@ export default function EraseEverything() {
         erase: () => eraseEverything(),
         setPhase,
         setFailed,
-        announceDone: () => AccessibilityInfo.announceForAccessibility(e.doneA11y),
+        announceDone: () => announce(e.doneA11y),
       });
     });
     Alert.alert(d.title, d.body, d.buttons);

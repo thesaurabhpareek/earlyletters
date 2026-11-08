@@ -719,7 +719,9 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     expect(s).toMatch(/<StateScreen kind="loading" title=\{e\.busy\} \/>/);
     expect(s).toMatch(/headerBackVisible: !erasing, gestureEnabled: !erasing/);
     expect(s).toMatch(/hardwareBackPress', \(\) => erasingRef\.current/);
-    expect(s).toMatch(/announceForAccessibility\(e\.doneA11y\)/);
+    // Through lib/a11y's announce (speech-gate.test.ts allows only four files to call AccessibilityInfo directly).
+    expect(s).toMatch(/announceDone: \(\) => announce\(e\.doneA11y\)/);
+    expect(s).not.toMatch(/AccessibilityInfo/);
   });
 
   it('a failed or refused erase leaves the Erasing screen for the page with one line, and announces nothing', async () => {
