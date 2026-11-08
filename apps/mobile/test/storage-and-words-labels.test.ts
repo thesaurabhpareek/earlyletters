@@ -3,11 +3,11 @@
  * Two Settings labels the founder flagged on build 1 (8 Nov 2026).
  * - Storage: the listening detector and the speech model are both language "mul", so both rows (and both Remove
  *   labels for VoiceOver) read "All languages, Speech model". Each now has its own name from packages/content.
- * - The words switch was labelled "Word for word", with a line that flipped between "Small fixes, marked" and
+ * - The words switch (now Your words, two named choices, #639) was labelled "Word for word", with a line that flipped between "Small fixes, marked" and
  *   "Exactly as said", so On read as the opposite of word for word. The label now names what On means and the
  *   footer names both choices. The stored setting is unchanged.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { en, packsCopy as raw } from '@scribe/content';
@@ -42,26 +42,38 @@ describe('Settings > Storage names each download', () => {
   });
 });
 
-describe('the words switch names what On means', () => {
-  it('the label is the On choice and never flips with the value', () => {
-    const screen = src('app/settings/recordings.tsx');
-    expect(screen).toMatch(/<ToggleRow\s+title=\{copy\.settings\.tidyOn\}\s+value=\{fixes\}/);
-    expect(screen).not.toMatch(/tidyLabel|description=\{fixes/);
+// 8 Nov 2026 (#639, CTO ruling): Your words (app/settings/your-words.tsx) replaces the switch and the Recordings page.
+// The three guarantees below move with it, unchanged in intent: each choice is named and never flips with the value,
+// both choices are named on the page, and the stored setting is the same key with the same two values.
+describe('the words choice names what each option means (Your words)', () => {
+  it('each choice is named, and no label flips with the value', () => {
+    const screen = src('app/settings/your-words.tsx');
+    expect(screen).toMatch(/\{ value: 'fixes', label: w\.marked\.label, description: w\.marked\.line \}/);
+    expect(screen).toMatch(/\{ value: 'exact', label: w\.exact\.label, description: w\.exact\.line \}/);
+    expect(screen).not.toMatch(/tidyLabel|description=\{fixes|ToggleRow/);
+    // The same words the switch used for its two states.
+    expect(en.yourWords.marked.label).toBe(en.settings.tidyOn);
+    expect(en.yourWords.exact.label).toBe(en.settings.tidyOff);
     expect(en.settings.tidyOn).toBe('Small fixes, marked');
     expect((en.settings as Record<string, unknown>).tidyLabel).toBeUndefined();
   });
 
-  it('the footer names both choices', () => {
-    expect(en.settings.tidyHelp).toBe(
-      'With this on, new letters open with small fixes marked, and you can put any of them back. With it off, they open Exactly as said, with every um and false start. Either way, we never rewrite your words.',
-    );
+  it('the page names both choices, says we never rewrite, and keeps the registered mishear line', () => {
+    const screen = src('app/settings/your-words.tsx');
+    expect(en.yourWords.footer).toBe('Either way, we never rewrite your words.');
+    expect(screen).toMatch(/\{w\.footer\}/);
+    expect(screen).toMatch(/\{copy\.settings\.help\.mistakes\}/);
+    // tidyHelp described the switch; no screen reads it now (kept for the dead-copy sweep, its words unchanged).
     expect(en.settings.tidyHelp).toContain(en.settings.tidyOff);
-    expect(src('app/settings/recordings.tsx')).toMatch(/footer=\{`\$\{copy\.settings\.tidyHelp\} \$\{copy\.settings\.help\.mistakes\}`\}/);
+    expect(screen).not.toMatch(/tidyHelp/);
+    expect(existsSync(join(__dirname, '..', 'src', 'app/settings/recordings.tsx'))).toBe(false);
   });
 
-  it('the stored setting is unchanged: On stores fixes, Off stores exact', () => {
-    const screen = src('app/settings/recordings.tsx');
-    expect(screen).toMatch(/setSetting\(DEFAULT_VIEW_SETTING, on \? 'fixes' : 'exact'\)/);
-    expect(typeof DEFAULT_VIEW_SETTING).toBe('string');
+  it('the stored setting is unchanged: Small fixes stores fixes, Exactly as said stores exact', () => {
+    const screen = src('app/settings/your-words.tsx');
+    expect(screen).toMatch(/setSetting\(DEFAULT_VIEW_SETTING, v\)/);
+    expect(screen).toMatch(/useState<ReviewView>/);
+    expect(screen).toMatch(/viewFromSetting\(getSetting\(DEFAULT_VIEW_SETTING\)\)/);
+    expect(DEFAULT_VIEW_SETTING).toBe('review.defaultView');
   });
 });

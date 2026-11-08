@@ -19,7 +19,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
+  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, Your words, reminders, appearance, privacy, export, Recently deleted, Where your letters live, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.

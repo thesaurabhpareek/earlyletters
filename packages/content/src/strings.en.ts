@@ -1196,6 +1196,10 @@ export const en = {
     },
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
+    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your data); Your words
+    // replaces the Word for word switch (Writing).
+    whereLive: "Where your letters live",
+    yourWords: "Your words",
     // Transcription language (D-056). The app itself is in English at v1.0.
     languageLabel: "Spoken language",
     languageHelp: "The language you speak your letters in.",
@@ -1223,6 +1227,50 @@ export const en = {
     // "1.0.0 (42)": app version and build number.
     versionValue: "{version} ({build})",
     strugglingA11yHint: "Shows free, confidential support lines.",
+  },
+
+  // Settings, Where your letters live (settings-ia.md 4; design.md 2.7; content.md 4.7; rulings CCO-8, CPrivO-4).
+  // Replaces the Recordings page. Language downloads live only in Storage.
+  whereLive: {
+    title: "Where your letters live",
+    onPhoneTitle: "On this phone",
+    // Build 1: SERVER_FEATURES and BACKUP off in every profile.
+    onPhone: "Your letters and recordings are kept on this iPhone.",
+    // Build 2, sync on, owner backup off (privacy P2b). Never "stay" (in-app-disclosures 2, rule 2).
+    onPhoneSynced: "Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.",
+    newPhoneTitle: "If you get a new phone",
+    iphoneBackup: {
+      title: "iPhone backup",
+      // CCO-8: until the device restore drill passes, no line says the iPhone backup brings the book back. This is
+      // content.md 1 item 14's recordings-only variant: recordings sit in Documents, which iOS backs up (D-033); the
+      // letters database line ("Includes your letters and recordings, ...") waits for the drill.
+      body: "Includes your recordings, if iCloud Backup is on.",
+      howTo: "How to check",
+      howToHint: "Opens Apple's help page.",
+    },
+    // The date is when a copy was prepared, not proof it was saved (settings.export.lastExport, D-085).
+    exportEmpty: "Save a copy any time.",
+    backupTitle: "Encrypted backup",
+    // Exec Q4, D-126: say what this version does, promise no update.
+    backupLater: "Not in this version",
+    // CPrivO-4 and CCO-8: an export is a copy, never a restore. Content's full footer opens with "Your iPhone backup
+    // brings the book to a new iPhone."; that sentence waits for the restore drill, so it is not here.
+    footer: "An export is a copy to open and keep. We hold no copy.",
+  },
+
+  // Settings, Your words (settings-ia.md 4; design.md 2.8; content.md 4.8). Two named choices replace the Word for
+  // word switch; the stored setting (review.defaultView, 'fixes' or 'exact', D-086) is unchanged.
+  yourWords: {
+    title: "Your words",
+    marked: {
+      label: "Small fixes, marked",
+      line: "An um or a repeat comes out, marked, and you can put it back.",
+    },
+    exact: {
+      label: "Exactly as said",
+      line: "Every um and false start stays in.",
+    },
+    footer: "Either way, we never rewrite your words.",
   },
 
   // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
