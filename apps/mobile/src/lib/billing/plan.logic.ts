@@ -36,11 +36,19 @@ import { isPlusProduct, periodOf } from './config';
 
 const DAY_MS = 86_400_000;
 /**
- * Apple still lists a subscription whose period end has passed (billing grace
- * without a date, or a renewal not yet on this phone): keep Plus on until the
- * next check, at most this long.
+ * Offline renewal grace (CR-46 in docs/agents/cto/RULINGS.md; RT-SUB-13): while the last read on this phone lists a
+ * subscription, Plus stays on until 7 days past its last verified expiry. That covers a monthly payer whose last read
+ * came before the period end and whose phone was then offline across it: the renewal has not reached this phone, so
+ * Plus stays on for 7 days past the old period end. When the read itself came after the period end and Apple still
+ * listed it (billing grace with no date, or a renewal not yet on this phone), Apple verified it at that read, so the 7
+ * days count from the read. Either way never less than 7 days past the expiry. 7 days, from PRD C-NFR-004
+ * (docs/prd/C-habits-pricing-settings.md: "The last known entitlement is cached for 7 days."), carried into PRD v2
+ * by F14-REQ-003 and 06-nfr ("C-NFR-004 Rev"). Failing open for a payer is the promise. A fresh read replaces the
+ * snapshot: if it no longer lists the subscription, Plus is off at once; if it shows a renewal, the window moves to
+ * the new expiry. So this only matters while the phone cannot read StoreKit again. A subscription Apple said will
+ * not renew (willAutoRenew false at a read before its end) has no renewal to wait for and ends at its period end.
  */
-const STILL_LISTED_MS = DAY_MS;
+export const STILL_LISTED_MS = 7 * DAY_MS;
 /** Subscription Terms: cancel at least 24 hours before a free trial or period ends. */
 const CANCEL_LEAD_MS = DAY_MS;
 
@@ -192,9 +200,22 @@ function liveOf(tx: NativeTransaction, status: NativeStatus | undefined, checked
   const exp = tx.expiresAt ? Date.parse(tx.expiresAt) : null;
   if (exp === null) return { tx, status, until: null, inGrace };
   const graceEnd = status?.gracePeriodExpiresAt ? Date.parse(status.gracePeriodExpiresAt) : null;
-  let until = exp;
-  if (inGrace) until = Math.max(exp, graceEnd ?? checkedMs + STILL_LISTED_MS);
-  else if (exp <= checkedMs) until = checkedMs + STILL_LISTED_MS;
+  let until: number;
+  if (inGrace && graceEnd !== null) {
+    // Apple's billing grace with its own end date is Apple's answer (C-REQ-027): on until that date.
+    until = Math.max(exp, graceEnd);
+  } else if (exp <= checkedMs) {
+    // The read came after the period end and Apple still listed it: verified at that read, so 7 days from it (CR-46).
+    until = checkedMs + STILL_LISTED_MS;
+  } else if (inGrace || status?.willAutoRenew !== false) {
+    // CR-46: the read came before the period end and a renewal is due. If the phone is offline across the period end,
+    // the renewal cannot reach it, so Plus stays on until 7 days past the last verified expiry.
+    until = exp + STILL_LISTED_MS;
+  } else {
+    // Apple said at the last read that it will not renew (cancelled): there is no renewal to wait for, so Plus ends at
+    // the period end, as the Plan screen says ("Plus ends on").
+    until = exp;
+  }
   return { tx, status, until, inGrace };
 }
 

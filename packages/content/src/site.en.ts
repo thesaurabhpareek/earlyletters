@@ -20,12 +20,12 @@ export const site = {
   /** Open Graph and social card text: first contact, so it carries the descriptor (BRAND.md naming; brand review BRD-12). */
   og: {
     title: brand.name,
-    description: `${brand.name}, the baby memory book you fill by talking. ${brand.tagline}`,
+    description: `${brand.name}: letters to your child, in your own words and voice. ${brand.tagline}`,
   },
   hero: {
-    headline: "Letters to your child, in your voice",
+    headline: "Letters to your child, in your own words and voice",
     subhead:
-      `${brand.name} is the baby memory book you fill by talking. It stays in your words, and your letters stay on your iPhone.`,
+      `${brand.name} is a book you fill by talking. It stays in your words, and your letters stay on your iPhone.`,
   },
   primaryCta: "Join the waitlist",
   price,

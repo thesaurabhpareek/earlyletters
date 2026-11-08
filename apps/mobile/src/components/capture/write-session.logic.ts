@@ -8,7 +8,11 @@
  *   keep Write open (false), so they are never lost.
  * - "Add to Asha's book" and "Keep private" (`keep`): the words are written now, then the draft is handed to Review;
  *   null when they could not be written (Write stays, "Not saved yet" shows).
- * - A swipe down or any other unmount (`unmount`): a pending write is written now with the newest words.
+ * - A swipe down or any other unmount (`unmount`): a pending write, or one that did not go through, is written now with
+ *   the newest words.
+ * - The app leaving the foreground (`background`, on AppState `inactive` or `background`; QE-06): the newest words are
+ *   written now, because iOS pauses timers in the background and may end the app before the pause ever fires. A write
+ *   that did not go through is tried again here too. Words already on the phone are not written twice.
  * Pure and timer-injected, so it runs in Node with fake timers against the real store (test/write-session.test.ts).
  */
 export const WRITE_AUTOSAVE_MS = 500;
@@ -36,9 +40,14 @@ export type WriteSession = {
   close: () => boolean;
   /** A destination tap: the draft to keep, or null to stay on Write. */
   keep: () => string | null;
-  /** The screen is going away: write any pending words now. */
+  /** The screen is going away: write any pending words, and any not yet on this phone, now. */
   unmount: () => void;
+  /** The app is leaving the foreground: write any words not yet on this phone now. */
+  background: () => void;
 };
+
+/** AppState values that mean the app is leaving the foreground (QE-06): iOS may end it from either without warning. */
+export const leavesForeground = (state: string): boolean => state === 'inactive' || state === 'background';
 
 export function createWriteSession(
   io: WriteSessionIo,
@@ -48,6 +57,13 @@ export function createWriteSession(
   const timers: Timers = opts.timers ?? { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
   let latest = opts.initial;
   let timer: unknown = null;
+  // Words typed since the last write that went through: what `background` must still put on the phone.
+  let unsaved = false;
+  const write = (value: string): boolean => {
+    const ok = io.persist(value);
+    if (ok && value === latest) unsaved = false;
+    return ok;
+  };
 
   const cancel = () => {
     if (timer !== null) timers.clear(timer);
@@ -57,10 +73,11 @@ export function createWriteSession(
   return {
     change(value) {
       latest = value;
+      unsaved = true;
       cancel();
       timer = timers.set(() => {
         timer = null;
-        io.persist(value);
+        write(value);
       }, delay);
     },
     latest: () => latest,
@@ -71,20 +88,27 @@ export function createWriteSession(
       const id = io.draftId();
       if (id && !latest.trim() && !io.hasRecording(id)) {
         io.deleteDraft(id);
+        unsaved = false; // nothing left to write: a later flush must not bring the deleted draft back
         return true;
       }
-      if (latest.trim() && !io.persist(latest)) return false;
+      if (latest.trim() && !write(latest)) return false;
+      unsaved = false;
       return true;
     },
     keep() {
       cancel();
-      if (!io.persist(latest)) return null;
+      if (!write(latest)) return null;
       return io.draftId();
     },
     unmount() {
-      if (timer === null) return;
+      if (timer === null && !unsaved) return;
       cancel();
-      io.persist(latest);
+      write(latest);
+    },
+    background() {
+      if (timer === null && !unsaved) return;
+      cancel();
+      write(latest);
     },
   };
 }
