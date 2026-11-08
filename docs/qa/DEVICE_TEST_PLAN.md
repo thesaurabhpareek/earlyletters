@@ -506,6 +506,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
 
+### S1-83 Listen follows the voice without re-rendering 20 times a second (founder report on TestFlight build 1; listening-cue.md; branch fix/mobile-listen-metering)
+- **Needs:** a build with fix/mobile-listen-metering; the SE 3 on battery and a 120 Hz iPhone (Pro); Asha's book; a quiet room. For (e), a Mac with Xcode Instruments and a development build of the same commit.
+- **Steps:**
+  - (a) Tonight > Speak. Talk normally for 20 s, then softly, then stay quiet for 15 s, then talk again.
+  - (b) Watch the clock for one minute while talking.
+  - (c) Tap Pause for 10 s, then Resume, then Finish.
+  - (d) Settings > Accessibility > Motion > Reduce Motion on: repeat (a).
+  - (e) Instruments, Time Profiler and Energy Log: a 10-minute take on the SE 3 with this build and with build 1 (or develop before this branch); note JS thread CPU and the energy impact for each.
+- **Expected:** (a) the glow behind the red circle swells with the voice within a fraction of a second, grows less when soft, and after about half a second of quiet turns to a slow breath (never still, never a warning); talking again brings it back to the voice. The red circle never moves. (b) The clock steps once a second, never skips or repeats a second. (c) Paused: the glow is still and dim; Resume brings it back; Finish opens Review. (d) The ring steps in strength with the voice, no swelling. (e) Lower JS CPU and energy impact than before; record the numbers either way. If the glow only ever breathes and never follows the voice, the metering is not arriving: note it as a fail and say so.
+- **Record:** S1-83 rows (a) to (e): phone, iOS version, pass or fail, and for (e) JS thread CPU percent and energy impact before and after.
+
 ### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
 - **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
 - **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:
@@ -533,6 +544,21 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-47 Settings, Reminders without the sheet: straight to the iOS alert, choices inline (reminders-settings.md; CDesO-3, CCO-10, LEGAL-REQ-007; branch feat/mobile-reminders-inline)
+- **Needs:** a TestFlight build with this branch, on a fresh install (iOS has never asked about notifications), and a second run on the same phone after denying. iPhone SE 3 for AX5. Asha's book with a birth date, and a second fresh install with a book that has only a due date.
+- **Steps:** (a) Never asked: open Settings, Reminders. Read the lines under the switch before touching it. Turn the switch on. (b) Allow. Read the page. Change How often, an evening, the time and Names in notifications, one at a time, pausing a second after each. (c) Fresh install again, turn on, Don't Allow. Turn the switch off and on again. (d) Tap Open Settings, allow notifications in iPhone Settings, and come back. (e) In iPhone Settings, Notifications, the app: choose Deliver Quietly (or reinstall and let a provisional grant stand, if the build asks provisionally), come back. (f) Airplane mode does not stop local scheduling; to see the failure row, use a development build with `scheduleNotificationAsync` made to throw once, then tap Try again. (g) The due-date-only book: read the Month and birthday messages row and the preview. (h) Repeat (a) to (d) with VoiceOver on, then with Reduce Motion on, then at AX5. (i) After the first letter on a fresh install: "Yes, evenings", allow; and on another fresh install, Don't Allow.
+- **Expected:**
+  - (a) "A nudge in the evening, as often as you choose. Never late at night. Only in the evenings you pick, and never late at night. Notifications never show what you write. Names stay off the lock screen unless you turn them on." shows under the switch before any tap. A tap goes straight to the iOS alert: no sheet, and no "A few evenings a week" title anywhere. The switch is already on behind the alert and never flips back.
+  - (b) Under the switch "Changes save as you go."; How it will look shows a flat card with the words of the next reminder (no name while Names is off; never a picture of an iOS banner); "Next: Tuesday at 8:30 PM." (or the real next day and time) changes with every edit, with a short cross-fade; How often, Which evenings, Time, Month and birthday messages and Names in notifications are all there with no Save button.
+  - (c) The switch stays on; the Notifications are off card with Open Settings shows; Next reads "Not sending yet."; the choices stay editable. Off and on again shows no second alert.
+  - (d) The card collapses, the toast says "Reminders are on. Next: ..." once, and the Next line appears.
+  - (e) A line says "iPhone delivers these quietly, to Notification Center only." [unverified until this row is run: Deliver Quietly detection reads allowsDisplayOnLockScreen false, alertStyle none, Notification Center not off and sound not on]. With Notification Center also off, or sounds on, no line shows.
+  - (f) "Could not set reminders just now." with Try again; Try again clears it and the Next line holds.
+  - (g) The row reads "Starts once a birth date is added."; the preview is neutral.
+  - (h) VoiceOver: after the alert, focus is on the Reminders switch, and "Reminders are on. Next: ..." or "Notifications are off" is spoken; the next swipe lands on the denied card. After each change in (b), "Saved. Next: ..." is spoken once, about half a second after the last change, never as a modal. The preview is one element. Reduce Motion: the choices fade in with no slide and the Next line swaps with no fade. AX5: the preview, the Next line and every help line wrap and never truncate; the time label and the time stack; the evening chips wrap; every target is at least 44 pt.
+  - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
+- **Record:** S1-47 rows (a) to (i): phone, iOS version, text size, VoiceOver yes or no, Reduce Motion yes or no; pass or fail with the step and what was seen; screenshots with Asha only. Row (e) on whether Deliver Quietly is detected (yes, no).
+
 ### S1-38 Book month card type: the numeral and one left edge (founder report on TestFlight build 1, "18 is merging. Font alignment can be cleaner."; PR #544)
 - **Needs:** a build with PR #544; the founder's iPhone and the SE 3; Asha's book seeded with letters in the current month and at least one past month, and a month of age of 10 or more (two figures, ideally 18 or 11). Fictional family only (Asha, Papa).
 - **Steps:** open the Book tab and look at the current month's lit card and one past month's opener, in each of:
@@ -555,6 +581,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c): the take from (a) is there as an unfinished letter ("Recorded before the app closed." or Read it back), opens in Review, and plays its sound up to the point the disk filled; nothing was deleted. If the recording file could not be written at all, Review says so in its own words and never claims a recording is kept.
 - **Record:** S1-39 rows (a) to (c): phone, iOS version, build number, free space before stop, take length, seconds from stop to the next screen, the screen reached, and for (c) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
 - **Not covered:** a line on Tonight saying the take was kept after a failed finish (follow-up: needs a new content key from `content`; today it returns home without a toast).
+
+### S1-81 Opening a letter from the Book: one move, card to page (founder report on TestFlight build 1; MOTION 5f, EXPERIENCE_PASS 5.8 row 7; branch fix/mobile-letter-open-motion)
+- **Needs:** a build with fix/mobile-letter-open-motion; the SE 3 and a 120 Hz iPhone (Pro); a book with at least six letters of different lengths (Asha only), one short enough to show whole on its card; light and dark mode.
+- **Steps:**
+  - (a) On the Book, tap a letter card in the middle of the screen. Watch the open, then tap Back. Repeat for the top card, the bottom card and the short letter. Record a screen recording of each on the SE 3.
+  - (b) Open a letter, then swipe down on the page's top bar. Open one more and scroll the Book far enough that its card is off screen before going back (open, Back, scroll, open the next).
+  - (c) Settings > Accessibility > Motion > Reduce Motion on: repeat (a) once.
+  - (d) Larger Text at AX5 (Reading Size larger than the card's, if offered): repeat (a) once.
+  - (e) VoiceOver on: open a letter from the Book, then Back. Open it again, swipe right past the end of the letter, then close it with the escape gesture (two-finger scrub, a Z).
+  - (f) Tonight's "A month ago" card, if shown, and Settings > Recently deleted > Open: open a letter from each; with VoiceOver on, swipe past the end of each.
+- **Expected:** (a) the card holds its press, the Book goes under the page's paper, and the paper grows from the card into the page; no sideways slide at any point, nothing moves twice, no native header or back arrow flashes at the top; the card's words stay still on their way (never re-wrap or jump); Back carries them back into the card. (b) The swipe closes the page the same way; with the card off screen the page fades instead. (c) and (d) one short cross-fade each way, nothing slides or grows. (e) VoiceOver lands on the dateline, reads the letter once, and never reaches the Book or the tab bar behind the page; the escape gesture closes the page the same way Back does. (f) The page fades in whole (no card to grow from), with no slide, and Back returns to where it came from; VoiceOver never reaches the tab bar or the Recently deleted list behind it. No hitch longer than one frame on the SE 3.
+- **Record:** S1-81 rows (a) to (f): phone, iOS version, text size, Reduce Motion yes or no, pass or fail, and for a fail what moved; the screen recordings of (a) on the SE 3.
 
 ### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
 - **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
@@ -607,8 +645,8 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - **Update:** AUTH_SETUP 11.8.
 
 ### S2-15 Reminders and notifications (C-REQ-001 to -009, D-025)
-- **Steps:** Settings > Reminders: turn on; the priming sheet, then the iOS prompt; choose a time 5 minutes ahead and wait with the phone locked. Change the time zone in iOS Settings; check the next reminder keeps local time. Look at the lock screen text. Turn Reminders off. Note: US daylight saving time ends on Sunday 1 Nov 2026 (A), right before submission week; check one reminder across it.
-- **Expected:** One iOS prompt, only after the priming sheet (C-REQ-001); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
+- **Steps:** Settings > Reminders: turn on; the iOS prompt straight away, with no sheet in front of it (S1-47); choose a time 5 minutes ahead and wait with the phone locked. Change the time zone in iOS Settings; check the next reminder keeps local time. Look at the lock screen text. Turn Reminders off. Note: US daylight saving time ends on Sunday 1 Nov 2026 (A), right before submission week; check one reminder across it.
+- **Expected:** One iOS prompt, straight from the Reminders switch with no sheet in front of it, after the explanation under the switch (C-REQ-001, CDesO-3, CCO-10); the switch stays on whatever the answer, and the choices, preview and Next line show inline (S1-47); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
 - **Record:** S2-15 row with delivery times.
 - **Update:** PRD C-REQ rows; `src/lib/reminders` notes.
 
