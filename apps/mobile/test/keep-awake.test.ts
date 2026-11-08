@@ -48,6 +48,9 @@ describe('a take that ended by leaving the app says so', () => {
     const listen = src('app/listen.tsx');
     expect(listen).toMatch(/afterFinish\(id, reason, kept\)/);
     expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: next\.params \}\)/);
+    // The params come from afterFinish, which builds them with reviewParams (BL-563): so the reason reaches Review
+    // after a quick save and after a slow one.
+    expect(src('components/capture/listen.logic.ts')).toMatch(/return \{ to: 'review', params: reviewParams\(draftId, reason\) \}/);
   });
 
   it('Review shows one plain line for it', () => {

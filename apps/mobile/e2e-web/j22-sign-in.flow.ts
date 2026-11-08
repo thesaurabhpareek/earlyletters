@@ -261,7 +261,8 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   ).toBeVisible();
   await expect(app.getByText('By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.')).toBeVisible();
   for (const doc of ['Terms of Service', 'Privacy Policy']) await expect(app.getByRole('link', { name: doc, exact: true })).toBeVisible();
-  await step('happy', 'Terms', 'The registered words as they are, the two documents each a row that opens in the in-app browser, and the agree line right above "Agree and continue" (LEGAL-REQ-001).');
+  await expect(app.getByRole('link', { name: 'Consumer Health Data Privacy Policy', exact: true })).toHaveCount(0);
+  await step('happy', 'Terms', 'The registered words as they are, each document a row that opens in the in-app browser, and the agree line right above "Agree and continue" (LEGAL-REQ-001).');
 
   await btn(app, 'Agree and continue').click();
   await expect(btn(app, 'Keep on this phone')).toBeVisible({ timeout: 15_000 });

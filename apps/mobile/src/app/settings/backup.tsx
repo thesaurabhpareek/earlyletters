@@ -1,8 +1,9 @@
 import { Redirect, Stack, router, type Href } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, View } from 'react-native';
-import { supportMailto } from '@scribe/brand';
+import { Alert, ScrollView, View } from 'react-native';
 import { backupCopy } from '@scribe/content';
+import { useHelpLink } from '@/components/settings/help-fallback';
+import { mailTarget } from '@/components/settings/help-links.logic';
 import { Button, ListRow, ListSection, Text, ToggleRow } from '@/components/ui';
 import { loadBackup } from '@/lib/backup/gate';
 import { fill, withBrandName } from '@/lib/copy';
@@ -23,7 +24,6 @@ import { dayDate, isoOf } from '@/lib/dates';
  */
 const t = withBrandName(backupCopy);
 const signIn = () => router.push('/settings/account' as Href);
-const writeToUs = () => void Linking.openURL(supportMailto());
 const holdTime = (iso: string) => new Date(iso).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit' });
 
 type Runtime = NonNullable<ReturnType<typeof loadBackup>>;
@@ -80,6 +80,9 @@ function BackupScreen({ rt }: { rt: Runtime }) {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [cellular, setCellular] = useState(rt.backupCellular);
+  // Write to us: with no Mail account the address shows to copy (F20-REQ-007).
+  const help = useHelpLink();
+  const writeToUs = () => help.open(mailTarget());
 
   const read = useCallback(() => {
     setView(rt.backupView());
@@ -196,6 +199,7 @@ function BackupScreen({ rt }: { rt: Runtime }) {
           </Button>
         </View>
       ) : null}
+      {help.sheet}
     </ScrollView>
   );
 }
