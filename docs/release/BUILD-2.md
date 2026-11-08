@@ -48,7 +48,7 @@ On a clean worktree of `origin/develop` at `29dcd7d8d46121abeb458737934a576d0350
 | `npm run preflight:alpha -w @scribe/mobile` (the servers-on profile, for the record) | 0 | 59 pass, 2 warn, 6 unverified, 0 fail, 11 to check by hand. |
 
 Not run: `npm run typecheck`, `npm test`, `npm run test:db`, any EAS or Apple command, and a build. Exit 0 means the configuration is consistent; it does not show that the build compiles or signs (the script says so itself). The earlier page (TESTFLIGHT.md, 30 Oct) recorded 2 FAIL for the pack keys and manifest; both are gone on this head (V).
-The packs: the repo holds a signed manifest and the keys (V), but the preflight cannot see whether the host serves it. Open `https://packs.earlyletters.app` manifest check from TESTFLIGHT.md step 4 or run `npx tsx scripts/packs/publish.ts verify` (U). Without it, recordings get no words.
+The packs: the repo holds a signed manifest and the keys (V), but the preflight cannot see whether the host serves it. Do the manifest check in TESTFLIGHT.md step 4, or run `npx tsx scripts/packs/publish.ts verify` (U). Without it, recordings get no words.
 
 ## 4. Dispatch `testflight.yml` instead of the Mac?
 
