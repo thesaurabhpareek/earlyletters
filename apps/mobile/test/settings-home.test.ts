@@ -30,7 +30,9 @@ describe('[S40] Settings home', () => {
     const about = home.indexOf('copy.settings.about.title');
     expect(about).toBeGreaterThan(-1);
     const uses = [...home.matchAll(/copy\.settings\.about\.beta\.(\w+)/g)];
-    expect(uses.map((m) => m[1])).toEqual(['label', 'body']);
+    // The body only: the "Early version" heading is not part of the registered note and is not shown, so About says
+    // "early" once (founder, 8 Nov 2026; CLO-5).
+    expect(uses.map((m) => m[1])).toEqual(['body']);
     for (const m of uses) expect(m.index!).toBeGreaterThan(about);
     // Unstyled: no tinted card, no accent caps label.
     expect(home).not.toMatch(/rounded-lg bg-secondary|tone="accent" caps/);
