@@ -1,0 +1,54 @@
+# PROPOSAL (BL-584, DATA-03): the founder applies this as .github/workflows/purge-watch.yml in the 9 Nov
+# window (D-124, CR-22). The Claude GitHub App cannot edit .github/workflows/.
+#
+# An alert from outside Supabase: every 30 minutes this reads two content-free health answers and fails
+# the run when no purge_run audit row is newer than 2 hours, or a scribe-* cron run failed in the last 2
+# hours, or it could not find out. GitHub emails the owner on a failed scheduled run (Settings >
+# Notifications > Actions: "Send notifications for failed workflows only"). Runbook:
+# docs/ops/runbooks/purge-failing.md.
+#
+# Needs two repository secrets (not Environment secrets: the staging Environment has a required
+# reviewer, and a scheduled run would wait for approval every 30 minutes and never alert):
+#   SUPABASE_STAGING_URL (the smoke's value) and SUPABASE_STAGING_SERVICE_ROLE_KEY (new: the project's
+#   secret key). That key can read everything, so the job runs no repository code beyond the
+#   pinned checkout and the one script, and prints nothing but numbers and fixed text. The founder
+#   creates the secret; no agent does.
+# Until public.ops_cron_health is migrated (docs/ops/proposed/ops_cron_health.sql), the cron half cannot
+# be read and the run is red by design. Set WATCH_ARGS to --purge-only for that interval; it still exits
+# non-zero (the cron line is reported as not checked), so remove it when the migration lands.
+# Scheduled workflows run from the default branch only.
+name: Purge watch
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  WATCH_ARGS: ''
+
+jobs:
+  watch:
+    name: purge and retention are running
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    concurrency:
+      group: purge-watch
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: |
+            scripts/ops
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: Check purge_run age and failed scribe-* cron runs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
+        run: node scripts/ops/purge-watch.ts $WATCH_ARGS
