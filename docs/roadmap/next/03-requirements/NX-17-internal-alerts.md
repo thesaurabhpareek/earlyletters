@@ -4,7 +4,7 @@ Readiness: 24 of 28. Author's score, `qa` to confirm. Remains: which sender send
 
 | | |
 |---|---|
-| Working label | NX-17 (working id, see `_CONVENTIONS.md`); backlog rank 17 in `../08-ranked-backlog.md` |
+| Working label | NX-17 (working id, see `_CONVENTIONS.md`); backlog rank 11 in `../08-ranked-backlog.md` |
 | Refines | `docs/prd/v2/06-nfr.md` section 14 (observability, alerts), F16 section 9, TDD 06 section 5.5 and 5.6, D-135 (the founder's mailbox for hand-offs) |
 | Tag | EVIDENCE for the need (06-nfr section 14 lists the alerts and says the founder is the only responder and severity 1 and 2 page his phone). HYPOTHESIS that email is a fast enough pager |
 | Size | S |

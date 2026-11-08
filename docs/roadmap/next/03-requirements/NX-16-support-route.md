@@ -4,7 +4,7 @@ Readiness: 24 of 28. Author's score, `qa` to confirm. Remains: the founder says 
 
 | | |
 |---|---|
-| Working label | NX-16 (working id, see `_CONVENTIONS.md`); backlog rank 16 in `../08-ranked-backlog.md` |
+| Working label | NX-16 (working id, see `_CONVENTIONS.md`); backlog rank 18 in `../08-ranked-backlog.md` |
 | Refines | F21 (support URL, App Store Connect), customer opportunity 24 in `../01-customer-needs.md`, BL-622 (as filed in PR #587, unmerged), NX-02-R10 (recovery), NX-04-R3 (delete page) |
 | Tag | EVIDENCE for the need: "when I write to support, a person answers within a day" is customer need 24 (R2 T15; R7 theme 4). HYPOTHESIS that a one-business-day reply is staffable by the founder alone |
 | Size | S (one web page, one app row check, one reply routine) |

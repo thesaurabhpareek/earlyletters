@@ -4,8 +4,8 @@ Readiness: 23 of 28. Author's score, `qa` to confirm. Remains: the rating ask ne
 
 | | |
 |---|---|
-| Working label | NX-24 (working id, see `_CONVENTIONS.md`); backlog rank 24 in `../08-ranked-backlog.md` |
-| Refines | F21 (store, web, legal pages), F21-REQ-005, F21-REQ-010, the ratings-prompt item and the listing items in PR #587 (BL-621 to BL-638 as filed there), D-139, D-060, D-061 |
+| Working label | NX-24 (working id, see `_CONVENTIONS.md`); backlog rank 28 in `../08-ranked-backlog.md` |
+| Refines | F21 (store, web, legal pages), F21-REQ-033 (the review request; F21-REQ-005 and -010 are category/age rating and export compliance, not this), F13-REQ-020 (named in `docs/prd/v2/reviews/DISPOSITION-A.md`; its row was not found in the feature files, UNVERIFIED), the ratings-prompt item and the listing items in PR #587 (BL-621 to BL-638 as filed there), D-139, D-060, D-061 |
 | Tag | EVIDENCE that the screenshots, listing and nomination are listed work (PR #587 body, read 8 Nov). HYPOTHESIS for any effect of a rating ask on ratings or on keeping |
 | Size | S for the ask and the checks; the screenshots are the existing BL-340 |
 | Gate | Apple 2.3 (accurate metadata) and the review-prompt rules. Founder: all App Store Connect entries. Counsel: only the D-061 line ("always kept") |
@@ -92,7 +92,7 @@ Id convention: `_CONVENTIONS.md`.
 | NX-24-R6 | F21; D-139 | `packages/content/test/claims-capabilities.test.ts` (exists); `[NX-24-R6] listing claims match production capabilities` | none |
 | NX-24-R7 | PR #587 | Test: none, a dated record in the listing doc | none |
 
-Trace: NX-24-R1..R7 -> F21, F21-REQ-005, -010, D-139, D-060, D-061.
+Trace: NX-24-R1..R7 -> F21, F21-REQ-033, F13-REQ-020, D-139, D-060, D-061.
 
 ## Founder-only decisions
 

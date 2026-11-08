@@ -13,7 +13,7 @@ R1 to R3 are finished and may start now.
 
 | | |
 |---|---|
-| Working label | NX-27 (working id, see `_CONVENTIONS.md`); backlog rank 27 in `../08-ranked-backlog.md` |
+| Working label | NX-27 (working id, see `_CONVENTIONS.md`); backlog rank 29 in `../08-ranked-backlog.md` |
 | Refines | F04-REQ-015 (backdating), F09-REQ-003, -004 (dateline, date change), customer needs on catching up (`../01-customer-needs.md`; the exact row number is not given here) |
 | Tag | EVIDENCE for the date rules: they are built and tested (`apps/mobile/src/components/book/date-change.logic.ts`, `apps/mobile/test/book-date-change.test.ts`). HYPOTHESIS for the demand for import: a want stated in the customer file, no measurement |
 | Size | M (R1 to R3 are S; import is M and native) |

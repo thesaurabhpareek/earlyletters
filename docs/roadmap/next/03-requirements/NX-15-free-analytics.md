@@ -4,7 +4,7 @@ Readiness: 25 of 28. Author's score, `qa` to confirm. Remains: the founder's own
 
 | | |
 |---|---|
-| Working label | NX-15 (working id, see `_CONVENTIONS.md`); backlog rank 15 in `../08-ranked-backlog.md` |
+| Working label | NX-15 (working id, see `_CONVENTIONS.md`); backlog rank 22 in `../08-ranked-backlog.md` |
 | Refines | PRD-REQ-001, -016, -018; LEGAL-REQ-014, -017; D-003, D-095, D-124 item 3; ADR 0008; `docs/analytics/TRACKING_PLAN.md` |
 | Tag | EVIDENCE for the design (plan on branch `feat/analytics-free-sink`, file `docs/analytics/FREE-ANALYTICS-PLAN-2026-11-08.md`, draft PR #677, read 8 Nov). HYPOTHESIS for how much opt-in counts tell us (only consenting families are seen, and they are probably the more engaged) |
 | Size | M (a function, a table, a sink in `packages/analytics`, a migration; PR #677 is the build) |
