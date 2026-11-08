@@ -25,7 +25,7 @@ import { useFocusOnMount } from '@/lib/a11y';
 import { clearNotice, coverShown, markPrompted, readLockAbility, unlock, useAppLock } from '@/lib/app-lock/controller';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { shouldAutoPrompt, type LockMethod } from '@/lib/app-lock/machine';
-import { fadeDone, LAYER_HIDDEN, layerMounted, layerStep, resetCoverOpacity, type LayerState } from './layer.logic';
+import { fadeDone, finishCoverFade, LAYER_HIDDEN, layerMounted, layerStep, resetCoverOpacity, type LayerState } from './layer.logic';
 import { PrivacyCover } from './privacy-cover';
 
 export function AppLockLayer() {
@@ -48,7 +48,10 @@ export function AppLockLayer() {
   useEffect(() => {
     if (!leaving) return undefined;
     opacity.value = withTiming(0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
-    const id = setTimeout(() => setLayer(fadeDone), tokens.motion.fadeMs);
+    const id = setTimeout(() => {
+      finishCoverFade(opacity, cancelAnimation); // the next cover never mounts at the fade's 0
+      setLayer(fadeDone);
+    }, tokens.motion.fadeMs);
     return () => clearTimeout(id);
   }, [leaving, opacity]);
 

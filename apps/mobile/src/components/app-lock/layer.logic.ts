@@ -45,3 +45,12 @@ export function resetCoverOpacity<T extends OpacityValue>(opacity: T, cancel: (o
   cancel(opacity);
   opacity.value = 1;
 }
+
+/**
+ * The unlock fade has ended and the layer is about to unmount: put the opacity back to 1 now, so the next cover never
+ * mounts with the fade's 0 for a frame (Review B on #640 at e11aebfb). The reset-on-up in the layer stays as a second
+ * guard.
+ */
+export function finishCoverFade<T extends OpacityValue>(opacity: T, cancel: (o: T) => void): void {
+  resetCoverOpacity(opacity, cancel);
+}

@@ -155,13 +155,14 @@ export function setGrace(grace: GraceChoice): void {
 
 /**
  * Read the settings again and start from them, as a cold start would (lock state in memory only). A no-op while a take
- * or a system sheet is live. For Erase everything
+ * or a system sheet is live; returns whether it applied. For Erase everything
  * (#520): once the store is wiped, call this so a just-erased phone does not keep the lock on until the next launch.
  */
-export function reloadAppLock(): void {
+export function reloadAppLock(): boolean {
   // Never while a take or a system sheet is live: a reload would forget them and could let a lock fall during a take.
-  if (state.recording || state.holding) return;
+  if (state.recording || state.holding) return false;
   dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: currentPhase() });
+  return true;
 }
 
 export function clearNotice(): void {

@@ -62,7 +62,7 @@ const { zonedToEpoch, parseIsoDate } = await import('../src/lib/reminders/tz');
 const { writeAppLock } = await import('../src/lib/app-lock/prefs');
 const recorder = await import('../src/lib/capture/recorder');
 const controller = await import('../src/lib/app-lock/controller');
-const { fadeDone, LAYER_HIDDEN, layerMounted, layerStep, resetCoverOpacity } = await import('../src/components/app-lock/layer.logic');
+const { fadeDone, LAYER_HIDDEN, layerMounted, layerStep, resetCoverOpacity, finishCoverFade } = await import('../src/components/app-lock/layer.logic');
 
 const LA = 'America/Los_Angeles';
 const asha = { id: 'child-asha', name: 'Asha', birthday: '2026-03-08', included: true };
@@ -244,11 +244,27 @@ describe('reloadAppLock never runs during a take (real controller)', () => {
     const rec = fakeRecorder();
     const draft = await recorder.beginTake(rec as unknown as Rec, { childId: 'child-asha', promptKey: null });
     h.settings.set('appLock.enabled', 'off');
-    controller.reloadAppLock();
+    expect(controller.reloadAppLock()).toBe(false);
     expect(controller.getAppLockState()).toMatchObject({ enabled: true, recording: true });
     await recorder.finalizeTake(rec as unknown as Rec, draft.id, 'user', 1_000);
     await vi.waitFor(() => expect(controller.getAppLockState().recording).toBe(false));
-    controller.reloadAppLock();
+    expect(controller.reloadAppLock()).toBe(true);
     expect(controller.getAppLockState()).toMatchObject({ enabled: false, locked: false });
+  });
+});
+
+describe('after a full unlock fade the opacity is back to 1 (Review B at e11aebfb)', () => {
+  it('a fade that ran to 0 ends at 1, so the next cover never mounts transparent', () => {
+    const opacity = { value: 1, animating: false };
+    // The fade runs to the end.
+    opacity.animating = true;
+    opacity.value = 0;
+    opacity.animating = false;
+    const cancel = vi.fn((o: typeof opacity) => {
+      o.animating = false;
+    });
+    finishCoverFade(opacity, cancel);
+    expect(cancel).toHaveBeenCalledTimes(1);
+    expect(opacity.value).toBe(1);
   });
 });
