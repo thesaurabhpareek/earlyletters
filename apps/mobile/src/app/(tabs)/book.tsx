@@ -42,6 +42,7 @@ import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
@@ -371,7 +372,7 @@ function WaitingCard(props: Omit<Parameters<typeof LetterCard>[0], 'reason'>) {
   const reason = !language
     ? null
     : download.progress !== null
-      ? fill(s.downloading, { n: Math.floor(download.progress * 100) })
+      ? downloadingLine(download.progress, (n) => fill(s.downloading, { n }))
       : download.hold === 'waiting_for_wifi'
         ? fill(s.waitingForWifi, { n: Math.round(planFor([language]).bytes / 1e6) })
         : null;

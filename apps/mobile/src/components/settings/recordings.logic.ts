@@ -13,12 +13,14 @@
  * backup off, where that card is the whole truth. None of them ever says the recordings are only on this phone.
  *
  * The language row is actionable when the model is missing: its trailing word says what a tap does ("Download", or
- * "Remove" once it is here), and while it downloads a small determinate ring shows "Getting ready, 40%". While it
- * downloads or waits for Wi-Fi the trailing word is "Stop" (a running download has no other Stop: the packs a language
- * row stands for are left out of Storage's In progress list, so a language is never said twice).
+ * "Remove" once it is here), and while it downloads a small determinate ring shows "Getting ready, 40%" (just
+ * "Downloading" below 1%, never 0%). While it downloads or waits for Wi-Fi the trailing word is "Stop" (a running
+ * download has no other Stop: the packs a language row stands for are left out of Storage's In progress list, so a
+ * language is never said twice).
  */
 import { backupCopy, packsCopy, speechSettingsCopy } from '@scribe/content';
 import { copy, fill } from '@/lib/copy';
+import { downloadingLine, shownPercent } from '@/lib/models/speech-download.logic';
 
 /**
  * Held for counsel (C7, D-102): `settings.recordings.onPhoneBodyBackupOff`, `backedUpTitle` and `backedUpBody` show
@@ -59,8 +61,14 @@ export function speechRow(state: SpeechRowState): SpeechRow {
     case 'here':
       return { subtitle: fill(s.ready, { n: state.mb }), action: 'remove', trailing: s.confirmButton, percent: null, hint: s.removeHint };
     case 'downloading': {
-      const percent = Math.max(0, Math.min(100, Math.floor(state.fraction * 100)));
-      return { subtitle: fill(s.downloading, { n: percent }), action: 'stop', trailing: packsCopy.stopButton, percent, hint: s.stopHint };
+      // "Downloading" below 1%, never 100% before it is done; the ring (no number on it) draws the same whole percent.
+      return {
+        subtitle: downloadingLine(state.fraction, (n) => fill(s.downloading, { n })),
+        action: 'stop',
+        trailing: packsCopy.stopButton,
+        percent: shownPercent(state.fraction) ?? 0,
+        hint: s.stopHint,
+      };
     }
     case 'waitingForWifi':
       return { subtitle: fill(s.waitingForWifi, { n: state.mb }), action: 'stop', trailing: packsCopy.stopButton, percent: null, hint: s.stopHint };
