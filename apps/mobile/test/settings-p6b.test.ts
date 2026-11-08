@@ -32,11 +32,14 @@ const screen = (over: Partial<Parameters<typeof planScreen>[0]> = {}) =>
   planScreen({ line: off, details: none, plusOn: false, storeSupport: 'available', noteLines: [], longDate, ...over });
 
 describe('[S41] Plan', () => {
-  it('Plus off: no status card, "See what Plus adds" first, the registered promise as the footer once, no Manage', () => {
+  it('Plus off: no status card, "See what Plus adds" first, the F5 line as the footer once (not the promise), no Manage', () => {
     const s = screen();
     expect(s.status).toBeNull();
     expect(s.seePlans).toEqual({ kind: 'open', title: 'See what Plus adds' });
-    expect(s.promise).toBe(billingCopy.store.promise);
+    // F5 (founder, 1 Nov 2026): Plus never had, the setup line is the footer; the promise would repeat its first sentence.
+    expect(s.freeLine).toBe(billingCopy.membership.line);
+    expect(s.promise).toBeNull();
+    expect(s.includes).toEqual({ title: 'What Plus includes', items: billingCopy.store.features });
     expect(s.manage).toBe(false);
     expect(s.redeem).toBe(true);
     // No StoreKit on this device (the web preview, an old iOS): the line that says why, and no Redeem.
@@ -90,7 +93,7 @@ describe('[S41] Plan', () => {
       { s: screen({ restored: HELD.restoreNothing }), note: [], restore: HELD.restoreNothing },
     ];
     for (const { s, note, restore } of states) {
-      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
+      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, s.freeLine, ...(s.includes?.items ?? []), p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
         .filter((x): x is string => !!x)
         .flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
@@ -98,7 +101,7 @@ describe('[S41] Plan', () => {
     }
     // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
-    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise \?\? undefined\}>/);
+    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.freeLine \?\? screen\.promise \?\? undefined\}>/);
     expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
@@ -145,7 +148,15 @@ describe('[S41] Plan', () => {
   });
 
   it('types no price, trial length or countdown anywhere it can show (D-083)', () => {
-    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise ?? '']);
+    const ended = screen({ details: { status: 'expired', period: 'month', ownership: 'purchased', periodEnd: '2026-11-13T12:00:00.000Z' } });
+    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' }), ended].flatMap((s) => [
+      s.status?.subtitle ?? '',
+      s.seePlans?.title ?? '',
+      s.promise ?? '',
+      s.freeLine ?? '',
+      s.includes?.title ?? '',
+      ...(s.includes?.items ?? []),
+    ]);
     for (const l of [...lines, p.payment, p.restoreHelp, p.manageHelp, p.redeemHelp]) expect(l, l).not.toMatch(/\$|\bprice\b|\d+\s*(days?|months?) (free|left)/i);
   });
 });
