@@ -506,6 +506,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-35 rows (a) to (h): phone, iOS version, text size, VoiceOver yes or no; seconds for (d); the screen seen at each point in (b) and (f); screenshots with the fictional family only.
 - **Update:** `docs/design/EXPERIENCE_PASS_2026-10.md` S64, once its acceptance list has the box proposed in section 5 of `docs/design/reviews/P6C_P8C_CRITICS_PASS_2026-10-30.md` ("A sole parent can reach Cancel deletion after the phone's next sync"; S64 lists four boxes today and this is not one of them, and the spec owner adds it, BL-491 point 4), and that pass's M1 where a result differs.
 
+### S1-83 Listen follows the voice without re-rendering 20 times a second (founder report on TestFlight build 1; listening-cue.md; branch fix/mobile-listen-metering)
+- **Needs:** a build with fix/mobile-listen-metering; the SE 3 on battery and a 120 Hz iPhone (Pro); Asha's book; a quiet room. For (e), a Mac with Xcode Instruments and a development build of the same commit.
+- **Steps:**
+  - (a) Tonight > Speak. Talk normally for 20 s, then softly, then stay quiet for 15 s, then talk again.
+  - (b) Watch the clock for one minute while talking.
+  - (c) Tap Pause for 10 s, then Resume, then Finish.
+  - (d) Settings > Accessibility > Motion > Reduce Motion on: repeat (a).
+  - (e) Instruments, Time Profiler and Energy Log: a 10-minute take on the SE 3 with this build and with build 1 (or develop before this branch); note JS thread CPU and the energy impact for each.
+- **Expected:** (a) the glow behind the red circle swells with the voice within a fraction of a second, grows less when soft, and after about half a second of quiet turns to a slow breath (never still, never a warning); talking again brings it back to the voice. The red circle never moves. (b) The clock steps once a second, never skips or repeats a second. (c) Paused: the glow is still and dim; Resume brings it back; Finish opens Review. (d) The ring steps in strength with the voice, no swelling. (e) Lower JS CPU and energy impact than before; record the numbers either way. If the glow only ever breathes and never follows the voice, the metering is not arriving: note it as a fail and say so.
+- **Record:** S1-83 rows (a) to (e): phone, iOS version, pass or fail, and for (e) JS thread CPU percent and energy impact before and after.
+
 ### S1-36 Typing on Write: the keyboard's own tools, at speed (founder report on TestFlight build 1; D-057; branch fix/mobile-write-typing)
 - **Needs:** a build with fix/mobile-write-typing; the founder's iPhone and the SE 3; English and Hindi keyboards added in Settings > General > Keyboard, Predictive (QuickType), Auto-Correction, Smart Punctuation and Enable Dictation on. Fictional family only (Asha).
 - **Steps:** open Write from Tonight (with a prompt) and again from a recording's Review (?draftId), then on each:

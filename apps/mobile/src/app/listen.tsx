@@ -19,7 +19,7 @@
  * arrives (S11). The room's rules are pure in components/capture/listen.logic.ts; the three start problems
  * (off, in use, full) in components/capture/mic-state.logic.ts.
  */
-import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
@@ -34,6 +34,8 @@ import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
+import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
+import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
   afterForeground,
   createListenAnnouncer,
@@ -98,7 +100,7 @@ export default function Listen() {
   const p = pendingCopy.listen;
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
-  // Read once on mount, never per render: the recorder state below re-renders this screen 20 times a second, and
+  // Read once on mount, never per render: the recorder state below re-renders this screen about once a second, and
   // the active child is three database reads. On web each synchronous read holds a 1 MB shared buffer, so reading it
   // per render ran a long take out of memory at about a minute (#480); on a phone it was wasted work. The book a take
   // is for cannot change while Listen is open.
@@ -116,8 +118,11 @@ export default function Listen() {
     // The OS or media services ended the take (TDD 03 FM-1): keep what exists.
     if (s.hasError || s.mediaServicesDidReset) setInterrupted(true);
   });
-  const status = useAudioRecorderState(recorder, 50); // 20 Hz metering (MOTION 5b)
-  const db = useSharedValue(-160);
+  // The clock, the minute line and the 5 s mark: read every 250 ms, re-rendered only when the shown second (or the
+  // recorder's state) changes. The level never goes through this state (below).
+  const status = useRecorderClock(recorder);
+  const db = useSharedValue(METER_SILENT);
+  const savedMark = useRef(0);
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
   const tapped = useRef<boolean | null>(null);
   if (tapped.current === null) tapped.current = consumeListenStart();
@@ -143,10 +148,23 @@ export default function Listen() {
     }
   }, [phase]);
 
-  // Metering into the UI thread; never setState per frame.
+  // Metering straight into the aura's shared value at 20 Hz (MOTION 5b), never through React state: nothing re-renders
+  // for the voice (listening-cue.md 2). No reading (metering off, or a released recorder) is silence: the idle breath.
   useEffect(() => {
-    db.value = phase === 'recording' && typeof status.metering === 'number' ? status.metering : -160;
-  }, [status.metering, phase, db]);
+    db.value = METER_SILENT;
+    if (phase !== 'recording') return;
+    const read = setInterval(() => {
+      let metering: number | undefined;
+      try {
+        metering = recorder.getStatus().metering;
+      } catch {}
+      db.value = meterDb(metering);
+    }, METER_MS);
+    return () => {
+      clearInterval(read);
+      db.value = METER_SILENT;
+    };
+  }, [phase, recorder, db]);
 
   // VoiceOver never speaks into a take (SR-C-02, F04-REQ-040, B2-21 never waived): without headphones its voice would
   // be in the letter. Every line this screen says goes through the gate in listen.logic, which drops or holds it while
@@ -207,7 +225,9 @@ export default function Listen() {
   useEffect(() => {
     if (status.durationMillis > 0) lastDuration.current = status.durationMillis;
     const id = takeId.current;
-    if (id && phase === 'recording' && Math.floor(status.durationMillis / 5000) !== Math.floor((status.durationMillis - 50) / 5000)) {
+    const mark = id && phase === 'recording' ? progressMark(savedMark.current, status.durationMillis) : null;
+    if (id && mark !== null) {
+      savedMark.current = mark;
       setRecordingProgress(id, status.durationMillis);
     }
   }, [status.durationMillis, phase]);
@@ -334,7 +354,7 @@ export default function Listen() {
     } catch {}
     if (live) seenLive.current = true;
     else if (seenLive.current) setInterrupted(true);
-  }, [status.durationMillis, phase, recorder]);
+  }, [status.durationMillis, status.isRecording, phase, recorder]);
 
   useEffect(() => {
     if (interrupted && (phase === 'recording' || phase === 'paused')) void endTake('interruption');
