@@ -7,7 +7,7 @@
  * review pending). `{app}` is filled from packages/brand, never typed here.
  * Rules (LEGAL-REQ-007): the microphone, and Face ID only because the app lock
  * ships (F17 Q3); never speech recognition. Each must equal packages/content
- * `permissions` word for word (test/app-lock-config.test.ts, rules.test.ts).
+ * `permissions` word for word (test/app-lock-wiring.test.ts, packages/content rules.test.ts).
  */
 export const permissionCopy = {
   // permissions.microphone (Info.plist NSMicrophoneUsageDescription)

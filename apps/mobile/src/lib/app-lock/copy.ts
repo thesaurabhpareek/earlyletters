@@ -29,7 +29,6 @@ const raw = {
   passcodeRemoved: 'The lock is off because this iPhone has no passcode. Set one to turn the lock on again.',
   pageTitle: 'App lock',
   toggle: { faceId: 'Lock with Face ID', touchId: 'Lock with Touch ID', passcode: 'Lock with passcode' },
-  toggleA11yHint: 'Asks you to confirm it is you first.',
   askAfter: 'Ask again after',
   grace: { immediately: 'Immediately', oneMinute: 'After 1 minute', fiveMinutes: 'After 5 minutes' },
   footer: 'When the lock is on, reminders never show a name.',

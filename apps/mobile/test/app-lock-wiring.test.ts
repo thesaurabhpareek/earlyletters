@@ -45,6 +45,10 @@ describe('AppLockLayer: over everything, only covering', () => {
     expect(layer).toContain('coverShown(s)');
     expect(layer).not.toMatch(/entering=/);
     expect(layer).toMatch(/withTiming\(0, \{ duration: tokens\.motion\.fadeMs/);
+    // Decided during render (layer.logic.ts, behaviour in app-lock-behaviour.test.ts), never in an effect after a null render.
+    expect(layer).toMatch(/const nextLayer = layerStep\(layer, \{ show, locked: s\.locked \}\);/);
+    expect(layer).toContain('if (!layerMounted(nextLayer)) return null;');
+    expect(layer).not.toMatch(/setFading|if \(!show && !/);
   });
 
   it('asks once on its own per lock, never in a loop', () => {
@@ -59,6 +63,29 @@ describe('AppLockLayer: over everything, only covering', () => {
 
   it('plays no haptic on unlock', () => {
     expect(layer).not.toContain('haptic(');
+  });
+});
+
+describe('VoiceOver hears each lock message once (Review B, #640)', () => {
+  // Toast announces its own message (components/ui/toast.tsx). An announce() beside a toast.show() says it twice.
+  const files = ['src/app/settings/app-lock.tsx', 'src/components/app-lock/app-lock-layer.tsx', 'src/components/app-lock/lock-offer.tsx'];
+
+  it('the toast itself announces', () => {
+    expect(code('src/components/ui/toast.tsx')).toMatch(/announce\(/);
+  });
+
+  for (const f of files) {
+    it(`${f} never pairs toast.show() with announce()`, () => {
+      const body = code(f);
+      expect(body).toContain('toast.show(');
+      expect(body).not.toMatch(/\bannounce\(/);
+    });
+  }
+});
+
+describe('Erase everything can reset the lock in memory (#520)', () => {
+  it('the controller re-reads the settings as a cold start does', () => {
+    expect(code('src/lib/app-lock/controller.ts')).toMatch(/export function reloadAppLock\(\): void \{\s*dispatch\(\{ type: 'launch', enabled: appLockOn\(\), grace: appLockGrace\(\), phase: /);
   });
 });
 
@@ -108,12 +135,8 @@ describe('Export asks again while the lock is on', () => {
 });
 
 describe('names in notifications are forced off while the lock is on (F17-REQ-015)', () => {
-  it('the reminder planner reads names through the lock', () => {
-    const prefs = code('src/lib/reminders/prefs.ts');
-    expect(prefs).toMatch(/export function lockScreenNamesOn\(\): boolean \{\s*if \(appLockOn\(\)\) return false;/);
-    expect(prefs).toContain('namesOnLockScreen: lockScreenNamesOn()');
-  });
-
+  // The data rule itself (names off in the planned notifications, stored choice kept) is behaviour-tested in
+  // app-lock-behaviour.test.ts.
   it('the Reminders switch is disabled with the lock line', () => {
     const page = code('src/app/settings/reminders.tsx');
     expect(page).toContain('disabled={lockOn}');

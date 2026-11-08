@@ -6,7 +6,7 @@
  *   ButtonRow stacks them at large text sizes; nothing truncates.
  * - Hidden when the phone has no passcode (the lock could not hold). Until the device answers it renders nothing.
  * - Turn on asks the device first (`appLock.turnOnReason`), so the Face ID permission appears in context. Success: a
- *   `success` haptic and the toast `appLock.onToast.*`, also announced. Cancel: stays off, silent. Face ID turned
+ *   `success` haptic and the toast `appLock.onToast.*` (the toast announces itself once, with the faceIdDenied line when it applies). Cancel: stays off, silent. Face ID turned
  *   off for the app: the passcode is the lock, and the card says so with `appLock.faceIdDenied`.
  * - Either answer closes the card (a cross-fade, swapMs, also the Reduce Motion form). Nothing is asked again.
  * - VoiceOver: title (heading), body, Turn on, Not now.
@@ -19,7 +19,6 @@ import { Button, ButtonRow } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { announce } from '@/lib/a11y';
 import { readLockAbility, turnOn } from '@/lib/app-lock/controller';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import type { LockAbility } from '@/lib/app-lock/machine';
@@ -55,11 +54,12 @@ export function LockOffer({ child }: { child: string }) {
     haptic('success');
     const message = appLockCopy.onToast[method];
     toast.show({ message: ability.faceIdDenied ? `${message} ${appLockCopy.faceIdDenied}` : message });
-    announce(message);
     setAnswered(true);
   };
 
   return (
+    // The one fade on a card with controls (MOTION principle 2 says controls do not animate in): it arrives after an
+    // async device read, so it cross-fades in at swapMs rather than popping in mid-step; also the Reduce Motion form.
     <Animated.View entering={SWAP_IN} exiting={SWAP_OUT} className="self-stretch" testID="appLock.offer">
       <Card variant="raised">
         <View className="gap-2">

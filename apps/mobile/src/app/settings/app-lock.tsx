@@ -6,7 +6,6 @@ import { ChoiceGroup } from '@/components/ui/choice-group';
 import { ListSection, ToggleRow } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { announce } from '@/lib/a11y';
 import { readLockAbility, setGrace, turnOff, turnOn, useAppLock } from '@/lib/app-lock/controller';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { GRACE_CHOICES, type GraceChoice, type LockAbility } from '@/lib/app-lock/machine';
@@ -17,7 +16,7 @@ import { haptic } from '@/lib/haptics';
  * Settings home (and from Privacy once the Privacy page lists it, CDesO-1).
  *
  * - The switch authenticates first, on and off (`turnOnReason`, `turnOffReason`); on plays `success`, off plays
- *   nothing; each change is announced (`onToast.*`, `offToast`). Cancel leaves it as it was.
+ *   nothing; each change shows a toast, which VoiceOver hears once (`onToast.*`, `offToast`). Cancel leaves it as it was.
  * - "Ask again after" (ChoiceGroup list, native radio state) shows only while the lock is on; 1 minute by default.
  * - No passcode: the switch is disabled with the line saying why. Face ID turned off for the app: the label is
  *   "Lock with passcode", with the line and Open Settings.
@@ -53,8 +52,7 @@ export default function AppLockSettings() {
     if (outcome !== 'ok') return;
     const message = on ? appLockCopy.onToast[method] : appLockCopy.offToast;
     if (on) haptic('success');
-    toast.show({ message });
-    announce(message);
+    toast.show({ message }); // the toast announces itself once (components/ui/toast.tsx)
   };
 
   // ChoiceGroup plays its own `tap` and carries the native selected state for VoiceOver.

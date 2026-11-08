@@ -49,7 +49,7 @@ let started = false;
 export function startAppLock(): void {
   if (started) return;
   started = true;
-  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace() });
+  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: phaseOf(AppState.currentState) ?? 'inactive' });
   AppState.addEventListener('change', (s) => {
     const phase = phaseOf(s);
     if (!phase) return;
@@ -149,6 +149,14 @@ export async function turnOff(): Promise<AuthOutcome> {
 export function setGrace(grace: GraceChoice): void {
   writeAppLock({ grace });
   dispatch({ type: 'setGrace', grace });
+}
+
+/**
+ * Read the settings again and start from them, as a cold start would (lock state in memory only). For Erase everything
+ * (#520): once the store is wiped, call this so a just-erased phone does not keep the lock on until the next launch.
+ */
+export function reloadAppLock(): void {
+  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: phaseOf(AppState.currentState) ?? 'active' });
 }
 
 export function clearNotice(): void {

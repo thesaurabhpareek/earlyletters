@@ -53,7 +53,7 @@ export type LockState = {
 
 export type LockEvent =
   /** Cold start, with what the settings say. */
-  | { type: 'launch'; enabled: boolean; grace: GraceChoice }
+  | { type: 'launch'; enabled: boolean; grace: GraceChoice; phase?: AppPhase }
   | { type: 'appState'; phase: AppPhase; at: number }
   | { type: 'take'; live: boolean }
   | { type: 'hold'; open: boolean }
@@ -92,7 +92,9 @@ export function reduce(s: LockState, e: LockEvent): LockState {
   switch (e.type) {
     case 'launch':
       // Cold start: no take and no sheet can be open yet, so it locks at once.
-      return { ...INITIAL, enabled: e.enabled, grace: e.grace, locked: e.enabled, promptArmed: e.enabled };
+      // The automatic ask waits until iOS has made the app active (shouldAutoPrompt), so it is not spent on a sheet
+      // the system refuses during launch.
+      return { ...INITIAL, enabled: e.enabled, grace: e.grace, phase: e.phase ?? 'active', locked: e.enabled, promptArmed: e.enabled };
     case 'appState': {
       if (!s.enabled) return { ...s, phase: e.phase, backgroundSince: null };
       if (e.phase === 'inactive') return { ...s, phase: 'inactive' };

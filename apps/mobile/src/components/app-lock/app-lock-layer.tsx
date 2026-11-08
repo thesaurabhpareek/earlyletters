@@ -21,10 +21,11 @@ import { FullWindowOverlay } from 'react-native-screens';
 import { tokens } from '@scribe/design-tokens';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/toast';
-import { announce, useFocusOnMount } from '@/lib/a11y';
+import { useFocusOnMount } from '@/lib/a11y';
 import { clearNotice, coverShown, markPrompted, readLockAbility, unlock, useAppLock } from '@/lib/app-lock/controller';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { shouldAutoPrompt, type LockMethod } from '@/lib/app-lock/machine';
+import { fadeDone, LAYER_HIDDEN, layerMounted, layerStep, type LayerState } from './layer.logic';
 import { PrivacyCover } from './privacy-cover';
 
 export function AppLockLayer() {
@@ -32,26 +33,20 @@ export function AppLockLayer() {
   const show = coverShown(s);
   const toast = useToast();
 
-  // Unlocked: keep the layer for one fade, then take it away. Any other way of leaving (back in front within the
-  // grace) removes it at once.
-  const [fading, setFading] = useState(false);
-  const wasLocked = useRef(s.locked);
+  // Unlocked: the layer stays mounted through one fade, decided during render (layer.logic.ts), so the overlay never
+  // unmounts and remounts between the unlock and the fade. Back in front within the grace: it goes at once.
+  const [layer, setLayer] = useState<LayerState>(() => layerStep(LAYER_HIDDEN, { show, locked: s.locked }));
+  const nextLayer = layerStep(layer, { show, locked: s.locked });
+  if (nextLayer.show !== layer.show || nextLayer.wasLocked !== layer.wasLocked || nextLayer.leaving !== layer.leaving) setLayer(nextLayer);
   const opacity = useSharedValue(1);
+  const leaving = nextLayer.leaving;
   useEffect(() => {
-    if (show) {
-      setFading(false);
-      opacity.value = 1;
-    } else if (wasLocked.current) {
-      setFading(true);
-      opacity.value = withTiming(0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
-      const id = setTimeout(() => setFading(false), tokens.motion.fadeMs);
-      return () => clearTimeout(id);
-    }
-    return undefined;
-  }, [show, opacity]);
-  useEffect(() => {
-    wasLocked.current = s.locked;
-  }, [s.locked]);
+    if (!leaving) return undefined;
+    opacity.value = 1;
+    opacity.value = withTiming(0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
+    const id = setTimeout(() => setLayer(fadeDone), tokens.motion.fadeMs);
+    return () => clearTimeout(id);
+  }, [leaving, opacity]);
 
   // The one automatic ask per lock.
   useEffect(() => {
@@ -62,21 +57,21 @@ export function AppLockLayer() {
 
   useEffect(() => {
     if (s.notice !== 'passcodeRemoved') return;
-    toast.show({ message: appLockCopy.passcodeRemoved });
-    announce(appLockCopy.passcodeRemoved);
+    toast.show({ message: appLockCopy.passcodeRemoved }); // the toast announces itself once
     clearNotice();
   }, [s.notice, toast]);
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  if (!show && !fading) return null;
+  if (!layerMounted(nextLayer)) return null;
 
-  const layer = (
-    <Animated.View style={[StyleSheet.absoluteFill, style]} accessibilityViewIsModal pointerEvents={show ? 'auto' : 'none'}>
+  // The fading style applies only while leaving: a cover that is up is always fully opaque from its first frame.
+  const content = (
+    <Animated.View style={[StyleSheet.absoluteFill, leaving ? style : null]} accessibilityViewIsModal pointerEvents={show ? 'auto' : 'none'}>
       <PrivacyCover>{s.locked ? <LockControls /> : null}</PrivacyCover>
     </Animated.View>
   );
-  if (Platform.OS === 'ios') return <FullWindowOverlay unstable_accessibilityContainerViewIsModal>{layer}</FullWindowOverlay>;
-  return <View style={[StyleSheet.absoluteFill, styles.web]}>{layer}</View>;
+  if (Platform.OS === 'ios') return <FullWindowOverlay unstable_accessibilityContainerViewIsModal>{content}</FullWindowOverlay>;
+  return <View style={[StyleSheet.absoluteFill, styles.web]}>{content}</View>;
 }
 
 /** Unlock, at the foot of the cover where a thumb reaches it; stacks and grows with Dynamic Type (Button lg). */
