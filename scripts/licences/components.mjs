@@ -87,6 +87,7 @@ export const PACKAGES = {
   expo: 'framework',
   'expo-application': 'framework',
   'expo-asset': 'framework',
+  'expo-clipboard': 'framework',
   'expo-constants': 'framework',
   'expo-dev-client': 'framework',
   'expo-dev-launcher': 'framework',
