@@ -538,3 +538,17 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog section and the two standards in one revert.
 - Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma
+
+### CR-60 The 0.9.0 beta Terms and Privacy are published at versioned addresses only, and nothing reaches main yet (8 Nov 2026, Karma via the build 12 session)
+- Question: how do the beta app Terms and Privacy 0.9.0 (BL-565) reach the website now that #616 (the texts) and #652 (the website pages) are merged to `develop`?
+- Tier and type: T3 for what users are promised, which the founder decided; T2 for the mechanism; complicated.
+- Options considered: publish 0.9.0 at the floating `/terms` and `/privacy`; publish at versioned addresses only; do not publish.
+- Ruling: versioned addresses only, the founder's call of 8 Nov 2026 (asked and answered in the session). `/legal/terms/0.9.0`, `/legal/privacy/0.9.0` and the two raw `.md` files exist in `apps/web`, byte for byte the files in `docs/legal/beta/`, pinned by sha256 in `packages/content/test/legal-beta.test.ts` and `apps/web/test/legal-served.test.ts`. They are `noindex, nofollow`, not in the sitemap, and the raw files send `X-Robots-Tag`. `/terms` and `/privacy` are unchanged.
+  - Hold on `main`. `apps/web` deploys from `main` and nothing mechanical stops a deploy, so the hold is this rule: no develop-to-main release PR is opened for these pages until (1) the founder confirms the facts the texts state and that he can do each by-hand route (the list is in the body of #616: staging region, the scheduled deletion running, encryption at rest, two-factor and who has access, the D-129 outcome, the hello@ route), (2) counsel has read the texts (`POLICY_VERSIONING.md` names counsel as approver; D-138 item 1 is a founder waiver he has not given in writing for 0.9.0), and (3) the open points from the reviews are decided: which document governs a visitor to earlyletters.com, the California references and the missing legal name and postal address, and the registered sign-in line in the second build that says only you and the people you invite can read your letters.
+  - The consent gap stays open. Build 2's consent sheet and Settings rows open `/terms` and `/privacy`, while the consent record says 0.9.0, so a tester agrees to a version the app does not show (`POLICY_VERSIONING.md` line 105, D-138 item 3). A later build has to link the versioned addresses, and PR #635, which records 4.1.0 and 3.0.0 today, has to record 0.9.0. Until then the invitation and What to Test can carry both 0.9.0 links.
+  - Before the release PR: delete or document the build-time override `LEGAL_CONTENT_DIR` in `apps/web/src/lib/legal/documents.ts`; run the two `curl | sha256sum` checks from #616 step 6 and look for the `x-robots-tag` header on the live files; add a device step that opens both versioned pages on a phone.
+- Why: the texts were rewritten across three rounds of two reviews so that each sentence is true or scoped to the build it describes. What stays unverified is listed in #616. Only the founder knows the facts, and only counsel can say whether the texts are enough.
+- Door: two-way.
+- Way back: revert #652 (the pages and raw routes) and #616 (the texts); no `policy_versions` row exists yet.
+- Revisit when: the founder has answered the facts, counsel has read the texts, or build 2 is cut.
+Karma
