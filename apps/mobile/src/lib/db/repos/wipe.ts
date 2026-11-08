@@ -7,10 +7,12 @@
  * A deleted book waits 30 days, restorable, like a deleted letter (F17 6.2 D step 5; spec 2.3 "Any parent can cancel
  * within 30 days"). It is marked in `settings`, not in a new column, because local schema numbers are given out by
  * the coordinator (08-delivery section 4) and this needs none:
- *   book.deletedAt.<child id>  L2  when the person deleted the book (this phone's clock)
- *   book.erasing.<child id>    L2  "Erase now" or the 30-day purge began; a relaunch finishes it
+ *   book.deletedAt.<child id>  L3  when the person deleted the book (this phone's clock)
+ *   book.erasing.<child id>    L3  "Erase now" or the 30-day purge began; a relaunch finishes it
  *   erase.everything.pending   L2  Erase everything began; a relaunch finishes it before any screen reads the store
- * Each holds a time or '1' and an id the phone made: no name, no words.
+ * The first two hold an L2 time, but their key holds a book id (L3, DATA_CLASSIFICATION 1.1 rule 5; the highest level
+ * wins, rule 1), so each row is handled as L3, as `readTogether.sessions.<book id>` is (4.5). The third is a time under
+ * a fixed key. None holds a name or words, and none is logged or sent.
  *
  * Nothing here queues an upload. Both paths are offered only on a phone that never signed in (store.ts checks).
  */
