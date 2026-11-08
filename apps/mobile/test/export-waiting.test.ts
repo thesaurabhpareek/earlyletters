@@ -13,17 +13,27 @@
  * Dates are the phone's own local day, as Review gives them: this file runs in America/Los_Angeles (pinned below,
  * before any Date is made), where 8 pm is already the next day in UTC.
  */
+const TZ_BEFORE = process.env.TZ;
 process.env.TZ = 'America/Los_Angeles';
 import Ajv2020 from 'ajv/dist/2020';
 import { strFromU8, unzipSync } from 'fflate';
-import { describe, expect, it } from 'vitest';
-import { planExport, type ExportSnapshot, type SnapshotWaiting } from '../src/lib/export/build.logic';
+import { afterAll, describe, expect, it } from 'vitest';
+import { planExport, waitingChangedWords, type ExportSnapshot, type SnapshotWaiting } from '../src/lib/export/build.logic';
+import { parsePutBack, parseView, wordsBase } from '../src/lib/capture/review-persist.logic';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { packExport } from '../src/lib/export/pack';
 import { EXPORT_SCHEMA_VERSION, exportJsonSchema, type Manifest, type WaitingFile } from '../src/lib/export/schema';
 import { verifyExport, type RandomAccess } from '../src/lib/export/verify';
 import { drafts } from '../src/lib/db/repos';
 import { fixture, insertBook } from './helpers/store-fixture';
 import { ASHA_AUDIO, ashaSnapshot, fakeAudio, sha256Hex } from './helpers/asha-export';
+
+// Put the zone back for the next file in this worker (as date-field.test.ts does).
+afterAll(() => {
+  if (TZ_BEFORE === undefined) delete process.env.TZ;
+  else process.env.TZ = TZ_BEFORE;
+});
 
 const ASHA = 'child-asha-0001';
 const DEV = 'child-dev-0002';
@@ -301,5 +311,37 @@ describe('[PL-2] the phone lists every waiting letter for the export', () => {
     f.db.run("UPDATE drafts SET state = 'recording' WHERE id = 'live'");
     const listed = drafts.listForExport(f.ctx);
     expect(listed.map((d) => [d.id, d.held])).toEqual([['held', true], ['typed', false], ['plain', false]]);
+  });
+});
+
+describe('[PL-2, #522] Change words reach the export only while Review would still show them', () => {
+  // The real store path: Review writes its choices with drafts.setReview on the words it shows; the export reads them
+  // back as store.getDraftReview does (parsePutBack, parseView) and passes them through waitingChangedWords.
+  const readBack = (f: ReturnType<typeof fixture>, id: string) => {
+    const r = drafts.getReview(f.ctx, id)!;
+    return { putBack: parsePutBack(r.putBack), view: parseView(r.view), text: r.text, base: r.base };
+  };
+
+  it('a typed draft changed on Write after Change words: the stale changed words are left out', () => {
+    const f = fixture();
+    insertBook(f.db, { id: 'c1', name: 'Asha', signsAs: 'Mama' });
+    drafts.insert(f.ctx, 'd1', { childId: 'c1', captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: 'You clapped.' });
+    expect(drafts.setReview(f.ctx, 'd1', wordsBase('You clapped.'), { text: 'You clapped twice.' })).toBe(true);
+    expect(waitingChangedWords(readBack(f, 'd1'), drafts.get(f.ctx, 'd1')!)).toBe('You clapped twice.');
+    drafts.setTyped(f.ctx, 'd1', 'You clapped, then laughed.');
+    expect(waitingChangedWords(readBack(f, 'd1'), drafts.get(f.ctx, 'd1')!)).toBeNull();
+  });
+
+  it('a spoken draft: based on the raw transcript, so a new transcript leaves them out; none saved gives null', () => {
+    const raw = 'Asha, um, you clapped.';
+    expect(waitingChangedWords({ putBack: [], view: null, text: 'Asha, you clapped.', base: wordsBase(raw) }, { typedText: null, rawTranscript: raw })).toBe('Asha, you clapped.');
+    expect(waitingChangedWords({ putBack: [], view: null, text: 'Asha, you clapped.', base: wordsBase(raw) }, { typedText: null, rawTranscript: 'Asha, you laughed.' })).toBeNull();
+    expect(waitingChangedWords(null, { typedText: null, rawTranscript: raw })).toBeNull();
+  });
+
+  it('the phone snapshot reads them through waitingChangedWords, never the raw stored text', () => {
+    const device = readFileSync(join(__dirname, '..', 'src', 'lib', 'export', 'device.ts'), 'utf8');
+    expect(device).toMatch(/changedWords: waitingChangedWords\(getDraftReview\(d\.id\), d\)/);
+    expect(device).not.toMatch(/getDraftReview\(d\.id\)\?\.text/);
   });
 });

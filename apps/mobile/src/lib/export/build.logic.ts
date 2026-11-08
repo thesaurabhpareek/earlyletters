@@ -34,6 +34,7 @@ import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file
 import { copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
 import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
+import { restorable, type ReviewSaved } from '../capture/review-persist.logic';
 import type { Child, Draft, Entry } from '../store';
 import { exportCopy } from './copy';
 import {
@@ -301,6 +302,17 @@ export function waitingReason(d: SnapshotWaiting): WaitingReason {
   if (d.state === 'unrecoverable') return 'unrecoverable';
   if (!draftSpoken(d)) return 'typed_draft';
   return has(d.rawTranscript) ? 'not_read_back' : 'waiting_for_words';
+}
+
+/**
+ * The person's own Change words for a waiting letter, only when Review would still show them (#522): saved on the
+ * draft's current words. Review's own rule, `restorable` on the words Review opens with (typed text when there is
+ * any, else the raw transcript; review.tsx), so words changed later (more typing on Write, a new transcript) leave
+ * stale Change words out of the export, exactly as Review leaves them out.
+ */
+export function waitingChangedWords(saved: ReviewSaved | null, d: Pick<Draft, 'typedText' | 'rawTranscript'>): string | null {
+  const typed = d.typedText != null && d.typedText.trim().length > 0;
+  return restorable(saved, typed ? d.typedText! : (d.rawTranscript ?? ''))?.text ?? null;
 }
 
 /** The recording goes in when it is a spoken take with a file on this phone that is not known to be empty. */

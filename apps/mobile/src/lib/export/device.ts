@@ -28,7 +28,7 @@ import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
 import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, type Entry } from '../store';
-import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
+import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
@@ -124,7 +124,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     .filter((d) => books.has(d.childId))
     .map((d) => {
       const state = d.captureMode !== 'typed' ? fileState(d.audioUri) : { exists: false, size: null };
-      return { ...d, audioOnPhone: state.exists, audioSizeOnPhone: state.size, changedWords: getDraftReview(d.id)?.text ?? null };
+      return { ...d, audioOnPhone: state.exists, audioSizeOnPhone: state.size, changedWords: waitingChangedWords(getDraftReview(d.id), d) };
     });
   return {
     generatedAt: now.toISOString(),
