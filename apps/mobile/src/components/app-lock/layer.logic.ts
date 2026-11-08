@@ -32,3 +32,16 @@ export function fadeDone(prev: LayerState): LayerState {
 export function layerMounted(l: LayerState): boolean {
   return l.show || l.leaving;
 }
+
+/** A shared value as the layer uses it (Reanimated's SharedValue<number>, kept structural so Node tests can run it). */
+export type OpacityValue = { value: number };
+
+/**
+ * Whenever the cover or the lock screen is up: stop any unlock fade still running and make the layer fully opaque.
+ * Without this, a cover that comes back during the 200 ms fade (unlock, then straight to the app switcher) would keep
+ * the fade's last opacity and show the book through it (Review A on #640 at e2120225).
+ */
+export function resetCoverOpacity(opacity: OpacityValue, cancel: (o: OpacityValue) => void): void {
+  cancel(opacity);
+  opacity.value = 1;
+}

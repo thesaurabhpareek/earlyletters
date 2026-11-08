@@ -49,6 +49,10 @@ describe('AppLockLayer: over everything, only covering', () => {
     expect(layer).toMatch(/const nextLayer = layerStep\(layer, \{ show, locked: s\.locked \}\);/);
     expect(layer).toContain('if (!layerMounted(nextLayer)) return null;');
     expect(layer).not.toMatch(/setFading|if \(!show && !/);
+    // A cover that comes back during the unlock fade is fully opaque again before paint (Review A at e2120225).
+    expect(layer).toMatch(/useLayoutEffect\(\(\) => \{\s*if \(up\) resetCoverOpacity\(opacity, cancelAnimation\);\s*\}, \[up, opacity\]\);/);
+    expect(layer).toContain('style={[StyleSheet.absoluteFill, style]}');
+    expect(layer).not.toMatch(/leaving \? style : null/);
   });
 
   it('asks once on its own per lock, never in a loop', () => {
@@ -85,7 +89,12 @@ describe('VoiceOver hears each lock message once (Review B, #640)', () => {
 
 describe('Erase everything can reset the lock in memory (#520)', () => {
   it('the controller re-reads the settings as a cold start does', () => {
-    expect(code('src/lib/app-lock/controller.ts')).toMatch(/export function reloadAppLock\(\): void \{\s*dispatch\(\{ type: 'launch', enabled: appLockOn\(\), grace: appLockGrace\(\), phase: /);
+    const c = code('src/lib/app-lock/controller.ts');
+    expect(c).toMatch(/export function reloadAppLock\(\): void \{\s*if \(state\.recording \|\| state\.holding\) return;\s*dispatch\(\{ type: 'launch', enabled: appLockOn\(\), grace: appLockGrace\(\), phase: currentPhase\(\) \}\);/);
+    // One fallback for an unknown AppState, the safe one, in both places.
+    expect(c).toContain("phaseOf(AppState.currentState) ?? 'inactive'");
+    expect(c).not.toMatch(/\?\? 'active'/);
+    expect(c.match(/phase: currentPhase\(\)/g)).toHaveLength(2);
   });
 });
 

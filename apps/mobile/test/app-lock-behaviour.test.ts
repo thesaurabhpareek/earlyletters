@@ -62,7 +62,7 @@ const { zonedToEpoch, parseIsoDate } = await import('../src/lib/reminders/tz');
 const { writeAppLock } = await import('../src/lib/app-lock/prefs');
 const recorder = await import('../src/lib/capture/recorder');
 const controller = await import('../src/lib/app-lock/controller');
-const { fadeDone, LAYER_HIDDEN, layerMounted, layerStep } = await import('../src/components/app-lock/layer.logic');
+const { fadeDone, LAYER_HIDDEN, layerMounted, layerStep, resetCoverOpacity } = await import('../src/components/app-lock/layer.logic');
 
 const LA = 'America/Los_Angeles';
 const asha = { id: 'child-asha', name: 'Asha', birthday: '2026-03-08', included: true };
@@ -218,5 +218,37 @@ describe('the lock layer stays mounted through the unlock fade (layer.logic.ts)'
     l = layerStep(l, { show: false, locked: false });
     l = layerStep(l, { show: true, locked: false });
     expect(l).toEqual({ show: true, wasLocked: false, leaving: false });
+  });
+});
+
+describe('a cover that comes back during the unlock fade is fully opaque (Review A at e2120225)', () => {
+  it('cancels the running fade and sets the opacity back to 1', () => {
+    // Mid-fade: an animation is running and the layer is part-transparent.
+    const opacity = { value: 0.4, animating: true };
+    const cancel = vi.fn((o: { value: number }) => {
+      (o as typeof opacity).animating = false;
+    });
+    resetCoverOpacity(opacity, cancel);
+    expect(cancel).toHaveBeenCalledWith(opacity);
+    expect(opacity.animating).toBe(false);
+    expect(opacity.value).toBe(1);
+  });
+});
+
+describe('reloadAppLock never runs during a take (real controller)', () => {
+  it('is a no-op while a take is live, and applies once it is kept', async () => {
+    await vi.waitFor(() => expect(recorder.activeTakeId()).toBeNull());
+    h.settings.set('appLock.enabled', 'on');
+    controller.reloadAppLock();
+    expect(await controller.unlock()).toBe('ok');
+    const rec = fakeRecorder();
+    const draft = await recorder.beginTake(rec as unknown as Rec, { childId: 'child-asha', promptKey: null });
+    h.settings.set('appLock.enabled', 'off');
+    controller.reloadAppLock();
+    expect(controller.getAppLockState()).toMatchObject({ enabled: true, recording: true });
+    await recorder.finalizeTake(rec as unknown as Rec, draft.id, 'user', 1_000);
+    await vi.waitFor(() => expect(controller.getAppLockState().recording).toBe(false));
+    controller.reloadAppLock();
+    expect(controller.getAppLockState()).toMatchObject({ enabled: false, locked: false });
   });
 });

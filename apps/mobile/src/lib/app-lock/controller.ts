@@ -39,6 +39,8 @@ export function useAppLock(): LockState {
 }
 
 const phaseOf = (s: AppStateStatus): AppPhase | null => (s === 'active' || s === 'inactive' || s === 'background' ? s : null);
+/** The phase now; unknown reads as inactive, the safe value (no automatic ask until iOS says active; the cover stays). */
+const currentPhase = (): AppPhase => phaseOf(AppState.currentState) ?? 'inactive';
 
 let started = false;
 
@@ -49,7 +51,7 @@ let started = false;
 export function startAppLock(): void {
   if (started) return;
   started = true;
-  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: phaseOf(AppState.currentState) ?? 'inactive' });
+  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: currentPhase() });
   AppState.addEventListener('change', (s) => {
     const phase = phaseOf(s);
     if (!phase) return;
@@ -152,11 +154,14 @@ export function setGrace(grace: GraceChoice): void {
 }
 
 /**
- * Read the settings again and start from them, as a cold start would (lock state in memory only). For Erase everything
+ * Read the settings again and start from them, as a cold start would (lock state in memory only). A no-op while a take
+ * or a system sheet is live. For Erase everything
  * (#520): once the store is wiped, call this so a just-erased phone does not keep the lock on until the next launch.
  */
 export function reloadAppLock(): void {
-  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: phaseOf(AppState.currentState) ?? 'active' });
+  // Never while a take or a system sheet is live: a reload would forget them and could let a lock fall during a take.
+  if (state.recording || state.holding) return;
+  dispatch({ type: 'launch', enabled: appLockOn(), grace: appLockGrace(), phase: currentPhase() });
 }
 
 export function clearNotice(): void {
