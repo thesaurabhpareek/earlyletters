@@ -36,6 +36,8 @@ export const speechSettingsCopy = {
     storage_error: 'The download could not be saved. It tries again by itself, or tap Try again.',
     hash_mismatch: 'The download did not check out. It tries again on Wi-Fi, or tap Try again.',
     needs_app_update: 'Needs the latest version of the app.',
+    // After several automatic tries on a link that kept stopping (download-retry.ts MAX_STOPPED_RUNS): it waits for a tap.
+    download_stopped: 'The download stopped. Tap Try again when the Wi-Fi is steady.',
   } as Record<string, string>,
 };
 

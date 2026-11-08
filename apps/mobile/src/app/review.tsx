@@ -299,7 +299,8 @@ export default function Review() {
   // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
   const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
   const shownAt = useRef(Date.now());
-  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}`;
+  // A new part, or a whole percent more within one, is progress (whisper.rn reports within a part).
+  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}:${Math.floor((job?.progress?.fraction ?? 0) * 100)}`;
   const progress = useRef({ key: progressKey, at: Date.now() });
   progress.current = progressClock(progress.current, progressKey, Date.now());
   const laterOffered = useRef(false);
@@ -1171,7 +1172,7 @@ function ProgressLine({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
     <View
-      className="h-1 w-full overflow-hidden rounded-full bg-muted"
+      className="h-1 w-full overflow-hidden rounded-full bg-input"
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: pct }}>
       <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />

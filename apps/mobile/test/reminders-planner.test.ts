@@ -6,6 +6,7 @@ import {
   activeWeekdays,
   clampReminderTime,
   DEFAULT_PREFS,
+  DEFAULT_WEEKLY_DAY,
   DEFAULT_WINDOW,
   normalizeWindow,
   isQuietTime,
@@ -153,6 +154,15 @@ describe('default cadence (C-REQ-002)', () => {
       ['evening', '2026-10-10', '2026-10-10 20:30'],
     ]);
     expect(week[1].month).toBe(7);
+  });
+
+  it('weekly with no chosen day lands on Saturday, as F13 section 6 says (BL-530)', () => {
+    expect(DEFAULT_WEEKLY_DAY).toBe(6);
+    expect(DEFAULT_PREFS.weeklyDay).toBe(6);
+    const weekly = plan({ prefs: { cadence: 'weekly', weeklyDay: DEFAULT_PREFS.weeklyDay, monthNotes: false }, horizonDays: 21 });
+    expect(weekly).toHaveLength(3);
+    expect(weekly.every((n) => new Date(`${n.date}T12:00:00Z`).getUTCDay() === 6)).toBe(true);
+    expect(activeWeekdays({ cadence: 'weekly', days: [], weeklyDay: Number.NaN })).toEqual([6]);
   });
 
   it('weekly uses its one evening; every evening uses all seven', () => {

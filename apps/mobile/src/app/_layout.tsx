@@ -22,7 +22,7 @@ import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startBackup } from '@/lib/backup/gate';
 import { resumeEraseAtLaunch } from '@/lib/erase-everything';
-import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
+import { allowanceSourceFor, PLUS_ALPHA, PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
@@ -96,8 +96,9 @@ let servicesStarted = false;
 function startServices(launchedAt: number): void {
   if (servicesStarted) return;
   servicesStarted = true;
-  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters).
-  setFreeLettersAllowanceSource(() => effectiveFreeLetters(getRemoteConfig()));
+  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters). Alpha builds
+  // (APP_ENV development or preview, set at bundle time) have no letter limit (founder, 1 Nov 2026; billing/alpha.ts).
+  setFreeLettersAllowanceSource(allowanceSourceFor(PLUS_ALPHA, () => effectiveFreeLetters(getRemoteConfig())));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
   // After packs: the queue registers the speech plan as a language resolver on the

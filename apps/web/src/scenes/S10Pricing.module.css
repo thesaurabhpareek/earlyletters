@@ -1,0 +1,40 @@
+/* S10: the free offer, then Plus. Real layout, no scaling. */
+.column {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Clear of the header above and the floating sign-up button below. */
+  padding: 72px var(--gutter) calc(env(safe-area-inset-bottom, 0px) + 96px);
+  color: var(--night-ink);
+  z-index: 3;
+}
+.inner {
+  width: 100%;
+  max-width: 46rem;
+}
+.inner h2 {
+  margin-bottom: clamp(12px, 2vh, 20px);
+  font-size: clamp(32px, 4.6vw, 64px);
+  line-height: 1.08;
+  text-align: left;
+}
+.plans {
+  width: 100%;
+}
+@media (min-width: 760px) {
+  .column {
+    padding-bottom: 7svh;
+  }
+}
+@media (max-height: 700px) {
+  .column {
+    padding-top: 60px;
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+  .inner h2 {
+    font-size: clamp(28px, 4vw, 40px);
+    margin-bottom: 10px;
+  }
+}

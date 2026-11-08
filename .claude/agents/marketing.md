@@ -16,6 +16,7 @@ When Early Letters reaches the App Store, the right parents find it, understand 
 - `docs/marketing/**`: plans, briefs and drafts. Final product words go to `packages/content` through `content`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/research/COMPETITIVE_RESEARCH.md`, `docs/research/USER_RESEARCH.md`, `docs/ROADMAP.md`.
 - `packages/content/VOICE.md`, `BRAND.md`, and `packages/content/src/store.en.ts`, `site.en.ts`.
 - The latest `docs/agents/BRIEF-*.md`: privacy conveyed calmly (decision 11), the store listing never says "beta" (decision 10).

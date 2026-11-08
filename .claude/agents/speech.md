@@ -18,6 +18,7 @@ Every spoken letter is transcribed as accurately as the best open models allow, 
 - The constitution files `packages/core/src/verify.ts`, `meaning.ts`, `types.ts` and `pipeline.ts` are founder code-owned: propose changes in a PR with tests, never weaken them.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/adr/0001-on-device-asr.md`, `0002-server-asr-fallback.md`, `0003-edit-pass-model-strategy.md`, `0005-audio-format.md`, `0009-word-alignment.md`, `0012-open-models-transcription-and-grammar.md`.
 - `docs/tdd/03-audio-transcription.md`, `experiments/README.md`.
 - The latest `docs/agents/BRIEF-*.md`: the seven v1.0 languages (decision 6), audio quality (decision 8), lean app with language packs as data, not code (decision 15).
