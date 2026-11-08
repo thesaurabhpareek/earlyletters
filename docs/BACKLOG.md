@@ -2929,6 +2929,238 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
+## Next roadmap, confirmed 8 Nov 2026 (backlog 08 ranks; BL-757 to BL-774)
+
+Source: `docs/roadmap/next/08-ranked-backlog.md` as the founder confirmed it ("confirm backlog 08 as ranked"), `docs/roadmap/next/03-requirements/*` (branch `docs/next-roadmap-8nov`, PR #664, not on `develop` yet) and `docs/roadmap/next/13-sequence-and-handout.md` task W1-6. Written by `product`, 8 Nov 2026 (UTC). The map from each working id (`NX-<theme>-R<n>`) to its `F##-REQ` and its BL id is `docs/backlog/ID-MAP-NEXT-2026-11-08.md`.
+
+How to read these rows:
+- One row per confirmed rank (an umbrella). Each names the NX rows it covers; on pickup the owner splits it into one PR per NX row (or per small group), taking the new ids from `node scripts/agents/next-id.mjs` at that moment. Nothing here is ready to merge in one PR.
+- `Satisfies:` copies the `F##-REQ` ids from the requirement file's Refines row and trace table. Where the file names only a feature (F13, F21) or a section (`06-nfr.md` section 14) and no REQ number, the row says so; product finds the number before the row is handed out.
+- Test titles keep the working bracket and gain the real one beside it: `[NX-02-R5] [F02-REQ-023] ...` (`_CONVENTIONS.md` section 4). "Fails on old code" is the requirement file's own claim, read at table level; no row was run.
+- Ids start at BL-757, not at BL-740 where `next-id.mjs` prints today. Reason: the readiness file (PR #638, section 1) tells #587 to renumber its 18 items to start at BL-739, so BL-739 to BL-756 are held for them (F17, ruled by Karma). BL-729 to BL-738 are reserved in #638 and are not given rows here (see the table at the end of this section). BL-621, D-139, D-141, D-142 are not reused.
+- Statuses repeat the "Ready" and "Missing" cells of backlog 08. `ready` appears only where 08 says Yes. Mode `pair` where a founder account, phone or vendor step is part of the row.
+
+### Tier 0: hosted server, accounts, adults only, deletion, alerts, store pack
+
+#### BL-757 Hosted backend: migrations, sign-in smoke, functions, preflight, outside-sign-in checklist (NX-01; backlog 08 rank 5, Tier 0)
+- Status: needs-decision (founder F1, F2 and F4 of backlog 08). Mode: pair. Owner: data architect, platform. Milestone: M14. Size: M plus about 7 founder hours (umbrella).
+- Who: `data-architect`, `ops`; tests `qa`; review `data-steward`, `principal-architect`.
+- Satisfies: F02-REQ-024. Also cited by the file (no REQ number): F16, F19, D-100, D-121 item 1, D-138 item 2, BL-594, BL-600.
+- Source: `03-requirements/01-hosted-backend.md`. Related PRs: #634, #636, #637, #655, #656; smoke script none yet.
+- Scope: NX-01-R1, R2, R3, R4, R7 (R5 and R6 are BL-761). `security-architect` rules on the smoke-script sign-in method first (R2).
+- Gate: founder (project, plan, `db-v` tag, `approve-migration`).
+- Device or ops rows: setup S-51, S-52, S-54.
+- Fails on old code: `[NX-01-R1] [F02-REQ-024] every migration applies to a blank hosted project`; `[NX-01-R2] [F02-REQ-024] policy-missing refusal, then sign in, keep, pull, delete in under 60 s`; `[NX-01-R3] 8 of 8 functions answer with legacy keys off`; `[NX-01-R4] preflight fails on http, service key, servers off against the decision`; `[NX-01-R7] [F02-REQ-024] outside sign-in checklist passes`.
+- Done when: those five titles pass against a throwaway hosted project and the evidence sits in `docs/qa/evidence/`.
+
+#### BL-758 Sign in and session on production: Apple and email code, sign-out queue, other-phone link (NX-02; backlog 08 rank 6, Tier 0)
+- Status: blocked (BL-757; founder F6 and F8, Apple key and Resend SMTP). Mode: pair. Owner: mobile engineer, security engineer. Milestone: M14. Size: M (umbrella).
+- Who: `mobile`, `security`; tests `qa`; review `security-architect`.
+- Satisfies: F02-REQ-015, F02-REQ-005, F02-REQ-001, F02-REQ-018, F02-REQ-020. Also in the Refines row, not tied to an NX row here: F02-REQ-003, -008, -011, -012, -023, -025; BL-598, BL-603. (F02-REQ-023 is NX-02-R5, which stays with the existing BL-597.)
+- Source: `03-requirements/02-sign-in-and-session-security.md`. The security PRs #602, #657, #632, #633 are rank 3 and keep their own ids (BL-594, BL-597, BL-599, BL-600, BL-568).
+- Scope: NX-02-R1, R2, R3, R4, R9, R10.
+- Gate: founder (Apple key, Resend SMTP, code length, a read of #602); Apple 4.8. R10 has no test until `support` sets the target minutes (by Mon 16 Nov).
+- Device rows: S1-06, S1-08, S1-22, S1-28; new: sign out with 3 unsent letters; new: recovery drill.
+- Fails on old code: `[NX-02-R1] [F02-REQ-015] Apple sign-in reaches Keep the book` (device); `[NX-02-R2] preflight fails when code length differs from EMAIL_CODE_LENGTH`; `[NX-02-R3] [F02-REQ-005] known and unknown address look the same`; `[NX-02-R4] [F02-REQ-001] sign out waits for an empty queue`; `[NX-02-R9] [F02-REQ-018] [F02-REQ-020] link from phone A does not sign in phone B`.
+- Done when: those titles pass; R1 and R9 are recorded device runs.
+
+#### BL-759 Adults only, plain agreement, age signal, country check (NX-03; backlog 08 rank 7, Tier 0)
+- Status: needs-decision (counsel Q46, Q48, Q57 and founder F3, F9; split #635 first). Mode: pair. Owner: mobile engineer, privacy engineer. Milestone: M14. Size: M (umbrella; #635 is 851 lines over 27 files, over the 400-line rule).
+- Who: `mobile`, `privacy`; tests `qa`; review `compliance-engineer`, founder CCO line.
+- Satisfies: F02-REQ-026, F02-REQ-027, LEGAL-REQ-001, LEGAL-REQ-002. Also cited: F01 (entry), BL-575, BL-577, BL-578, BL-580, BL-585, D-131, D-136, D-138. (F02-REQ-026 and -027 are defined on the PR #638 branch, not on `develop` yet.)
+- Source: `03-requirements/03-age-consent-and-region.md`.
+- Scope: NX-03-R0 (split #635), R1a, R1b, R1c, R2, R3, R4, R5, R8. Held and in this row only as a tail: R6 (age signal, counsel B-2) and R7 (blocked country, counsel B-1). By audience: agreement and adults-only gate Friends; age signal and country gate Public.
+- Gate: counsel Q46, Q48, Q44, Q57; founder CCO line on #635; Apple 5.1.1(i).
+- Device rows: S1-03; new: age question at AX5 and VoiceOver; new: update from build 1; new: phone with no age signal; new: blocked-country sign-up refused.
+- Fails on old code: `[NX-03-R1a] nothing is preselected and the gate needs an answer`; `[NX-03-R1b] [F02-REQ-026] Yes with an unticked box stores nothing`; `[NX-03-R1c] [F02-REQ-026] a build 1 install sees the agreement once`; `[NX-03-R3] every legal link points at a served route`; `[NX-03-R4] consent row has 4 of 4 fields`; `[NX-03-R5] erase finds and removes consent rows; audit rows refuse update`; `[NX-03-R8] privacy and terms say the app exists; 3 absent pages answer 200`.
+- Done when: #635 is split into parts under the size rule and the R1 to R5, R8 titles pass; R6 and R7 stay held.
+
+#### BL-760 Delete account end to end and the proof drill (NX-04 theme; backlog 08 rank 9, Tier 0)
+- Status: blocked (BL-757 for the drill; founder CCO line on #520, F9). Mode: pair. Owner: mobile engineer, sync owner. Milestone: M14. Size: M (umbrella).
+- Who: `mobile`, `sync`; tests `qa`; review `privacy`, `data-steward`.
+- Satisfies: F02-REQ-004, F02-REQ-007, F02-REQ-022, DATA-REQ-023, DATA-REQ-024. Also cited: F17 deletion rows, F21, F11, D-042, BL-330. NX-04-R5 is carried by BL-640 (#520, in #599), not by this row.
+- Source: `03-requirements/04-delete-account-and-erase-phone.md`. D-129: ships hidden unless the sole-parent drill passes.
+- Scope: NX-04-R1, R2, R3, R4, R6, R7. The `/delete-account` page answers 404 today.
+- Gate: Apple 5.1.1(v); founder CCO line on #520; counsel for the published deletion sentence.
+- Device rows: S1-35, S2-13, S1-22, S1-28; new: delete on phone A, open phone B; new: AX5 and VoiceOver on deletion.
+- Fails on old code: `[NX-04-R1] [DATA-REQ-023] sole-parent account leaves 0 rows at day 30`; `[NX-04-R2] [F02-REQ-004] revoke returns 204 with no token in the body`; `[NX-04-R3] /delete-account answers 200 with the in-app steps`; `[NX-04-R4] [F02-REQ-007] export offered once, then database, audio, Keychain and analytics id clear`; `[NX-04-R6] co-parent keeps their own letters`.
+- Done when: those titles pass and the drill minutes are in the runbook.
+
+#### BL-761 Production backup, kill switch, rollback, restore drill (NX-01-R5 and R6; backlog 08 rank 10, Tier 0)
+- Status: needs-decision (founder F2 and F4; D-138 item 2). Mode: pair. Owner: platform. Milestone: M14. Size: M (umbrella).
+- Who: `ops`; tests `qa`; review `principal-architect`.
+- Satisfies: DATA-REQ-030, DATA-REQ-031. Also cited: F19 kill switches (no REQ number in the file), D-138 item 2.
+- Source: `03-requirements/01-hosted-backend.md` R5 and R6. Related: #622 (staging only; production variant none yet).
+- Scope: NX-01-R5, NX-01-R6.
+- Gate: founder (plan). Follows the same hosted project as BL-757.
+- Device rows: DL-03; new: kill switch off, then record, keep, read, export.
+- Fails on old code: `[NX-01-R5] [DATA-REQ-030] restore matches row counts in 4 hours or less`; `[NX-01-R6] sync off means 0 uploads and record, keep, read, export still work`.
+- Done when: both titles pass and the restore drill minutes are in `docs/ops/runbooks/restore-drill.md`.
+
+#### BL-762 Alerts, incident order, weekly report to earlyletters@gmail.com (NX-17; backlog 08 rank 11, Tier 0)
+- Status: blocked (BL-757; founder confirms the sender). Mode: agent. Owner: platform, security engineer. Milestone: M14. Size: S.
+- Who: `ops`, `security`; tests `qa`; review `privacy`, `security-architect`.
+- Satisfies: none numbered in the file. It cites `docs/prd/v2/06-nfr.md` section 14, F16 section 9, TDD 06 sections 5.5 and 5.6, D-135, LEGAL-REQ-014 (R2). Product finds REQ ids before handing out.
+- Source: `03-requirements/NX-17-internal-alerts.md` (its header says "backlog rank 17"; that was the old rank, it is rank 11 in 08).
+- Scope: NX-17-R1 to R6. What an alert may hold is the privacy rule in `CLAUDE.md` (no letter text, names, transcripts or audio). Rank 11 in 08 also names the abuse route and rate limits; the file covers alerts and the weekly report, so those two are not in this row (UNVERIFIED whether another file holds them).
+- Gate: none external. F16 is settled (the founder named the mailbox).
+- Device or ops rows: rehearsal on the throwaway project; switch the first route off once.
+- Fails on old code: `[NX-17-R1] each rule sends one mail with the five fields`; `[NX-17-R2] [LEGAL-REQ-014] canaries appear in 0 of 10 alert bodies`; `[NX-17-R3] no hardcoded address and no secret shapes`; `[NX-17-R4] 3 crossings in an hour send 1 mail; clear sends 1`; `[NX-17-R5] missing heartbeat is caught by the second route`; `[NX-17-R6] weekly report holds counts only`.
+- Done when: those six titles pass.
+
+#### BL-763 Reviewer sign-in, Notes for Review, store pack checks (NX-05; backlog 08 rank 12, Tier 0)
+- Status: needs-decision (founder F5, F7, F14, F15; counsel Q54, Q47). Mode: pair. Owner: content, platform. Milestone: M14. Size: M (umbrella).
+- Who: `content`, `ops`; tests `qa`; review `compliance-engineer`.
+- Satisfies: F19-REQ-024. Also cited (no REQ number): F21, BL-340, BL-341, BL-342, D-121, D-134, D-137. BL-341 (App Review notes and demo account) already exists; this row extends it and does not replace it.
+- Source: `03-requirements/05-reviewer-sign-in-and-store-pack.md`. R1 and R2 are NOT READY until the founder's reviewer path is chosen.
+- Scope: NX-05-R1 to R9. Held: R2 (device row with a person who is not the founder).
+- Gate: Apple 2.1(a), 2.3.1(a), 5.1.1(i); counsel Q54, Q47.
+- Device rows: S1-03 onward; new: fresh phone, Notes only, reach a signed-in book.
+- Fails on old code: `[NX-05-R1] review notes carry the chosen sign-in path and not the on-device sentence`; `[NX-05-R3] [F19-REQ-024] Notes count equals production off switches`; `[NX-05-R4] listing claims English only and no co-parent sharing`; `[NX-05-R5] five legal and support addresses answer 200`; `[NX-05-R6] no Data Not Collected; each data type has a row`; `[NX-05-R8] ascAppId present; age rating entered`.
+- Done when: those titles pass; R7 and R9 leave dated evidence in `docs/qa/evidence/` and `docs/ops/APP_SIZE.md`.
+
+### Tier 1: the happy path, billing, analytics, support
+
+#### BL-764 Recording and Listen that behave: kill-safe save, slow save, download choice, first-run links (NX-06 except R2, R4, R9; backlog 08 rank 14, Tier 1)
+- Status: ready. Mode: agent. Owner: mobile engineer, content. Milestone: M14. Size: M (umbrella).
+- Who: `mobile`, `content` (words), `design-systems` (finish-failed screen); tests `qa`; review `red-team`.
+- Satisfies: F04-REQ-048. Also cited (no REQ number): F03 (first run), F05, BL-563, opportunities 1 to 5.
+- Source: `03-requirements/06-recording-that-behaves.md`. Pick one of #615 or #618 first (both make a slow save open Review; Karma picks). NX-06-R2 is the reserved BL-734 (phone-is-full screen, words by `content`) and NX-06-R4 is the reserved BL-736; neither has a row here.
+- Scope: NX-06-R1, R3, R5, R7 as code and unit checks; R6 (one-handed date picker) and R8 (user-research study) are evidence rows run by the founder and `user-research`, not part of the PR.
+- Gate: none external. Founder runs the iPhone SE 3 rows.
+- Device rows: B2-11, DL-01, DL-02, S1-13, S1-03; new: download choice on cellular; new: date picker one-handed.
+- Fails on old code: `[NX-06-R1] [F04-REQ-048] draft survives a kill during save, 500 of 500`; `[NX-06-R3] a save over 3 s lands on Review with the draft id`; `[NX-06-R5] sheet offers wait or keep recording and a letter can be saved`; `[NX-06-R7] Back returns to the same screen, 2 of 2 links`.
+- Done when: those titles pass; B2-11 (kill-safety proof) is the exit test and is a founder device run.
+
+#### BL-765 Local database migration flake (#533) as a repeat-run test (NX-06-R9; backlog 08 rank 15, Tier 1)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S.
+- Who: `mobile`; tests `qa`; review `data-steward`.
+- Satisfies: none numbered. The file's Refines cites feasibility R6 and #533. Backlog 08 names the source as "`04` R6" (the feasibility file); I read NX-06-R9 as its requirement row. That reading is mine and the founder or `qa` may correct it.
+- Source: `03-requirements/06-recording-that-behaves.md` R9; PR #533 (not read). Start with BL-764; first if a recording PR adds a local migration.
+- Scope: a repeat-run upgrade test on the year-5 fixture, following the `apps/mobile/test/migrations.v9.test.ts` pattern.
+- Gate: none external.
+- Fails on old code: `[NX-06-R9] upgrade succeeds 20 of 20` (it must fail on the tree with the flake).
+- Done when: that title passes 20 of 20 and the flake no longer shows in repeat runs.
+
+#### BL-766 Letters on every phone: two-phone proof (NX-07; backlog 08 rank 16, Tier 1)
+- Status: blocked (BL-757, BL-758; founder two phones and two Apple Accounts). Mode: pair. Owner: sync owner, qa engineer. Milestone: M14. Size: M to L (umbrella).
+- Who: `sync`, `qa`; review `principal-architect`.
+- Satisfies: F16-REQ-029, F16-REQ-029a, F16-REQ-029c, F16-REQ-026, F16-REQ-027. Also cited: F16-REQ-029b, F08, AL-06, feasibility R12.
+- Source: `03-requirements/07-letters-on-every-phone.md`. R4 and R6 run only on the throwaway project from BL-757. Recording backup stays off.
+- Scope: NX-07-R1 to R8. R7 needs the audio-elsewhere drawing from `design-systems`.
+- Gate: founder (two phones, two Apple Accounts, SE 3).
+- Device rows: B2-4, S1-22, S1-28, DL-03, AL-06; new: new phone shows words with audio elsewhere.
+- Fails on old code: `[NX-07-R1] [F16-REQ-029] 3 unsynced letters become 3 on the server and on phone 2`; `[NX-07-R2] [F16-REQ-029c] a lost answer retried 3 times leaves 1 letter`; `[NX-07-R3] [F16-REQ-029a] stale version is refused and no words are lost`; `[NX-07-R4] [F16-REQ-026] five stale-cursor pulls equal the pre-erase answer byte for byte`; `[NX-07-R5] [F16-REQ-027] app role query over 5 s is cancelled; no job holds a transaction over 1 s`; `[NX-07-R6] G4 load run passes`; `[NX-07-R7] no play button for a letter with no local audio`.
+- Done when: those titles pass and the two-phone evidence is in `docs/qa/evidence/`.
+
+#### BL-767 Plus and billing trust: lapse, buy screen, trust page (NX-08 except R7; backlog 08 rank 17, Tier 1)
+- Status: needs-decision (founder F10 and F19; counsel Q41 and ten locked strings). Mode: pair. Owner: payments engineer, content. Milestone: M14. Size: S to M (umbrella).
+- Who: `payments`, `content`; tests `qa`; review `compliance-engineer`.
+- Satisfies: F14-REQ-040, F14-REQ-081, F14-REQ-082. Also cited: F14, M1, M17, D-080, D-082, D-083, BL-342, BL-560. (F14-REQ-081 and -082 are defined on the PR #638 branch, not on `develop` yet.)
+- Source: `03-requirements/08-plus-and-billing-trust.md`. NX-08-R7 (alpha allowance) is the reserved BL-736 and has no row here. BL-604 and BL-605 stay in #591 and #599.
+- Scope: NX-08-R1, R2, R3, R4, R5, R6, R8. R5 is a user-research study. R3 is a StoreKit sandbox device row.
+- Gate: Apple 2.1(b), 3.1.1, 3.1.2; counsel Q41 notices and Subscription Terms; founder (App Store Connect products, Paid Apps agreement). No price is set here: the founder confirms from `packages/content/src/pricing.ts` (F10).
+- Device rows: AL-09; new: lapse then read, play, export.
+- Fails on old code: `[NX-08-R1] a lapse leaves 100% of letters readable, playable, exportable`; `[NX-08-R2] length, renewal and cancel sit beside the button; no price outside pricing.ts`; `[NX-08-R4] /subscription-terms answers 200 and matches the in-app notice by hash`; `[NX-08-R6] [BL-342] no promise of a plan reminder email while emails are off`; `[NX-08-R8] no unmatched free-for-relatives claim`.
+- Done when: those titles pass and the sandbox row is recorded.
+
+#### BL-768 Support route: a person answers within a day (NX-16; backlog 08 rank 18, Tier 1)
+- Status: needs-decision (founder: what the public pages may promise and who answers on which days). Mode: pair. Owner: platform, mobile engineer. Milestone: M14. Size: S.
+- Who: `support`, `ops`, `mobile`; review `product`.
+- Satisfies: none numbered. The file's Refines cites F21 (support URL), customer opportunity 24, BL-622 (as filed in #587, to be renumbered), NX-02-R10, NX-04-R3. Product finds the F21 REQ id before hand-out.
+- Source: `03-requirements/NX-16-support-route.md` (its header says "backlog rank 16"; that was the old rank, it is rank 18 in 08). The `/support` page is shared with BL-763 (NX-05-R5).
+- Scope: NX-16-R1 to R5.
+- Gate: founder (the promise and the mailbox duty). App Review 2.1(a) wants a working support page.
+- Device rows: new: Write to us opens a draft with the version only; new: attach diagnostics shows its list.
+- Fails on old code: `[NX-16-R1] /support answers 200 with the five parts`; `[NX-16-R2] draft holds the version only`; `[NX-16-R3] page promise equals the measured target`; `[NX-16-R4] four saved replies exist and ask for no content`; `[NX-16-R5] attach is by tap and holds no content`.
+- Done when: those titles pass.
+
+#### BL-769 Free analytics, first-party sink (NX-15; backlog 08 rank 22, Tier 1)
+- Status: needs-decision (founder F11, a decision entry superseding D-124 item 3; counsel Q54 privacy label). Mode: agent. Owner: analytics engineer, data architect. Milestone: M14. Size: M (the file's size; 08 says not sized).
+- Who: `analytics`, `data-architect`; tests `qa`; review `privacy`, `security-architect`.
+- Satisfies: PRD-REQ-001, PRD-REQ-016, PRD-REQ-018, LEGAL-REQ-014, LEGAL-REQ-017. Also cited: D-003, D-095, D-124 item 3, ADR 0008.
+- Source: `03-requirements/NX-15-free-analytics.md` (its header says "backlog rank 15"; that was the old rank, it is rank 22 in 08). The build is draft PR #677 on `feat/analytics-free-sink`; this row is its acceptance. Off in build 12 and the first submission (08, F11 default). The migration needs the `approve-migration` label.
+- Scope: NX-15-R1 to R9.
+- Gate: founder's own words in a decision entry; counsel on the privacy label and consent sheet wording.
+- Device rows: new: analytics off, 0 requests; new: yes then off.
+- Fails on old code: `[NX-15-R1] [D-124] no profile sets an endpoint; 0 requests with the switch off`; `[NX-15-R2] [PRD-REQ-001] [PRD-REQ-016] nothing before yes; off empties queue and outbox`; `[NX-15-R3] [LEGAL-REQ-017] three walls refuse a bad event`; `[NX-15-R4] canaries appear nowhere`; `[NX-15-R5] failed batches are kept, 4xx dropped, 14-day limit`; `[NX-15-R6] no auth read, no IP, 50 events, 32 KB, 5,000 a day`; `[NX-15-R7] only service_role reads the table; views null below 10`; `[NX-15-R8] forget and 365-day purge`.
+- Done when: those titles pass on #677 or its successor and counsel's review of R9 is on record.
+
+#### BL-770 Reminders that fit: no-repeat across seasons, back-off, refused notifications (NX-10; backlog 08 rank 23, Tier 1)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S to M. R3 (back-off) is 1.0 or 1.0.1 by the founder's BL-534 call; it can be written now and shipped when he decides.
+- Who: `mobile`; tests `qa`; review `principal-architect`.
+- Satisfies: C-REQ-008, PRIV-R10. Also cited (no REQ number in the file): F13, F13-U18, BL-530 to BL-550. Product finds the F13 REQ ids in the F13 spec before hand-out.
+- Source: `03-requirements/10-reminders-that-fit.md`. Local reminders are built (#624, #483); back-off is not built (the file found this on re-reading the code).
+- Scope: NX-10-R2, R3, R4, R5, R6 as code. R1 is a device run on an SE 3.
+- Gate: Apple 4.5.4; founder decides BL-534 (1.0 or 1.0.1).
+- Device rows: new: reminder at chosen time on SE 3; new: notifications refused then Settings.
+- Fails on old code: `[NX-10-R2] 30 reminders across a season change repeat no prompt text`; `[NX-10-R3] [C-REQ-008] 4 unopened drop to weekly, 4 more to month notes, a save restores`; `[NX-10-R4] refused notifications are asked once and never again`; `[NX-10-R5] back-off and month-note keys exist and have 0 rule hits`; `[NX-10-R6] a month with nothing recorded is never counted or flagged`.
+- Done when: those titles pass and `npm test -w @scribe/content` stays green.
+
+### Tier 2: growth, co-parent text, names, store page, catch-up
+
+#### BL-771 Co-parent text proof on two phones; Family tab hidden (NX-09, 9a only; backlog 08 rank 25, Tier 2)
+- Status: needs-decision (founder F8; counsel Q53, Q50). Mode: pair. Owner: mobile engineer, qa engineer. Milestone: M14. Size: S.
+- Who: `mobile`, `qa`; review `compliance-engineer`.
+- Satisfies: F11-REQ-006, F02-REQ-021. Also cited: F11, D-120, D-126, D-050, #605, #607.
+- Source: `03-requirements/09-co-parent-and-shared-voice.md` R1, R2, R3, R6. R4 and R5 (shared voice, 9b) are not in this row (rank 31, held).
+- Scope: NX-09-R1, R2, R3, R6.
+- Gate: counsel Q53 (two-parent cap), Q50 (custody and removal); founder two phones and two Apple Accounts.
+- Device rows: S1-22, S1-28.
+- Fails on old code: `[NX-09-R1] second Apple Account joins; a third is refused with SCCAP`; `[NX-09-R2] [F02-REQ-021] peek returns sign-off and role, never the child's name`; `[NX-09-R3] Family tab shows the coming-soon line in the build 12 profile`; `[NX-09-R6] a co-parent letter produces no push and no lock-screen text`.
+- Done when: those titles pass and the two-phone rows are recorded.
+
+#### BL-772 Names that learn: Add to your words, term rules, name packs (NX-12 names part; backlog 08 rank 27, Tier 2)
+- Status: blocked (the Add to your words control, NX-12-R3b, is not built; names near a log path is the pre-mortem risk). Mode: agent. Owner: mobile engineer, content. Milestone: M14. Size: M.
+- Who: `mobile`, `content`; tests `qa`; review `privacy`.
+- Satisfies: F07-REQ-004, F07-REQ-001, F07-REQ-005, F07-REQ-006. Also cited: F05, F07-REQ-002 to -008 range, F33, F38, D-115, D-121 item 2(d), CVL-01, CVL-03, FB-02.
+- Source: `03-requirements/12-names-and-languages-as-spoken.md`. Build 12 stays English. R2 and R5 (languages) are NOT READY and stay parked (rank 32), with no id.
+- Scope: NX-12-R1, R3a, R3b, R4, R6. 08 also names repeat suppression across seasons with the content-rules test; that is NX-10-R2 in BL-770.
+- Gate: none external for names. Native reviewers apply to languages only.
+- Device rows: new: add a name in Review; setup S-08, S-11 (R6).
+- Fails on old code: `[NX-12-R1] English-only: picker lists English with a note; listing names 1 language`; `[NX-12-R3a] [F07-REQ-004] stt_fix to a non-dictionary term is rejected`; `[NX-12-R3b] [F07-REQ-001] term and re-cleaned draft commit in one transaction`; `[NX-12-R4] no meaning-changing edit accepted across the code-switched set`; `[NX-12-R6] a served pack verifies`.
+- Done when: those titles pass and the content rules test stays green.
+
+#### BL-773 Rating ask, store page frames, listing claims (NX-24; backlog 08 rank 28, Tier 2)
+- Status: blocked (the #587 renumber in the readiness file; a native module batch; Apple's review-prompt rule is UNVERIFIED in the file). Mode: pair. Owner: content, platform. Milestone: M14. Size: S.
+- Who: `content`, `ops`; tests `qa`; review `product`.
+- Satisfies: F21-REQ-005, F21-REQ-010. Also cited: F21, D-139 (as the file cites it; D-139 clashes, see the readiness file), D-060, D-061, BL-340.
+- Source: `03-requirements/NX-24-rating-ask-and-store-page.md` (its header says "backlog rank 24"; that was the old rank, it is rank 28 in 08). The listing items are in #587 (18 items, renumbering to start at BL-739).
+- Scope: NX-24-R1 to R7. `expo-store-review` is a native change; batch it with others.
+- Gate: Apple 2.3 and the review-prompt rules; founder (App Store Connect entries); counsel only for the D-061 line ("always kept").
+- Device rows: new: day 4 and day 5 rows; new: one row per label.
+- Fails on old code: `[NX-24-R1] at most once a version, 3 days after install, never after an error`; `[NX-24-R2] nothing depends on a rating; only the date is stored`; `[NX-24-R3] review-prompt flag is off in production until the module ships`; `[NX-24-R4] frames come from a release build with Asha`; `[NX-24-R6] [F21-REQ-005] listing claims match production capabilities`.
+- Done when: those titles pass.
+
+#### BL-774 Catch-up letters: backdate and file into the right chapter (NX-27 R1 to R3; backlog 08 rank 29, Tier 2)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S. Read the code first (08 says so): the file reads backdating bounds from existing book-date code.
+- Who: `mobile`; tests `qa`; review `privacy`.
+- Satisfies: F04-REQ-015, F09-REQ-003, F09-REQ-004. Also cited: D-083.
+- Source: `03-requirements/NX-27-catch-up-letters.md` (its header says "backlog rank 27"; that was the old rank, it is rank 29 in 08). R4 to R7 (voice-memo import) are HELD on counsel and a native module and have no id.
+- Scope: NX-27-R1, R2, R3.
+- Gate: none for the dates. Counsel on others' voices applies to import only.
+- Device rows: new: catch-up letter dated before recording.
+- Fails on old code: `[NX-27-R1] [F04-REQ-015] a catch-up letter is dated on first save and files into its chapter`; `[NX-27-R2] [F04-REQ-015] catch-up reuses the date bounds`; `[NX-27-R3] [D-083] catch-up letters count like any letter`.
+- Done when: those titles pass.
+
+### Confirmed rows with no BL row in this block
+
+Pending requirement, no id taken (other agents are writing the requirement today):
+- Rank 4, independent security test (D-125 item 10). Requirement pending. No id.
+- Rank 8, withdraw sensitive-data consent (D-128). Requirement pending. No id. (BL-485 is the related existing item.)
+
+| Rank | Why there is no new row |
+|---|---|
+| 1 | Record the route: a decision entry the founder decides, not a BL row. |
+| 2 | Counsel packet: existing PRs #616 and #652; no requirement file in the folder. |
+| 3 | Existing ids carry it: BL-594, BL-597, BL-599, BL-600, BL-568 (NX-02-R5 to R8 map to them in the id map). |
+| 13 | Founder-hands setup and money admin: no requirement file ("money steps: none written"). |
+| 14 (part), 17 (part), 24, 26, 30 | Ids BL-734, BL-736, BL-737, BL-729 to BL-733, BL-738 are reserved in PR #638. Their rows are written there; this block does not copy them. |
+| 19, 20 | Existing ids: BL-567 to BL-603 and BL-551 to BL-562 (rank 19), #599 (rank 20). Product's tag pass for rank 19 is due Wed 11 Nov and is separate work. |
+| 21 | Notes control: cites F04-REQ-014 and F14-REQ-081 but has no requirement file in the folder; no row until one exists. |
+| 31 | Shared voice (9b) and relatives' hello: NOT READY by design, ADRs first. Held NX ids (NX-09-R4, R5, NX-11-R1 to R7) have no BL id. |
+| 32 | Parked group: not started by design. |
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
