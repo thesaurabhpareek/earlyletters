@@ -72,7 +72,9 @@ export function listenRoom(phase: RoomPhase): {
     clock: !before,
     line: phase === 'ready' ? 'readyHint' : phase === 'asking' ? 'none' : phase === 'paused' ? 'paused' : 'listening',
     controls: phase === 'recording' || phase === 'paused',
-    discard: phase === 'recording' || phase === 'paused' || phase === 'finishing',
+    // Never while finishing (BL-563): the take is being kept, and the only control left must not be the one that
+    // deletes it.
+    discard: phase === 'recording' || phase === 'paused',
   };
 }
 
@@ -110,4 +112,29 @@ export function reviewParams(draftId: string, reason: StopReason): { draftId: st
 export function promptLine(promptKey: string | null | undefined, prompts: readonly { key: string; text: string }[]): string | null {
   if (!promptKey) return null;
   return prompts.find((p) => p.key === promptKey)?.text ?? null;
+}
+
+/** How long Listen waits for a take to be kept before it leaves anyway (BL-563). The take stays either way. */
+export const FINISH_TIMEOUT_MS = 3000;
+
+/**
+ * Waits for the step that keeps a take, but never longer than `ms`, and never lets its failure escape (BL-563). A
+ * full disk makes the save throw; before this, the screen stayed on "finishing" with only "Let it go" left. The job
+ * keeps running after a timeout (finalizeTake shares it with any later caller), and the draft row is never removed
+ * here: the launch sweep picks up a take that did not finish.
+ */
+export async function finishWithin<T>(job: Promise<T>, ms: number = FINISH_TIMEOUT_MS): Promise<{ ok: true; value: T } | { ok: false; why: 'failed' | 'timeout' }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<{ ok: false; why: 'timeout' }>((resolve) => {
+    timer = setTimeout(() => resolve({ ok: false, why: 'timeout' }), ms);
+  });
+  const done = job.then(
+    (value) => ({ ok: true as const, value }),
+    () => ({ ok: false as const, why: 'failed' as const }),
+  );
+  try {
+    return await Promise.race([done, late]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
 }
