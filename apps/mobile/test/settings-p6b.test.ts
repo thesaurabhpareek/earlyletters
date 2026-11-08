@@ -8,7 +8,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
+import { billingCopy, en, exportCopy, packsCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
 import { fill } from '../src/lib/copy';
 import { appearanceSample, type SampleEntry } from '../src/components/settings/appearance.logic';
 import { exportEmpty, exportFailure, INSIDE } from '../src/components/settings/export.logic';
@@ -256,15 +256,15 @@ describe('[S42] Recordings', () => {
 
   it('the language row is actionable when the model is missing, and shows its progress while it downloads', () => {
     expect(speechRow({ kind: 'absent', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: 'download', trailing: 'Download', percent: null, hint: speechSettingsCopy.downloadHint });
-    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toMatchObject({ subtitle: 'Getting ready, 40%', action: null, percent: 40 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toMatchObject({ subtitle: 'Getting ready, 40%', action: 'stop', percent: 40 });
     expect(speechRow({ kind: 'here', mb: 575 })).toMatchObject({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: 'Remove' });
-    expect(speechRow({ kind: 'waitingForWifi', mb: 575 }).action).toBeNull();
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 }).action).toBe('stop');
     expect(speechRow({ kind: 'unknown', mb: 575 }).action).toBeNull();
-    // Each state's words and action, in full: Remove says what it frees; the rows that wait offer nothing to tap.
+    // Each state's words and action, in full: Remove says what it frees; the rows a tap cannot help (no space, no files to read) offer nothing.
     expect(speechRow({ kind: 'here', mb: 575 })).toEqual({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: speechSettingsCopy.confirmButton, percent: null, hint: speechSettingsCopy.removeHint });
     expect(speechSettingsCopy.removeHint).toBe('Removes this language from the phone to free space');
     expect(speechRow({ kind: 'noSpace', mb: 575 })).toEqual({ subtitle: 'Needs more free space, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
-    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: 'stop', trailing: 'Stop', percent: null, hint: speechSettingsCopy.stopHint });
     expect(speechRow({ kind: 'unknown', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
     // The ring and its words stay between 0 and 99, rounded down: never "100%" before it is done, and below 1% the
     // words say "Downloading" with no number (TestFlight build 1: never "Getting ready, 0%"), the ring at its start.
@@ -274,7 +274,38 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'downloading', fraction: 0.004 })).toMatchObject({ subtitle: 'Downloading', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.01 })).toMatchObject({ subtitle: 'Getting ready, 1%', percent: 1 });
     // The row moved to Storage with the language download (settings-ia.md 4).
-    expect(code('components/settings/speech-row.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
+    expect(code('components/settings/speech-row.tsx')).toMatch(
+      /onPress=\{\s*row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : row\.action === 'stop' \? stop : undefined\s*\}/,
+    );
+  });
+
+  it('[S1-97b] a running speech download can be stopped from its language row: Stop while it downloads or waits for Wi-Fi', () => {
+    // The packs a language row stands for are left out of Storage's In progress list (where-live.test.ts), so before
+    // this the row was the only place a language showed and it offered nothing: a running download had no Stop.
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toEqual({ subtitle: 'Getting ready, 40%', action: 'stop', trailing: 'Stop', percent: 40, hint: speechSettingsCopy.stopHint });
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: 'stop', trailing: 'Stop', percent: null, hint: speechSettingsCopy.stopHint });
+    // The word is the one Storage's In progress list already uses: no new button. The hint is the only new line.
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 }).trailing).toBe(packsCopy.stopButton);
+    expect(packsCopy.stopButton.length).toBeLessThanOrEqual(22);
+    expect(speechSettingsCopy.stopHint).toBe('Stops getting this language ready for now');
+    // Stop at every point of the download keeps its percent for the ring, rounded down and clamped as before.
+    expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ action: 'stop', trailing: 'Stop', percent: 99 });
+    // What a tap cannot help stays without an action: no space, and the design preview that cannot read files.
+    expect(speechRow({ kind: 'noSpace', mb: 575 }).action).toBeNull();
+    expect(speechRow({ kind: 'unknown', mb: 575 }).action).toBeNull();
+    // Download and Remove are unchanged.
+    expect(speechRow({ kind: 'absent', mb: 575 })).toMatchObject({ action: 'download', trailing: 'Download' });
+    expect(speechRow({ kind: 'here', mb: 575 })).toMatchObject({ action: 'remove', trailing: 'Remove' });
+  });
+
+  it('[S1-97b] Stop on the language row pauses every pack the language needs (the detector and the speech model), through cancelPack', () => {
+    const row = code('components/settings/speech-row.tsx');
+    expect(row).toMatch(/import \{ cancelPack \} from '@\/lib\/packs';/);
+    expect(row).toMatch(/const stop = \(\) => \{\s*for \(const id of plan\.packs\) cancelPack\(id\);\s*\};/);
+    // Not the removal path: Stop keeps the partial file (the next Download carries on), Remove deletes it.
+    expect(row.match(/const stop = \(\) => \{[\s\S]*?\};/)?.[0]).not.toMatch(/removePack|removeSpeechPack/);
+    // Storage's In progress list still leaves a language's packs out, so a language is still never said twice.
+    expect(code('app/settings/storage.tsx')).toMatch(/!asLanguages\.has\(p\.id\) && ACTIVE\.includes/);
   });
 });
 

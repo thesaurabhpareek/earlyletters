@@ -118,8 +118,8 @@ describe('Settings, Storage: the language row (recordings.logic speechRow)', () 
   it('the ring has no number on it and stays a ring at its start', () => {
     const r = speechRow({ kind: 'downloading', fraction: 0.004 });
     expect(r.percent).toBe(0);
-    expect(r.action).toBeNull();
-    expect(r.trailing).toBeNull();
+    expect(r.action).toBe('stop');
+    expect(r.trailing).toBe('Stop');
   });
 });
 
