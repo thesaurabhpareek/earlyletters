@@ -21,7 +21,7 @@ Prepared 3 Oct 2026 for PRD V2. Extends `docs/research/COMPETITIVE_RESEARCH.md` 
 7. **Price sits at the floor of the category.** $29.99/yr equals Tiny Treasures and undercuts FirstChapter ($39.99), Dearest ($49.99) and From, Mama ($49.99) [F] R1-S67, R1-S4, R1-S3, R1-S20. Dearest now sends in-app renewal reminders with cancellation deadlines [F] R1-S3, a pattern that bears on the California auto-renewal question in B2. *Note (13 Oct 2026): our own price here is superseded on 13 Oct by M1 to M3; Plus Annual is now $49.99 (`_AUTHORING.md` 3b).*
 8. **Day One Shared Journals is the best co-parent precedent.** Up to 30 members, invitees join free, editing defaults to author-only, the owner controls membership, end-to-end encrypted per journal [F] R1-S24. Day One also says its in-app purchases cannot be shared through Family Sharing [F] R1-S25, so our Family Sharing plan is a real difference.
 9. **Most category leaders declare tracking on their privacy labels.** Qeepsake, Tinybeans, BabyPage, 23snaps, FamilyAlbum, From, Mama, StoryCorps, Chatbooks, Day One and Calm all list "Data Used to Track You" [F] (section F18). Dearest lists only "Data Not Linked to You" [F] R1-S3. A clean label is visible proof of B9.
-10. **The strongest published habit pattern is Calm's.** A reminder prompt shown right after the first session: 40% set a reminder and those users retained 3x better [F] R1-S57. Headspace's onboarding quiz doubled course starts but did not raise meditation days [F] R1-S58.
+10. **The strongest published habit pattern is Calm's.** A reminder prompt shown right after the first session: 40% set a reminder and those users retained "almost 3x" better [S] vendor claim, from Amplitude's own case study, not a first-party fact R1-S57. Headspace's onboarding quiz doubled course starts but did not raise meditation days [F] R1-S58.
 
 ## 1. What changed since CR (1 Oct 2026)
 
@@ -233,7 +233,7 @@ Column guide for every table: **Product | What it does | Does it work? (evidence
 | Qeepsake | 2 questions a day (Essential) or 4 (Premium); 1 a week on free Lite [F] R1-S16, R1-S44 | 4.9 (15K) | Repeated questions within short spans; marketing texts during postpartum [S] R1-S56, R1-S1 | **Avoid** daily volume and mixed marketing [R] |
 | Remento | Weekly prompt by text or email, cadence adjustable [F] R1-S53 | 4.8 (1,738) | Too many reminder emails and texts after sign-up [S] R1-S15 | **Avoid** sign-up email bursts [R] |
 | Storyworth | Weekly emailed question [F] R1-S14 | 4.7 (65,094) | Prompts help reluctant, busy authors fill gaps [S] R1-S54 | **Match** weekly default [R] |
-| Calm (quality bar) | Reminder prompt shown after the first session [F] R1-S57 | 40% of those shown set a reminder; 3x retention; judged causal [F] R1-S57 | n/a | **Match** [R]: ask for a reminder right after the first saved letter |
+| Calm (quality bar) | Reminder prompt shown after the first session [F] R1-S57 | 40% of those shown set a reminder; "almost 3x" retention [S] vendor claim from Amplitude's case study, not a first-party fact R1-S57 | n/a | **Match** [R]: ask for a reminder right after the first saved letter |
 | Headspace (quality bar) | Precommitment: user picks days and triggers [F] R1-S58 | +7.5% app opens; no gain in active days [F] R1-S58 | n/a | **Match lightly** [R]: let the parent pick evenings |
 | Dearest | Home Screen widgets as reminders [F] R1-S3 | n/a | n/a | **Match** [R] |
 | From, Mama | "Inspire Me" prompts; daily Reflect content [F] R1-S20 | 4.9 (48) | n/a | Neutral |
@@ -439,7 +439,7 @@ App Store privacy labels as declared today. "None" means the summary showed no "
 
 | # | From | Pattern | Evidence | Apply to |
 |---|---|---|---|---|
-| 1 | Calm | Ask to set a daily reminder on a screen right after the first completed session | 40% of users shown it set one; 3x retention; Calm judged it causal [F] R1-S57 | F13: ask after the first saved letter, not at install |
+| 1 | Calm | Ask to set a daily reminder on a screen right after the first completed session | 40% of users shown it set one; "almost 3x" retention [S] vendor claim from Amplitude's case study, not a first-party fact R1-S57 | F13: ask after the first saved letter, not at install |
 | 2 | Headspace | Keep onboarding questions few and useful; do not expect onboarding to build the habit | Quiz doubled course starts (31% to 63%), no lift in meditation days; precommitment +7.5% opens [F] R1-S58 | F01, F03, F13 |
 | 3 | Day One | Shared space with author-only editing by default, owner controls members, invitees free | Shared Journals rules [F] R1-S24 | F11 |
 | 4 | Day One | Media stays playable on every tier after a subscription ends | Pricing guide and audio guide [F] R1-S25, R1-S60 | F08, F14 lapse |
