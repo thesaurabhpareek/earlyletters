@@ -140,7 +140,11 @@ export function setBaseDirection({ db }: RepoContext, id: string, dir: BaseDirec
  * file, then `finishDiscard` removes the row. False for a missing draft.
  */
 export function beginDiscard({ db }: RepoContext, id: string): boolean {
-  db.run("UPDATE drafts SET state = 'discarding' WHERE id = ?", id);
+  // Review's choices go with it (v9): nothing of a let-go letter waits on the phone.
+  db.run(
+    "UPDATE drafts SET state = 'discarding', review_put_back = NULL, review_view = NULL, review_text = NULL, review_base = NULL WHERE id = ?",
+    id,
+  );
   return changes(db) === 1;
 }
 
@@ -219,6 +223,56 @@ export function setTyped({ db }: RepoContext, id: string, text: string): void {
 
 export function setChild({ db }: RepoContext, id: string, childId: string): void {
   db.run('UPDATE drafts SET child_id = ? WHERE id = ?', childId, id);
+}
+
+// ── Review's own choices (v9; SR-C-06, CR-39) ──────────────────────────────
+/** Review's choices as stored: JSON and text, read by lib/capture/review-persist.logic. Null for a missing draft. */
+export interface DraftReviewRow {
+  putBack: string | null;
+  view: string | null;
+  text: string | null;
+  base: string | null;
+}
+
+export function getReview({ db }: RepoContext, id: string): DraftReviewRow | null {
+  const r = db.get<{ review_put_back: string | null; review_view: string | null; review_text: string | null; review_base: string | null }>(
+    'SELECT review_put_back, review_view, review_text, review_base FROM drafts WHERE id = ?',
+    id,
+  );
+  return r ? { putBack: r.review_put_back, view: r.review_view, text: r.review_text, base: r.review_base } : null;
+}
+
+/**
+ * Writes the named parts of Review's choices, with the fingerprint of the words they were made on. Choices made on
+ * other words (an older base) are cleared in the same statement, so old and new never mix. Only a draft still being
+ * read back takes them (not one recording or being let go). False for a missing draft, a bad view or a bad base.
+ * Never touches raw_transcript, typed_text or anything that syncs.
+ */
+export function setReview(
+  { db }: RepoContext,
+  id: string,
+  base: string,
+  patch: { putBack?: string; view?: 'fixes' | 'exact'; text?: string | null },
+): boolean {
+  if (!base) return false;
+  if (patch.view !== undefined && patch.view !== 'fixes' && patch.view !== 'exact') return false;
+  const same = 'review_base IS ?';
+  const sets: string[] = ['review_base = ?'];
+  const params: (string | null)[] = [base];
+  const part = (col: string, has: boolean, value: string | null) => {
+    if (has) {
+      sets.push(`${col} = ?`);
+      params.push(value);
+    } else {
+      sets.push(`${col} = CASE WHEN ${same} THEN ${col} ELSE NULL END`);
+      params.push(base);
+    }
+  };
+  part('review_put_back', patch.putBack !== undefined, patch.putBack ?? null);
+  part('review_view', patch.view !== undefined, patch.view ?? null);
+  part('review_text', patch.text !== undefined, patch.text ?? null);
+  db.run(`UPDATE drafts SET ${sets.join(', ')} WHERE id = ? AND state NOT IN ('recording', 'discarding')`, ...params, id);
+  return changes(db) === 1;
 }
 
 /** Removes the row only, never the file. */
