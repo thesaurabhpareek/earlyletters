@@ -644,6 +644,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (l) Lock off: Who can see it reads "Anyone who can unlock this iPhone can open the book." and the App lock row says Off. Lock on: it reads "You, after Face ID or your passcode." (Touch ID on the SE 3) and the row says On; the row opens Settings > App lock.
 - **Record:** S1-131 rows (a) to (l) with the build number, phone and iOS version; screenshots of the snapshot (b) with Asha only; cold start times for (k).
 
+### S1-140 Two tabs in the store build, three in the alpha (D-126, BL-604; branch feat/mobile-bl604-store-family-tab)
+- **Needs:** (a) to (c) a build of the `production` profile (servers off) on a fresh install, with Asha's book set up; (d) a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book.
+- **Steps:** (a) Production: look at the tab bar on Tonight and on the Book, in light and dark. (b) Production: Settings, Asha's book; scroll the whole page. (c) Production: Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Testflight: repeat (a) and (b), then tap Family and the "Write this book together" row.
+- **Expected:**
+  - (a) Two tab items, Tonight and Book, sharing the bar width; no Family item and no gap where it was.
+  - (b) No "Write this book together" row and no empty section where it sat; every other row as before.
+  - (c) VoiceOver reads two tabs ("Tonight, tab, 1 of 2", "Book, tab, 2 of 2"); the Large Content Viewer shows each title.
+  - (d) Alpha unchanged: three tabs; Family shows the coming-soon page; the row opens the coming-soon sheet.
+- **Record:** S1-140 rows (a) to (d): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
 - **Steps:** (a) Settings > Privacy. Read top to bottom. (b) Tap Names in notifications. In Reminders, turn reminders on first (the Names switch shows only while reminders are on), then turn names on; come back. (c) Tap Export your book, then Recently deleted, coming back each time. (d) Tap Privacy Policy, then Terms of Service. (e) Repeat (a) at AX5, with VoiceOver, and in dark mode.
