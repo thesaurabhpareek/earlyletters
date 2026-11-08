@@ -445,7 +445,7 @@ interface Source {
 
 function sourceFor(job: Job): Source | null {
   const d = getDraft(job.id);
-  if (d) return d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
+  if (d) return d.audioUri && d.rawTranscript == null && d.state !== 'recording' ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
   const e = getEntry(job.id);
   if (e && e.transcriptStatus === 'waiting' && e.audioUri) return { audioUri: e.audioUri, durationMs: e.audioDurationMs ?? null, childId: e.childId };
   return null;

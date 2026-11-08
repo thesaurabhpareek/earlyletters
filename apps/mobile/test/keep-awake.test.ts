@@ -46,7 +46,7 @@ describe('a take that ended by leaving the app says so', () => {
   // in test/listen.test.ts (reviewParams) and test/words-state.test.ts (stopLine). Here: the screens use them.
   it('Listening passes why the take stopped to Review (leaving the app, or a call or an alert)', () => {
     const listen = src('app/listen.tsx');
-    expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: reviewParams\(draft\.id, reason\) \}\)/);
+    expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: reviewParams\(next\.draftId, reason\) \}\)/);
   });
 
   it('Review shows one plain line for it', () => {

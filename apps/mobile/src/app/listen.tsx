@@ -54,6 +54,7 @@ import {
 } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { createStartTick } from '@/components/capture/start-tick.logic';
+import { afterFinish } from '@/components/capture/take-settle.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -249,10 +250,12 @@ export default function Listen() {
     // (the recorder has stopped), never on the timeout: leaving Listen unmounts it, and unmount always resets the gate.
     const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current).finally(() => closeTake(token)));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
-    const draft = kept.ok ? kept.value : null;
+    // A slow save still opens Review on the known take (BL-563); Review waits for the save (settleTake) before it
+    // reads the length, asks for words or keeps the letter. Only a save that threw, or a take let go meanwhile, leaves.
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
-    if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
-    else if (router.canGoBack()) router.back();
+    const next = afterFinish(kept, id, reason, router.canGoBack());
+    if (next.to === 'review') router.replace({ pathname: '/review', params: reviewParams(next.draftId, reason) });
+    else if (next.canGoBack) router.back();
     else router.replace('/');
   };
 

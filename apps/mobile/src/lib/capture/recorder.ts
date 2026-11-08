@@ -27,6 +27,7 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+import { settleTake as settle, type Settled } from '../../components/capture/take-settle.logic';
 import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format';
 
 /**
@@ -179,6 +180,11 @@ export function finalizeTake(recorder: AudioRecorder | null, draftId: string, re
     if (activeTake === draftId) setActiveTake(null);
   });
   return job;
+}
+
+/** Waits for the save of this take that is running, if any, and returns the finalized row (BL-563). Never throws. */
+export function settleTake(draftId: string, ms?: number): Promise<Settled<Draft>> {
+  return settle({ running: () => finalizing.get(draftId), read: () => getDraft(draftId) }, ms);
 }
 
 /** Ends a session that the parent discarded (the file is deleted by the caller after confirmation). */
