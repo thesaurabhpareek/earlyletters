@@ -51,7 +51,7 @@ const CHANGED: Record<string, string> = {
   'accept.title': 'Join a book',
   'accept.signInBody': 'You each write from your own phone, in the same book.',
   'accept.peeking': 'Opening the invite',
-  'accept.needsSync': 'To join, turn on sync and sharing in Settings, Privacy.',
+  'accept.needsSync': 'To join, choose Agree and sync in Settings, Account.',
   'accept.joinedBody': "Your letters and {inviter}'s sit side by side, each signed.",
   'accept.joinedBodyUnknown': 'Your letters and theirs sit side by side, each signed.',
 };

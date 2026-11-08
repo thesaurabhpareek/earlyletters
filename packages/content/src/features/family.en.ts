@@ -88,7 +88,8 @@ export const familyCopy = {
     join: 'Join the book',
     notNow: 'Not now',
     /** F11-U11: joining needs sync; the invite stays usable until it expires. */
-    needsSync: 'To join, turn on sync and sharing in Settings, Privacy.',
+    // Settings, Privacy has no switch (BL-485); "Agree and sync" is a row on Settings, Account after a no (offerSync).
+    needsSync: 'To join, choose Agree and sync in Settings, Account.',
     /** F11-REQ-024: the joined parent's signature for this book, prefilled with the inviter's suggestion. */
     signsAsLabel: 'What does {child} call you?',
     signsAsHelp: 'It signs your letters in this book.',

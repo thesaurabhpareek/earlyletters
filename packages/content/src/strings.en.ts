@@ -951,7 +951,10 @@ export const en = {
     title: "Before your book syncs",
     body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
     use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
-    changeLater: "You can change this any time in Settings, Privacy.",
+    // Names only controls that exist (in-app-disclosures.md row "Sensitive-data agreement": no withdrawal control yet,
+    // D-128, BL-485, so the sheet promises none). Settings, Account shows "Agree and sync" after a no (account-view.logic.ts
+    // `offerSync`); Settings, Delete account is in every servers-on build (EXPO_PUBLIC_ACCOUNT_DELETION on in production).
+    changeLater: "You can turn them on later in Settings, Account. Deleting your account removes your letters from our servers.",
     // v1.0 has no backup (D-059); counsel to re-approve this line with the HN-4 text.
     declineHelp: "If you keep it on this phone, syncing and sharing stay off.",
     agreeButton: "Agree and sync",

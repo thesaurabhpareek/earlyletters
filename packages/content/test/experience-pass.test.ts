@@ -199,7 +199,7 @@ const REGISTERED: Record<string, Text> = {
   'en.sensitiveConsent.body':
     'Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.',
   'en.sensitiveConsent.use': 'We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.',
-  'en.sensitiveConsent.changeLater': 'You can change this any time in Settings, Privacy.',
+  'en.sensitiveConsent.changeLater': 'You can turn them on later in Settings, Account. Deleting your account removes your letters from our servers.',
   'en.sensitiveConsent.declineHelp': 'If you keep it on this phone, syncing and sharing stay off.',
   'en.sensitiveConsent.agreeButton': 'Agree and sync',
   'en.sensitiveConsent.declineButton': 'Keep on this phone',
