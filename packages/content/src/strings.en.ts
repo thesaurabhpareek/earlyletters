@@ -878,7 +878,8 @@ export const en = {
     erase: {
       rowLabel: "Erase everything on this phone",
       // Final strings: proposals/account-security/content.md 4.11 (design 2.12), word for word: title, body, exportFirst,
-      // exportButton, button, confirmTitle, confirmBody, confirmButton, busy, doneA11y, failed.
+      // exportButton, button, confirmTitle, confirmBody, confirmButton, busy, doneA11y. `failed`, `backups` and
+      // `plusStays` are the council's wording of 8 Nov (founder decision), not 4.11's.
       title: "Erase everything on this phone",
       heading: "What is erased",
       body: "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.",
