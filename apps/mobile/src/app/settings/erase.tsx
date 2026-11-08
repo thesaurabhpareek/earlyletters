@@ -2,14 +2,16 @@ import { router, Stack, useFocusEffect } from 'expo-router';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
 import { useCallback, useRef, useState } from 'react';
 import { Alert, BackHandler, Platform, ScrollView, View } from 'react-native';
-import { eraseConfirmDialog, runEraseEverything, type ErasePhase } from '@/components/settings/wipe.logic';
+import { eraseConfirmDialog, eraseNoteKeys, runEraseEverything, type ErasePhase } from '@/components/settings/wipe.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
 import { ErrorLine } from '@/lib/auth/ui';
 import { announce, useTheme } from '@/lib/a11y';
+import { showSubscriptionNotice } from '@/lib/account-deletion/logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
+import { usePlan } from '@/lib/billing';
 import { copy } from '@/lib/copy';
 import { eraseEverything } from '@/lib/erase-everything';
 import { haptic } from '@/lib/haptics';
@@ -37,6 +39,8 @@ export default function EraseEverything() {
   const erasing = phase === 'erasing';
   const erasingRef = useRef(false);
   erasingRef.current = erasing;
+  // The same signal as Settings > Delete account's Plus card: Plus that will renew, or not yet known.
+  const plusRenews = showSubscriptionNotice(usePlan().details);
 
   // Android's back does nothing while erasing (the native stack's swipe is off below; this holds the hardware key).
   useFocusEffect(
@@ -80,6 +84,8 @@ export default function EraseEverything() {
     Alert.alert(d.title, d.body, d.buttons);
   };
 
+  const notes = eraseNoteKeys({ alpha: PLUS_ALPHA, plusRenews });
+
   return (
     <ScrollView key="review" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
       {header}
@@ -88,17 +94,13 @@ export default function EraseEverything() {
           {e.heading}
         </Text>
         <Text variant="body">{e.body}</Text>
-        {/* #552, F5: no letter limit in alpha, so the free-letter line is left out there. */}
-        {PLUS_ALPHA ? null : <Text variant="body">{e.freeLetters}</Text>}
-        <Text variant="subhead" tone="muted">
-          {e.speechStays}
-        </Text>
-        <Text variant="subhead" tone="muted">
-          {e.onThisPhone}
-        </Text>
-        <Text variant="subhead" tone="muted">
-          {e.backups}
-        </Text>
+        {/* One list, one style, so the order drawn is the order VoiceOver reads (wipe.logic.ts eraseNoteKeys). #552, F5:
+            no letter limit in alpha and no Plus products there, so the Plus and free-letter lines are left out. */}
+        {notes.map((k) => (
+          <Text key={k} variant="subhead" tone="muted">
+            {e[k]}
+          </Text>
+        ))}
       </View>
 
       {/* AX5: Export first, so it comes before the erase button at every size (design 2.12). */}

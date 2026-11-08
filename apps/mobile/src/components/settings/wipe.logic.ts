@@ -29,6 +29,24 @@ export function eraseConfirmDialog(
   };
 }
 
+/** The notes under the body on the Erase everything page, each a key of `copy.settings.erase`. */
+export type EraseNoteKey = 'backups' | 'onThisPhone' | 'speechStays' | 'plusStays' | 'freeLetters';
+
+/**
+ * Erase everything, step 1: which notes the page shows under the body, in the order they are read and drawn
+ * (council on #520, founder decision of 8 Nov; one list, so the visual order and the VoiceOver order cannot differ).
+ * What stays comes first and together: backups and saved exports, this phone only, the speech model. Then, in the
+ * store build only: the Plus line, and only while Plus will renew (the account-deletion screen's signal,
+ * `showSubscriptionNotice`), and last the free-letters line. In an alpha build (no letter limit, Plus products cannot
+ * load, `PLUS_ALPHA`) neither is ever shown.
+ */
+export function eraseNoteKeys(o: { alpha: boolean; plusRenews: boolean }): EraseNoteKey[] {
+  const keys: EraseNoteKey[] = ['backups', 'onThisPhone', 'speechStays'];
+  if (!o.alpha && o.plusRenews) keys.push('plusStays');
+  if (!o.alpha) keys.push('freeLetters');
+  return keys;
+}
+
 export type ErasePhase = 'review' | 'erasing';
 export type EraseOutcome = 'erased' | 'incomplete' | 'signed_in';
 

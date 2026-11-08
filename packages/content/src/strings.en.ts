@@ -882,13 +882,19 @@ export const en = {
       title: "Erase everything on this phone",
       heading: "What is erased",
       body: "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.",
-      // D-083: the free count starts again, because the person asked for deletion.
+      // D-083: the free count starts again, because the person asked for deletion. Store build only, last of the
+      // notes and in the same muted style as the others (council on #520, founder decision of 8 Nov).
       freeLetters: "Your free letters start again.",
       // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
       speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
       onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
-      // Privacy Review A on #520: the same fact the deletion page states (pages.en.ts, "What stays").
-      backups: "Backups of this phone you already made, such as iCloud Backup, are not changed.",
+      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page states (pages.en.ts, "What
+      // stays"). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
+      backups: "Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.",
+      // Council on #520 (founder decision, 8 Nov): the account-deletion screen's Plus line (features/account-deletion.en.ts
+      // subscription.body) with this screen's own first words. Store build only, and only while Plus will renew
+      // (showSubscriptionNotice); never in alpha.
+      plusStays: "Erasing does not cancel Plus. Billing continues through Apple until you cancel.",
       exportFirst: "Save a copy first?",
       exportButton: "Export your book",
       // Step 1's button: destructive, not the large button. It opens the confirm.
@@ -903,8 +909,10 @@ export const en = {
       busy: "Erasing",
       // Announced as the app returns to the start.
       doneA11y: "Everything on this phone is erased.",
-      // A file would not go: the rows stay, and the next launch finishes (lib/erase-everything.ts).
-      failed: "Erasing did not finish. Try again.",
+      // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
+      // finishes it too, and it erases every row then present, so a letter added in between goes as well
+      // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
+      failed: "Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },

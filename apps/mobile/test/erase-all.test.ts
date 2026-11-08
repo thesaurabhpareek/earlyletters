@@ -13,8 +13,10 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { en } from '@scribe/content';
+import { accountDeletionCopy, en } from '@scribe/content';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { eraseNoteKeys } from '../src/components/settings/wipe.logic';
+import { showSubscriptionNotice } from '../src/lib/account-deletion/logic';
 import { OPEN_PRAGMAS } from '../src/lib/db/expo-adapter';
 import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
@@ -564,6 +566,55 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expectEmpty();
   });
 
+  it('[DATA-REQ-024] the failed line, "Try again now": Erase everything again after a failed erase finishes it on the spot', async () => {
+    const { app, f, stray } = await filled();
+    let n = 0;
+    expect(
+      app.store.eraseEverythingLocal((uri, id) => {
+        if (n++ === 2) throw new Error('a file would not go');
+        app.erase.eraseAudioFile(uri, id);
+      }, app.all.eraseDeviceFiles),
+    ).toBe('incomplete');
+    expect(app.store.eraseEverythingPending()).toBe(true);
+    expect(rows('entries')).toBe(4); // the page is back with its failed line; nothing was lost yet
+
+    // The page offers the same Erase everything button again (erase.tsx); the second run is the same call, with the mark already set.
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expectEmpty();
+    expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
+    expect(app.store.eraseEverythingPending()).toBe(false);
+    expect(fetches).toBe(0);
+  });
+
+  it('[DATA-REQ-024] the failed line, "If you wait ... that erases anything you add before then": the next launch erases a letter written after the failed erase', async () => {
+    const { app, f } = await filled();
+    let n = 0;
+    expect(
+      app.store.eraseEverythingLocal((uri, id) => {
+        if (n++ === 2) throw new Error('a file would not go');
+        app.erase.eraseAudioFile(uri, id);
+      }, app.all.eraseDeviceFiles),
+    ).toBe('incomplete');
+
+    // The person leaves the page and keeps writing in Asha's book: a spoken letter and a typed one, both kept.
+    const late = take('0A1B2C3D-0000-4000-8000-00000000A5A9');
+    const lateId = '0199a5b0-0000-7000-8000-0000000a0009';
+    const lateTypedId = '0199a5b0-0000-7000-8000-0000000a000a';
+    app.store.saveEntry(letter({ id: lateId, childId: f.asha, audioUri: late, finalText: 'Asha, a letter after the failed erase.' }));
+    app.store.saveEntry(letter({ id: lateTypedId, childId: f.asha, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a typed one.' }));
+    expect(rowKept(lateId) && rowKept(lateTypedId)).toBe(true);
+    expect(app.store.eraseEverythingPending()).toBe(true);
+
+    // The next time the app opens it finishes the erase, and the new letters go with the old ones.
+    const next = await launch();
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect([rowKept(lateId), rowKept(lateTypedId), has(late)]).toEqual([false, false, false]);
+    expectEmpty();
+    expect(next.store.eraseEverythingPending()).toBe(false);
+    expect(await next.sweep.runLaunchSweep()).toEqual({});
+    expect(fetches).toBe(0);
+  });
+
   it('a phone that has signed in is refused and nothing changes (F17-REQ-026 is a separate flow)', async () => {
     const { app, f } = await filled();
     app.store.setSetting('sync.ownerId', '0199a5b0-0000-7000-8000-00000000aaaa');
@@ -799,7 +850,6 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     expect(e.confirmButton).toBe('Erase');
     expect(e.busy).toBe('Erasing');
     expect(e.doneA11y).toBe('Everything on this phone is erased.');
-    expect(e.failed).toBe('Erasing did not finish. Try again.');
   });
 
   it('the confirm: Keep everything first as cancel, Erase second and destructive; the screen shows it with a warning haptic, and no typed word', async () => {
@@ -880,5 +930,85 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
       announceDone: () => log.push('announce'),
     });
     expect(log).toEqual(['failed:null', 'phase:erasing', 'phase:review', 'failed:failed']);
+  });
+
+  it('[DATA-REQ-024] the failed line is the one the page shows for an unfinished erase, beside the Erase everything button it tells the person to press', () => {
+    const s = screen();
+    expect(s).toMatch(/failed \? <ErrorLine message=\{failed === 'signed_in' \? e\.signedIn : e\.failed\} \/> : null/);
+    expect(s.indexOf('<ErrorLine')).toBeLessThan(s.indexOf('label={e.button}'));
+  });
+});
+
+describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line (council on #520; founder decision of 8 Nov)', () => {
+  const e = en.settings.erase;
+  const screen = () => readFileSync(join(__dirname, '..', 'src/app/settings/erase.tsx'), 'utf8');
+
+  it('the three wording edits, word for word, and the lines that must not change', () => {
+    expect(e.backups).toBe('Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.');
+    expect(e.failed).toBe('Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.');
+    // The account-deletion screen's Plus card says the same, with its own first words.
+    expect(e.plusStays).toBe('Erasing does not cancel Plus. Billing continues through Apple until you cancel.');
+    expect(accountDeletionCopy.subscription.body).toBe(`Deleting your account ${e.plusStays.slice('Erasing '.length)}`);
+    // Unchanged on purpose.
+    expect(e.body).toBe('This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.');
+    expect(e.onThisPhone).toBe('This happens on this phone only. Nothing is sent anywhere.');
+    expect(e.freeLetters).toBe('Your free letters start again.');
+    const d = en.settings.delete;
+    expect(d.bookBodyThisPhone).toBe("Every letter and recording in {child}'s book will be removed from this phone.");
+    expect(d.bookEraseNowBody).toBe('Every letter and recording in it is erased for good.');
+    expect(d.bookEraseFailedToast).toBe('The book was not erased yet. The app finishes the next time it opens.');
+  });
+
+  it('button labels stay at most 22 characters', () => {
+    for (const label of [e.button, e.exportButton, e.confirmButton, e.back]) expect(label.length, label).toBeLessThanOrEqual(22);
+  });
+
+  it('the notes read: backups, this phone only, speech, then (store build, Plus renewing) the Plus line, then (store build) free letters', () => {
+    expect(eraseNoteKeys({ alpha: false, plusRenews: true })).toEqual(['backups', 'onThisPhone', 'speechStays', 'plusStays', 'freeLetters']);
+    expect(eraseNoteKeys({ alpha: false, plusRenews: false })).toEqual(['backups', 'onThisPhone', 'speechStays', 'freeLetters']);
+  });
+
+  it('the Plus line is hidden in alpha, hidden when Plus is off, shown when Plus is on in the store build (the account-deletion screen\'s signal)', () => {
+    const none = { status: 'none', willAutoRenew: null };
+    const active = { status: 'active', willAutoRenew: true };
+    const notRenewing = { status: 'active', willAutoRenew: false };
+    const expired = { status: 'expired', willAutoRenew: false };
+    const shows = (alpha: boolean, plan: { status: string; willAutoRenew: boolean | null }) => eraseNoteKeys({ alpha, plusRenews: showSubscriptionNotice(plan) }).includes('plusStays');
+    expect([shows(true, active), shows(true, none)]).toEqual([false, false]); // alpha: never
+    expect([shows(false, none), shows(false, expired), shows(false, notRenewing)]).toEqual([false, false, false]); // store build, Plus off or ending: no
+    expect(shows(false, active)).toBe(true); // store build, Plus on and renewing
+    expect(shows(false, { status: 'trial', willAutoRenew: null })).toBe(true);
+    // The page asks exactly that, from the device's plan, and from nothing a person can set.
+    const s = screen();
+    expect(s).toMatch(/const plusRenews = showSubscriptionNotice\(usePlan\(\)\.details\);/);
+    expect(s).toMatch(/import \{ showSubscriptionNotice \} from '@\/lib\/account-deletion\/logic';/);
+    expect(s).toMatch(/import \{ usePlan \} from '@\/lib\/billing';/);
+  });
+
+  it('the page draws the body, then the notes in that order, then the Export card, then the button; every note is the muted note style, none is body weight', () => {
+    const s = screen();
+    const at = (needle: string) => {
+      const i = s.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      return i;
+    };
+    expect(s.match(/\{e\.body\}/g)).toHaveLength(1);
+    expect(at('{e.body}')).toBeLessThan(at('notes.map('));
+    expect(at('notes.map(')).toBeLessThan(at('<Card variant="raised"'));
+    expect(at('<Card variant="raised"')).toBeLessThan(at('label={e.exportButton}'));
+    expect(at('label={e.exportButton}')).toBeLessThan(at('label={e.button}'));
+    // One list drawn once: the order on screen and the order VoiceOver reads are the same list. The page names no note itself.
+    expect(s).toMatch(/\{notes\.map\(\(k\) => \(\s*<Text key=\{k\} variant="subhead" tone="muted">\s*\{e\[k\]\}\s*<\/Text>\s*\)\)\}/);
+    expect(s).not.toMatch(/\be\.(backups|onThisPhone|speechStays|plusStays|freeLetters)\b/);
+    expect(s).toMatch(/const notes = eraseNoteKeys\(\{ alpha: PLUS_ALPHA, plusRenews \}\);/);
+  });
+
+  it('every note key names a string, and each is one plain sentence or two with the content rules\' characters', () => {
+    for (const k of eraseNoteKeys({ alpha: false, plusRenews: true })) {
+      const line = e[k];
+      expect(typeof line, k).toBe('string');
+      expect(line, k).not.toMatch(/[^\x20-\x7e]/);
+      expect(line, k).toMatch(/[.]$/);
+    }
   });
 });
