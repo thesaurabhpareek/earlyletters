@@ -237,6 +237,36 @@ export function writeSwipeAllowed(input: { text: string; writeFailed: boolean })
   return !(input.writeFailed && input.text.trim().length > 0);
 }
 
+/**
+ * Write's page is the keyboard's, not React's (founder report on TestFlight build 1, "won't let me type properly").
+ * The input is uncontrolled: what is typed is never sent back to it, so autocorrect, QuickType, dictation and a
+ * keyboard that composes (Hindi transliteration, marked text) are never interrupted. The screen re-renders only when
+ * the page goes from empty to words or back (the destinations turn on or off), never on each keystroke.
+ */
+export function pageEmptinessChanged(before: string, after: string): boolean {
+  return !before.trim() !== !after.trim();
+}
+
+/**
+ * The distance from the top of the screen to the top of Write's sheet, for KeyboardAvoidingView. Its own frame is
+ * measured inside the sheet, while the keyboard's top is measured from the top of the screen, so without this the
+ * page and its two buttons sat that much too low: "Keep private" and the last lines typed went behind the keyboard.
+ * An iOS page sheet reaches the bottom of the screen, so its top is the screen's height less the sheet's own height.
+ * Zero before the sheet has measured itself, and for a sheet as tall as the screen.
+ */
+export function sheetKeyboardOffset(windowHeight: number, sheetHeight: number): number {
+  if (!(windowHeight > 0) || !(sheetHeight > 0)) return 0;
+  return Math.max(0, Math.round(windowHeight - sheetHeight));
+}
+
+/**
+ * Whether Write's page should scroll to its end after the typed text grew: only when the caret is at the end of what
+ * is typed (the usual case, writing on). Editing in the middle never moves the page under the person's finger.
+ */
+export function followCaretToEnd(input: { selectionEnd: number | null; length: number }): boolean {
+  return input.selectionEnd === null || input.selectionEnd >= input.length;
+}
+
 /** What one write of Write's words did: the draft it wrote to, and the autosave line to show (null: unchanged). */
 export type WriteResult = { ok: boolean; draftId: string | null; saveState: 'saved' | 'failed' | null };
 

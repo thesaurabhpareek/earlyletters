@@ -45,7 +45,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await app.getByText('Licenses', { exact: true }).click();
   await expect(app.getByText('This app is built with the help of open work by many people. Thank you.')).toBeVisible();
   await expect(app.getByText('Language data', { exact: true })).toBeVisible();
-  await step('happy', 'Licenses', 'Its own page: the speech models and icons, the language data word for word, then every bundled library, font and vendored file grouped by licence. A row opens its notice, one at a time.');
+  await step('happy', 'Licenses', 'Its own page: what ships in the app, grouped by what it does (Speech, Recording and audio, Look and feel, App framework, Storage and data, Signing in, Everything else), each with one line on what it is for, and the language data word for word after Speech. A row opens to its version, copyright and full license, one at a time.');
 });
 
 test('[J16b] settings with server features on, signed out: Account, and no Delete account', async ({ app, record }) => {

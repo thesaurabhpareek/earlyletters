@@ -1,0 +1,61 @@
+# E2E-06  Read together: free with no limit. The 4th and later sessions open
+# just like the 1st, and no Plus sheet appears anywhere on the way.
+# Proves: F14-REQ-029 and F10-REQ-014 (Read together has no Plus gate: 5 and more
+# sessions, 0 Plus sheets), D-082 and D-083 (Plus gates only keeping a new letter
+# after the first 2; Read together is free for letters that exist; this supersedes
+# the "3 free sessions" rule of D-053 and PRD-REQ-020), C-REQ-023 (the Plus sheet
+# appears only at its trigger), LEGAL-REQ-050 (everything but Keep stays free).
+# The Asha seed holds 5 letters, already past the 2 free ones, on a Free phone:
+# any Plus sheet seen here would be a gate that D-082 removed.
+# "0 StoreKit calls" is not observable from Maestro; it is the device check D-3
+# (F14-REQ-029) and the call-site rule F14-REQ-019.
+appId: ${APP_ID}
+name: E2E-06 Read together, no gate
+tags:
+  - e2e
+  - E2E-06
+  - F14-REQ-029
+  - F10-REQ-014
+  - D-082
+  - D-083
+  - C-REQ-023
+  - LEGAL-REQ-050
+---
+- runFlow:
+    file: ../subflows/launch-fresh.yaml
+    env:
+      E2E_SEED: "asha"
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- assertVisible:
+    id: "book.readTogether"
+# 1. Six sessions in a row: each opens Read together, none shows the Plus sheet.
+#    The 4th, 5th and 6th are the ones the old 3-session rule would have gated.
+- repeat:
+    times: 6
+    commands:
+      - runFlow: ../subflows/read-together-once.yaml
+      - assertNotVisible:
+          id: "plusGate.screen"
+# 2. Reading one letter is never limited either.
+- tapOn:
+    id: "book.letter"
+    index: 0
+- assertVisible:
+    id: "letter.screen"
+- assertNotVisible:
+    id: "plusGate.screen"
+- runFlow: ../subflows/go-back.yaml
+# 3. A cold start keeps nothing that could count sessions toward a gate: the
+#    7th session after a relaunch opens the same way.
+- runFlow:
+    file: ../subflows/relaunch.yaml
+    env:
+      E2E_OFFLINE: "1"
+- tapOn:
+    id: "tab.book"
+- runFlow: ../subflows/read-together-once.yaml
+- assertNotVisible:
+    id: "plusGate.screen"
+- stopApp

@@ -269,7 +269,7 @@ describe('[#53] the letter page and Review are wired this way', () => {
     const gate = read('components/child/plus-gate.tsx');
     expect(gate).toMatch(/heldOn = 'tonight'/);
     // The words are chosen in plus-gate.logic.ts (P6, S22), which the sheet draws: signed in or out, online or off.
-    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, storeSupport: plan\.storeSupport \}\)/);
+    expect(gate).toMatch(/keepSheetView\(\{ lapsed, heldOn, synced, offline, storeSupport: plan\.storeSupport, alpha: PLUS_ALPHA \}\)/);
     const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
     for (const synced of [false, true]) {
       const base = { lapsed: false, heldOn: 'letter' as const, synced, storeSupport: 'available' as const };

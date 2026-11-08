@@ -105,7 +105,7 @@ function Shelf() {
       </Text>
       {rows.map((e) => (
         <Animated.View key={e.id} layout={layout} exiting={FadeOut.duration(reduced ? tokens.motion.fadeMs : tokens.motion.exitMs).reduceMotion(ReduceMotion.Never)}>
-          <ShelfCard v={shelfRow(e)} from={signatureOf(e)} eraseNow={actions.eraseNow} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
+          <ShelfCard v={shelfRow(e, undefined, bookOf(e))} from={signatureOf(e)} eraseNow={actions.eraseNow} onRestore={() => restore(e)} onErase={() => setErasing(e.id)} />
         </Animated.View>
       ))}
       <ConfirmSheet
@@ -122,6 +122,11 @@ function Shelf() {
 }
 
 /** "From Mama": the signature frozen with the letter, or its book's for this phone. */
+/** The letter's book, for its month-only dateline (F09-REQ-003). */
+function bookOf(e: DeletedEntry) {
+  return (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
+}
+
 function signatureOf(e: DeletedEntry): string {
   const child = (e.childId ? getChild(e.childId) : null) ?? getActiveChild();
   const signsAs = child ? authorOf(e, child) : (e.authorSignsAs ?? '');
