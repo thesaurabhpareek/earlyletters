@@ -18,16 +18,21 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   // The sign-off is the last line, under the note (CDesO-2).
   await expect(app.getByTestId('settings.signOff')).toHaveText(SIGN_OFF);
   const signOffBox = await app.getByTestId('settings.signOff').boundingBox();
-  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  // CPrivO-5: the short privacy line moved to Settings, Privacy (its last line).
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(0);
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
   expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is said once, under Your data, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
+  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, Your words, reminders, appearance, privacy, export, Recently deleted, Where your letters live, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
-  await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
-  await step('happy', 'Privacy', 'No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.');
+  // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.
+  await expect(app.getByTestId('privacy.promise')).toBeVisible();
+  await expect(app.getByText('What we never do', { exact: false })).toHaveCount(0);
+  await expect(app.getByText('Anyone who can unlock this iPhone can open the book.', { exact: true })).toBeVisible();
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  await step('happy', 'Privacy', 'The promise word for word at the top, with no icon. Where your book is kept (on this phone, not sent to us; iPhone backup includes your recordings, if iCloud Backup is on; speech written down on this phone; no usage or crash reports), Who can see it (anyone who can unlock this iPhone; Names in notifications; notifications never show the words), What you can do (Export, Recently deleted; no account in this version), then the Privacy Policy and Terms, and the short privacy line last.');
   await app.goBack();
 
   await app.getByText('Appearance', { exact: true }).first().click();

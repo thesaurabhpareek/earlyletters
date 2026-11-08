@@ -177,6 +177,24 @@ describe('the offer at the end of first run (CPO-2)', () => {
   });
 });
 
+describe('Privacy, Who can see it, while the lock is on (content.md 4.10)', () => {
+  it('the lock-on lines are content.md word for word, never an absolute "Only you"', async () => {
+    const { appLockCopy } = await import('../src/lib/app-lock/copy');
+    expect(appLockCopy.privacy.whoLockOn).toEqual({
+      faceId: 'You, after Face ID or your passcode.',
+      touchId: 'You, after Touch ID or your passcode.',
+      passcode: 'You, after your iPhone passcode.',
+    });
+    for (const v of Object.values(appLockCopy.privacy.whoLockOn)) expect(v).not.toMatch(/only you/i);
+  });
+
+  it('the page shows them only while the lock is on, with the App lock row', () => {
+    const page = code('src/app/settings/privacy.tsx');
+    expect(page).toContain('lockOn ? appLockCopy.privacy.whoLockOn[method] : p.whoLockOff');
+    expect(page).toContain("onPress={go('/settings/app-lock')}");
+  });
+});
+
 describe('Settings', () => {
   it('home has an App lock row with On or Off, opening the App lock page', () => {
     const home = code('src/app/settings/index.tsx');

@@ -39,6 +39,11 @@ const raw = {
   turnOffReason: 'Confirm it is you to turn off the lock',
   exportReason: 'Confirm it is you to export your book',
   settingsHome: { appLock: 'App lock', appLockOn: 'On', appLockOff: 'Off' },
+  // Privacy, Who can see it, while the lock is on (content.md 4.10; replaces "Only you, on this phone.", an absolute).
+  // New privacy statements: they go into claims-registry.yaml before release (LEGAL-REQ-044).
+  privacy: {
+    whoLockOn: { faceId: 'You, after Face ID or your passcode.', touchId: 'You, after Touch ID or your passcode.', passcode: 'You, after your iPhone passcode.' },
+  },
 } as const;
 
 export const appLockCopy: typeof raw = withBrandName(raw);

@@ -68,7 +68,9 @@ export const en = {
       title: "{app}",
       subtitle: "Letters to your child, in your own words and voice.",
       body: "Talk for a minute, or type a few lines. Kept for {child} to read and hear for years.",
-      freeLine: "Your first two letters are free.",
+      // Founder decision F5 (1 Nov 2026): said once at setup, in the store build; the same words as billingCopy.membership.line.
+      // An alpha build shows billingCopy.alpha.note here instead (billing/alpha.ts plusLineFor).
+      freeLine: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.",
       startButton: "Begin the book",
       signInButton: "I already have a book",
       joinButton: "I was invited",
@@ -895,14 +897,46 @@ export const en = {
       sensitiveLabel: "Sync and family sharing",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.
-      sensitiveHelp: "Letters can hold health details about you or {child}. This row shows whether syncing is on. There is no switch to turn it off yet.",
+      // CPrivO-5 (1 Nov 2026): "yet" dropped, it leaned toward a promise (privacy-settings.md 4, flag).
+      sensitiveHelp: "Letters can hold health details about you or {child}. This row shows whether syncing is on.",
       sensitiveOn: "On",
       sensitiveOff: "Off, kept on this phone",
       sensitiveSignedOut: "Not signed in",
       lockScreenLabel: "Names in notifications",
+      // The Names in notifications row's value on Privacy: its own words, not the sync status words.
+      namesValueOn: "On",
+      namesValueOff: "Off",
       promiseTitle: "Our promise",
       // Shown above the switches. The promise itself is `trust.promise`.
       controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
+      // The Privacy page as ruled (CPrivO-5; privacy-settings.md 3 and 4; SETTINGS_AND_ACCOUNT.md 11): the promise
+      // (`trust.promise`) at the top, then facts, then controls, then the documents. Every line below is a privacy
+      // statement for the claims registry (LEGAL-REQ-044) once it exists; `legal` reviews them before release.
+      whereTitle: "Where your book is kept",
+      // P2. Shown only where nothing can have reached us: a build without sync (every build 1 profile: SERVER_FEATURES
+      // off), or a sync build whose status is exactly 'off' (consent declined, nothing ever sent). Never while the
+      // status is unknown or signed out (CTO ruling, 8 Nov 2026: a parent who synced and signed out has letters on our
+      // servers). The backup clause moved to its own line, worded as on Where your letters live (CCO-8).
+      keptOnPhone: "Your letters and recordings are kept on this phone. They are not sent to us.",
+      // P2b, sync on (build 2, D-128): text syncs, recordings do not while owner backup is off.
+      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings are kept on this phone.",
+      // The iPhone backup, one wording on both pages (CTO ruling, 8 Nov 2026): CCO-8's recordings-only variant
+      // (content.md 1 item 14) until the device restore drill passes. Same words as whereLive.iphoneBackup.
+      iphoneBackupTitle: "iPhone backup",
+      iphoneBackup: "Includes your recordings, if iCloud Backup is on.",
+      // P3: on-device speech (ADR 0015); Privacy Policy 2.
+      speechOnPhone: "Your speech is written down on this phone.",
+      // P4: shown only in a build without the analytics switch (capabilities.analytics off, D-095); no crash SDK.
+      noReports: "This version collects no usage or crash reports.",
+      whoTitle: "Who can see it",
+      // content.md 4.10 privacy.whoLockOff: the plain fact while there is no app lock (CPrivO-5 replaces P6's
+      // "Only you, on this phone.", false for anyone who knows the passcode).
+      whoLockOff: "Anyone who can unlock this iPhone can open the book.",
+      // P8: reminders fill names and months only (planner.ts), never letter text (M13 rule 3, Privacy Policy 5).
+      notificationsLine: "Notifications never show the words of a letter.",
+      canDoTitle: "What you can do",
+      // P9, ruled `deleteAccountNotYet` (build without accounts). Claims no more than the phone.
+      noAccount: "There is no account in this version. Deleting the app removes its letters and recordings from this phone.",
       documentsTitle: "Our promises in full",
       privacyPolicyLink: "Privacy Policy",
       healthPrivacyLink: "Consumer Health Data Privacy Policy",
@@ -1183,12 +1217,16 @@ export const en = {
     },
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
+    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your data); Your words
+    // replaces the Word for word switch (Writing).
+    whereLive: "Where your letters live",
+    yourWords: "Your words",
     // Transcription language (D-056). The app itself is in English at v1.0.
     languageLabel: "Spoken language",
     languageHelp: "The language you speak your letters in.",
     // "Settings, Plan" is the path the Plus legal text and Subscription Terms name.
     planLabel: "Plan",
-    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082
+    planHelp: "Your first two letters are free. Plus lets you keep adding letters.", // D-082; under the Plan row only while Plus is off (PL-3)
     remindersLabel: "Reminders",
     exportLabel: "Export your book",
     exportHelp: "Every letter and recording, free, any time.",
@@ -1214,6 +1252,50 @@ export const en = {
     // ever stops being true: "Made with care".
     signOff: "Made with care in California",
     strugglingA11yHint: "Shows free, confidential support lines.",
+  },
+
+  // Settings, Where your letters live (settings-ia.md 4; design.md 2.7; content.md 4.7; rulings CCO-8, CPrivO-4).
+  // Replaces the Recordings page. Language downloads live only in Storage.
+  whereLive: {
+    title: "Where your letters live",
+    onPhoneTitle: "On this phone",
+    // Build 1: SERVER_FEATURES and BACKUP off in every profile.
+    onPhone: "Your letters and recordings are kept on this iPhone.",
+    // Build 2, sync on, owner backup off (privacy P2b). Never "stay" (in-app-disclosures 2, rule 2).
+    onPhoneSynced: "Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.",
+    newPhoneTitle: "If you get a new phone",
+    iphoneBackup: {
+      title: "iPhone backup",
+      // CCO-8: until the device restore drill passes, no line says the iPhone backup brings the book back. This is
+      // content.md 1 item 14's recordings-only variant: recordings sit in Documents, which iOS backs up (D-033); the
+      // letters database line ("Includes your letters and recordings, ...") waits for the drill.
+      body: "Includes your recordings, if iCloud Backup is on.",
+      howTo: "How to check",
+      howToHint: "Opens Apple's help page.",
+    },
+    // The date is when a copy was prepared, not proof it was saved (settings.export.lastExport, D-085).
+    exportEmpty: "Save a copy any time.",
+    backupTitle: "Encrypted backup",
+    // Exec Q4, D-126: say what this version does, promise no update.
+    backupLater: "Not in this version",
+    // CPrivO-4 and CCO-8: an export is a copy, never a restore. Content's full footer opens with "Your iPhone backup
+    // brings the book to a new iPhone."; that sentence waits for the restore drill, so it is not here.
+    footer: "An export is a copy to open and keep. We hold no copy.",
+  },
+
+  // Settings, Your words (settings-ia.md 4; design.md 2.8; content.md 4.8). Two named choices replace the Word for
+  // word switch; the stored setting (review.defaultView, 'fixes' or 'exact', D-086) is unchanged.
+  yourWords: {
+    title: "Your words",
+    marked: {
+      label: "Small fixes, marked",
+      line: "An um or a repeat comes out, marked, and you can put it back.",
+    },
+    exact: {
+      label: "Exactly as said",
+      line: "Every um and false start stays in.",
+    },
+    footer: "Either way, we never rewrite your words.",
   },
 
   // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
