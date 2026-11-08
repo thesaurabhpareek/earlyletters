@@ -8,7 +8,6 @@ import { privacyPage } from '@/components/settings/privacy.logic';
 import { Text } from '@/components/ui/text';
 import { capabilities } from '@/lib/capabilities';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
-import { useAuth } from '@/lib/auth/session-provider';
 import { copy, fill } from '@/lib/copy';
 import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
@@ -28,8 +27,9 @@ import { lockScreenNamesOn } from '@/lib/reminders';
  *   (capabilities.analytics; P4 only where the build cannot collect, D-095); the sync row when the build has sync.
  * - Who can see it: the plain fact while there is no app lock (`whoLockOff`); Names in notifications, which opens
  *   Reminders; P8 as the footer. APP_LOCK_ROW: feat/mobile-app-lock adds its row and the `whoLockOn` lines here.
- * - What you can do: Export your book, Recently deleted, Delete account (build 2, D-129), and P9 in a build with no
- *   account. ERASE_ROW: "Erase everything on this phone" joins here when #520 lands (design.md 2.11).
+ * - What you can do: Export your book, Recently deleted, and P9 in a build with no account. Delete account stays on
+ *   Settings home only (D-129: the one screen that names its route). ERASE_ROW: "Erase everything on this phone"
+ *   joins here when #520 lands (design.md 2.11).
  * - Our promises in full: the Privacy Policy and the Terms, the two pages the website serves
  *   (test/privacy-documents.test.ts). Then `trust.short`, the "Private by default" line, moved here from Settings home.
  *
@@ -40,7 +40,6 @@ export default function PrivacySettings() {
   const p = copy.settings.privacy;
   const analytics = useAnalyticsConsent();
   const sensitive = useSensitiveDataStatus();
-  const auth = useAuth();
   const [busy, setBusy] = useState(false);
   const [names, setNames] = useState(lockScreenNamesOn);
   // Names in notifications changes on the Reminders page: re-read it when Privacy comes back.
@@ -50,7 +49,6 @@ export default function PrivacySettings() {
     sync: capabilities.sync,
     syncStatus: sensitive.status,
     analytics: capabilities.analytics,
-    accountDeletion: capabilities.accountDeletion && auth.signedIn,
     signIn: capabilities.signIn,
   });
 
@@ -119,7 +117,8 @@ export default function PrivacySettings() {
           <ListRow title={copy.settingsHome.exportLabel} trailing="chevron" onPress={go('/settings/export')} />
           <ListRow title={copy.settings.delete.recentlyDeleted} trailing="chevron" onPress={go('/settings/recently-deleted')} />
           {/* ERASE_ROW: "Erase everything on this phone" (#520) joins here once it is merged. */}
-          {page.deleteAccountRow ? <ListRow title={copy.settingsHome.deleteAccountLabel} variant="destructive" trailing="chevron" onPress={go('/settings/delete-account')} /> : null}
+          {/* No Delete account row here: D-129 keeps Settings home the only screen that names that route
+              (test/account-deletion-switch.test.ts). */}
         </ListSection>
 
         {/* Only documents the website serves (P6b critics' M1): it took /health-privacy and /subprocessors down (#169), and

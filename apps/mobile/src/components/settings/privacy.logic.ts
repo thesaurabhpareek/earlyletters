@@ -9,7 +9,7 @@
  *   neither is known to be true. Then the iPhone backup line (CCO-8 wording, same as Where your letters live), P3
  *   `speechOnPhone` always, and P4 `noReports` only where the build has no analytics switch.
  * - The sync row only in a build with sync; the analytics switch only in a build with analytics (D-095).
- * - P9 `noAccount` only in a build with no sign-in; Delete account only where the account can be deleted (D-129).
+ * - P9 `noAccount` only in a build with no sign-in; Delete account is never here (D-129: only Settings home names its route).
  */
 export type PrivacyFact = 'keptOnPhone' | 'keptSynced' | 'speechOnPhone' | 'noReports';
 export type SyncStatus = 'on' | 'off' | 'unknown' | 'signed_out';
@@ -19,10 +19,9 @@ export type PrivacyPage = {
   syncRow: boolean;
   analyticsSwitch: boolean;
   noAccountLine: boolean;
-  deleteAccountRow: boolean;
 };
 
-export function privacyPage(input: { sync: boolean; syncStatus: SyncStatus; analytics: boolean; accountDeletion: boolean; signIn: boolean }): PrivacyPage {
+export function privacyPage(input: { sync: boolean; syncStatus: SyncStatus; analytics: boolean; signIn: boolean }): PrivacyPage {
   const facts: PrivacyFact[] = [];
   if (!input.sync || input.syncStatus === 'off') facts.push('keptOnPhone');
   else if (input.syncStatus === 'on') facts.push('keptSynced');
@@ -33,6 +32,5 @@ export function privacyPage(input: { sync: boolean; syncStatus: SyncStatus; anal
     syncRow: input.sync,
     analyticsSwitch: input.analytics,
     noAccountLine: !input.signIn,
-    deleteAccountRow: input.accountDeletion,
   };
 }
