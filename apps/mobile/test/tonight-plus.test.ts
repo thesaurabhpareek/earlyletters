@@ -9,6 +9,7 @@ import { join } from 'node:path';
 import { billingCopy, en } from '@scribe/content';
 import type { PlanView } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
+import { plusLineFor } from '../src/lib/billing/alpha';
 import { draftCard, type DraftFields } from '../src/components/tonight/draft-card.logic';
 import {
   HELD_COLLAPSE_AT,
@@ -99,6 +100,20 @@ function draft(id: string, over: Partial<DraftFields> = {}): DraftFields {
   } as DraftFields;
 }
 const cards = (ds: DraftFields[]) => ds.map((d) => draftCard(d, new Date(NOW)));
+
+describe('[F14-REQ-040] alpha: Tonight matches the Keep sheet', () => {
+  it('the alpha words are the Keep sheet note, with no "needs Plus"', () => {
+    expect(plusLineFor(true, plusLine())).toBe(billingCopy.alpha.note);
+    expect(plusLineFor(true, plusLine())).not.toMatch(/needs Plus/i);
+    expect(plusLineFor(false, plusLine())).toBe(billingCopy.tonight.plusLine);
+  });
+
+  it('PlusLine draws plusLineFor(PLUS_ALPHA, ...), not the store line alone (fails on the old behaviour)', () => {
+    const src = code('components/tonight/plus-line.tsx');
+    expect(src).toMatch(/plusLineFor\(PLUS_ALPHA, plusLine\(\)\)/);
+    expect(src).not.toMatch(/\{plusLine\(\)\}/);
+  });
+});
 
 describe('[F14-REQ-041] held letters fold into one row', () => {
   it('folds from two', () => {
