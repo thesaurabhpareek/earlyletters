@@ -23,7 +23,9 @@ approved and released  -->  tag ios-v1.0.0 on the RC's commit  -->  GitHub Relea
 alongside, never inside the binary:  migrations (APPLY.md order, founder)  |  packs, config, content (scripts/packs, founder's key)
 ```
 
-Dates for v1.0 (ROADMAP 2.1): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+Original dates for v1.0 (ROADMAP 2.1, superseded; the current dates follow this line): C0 Wed 14 Oct, Beta App Review submitted Thu 15 Oct, C1 Mon 19 Oct, feature freeze Mon 26 Oct, C1 exit and counsel sign-off Thu 29 Oct, release candidate `ios-v1.0.0-rc.<n>` from `release/1.0` by Fri 30 Oct, submit Mon 2 Nov (Fri 6 Nov latest), release planned Mon 16 Nov with 9 to 20 Nov as the buffer.
+
+Current dates: the build 2 freeze is Tue 3 Nov and the go/no-go is Mon 9 Nov (D-130). The first store build is targeted for submission on Tue 1 Dec (D-121) and is re-planned after the go/no-go (D-106).
 
 Who does what:
 
