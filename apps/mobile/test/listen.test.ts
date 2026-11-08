@@ -8,10 +8,12 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { en, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   afterForeground,
   elapsedClock,
+  finishWithin,
+  FINISH_TIMEOUT_MS,
   isMicProblem,
   listenRoom,
   promptLine,
@@ -294,5 +296,41 @@ describe('the screen uses them (source)', () => {
   it('the screen types no user-facing words (packages/content only)', () => {
     const jsxText = [...c.matchAll(/>\s*([A-Za-z][^<>{}]*?)\s*</g)].map((m) => m[1]).filter((t) => /[a-z]{3,}/i.test(t));
     expect(jsxText).toEqual([]);
+  });
+});
+
+describe('[BL-563] Listen never sticks on "finishing", and never offers Let it go there', () => {
+  it('finishing offers no discard: the only control left never deletes the take', () => {
+    expect(listenRoom('finishing').discard).toBe(false);
+    expect(listenRoom('recording').discard).toBe(true);
+    expect(listenRoom('paused').discard).toBe(true);
+  });
+
+  it('a save that throws (a full disk) resolves as failed instead of escaping', async () => {
+    const r = await finishWithin(Promise.reject(new Error('SQLITE_FULL')), 3000);
+    expect(r).toEqual({ ok: false, why: 'failed' });
+  });
+
+  it('a save that hangs lets the screen leave within 3 s', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = finishWithin(new Promise<never>(() => {}));
+      vi.advanceTimersByTime(FINISH_TIMEOUT_MS);
+      await expect(pending).resolves.toEqual({ ok: false, why: 'timeout' });
+      expect(FINISH_TIMEOUT_MS).toBeLessThanOrEqual(3000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a save that works passes the kept take through', async () => {
+    await expect(finishWithin(Promise.resolve({ id: 'd1' }))).resolves.toEqual({ ok: true, value: { id: 'd1' } });
+  });
+
+  it('the screen waits through finishWithin and never deletes the draft on that path', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
+    expect(end).not.toMatch(/deleteDraft|abandonTake/);
   });
 });
