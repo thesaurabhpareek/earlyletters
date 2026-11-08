@@ -86,6 +86,8 @@ export interface SnapshotWaiting extends Draft {
   audioOnPhone: boolean;
   /** Its size on disk, when known. */
   audioSizeOnPhone: number | null;
+  /** The person's own words from Review's Change words, kept on the draft (v9, #522); null when they changed nothing. */
+  changedWords?: string | null;
 }
 
 /** The phone's consent choices for account.json (schema 1.1.0). */
@@ -337,7 +339,8 @@ function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): 
   if (waitingHasAudio(d)) lines.push(`${l.recording}: ${waitingAudioPath(d.id, d.audioUri)}`);
   lines.push(`${w.status}: ${w.reasons[waitingReason(d)]}`);
   const parts: string[] = [];
-  if (has(d.typedText)) parts.push(draftSpoken(d) ? `${w.typed}:\n${d.typedText}` : d.typedText);
+  if (has(d.changedWords)) parts.push(`${w.changed}:\n${d.changedWords}`);
+  if (has(d.typedText)) parts.push(draftSpoken(d) || has(d.changedWords) ? `${w.typed}:\n${d.typedText}` : d.typedText);
   if (draftSpoken(d) && has(d.rawTranscript)) parts.push(`${l.exactlyHeard}:\n${d.rawTranscript}`);
   return `${lines.join('\n')}\n${parts.length ? `\n${parts.join('\n\n')}\n` : ''}`;
 }
@@ -737,7 +740,8 @@ export async function dataFiles(
         language: d.language ?? null,
         typed_text: has(d.typedText) ? d.typedText : null,
         raw_transcript: draftSpoken(d) && has(d.rawTranscript) ? d.rawTranscript : null,
-        changed_words: null,
+        // The person's own words from Review's Change words (#522), never a machine-tidied version.
+        changed_words: has(d.changedWords) ? d.changedWords : null,
         text_file: waitingTextPath(d.id),
         audio,
         audio_missing: missing ? { reason: missing } : null,

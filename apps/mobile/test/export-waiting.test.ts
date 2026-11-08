@@ -234,6 +234,17 @@ describe('[PL-2, F14-REQ-039] letters that are waiting are in the export (schema
     }
   });
 
+  it("[#522] the person's own words from Change words go in too, as written, beside what was heard", async () => {
+    const changed = 'You fell asleep on my shoulder at the window, and I did not move for an hour.';
+    const waiting = waitingLetters().map((d) => (d.id === 'w1' ? { ...d, changedWords: changed } : d));
+    const { files } = await zipOf(snapshot({ waiting }));
+    const w1 = strFromU8(files['waiting/w1.txt']);
+    expect(w1).toContain(`Your words, as you changed them:\n${changed}`);
+    expect(w1).toContain(`Exactly what you said:\n${HELD_SPOKEN}`);
+    expect(waitingJson(files).waiting[0]).toMatchObject({ changed_words: changed, raw_transcript: HELD_SPOKEN });
+    expect(waitingJson(files).waiting[1].changed_words).toBeNull();
+  });
+
   it("[local day] a letter made at 8 pm in California keeps that day, not the next day in UTC (Review's todayISO rule)", async () => {
     expect(new Date('2027-03-12T04:00:00.000Z').getHours()).toBe(20); // the pin took: 04:00Z is 8 pm PST on March 11
     const late = draft({ id: 'w8pm', createdAt: '2027-03-12T04:00:00.000Z', captureMode: 'typed', typedText: 'Bath, then the moon.' });

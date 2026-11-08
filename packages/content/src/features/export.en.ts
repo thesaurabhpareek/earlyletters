@@ -68,6 +68,7 @@ export const exportCopy = {
       unrecoverable: 'This recording has no sound in it.',
     },
     typed: 'What you wrote',
+    changed: 'Your words, as you changed them',
   },
 
   /** index.html, the offline reader. */

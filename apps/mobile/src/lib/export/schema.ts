@@ -326,7 +326,7 @@ export interface ExportWaitingLetter {
   typed_text: string | null;
   /** Exactly as heard, when the words have been written down. */
   raw_transcript: string | null;
-  /** The person's own changes in Review (reserved; null until Review keeps them). */
+  /** The person's own words from Review's Change words, when they changed any (v9 local draft, #522); else null. */
   changed_words: string | null;
   text_file: string;
   audio: ExportWaitingAudio | null;
