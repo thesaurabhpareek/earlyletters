@@ -1,6 +1,6 @@
 /// <reference types="node" />
 /**
- * RT-PAY-17: the Keep gate never says "needs Plus" before StoreKit has answered. It waits, briefly, for the first
+ * RT-PLS-10: the Keep gate never says "needs Plus" before StoreKit has answered. It waits, briefly, for the first
  * entitlement read of this process (plan-store planReadiness, KEEP_PLAN_WAIT_MS); on timeout it decides from the cached
  * snapshot; with no read and no snapshot it holds the letter and opens no Plus sheet. Free letters never wait on any of
  * this. The plan store is a fake; the ledger is the real one over a fake database. Fictional Asha family only.
@@ -56,7 +56,7 @@ beforeEach(() => {
   configureLedgerStorage(null);
 });
 
-describe('[RT-PAY-17] the Keep gate waits for the first StoreKit read', () => {
+describe('[RT-PLS-10] the Keep gate waits for the first StoreKit read', () => {
   it('asks the plan store to wait for the first read, with a short bounded timeout', async () => {
     await keepLetterGate(NOW);
     expect(h.waits).toEqual([KEEP_PLAN_WAIT_MS]);

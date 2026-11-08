@@ -22,7 +22,7 @@ const CACHE_REFRESH_MS = 24 * 60 * 60 * 1000;
 let snapshot: NativeEntitlementSnapshot | null = null;
 let plan: PlanState = EMPTY_PLAN;
 let hydrated = false;
-/** A StoreKit read landed in this process (RT-PAY-17): the plan is Apple's answer, not only the cache. */
+/** A StoreKit read landed in this process (RT-PLS-10): the plan is Apple's answer, not only the cache. */
 let readLanded = false;
 let inflight: Promise<void> | null = null;
 const listeners = new Set<() => void>();
@@ -103,7 +103,7 @@ export function refreshPlan(): Promise<void> {
 }
 
 /**
- * How much the plan in hand is worth to a gate (RT-PAY-17):
+ * How much the plan in hand is worth to a gate (RT-PLS-10):
  *   'read'      StoreKit answered in this process.
  *   'cached'    no answer yet (slow, or it failed), but a snapshot from an earlier read is on this phone.
  *   'none'      no answer and no snapshot: the phone does not know yet whether this person has Plus.

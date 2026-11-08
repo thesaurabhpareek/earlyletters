@@ -508,7 +508,7 @@ export default function Review() {
     const g = await keepSheetFor(wordsOnScreen);
     if (g === null) return false;
     if (g.decision.kind === 'hold') {
-      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PAY-17): hold the letter exactly as
+      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PLS-10): hold the letter exactly as
       // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
       // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
       // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses. A second

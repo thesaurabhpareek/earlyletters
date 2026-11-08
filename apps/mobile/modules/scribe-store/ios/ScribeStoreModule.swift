@@ -259,6 +259,8 @@ final class TransactionListener: @unchecked Sendable {
         onChange(Entitlements.isLive(transaction))
       }
     }
+    // RT-PAY-17: a purchase left unfinished (Ask to Buy approved, an interrupted purchase, a kill mid-purchase) is
+    // finished here at start, once per id (claim), and only when verified. Device check: DEVICE_TEST_PLAN S1-132 (a) to (c).
     unfinishedTask = Task.detached(priority: .background) { [weak self] in
       var finishedAny = false
       for await result in Transaction.unfinished {

@@ -171,7 +171,7 @@ describe('[S19] release test catalog', () => {
 
   it('refuses a planted bad citation (self-check of the resolver)', () => {
     const resolve = makeResolver();
-    for (const t of ['E2E-99b', 'E2E-16', 'E2E-01c', 'S1-99', 'D-999', 'V-99', 'apps/mobile/test/nope.test.ts', 'plan.ts', 'SR-C-99', 'IMP-9999', 'MOB-999', 'CR-999', 'F99-REQ-999']) {
+    for (const t of ['E2E-99b', 'E2E-16', 'E2E-01c', 'S1-99', 'S1-999', 'D-999', 'V-99', 'apps/mobile/test/nope.test.ts', 'plan.ts', 'SR-C-99', 'IMP-9999', 'MOB-999', 'CR-999', 'F99-REQ-999']) {
       expect(resolve(t), t).toBeNull();
     }
     for (const t of ['E2E-01', 'E2E-01a', 'E2E-13c', 'J11-05', 'S2-07', 'V-06', '.github/workflows/ci.yml', 'SR-C-04', 'IMP-67', 'CR-37', 'F14-REQ-040', '#480']) {

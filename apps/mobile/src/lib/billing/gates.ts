@@ -70,13 +70,13 @@ export function freeLettersAllowance(): number {
 
 /**
  * How long the Keep gate waits for the first StoreKit read of this process before it decides from the cached
- * snapshot (RT-PAY-17). Short: after launch the read has almost always landed, and the wait only runs until it does.
+ * snapshot (RT-PLS-10). Short: after launch the read has almost always landed, and the wait only runs until it does.
  */
 export const KEEP_PLAN_WAIT_MS = 1000;
 
 /**
  * The Keep step's answer: packages/core's decision, or `hold` when keeping would need Plus but the phone does not
- * know yet whether this person has it (no StoreKit read and no cached snapshot, RT-PAY-17). On `hold` the letter is
+ * know yet whether this person has it (no StoreKit read and no cached snapshot, RT-PLS-10). On `hold` the letter is
  * held exactly as it is and no Plus sheet opens: a payer is never shown "needs Plus" before Apple has answered.
  */
 export type KeepGateDecision = KeepLetterDecision | { kind: 'hold'; reason: 'plan_unread' };
@@ -101,7 +101,7 @@ async function readiness(): Promise<PlanReadiness> {
  * screen). Call it after the recording is hashed and BEFORE saving. It also
  * heals the ledger (a reinstall or a backup restore). Only when the answer
  * would be the Keep sheet does it wait, briefly, for the first StoreKit read
- * (RT-PAY-17), then decide again; on timeout it decides from the cached
+ * (RT-PLS-10), then decide again; on timeout it decides from the cached
  * snapshot. A free letter never waits. On `offer`, the caller opens the Keep sheet and returns
  * WITHOUT saving: the draft stays exactly where it is. On `hold` (no read and
  * no snapshot), the caller holds the letter and opens no sheet. Never throws;

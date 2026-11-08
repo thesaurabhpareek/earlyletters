@@ -46,7 +46,7 @@ export type KeepSheetInput = {
   synced: boolean;
   /** "See Plus" answered that the store could not be reached. */
   offline: boolean;
-  /** "Redeem a code": Apple's code sheet answered `failed` (RT-PLS-10). */
+  /** "Redeem a code": Apple's code sheet answered `failed` (RT-OFC-06). */
   codeFailed?: boolean;
   storeSupport: StoreViewSupport;
   /**
@@ -106,7 +106,7 @@ export function keepSheetView({ lapsed, heldOn, synced, offline, codeFailed = fa
 export type SheetTapNote = 'offline' | 'codeFailed' | null;
 
 /**
- * One tap on "See Plus" or "Redeem a code" (RT-PAY-09, RT-OFC-06, RT-PLS-10). Offline, Apple's sheet would open with
+ * One tap on "See Plus" or "Redeem a code" (RT-PAY-09, RT-OFC-06). Offline, Apple's sheet would open with
  * its own error (the store view) or answer `failed` (the code sheet), and the sheet would say nothing. So reachability
  * is checked first, with the app's own network check: known offline, Apple's sheet is not opened and our offline line
  * shows. Unknown counts as online (Apple's sheet then says what it knows). After the sheet: `unavailable` is the
@@ -174,7 +174,7 @@ export function holdOnce(guard: { current: boolean }, hold: () => boolean): Hold
 }
 
 /**
- * The Keep step's `hold` (RT-PAY-17: Plus not known yet on this phone, so no Keep sheet): hold the letter once, then say
+ * The Keep step's `hold` (RT-PLS-10: Plus not known yet on this phone, so no Keep sheet): hold the letter once, then say
  * the held line and leave Review, once. A second Keep tap in the same moment does nothing: one hold, one line, one
  * navigation (`holdOnce`'s 'again'). A hold that does not take still says the line and leaves, as "Keep it here for now"
  * does, because the draft is still where it was. Never throws past `holdOnce`.

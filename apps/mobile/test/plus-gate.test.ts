@@ -98,7 +98,7 @@ describe('[S22] what the Keep sheet says', () => {
   });
 });
 
-describe('[RT-PAY-09, RT-OFC-06, RT-PLS-10] See Plus and Redeem a code offline, or when the code sheet fails', () => {
+describe('[RT-PAY-09, RT-OFC-06] See Plus and Redeem a code offline, or when the code sheet fails', () => {
   const online = async () => false;
   const offline = async () => true;
 
@@ -118,7 +118,7 @@ describe('[RT-PAY-09, RT-OFC-06, RT-PLS-10] See Plus and Redeem a code offline, 
     expect(await sheetTap('seePlus', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
     expect(await sheetTap('redeem', { offline: online, open: async () => 'presented' as const })).toEqual({ outcome: 'presented', note: null });
     expect(await sheetTap('redeem', { offline: online, open: async () => 'unavailable' as const })).toEqual({ outcome: 'unavailable', note: 'offline' });
-    // Before this fix a failed code sheet showed nothing at all (RT-PLS-10).
+    // Before this fix a failed code sheet showed nothing at all (RT-OFC-06).
     expect(await sheetTap('redeem', { offline: online, open: async () => 'failed' as const })).toEqual({ outcome: 'failed', note: 'codeFailed' });
   });
 

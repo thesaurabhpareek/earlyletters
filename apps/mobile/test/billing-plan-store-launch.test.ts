@@ -1,11 +1,11 @@
 /**
  * The plan store at launch (lib/billing/plan-store.ts), with a fake ScribeStore native module.
  *
- *  - RT-OFC-06 / RT-SUB-13 (JavaScript half): startPlus starts the native transaction listener (which, in Swift, also
+ *  - RT-PAY-17 / RT-SUB-13 (JavaScript half): startPlus starts the native transaction listener (which, in Swift, also
  *    walks Transaction.unfinished, finishes each verified one and sends one "update"), reads StoreKit's entitlements
  *    at once, and re-reads on every onEntitlementsChanged. It never calls AppStore.sync at launch: that asks the person
  *    to sign in, so it runs only from Restore. The Swift half is a Device check (Xcode Transaction Manager).
- *  - RT-PAY-17: planReadiness waits for the first read, bounded, then says what the plan rests on.
+ *  - RT-PLS-10: planReadiness waits for the first read, bounded, then says what the plan rests on.
  * Nothing here talks to a server. Fictional Asha family only (no family data at all here).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -72,7 +72,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('[RT-OFC-06, RT-SUB-13] at launch the JavaScript side syncs with StoreKit on the phone', () => {
+describe('[RT-PAY-17, RT-SUB-13] at launch the JavaScript side syncs with StoreKit on the phone', () => {
   it('starts the transaction listener, reads the entitlements at once, and never calls AppStore.sync', async () => {
     const ps = await freshStore();
     const stop = ps.startPlus();
@@ -96,7 +96,7 @@ describe('[RT-OFC-06, RT-SUB-13] at launch the JavaScript side syncs with StoreK
   });
 });
 
-describe('[RT-PAY-17] planReadiness: what the plan rests on when a gate asks', () => {
+describe('[RT-PLS-10] planReadiness: what the plan rests on when a gate asks', () => {
   it('a read that lands within the wait: read', async () => {
     const ps = await freshStore();
     expect(await ps.planReadiness(1000)).toBe('read');

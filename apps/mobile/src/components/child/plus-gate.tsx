@@ -176,7 +176,7 @@ export function PlusGate({ childName, lapsed = false, lettersKept, heldOn = 'ton
   const redeem = async () => {
     setTapNote(null);
     awaitingCode.current = true;
-    // A failed code sheet says so calmly (RT-PLS-10); offline it is not opened at all.
+    // A failed code sheet says so calmly (RT-OFC-06); offline it is not opened at all.
     const { outcome, note } = await sheetTap('redeem', { offline: offlineNow, open: redeemOfferCode });
     if (outcome !== 'presented') awaitingCode.current = false;
     setTapNote(note);
