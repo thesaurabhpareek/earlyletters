@@ -29,7 +29,7 @@ import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import { FADE_MS } from '@/lib/motion';
-import { auraRestOpacity, auraRunsFrames } from './listen-meter.logic';
+import { PAUSED_OPACITY, auraRestOpacity, auraRunsFrames } from './listen-meter.logic';
 
 export type AuraState = 'ready' | 'idle' | 'listening' | 'paused' | 'processing';
 
@@ -80,7 +80,7 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
         return;
       }
       scale.value = 1;
-      opacity.value = ready.value ? 0 : paused.value ? 0.12 : B.opacityMin;
+      opacity.value = ready.value ? 0 : paused.value ? PAUSED_OPACITY : B.opacityMin;
       return;
     }
     const a = Math.pow(Math.min(1, Math.max(0, (db.value - B.dbFloor) / (B.dbCeil - B.dbFloor))), B.gamma);

@@ -19,7 +19,7 @@
  * arrives (S11). The room's rules are pure in components/capture/listen.logic.ts; the three start problems
  * (off, in use, full) in components/capture/mic-state.logic.ts.
  */
-import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder, useAudioRecorderState } from 'expo-audio';
+import { getRecordingPermissionsAsync, requestRecordingPermissionsAsync, useAudioRecorder } from 'expo-audio';
 import { File, Paths } from 'expo-file-system';
 import { router, useLocalSearchParams } from 'expo-router';
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
@@ -33,8 +33,9 @@ import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
-import { CLOCK_MS, METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
-import { afterForeground, elapsedClock, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
+import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
+import { useRecorderClock } from '@/components/capture/use-recorder-clock';
+import { afterForeground, elapsedClock, finishWithin, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -83,8 +84,9 @@ export default function Listen() {
     // The OS or media services ended the take (TDD 03 FM-1): keep what exists.
     if (s.hasError || s.mediaServicesDidReset) setInterrupted(true);
   });
-  // The clock, the minute line and the 5 s mark: once a second. The level never goes through this state (below).
-  const status = useAudioRecorderState(recorder, CLOCK_MS);
+  // The clock, the minute line and the 5 s mark: read every 250 ms, re-rendered only when the shown second (or the
+  // recorder's state) changes. The level never goes through this state (below).
+  const status = useRecorderClock(recorder);
   const db = useSharedValue(METER_SILENT);
   const savedMark = useRef(0);
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
@@ -154,11 +156,15 @@ export default function Listen() {
     if (!id || ended.current) return;
     ended.current = true;
     setPhase('finishing');
-    const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
+    // Never stuck here (BL-563): a save that throws (a full disk) or hangs still leaves within FINISH_TIMEOUT_MS, and
+    // the take is kept; the launch sweep finishes it if this did not.
+    const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
+    const draft = kept.ok ? kept.value : null;
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
     if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   const start = async () => {
@@ -243,7 +249,7 @@ export default function Listen() {
     } catch {}
     if (live) seenLive.current = true;
     else if (seenLive.current) setInterrupted(true);
-  }, [status.durationMillis, phase, recorder]);
+  }, [status.durationMillis, status.isRecording, phase, recorder]);
 
   useEffect(() => {
     if (interrupted && (phase === 'recording' || phase === 'paused')) void endTake('interruption');

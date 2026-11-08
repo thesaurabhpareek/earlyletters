@@ -3,7 +3,8 @@
  * The voice level on Listen, off React state (listening-cue.md section 2; founder report on TestFlight build 1; device
  * row S1-83). Build 1 polled the recorder through useAudioRecorderState every 50 ms, so the whole screen re-rendered up
  * to 20 times a second, and the level reached the aura only afterwards, in an effect. Now the level goes straight into
- * the aura's shared value, the screen re-renders once a second for its clock, and the aura spends no frame at rest.
+ * the aura's shared value, the screen reads the recorder every 250 ms and re-renders only when the shown second
+ * changes (about once a second, never skipping one), and the aura spends no frame at rest.
  * The pure parts run here; the screens' use of them is checked in their source (Node cannot load React Native).
  */
 import { readFileSync } from 'node:fs';
@@ -14,12 +15,16 @@ import {
   CLOCK_MS,
   METER_MS,
   METER_SILENT,
+  PAUSED_OPACITY,
   PROGRESS_MS,
   auraRestOpacity,
   auraRunsFrames,
+  clockChanged,
   meterDb,
   progressMark,
+  type ClockStatus,
 } from '../src/components/capture/listen-meter.logic';
+import { elapsedClock } from '../src/components/capture/listen.logic';
 import type { AuraState } from '../src/components/capture/listening-aura';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -28,10 +33,55 @@ const listen = code(src('app/listen.tsx'));
 const aura = code(src('components/capture/listening-aura.tsx'));
 
 describe('the level (pure)', () => {
-  it('reads at 20 Hz into the aura; the screen itself once a second', () => {
+  it('reads at 20 Hz into the aura; the clock every 250 ms, under a second so it can never skip one', () => {
     expect(METER_MS).toBe(50);
-    expect(CLOCK_MS).toBe(1000);
+    expect(CLOCK_MS).toBe(250);
+    expect(CLOCK_MS).toBeLessThan(1000);
     expect(PROGRESS_MS).toBe(5000);
+  });
+
+  const at = (durationMillis: number, more: Partial<ClockStatus> = {}): ClockStatus => ({
+    canRecord: true,
+    isRecording: true,
+    durationMillis,
+    mediaServicesDidReset: false,
+    metering: -30,
+    url: 'file:///take.m4a',
+    ...more,
+  });
+
+  it('a reading re-renders only when the shown second or the recorder state changes, never for the level', () => {
+    expect(clockChanged(at(1_000), at(1_999))).toBe(false);
+    expect(clockChanged(at(1_999), at(2_000))).toBe(true);
+    expect(clockChanged(at(1_200), at(1_250, { metering: -5 }))).toBe(false);
+    expect(clockChanged(at(1_200), at(1_200, { isRecording: false }))).toBe(true);
+    expect(clockChanged(at(1_200), at(1_200, { canRecord: false }))).toBe(true);
+    expect(clockChanged(at(1_200), at(1_200, { mediaServicesDidReset: true }))).toBe(true);
+    expect(clockChanged(at(1_200), at(1_200, { url: null }))).toBe(true);
+  });
+
+  it('over a 10-minute take read by a late-firing 250 ms timer, the clock shows every second once and re-renders about once a second', () => {
+    // A repeating JS timer fires a little late each time (to the next frame): up to 16 ms here, never aligned to the
+    // take's start. (Review A on #630: at 1000 ms such a timer skips a second every couple of minutes.)
+    let shown = at(0);
+    let renders = 0;
+    const seen = new Set<string>([elapsedClock(0)]);
+    let t = 137;
+    let k = 0;
+    while (t < 600_500) {
+      const next = at(t, { metering: -60 + (k % 40) });
+      if (clockChanged(shown, next)) {
+        // Each change moves the clock one second on, never two.
+        expect(Math.floor(next.durationMillis / 1000) - Math.floor(shown.durationMillis / 1000)).toBe(1);
+        shown = next;
+        renders++;
+        seen.add(elapsedClock(t));
+      }
+      t += CLOCK_MS + ((k * 7) % 17);
+      k++;
+    }
+    expect(seen.size).toBe(601); // 0:00 to 10:00, each shown once
+    expect(renders).toBe(600); // one a second, against 20 a second before
   });
 
   it('a reading passes through; none, or not a number, is silence, so the aura keeps its idle breath', () => {
@@ -66,16 +116,24 @@ describe('the level (pure)', () => {
   it('at rest the glow holds still: none before a take, dim while paused, its floor otherwise (as the frame callback set it)', () => {
     const min = tokens.motion.breath.opacityMin;
     expect(auraRestOpacity('ready', min)).toBe(0);
-    expect(auraRestOpacity('paused', min)).toBe(0.12);
+    expect(auraRestOpacity('paused', min)).toBe(PAUSED_OPACITY);
+    expect(PAUSED_OPACITY).toBe(0.12);
     expect(auraRestOpacity('idle', min)).toBe(min);
   });
 });
 
 describe('Listen does not re-render for the voice (source)', () => {
-  it('the recorder state is polled once a second, never at 50 ms', () => {
-    expect(listen).toMatch(/const status = useAudioRecorderState\(recorder, CLOCK_MS\);/);
-    expect(listen.match(/useAudioRecorderState\(/g)).toHaveLength(1);
-    expect(listen).not.toMatch(/useAudioRecorderState\(recorder, 50\)/);
+  it("the recorder state comes from useRecorderClock (re-renders on the shown second), not expo-audio's 50 ms hook", () => {
+    expect(listen).toMatch(/const status = useRecorderClock\(recorder\);/);
+    expect(listen).not.toMatch(/useAudioRecorderState/);
+    const hook = code(src('components/capture/use-recorder-clock.ts'));
+    expect(hook).toMatch(/export function useRecorderClock\(recorder: AudioRecorder, interval: number = CLOCK_MS\): RecorderState/);
+    expect(hook).toMatch(/setState\(\(prev\) => \(clockChanged\(prev, next\) \? next : prev\)\);/);
+    expect(hook).toMatch(/\}, interval\);\s*return \(\) => clearInterval\(read\);/);
+  });
+
+  it('an interruption is checked when the recorder stops, not only when the clock moves', () => {
+    expect(listen).toMatch(/\}, \[status\.durationMillis, status\.isRecording, phase, recorder\]\);/);
   });
 
   it("the level is read from the recorder on a 50 ms timer straight into the aura's shared value", () => {
@@ -105,6 +163,11 @@ describe('the aura spends no frame at rest (source)', () => {
     expect(aura).toMatch(/const runs = auraRunsFrames\(state, reduced\);/);
     expect(aura).toMatch(/const frames = useFrameCallback\(\(f\) => \{[\s\S]*\}, runs\);/);
     expect(aura).toMatch(/frames\.setActive\(runs\);/);
+  });
+
+  it('the paused glow has one source (PAUSED_OPACITY), in the frame callback and at rest', () => {
+    expect(aura).toMatch(/opacity\.value = ready\.value \? 0 : paused\.value \? PAUSED_OPACITY : B\.opacityMin;/);
+    expect(aura).not.toMatch(/0\.12/);
   });
 
   it('at rest it sets the still values the callback used to hold every frame', () => {
