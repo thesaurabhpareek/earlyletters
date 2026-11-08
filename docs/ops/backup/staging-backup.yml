@@ -1,0 +1,173 @@
+# BL-566 (D-138 item 2): the free nightly backup of staging.
+#
+# This file does NOT run in the earlyletters repository. Copy it unchanged to
+# `.github/workflows/staging-backup.yml` in the separate PRIVATE repository
+# `earlyletters-backups` (runbook: docs/ops/runbooks/staging-backup-free.md).
+#
+# Every night it: installs the Postgres client matching staging's major
+# version; refuses to go on if the server's major differs, the URL is not
+# TLS or not the session pooler, or the role can write; dumps the whole
+# database with pg_dump (custom format) as the read-only role from
+# docs/ops/backup/backup-role.sql; proves the dump reads back (pg_restore
+# --list, then every data block read to /dev/null); counts the rows of three
+# tables inside the dump; encrypts it with age to the founder's public key;
+# deletes the plain dump; and keeps only the encrypted file, as an artifact,
+# for 7 days.
+#
+# The log shows versions, sizes, exit codes and three row counts. Never a
+# row, a URL or a password (GitHub also masks the secrets).
+#
+# Secrets (Settings > Secrets and variables > Actions > Secrets):
+#   STAGING_DB_URL        postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require
+#   BACKUP_AGE_RECIPIENT  the founder's age public key, the line starting age1
+# Variables (same page, Variables tab; optional):
+#   DUMP_EXCLUDE_SCHEMAS  space-separated schema names the role could not be
+#                         granted (backup-role.sql block 2B only). Empty by default.
+#
+# Third-party actions are pinned to a full commit sha. Checked 8 Nov 2026 with
+# `git ls-remote https://github.com/actions/upload-artifact refs/tags/v7*`:
+#   actions/upload-artifact cf430e030ddbb5b0abf93d22962f4752f3646cd9 = tag v7.0.2 (and v7), the same pin
+#   this repository's ios-compile.yml and kill-harness.yml use.
+
+name: Nightly staging backup
+
+on:
+  schedule:
+    - cron: '17 10 * * *'   # 10:17 UTC: 3:17 AM in California in summer (PDT), 2:17 AM in winter (PST)
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Staging's Postgres major version. supabase/config.toml says 17; backup-role.sql block 0 reads the real one.
+      PG_MAJOR: '17'
+    steps:
+      - name: Install the Postgres client and age
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          if ! apt-cache policy "postgresql-client-$PG_MAJOR" | grep -Eq 'Candidate: [0-9]'; then
+            # Not in Ubuntu's own archive: add the PostgreSQL project's (PGDG) apt repository, the documented way.
+            sudo apt-get install -y -qq postgresql-common
+            sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+            sudo apt-get update -qq
+          fi
+          sudo apt-get install -y -qq --no-install-recommends "postgresql-client-$PG_MAJOR" age
+          bin="/usr/lib/postgresql/$PG_MAJOR/bin"
+          "$bin/pg_dump" --version
+          "$bin/pg_dump" --version | grep -Eq " $PG_MAJOR\.[0-9]+" || { echo "::error::pg_dump is not version $PG_MAJOR"; exit 1; }
+          age --version
+          echo "PGBIN=$bin" >> "$GITHUB_ENV"
+
+      - name: Check the connection, the server version and the role
+        env:
+          DB_URL: ${{ secrets.STAGING_DB_URL }}
+        run: |
+          set -euo pipefail
+          [ -n "$DB_URL" ] || { echo "::error::The STAGING_DB_URL secret is not set"; exit 1; }
+          case "$DB_URL" in postgres://*|postgresql://*) ;; *) echo "::error::STAGING_DB_URL is not a postgres:// URL"; exit 1 ;; esac
+          case "$DB_URL" in *sslmode=disable*|*sslmode=allow*|*sslmode=prefer*) echo "::error::STAGING_DB_URL must use TLS (sslmode=require)"; exit 1 ;; esac
+          # The transaction pooler (6543) cannot hold pg_dump's one long snapshot; the session pooler (5432) can.
+          case "$DB_URL" in *:6543/*) echo "::error::STAGING_DB_URL is the transaction pooler (6543); use the session pooler (5432)"; exit 1 ;; esac
+          export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-backup
+          num=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c 'show server_version_num')
+          major=$(( num / 10000 ))
+          echo "Server major version: $major (client $PG_MAJOR)"
+          if [ "$major" != "$PG_MAJOR" ]; then
+            echo "::error::Staging runs Postgres $major but this job installs the $PG_MAJOR client. Set PG_MAJOR to $major in this file."
+            exit 1
+          fi
+          # Expect: f t f on (not superuser, bypasses RLS so the dump is whole, cannot write, read only by default).
+          facts=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -F ' ' -d "$DB_URL" -c "
+            select r.rolsuper, r.rolbypassrls,
+                   has_table_privilege('public.entries', 'insert, update, delete, truncate'),
+                   current_setting('default_transaction_read_only')
+              from pg_roles r where r.rolname = current_user")
+          echo "Role facts (superuser, bypassrls, can write entries, read only): $facts"
+          [ "$facts" = "f t f on" ] || { echo "::error::The backup role is not the read-only role from backup-role.sql (expected: f t f on)"; exit 1; }
+
+      - name: Dump, check, count, encrypt
+        env:
+          DB_URL: ${{ secrets.STAGING_DB_URL }}
+          RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+          DUMP_EXCLUDE_SCHEMAS: ${{ vars.DUMP_EXCLUDE_SCHEMAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          [[ "$RECIPIENT" =~ ^age1[02-9ac-hj-np-z]{58}$ ]] || { echo "::error::BACKUP_AGE_RECIPIENT is not an age public key (age1...)"; exit 1; }
+          excludes=()
+          for s in ${DUMP_EXCLUDE_SCHEMAS:-}; do
+            [[ "$s" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || { echo "::error::DUMP_EXCLUDE_SCHEMAS holds something that is not a schema name"; exit 1; }
+            excludes+=("--exclude-schema=$s")
+          done
+          export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-backup
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          # Whole database, with owners and grants recorded (a real restore needs the grants; the drill
+          # skips them with pg_restore --no-owner --no-privileges). Live login secrets are left out
+          # (sessions, refresh and one-time tokens: a restore signs everyone out, which is fine), and so
+          # are the Auth audit log, HTTP responses kept by pg_net, cron run history and Vault ciphertext.
+          "$PGBIN/pg_dump" --format=custom --compress=6 --lock-wait-timeout=60s \
+            --exclude-table-data='auth.sessions' \
+            --exclude-table-data='auth.refresh_tokens' \
+            --exclude-table-data='auth.one_time_tokens' \
+            --exclude-table-data='auth.flow_state' \
+            --exclude-table-data='auth.mfa_challenges' \
+            --exclude-table-data='auth.mfa_amr_claims' \
+            --exclude-table-data='auth.saml_relay_states' \
+            --exclude-table-data='auth.audit_log_entries' \
+            --exclude-table-data='net._http_response' \
+            --exclude-table-data='cron.job_run_details' \
+            --exclude-table-data='vault.secrets' \
+            "${excludes[@]}" \
+            -d "$DB_URL" -f dump.pgc
+          # Proves the archive reads back. --list reads the catalogue only and catches a truncated file;
+          # the full read to /dev/null decompresses every data block and catches corrupt table data,
+          # which --list misses (rehearsed 8 Nov 2026 on PostgreSQL 16: a flipped byte in a data block
+          # passed --list and failed the full read; one corrupt length made pg_restore hang, hence the
+          # time limit). Either failure stops the job here, and no artifact is kept.
+          "$PGBIN/pg_restore" --list dump.pgc > toc.txt
+          timeout 600 "$PGBIN/pg_restore" -f /dev/null dump.pgc
+          echo "Dump: $(stat -c %s dump.pgc) bytes, $(grep -vc '^;' toc.txt) catalogue entries"
+          for t in entries policy_acceptances deletion_requests; do
+            grep -Eq "TABLE DATA public $t " toc.txt || { echo "::error::The dump has no data section for public.$t"; exit 1; }
+          done
+          # Rows inside this very dump (COPY text format keeps one row per line). Counts only.
+          count_rows() {
+            "$PGBIN/pg_restore" --data-only --schema=public --table="$1" -f - dump.pgc \
+              | awk '/^COPY /{c=1; next} c && /^\\\.$/{c=0; next} c{n++} END{print n+0}'
+          }
+          counts="entries=$(count_rows entries),policy_acceptances=$(count_rows policy_acceptances),deletion_requests=$(count_rows deletion_requests)"
+          echo "Row counts in this dump: $counts"
+          age -r "$RECIPIENT" -o "staging-$stamp.pgc.age" dump.pgc
+          shred -u dump.pgc
+          rm -f toc.txt
+          [ "$(head -c 21 "staging-$stamp.pgc.age")" = "age-encryption.org/v1" ] || { echo "::error::The output is not an age file"; exit 1; }
+          echo "Encrypted: staging-$stamp.pgc.age, $(stat -c %s "staging-$stamp.pgc.age") bytes"
+          {
+            echo "### Staging backup $stamp"
+            echo "- Encrypted file: \`staging-$stamp.pgc.age\`, $(stat -c %s "staging-$stamp.pgc.age") bytes, kept 7 days"
+            echo "- Row counts in this dump: \`$counts\` (the restore drill's \`--expect\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove any plain dump left by a failed step
+        if: always()
+        run: |
+          [ ! -f dump.pgc ] || shred -u dump.pgc
+          rm -f toc.txt
+
+      - name: Keep the encrypted file for 7 days
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: staging-*.pgc.age
+          archive: false             # one file, uploaded as is; the artifact is named after it
+          retention-days: 7
+          if-no-files-found: error

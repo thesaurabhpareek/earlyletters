@@ -27,6 +27,11 @@ Drill log (append one line per drill):
 | Date | Ticket | Restore point | RTO (min) | Backup age (h) | Ledger ids | Hash sample (match / differ / unexplained) | Verdict |
 |---|---|---|---|---|---|---|---|
 
+Free nightly backup drills (BL-566, monthly, `staging-backup-free.md`; counts only, never content):
+
+| Date | Backup run (UTC) | Restore errors ignored | entries | policy_acceptances | deletion_requests | Verdict |
+|---|---|---|---|---|---|---|
+
 ## Part 2. A real restore (corruption, bad migration, operator error)
 
 Prefer fixing forward. Restore only when the data itself is wrong and cannot be repaired.
