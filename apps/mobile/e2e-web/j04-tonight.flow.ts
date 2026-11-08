@@ -165,44 +165,38 @@ test('[J04g] a book that is not born yet: the dateline names the child and the p
   await step('happy', 'Another thought, before the birth', 'Fourteen presses: each shows a different prompt from the eight, never the one that was on screen, and never a newborn one. Nothing is counted.');
 });
 
-test('[J04h] past the free letters: the line before Speak, and held letters as one row', async ({ app, record }) => {
+test('[J04h] a test build past the free letters: no Plus line on Tonight and no Plus sheet', async ({ app, record }) => {
   test.setTimeout(150_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 11, 'J04-08');
-  // SR-C-08 (F14-REQ-040, F14-REQ-041): a free phone with two letters kept says, on Tonight and before anyone records,
-  // that new letters need Plus; two held letters are one row that opens their list.
+  // The e2e web build is an alpha build (support/global-setup.ts: EXPO_PUBLIC_APP_ENV=preview, so PLUS_ALPHA). In alpha
+  // there is no letter limit (#552, PL-1) and, by Karma's ruling on #508, the Tonight Plus line (F14-REQ-040, SR-C-08)
+  // never shows at any count. So: two letters kept, then a third and a fourth, and Tonight never says new letters need
+  // Plus and the Keep step never opens the Plus sheet. The store build's line (after the allowance, no number, F5) and
+  // the held-row fold (F14-REQ-041, "Letters waiting to be kept.", no count) are unit tested in test/tonight-plus.test.ts;
+  // a store-profile run is the device check.
+  const line = 'Adding new letters to the book needs Plus. Recording, reading and export are always free.';
   await firstRun(app);
   await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   await typeLetter(app, 'You held the spoon by yourself today.');
   await noRemindersAfterFirstLetter(app);
   await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
-  await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   await typeLetter(app, 'You laughed at the rain.');
   await tab(app, 'Tonight').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
-  const line = 'Adding new letters to the book needs Plus. Recording, reading and export are always free.';
-  await expect(app.getByText(line, { exact: true })).toBeVisible();
-  // A state, not a sell: nothing to press (F14-REQ-040).
+  await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
+  await expect(app.getByText(line, { exact: true })).toHaveCount(0);
   await expect(btn(app, 'See Plus')).toHaveCount(0);
-  await step('happy', 'Before recording: new letters need Plus', 'Two letters are kept, so Tonight says it before the next recording, in one calm line above Speak and Type. No count, no price, no button; Speak and Type work as before.');
+  await step('happy', 'A test build past two letters: no Plus line', 'Two letters are kept on a test build, and Tonight shows no line about Plus above Speak and Type: every letter is free while testing (#552), so the line never shows in alpha.');
 
   for (const words of ['You waved at the dog on the corner.', 'You pointed at the moon and said ball.']) {
-    await btn(app, /^Type/).click();
-    await app.getByRole('textbox').first().fill(words);
-    await btn(app, /^Add to .*book/).click();
-    await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-    await btn(app, 'Keep it here for now').click();
-    await expect(btn(app, 'Speak')).toBeVisible();
+    await typeLetter(app, words);
+    await expect(app.getByText(/Added to/)).toBeVisible();
+    await expect(app.getByText("Keep adding to Asha's book")).toHaveCount(0);
+    await tab(app, 'Tonight').click();
+    await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
+    await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   }
-  // One row, not one card each; the letters' words are behind it until it opens.
-  await expect(app.getByTestId('tonight.heldRow')).toHaveCount(1);
-  await expect(app.getByText('Letters waiting to be kept.', { exact: true })).toBeVisible();
-  await expect(app.getByText(/\b2 letters\b/)).toHaveCount(0);
-  await expect(app.getByText('You waved at the dog on the corner.')).toHaveCount(0);
-  await step('happy', 'Two held letters, one row', 'Both letters held at the Keep step wait on Tonight as one row, "Letters waiting to be kept." (no count, F5), where the newest one was. Nothing else on Tonight moves.');
-  await app.getByTestId('tonight.heldRow').click();
-  await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
-  await expect(app.getByText('You pointed at the moon and said ball.')).toBeVisible();
-  await expect(app.getByText('Keep it', { exact: true })).toHaveCount(2);
-  await step('happy', 'The list, open', 'A tap opens the list in place: each held letter on its own card, newest first, with its words as typed, "Waiting to be kept." and "Keep it". "Hide them" closes it.');
+  await expect(app.getByTestId('tonight.heldRow')).toHaveCount(0);
+  await step('happy', 'Third and fourth letters go straight in', 'The third and fourth letters are added to the book like the first two: no Plus sheet, nothing held, and still no Plus line on Tonight.');
 });

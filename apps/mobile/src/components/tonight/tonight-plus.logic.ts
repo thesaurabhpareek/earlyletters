@@ -29,14 +29,21 @@ export type PlusLineInput = {
   lettersKept: number | null;
   /** The free-letter allowance (freeLettersAllowance). */
   allowance: unknown;
+  /**
+   * An alpha build (PLUS_ALPHA, lib/billing/alpha.ts: TestFlight and development). Karma's ruling on #508: the line never
+   * shows in alpha, at any count; at the 100-letter cap the alpha note (billingCopy.alpha.note) applies instead, on the
+   * Plus surfaces #552 names. Passed in, not imported, so this stays pure and both builds are tested.
+   */
+  alpha: boolean;
 };
 
 /**
  * True when Tonight shows the standing line: the next letter kept would meet the Keep sheet, because the free letters
- * are used and Plus is not on (lapsed included). Never before the ledger has been read, so a slow read shows nothing
+ * are used and Plus is not on (lapsed included). Never in an alpha build. Never before the ledger has been read, so a slow read shows nothing
  * rather than a wrong line.
  */
 export function plusLineShows(input: PlusLineInput): boolean {
+  if (input.alpha) return false;
   if (input.lettersKept == null) return false;
   return decideKeepLetter({ now: input.now, plan: input.plan, lettersKept: input.lettersKept, allowance: input.allowance }).kind === 'offer';
 }

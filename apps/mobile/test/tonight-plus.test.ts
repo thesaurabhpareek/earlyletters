@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { billingCopy, en } from '@scribe/content';
-import type { PlanView } from '@scribe/core';
+import { MAX_FREE_LETTERS, type PlanView } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
 import { draftCard, type DraftFields } from '../src/components/tonight/draft-card.logic';
 import {
@@ -39,31 +39,53 @@ const LAPSED = plan({ state: 'expired', effectiveUntil: '2026-10-01T00:00:00.000
 
 describe('[F14-REQ-040] the standing line on Tonight', () => {
   it('shows once the free letters are used and Plus is off', () => {
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 2, allowance: undefined })).toBe(true);
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 5, allowance: undefined })).toBe(true);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 2, allowance: undefined, alpha: false })).toBe(true);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 5, allowance: undefined, alpha: false })).toBe(true);
   });
 
   it('shows when Plus has ended', () => {
-    expect(plusLineShows({ plan: LAPSED, now: NOW, lettersKept: 2, allowance: undefined })).toBe(true);
+    expect(plusLineShows({ plan: LAPSED, now: NOW, lettersKept: 2, allowance: undefined, alpha: false })).toBe(true);
   });
 
   it('is absent while free letters remain', () => {
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 0, allowance: undefined })).toBe(false);
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 1, allowance: undefined })).toBe(false);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 0, allowance: undefined, alpha: false })).toBe(false);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 1, allowance: undefined, alpha: false })).toBe(false);
   });
 
   it('is absent with Plus on, however many letters are kept', () => {
-    expect(plusLineShows({ plan: ON, now: NOW, lettersKept: 2, allowance: undefined })).toBe(false);
-    expect(plusLineShows({ plan: ON, now: NOW, lettersKept: 40, allowance: undefined })).toBe(false);
+    expect(plusLineShows({ plan: ON, now: NOW, lettersKept: 2, allowance: undefined, alpha: false })).toBe(false);
+    expect(plusLineShows({ plan: ON, now: NOW, lettersKept: 40, allowance: undefined, alpha: false })).toBe(false);
   });
 
   it('follows a raised allowance from remote config', () => {
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 2, allowance: 3 })).toBe(false);
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 3, allowance: 3 })).toBe(true);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 2, allowance: 3, alpha: false })).toBe(false);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 3, allowance: 3, alpha: false })).toBe(true);
+  });
+
+  it('alpha build (PLUS_ALPHA): never shows, at any count, with any allowance or plan (Karma ruling on #508)', () => {
+    for (const lettersKept of [0, 1, 2, 3, 5, 99, 100, 101, 250]) {
+      for (const allowance of [undefined, 3, MAX_FREE_LETTERS]) {
+        for (const p of [plan(), LAPSED, ON]) {
+          expect(plusLineShows({ plan: p, now: NOW, lettersKept, allowance, alpha: true })).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('store build: shows the F5 line after the allowance, with no number', () => {
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 1, allowance: undefined, alpha: false })).toBe(false);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: 2, allowance: undefined, alpha: false })).toBe(true);
+    expect(plusLine()).not.toMatch(/\d/);
+  });
+
+  it('Tonight passes the build\'s own PLUS_ALPHA, never a constant', () => {
+    const screen = code('app/(tabs)/index.tsx');
+    expect(screen).toMatch(/plusLineShows\(\{[^}]*alpha: PLUS_ALPHA \}\)/);
+    expect(screen).toMatch(/import \{[^}]*\bPLUS_ALPHA\b[^}]*\} from '@\/lib\/billing'/);
   });
 
   it('never shows before letters kept has been read', () => {
-    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: null, allowance: undefined })).toBe(false);
+    expect(plusLineShows({ plan: plan(), now: NOW, lettersKept: null, allowance: undefined, alpha: false })).toBe(false);
   });
 
   it('says a state, not a count or a price', () => {

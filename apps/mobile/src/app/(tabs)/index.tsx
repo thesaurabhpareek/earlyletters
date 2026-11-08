@@ -69,7 +69,7 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
-import { freeLettersAllowance, lettersKeptNow, usePlan } from '@/lib/billing';
+import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
 import { copy } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
@@ -196,7 +196,7 @@ export default function Tonight() {
   useEffect(() => setHeldOpen(false), [heldCount]);
   // The held list also closes when the person leaves Tonight (blur).
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
-  const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance() });
+  const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 
   if (room === undefined) return null;
