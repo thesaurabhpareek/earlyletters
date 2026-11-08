@@ -9,6 +9,7 @@ import { authorSpeechLanguage } from '@/lib/models/author-language';
 import { SPEECH_MODELS, VAD_MODEL_ID, type SpeechLanguage } from '@/lib/models/catalog';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { planFor, speechPackHost } from '@/lib/models/speech-packs';
+import { cancelPack } from '@/lib/packs';
 import { removeSpeechPack, speechDownloadHold, startSpeechDownload, speechDownloadProgress, wordsState } from '@/lib/transcription-queue';
 import { languageNames } from '@/lib/transcription-queue/copy';
 
@@ -17,7 +18,9 @@ import { languageNames } from '@/lib/transcription-queue/copy';
  * size, and Download or Remove (founder decision 15, ADR 0015; EXPERIENCE_PASS S42). Moved from Recordings to
  * Storage on 8 Nov 2026 (settings-ia.md 4: language download lives only in Storage). The size of a language includes
  * the listening detector it needs, so the detector is never a row of its own. Removing one frees space; recordings
- * and letters stay, and new recordings wait for their words.
+ * and letters stay, and new recordings wait for their words. While a language downloads or waits for Wi-Fi the row
+ * offers Stop: its packs are left out of Storage's In progress list, so this is the only Stop for them. Stop pauses
+ * both packs and keeps the partial file; Download carries on from it.
  */
 
 /** Every pack a language row stands for (its speech model and the detector): Storage leaves these out of its list. */
@@ -77,13 +80,34 @@ export function SpeechRow({ language }: { language: SpeechLanguage }) {
       { text: s.confirmButton, style: 'destructive', onPress: () => void removeSpeechPack(asrId) },
     ]);
 
+  // Stop pauses every pack the language needs (the detector and the speech model); the partial file stays for Download.
+  const stop = () => {
+    for (const id of plan.packs) cancelPack(id);
+  };
+
   // One element for VoiceOver: the row is the button, its trailing word says what a tap does (S42).
   return (
     <ListRow
       title={name}
       subtitle={row.subtitle}
-      trailing={row.trailing ? <TrailingWord text={row.trailing} /> : row.percent !== null ? <ProgressRing percent={row.percent} /> : 'none'}
-      onPress={row.action === 'remove' ? confirmRemove : row.action === 'download' ? () => void startSpeechDownload(language) : undefined}
+      trailing={
+        row.trailing ? (
+          row.percent !== null ? (
+            // The ring beside the word: both are hidden from VoiceOver by their own wrappers; the subtitle says the percent.
+            <View className="flex-row items-center gap-3">
+              <ProgressRing percent={row.percent} />
+              <TrailingWord text={row.trailing} />
+            </View>
+          ) : (
+            <TrailingWord text={row.trailing} />
+          )
+        ) : (
+          'none'
+        )
+      }
+      onPress={
+        row.action === 'remove' ? confirmRemove : row.action === 'download' ? () => void startSpeechDownload(language) : row.action === 'stop' ? stop : undefined
+      }
       accessibilityHint={row.hint}
       testID={`storage.language.${language}`}
     />

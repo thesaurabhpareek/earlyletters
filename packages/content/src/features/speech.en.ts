@@ -18,6 +18,8 @@ export const speechSettingsCopy = {
   absent: 'Not on this phone, {n} MB',
   removeHint: 'Removes this language from the phone to free space',
   downloadHint: 'Gets this language ready now',
+  // The language row's hint while it downloads or waits for Wi-Fi: its trailing word is Stop (packsCopy.stopButton).
+  stopHint: 'Stops getting this language ready for now',
   confirmTitle: 'Remove {name}?',
   confirmBody: 'Your recordings and letters stay. New {name} recordings will wait for their words until you add it again.',
   confirmButton: 'Remove',

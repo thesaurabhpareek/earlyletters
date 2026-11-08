@@ -13,9 +13,11 @@
  * backup off, where that card is the whole truth. None of them ever says the recordings are only on this phone.
  *
  * The language row is actionable when the model is missing: its trailing word says what a tap does ("Download", or
- * "Remove" once it is here), and while it downloads a small determinate ring shows "Getting ready, 40%".
+ * "Remove" once it is here), and while it downloads a small determinate ring shows "Getting ready, 40%". While it
+ * downloads or waits for Wi-Fi the trailing word is "Stop" (a running download has no other Stop: the packs a language
+ * row stands for are left out of Storage's In progress list, so a language is never said twice).
  */
-import { backupCopy, speechSettingsCopy } from '@scribe/content';
+import { backupCopy, packsCopy, speechSettingsCopy } from '@scribe/content';
 import { copy, fill } from '@/lib/copy';
 
 /**
@@ -49,7 +51,7 @@ export type SpeechRowState =
   /** The web design preview: files cannot be read, so the row shows the size and offers nothing. */
   | { kind: 'unknown'; mb: number };
 
-export type SpeechRow = { subtitle: string; action: 'download' | 'remove' | null; trailing: string | null; percent: number | null; hint: string | undefined };
+export type SpeechRow = { subtitle: string; action: 'download' | 'remove' | 'stop' | null; trailing: string | null; percent: number | null; hint: string | undefined };
 
 export function speechRow(state: SpeechRowState): SpeechRow {
   const s = speechSettingsCopy;
@@ -58,10 +60,10 @@ export function speechRow(state: SpeechRowState): SpeechRow {
       return { subtitle: fill(s.ready, { n: state.mb }), action: 'remove', trailing: s.confirmButton, percent: null, hint: s.removeHint };
     case 'downloading': {
       const percent = Math.max(0, Math.min(100, Math.floor(state.fraction * 100)));
-      return { subtitle: fill(s.downloading, { n: percent }), action: null, trailing: null, percent, hint: undefined };
+      return { subtitle: fill(s.downloading, { n: percent }), action: 'stop', trailing: packsCopy.stopButton, percent, hint: s.stopHint };
     }
     case 'waitingForWifi':
-      return { subtitle: fill(s.waitingForWifi, { n: state.mb }), action: null, trailing: null, percent: null, hint: undefined };
+      return { subtitle: fill(s.waitingForWifi, { n: state.mb }), action: 'stop', trailing: packsCopy.stopButton, percent: null, hint: s.stopHint };
     case 'noSpace':
       return { subtitle: fill(s.noSpace, { n: state.mb }), action: null, trailing: null, percent: null, hint: undefined };
     case 'absent':
