@@ -1,0 +1,333 @@
+{
+  "schema": "setup-steps/1",
+  "about": "One entry per setup step (S-ids from the setup record, section 3, plus GH-ids for GitHub settings the record lists without an S-id). Read by scripts/release/setup-state.mjs (npm run release:ready). Public identifiers only. Minutes are hands-on estimates, waits not included. ledger is the setup record's word and its date; a probe, when it runs, wins over it.",
+  "enums": {
+    "owner": ["founder", "agent", "karma"],
+    "wall": ["agreement", "dns-edit", "secret", "account-creation", "security-setting", "bulk-delete", "passkey", "payment", "spend", "legal-declaration", "account-dashboard"],
+    "blocks": ["mac-build", "gh-build", "store", "build-2", "optional"],
+    "recurrence": ["once", "per-build", "per-release", "on-change"],
+    "ledgerStatus": ["done", "open", "waiting"]
+  },
+  "steps": [
+    {
+      "id": "S-00", "title": "earlyletters.app records are DNS only (A and www point at Vercel)", "chain": "A",
+      "owner": "founder", "wall": "dns-edit", "blocks": "mac-build", "depends": [],
+      "probe": "appDnsOnly", "link": "https://dash.cloudflare.com/", "minutes": 5, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-01", "title": "Porkbun nameservers for earlyletters.app switched to Cloudflare", "chain": "A",
+      "owner": "founder", "wall": "dns-edit", "blocks": "mac-build", "depends": ["S-00"],
+      "probe": "appNameservers", "link": "https://porkbun.com/account/domainsSpeedy", "minutes": 5, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-02", "title": "Cloudflare zone active and earlyletters.app still redirects (308) to earlyletters.com", "chain": "A",
+      "owner": "founder", "wall": null, "blocks": "mac-build", "depends": ["S-01"],
+      "probe": "appRedirect", "link": "https://dash.cloudflare.com/", "minutes": 2, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-03", "title": "DNSSEC on earlyletters.app (Cloudflare signs, DS at Porkbun)", "chain": "A",
+      "owner": "founder", "wall": "dns-edit", "blocks": "mac-build", "depends": ["S-02"],
+      "probe": "appDnssec", "link": "https://dash.cloudflare.com/", "minutes": 10, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-04", "title": "earlyletters.app CAA, null MX and SPF -all", "chain": "A",
+      "owner": "founder", "wall": "dns-edit", "blocks": "mac-build", "depends": ["S-02"],
+      "probe": "appCaaMx", "link": "https://dash.cloudflare.com/", "minutes": 5, "recurrence": "once",
+      "values": [
+        { "type": "MX", "name": "@", "value": "0 ." },
+        { "type": "TXT", "name": "@", "value": "v=spf1 -all" }
+      ],
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-04b", "title": "Strict DMARC on earlyletters.app (p=reject with adkim=s and aspf=s)", "chain": "A",
+      "owner": "founder", "wall": "dns-edit", "blocks": "optional", "depends": ["S-02"],
+      "probe": "appDmarcStrict", "link": "https://dash.cloudflare.com/", "minutes": 1, "recurrence": "once",
+      "values": [ { "type": "TXT", "name": "_dmarc", "value": "v=DMARC1; p=reject; adkim=s; aspf=s" } ],
+      "queue": 1,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-05", "title": "Cloudflare payment method on file and R2 enabled", "chain": "A",
+      "owner": "founder", "wall": "payment", "blocks": "mac-build", "depends": [],
+      "attest": true, "link": "https://dash.cloudflare.com/", "minutes": 5, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-06", "title": "R2 bucket early-letters-packs and custom domain packs.earlyletters.app", "chain": "A",
+      "owner": "founder", "wall": "account-dashboard", "blocks": "mac-build", "depends": ["S-03", "S-05"],
+      "probe": "packsHost", "link": "https://dash.cloudflare.com/", "minutes": 10, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-07", "title": "R2 API token scoped to the bucket, kept in the founder's r2.env", "chain": "A",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": ["S-06"],
+      "attest": true, "link": "https://dash.cloudflare.com/", "minutes": 5, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-08", "title": "Pack signing keys, primary and backup (keygen.mjs), public halves in keys.ts", "chain": "A",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": [],
+      "probe": "trustedKeys", "link": "https://github.com/thesaurabhpareek/earlyletters/blob/develop/packages/api/src/keys.ts", "minutes": 20, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-09", "title": "publish.ts release (signed manifest, remote config, content bundle)", "chain": "A",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": ["S-08"],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/blob/develop/docs/ops/PACKS_HOSTING.md", "minutes": 10, "recurrence": "on-change",
+      "deepCheck": "npx tsx scripts/packs/publish.ts verify",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-10", "title": "Keys PR merged (#512)", "chain": "A",
+      "owner": "karma", "wall": null, "blocks": "mac-build", "depends": ["S-08"],
+      "probe": "prMerged", "args": { "numbers": [512] }, "link": "https://github.com/thesaurabhpareek/earlyletters/pull/512", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-11", "title": "publish.ts upload and verify; the pack manifest answers on packs.earlyletters.app", "chain": "A",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": ["S-06", "S-07", "S-09"],
+      "probe": "packManifest", "link": "https://packs.earlyletters.app/functions/v1/config/v1/packs", "minutes": 15, "recurrence": "on-change",
+      "deepCheck": "npx tsx scripts/packs/publish.ts verify",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-12", "title": "Expo project id and owner in app.config.ts (#487 merged)", "chain": "B",
+      "owner": "karma", "wall": null, "blocks": "mac-build", "depends": [],
+      "probe": "easProjectConfig", "link": "https://github.com/thesaurabhpareek/earlyletters/pull/487", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-12b", "title": "Production profile store-ready: submit.production ascAppId 6829377245, and no channel while expo-updates is absent", "chain": "B",
+      "owner": "agent", "wall": null, "blocks": "store", "depends": ["S-12"],
+      "probe": "easProductionProfile", "link": "https://github.com/thesaurabhpareek/earlyletters/blob/develop/apps/mobile/eas.json", "minutes": 0, "recurrence": "once",
+      "deepCheck": "npx tsx scripts/release/doctor.ts --store",
+      "values": [ { "field": "submit.production.ios.ascAppId", "value": "6829377245" } ],
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-13", "title": "Duplicate PRs #486 and #482 closed", "chain": "B",
+      "owner": "karma", "wall": null, "blocks": "optional", "depends": ["S-12"],
+      "probe": "prClosed", "args": { "numbers": [486, 482] }, "link": "https://github.com/thesaurabhpareek/earlyletters/pulls", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-14", "title": "Download the EAS submit App Store Connect API key (.p8), once", "chain": "B",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": [],
+      "attest": true, "link": "https://appstoreconnect.apple.com/access/integrations/api", "minutes": 5, "recurrence": "once",
+      "deepCheck": "npx tsx scripts/release/doctor.ts --live",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-15", "title": "Expo account two-factor on (or confirm it is on)", "chain": "hygiene",
+      "owner": "founder", "wall": "security-setting", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://expo.dev/settings", "minutes": 5, "recurrence": "once",
+      "queue": 5,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-16", "title": "TestFlight internal group Family and its testers on the preview record", "chain": "B",
+      "owner": "karma", "wall": null, "blocks": "mac-build", "depends": [],
+      "attest": true, "link": "https://appstoreconnect.apple.com/apps/6829163677/testflight", "minutes": 3, "recurrence": "on-change",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-17", "title": "Build 1 from the founder's Mac (testflight profile), submitted and in Family", "chain": "B",
+      "owner": "founder", "wall": "secret", "blocks": "mac-build", "depends": ["S-11", "S-12", "S-14", "S-16"],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/blob/develop/docs/release/TESTFLIGHT.md", "minutes": 30, "recurrence": "per-build",
+      "deepCheck": "npm run preflight:testflight -w @scribe/mobile",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-18", "title": "Expo robot token in the GitHub testflight environment as EXPO_TOKEN", "chain": "B",
+      "owner": "founder", "wall": "secret", "blocks": "gh-build", "depends": ["GH-01"],
+      "probe": "envSecretNames", "founderOnly": true, "args": { "environment": "testflight", "names": ["EXPO_TOKEN"] },
+      "link": "https://github.com/thesaurabhpareek/earlyletters/settings/environments", "minutes": 5, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-21", "title": "AASA served by earlyletters.com (Vercel APPLE_TEAM_ID, IOS_BUNDLE_ID) and by Apple's CDN", "chain": "C",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": [],
+      "probe": "aasa", "link": "https://earlyletters.com/.well-known/apple-app-site-association", "minutes": 5, "recurrence": "once",
+      "values": [ { "field": "APPLE_TEAM_ID", "value": "VX2Z7FGV23" }, { "field": "IOS_BUNDLE_ID", "value": "com.earlyletters.scribe" } ],
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-31", "title": "App Store Small Business Program (submitted, Apple's approval pending)", "chain": "hygiene",
+      "owner": "founder", "wall": "agreement", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://developer.apple.com/app-store/small-business-program/", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "waiting", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-32", "title": "Billing grace period, 16 days, all renewals", "chain": "hygiene",
+      "owner": "karma", "wall": null, "blocks": "store", "depends": [],
+      "attest": true, "link": "https://appstoreconnect.apple.com/apps/6829377245/distribution/subscriptions", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-33", "title": "EU DSA trader answer checked against the record and counsel", "chain": "hygiene",
+      "owner": "founder", "wall": "legal-declaration", "blocks": "store", "depends": [],
+      "attest": true, "link": "https://appstoreconnect.apple.com/business", "minutes": 10, "recurrence": "once",
+      "queue": 8,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-34", "title": "Age rating questionnaire on the production record", "chain": "hygiene",
+      "owner": "founder", "wall": "legal-declaration", "blocks": "store", "depends": [],
+      "attest": true, "link": "https://appstoreconnect.apple.com/apps/6829377245/distribution/info", "minutes": 15, "recurrence": "once",
+      "queue": 9,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-35", "title": "Decide how the alpha tests Plus (sandbox on a development build)", "chain": "hygiene",
+      "owner": "karma", "wall": null, "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/blob/develop/docs/release/TESTFLIGHT.md", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-36", "title": "GitHub two-factor on the owner account", "chain": "hygiene",
+      "owner": "founder", "wall": "security-setting", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://github.com/settings/security", "minutes": 10, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-10-31" }
+    },
+    {
+      "id": "S-37", "title": "Porkbun: renewal dates, auto-renew, lock, WHOIS privacy, account two-factor; confirm earlyletters.com DNSSEC", "chain": "hygiene",
+      "owner": "founder", "wall": "security-setting", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://porkbun.com/account/domainsSpeedy", "minutes": 10, "recurrence": "once",
+      "queue": 6,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-38", "title": "CAA records on earlyletters.com", "chain": "hygiene",
+      "owner": "founder", "wall": "dns-edit", "blocks": "optional", "depends": [],
+      "probe": "comCaa", "link": "https://porkbun.com/account/domainsSpeedy", "minutes": 5, "recurrence": "once",
+      "values": [ { "type": "CAA", "name": "@", "value": "0 issue \"letsencrypt.org\"" }, { "type": "CAA", "name": "@", "value": "0 issuewild \";\"" } ],
+      "queue": 7,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-39", "title": "Resend aliases privacy, security and dmarc; then earlyletters.com DMARC rua to the dmarc alias", "chain": "hygiene",
+      "owner": "agent", "wall": null, "blocks": "optional", "depends": [],
+      "probe": "comDmarcRua", "link": "https://resend.com/domains", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-40", "title": "Line-by-line pass over the other Project setup docs", "chain": "hygiene",
+      "owner": "karma", "wall": null, "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/tree/develop/docs/release", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-41", "title": "Fix release docs that disagree with the record (TESTFLIGHT 2.5, FOUNDER_QUEUE, PACKS_HOSTING, emails BRIEF, .app CAA wording)", "chain": "hygiene",
+      "owner": "agent", "wall": null, "blocks": "optional", "depends": ["S-40"],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/tree/develop/docs/release", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-42", "title": "Apple Developer Program membership renewal card", "chain": "hygiene",
+      "owner": "founder", "wall": "payment", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://developer.apple.com/account", "minutes": 5, "recurrence": "on-change",
+      "queue": 4,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-43", "title": "Delete the two unused Expo projects", "chain": "hygiene",
+      "owner": "founder", "wall": "account-dashboard", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://expo.dev/accounts/earlyletters-team/projects", "minutes": 5, "recurrence": "once",
+      "queue": 12,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-44", "title": "Vercel Agent PRs off; detach connectors from the disabled scheduled tasks", "chain": "hygiene",
+      "owner": "founder", "wall": "account-dashboard", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://vercel.com/dashboard", "minutes": 5, "recurrence": "once",
+      "queue": 13,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-45", "title": "Branch cleanup pass 1 (cleanup-branches.sh --apply on the founder's Mac)", "chain": "hygiene",
+      "owner": "founder", "wall": "bulk-delete", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://github.com/thesaurabhpareek/earlyletters/branches", "minutes": 10, "recurrence": "once",
+      "deepCheck": "bash scripts/release/cleanup-branches.sh scripts/release/branch-cleanup/pass1-2026-10-30.tsv",
+      "queue": 10,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-46", "title": "Monthly regulatory watch scheduled task (or confirm it exists)", "chain": "hygiene",
+      "owner": "founder", "wall": "account-dashboard", "blocks": "optional", "depends": [],
+      "attest": true, "link": "https://claude.ai/", "minutes": 5, "recurrence": "once",
+      "queue": 11,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-50", "title": "Decide where staging lives (Supabase Pro in a dedicated org, or reuse the free slot)", "chain": "D",
+      "owner": "founder", "wall": "spend", "blocks": "build-2", "depends": [],
+      "attest": true, "link": "https://supabase.com/dashboard/projects", "minutes": 10, "recurrence": "once",
+      "queue": 2,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-51", "title": "Create scribe-staging, the staging environment secrets, the CI catch-up deploy, spend cap on", "chain": "D",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": ["S-50"],
+      "probe": "envSecretNames", "founderOnly": true,
+      "args": { "environment": "staging", "names": ["SUPABASE_DB_URL_STAGING", "SUPABASE_STAGING_URL", "SUPABASE_STAGING_PUBLISHABLE_KEY", "SUPABASE_STAGING_PROJECT_REF"] },
+      "link": "https://supabase.com/dashboard/projects", "minutes": 45, "recurrence": "once",
+      "deepCheck": "npx tsx scripts/ops/staging-smoke.ts",
+      "queue": 3,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-52", "title": "Staging auth: Resend SMTP, Sign in with Apple key and provider, OTP length", "chain": "D",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": ["S-51"],
+      "attest": true, "link": "https://developer.apple.com/account/resources/authkeys/list", "minutes": 30, "recurrence": "once",
+      "queue": 3,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-53", "title": "EAS preview environment variables", "chain": "D",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": ["S-51"],
+      "attest": true, "link": "https://expo.dev/accounts/earlyletters-team/projects/scribe/environment-variables", "minutes": 10, "recurrence": "once",
+      "deepCheck": "npm run preflight:alpha -w @scribe/mobile",
+      "queue": 3,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-54", "title": "Purge worker and function secrets before account deletion is on (D-129)", "chain": "D",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": ["S-51"],
+      "attest": true, "link": "https://supabase.com/dashboard/projects", "minutes": 20, "recurrence": "once",
+      "queue": 3,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "S-55", "title": "Build 2 (preview profile) from the Mac or testflight.yml, Family only", "chain": "D",
+      "owner": "founder", "wall": "secret", "blocks": "build-2", "depends": ["S-51", "S-52", "S-53", "S-54", "S-18", "GH-03"],
+      "probe": "testflightDispatched", "link": "https://github.com/thesaurabhpareek/earlyletters/actions/workflows/testflight.yml", "minutes": 15, "recurrence": "per-build",
+      "deepCheck": "npm run preflight:alpha -w @scribe/mobile",
+      "queue": 3,
+      "ledger": { "status": "open", "date": "2026-11-01" }
+    },
+    {
+      "id": "GH-01", "title": "Default branch develop; protection with required checks on develop and main", "chain": "github",
+      "owner": "karma", "wall": null, "blocks": "gh-build", "depends": [],
+      "probe": "githubProtection", "link": "https://github.com/thesaurabhpareek/earlyletters/settings/branches", "minutes": 0, "recurrence": "once",
+      "deepCheck": "npx tsx scripts/release/github-settings.ts --verify",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "GH-02", "title": "Rulesets: long-lived branches, release tags, archive tags, Copilot review", "chain": "github",
+      "owner": "karma", "wall": null, "blocks": "gh-build", "depends": [],
+      "probe": "githubRulesets", "link": "https://github.com/thesaurabhpareek/earlyletters/settings/rules", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    },
+    {
+      "id": "GH-03", "title": "testflight.yml registered and active", "chain": "github",
+      "owner": "karma", "wall": null, "blocks": "gh-build", "depends": [],
+      "probe": "workflowsActive", "args": { "workflows": ["testflight.yml"] }, "link": "https://github.com/thesaurabhpareek/earlyletters/actions", "minutes": 0, "recurrence": "once",
+      "ledger": { "status": "done", "date": "2026-11-01" }
+    }
+  ]
+}

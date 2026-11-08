@@ -193,6 +193,19 @@ export function expoFileSystem(current: () => Disk) {
     open(_mode: string) {
       const uri = this.uri;
       return {
+        /** Where readBytes starts (FileHandle.offset). */
+        offset: 0 as number | null,
+        get size(): number | null {
+          return current().files.get(uri)?.data.length ?? null;
+        },
+        readBytes(length: number): Uint8Array {
+          const f = current().files.get(uri);
+          if (!f) throw new Error('ERR_FILE_NOT_FOUND');
+          const at = this.offset ?? 0;
+          const out = f.data.slice(at, at + length);
+          this.offset = at + out.length;
+          return out;
+        },
         writeBytes(chunk: Uint8Array) {
           const disk = current();
           const old = disk.files.get(uri);

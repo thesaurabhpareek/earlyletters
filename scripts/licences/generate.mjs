@@ -1,16 +1,19 @@
 #!/usr/bin/env node
 /**
- * Writes apps/mobile/src/generated/licences.json: the licence notice of every production npm
- * package in the app's tree, every bundled font, every third-party native module and every
- * vendored file, grouped by licence, for the Licenses page (MIT, BSD, Apache and ISC ask for the
+ * Writes apps/mobile/src/generated/licences.json: the licence notice of every npm package in the
+ * iOS binary, every native library compiled in, every bundled font, the icon artwork, the speech
+ * models the app downloads and every vendored file, grouped by theme (scripts/licences/components.mjs),
+ * for the Licenses page (MIT, BSD, Apache and ISC ask for the
  * notice to ship with the code). The app reads it through apps/mobile/src/lib/licences.ts.
  *
  *   npm run licences:generate -w @scribe/mobile              # after any dependency change
  *   npm run licences:generate -w @scribe/mobile -- --check   # exit 1 when the file would change; writes nothing
  *   node scripts/licences/generate.mjs --check --against <file>   # check another copy (the tests use it)
  *
- * Sources: package-lock.json (the production set, walked by lib.mjs), `npm ls --omit=dev --all`
- * (a cross-check of that walk against npm's own), each package's LICENSE and NOTICE files in
+ * Sources: package-lock.json walked through the table in components.mjs (what ships, by theme;
+ * build tools, web-only and type packages left out with a reason), `npm ls --omit=dev --all`
+ * (a cross-check of the lockfile walk against npm's own), scripts/licences/third-party/ (licence
+ * texts of native libraries, models and artwork, copied from upstream), each package's LICENSE and NOTICE files in
  * node_modules, packages/design-tokens/fonts/OFL-*.txt, apps/mobile/modules/*, any licence
  * file under packs/, and third-party code adapted into apps/mobile/shims (VENDORED in lib.mjs).
  * Needs node_modules installed (`npm ci` at the repo root). What goes in the file is decided by
@@ -26,7 +29,9 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { APP_PACKAGE, COMMAND, EXPECTED_LICENCES, OUTPUT, deriveNotices, dependencyIds, flattenNpmLs } from './lib.mjs';
+import { TABLE } from './components.mjs';
+import { APP_PACKAGE, COMMAND, OUTPUT, deriveNotices, dependencyIds, flattenNpmLs, shippedPackages } from './lib.mjs';
+
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const args = process.argv.slice(2);
@@ -45,11 +50,11 @@ if (!existsSync(join(REPO, 'node_modules'))) fail('node_modules is missing: run 
 /** @type {ReturnType<typeof deriveNotices>} */
 let derived;
 try {
-  derived = deriveNotices(REPO);
+  derived = deriveNotices(REPO, { table: TABLE });
 } catch (e) {
   fail(/** @type {Error} */ (e).message);
 }
-const { shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, entries, notices, json } = derived;
+const { all, shipped, hostSpecific, own, hash, libraries, fonts, native, data, vendored, thirdParty, entries, notices, json } = derived;
 
 // ---------------------------------------------------------------- 2. cross-check the lockfile walk against npm's own walk of the installed tree
 const ls = spawnSync(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['ls', '--omit=dev', '--all', '--long', '--json', '-w', APP_PACKAGE], {
@@ -73,7 +78,7 @@ const npmIds = new Set(
     .map((p) => `${p.name}@${p.version}`)
     .filter((id) => !hostIds.has(id)),
 );
-const lockIds = new Set(dependencyIds(shipped));
+const lockIds = new Set(dependencyIds(shippedPackages(all)));
 const onlyLock = [...lockIds].filter((id) => !npmIds.has(id));
 const onlyNpm = [...npmIds].filter((id) => !lockIds.has(id));
 if (onlyLock.length || onlyNpm.length) {
@@ -89,7 +94,7 @@ const shown = against ?? OUTPUT;
 const before = existsSync(outPath) ? readFileSync(outPath, 'utf8') : null;
 if (CHECK) {
   if (before === json) {
-    console.log(`licences: ${shown} is up to date (${entries.length} entries, ${notices.licences.length} licences).`);
+    console.log(`licences: ${shown} is up to date (${entries.length} entries in ${notices.themes.length} themes).`);
     process.exit(0);
   }
   fail(`${shown} is ${before === null ? 'missing' : 'stale or edited by hand'}. Run: ${COMMAND}`);
@@ -100,23 +105,20 @@ writeFileSync(outPath, json);
 // ---------------------------------------------------------------- 4. report
 const kb = Math.round(Buffer.byteLength(json, 'utf8') / 1024);
 const label = (/** @type {{ name: string, version?: string }} */ e) => (e.version ? `${e.name}@${e.version}` : e.name);
+const all_ = notices.themes.flatMap((g) => g.entries);
 console.log(`licences: ${before === json ? 'unchanged' : before === null ? 'wrote' : 'updated'} ${OUTPUT} (${kb} KB, ${notices.texts.length} distinct notice texts)`);
-console.log(`  ${entries.length} entries: ${libraries.length} npm packages, ${fonts.length} fonts, ${native.entries.length} native modules, ${data.length} data files, ${vendored.length} vendored; dependency hash ${hash.slice(0, 12)}`);
-console.log(`  ${notices.licences.length} licences:`);
-for (const g of notices.licences) console.log(`    ${g.id.padEnd(28)} ${String(g.entries.length).padStart(4)}  ${g.name}`);
+console.log(`  ${entries.length} entries: ${libraries.length} npm packages in the iOS binary, ${thirdParty.length} other components (native libraries, vendored code, models, artwork), ${fonts.length} fonts, ${native.entries.length} third-party local modules, ${data.length} data files, ${vendored.length} vendored shims; dependency hash ${hash.slice(0, 12)}`);
+console.log(`  Left out of the ${shippedPackages(all).length} packages in the production tree: ${shippedPackages(all).length - shipped.length} (build tools, web-only, types; reasons in components.mjs NOT_SHIPPED)`);
+for (const g of notices.themes) console.log(`    ${g.id.padEnd(10)} ${String(g.entries.length).padStart(4)}`);
 
-const unusual = entries.filter((e) => !e.licence || !EXPECTED_LICENCES.has(e.licence));
-console.log(`\n  To look at (licence missing or outside the expected set): ${unusual.length}`);
-for (const e of unusual) console.log(`    ${label(e).padEnd(44)} ${e.licence ?? '(none stated)'}`);
+const review = all_.filter((e) => e.review);
+console.log(`\n  Needs review (licence missing or unexpected, or no notice text for a licence that asks for one): ${review.length}`);
+for (const e of review) console.log(`    ${label(e).padEnd(44)} ${e.licence}${e.text === null ? ', no notice text' : ''}`);
 
 const inherited = libraries.filter((e) => e.noticeFrom);
-console.log(`\n  Published without a licence file; notice read from a sibling package in the same repository (its root LICENSE): ${inherited.length}`);
-for (const e of inherited) console.log(`    ${label(e).padEnd(44)} from ${e.noticeFrom} (${e.repository})`);
-
-const noText = entries.filter((e) => e.text === null);
-console.log(`\n  Published without a licence file and no sibling to read from (listed with the licence from package.json only): ${noText.length}`);
-for (const e of noText) console.log(`    ${label(e).padEnd(44)} ${e.licence ?? '(none stated)'}`);
+console.log(`\n  Published without a licence file; notice read from a sibling package in the same repository: ${inherited.length}`);
+for (const e of inherited) console.log(`    ${label(e).padEnd(44)} from ${e.noticeFrom}`);
 
 console.log(`\n  Our own native modules, no third-party code, not listed: ${native.own.join(', ') || 'none'}`);
-console.log(`  Host-specific build binaries left out (never in the app): ${hostSpecific.length}${hostSpecific.length ? ` (${[...new Set(hostSpecific.map((p) => p.name.replace(/-[^-]+-[^-]+(-[^-]+)?$/, '-*')))].join(', ')})` : ''}`);
+console.log(`  Host-specific build binaries left out (never in the app): ${hostSpecific.length}`);
 console.log(`  Our own packages, followed but not listed: ${[...own].sort().join(', ')}`);

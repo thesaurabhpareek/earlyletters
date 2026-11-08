@@ -1,0 +1,41 @@
+/* Owner: coordinator. Display type: Literata 500, sentence case, 6 words or fewer (CREATIVE 3). */
+.dateline {
+  margin: 0 0 0.9em;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: clamp(13px, 1.1vw, 16px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+.headline {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-size: clamp(40px, 7.2vw, 112px);
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.support {
+  margin: 1.1em 0 0;
+  max-width: 30em;
+  font-family: var(--font-sans);
+  font-size: clamp(18px, 1.5vw, 22px);
+  line-height: 1.5;
+  opacity: 0.82;
+  text-wrap: pretty;
+}
+
+/* Very small phones (320x568 and the like): there is no room for full-size words beside a phone mock or a letter. */
+@media (max-width: 360px), (max-height: 600px) {
+  .headline {
+    font-size: clamp(30px, 9.4vw, 38px);
+    line-height: 1.04;
+  }
+  .support {
+    margin-top: 0.7em;
+    font-size: 15px;
+    line-height: 1.38;
+  }
+}

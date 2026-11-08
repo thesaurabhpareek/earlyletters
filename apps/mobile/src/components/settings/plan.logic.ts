@@ -82,10 +82,16 @@ export type PlanScreen = {
   status: { title: string; subtitle: string | null; value: string | null } | null;
   /** Plus off: "See what Plus adds" opens Apple's view; or the line that says why it cannot here. */
   seePlans: { kind: 'open'; title: string } | { kind: 'unavailable'; title: string } | null;
-  /** The section footer, once: the registered promise. */
-  promise: string;
+  /** The section footer, once: the registered promise. Null in alpha, where the free-letter limit does not apply. */
+  promise: string | null;
   manage: boolean;
   redeem: boolean;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA; founder, 1 Nov 2026; Karma ruling on #552): the screen shows only the
+   * alpha note (`seePlans.title`). No status, promise, payment line, Manage, Restore, Redeem, Save a copy or refund:
+   * no StoreKit call can be reached from it.
+   */
+  alpha: boolean;
 };
 
 export function planScreen(input: {
@@ -98,7 +104,15 @@ export function planScreen(input: {
   /** The restore result on screen under its row ("Plus is on."), so the row never repeats it either. */
   restored?: string | null;
   longDate: (ymd: string) => string;
+  /**
+   * An alpha build (billing/alpha.ts PLUS_ALPHA): Plus products cannot load, so "See what Plus adds" becomes the note
+   * that Plus is not part of this test, and Redeem a code is not offered. Defaults to false, the store build.
+   */
+  alpha?: boolean;
 }): PlanScreen {
+  if (input.alpha) {
+    return { status: null, seePlans: { kind: 'unavailable', title: billingCopy.alpha.note }, promise: null, manage: false, redeem: false, alpha: true };
+  }
   const said = new Set([...input.noteLines, ...(input.restored ? [input.restored] : [])]);
   const line = input.line;
   // A trial whose end date the open note already says ("Plus is free until {date}."): the row says only that Plus is
@@ -127,6 +141,7 @@ export function planScreen(input: {
     // shown only for the person's own subscription; the status row already says it is shared with them.
     manage: subscriptionExists(input.details.status) && input.details.ownership !== 'familyShared',
     redeem: !input.plusOn && available,
+    alpha: false,
   };
 }
 

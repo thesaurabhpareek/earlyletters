@@ -64,7 +64,18 @@ import { brand } from '@scribe/brand';
  * schema, so every earlier v1 export still validates; this version always
  * writes it. The 1.3.0 schema rejects a 1.4.0 account.json.
  */
-export const EXPORT_SCHEMA_VERSION = '1.4.0';
+/**
+ * 1.5.0 (RT-BK-05, SR-C-10; F09-REQ-003, F04-REQ-015): each entry gains
+ * `occurred_precision`, `day` or `month`. A `month` letter's `occurred_on` is
+ * only where that month of age starts, never a day the parent gave: readers
+ * show the month alone ("Sometime in Month 3"), as the app, the letter files,
+ * index.html and the printable book do, and its letter file name carries no
+ * day. Optional in the schema, so every earlier v1 export still validates
+ * (a missing value means `day`); this version always writes it. The same
+ * one-way rule applies: the 1.4.0 schema closes entries, so it rejects a
+ * 1.5.0 entries.json; read each export with the schema it carries.
+ */
+export const EXPORT_SCHEMA_VERSION = '1.5.0';
 
 /** "early-letters-export", from packages/brand (the name lives only there). */
 export const EXPORT_FORMAT = `${brand.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}-export`;
@@ -101,6 +112,8 @@ export interface ExportEntry {
   author: { signs_as: string; is_exporter: boolean };
   kind: 'letter' | 'note' | 'not_much';
   occurred_on: string;
+  /** Since 1.5.0. `month`: the parent named a month of age, not a day; `occurred_on` is that month's first day. */
+  occurred_precision?: 'day' | 'month';
   captured_at: string;
   capture_mode: 'spoken' | 'typed' | 'mixed';
   edit_level: 'clean' | 'verbatim';
@@ -364,6 +377,8 @@ export const exportJsonSchema = {
         },
         kind: { enum: ['letter', 'note', 'not_much'] },
         occurred_on: isoDate,
+        // Since 1.5.0; optional so every earlier v1 export still validates (missing means day).
+        occurred_precision: { enum: ['day', 'month'] },
         captured_at: { type: 'string', minLength: 10 },
         capture_mode: { enum: ['spoken', 'typed', 'mixed'] },
         edit_level: { enum: ['clean', 'verbatim'] },

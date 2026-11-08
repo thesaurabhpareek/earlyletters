@@ -23,8 +23,8 @@ TDD 07 planned 15 flows on 3 Oct morning; the founder's decisions that day chang
 | E2E-03 | `E2E-03-speak-save-offline.yaml` | Speak, Review, keep the recording as a letter waiting for its words; Keep the book sheet and Not now; background stops and keeps the take; kill during recording is recovered | offline, no model |
 | E2E-04 | `E2E-04-type-a-letter.yaml` | Type a letter with Devanagari; no first-note card; text back exactly; kill right after Save leaves it exactly once | offline |
 | E2E-05 | `E2E-05-language-hindi-packs.yaml` | Add Hindi; its text pack downloads to installed and appears in Storage alone; offline and kill-switch states | network (part 1) |
-| E2E-06 | `E2E-06-read-together-plus-gate.yaml` | 3 free Read together sessions, then the Plus gate; remote config raises it to 5 | offline, config seam |
-| E2E-07 | `E2E-07-add-child-plus-gate.yaml` | Add a child after first run: Plus gate from the Book (2 taps) and from Settings; Not now creates nothing | offline |
+| E2E-06 | `E2E-06-read-together-no-gate.yaml` | Read together is free with no limit (D-082, F14-REQ-029): 6 sessions in a row, then a 7th after a relaunch, all open with no Plus sheet; reading one letter is never limited | offline, seed `asha` |
+| E2E-07 | `E2E-07-add-child-no-gate.yaml` | Add a child after first run needs no gate (D-083, F14-REQ-029): the form opens from the Book (2 taps), Avi's book is added and the switcher lists both; Settings, Add a child opens the same form with no gate | offline, seed `asha` |
 | E2E-08 | `E2E-08-delete-and-undo.yaml` | Delete, Undo, delete again: gone from the book, also after relaunch | offline |
 | E2E-09 | `E2E-09-account-deletion.yaml` | Account deletion: Export offered first, typed confirm, scheduled; cancel; server row scheduled then cancelled | backend |
 | E2E-10 | `E2E-10-export.yaml` + `bin/inspect-export.sh` | Export offline with no Plus UI; ZIP contents and manifest hashes | offline |

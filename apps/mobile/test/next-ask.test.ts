@@ -6,6 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { en } from '@scribe/content';
 import {
   ASK_SESSION_GAP_MS,
   MAX_REMINDER_PRIMES,
@@ -128,6 +129,10 @@ describe('wiring (source checks; the card and the sheet are on the device list)'
     const card = src('components/asks/reminder-prime-ask.tsx');
     for (const k of ['title', 'body', 'yesEveningsButton', 'pickTimeButton', 'noneOption', 'noneHelp', 'timeLabel', 'cta']) expect(card, k).toMatch(new RegExp(`r\\.${k}\\b`));
     expect(card).toMatch(/noteReminderPrimeShown\(\)/);
+    // BL-532: the card says the child's name, in the app only; the words carry {child} and the card fills it.
+    expect(en.onboarding.reminder.body).toContain("{child}");
+    expect(card).toMatch(/renderTemplate\(r\.body, \{ child: getActiveChild\(\)\?\.name \|\| 'your little one' \}\)/);
+    expect(en.onboarding.reminder.body.replace('{child}', 'Asha')).toMatch(/to add to Asha's book/);
     // "No reminders" never opens the OS alert.
     const none = card.slice(card.indexOf('const none = () =>'), card.indexOf('return (', card.indexOf('const none = () =>')));
     expect(none).not.toMatch(/enableReminders/);

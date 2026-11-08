@@ -4,7 +4,7 @@ The name, store name, category, tagline and print title live in `packages/brand/
 
 ## Positioning statement
 
-For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice, exactly as you said them, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
+For parents of young children, Early Letters is the baby memory book you fill by talking. Unlike fill-in-the-blank baby books or photo apps, it keeps letters to your child in your own words and your own voice. It stays in your words, so your child can read and hear them for years. (From v1.1: and for the family who love them.)
 
 ## Naming system
 
@@ -20,7 +20,7 @@ For parents of young children, Early Letters is the baby memory book you fill by
 
 ## Messaging pillars
 
-### 1. Exactly as you said it
+### 1. It stays in your words
 Your words, never ours.
 - On-device transcription only fixes small slips, like an um, a repeat or a misheard word, and marks each one.
 - Word for word: every small fix is marked, and you can undo it.
@@ -116,7 +116,7 @@ One term per concept. Banned words must not appear in user-facing copy (app, web
 | Privacy promise | private by default; "Only you, and your co-parent if you invite them, can read what you add to the book. Our staff look only in the rare cases our Privacy Policy lists." | "only the family you invite", secure vault, military-grade, 100% private, end-to-end (letters are encrypted at rest, not end-to-end) | No Vault mode or cloud transcription in v1.0 public copy. |
 | Release state | early version ("early version, can make mistakes", in the app only) | beta (in app, store and website copy), preview, alpha | TestFlight is the only beta (Brief 10). Legal terms may say beta until counsel changes them. |
 | Email sign-off | "Warmly," then the brand name | The Early Letters Team, Love, Cheers, Best | `emailChrome.signature`. |
-| Footer line | brand name, then the tagline "Exactly as you said it." | other tagline variants | `emailChrome.footer.nameLine`. |
+| Footer line | brand name, then the tagline "It stays in your words." | other tagline variants | `emailChrome.footer.nameLine`. |
 
 ## Internal terms, and what a parent sees instead (CR-25, 31 Oct 2026)
 
