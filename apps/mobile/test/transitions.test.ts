@@ -81,11 +81,25 @@ describe('routeTransitions: one table for every route (EXPERIENCE_PASS 5.8)', ()
     expect(routeTransitions(true).onboarding).toEqual({ animation: 'none' });
   });
 
-  it('row 7: the letter keeps the platform push until its page mounts CardToPage (P5), so nothing appears without motion', () => {
-    expect(ROUTES['letter/[id]'].move).toBe('push');
-    expect(routeTransitions(false)['letter/[id]']).toEqual({});
-    expect(moveOptions('cardToPage', false)).toEqual({ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } });
-    expect(moveOptions('cardToPage', true)).toEqual(moveOptions('cardToPage', false)); // CardToPage cross-fades itself
+  it('row 7: a letter opens card to page only: no native slide under the grow, under either setting (build 1 played both)', () => {
+    expect(ROUTES['letter/[id]'].move).toBe('cardToPage');
+    const card = { presentation: 'transparentModal', animation: 'none', headerShown: false, contentStyle: { backgroundColor: 'transparent' } };
+    expect(moveOptions('cardToPage', false)).toEqual(card);
+    expect(moveOptions('cardToPage', true)).toEqual(card); // CardToPage cross-fades itself under Reduce Motion
+    for (const reduced of [false, true]) {
+      const t = routeTransitions(reduced)['letter/[id]'];
+      expect(t, String(reduced)).toEqual(card);
+      expect(t.animation).toBe('none'); // the platform adds no move of its own
+    }
+  });
+
+  it('row 7 (source): the letter page mounts CardToPage because the route is card to page, and the root layout spreads the row last', () => {
+    const page = read('app/letter/[id].tsx');
+    expect(page).toMatch(/const CARD_MODE = \(ROUTES\['letter\/\[id\]'\]\.move as Move\) === 'cardToPage';/);
+    expect(page).toContain('<CardToPage id={entry.id}');
+    const layout = read('app/_layout.tsx');
+    // The row's headerShown: false and animation: 'none' win over the layout's own header options.
+    expect(layout).toMatch(/name="letter\/\[id\]" options=\{\{[^}]*\.\.\.routes\['letter\/\[id\]'\] \}\}/);
   });
 
   it('Reduce Motion (rule 6): our dissolves become one fadeMs cross-fade; native pushes and sheets keep the system transition', () => {

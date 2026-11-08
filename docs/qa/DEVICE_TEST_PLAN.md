@@ -533,6 +533,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-81 Opening a letter from the Book: one move, card to page (founder report on TestFlight build 1; MOTION 5f, EXPERIENCE_PASS 5.8 row 7; branch fix/mobile-letter-open-motion)
+- **Needs:** a build with fix/mobile-letter-open-motion; the SE 3 and a 120 Hz iPhone (Pro); a book with at least six letters of different lengths (Asha only), one short enough to show whole on its card; light and dark mode.
+- **Steps:**
+  - (a) On the Book, tap a letter card in the middle of the screen. Watch the open, then tap Back. Repeat for the top card, the bottom card and the short letter. Record a screen recording of each on the SE 3.
+  - (b) Open a letter, then swipe down on the page's top bar. Open one more and scroll the Book far enough that its card is off screen before going back (open, Back, scroll, open the next).
+  - (c) Settings > Accessibility > Motion > Reduce Motion on: repeat (a) once.
+  - (d) Larger Text at AX5 (Reading Size larger than the card's, if offered): repeat (a) once.
+  - (e) VoiceOver on: open a letter from the Book, then Back.
+  - (f) Tonight's "A month ago" card, if shown, and Settings > Recently deleted > Open: open a letter from each.
+- **Expected:** (a) the card holds its press, the Book goes under the page's paper, and the paper grows from the card into the page; no sideways slide at any point, nothing moves twice, no native header or back arrow flashes at the top; the card's words stay still on their way (never re-wrap or jump); Back carries them back into the card. (b) The swipe closes the page the same way; with the card off screen the page fades instead. (c) and (d) one short cross-fade each way, nothing slides or grows. (e) VoiceOver lands on the dateline, reads the letter once, and never reaches the Book behind the page. (f) The page fades in whole (no card to grow from), with no slide, and Back returns to where it came from. No hitch longer than one frame on the SE 3.
+- **Record:** S1-81 rows (a) to (f): phone, iOS version, text size, Reduce Motion yes or no, pass or fail, and for a fail what moved; the screen recordings of (a) on the SE 3.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

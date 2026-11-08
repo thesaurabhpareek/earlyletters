@@ -48,8 +48,8 @@
  * page's own opening is hidden until the move settles, and then VoiceOver and TalkBack focus move to the element
  * the page gave `focus` (its dateline or heading).
  *
- * Package P5 switches the letter route to this (ROUTES['letter/[id]'] = 'cardToPage') when the page mounts
- * CardToPage; until then the letter keeps the native push. Pure parts: lib/transitions.logic.ts.
+ * The letter route is presented for this (ROUTES['letter/[id]'] = 'cardToPage': a transparent modal with no native
+ * move or header), so the grow is the only move. Pure parts: lib/transitions.logic.ts.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
