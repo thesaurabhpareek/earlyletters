@@ -363,6 +363,38 @@ describe('copy rotation (C-REQ-006)', () => {
     });
   }
 
+  // NX-10-R2 (docs/roadmap/next/03-requirements/10-reminders-that-fit.md): the check above runs on one plan. This one
+  // walks a year the way the phone does: re-plan every morning, keep the nudge that fires that day, and read the
+  // reminders that were actually delivered, across the November and March clock changes and the new year.
+  const delivered = (prefs: Partial<ReminderPrefs>, start: string, days: number): PlannedNotification[] => {
+    const out: PlannedNotification[] = [];
+    for (let i = 0; i < days; i++) {
+      const day = addDays(parseIsoDate(start)!, i);
+      const iso = `${day.y}-${String(day.m).padStart(2, '0')}-${String(day.d).padStart(2, '0')}`;
+      const today = plan({ now: at(iso, 6, 0), prefs, children: [asha, dev] }).filter((n) => n.date === iso);
+      out.push(...today);
+    }
+    return out;
+  };
+
+  for (const [label, prefs] of patterns) {
+    for (const namesOnLockScreen of [false, true]) {
+      it(`[NX-10-R2] 30 reminders in a row, across seasons: no text twice in a row, no variant twice within 4 (${label}, names ${namesOnLockScreen ? 'on' : 'off'})`, () => {
+        for (const start of ['2026-10-05', '2026-12-15', '2027-02-20']) {
+          const run = delivered({ ...prefs, namesOnLockScreen }, start, 150);
+          expect(run.length, start).toBeGreaterThan(30 * (label === 'weekly' ? 0.5 : 1));
+          for (let i = 1; i < run.length; i++) {
+            expect(`${run[i].title}|${run[i].body}`, `${start} #${i} ${run[i].date}`).not.toBe(`${run[i - 1].title}|${run[i - 1].body}`);
+          }
+          const evenings = run.filter((n) => n.kind === 'evening');
+          for (let i = 0; i + 4 <= evenings.length; i++) {
+            expect(new Set(evenings.slice(i, i + 4).map((n) => n.variant)).size, `${start} window ${i}`).toBe(4);
+          }
+        }
+      });
+    }
+  }
+
   it('a date keeps its variant when the plan is made again later', () => {
     const early = plan({ prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 21 });
     const later = plan({ now: at('2026-10-12', 9, 0), prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 21 });
