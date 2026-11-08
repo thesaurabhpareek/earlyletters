@@ -14,7 +14,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await expect(about.getByText(EARLY, { exact: true })).toBeVisible();
   await expect(about.getByText(EARLY_BODY)).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
-  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(0);
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
@@ -22,11 +22,15 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await expect(app.getByTestId('settings.headerCard').getByText('On this phone', { exact: true })).toBeVisible();
   await expect(app.getByText('Your letters', { exact: true })).toBeVisible();
   await expect(app.getByText('Privacy and security', { exact: true })).toBeVisible();
-  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is said once, under Privacy and security, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
+  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
-  await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
-  await step('happy', 'Privacy', 'No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.');
+  // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.
+  await expect(app.getByTestId('privacy.promise')).toBeVisible();
+  await expect(app.getByText('What we never do', { exact: false })).toHaveCount(0);
+  await expect(app.getByText('Anyone who can unlock this iPhone can open the book.', { exact: true })).toBeVisible();
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  await step('happy', 'Privacy', 'The promise word for word at the top, with no icon. Where your book is kept (on this phone and in the iPhone backup, not sent to us; speech written down on this phone; no usage or crash reports), Who can see it (anyone who can unlock this iPhone; Names in notifications; notifications never show the words), What you can do (Export, Recently deleted; no account in this version), then the Privacy Policy and Terms, and the short privacy line last.');
   await app.goBack();
 
   await app.getByText('Appearance', { exact: true }).first().click();

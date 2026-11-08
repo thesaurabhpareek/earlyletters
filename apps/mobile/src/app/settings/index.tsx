@@ -29,7 +29,7 @@ import { backupCopy } from '@scribe/content';
  * - Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal).
  * - About: version, then the early-version note (registered text, D-060, K-13), word for word, unstyled.
  *
- * Said once each: the short privacy line (`trust.short`) is the footer of Privacy and security. Help writes to the
+ * Said once each: the short privacy line (`trust.short`) is the last line of Settings, Privacy (design.md 2.11). Help writes to the
  * support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling" is always here,
  * never behind a flag (D-034).
  *
@@ -131,7 +131,7 @@ export default function Settings() {
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
-      <ListSection title={h.sections.privacy} footer={copy.trust.short}>
+      <ListSection title={h.sections.privacy}>
         {/* APP_LOCK_ROW slot: the App lock row (design.md 2.5, CDesO-1) goes here, first in this group, from
             feat/mobile-app-lock. No placeholder row is drawn until that lane ships the page it opens. */}
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
