@@ -603,7 +603,7 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 
 ### S2-15 Reminders and notifications (C-REQ-001 to -009, D-025)
 - **Steps:** Settings > Reminders: turn on; the iOS prompt straight away, with no sheet in front of it (S1-47); choose a time 5 minutes ahead and wait with the phone locked. Change the time zone in iOS Settings; check the next reminder keeps local time. Look at the lock screen text. Turn Reminders off. Note: US daylight saving time ends on Sunday 1 Nov 2026 (A), right before submission week; check one reminder across it.
-- **Expected:** One iOS prompt, only after the priming sheet (C-REQ-001); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
+- **Expected:** One iOS prompt, straight from the Reminders switch with no sheet in front of it, after the explanation under the switch (C-REQ-001, CDesO-3, CCO-10); the switch stays on whatever the answer, and the choices, preview and Next line show inline (S1-47); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
 - **Record:** S2-15 row with delivery times.
 - **Update:** PRD C-REQ rows; `src/lib/reminders` notes.
 
