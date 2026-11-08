@@ -547,7 +547,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
 
-### S1-132 Delete this book, Restore, Erase now, and Erase everything on this phone (PR #520; RT-BK-12, SR-C-07; DATA-REQ-014, DATA-REQ-024, F17-REQ-080; D-083, D-103; design 2.12; CTO ruling 8 Nov)
+### S1-133 Delete this book, Restore, Erase now, and Erase everything on this phone (PR #520; RT-BK-12, SR-C-07; DATA-REQ-014, DATA-REQ-024, F17-REQ-080; D-083, D-103; design 2.12; CTO ruling 8 Nov)
 - **Needs:** a build with PR #520 on a phone that has never signed in (both rows are hidden once a phone signs in); the SE 3 and the founder's iPhone; two fictional books, Asha's with spoken and written letters and a draft, and a second one with one letter; reminders on; the English speech download installed. Fictional family only (Asha, Papa). For (i), a development build and a Mac with Xcode.
 - **Steps and expected:**
   - (a) Delete this book: Settings > Asha > Delete this book (below Hide this book). Step 1 shows Export everything first and Continue. Step 2 asks for the typed word "delete" before **Delete the book**; **Keep the book** backs out. After deleting, Asha's book is gone from the Book tab, Tonight, Export and the reminders, and Settings > Recently deleted shows one card with **Restore the book** and **Erase now**. The second book is untouched.
@@ -559,7 +559,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (g) Kill after confirming: set up a book again, Erase everything, tap **Erase**, and kill the app from the app switcher at once (while "Erasing" shows, or as soon as possible after). Relaunch: it opens on the age question, with no book.
   - (h) VoiceOver: on the page the order is the title, "What is erased", the body, the other lines, "Save a copy first?", Export your book, then Erase everything; the alert reads its title, body and both buttons; the Erasing screen is announced as busy; after the erase "Everything on this phone is erased." is spoken. Dynamic Type AX5 on the SE 3: nothing truncated and Export comes before Erase everything.
   - (i) Optional, development build: after (f), Xcode > Devices and Simulators > Download Container. The app's Documents and Caches hold no recording, export or recovery ZIP; only the speech model and language packs remain.
-- **Record:** S1-132 rows (a) to (i): build number and profile, phone, iOS version, pass or fail, and for any fail which step and a screenshot (Asha only).
+- **Record:** S1-133 rows (a) to (i): build number and profile, phone, iOS version, pass or fail, and for any fail which step and a screenshot (Asha only).
 - **Not covered:** device authentication (Face ID or passcode) before Erase everything, deferred to the 1 Dec build by the CTO ruling of 8 Nov (needs app lock, #640); Erase everything on a signed-in phone (F17-REQ-026, not built); Android.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
