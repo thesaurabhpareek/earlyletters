@@ -1,6 +1,6 @@
 import { router, Stack, useFocusEffect, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { brand } from '@scribe/brand';
 import { consentCopy } from '@/components/consent/copy';
@@ -14,6 +14,9 @@ import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
 import { useAnalyticsConsent } from '@/lib/analytics/use-analytics-consent';
 import { sensitiveStatusWords, useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
 import { lockScreenNamesOn } from '@/lib/reminders';
+import { readLockAbility, useAppLock } from '@/lib/app-lock/controller';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import type { LockMethod } from '@/lib/app-lock/machine';
 
 /**
  * Settings > Privacy (PRD.md K-01, K-17; C-REQ-016; LEGAL-REQ-003, -006), as ruled 1 Nov 2026 (CPrivO-5;
@@ -25,8 +28,10 @@ import { lockScreenNamesOn } from '@/lib/reminders';
  * - Where your book is kept: P2 (no sync, or sync status 'off') or P2b (status 'on'), none while unknown or signed
  *   out; the iPhone backup line (CCO-8 wording, same as Where your letters live); P3; P4 or the usage switch
  *   (capabilities.analytics; P4 only where the build cannot collect, D-095); the sync row when the build has sync.
- * - Who can see it: the plain fact while there is no app lock (`whoLockOff`); Names in notifications, which opens
- *   Reminders; P8 as the footer. APP_LOCK_ROW: feat/mobile-app-lock adds its row and the `whoLockOn` lines here.
+ * - Who can see it: the plain fact while the app lock is off (`whoLockOff`), and "You, after Face ID or your passcode."
+ *   (`appLock.privacy.whoLockOn.*`, by the phone's method) while it is on; the App lock row, On or Off, which opens
+ *   Settings > App lock (CDesO-1: one setting, two doors); Names in notifications, which opens Reminders; P8 as the
+ *   footer. Until the device answers, the lock-on line is the passcode one, which is true on every phone.
  * - What you can do: Export your book, Recently deleted, and P9 in a build with no account. Delete account stays on
  *   Settings home only (D-129: the one screen that names its route). ERASE_ROW: "Erase everything on this phone"
  *   joins here when #520 lands (design.md 2.11).
@@ -45,6 +50,15 @@ export default function PrivacySettings() {
   // Names in notifications changes on the Reminders page: re-read it when Privacy comes back.
   useFocusEffect(useCallback(() => setNames(lockScreenNamesOn()), []));
   const child = getActiveChild()?.name ?? consentCopy.childFallback;
+  const lockOn = useAppLock().enabled;
+  const [method, setMethod] = useState<LockMethod>('passcode');
+  useEffect(() => {
+    let live = true;
+    void readLockAbility().then((a) => live && a.available && setMethod(a.method));
+    return () => {
+      live = false;
+    };
+  }, []);
   const page = privacyPage({
     sync: capabilities.sync,
     syncStatus: sensitive.status,
@@ -102,8 +116,14 @@ export default function PrivacySettings() {
         ) : null}
 
         <ListSection title={p.whoTitle} footer={p.notificationsLine}>
-          <ListRow title={p.whoLockOff} testID="privacy.who" />
-          {/* APP_LOCK_ROW: feat/mobile-app-lock adds "App lock, On or Off" here and swaps whoLockOff for whoLockOn. */}
+          <ListRow title={lockOn ? appLockCopy.privacy.whoLockOn[method] : p.whoLockOff} testID="privacy.who" />
+          <ListRow
+            title={appLockCopy.settingsHome.appLock}
+            value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+            trailing="chevron"
+            onPress={go('/settings/app-lock')}
+            testID="privacy.appLock"
+          />
           <ListRow
             title={p.lockScreenLabel}
             value={names ? p.namesValueOn : p.namesValueOff}

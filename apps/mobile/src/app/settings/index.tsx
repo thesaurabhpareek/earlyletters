@@ -11,6 +11,8 @@ import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
 import { accountSubtitle, planRowFor } from '@/components/settings/settings-home.logic';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import { useAppLock } from '@/lib/app-lock/controller';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
 import { getPlan, subscribePlan } from '@/lib/billing';
@@ -49,6 +51,7 @@ const ROUTES = {
   export: '/settings/export',
   recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
+  appLock: '/settings/app-lock',
   storage: '/settings/storage',
   whereLive: '/settings/where-letters-live',
   yourWords: '/settings/your-words',
@@ -80,6 +83,7 @@ export default function Settings() {
   const h = copy.settingsHome;
   // Signed in: "Signed in with Apple" (or Google, email) under Account; signed out: what the row is for (S40, #310).
   const auth = useAuth();
+  const lockOn = useAppLock().enabled;
   const account = accountSubtitle({ status: auth.state.status, provider: auth.account.provider });
   const version = Constants.expoConfig?.version ?? '';
   // The build number from the installed binary (EAS sets it remotely, so the config never has it). null on web.
@@ -122,6 +126,15 @@ export default function Settings() {
 
       <ListSection title={h.sections.data}>
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
+        {/* App lock (F1; SETTINGS_AND_ACCOUNT.md section 6): its value says On or Off. Moves into Privacy and security
+            with the Settings regroup. */}
+        <ListRow
+          title={appLockCopy.settingsHome.appLock}
+          value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+          trailing="chevron"
+          onPress={go(ROUTES.appLock)}
+          testID="settings.appLock"
+        />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         <ListRow title={h.whereLive} trailing="chevron" onPress={go(ROUTES.whereLive)} testID="settings.whereLive" />

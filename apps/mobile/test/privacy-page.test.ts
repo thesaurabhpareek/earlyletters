@@ -84,16 +84,17 @@ describe('[CPrivO-5] Settings > Privacy', () => {
     expect(screen).not.toMatch(/copy\.settings\.privacy\.sensitiveOn|reminders\.offLabel/);
   });
 
-  it('who can see it: the plain fact while there is no app lock, never "Only you" (content 7, LEGAL-REQ-044)', () => {
+  it('who can see it: the plain fact while the app lock is off, the lock line while on, never "Only you" (content 7, LEGAL-REQ-044)', () => {
     expect(p.whoLockOff).toBe('Anyone who can unlock this iPhone can open the book.');
-    expect(screen).toMatch(/<ListRow title=\{p\.whoLockOff\}/);
+    expect(screen).toMatch(/<ListRow title=\{lockOn \? appLockCopy\.privacy\.whoLockOn\[method\] : p\.whoLockOff\} testID="privacy\.who" \/>/);
     expect((Object.values(p) as unknown[]).filter((v): v is string => typeof v === "string").filter((v) => /only you/i.test(v))).toEqual([]);
     // Names in notifications opens Reminders and reads the real setting; P8 is the section footer.
     expect(screen).toMatch(/<ListSection title=\{p\.whoTitle\} footer=\{p\.notificationsLine\}>/);
     expect(screen).toMatch(/title=\{p\.lockScreenLabel\}[\s\S]*?onPress=\{go\('\/settings\/reminders'\)\}/);
     expect(screen).toMatch(/useState\(lockScreenNamesOn\)/);
-    // The slot the app lock lane fills.
-    expect(readFileSync(join(SRC, 'app/settings/privacy.tsx'), 'utf8')).toMatch(/APP_LOCK_ROW/);
+    // The app lock lane filled its slot: the App lock row, On or Off, opening Settings > App lock (CDesO-1).
+    expect(screen).toMatch(/title=\{appLockCopy\.settingsHome\.appLock\}\s*value=\{lockOn \? appLockCopy\.settingsHome\.appLockOn : appLockCopy\.settingsHome\.appLockOff\}\s*trailing="chevron"\s*onPress=\{go\('\/settings\/app-lock'\)\}/);
+    expect(readFileSync(join(SRC, 'app/settings/privacy.tsx'), 'utf8')).not.toMatch(/APP_LOCK_ROW/);
   });
 
   it('sections in order: where, who, what you can do, the documents; the short line last', () => {
