@@ -1182,3 +1182,16 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 29: a consent record carries the build, the OS major version, the words shown and their language (8 Nov 2026, data-architect, BL-577)
+
+`20261108000000_consent_record_fields.sql`. Before this file a consent record could not tell build 1 from build 2 (both "1.0.0"), and a sheet act could be recorded with no hash of the words shown and no language (PRIV-R21).
+
+What it changes:
+- **`policy_acceptances.app_build`** (L2, the EAS build number) and **`policy_acceptances.os_major`** (L2, the major OS version only). `locale` now means the language of the text shown.
+- **`record_policy_act`** takes `p_app_build` and `p_os_major` last, both optional. The old function is dropped and the new one created, so the API sees one candidate. Today's app records exactly as before.
+- **Sheet acts** (`signin_sheet`, `consent_sheet`, `reconsent_sheet`) need `rendered_sha256` and `locale` (23502) when the call carries a build number, and for every call once `app.consent_fields_required` is on. Existing rows are untouched; pseudonymisation at account deletion still works on them.
+- **`policy_acceptances_guard`** also freezes the two new columns.
+- Tests: `consent_record_fields` (new); `data_governance` looks the function up by name.
+
+**Apply** after file 27 (and file 28 if it is applied first; they touch different objects). Changes one function signature; drops no data. **Check:** `select pg_get_function_identity_arguments('public.record_policy_act'::regproc);` ends in `p_app_build text, p_os_major integer`, and a sign-in on the current TestFlight build still records its acts. **Do not turn on yet:** `alter database postgres set app.consent_fields_required = 'on';` only after the shared record builder (BL-577, app half) ships and no older build is in use; from then an older build's sheet act is refused. **Rollback:** see the file header; only before any row carries `app_build`.
