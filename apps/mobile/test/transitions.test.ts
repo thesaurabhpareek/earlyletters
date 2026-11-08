@@ -102,6 +102,14 @@ describe('routeTransitions: one table for every route (EXPERIENCE_PASS 5.8)', ()
     expect(layout).toMatch(/name="letter\/\[id\]" options=\{\{[^}]*\.\.\.routes\['letter\/\[id\]'\] \}\}/);
   });
 
+  it("row 7: VoiceOver's escape closes the letter the way Back does (a transparent modal has no native escape)", () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toMatch(/accessibilityViewIsModal aria-modal onAccessibilityEscape=\{close\}>/);
+    // The same close as Back and the swipe: the words go back into the card, or the page fades.
+    expect(src).toMatch(/const close = useCallback\(/);
+    expect(src).toMatch(/close,\s*opening,/);
+  });
+
   it('Reduce Motion (rule 6): our dissolves become one fadeMs cross-fade; native pushes and sheets keep the system transition', () => {
     const t = routeTransitions(true);
     for (const route of ['listen', 'review', 'read-together'] as const) expect(t[route].animationDuration, route).toBe(M.fadeMs);
@@ -676,7 +684,7 @@ describe('card to page (MOTION 5f)', () => {
   it('screen readers read the letter once and land on the page (source)', () => {
     const src = read('components/motion/card-transition.tsx');
     // The page is modal, and holds the Book hidden for as long as it is up.
-    expect(src).toMatch(/<View style=\{StyleSheet\.absoluteFill\} accessibilityViewIsModal aria-modal>/);
+    expect(src).toMatch(/<View style=\{StyleSheet\.absoluteFill\} accessibilityViewIsModal aria-modal onAccessibilityEscape=\{close\}>/);
     expect(src).toContain('useEffect(() => cardPages.hold(), []);');
     expect(src).toMatch(/export function useHiddenBehindCardPage\(\)/);
     // Focus moves to the page's own element once it has arrived, carried or faded.

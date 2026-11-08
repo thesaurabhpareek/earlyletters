@@ -472,8 +472,9 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   return (
     <CardPageContext.Provider value={ctx}>
-      {/* Modal for screen readers: only the page is reachable while it is up (the Book also hides itself). */}
-      <View style={StyleSheet.absoluteFill} accessibilityViewIsModal aria-modal>
+      {/* Modal for screen readers: only the page is reachable while it is up (the Book also hides itself). VoiceOver's
+          escape (two-finger scrub) closes it the way Back does: a transparent modal has no native escape of its own. */}
+      <View style={StyleSheet.absoluteFill} accessibilityViewIsModal aria-modal onAccessibilityEscape={close}>
         {/* The veil: the page's paper over the whole Book, one layer (the Book's words and light leave, never cut). */}
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: c.bg }, veilStyle]} />
         <Animated.View pointerEvents="none" style={[{ position: 'absolute' }, paper]} />
