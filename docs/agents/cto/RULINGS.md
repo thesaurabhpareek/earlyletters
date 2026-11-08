@@ -538,3 +538,35 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way
 - Way back: delete the backlog section and the two standards in one revert.
 - Revisit when: after the 9 Nov go/no-go, or when a device run disproves a budget. Karma
+
+### CR-49 The next TestFlight build goes from `develop` on the Mac now; the S0 fixes follow in another build; nothing new ships to production today (2 Nov 2026, Karma via release session earlyletters-d9)
+- Question: make build 9 now, or wait for the S0 fixes; can this session count as CR-48's second session; what does "production" mean today?
+- Tier and type: T1 (servers-off build to the internal Family group, two-way); clear
+- Options considered: (a) wait for #595, #589 and BL-594, then build once; (b) build 9 now from `develop`, build 10 when the S0 fixes merge; (c) build from a local merge of unmerged PRs; (d) do nothing.
+- Ruling: (b). Build 9 is the `testflight` profile at `develop` 29dcd7d8, only after the full harness, `doctor.ts` and `preflight:testflight` show 0 FAIL, then `eas submit` with the stored key. (c) is refused: a build traces to a commit on `develop`. This session did not author #595 or #589, so it runs two lens reviews on their exact heads; they count only when posted on GitHub against that sha (CR-48 path 1). Here they are evidence the founder can post. BL-594 still needs the founder's own read of the diff (CR-48 item 5). The only production surface live today is the website, deployed from `main` by Vercel; #549 and #573 are on `main`, so "deploy" means verifying the live site serves `main`'s tip. No Supabase production exists, and the store lane waits for 9 Nov (D-106, D-124).
+- Why: build 8 has the 0% download stall (#541), which blocks words entirely; build 9 fixes it and is no worse on BL-563. Expo is on the Free plan, 1 of 30 builds used this cycle, no overage (`eas account:usage`, read 2 Nov). Cost of delay is a broken first run for the family each day.
+- Stops: any FAIL or red test; any change to EAS env vars, credentials or App Store Connect; staging (spend, S-50); any `ios-v*` tag (setup retro section 0 item 6); the `preview` profile.
+- Door: two-way
+- Way back: expire build 9 in App Store Connect; build 8 stays.
+- Revisit when: #595 and #589 merge (then build 10, before Tue 3 Nov 13:00 UTC).
+- Note: CR-48 is used twice on open branches (#592 and #591); this one is CR-49. Karma
+
+### CR-50 Build 1 feedback: reported defects ride build 10, the F1 to F11 map stays for features (2 Nov 2026, Karma via release session earlyletters-d9)
+- Question: the founder asked that every improvement he reported on TestFlight build 1 be part of this release, with an end-to-end test plan covering happy, unhappy and error paths. How does that fit the M14 merge window (behaviour changes after 9 Nov, D-130) and the freeze?
+- Tier and type: T1, applying a founder instruction he approved through the council; complicated
+- Options considered: (a) everything into build 10 before the freeze; (b) defects with PRs into build 10, features on the F11 map, one test plan over all of it; (c) nothing before 9 Nov.
+- Ruling: (b). Founder-reported defects that already have PRs (for example #540 date picker, #544 Book month) are freeze-window fixes for build 10 under the CR-48 gates. Enhancements and features from F1 to F11 keep the release map the founder approved on 1 Nov (1 Dec store build or 1.0.1). "This release" is the 1.0 store release; the test plan and the traceability inventory cover every item in it, each with happy, unhappy and error cases.
+- Why: (a) puts about a hundred behaviour changes into a freeze week with no device runs, the opposite of the margin-of-safety rule; (c) ignores his newest instruction. The founder's latest word amends the window only for defects he saw himself.
+- Door: two-way
+- Way back: move any item between builds with one line in the release map.
+- Revisit when: the inventory shows a defect with no PR, or a device run disproves a fix. Karma
+
+### CR-51 The harness runs on Claude Code with Sonnet 5.5, paid from the promotional credit only (2 Nov 2026, Karma via release session earlyletters-d9)
+- Question: the founder set AGENTS_ENABLED=true on 2 Nov, overriding CR-5 and CR-22, and said to spend only the promotional API credit, never buy credit or turn on auto-reload, and use Sonnet by default. Which engine?
+- Tier and type: T1 for the engine choice; the switch-on itself is his (recorded here)
+- Options considered: keep opencode on OpenRouter (needs a funded OpenRouter key: a purchase, refused); claude-code with Sonnet 5.5 on ANTHROPIC_API_KEY; leave it off.
+- Ruling: claude-code as the roster default, model claude-sonnet-5-5, red team too; caps unchanged (one run per agent per day, cap 30 runs a day, 8 USD per run via --max-budget-usd). Agents never merge (D-107 and branch protection). The key must come from the Console organisation that holds the promotional credit, with auto-reload off, so spend stops at the balance.
+- Why: the opencode default would fail every run without a key, and funding one breaks his spending rule. Bounded worst case about 240 USD a day, and the hard ceiling is the credit balance.
+- Door: two-way
+- Way back: AGENTS_PAUSED=true (stops new work at once), or AGENTS_ENABLED off, or revert the roster commit.
+- Revisit when: the credit balance falls below a week of runs, or red-team verdict quality drops on Sonnet. Karma
