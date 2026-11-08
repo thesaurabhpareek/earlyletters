@@ -20,7 +20,7 @@ vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 
 const store = await import('../src/lib/store');
 const { writeWords } = await import('../src/components/capture/review-view.logic');
-const { createFirstFocus, createWriteSession, WRITE_AUTOSAVE_MS, WRITE_FOCUS_FALLBACK_MS } = await import('../src/components/capture/write-session.logic');
+const { createFirstFocus, createWriteSession, leavesForeground, WRITE_AUTOSAVE_MS, WRITE_FOCUS_FALLBACK_MS } = await import('../src/components/capture/write-session.logic');
 const { armKeep, consumeKeep, resetKeep } = await import('../src/lib/capture/keep-intent');
 
 const now = () => '2026-10-03T09:00:00.000Z';
@@ -158,6 +158,69 @@ describe('the last keystrokes inside the autosave pause are kept on every way ou
     expect(typed(w.draftId())).toBe(LAST);
   });
 
+  // QE-06: iOS pauses JS timers in the background and may end the app there, so the pause may never fire.
+  it('the app leaving the foreground inside the pause writes the newest words now, once', () => {
+    const w = openWrite();
+    w.type('', FIRST);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    w.type(FIRST, LAST, 20);
+    const before = w.writes.length;
+    w.session.background();
+    expect(typed(w.draftId())).toBe(LAST);
+    expect(w.writes.length).toBe(before + 1);
+    w.session.background(); // inactive, then background: one write
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS * 4); // the disarmed pause never writes again
+    w.session.unmount();
+    expect(w.writes.length).toBe(before + 1);
+  });
+
+  it('the first words, typed and backgrounded before any pause, are on the phone', () => {
+    const w = openWrite();
+    w.type('', FIRST, 20);
+    expect(w.draftId()).toBeNull();
+    w.session.background();
+    expect(typed(w.draftId())).toBe(FIRST);
+  });
+
+  it('leaving the foreground after the pause has written writes nothing more', () => {
+    const w = openWrite();
+    w.type('', LAST);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    const before = w.writes.length;
+    w.session.background();
+    expect(w.writes.length).toBe(before);
+  });
+
+  it('a pause that could not write is tried again when the app leaves the foreground', () => {
+    const w = openWrite();
+    w.type('', FIRST);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    w.disk.full = true;
+    w.type(FIRST, LAST, 20);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS); // the pause fails: "Not saved yet"
+    expect(typed(w.draftId())).toBe(FIRST);
+    w.disk.full = false;
+    w.session.background();
+    expect(typed(w.draftId())).toBe(LAST);
+  });
+
+  it('a draft Close deleted (words cleared) is not brought back by leaving the foreground', () => {
+    const w = openWrite();
+    w.type('', FIRST);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    const id = w.draftId()!;
+    w.session.change('');
+    expect(w.session.close()).toBe(true);
+    w.session.background();
+    expect(store.getDraft(id)).toBeNull();
+  });
+
+  it('inactive and background leave the foreground; active does not', () => {
+    expect(leavesForeground('inactive')).toBe(true);
+    expect(leavesForeground('background')).toBe(true);
+    expect(leavesForeground('active')).toBe(false);
+  });
+
   it('a reopened draft keeps its words and the new tail, typed inside the pause, on Close', () => {
     const first = openWrite();
     first.type('', FIRST);
@@ -257,12 +320,14 @@ describe('write.tsx uses the session on every way out', () => {
     .replace(/\/\*[\s\S]*?\*\//g, '')
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-  it('keystrokes, Close, both destinations and unmount all go through it', () => {
+  it('keystrokes, Close, both destinations, unmount and leaving the foreground all go through it', () => {
     expect(code).toMatch(/createWriteSession\(\s*\{\s*persist: \(value\) => persistRef\.current\(value\),\s*draftId: \(\) => draftId\.current,\s*hasRecording: \(id\) => !!getDraft\(id\)\?\.audioUri,\s*deleteDraft,\s*\},\s*\{ initial: initialText \},\s*\)/);
     expect(code).toMatch(/session\.change\(value\);/);
     expect(code).toMatch(/const close = \(\) => \{\s*if \(session\.close\(\)\) router\.back\(\);\s*\};/);
     expect(code).toMatch(/const keep = \(inBook: boolean\) => \{\s*const id = session\.keep\(\);\s*if \(!id\) return;\s*armKeep\(id, inBook\);\s*router\.replace\(\{ pathname: '\/review', params: \{ draftId: id \} \}\);\s*\};/);
     expect(code).toMatch(/useEffect\(\(\) => \(\) => session\.unmount\(\), \[session\]\);/);
+    // QE-06: leaving the foreground writes the newest words now.
+    expect(code).toMatch(/AppState\.addEventListener\('change', \(state\) => \{\s*if \(leavesForeground\(state\)\) session\.background\(\);\s*\}\);\s*return \(\) => sub\.remove\(\);\s*\}, \[session\]\);/);
     expect(code).toMatch(/onPress=\{\(\) => keep\(true\)\}/);
     expect(code).toMatch(/onPress=\{\(\) => keep\(false\)\}/);
     // The keyboard: no autoFocus; the field is focused through its ref after the commit that carries the sheet's height.

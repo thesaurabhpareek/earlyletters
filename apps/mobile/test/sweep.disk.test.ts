@@ -288,6 +288,8 @@ describe('[D-085] erase removes the recording where it is now (privacy)', () => 
 
     moveContainer(h.disk, NEW);
     vi.setSystemTime(T0 + 30 * DAY + 60_000);
+    // A launch that has already seen this time (QE-05: the purge counts time by the last recorded launch).
+    app.store.recordLaunch(Date.now());
     app = await launch();
     await app.sweep.runLaunchSweep();
     expect(app.store.listDeleted()).toEqual([]);
@@ -346,6 +348,8 @@ describe('[D-085] erase removes the recording where it is now (privacy)', () => 
     app.store.deleteEntry(id);
     const draft = app.store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: shared, audioDurationMs: 4000, state: 'ready' });
     vi.setSystemTime(T0 + 30 * DAY + 60_000);
+    // A launch that has already seen this time (QE-05: the purge counts time by the last recorded launch).
+    app.store.recordLaunch(Date.now());
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({});
     expect(app.store.listDeleted()).toEqual([]); // the letter is erased
@@ -362,6 +366,8 @@ describe('[D-085] erase removes the recording where it is now (privacy)', () => 
     app.store.deleteEntry(id);
     h.disk.unreadable.add(recorderDir(h.disk));
     vi.setSystemTime(T0 + 31 * DAY);
+    // A launch that has already seen this time (QE-05: the purge counts time by the last recorded launch).
+    app.store.recordLaunch(Date.now());
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toBeNull(); // the sweep itself changes nothing
     expect(app.store.listDeleted()).toEqual([]);
@@ -487,6 +493,8 @@ describe('[ADR 0027] an ADTS take (.aac) needs nothing new from the sweep, erase
     app.store.deleteEntry(id);
     moveContainer(h.disk, NEW);
     vi.setSystemTime(T0 + 30 * DAY + 60_000);
+    // A launch that has already seen this time (QE-05: the purge counts time by the last recorded launch).
+    app.store.recordLaunch(Date.now());
     app = await launch();
     await app.sweep.runLaunchSweep();
     expect(app.store.listDeleted()).toEqual([]);

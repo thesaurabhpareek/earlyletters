@@ -23,7 +23,7 @@ import { Stack, router, useFocusEffect, useLocalSearchParams, useNavigation } fr
 import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions, type TextInput } from 'react-native';
+import { AppState, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
@@ -36,7 +36,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createFirstFocus, createWriteSession } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
 import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
@@ -112,6 +112,14 @@ export default function Write() {
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
   // never dropped. After a write that did not go through, the swipe down is refused instead, as Close is (below).
   useEffect(() => () => session.unmount(), [session]);
+  // The app leaving the foreground (the phone locked, another app opened): the newest words are written now. iOS pauses
+  // the pause's timer in the background and may end the app there, so waiting for it could lose the last words (QE-06).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (leavesForeground(state)) session.background();
+    });
+    return () => sub.remove();
+  }, [session]);
 
   // Words that cannot be written to this phone keep the sheet open, with "Not saved yet" on screen and said aloud:
   // closing would lose them (S19).

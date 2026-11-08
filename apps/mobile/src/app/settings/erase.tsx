@@ -26,7 +26,8 @@ const PAGE = 'gap-7 px-5 pb-12 pt-4';
  * resets the free-letter count and clears our reminders; the age question then replaces every screen by itself
  * (lib/age-gate.ts re-reads its setting), and the done line is announced. Nothing goes to Recently deleted and
  * nothing is sent. Device owner authentication before erase (design 2.12, F17 6.2 F) is deferred to the 1 Dec build
- * by the CTO ruling of 8 Nov: it needs the app lock lane's expo-local-authentication (#640).
+ * by the CTO ruling of 8 Nov (the app lock, #640, is in the build; asking it here is the follow-up). The lock itself is
+ * reset by the erase (lib/erase-everything.ts).
  */
 export default function EraseEverything() {
   const e = copy.settings.erase;

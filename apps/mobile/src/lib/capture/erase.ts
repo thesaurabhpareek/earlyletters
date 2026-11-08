@@ -23,7 +23,7 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
-import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeExpired, recordLaunch, type AudioEraser } from '../store';
+import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
 
@@ -63,7 +63,5 @@ export function finishErasedLetters(): number {
 
 /** Launch purge, then record this launch for the clock guard. Returns how many letters were erased. */
 export function purgeShelfAtLaunch(nowMs = Date.now()): number {
-  const n = purgeExpired(nowMs, eraseAudioFile) + finishServerErased(eraseAudioFile);
-  recordLaunch(nowMs);
-  return n;
+  return purgeThenRecordLaunch(nowMs, eraseAudioFile, () => finishServerErased(eraseAudioFile));
 }

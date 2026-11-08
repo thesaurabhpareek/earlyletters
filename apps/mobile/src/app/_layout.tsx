@@ -8,6 +8,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
+import { AppLockLayer } from '@/components/app-lock/app-lock-layer';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
@@ -16,6 +17,7 @@ import { UIProvider } from '@/components/ui/provider';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
+import { startAppLock } from '@/lib/app-lock/controller';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
@@ -143,6 +145,11 @@ function Root() {
   // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
   // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
   useState(() => void resumeEraseAtLaunch());
+  // App lock (F1, CISO-1): read during this first render, from two settings and nothing awaited, so a locked book is
+  // covered in the very first frame (lib/app-lock/controller.ts; A-NFR-001, A-NFR-002). It comes after the resume
+  // above on purpose: an Erase everything finished at launch removes the lock settings with the rest, so the lock
+  // reads "off" and the phone starts as on first run instead of locking an empty book.
+  useState(startAppLock);
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
@@ -222,6 +229,9 @@ function Root() {
             <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
+            {/* App lock: the cover and the lock screen over every screen and sheet, last so it is on top. It only
+                covers; nothing under it unmounts, so a take being kept finishes underneath (components/app-lock). */}
+            <AppLockLayer />
           </SessionProvider>
         )}
       </UIProvider>

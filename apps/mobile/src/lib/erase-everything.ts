@@ -13,6 +13,11 @@
  *     letters still present (letter-ledger.ts takes the largest of the three).
  *  4. Our reminders, scheduled and shown, so no note with a child's name stays in Notification Center.
  *  5. The pending mark goes. The age question and first run come next, because their settings are gone.
+ * App lock (F1) keeps nothing but its two settings (`appLock.enabled`, `appLock.grace`; lib/app-lock/prefs.ts), so they
+ * go with every other setting in step 2, as does the launch stamp of the shelf purge (`lastLaunchAt`). The lock in
+ * memory is read again right after the rows go (reloadAppLock), so a phone erased while locked does not lock the empty
+ * book after the age question. At launch the same holds with no reload: the root layout resumes the erase before the
+ * lock reads its settings.
  * A kill at any point leaves the mark; `resumeEraseAtLaunch` (root layout, before any screen reads the store)
  * finishes the same steps, all of which are safe to repeat.
  *
@@ -23,6 +28,7 @@ import { Directory, Paths } from 'expo-file-system';
 import { Platform } from 'react-native';
 import { stopAnalyticsForErase } from './analytics';
 import { sweepListeningCopies } from './audio-enhance';
+import { reloadAppLock } from './app-lock/controller';
 import { APPLE_USER_KEY, PENDING_NAME_KEY } from './auth/apple';
 import { PENDING_REQUEST_KEY } from './auth/pending';
 import { clearLedger } from './billing/letter-ledger';
@@ -86,8 +92,22 @@ export async function eraseEverything(): Promise<EraseEverythingResult> {
   }
   const r = eraseEverythingLocal(eraseAudioFile, eraseDeviceFiles);
   if (r !== 'erased') return r;
+  resetAppLockInMemory();
   await finish();
   return 'erased';
+}
+
+/**
+ * The rows are gone, so the lock's two settings read as off: start the lock from them again (a cold start's read), so
+ * it neither covers nor locks the empty book. Not awaited and never throws; a take or sheet live at this moment leaves
+ * the lock as it is until the next launch, which reads the same empty settings.
+ */
+function resetAppLockInMemory(): void {
+  try {
+    reloadAppLock();
+  } catch {
+    // Nothing here may stop the Keychain and reminder steps below.
+  }
 }
 
 let resumed: Promise<EraseEverythingResult | null> | null = null;

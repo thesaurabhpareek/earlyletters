@@ -26,6 +26,10 @@ const h = vi.hoisted(() => ({
   calls: [] as string[],
   /** The Keychain, as a map that outlives a kill (it survives a reinstall on a real phone). */
   keychain: new Map<string, string>(),
+  /** What `appLock.enabled` read when the app lock was asked to read its settings again (null: erased). */
+  lockReloads: [] as (string | null)[],
+  /** A setting as the store's database holds it right now (set in beforeEach, once the database exists). */
+  settingNow: (_key: string): string | null => null,
 }));
 
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -61,6 +65,13 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({
 }));
 vi.mock('../src/lib/auth/apple', () => ({ APPLE_USER_KEY: 'scribe.auth.appleUser', PENDING_NAME_KEY: 'scribe.auth.pendingName' }));
 vi.mock('../src/lib/auth/pending', () => ({ PENDING_REQUEST_KEY: 'scribe.auth.pendingEmailRequest' }));
+// The app lock's run time (expo-local-authentication, AppState): only its reload is observed, with the setting it would read.
+vi.mock('../src/lib/app-lock/controller', () => ({
+  reloadAppLock: () => {
+    h.lockReloads.push(h.settingNow('appLock.enabled'));
+    return true;
+  },
+}));
 vi.mock('../src/lib/reminders/scheduler', () => ({ forgetReminders: async () => void h.calls.push('reminders:forget') }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
   openNativeDb: () => {
@@ -105,6 +116,8 @@ type App = Awaited<ReturnType<typeof launch>>;
 const rows = (table: string) => db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${table}`)!.n;
 const take = (name: string) => put(h.disk, `${recorderDir(h.disk)}/recording-${name}.m4a`, 24_000);
 const has = (uri: string) => h.disk.files.has(uri);
+/** Whether a letter's row is still in the database, deleted or not (store.getEntry hides deleted letters). */
+const rowKept = (id: string) => db.get('SELECT id FROM entries WHERE id = ?', id) !== null;
 
 /** Asha's book: two kept letters with recordings (one later deleted), a typed letter, and a draft waiting. Avi's book: one letter. */
 function family(app: App) {
@@ -137,12 +150,14 @@ beforeEach(() => {
   vi.setSystemTime(T0);
   seq = 0;
   h.calls = [];
+  h.lockReloads = [];
   h.keychain = new Map();
   h.disk = createDisk(PHONE);
   layOutApp(h.disk);
   const n = nodeDb();
   db = n.db;
   closeDb = n.close;
+  h.settingNow = (key) => db.get<{ value: string }>('SELECT value FROM settings WHERE key = ?', key)?.value ?? null;
   fetches = 0;
   vi.stubGlobal('fetch', () => {
     fetches += 1;
@@ -205,17 +220,26 @@ describe('[DATA-REQ-014][F17-REQ-080] Delete this book, on a phone that never si
     expect(fetches).toBe(0);
   });
 
-  it('[F17 6.2 D step 6] the launch purge erases a deleted book after 30 days, not before', async () => {
+  it('[F17 6.2 D step 6][QE-05] the launch purge erases a deleted book after 30 days, not before, and only once two launches agree', async () => {
     let app = await launch();
     const f = family(app);
     app.store.deleteBook(f.asha);
+    // The first launch has no record of an earlier one: it erases nothing and records itself (QE-05).
     vi.setSystemTime(T0 + 29 * DAY);
     app = await launch();
     await app.sweep.runLaunchSweep();
     expect(app.store.listDeletedBooks().map((b) => b.id)).toEqual([f.asha]);
     expect(has(f.a1)).toBe(true);
 
+    // Time is counted by the previous launch (day 29), so day 30 still keeps the book; this launch records itself.
     vi.setSystemTime(T0 + 30 * DAY + 1000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(app.store.listDeletedBooks().map((b) => b.id)).toEqual([f.asha]);
+    expect(has(f.a1)).toBe(true);
+
+    // The next launch finds the previous one more than 30 days after the delete: now it goes.
+    vi.setSystemTime(T0 + 31 * DAY);
     app = await launch();
     await app.sweep.runLaunchSweep();
     expect(app.store.listDeletedBooks()).toEqual([]);
@@ -321,7 +345,12 @@ describe('[D-103] deleting a book never lowers the free-letter count (only Erase
   it('the day-30 purge at launch, before the ledger heal has run: the count is the same after a relaunch', async () => {
     let { app, f, before } = await behind();
     app.store.deleteBook(f.asha);
+    // Two launches agree the book has waited its 30 days (QE-05): the first only records the time it saw.
     vi.setSystemTime(T0 + 30 * DAY + 1000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(app.store.listDeletedBooks().map((b) => b.id)).toEqual([f.asha]);
+    vi.setSystemTime(T0 + 31 * DAY + 1000);
     app = await launch();
     await app.sweep.runLaunchSweep();
     expect(app.store.listDeletedBooks()).toEqual([]);
@@ -364,6 +393,10 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     app.store.setSetting('ageGate.passed', '1');
     app.store.setSetting('appearance', 'dark');
     app.store.setSetting('analytics.id', '0199a5b0-0000-7000-8000-00000000c0c0');
+    // F1 app lock (develop #640): turned on, and the shelf purge's launch stamp (QE-05, #647). Both live in settings.
+    app.store.setSetting('appLock.enabled', 'on');
+    app.store.setSetting('appLock.grace', 'immediately');
+    app.store.recordLaunch(T0);
     const stray = put(h.disk, `${h.disk.documents}recording-5D2E0F11-0000-4000-8000-0000000057A2.m4a`, 8_000);
     const frames = put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000);
     const zip = put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000);
@@ -400,6 +433,8 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(app.store.getFamily()).toBeNull();
     expect(app.store.getSetting('ageGate.passed')).toBeNull();
     expect(fetches).toBe(0);
+    // The app lock's two settings and the shelf purge's launch stamp went with every other setting.
+    for (const k of ['appLock.enabled', 'appLock.grace', 'lastLaunchAt']) expect([k, app.store.getSetting(k)]).toEqual([k, null]);
 
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBeNull();
@@ -408,6 +443,41 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort()).toEqual(['db.secureDeleteVacuumAt', 'lastLaunchAt']);
     db.run('DELETE FROM settings');
     expectEmpty();
+  });
+
+  it('[F1][CISO-1] the app lock is reset too: it is read again after the rows are gone, so the empty book is neither covered nor locked', async () => {
+    const { app } = await filled();
+    expect(app.store.getSetting('appLock.enabled')).toBe('on');
+    expect(await app.all.eraseEverything()).toBe('erased');
+    // One reload, and at that moment the lock's setting already read "off" (null), so the lock starts from the defaults.
+    expect(h.lockReloads).toEqual([null]);
+    const prefs = await import('../src/lib/app-lock/prefs');
+    expect(prefs.appLockOn()).toBe(false);
+    expect(prefs.appLockGrace()).toBe('oneMinute');
+  });
+
+  it('[F1] a refused erase (signed in) leaves the app lock exactly as it was and reads nothing again', async () => {
+    const { app } = await filled();
+    app.store.setSetting('sync.ownerId', '0199a5b0-0000-7000-8000-00000000aaaa');
+    expect(await app.all.eraseEverything()).toBe('signed_in');
+    expect(h.lockReloads).toEqual([]);
+    expect(app.store.getSetting('appLock.enabled')).toBe('on');
+    expect(app.store.getSetting('appLock.grace')).toBe('immediately');
+  });
+
+  it('[F1][QE-05] the launch after an Erase everything: no launch stamp, so the purge erases nothing, and the stamp is written again', async () => {
+    const { app } = await filled();
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect(app.store.getSetting('lastLaunchAt')).toBeNull();
+    // A letter deleted after the erase waits its 30 days: a launch with no stamp erases nothing, then records itself.
+    const book = app.store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' }).id;
+    app.store.saveEntry(letter({ id: '0199a5b0-0000-7000-8000-0000000d0001', childId: book, captureMode: 'typed', audioUri: null, audioSha256: null, audioBytes: null, audioDurationMs: null, finalText: 'Asha, a new first.' }));
+    app.store.deleteEntry('0199a5b0-0000-7000-8000-0000000d0001');
+    vi.setSystemTime(T0 + 40 * DAY);
+    const next = await launch();
+    await next.sweep.runLaunchSweep();
+    expect(rowKept('0199a5b0-0000-7000-8000-0000000d0001')).toBe(true);
+    expect(next.store.getSetting('lastLaunchAt')).toBe(new Date(T0 + 40 * DAY).toISOString());
   });
 
   it('a kill while files are going: the next launch finishes before any screen reads the store, and the sweep re-attaches nothing', async () => {
@@ -425,6 +495,9 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const next = await launch();
     expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
     expectEmpty();
+    // The root layout reads the app lock (startAppLock) right after this call: it finds the lock off, no reload needed.
+    const prefs = await import('../src/lib/app-lock/prefs');
+    expect(prefs.appLockOn()).toBe(false);
     expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
     expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(false);
     expect(await next.ledger.lettersKept(next.store.ledgerDb())).toBe(0);
@@ -505,10 +578,15 @@ describe('[DATA-REQ-024] erased words leave the database file itself, not only i
     const id = '0199a5b0-0000-7000-8000-0000000c0002';
     words(app, id, avi, null);
     app.store.deleteEntry(id);
+    // Two launches agree the letter has waited its 30 days (QE-05): the first only records the time it saw.
     vi.setSystemTime(T0 + 30 * DAY + 1000);
     app = await launch();
     await app.sweep.runLaunchSweep();
-    expect(app.store.getEntry(id)).toBeNull();
+    expect(rowKept(id)).toBe(true);
+    vi.setSystemTime(T0 + 31 * DAY + 1000);
+    app = await launch();
+    await app.sweep.runLaunchSweep();
+    expect(rowKept(id)).toBe(false);
     expect(found(WORD)).toBe(false);
   });
 
@@ -570,6 +648,16 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
     expect(src('src/app/+native-intent.tsx')).toMatch(/decideGate\(/);
     const callers = ['src/app/settings/erase.tsx', 'src/app/settings/index.tsx', 'src/app/_layout.tsx'].filter((p) => /\beraseEverything\(\)/.test(src(p)));
     expect(callers).toEqual(['src/app/settings/erase.tsx']);
+  });
+
+  it('the root layout resumes an unfinished erase before the app lock reads its settings and before the age gate reads its answer', () => {
+    const layout = src('src/app/_layout.tsx');
+    const resume = layout.indexOf('useState(() => void resumeEraseAtLaunch())');
+    const lock = layout.indexOf('useState(startAppLock)');
+    const gate = layout.indexOf('const gate = useAgeGate()');
+    expect(resume).toBeGreaterThan(0);
+    expect(lock).toBeGreaterThan(resume);
+    expect(gate).toBeGreaterThan(lock);
   });
 
   it('(b) a stop still running is kept, exactly as stored', async () => {

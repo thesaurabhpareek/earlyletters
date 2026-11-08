@@ -859,26 +859,43 @@ export function finishServerErased(eraseAudio: AudioEraser): number {
 }
 
 /**
- * Launch purge: erases letters that have waited SHELF_DAYS or more. Does
- * nothing when `nowMs` is earlier than the latest recorded launch (a phone
- * clock moved back). When the build syncs, the server's clock rules every
- * letter it holds (spec 2.2 step 7), so only letters it never held, or no
- * longer holds, with nothing queued for them, are erased here, with nothing
- * sent; otherwise they would wait in Recently deleted forever. Returns how
- * many letters were erased.
+ * Launch purge: erases letters that have waited SHELF_DAYS or more. Deleting
+ * is a promise ("Kept here until <day>"), so the phone clock is never trusted
+ * further than it has been seen before (QE-05):
+ *
+ * - The purge counts time by the latest recorded launch, not by the clock now.
+ *   A clock that jumped ahead (a wrong date, a manual change, a restore onto
+ *   another phone) erases nothing more at that launch than the previous
+ *   launch would have; a letter is erased only once two launches agree it has
+ *   waited its 30 days. Failing toward keeping costs at most one launch of
+ *   delay.
+ * - With no readable record of an earlier launch (a first launch, or a damaged
+ *   setting) nothing is erased at that launch, because the clock has not been
+ *   seen before. The launch is recorded after the purge, so the next launch
+ *   purges as usual.
+ * - A clock earlier than the latest recorded launch (moved back) purges
+ *   nothing at that launch (DL-04). `recordLaunch` then stores that earlier
+ *   time, so a clock corrected after running ahead resumes purging at the next
+ *   launch instead of waiting for real time to pass the stored future date.
+ *
+ * When the build syncs, the server's clock rules every letter it holds (spec
+ * 2.2 step 7), so only letters it never held, or no longer holds, with nothing
+ * queued for them, are erased here, with nothing sent; otherwise they would
+ * wait in Recently deleted forever. Returns how many letters were erased.
  */
 export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   const c = ctx();
-  // A book erase a kill cut short is finished first, whatever the clock says: the person already asked for it.
+  // A book erase a kill cut short is finished first, whatever the clock says and even with no readable launch stamp
+  // below: the person already asked for it, and it counts no days.
   for (const id of wipe.erasingIds(c)) eraseBook(id, eraseAudio);
   const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && nowMs < last) return 0;
-  const cutoff = new Date(nowMs - SHELF_MS).toISOString();
+  if (!Number.isFinite(last) || nowMs < last) return 0;
+  const cutoff = new Date(last - SHELF_MS).toISOString();
   let erased = 0;
   for (const id of capabilities.sync ? entries.expiredLocalOnlyIds(c, cutoff) : entries.expiredIds(c, cutoff)) {
     if (eraseEntry(id, eraseAudio)) erased += 1;
   }
-  // Deleted books whose 30 days are over (F17 6.2 D step 6), on this phone's clock, like letters.
+  // Deleted books whose 30 days are over (F17 6.2 D step 6), by the same guarded cutoff as letters (QE-05).
   let books = 0;
   for (const id of wipe.expiredIds(c, cutoff)) if (eraseBook(id, eraseAudio)) books += 1;
   // After the 30-day erase, rebuild the file too (rare, and cheap at this size; PR #520 body has the numbers).
@@ -886,10 +903,14 @@ export function purgeExpired(nowMs: number, eraseAudio: AudioEraser): number {
   return erased;
 }
 
-/** Writes the launch time for the purge's clock guard. Never moves backwards. */
+/**
+ * Writes this launch's time for the purge's clock guard, after the purge. It
+ * follows the clock both ways: forward, so the next launch can confirm a jump;
+ * back, so a clock corrected after running ahead does not block the purge
+ * until real time catches up with a date it never reached (QE-05).
+ */
 export function recordLaunch(nowMs: number): void {
-  const last = Date.parse(getSetting(LAST_LAUNCH_SETTING) ?? '');
-  if (Number.isFinite(last) && last >= nowMs) return;
+  if (!Number.isFinite(nowMs)) return;
   setSetting(LAST_LAUNCH_SETTING, new Date(nowMs).toISOString());
 }
 
@@ -1036,6 +1057,19 @@ export function finishEraseEverything(): void {
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
 }
 
+/**
+ * The launch purge, then this launch's record, in that order. The purge reads
+ * the previous launch's stamp, so recording first would make every purge count
+ * time by the clock now and disable the QE-05 guard. `alsoErase` runs between
+ * the two (letters the server erased); its count is added. Returns how many
+ * letters were erased.
+ */
+export function purgeThenRecordLaunch(nowMs: number, eraseAudio: AudioEraser, alsoErase: () => number = () => 0): number {
+  const n = purgeExpired(nowMs, eraseAudio) + alsoErase();
+  recordLaunch(nowMs);
+  return n;
+}
+
 // ── Drafts (capture in progress) ─────────────────────────────────────────
 export function createDraft(input: NewDraft): Draft {
   const c = ctx();
@@ -1159,6 +1193,11 @@ export function setDraftBaseDirection(id: string, dir: BaseDirection): boolean {
  */
 export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): boolean {
   return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
+}
+
+/** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
+export function listWaitingForExport(): Draft[] {
+  return drafts.listForExport(ctx());
 }
 
 /**
