@@ -24,6 +24,9 @@ import {
   typedFinalText,
   viewFromSetting,
   writeSwipeAllowed,
+  pageEmptinessChanged,
+  sheetKeyboardOffset,
+  followCaretToEnd,
 } from './review-view.logic';
 
 describe('review view (D-086)', () => {
@@ -139,6 +142,32 @@ describe('a typed letter (S19, S20)', () => {
     expect(writeSwipeAllowed({ text: 'Asha, you sang.', writeFailed: true })).toBe(false);
     expect(writeSwipeAllowed({ text: ' \n ', writeFailed: true })).toBe(true);
     expect(writeSwipeAllowed({ text: '', writeFailed: false })).toBe(true);
+  });
+
+  it('Write renders only when the page goes from empty to words or back, never on each keystroke (TestFlight build 1)', () => {
+    expect(pageEmptinessChanged('', 'A')).toBe(true);
+    expect(pageEmptinessChanged('Asha', '')).toBe(true);
+    expect(pageEmptinessChanged('Asha', 'Asha,')).toBe(false);
+    expect(pageEmptinessChanged('', ' \n ')).toBe(false);
+    expect(pageEmptinessChanged(' ', 'a')).toBe(true);
+    // A composing keyboard sends many partial strings; none of them is empty-to-words, so none renders.
+    const steps = ['\u0906', '\u0906\u0936', '\u0906\u0936\u093e'];
+    expect(steps.slice(1).map((v, i) => pageEmptinessChanged(steps[i], v))).toEqual([false, false]);
+  });
+
+  it('the keyboard is measured from the top of the screen, the sheet from its own top: the offset is the sheet\'s top', () => {
+    expect(sheetKeyboardOffset(852, 793)).toBe(59);
+    expect(sheetKeyboardOffset(667, 667)).toBe(0);
+    expect(sheetKeyboardOffset(852, 0)).toBe(0); // not measured yet
+    expect(sheetKeyboardOffset(0, 600)).toBe(0);
+    expect(sheetKeyboardOffset(700, 720)).toBe(0); // never negative
+    expect(sheetKeyboardOffset(852.4, 793.1)).toBe(59);
+  });
+
+  it('the page follows the caret only when writing on at the end, never while editing mid-text', () => {
+    expect(followCaretToEnd({ selectionEnd: 12, length: 12 })).toBe(true);
+    expect(followCaretToEnd({ selectionEnd: null, length: 12 })).toBe(true);
+    expect(followCaretToEnd({ selectionEnd: 4, length: 12 })).toBe(false);
   });
 
   it('back in Review it keeps Write\'s heading, "Your letter"; a letter with a recording reads "Read it back"', () => {

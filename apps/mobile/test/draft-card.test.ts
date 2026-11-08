@@ -301,6 +301,13 @@ describe('[S09] A month ago', () => {
     expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0)).toBeNull();
     expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0)).toBeNull(); // 27 and 36 days
   });
+
+  it('[F09-REQ-003] never a letter dated to a month only: "A month ago" and its date would state a day nobody gave', () => {
+    const month = { ...letter('m', '2026-09-19'), occurredPrecision: 'month' as const };
+    expect(resurfaced([month], TODAY, 0)).toBeNull();
+    // A day letter in the window still comes back, and the month-only one never takes its place.
+    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0)?.id).toBe('d');
+  });
 });
 
 describe('[S33] not much today, and the light', () => {

@@ -17,6 +17,7 @@ The founder spends ten minutes a day and knows exactly what the team did, what i
 - `docs/agents/digest-notes.md` for scratch notes, if you need them.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - The issue labelled `agent-board` (status, runs, spend, what needs the founder).
 - Open and recently merged PRs (`gh pr list`, `gh pr list --state merged`), agent journals (label `journal`), and `needs-decision` and `human` tasks in `docs/BACKLOG.md`.
 

@@ -28,6 +28,7 @@ import {
   manageSubscription,
   noteLines,
   PlanNoteBody,
+  PLUS_ALPHA,
   presentPlusStore,
   purchaseConfirmation,
   redeemOfferCode,
@@ -115,6 +116,7 @@ export default function PlanSettings() {
     // Nor what the restore result under its row says ("Plus is on.").
     restored: restored?.text ?? null,
     longDate: (ymd) => longDate(ymd),
+    alpha: PLUS_ALPHA,
   });
   const notifications = useNotificationsAllowed();
   const remindable = plan.plusOn && plan.details.ownership === 'purchased' && plan.details.willAutoRenew !== false && (plan.details.status === 'trial' || plan.details.status === 'active');
@@ -145,11 +147,24 @@ export default function PlanSettings() {
     return null;
   };
 
+  // Alpha build (billing/alpha.ts): only the note that Plus is not part of this test. No purchase, restore, redeem,
+  // manage or refund control is rendered, so no StoreKit sheet or call can be reached from this screen.
+  if (screen.alpha) {
+    return (
+      <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
+        <Stack.Screen options={{ title: p.title }} />
+        <ListSection title={p.statusTitle}>
+          <ListRow title={screen.seePlans?.title ?? billingCopy.alpha.note} testID="plan.alpha" />
+        </ListSection>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen options={{ title: p.title }} />
 
-      <ListSection title={p.statusTitle} footer={screen.promise}>
+      <ListSection title={p.statusTitle} footer={screen.promise ?? undefined}>
         {screen.status ? <ListRow title={screen.status.title} subtitle={screen.status.subtitle ?? undefined} value={screen.status.value ?? undefined} testID="plan.status" /> : null}
         {screen.seePlans?.kind === 'open' ? (
           <ListRow

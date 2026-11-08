@@ -4,7 +4,7 @@ title: Privacy engineering
 owner: compliance-engineer
 reviewers: [security-architect, data-steward]
 status: adopted
-last_reviewed: 2026-10-03
+last_reviewed: 2026-11-01
 applies_to: packages/analytics/**, apps/mobile/src/**, supabase/migrations/**, docs/legal/**, package.json, apps/mobile/package.json, apps/mobile/app.config.ts
 ---
 
@@ -49,6 +49,30 @@ Levels and classes: `docs/legal/DATA_CLASSIFICATION.md` (L1 to L4) and `docs/leg
 **PRIV-R08 (MUST)** Consent that gates a server feature is checked on the server, never only in the client. *Why:* a client check can be bypassed. *Enforced by:* `require_content_consent()` in `supabase/migrations/20261003000000_security_and_family.sql:190`, tested in `supabase/tests/security_family.test.mjs` (enforced on develop); the `ai-processing` gate (LEGAL-REQ-004) binds when server transcription ships (v1.1).
 
 **PRIV-R09 (MUST)** A consent version change follows POLICY_VERSIONING sections 5 and 6, and never gates export or deletion. *Why:* LEGAL-REQ-009. *Enforced by:* review (compliance-engineer); CI controls in POLICY_VERSIONING section 9 are `not yet`.
+
+**PRIV-R21 (MUST)** A record of what a person agreed to holds at least these fields (plus its row `id` and `pseudonymised_at`), built by one shared function on the phone and checked by the server. Added 1 Nov 2026 after the build 1 audit (CR-47, BL-577). It extends PRIV-R06 and does not replace it.
+
+| Field | Source | Why | Level |
+|---|---|---|---|
+| `profile_id`, later `subject_hash` | `auth.uid()`; the peppered hash at deletion | whose act | L3 |
+| `document`, `version` | the `policy_versions` row on screen | what was agreed | L2 |
+| `action`, `method`, `surface` | allowed values only; the screen id | how it was agreed | L2 |
+| `accepted_at` | server `now()` | the time we rely on | L2 |
+| `client_recorded_at` | phone clock; the server drops future times | acts made offline or before an account | L2 |
+| `app_version` and `app_build` (new) | marketing version and the EAS build number | which build drew the screen | L2 |
+| `os_major` (new) | the major OS version only, for example 17 | shows when no store age signal could exist | L2 |
+| `platform` | ios, android or web | which screen | L2 |
+| `locale` | the language of the text shown, not the phone's setting | which translation | L3 (DATA_CLASSIFICATION; counsel may make it L2) |
+| `rendered_sha256` | sha256 of the bundled template text, before any name is filled in | the exact words shown | L2 |
+| `context` | the server's allowlist only: `auth`, `age_attested` (true only), `age_signal` (declared_range, none or unavailable_os), `scope`, `mode`, and for analytics and purchase acts `crash`, `usage`, `product`, `intro_offer`, `storefront` | conditions of the act | L2 |
+
+Retention: the life of the account, then pseudonymised and kept 3 years (counsel confirms, COUNSEL_PACKET Q41 e). A deletion request id must still lead to the pseudonymised rows for those 3 years (BL-578).
+
+Before any account, the phone keeps a local record of document, version, action, `rendered_sha256` and `client_recorded_at`, uploads it unchanged at first sign-in and deletes it on Erase everything (BL-579).
+
+Never in a consent record, each with a test: an IP address (even truncated), user agent, device model, IDFV, IDFA or push token; a birth date, age, age range or the Declared Age Range value; a name or email; a hash of text with a child's name filled in (a short string with a name can be guessed from its hash); free text; any join to `auth.sessions` or the auth audit log. The age gate itself stays on the phone as `ageGate.passed` (D-026); a No reaches the server only as the content-free closure row (BL-580).
+
+*Why:* LEGAL-REQ-001, LEGAL-REQ-002, POLICY_VERSIONING 7.1 and 9.2; the build 1 audit found records with no build number, no hash and a fixed locale (BL-577). *Enforced by:* the server's context allowlist (`20261005000000_family_cap_language_idempotency.sql:505-513`, enforced); the shared builder and its contract test, `not yet: BL-577`.
 
 ### The content-free rule
 

@@ -1,0 +1,43 @@
+/* Owner: coordinator. The letter on paper: Literata at reading size (DESIGN_LANGUAGE letterBody). */
+.letter {
+  margin: 0;
+  max-width: 31em;
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-size: clamp(19px, 1.75vw, 26px);
+  line-height: 1.6;
+  color: var(--ink);
+  text-wrap: pretty;
+  font-variation-settings: 'opsz' 18;
+}
+.name {
+  position: relative;
+}
+.cell {
+  position: relative;
+}
+/* The right name sits exactly over the misheard one, on the same baseline. */
+.over {
+  position: absolute;
+  left: 0;
+  top: 0;
+  white-space: nowrap;
+}
+.wash {
+  position: absolute;
+  inset: -0.08em -0.22em;
+  border-radius: 0.25em;
+  background: var(--accent-soft);
+}
+.removal {
+  position: relative;
+}
+/* The quiet underline: 1.5px dotted accent at 60 percent, 3px below the baseline. */
+.mark {
+  position: absolute;
+  left: 0;
+  right: 0.25em;
+  bottom: 0.08em;
+  border-bottom: 1.5px dotted color-mix(in srgb, var(--accent) 60%, transparent);
+  pointer-events: none;
+}
