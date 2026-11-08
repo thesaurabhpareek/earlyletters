@@ -108,19 +108,19 @@ describe('[F2] the agreement record', () => {
   });
 });
 
-describe('[F2] local schema v9: the agreements table', () => {
-  it('v9 creates the table with no age column and no rows, even on an install that passed the old gate (no backfill)', () => {
+describe('[F2] local schema v10: the agreements table', () => {
+  it('v10 creates the table with no age column and no rows, even on an install that passed the old gate (no backfill)', () => {
     const { db } = nodeDb();
     const ctx = { now: NOW, newId: ids };
-    migrate(db, ctx, MIGRATIONS.filter((m) => m.version <= 8));
+    migrate(db, ctx, MIGRATIONS.filter((m) => m.version <= 9));
     db.run("INSERT INTO settings (key, value) VALUES ('ageGate.passed', '1')");
-    expect(migrate(db, ctx)).toMatchObject({ from: 8, to: LATEST_VERSION });
+    expect(migrate(db, ctx)).toMatchObject({ from: 9, to: LATEST_VERSION });
     const cols = db.all<{ name: string }>('PRAGMA table_info(agreements)').map((c) => c.name);
     expect(cols).toEqual(['id', 'document', 'version', 'action', 'surface', 'recorded_at', 'app_version', 'rendered_sha256', 'uploaded_at', 'server_act_id']);
     expect(cols.filter((c) => AGE_LIKE.test(c))).toEqual([]);
     expect(db.get<{ n: number }>('SELECT count(*) AS n FROM agreements')?.n).toBe(0);
     // Safe to run again on a database that already has the table.
-    expect(() => MIGRATIONS.find((m) => m.version === 9)!.up(db, ctx)).not.toThrow();
+    expect(() => MIGRATIONS.find((m) => m.version === 10)!.up(db, ctx)).not.toThrow();
   });
 
   it('a record is written once: a second accept of the same document and version keeps the first row as it was', () => {

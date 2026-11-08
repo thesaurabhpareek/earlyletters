@@ -195,9 +195,12 @@ describe('boundaries (MOB-04)', () => {
     }
   });
 
-  it('[D-083] saveLetterFromDraft counts a kept letter in the same transaction, and only a letter', () => {
+  it('[D-083, D-133] saveLetterFromDraft counts a kept letter or note in the same transaction, never a quiet-day mark', () => {
     const source = src('store.ts');
-    expect(source).toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    // D-133: a kept note counts like a letter. The guard excludes only the quiet-day mark; ledger.recordKept
+    // still applies the full D-103 rule (own author, words present, reviewed, kind letter or note).
+    expect(source).toMatch(/if \(e\.kind !== 'not_much'\) ledger\.recordKept\(c, draftId, keychainFloor\(\)\)/);
+    expect(source).not.toMatch(/if \(e\.kind === 'letter'\) ledger\.recordKept/);
     // The count is written inside the transaction callback, before the upload is queued.
     expect(source.indexOf('ledger.recordKept')).toBeLessThan(source.indexOf('enqueueEntryUpsert(c.db, draftId'));
   });

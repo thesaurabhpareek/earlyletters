@@ -2,7 +2,7 @@
  * Before you begin: the rules for the one screen that asks the neutral 18+ question and holds the unticked agreement
  * box (founder decision F2, 8 Nov 2026; proposals/account-security/legal-consent.md 2 and 3, design.md 2.1; data design
  * PR #597 docs/data/account-experience-schema.md 2.1). Pure, tested in Node (test/agreements.test.ts). App glue:
- * lib/age-gate.ts; the table: lib/db/repos/agreements.ts (local schema v9).
+ * lib/age-gate.ts; the table: lib/db/repos/agreements.ts (local schema v10).
  *
  * What is stored, and nothing else:
  * - The age answer stays the existing boolean `ageGate.passed` (D-026), or the time of a No (`ageGate.stoppedAt`, the

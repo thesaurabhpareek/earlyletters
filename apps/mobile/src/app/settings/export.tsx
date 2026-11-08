@@ -8,10 +8,11 @@ import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
 import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
 import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle';
 import { useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Linking, ScrollView, View } from 'react-native';
-import { supportMailto } from '@scribe/brand';
+import { AccessibilityInfo, ScrollView, View } from 'react-native';
 import { BookCover } from '@/components/book/book-cover';
 import { exportEmpty, exportFailure, INSIDE } from '@/components/settings/export.logic';
+import { useHelpLink } from '@/components/settings/help-fallback';
+import { mailTarget } from '@/components/settings/help-links.logic';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -69,6 +70,8 @@ export default function ExportScreen() {
   const e = copy.settings.export;
   const s = exportCopy.screen;
   const [state, setState] = useState<State>({ kind: 'idle' });
+  // Write to us: with no Mail account the address shows to copy (F20-REQ-007).
+  const help = useHelpLink();
   const [summary] = useState(() => {
     try {
       return exportSummary();
@@ -201,7 +204,7 @@ export default function ExportScreen() {
           ) : null}
           {state.kind === 'failed' && exportFailure(state.reason).action === 'writeToUs' ? (
             // Too big: exporting again would fail the same way, so the way on is to write to us (S43).
-            <Button size="lg" label={copy.settingsHome.helpValue} onPress={() => void Linking.openURL(supportMailto(copy.settingsHome.helpSubject))} testID="export.writeToUs" />
+            <Button size="lg" label={copy.settingsHome.helpValue} onPress={() => help.open(mailTarget(copy.settingsHome.helpSubject))} testID="export.writeToUs" />
           ) : (
             <Button size="lg" onPress={() => void start()} disabled={empty} testID="export.start">
               <Text>{state.kind === 'idle' ? e.button : s.againButton}</Text>
@@ -249,6 +252,7 @@ export default function ExportScreen() {
           </Button>
         </View>
       )}
+      {help.sheet}
     </ScrollView>
   );
 }

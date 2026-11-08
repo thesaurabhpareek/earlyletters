@@ -1,5 +1,5 @@
 /**
- * Local agreement record (table `agreements`, local schema v9; PR #597 data design 2.1). Append-only: a row is
+ * Local agreement record (table `agreements`, local schema v10; PR #597 data design 2.1). Append-only: a row is
  * written once per (document, version, action) and never changed, except `uploaded_at` and `server_act_id`, which
  * the 1.1 upload sets once. L2, never logged, never in analytics. Rules: lib/agreements.logic.ts.
  */
