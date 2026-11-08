@@ -11,6 +11,8 @@ export function legalRawResponse(doc: LegalDoc, version: string): Response {
       'Content-Type': 'text/markdown; charset=utf-8',
       'Content-Length': String(raw.length),
       'Cache-Control': 'public, max-age=300',
+      // Headers only: the bytes, and so the sha256, are unchanged.
+      'X-Robots-Tag': 'noindex, nofollow',
     },
   });
 }

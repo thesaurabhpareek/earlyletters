@@ -1,7 +1,6 @@
 /** Things a crawler, a proxy or a browser's security model sees: robots, sitemap, redirects, headers, CSP in action. */
 import { siteOrigin } from '../src/lib/legal/origin';
 import { legalPage, legalSlugs } from '../src/lib/legal/pages';
-import { legalVersionPage } from '../src/lib/legal/versions';
 import { expect, test } from './support/fixtures';
 
 test.describe('robots.txt and sitemap.xml', () => {
@@ -16,19 +15,18 @@ test.describe('robots.txt and sitemap.xml', () => {
     expect(text).toContain(`Sitemap: ${siteOrigin}/sitemap.xml`);
   });
 
-  test('sitemap.xml lists the home page, /privacy and /terms, then the permanent pages of version 0.9.0, all on the primary domain, with each page date', async ({ request }) => {
+  test('sitemap.xml lists the home page, /privacy and /terms, all on the primary domain, with each page date, and not the versioned test texts', async ({ request }) => {
     const res = await request.get('/sitemap.xml');
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toMatch(/xml/);
     const xml = await res.text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(locs).toEqual([siteOrigin, ...legalSlugs.map((slug) => `${siteOrigin}/${slug}`), ...legalSlugs.map((slug) => `${siteOrigin}/legal/${slug}/0.9.0`)]);
+    expect(locs).toEqual([siteOrigin, ...legalSlugs.map((slug) => `${siteOrigin}/${slug}`)]);
+    expect(xml, 'the versioned test texts are noindex and unlisted').not.toContain('/legal/');
     expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe|\/health-privacy|\/subprocessors|\/delete-account/);
     // Only url and lastmod; no changefreq or priority hints.
     expect(xml).not.toMatch(/<changefreq>|<priority>/);
     for (const slug of legalSlugs) expect(xml).toContain(`<lastmod>${legalPage(slug, {}).lastUpdated}`);
-    // A permanent page is dated by its version's own changelog row.
-    for (const slug of legalSlugs) expect(xml).toMatch(new RegExp(`<loc>${siteOrigin}/legal/${slug}/0\\.9\\.0</loc>\\s*<lastmod>${legalVersionPage(slug, '0.9.0').published}</lastmod>`));
   });
 
   test('every address in the sitemap exists on this site and may be indexed', async ({ request }) => {

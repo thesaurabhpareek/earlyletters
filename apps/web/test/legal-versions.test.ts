@@ -46,7 +46,7 @@ describe('the versioned texts', () => {
       'src/app/(legal)/terms/page.tsx',
       'src/app/(legal)/privacy/page.tsx',
     ];
-    for (const file of floating) expect(read(file), file).not.toMatch(/legal\/documents|legal\/versions|LegalDocument|content\/legal/);
+    for (const file of floating) expect(read(file), file).not.toMatch(/legal\/documents|legal\/versions|\.\/documents|\.\/versions|LegalDocument|content\/legal/);
     for (const slug of legalSlugs) {
       expect(legalPage(slug, {}).href).toBe(`/${slug}`);
       expect(legalPage(slug, {}).lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);

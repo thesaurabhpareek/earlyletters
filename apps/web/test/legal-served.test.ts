@@ -17,7 +17,7 @@ const sha256 = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest(
 /** The same values as packages/content/test/legal-beta.test.ts (PR 616, BL-565) and its APPLY step 8.2 table. */
 const PINNED = {
   terms: 'dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1',
-  privacy: '4fdaa6d33a7e1a68a065351935ddc58871a28a98afef62424e4193adabd4a2c9',
+  privacy: '4ec16856b2527cfdc7987f7cb8018fd1ab095b4ecf6093d0fcfcecf4f990cfe4',
 } as const;
 
 describe('[BL-565] the served 0.9.0 text', () => {

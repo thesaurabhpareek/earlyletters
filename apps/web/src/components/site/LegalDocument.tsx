@@ -20,5 +20,7 @@ export function legalDocumentMetadata(doc: LegalDoc, version: string): Metadata 
     title: page.metaTitle,
     description: page.metaDescription,
     alternates: { canonical: page.href },
+    // A test text for the app's testers, not the site's policy: kept out of search (review B2, 8 Nov).
+    robots: { index: false, follow: false },
   };
 }

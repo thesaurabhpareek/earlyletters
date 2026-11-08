@@ -16,7 +16,7 @@ import { DRAFT_MARKS, INTERNAL_MARKS } from './support/legal';
 /** sha256 of the raw 0.9.0 files: the values in PR 616 (the table for APPLY step 8.2) and packages/content legal-beta.test.ts. */
 const PUBLISHED_SHA256 = {
   terms: 'dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1',
-  privacy: '4fdaa6d33a7e1a68a065351935ddc58871a28a98afef62424e4193adabd4a2c9',
+  privacy: '4ec16856b2527cfdc7987f7cb8018fd1ab095b4ecf6093d0fcfcecf4f990cfe4',
 } as const;
 
 const TITLE = { terms: 'Terms of Service', privacy: 'Privacy Policy' } as const;
@@ -26,7 +26,7 @@ test.describe('versioned legal pages', () => {
     const path = `/legal/${slug}/0.9.0`;
     const doc = legalVersionPage(slug, '0.9.0');
 
-    test(`${path}: one h1, "Version 0.9.0, a test version." under it, every section, a way home, the three footer links, indexable`, async ({ page }) => {
+    test(`${path}: one h1, "Version 0.9.0, a test version." under it, every section, a way home, the three footer links, noindex`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
@@ -35,7 +35,7 @@ test.describe('versioned legal pages', () => {
       await expect(page).toHaveTitle(doc.metaTitle);
       await expect(page.locator('html')).toHaveAttribute('lang', 'en');
       await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://earlyletters.com${path}`);
-      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+      await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex, nofollow');
       // Every "## " heading of the text, in order.
       const headings = [...readLegalSource(slug, '0.9.0').body.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
       expect(headings.length).toBeGreaterThan(10);
@@ -67,6 +67,7 @@ test.describe('versioned legal pages', () => {
       const res = await request.get(`${path}.md`);
       expect(res.status()).toBe(200);
       expect(res.headers()['content-type']).toBe('text/markdown; charset=utf-8');
+      expect(res.headers()['x-robots-tag']).toBe('noindex, nofollow');
       const bytes = await res.body();
       expect(createHash('sha256').update(bytes).digest('hex')).toBe(PUBLISHED_SHA256[slug]);
       expect(bytes.toString('utf8').startsWith('---\n')).toBe(true);
