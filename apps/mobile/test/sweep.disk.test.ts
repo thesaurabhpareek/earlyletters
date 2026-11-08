@@ -373,6 +373,48 @@ describe('[D-085] erase removes the recording where it is now (privacy)', () => 
     expect(app.store.listDeleted()).toEqual([]);
     expect(h.disk.files.has(uri)).toBe(false);
   });
+
+  // erase.ts is where the launch purge is wired: the store tests pin purgeThenRecordLaunch, these pin
+  // that purgeShelfAtLaunch is the one that is called, in that order, with the server-erased step (QE-05).
+  it('[QE-05] purgeShelfAtLaunch erases nothing at the first launch after a clock jump of 40 days, and the letter at the next', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-3E4F5A6B-0000-4000-8000-0000000DE1EC.m4a`, 20_000);
+    const id = '0199a5b0-0000-7000-8000-00000000e00a';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
+    app.store.deleteEntry(id); // deleted at T0
+    // The last launch the phone saw: a day after the delete.
+    vi.setSystemTime(T0 + DAY);
+    app.store.recordLaunch(Date.now());
+
+    // The clock jumps 40 days ahead (a wrong date) and the app is opened: the previous launch has not seen day 30.
+    vi.setSystemTime(T0 + 40 * DAY);
+    app = await launch();
+    expect(app.erase.purgeShelfAtLaunch()).toBe(0);
+    expect(app.store.listDeleted().map((l) => l.id)).toEqual([id]);
+    expect(h.disk.files.has(uri)).toBe(true);
+
+    // The next launch finds the previous one had seen day 40: the file goes first, then the row.
+    app = await launch();
+    expect(app.erase.purgeShelfAtLaunch()).toBe(1);
+    expect(app.store.listDeleted()).toEqual([]);
+    expect(h.disk.files.has(uri)).toBe(false);
+    expect(db.get('SELECT id FROM entries WHERE id = ?', id)).toBeNull();
+  });
+
+  it('[QE-05] purgeShelfAtLaunch also finishes a letter the server erased, at any launch, with its recording', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-3E4F5A6B-0000-4000-8000-0000000DE1ED.m4a`, 20_000);
+    const id = '0199a5b0-0000-7000-8000-00000000e00b';
+    app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
+    app.store.deleteEntry(id);
+    db.run("UPDATE entries SET sync_state = 'erased' WHERE id = ?", id); // another phone chose Erase now; the pull marked it
+    app = await launch();
+    expect(app.erase.purgeShelfAtLaunch()).toBe(1); // just deleted and no launch stamp yet: only the server's erase counts
+    expect(h.disk.files.has(uri)).toBe(false);
+    expect(db.get('SELECT id FROM entries WHERE id = ?', id)).toBeNull();
+  });
 });
 
 describe('edge cases on a real layout', () => {

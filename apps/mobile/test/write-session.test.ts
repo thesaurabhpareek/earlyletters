@@ -204,6 +204,30 @@ describe('the last keystrokes inside the autosave pause are kept on every way ou
     expect(typed(w.draftId())).toBe(LAST);
   });
 
+  // QE-06 review: unmount used to test only the pause, so a write that had failed (disk full) was never retried when
+  // Write unmounted by a route other than Close, Android back or the swipe (a deep link, a stack reset).
+  it.each([
+    ['the pause could not write', false],
+    ['the write when the app left the foreground could not go through', true],
+  ])('words not on the phone because %s are written again when Write unmounts', (_name, leftForeground) => {
+    const w = openWrite();
+    w.type('', FIRST);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    w.disk.full = true;
+    w.type(FIRST, LAST, 20);
+    if (leftForeground) w.session.background();
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS); // a pause that was still waiting fails too: "Not saved yet"
+    expect(typed(w.draftId())).toBe(FIRST); // the newest words are only in the session
+    expect(w.session.pending()).toBe(false); // so no timer is left to save them
+    w.disk.full = false;
+    const before = w.writes.length;
+    w.session.unmount();
+    expect(typed(w.draftId())).toBe(LAST);
+    expect(w.writes.length).toBe(before + 1);
+    w.session.unmount(); // on the phone now: nothing more to write
+    expect(w.writes.length).toBe(before + 1);
+  });
+
   it('a draft Close deleted (words cleared) is not brought back by leaving the foreground', () => {
     const w = openWrite();
     w.type('', FIRST);
@@ -211,8 +235,12 @@ describe('the last keystrokes inside the autosave pause are kept on every way ou
     const id = w.draftId()!;
     w.session.change('');
     expect(w.session.close()).toBe(true);
+    const before = w.writes.length;
     w.session.background();
+    w.session.unmount();
     expect(store.getDraft(id)).toBeNull();
+    // Nothing is written at all: a write to the deleted draft's id changes no row, but it would still say "Saved on this phone".
+    expect(w.writes.length).toBe(before);
   });
 
   it('inactive and background leave the foreground; active does not', () => {

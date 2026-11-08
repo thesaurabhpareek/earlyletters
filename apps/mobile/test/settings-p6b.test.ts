@@ -266,10 +266,13 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'noSpace', mb: 575 })).toEqual({ subtitle: 'Needs more free space, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
     expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
     expect(speechRow({ kind: 'unknown', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
-    // The ring and its words stay between 0 and 100, rounded down (never "100%" before it is done).
-    expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
-    expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
+    // The ring and its words stay between 0 and 99, rounded down: never "100%" before it is done, and below 1% the
+    // words say "Downloading" with no number (TestFlight build 1: never "Getting ready, 0%"), the ring at its start.
+    expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
+    expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Downloading', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.004 })).toMatchObject({ subtitle: 'Downloading', percent: 0 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.01 })).toMatchObject({ subtitle: 'Getting ready, 1%', percent: 1 });
     // The row moved to Storage with the language download (settings-ia.md 4).
     expect(code('components/settings/speech-row.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
   });

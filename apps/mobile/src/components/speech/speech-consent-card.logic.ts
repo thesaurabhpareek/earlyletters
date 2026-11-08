@@ -9,7 +9,7 @@
  */
 import { speechConsentCopy, speechSettingsCopy } from '@scribe/content';
 import { fill } from '@/lib/copy';
-import { shownPercent, type DownloadStage } from '@/lib/models/speech-download.logic';
+import { downloadingLine, type DownloadStage } from '@/lib/models/speech-download.logic';
 import { packsCopy } from '@/lib/packs/copy';
 
 export interface ConsentDownload {
@@ -45,8 +45,7 @@ export function consentLine(d: ConsentDownload, mb: number): ConsentLine {
   if (d.hold === 'no_space') return { text: fill(speechSettingsCopy.noSpace, { n: mb }), bar: null, retry: false };
   if (d.hold === 'offline') return { text: speechSettingsCopy.downloadFailures.offline, bar: null, retry: false };
   if (d.progress !== null) {
-    const n = shownPercent(d.progress);
-    return { text: n === null ? packsCopy.phases.downloading : fill(speechSettingsCopy.downloading, { n }), bar: d.progress, retry: false };
+    return { text: downloadingLine(d.progress, (n) => fill(speechSettingsCopy.downloading, { n })), bar: d.progress, retry: false };
   }
   // `verifying` is the SHA-256 check of the whole file (packs/engine.ts); `queued` and `installing` keep their words.
   if (d.stage === 'verifying') return { text: speechConsentCopy.checking, bar: null, retry: false };
