@@ -1,8 +1,10 @@
 # Theme 1: The hosted backend my letters live on
 
+Readiness: 25 of 28 (audit 8 Nov: 18). Author's re-score, `qa` to confirm. Remains: `security-architect` rules on the smoke-script sign-in method (R2, C8); the founder clicks F1, F2, F4 (C14); the tests in "Trace and tests" are named but not written.
+
 | | |
 |---|---|
-| Working label | NX-01 (id: to be assigned; backlog ids from BL-740 per `next-id.mjs` on 8 Nov 2026) |
+| Working label | NX-01 (working id, see `_CONVENTIONS.md`; real ids from `next-id.mjs`, which printed BL-740 on 8 Nov 2026, assigned by product later) |
 | Refines | F02-REQ-024 (R-17 gate), F16 (sync), F19 (config, kill switches), D-100, D-121 item 1, D-138 item 2 |
 | Tag | EVIDENCE for the gap (`docs/release/BUILD12-GAP-MAP-2026-11-08.md` sections 0, 2, 5; `release:ready` S-50 to S-54 FAIL on 8 Nov). HYPOTHESIS for every number marked "proposed" |
 | Size | M in agent PRs (gap map rank 3, 9, 10, 11, 17; feasibility R3, R4, R12). The feasibility file has no single row for this theme; the size is my sum of those ranks |
@@ -17,17 +19,17 @@ The founder's route is a public App Store release with build 12 on the productio
 
 ## The check
 
-Working ids are labels only. "Old code" means develop at `cda0ba83`.
+Working ids are labels only. "Old code" means the tree this branch holds (develop at `caba0215` plus docs), searched 8 Nov 2026.
 
 | Label | Tag | Given, When, Then | Fails on old code because | Source |
 |---|---|---|---|---|
-| NX-01-R1 | EVIDENCE | Given a blank throwaway hosted project, When all migration files on develop apply in file order, Then 0 errors, and the grants test (`supabase/tests/grants.mjs`) passes against that hosted project. | No hosted project exists; the 32 access-test files run only in embedded Postgres. | Gap map 1.5, 5 (RLS tests row) |
-| NX-01-R2 | EVIDENCE | Given the same project with policy versions `terms` and `sensitive-data` not published, When a synthetic Asha account signs in, Then setup stops with the known refusal and a check script reports "policy versions missing". Given both published, the script signs in, creates 1 letter, syncs it, reads it back on a second client and deletes it, with 0 failed steps. Proposed number: the whole run under 60 seconds. | No such script runs after deploy; `docs/ops/runbooks/staging-smoke.md` is staging only. | Gap map section 5 (setup traps); `docs/release/TESTFLIGHT.md` lines 74 to 82 |
-| NX-01-R3 | EVIDENCE | Given legacy Supabase keys switched off on the throwaway project, When each of the 10 Edge Function folders (except `_shared`) gets its health call, Then 9 of 9 answer without a key error. | #602 (BL-594) is open; functions read the old keys only. | Gap map 1.2, 2; #602 |
-| NX-01-R4 | EVIDENCE | Given a production build profile, When `npm run preflight` runs with an `http` Supabase URL, a service-role key, or servers set to off while the recorded decision says on, Then it fails, 3 of 3 cases. | Production profile writes servers `off`; no equality check with a decision; #633 is a draft. | Gap map 2 (server switch row); #633 |
-| NX-01-R5 | EVIDENCE | Given a nightly dump of the throwaway project, When it restores into a second throwaway project, Then every table row count for the Asha fixture matches (100%) and the minutes taken are written in the runbook. | Backup drafted for staging only (#622); no restore ever run (DL-03 "not run"). | Gap map 1.6, 5 (backups row) |
-| NX-01-R6 | HYPOTHESIS (not shown on a phone yet) | Given the signed `sync` switch set off in remote config, When a build that has sync refreshes config, Then it makes 0 sync uploads from that moment. | Switch exists in code; no device run proves it (gap map: NOT VERIFIED on a device). | Gap map section 5 (kill switch); `capabilities.ts` |
-| NX-01-R7 | EVIDENCE | Given the R-17 checklist (BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349), When it runs on the throwaway project, Then 6 of 6 items pass and the evidence file is committed under `docs/qa/evidence/`. | Code merged 23 Oct; checklist never run; evidence folder holds 2 files, README and TEMPLATE. | `docs/release/1.0.0.md` lines 38 to 39; feasibility R1 |
+| NX-01-R1 | EVIDENCE | Given a blank throwaway hosted project, When all migration files on develop apply in file order, Then 0 errors, and the grants test (`supabase/tests/grants.mjs`) passes against that hosted project. | No hosted project exists as far as the repo shows; `npm run test:db` (every file it runs, 38 `*.test.mjs` files today) runs only in embedded Postgres. | Gap map 1.5, 5 (RLS tests row) |
+| NX-01-R2 | EVIDENCE | Given the same project with policy versions `terms` and `sensitive-data` not published, When a synthetic Asha account signs in, Then setup stops with the known refusal and a check script reports "policy versions missing". Given both published, the script signs in, creates 1 letter, syncs it, reads it back on a second client and deletes it, with 0 failed steps. Proposed number: the whole run under 60 seconds. Sign-in method: the script signs in through the Auth admin API with a test-only key held in the CI secret store (never in the app, EAS variables or the repo), for the Asha account only; it uses the real email path once, to prove the template renders. The method is named in `docs/ops/` and `security-architect` rules on it before merge (the SEC rules were not read for this clause). | No such script runs after deploy; `docs/ops/runbooks/staging-smoke.md` is staging only. | Gap map section 5 (setup traps); `docs/release/TESTFLIGHT.md` lines 74 to 82 |
+| NX-01-R3 | EVIDENCE | Given legacy Supabase keys switched off on the throwaway project, When the script calls each folder under `supabase/functions` other than `_shared` (the script lists them; 8 today: analytics-forget, apple-token, config, content, escrow, invite-redeem, purge-worker, subscription-status), Then 8 of 8 answer their documented no-op call without a key error. A function with no safe no-op call gets one in the same PR, named in the PR body. | The functions read the legacy keys only (BL-594); no run with legacy keys off exists, and no function was found to expose a no-op health route by search (UNVERIFIED per handler). | Gap map 1.2, 2; #602 |
+| NX-01-R4 | EVIDENCE | Given a production build profile, When `npm run preflight` runs with an `http` Supabase URL, a service-role key, or servers set to off while the recorded decision says on, Then it fails, 3 of 3 cases. | The production profile writes servers `off` today and `npm run preflight` has no check that compares the profile with a recorded decision or refuses an `http` URL. | Gap map 2 (server switch row); #633 |
+| NX-01-R5 | EVIDENCE | Given a dump of the throwaway project, When it restores into a second throwaway project, Then every table row count for the Asha fixture matches (100%) and the restore finishes in 4 hours or less (the RTO in `06-nfr.md`, Server RPO and RTO row: RPO 24 h, RTO 4 h, PITR off at launch). The minutes taken are written in `docs/ops/runbooks/restore-drill.md`. If the founder turns on point-in-time recovery (F4), the `06-nfr.md` row changes to the new RPO in the same PR, marked Rev D-###. | Backup is written for staging only (`docs/ops/runbooks/staging-backup-free.md`); no restore has been run on a hosted project (DL-03 "not run"). | Gap map 1.6, 5 (backups row) |
+| NX-01-R6 | HYPOTHESIS (not shown on a phone yet) | Given the signed `sync` switch set off in remote config, When a build that has sync refreshes config, Then it makes 0 sync uploads from 60 seconds after that refresh completes (proposed tolerance; the harness reads the outbox, not a log). | Switch exists in code; no device run proves it (gap map: NOT VERIFIED on a device). | Gap map section 5 (kill switch); `capabilities.ts` |
+| NX-01-R7 | EVIDENCE | Given the F02-REQ-024 checklist, When it runs on the throwaway project, Then every item passes: the 6 code items (BL-347, BL-330, BL-331 with BL-332, `peek_invite` with BL-334, BL-322, BL-349), migrations applied to the hosted project, F11-REQ-025 green, and `/terms` and `/privacy` live. The `/health-privacy` item in F02-REQ-024 is retired if BL-564 stands (the consent sheet links Terms and Privacy only, unless counsel answers Q32 the other way); product edits F02-REQ-024 in a separate PR marked Rev BL-564, counsel confirms no health page is owed. The evidence file is committed under `docs/qa/evidence/`. | Code merged 23 Oct; the checklist has never been run on a hosted project; `apps/web/src/app/(legal)` serves `privacy` and `terms` only, so the list's `/health-privacy` item cannot pass as written; the evidence folder holds 2 files, README and TEMPLATE. | `docs/release/1.0.0.md` lines 38 to 39; feasibility R1 |
 
 ## Edge cases
 
@@ -72,6 +74,34 @@ None new. Analytics stay off in every build profile for the 1.0 line (D-124). Se
 | Supabase plan for production | Pro with point-in-time recovery from the day a friend signs in. The monthly cost is UNVERIFIED here; read Supabase's pricing page first |
 | Update channel before the store freeze (feasibility AD-3) | Server-driven content only for now; decide the disabled `expo-updates` option with `security-architect` before any build that goes to review. Whether Expo update signing meets SEC-R10 is NOT VERIFIED |
 | Who may sign in to build 12 | Family only (internal TestFlight) until counsel answers Q44 and the 0.9.0 policy is live (theme 3) |
+
+## Engineering block (cross-cutting, added 8 Nov 2026 after the readiness audit, G-31 to G-37)
+
+| Line | This theme |
+|---|---|
+| API contract (`packages/api`) | No new type. Each function keeps its type in `packages/api/src/server/`; any no-op route added for R3 gets its type and a case in `packages/api/test/server-contracts.test.ts` (exists). Version: additive. |
+| Budget (`06-nfr.md`) | Edge Function light: p95 600 ms, p99 1.5 s with cold start. Sync pull: 300 ms a page p95. Restore: RTO 4 h. Smoke run: under 60 s (proposed, this file). |
+| Accessibility | None: no screen. |
+| Switch, off behaviour, noticed by | Switch: the signed remote-config kill switches in `packages/api/src/kill-switches.ts` (`KILL_SWITCH_KEYS`; sync is the one R6 tests). Off: the phone keeps record, read, export. Noticed by: the smoke script's exit code in CI, and the `ops-health` views in `06-nfr.md` (purge backlog, stuck deletions, oldest transaction). Rollback of a bad migration is a new forward migration; a bad function is redeployed from the previous tag. |
+| Data class and retention | The smoke script touches only the fictional Asha family: no real L4. The test-only auth key is L3 secret material: CI secret store only, rotated when a person leaves, never in logs. |
+| Schema and grants | No new table or function in this theme. It applies the existing migrations in file order and runs `supabase/tests/grants.mjs` against the hosted project. The consent and audit chain (#634, #636, #637) lands in the order #655 sets. |
+| Analytics events | None. In 1.0 analytics are off (D-124). Server health comes from Supabase logs and the script. |
+
+## Trace and tests
+
+Id convention: `_CONVENTIONS.md`. A test title starts with the bracketed id. Paths marked "proposed" do not exist yet; the PR that adds the test names the real path.
+
+| Id | Refines | Test (layer, file, title) | Device or ops row |
+|---|---|---|---|
+| NX-01-R1 | F02-REQ-024; D-100 | ops script (proposed `scripts/ops/hosted-check.mjs`) plus `supabase/tests/grants.mjs` against the hosted URL; `[NX-01-R1] every migration applies to a blank hosted project` | setup S-51 (founder creates the project) |
+| NX-01-R2 | F02-REQ-024; F16 | ops script, same file; `[NX-01-R2] policy-missing refusal, then sign in, keep, pull, delete in under 60 s` | setup S-52 (auth settings) |
+| NX-01-R3 | BL-594 | script lists `supabase/functions/*` and calls each; `[NX-01-R3] 8 of 8 functions answer with legacy keys off` | none (script) |
+| NX-01-R4 | BL-600; F19 | unit test beside `scripts/` preflight (proposed `scripts/release/preflight.test.mjs`); `[NX-01-R4] preflight fails on http, service key, servers off against the decision` | none |
+| NX-01-R5 | DATA-REQ-030, -031 | runbook drill, minutes in `docs/ops/runbooks/restore-drill.md`; `[NX-01-R5] restore matches row counts in 4 hours or less` | DL-03 |
+| NX-01-R6 | F19 kill switches | device harness on an iPhone SE 3; `[NX-01-R6] sync off means 0 uploads and record, keep, read, export still work` | new: kill switch off then record, keep, read, export |
+| NX-01-R7 | F02-REQ-024 | checklist run, evidence in `docs/qa/evidence/`; `[NX-01-R7] outside sign-in checklist passes` | setup S-54 (purge worker secrets) |
+
+Trace: NX-01-R1..R7 -> F02-REQ-024, F16, F19, D-100, D-121 item 1, D-138 item 2.
 
 ## Not verified
 

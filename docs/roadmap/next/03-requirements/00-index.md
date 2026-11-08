@@ -6,11 +6,37 @@ Founder facts held: public App Store release (full App Review); build 12 on prod
 
 ## Ids
 
-Requirements carry working labels (NX-01-R1 and so on) and "id: to be assigned". `node scripts/agents/next-id.mjs` ran on 8 Nov and printed BL-740, D-144, ADR 0028; I reserved none. The tool shows BL-621 clashes and the D-139, D-141, D-142 holds from other open PRs, so these files avoid all of them. Each requirement names the existing F##-REQ it refines. Product assigns real ids when it adds backlog rows.
+Requirements carry stable working ids (`NX-<theme>-R<n>`; how a test names one, and how one converts to a real id later without a rename, is in `_CONVENTIONS.md`). `node scripts/agents/next-id.mjs` ran on 8 Nov and printed BL-740, D-144, ADR 0028; I reserved none. The tool shows BL-621 clashes and the D-139, D-141, D-142 holds from other open PRs, so these files avoid all of them. Each requirement names the existing F##-REQ it refines. Product assigns real ids when it adds backlog rows.
+
+## Readiness after the 8 Nov fix round
+
+Scored against the 14-point Definition of Ready in `../12-engineering-readiness-audit.md` section 1 (0 to 2 each, max 28). These are the authors' re-scores of their own text, not an independent audit: `qa` should re-run the audit before a row is handed out. "Before" is the audit's 8 Nov score.
+
+| Theme | Before | Now | What keeps it from 28 |
+|---|---|---|---|
+| 01 Hosted backend | 18 | 25 | `security-architect` rules on the smoke-script sign-in; founder F1, F2, F4 |
+| 02 Sign-in and session | 16 | 25 | R10 target minutes (`support`, by Mon 16 Nov); Apple key and SMTP |
+| 03 Age, consent, region | 14 | NOT READY (22 for the rest) | Blocked on B-1 country source (counsel Q57), B-2 age signal (Q46), B-3 accept or acknowledge (Q48) |
+| 04 Delete account, erase phone | 18 | 26 | CCO line on #520; drill needs theme 1 |
+| 05 Reviewer sign-in, store pack | 18 | NOT READY (22 for the rest) | Blocked on the founder's reviewer path (A or B), counsel Q54 and Q47 |
+| 06 Recording that behaves | 17 | 26 | Words for two screens; real people and an SE 3 for R6 |
+| 07 Letters on every phone | 17 | 25 | Audio-elsewhere drawing; the founder's two phones |
+| 08 Plus and billing trust | 15 | 24 | Counsel for registered strings; App Store Connect products |
+| 09 Co-parent, shared voice | 12 | 9a: 24; 9b NOT READY (14) | 9b blocked on an ADR for key distribution and counsel Q53, Q50 |
+| 10 Reminders | 17 | 26 | SE 3 runs; BL-534 timing; found that back-off is not built |
+| 11 Relative adds a hello | 11 | NOT READY (15), by design | Blocked on an ADR for guest identity, counsel memo, send limit |
+| 12 Names and languages | 14 | names: 24; languages NOT READY (15) | Languages blocked on the founder's first language, the FB-02 harness, native reviewers |
+| 15 Free analytics (new) | 2 | 25 | Founder's own words reversing D-124 item 3; counsel on the label |
+| 16 Support route (new) | 2 | 24 | Founder's reply promise |
+| 17 Internal alerts (new) | 2 | 24 | Founder confirms the sender |
+| 24 Rating ask, store page (new) | 4 | 23 | Native module; Apple's review-prompt rule unverified |
+| 27 Catch-up (new) | 3 | catch-up dates 25; import NOT READY (15) | Import blocked on counsel and a native module |
+
+New files in this folder, for backlog ranks the audit found had no requirement text: `NX-15-free-analytics.md`, `NX-16-support-route.md`, `NX-17-internal-alerts.md`, `NX-24-rating-ask-and-store-page.md`, `NX-27-catch-up-letters.md`. `_CONVENTIONS.md` is the one-page id and test-title rule. Every theme file now carries a `Readiness` line, an "Engineering block" (API, budget, accessibility, switch and rollback, data class, schema and grants, analytics catalog status) and a "Trace and tests" table.
 
 ## Every file has
 
-What the person sees and does, then the check (Given, When, Then with numbers, why it fails on old code, tag HYPOTHESIS or EVIDENCE with source), edge cases, offline behaviour, what we never do, copy keys (names only), analytics event names (opt-in, content-free), device rows, dependencies, size, gate, and founder-only decisions with a recommended default. Numbers marked "proposed" are targets, not data.
+What the person sees and does, then the check (Given, When, Then with numbers, why it fails on old code, tag HYPOTHESIS or EVIDENCE with source), edge cases, offline behaviour, what we never do, copy keys (names only), analytics event names (opt-in, content-free), device rows, dependencies, size, gate, and founder-only decisions with a recommended default. Numbers marked "proposed" are targets, not data. Founder decisions and counsel answers that hold a row are in a "Blocked on" block at the top of the file (themes 3, 5, 9b, 11, 12 and the import part of 27).
 
 ## Order and reason
 
@@ -41,7 +67,7 @@ Quick capture from the lock screen (native, L, kill-safety proof), photos and vi
 2. Supabase plan (default Pro with point-in-time recovery; cost unverified).
 3. Update channel before freeze (default server-driven now).
 4. Google sign-in out of build 12; code length 6.
-5. Reviewer sign-in method (default a review mailbox he opens).
+5. Reviewer sign-in method (default a review mailbox he opens; see theme 5 "Blocked on", which also notes the release script still demands a demo password the app cannot have).
 6. Co-parent hidden in the first public release.
 7. CCO lines for #635 and #520.
 8. Confirm Plus prices from the repo source.
