@@ -164,8 +164,8 @@ Borrowing is fine for `ip12` and `ip15`: the founder needs only the SE 3 and one
 - **Update:** `docs/legal/DELETION_AND_EXPORT_SPEC.md` 2.2 (local purge), `docs/BACKLOG.md` BL-284.
 
 ### DL-04 Negative restore, and the clock guard (D-085). Not run: needs the device
-- **Steps:** (a) Restore from a backup made before the last letter. (b) Delete a letter, set the phone date 40 days forward, open the app (it purges), set the date back 10 days, delete another letter and open the app; then set the date 31 days forward from the second deletion.
-- **Expected:** (a) the app opens and says nothing false (no backup claim anywhere). (b) The first letter is erased (file and row); nothing is erased while the date is earlier than the last launch; the second letter is erased once the date passes day 30 after its own deletion.
+- **Steps:** (a) Restore from a backup made before the last letter. (b) Delete a letter, set the phone date 40 days forward, open the app, force quit and open it again. Set the date back 10 days, delete another letter, open the app, force quit and open it again; then set the date 31 days forward from the second deletion and open the app twice. (c) QE-05: delete a letter, set the date a year forward, open the app, set the date back to today and open the app twice.
+- **Expected:** (a) the app opens and says nothing false (no backup claim anywhere). (b) The first letter is still on the shelf after the first open on the jumped date and erased (file and row) at the second; nothing is erased at the first open on the earlier date; the second letter is erased at the second open past day 30 after its own deletion. (c) The letter stays on the shelf at every open, and a letter deleted 30 days before the corrected date is erased by the second open (purging resumes).
 - **Record:** DL-04 row. **Update:** `apps/mobile/test/store.shelf.test.ts` if behaviour differs.
 
 ### DL-05 Delete, shelf and erase by hand (D-085)

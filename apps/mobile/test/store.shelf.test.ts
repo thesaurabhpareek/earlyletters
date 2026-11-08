@@ -178,10 +178,64 @@ describe('the 30 day purge', () => {
     expect(store.purgeExpired(T0 + 41 * DAY, disk().eraser)).toBe(1);
   });
 
-  it('the recorded launch never moves backwards', () => {
-    store.recordLaunch(T0 + 10 * DAY);
-    store.recordLaunch(T0 + 5 * DAY);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 10 * DAY).toISOString());
+  // QE-05: what purgeShelfAtLaunch does at each launch: purge, then record the launch.
+  const launch = (ms: number, eraser: AudioEraser = disk().eraser) => {
+    const n = store.purgeExpired(ms, eraser);
+    store.recordLaunch(ms);
+    return n;
+  };
+
+  it('[QE-05] a clock that jumps 30 days or more ahead erases nothing at that launch', () => {
+    save(id1);
+    save(id2);
+    launch(T0);
+    store.deleteEntry(id1);
+    clock += 2 * DAY;
+    store.deleteEntry(id2);
+    launch(T0 + 2 * DAY);
+    // The phone date jumps 40 days ahead (manual change, a wrong network time).
+    expect(launch(T0 + 42 * DAY)).toBe(0);
+    expect(store.listDeleted().map((e) => e.id).sort()).toEqual([id1, id2]);
+  });
+
+  it('[QE-05] a clock corrected after running ahead resumes purging, and keeps what is not yet due', () => {
+    save(id1);
+    save(id2);
+    launch(T0);
+    store.deleteEntry(id1);
+    launch(T0 + 1 * DAY);
+    expect(launch(T0 + 365 * DAY)).toBe(0); // a year ahead: nothing erased
+    // Corrected. The guard skips the first launch on the earlier clock (DL-04), then the purge runs as before.
+    expect(launch(T0 + 3 * DAY)).toBe(0);
+    clock = T0 + 3 * DAY;
+    store.deleteEntry(id2);
+    expect(launch(T0 + 20 * DAY)).toBe(0);
+    expect(launch(T0 + 30 * DAY)).toBe(0); // the previous launch had not seen day 30 yet
+    expect(launch(T0 + 31 * DAY)).toBe(1); // id1, 30 days by both clocks
+    expect(store.listDeleted().map((e) => e.id)).toEqual([id2]);
+    expect(launch(T0 + 33 * DAY)).toBe(0);
+    expect(launch(T0 + 34 * DAY)).toBe(1); // id2, deleted on day 3
+    expect(store.listDeleted()).toEqual([]);
+  });
+
+  it('[QE-05] a clock left ahead is believed only once a second launch agrees with it', () => {
+    save(id1);
+    launch(T0);
+    store.deleteEntry(id1);
+    expect(launch(T0 + 40 * DAY)).toBe(0);
+    expect(launch(T0 + 40 * DAY + 3600_000)).toBe(1);
+  });
+
+  it('[DL-04] a clock moved back purges nothing at that launch; the recorded launch follows it', () => {
+    save(id1);
+    launch(T0);
+    store.deleteEntry(id1);
+    expect(launch(T0 + 29 * DAY)).toBe(0);
+    expect(launch(T0 + 24 * DAY)).toBe(0); // moved back 5 days: guarded
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 24 * DAY).toISOString());
+    expect(launch(T0 + 31 * DAY)).toBe(0); // the launch before saw only day 24
+    expect(store.listDeleted()).toHaveLength(1);
+    expect(launch(T0 + 32 * DAY)).toBe(1);
   });
 
   it('[D-085] with sync on the server owns the clock for a letter it holds: the launch purge leaves it', () => {

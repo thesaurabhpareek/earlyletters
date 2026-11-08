@@ -100,16 +100,17 @@ describe('the clock guard (a phone clock moved back never purges early)', () => 
     expect(onShelf()).toEqual([]);
   });
 
-  it('recordLaunch: an equal time is a no-op, a later time moves it, an earlier one is ignored', () => {
+  // QE-05: the stamp follows the clock both ways. A stamp that never moved back let a clock that once ran ahead block
+  // every purge until real time passed it; the purge itself still skips the launch whose clock is earlier (above).
+  it('recordLaunch follows the clock: a later time moves it, an earlier one moves it back', () => {
     store.recordLaunch(T0);
-    const stamp = store.getSetting(store.LAST_LAUNCH_SETTING);
-    expect(stamp).toBe(new Date(T0).toISOString());
-    store.recordLaunch(T0);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(stamp);
-    store.recordLaunch(T0 - DAY);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(stamp);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0).toISOString());
     store.recordLaunch(T0 + 1);
     expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 1).toISOString());
+    store.recordLaunch(T0 - DAY);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 - DAY).toISOString());
+    store.recordLaunch(Number.NaN);
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 - DAY).toISOString());
   });
 });
 
