@@ -114,6 +114,23 @@ export function promptLine(promptKey: string | null | undefined, prompts: readon
   return prompts.find((p) => p.key === promptKey)?.text ?? null;
 }
 
+/**
+ * Where Listen goes once the wait for the save ends (BL-563). The draft id is known before the wait, so a slow save
+ * still opens Review on that draft; only a save that threw leaves early, because nothing was kept to open.
+ */
+export type AfterFinish =
+  | { to: 'review'; params: { draftId: string; stopped?: StoppedParam } }
+  | { to: 'leave' };
+
+export function afterFinish(
+  draftId: string,
+  reason: StopReason,
+  outcome: { ok: true; value: unknown } | { ok: false; why: 'failed' | 'timeout' },
+): AfterFinish {
+  if (!outcome.ok && outcome.why === 'failed') return { to: 'leave' };
+  return { to: 'review', params: reviewParams(draftId, reason) };
+}
+
 /** How long Listen waits for a take to be kept before it leaves anyway (BL-563). The take stays either way. */
 export const FINISH_TIMEOUT_MS = 3000;
 
