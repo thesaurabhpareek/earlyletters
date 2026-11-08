@@ -26,7 +26,8 @@ import { backupCopy } from '@scribe/content';
  * Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, If you are struggling, Licenses, version.
  * "Settings, Plan" is the path the Plus legal text names.
  *
- * Said once each: the short privacy line is the footer of Your data (`trust.short`), and the early-version note
+ * Said once each: the short privacy line (`trust.short`) is the last line of Settings, Privacy (CPrivO-5, design.md
+ * 2.11), and the early-version note
  * (`settings.about.beta.*`, registered text, D-060, K-13) is the footer of About, word for word, unstyled.
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling"
  * is always here, never behind a flag (D-034).
@@ -108,7 +109,7 @@ export default function Settings() {
         <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
 
-      <ListSection title={h.sections.data} footer={copy.trust.short}>
+      <ListSection title={h.sections.data}>
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />

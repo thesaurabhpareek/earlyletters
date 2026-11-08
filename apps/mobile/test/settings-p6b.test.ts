@@ -5,7 +5,7 @@
  * use of the rules is pinned in their source. Registered words are pinned word for word in
  * packages/content/test/experience-pass.test.ts; here they are read as they are. Fixtures: the fictional family Asha.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
@@ -290,15 +290,11 @@ describe('[S43] Export', () => {
 });
 
 describe('[S44] Privacy', () => {
-  it('the never-lines are a plain list with a glyph each, not rows, with their registered words', () => {
-    const list = code('components/consent/never-list.tsx');
-    expect(list).not.toMatch(/ListRow|ListSection/);
-    expect(list).toMatch(/consentCopy\.never\.map/);
-    // LockSimple: the icon section 5.4 lists for S44 (the coordinator's ruling on #313).
-    expect(list).toMatch(/import \{ LockSimpleIcon \} from 'phosphor-react-native\/src\/icons\/LockSimple';/);
-    expect(list).toMatch(/<LockSimpleIcon size=\{20\} color=\{c\.textMuted\} \/>/);
-    expect(list).not.toMatch(/Prohibit/);
-    expect(code('app/settings/privacy.tsx')).toMatch(/<NeverList \/>/);
+  it('the never-list is gone: the promise opens the page, with no lock icon (CPrivO-5, VOICE.md)', () => {
+    expect(existsSync(join(SRC, 'components/consent/never-list.tsx'))).toBe(false);
+    const screen = code('app/settings/privacy.tsx');
+    expect(screen).not.toMatch(/NeverList|consentCopy\.never|Lock\w*Icon|Shield/);
+    expect(screen).toMatch(/\{copy\.trust\.promise\}/);
   });
 });
 

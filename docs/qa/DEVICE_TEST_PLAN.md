@@ -547,6 +547,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
 
+### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
+- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
+- **Steps:** (a) Settings > Privacy. Read top to bottom. (b) Tap Names in notifications; turn names on in Reminders; come back. (c) Tap Export your book, then Recently deleted, coming back each time. (d) Tap Privacy Policy, then Terms of Service. (e) Repeat (a) at AX5, with VoiceOver, and in dark mode.
+- **Expected:**
+  - (a) First, with no icon: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models." Then Where your book is kept: the on-this-phone line ending "They are not sent to us.", "Your speech is written down on this phone.", "This version collects no usage or crash reports." Who can see it: "Anyone who can unlock this iPhone can open the book.", Names in notifications Off, and "Notifications never show the words of a letter." What you can do: Export your book, Recently deleted, and "There is no account in this version. Deleting the app removes its letters and recordings from this phone." Our promises in full: Privacy Policy, Terms of Service, then "Private by default. Never sold, never used for ads." No "What we never do", no lock icons, nothing about photos, no usage switch, no sync row.
+  - (b) Reminders opens; back on Privacy the row reads On.
+  - (c) and (d) Each opens its page; the documents open in the in-app browser.
+  - (e) Nothing truncates at AX5; each section title is a heading; each line is read once.
+- **Record:** S1-96 rows (a) to (e) with the build number, phone and iOS version; screenshots with Asha only.
+- **Update:** `proposals/privacy-settings.md` and `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 11 where a result differs.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

@@ -9,14 +9,8 @@ export const consentCopy = {
   analyticsSection: 'Usage and crash reports',
   // settings.privacy.sensitiveSection
   sensitiveSection: 'Your letters',
-  // settings.privacy.neverTitle
-  neverTitle: 'What we never do',
-  // settings.privacy.never[]
-  never: [
-    'We never show ads, and your letters are never used for advertising.',
-    'We never sell your data.',
-    'We never use your words, recordings or photos to train machine learning models.',
-  ],
+  // The "What we never do" list (neverTitle, never[]) retired 8 Nov 2026 (CPrivO-5): Settings, Privacy opens with
+  // `trust.promise` word for word, and the list's third line named photos, which v1.0 does not have (M13 rule 4).
   // settings.privacy.childFallback: fills {child} in sensitiveHelp when no book exists yet.
   childFallback: 'your child',
 } as const;

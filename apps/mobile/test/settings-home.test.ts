@@ -41,9 +41,11 @@ describe('[S40] Settings home', () => {
     expect(others).toEqual([]);
   });
 
-  it('says the short privacy line once, as the Your data footer, and drops the page footer', () => {
-    expect(home.match(/copy\.trust\.short/g)).toHaveLength(1);
-    expect(home).toMatch(/<ListSection title=\{h\.sections\.data\} footer=\{copy\.trust\.short\}>/);
+  it('leaves the short privacy line to Settings, Privacy, where it is said once as the last line (design.md 2.11)', () => {
+    expect(home).not.toMatch(/copy\.trust\.short/);
+    const privacy = code('app/settings/privacy.tsx');
+    expect(privacy.match(/copy\.trust\.short/g)).toHaveLength(1);
+    expect(privacy).toMatch(/<ListSection title=\{p\.documentsTitle\} footer=\{copy\.trust\.short\}>/);
     expect(home).not.toMatch(/neverRewrite/);
   });
 

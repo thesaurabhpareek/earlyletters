@@ -876,7 +876,8 @@ export const en = {
       sensitiveLabel: "Sync and family sharing",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.
-      sensitiveHelp: "Letters can hold health details about you or {child}. This row shows whether syncing is on. There is no switch to turn it off yet.",
+      // CPrivO-5 (1 Nov 2026): "yet" dropped, it leaned toward a promise (privacy-settings.md 4, flag).
+      sensitiveHelp: "Letters can hold health details about you or {child}. This row shows whether syncing is on.",
       sensitiveOn: "On",
       sensitiveOff: "Off, kept on this phone",
       sensitiveSignedOut: "Not signed in",
@@ -884,6 +885,27 @@ export const en = {
       promiseTitle: "Our promise",
       // Shown above the switches. The promise itself is `trust.promise`.
       controlsHelp: "These switches are yours. Export your book, stop sharing or delete everything, any time.",
+      // The Privacy page as ruled (CPrivO-5; privacy-settings.md 3 and 4; SETTINGS_AND_ACCOUNT.md 11): the promise
+      // (`trust.promise`) at the top, then facts, then controls, then the documents. Every line below is a privacy
+      // statement for the claims registry (LEGAL-REQ-044) once it exists; `legal` reviews them before release.
+      whereTitle: "Where your book is kept",
+      // P2, sync off (every build 1 profile: SERVER_FEATURES off). Ruled shape: exec Q4 signedOutHelp, Q5 row 5.
+      keptOnPhone: "Your letters and recordings are kept on this phone and in your iPhone's own backup, if you use one. They are not sent to us.",
+      // P2b, sync on (build 2, D-128): text syncs, recordings do not while owner backup is off.
+      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings stay on this phone and in your iPhone's own backup, if you use one.",
+      // P3: on-device speech (ADR 0015); Privacy Policy 2.
+      speechOnPhone: "Your speech is written down on this phone.",
+      // P4: shown only in a build without the analytics switch (capabilities.analytics off, D-095); no crash SDK.
+      noReports: "This version collects no usage or crash reports.",
+      whoTitle: "Who can see it",
+      // content.md 4.10 privacy.whoLockOff: the plain fact while there is no app lock (CPrivO-5 replaces P6's
+      // "Only you, on this phone.", false for anyone who knows the passcode).
+      whoLockOff: "Anyone who can unlock this iPhone can open the book.",
+      // P8: reminders fill names and months only (planner.ts), never letter text (M13 rule 3, Privacy Policy 5).
+      notificationsLine: "Notifications never show the words of a letter.",
+      canDoTitle: "What you can do",
+      // P9, ruled `deleteAccountNotYet` (build without accounts). Claims no more than the phone.
+      noAccount: "There is no account in this version. Deleting the app removes its letters and recordings from this phone.",
       documentsTitle: "Our promises in full",
       privacyPolicyLink: "Privacy Policy",
       healthPrivacyLink: "Consumer Health Data Privacy Policy",
