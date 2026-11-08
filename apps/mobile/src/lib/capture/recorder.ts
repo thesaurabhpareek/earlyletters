@@ -65,12 +65,6 @@ let activeTake: string | null = null;
 const finalizing = new Map<string, Promise<Draft | null>>();
 const takeListeners = new Set<(live: boolean) => void>();
 
-/** Every change goes through here, so capture/busy.ts (the transcription queue's pause, BL-572) always knows. */
-function setActiveTake(id: string | null): void {
-  activeTake = id;
-  noteLiveTake(id);
-}
-
 /** The draft a live recording session owns (the launch sweep never touches it). */
 export function activeTakeId(): string | null {
   return activeTake;
@@ -85,9 +79,11 @@ export function onActiveTakeChange(listener: (live: boolean) => void): () => voi
   return () => takeListeners.delete(listener);
 }
 
+/** Every change goes through here: capture/busy.ts (the queue's pause, BL-572) and the app lock's listeners both follow it. */
 function setActiveTake(id: string | null): void {
   const was = activeTake !== null;
   activeTake = id;
+  noteLiveTake(id);
   if (was === (id !== null)) return;
   for (const l of [...takeListeners]) {
     try {
