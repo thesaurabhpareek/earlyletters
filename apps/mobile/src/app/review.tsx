@@ -118,7 +118,7 @@ import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSav
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
-import { ensureAudioHash } from '@/lib/capture/recorder';
+import { ensureAudioHash, settleTake } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -329,7 +329,24 @@ export default function Review() {
 
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
-    if (phase === 'transcribing' && draft?.audioUri) requestWords(draft.id);
+    if (phase !== 'transcribing' || !draft?.audioUri) return;
+    if (draft.state !== 'recording') {
+      requestWords(draft.id);
+      return;
+    }
+    // Listen left on a slow save (BL-563): the take is still being kept, so it has no length or hash yet. Wait for the
+    // save, show the finished row, and only then ask for words.
+    let alive = true;
+    void settleTake(draft.id).then((out) => {
+      if (!alive) return;
+      if (out.kind === 'gone') return;
+      setDraft(out.draft);
+      if (out.kind === 'settled' && out.draft.state === 'ready') requestWords(out.draft.id);
+      else if (out.kind === 'settled') setPhase('waiting');
+    });
+    return () => {
+      alive = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -609,7 +626,14 @@ export default function Review() {
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
     try {
-      const audio = await ensureAudioHash(draft);
+      // Never keep a take that is still being saved: its length and hash would be missing (BL-563).
+      const settled = await settleTake(draft.id);
+      if (settled.kind !== 'settled') {
+        saving.current = false;
+        setSaveFailed(true); // the take is untouched; trying again joins the same save
+        return;
+      }
+      const audio = await ensureAudioHash(settled.draft);
       // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
       // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
       // It counts later, at the save where its words are first on screen.
