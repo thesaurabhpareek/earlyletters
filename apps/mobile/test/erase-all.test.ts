@@ -381,12 +381,16 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
 
   it('removes every book, letter, draft, recording, copy, export and setting; keeps the speech model; resets the free-letter count; sends nothing', async () => {
     const { app, f, stray, frames, zip, recovery } = await filled();
+    // A language pack where packs/app-support.ts keeps it on iOS: Library/Application Support/packs, beside Documents.
+    const packs = `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application Support/packs`;
+    const pack = put(h.disk, `${packs}/en/rules.json`, 256);
     expect(await app.all.eraseEverything()).toBe('erased');
 
     expectEmpty();
     expect([f.a1, f.a2, f.draft, f.v1, stray, frames, zip, recovery].filter(has)).toEqual([]);
     expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
     expect(namesIn(h.disk, `${h.disk.documents}models`)).toEqual(['ggml-large-v3-turbo-q5_0.bin']); // F17 6.2 F step 3
+    expect(has(pack)).toBe(true); // F17 6.2 F step 3, DATA-REQ-024: language packs stay too
     expect(h.calls).toEqual(expect.arrayContaining(['analytics:stop', 'listening:sweep', 'invite:clear', 'reminders:forget']));
     // D-083, D-103: the free count starts again; the next kept letter is free letter 1. Nothing else stays in the Keychain.
     expect([...h.keychain.keys()]).toEqual([]);
@@ -620,7 +624,8 @@ describe('[LEGAL-REQ-002][D-026] Erase everything never ends the 24-hour age sto
   });
 
   it("age-gate.ts's subscription returns the unsubscribe as the effect's cleanup, and the unsubscribe stops it", async () => {
-    expect(src('src/lib/age-gate.ts')).toMatch(/useEffect\(\(\) => subscribeTo\('settings', refresh\), \[refresh\]\);/);
+    // The hook's behaviour (Yes keeps its leave, an erase brings the question back) is in age-gate-erase.test.ts.
+    expect(src('src/lib/age-gate.ts')).toMatch(/subscribeTo\('settings', \(\) => \{\s*const next = readDecision\(\);\s*if \(next !== 'pass'\) setDecision\(next\);\s*\}\),\s*\[\],\s*\);/);
     const app = await launch();
     let calls = 0;
     const off = app.store.subscribeTo('settings', () => (calls += 1));
