@@ -53,6 +53,7 @@ import {
   type RoomLabels,
 } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
+import { createStartTick } from '@/components/capture/start-tick.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -126,6 +127,9 @@ export default function Listen() {
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
   const tapped = useRef<boolean | null>(null);
   if (tapped.current === null) tapped.current = consumeListenStart();
+  // One start tick per take, counting Speak's (start-tick.logic): the start Speak opened plays none, its primer's
+  // Continue included; a start after a blocker or a failure is a new tap and plays it.
+  const startTick = useRef(createStartTick(tapped.current)).current;
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
   /** The labels VoiceOver last could hear: they hold still while capturing (listen.logic `stableLabels`, F04-REQ-041). */
@@ -264,7 +268,7 @@ export default function Listen() {
         getPermission: getRecordingPermissionsAsync,
         requestPermission: requestRecordingPermissionsAsync,
         freeBytes: freeBytesNow,
-        pressHaptic: () => haptic('press'),
+        pressHaptic: () => startTick.press(() => haptic('press')),
         setRecordingMode: () => setAudioMode('recording'),
         setIdleMode: () => setAudioMode('idle'),
         openTake,
@@ -282,7 +286,10 @@ export default function Listen() {
       primed,
     );
     if (out.kind === 'primer') return setPhase('primer');
-    if (out.kind === 'blocked') return setPhase(out.problem);
+    if (out.kind === 'blocked') {
+      startTick.reset(); // the start Speak opened ended here; Try again is the parent's own
+      return setPhase(out.problem);
+    }
     if (out.kind === 'gone') return;
     takeId.current = out.draftId;
     setPhase('recording');
@@ -306,6 +313,7 @@ export default function Listen() {
   const startFromTap = (primed: boolean) => {
     setPhase('asking');
     start(primed).catch(async () => {
+      startTick.reset(); // a retry after a busy microphone is a new tap
       // A take that began ends as an interruption and is kept; before that, a granted microphone is busy, never "off" (S13).
       const failure = startFailure({ takeBegun: takeId.current !== null, granted: await grantedNow() });
       if (failure === 'interrupted') void endTake('interruption');
@@ -378,8 +386,8 @@ export default function Listen() {
     [],
   );
 
+  // No haptic: nothing vibrates between record start and stop (MOTION 6; iOS mutes it, and the microphone would hear it).
   const togglePause = () => {
-    haptic('tap');
     if (phase === 'recording') {
       pauseTake(takeToken.current); // still ON until the recorder has really stopped (pauseConfirmed)
       recorder.pause();

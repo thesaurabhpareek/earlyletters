@@ -289,7 +289,7 @@ describe('the screen uses them (source)', () => {
     expect(begin).not.toMatch(/AccessibilityInfo/);
     // The start haptic plays before the session activates (iOS mutes haptics while recording): the screen passes it to
     // startTake, which calls it before setRecordingMode (order checked by behaviour in listen-voiceover.test.ts).
-    expect(begin).toMatch(/pressHaptic: \(\) => haptic\('press'\),/);
+    expect(begin).toMatch(/pressHaptic: \(\) => startTick\.press\(\(\) => haptic\('press'\)\),/); // one tick per take, counting Speak's (recording-haptics.test.ts)
     expect(begin).toMatch(/setRecordingMode: \(\) => setAudioMode\('recording'\),/);
     const logic = code(src('components/capture/listen.logic.ts'));
     const path = logic.slice(logic.indexOf('export async function startTake'));
