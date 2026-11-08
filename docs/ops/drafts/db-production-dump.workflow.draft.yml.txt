@@ -1,0 +1,185 @@
+# DRAFT, UNVERIFIED. Production variant of the nightly database dump (backlog 08 rank 9).
+# Runs only after the founder decides F1 (servers on), F2 (staging or production directly) and F4 (Supabase plan).
+# Text file on purpose: it is NOT in .github and NOT a workflow in the earlyletters repository.
+#
+# Intended home: the separate PRIVATE repository `earlyletters-backups`, next to the staging variant from
+# PR #622 (docs/ops/backup/staging-backup.yml), as `.github/workflows/production-backup.yml` there. Changes in this
+# repository's own `.github` need two independent reviews and the freeze rules; a private backups repository is
+# the founder's own. Derived from #622's staging-backup.yml at head c304d8ad (read 8 Nov 2026), not re-run.
+#
+# Differences from the staging variant:
+#   1. Secret PROD_DB_URL (session pooler, port 5432, role scribe_backup.<ref>, TLS), and variable
+#      PROD_PROJECT_REF: the job refuses a URL that does not contain that ref, so it cannot dump staging by mistake.
+#   2. Recipients: secret BACKUP_AGE_RECIPIENTS holds one age public key per line (at least two: the founder's Mac key
+#      and the key whose private half is on the sealed paper copy), so losing one key does not lose every backup.
+#      Staging uses one key. `age -R` reads a recipients file.
+#   3. Cron 10:47 UTC; artifact names production-<stamp>.pgc.age; concurrency group production-backup.
+#   4. A freshness summary line (hours since the previous dump is not computed here: check the Actions tab weekly).
+#
+# What it does not cover (same as staging, runbook docs/ops/runbooks/staging-backup-free.md):
+#   storage files; Auth sessions and tokens (left out on purpose, so a restore signs everyone out); the consent
+#   pepper (a database setting, set again after a restore, supabase/APPLY.md step 6); up to 24 hours of changes.
+# Before this runs on real families' data: docs/legal/subprocessors.md and the Privacy Policy must name GitHub as
+# holding an encrypted copy (founder merge), and docs/ops/backup/backup-role.sql must have been run on the
+# production project (block 0 reads its Postgres major version; set PG_MAJOR below to match).
+#
+# Secrets (private repository, Settings > Secrets and variables > Actions):
+#   PROD_DB_URL            postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require
+#   BACKUP_AGE_RECIPIENTS  age public keys, one per line (each starts with age1)
+# Variables:
+#   PROD_PROJECT_REF       the 20-character project ref of scribe-prod
+#   DUMP_EXCLUDE_SCHEMAS   optional, as in the staging variant
+#
+# Third-party action pinned to a full commit sha (same pin as #622 and ios-compile.yml):
+#   actions/upload-artifact cf430e030ddbb5b0abf93d22962f4752f3646cd9 = tag v7.0.2
+
+name: Nightly production backup
+
+on:
+  schedule:
+    - cron: '47 10 * * *'   # 10:47 UTC, 30 minutes after the staging job so the two never overlap
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      # Production's Postgres major version. supabase/config.toml says 17; backup-role.sql block 0 reads the real one.
+      PG_MAJOR: '17'
+    steps:
+      - name: Install the Postgres client and age
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          if ! apt-cache policy "postgresql-client-$PG_MAJOR" | grep -Eq 'Candidate: [0-9]'; then
+            # Not in Ubuntu's own archive: add the PostgreSQL project's (PGDG) apt repository, the documented way.
+            sudo apt-get install -y -qq postgresql-common
+            sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+            sudo apt-get update -qq
+          fi
+          sudo apt-get install -y -qq --no-install-recommends "postgresql-client-$PG_MAJOR" age
+          bin="/usr/lib/postgresql/$PG_MAJOR/bin"
+          "$bin/pg_dump" --version
+          "$bin/pg_dump" --version | grep -Eq " $PG_MAJOR\.[0-9]+" || { echo "::error::pg_dump is not version $PG_MAJOR"; exit 1; }
+          age --version
+          echo "PGBIN=$bin" >> "$GITHUB_ENV"
+
+      - name: Check the connection, the server version and the role
+        env:
+          DB_URL: ${{ secrets.PROD_DB_URL }}
+          PROD_REF: ${{ vars.PROD_PROJECT_REF }}
+        run: |
+          set -euo pipefail
+          [ -n "$DB_URL" ] || { echo "::error::The PROD_DB_URL secret is not set"; exit 1; }
+          case "$DB_URL" in postgres://*|postgresql://*) ;; *) echo "::error::PROD_DB_URL is not a postgres:// URL"; exit 1 ;; esac
+          case "$DB_URL" in *sslmode=disable*|*sslmode=allow*|*sslmode=prefer*) echo "::error::PROD_DB_URL must use TLS (sslmode=require)"; exit 1 ;; esac
+          # The transaction pooler (6543) cannot hold pg_dump's one long snapshot; the session pooler (5432) can.
+          case "$DB_URL" in *:6543/*) echo "::error::PROD_DB_URL is the transaction pooler (6543); use the session pooler (5432)"; exit 1 ;; esac
+          [[ "$PROD_REF" =~ ^[a-z0-9]{20}$ ]] || { echo "::error::The PROD_PROJECT_REF variable is not set to a 20-character project ref"; exit 1; }
+          case "$DB_URL" in *"$PROD_REF"*) ;; *) echo "::error::PROD_DB_URL does not belong to the production project"; exit 1 ;; esac
+          export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-prod-backup
+          num=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -d "$DB_URL" -c 'show server_version_num')
+          major=$(( num / 10000 ))
+          echo "Server major version: $major (client $PG_MAJOR)"
+          if [ "$major" != "$PG_MAJOR" ]; then
+            echo "::error::Production runs Postgres $major but this job installs the $PG_MAJOR client. Set PG_MAJOR to $major in this file."
+            exit 1
+          fi
+          # Expect: f t f on (not superuser, bypasses RLS so the dump is whole, cannot write, read only by default).
+          facts=$("$PGBIN/psql" -X -A -t -q -v ON_ERROR_STOP=1 -F ' ' -d "$DB_URL" -c "
+            select r.rolsuper, r.rolbypassrls,
+                   has_table_privilege('public.entries', 'insert, update, delete, truncate'),
+                   current_setting('default_transaction_read_only')
+              from pg_roles r where r.rolname = current_user")
+          echo "Role facts (superuser, bypassrls, can write entries, read only): $facts"
+          [ "$facts" = "f t f on" ] || { echo "::error::The backup role is not the read-only role from backup-role.sql (expected: f t f on)"; exit 1; }
+
+      - name: Dump, check, count, encrypt
+        env:
+          DB_URL: ${{ secrets.PROD_DB_URL }}
+          RECIPIENTS: ${{ secrets.BACKUP_AGE_RECIPIENTS }}
+          DUMP_EXCLUDE_SCHEMAS: ${{ vars.DUMP_EXCLUDE_SCHEMAS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$RECIPIENTS" | sed '/^[[:space:]]*$/d' > recipients.txt
+          n=$(wc -l < recipients.txt)
+          [ "$n" -ge 2 ] || { echo "::error::BACKUP_AGE_RECIPIENTS needs at least two age public keys (Mac key and sealed paper key)"; exit 1; }
+          while IFS= read -r k; do
+            [[ "$k" =~ ^age1[02-9ac-hj-np-z]{58}$ ]] || { echo "::error::BACKUP_AGE_RECIPIENTS holds a line that is not an age public key"; exit 1; }
+          done < recipients.txt
+          excludes=()
+          for s in ${DUMP_EXCLUDE_SCHEMAS:-}; do
+            [[ "$s" =~ ^[a-z_][a-z0-9_]{0,62}$ ]] || { echo "::error::DUMP_EXCLUDE_SCHEMAS holds something that is not a schema name"; exit 1; }
+            excludes+=("--exclude-schema=$s")
+          done
+          export PGSSLMODE=require PGCONNECT_TIMEOUT=20 PGAPPNAME=scribe-nightly-prod-backup
+          stamp=$(date -u +%Y%m%dT%H%MZ)
+          # Whole database, with owners and grants recorded (a real restore needs the grants; the drill
+          # skips them with pg_restore --no-owner --no-privileges). Live login secrets are left out
+          # (sessions, refresh and one-time tokens: a restore signs everyone out, which is fine), and so
+          # are the Auth audit log, HTTP responses kept by pg_net, cron run history and Vault ciphertext.
+          "$PGBIN/pg_dump" --format=custom --compress=6 --lock-wait-timeout=60s \
+            --exclude-table-data='auth.sessions' \
+            --exclude-table-data='auth.refresh_tokens' \
+            --exclude-table-data='auth.one_time_tokens' \
+            --exclude-table-data='auth.flow_state' \
+            --exclude-table-data='auth.mfa_challenges' \
+            --exclude-table-data='auth.mfa_amr_claims' \
+            --exclude-table-data='auth.saml_relay_states' \
+            --exclude-table-data='auth.audit_log_entries' \
+            --exclude-table-data='net._http_response' \
+            --exclude-table-data='cron.job_run_details' \
+            --exclude-table-data='vault.secrets' \
+            "${excludes[@]}" \
+            -d "$DB_URL" -f dump.pgc
+          # Proves the archive reads back. --list reads the catalogue only and catches a truncated file;
+          # the full read to /dev/null decompresses every data block and catches corrupt table data,
+          # which --list misses (rehearsed 8 Nov 2026 on PostgreSQL 16: a flipped byte in a data block
+          # passed --list and failed the full read; one corrupt length made pg_restore hang, hence the
+          # time limit). Either failure stops the job here, and no artifact is kept.
+          "$PGBIN/pg_restore" --list dump.pgc > toc.txt
+          timeout 600 "$PGBIN/pg_restore" -f /dev/null dump.pgc
+          echo "Dump: $(stat -c %s dump.pgc) bytes, $(grep -vc '^;' toc.txt) catalogue entries"
+          for t in entries policy_acceptances deletion_requests; do
+            grep -Eq "TABLE DATA public $t " toc.txt || { echo "::error::The dump has no data section for public.$t"; exit 1; }
+          done
+          # Rows inside this very dump (COPY text format keeps one row per line). Counts only.
+          count_rows() {
+            "$PGBIN/pg_restore" --data-only --schema=public --table="$1" -f - dump.pgc \
+              | awk '/^COPY /{c=1; next} c && /^\\\.$/{c=0; next} c{n++} END{print n+0}'
+          }
+          counts="entries=$(count_rows entries),policy_acceptances=$(count_rows policy_acceptances),deletion_requests=$(count_rows deletion_requests)"
+          echo "Row counts in this dump: $counts"
+          age -R recipients.txt -o "production-$stamp.pgc.age" dump.pgc
+          shred -u dump.pgc
+          rm -f toc.txt recipients.txt
+          [ "$(head -c 21 "production-$stamp.pgc.age")" = "age-encryption.org/v1" ] || { echo "::error::The output is not an age file"; exit 1; }
+          echo "Encrypted: production-$stamp.pgc.age, $(stat -c %s "production-$stamp.pgc.age") bytes"
+          {
+            echo "### Production backup $stamp"
+            echo "- Encrypted file: \`production-$stamp.pgc.age\`, $(stat -c %s "production-$stamp.pgc.age") bytes, kept 7 days"
+            echo "- Row counts in this dump: \`$counts\` (the restore drill's \`--expect\`)"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove any plain dump left by a failed step
+        if: always()
+        run: |
+          [ ! -f dump.pgc ] || shred -u dump.pgc
+          rm -f toc.txt
+
+      - name: Keep the encrypted file for 7 days
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          path: production-*.pgc.age
+          archive: false             # one file, uploaded as is; the artifact is named after it
+          retention-days: 7
+          if-no-files-found: error
