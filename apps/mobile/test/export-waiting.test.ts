@@ -7,8 +7,13 @@
  * is still recording: neither is in the export. Each waiting letter has its own words in waiting/
  * and data/waiting.json; each spoken one has its original recording, and the hash in the manifest,
  * in waiting.json and of the bytes in the ZIP equal the hash of the file on the phone. The export
- * is the same with Plus on, off or ended, and needs no connection (it reads nothing but the phone).
+ * is the same with Plus on or off (a plan that ended is off: the snapshot's plan comes from hasPlus()), and needs no
+ * connection (it reads nothing but the phone).
+ *
+ * Dates are the phone's own local day, as Review gives them: this file runs in America/Los_Angeles (pinned below,
+ * before any Date is made), where 8 pm is already the next day in UTC.
  */
+process.env.TZ = 'America/Los_Angeles';
 import Ajv2020 from 'ajv/dist/2020';
 import { strFromU8, unzipSync } from 'fflate';
 import { describe, expect, it } from 'vitest';
@@ -196,7 +201,7 @@ describe('[PL-2, F14-REQ-039] letters that are waiting are in the export (schema
     expect(strFromU8(files['waiting/w8.txt'])).toContain('Waiting: This recording has no sound in it.');
   });
 
-  it('is the same with Plus on, off or ended, and reads nothing but the phone (works offline)', async () => {
+  it('is the same with Plus on or off, ended included (it is off), and reads nothing but the phone (works offline)', async () => {
     const reads: string[] = [];
     const offline = async (uri: string) => {
       reads.push(uri);
@@ -227,6 +232,18 @@ describe('[PL-2, F14-REQ-039] letters that are waiting are in the export (schema
     for (const p of Object.keys(files).filter((f) => (f.startsWith('waiting/') && f.endsWith('.txt')) || f === 'data/waiting.json').sort()) {
       await expect(strFromU8(files[p]), p).toMatchFileSnapshot(`./__golden__/export-asha-waiting/${p}`);
     }
+  });
+
+  it("[local day] a letter made at 8 pm in California keeps that day, not the next day in UTC (Review's todayISO rule)", async () => {
+    expect(new Date('2027-03-12T04:00:00.000Z').getHours()).toBe(20); // the pin took: 04:00Z is 8 pm PST on March 11
+    const late = draft({ id: 'w8pm', createdAt: '2027-03-12T04:00:00.000Z', captureMode: 'typed', typedText: 'Bath, then the moon.' });
+    const { files } = await zipOf(snapshot({ waiting: [late] }));
+    const text = strFromU8(files['waiting/w8pm.txt']);
+    expect(text).toContain('Date: Thursday, March 11, 2027.');
+    expect(text).not.toContain('March 12');
+    // The parent's own date always wins over the day it was made.
+    const chosen = await zipOf(snapshot({ waiting: [{ ...late, occurredOn: '2027-03-10' }] }));
+    expect(strFromU8(chosen.files['waiting/w8pm.txt'])).toContain('Date: Wednesday, March 10, 2027.');
   });
 
   it('writes no waiting folder and no waiting.json when nothing is waiting', async () => {

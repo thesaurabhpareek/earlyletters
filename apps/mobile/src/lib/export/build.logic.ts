@@ -33,7 +33,7 @@ import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
 import { copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
-import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly } from '../dates';
+import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
 import type { Child, Draft, Entry } from '../store';
 import { exportCopy } from './copy';
 import {
@@ -318,7 +318,12 @@ export function waitingOf(snapshot: Pick<ExportSnapshot, 'waiting' | 'children'>
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
 }
 
-const waitingDay = (d: Pick<Draft, 'occurredOn' | 'createdAt'>) => d.occurredOn ?? d.createdAt.slice(0, 10);
+/**
+ * The day a waiting letter is about: the day the parent chose, else the phone's own local day of when it was made, the
+ * day Review gives it when it is kept (review.tsx `todayISO(new Date(draft.createdAt))`; `isoOf` is the same local-day
+ * rule). Never the UTC day: 8 pm in California is the next day in UTC.
+ */
+const waitingDay = (d: Pick<Draft, 'occurredOn' | 'createdAt'>) => d.occurredOn ?? isoOf(new Date(d.createdAt));
 
 /** waiting/<id>.txt: header lines, then the person's own words (typed, then exactly as heard). */
 function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): string {
