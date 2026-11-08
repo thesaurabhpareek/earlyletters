@@ -533,6 +533,21 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-47 Settings, Reminders without the sheet: straight to the iOS alert, choices inline (reminders-settings.md; CDesO-3, CCO-10, LEGAL-REQ-007; branch feat/mobile-reminders-inline)
+- **Needs:** a TestFlight build with this branch, on a fresh install (iOS has never asked about notifications), and a second run on the same phone after denying. iPhone SE 3 for AX5. Asha's book with a birth date, and a second fresh install with a book that has only a due date.
+- **Steps:** (a) Never asked: open Settings, Reminders. Read the lines under the switch before touching it. Turn the switch on. (b) Allow. Read the page. Change How often, an evening, the time and Names in notifications, one at a time, pausing a second after each. (c) Fresh install again, turn on, Don't Allow. Turn the switch off and on again. (d) Tap Open Settings, allow notifications in iPhone Settings, and come back. (e) In iPhone Settings, Notifications, the app: choose Deliver Quietly (or reinstall and let a provisional grant stand, if the build asks provisionally), come back. (f) Airplane mode does not stop local scheduling; to see the failure row, use a development build with `scheduleNotificationAsync` made to throw once, then tap Try again. (g) The due-date-only book: read the Month and birthday messages row and the preview. (h) Repeat (a) to (d) with VoiceOver on, then with Reduce Motion on, then at AX5. (i) After the first letter on a fresh install: "Yes, evenings", allow; and on another fresh install, Don't Allow.
+- **Expected:**
+  - (a) "A nudge in the evening, as often as you choose. Never late at night. Only in the evenings you pick, and never late at night. Notifications never show what you write. Names stay off the lock screen unless you turn them on." shows under the switch before any tap. A tap goes straight to the iOS alert: no sheet, and no "A few evenings a week" title anywhere. The switch is already on behind the alert and never flips back.
+  - (b) Under the switch "Changes save as you go."; How it will look shows a flat card with the words of the next reminder (no name while Names is off; never a picture of an iOS banner); "Next: Tuesday at 8:30 PM." (or the real next day and time) changes with every edit, with a short cross-fade; How often, Which evenings, Time, Month and birthday messages and Names in notifications are all there with no Save button.
+  - (c) The switch stays on; the Notifications are off card with Open Settings shows; Next reads "Not sending yet."; the choices stay editable. Off and on again shows no second alert.
+  - (d) The card collapses, the toast says "Reminders are on. Next: ..." once, and the Next line appears.
+  - (e) A line says "iPhone delivers these quietly, to Notification Center only." [unverified until this row is run: Deliver Quietly detection reads allowsDisplayOnLockScreen false, alertStyle none, Notification Center not off and sound not on]. With Notification Center also off, or sounds on, no line shows.
+  - (f) "Could not set reminders just now." with Try again; Try again clears it and the Next line holds.
+  - (g) The row reads "Starts once a birth date is added."; the preview is neutral.
+  - (h) VoiceOver: after the alert, focus is on the Reminders switch, and "Reminders are on. Next: ..." or "Notifications are off" is spoken; the next swipe lands on the denied card. After each change in (b), "Saved. Next: ..." is spoken once, about half a second after the last change, never as a modal. The preview is one element. Reduce Motion: the choices fade in with no slide and the Next line swaps with no fade. AX5: the preview, the Next line and every help line wrap and never truncate; the time label and the time stack; the evening chips wrap; every target is at least 44 pt.
+  - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
+- **Record:** S1-47 rows (a) to (i): phone, iOS version, text size, VoiceOver yes or no, Reduce Motion yes or no; pass or fail with the step and what was seen; screenshots with Asha only. Row (e) on whether Deliver Quietly is detected (yes, no).
+
 ### S1-112 Before you begin: the age question and the agreement on one screen (founder decision F2, 8 Nov 2026; LEGAL-REQ-002; branch feat/mobile-before-you-begin)
 - **Needs:** a TestFlight build with feat/mobile-before-you-begin; (a) to (e) on a fresh install; (f) on a phone that already has build 1 installed and past the age question (update over it, do not delete). Fictional family only (Asha). VoiceOver for (d).
 - **Steps:**
@@ -564,6 +579,15 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - with Increase Contrast, the lit card has a plain 1 pt edge and no glow, with the same alignment.
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
+
+### S1-39 Full disk and a long take: finishing never sticks, and the take is kept (BL-563, S0; PR #595)
+- **Needs:** a build with PR #595; the SE 3; Asha's book; a way to fill the disk (large videos or a filler file through Files) and Settings > General > iPhone Storage to read free space. Fictional family only (Asha).
+- **Steps:** (a) Fill the disk until iPhone Storage shows under 1 MB free (if iOS frees space on its own, fill again just before stopping). Start a letter and talk, or leave a radio on, for 30 minutes, then tap stop. Note the seconds from stop to the next screen and what that screen is. (b) On the same phone with the disk still full, try once more with a 1 minute take. (c) Free a few GB, force-quit the app and open it again. Read Tonight's unfinished letters, then open the card.
+- **Expected:**
+  - (a) and (b): within about 3 s of stop the screen leaves "finishing" on its own and lands on Review, or, if the save failed, on Tonight (home); never a screen that stays on finishing, and "Let it go" never shows while finishing. No crash.
+  - (c): the take from (a) is there as an unfinished letter ("Recorded before the app closed." or Read it back), opens in Review, and plays its sound up to the point the disk filled; nothing was deleted. If the recording file could not be written at all, Review says so in its own words and never claims a recording is kept.
+- **Record:** S1-39 rows (a) to (c): phone, iOS version, build number, free space before stop, take length, seconds from stop to the next screen, the screen reached, and for (c) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
+- **Not covered:** a line on Tonight saying the take was kept after a failed finish (follow-up: needs a new content key from `content`; today it returns home without a toast).
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
@@ -605,8 +629,8 @@ Run the twelve checks D-1 to D-12 in `docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.m
 - **Update:** AUTH_SETUP 11.8.
 
 ### S2-15 Reminders and notifications (C-REQ-001 to -009, D-025)
-- **Steps:** Settings > Reminders: turn on; the priming sheet, then the iOS prompt; choose a time 5 minutes ahead and wait with the phone locked. Change the time zone in iOS Settings; check the next reminder keeps local time. Look at the lock screen text. Turn Reminders off. Note: US daylight saving time ends on Sunday 1 Nov 2026 (A), right before submission week; check one reminder across it.
-- **Expected:** One iOS prompt, only after the priming sheet (C-REQ-001); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
+- **Steps:** Settings > Reminders: turn on; the iOS prompt straight away, with no sheet in front of it (S1-47); choose a time 5 minutes ahead and wait with the phone locked. Change the time zone in iOS Settings; check the next reminder keeps local time. Look at the lock screen text. Turn Reminders off. Note: US daylight saving time ends on Sunday 1 Nov 2026 (A), right before submission week; check one reminder across it.
+- **Expected:** One iOS prompt, straight from the Reminders switch with no sheet in front of it, after the explanation under the switch (C-REQ-001, CDesO-3, CCO-10); the switch stays on whatever the answer, and the choices, preview and Next line show inline (S1-47); delivered at the chosen local time; none between 21:30 and 07:00; no child name on the lock screen by default (D-025); tapping opens Tonight; off means nothing is scheduled. F: the priming card after the first letter is not on Tonight yet (only Settings), see `apps/mobile/e2e/TESTID_REQUESTS.md` "Not mounted yet".
 - **Record:** S2-15 row with delivery times.
 - **Update:** PRD C-REQ rows; `src/lib/reminders` notes.
 
