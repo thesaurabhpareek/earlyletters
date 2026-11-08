@@ -238,9 +238,9 @@ describe('[S42] Recordings', () => {
       const sentences = [c.body, c.footer].filter((x): x is string => !!x).flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(sentences.length).toBe(new Set(sentences).size);
     }
-    const screen = code('app/settings/recordings.tsx');
-    expect(screen).not.toMatch(/r\.keepHelp/);
-    expect(screen).toMatch(/<ListSection title=\{r\.title\} footer=\{card\.footer \?\? undefined\}>/);
+    // The Recordings page is gone (8 Nov 2026): Where your letters live says where the book is kept
+    // (test/where-live.test.ts). recordingsCard stays for the backup build's held lines (C7).
+    expect(existsSync(join(SRC, 'app/settings/recordings.tsx'))).toBe(false);
   });
 
   it('the language row is actionable when the model is missing, and shows its progress while it downloads', () => {
@@ -259,7 +259,8 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
     expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
-    expect(code('app/settings/recordings.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
+    // The row moved to Storage with the language download (settings-ia.md 4).
+    expect(code('components/settings/speech-row.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
   });
 });
 

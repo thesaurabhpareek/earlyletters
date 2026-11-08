@@ -24,7 +24,7 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
   expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
+  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, Your words, reminders, appearance, privacy, export, Recently deleted, Where your letters live, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.

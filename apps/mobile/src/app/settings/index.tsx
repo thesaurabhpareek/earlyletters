@@ -25,7 +25,8 @@ import { backupCopy } from '@scribe/content';
  * one tap from here, and every row pushes its own page, like iOS Settings: no accordion opens inside the list.
  * Rows (coordinator, 3 Oct 2026): Account, Plan, Spoken language, Reminders, Export your book, Privacy, Storage,
  * Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, If you are struggling, Licenses, version.
- * "Settings, Plan" is the path the Plus legal text names.
+ * "Settings, Plan" is the path the Plus legal text names. 8 Nov 2026 (settings-ia.md 4): Where your letters live replaces
+ * Recordings, and Your words (the two named choices that replace the Word for word switch) follows Spoken language.
  *
  * Said once each: the short privacy line (`trust.short`) is the last line of Settings, Privacy (CPrivO-5, design.md
  * 2.11), and the early-version note (`settings.about.beta.body`, registered text, D-060, K-13) is the footer of About,
@@ -35,7 +36,7 @@ import { backupCopy } from '@scribe/content';
  * is always here, never behind a flag (D-034).
  *
  * Seams for P8 (option B): the Account row (top of the first section, signed in or out, with the way the person signs
- * in as its subtitle, P8a's request on #310), the Back up my recordings row (Your data, after Recordings) and Delete
+ * in as its subtitle, P8a's request on #310), the Back up my recordings row (Your data, after Where your letters live) and Delete
  * account (its own section above Help) are drawn here, each behind its capability; P8 asks for anything more (S40:
  * Delete account signed in only) and P6 makes it in this file.
  */
@@ -48,7 +49,8 @@ const ROUTES = {
   recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
   storage: '/settings/storage',
-  recordings: '/settings/recordings',
+  whereLive: '/settings/where-letters-live',
+  yourWords: '/settings/your-words',
   backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
@@ -108,6 +110,7 @@ export default function Settings() {
 
       <ListSection title={h.sections.writing}>
         <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
+        <ListRow title={h.yourWords} trailing="chevron" onPress={go(ROUTES.yourWords)} testID="settings.yourWords" />
         <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
         <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
@@ -116,7 +119,7 @@ export default function Settings() {
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
-        <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
+        <ListRow title={h.whereLive} trailing="chevron" onPress={go(ROUTES.whereLive)} testID="settings.whereLive" />
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
