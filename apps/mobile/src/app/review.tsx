@@ -74,6 +74,7 @@ import {
   countLine,
   letterHeader,
   primaryDestination,
+  putBackNoteShows,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -1006,7 +1007,7 @@ export default function Review() {
                     </Animated.View>
                   )}
 
-                  {restored && (
+                  {putBackNoteShows({ restored: !!restored, editing, userText }) && (
                     <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
                       <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
                       <Button size="sm" variant="quiet" onPress={undoPutBack}>
@@ -1073,6 +1074,8 @@ export default function Review() {
                   testID="review.edit"
                   onPress={() => {
                     track('review_action', { action: 'edit_text' });
+                    // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
+                    setRestored(null);
                     setEditing(true);
                   }}>
                   <Text>{pendingCopy.review.editTextButton}</Text>
