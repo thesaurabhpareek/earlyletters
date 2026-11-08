@@ -24,7 +24,7 @@ import { LanguageRow } from '@/components/language/language-row';
 import { ChoiceGroup } from '@/components/ui/choice-group';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
-import { capabilities } from '@/lib/capabilities';
+import { heardLanguagesForBuild } from '@/lib/language/heard-languages';
 import { fill } from '@/lib/copy';
 import { ensureTextRules, useTextRulesStatus } from '@/lib/language/packs';
 import { MAX_LANGUAGES, type SpokenLanguage } from '@/lib/language/spoken-language.logic';
@@ -58,8 +58,8 @@ export default function LanguageSettings() {
     ? `${t.primaryFooter} ${fill(t.safeModeNote, { name: languageInfo(primary.code).english })}`
     : t.primaryFooter;
   const full = spoken.languages.length >= MAX_LANGUAGES;
-  // English only (D-111 item 4): nothing can be added, so no Add row and no "two more" line.
-  const also = alsoSpokenView(capabilities.englishOnly, spoken.others.length);
+  // English only (D-111 item 4, or a list of English alone): nothing can be added, so no Add row and no "two more" line.
+  const also = alsoSpokenView(heardLanguagesForBuild(), spoken.others.length);
 
   return (
     <>
