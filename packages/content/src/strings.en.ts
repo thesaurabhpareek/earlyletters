@@ -282,6 +282,12 @@ export const en = {
       hint: "Tap the red circle and talk.",
       startA11y: "Start recording",
     },
+    // Shown at Finish when the save fails for space. The recording was made and is kept, so this never offers "Let it go".
+    phoneFull: {
+      title: "This phone is full",
+      body: "Your recording is kept on this phone. Free some space and it will finish on its own.",
+      keep: "Keep it",
+    },
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
