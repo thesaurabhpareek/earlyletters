@@ -2875,6 +2875,87 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the Asha fixture on one project, when moved to another, then letter counts, `raw_sha256` and consent rows match, and each phone resyncs with no duplicates.
   - Given the pepper differs between projects, then pseudonymised rows still resolve, or the pepper is carried over as a documented step.
 
+### Follow-ups from the 8 Nov 2026 rulings (Erase everything on PR #520; the 0.9.0 texts)
+
+Source: CCO-6 in `docs/agents/exec/RULINGS.md` (in PR #520, not on `develop` until it merges), CR-60 in `docs/agents/cto/RULINGS.md`, and the founder's answers in D-144. CCO-6 says its three open points are "not yet in the backlog (Karma adds the rows after the merge)"; they are BL-775 to BL-777. BL-778 to BL-781 come from CR-60 and D-144. Written 8 Nov 2026 by the docs lane; severities are proposals for `product` to confirm. Files named for BL-775 to BL-777 are read at the head of PR #520 (3ae9eab2) and exist on `develop` only after it merges.
+
+#### BL-775 A failed Erase everything that the person keeps using erases only what existed when it began
+- Status: blocked (PR #520 merges first). Mode: agent. Owner: mobile engineer. Severity: S2. Area: front.
+- Who: `mobile`; review `privacy`, `data-steward`.
+- Problem: in #520, `eraseEverythingLocal` (`apps/mobile/src/lib/store.ts:1030`) writes the pending mark `erase.everything.pending` (a time) and, when a recording file will not go, returns `incomplete` with the rows and the mark still there. The person can then keep using the app. The next launch (`resumeEraseAtLaunch`, `apps/mobile/src/lib/erase-everything.ts:124`) and a retry from the screen both call `eraseEverythingLocal` again, which removes every row then present, so a letter written after the failure goes too. The failed line tells the person so (it ends "and that erases anything you add before then", D-144 item 1), so the screen is true, but new words are lost with no way back. `apps/mobile/test/erase-all.test.ts:588` pins today's behaviour. CCO-6 lists it as open and not blocking.
+- Requirement: a retry and the launch resume erase only what existed when the mark was written. What the person writes after the mark is kept, and the PR says how it tells old from new for each table and for the files.
+- Acceptance:
+  - Given an Erase everything that ended `incomplete` because one recording would not go, and a new letter kept after it, when the file can be removed and the erase runs again (a retry, or the next launch), then every row and file that existed when the mark was written is gone and the new letter and its recording are still there.
+  - Given a kill part way through an erase and nothing written afterwards, when the app next opens, then the store is empty and the 18+ question shows, as today.
+  - Given the new behaviour, when the content tests run, then `copy.settings.erase.failed` no longer says that anything added is erased, and the founder has approved the new wording (D-144 item 1: a change to these lines goes back to him).
+- Tests: change the case at `erase-all.test.ts:588` and add the two above, each failing on the old code.
+- Extends: PR #520, BL-387, CCO-6, D-144.
+
+#### BL-776 A person with one book can reach Recently deleted after a cold start (CPO to rule before 1 Dec)
+- Status: needs-decision (CPO, before 1 Dec; PR #520 merges first). Mode: agent after the ruling. Owner: mobile engineer. Severity: S2. Area: front.
+- Who: the CPO rules; `mobile` builds; review `design`.
+- Problem: CCO-6 says a sole-book person cannot reach Recently deleted after a cold start until a new book exists. Read in code on `develop` (6ca2491a), not run on a phone: `(tabs)/book.tsx:318` and `(tabs)/index.tsx:203` redirect to `/onboarding` when the phone has no visible book, and `onboarding.tsx` does not route to Settings. Recently deleted is reached from Settings (`settings/index.tsx:52`, `settings/privacy.tsx:138`) or from a letter (`letter/[id].tsx:549`). In #520, Delete this book on the only book leaves a book waiting for 30 days that the person has no way to Restore after the next cold start, unless they add a book first.
+- Requirement: the CPO rules between (a) onboarding shows a quiet way to Recently deleted while a deleted book is waiting, (b) the delete step says what to do after a restart (a content change), (c) Delete this book is not offered on the only book. The ruling goes to the CDesO for the screen and, because the first two change what the person reads, to the founder for any new line.
+- Acceptance:
+  - Given a phone whose only book was deleted, and a cold start, when the person looks for the deleted book, then the way to it is the one the ruling names, and a device step in `docs/qa/DEVICE_TEST_PLAN.md` walks it.
+  - Given the same phone and a restore, when Restore is tapped, then the book, its letters and its choices are back as they were.
+- Extends: PR #520, BL-387, CCO-6, D-085.
+
+#### BL-777 The VoiceOver line after Erase everything says no more than the screen
+- Status: needs-decision (CPrivO and CDesO to rule; PR #520 merges first). Mode: agent after the ruling. Owner: content, mobile engineer. Severity: S2. Area: front.
+- Who: the CPrivO and the CDesO rule; `content` and `mobile` build; review `design`, `privacy`.
+- Problem: `copy.settings.erase.doneA11y` is "Everything on this phone is erased." and is announced as the app returns to the start (`apps/mobile/src/app/settings/erase.tsx:80`). The screen before it says the spoken language stays ready (`speechStays`) and that saved exports and device backups are not changed (`backups`). CCO-6 adds that plan reminders stay too (not re-checked here). So the announcement says more than the screen did. The string comes from the account-security proposal, `content.md` 4.11 (a Project document, in no registered map), word for word.
+- Requirement: the CPrivO and the CDesO rule on a line that names only what was erased (books, letters, recordings and settings), or on dropping the announcement. A new line is a promise, so the founder approves the wording (D-144 item 1).
+- Acceptance:
+  - Given Erase everything finishes with VoiceOver on, when the announcement plays, then every thing it names was erased and nothing it names stays (the speech model, saved exports, device backups and plan reminders).
+  - Given the ruled line, when the content tests run, then a test pins it, and the VoiceOver step of S1-133 (in #520) reads it back on a phone.
+- Extends: PR #520, CCO-6, D-144.
+
+#### BL-778 Delete or document the build-time override LEGAL_CONTENT_DIR before the 0.9.0 pages are deployed
+- Status: ready. Mode: agent. Owner: web lane. Severity: S1. Area: web.
+- Who: `web`; review `security`.
+- Problem: `apps/web/src/lib/legal/documents.ts:49` reads `process.env.LEGAL_CONTENT_DIR` before the committed folder `apps/web/content/legal`. Nothing else in the repo, workflows included, sets or mentions it (`git grep` on 8 Nov 2026 finds only that line and CR-60). The 0.9.0 pages and raw `.md` files are pinned by sha256 in `packages/content/test/legal-beta.test.ts` and `apps/web/test/legal-served.test.ts`, which run in CI where nothing sets the variable. If it were set in the hosting project only, the live pages could serve other bytes than the ones pinned, and no test would notice.
+- Requirement: delete the override, or keep it and document in `documents.ts` and in `docs/ops` what sets it, who may, and that the production project must not. CR-60 puts this before the first deploy of the 0.9.0 pages.
+- Acceptance:
+  - Given the repository, when `git grep LEGAL_CONTENT_DIR` runs, then it finds nothing (deleted) or finds the line in `documents.ts` with the comment and one entry in `docs/ops` that says it is not set in production.
+  - Given the override deleted, when the web tests run, then the pins still pass and the pages read the committed folder only.
+- Extends: CR-60, BL-565, PR #652.
+
+#### BL-779 A written route for withdraw sync, see/export/correct and deleting TestFlight feedback by email
+- Status: ready for the runbook; the emailed account deletion waits for BL-551. Mode: agent (the runbook), then `pair` for the first rehearsal. Owner: platform. Severity: S1. Area: ops.
+- Who: `ops` with `support` and `privacy`; review `privacy`.
+- Problem: the 0.9.0 texts promise these routes by hand: withdraw the agreement to sync ("by emailing us, and we will do it by hand", Privacy section 9), see, export, correct or delete ("email hello@earlyletters.com and we will do it by hand", Privacy section 10), delete an account (Terms 10.1) and delete TestFlight feedback (Privacy section 7). Runbooks exist for closing an under-18 account (`docs/ops/runbooks/underage-account.md`) and for a deletion that did not finish (`stuck-deletion.md`). There is none for withdrawing sync, for see/export/correct, or for TestFlight feedback, and the tool that opens a deletion from an email is BL-551 (`ops_open_account_deletion`, in no migration). `docs/engineering/08-data-rights-and-legal-requests.md` DSR-R02 requires support to confirm control of the account email, by a sign-in link or code that is used, before any destructive action asked for by email, and DSR-R05 requires a request log row at receipt (the founder keeps it in the support mailbox until the table exists). CR-60 holds the website deploy partly for this.
+- Requirement: one runbook, `docs/ops/runbooks/data-requests-by-email.md`, with a section per route: who does it, the DSR-R02 check first, the log row, the steps, the reply inside 45 days (the 0.9.0 text), and a done check. TestFlight feedback is held by Apple, so its section starts from Apple's current documentation, which the author reads first (not read for this row). BL-551 stays its own row: this row does not duplicate it, and the runbook says which route is closed until BL-551 exists.
+- Acceptance:
+  - Given an email asking to withdraw sync, when the runbook is followed, then a code goes to the account address first, nothing changes until it is used, and the log row holds no letter text.
+  - Given an email asking to see, export or correct, when the runbook is followed, then it ends with what the person receives or what changed, and the same check came first.
+  - Given an email asking to delete TestFlight feedback, when the runbook is followed, then the feedback is deleted where Apple holds it, or the person is told plainly that it cannot be, and a log row exists.
+  - Given an email asking to delete an account and BL-551 not built, when the runbook is read, then it says that route is closed and what the person is told; the founder decides whether the deploy waits (CR-60).
+- Extends: BL-551, BL-565, CR-60, DSR-R02, DSR-R05, `underage-account.md`, `stuck-deletion.md`.
+
+#### BL-780 Counsel asks for the packet: the absolutes in Erase everything, and whether Terms 8.1 says it resets the free count
+- Status: needs-founder (the founder merges `docs/legal`, D-132). Mode: human. Owner: legal. Severity: S2. Area: legal.
+- Who: `legal`, through the CLO; the founder merges `docs/legal`.
+- Problem: PR #520 ships "We hold no copy." and "Nothing is sent anywhere." and "Your free letters start again." (D-144). Counsel has not read them. `docs/legal/COUNSEL_PACKET.md` (1.5.0, 1 Nov 2026) has no entry for them, none for D-083's own ask that counsel confirm the free count held in the Keychain (`grep -i keychain` finds nothing), and none for whether Terms 8.1 should mention the reset. Terms 4.1.0 section 8.1 says "the count is kept on your phone so that reinstalling the app does not reset it" and is silent on Erase everything, which D-083 and D-103 say does reset it.
+- Requirement: add three questions, numbered from the next free Q (the packet's last is Q57; #598 holds Q61 to Q74), each with the default the product follows until counsel answers:
+  1. The absolutes. "We hold no copy" and "Nothing is sent anywhere" are true only where the row can show, a phone that has never signed in (`localDeletionAllowed`), and `apps/mobile/test/erase-all.test.ts` proves the erase makes no network call. "We hold no copy." is already in the app on `develop` (the footer of Where your letters live, `packages/content/src/strings.en.ts:1283`), shown only where nothing can have reached us. For counsel: whether the absolutes can stand beside what the person may have sent as TestFlight feedback (0.9.0 Privacy, section 2, "TestFlight"; my reading, not a finding) and beside the exports and device backups the screen names.
+  2. Terms 8.1. Whether it should say that Erase everything resets the free count.
+  3. The Keychain count (D-083). Whether holding the free count in the Keychain so a reinstall does not reset it is acceptable.
+- Acceptance:
+  - Given the packet, when read, then each of the three has an entry with the facts above and a default, and the changelog has a new version row.
+  - Given counsel's answers, when they arrive, then the entry for each is updated and, if an answer changes a line, BL-781 and a content PR follow.
+- Extends: D-083, D-103, D-144, CCO-6, Q31, Q44.
+
+#### BL-781 The claims inventory records the four Erase everything lines as in-app only
+- Status: blocked (PR #520 merges first, so the lines and `erase-all.test.ts` exist on `develop`). Mode: agent. Owner: content. Severity: S2. Area: front.
+- Who: `content`, `legal`; the CMO keeps the registry (`docs/agents/exec/COUNCIL.md`); review `compliance-engineer`.
+- Problem: the claims inventory is `docs/reviews/2026-10-claims-inventory.md` (a 28 Oct snapshot, section 3f added 30 Oct; the CMO keeps the registry). Its row S12 says of Erase everything: "UI not opened". The four lines of D-144 have no row, and D-144 item 2 approves them for the app only. A registry file of its own, `docs/legal/CLAIMS.md`, is proposed in PR #37 and is not on `develop` (D-123 deferred it). The open PR #599 holds a separate task for registry rows for the new privacy and recovery lines (BL-637 there).
+- Requirement: a row for each of the four lines (`body`, `onThisPhone`, `freeLetters`, `backups`), each saying: the words, the surface (Settings > Your data > Erase everything on this phone, a phone that has never signed in), the decision of record (D-083, D-103, D-144), the proof (`apps/mobile/test/erase-all.test.ts`: rows and files gone, no request sent, the free count reset), the builds where it is false or not shown (`freeLetters` shows in the store build only), and "in-app only, not for the store listing, the website or other public copy (D-144 item 2)". Where the inventory does not take new rows, the row says so and names the file that does.
+- Acceptance:
+  - Given the inventory, when read, then each of the four lines has a row whose verdict comes from `erase-all.test.ts` and says "in-app only".
+  - Given the store listing, website and page copy sources (`packages/content/src/store.en.ts`, `site.en.ts`, `pages.en.ts`), when a content test scans them, then none contains any of the four sentences.
+- Extends: D-144, CCO-6, BL-118, BL-780.
+
 ### Speed, size and release evidence
 
 #### BL-588 Measure the launch and record budgets on a phone (APP-05, APP-06)
