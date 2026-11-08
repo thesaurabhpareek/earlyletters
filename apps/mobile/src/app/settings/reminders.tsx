@@ -12,6 +12,8 @@ import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { track } from '@/lib/analytics/track';
+import { useAppLock } from '@/lib/app-lock/controller';
+import { appLockCopy } from '@/lib/app-lock/copy';
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import {
@@ -58,6 +60,7 @@ export default function Reminders() {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [priming, setPriming] = useState(false);
   const toast = useToast();
+  const lockOn = useAppLock().enabled;
   const motion = useMotion();
   // The permission last seen, to tell "allowed in iOS Settings just now" from any other read.
   const seen = useRef<ReminderPermission | null>(null);
@@ -234,10 +237,12 @@ export default function Reminders() {
 
           <ListSection>
             <ToggleRow title={s.monthNotesLabel} description={s.monthNotesHelp} value={prefs.monthNotes} onValueChange={(v) => update({ monthNotes: v })} />
+            {/* With the app lock on, names are off and the switch cannot turn them on (F17-REQ-015; lib/reminders/prefs.ts). */}
             <ToggleRow
               title={copy.settings.privacy.lockScreenLabel}
-              description={prefs.namesOnLockScreen ? s.namesHelpOn : s.namesHelpOff}
+              description={lockOn ? appLockCopy.reminders.lockNames : prefs.namesOnLockScreen ? s.namesHelpOn : s.namesHelpOff}
               value={prefs.namesOnLockScreen}
+              disabled={lockOn}
               onValueChange={(v) => {
                 update({ namesOnLockScreen: v });
                 track('settings_changed', { key: 'lock_screen_names' });
