@@ -973,6 +973,11 @@ export function holdDraft(id: string, opts: { inBookChoice: boolean | null }): b
   return writeDraft(id, (c) => drafts.markHeld(c, id, opts.inBookChoice));
 }
 
+/** Every letter waiting on this phone (not recording, not being let go), oldest first: for the export (PL-2). */
+export function listWaitingForExport(): Draft[] {
+  return drafts.listForExport(ctx());
+}
+
 /** Held drafts, newest first; for one book when given (Tonight's held row, F14-REQ-041). */
 export function listHeldDrafts(childId?: string): Draft[] {
   return drafts.listHeld(ctx(), childId);

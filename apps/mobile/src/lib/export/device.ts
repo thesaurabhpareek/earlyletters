@@ -1,5 +1,6 @@
 /**
  * Export on the phone (C-REQ-017, LEGAL-REQ-034, DATA-REQ-050 to -053, -056).
+ * Letters that are waiting (held at Keep, not read back) are in it too (PL-2).
  * Free in every plan state and works offline: it reads the local store and
  * files, never the entitlement (C-NFR-004). The one network read is the
  * server's consent record and the person's profile for account.json, when signed in
@@ -26,7 +27,7 @@ import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
-import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, myRoleIn, type Entry } from '../store';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, myRoleIn, type Entry } from '../store';
 import { paperFor, phoneConsent, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
@@ -117,6 +118,14 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
       return { ...e, childId: e.childId ?? c.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
     }),
   );
+  // Letters that are waiting (PL-2, 1.6.0): held at Keep, not read back, typed and not kept. Every plan state.
+  const books = new Set(children.map((c) => c.id));
+  const waiting = listWaitingForExport()
+    .filter((d) => books.has(d.childId))
+    .map((d) => {
+      const state = d.captureMode !== 'typed' ? fileState(d.audioUri) : { exists: false, size: null };
+      return { ...d, audioOnPhone: state.exists, audioSizeOnPhone: state.size };
+    });
   return {
     generatedAt: now.toISOString(),
     appVersion: Constants.expoConfig?.version ?? '0.0.0',
@@ -126,6 +135,7 @@ export function exportSnapshot(now = new Date()): ExportSnapshot {
     signedIn: me !== null,
     children,
     entries,
+    waiting,
     // Conflict copies are the author's own words: kept on this phone until they pick, and in every export (F16-REQ-023).
     otherVersions: listConflicts().map((c) => ({
       entryId: c.entryId, finalText: c.words.final_text, editLevel: c.words.edit_level, machineEdits: c.words.machine_edits, keptAt: c.at,

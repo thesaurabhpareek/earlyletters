@@ -533,6 +533,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-110 Letters that are waiting are in the export (PL-2, F14-REQ-039; founder decision F5; export format 1.6.0; branch feat/billing-pl2-held-export)
+- **Needs:** any build with this change; a Mac or PC to open the ZIP. For (b), a `production` profile build (the alpha keeps every letter, so nothing is held there).
+- **Steps:** (a) In Asha's book, record a letter and leave Review without keeping it; start a typed letter on Write and leave it. Settings > Export everything, then Save to Files and open the ZIP on a computer. (b) Production profile, Plus off, two letters already kept: record a third, tap Keep, choose "Keep it here for now", then export as in (a). (c) Airplane mode on, export again.
+- **Expected:**
+  - (a) and (b): a `waiting/` folder with one `.txt` per waiting letter (your own words, typed or exactly as heard) and the spoken one's recording (`.m4a` or `.aac`) that plays in any player; `data/waiting.json` lists each one with its reason (`not_read_back`, `typed_draft`, `held_at_keep`). The ready screen counts nothing new.
+  - On a Mac, `shasum -a 256 waiting/<file>` equals that file's line in `manifest.json` and its `sha256` in `data/waiting.json`.
+  - (c) The export finishes with no connection, with the same `waiting/` files.
+  - A letter let go before the export is not in it.
+- **Record:** S1-110 rows (a) to (c): phone, iOS version, build number and profile; the list of files under `waiting/`; the shasum line for one recording; screenshots with Asha only.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
