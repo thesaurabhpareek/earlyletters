@@ -41,7 +41,7 @@ export type OpacityValue = { value: number };
  * Without this, a cover that comes back during the 200 ms fade (unlock, then straight to the app switcher) would keep
  * the fade's last opacity and show the book through it (Review A on #640 at e2120225).
  */
-export function resetCoverOpacity(opacity: OpacityValue, cancel: (o: OpacityValue) => void): void {
+export function resetCoverOpacity<T extends OpacityValue>(opacity: T, cancel: (o: T) => void): void {
   cancel(opacity);
   opacity.value = 1;
 }
