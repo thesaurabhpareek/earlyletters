@@ -55,4 +55,11 @@ export const speechConsentCopy = {
   lowSpace: 'This phone needs {size} of free space first.',
   chosenYes: 'Getting ready. It waits for Wi-Fi.',
   chosenLater: 'Your voice is kept either way.',
+  // Under the progress after a yes, while the download is on its way (not after a failure, not when space is short):
+  // a recording made now is kept and waits for its words (transcription queue `waiting_for_pack`, F04-REQ-044).
+  startNow: 'You can start now. Your voice is kept, and the words follow.',
+  // The download is here and its SHA-256 is being checked (pack engine `verifying`).
+  checking: 'Almost ready. Checking the download.',
+  // Said first when a download that was moving stopped and a tap can help; the reason follows on its own line.
+  stopped: 'The download stopped.',
 };
