@@ -324,8 +324,13 @@ export async function forgetReminders(): Promise<void> {
     clearTimeout(timer);
     timer = null;
   }
-  const run = async () => {
+  const run = async (): Promise<ScheduleResult> => {
     lastSignature = null;
+    // A "Could not set reminders" from before the erase belongs to the erased phone, not to the fresh first run.
+    if (!lastResult.ok) {
+      lastResult = OK;
+      for (const fn of resultListeners) fn(OK);
+    }
     try {
       for (const s of await Notifications.getAllScheduledNotificationsAsync()) {
         if (isOurs(s.content.data) || s.identifier.startsWith(ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(s.identifier).catch(() => {});
@@ -336,9 +341,10 @@ export async function forgetReminders(): Promise<void> {
     } catch {
       // Nothing scheduled, or no notification module (web preview).
     }
+    return OK;
   };
   chain = chain.then(run, run);
-  return chain;
+  await chain;
 }
 
 /** The user turned reminders off: every scheduled nudge and note is removed. */

@@ -205,6 +205,23 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     expect(code('app/settings/reminders.tsx')).toMatch(/\{s\.scheduleFailed\}[\s\S]*?label=\{copy\.common\.tryAgainButton\} onPress=\{\(\) => void tryAgain\(\)\}/);
   });
 
+  it('Erase everything (forgetReminders) clears a "Could not set reminders" left from before, so the fresh first run does not show it (#520)', async () => {
+    reminders.writePrefs({ enabled: true });
+    os.status = 'granted';
+    os.iosStatus = 2;
+    os.failSchedule = true;
+    reminders.writePrefs({ time: { hour: 20, minute: 15 } });
+    expect(await reminders.rescheduleReminders()).toEqual({ ok: false });
+    expect(reminders.lastScheduleResult()).toEqual({ ok: false });
+    const seen: boolean[] = [];
+    const stop = reminders.subscribeScheduleResult((r) => seen.push(r.ok));
+    await expect(reminders.forgetReminders()).resolves.toBeUndefined();
+    expect(reminders.lastScheduleResult()).toEqual({ ok: true });
+    expect(seen).toEqual([true]);
+    stop();
+    os.failSchedule = false;
+  });
+
   it('Provisional and Deliver Quietly count as allowed, with the quiet note', async () => {
     os.status = 'undetermined';
     os.iosStatus = 3;
