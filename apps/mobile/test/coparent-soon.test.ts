@@ -202,14 +202,23 @@ describe('coming-soon copy', () => {
   });
 
   it('personalises with {child} and never genders the child', () => {
-    expect(s.title).toContain('{child}');
     expect(s.lead).toContain('{child}');
     expect(JSON.stringify(s)).not.toMatch(/\b(she|he|her|him|his|hers)\b/i);
   });
 
-  it('is true about today: letters stay on this phone; three points', () => {
-    expect(s.building).toMatch(/stays on this phone/);
-    expect(s.points).toHaveLength(3);
+  it('rewrite B (founder, 8 Nov 2026): a heading and one line, word for word; the quiet title matches', () => {
+    expect(`${s.title} ${s.lead}`).toBe("For now, this book is yours. In a later update, {child}'s other parent can add letters too, from their own phone.");
+    expect(s.quiet.title).toBe('For now, this book is yours.');
+  });
+
+  it('no badge, points or footer: the footer said letters stay on this phone, and recordings are also in the iPhone backup', () => {
+    const soon = s as Record<string, unknown>;
+    expect(soon.points).toBeUndefined();
+    expect(soon.building).toBeUndefined();
+    const ui = src('components/family/coparent-soon.tsx');
+    expect(ui).not.toMatch(/StatusChip|s\.status|s\.points|s\.building/);
+    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.title : s\.title, \{ child \}\)/);
+    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.body : s\.lead, \{ child \}\)/);
   });
 });
 
