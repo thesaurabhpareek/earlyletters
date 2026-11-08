@@ -16,11 +16,12 @@ import { argv, exit, guardCrashes, printError } from './lib/cli.ts';
 import { CopyCounter, formatManifest, manifestGaps, policiesFromToc } from './lib/dump-manifest.ts';
 
 guardCrashes('dump-manifest stopped unexpectedly (no details are printed).', 2);
-const file = argv().find((a) => !a.startsWith('--'));
-if (!file) {
+const given = argv().find((a) => !a.startsWith('--'));
+if (!given) {
   printError('Usage: node scripts/ops/dump-manifest.ts <dump.pgc>');
   exit(2);
 }
+const file = given ?? '';
 const bin = process.env.PG_RESTORE_BIN || 'pg_restore';
 
 /** Runs pg_restore, feeds each stdout line to `onLine`, resolves with its exit code (127 when it is not installed). */
