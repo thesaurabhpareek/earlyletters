@@ -19,7 +19,7 @@ const BETA = join(__dirname, '..', '..', '..', 'docs', 'legal', 'beta');
 
 const FILES = {
   terms: { file: 'terms-0.9.0.md', sha256: 'dfa303a731edd0fe5a68e05157587e260b00ea55b286cd57512156d0da0e6af1' },
-  privacy: { file: 'privacy-0.9.0.md', sha256: '4fdaa6d33a7e1a68a065351935ddc58871a28a98afef62424e4193adabd4a2c9' },
+  privacy: { file: 'privacy-0.9.0.md', sha256: '4ec16856b2527cfdc7987f7cb8018fd1ab095b4ecf6093d0fcfcecf4f990cfe4' },
 } as const;
 
 const raw = (file: string) => readFileSync(join(BETA, file));
