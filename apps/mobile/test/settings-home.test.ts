@@ -8,8 +8,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { authCopy, en, licences } from '@scribe/content';
-import { accountSubtitle } from '../src/components/settings/settings-home.logic';
+import { authCopy, billingCopy, en, licences } from '@scribe/content';
+import { accountSubtitle, headerCard } from '../src/components/settings/settings-home.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
@@ -41,22 +41,29 @@ describe('[S40] Settings home', () => {
     expect(others).toEqual([]);
   });
 
-  it('says the short privacy line once, as the Your data footer, and drops the page footer', () => {
+  it('says the short privacy line once, as the Privacy and security footer, and drops the page footer', () => {
     expect(home.match(/copy\.trust\.short/g)).toHaveLength(1);
-    expect(home).toMatch(/<ListSection title=\{h\.sections\.data\} footer=\{copy\.trust\.short\}>/);
+    expect(home).toMatch(/<ListSection title=\{h\.sections\.privacy\} footer=\{copy\.trust\.short\}>/);
     expect(home).not.toMatch(/neverRewrite/);
   });
 
   it('opens nothing in place: If you are struggling and Licenses are rows that push their own pages', () => {
     expect(home).not.toMatch(/Disclosure|expanded|CaretDown|CaretUp/);
     expect(home).toMatch(/<ListRow title=\{copy\.struggling\.title\} trailing="chevron" accessibilityHint=\{h\.strugglingA11yHint\} onPress=\{go\(ROUTES\.struggling\)\}/);
-    expect(home).toMatch(/<ListRow title=\{h\.licencesLabel\} trailing="chevron" onPress=\{go\(ROUTES\.licenses\)\}/);
+    // Licenses moved to the Legal page with the Terms and the Privacy Policy (settings-ia.md 3, regroup 8 Nov 2026).
+    expect(home).toMatch(/<ListRow title=\{h\.legalLabel\} trailing="chevron" onPress=\{go\(ROUTES\.legal\)\}/);
     expect(home).toMatch(/struggling: '\/settings\/struggling'/);
-    expect(home).toMatch(/licenses: '\/settings\/licenses'/);
+    expect(home).toMatch(/legal: '\/settings\/legal'/);
+    const legal = code('app/settings/legal.tsx');
+    expect(legal).toMatch(/title=\{h\.licencesLabel\} trailing="chevron" onPress=\{\(\) => router\.push\('\/settings\/licenses' as Href\)\}/);
+    expect(legal).toMatch(/title=\{h\.termsLabel\} trailing="chevron" onPress=\{open\(brand\.web\.terms\)\}/);
+    expect(legal).toMatch(/title=\{h\.privacyPolicyLabel\} trailing="chevron" onPress=\{open\(brand\.web\.privacy\)\}/);
+    expect(home).not.toMatch(/brand\.web\.(terms|privacy)/);
     // The settings stack titles both pages from content.
     const layout = code('app/settings/_layout.tsx');
     expect(layout).toMatch(/<Stack\.Screen name="struggling" options=\{\{ title: copy\.struggling\.title \}\} \/>/);
     expect(layout).toMatch(/<Stack\.Screen name="licenses" options=\{\{ title: licences\.title \}\} \/>/);
+    expect(layout).toMatch(/<Stack\.Screen name="legal" options=\{\{ title: copy\.settingsHome\.legalLabel \}\} \/>/);
     expect(en.settingsHome.licencesLabel).toBe('Licenses');
   });
 
@@ -70,12 +77,11 @@ describe('[S40] Settings home', () => {
     expect(accountSubtitle({ status: 'ready', provider: 'google' })).toBe(authCopy.account.signedInWith.google);
     expect(accountSubtitle({ status: 'ready', provider: 'email' })).toBe(authCopy.account.signedInWith.email);
     expect(accountSubtitle({ status: 'ready', provider: null })).toBe(authCopy.account.signedInWith.other);
-    expect(home).toMatch(/accountSubtitle\(\{ status: auth\.state\.status, provider: auth\.account\.provider \}\)/);
-    expect(home).toMatch(/<ListRow title=\{h\.accountLabel\} subtitle=\{account\}/);
+    // The header card carries the sign-in line now (regroup 8 Nov 2026); accountSubtitle stays for Account itself.
+    expect(home).toMatch(/headerCard\(\{\s*signIn: capabilities\.signIn,\s*status: auth\.state\.status,\s*provider: auth\.account\.provider,/);
   });
 
-  it('keeps the P8 seams: Account, Back up my recordings and Delete account, each behind its capability', () => {
-    expect(home).toMatch(/\{capabilities\.signIn \? <ListRow title=\{h\.accountLabel\}/);
+  it('keeps the P8 seams: Back up my recordings and Delete account, each behind its capability', () => {
     expect(home).toMatch(/\{backupInBuild\(\) \? <ListRow title=\{backupCopy\.title\}/);
     expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn \? \(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
   });
@@ -93,6 +99,57 @@ describe('[S40] Settings home', () => {
     expect(home).toMatch(/const auth = useAuth\(\);/);
     // The row reads the capability itself, which includes the server switch (test/account-deletion-switch.test.ts runs it against the real one).
     expect(m![1]).toMatch(/capabilities\.accountDeletion/);
+  });
+});
+
+describe('[CCO-9, CDesO-1] Settings home regroup (settings-ia.md 3; SETTINGS_AND_ACCOUNT.md 6)', () => {
+  const base = { signIn: false, status: 'signedOut' as const, provider: null, signsAs: 'Mama', alpha: false, plusOn: false };
+
+  it('the header card names the person, says On this phone, shows the plan status and opens Plan in a build without sign-in', () => {
+    expect(headerCard(base)).toEqual({ title: 'Mama', subtitle: 'On this phone', value: 'Free', hint: 'Opens Plan.', route: 'plan', footer: null, planRow: false });
+    expect(headerCard({ ...base, plusOn: true }).value).toBe(billingCopy.plan.statusTitle);
+    // No name yet: the card is the Plan row by its own name (CCO-9, "Settings, Plan").
+    expect(headerCard({ ...base, signsAs: '' }).title).toBe(en.settingsHome.planLabel);
+    expect(headerCard({ ...base, signsAs: '   ' }).title).toBe('Plan');
+    expect(headerCard({ ...base, signsAs: null }).title).toBe('Plan');
+  });
+
+  it('in alpha the card shows no plan status and the alpha note sits under it', () => {
+    const a = headerCard({ ...base, alpha: true, plusOn: true });
+    expect(a.value).toBeNull();
+    expect(a.footer).toBe(billingCopy.alpha.note);
+    expect(a.route).toBe('plan');
+  });
+
+  it('with sign-in the card opens Account and a Plan row sits right under it, so Plan stays one tap from home', () => {
+    const signedIn = headerCard({ ...base, signIn: true, status: 'ready', provider: 'apple' });
+    expect(signedIn).toMatchObject({ subtitle: authCopy.account.signedInWith.apple, route: 'account', hint: 'Opens Account.', planRow: true });
+    expect(headerCard({ ...base, signIn: true }).subtitle).toBe(authCopy.account.signedOutTitle);
+    expect(headerCard({ ...base, signIn: true, signsAs: '' }).title).toBe(en.settingsHome.accountLabel);
+    // The Plan row under the card carries the alpha note itself, so the card has no footer then.
+    expect(headerCard({ ...base, signIn: true, alpha: true }).footer).toBeNull();
+    expect(home).toMatch(/\{card\.planRow \? <ListRow title=\{h\.planLabel\} subtitle=\{plusLineFor\(PLUS_ALPHA, h\.planHelp\)\}[^>]*onPress=\{go\(ROUTES\.plan\)\}/);
+    expect(home).toMatch(/onPress=\{go\(card\.route === 'account' \? ROUTES\.account : ROUTES\.plan\)\}/);
+    expect(home).toMatch(/plan: '\/settings\/plus'/);
+  });
+
+  it('draws the five groups in order, then About: Children, Writing, Your letters, Privacy and security, Help and legal', () => {
+    const order = ['settings.headerCard', 'h.sections.children', 'h.sections.writing', 'h.sections.letters', 'h.sections.privacy', 'h.sections.help', 'copy.settings.about.title'];
+    const at = order.map((k) => home.indexOf(k));
+    for (const [i, n] of at.entries()) expect(n, order[i]).toBeGreaterThan(-1);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(en.settingsHome.sections).toMatchObject({ children: 'Children', writing: 'Writing', letters: 'Your letters', privacy: 'Privacy and security', help: 'Help and legal', about: 'About' });
+    expect(home).not.toMatch(/h\.sections\.data\b|h\.sections\.account\b/);
+  });
+
+  it('leaves a named slot for the App lock row in Privacy and security, and draws no placeholder row', () => {
+    const raw = read('app/settings/index.tsx');
+    const privacy = raw.indexOf('<ListSection title={h.sections.privacy}');
+    const slot = raw.indexOf('APP_LOCK_ROW');
+    expect(slot).toBeGreaterThan(privacy);
+    expect(slot).toBeLessThan(raw.indexOf('title={h.privacyLabel}'));
+    // No row says "App lock" until the lane that builds the page ships it.
+    expect(home).not.toMatch(/appLock/);
   });
 });
 

@@ -1149,18 +1149,32 @@ export const en = {
     versionLabel: "Version",
   },
 
-  // Settings home (PRD C, C-REQ-016). Rows, in order: Account, Language, Plus, Reminders, Export your
-  // book, Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, version.
+  // Settings home (PRD C, C-REQ-016; regrouped 8 Nov 2026 per proposals/account-security settings-ia.md 3, CDesO-1,
+  // CCO-9): a header card (opens Plan in a build without sign-in, Account with it), then Children, Writing, Your
+  // letters, Privacy and security, Help and legal, About. Words from account-security/content.md 4.6.
   settingsHome: {
     sections: {
       account: "Account",
+      children: "Children",
       writing: "Writing",
       plus: "Plus",
+      // Retired from home by the regroup (8 Nov 2026); kept until the dead-copy sweep.
       data: "Your data",
-      privacy: "Privacy and space",
+      letters: "Your letters",
+      privacy: "Privacy and security",
       help: "Help and legal",
       about: "About",
     },
+    // Header card (content 4.6). Build without sign-in: "On this phone"; signed in or out lines reuse
+    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; its hint says where it goes.
+    cardOnPhone: "On this phone",
+    cardHint: {
+      plan: "Opens Plan.",
+      account: "Opens Account.",
+    },
+    // The card's plan status value (CDesO-6). "Plus" is billingCopy.plan.statusTitle. New (N), content to confirm.
+    planFree: "Free",
+    legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
     // Transcription language (D-056). The app itself is in English at v1.0.

@@ -18,7 +18,11 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, reminders, appearance, privacy, export, Recently deleted, recordings, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is said once, under Your data, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
+  // Regroup (settings-ia.md 3, CCO-9): the header card opens Plan in this build, and says where the book is kept.
+  await expect(app.getByTestId('settings.headerCard').getByText('On this phone', { exact: true })).toBeVisible();
+  await expect(app.getByText('Your letters', { exact: true })).toBeVisible();
+  await expect(app.getByText('Privacy and security', { exact: true })).toBeVisible();
+  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is said once, under Privacy and security, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
@@ -42,6 +46,9 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await step('happy', 'If you are struggling', 'Always available, never behind a flag, one tap from Settings: its own page with the three free, confidential lines (each row starts a call) and the 911 line, word for word. No drawing, no light, no motion.');
   await app.goBack();
 
+  // Licenses sits on the Legal page with the Terms and the Privacy Policy (settings-ia.md 3).
+  await app.getByText('Legal', { exact: true }).click();
+  await expect(app.getByText('Terms of Service', { exact: true })).toBeVisible();
   await app.getByText('Licenses', { exact: true }).click();
   await expect(app.getByText('This app is built with the help of open work by many people. Thank you.')).toBeVisible();
   await expect(app.getByText('Language data', { exact: true })).toBeVisible();
@@ -54,11 +61,13 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   await app.goto(`${process.env.E2E_WEB_ON_URL}/?seed=asha`);
   await expect(app.locator('body')).not.toBeEmpty();
   await app.goto(`${process.env.E2E_WEB_ON_URL}/settings?seed=asha`);
-  await expect(btn(app, /^Account/)).toBeVisible();
+  // The header card opens Account with sign-in in the build, and a Plan row sits right under it (CCO-9).
+  await expect(app.getByTestId('settings.headerCard').getByText('Not signed in', { exact: true })).toBeVisible();
+  await expect(app.getByTestId('settings.plan')).toBeVisible();
   // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
   // runs the row's condition for signed in, signed out and server features off).
   await expect(btn(app, /^Delete account/)).toHaveCount(0);
   await expect(app.getByTestId('settings.about.beta').getByText(EARLY, { exact: true })).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
-  await step('happy', 'Settings, server features on', 'With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
+  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with a Plan row right under it (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });

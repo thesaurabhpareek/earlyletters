@@ -533,6 +533,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-95 Settings home, regrouped: header card and five groups (settings-ia.md 3; CDesO-1, CCO-9; branch feat/mobile-settings-regroup)
+- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book set up as Mama; any phone; then Larger Text at AX5 and VoiceOver.
+- **Steps:** (a) Open Settings. Read the card at the top, then each group heading and its rows top to bottom. (b) Tap the card. (c) Go back, tap Legal, then each of its three rows. (d) At AX5, read the card and every row. (e) With VoiceOver, swipe from the card to the last line.
+- **Expected:**
+  - (a) The card reads "Mama", then "On this phone", with no plan status word; the line "Plus is not part of this test. Every letter is free while you test." sits under it. Then: Children (Asha, Add a child); Writing (Spoken language, Reminders, Appearance); Your letters (Recordings, Export your book, Recently deleted, Storage); Privacy and security (Privacy, with "Private by default. Never sold, never used for ads." under it, once); Help and legal (Help, If you are struggling, Legal); About. No App lock row unless the app lock build is in. No Account or Delete account rows.
+  - (b) The card opens Plan in one tap (CCO-9, "Settings, Plan").
+  - (c) Legal lists Terms of Service, Privacy Policy and Licenses. The two documents open in the in-app browser; Licenses opens its own page.
+  - (d) Nothing truncates; the card grows and its lines stack.
+  - (e) The card is one element, read as the name, "On this phone" and its hint "Opens Plan."; each group heading is a heading.
+- **Record:** S1-95 rows (a) to (e) with the build number, phone, iOS version and text size; screenshots with Asha only.
+- **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 6 (PR #596) where a result differs.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).
