@@ -41,17 +41,20 @@ export function AppLockLayer() {
   const opacity = useSharedValue(1);
   const leaving = nextLayer.leaving;
   const up = nextLayer.show;
-  // Up (cover or lock screen): cancel any fade still running and be fully opaque, before the frame is painted.
+  const mounted = layerMounted(nextLayer);
+  // Up (cover or lock screen): cancel any fade still running and be fully opaque, before the frame is painted (second guard).
   useLayoutEffect(() => {
     if (up) resetCoverOpacity(opacity, cancelAnimation);
   }, [up, opacity]);
+  // CTO ruling on #640: reset only once the layer is unmounted, never in the fade timer before it (that brings back a
+  // one-frame flash at the end of unlock). Unmounted, nothing draws, so the next cover mounts at 1.
+  useLayoutEffect(() => {
+    if (!mounted) finishCoverFade(opacity, cancelAnimation);
+  }, [mounted, opacity]);
   useEffect(() => {
     if (!leaving) return undefined;
     opacity.value = withTiming(0, { duration: tokens.motion.fadeMs, reduceMotion: ReduceMotion.Never });
-    const id = setTimeout(() => {
-      finishCoverFade(opacity, cancelAnimation); // the next cover never mounts at the fade's 0
-      setLayer(fadeDone);
-    }, tokens.motion.fadeMs);
+    const id = setTimeout(() => setLayer(fadeDone), tokens.motion.fadeMs);
     return () => clearTimeout(id);
   }, [leaving, opacity]);
 
@@ -69,7 +72,7 @@ export function AppLockLayer() {
   }, [s.notice, toast]);
 
   const style = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  if (!layerMounted(nextLayer)) return null;
+  if (!mounted) return null;
 
   // The animated style is always applied (swapping it off would leave the last opacity on the native view); a cover
   // that is up is fully opaque because the layout effect above resets it before paint.

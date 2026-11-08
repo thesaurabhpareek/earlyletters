@@ -47,13 +47,18 @@ describe('AppLockLayer: over everything, only covering', () => {
     expect(layer).toMatch(/withTiming\(0, \{ duration: tokens\.motion\.fadeMs/);
     // Decided during render (layer.logic.ts, behaviour in app-lock-behaviour.test.ts), never in an effect after a null render.
     expect(layer).toMatch(/const nextLayer = layerStep\(layer, \{ show, locked: s\.locked \}\);/);
-    expect(layer).toContain('if (!layerMounted(nextLayer)) return null;');
     expect(layer).not.toMatch(/setFading|if \(!show && !/);
     // A cover that comes back during the unlock fade is fully opaque again before paint (Review A at e2120225).
     expect(layer).toMatch(/useLayoutEffect\(\(\) => \{\s*if \(up\) resetCoverOpacity\(opacity, cancelAnimation\);\s*\}, \[up, opacity\]\);/);
     expect(layer).toContain('style={[StyleSheet.absoluteFill, style]}');
-    // When the fade ends, the opacity goes back to 1 before the layer unmounts (Review B at e11aebfb).
-    expect(layer).toMatch(/setTimeout\(\(\) => \{\s*finishCoverFade\(opacity, cancelAnimation\);[^\n]*\n\s*setLayer\(fadeDone\);/);
+    // CTO ruling on #640: the fade timer only unmounts; the opacity goes back to 1 in a layout effect once the layer is
+    // not mounted (no flash at the end of unlock, and the next cover mounts at 1). The reset on up stays as a guard.
+    expect(layer).toContain('const id = setTimeout(() => setLayer(fadeDone), tokens.motion.fadeMs);');
+    expect(layer).toMatch(/useLayoutEffect\(\(\) => \{\s*if \(!mounted\) finishCoverFade\(opacity, cancelAnimation\);\s*\}, \[mounted, opacity\]\);/);
+    expect(layer).toContain('const mounted = layerMounted(nextLayer);');
+    expect(layer).toContain('if (!mounted) return null;');
+    const timer = layer.slice(layer.indexOf('setTimeout('), layer.indexOf('tokens.motion.fadeMs);', layer.indexOf('setTimeout(')));
+    expect(timer).not.toMatch(/finishCoverFade|resetCoverOpacity|opacity\.value/);
     expect(layer).not.toMatch(/leaving \? style : null/);
   });
 
