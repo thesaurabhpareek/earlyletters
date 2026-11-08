@@ -7,8 +7,8 @@ test('[J13] reminders: off, on, how often', async ({ app, record }) => {
   await app.getByText('Reminders', { exact: true }).click();
   await expect(app.getByRole('switch')).toBeVisible();
   // CCO-10 (LEGAL-REQ-007): the explanation is on screen before the switch is ever turned on; no sheet follows a tap.
-  await expect(app.getByText(/Only in the evenings you pick, and never late at night\./)).toBeVisible();
-  await step('happy', 'Reminders, off', 'One switch and, under it, the two plain lines that explain it before it is turned on: only in the evenings you pick, never late at night, and notifications never show what you write. Nothing is asked of the phone until the switch is turned on.');
+  await expect(app.getByText(/^A nudge in the evening, as often as you choose\. Never late at night\. Only in the evenings you pick/)).toBeVisible();
+  await step('happy', 'Reminders, off', 'One switch and, under it, the plain lines that explain it before it is turned on: a nudge in the evening, as often as you choose; only in the evenings you pick, never late at night; and notifications never show what you write. Nothing is asked of the phone until the switch is turned on.');
   await app.getByRole('switch').first().click();
   await expect(app.getByText('Notifications are off')).toBeVisible();
   await expect(app.getByText('Turn them on in Settings to get these reminders.')).toBeVisible();

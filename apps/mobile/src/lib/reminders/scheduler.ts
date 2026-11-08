@@ -69,8 +69,9 @@ export async function getReminderPermission(): Promise<ReminderPermission> {
 }
 
 /**
- * The permission plus whether iOS delivers quietly: Provisional (or Ephemeral), or Deliver Quietly chosen in iOS
- * Settings, which turns off the lock screen and banners. Both count as allowed (`permissionOf`); Settings adds a note.
+ * The permission plus whether iOS delivers quietly to Notification Center only: Provisional (or Ephemeral), which
+ * iOS always delivers that way, or Deliver Quietly chosen in iOS Settings (lock screen, banners and sound off, Notification
+ * Center on). Both count as allowed (`permissionOf`); Settings adds a note.
  */
 export async function getReminderPermissionDetail(): Promise<{ permission: ReminderPermission; quiet: boolean }> {
   try {
@@ -78,8 +79,15 @@ export async function getReminderPermissionDetail(): Promise<{ permission: Remin
     const permission = permissionOf(p);
     const ios = p.ios;
     const provisional = ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL || ios?.status === Notifications.IosAuthorizationStatus.EPHEMERAL;
-    // Deliver Quietly: no lock screen and no banner (alertStyle NONE). Unverified on a device (DEVICE_TEST_PLAN S1-47).
-    const deliverQuietly = !!ios && ios.allowsDisplayOnLockScreen === false && ios.alertStyle === Notifications.IosAlertStyle.NONE;
+    // Deliver Quietly: no lock screen, no banner (alertStyle NONE) and no sound, while Notification Center still shows
+    // them. Anything else (Notification Center off too, or sound on) gets no note, because the note would not be true.
+    // Unverified on a device (DEVICE_TEST_PLAN S1-47 e).
+    const deliverQuietly =
+      !!ios &&
+      ios.allowsDisplayOnLockScreen === false &&
+      ios.alertStyle === Notifications.IosAlertStyle.NONE &&
+      ios.allowsDisplayInNotificationCenter !== false &&
+      ios.allowsSound !== true;
     return { permission, quiet: permission === 'granted' && (provisional || deliverQuietly) };
   } catch {
     return { permission: 'undetermined', quiet: false };

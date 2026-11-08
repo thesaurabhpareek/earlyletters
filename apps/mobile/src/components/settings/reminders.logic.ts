@@ -10,7 +10,7 @@
  * Back from iOS Settings with notifications allowed, while reminders are on: the notifications-off card collapses
  * and "Reminders are on." shows once as a toast.
  */
-import { reminderCopy } from '@scribe/content';
+import { en, reminderCopy } from '@scribe/content';
 import { renderTemplate } from '@scribe/core';
 import type { ReminderPermission, ReminderPrefs, ReminderTime } from '@/lib/reminders';
 
@@ -51,13 +51,14 @@ export function weekdayOfIso(date: string): number {
 }
 
 /**
- * The footer under the switch. Off: the explanation, on screen before the switch is ever turned on, so the iOS alert
- * that follows a tap is never the first word (CCO-10; LEGAL-REQ-007 "after an in-app explanation"). On: "Changes save
- * as you go." (iOS settings save on change; there is no Save button).
+ * The footer under the switch. Off: the explanation, as wireframed (reminders-settings.md 4, OFF): what a reminder is
+ * (`settings.reminders.help`), then the two reassurance lines. It is drawn whenever the switch is off, before any tap,
+ * so the iOS alert that follows a tap is never the first word (CCO-10; LEGAL-REQ-007 "after an in-app explanation").
+ * On: "Changes save as you go." (iOS settings save on change; there is no Save button).
  */
 export function switchFooter(on: boolean): string {
   const p = reminderCopy.priming;
-  return on ? reminderCopy.settings.savesAsYouGo : `${p.quietLine} ${p.privacyLine}`;
+  return on ? reminderCopy.settings.savesAsYouGo : `${en.settings.reminders.help} ${p.quietLine} ${p.privacyLine}`;
 }
 
 /**

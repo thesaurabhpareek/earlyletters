@@ -23,6 +23,8 @@ const os = vi.hoisted(() => ({
   failSchedule: false,
   scheduled: [] as string[],
   lockScreen: null as boolean | null,
+  center: null as boolean | null,
+  sound: null as boolean | null,
   alertStyle: 1,
 }));
 
@@ -39,7 +41,7 @@ vi.mock('expo-notifications', () => {
     granted: os.status === 'granted',
     status: os.status,
     canAskAgain: os.canAskAgain,
-    ios: { status: os.iosStatus, allowsDisplayOnLockScreen: os.lockScreen, alertStyle: os.alertStyle },
+    ios: { status: os.iosStatus, allowsDisplayOnLockScreen: os.lockScreen, allowsDisplayInNotificationCenter: os.center, allowsSound: os.sound, alertStyle: os.alertStyle },
   });
   return {
     IosAuthorizationStatus: { NOT_DETERMINED: 0, DENIED: 1, AUTHORIZED: 2, PROVISIONAL: 3, EPHEMERAL: 4 },
@@ -85,7 +87,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
   const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
 
   beforeEach(() => {
-    Object.assign(os, { status: 'undetermined', iosStatus: 0, canAskAgain: true, answer: 'granted', enabledWhenAsked: null, asked: 0, failSchedule: false, scheduled: [], lockScreen: null, alertStyle: 1 });
+    Object.assign(os, { status: 'undetermined', iosStatus: 0, canAskAgain: true, answer: 'granted', enabledWhenAsked: null, asked: 0, failSchedule: false, scheduled: [], lockScreen: null, center: null, sound: null, alertStyle: 1 });
     os.readEnabled = () => reminders.readPrefs().enabled;
     store.closeStore();
     const h = nodeDb();
@@ -103,14 +105,17 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
 
   it('LEGAL-REQ-007 / CCO-10: the explanation is the footer while the switch is off, on screen before any tap', () => {
     const off = logic.switchFooter(false);
+    // As wireframed (reminders-settings.md 4, OFF): what a reminder is, then the two reassurance lines.
+    expect(off).toBe(`${en.settings.reminders.help} ${reminderCopy.priming.quietLine} ${reminderCopy.priming.privacyLine}`);
+    expect(off.startsWith('A nudge in the evening, as often as you choose. Never late at night.')).toBe(true);
     expect(off).toContain(reminderCopy.priming.quietLine);
     expect(off).toContain(reminderCopy.priming.privacyLine);
     expect(logic.switchFooter(true)).toBe('Changes save as you go.');
     const screen = code('app/settings/reminders.tsx');
-    // The footer sits on the switch's own section and is drawn whatever iOS has said, so it is read before the tap.
+    // The footer is the switch's own section footer (drawn just under the switch), and that section is the page's
+    // first element with no condition around it: it shows whatever iOS has said, before any tap.
     expect(screen).toMatch(/<ListSection footer=\{switchFooter\(on\)\}>\s*<ToggleRow title=\{s\.enabledLabel\} value=\{on\}/);
-    // And it comes before the switch in the reading order the page has: nothing else is above it.
-    expect(screen.indexOf('switchFooter(on)')).toBeLessThan(screen.indexOf('<ToggleRow title={s.enabledLabel}'));
+    expect(screen).toMatch(/<ScrollView[^>]*>\s*(?:\{\s*\}\s*)?<ListSection footer=\{switchFooter\(on\)\}>/);
   });
 
   it('no sheet in front of the alert anywhere: the priming sheet and its "A few evenings a week" title are gone', () => {
@@ -127,6 +132,14 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
   });
 
   it('turning on writes `enabled` before iOS asks, so the switch never flips back behind the alert', async () => {
+    // Through enableReminders(), which existed before: on the old code this fails on the order itself (prefs were
+    // written after the ask).
+    await reminders.enableReminders();
+    expect(os.asked).toBe(1);
+    expect(os.enabledWhenAsked).toBe(true);
+    // And through the shared door both callers use now.
+    await reminders.disableReminders();
+    Object.assign(os, { status: 'undetermined', iosStatus: 0, asked: 0, enabledWhenAsked: null });
     const res = await reminders.turnOnReminders();
     expect(os.asked).toBe(1);
     expect(os.enabledWhenAsked).toBe(true);
@@ -196,9 +209,14 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     os.status = 'undetermined';
     os.iosStatus = 3;
     expect(await reminders.getReminderPermissionDetail()).toEqual({ permission: 'granted', quiet: true });
-    Object.assign(os, { status: 'granted', iosStatus: 2, lockScreen: false, alertStyle: 0 });
+    Object.assign(os, { status: 'granted', iosStatus: 2, lockScreen: false, alertStyle: 0, center: true, sound: false });
     expect(await reminders.getReminderPermissionDetail()).toEqual({ permission: 'granted', quiet: true });
-    Object.assign(os, { lockScreen: true, alertStyle: 1 });
+    // "to Notification Center only" would be untrue with Notification Center off, and "quietly" with sound on.
+    Object.assign(os, { center: false });
+    expect(await reminders.getReminderPermissionDetail()).toEqual({ permission: 'granted', quiet: false });
+    Object.assign(os, { center: true, sound: true });
+    expect(await reminders.getReminderPermissionDetail()).toEqual({ permission: 'granted', quiet: false });
+    Object.assign(os, { lockScreen: true, alertStyle: 1, sound: false });
     expect(await reminders.getReminderPermissionDetail()).toEqual({ permission: 'granted', quiet: false });
     expect(code('app/settings/reminders.tsx')).toMatch(/\{quiet && \(/);
   });
