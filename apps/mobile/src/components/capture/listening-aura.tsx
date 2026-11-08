@@ -29,6 +29,7 @@ import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 import { tokens } from '@scribe/design-tokens';
 import { useTheme } from '@/lib/a11y';
 import { FADE_MS } from '@/lib/motion';
+import { auraRestOpacity, auraRunsFrames } from './listen-meter.logic';
 
 export type AuraState = 'ready' | 'idle' | 'listening' | 'paused' | 'processing';
 
@@ -59,15 +60,9 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
   const ready = useSharedValue(state === 'ready');
   const processing = useSharedValue(state === 'processing');
   const reducedSV = useSharedValue(reduced);
-  useEffect(() => {
-    listening.value = state === 'listening';
-    paused.value = state === 'paused';
-    ready.value = state === 'ready';
-    processing.value = state === 'processing';
-    reducedSV.value = reduced;
-  }, [state, reduced, listening, paused, ready, processing, reducedSV]);
+  const runs = auraRunsFrames(state, reduced);
 
-  useFrameCallback((f) => {
+  const frames = useFrameCallback((f) => {
     'worklet';
     if (reducedSV.value) return;
     const dt = Math.min(f.timeSincePreviousFrame ?? 16, 64);
@@ -97,7 +92,26 @@ export function ListeningAura({ state, db, reduced, size = 240 }: Props) {
     const breath = 0.5 - 0.5 * Math.cos((2 * Math.PI * t.value) / BREATH_MS);
     scale.value = Math.max(1 + B.scaleMax * s.value, 1 + B.idleScale * idleW.value * breath);
     opacity.value = B.opacityMin + (B.opacityMax - B.opacityMin) * Math.max(s.value, 0.4 * idleW.value * breath);
-  });
+  }, runs);
+
+  // The frame callback runs only while it follows the voice or releases at the end (auraRunsFrames); at rest the glow
+  // holds still values and no frame is spent.
+  useEffect(() => {
+    listening.value = state === 'listening';
+    paused.value = state === 'paused';
+    ready.value = state === 'ready';
+    processing.value = state === 'processing';
+    reducedSV.value = reduced;
+    if (!runs) {
+      s.value = 0;
+      idleW.value = 0;
+      quietMs.value = 0;
+      scale.value = 1;
+      opacity.value = auraRestOpacity(state, B.opacityMin);
+    }
+    frames.setActive(runs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state, reduced, runs]);
 
   // Reduce Motion: stepped ring opacity, at most one change per 400 ms.
   const ringOpacity = useSharedValue(0.2);
