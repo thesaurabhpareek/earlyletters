@@ -6,8 +6,8 @@
  * Order, and why:
  *  1. Analytics stops and forgets its ids, sending nothing (it is off in v1.0; this keeps the promise if it is on).
  *  2. The store marks the erase pending, removes every recording file (letters, deleted letters, drafts and strays
- *     in both recording folders), every listening copy, every temporary whole-frame copy and every export ZIP, then
- *     every row of every table, settings included.
+ *     in both recording folders), every listening copy, every temporary whole-frame copy, every export ZIP and any
+ *     half-rendered print PDF, then every row of every table, settings included.
  *  3. The Keychain: the free-letter count (D-083: Erase everything starts the count again, `clearLedger`), any
  *     invite link kept from before, and what an unfinished sign-in left (SIGN_IN_LEFTOVERS). After the rows, so a relaunch in between cannot raise the count again from
  *     letters still present (letter-ledger.ts takes the largest of the three).
@@ -42,8 +42,12 @@ import { eraseEverythingLocal, eraseEverythingPending, finishEraseEverything, le
 
 export type EraseEverythingResult = 'erased' | 'incomplete' | 'signed_in';
 
-/** Cache folders that can hold a copy of letters: an export ZIP (export/device.ts) and "Export what is readable". */
-const CACHE_COPIES = ['exports', 'recovery-export'] as const;
+/**
+ * Cache folders that can hold a copy of letters: an export ZIP (export/device.ts), "Export what is readable", and the
+ * PDF expo-print writes to `Caches/Print/<uuid>.pdf` while an export renders the whole book (export/device.ts deletes
+ * it afterwards, but a kill mid-render leaves it, and `cleanupExports` does not look there).
+ */
+const CACHE_COPIES = ['exports', 'recovery-export', 'Print'] as const;
 
 /**
  * Every recording file, listening copy, temporary copy and export left on the phone after each row's own erase.

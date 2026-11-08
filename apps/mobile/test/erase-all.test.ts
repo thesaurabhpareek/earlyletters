@@ -401,9 +401,11 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     const frames = put(h.disk, `${h.disk.caches}whole-frames-abc-1.aac`, 4_000);
     const zip = put(h.disk, `${h.disk.caches}exports/early-letters-2026-10-03.zip`, 9_000);
     const recovery = put(h.disk, `${h.disk.caches}recovery-export/recovery-2026-10-03.zip`, 9_000);
+    // expo-print's half-rendered whole-book PDF, left by a kill during an export (Review A on #520 at 79bc4456, note 3).
+    const printPdf = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00D.pdf`, 12_000);
     h.keychain.set('scribe.auth.pendingName', 'Mama'); // an Apple sign-in that never finished
     h.keychain.set('scribe.auth.appleUser', 'stand-in.apple.user');
-    return { app, f, stray, frames, zip, recovery };
+    return { app, f, stray, frames, zip, recovery, printPdf };
   }
 
   function expectEmpty() {
@@ -413,14 +415,14 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
   }
 
   it('removes every book, letter, draft, recording, copy, export and setting; keeps the speech model; resets the free-letter count; sends nothing', async () => {
-    const { app, f, stray, frames, zip, recovery } = await filled();
+    const { app, f, stray, frames, zip, recovery, printPdf } = await filled();
     // A language pack where packs/app-support.ts keeps it on iOS: Library/Application Support/packs, beside Documents.
     const packs = `${h.disk.documents.replace(/Documents\/$/, '')}Library/Application Support/packs`;
     const pack = put(h.disk, `${packs}/en/rules.json`, 256);
     expect(await app.all.eraseEverything()).toBe('erased');
 
     expectEmpty();
-    expect([f.a1, f.a2, f.draft, f.v1, stray, frames, zip, recovery].filter(has)).toEqual([]);
+    expect([f.a1, f.a2, f.draft, f.v1, stray, frames, zip, recovery, printPdf].filter(has)).toEqual([]);
     expect(namesIn(h.disk, recorderDir(h.disk))).toEqual([]);
     expect(namesIn(h.disk, `${h.disk.documents}models`)).toEqual(['ggml-large-v3-turbo-q5_0.bin']); // F17 6.2 F step 3
     expect(has(pack)).toBe(true); // F17 6.2 F step 3, DATA-REQ-024: language packs stay too
@@ -443,6 +445,47 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     expect(db.all<{ key: string }>('SELECT key FROM settings').map((r) => r.key).sort()).toEqual(['db.secureDeleteVacuumAt', 'lastLaunchAt']);
     db.run('DELETE FROM settings');
     expectEmpty();
+  });
+
+  it('[DATA-REQ-024] a whole-book PDF left in Caches/Print by a kill during an export render is removed by Erase everything (Review A on #520 at 79bc4456, note 3)', async () => {
+    const { app, printPdf } = await filled();
+    const other = put(h.disk, `${h.disk.caches}Print/0A1B2C3D-0000-4000-8000-00000000F00E.pdf`, 3_000); // a second one: the whole folder goes
+    expect([printPdf, other].every(has)).toBe(true);
+    expect(await app.all.eraseEverything()).toBe('erased');
+    expect([printPdf, other].filter(has)).toEqual([]);
+  });
+
+  it('[LEGAL-REQ-002][D-026] the store tells its listeners that settings changed once the rows are gone, and again when the mark is removed: this is what brings the age question back at once (Review B on #520 at 79bc4456)', async () => {
+    const { app } = await filled();
+    expect(app.store.getSetting('ageGate.passed')).toBe('1');
+    const seen: { answerGone: boolean; pending: boolean }[] = [];
+    const off = app.store.subscribeTo('settings', () => {
+      seen.push({ answerGone: app.store.getSetting('ageGate.passed') === null, pending: app.store.eraseEverythingPending() });
+    });
+    expect(await app.all.eraseEverything()).toBe('erased');
+    off();
+    // useAgeGate reads its answer again on each of these (age-gate.ts). One when the rows went (mark still set, the
+    // Keychain and reminder steps still to come), one when the mark went. Never before the answer is gone.
+    expect(seen).toEqual([
+      { answerGone: true, pending: true },
+      { answerGone: true, pending: false },
+    ]);
+  });
+
+  it('[LEGAL-REQ-002][D-026] the same when the launch finishes an erase a kill cut short: the first frame is told, before the Keychain steps', async () => {
+    const { app } = await filled();
+    expect(app.store.eraseEverythingLocal(app.erase.eraseAudioFile, app.all.eraseDeviceFiles)).toBe('erased');
+    // Killed here: the rows are gone, the mark stays. A new process opens the same database.
+    const next = await launch();
+    const seen: { answerGone: boolean; pending: boolean }[] = [];
+    next.store.subscribeTo('settings', () => {
+      seen.push({ answerGone: next.store.getSetting('ageGate.passed') === null, pending: next.store.eraseEverythingPending() });
+    });
+    expect(await next.all.resumeEraseAtLaunch()).toBe('erased');
+    expect(seen).toEqual([
+      { answerGone: true, pending: true },
+      { answerGone: true, pending: false },
+    ]);
   });
 
   it('[F1][CISO-1] the app lock is reset too: it is read again after the rows are gone, so the empty book is neither covered nor locked', async () => {
@@ -481,7 +524,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
   });
 
   it('a kill while files are going: the next launch finishes before any screen reads the store, and the sweep re-attaches nothing', async () => {
-    const { app, f, stray } = await filled();
+    const { app, f, stray, printPdf } = await filled();
     let n = 0;
     expect(
       app.store.eraseEverythingLocal((uri, id) => {
@@ -498,7 +541,7 @@ describe('[DATA-REQ-024][F14-REQ-026] Erase everything on this phone, signed out
     // The root layout reads the app lock (startAppLock) right after this call: it finds the lock off, no reload needed.
     const prefs = await import('../src/lib/app-lock/prefs');
     expect(prefs.appLockOn()).toBe(false);
-    expect([f.a1, f.a2, f.draft, f.v1, stray].filter(has)).toEqual([]);
+    expect([f.a1, f.a2, f.draft, f.v1, stray, printPdf].filter(has)).toEqual([]);
     expect(h.keychain.has('earlyletters.letters.keptEver')).toBe(false);
     expect(await next.ledger.lettersKept(next.store.ledgerDb())).toBe(0);
     expect(await next.sweep.runLaunchSweep()).toEqual({});
