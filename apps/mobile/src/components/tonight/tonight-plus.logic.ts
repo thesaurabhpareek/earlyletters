@@ -7,13 +7,13 @@
  *    a count, never a price, and no button (F14-REQ-040). The rule is the Keep step's own (packages/core decideKeepLetter), read
  *    through the billing API (usePlan, lettersKeptNow, freeLettersAllowance), so the line and the gate never disagree.
  *
- * 2. Held letters. One held letter keeps its own card. Two or more fold into one row, "{count} letters waiting to be
- *    kept.", where the newest of them would be; tapping the row opens the list of their cards in place. Every other
+ * 2. Held letters. One held letter keeps its own card. Two or more fold into one row, "Letters waiting to be kept."
+ *    (no count: founder decision F5, the council refused "{count} letters waiting"), where the newest of them would be; tapping the row opens the list of their cards in place. Every other
  *    card keeps its place and order (newest first).
  */
 import { decideKeepLetter, type PlanView } from '@scribe/core';
 import { billingCopy } from '@scribe/content';
-import { copy, fill } from '@/lib/copy';
+import { copy } from '@/lib/copy';
 import type { DraftCard } from './draft-card.logic';
 
 /* ------------------------------------------------------------------ */
@@ -57,8 +57,9 @@ export type HeldRow = {
   kind: 'held';
   /** Stable key for the list. */
   id: 'held';
+  /** How many held letters the row folds; used only to close the list when it changes, never shown (F5). */
   count: number;
-  /** "2 letters waiting to be kept." */
+  /** "Letters waiting to be kept." No count (F5). */
   title: string;
   /** The held letters' own cards, newest first, shown when the row is open. */
   cards: DraftCard[];
@@ -82,7 +83,7 @@ export function tonightRows(cards: readonly DraftCard[]): TonightRow[] {
 }
 
 function heldRow(cards: DraftCard[]): HeldRow {
-  return { kind: 'held', id: 'held', count: cards.length, title: fill(copy.tonight.draft.heldMany, { count: String(cards.length) }), cards };
+  return { kind: 'held', id: 'held', count: cards.length, title: copy.tonight.draft.heldMany, cards };
 }
 
 /** How many letters the folded row holds; 0 when there is no folded row. Tonight closes the list when it changes. */

@@ -111,13 +111,14 @@ describe('[F14-REQ-041] held letters fold into one row', () => {
     expect(rows.some((r) => r.kind === 'held')).toBe(false);
   });
 
-  it('two held letters are one row that says how many are waiting, not one card each', () => {
+  it('two held letters are one row with no count (F5), not one card each', () => {
     const rows = tonightRows(cards([draft('held-2', { held: true }), draft('held-1', { held: true })]));
     expect(rows).toHaveLength(1);
     const row = rows[0] as HeldRow;
     expect(row.kind).toBe('held');
     expect(row.count).toBe(2);
-    expect(row.title).toBe('2 letters waiting to be kept.');
+    expect(row.title).toBe('Letters waiting to be kept.');
+    expect(row.title).not.toMatch(/\d/);
     expect(row.cards.map((c) => c.id)).toEqual(['held-2', 'held-1']);
   });
 
@@ -132,7 +133,7 @@ describe('[F14-REQ-041] held letters fold into one row', () => {
       ]),
     );
     expect(rows.map((r) => (r.kind === 'card' ? r.card.id : `held:${r.count}`))).toEqual(['typed-2', 'held:3', 'typed-1']);
-    expect((rows[1] as HeldRow).title).toBe('3 letters waiting to be kept.');
+    expect((rows[1] as HeldRow).title).toBe('Letters waiting to be kept.');
     expect((rows[1] as HeldRow).cards.map((c) => c.id)).toEqual(['held-3', 'held-2', 'held-1']);
     expect(heldCountOf(rows)).toBe(3);
   });
@@ -152,7 +153,8 @@ describe('[F14-REQ-041] held letters fold into one row', () => {
   });
 
   it('the row uses the glossary words', () => {
-    expect(en.tonight.draft.heldMany).toBe('{count} letters waiting to be kept.');
+    expect(en.tonight.draft.heldMany).toBe('Letters waiting to be kept.');
+    expect(en.tonight.draft.heldMany).not.toMatch(/\{count\}|\d/);
   });
 });
 

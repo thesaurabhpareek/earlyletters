@@ -5,7 +5,7 @@
  * closes it. One held letter never comes here: it keeps its own card (tonight-plus.logic tonightRows).
  *
  * Letter-shaped like DraftCard (Card "raised", radius md, the 3 pt accent rule), so the row reads as letters, not as a
- * setting. The whole row is one button: VoiceOver reads "2 letters waiting to be kept." and its action, with its
+ * setting. The whole row is one button: VoiceOver reads "Letters waiting to be kept." (no count, F5) and its action, with its
  * expanded state. The title wraps at every text size; nothing is cut.
  * Motion: the list appears with the screen's own `enter` fade when it opens; Reduce Motion is handled by useMotion.
  */

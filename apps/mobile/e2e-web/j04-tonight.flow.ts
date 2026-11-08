@@ -196,9 +196,10 @@ test('[J04h] past the free letters: the line before Speak, and held letters as o
   }
   // One row, not one card each; the letters' words are behind it until it opens.
   await expect(app.getByTestId('tonight.heldRow')).toHaveCount(1);
-  await expect(app.getByText('2 letters waiting to be kept.', { exact: true })).toBeVisible();
+  await expect(app.getByText('Letters waiting to be kept.', { exact: true })).toBeVisible();
+  await expect(app.getByText(/\b2 letters\b/)).toHaveCount(0);
   await expect(app.getByText('You waved at the dog on the corner.')).toHaveCount(0);
-  await step('happy', 'Two held letters, one row', 'Both letters held at the Keep step wait on Tonight as one row, "2 letters waiting to be kept.", where the newest one was. Nothing else on Tonight moves.');
+  await step('happy', 'Two held letters, one row', 'Both letters held at the Keep step wait on Tonight as one row, "Letters waiting to be kept." (no count, F5), where the newest one was. Nothing else on Tonight moves.');
   await app.getByTestId('tonight.heldRow').click();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
   await expect(app.getByText('You pointed at the moon and said ball.')).toBeVisible();
