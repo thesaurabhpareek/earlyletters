@@ -49,6 +49,12 @@ function good(): Input {
       extra: { appEnv: 'production', serverFeatures: false, backup: false, statusReport: false, accountDeletion: false, eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } },
       ios: { privacyManifests: { NSPrivacyTracking: false, NSPrivacyTrackingDomains: [], NSPrivacyAccessedAPITypes: [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] }], NSPrivacyCollectedDataTypes: [] } },
     },
+    introspected: {
+      ios: {
+        entitlements: { 'com.apple.developer.default-data-protection': 'NSFileProtectionCompleteUntilFirstUserAuthentication' },
+        infoPlist: { CFBundleURLTypes: [{ CFBundleURLSchemes: ['scribe', 'com.example.scribe'] }, { CFBundleURLSchemes: ['exp+scribe'] }] },
+      },
+    },
     environmentsMd: ENVIRONMENTS,
     keysSource: KEYS,
     publishedSource: "export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = '{\"fictional\":\"Asha\"}';\n",
@@ -80,6 +86,11 @@ const withCfg = (mutate: (cfg: Record<string, any>) => void): Input => {
   mutate(i.cfg as Record<string, any>);
   return i;
 };
+const withIntrospected = (mutate: (cfg: Record<string, any>) => void): Input => {
+  const i = good();
+  mutate(i.introspected as Record<string, any>);
+  return i;
+};
 
 describe('the store preflight on a store-ready fixture', () => {
   it('fails nothing, and gives every check an id', () => {
@@ -97,6 +108,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'signing-keys',
       'pack-manifest',
       'privacy-manifest',
+      'sign-in',
       'version',
       'project-id',
       'update-channel',
@@ -142,6 +154,13 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['privacy-manifest', 'no privacy manifest', withCfg((c) => delete c.ios.privacyManifests)],
     ['privacy-manifest', 'tracking true', withCfg((c) => (c.ios.privacyManifests.NSPrivacyTracking = true))],
     ['privacy-manifest', 'collected data with servers off', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = [{ NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress' }]))],
+    ['sign-in', 'ios.usesAppleSignIn in the config', withCfg((c) => (c.ios.usesAppleSignIn = true))],
+    ['sign-in', 'associated domains in the config', withCfg((c) => (c.ios.associatedDomains = ['applinks:example.com']))],
+    ['sign-in', 'the Google Sign-In plugin in the config', withCfg((c) => (c.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]]))],
+    ['sign-in', 'the Sign in with Apple entitlement after mods (expo-apple-authentication adds it on its own)', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.applesignin'] = ['Default']))],
+    ['sign-in', 'the associated-domains entitlement after mods', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com']))],
+    ['sign-in', 'a Google URL scheme in Info.plist', withIntrospected((c) => c.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] }))],
+    ['sign-in', 'the introspected config did not evaluate', { ...good(), introspected: null, introspectError: 'boom' }],
     ['version', 'version.json is not x.y.z', { ...good(), versionJson: '{ "version": "1.0" }' }],
     ['version', 'the config version differs from version.json', withCfg((c) => (c.version = '1.0.1'))],
     ['version', 'app.config.ts writes a version literal', { ...good(), appConfigSource: "export default () => ({ version: '1.0.0' });\n" }],
@@ -251,6 +270,8 @@ describe('the real repository', () => {
     // Do not drop it from this list to make the test pass: fix eas.json instead.
     expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'update-channel']);
     expect(failing.find((r) => r.id === 'update-channel')?.msg).toContain('"production"');
+    // Guideline 2.5.19 (build 12 store compliance review, risk 5): no dormant sign-in capability. Must stay passing.
+    expect(results.find((r) => r.id === 'sign-in')?.level).toBe('PASS');
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
