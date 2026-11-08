@@ -32,6 +32,7 @@ import { speechConsentCopy, speechSettingsCopy, wordsCopy } from '@scribe/conten
 import type { StateKind } from '@/components/ui/state-screen.logic';
 import type { LineArtName } from '@/components/ui/line-art.data';
 import { copy, fill } from '@/lib/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { waitingForLanguageNote } from '@/lib/transcription-queue/language-hold';
 import type { Job } from '@/lib/transcription-queue/machine';
 
@@ -157,7 +158,7 @@ function languageDownload(i: WordsInput): WordsCard {
         : d.hold === 'offline'
           ? speechSettingsCopy.downloadFailures.offline
           : d.progress !== null
-            ? fill(speechSettingsCopy.downloading, { n: Math.floor(d.progress * 100) })
+            ? downloadingLine(d.progress, (n) => fill(speechSettingsCopy.downloading, { n }))
             : undefined;
   return {
     state: 'downloading',

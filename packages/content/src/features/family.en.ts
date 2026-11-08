@@ -159,24 +159,15 @@ export const familyCopy = {
    * {child} is the open book's name, or `childFallback` before there is a book.
    */
   soon: {
+    /** The Settings row value and the leave sheet's title (child-settings.logic.ts, invite/leave.tsx). Not shown on the coming-soon screen. */
     status: 'Coming soon',
-    title: 'Write to {child}, together',
-    lead: "Soon {child}'s other parent can write in this same book, from their own phone.",
-    points: [
-      {
-        title: 'One book, two voices',
-        body: 'Your letters and theirs sit side by side, each signed with the name {child} calls you.',
-      },
-      {
-        title: 'Each from your own phone',
-        body: 'Write whenever it suits you, and read every shared letter wherever you are.',
-      },
-      {
-        title: 'Private to your family',
-        body: "{child}'s book is shared only with {child}'s other parent, if you invite them. A letter you keep private stays yours.",
-      },
-    ],
-    building: "We're building it now. Until then, every letter you write stays on this phone.",
+    /**
+     * The screen is the drawing, this heading and one line (founder, 8 Nov 2026: rewrite B of
+     * proposals/family-soon-content.md). No badge, points or footer: the old footer said letters stay on this phone,
+     * and recordings are also in the iPhone's own backup.
+     */
+    title: 'For now, this book is yours.',
+    lead: "In a later update, {child}'s other parent can add letters too, from their own phone.",
     notify: {
       button: "Tell me when it's here",
       hint: 'Saves a note on this phone. Nothing is sent.',
@@ -184,7 +175,7 @@ export const familyCopy = {
       done: "Noted on this phone. When the update arrives, you will see it here.",
     },
     quiet: {
-      title: 'Just you, for now.',
+      title: 'For now, this book is yours.',
       body: "{child}'s book and every letter in it stay on this phone.",
     },
     childFallback: 'your child',

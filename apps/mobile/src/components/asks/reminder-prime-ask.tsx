@@ -5,8 +5,10 @@
  * when `nextAsk` returns `reminder_prime`, after the Book is on screen; the card is then the first ask.
  *
  * - "Yes, evenings": the default ("A few times a week", 8:30 PM), then the iOS alert (F13 6.2 B row 4a). The card
- *   itself is the pre-alert screen, so the Settings priming sheet is not shown a second time in front of the alert.
+ *   is the one in-context ask before the alert (reminders-settings.md 3); Settings has no sheet at all (CDesO-3).
  * - "Pick a time": a time picker from 7:00 AM to 9:30 PM in 15-minute steps, then "Set reminder" and the iOS alert (row 4b).
+ * - Both call the shared `turnOnReminders()` (the Settings switch calls it too), then say what came of it: "Reminders
+ *   are on. Next: Tuesday at 8:30 PM." with Change (Settings, Reminders), or "Notifications are off" with Open Settings.
  * - "No reminders": no OS prompt; the card closes with `onboarding.reminder.noneHelp` (row 4c).
  * Every showing counts toward the cap of 2 primes ever (`noteReminderPrimeShown`, next-ask.logic MAX_REMINDER_PRIMES).
  * No close button and no swipe: one of the three answers ends it, and none of them asks anything of the server.
@@ -15,7 +17,8 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { BellSimpleIcon } from 'phosphor-react-native/src/icons/BellSimple';
 import { renderTemplate } from '@scribe/core';
 import { useEffect, useState } from 'react';
-import { Modal, Platform, Pressable, View } from 'react-native';
+import { router } from 'expo-router';
+import { Linking, Modal, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
@@ -26,7 +29,8 @@ import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeReques
 import { copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { getActiveChild } from '@/lib/store';
-import { clampReminderTime, enableReminders, formatReminderTime, readPrefs, writePrefs, type ReminderTime } from '@/lib/reminders';
+import { nextLine, turnOnOutcome } from '@/components/settings/reminders.logic';
+import { clampReminderTime, formatReminderTime, nextReminder, readPrefs, reminderCopy, rescheduleReminders, turnOnReminders, writePrefs, type ReminderTime } from '@/lib/reminders';
 
 const at = (t: ReminderTime): Date => {
   const d = new Date();
@@ -65,7 +69,22 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
     if (chosen) writePrefs({ time: chosen });
     track('reminder_prime_result', { choice: 'yes' });
     onClose();
-    void enableReminders().catch(() => {}); // the choice is saved either way; Settings shows a no from iOS
+    // The choice is saved either way; then one line says what came of it (reminders-settings.md 3).
+    void turnOnReminders()
+      .then((res) => {
+        // The card already counted itself as this session's ask (noteReminderPrimeShown).
+        if (res.asked) track('os_permission_result', { granted: res.permission === 'granted', platform: Platform.OS === 'android' ? 'android' : 'ios' });
+        const o = turnOnOutcome(res, nextLine({ on: true, permission: res.permission, next: nextReminder(), formatTime: formatReminderTime }));
+        const s = reminderCopy.settings;
+        const action =
+          o.action === 'change'
+            ? { label: s.changeButton, onPress: () => router.push('/settings/reminders') }
+            : o.action === 'openSettings'
+              ? { label: s.openSettingsButton, onPress: () => void Linking.openSettings() }
+              : { label: copy.common.tryAgainButton, onPress: () => void rescheduleReminders() };
+        toast.show({ message: o.message, action });
+      })
+      .catch(() => {});
   };
   const none = () => {
     track('reminder_prime_result', { choice: 'not_now' });

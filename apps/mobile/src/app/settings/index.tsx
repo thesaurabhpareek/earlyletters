@@ -1,16 +1,21 @@
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { router, useFocusEffect, type Href } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { Linking, ScrollView, View } from 'react-native';
-import { brand, supportMailto } from '@scribe/brand';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { ScrollView, View } from 'react-native';
+import { brand } from '@scribe/brand';
 import { ListRow, ListSection, Text } from '@/components/ui';
 import { getAppearance } from '@/components/child/child-store';
+import { useHelpLink } from '@/components/settings/help-fallback';
+import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
-import { headerCard } from '@/components/settings/settings-home.logic';
+import { headerCard, planRowFor } from '@/components/settings/settings-home.logic';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import { useAppLock } from '@/lib/app-lock/controller';
 import { useAuth } from '@/lib/auth/session-provider';
 import { backupInBuild, loadBackup } from '@/lib/backup/gate';
-import { PLUS_ALPHA, plusLineFor } from '@/lib/billing/alpha';
-import { usePlan } from '@/lib/billing/use-plan';
+import { getPlan, subscribePlan } from '@/lib/billing';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
@@ -21,20 +26,25 @@ import { backupCopy } from '@scribe/content';
  * Settings home (PRD C, C-REQ-016; PRD B section 9; EXPERIENCE_PASS_2026-10 S40, package P6). Every destination is
  * one tap from here, and every row pushes its own page, like iOS Settings: no accordion opens inside the list.
  *
- * Regrouped 8 Nov 2026 (proposals/account-security/settings-ia.md 3 and design.md 2.6; docs/design/screens/
- * SETTINGS_AND_ACCOUNT.md 6; rulings CDesO-1, CCO-9): a header card, then five groups and About.
+ * Regrouped (proposals/account-security/settings-ia.md 3 and design.md 2.6; docs/design/screens/SETTINGS_AND_ACCOUNT.md
+ * 6; rulings CDesO-1, CCO-9; founder: build 12): a header card, then five groups and About.
  * - Header card (settings-home.logic.ts headerCard): the name the person signs as, if any; "On this phone" (or the
- *   sign-in line); the plan status. Without sign-in it opens Plan, so Plan stays one tap from home (CCO-9, the
- *   "Settings, Plan" path the Plus legal text names). With sign-in it opens Account and a Plan row sits under it.
- * - Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal).
- * - About: version, then the early-version note (registered text, D-060, K-13), word for word, unstyled.
+ *   sign-in line). Without sign-in it is the Plan row: it opens Plan and carries the plan status (planRowFor: Free,
+ *   Plus or Plus, shared; the alpha note in alpha), so Plan stays one tap from home (CCO-9, the "Settings, Plan" path
+ *   the Plus legal text names). With sign-in it opens Account, and the Plan row sits directly under it.
+ * - Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live,
+ *   Export your book, Recently deleted, Back up when in the build, Storage); Privacy and security (App lock, Privacy);
+ *   Help and legal (Help, If you are struggling, Legal: one page for the Terms, the Privacy Policy and Licenses).
+ * - About: version, the early-version note (registered text, D-060, K-13), word for word, unstyled, with no heading
+ *   of its own, so About says "early" once (CLO-5); then the sign-off, text only (CDesO-2).
  *
- * Said once each: the short privacy line (`trust.short`) is the footer of Privacy and security. Help writes to the
- * support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling" is always here,
- * never behind a flag (D-034).
+ * Said once each: the short privacy line (`trust.short`) is the last line of Settings, Privacy (CPrivO-5, design.md
+ * 2.11). Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are
+ * struggling" is always here, never behind a flag (D-034).
  *
- * Seams for P8 (option B), each behind its capability: the Back up my recordings row (Your letters) and Delete
- * account (its own section above Help, until Account takes it in build 2, design.md 3.4).
+ * Seams for P8 (option B), each behind its capability: the Back up my recordings row (Your letters, after Recently
+ * deleted) and Delete account (its own section above Help, until Account takes it in build 2, design.md 3.4). This
+ * file is the only screen that names the Delete account route (D-129, test/account-deletion-switch.test.ts).
  */
 const ROUTES = {
   account: '/settings/account',
@@ -44,8 +54,10 @@ const ROUTES = {
   export: '/settings/export',
   recentlyDeleted: '/settings/recently-deleted',
   privacy: '/settings/privacy',
+  appLock: '/settings/app-lock',
   storage: '/settings/storage',
-  recordings: '/settings/recordings',
+  whereLive: '/settings/where-letters-live',
+  yourWords: '/settings/your-words',
   backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
@@ -73,36 +85,45 @@ export default function Settings() {
   const h = copy.settingsHome;
   // The header card names the way the person signs in, once there is sign-in (S40, #310; headerCard).
   const auth = useAuth();
-  const plan = usePlan();
+  const lockOn = useAppLock().enabled;
+  const version = Constants.expoConfig?.version ?? '';
+  // The build number from the installed binary (EAS sets it remotely, so the config never has it). null on web.
+  const build = Application.nativeBuildVersion ?? '';
+  const versionValue = build ? fill(h.versionValue, { version, build }) : version;
+  // Help writes to us; with no Mail account the address shows to copy (F20-REQ-007).
+  const help = useHelpLink();
+  // F5, PL-3: Free, Plus or Plus, shared (store build); the alpha note only in an alpha build (#552). The cached plan
+  // startPlus() keeps current: this row reads it and never asks StoreKit itself.
+  const plan = useSyncExternalStore(subscribePlan, getPlan, getPlan);
+  const planRowView = planRowFor(plan, new Date().toISOString(), PLUS_ALPHA);
   const card = headerCard({
     signIn: capabilities.signIn,
     status: auth.state.status,
     provider: auth.account.provider,
     signsAs: getActiveChild()?.signsAs,
-    alpha: PLUS_ALPHA,
-    plusOn: plan.plusOn,
+    plan: planRowView,
   });
-  const version = Constants.expoConfig?.version ?? '';
-  const build = Constants.expoConfig?.ios?.buildNumber ?? '';
-  const versionValue = build ? fill(h.versionValue, { version, build }) : version;
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      {/* Header card (CCO-9): opens Plan without sign-in, Account with it; with sign-in a Plan row sits right under it. */}
-      <ListSection footer={card.footer ?? undefined}>
+      {/* Header card (CCO-9): the Plan row without sign-in (opens Plan, plan status, the plan line or alpha note under
+          it); with sign-in it opens Account and the Plan row sits right under it. */}
+      <ListSection footer={card.footer}>
         <ListRow
           title={card.title}
           subtitle={card.subtitle}
-          value={card.value ?? undefined}
+          value={card.value}
           trailing="chevron"
           accessibilityHint={card.hint}
           onPress={go(card.route === 'account' ? ROUTES.account : ROUTES.plan)}
           testID="settings.headerCard"
         />
-        {card.planRow ? <ListRow title={h.planLabel} subtitle={plusLineFor(PLUS_ALPHA, h.planHelp)} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" /> : null}
+        {card.planRow ? (
+          <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={go(ROUTES.plan)} testID="settings.plan" />
+        ) : null}
       </ListSection>
 
-      <ListSection title={h.sections.children}>
+      <ListSection title={copy.children.settings.sectionTitle}>
         {s.children.map((ch: Child) => (
           <ListRow
             key={ch.id}
@@ -118,12 +139,13 @@ export default function Settings() {
 
       <ListSection title={h.sections.writing}>
         <ListRow title={h.languageLabel} subtitle={h.languageHelp} trailing="chevron" onPress={go(ROUTES.language)} />
+        <ListRow title={h.yourWords} trailing="chevron" onPress={go(ROUTES.yourWords)} testID="settings.yourWords" />
         <ListRow title={h.remindersLabel} value={s.reminders} trailing="chevron" onPress={go(ROUTES.reminders)} />
         <ListRow title={h.appearanceLabel} value={copy.settingsMore.themes[s.appearance]} trailing="chevron" onPress={go(ROUTES.appearance)} />
       </ListSection>
 
       <ListSection title={h.sections.letters}>
-        <ListRow title={h.recordingsLabel} trailing="chevron" onPress={go(ROUTES.recordings)} />
+        <ListRow title={h.whereLive} trailing="chevron" onPress={go(ROUTES.whereLive)} testID="settings.whereLive" />
         <ListRow title={h.exportLabel} subtitle={h.exportHelp} trailing="chevron" onPress={go(ROUTES.export)} />
         <ListRow title={copy.settings.delete.recentlyDeleted} subtitle={copy.settings.delete.shelfHelp} trailing="chevron" onPress={go(ROUTES.recentlyDeleted)} />
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
@@ -131,9 +153,15 @@ export default function Settings() {
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
       </ListSection>
 
-      <ListSection title={h.sections.privacy} footer={copy.trust.short}>
-        {/* APP_LOCK_ROW slot: the App lock row (design.md 2.5, CDesO-1) goes here, first in this group, from
-            feat/mobile-app-lock. No placeholder row is drawn until that lane ships the page it opens. */}
+      <ListSection title={h.sections.privacy}>
+        {/* App lock (F1; design.md 2.5, CDesO-1): its own row, first in Privacy and security; its value says On or Off. */}
+        <ListRow
+          title={appLockCopy.settingsHome.appLock}
+          value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+          trailing="chevron"
+          onPress={go(ROUTES.appLock)}
+          testID="settings.appLock"
+        />
         <ListRow title={h.privacyLabel} trailing="chevron" onPress={go(ROUTES.privacy)} />
       </ListSection>
 
@@ -146,8 +174,9 @@ export default function Settings() {
       ) : null}
 
       <ListSection title={h.sections.help}>
-        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => void Linking.openURL(supportMailto(h.helpSubject))} />
+        <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => help.open(mailTarget(h.helpSubject))} testID="settings.help" />
         <ListRow title={copy.struggling.title} trailing="chevron" accessibilityHint={h.strugglingA11yHint} onPress={go(ROUTES.struggling)} testID="settings.struggling" />
+        {/* Legal (settings-ia.md 3): one page for the Terms of Service, the Privacy Policy and Licenses (legal.tsx). */}
         <ListRow title={h.legalLabel} trailing="chevron" onPress={go(ROUTES.legal)} testID="settings.legal" />
       </ListSection>
 
@@ -155,12 +184,16 @@ export default function Settings() {
         <ListSection title={copy.settings.about.title}>
           <ListRow title={h.versionLabel} trailing={versionValue} />
         </ListSection>
-        {/* The early-version note: registered text (in-app-disclosures.md section 1), word for word, About's footer. */}
+        {/* The early-version note: registered text (in-app-disclosures.md section 1), word for word, About's footer.
+            No "Early version" heading above it: the note says "early" once (founder, 8 Nov 2026). */}
         <View accessible className="gap-0.5 px-4" testID="settings.about.beta">
-          <Text variant="footnote">{copy.settings.about.beta.label}</Text>
           <Text variant="footnote">{copy.settings.about.beta.body}</Text>
         </View>
+        <Text variant="footnote" tone="muted" className="mt-4 px-4 text-center" testID="settings.signOff">
+          {h.signOff}
+        </Text>
       </View>
+      {help.sheet}
     </ScrollView>
   );
 }

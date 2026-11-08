@@ -2,7 +2,9 @@ import { btn, journey } from './support/app';
 import { expect, seeded, test } from './support/journey';
 import { MAMA, mockServer } from './support/mock-server';
 
+// The "Early version" heading is gone (founder, 8 Nov 2026; CLO-5): the registered note says "early" once.
 const EARLY = 'Early version';
+const SIGN_OFF = 'Made with care in California';
 const EARLY_BODY = /is an early version, and it can make mistakes\. Some things may change\. Export a copy of your letters now and then\./;
 
 test('[J16] settings: home, privacy, appearance, help, licenses, about', async ({ app, record }) => {
@@ -11,22 +13,31 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   await expect(app.getByText('Version', { exact: true })).toBeVisible();
   // S40: the early-version note sits only under About, as its footer, after the version row; the privacy line once.
   const about = app.getByTestId('settings.about.beta');
-  await expect(about.getByText(EARLY, { exact: true })).toBeVisible();
   await expect(about.getByText(EARLY_BODY)).toBeVisible();
-  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
-  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
+  // The sign-off is the last line, under the note (CDesO-2).
+  await expect(app.getByTestId('settings.signOff')).toHaveText(SIGN_OFF);
+  const signOffBox = await app.getByTestId('settings.signOff').boundingBox();
+  // CPrivO-5: the short privacy line moved to Settings, Privacy (its last line).
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(0);
   const versionBox = await app.getByText('Version', { exact: true }).boundingBox();
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
-  // Regroup (settings-ia.md 3, CCO-9): the header card opens Plan in this build, and says where the book is kept.
+  expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
+  // Regroup (settings-ia.md 3, CCO-9): the header card is the Plan row in this build, and says where the book is kept.
   await expect(app.getByTestId('settings.headerCard').getByText('On this phone', { exact: true })).toBeVisible();
   await expect(app.getByText('Your letters', { exact: true })).toBeVisible();
   await expect(app.getByText('Privacy and security', { exact: true })).toBeVisible();
-  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing; Your letters; Privacy and security; Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is said once, under Privacy and security, and the "Early version" note is About\'s footer, word for word, not the first thing on the page.');
+  await expect(app.getByTestId('settings.appLock')).toBeVisible();
+  await step('happy', 'Settings', 'A header card (the name the parent signs as, On this phone, and the plan status; in alpha the alpha note under it) that opens Plan, then five groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
-  await expect(app.getByText('What we never do', { exact: false })).toBeVisible();
-  await step('happy', 'Privacy', 'No usage switch in v1.0 (it collects no data), what is never done (ads, selling data, training models), and links to the full policies.');
+  // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.
+  await expect(app.getByTestId('privacy.promise')).toBeVisible();
+  await expect(app.getByText('What we never do', { exact: false })).toHaveCount(0);
+  await expect(app.getByText('Anyone who can unlock this iPhone can open the book.', { exact: true })).toBeVisible();
+  await expect(app.getByText('Private by default. Never sold, never used for ads.')).toHaveCount(1);
+  await step('happy', 'Privacy', 'The promise word for word at the top, with no icon. Where your book is kept (on this phone, not sent to us; iPhone backup includes your recordings, if iCloud Backup is on; speech written down on this phone; no usage or crash reports), Who can see it (anyone who can unlock this iPhone; Names in notifications; notifications never show the words), What you can do (Export, Recently deleted; no account in this version), then the Privacy Policy and Terms, and the short privacy line last.');
   await app.goBack();
 
   await app.getByText('Appearance', { exact: true }).first().click();
@@ -67,7 +78,7 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
   // runs the row's condition for signed in, signed out and server features off).
   await expect(btn(app, /^Delete account/)).toHaveCount(0);
-  await expect(app.getByTestId('settings.about.beta').getByText(EARLY, { exact: true })).toBeVisible();
-  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(1);
-  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with a Plan row right under it (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
+  await expect(app.getByTestId('settings.about.beta').getByText(EARLY_BODY)).toBeVisible();
+  await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
+  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with the Plan row right under it (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });

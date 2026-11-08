@@ -62,10 +62,33 @@ export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 
 let activeTake: string | null = null;
 const finalizing = new Map<string, Promise<Draft | null>>();
+const takeListeners = new Set<(live: boolean) => void>();
 
 /** The draft a live recording session owns (the launch sweep never touches it). */
 export function activeTakeId(): string | null {
   return activeTake;
+}
+
+/**
+ * Called with true when a take begins and false once it is finalized (kept) or abandoned. The app lock uses it so it
+ * never fires during a take, paused included, and applies once the take is safely kept (security.md section 2).
+ */
+export function onActiveTakeChange(listener: (live: boolean) => void): () => void {
+  takeListeners.add(listener);
+  return () => takeListeners.delete(listener);
+}
+
+function setActiveTake(id: string | null): void {
+  const was = activeTake !== null;
+  activeTake = id;
+  if (was === (id !== null)) return;
+  for (const l of [...takeListeners]) {
+    try {
+      l(id !== null);
+    } catch {
+      // A listener never stops a take from being kept.
+    }
+  }
 }
 
 function hex(buf: ArrayBuffer): string {
@@ -106,7 +129,7 @@ export async function hashAudioFile(uri: string | null | undefined): Promise<{ s
 export async function beginTake(recorder: AudioRecorder, input: { childId: string; promptKey: string | null }): Promise<Draft> {
   await recorder.prepareToRecordAsync();
   const draft = createRecordingDraft({ childId: input.childId, promptKey: input.promptKey, audioUri: recorder.uri ?? null });
-  activeTake = draft.id;
+  setActiveTake(draft.id);
   try {
     recorder.record();
   } catch (e) {
@@ -153,14 +176,14 @@ export function finalizeTake(recorder: AudioRecorder | null, draftId: string, re
   })();
   finalizing.set(draftId, job);
   job.finally(() => {
-    if (activeTake === draftId) activeTake = null;
+    if (activeTake === draftId) setActiveTake(null);
   });
   return job;
 }
 
 /** Ends a session that the parent discarded (the file is deleted by the caller after confirmation). */
 export async function abandonTake(recorder: AudioRecorder, draftId: string): Promise<void> {
-  if (activeTake === draftId) activeTake = null;
+  if (activeTake === draftId) setActiveTake(null);
   finalizing.set(draftId, Promise.resolve(null));
   await recorder.stop().catch(() => {});
   await setAudioMode('idle').catch(() => {});

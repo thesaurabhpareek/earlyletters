@@ -8,10 +8,10 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 
 | Field | Value | Length / limit |
 |---|---|---|
-| Name | Early Letters: Memory Book | 26 / 30 |
-| Subtitle | Baby journal in your own voice | 30 / 30 |
+| Name | Early Letters: Baby Journal | 27 / 30 |
+| Subtitle | For parents who'd rather talk | 29 / 30 |
 | Promotional text | Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged. | 135 / 170 |
-| Keywords | `diary,keepsake,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,private,talk,mama` | 95 / 100 |
+| Keywords | `diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama` | 100 / 100 |
 | Primary category | Lifestyle | |
 | Support URL | https://earlyletters.com | |
 | Marketing URL | https://earlyletters.com | |
@@ -20,10 +20,10 @@ Rules this copy follows (docs/DECISIONS.md): no "beta" (D-060, guideline 2.2); n
 
 Keywords repeat no word from the name or subtitle (Apple already indexes those), use no spaces, and name no competitor or other platform.
 
-## Description (3462 / 4000)
+## Description (3470 / 4000)
 
 ```text
-Early Letters is the baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Tell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.
 
