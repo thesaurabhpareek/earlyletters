@@ -547,6 +547,15 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
 
+### S1-39 Full disk and a long take: finishing never sticks, and the take is kept (BL-563, S0; PR #595)
+- **Needs:** a build with PR #595; the SE 3; Asha's book; a way to fill the disk (large videos or a filler file through Files) and Settings > General > iPhone Storage to read free space. Fictional family only (Asha).
+- **Steps:** (a) Fill the disk until iPhone Storage shows under 1 MB free (if iOS frees space on its own, fill again just before stopping). Start a letter and talk, or leave a radio on, for 30 minutes, then tap stop. Note the seconds from stop to the next screen and what that screen is. (b) On the same phone with the disk still full, try once more with a 1 minute take. (c) Free a few GB, force-quit the app and open it again. Read Tonight's unfinished letters, then open the card.
+- **Expected:**
+  - (a) and (b): within about 3 s of stop the screen leaves "finishing" on its own and lands on Review, or, if the save failed, on Tonight (home); never a screen that stays on finishing, and "Let it go" never shows while finishing. No crash.
+  - (c): the take from (a) is there as an unfinished letter ("Recorded before the app closed." or Read it back), opens in Review, and plays its sound up to the point the disk filled; nothing was deleted. If the recording file could not be written at all, Review says so in its own words and never claims a recording is kept.
+- **Record:** S1-39 rows (a) to (c): phone, iOS version, build number, free space before stop, take length, seconds from stop to the next screen, the screen reached, and for (c) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
+- **Not covered:** a line on Tonight saying the take was kept after a failed finish (follow-up: needs a new content key from `content`; today it returns home without a toast).
+
 ### S1-110 Letters that are waiting are in the export (PL-2, F14-REQ-039; founder decision F5; export format 1.6.0; branch feat/billing-pl2-held-export)
 - **Needs:** any build with this change; a Mac or PC to open the ZIP. For (b), a `production` profile build (the alpha keeps every letter, so nothing is held there).
 - **Steps:** (a) In Asha's book, record a letter and leave Review without keeping it; start a typed letter on Write and leave it. Settings > Export everything, then Save to Files and open the ZIP on a computer. (b) Production profile, Plus off, two letters already kept: record a third, tap Keep, choose "Keep it here for now", then export as in (a). (c) Airplane mode on, export again.
