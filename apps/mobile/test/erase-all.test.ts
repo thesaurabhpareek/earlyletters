@@ -647,3 +647,100 @@ describe("the screens' rules (components/settings/wipe.logic.ts, components/book
     expect(line).toBe('Deleted October 3. Kept here until November 2.');
   });
 });
+
+describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confirm, the Erasing screen (Review B on #520; CTO ruling 8 Nov)', () => {
+  const e = en.settings.erase;
+  const screen = () => readFileSync(join(__dirname, '..', 'src/app/settings/erase.tsx'), 'utf8');
+
+  it('says the content.md 4.11 strings word for word', () => {
+    expect(e.title).toBe('Erase everything on this phone');
+    expect(e.body).toBe('This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.');
+    expect(e.exportFirst).toBe('Save a copy first?');
+    expect(e.exportButton).toBe('Export your book');
+    expect(e.button).toBe('Erase everything');
+    expect(e.confirmTitle).toBe('Erase everything on this phone?');
+    expect(e.confirmBody).toBe('This cannot be undone.');
+    expect(e.confirmButton).toBe('Erase');
+    expect(e.busy).toBe('Erasing');
+    expect(e.doneA11y).toBe('Everything on this phone is erased.');
+    expect(e.failed).toBe('Erasing did not finish. Try again.');
+  });
+
+  it('the confirm: Keep everything first as cancel, Erase second and destructive; the screen shows it with a warning haptic, and no typed word', async () => {
+    const { eraseConfirmDialog } = await import('../src/components/settings/wipe.logic');
+    const onErase = vi.fn();
+    const d = eraseConfirmDialog(e, onErase);
+    expect(d.title).toBe(e.confirmTitle);
+    expect(d.body).toBe(e.confirmBody);
+    expect(d.buttons.map((b) => [b.text, b.style])).toEqual([
+      [e.back, 'cancel'],
+      [e.confirmButton, 'destructive'],
+    ]);
+    d.buttons[1].onPress?.();
+    expect(onErase).toHaveBeenCalledTimes(1);
+    const s = screen();
+    expect(s).toMatch(/Alert\.alert\(d\.title, d\.body, d\.buttons\)/);
+    expect(s.indexOf("haptic('warning')")).toBeGreaterThan(0);
+    expect(s.indexOf("haptic('warning')")).toBeLessThan(s.indexOf('Alert.alert('));
+    expect(s).not.toMatch(/typedWordMatches|typeWord|TextField/);
+    // Step 1's button opens the confirm and starts nothing by itself.
+    expect(s).toMatch(/label=\{e\.button\} onPress=\{askToErase\}/);
+  });
+
+  it('cancel does nothing: no action, so nothing is erased and the page stays as it was', async () => {
+    const { eraseConfirmDialog } = await import('../src/components/settings/wipe.logic');
+    const onErase = vi.fn();
+    const [cancel] = eraseConfirmDialog(e, onErase).buttons;
+    expect(cancel.onPress).toBeUndefined();
+    expect(onErase).not.toHaveBeenCalled();
+  });
+
+  it('after Erase the Erasing screen comes first, before the erase runs, and stays; the done line is announced', async () => {
+    const { runEraseEverything } = await import('../src/components/settings/wipe.logic');
+    const log: string[] = [];
+    const r = await runEraseEverything({
+      erase: async () => {
+        log.push('erase');
+        return 'erased';
+      },
+      setPhase: (p) => log.push(`phase:${p}`),
+      setFailed: (f) => log.push(`failed:${f}`),
+      announceDone: () => log.push('announce'),
+    });
+    expect(r).toBe('erased');
+    expect(log).toEqual(['failed:null', 'phase:erasing', 'erase', 'announce']);
+    const s = screen();
+    // The Erasing screen: StateScreen loading with "Erasing", no actions, no back button, no swipe, Android back held.
+    expect(s).toMatch(/<StateScreen kind="loading" title=\{e\.busy\} \/>/);
+    expect(s).toMatch(/headerBackVisible: !erasing, gestureEnabled: !erasing/);
+    expect(s).toMatch(/hardwareBackPress', \(\) => erasingRef\.current/);
+    expect(s).toMatch(/announceForAccessibility\(e\.doneA11y\)/);
+  });
+
+  it('a failed or refused erase leaves the Erasing screen for the page with one line, and announces nothing', async () => {
+    const { runEraseEverything } = await import('../src/components/settings/wipe.logic');
+    for (const [outcome, line] of [
+      ['incomplete', 'failed'],
+      ['signed_in', 'signed_in'],
+    ] as const) {
+      const log: string[] = [];
+      await runEraseEverything({
+        erase: async () => outcome,
+        setPhase: (p) => log.push(`phase:${p}`),
+        setFailed: (f) => log.push(`failed:${f}`),
+        announceDone: () => log.push('announce'),
+      });
+      expect(log).toEqual(['failed:null', 'phase:erasing', 'phase:review', `failed:${line}`]);
+    }
+    const log: string[] = [];
+    await runEraseEverything({
+      erase: async () => {
+        throw new Error('disk');
+      },
+      setPhase: (p) => log.push(`phase:${p}`),
+      setFailed: (f) => log.push(`failed:${f}`),
+      announceDone: () => log.push('announce'),
+    });
+    expect(log).toEqual(['failed:null', 'phase:erasing', 'phase:review', 'failed:failed']);
+  });
+});

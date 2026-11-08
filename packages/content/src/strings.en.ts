@@ -858,9 +858,11 @@ export const en = {
     // proven by apps/mobile/test/erase-all.test.ts (rows and files gone, no request sent, the free count reset).
     erase: {
       rowLabel: "Erase everything on this phone",
-      title: "Erase everything",
+      // Final strings: proposals/account-security/content.md 4.11 (design 2.12), word for word: title, body, exportFirst,
+      // exportButton, button, confirmTitle, confirmBody, confirmButton, busy, doneA11y, failed.
+      title: "Erase everything on this phone",
       heading: "What is erased",
-      body: "Every book, letter and recording on this phone, and every setting. The app starts again from the beginning.",
+      body: "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.",
       // D-083: the free count starts again, because the person asked for deletion.
       freeLetters: "Your free letters start again.",
       // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
@@ -868,14 +870,22 @@ export const en = {
       onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
       // Privacy Review A on #520: the same fact the deletion page states (pages.en.ts, "What stays").
       backups: "Backups of this phone you already made, such as iCloud Backup, are not changed.",
-      confirmHeading: "Erase everything on this phone?",
-      confirmBody: "Nothing goes to Recently deleted, so this cannot be undone.",
-      typeLabel: "Type delete to confirm",
-      typeWord: "delete",
-      confirmButton: "Erase everything",
+      exportFirst: "Save a copy first?",
+      exportButton: "Export your book",
+      // Step 1's button: destructive, not the large button. It opens the confirm.
+      button: "Erase everything",
+      confirmTitle: "Erase everything on this phone?",
+      confirmBody: "This cannot be undone.",
+      // Second in the confirm, never the default.
+      confirmButton: "Erase",
+      // The confirm's way back (first, the cancel button).
       back: "Keep everything",
+      // The Erasing screen (StateScreen loading), with no way out until the erase ends. Titles take no full stop.
+      busy: "Erasing",
+      // Announced as the app returns to the start.
+      doneA11y: "Everything on this phone is erased.",
       // A file would not go: the rows stay, and the next launch finishes (lib/erase-everything.ts).
-      incomplete: "Not everything was erased yet. Try again. The app also finishes the next time it opens.",
+      failed: "Erasing did not finish. Try again.",
       // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
       signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
