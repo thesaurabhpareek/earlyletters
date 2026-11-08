@@ -37,9 +37,15 @@ function hapticsInTake(c: string): string[] {
     const fn = /^\n {2}const (\w+) = /.exec(before.slice(before.lastIndexOf('\n  const ')))?.[1] ?? '?';
     const f = body(c, fn);
     const i = f.indexOf(m[0]);
-    if (fn === 'start' && i >= 0 && i < f.indexOf("await setAudioMode('recording')")) continue; // before the session
-    if (fn === 'endTake' && i > f.indexOf('await finalizeTake(')) continue; // after it ends
-    if (fn === 'discard' && i > f.indexOf('await abandonTake(') && i > f.indexOf("await setAudioMode('idle')")) continue; // after it stops
+    // Each anchor must be found: a missing one is a failure, never a pass (indexOf -1 would make "after" vacuous).
+    const found = (anchor: string) => {
+      const k = f.indexOf(anchor);
+      if (k < 0) bad.push(`no ${anchor} in ${fn}`);
+      return k;
+    };
+    if (fn === 'start' && i < found("setAudioMode('recording')")) continue; // before the session
+    if (fn === 'endTake' && i > found('finalizeTake(')) continue; // after it ends (await finalizeTake, or inside finishWithin)
+    if (fn === 'discard' && i > found('abandonTake(') && i > found("setAudioMode('idle')")) continue; // after it stops
     bad.push(`${m[0]} in ${fn}`);
   }
   return bad;
@@ -86,6 +92,16 @@ describe('one start tick, not two', () => {
   it('stop plays one tick, after the session ends', () => {
     const end = body(listen, 'endTake');
     expect(end.match(/haptic\(/g)).toHaveLength(1);
-    expect(end.indexOf("haptic('press')")).toBeGreaterThan(end.indexOf('await finalizeTake('));
+    const stop = end.indexOf('finalizeTake(');
+    expect(stop).toBeGreaterThanOrEqual(0);
+    expect(end.indexOf("haptic('press')")).toBeGreaterThan(stop);
+  });
+
+  it('a missing anchor fails the check rather than passing it', () => {
+    const renamed = listen.replace(/finalizeTake\(recorder, id, reason/, 'saveTake(recorder, id, reason');
+    expect(hapticsInTake(renamed)).toContain('no finalizeTake( in endTake');
+    const early = listen.replace('  const endTake = async (reason: StopReason) => {\n', "  const endTake = async (reason: StopReason) => {\n    haptic('press');\n");
+    expect(early).not.toBe(listen);
+    expect(hapticsInTake(early)).toContain("haptic('press') in endTake");
   });
 });
