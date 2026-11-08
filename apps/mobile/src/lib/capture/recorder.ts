@@ -27,6 +27,7 @@ import {
   type Draft,
   type DraftState,
 } from '../store';
+import { noteLiveTake } from './busy';
 import { RECORDING_CONTAINERS, voiceRecordingOptions } from './recording-format';
 
 /**
@@ -62,6 +63,12 @@ export type StopReason = 'user' | 'background' | 'interruption' | 'dismiss';
 
 let activeTake: string | null = null;
 const finalizing = new Map<string, Promise<Draft | null>>();
+
+/** Every change goes through here, so capture/busy.ts (the transcription queue's pause, BL-572) always knows. */
+function setActiveTake(id: string | null): void {
+  activeTake = id;
+  noteLiveTake(id);
+}
 
 /** The draft a live recording session owns (the launch sweep never touches it). */
 export function activeTakeId(): string | null {
@@ -106,7 +113,7 @@ export async function hashAudioFile(uri: string | null | undefined): Promise<{ s
 export async function beginTake(recorder: AudioRecorder, input: { childId: string; promptKey: string | null }): Promise<Draft> {
   await recorder.prepareToRecordAsync();
   const draft = createRecordingDraft({ childId: input.childId, promptKey: input.promptKey, audioUri: recorder.uri ?? null });
-  activeTake = draft.id;
+  setActiveTake(draft.id);
   try {
     recorder.record();
   } catch (e) {
@@ -153,14 +160,14 @@ export function finalizeTake(recorder: AudioRecorder | null, draftId: string, re
   })();
   finalizing.set(draftId, job);
   job.finally(() => {
-    if (activeTake === draftId) activeTake = null;
+    if (activeTake === draftId) setActiveTake(null);
   });
   return job;
 }
 
 /** Ends a session that the parent discarded (the file is deleted by the caller after confirmation). */
 export async function abandonTake(recorder: AudioRecorder, draftId: string): Promise<void> {
-  if (activeTake === draftId) activeTake = null;
+  if (activeTake === draftId) setActiveTake(null);
   finalizing.set(draftId, Promise.resolve(null));
   await recorder.stop().catch(() => {});
   await setAudioMode('idle').catch(() => {});
