@@ -92,7 +92,7 @@ function makeResolver(): (t: string) => Kind {
       if ((n >= 1 && n <= 12) || (n >= 18 && n <= 21)) return new RegExp(`\\b${t} = `).test(s2Map) ? 'id' : null;
       return device.includes(`### ${t} `) ? 'id' : null;
     }
-    if (/^(S1|TF|DL)-\d{2}$/.test(t) || t === 'B1-01') return device.includes(`### ${t} `) ? 'id' : null;
+    if (/^(S1|TF|DL)-\d{2,3}$/.test(t) || t === 'B1-01') return device.includes(`### ${t} `) ? 'id' : null;
     if (/^V-\d{2}$/.test(t)) return device.includes(`**${t} `) ? 'id' : null;
     if (/^P-\d{2}$/.test(t)) return device.includes(`| ${t} |`) ? 'id' : null;
     if (/^B[12]-\d{1,2}$/.test(t)) return alpha.includes(`| ${t} |`) ? 'id' : null;
