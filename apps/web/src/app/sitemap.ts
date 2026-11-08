@@ -11,7 +11,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: siteOrigin },
     ...legalSlugs.map((slug) => {
       const page = legalPage(slug);
-      return { url: `${siteOrigin}${page.href}`, lastModified: page.lastUpdated };
+      return { url: `${siteOrigin}${page.href}`, lastModified: page.published };
     }),
   ];
 }

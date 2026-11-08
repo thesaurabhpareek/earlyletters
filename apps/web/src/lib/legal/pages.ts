@@ -1,54 +1,46 @@
 /**
- * Owner: E1 (web platform). The legal pages the site publishes: /privacy and /terms, short pages written in this
- * folder (privacy-copy.ts, terms-copy.ts). Nothing is read from docs/legal: those are the drafts for the app.
+ * Owner: E1 (web platform). The legal pages the site publishes. The words are the versioned texts in content/legal
+ * (documents.ts): /terms and /privacy show the current version, /legal/<doc>/<version> is its permanent page and
+ * /legal/<doc>/<version>.md the raw file. Nothing is written in code any more.
  */
-import { legalCopy } from './legal-copy';
-import { privacyCopy } from './privacy-copy';
-import { publisher } from './publisher';
-import { termsCopy } from './terms-copy';
-import type { InlineLink, LegalPageCopy, Publisher } from './types';
+import { currentVersion, readLegalSource, renderLegalHtml, type LegalDoc } from './documents';
 
-export const legalSlugs = ['privacy', 'terms'] as const;
+export const legalSlugs = ['privacy', 'terms'] as const satisfies readonly LegalDoc[];
 export type LegalSlug = (typeof legalSlugs)[number];
 
-const build: Record<LegalSlug, (publisher: Publisher) => LegalPageCopy> = { privacy: privacyCopy, terms: termsCopy };
-
-export interface LegalPage extends LegalPageCopy {
+export interface LegalPage {
   slug: LegalSlug;
+  version: string;
+  /** The floating address, which always shows the current version. */
   href: `/${LegalSlug}`;
-  /** Text that becomes a link wherever it appears in a paragraph. */
-  links: InlineLink[];
+  /** The permanent address of this version's page, and of its raw file. */
+  versionHref: string;
+  rawHref: string;
+  metaTitle: string;
+  metaDescription: string;
+  /** The body as HTML (frontmatter removed). It starts with the h1 and the line "Version 0.9.0, a test version." */
+  html: string;
+  /** The date of the version's own changelog row, ISO (YYYY-MM-DD). */
+  published: string;
 }
 
-export function legalPage(slug: LegalSlug, env: Readonly<Record<string, string | undefined>> = process.env): LegalPage {
-  const links: InlineLink[] = [{ text: legalCopy.contact, href: `mailto:${legalCopy.contact}` }];
-  if (slug === 'terms') links.push({ text: 'Privacy Policy', href: '/privacy' });
-  return { ...build[slug](publisher(env)), slug, href: `/${slug}`, links };
+export function legalVersionHref(slug: LegalSlug, version: string): string {
+  return `/legal/${slug}/${version}`;
 }
 
-/** "2026-10-15" as "October 15, 2026", the same on every machine. */
-export function formatDate(iso: string): string {
-  const [year, month, day] = iso.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString('en-US', { timeZone: 'UTC', year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-/** Splits a paragraph around the texts that become links, in reading order. */
-export function splitLinks(text: string, links: readonly InlineLink[]): (string | InlineLink)[] {
-  const parts: (string | InlineLink)[] = [];
-  let rest = text;
-  while (rest) {
-    let next: { at: number; link: InlineLink } | undefined;
-    for (const link of links) {
-      const at = rest.indexOf(link.text);
-      if (at >= 0 && (!next || at < next.at)) next = { at, link };
-    }
-    if (!next) {
-      parts.push(rest);
-      break;
-    }
-    if (next.at > 0) parts.push(rest.slice(0, next.at));
-    parts.push(next.link);
-    rest = rest.slice(next.at + next.link.text.length);
-  }
-  return parts;
+export function legalPage(slug: LegalSlug, version: string = currentVersion): LegalPage {
+  const { meta, body } = readLegalSource(slug, version);
+  const row = new RegExp(`^\\| ${version.replaceAll('.', '\\.')} \\| (\\d{4}-\\d{2}-\\d{2}) \\|`, 'm').exec(body);
+  if (!row) throw new Error(`${slug} ${version}: the changelog has no row for this version.`);
+  return {
+    slug,
+    version,
+    href: `/${slug}`,
+    versionHref: legalVersionHref(slug, version),
+    rawHref: `${legalVersionHref(slug, version)}.md`,
+    metaTitle: meta.title,
+    metaDescription: `${meta.title}, version ${version}. For family testers of the TestFlight builds.`,
+    html: renderLegalHtml(body),
+    published: row[1],
+  };
 }

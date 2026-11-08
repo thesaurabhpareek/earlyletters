@@ -25,7 +25,7 @@ test.describe('robots.txt and sitemap.xml', () => {
     expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe|\/health-privacy|\/subprocessors|\/delete-account/);
     // Only url and lastmod; no changefreq or priority hints.
     expect(xml).not.toMatch(/<changefreq>|<priority>/);
-    for (const slug of legalSlugs) expect(xml).toContain(`<lastmod>${legalPage(slug, {}).lastUpdated}`);
+    for (const slug of legalSlugs) expect(xml).toContain(`<lastmod>${legalPage(slug).published}`);
   });
 
   test('every address in the sitemap exists on this site and may be indexed', async ({ request }) => {

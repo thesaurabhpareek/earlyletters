@@ -1,68 +1,94 @@
-/** /privacy and /terms (short pages, words in src/lib/legal/*-copy.ts), the routes taken off for now, the 404 page and the closed lab. */
+/** /privacy and /terms (the 0.9.0 texts, content/legal), their permanent pages and raw files, the routes taken off for now, the 404 page and the closed lab. */
+import { createHash } from 'node:crypto';
+import { brand } from '@scribe/brand';
 import { site } from '../src/content/site';
+import { readLegalSource } from '../src/lib/legal/documents';
 import { legalCopy } from '../src/lib/legal/legal-copy';
-import { formatDate, legalPage, legalSlugs } from '../src/lib/legal/pages';
+import { legalPage, legalSlugs } from '../src/lib/legal/pages';
 import { siteCopy } from '../src/lib/legal/site-copy';
 import { expect, test } from './support/fixtures';
-import { DRAFT_MARKS, INTERNAL_MARKS, NOT_USED_SERVICES, REMOVED_ROUTES } from './support/legal';
+import { DRAFT_MARKS, INTERNAL_MARKS, PUBLISHED_SHA256, REMOVED_ROUTES } from './support/legal';
 
 test.describe('legal pages', () => {
-  for (const slug of legalSlugs) {
-    // As the suite builds the site: PUBLISHER_LEGAL_NAME is not set, so the pages say "run by its founder".
-    const doc = legalPage(slug, {});
+  // The floating address and the permanent address of the 0.9.0 text show the same words (BL-565).
+  const addresses = (slug: (typeof legalSlugs)[number]) => [`/${slug}`, `/legal/${slug}/0.9.0`];
 
-    test(`/${slug}: one h1, the date, every section, a way home, the three footer links, indexable`, async ({ page }) => {
-      const response = await page.goto(`/${slug}`);
-      expect(response?.status()).toBe(200);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText(doc.title);
-      await expect(page).toHaveTitle(doc.metaTitle);
-      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://earlyletters.com/${slug}`);
-      await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', doc.metaDescription);
-      await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
-      await expect(page.getByText(`${legalCopy.lastUpdated} ${formatDate(doc.lastUpdated)}`)).toBeVisible();
-      await expect(page.locator('main time')).toHaveAttribute('datetime', doc.lastUpdated);
-      for (const section of doc.sections) await expect(page.getByRole('heading', { level: 2, name: section.heading })).toBeVisible();
-      await expect(page.getByText(`is run by ${legalCopy.publisherFallback.subject} as an individual, not a company.`)).toBeVisible();
-      await expect(page.getByText(`"we" and "us" mean ${legalCopy.publisherFallback.reference}.`)).toBeVisible();
-      await expect(page.locator('main').getByRole('link', { name: site.footer.contact }).first()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
-      await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
-      // The footer: Privacy, Terms, Contact. Nothing else.
-      const footer = page.getByRole('navigation', { name: 'Legal' });
-      await expect(footer.getByRole('link')).toHaveCount(site.footer.links.length);
-      for (const link of site.footer.links) await expect(footer.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
+  for (const slug of legalSlugs) {
+    const doc = legalPage(slug);
+
+    for (const path of addresses(slug)) {
+      test(`${path}: one h1, "Version 0.9.0, a test version." under it, every section, a way home, the three footer links, indexable`, async ({ page }) => {
+        const response = await page.goto(path);
+        expect(response?.status()).toBe(200);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText(`${brand.name} ${slug === 'terms' ? 'Terms of Service' : 'Privacy Policy'}`);
+        await expect(page.locator('main article > h1 + p')).toHaveText('Version 0.9.0, a test version.');
+        await expect(page).toHaveTitle(doc.metaTitle);
+        await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+        await expect(page.locator('link[rel="canonical"]')).toHaveAttribute('href', `https://earlyletters.com${path}`);
+        await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+        // Every "## " heading of the text, in order.
+        const headings = [...readLegalSource(slug).body.matchAll(/^## (.+)$/gm)].map((m) => m[1]);
+        expect(headings.length).toBeGreaterThan(10);
+        await expect(page.locator('main h2')).toHaveText(headings);
+        await expect(page.getByText('Early Letters is run by its founder, an individual based in California')).toBeVisible();
+        await expect(page.locator('main').getByRole('link', { name: site.footer.contact }).first()).toHaveAttribute('href', `mailto:${site.footer.contact}`);
+        await expect(page.getByRole('link', { name: legalCopy.backHome })).toHaveAttribute('href', '/');
+        // The footer: Privacy, Terms, Contact. Nothing else.
+        const footer = page.getByRole('navigation', { name: 'Legal' });
+        await expect(footer.getByRole('link')).toHaveCount(site.footer.links.length);
+        for (const link of site.footer.links) await expect(footer.getByRole('link', { name: link.label })).toHaveAttribute('href', link.href);
+      });
+
+      test(`${path} shows no counsel mark, no internal reference and no bracketed blank`, async ({ page, request }) => {
+        // The draft marks are checked in everything the server sends; the internal marks in what a visitor reads.
+        const html = await (await request.get(path)).text();
+        await page.goto(path);
+        const text = await page.locator('main').innerText();
+        for (const mark of DRAFT_MARKS) {
+          expect(html, `${mark.name} in the HTML the server sends for ${path}`).not.toMatch(mark.pattern);
+          expect(text, `${mark.name} in what a visitor reads on ${path}`).not.toMatch(mark.pattern);
+        }
+        for (const mark of INTERNAL_MARKS) expect(text, `${mark} on ${path}`).not.toMatch(mark);
+        expect(text, `a bracketed placeholder on ${path}`).not.toMatch(/[[\]{}]/);
+      });
+    }
+
+    test(`/${slug} and /legal/${slug}/0.9.0 read the same, word for word`, async ({ page }) => {
+      await page.goto(`/${slug}`);
+      const floating = await page.locator('main').innerText();
+      await page.goto(`/legal/${slug}/0.9.0`);
+      expect(await page.locator('main').innerText()).toBe(floating);
     });
 
-    test(`/${slug} shows no counsel mark, no internal reference and no service the site does not use`, async ({ page, request }) => {
-      // The draft marks are checked in everything the server sends; the words in what a visitor reads.
-      const html = await (await request.get(`/${slug}`)).text();
-      await page.goto(`/${slug}`);
-      const text = await page.locator('main').innerText();
-      for (const mark of DRAFT_MARKS) {
-        expect(html, `${mark.name} in the HTML the server sends for /${slug}`).not.toMatch(mark.pattern);
-        expect(text, `${mark.name} in what a visitor reads on /${slug}`).not.toMatch(mark.pattern);
-      }
-      for (const mark of INTERNAL_MARKS) expect(text, `${mark} on /${slug}`).not.toMatch(mark);
-      expect(text, `a service the website does not use, named on /${slug}`).not.toMatch(NOT_USED_SERVICES);
-      // No placeholder of any kind ever renders: nothing in square or curly brackets.
-      expect(text, `a bracketed placeholder on /${slug}`).not.toMatch(/[[\]{}]/);
+    test(`/legal/${slug}/0.9.0.md serves the raw file: text/markdown, utf-8, the published sha256`, async ({ request }) => {
+      const res = await request.get(`/legal/${slug}/0.9.0.md`);
+      expect(res.status()).toBe(200);
+      expect(res.headers()['content-type']).toBe('text/markdown; charset=utf-8');
+      const bytes = await res.body();
+      expect(createHash('sha256').update(bytes).digest('hex')).toBe(PUBLISHED_SHA256[slug]);
+      expect(bytes.toString('utf8').startsWith('---\n')).toBe(true);
+      expect(bytes.includes(13), 'no carriage return').toBe(false);
     });
   }
 
-  test('/privacy reads in under three minutes and names exactly the services the site uses', async ({ page }) => {
+  test('/privacy names the providers in its table, and the website itself uses only Vercel and Resend', async ({ page }) => {
     await page.goto('/privacy');
-    const text = await page.locator('main').innerText();
-    expect(text.split(/\s+/).filter(Boolean).length, 'words (200 a minute)').toBeLessThan(600);
-    const helps = page.locator('h2#who-we-share-it-with + p + ul li');
-    await expect(helps).toHaveText(['Vercel hosts the website.', 'Resend stores the list and handles our email.']);
+    const rows = page.locator('main table').first().locator('tbody tr td:first-child');
+    await expect(rows).toHaveText(['Supabase', 'GitHub', 'Cloudflare R2', 'Resend', 'Vercel']);
   });
 
-  test('/terms links to /privacy, and the link lands', async ({ page }) => {
+  test('/terms links to the 0.9.0 Privacy Policy, and the link lands', async ({ page }) => {
     await page.goto('/terms');
-    await page.locator('main').getByRole('link', { name: 'Privacy Policy' }).click();
-    await expect(page).toHaveURL(/\/privacy$/);
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText(legalPage('privacy', {}).title);
+    await page.locator('main').getByRole('link', { name: 'https://earlyletters.com/legal/privacy/0.9.0' }).click();
+    await expect(page).toHaveURL(/\/legal\/privacy\/0\.9\.0$/);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText(`${brand.name} Privacy Policy`);
+  });
+
+  test('the permanent address of a version that does not exist answers 404', async ({ request }) => {
+    for (const path of ['/legal/terms/0.9.1', '/legal/terms/0.9.1.md', '/legal/other/0.9.0', '/legal/other/0.9.0.md', '/legal/terms']) {
+      expect((await request.get(path)).status(), path).toBe(404);
+    }
   });
 });
 

@@ -1,8 +1,8 @@
 /**
- * /privacy and /terms: short pages that say only what is true today. Owner: E1 (web platform).
- * The words are checked here (length, sections, no internal references, no service the code does not use); the claims
- * the code can prove are checked against the code itself, so a change that makes a sentence untrue fails here first.
- * Characters and voice are checked by copy-rules.test.ts, which reads the same copy files.
+ * /terms and /privacy, and the permanent pages /legal/<doc>/0.9.0: the 0.9.0 texts (BL-565), nothing written in code.
+ * The words are checked where they live (content/legal/<doc>/0.9.0.md, test/legal-served.test.ts pins their bytes); here the
+ * claims the code can prove are checked against the code itself, so a change that makes a sentence untrue fails here first.
+ * Characters and voice are checked by copy-rules.test.ts for the copy files; this file checks the texts' characters too.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -11,185 +11,108 @@ import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
 import { site } from '../src/content/site';
 import { analyticsEnabled } from '../src/lib/analytics';
-import { legalCopy } from '../src/lib/legal/legal-copy';
-import { formatDate, legalPage, legalSlugs, splitLinks } from '../src/lib/legal/pages';
-import { serviceProviders } from '../src/lib/legal/privacy-copy';
-import { resolvePublisher } from '../src/lib/legal/publisher';
-import type { LegalBlock, LegalPageCopy } from '../src/lib/legal/types';
+import { currentVersion, legalDocs, readLegalSource, renderLegalHtml, splitFrontmatter } from '../src/lib/legal/documents';
+import { siteOrigin } from '../src/lib/legal/origin';
+import { legalPage, legalSlugs } from '../src/lib/legal/pages';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
 const read = (path: string) => readFileSync(join(WEB, path), 'utf8');
 
-const blockText = (block: LegalBlock) => (typeof block === 'string' ? block : block.list.join('\n'));
-/** Everything a visitor reads on the page, in order. */
-function pageText(page: LegalPageCopy): string {
-  return [
-    page.title,
-    `${legalCopy.lastUpdated} ${formatDate(page.lastUpdated)}`,
-    ...page.intro.map(blockText),
-    ...page.sections.flatMap((s) => [s.heading, ...s.blocks.map(blockText)]),
-  ].join('\n');
-}
+const sources = { privacy: readLegalSource('privacy'), terms: readLegalSource('terms') };
+const body = { privacy: sources.privacy.body, terms: sources.terms.body };
+const pages = { privacy: legalPage('privacy'), terms: legalPage('terms') };
 const words = (text: string) => text.split(/\s+/).filter(Boolean).length;
 
-const privacy = legalPage('privacy', {});
-const terms = legalPage('terms', {});
-const pages = [privacy, terms];
-
-describe('length and shape', () => {
-  // RULE: Privacy reads in under three minutes (at 200 words a minute, under 600 words); Terms stays as short.
-  it('Privacy is under 600 words and Terms under 650', () => {
-    expect(words(pageText(privacy))).toBeLessThan(600);
-    expect(words(pageText(terms))).toBeLessThan(650);
-  });
-
-  it('has the sections a reader and the publisher need, in order', () => {
-    expect(privacy.sections.map((s) => s.heading)).toEqual([
-      'Who we are',
-      'What we collect and why',
-      'Cookies and tracking',
-      'Who we share it with',
-      'How long we keep it',
-      'Your choices',
-      'Children',
-      'Changes to this policy',
-      'Contact',
-    ]);
-    expect(privacy.sections.map((s) => s.id)).toEqual([
-      'who-we-are',
-      'what-we-collect',
-      'cookies-and-tracking',
-      'who-we-share-it-with',
-      'how-long',
-      'your-choices',
-      'children',
-      'changes',
-      'contact',
-    ]);
-    expect(terms.sections.map((s) => s.id)).toEqual([
-      'who-we-are',
-      'the-website',
-      'the-email-list',
-      'using-the-website',
-      'our-content',
-      'no-warranty',
-      'liability',
-      'changes',
-      'contact',
-    ]);
-  });
-
-  // RULE: the page carries only a "Last updated" date; git history is the change log.
-  it('carries one date, shown as a reader writes it', () => {
-    for (const page of pages) {
-      expect(page.lastUpdated).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(pageText(page)).not.toMatch(/\bversion \d|effective date|change ?log/i);
-    }
-    expect(formatDate('2026-10-15')).toBe('October 15, 2026');
-  });
-});
-
-describe('what the pages promise', () => {
-  const text = { privacy: pageText(privacy), terms: pageText(terms) };
-
-  it('Privacy covers who, what and why, how long, how to leave or be deleted, and where to write', () => {
-    for (const phrase of [
-      'Your email address, if you join the list',
-      'a welcome email when you join and one email when the app is ready',
-      'Your email address and message, if you write to us.',
-      'When you join or leave the list, we hold your IP address in memory for up to 10 minutes to block automated requests. We do not save it.',
-      'We do not use cookies.',
-      'If you press the sound button, your browser remembers whether sound is on. It stays in your browser and is never sent to us.',
-      'We do not track you, so a Do Not Track signal changes nothing here.',
-      'We do not sell or rent your email address, or share it for advertising. We do not share your information with anyone else unless the law requires it.',
-      'until you ask us to delete it',
-      'unsubscribe link',
-      'To have your address deleted',
-      'for adults',
-      'It will have its own privacy policy when it launches.',
-      `Questions about this policy: ${site.footer.contact}.`,
-    ]) {
-      expect(text.privacy, phrase).toContain(phrase);
+describe('the texts', () => {
+  it('there are two documents at version 0.9.0, and the floating pages show that version', () => {
+    expect([...legalDocs].sort()).toEqual(['privacy', 'terms']);
+    expect([...legalSlugs].sort()).toEqual(['privacy', 'terms']);
+    expect(currentVersion).toBe('0.9.0');
+    for (const slug of legalSlugs) {
+      expect(sources[slug].meta.document).toBe(slug);
+      expect(sources[slug].meta.version).toBe('0.9.0');
+      expect(sources[slug].meta.url).toBe(`${siteOrigin}/legal/${slug}/0.9.0`);
+      expect(pages[slug].versionHref).toBe(`/legal/${slug}/0.9.0`);
+      expect(pages[slug].rawHref).toBe(`/legal/${slug}/0.9.0.md`);
     }
   });
 
-  it('Terms covers the website, the list, no warranty, a liability limit with its carve-outs, and the app terms to come', () => {
-    for (const phrase of [
-      'nothing on the website is an offer',
-      'Joining the list is free.',
-      'as they are and as available',
-      'we give no warranties',
-      'limited to 50 US dollars',
-      'Nothing in these terms limits our liability for fraud, gross negligence or willful misconduct, or for anything else the law does not allow us to limit.',
-      'It will have its own terms when it launches',
-      `Questions about these terms: ${site.footer.contact}.`,
-    ]) {
-      expect(text.terms, phrase).toContain(phrase);
+  // RULE (BL-565, step 4): the page a tester opens from the app (/terms, /privacy) is the 0.9.0 text, the same as its permanent page.
+  it('[BL-565] /terms and /privacy render the same 0.9.0 text as /legal/<doc>/0.9.0', () => {
+    for (const slug of legalSlugs) {
+      expect(legalPage(slug).html).toBe(legalPage(slug, '0.9.0').html);
+      expect(legalPage(slug).html).toBe(renderLegalHtml(body[slug]));
+      expect(pages[slug].href).toBe(`/${slug}`);
     }
   });
 
-  // RULE (brand review of 16 Oct 2026): plain words, no padding, the list is "the email list", one contact address per spot.
-  it('says it plainly: no padding, no internal name for the list, no repeated contact under Who we are', () => {
-    for (const [name, value] of Object.entries(text)) {
-      expect(value, name).not.toMatch(/launch-notice|one short|Like every website|our code also|Even our fonts|never writes your email|that person|Who runs this/);
-    }
-    expect(text.terms).not.toMatch(/those terms will cover the app|It describes what we plan to build|for an app that is not out yet/);
-    const whoWeAre = privacy.sections.find((s) => s.id === 'who-we-are')!;
-    expect(whoWeAre.blocks.map(blockText).join(' ')).not.toContain(site.footer.contact);
-  });
-
-  // RULE: no governing-law clause until the founder says which state; none may name a state meanwhile.
-  it('Terms names no state and has no governing-law section yet', () => {
-    expect(terms.sections.some((s) => /governing/i.test(s.id + s.heading))).toBe(false);
-    expect(text.terms).not.toMatch(/California|governed by|laws of the State/i);
-  });
-
-  // RULE: no internal decision ids, ADR numbers, backlog ids, counsel notes, TODOs or drafting reasoning in published text.
-  it('has no internal references, counsel notes, placeholders in braces or drafting words', () => {
-    const internal = [/\bD-\d{2,3}\b/, /\bADR\b/i, /\bBL-\d+/, /\b[A-Z]+-REQ-\d+/, /\b(CN|HN)-\d/, /counsel/i, /\bTODO\b/, /\bdraft/i, /appendix/i, /\{[A-Za-z_]+\}/, /\bunverified\b/i];
-    for (const [name, value] of Object.entries(text)) {
-      for (const pattern of internal) expect(value, `${name}: ${pattern}`).not.toMatch(pattern);
+  // RULE (BL-565, step 3): the frontmatter is not shown, and "Version 0.9.0, a test version." is the first line under the title.
+  it('[BL-565] the page has the title, then the line "Version 0.9.0, a test version.", and no frontmatter', () => {
+    for (const slug of legalSlugs) {
+      const { html } = pages[slug];
+      expect(html).toMatch(/^<h1[^>]*>[^<]+<\/h1>\n<p>Version 0\.9\.0, a test version\.<\/p>/);
+      expect(html.match(/<h1\b/g)).toHaveLength(1);
+      for (const key of ['status:', 'review:', 'source:', 'draft-for-counsel', 'document: ']) expect(html, `${slug}: ${key}`).not.toContain(key);
+      expect(body[slug].startsWith('# ')).toBe(true);
+      expect(splitFrontmatter(sources[slug].raw.toString('utf8')).body).toBe(body[slug]);
     }
   });
 
-  // RULE: name no service the code does not use.
-  it('names exactly the two services the code uses, and no other', () => {
-    expect(serviceProviders.map((p) => p.name)).toEqual(['Vercel', 'Resend']);
-    const helps = privacy.sections.find((s) => s.id === 'who-we-share-it-with')!;
-    expect(helps.blocks.find((b) => typeof b !== 'string')).toEqual({ list: ['Vercel hosts the website.', 'Resend stores the list and handles our email.'] });
-    const notUsed = /\b(PostHog|Sentry|RevenueCat|AWS|Amazon|Google|Anthropic|Stripe|Supabase|PowerSync|Groq|DeepInfra|Cloudflare|Apple|Mailchimp|Segment)\b/;
-    for (const [name, value] of Object.entries(text)) expect(value, name).not.toMatch(notUsed);
+  it('keeps tables as tables and turns the contact address and web links into links', () => {
+    expect(pages.privacy.html).toContain('<table>');
+    expect(pages.privacy.html).toContain('<a href="mailto:hello@earlyletters.com">hello@earlyletters.com</a>');
+    // A link to our own address stays on the origin that serves it; the text shows the full address.
+    expect(pages.terms.html).toContain('<a href="/legal/privacy/0.9.0">https://earlyletters.com/legal/privacy/0.9.0</a>');
+    for (const slug of legalSlugs) expect(pages[slug].html, 'raw HTML and scripts never pass').not.toMatch(/<script|onerror=|javascript:/i);
+  });
+
+  it('[BL-565] each page is a permanent page of its own version, dated by the version\'s changelog row', () => {
+    for (const slug of legalSlugs) {
+      expect(pages[slug].published).toBe('2026-11-08');
+      expect(body[slug]).toMatch(/\| 0\.9\.0 \| 2026-11-08 \| First published version/);
+    }
+  });
+
+  // RULE: content rules (CLAUDE.md): ASCII only, so no dashes, curly quotes, ellipsis characters or emoji.
+  it('is plain ASCII, with Unix line endings and one final newline', () => {
+    for (const slug of legalSlugs) {
+      const text = sources[slug].raw.toString('utf8');
+      expect(text, slug).toMatch(/^[\x0a\x20-\x7e]*$/);
+      expect(text.endsWith('\n') && !text.endsWith('\n\n'), `${slug}: one final newline`).toBe(true);
+    }
+  });
+
+  // RULE: no internal decision ids, ADR numbers, backlog ids, counsel notes, TODOs or placeholders in the published body.
+  it('has no internal references, placeholders or bracketed blanks in what a reader sees', () => {
+    const internal = [/\bD-\d{2,3}\b/, /\bADR\b/, /\bBL-\d+/, /\b[A-Z]+-REQ-\d+/, /\b(CN|HN)-\d/, /\bTODO\b/, /\{[A-Za-z_]+\}/, /\[[A-Z][^\]]*\]/];
+    for (const slug of legalSlugs) for (const pattern of internal) expect(body[slug], `${slug}: ${pattern}`).not.toMatch(pattern);
+  });
+
+  it('reads as a test version: the top says so, and it names no Plus price', () => {
+    for (const slug of legalSlugs) {
+      expect(body[slug]).toContain('test version');
+      expect(body[slug]).toContain('has not had a full legal review');
+      expect(body[slug]).not.toMatch(/\$\d+(\.\d\d)?\s*(\/|a |per )(month|year)/i);
+    }
+    expect(words(body.terms)).toBeGreaterThan(500);
+    expect(words(body.privacy)).toBeGreaterThan(500);
   });
 });
 
 describe('the publisher', () => {
-  // RULE: the legal name never goes in code (D-004); it comes from PUBLISHER_LEGAL_NAME at build. No placeholder ever renders.
-  const noBrackets = (text: string) => expect(text, 'a bracketed placeholder').not.toMatch(/[[\]{}]/);
-
-  it('unset: "run by its founder as an individual, not a company", and "we" means the founder, on both pages', () => {
-    expect(resolvePublisher({})).toEqual({ subject: 'its founder', reference: 'the founder', isFallback: true });
-    expect(pageText(privacy)).toContain('Early Letters is run by its founder as an individual, not a company. In this policy, "we" and "us" mean the founder.');
-    expect(pageText(terms)).toContain('Early Letters is run by its founder as an individual, not a company. In these terms, "we" and "us" mean the founder.');
-    for (const page of pages) noBrackets(pageText(page));
-  });
-
-  it('set: the name from the build, in both places, on both pages', () => {
-    const env = { PUBLISHER_LEGAL_NAME: '  Asha   Example  ' };
-    expect(resolvePublisher(env)).toEqual({ subject: 'Asha Example', reference: 'Asha Example', isFallback: false });
-    expect(pageText(legalPage('privacy', env))).toContain('Early Letters is run by Asha Example as an individual, not a company. In this policy, "we" and "us" mean Asha Example.');
-    expect(pageText(legalPage('terms', env))).toContain('Early Letters is run by Asha Example as an individual, not a company. In these terms, "we" and "us" mean Asha Example.');
-    for (const slug of legalSlugs) {
-      expect(pageText(legalPage(slug, env))).not.toMatch(/its founder|the founder/);
-      noBrackets(pageText(legalPage(slug, env)));
+  // RULE: the legal name never goes in code or in git (D-004). The 0.9.0 text says "its founder" and is served unchanged, so
+  // a build variable cannot change it; naming the publisher is a new version.
+  it('the texts say "its founder", and no build variable can put a name into them', () => {
+    for (const slug of legalSlugs) expect(body[slug]).toContain('Early Letters is run by its founder, an individual based in California');
+    const before = legalPage('terms').html;
+    process.env.PUBLISHER_LEGAL_NAME = 'Asha Example';
+    try {
+      expect(legalPage('terms').html).toBe(before);
+      expect(legalPage('privacy').html).not.toContain('Asha Example');
+    } finally {
+      delete process.env.PUBLISHER_LEGAL_NAME;
     }
-  });
-
-  it('a value that is not a plain name falls back to the founder, never to the value itself', () => {
-    for (const value of ['', '   ', '{PUBLISHER_LEGAL_NAME}', '[Publisher legal name]', '<b>x</b>', 'x'.repeat(121), 'a\u0000b']) {
-      const resolved = resolvePublisher({ PUBLISHER_LEGAL_NAME: value });
-      expect(resolved, JSON.stringify(value)).toEqual({ ...legalCopy.publisherFallback, isFallback: true });
-      for (const slug of legalSlugs) noBrackets(pageText(legalPage(slug, { PUBLISHER_LEGAL_NAME: value })));
-    }
+    expect(sourceFiles().filter((file) => /PUBLISHER_LEGAL_NAME/.test(readFileSync(file, 'utf8')))).toEqual([]);
   });
 });
 
@@ -214,14 +137,8 @@ describe('links', () => {
     ]);
   });
 
-  it('the contact address and, on Terms, the Privacy Policy become links', () => {
-    expect(splitLinks(`Questions: ${site.footer.contact}.`, privacy.links)).toEqual([
-      'Questions: ',
-      { text: site.footer.contact, href: `mailto:${site.footer.contact}` },
-      '.',
-    ]);
-    expect(splitLinks('Our Privacy Policy explains it.', terms.links)).toEqual(['Our ', { text: 'Privacy Policy', href: '/privacy' }, ' explains it.']);
-    expect(legalSlugs.map((slug) => legalPage(slug, {}).href)).toEqual(['/privacy', '/terms']);
+  it('the footer links land on the pages that show the 0.9.0 text', () => {
+    expect(legalSlugs.map((slug) => legalPage(slug).href).sort()).toEqual(site.footer.links.slice(0, 2).map((l) => l.href).sort());
   });
 });
 
@@ -253,9 +170,9 @@ describe('the claims hold in the code', () => {
     expect(read('src/film/sound/ambient-map.ts')).toMatch(/v === 'on' \? true : v === 'off' \? false : null/);
   });
 
-  it('the Privacy page says what the code does: the sound choice is written only when the button is pressed', () => {
-    const sentence = 'If you press the sound button, your browser remembers whether sound is on. It stays in your browser and is never sent to us.';
-    expect(pageText(privacy)).toContain(sentence);
+  it('the Privacy text says what the code does: the sound choice is written only when the button is pressed', () => {
+    const sentence = 'If you press its sound button, your browser remembers whether sound is on; that stays in your browser.';
+    expect(body.privacy).toContain(sentence);
     const src = readFileSync(join(WEB, 'src/film/sound/AmbientSound.tsx'), 'utf8');
     // Writes happen in exactly two places, both inside the button handler; reading on load never writes.
     expect(src.match(/writeChoice\(/g)?.length).toBe(2);
@@ -264,13 +181,40 @@ describe('the claims hold in the code', () => {
     expect(src.slice(0, src.indexOf('onToggle'))).not.toMatch(/writeChoice\(storage\(\)/);
     // Nothing is sent: the stored value never reaches fetch, sendBeacon, a form or a URL.
     expect(src).not.toMatch(/\bfetch\(|sendBeacon|XMLHttpRequest|WebSocket/);
-    // No other page claims the opposite.
-    for (const page of [privacy, terms]) expect(pageText(page)).not.toMatch(/no browser storage|nothing (is )?(stored|kept) in your browser/i);
+    // No part of either text claims the opposite.
+    for (const slug of legalSlugs) expect(body[slug]).not.toMatch(/no browser storage|nothing (is )?(stored|kept) in your browser/i);
+  });
+
+  // RULE (BL-565): the texts describe the email list; every sentence about it is true to the code (apps/web/src/lib/notify).
+  it('the email list: what Privacy says about joining, the emails, unsubscribing and the IP address is what the code does', () => {
+    const privacy = body.privacy;
+    // Joining stores the address as a Resend contact in one segment; nothing else is sent or asked.
+    expect(privacy).toContain('If you join the list on our website to hear when the app is ready, we keep your email address.');
+    expect(read('src/lib/notify/provider.ts')).toMatch(/contacts\.create\(\{ email, segments: \[\{ id: config\.segmentId \}\] \}/);
+    expect(privacy).toContain('Resend | Sends our emails, receives mail sent to our address, and stores our email list');
+    expect(privacy).toContain('Vercel | Hosts our website');
+    // A welcome email at sign-up (sendWelcome) and one more when the app is ready (the welcome email promises it).
+    expect(privacy).toContain('we use your address to send a welcome email and one email when the app is ready');
+    expect(read('src/lib/notify/provider.ts')).toMatch(/export async function sendWelcome/);
+    expect(site.welcomeEmail.intro).toContain('You will hear from us once more, at launch.');
+    // Unsubscribing marks the contact unsubscribed and keeps it; it never removes it.
+    expect(privacy).toContain('If you unsubscribe, we keep the address marked as unsubscribed, only so that we never email you again.');
+    const unsubscribe = read('src/lib/notify/unsubscribe.ts');
+    expect(unsubscribe).toMatch(/unsubscribed: true/);
+    expect(unsubscribe).not.toMatch(/contacts\.remove|\.delete\(/);
+    // Every email has an unsubscribe link and the one-click header.
+    expect(read('src/lib/notify/provider.ts')).toMatch(/List-Unsubscribe-Post/);
+    // Removing an address entirely is by email, as the text says; there is no delete route on the site.
+    expect(privacy).toContain('To have your email address removed from our list, email us from that address.');
+    // The IP address: held in memory for 10 minutes at most when joining or leaving, never saved.
+    expect(privacy).toContain('the website holds your IP address in memory for up to 10 minutes to block automated requests, and does not save it.');
+    // No cookies, no analytics, nothing from other sites.
+    expect(privacy).toContain('The website uses no cookies and no analytics, and loads nothing from other sites.');
   });
 
   // RULE: "We do not use analytics". Turning analytics on means changing the Privacy page first.
   it('analytics is off: not mounted, and off unless NEXT_PUBLIC_ANALYTICS=vercel', () => {
-    expect(read('src/app/layout.tsx'), 'mounting WebAnalytics makes the Privacy page untrue; update it first').not.toMatch(/WebAnalytics|@vercel\/analytics/);
+    expect(read('src/app/layout.tsx'), 'mounting WebAnalytics makes the Privacy text untrue; publish a new version first').not.toMatch(/WebAnalytics|@vercel\/analytics/);
     expect(analyticsEnabled).toBe(false);
   });
 
