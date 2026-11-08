@@ -15,9 +15,11 @@
  * New York keeps 8:30 PM, C-REQ-003). Android (later): exact dates, re-planned
  * on every foreground.
  *
- * Permission is asked only from `enableReminders()`, which runs when the
- * user turns reminders on (Settings, Reminders; or the priming card after the
- * first letter, C-REQ-001). Nothing here ever prompts on its own.
+ * Permission is asked only from `turnOnReminders()`, which runs when the
+ * user turns reminders on (the Settings switch, or the card after the first
+ * letter, C-REQ-001). Nothing here ever prompts on its own. There is no sheet
+ * in front of the iOS alert (CDesO-3): the switch, with its footer lines on
+ * screen first, is the context (CCO-10, LEGAL-REQ-007).
  */
 import { router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
@@ -34,11 +36,18 @@ const STORE_DEBOUNCE_MS = 1200;
 
 export type ReminderPermission = 'granted' | 'denied' | 'undetermined';
 
+/** Whether the last re-plan reached iOS. A failure is kept and shown (Settings, Reminders), never swallowed. */
+export type ScheduleResult = { ok: true } | { ok: false };
+const OK: ScheduleResult = { ok: true };
+const FAILED: ScheduleResult = { ok: false };
+
 let started = false;
 let lastSignature: string | null = null;
 let lastForegroundAt: number | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
-let chain: Promise<void> = Promise.resolve();
+let chain: Promise<ScheduleResult> = Promise.resolve(OK);
+let lastResult: ScheduleResult = OK;
+const resultListeners = new Set<(r: ScheduleResult) => void>();
 
 function deviceTimeZone(): string {
   try {
@@ -56,10 +65,32 @@ function permissionOf(p: Notifications.NotificationPermissionsStatus): ReminderP
 
 /** Current OS permission, without asking. */
 export async function getReminderPermission(): Promise<ReminderPermission> {
+  return (await getReminderPermissionDetail()).permission;
+}
+
+/**
+ * The permission plus whether iOS delivers quietly to Notification Center only: Provisional (or Ephemeral), which
+ * iOS always delivers that way, or Deliver Quietly chosen in iOS Settings (lock screen, banners and sound off, Notification
+ * Center on). Both count as allowed (`permissionOf`); Settings adds a note.
+ */
+export async function getReminderPermissionDetail(): Promise<{ permission: ReminderPermission; quiet: boolean }> {
   try {
-    return permissionOf(await Notifications.getPermissionsAsync());
+    const p = await Notifications.getPermissionsAsync();
+    const permission = permissionOf(p);
+    const ios = p.ios;
+    const provisional = ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL || ios?.status === Notifications.IosAuthorizationStatus.EPHEMERAL;
+    // Deliver Quietly: no lock screen, no banner (alertStyle NONE) and no sound, while Notification Center still shows
+    // them. Anything else (Notification Center off too, or sound on) gets no note, because the note would not be true.
+    // Unverified on a device (DEVICE_TEST_PLAN S1-47 e).
+    const deliverQuietly =
+      !!ios &&
+      ios.allowsDisplayOnLockScreen === false &&
+      ios.alertStyle === Notifications.IosAlertStyle.NONE &&
+      ios.allowsDisplayInNotificationCenter !== false &&
+      ios.allowsSound !== true;
+    return { permission, quiet: permission === 'granted' && (provisional || deliverQuietly) };
   } catch {
-    return 'undetermined';
+    return { permission: 'undetermined', quiet: false };
   }
 }
 
@@ -83,19 +114,29 @@ function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerIn
   return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.fireAt, channelId: ANDROID_CHANNEL };
 }
 
+/** What the prefs plan on this phone now, whatever iOS allows (the Settings preview and Next line). Pure read. */
+export function intendedPlan(now = Date.now()): PlannedNotification[] {
+  return planReminders({
+    now,
+    timeZone: deviceTimeZone(),
+    prefs: readPrefs(),
+    children: plannerChildren(),
+    lastSaveAt: lastOwnSaveAt(),
+    lastForegroundAt,
+  });
+}
+
+/** The first planned notification (reminders-settings.md 2: preview and "Next: ..."), or null. */
+export function nextReminder(now = Date.now()): PlannedNotification | null {
+  return intendedPlan(now)[0] ?? null;
+}
+
 /** The current plan for this phone, or [] when reminders are off, paused or not allowed. */
 export async function currentPlan(now = Date.now()): Promise<PlannedNotification[]> {
   const prefs = readPrefs();
   if (!prefs.enabled || prefs.paused) return [];
   if ((await getReminderPermission()) !== 'granted') return [];
-  return planReminders({
-    now,
-    timeZone: deviceTimeZone(),
-    prefs,
-    children: plannerChildren(),
-    lastSaveAt: lastOwnSaveAt(),
-    lastForegroundAt,
-  });
+  return intendedPlan(now);
 }
 
 async function apply(): Promise<void> {
@@ -125,14 +166,46 @@ async function apply(): Promise<void> {
   lastSignature = signature;
 }
 
-/** Re-plan now (serialised; concurrent calls queue behind each other). Never throws. */
-export function rescheduleReminders(): Promise<void> {
+/**
+ * Re-plan now (serialised; concurrent calls queue behind each other). Never throws: it resolves with whether iOS
+ * took the plan. A failure is no longer swallowed (reminders-settings.md 2): it is kept as `lastScheduleResult()`
+ * and told to `subscribeScheduleResult` listeners, so Settings shows "Could not set reminders just now." with Try
+ * again. The signature is not recorded on failure, so the next re-plan tries in full again.
+ */
+export function rescheduleReminders(): Promise<ScheduleResult> {
   if (timer) {
     clearTimeout(timer);
     timer = null;
   }
-  chain = chain.then(() => apply().catch(() => {}));
+  chain = chain.then(() =>
+    apply().then(
+      () => OK,
+      () => {
+        lastSignature = null;
+        return FAILED;
+      },
+    ),
+  ).then((r) => {
+    if (r.ok !== lastResult.ok) {
+      lastResult = r;
+      for (const fn of resultListeners) fn(r);
+    }
+    return r;
+  });
   return chain;
+}
+
+/** The result of the newest re-plan. */
+export function lastScheduleResult(): ScheduleResult {
+  return lastResult;
+}
+
+/** Told when the re-plan result changes (ok to failed, or back). Returns the unsubscribe. */
+export function subscribeScheduleResult(fn: (r: ScheduleResult) => void): () => void {
+  resultListeners.add(fn);
+  return () => {
+    resultListeners.delete(fn);
+  };
 }
 
 function rescheduleSoon(delay = STORE_DEBOUNCE_MS): void {
@@ -199,46 +272,50 @@ export function startReminders(): () => void {
   };
 }
 
-/**
- * Whether turning reminders on will show the iOS permission alert, so the
- * priming sheet (priming-sheet.tsx) should come first. False once the person
- * has answered the alert either way: a "no" is never asked again (F1); the
- * screen offers Open Settings instead.
- */
-export async function needsPriming(): Promise<boolean> {
-  try {
-    const p = await Notifications.getPermissionsAsync();
-    return permissionOf(p) === 'undetermined' && p.canAskAgain !== false;
-  } catch {
-    return false;
-  }
+/** What turning reminders on came to: the OS answer, whether the alert showed, and whether iOS took the plan. */
+export interface TurnOnResult {
+  permission: ReminderPermission;
+  /** The iOS alert showed just now (the first time only; a "no" is never asked again, F1). */
+  asked: boolean;
+  scheduled: ScheduleResult;
 }
 
 /**
- * The user turned reminders on. Asks the OS once if it has never been asked;
- * the choice is saved either way, so if the OS says no, Settings shows
- * "Open Settings" and reminders start by themselves once allowed (F1: never
- * re-prompt).
+ * The user turned reminders on: the Settings switch, or "Yes, evenings" and "Set reminder" on the card after the
+ * first letter. One function for both doors (reminders-settings.md 3).
+ *
+ * `enabled` is written first, so the switch stays on while iOS asks (the old sheet left it off behind itself). Then
+ * the OS is asked once if it never has been, straight away: no sheet in front of the alert (CDesO-3). The choice is
+ * kept either way; if iOS says no, Settings shows Open Settings and reminders start by themselves once allowed.
+ * Callers record the ask (`noteAskShown`, `os_permission_result`) when `asked` is true; this module stays free of
+ * analytics so boot (startReminders) loads nothing more.
  */
-export async function enableReminders(cadence?: Exclude<Cadence, 'off'>): Promise<ReminderPermission> {
-  let status: ReminderPermission = 'undetermined';
+export async function turnOnReminders(opts: { cadence?: Exclude<Cadence, 'off'> } = {}): Promise<TurnOnResult> {
+  const prefs = readPrefs();
+  writePrefs({ enabled: true, paused: false, cadence: opts.cadence ?? (prefs.cadence === 'off' ? 'fewTimes' : prefs.cadence) });
+  let permission: ReminderPermission = 'undetermined';
+  let asked = false;
   try {
     let p = await Notifications.getPermissionsAsync();
     if (permissionOf(p) === 'undetermined' && p.canAskAgain !== false) {
+      asked = true;
       p = await Notifications.requestPermissionsAsync({ ios: { allowAlert: true, allowBadge: false, allowSound: false } });
     }
-    status = permissionOf(p);
+    permission = permissionOf(p);
   } catch {
-    status = 'denied';
+    permission = 'denied';
   }
-  const prefs = readPrefs();
-  writePrefs({ enabled: true, paused: false, cadence: cadence ?? (prefs.cadence === 'off' ? 'fewTimes' : prefs.cadence) });
-  await rescheduleReminders();
-  return status;
+  const scheduled = await rescheduleReminders();
+  return { permission, asked, scheduled };
+}
+
+/** Kept for callers that need only the OS answer. Same as `turnOnReminders()`. */
+export async function enableReminders(cadence?: Exclude<Cadence, 'off'>): Promise<ReminderPermission> {
+  return (await turnOnReminders({ cadence })).permission;
 }
 
 /** The user turned reminders off: every scheduled nudge and note is removed. */
-export async function disableReminders(): Promise<void> {
+export async function disableReminders(): Promise<ScheduleResult> {
   writePrefs({ enabled: false });
-  await rescheduleReminders();
+  return rescheduleReminders();
 }
