@@ -15,6 +15,7 @@ import {
   finishWithin,
   FINISH_TIMEOUT_MS,
   isMicProblem,
+  leaveAfterFinish,
   listenRoom,
   promptLine,
   reviewParams,
@@ -332,5 +333,29 @@ describe('[BL-563] Listen never sticks on "finishing", and never offers Let it g
     const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
     expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
     expect(end).not.toMatch(/deleteDraft|abandonTake/);
+  });
+});
+
+describe('[BL-563] a slow or failed save still lands on Review with the take kept', () => {
+  it('a timeout goes to Review with the known draft id, not back or home', () => {
+    expect(leaveAfterFinish({ ok: false, why: 'timeout' }, 'd1', 'user', true)).toEqual({ to: 'review', params: { draftId: 'd1' } });
+    expect(leaveAfterFinish({ ok: false, why: 'timeout' }, 'd1', 'user', false)).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+  it('a failed save goes to Review too, and keeps the reason line for background and interruption', () => {
+    expect(leaveAfterFinish({ ok: false, why: 'failed' }, 'd1', 'background', true)).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'background' } });
+  });
+  it('a kept take goes to Review with its own id', () => {
+    expect(leaveAfterFinish({ ok: true, value: { id: 'd1' } }, 'd1', 'user', true)).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+  it('a take let go meanwhile has nothing to show: back when it can, else Home (the canGoBack branch)', () => {
+    expect(leaveAfterFinish({ ok: true, value: null }, 'd1', 'user', true)).toEqual({ to: 'back' });
+    expect(leaveAfterFinish({ ok: true, value: null }, 'd1', 'user', false)).toEqual({ to: 'home' });
+  });
+  it('the screen routes through leaveAfterFinish with router.canGoBack()', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/leaveAfterFinish\(kept, id, reason, router\.canGoBack\(\)\)/);
+    expect(end).toMatch(/router\.back\(\)/);
+    expect(end).toMatch(/router\.replace\('\/'\)/);
   });
 });

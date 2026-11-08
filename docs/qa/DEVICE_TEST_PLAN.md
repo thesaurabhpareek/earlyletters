@@ -547,6 +547,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-38 rows (a) to (h): phone, iOS version, pass or fail, and for any fail which check and a screenshot (Asha only).
 - **Not covered:** Android (React Native on Android places a line's text differently, so the figure trim is unverified there).
 
+### S1-39 Listen never sticks on finishing, and a finished take is never lost (BL-563; PR #595 and its follow-up)
+- **Needs:** a build with BL-563 and the follow-up; the SE 3; Asha's book; a way to fill the phone to under 1 MB free (copy large files until Settings > General > iPhone Storage shows almost none).
+- **Steps:**
+  - (a) Phone filled to under 1 MB free. Open Listen, record 30 s, tap Finish.
+  - (b) Free the space, then relaunch the app.
+  - (c) With normal free space, record a short take and tap Finish.
+- **Expected:**
+  - (a) the screen leaves within 3 s; while it says finishing, no Let it go is shown; it lands on Review for the take (not Home and not the previous screen) and nothing is lost;
+  - (b) the take is in the book or in drafts, and it plays;
+  - (c) a normal Finish still opens Review on that take.
+- **Record:** S1-39 rows (a) to (c): phone, iOS version, seconds for (a), pass or fail, and for any fail what was on screen. Asha only.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

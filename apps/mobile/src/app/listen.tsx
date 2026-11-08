@@ -33,7 +33,7 @@ import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
-import { afterForeground, elapsedClock, finishWithin, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
+import { afterForeground, elapsedClock, finishWithin, isMicProblem, leaveAfterFinish, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -137,13 +137,14 @@ export default function Listen() {
     ended.current = true;
     setPhase('finishing');
     // Never stuck here (BL-563): a save that throws (a full disk) or hangs still leaves within FINISH_TIMEOUT_MS, and
-    // the take is kept; the launch sweep finishes it if this did not.
+    // the take is kept and Review opens on it; the launch sweep finishes it if this did not.
     const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
-    const draft = kept.ok ? kept.value : null;
-    // Review says why in one honest line when leaving the app or a call ended the take (S14).
-    if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
-    else if (router.canGoBack()) router.back();
+    // Review says why in one honest line when leaving the app or a call ended the take (S14). A slow or failed save
+    // still goes to Review with the known draft id: the take is kept, and Review shows it or its honest state.
+    const leave = leaveAfterFinish(kept, id, reason, router.canGoBack());
+    if (leave.to === 'review') router.replace({ pathname: '/review', params: leave.params });
+    else if (leave.to === 'back') router.back();
     else router.replace('/');
   };
 

@@ -138,3 +138,21 @@ export async function finishWithin<T>(job: Promise<T>, ms: number = FINISH_TIMEO
     if (timer) clearTimeout(timer);
   }
 }
+
+/** Where Listen goes when the keep step ends (BL-563). */
+export type Leave = { to: 'review'; params: { draftId: string; stopped?: StoppedParam } } | { to: 'back' } | { to: 'home' };
+
+/**
+ * A take that exists always goes to Review, with its known draft id. A slow save (a long take on an older phone) or a
+ * failed one still lands there, so the parent sees the take or its honest state, never a silent exit. Only a take
+ * that was let go meanwhile (the save finished with no draft) has nothing to show: back if there is a screen, else Home.
+ */
+export function leaveAfterFinish(
+  kept: { ok: true; value: { id: string } | null } | { ok: false; why: 'failed' | 'timeout' },
+  draftId: string,
+  reason: StopReason,
+  canGoBack: boolean,
+): Leave {
+  if (kept.ok && kept.value === null) return canGoBack ? { to: 'back' } : { to: 'home' };
+  return { to: 'review', params: reviewParams(kept.ok && kept.value ? kept.value.id : draftId, reason) };
+}
