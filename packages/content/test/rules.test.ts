@@ -931,9 +931,12 @@ describe('glossary (BRAND.md)', () => {
     expect(offenders(COPY, /\b(Google|Apple) sign-in\b|\b(Google|Apple) login\b|\bmagic link\b/i)).toEqual([]);
   });
 
+  // Deliberate rule change, founder decision D-139 (positioning A, 1 Nov 2026): the descriptor is now "letters to your
+  // child, in your own words and voice", and the old one ("the baby memory book you fill by talking") is retired.
   it('uses one descriptor', () => {
-    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}, the baby memory book you fill by talking.`);
-    expect(offenders(COPY, /\bthe memory book you fill by talking\b/i)).toEqual([]);
+    expect(en.app.oneLine.replaceAll('{app}', brand.name)).toBe(`${brand.name}: letters to your child, in your own words and voice.`);
+    expect(offenders(COPY, /\bmemory book (?:that )?(?:you|parents) fill by talking\b/i)).toEqual([]);
+    expect(offenders(COPY, /\bletters to your child,? in your (?:own )?voice\b/i)).toEqual([]);
   });
 });
 
