@@ -8,10 +8,15 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { startTake, type MicPermission, type StartDeps } from '../src/components/capture/listen.logic';
+import { createStartTick } from '../src/components/capture/start-tick.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 const code = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 const listen = code(src('app/listen.tsx'));
+const logic = code(src('components/capture/listen.logic.ts'));
+/** Listen's one start haptic: handed to listen.logic startTake, which plays it before the session goes live. */
+const PRESS = "pressHaptic: () => startTick.press(() => haptic('press'))";
 const tonight = code(src('app/(tabs)/index.tsx'));
 
 /** The body of `const <name> = ...` up to the next top-level `const ` in the component (two-space indent). */
@@ -24,7 +29,8 @@ function body(c: string, name: string): string {
 
 /**
  * Every haptic Listen can play, by where it sits: a call `haptic(...)` or a Button's `haptic=` prop. Each must be
- * outside the take: before the session starts recording, or after it has ended.
+ * outside the take: the start only as startTake's pressHaptic (which startTake plays before the gate opens and the
+ * session goes live, pinned below), the stop after finalizeTake, Let it go after the stop. A missing anchor fails.
  */
 function hapticsInTake(c: string): string[] {
   const bad: string[] = [];
@@ -43,7 +49,11 @@ function hapticsInTake(c: string): string[] {
       if (k < 0) bad.push(`no ${anchor} in ${fn}`);
       return k;
     };
-    if (fn === 'start' && i < found("setAudioMode('recording')")) continue; // before the session
+    // Start: only as startTake's pressHaptic, which startTake plays before the session (pinned below).
+    if (fn === 'start') {
+      const k = found(PRESS);
+      if (k >= 0 && i === k + PRESS.indexOf("haptic('press')")) continue;
+    }
     if (fn === 'endTake' && i > found('finalizeTake(')) continue; // after it ends (await finalizeTake, or inside finishWithin)
     if (fn === 'discard' && i > found('abandonTake(') && i > found("setAudioMode('idle')")) continue; // after it stops
     bad.push(`${m[0]} in ${fn}`);
@@ -64,31 +74,108 @@ describe('no haptic while the recorder is recording (MOTION 6)', () => {
     const tick = listen.replace('  const togglePause = () => {\n', "  const togglePause = () => {\n    haptic('tap');\n");
     expect(hapticsInTake(tick)).toEqual(["haptic('tap') in togglePause"]);
     expect(hapticsInTake(listen.replace('onPress={finish}', 'onPress={finish} haptic="press"'))).toEqual(['a Button haptic prop']);
-    const late = listen.replace("    if (tick) haptic('press');\n", '').replace('    takeId.current = draft.id;\n', "    takeId.current = draft.id;\n    haptic('press');\n");
-    expect(hapticsInTake(late)).toEqual(["haptic('press') in start"]);
+    const late = listen.replace(PRESS, 'pressHaptic: () => {}').replace('    takeId.current = out.draftId;\n', "    takeId.current = out.draftId;\n    haptic('press');\n");
+    expect(late).not.toBe(listen);
+    expect(hapticsInTake(late)).toEqual([`no ${PRESS} in start`, "haptic('press') in start"]);
   });
 });
 
 describe('one start tick, not two', () => {
-  it("Speak plays the start tick, then opens Listen, which starts the microphone without a second one", () => {
+  it("Speak plays the start tick, then opens Listen, whose start goes through createStartTick", () => {
     expect(tonight).toMatch(/<Button size="capture" icon=\{MicrophoneIcon\} label=\{t\.speakButton\} haptic="press" onPress=\{\(\) => start\('spoken'\)\} \/>/);
     expect(tonight).toMatch(/if \(mode === 'spoken'\) armListenStart\(\);/);
-    // Listen knows Speak opened it (consumeListenStart) and its first start plays no tick.
-    expect(listen).toMatch(/const speakTicked = useRef\(tapped\.current\);/);
+    // Listen knows Speak opened it (consumeListenStart, read once) and hands that to the tick rule.
+    expect(listen).toMatch(/const startTick = useRef\(createStartTick\(tapped\.current\)\)\.current;/);
     const start = body(listen, 'start');
     expect(start.match(/haptic\(/g)).toHaveLength(1);
-    expect(start).toMatch(/if \(tick\) haptic\('press'\);/);
-  });
-
-  it("only the first start is Speak's: the circle and Try again, even after a blocked first start, play the tick", () => {
-    const start = body(listen, 'start');
-    // Cleared before any early return (no child, microphone off, phone full), so a retry is never silent.
-    expect(start).toMatch(/const start = async \(\) => \{\s*const tick = !speakTicked\.current;\s*speakTicked\.current = false;\s*if \(!child\) return;/);
-    expect(start.indexOf('speakTicked.current = false')).toBeLessThan(start.indexOf('startBlocker('));
+    expect(start).toContain(PRESS);
+    // A start that ends without a take resets it, so Try again is the parent's own tick.
+    expect(start).toMatch(/if \(out\.kind === 'blocked'\) \{\s*startTick\.reset\(\);[^\n]*\n\s*return setPhase\(out\.problem\);/);
+    expect(body(listen, 'startFromTap')).toMatch(/start\(primed\)\.catch\(async \(\) => \{\s*startTick\.reset\(\);/);
+    // The primer is part of the same start: no reset there.
+    expect(start).toMatch(/if \(out\.kind === 'primer'\) return setPhase\('primer'\);/);
     expect(listen).toMatch(/onPress=\{begin\}/);
     expect(listen).toMatch(/tryAgain: begin/);
+    expect(listen).toMatch(/const continueAfterPrimer = \(\) => startFromTap\(true\);/);
   });
 
+  it('startTake plays the start haptic once, before the gate opens and the session goes live', () => {
+    const fn = logic.slice(logic.indexOf('export async function startTake('), logic.indexOf('\n}\n', logic.indexOf('export async function startTake(')));
+    const press = fn.indexOf('d.pressHaptic();');
+    expect(press).toBeGreaterThanOrEqual(0);
+    expect(fn.match(/d\.pressHaptic\(\)/g)).toHaveLength(1);
+    for (const later of ['d.openTake()', 'd.setRecordingMode()', 'd.begin()']) {
+      expect(fn.indexOf(later), later).toBeGreaterThan(press);
+    }
+  });
+});
+
+/** One take started through listen.logic startTake, with the screen's tick rule: what the parent feels, in order. */
+describe('one tick per take, counting Speak (startTake with the tick rule)', () => {
+  type Perm = MicPermission;
+  const granted: Perm = { granted: true, status: 'granted' } as Perm;
+  const undetermined: Perm = { granted: false, status: 'undetermined' } as Perm;
+  const denied: Perm = { granted: false, status: 'denied' } as Perm;
+
+  /** A Listen screen: `speak` when Speak opened it (and played its own tick). Returns a start like the screen's. */
+  function screen(speak: boolean, perms: { now: Perm[]; asked?: Perm }) {
+    const felt: string[] = speak ? ['tick (Speak)'] : [];
+    const tick = createStartTick(speak);
+    let n = 0;
+    const deps = (): StartDeps => ({
+      alive: () => true,
+      getPermission: async () => perms.now[Math.min(n++, perms.now.length - 1)],
+      requestPermission: async () => perms.asked ?? granted,
+      freeBytes: () => null,
+      pressHaptic: () => tick.press(() => felt.push('tick')),
+      setRecordingMode: async () => void felt.push('session live'),
+      setIdleMode: async () => {},
+      openTake: () => 1,
+      closeTake: () => {},
+      onToken: () => {},
+      begin: async () => ({ id: 'take-asha' }),
+      keepOrphan: () => {},
+    });
+    const start = async (primed: boolean) => {
+      const out = await startTake(deps(), primed);
+      if (out.kind === 'blocked') tick.reset();
+      return out.kind;
+    };
+    return { felt, start };
+  }
+
+  it('Speak, then the take: one tick, before the session', async () => {
+    const s = screen(true, { now: [granted] });
+    expect(await s.start(false)).toBe('live');
+    expect(s.felt).toEqual(['tick (Speak)', 'session live']);
+  });
+
+  it('fresh install: Speak, the primer, Continue: still one tick for the take', async () => {
+    const s = screen(true, { now: [undetermined], asked: granted });
+    expect(await s.start(false)).toBe('primer'); // Listen's automatic start stops at the primer
+    expect(await s.start(true)).toBe('live'); // Continue
+    expect(s.felt).toEqual(['tick (Speak)', 'session live']);
+  });
+
+  it("opened another way: the circle plays the take's one tick, and with the primer it is Continue's", async () => {
+    const a = screen(false, { now: [granted] });
+    expect(await a.start(false)).toBe('live');
+    expect(a.felt).toEqual(['tick', 'session live']);
+    const b = screen(false, { now: [undetermined], asked: granted });
+    expect(await b.start(false)).toBe('primer');
+    expect(await b.start(true)).toBe('live');
+    expect(b.felt).toEqual(['tick', 'session live']);
+  });
+
+  it("Speak, the microphone off, then Try again once it is on: Try again is the parent's own tap and plays the tick", async () => {
+    const s = screen(true, { now: [denied, granted], asked: denied });
+    expect(await s.start(false)).toBe('blocked');
+    expect(await s.start(false)).toBe('live');
+    expect(s.felt).toEqual(['tick (Speak)', 'tick', 'session live']);
+  });
+});
+
+describe('the stop tick, and the check itself', () => {
   it('stop plays one tick, after the session ends', () => {
     const end = body(listen, 'endTake');
     expect(end.match(/haptic\(/g)).toHaveLength(1);

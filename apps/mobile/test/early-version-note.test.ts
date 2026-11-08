@@ -34,18 +34,43 @@ describe('About shows the early-version note (F17-REQ-019, F20-REQ-009)', () => 
     expect(note.body).toMatch(/\bmistakes?\b/i);
   });
 
-  it('Settings draws the label and the body inside About, after the version row', () => {
+  it('Settings draws the body inside About, after the version row, with no "Early version" heading (founder, 8 Nov 2026; CLO-5)', () => {
     const src = readFileSync(join(APP, 'src/app/settings/index.tsx'), 'utf8');
     const about = src.indexOf('<ListSection title={copy.settings.about.title}>');
     expect(about).toBeGreaterThan(-1);
     const after = src.slice(about);
     const block = after.slice(after.indexOf('testID="settings.about.beta"'), after.indexOf('</View>'));
     expect(after.indexOf('h.versionLabel')).toBeLessThan(after.indexOf('testID="settings.about.beta"'));
-    expect(block).toContain('{copy.settings.about.beta.label}');
     expect(block).toContain('{copy.settings.about.beta.body}');
+    // "early" once: the registered note says it; neither a heading nor the version row repeats it.
+    expect(src).not.toContain('copy.settings.about.beta.label');
+    expect(copy.settingsHome.versionValue).toBe('{version} ({build})');
     // Unconditional: the note stays until the founder ends the beta, so no switch hides it.
     const between = after.slice(after.indexOf('</ListSection>'), after.indexOf('testID="settings.about.beta"'));
     expect(between.replace(/\{\/\*[\s\S]*?\*\/\}/g, '')).not.toMatch(/&&|\?|\{[^}]*\(/);
+  });
+});
+
+describe('About: the build number and the sign-off (founder, 8 Nov 2026)', () => {
+  const src = () => readFileSync(join(APP, 'src/app/settings/index.tsx'), 'utf8');
+
+  it('the version row shows "{version} ({build})" with the build number read from the installed binary, never hard-coded', () => {
+    expect(src()).toMatch(/import \* as Application from 'expo-application';/);
+    expect(src()).toMatch(/const build = Application\.nativeBuildVersion \?\? '';/);
+    expect(src()).toMatch(/const versionValue = build \? fill\(h\.versionValue, \{ version, build \}\) : version;/);
+    expect(src()).not.toMatch(/ios\?\.buildNumber/);
+  });
+
+  it('expo-application is no new native module: expo-notifications already brings it into the build', () => {
+    const lock = JSON.parse(readFileSync(join(APP, '../../package-lock.json'), 'utf8')) as { packages: Record<string, { dependencies?: Record<string, string> }> };
+    expect(lock.packages['node_modules/expo-notifications']?.dependencies?.['expo-application']).toBeDefined();
+    expect(lock.packages['node_modules/expo-application']).toBeDefined();
+  });
+
+  it('the sign-off is "Made with care in California", text only, after the note', () => {
+    expect(copy.settingsHome.signOff).toBe('Made with care in California');
+    const s = src();
+    expect(s.indexOf('{h.signOff}')).toBeGreaterThan(s.indexOf('{copy.settings.about.beta.body}'));
   });
 });
 

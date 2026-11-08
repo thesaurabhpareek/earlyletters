@@ -219,7 +219,7 @@ One `haptic(name)` wrapper. Android uses `performAndroidHapticsAsync` (system fe
 
 iOS mutes the Taptic Engine in Low Power Mode and during dictation (M22): a haptic always accompanies a visible change.
 
-One start tick per take: Speak plays it and Listen's start from Speak plays none; Listen plays it only for a tap on its own circle or Try again. The stop tick plays after the session ends. Nothing plays while the recorder records: iOS mutes it, and the microphone would hear it (`test/recording-haptics.test.ts`).
+One start tick per take, counting Speak's: Speak plays it and the start it opens plays none, the microphone primer's Continue included; Listen plays it for a tap on its own circle, Continue when the circle opened the primer, or Try again after a blocker (`components/capture/start-tick.logic.ts`). The stop tick plays after the session ends. Nothing plays while the recorder records: iOS mutes it, and the microphone would hear it (`test/recording-haptics.test.ts`).
 
 ## 7. Performance rules
 

@@ -1,7 +1,7 @@
 /**
  * The pre-birth prompts and how Tonight uses the library (P3 critics' pass of 28 Oct 2026, S2 and S4).
  *
- * S2: a book whose child is not born yet (a due date, no birthday) is offered the `before` prompts (eight today) and
+ * S2: a book whose child is not born yet (a due date, no birthday) is offered the `before` prompts (twelve today) and
  * nothing else: not the 0 to 3 month prompts about hands and the first day home, and not the any-age openings, which assume a
  * child who is here. A born child is never offered a `before` prompt.
  * S4: a press of "Another thought" never shows the prompt that was on screen.
@@ -46,9 +46,9 @@ const presumesAnything = (text: string): boolean => PRESUMES.test(text) || ADDRE
 const weekOutsideThese = (text: string): boolean => /\bweeks?\b/i.test(text.replace(/\bthese weeks\b/gi, ''));
 
 describe('[S2] the pre-birth set: openings that assume no birth', () => {
-  it('is at least eight openings in the before band, with stable keys of their own', () => {
+  it('is at least twelve openings in the before band, with stable keys of their own', () => {
     // A floor, not a cap: the set may grow, and the next content addition must not be blocked by this test.
-    expect(BEFORE.length).toBeGreaterThanOrEqual(8);
+    expect(BEFORE.length).toBeGreaterThanOrEqual(12);
     for (const p of BEFORE) {
       expect(p.kind, p.key).toBe('opening');
       expect(p.key, p.key).toMatch(/^opening\.before\.[a-z-]+$/);
