@@ -21,6 +21,7 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
@@ -50,6 +51,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
+import { decideReauth, parseSeenEpoch, REAUTH_EPOCH_KEY, type ReauthPhase } from './reauth.logic';
 import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
@@ -321,6 +323,19 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       onUnder18?.();
     })();
   }, [under18, sb, onUnder18]);
+
+  // BL-597 / F02-REQ-023: the founder raised `forceReauthEpoch`. A signed-in phone signs out once, after its queued
+  // letters are up; a signed-out phone just notes the number. Letters on the phone stay (local sign-out only).
+  const remoteEpoch = useRemoteConfig().forceReauthEpoch;
+  const reauthPhase: ReauthPhase = isSignedIn(state) ? 'signedIn' : state.status === 'signedOut' ? 'signedOut' : 'other';
+  useEffect(() => {
+    const seen = parseSeenEpoch(getSetting(REAUTH_EPOCH_KEY));
+    const decision = decideReauth({ remoteEpoch, seenEpoch: seen, phase: reauthPhase });
+    if (decision === 'record') setSetting(REAUTH_EPOCH_KEY, String(remoteEpoch));
+    if (decision === 'sign_out') {
+      void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
+    }
+  }, [remoteEpoch, reauthPhase]);
 
   const remember = useCallback((m: AuthMethod) => {
     setSetting(LAST_METHOD_KEY, m);
