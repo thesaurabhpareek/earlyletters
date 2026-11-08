@@ -720,6 +720,15 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (f) **Offline across a renewal: 7 days past the last verified expiry (RT-SUB-13, CR-46).** Plus Monthly renewing, open the app online once (a fresh read). Airplane mode on before the period end (in the sandbox a month is minutes, so do it straight after the read; note the end time Plan shows). Stay offline. After the period end, keep a letter: expected kept, no Keep sheet, Plan still says Plus. Then, still offline, move the phone's date forward 6 days past that end: kept, no sheet. Then 8 days past it: the Keep sheet holds the letter (offline line), nothing is lost. Set the date back to automatic and go online: Plus follows Apple's answer at once. A subscription cancelled before going offline ends at its period end, with no 7 days (the Plan screen's "stays on until").
 - **Record:** S1-132 rows (a) to (f): phone, iOS version, build profile and "StoreKit file" or "sandbox", Xcode version for (a) to (c), seconds to Plus on in (a), pass or fail per row with the step that failed. No receipt, transaction id or Apple Account address in the record. Screenshots with Asha only.
 
+### S1-143 "Put back. Undo" goes away with Change words (QE-02; branch fix/mobile-qe02-stale-put-back)
+- **Needs:** any build with this change; Asha's book; a spoken letter whose Review shows at least one small fix (an "um" works).
+- **Steps:** (a) On Review, tap a marked fix, then Put back; read the line under the letter. Tap Undo; the fix returns. (b) Put the fix back again, then tap Change words without touching the line. Type a word, then Done. (c) Repeat (b) but tap Done without typing. (d) VoiceOver on: repeat (a) and (b).
+- **Expected:**
+  - (a) "Put back." with Undo and Close under the letter; Undo restores the fix, as before.
+  - (b) and (c) The line goes as soon as Change words opens the page, and it does not come back after Done. The fix stays put back (the letter keeps the words as said there).
+  - (d) VoiceOver announces "Put back." once in (a); nothing about it after Change words.
+- **Record:** S1-143 rows (a) to (d): phone, iOS version, build number and profile; a screenshot after Done in (b), with Asha only.
+
 ### S1-110 Letters that are waiting are in the export (PL-2, F14-REQ-039; founder decision F5; export format 1.6.0; branch feat/billing-pl2-held-export)
 - **Needs:** any build with this change; a Mac or PC to open the ZIP. For (b), a `production` profile build (the alpha keeps every letter, so nothing is held there).
 - **Steps:** (a) In Asha's book, record a letter and leave Review without keeping it; start a typed letter on Write and leave it. Settings > Export everything, then Save to Files and open the ZIP on a computer. (b) Production profile, Plus off, two letters already kept: record a third, tap Keep, choose "Keep it here for now", then export as in (a). (c) Airplane mode on, export again.
