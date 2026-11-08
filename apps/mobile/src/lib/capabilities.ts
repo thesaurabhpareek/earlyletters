@@ -144,6 +144,15 @@ export function postHogKeyForBuild(enabled: boolean, key: string | undefined | n
   return enabled ? (key ?? '').trim() : '';
 }
 
+/**
+ * The first-party analytics endpoint (docs/analytics/FREE-ANALYTICS-PLAN-2026-11-08.md): none at all unless the
+ * analytics switch is on, and only an https URL. Off in every profile today (D-095, D-124).
+ */
+export function analyticsEndpointForBuild(enabled: boolean, url: string | undefined | null): string {
+  const u = enabled ? (url ?? '').trim() : '';
+  return /^https:\/\/[^\s]+$/.test(u) ? u : '';
+}
+
 /** True only in a build made with `EXPO_PUBLIC_SERVER_FEATURES=on`. */
 export function serverFeaturesEnabled(): boolean {
   return testOverride ?? BUILD_VALUE;

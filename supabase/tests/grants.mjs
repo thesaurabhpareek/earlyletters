@@ -18,7 +18,7 @@ export const COLUMNS = {
 export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)', 'backup_svc_stop(bytea)',
   'backup_svc_sweep(timestamp with time zone,integer)', 'backup_svc_unwraps_between(timestamp with time zone,timestamp with time zone,integer)',
   'consent_pepper_ready()', 'content_gate_state(uuid)', 'dictionary_forms_valid(jsonb)', 'finalize_account_deletion(uuid,jsonb)',
-  'has_active_consent(uuid,text)', 'insights_aggregates(integer)',
+  'has_active_consent(uuid,text)', 'forget_app_events(uuid[])', 'ingest_app_events(uuid,jsonb)', 'insights_aggregates(integer)',
   'invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])', 'is_anonymous()', 'ops_alert_claim(text,integer)', 'ops_alert_reset(text)',
   'ops_apple_token_delete(uuid)', 'ops_apple_token_get(uuid)', 'ops_apple_token_put(uuid,text,integer,text)',
   'ops_audit_write(text,text,text,text,uuid,uuid,uuid,jsonb)', 'ops_consume_forget_quota(uuid,integer)', 'ops_deletion_contributors(uuid)',
@@ -27,7 +27,7 @@ export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)'
   'ops_merge_deletion_receipt(uuid,jsonb)', 'ops_raw_sha(jsonb,integer,timestamp with time zone)', 'ops_replay_ledger(jsonb)',
   'ops_retention(timestamp with time zone)', 'ops_row_counts()', 'ops_schema_health()', 'ops_set_child_photo_path(uuid,text,text)',
   'ops_storage_owned_by(uuid,integer)', 'ops_storage_queue_due(integer,uuid)', 'ops_storage_residue(uuid,integer)',
-  'prepare_account_purge(uuid)', 'purge_due(timestamp with time zone,integer)', 'record_deletion_step(uuid,text,text,text)',
+  'prepare_account_purge(uuid)', 'purge_app_events(timestamp with time zone)', 'purge_due(timestamp with time zone,integer)', 'record_deletion_step(uuid,text,text,text)',
   'record_purge_attempt(bigint,boolean,text)', 'subscription_retention_purge(timestamp with time zone)',
   'sync_begin_epoch(text,timestamp with time zone)', 'sync_housekeeping(timestamp with time zone,integer)'];
 // "role relation letters" rows, sorted, for an exact comparison.
