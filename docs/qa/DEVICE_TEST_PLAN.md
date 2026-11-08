@@ -535,6 +535,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-36 rows (a) to (k): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
 - **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
 
+### S1-82 One tick to start a recording, one to stop, none between (founder report on TestFlight build 1; MOTION 6; branch fix/mobile-recording-haptics)
+- **Needs:** a build with fix/mobile-recording-haptics; the SE 3 and the founder's iPhone; Settings > Sounds & Haptics > System Haptics on; Low Power Mode off; Asha's book.
+- **Steps:**
+  - (a) On Tonight tap Speak, with a finger resting lightly on the phone's back. Count the taps felt until the clock shows 0:03.
+  - (b) Record 2 minutes, tapping Pause and then Resume three times along the way, then Finish.
+  - (c) Open Listen and tap Close at rest; open it from Speak with the microphone off in Settings > Privacy > Microphone, turn it back on, return and tap the red circle (or Try again).
+  - (d) Play back the letter from (b) in Review, listening around each pause and resume and the last second before Finish.
+  - (e) Fresh install (or Settings > General > Transfer or Reset iPhone > Reset > Reset Location & Privacy): set up Asha's book, tap Speak, read the microphone note and tap Continue, allow the microphone in the iOS question, and count the taps felt until the clock shows 0:03.
+- **Expected:** (a) exactly one light tap, as Speak is let go, and none as Listen opens or the microphone starts. (b) no tap at any Pause or Resume; one light tap after Finish, as Review comes. (c) the circle or Try again plays one tap, before recording starts. (d) no click or buzz on the recording.
+- **Record:** S1-82 rows (a) to (e): phone, iOS version, taps felt in (a), taps felt in (b) during the take and at Finish, pass or fail for (c) and (d), taps felt in (e) (expected: one, as Speak is let go; none at Continue).
+
 ### S1-37 No letter limit in alpha (founder decision, 1 Nov 2026; PL-1, S1; `apps/mobile/src/lib/billing/alpha.ts`)
 - **Needs:** a TestFlight build of the `testflight` or `preview` profile (`.preview` bundle id) on a fresh install, and, after Mon 9 Nov, a TestFlight build of the `production` profile.
 - **Steps:** (a) Alpha build: on the Welcome screen read the line under the body. Set up Asha's book, then keep three letters, then a fourth (speak one, type the others), each from Review with words on screen. Open Settings and read the Plan row, then open Plan. (b) Production profile build: the same steps.
@@ -593,6 +604,39 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (f) Tonight's "A month ago" card, if shown, and Settings > Recently deleted > Open: open a letter from each; with VoiceOver on, swipe past the end of each.
 - **Expected:** (a) the card holds its press, the Book goes under the page's paper, and the paper grows from the card into the page; no sideways slide at any point, nothing moves twice, no native header or back arrow flashes at the top; the card's words stay still on their way (never re-wrap or jump); Back carries them back into the card. (b) The swipe closes the page the same way; with the card off screen the page fades instead. (c) and (d) one short cross-fade each way, nothing slides or grows. (e) VoiceOver lands on the dateline, reads the letter once, and never reaches the Book or the tab bar behind the page; the escape gesture closes the page the same way Back does. (f) The page fades in whole (no card to grow from), with no slide, and Back returns to where it came from; VoiceOver never reaches the tab bar or the Recently deleted list behind it. No hitch longer than one frame on the SE 3.
 - **Record:** S1-81 rows (a) to (f): phone, iOS version, text size, Reduce Motion yes or no, pass or fail, and for a fail what moved; the screen recordings of (a) on the SE 3.
+
+### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
+- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
+- **Steps:** (a) Settings > Privacy. Read top to bottom. (b) Tap Names in notifications. In Reminders, turn reminders on first (the Names switch shows only while reminders are on), then turn names on; come back. (c) Tap Export your book, then Recently deleted, coming back each time. (d) Tap Privacy Policy, then Terms of Service. (e) Repeat (a) at AX5, with VoiceOver, and in dark mode.
+- **Expected:**
+  - (a) First, with no icon: "Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models." Then Where your book is kept: "Your letters and recordings are kept on this phone. They are not sent to us.", iPhone backup "Includes your recordings, if iCloud Backup is on." (the same words as Where your letters live), "Your speech is written down on this phone.", "This version collects no usage or crash reports." Who can see it: "Anyone who can unlock this iPhone can open the book.", Names in notifications Off, and "Notifications never show the words of a letter." What you can do: Export your book, Recently deleted, and "There is no account in this version. Deleting the app removes its letters and recordings from this phone." Our promises in full: Privacy Policy, Terms of Service, then "Private by default. Never sold, never used for ads." No "What we never do", no lock icons, nothing about photos, no usage switch, no sync row.
+  - (b) Reminders opens; back on Privacy the row reads On.
+  - (c) and (d) Each opens its page; the documents open in the in-app browser.
+  - (e) Nothing truncates at AX5; each section title is a heading; each line is read once.
+- **Record:** S1-96 rows (a) to (e) with the build number, phone and iOS version; screenshots with Asha only.
+- **Update:** `proposals/privacy-settings.md` and `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 11 where a result differs.
+
+### S1-97 Where your letters live, Your words, and languages only in Storage (settings-ia.md 4; CCO-8, CPrivO-4; branch feat/mobile-letters-live-and-your-words)
+- **Needs:** a TestFlight build of the `testflight` profile with Asha's book and at least one kept letter; a fresh install for (c); Larger Text at AX5 and VoiceOver.
+- **Steps:** (a) Settings > Where your letters live. Read it. Tap iPhone backup, then come back; tap Export your book, export, come back. (b) Settings > Your words. Choose Exactly as said; record a letter and open Review; come back and choose Small fixes, marked; record another. (c) On a fresh install before the speech model is here: Settings > Storage. Tap English to download, watch it, then tap it again to remove. (d) Repeat (a) to (c) at AX5 and with VoiceOver.
+- **Expected:**
+  - (a) "Your letters and recordings are kept on this iPhone." Then If you get a new phone: iPhone backup "Includes your recordings, if iCloud Backup is on." with How to check, which opens Apple's iCloud Backup page in the in-app browser; Export your book "Save a copy any time." before the first export and "Last export: {date}" after; Encrypted backup "Not in this version". Footer: "An export is a copy to open and keep. We hold no copy." No line says a backup or an export brings the book back. No language rows, no switch. Recordings without a letter and Recordings that may not play show only when there are some.
+  - (b) Each choice shows its line and the example changes: struck-through words with Small fixes, the sentence as spoken with Exactly as said. The next new letter opens in the chosen view. On a phone that had the old switch off, Exactly as said is already chosen.
+  - (c) Storage lists English once, with its size, and no separate "All languages, Speech model" or detector rows. Download shows the ring with "Getting ready, n%"; Remove asks first.
+  - (d) Nothing truncates; each choice is read with its state ("selected"); the example is read once, with the taken-out words named.
+- **Record:** S1-97 rows (a) to (d) with the build number, phone and iOS version; screenshots with Asha only.
+- **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` sections 7 to 9 (PR #596) where a result differs.
+
+### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
+- **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
+- **Steps:** (a) Alpha: read the line under the Welcome body; open Settings and read the Plan row; open Plan. (b) Production, Plus off: read the Welcome line; set up Asha's book; keep a first and then a second letter (each with words on screen) and read the toast on the Book; open Settings and read the Plan row; open Plan and read every section. (c) Start Plus Monthly in Apple's sheet (sandbox); come back to Settings and read the Plan row, then Plan. (d) Let the sandbox subscription lapse (cancel, then wait for the sandbox renewal period to end); read the Plan row and Plan.
+- **Expected:**
+  - (a) Welcome, the Plan row and Plan say only "Plus is not part of this test. Every letter is free while you test." The Plan row has no Free or Plus value. Plan has no "What Plus includes", no Restore, no Redeem, no Manage. Unchanged from S1-37 (a).
+  - (b) Welcome: "Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free." No toast after letter 1. After letter 2, once, with no button: "That was your second free letter. Whenever you are ready, Plus keeps the book growing." The Plan row: "Free" at the right, with "Your first two letters are free. Plus lets you keep adding letters." under the title. Plan: "See what Plus adds" with the Welcome line under it (not "Every letter you keep stays yours..."), then "What Plus includes" with "Keep adding letters to every book, as many as you like." No number, price or trial length anywhere.
+  - (c) The Plan row: "Plus" and no line under it ("Plus, shared" for a Family Sharing member). Plan: the status row with its dates, the promise under it, "What Plus includes".
+  - (d) The Plan row: "Free". Plan: "Plus ended on {the day it ended}. Every letter you kept is still yours." No Welcome line, no promise, no Manage; "See what Plus adds" is there.
+  - VoiceOver on the Plan row reads "Plan", then the line under it when there is one, then "Free" (or "Plus").
+- **Record:** S1-111 rows (a) to (d): phone, iOS version, build number and profile, text size; screenshots of Welcome, the Plan row and Plan at each step, with Asha only.
 
 ### S1-110 Letters that are waiting are in the export (PL-2, F14-REQ-039; founder decision F5; export format 1.6.0; branch feat/billing-pl2-held-export)
 - **Needs:** any build with this change; a Mac or PC to open the ZIP. For (b), a `production` profile build (the alpha keeps every letter, so nothing is held there).

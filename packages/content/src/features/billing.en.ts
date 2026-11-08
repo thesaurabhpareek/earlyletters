@@ -62,8 +62,29 @@ export const billingCopy = {
     // phone. New for the content owner and counsel (C10), beside the "Keep step and held letter" register row.
     heldNoteLetter: 'Your words stay with this letter, exactly as they are. Keep them whenever you like.',
     offlineLetter: 'Plus needs a connection to start. Your words stay with this letter, exactly as they are.',
-    secondFreeNote: 'That was your second free letter.',
-    plusIsOn: 'Plus is on. Your letter is waiting for you to keep it.',
+    // The Book's toast when the second free letter is kept, once, with no action (F5, PL-5). Store build only: in an
+    // alpha build the allowance is not 2, so countAfterSave never asks for it.
+    secondFreeNote: 'That was your second free letter. Whenever you are ready, Plus keeps the book growing.',
+  },
+
+  /**
+   * Founder decision F5 (1 Nov 2026), "Plus, gently" (proposals/v1-experience/plus.md sections 3 and 5; PL-3, PL-4,
+   * PL-5). New keys, not the registered `plan.*` group: counsel reads them with the rest (CLO-6). Store build only;
+   * an alpha build shows `alpha.note` instead and none of these.
+   * - `line`: the setup line, said again on Plan while Plus is off (the same words as en.onboarding.welcome.freeLine).
+   * - `status`: the Settings Plan row's value. No count and no countdown; dates live on Plan only.
+   * - `includesTitle`: Plan's section that lists `store.features` before Apple's sheet (App Review 3.1.2(c)).
+   * - `ended`: Plan after Plus has lapsed. {date} is the day it ended, as StoreKit reports it. No sales sentence.
+   */
+  membership: {
+    line: 'Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free.',
+    status: {
+      free: 'Free',
+      plus: 'Plus',
+      shared: 'Plus, shared',
+    },
+    includesTitle: 'What Plus includes',
+    ended: 'Plus ended on {date}. Every letter you kept is still yours.',
   },
 
   /**

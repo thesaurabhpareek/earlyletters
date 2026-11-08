@@ -17,6 +17,9 @@ import {
 import { formatBytes, packName, packsCopy as t } from '@/lib/packs/copy';
 import { getPackManifest } from '@/lib/remote';
 import { track } from '@/lib/analytics/track';
+import { languagesInUse, packsShownAsLanguages, SpeechRow } from '@/components/settings/speech-row';
+import { speechSettingsCopy } from '@/lib/models/copy';
+import { useWordsTick } from '@/lib/transcription-queue/use-words';
 
 /**
  * Settings > Storage (founder decision 15): what is downloaded, how big, and
@@ -25,6 +28,10 @@ import { track } from '@/lib/analytics/track';
  * (they live in Documents, not in the packs folder).
  *
  * Reached from a Settings row (the coordinator adds it to settings/index.tsx).
+ *
+ * Language download lives only here (settings-ia.md 4, 8 Nov 2026): one row per spoken language in use, first, with
+ * Download or Remove (components/settings/speech-row.tsx, moved from Recordings). The packs those rows stand for (the
+ * speech model and the listening detector) are not listed again under Downloaded, so a language is never said twice.
  */
 
 const ACTIVE: PackProgress['phase'][] = ['queued', 'waiting_for_wifi', 'downloading', 'verifying', 'installing', 'cancelled', 'failed'];
@@ -57,10 +64,15 @@ export default function Storage() {
   const { installed, progress } = usePacks();
   const [cellular, setCellular] = useState(allowCellular);
   const used = storageBytes();
+  useWordsTick();
+  const languages = languagesInUse();
+  const asLanguages = packsShownAsLanguages(languages);
+  const listed = installed.filter((p) => !asLanguages.has(p.id));
   const installedIds = new Set(installed.map((p) => p.id));
   // A failed or stopped background update of an installed pack is not shown: the installed version keeps working.
+  // A language's own downloads show on its row (progress in place of the size), not again under In progress.
   const inFlight = Object.values(progress).filter(
-    (p) => ACTIVE.includes(p.phase) && !(installedIds.has(p.id) && (p.phase === 'failed' || p.phase === 'cancelled')),
+    (p) => !asLanguages.has(p.id) && ACTIVE.includes(p.phase) && !(installedIds.has(p.id) && (p.phase === 'failed' || p.phase === 'cancelled')),
   );
 
   const confirmRemove = (pack: InstalledPack) => {
@@ -76,6 +88,12 @@ export default function Storage() {
       <Text variant="subhead" tone="muted">
         {t.intro}
       </Text>
+
+      <ListSection title={speechSettingsCopy.title} footer={speechSettingsCopy.footer}>
+        {languages.map((lang) => (
+          <SpeechRow key={lang} language={lang} />
+        ))}
+      </ListSection>
 
       {inFlight.length > 0 && (
         <ListSection title={t.inProgressTitle}>
@@ -108,7 +126,7 @@ export default function Storage() {
         ) : (
           [
             <ListRow key="total" title={t.totalLabel} trailing={formatBytes(used.installed + used.partial)} />,
-            ...installed.map((p) => (
+            ...listed.map((p) => (
               <View key={p.id} className="flex-row items-center gap-3 pr-2">
                 <View className="flex-1">
                   <ListRow title={packName(p)} subtitle={formatBytes(p.bytes)} />

@@ -5,7 +5,7 @@
  * use of the rules is pinned in their source. Registered words are pinned word for word in
  * packages/content/test/experience-pass.test.ts; here they are read as they are. Fixtures: the fictional family Asha.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
@@ -32,11 +32,14 @@ const screen = (over: Partial<Parameters<typeof planScreen>[0]> = {}) =>
   planScreen({ line: off, details: none, plusOn: false, storeSupport: 'available', noteLines: [], longDate, ...over });
 
 describe('[S41] Plan', () => {
-  it('Plus off: no status card, "See what Plus adds" first, the registered promise as the footer once, no Manage', () => {
+  it('Plus off: no status card, "See what Plus adds" first, the F5 line as the footer once (not the promise), no Manage', () => {
     const s = screen();
     expect(s.status).toBeNull();
     expect(s.seePlans).toEqual({ kind: 'open', title: 'See what Plus adds' });
-    expect(s.promise).toBe(billingCopy.store.promise);
+    // F5 (founder, 1 Nov 2026): Plus never had, the setup line is the footer; the promise would repeat its first sentence.
+    expect(s.freeLine).toBe(billingCopy.membership.line);
+    expect(s.promise).toBeNull();
+    expect(s.includes).toEqual({ title: 'What Plus includes', items: billingCopy.store.features });
     expect(s.manage).toBe(false);
     expect(s.redeem).toBe(true);
     // No StoreKit on this device (the web preview, an old iOS): the line that says why, and no Redeem.
@@ -90,7 +93,7 @@ describe('[S41] Plan', () => {
       { s: screen({ restored: HELD.restoreNothing }), note: [], restore: HELD.restoreNothing },
     ];
     for (const { s, note, restore } of states) {
-      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
+      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, s.freeLine, ...(s.includes?.items ?? []), p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
         .filter((x): x is string => !!x)
         .flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
@@ -98,7 +101,7 @@ describe('[S41] Plan', () => {
     }
     // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
-    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise \?\? undefined\}>/);
+    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.freeLine \?\? screen\.promise \?\? undefined\}>/);
     expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
@@ -145,7 +148,15 @@ describe('[S41] Plan', () => {
   });
 
   it('types no price, trial length or countdown anywhere it can show (D-083)', () => {
-    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise ?? '']);
+    const ended = screen({ details: { status: 'expired', period: 'month', ownership: 'purchased', periodEnd: '2026-11-13T12:00:00.000Z' } });
+    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' }), ended].flatMap((s) => [
+      s.status?.subtitle ?? '',
+      s.seePlans?.title ?? '',
+      s.promise ?? '',
+      s.freeLine ?? '',
+      s.includes?.title ?? '',
+      ...(s.includes?.items ?? []),
+    ]);
     for (const l of [...lines, p.payment, p.restoreHelp, p.manageHelp, p.redeemHelp]) expect(l, l).not.toMatch(/\$|\bprice\b|\d+\s*(days?|months?) (free|left)/i);
   });
 });
@@ -238,9 +249,9 @@ describe('[S42] Recordings', () => {
       const sentences = [c.body, c.footer].filter((x): x is string => !!x).flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(sentences.length).toBe(new Set(sentences).size);
     }
-    const screen = code('app/settings/recordings.tsx');
-    expect(screen).not.toMatch(/r\.keepHelp/);
-    expect(screen).toMatch(/<ListSection title=\{r\.title\} footer=\{card\.footer \?\? undefined\}>/);
+    // The Recordings page is gone (8 Nov 2026): Where your letters live says where the book is kept
+    // (test/where-live.test.ts). recordingsCard stays for the backup build's held lines (C7).
+    expect(existsSync(join(SRC, 'app/settings/recordings.tsx'))).toBe(false);
   });
 
   it('the language row is actionable when the model is missing, and shows its progress while it downloads', () => {
@@ -259,7 +270,8 @@ describe('[S42] Recordings', () => {
     expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
     expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
-    expect(code('app/settings/recordings.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
+    // The row moved to Storage with the language download (settings-ia.md 4).
+    expect(code('components/settings/speech-row.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
   });
 });
 
@@ -303,15 +315,11 @@ describe('[S43] Export', () => {
 });
 
 describe('[S44] Privacy', () => {
-  it('the never-lines are a plain list with a glyph each, not rows, with their registered words', () => {
-    const list = code('components/consent/never-list.tsx');
-    expect(list).not.toMatch(/ListRow|ListSection/);
-    expect(list).toMatch(/consentCopy\.never\.map/);
-    // LockSimple: the icon section 5.4 lists for S44 (the coordinator's ruling on #313).
-    expect(list).toMatch(/import \{ LockSimpleIcon \} from 'phosphor-react-native\/src\/icons\/LockSimple';/);
-    expect(list).toMatch(/<LockSimpleIcon size=\{20\} color=\{c\.textMuted\} \/>/);
-    expect(list).not.toMatch(/Prohibit/);
-    expect(code('app/settings/privacy.tsx')).toMatch(/<NeverList \/>/);
+  it('the never-list is gone: the promise opens the page, with no lock icon (CPrivO-5, VOICE.md)', () => {
+    expect(existsSync(join(SRC, 'components/consent/never-list.tsx'))).toBe(false);
+    const screen = code('app/settings/privacy.tsx');
+    expect(screen).not.toMatch(/NeverList|consentCopy\.never|Lock\w*Icon|Shield/);
+    expect(screen).toMatch(/\{copy\.trust\.promise\}/);
   });
 });
 
