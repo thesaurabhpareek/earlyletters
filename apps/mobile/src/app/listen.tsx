@@ -33,7 +33,7 @@ import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
-import { afterForeground, elapsedClock, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
+import { afterForeground, elapsedClock, finishWithin, isMicProblem, listenRoom, promptLine, reviewParams, startBlocker, startFailure, type ListenPhase } from '@/components/capture/listen.logic';
 import { MIC_ERROR_CODE, micStateView, type MicAction } from '@/components/capture/mic-state.logic';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -68,7 +68,11 @@ export default function Listen() {
   const p = pendingCopy.listen;
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
-  const child = getActiveChild();
+  // Read once on mount, never per render: the recorder state below re-renders this screen 20 times a second, and
+  // the active child is three database reads. On web each synchronous read holds a 1 MB shared buffer, so reading it
+  // per render ran a long take out of memory at about a minute (#480); on a phone it was wasted work. The book a take
+  // is for cannot change while Listen is open.
+  const [child] = useState(getActiveChild);
   const reduced = useReducedMotion();
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
@@ -136,11 +140,15 @@ export default function Listen() {
     if (!id || ended.current) return;
     ended.current = true;
     setPhase('finishing');
-    const draft = await finalizeTake(recorder, id, reason, lastDuration.current);
+    // Never stuck here (BL-563): a save that throws (a full disk) or hangs still leaves within FINISH_TIMEOUT_MS, and
+    // the take is kept; the launch sweep finishes it if this did not.
+    const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
+    const draft = kept.ok ? kept.value : null;
     // Review says why in one honest line when leaving the app or a call ended the take (S14).
     if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
-    else router.back();
+    else if (router.canGoBack()) router.back();
+    else router.replace('/');
   };
 
   const start = async () => {

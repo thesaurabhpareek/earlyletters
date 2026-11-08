@@ -150,7 +150,6 @@ export const authCopy = {
       agreeLine: 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
       termsLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
-      healthLink: 'Consumer Health Data Privacy Policy',
       agree: 'Agree and continue',
       notNow: 'Not now',
     },
