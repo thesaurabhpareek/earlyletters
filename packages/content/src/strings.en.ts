@@ -1203,21 +1203,32 @@ export const en = {
     versionLabel: "Version",
   },
 
-  // Settings home (PRD C, C-REQ-016). Rows, in order: Account, Language, Plus, Reminders, Export your
-  // book, Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, version.
+  // Settings home (PRD C, C-REQ-016; regrouped 8 Nov 2026 per proposals/account-security settings-ia.md 3, CDesO-1,
+  // CCO-9; settings-ia.md 3 [F] read literally, CTO ruling 8 Nov 2026): a header card (the name and "On this phone",
+  // or the sign-in line; it opens Account with sign-in and nothing without), then the Plan row under it in every build
+  // (the "Settings, Plan" path the Terms and Subscription Terms name), then Children, Writing, Your letters, Privacy
+  // and security, Help and legal, About. Words from account-security/content.md 4.6. Removed with the regroup:
+  // settingsHome.sections.account ("Account") and sections.data ("Your data"), no longer read.
   settingsHome: {
     sections: {
-      account: "Account",
       writing: "Writing",
       plus: "Plus",
-      data: "Your data",
-      privacy: "Privacy and space",
+      letters: "Your letters",
+      privacy: "Privacy and security",
       help: "Help and legal",
       about: "About",
     },
+    // Header card (content 4.6). Build without sign-in: "On this phone"; signed in or out lines reuse
+    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; with sign-in its hint says it
+    // opens Account. Without sign-in the card opens nothing: the Plan row under it is the one way to Plan.
+    cardOnPhone: "On this phone",
+    cardHint: {
+      account: "Opens Account.",
+    },
+    legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
-    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your data); Your words
+    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your letters); Your words
     // replaces the Word for word switch (Writing).
     whereLive: "Where your letters live",
     yourWords: "Your words",
