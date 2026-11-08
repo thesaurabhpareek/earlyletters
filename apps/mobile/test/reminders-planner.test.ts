@@ -40,6 +40,7 @@ function plan(p: Omit<Partial<PlanInput>, 'prefs'> & { prefs?: Partial<ReminderP
     children: p.children ?? [asha],
     lastSaveAt: p.lastSaveAt ?? null,
     lastForegroundAt: p.lastForegroundAt ?? null,
+    lastDelivered: p.lastDelivered ?? null,
     horizonDays: p.horizonDays,
     monthHorizonDays: p.monthHorizonDays,
     maxNotifications: p.maxNotifications,
@@ -394,6 +395,37 @@ describe('copy rotation (C-REQ-006)', () => {
       });
     }
   }
+
+  // NX-10-R2, the switch case: changing the cadence or the evenings changes which count each date gets, so the next
+  // evening could carry the words that were just delivered. The planner is told the last delivered one and steps past it.
+  it('[NX-10-R2] after a cadence or evenings change the next reminder never repeats the last delivered text', () => {
+    const noteless = { monthNotes: false };
+    let switches = 0;
+    for (const namesOnLockScreen of [false, true]) {
+      for (const [, from] of patterns) {
+        for (const [, to] of patterns) {
+          for (let day = 0; day < 120; day++) {
+            const d = addDays(parseIsoDate('2026-10-01')!, day);
+            const iso = `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}`;
+            const old = plan({ now: at(iso, 6, 0), prefs: { ...from, ...noteless, namesOnLockScreen }, children: [asha, dev] }).find((n) => n.date === iso);
+            if (!old) continue;
+            // The evening has been delivered; the person changes the pattern a little after.
+            const now = old.fireAt + 10 * 60_000;
+            const next = plan({
+              now,
+              prefs: { ...to, ...noteless, namesOnLockScreen },
+              children: [asha, dev],
+              lastDelivered: { date: old.date, variant: old.variant! },
+            })[0];
+            if (!next) continue;
+            switches++;
+            expect(`${next.title}|${next.body}`, `${iso} names ${namesOnLockScreen}`).not.toBe(`${old.title}|${old.body}`);
+          }
+        }
+      }
+    }
+    expect(switches).toBeGreaterThan(1000);
+  });
 
   it('a date keeps its variant when the plan is made again later', () => {
     const early = plan({ prefs: { cadence: 'everyEvening', monthNotes: false }, horizonDays: 21 });

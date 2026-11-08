@@ -83,6 +83,11 @@ export interface PlanInput {
   lastSaveAt?: number | null;
   /** When the app last came to the foreground (epoch ms). */
   lastForegroundAt?: number | null;
+  /**
+   * The last evening nudge that was delivered (its local date and variant). After a cadence or evenings change the
+   * count restarts, so the next evening steps past this variant instead of repeating its words (NX-10-R2).
+   */
+  lastDelivered?: { date: string; variant: number } | null;
   /** Evening nudges are planned this many days ahead (default 21). */
   horizonDays?: number;
   /** Month and birthday notes are planned this many days ahead (default 92). */
@@ -348,13 +353,21 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       input.lastSaveAt != null ? input.lastSaveAt + RECENT_SAVE_QUIET_MS : -Infinity,
       input.lastForegroundAt != null ? input.lastForegroundAt + FOREGROUND_QUIET_MS : -Infinity,
     );
+    let shift = 0; // set by the first evening only, then carried so later evenings keep their order
+    let first = true;
     for (let n = dayNumber(today); n <= eveningLastDay; n++) {
       const date = addDays(today, n - dayNumber(today));
       if (!weekdays.includes(weekdayOf(date))) continue;
       if (noteDays.has(n)) continue; // the month or birthday note is today's one note
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
-      const ordinal = slotOrdinal(date, weekdays);
+      let ordinal = slotOrdinal(date, weekdays);
+      if (first) {
+        first = false;
+        const last = input.lastDelivered;
+        if (last && last.date < isoDate(date) && ordinal % VARIANTS === last.variant) shift = 1;
+      }
+      ordinal += shift;
       const variant = ordinal % VARIANTS;
       const named = prefs.namesOnLockScreen && included.length > 0 ? included[namedSlotIndex(ordinal) % included.length].name : null;
       const c = eveningCopy(variant, date, named);

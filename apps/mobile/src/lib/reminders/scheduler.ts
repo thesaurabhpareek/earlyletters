@@ -27,7 +27,7 @@ import { AppState, Platform } from 'react-native';
 import { subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
-import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
+import { lastOwnSaveAt, plannerChildren, readLastEvening, readPrefs, writeLastEvening, writePrefs } from './prefs';
 
 /** Marks our notifications in `content.data`, so we never cancel anyone else's. */
 export const REMINDER_SOURCE = 'scribe.reminders';
@@ -43,6 +43,7 @@ const FAILED: ScheduleResult = { ok: false };
 
 let started = false;
 let lastSignature: string | null = null;
+let lastPlanned: PlannedNotification[] = [];
 let lastForegroundAt: number | null = null;
 let timer: ReturnType<typeof setTimeout> | null = null;
 let chain: Promise<ScheduleResult> = Promise.resolve(OK);
@@ -114,6 +115,17 @@ function triggerFor(p: PlannedNotification): Notifications.NotificationTriggerIn
   return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: p.fireAt, channelId: ANDROID_CHANNEL };
 }
 
+/** The newest evening nudge that has fired by `now`: the one kept on this phone, or one from the plan iOS holds. */
+function lastDeliveredEvening(now: number) {
+  let best = readLastEvening();
+  for (const p of lastPlanned) {
+    if (p.kind === 'evening' && p.variant != null && p.fireAt <= now && (!best || p.fireAt > best.fireAt)) {
+      best = { fireAt: p.fireAt, date: p.date, variant: p.variant };
+    }
+  }
+  return best;
+}
+
 /** What the prefs plan on this phone now, whatever iOS allows (the Settings preview and Next line). Pure read. */
 export function intendedPlan(now = Date.now()): PlannedNotification[] {
   return planReminders({
@@ -123,6 +135,7 @@ export function intendedPlan(now = Date.now()): PlannedNotification[] {
     children: plannerChildren(),
     lastSaveAt: lastOwnSaveAt(),
     lastForegroundAt,
+    lastDelivered: lastDeliveredEvening(now),
   });
 }
 
@@ -140,6 +153,8 @@ export async function currentPlan(now = Date.now()): Promise<PlannedNotification
 }
 
 async function apply(): Promise<void> {
+  const delivered = lastDeliveredEvening(Date.now());
+  if (delivered) writeLastEvening(delivered);
   const plan = await currentPlan();
   const signature = planSignature(plan);
   if (signature === lastSignature) return;
@@ -164,6 +179,7 @@ async function apply(): Promise<void> {
     });
   }
   lastSignature = signature;
+  lastPlanned = plan;
 }
 
 /**

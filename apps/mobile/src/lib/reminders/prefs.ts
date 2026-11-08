@@ -48,6 +48,7 @@ const K = {
   time: 'reminders.time',
   monthNotes: 'reminders.monthNotes',
   names: 'notifications.lockScreenNames',
+  lastEvening: 'reminders.lastEvening',
 } as const;
 
 const onOff = (key: string, fallback: boolean): boolean => {
@@ -128,4 +129,23 @@ export function lastOwnSaveAt(): number | null {
     }
   }
   return newest;
+}
+
+/** The newest evening nudge that has fired, as the planner needs it (date and variant, no words). Content-free. */
+export interface DeliveredEvening {
+  fireAt: number;
+  date: string;
+  variant: number;
+}
+
+export function readLastEvening(): DeliveredEvening | null {
+  const [t, date, v] = (getSetting(K.lastEvening) ?? '').split('|');
+  const fireAt = Number(t);
+  const variant = Number(v);
+  return Number.isFinite(fireAt) && /^\d{4}-\d{2}-\d{2}$/.test(date ?? '') && Number.isInteger(variant) ? { fireAt, date, variant } : null;
+}
+
+export function writeLastEvening(d: DeliveredEvening): void {
+  const v = `${d.fireAt}|${d.date}|${d.variant}`;
+  if (getSetting(K.lastEvening) !== v) setSetting(K.lastEvening, v);
 }
