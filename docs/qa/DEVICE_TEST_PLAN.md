@@ -533,6 +533,24 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - S1-33 and V-06 (the Keep sheet) say so in their own entries: they need a production-profile build.
 - **Record:** S1-37 rows (a) and (b) with the build number and profile; screenshots with Asha only.
 
+### S1-112 Before you begin: the age question and the agreement on one screen (founder decision F2, 8 Nov 2026; LEGAL-REQ-002; branch feat/mobile-before-you-begin)
+- **Needs:** a TestFlight build with feat/mobile-before-you-begin; (a) to (e) on a fresh install; (f) on a phone that already has build 1 installed and past the age question (update over it, do not delete). Fictional family only (Asha). VoiceOver for (d).
+- **Steps:**
+  - (a) Fresh install: read the first screen without touching it. Tap Continue.
+  - (b) Tap Yes, then Continue, with the box unticked. Then tick the box, tap Terms of Service, come back; tap Privacy Policy, come back.
+  - (c) Delete and reinstall. Tick the box, tap No, then Continue. Force-quit and reopen. Set the clock forward 25 hours and reopen.
+  - (d) Fresh install with VoiceOver on: swipe through the screen from the top; tap Continue with nothing answered; answer Yes and tap Continue.
+  - (e) Fresh install at AX5 on the SE 3: reach every control; answer Yes, tick, Continue.
+  - (f) Update over build 1 and open the app. Tick, Continue. Force-quit and reopen.
+- **Expected:**
+  - (a) "Are you 18 or older?", Yes and No with neither selected, an unticked box "I agree to the Terms of Service and Privacy Policy.", the two links under it, and Continue (not dimmed). Continue shows "Choose Yes or No." above it, with a mark in the text colour (no red or amber), and nothing else changes.
+  - (b) "Check the box to continue." and VoiceOver focus on the box; each link opens in the in-app browser, and after Done the answer and the tick are as they were. Ticked plus Continue: the words go up and out and the welcome takes the light.
+  - (c) The stop line "... is currently for adults 18 and over" and nothing else; after the relaunch the same; after 25 hours "I answered by mistake", which brings the question back with nothing selected and the box unticked.
+  - (d) Order: the question (heading), Yes, No, the box read as "checkbox, not checked" with the sentence, Terms of Service and Privacy Policy as links with the hint "Opens in a browser inside the app.", Continue. The reason line is spoken when it appears. A tap on the box reads "checked".
+  - (e) Nothing truncated; the box stays top-aligned beside the wrapping sentence; the links stack; Continue scrolls into reach.
+  - (f) Once: "Before you continue", the box, the two links and Continue, with no age question. After the tick it never shows again, and the book is as it was.
+- **Record:** S1-112 rows (a) to (f): phone, iOS version, text size, VoiceOver yes or no, build number, pass or fail; screenshots with Asha only. For (c) and (f), if a Mac is at hand, run `apps/mobile/e2e/bin/inspect-container.sh` on a simulator install for the same steps (two agreement rows after Yes, none after No, no age column). No agreement row content in the record beyond pass or fail.
+
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
 - **Steps:** (a) On phone A create the synchronizable test item; note the clock time. On phone B poll until it appears; note the time. Delete it on phone A; note when it is gone on B. Repeat once in the other direction. (b) On the SE 3, seal and encrypt the 15 MB file in 64 KiB AES-GCM segments five times; note each time and the thermal state. (c) Start the resumable upload of the file; kill the app at about half; relaunch; note whether it resumes from the last finished part or from zero, and the part size. (d) If an iOS 17 phone is at hand, run the HPKE availability check on it; otherwise record "not measured: no iOS 17 phone" (SE 3 B is ordered at T12).

@@ -1277,6 +1277,21 @@ export const en = {
     stopTitle: "{app} is currently for adults 18 and over",
     mistakeButton: "I answered by mistake",
   },
+  // Before you begin (founder decision F2, 8 Nov 2026; proposals/account-security/content.md 4.1, final strings word for
+  // word): the age question above plus an unticked agreement box, on one screen. The agreement sentence is hashed and
+  // stored with the local record (apps/mobile/src/lib/agreements.logic.ts), so changing a word here is a new record
+  // text, not a typo fix. Q-D (agree or acknowledge the Privacy Policy) is with counsel.
+  beforeBegin: {
+    agree: "I agree to the Terms of Service and Privacy Policy.",
+    termsLink: "Terms of Service",
+    privacyLink: "Privacy Policy",
+    linkA11yHint: "Opens in a browser inside the app.",
+    // The reason line under the links when Continue is tapped too early (announced).
+    chooseAnswer: "Choose Yes or No.",
+    tickBox: "Check the box to continue.",
+    // Installs that passed the old age gate see only the agreement row and Continue, once (counsel Q-C).
+    returningTitle: "Before you continue",
+  },
 } as const;
 
 // Retired 3 Oct 2026 (bring back from git history if the feature returns):

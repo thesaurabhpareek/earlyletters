@@ -363,6 +363,42 @@ export const MIGRATIONS: Migration[] = [
       for (const { id } of waiting) enqueueEntryUpsert(db, id, ['text'], ctx);
     },
   },
+  {
+    version: 9,
+    name: 'agreements: the Terms and Privacy accept made at Before you begin, kept on this phone (F2, PR #597 L-A)',
+    up(db) {
+      // PR #597 docs/data/account-experience-schema.md 2.1 (step L-A). Number: the next free one on develop
+      // (8 Nov 2026); open PR #522 also uses 9, so whichever merges second renumbers (no gaps, append-only).
+      // Every column is L2. No age column, ever: the age answer stays settings.ageGate.passed (D-026).
+      // No backfill: an install that passed the old gate never saw the agreement, so it gets no row and the
+      // app shows the agreement once (legal-consent 3, counsel Q-C). A record is never made up from use.
+      //   id               L2  UUIDv7
+      //   document         L2  'terms' | 'privacy'
+      //   version          L2  document version shown (build constant)
+      //   action           L2  'accept' | 'acknowledge'
+      //   surface          L2  'first_run.before_you_begin' | 'update.agreement'
+      //   recorded_at      L2  device time of the tap
+      //   app_version      L2
+      //   rendered_sha256  L2  hex SHA-256 of the agreement sentence shown
+      //   uploaded_at      L2  when record_policy_act returned (1.1); null until then
+      //   server_act_id    L2  policy_acceptances.id (1.1)
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS agreements (
+          id TEXT PRIMARY KEY NOT NULL,
+          document TEXT NOT NULL,
+          version TEXT NOT NULL,
+          action TEXT NOT NULL,
+          surface TEXT NOT NULL,
+          recorded_at TEXT NOT NULL,
+          app_version TEXT NOT NULL,
+          rendered_sha256 TEXT NOT NULL,
+          uploaded_at TEXT,
+          server_act_id TEXT
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS agreements_once ON agreements (document, version, action);
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
