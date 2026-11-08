@@ -55,15 +55,17 @@ export function longDate(iso: string, locale?: string): string {
 
 /**
  * Full letter dateline: "Tuesday, September 29, 2026. Asha is 7 months old."
- * Uses the due date while expecting ("before Asha was born").
+ * The age sentence counts only from a birthday. A letter the Book files in Before You (no birthday yet, or a day
+ * before it) reads "Before Asha was born.", the same test the Book uses (`isBeforeBirth`). A due date is never an age
+ * anchor: past the due date with no birthday set, the letter is still before birth (QE-01).
  */
 export function letterDateline(child: Pick<Child, 'name' | 'birthday' | 'dueDate'>, iso: string, locale?: string): string {
-  const anchor = child.birthday ?? child.dueDate;
-  if (!anchor) return `${dayDate(iso, locale)}.`;
+  const day = dayDate(iso, locale);
+  if (isBeforeBirth(child.birthday, iso)) return `${day}. ${fill(copy.book.dateline.beforeBirth, { child: child.name })}`;
   // Core gives "<date>. <Age sentence>."; keep its age sentence, use the locale date.
-  const core = dateline(iso, child.name, anchor);
+  const core = dateline(iso, child.name, child.birthday!);
   const cut = core.indexOf('. ');
-  return cut < 0 ? `${dayDate(iso, locale)}.` : `${dayDate(iso, locale)}. ${core.slice(cut + 2)}`;
+  return cut < 0 ? `${day}.` : `${day}. ${core.slice(cut + 2)}`;
 }
 
 /**
