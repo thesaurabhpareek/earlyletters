@@ -10,6 +10,7 @@ export type SitePage = { name: string; path: string; status: number };
 export const PAGES: SitePage[] = [
   { name: 'home', path: '/', status: 200 },
   ...legalSlugs.map((slug) => ({ name: slug, path: `/${slug}`, status: 200 })),
+  ...legalSlugs.map((slug) => ({ name: `${slug} 0.9.0`, path: `/legal/${slug}/0.9.0`, status: 200 })),
   { name: 'unsubscribe, no token', path: '/unsubscribe', status: 200 },
   { name: 'unsubscribe, confirm', path: `/unsubscribe?t=${encodeURIComponent(VALID_TOKEN)}`, status: 200 },
   { name: 'unsubscribe, could not send', path: `/unsubscribe?t=${encodeURIComponent(VALID_TOKEN)}&error=1`, status: 200 },
