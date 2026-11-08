@@ -20,8 +20,12 @@ import {
   cardFooterStacks,
   compactMonth,
   coverAge,
+  JUMP_MAX_TRIES,
+  jumpTarget,
   monthRows,
   MONTHS_BUTTON_MIN_ROWS,
+  runJump,
+  type JumpSteps,
   showsMonthsButton,
   topChapterKey,
   voiceMarker,
@@ -305,7 +309,16 @@ describe('BL-676: the Months sheet and the compact month', () => {
 
   it('the screen jumps with a cross-fade and no animated scroll; the bar takes touches only once it is up (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/scrollToLocation\(\{ sectionIndex: row\.sectionIndex, itemIndex: 0, viewPosition: 0, viewOffset: insets\.top \+ BAR_HEIGHT, animated: false \}\)/);
+    expect(book).toMatch(/scrollToLocation\(\{ sectionIndex, itemIndex: 0, viewPosition: 0, viewOffset, animated: false \}\)/);
+    // The month is found again by its key when the fade ends, and the move goes through runJump.
+    expect(book).toMatch(/locate: \(\) => jumpTarget\(chaptersNow\.current, row\.key\)/);
+    expect(book).toMatch(/runJump\(\{/);
+    // The offset is the bar's whole measured height (its compact month line included), the old sum only as a fallback.
+    expect(book).toMatch(/const viewOffset = barHeight\.current \|\| insets\.top \+ BAR_HEIGHT;/);
+    expect(book).toMatch(/barHeight\.current = e\.nativeEvent\.layout\.height;/);
+    // A month not measured yet: the failed-index handler marks it, and the next layout runs the retry.
+    expect(book).toMatch(/jumpFailed\.current = true;/);
+    expect(book).toMatch(/scrollToArrival\(\);\s*runPendingJump\(\);/);
     expect(book).toMatch(/const half = tokens\.motion\.fadeMs \/ 2;/);
     expect(book).toMatch(/pointerEvents=\{barUp \? 'box-none' : 'none'\}/);
     expect(book).toMatch(/accessibilityElementsHidden=\{!barUp\}/);
@@ -316,6 +329,99 @@ describe('BL-676: the Months sheet and the compact month', () => {
     const bar = book.slice(book.indexOf('const topBar'), book.indexOf('return (\n    <View className="flex-1 bg-background"'));
     expect(bar).toMatch(/testID="book\.bar\.month"/);
     expect(bar.slice(bar.indexOf('compact ?'))).not.toMatch(/numberOfLines/);
+  });
+});
+
+describe('going to a month always brings the list back (Review A on #674)', () => {
+  /** A fake list: records what happened, in order. `measuredAfter` = the attempt from which the target is reachable. */
+  function fake(o: { at?: () => number | null; measuredAfter?: number; throwOnScroll?: boolean } = {}) {
+    const log: string[] = [];
+    let opacity = 1;
+    let tries = 0;
+    const pending: (() => void)[] = [];
+    const steps: JumpSteps = {
+      fadeOut: (next) => {
+        opacity = 0;
+        log.push('out');
+        next();
+      },
+      locate: o.at ?? (() => 3),
+      scroll: (i) => {
+        tries++;
+        log.push(`scroll ${i}`);
+        if (o.throwOnScroll) throw new Error('sections[i] is undefined');
+        return tries >= (o.measuredAfter ?? 1);
+      },
+      afterLayout: (retry) => {
+        log.push('wait');
+        pending.push(retry);
+      },
+      fadeIn: () => {
+        opacity = 1;
+        log.push('in');
+      },
+    };
+    const layout = () => {
+      while (pending.length) pending.shift()!();
+    };
+    return { steps, log, layout, opacity: () => opacity, tries: () => tries };
+  }
+
+  it('a throw while moving still fades the list back in (the restore is in a finally)', () => {
+    const f = fake({ throwOnScroll: true });
+    expect(() => runJump(f.steps)).toThrow();
+    expect(f.opacity()).toBe(1);
+    expect(f.log).toEqual(['out', 'scroll 3', 'in']);
+  });
+
+  it('a month gone since the tap (a deletion, a sync rebuild) is not moved to, and the list comes back', () => {
+    const f = fake({ at: () => null });
+    runJump(f.steps);
+    expect(f.log).toEqual(['out', 'in']);
+    expect(f.opacity()).toBe(1);
+  });
+
+  it('the month is found again by its key: a new place after the list changed, null when gone or empty', () => {
+    const chapters = [
+      { key: 'm17', countLine: '' },
+      { key: 'm16', countLine: '3 letters' },
+      { key: 'm12', countLine: '1 letter' },
+    ];
+    expect(jumpTarget(chapters, 'm12')).toBe(2);
+    expect(jumpTarget(chapters.filter((c) => c.key !== 'm16'), 'm12')).toBe(1);
+    expect(jumpTarget(chapters, 'm14')).toBeNull();
+    // The current month before its first letter is not a place to go.
+    expect(jumpTarget(chapters, 'm17')).toBeNull();
+  });
+
+  it('a month the list has not measured yet is tried again after the next layout, then the list fades in once', () => {
+    const f = fake({ measuredAfter: 3 });
+    runJump(f.steps);
+    // Out, a first try that misses, and the list stays faded while it waits.
+    expect(f.log).toEqual(['out', 'scroll 3', 'wait']);
+    expect(f.opacity()).toBe(0);
+    f.layout();
+    expect(f.log).toEqual(['out', 'scroll 3', 'wait', 'scroll 3', 'wait', 'scroll 3', 'in']);
+    expect(f.opacity()).toBe(1);
+  });
+
+  it('never measured: it gives up after JUMP_MAX_TRIES and still fades back in', () => {
+    const f = fake({ measuredAfter: Infinity });
+    runJump(f.steps);
+    f.layout();
+    expect(f.tries()).toBe(JUMP_MAX_TRIES);
+    expect(f.log.filter((l) => l === 'in')).toHaveLength(1);
+    expect(f.opacity()).toBe(1);
+  });
+
+  it('a month that is gone by the retry is left alone, and the list comes back', () => {
+    let present = true;
+    const f = fake({ at: () => (present ? 2 : null), measuredAfter: 2 });
+    runJump(f.steps);
+    present = false;
+    f.layout();
+    expect(f.log).toEqual(['out', 'scroll 2', 'wait', 'in']);
+    expect(f.opacity()).toBe(1);
   });
 });
 

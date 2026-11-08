@@ -108,3 +108,54 @@ export function topChapterKey(viewable: readonly { section?: { key?: string } | 
   for (const v of viewable) if (v.section?.key) return v.section.key;
   return null;
 }
+
+/* ------------------------------------------------------------------ */
+/* Going to a month (book-page.md 3): fade out, move at once, fade in  */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Where a month is in the Book's list now, found again by its key: the list can change between the tap and the move
+ * (a co-parent's deletion, a sync rebuild). Null when the month is gone or has no letters any more.
+ */
+export function jumpTarget(chapters: readonly Pick<Chapter, 'key' | 'countLine'>[], key: string): number | null {
+  const i = chapters.findIndex((c) => c.key === key);
+  return i >= 0 && chapters[i]!.countLine ? i : null;
+}
+
+/** How many times a jump tries a month the list has not measured yet before it gives up and fades back in. */
+export const JUMP_MAX_TRIES = 5;
+
+/** The screen's side of a jump: the list and its fade. */
+export interface JumpSteps {
+  /** Fade the list out, then call `next` (always, also when the fade was cut short). */
+  fadeOut: (next: () => void) => void;
+  /** The month's current place in the list, or null when it is gone (jumpTarget). */
+  locate: () => number | null;
+  /** Move there at once. False when the list could not reach it yet (scrollToIndexFailed: not measured). */
+  scroll: (sectionIndex: number) => boolean;
+  /** Call `retry` once after the next layout (or frame), when cells near the target have been measured. */
+  afterLayout: (retry: () => void) => void;
+  /** Fade the list back in. */
+  fadeIn: () => void;
+}
+
+/**
+ * Runs a jump: the list always comes back. A month that is gone is not moved to; a month not measured yet is tried
+ * again after the next layout, up to `maxTries` in all; a throw anywhere still fades the list back in.
+ */
+export function runJump(steps: JumpSteps, maxTries: number = JUMP_MAX_TRIES): void {
+  const attempt = (n: number) => {
+    let retrying = false;
+    try {
+      const at = steps.locate();
+      if (at === null) return;
+      if (!steps.scroll(at) && n < maxTries) {
+        steps.afterLayout(() => attempt(n + 1));
+        retrying = true;
+      }
+    } finally {
+      if (!retrying) steps.fadeIn();
+    }
+  };
+  steps.fadeOut(() => attempt(1));
+}

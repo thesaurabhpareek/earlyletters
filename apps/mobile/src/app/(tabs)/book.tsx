@@ -60,7 +60,7 @@ import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { MonthOpener } from '@/components/book/month-opener';
-import { compactMonth, coverAge, monthRows, showsMonthsButton, topChapterKey, type MonthRow } from '@/components/book/book-page.logic';
+import { compactMonth, coverAge, jumpTarget, monthRows, runJump, showsMonthsButton, topChapterKey, type MonthRow } from '@/components/book/book-page.logic';
 import { bookCopy } from '@/components/book/copy';
 import { CoverBand } from '@/components/book/cover-band';
 import { EndOfBook } from '@/components/book/end-of-book';
@@ -273,20 +273,46 @@ export default function Book() {
     if (key) setTopKey((k) => (k === key ? k : key));
   }).current;
   // Going to a month (book-page.md 3): no animated scroll. The list fades out, moves at once, and fades back in,
-  // over fadeMs in all (a fade either way, so Reduce Motion keeps it).
+  // over fadeMs in all (a fade either way, so Reduce Motion keeps it). runJump (book-page.logic.ts) always fades the
+  // list back in, finds the month again by its key when the fade ends (the list may have changed since the tap), and
+  // tries a month the list has not measured yet again after the next layout, a bounded number of times.
+  const chaptersNow = useRef(chapters);
+  chaptersNow.current = chapters;
+  const barHeight = useRef(0);
+  const jumpFailed = useRef(false);
+  const pendingJump = useRef<(() => void) | null>(null);
+  const runPendingJump = useCallback(() => {
+    const retry = pendingJump.current;
+    pendingJump.current = null;
+    retry?.();
+  }, []);
   const jumpTo = useCallback(
     (row: MonthRow) => {
       setMonthsOpen(false);
       const half = tokens.motion.fadeMs / 2;
-      const move = () => {
-        listRef.current?.scrollToLocation({ sectionIndex: row.sectionIndex, itemIndex: 0, viewPosition: 0, viewOffset: insets.top + BAR_HEIGHT, animated: false });
-        listFade.value = withTiming(1, { duration: half, reduceMotion: ReduceMotion.Never });
-      };
-      listFade.value = withTiming(0, { duration: half, reduceMotion: ReduceMotion.Never }, (done) => {
-        if (done) runOnJS(move)();
+      runJump({
+        fadeOut: (next) => {
+          listFade.value = withTiming(0, { duration: half, reduceMotion: ReduceMotion.Never }, () => runOnJS(next)());
+        },
+        locate: () => jumpTarget(chaptersNow.current, row.key),
+        scroll: (sectionIndex) => {
+          jumpFailed.current = false;
+          // The bar's whole height (status bar, title row and the compact month), so the heading lands under it.
+          const viewOffset = barHeight.current || insets.top + BAR_HEIGHT;
+          listRef.current?.scrollToLocation({ sectionIndex, itemIndex: 0, viewPosition: 0, viewOffset, animated: false });
+          return !jumpFailed.current;
+        },
+        afterLayout: (retry) => {
+          pendingJump.current = retry;
+          // The next content size change runs it; a frame later at the latest, if the size does not change.
+          requestAnimationFrame(() => requestAnimationFrame(runPendingJump));
+        },
+        fadeIn: () => {
+          listFade.value = withTiming(1, { duration: half, reduceMotion: ReduceMotion.Never });
+        },
       });
     },
-    [insets.top, listFade],
+    [insets.top, listFade, runPendingJump],
   );
 
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;
@@ -336,6 +362,9 @@ export default function Book() {
     <Animated.View
       pointerEvents={barUp ? 'box-none' : 'none'}
       style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, barStyle]}
+      onLayout={(e) => {
+        barHeight.current = e.nativeEvent.layout.height;
+      }}
       accessibilityElementsHidden={!barUp}
       importantForAccessibility={barUp ? 'auto' : 'no-hide-descendants'}>
       <BlurSurface edge="bottom" style={{ paddingTop: insets.top, paddingBottom: tokens.space[2], paddingHorizontal: tokens.space[5] }}>
@@ -388,9 +417,14 @@ export default function Book() {
               contentContainerStyle={{ paddingBottom: 40 }}
               onScroll={onScroll}
               scrollEventThrottle={16}
-              onContentSizeChange={scrollToArrival}
+              onContentSizeChange={() => {
+                scrollToArrival();
+                runPendingJump();
+              }}
               onScrollToIndexFailed={(info: { averageItemLength: number; index: number }) => {
-                // Not measured yet: go near it, then the next layout finishes the job.
+                // Not measured yet: go near it, then the next layout finishes the job (the arrival's pendingScroll, or
+                // the jump's retry).
+                jumpFailed.current = true;
                 (listRef.current as unknown as { getScrollResponder?: () => { scrollTo?: (o: { y: number; animated: boolean }) => void } } | null)
                   ?.getScrollResponder?.()
                   ?.scrollTo?.({ y: info.averageItemLength * info.index, animated: false });
