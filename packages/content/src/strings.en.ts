@@ -748,11 +748,12 @@ export const en = {
     birthdayLabel: "Birthday",
     dictionaryLabel: "Names and words",
     dictionaryHelp: "Spelled your way, every time.",
-    // D-074: the edit feature is "Word for word"; its changes are small fixes, marked and undoable.
-    tidyLabel: "Word for word",
+    // D-074: the edit feature's changes are small fixes, marked and undoable. The Settings switch is labelled with
+    // what On means, `tidyOn` (founder, build 1: "Word for word" read as the opposite of what On does), and the
+    // footer names both choices. `tidyOff` names the Off choice and the 1 Dec two-choice picker.
     tidyOn: "Small fixes, marked",
     tidyOff: "Exactly as said",
-    tidyHelp: "Small fixes are marked in each letter and can be put back. Exactly as said keeps every um and false start. Either way, we never rewrite your words.",
+    tidyHelp: "With this on, new letters open with small fixes marked, and you can put any of them back. With it off, they open Exactly as said, with every um and false start. Either way, we never rewrite your words.",
     // D-085 (amends D-073): v1.0 has no backup of our own; onPhone* is the honest line. Our encrypted backup,
     // with its strings, returns with sign-in and a server (v1.1).
     recordings: {

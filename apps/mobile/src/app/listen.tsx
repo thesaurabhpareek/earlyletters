@@ -68,7 +68,11 @@ export default function Listen() {
   const p = pendingCopy.listen;
   const motion = useMotion();
   const { promptKey } = useLocalSearchParams<{ promptKey?: string }>();
-  const child = getActiveChild();
+  // Read once on mount, never per render: the recorder state below re-renders this screen 20 times a second, and
+  // the active child is three database reads. On web each synchronous read holds a 1 MB shared buffer, so reading it
+  // per render ran a long take out of memory at about a minute (#480); on a phone it was wasted work. The book a take
+  // is for cannot change while Listen is open.
+  const [child] = useState(getActiveChild);
   const reduced = useReducedMotion();
   // At accessibility text sizes the room scrolls; the clock and "Listening." then sit with Pause and Finish, so the
   // screen always says it is recording, and the prompt is shown whole (P4 critics' pass S5).
