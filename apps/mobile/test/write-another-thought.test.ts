@@ -52,9 +52,10 @@ describe('[BL-E1] the swap', () => {
     const start = tonightFirst();
     const seen = press(60, start);
     const firstRepeat = seen.findIndex((k, i) => seen.indexOf(k) !== i);
+    // The first repeat comes only after every distinct prompt this run ever showed had been shown once: nothing came
+    // back early. (A draw that forgot what it showed repeats long before the pool is used up.)
+    expect(firstRepeat).toBe(new Set(seen).size);
     expect(firstRepeat).toBeGreaterThan(2);
-    // Up to the first repeat, every press was new.
-    expect(new Set(seen.slice(0, firstRepeat)).size).toBe(firstRepeat);
     // And it never stops offering one (no "no more").
     expect(seen).toHaveLength(61);
   });
