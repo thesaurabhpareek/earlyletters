@@ -14,6 +14,9 @@
  * - `caps` uses textTransform, so VoiceOver hears "For Asha", not "F-O-R A-S-H-A", and
  *   Devanagari is untouched (TDD 09 A11Y-F13). Never .toUpperCase() a string.
  * - `asHeading` sets role="heading" for the rotor.
+ * - `trim="figures"` pulls the line box in to the ink of lining figures (text-trim.logic): the month numeral uses
+ *   it so the spacing scale, not the face's ascender, sets the gaps around it, and its left edge meets the small
+ *   text beside it. The style carries its own figure features (`fontVariant`, tokens.type).
  * - Faces: the bundled face for the variant (or for the className's family and weight),
  *   with fontWeight and fontStyle reset so nothing is synthesised.
  */
@@ -23,7 +26,9 @@ import * as React from 'react';
 import { Platform, Text as RNText, type Role, type TextStyle } from 'react-native';
 import { tokens, type TypeToken } from '@scribe/design-tokens';
 import { cn } from '@/lib/utils';
+import { useFontScale } from '@/lib/a11y';
 import { faceForClassName, useFontsReady } from './fonts';
+import { figureTrim } from './text-trim.logic';
 
 const legacyVariants = cva(cn('text-foreground text-base', Platform.select({ web: 'select-text' })), {
   variants: {
@@ -97,6 +102,8 @@ export type TextProps = React.ComponentProps<typeof RNText> &
     asHeading?: boolean | 1 | 2 | 3;
     /** Reader-owned size on top of Dynamic Type (Reading Size); letter styles only. */
     scale?: number;
+    /** Trim the line box to the ink of lining figures (ramp styles with measured face metrics: `numeral`). */
+    trim?: 'figures';
     asChild?: boolean;
   };
 
@@ -109,6 +116,7 @@ export function typeStyle(variant: TypeToken, opts: { scale?: number; fontsReady
     fontSize: t.fontSize * s,
     lineHeight: t.lineHeight * s,
     letterSpacing: t.letterSpacing,
+    ...(t.fontVariant ? { fontVariant: [...t.fontVariant] } : {}),
     ...(ready ? { fontFamily: t.fontFamily, fontWeight: 'normal', fontStyle: 'normal' } : { fontWeight: t.fontWeight, fontStyle: variant === 'signature' ? 'italic' : 'normal' }),
   };
 }
@@ -118,7 +126,22 @@ export function maxScaleFor(variant: TypeToken): number {
   return TYPE[variant].maxScale ?? 0;
 }
 
-function Text({ className, asChild = false, variant, tone, caps, asHeading, scale, style, maxFontSizeMultiplier, role, ...props }: TextProps) {
+/** Text with its line box trimmed to its figures: reads the font scale, so only trimmed text follows it. */
+function TrimmedText({ trim: _trim, style, ...props }: TextProps) {
+  const fontScale = useFontScale();
+  const ready = useFontsReady();
+  const variant = props.variant;
+  // The metrics are the bundled face's: until it loads, the system face draws with its own, so no trim.
+  const margins = ready && variant && variant in TYPE ? figureTrim(variant as TypeToken, fontScale) : null;
+  return <PlainText {...props} style={margins ? [margins, style] : style} />;
+}
+
+/** No hooks here: a Text that gains or loses `trim` swaps the component under it, never its hook order. */
+function Text(props: TextProps) {
+  return props.trim ? <TrimmedText {...props} /> : <PlainText {...props} />;
+}
+
+function PlainText({ className, asChild = false, variant, tone, caps, asHeading, scale, style, maxFontSizeMultiplier, role, trim: _trim, ...props }: TextProps) {
   const textClass = React.useContext(TextClassContext);
   const contextVariant = React.useContext(TextVariantContext);
   const ready = useFontsReady();
