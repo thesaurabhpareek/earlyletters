@@ -87,6 +87,9 @@ export default function Listen() {
   // Read once on mount: was this opened by a tap on Speak? (A ref, so a re-render never re-reads it.)
   const tapped = useRef<boolean | null>(null);
   if (tapped.current === null) tapped.current = consumeListenStart();
+  // Speak played the start tick (MOTION 6: one per take), so the start it opens plays none. A later start here (the
+  // circle, Try again) is the parent's own tap and plays it.
+  const speakTicked = useRef(tapped.current);
   const [phase, setPhase] = useState<ListenPhase>(tapped.current ? 'asking' : 'ready');
   const announcedMinute = useRef(0);
   const mounted = useRef(true);
@@ -144,6 +147,9 @@ export default function Listen() {
   };
 
   const start = async () => {
+    // Only the first start, the one Speak opened, is already ticked; Try again after a blocker is a new tap.
+    const tick = !speakTicked.current;
+    speakTicked.current = false;
     if (!child) return;
     const perm = (await getRecordingPermissionsAsync()).granted ? { granted: true } : await requestRecordingPermissionsAsync();
     // Off, then a phone with no room for a take: each says its own cause (S13). Nothing is written for either.
@@ -153,7 +159,7 @@ export default function Listen() {
       return;
     }
     // Haptic before the session activates: iOS mutes haptics while recording.
-    haptic('press');
+    if (tick) haptic('press');
     await setAudioMode('recording');
     const draft = await beginTake(recorder, { childId: child.id, promptKey: promptKey ?? null });
     if (!mounted.current) {
@@ -246,8 +252,8 @@ export default function Listen() {
     [],
   );
 
+  // No haptic: nothing vibrates between record start and stop (MOTION 6; iOS mutes it, and the microphone would hear it).
   const togglePause = () => {
-    haptic('tap');
     if (phase === 'recording') {
       recorder.pause();
       seenLive.current = false;

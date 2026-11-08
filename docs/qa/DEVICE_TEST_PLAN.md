@@ -524,6 +524,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-36 rows (a) to (k): phone, iOS version, text size, keyboard, pass or fail, and for any fail the step and what happened (no letter text in the record beyond the fictional words typed); a screen recording of (a) on the SE 3.
 - **Known unverified on a phone:** editing in the middle of a long letter relies on UIKit scrolling the sheet to keep the caret in view (the app only follows the caret when writing at the end); and the keyboard offset assumes the page sheet reaches the bottom of the screen. Report either if it does not hold.
 
+### S1-82 One tick to start a recording, one to stop, none between (founder report on TestFlight build 1; MOTION 6; branch fix/mobile-recording-haptics)
+- **Needs:** a build with fix/mobile-recording-haptics; the SE 3 and the founder's iPhone; Settings > Sounds & Haptics > System Haptics on; Low Power Mode off; Asha's book.
+- **Steps:**
+  - (a) On Tonight tap Speak, with a finger resting lightly on the phone's back. Count the taps felt until the clock shows 0:03.
+  - (b) Record 2 minutes, tapping Pause and then Resume three times along the way, then Finish.
+  - (c) Open Listen and tap Close at rest; open it from Speak with the microphone off in Settings > Privacy > Microphone, turn it back on, return and tap the red circle (or Try again).
+  - (d) Play back the letter from (b) in Review, listening around each pause and resume and the last second before Finish.
+- **Expected:** (a) exactly one light tap, as Speak is let go, and none as Listen opens or the microphone starts. (b) no tap at any Pause or Resume; one light tap after Finish, as Review comes. (c) the circle or Try again plays one tap, before recording starts. (d) no click or buzz on the recording.
+- **Record:** S1-82 rows (a) to (d): phone, iOS version, taps felt in (a), taps felt in (b) during the take and at Finish, pass or fail for (c) and (d).
+
 ### S1-37 No letter limit in alpha (founder decision, 1 Nov 2026; PL-1, S1; `apps/mobile/src/lib/billing/alpha.ts`)
 - **Needs:** a TestFlight build of the `testflight` or `preview` profile (`.preview` bundle id) on a fresh install, and, after Mon 9 Nov, a TestFlight build of the `production` profile.
 - **Steps:** (a) Alpha build: on the Welcome screen read the line under the body. Set up Asha's book, then keep three letters, then a fourth (speak one, type the others), each from Review with words on screen. Open Settings and read the Plan row, then open Plan. (b) Production profile build: the same steps.
