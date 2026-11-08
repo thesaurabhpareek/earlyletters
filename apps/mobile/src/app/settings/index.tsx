@@ -1,3 +1,4 @@
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { router, useFocusEffect, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -25,7 +26,8 @@ import { backupCopy } from '@scribe/content';
  * "Settings, Plan" is the path the Plus legal text names.
  *
  * Said once each: the short privacy line is the footer of Your data (`trust.short`), and the early-version note
- * (`settings.about.beta.*`, registered text, D-060, K-13) is the footer of About, word for word, unstyled.
+ * (`settings.about.beta.body`, registered text, D-060, K-13) is the footer of About, word for word, unstyled, with no
+ * heading of its own, so About says "early" once (CLO-5). Then the sign-off, text only (CDesO-2).
  * Help writes to the support mailbox with a fixed subject and nothing else (LEGAL-REQ-014). "If you are struggling"
  * is always here, never behind a flag (D-034).
  *
@@ -74,7 +76,8 @@ export default function Settings() {
   const auth = useAuth();
   const account = accountSubtitle({ status: auth.state.status, provider: auth.account.provider });
   const version = Constants.expoConfig?.version ?? '';
-  const build = Constants.expoConfig?.ios?.buildNumber ?? '';
+  // The build number from the installed binary (EAS sets it remotely, so the config never has it). null on web.
+  const build = Application.nativeBuildVersion ?? '';
   const versionValue = build ? fill(h.versionValue, { version, build }) : version;
 
   return (
@@ -134,11 +137,14 @@ export default function Settings() {
         <ListSection title={copy.settings.about.title}>
           <ListRow title={h.versionLabel} trailing={versionValue} />
         </ListSection>
-        {/* The early-version note: registered text (in-app-disclosures.md section 1), word for word, About's footer. */}
+        {/* The early-version note: registered text (in-app-disclosures.md section 1), word for word, About's footer.
+            No "Early version" heading above it: the note says "early" once (founder, 8 Nov 2026). */}
         <View accessible className="gap-0.5 px-4" testID="settings.about.beta">
-          <Text variant="footnote">{copy.settings.about.beta.label}</Text>
           <Text variant="footnote">{copy.settings.about.beta.body}</Text>
         </View>
+        <Text variant="footnote" tone="muted" className="mt-4 px-4 text-center" testID="settings.signOff">
+          {h.signOff}
+        </Text>
       </View>
     </ScrollView>
   );
