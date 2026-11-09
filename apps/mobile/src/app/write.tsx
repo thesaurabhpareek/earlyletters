@@ -226,7 +226,7 @@ export default function Write() {
       };
     }
     presses.current += 1;
-    const next = anotherThought({ birthday: child.birthday, today, ...history.current, shown: shownKeys.current, press: presses.current }, PROMPTS);
+    const next = anotherThought({ birthday: child.birthday, today, ...history.current, shown: shownKeys.current, press: presses.current, childName: child.name }, PROMPTS);
     shownKeys.current = next.shown;
     haptic('tap');
     setPromptKey(next.prompt.key);

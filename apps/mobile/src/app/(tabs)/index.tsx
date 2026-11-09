@@ -184,9 +184,10 @@ export default function Tonight() {
   const family = room?.family;
   const birthday = family?.childBirthday ?? null;
 
+  const childName = family?.childName;
   const prompt = useMemo(
-    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS),
-    [birthday, daysSince, recent, today, shuffle, leftKey],
+    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey, childName }), PROMPTS),
+    [birthday, daysSince, recent, today, shuffle, leftKey, childName],
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);

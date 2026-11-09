@@ -637,7 +637,7 @@ describe('[S2] a book that is not born yet: the dateline names the child, and th
 
   it('the screen builds its prompt and its dateline from these (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toContain('selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS)');
+    expect(screen).toContain('selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey, childName }), PROMPTS)');
     expect(screen).toContain('tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today))');
     // The old input, which turned a missing birthday into month 0, is gone.
     expect(screen).not.toMatch(/ageMonths:/);
@@ -677,7 +677,7 @@ describe('[S4] "Another thought" never shows the prompt that is on screen', () =
     expect(screen).toMatch(/haptic\('tap'\);\s*setLeftKey\(prompt\.key\);\s*setShuffle\(\(s\) => s \+ 1\);/);
     expect(screen).toContain('const [leftKey, setLeftKey] = useState<string | null>(null);');
     // it is a dependency of the memo, so the draw sees it
-    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey\]/);
+    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey(, childName)?\]/);
   });
 });
 

@@ -212,10 +212,13 @@ export function resurfaced(
 /**
  * The dateline ("Asha · 7 months"), and what VoiceOver reads instead ("Asha, 7 months"): the separator is never read
  * aloud. With no age it is the day's date (the Family tab). Tonight always passes a stage, the age or, before the birth,
- * "Before You" (prompt.logic tonightStageLabel), so its dateline always names the child.
+ * "Before You" (prompt.logic tonightStageLabel), so its dateline always names the stage, and the child too when the book has a name.
  */
 export function tonightDateline(child: string, age: string | null, dayFallback: string): { text: string; a11y: string } {
-  return age ? { text: `${child} · ${age}`, a11y: `${child}, ${age}` } : { text: dayFallback, a11y: dayFallback };
+  if (!age) return { text: dayFallback, a11y: dayFallback };
+  // A book made without a name (NX-31-R3, NX-36 S13): the stage alone, "7 months", with no name and no dot.
+  if (!child.trim()) return { text: age, a11y: age };
+  return { text: `${child} · ${age}`, a11y: `${child}, ${age}` };
 }
 
 /**
