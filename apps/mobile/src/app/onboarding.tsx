@@ -64,7 +64,9 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
-import { capabilities } from '@/lib/capabilities';
+import { useAuth } from '@/lib/auth/session-provider';
+import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
@@ -166,7 +168,13 @@ function FirstRun() {
   // welcome ends the wait.
   const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
   const joinLine = joining.line;
-  const showContinue = joining.begin;
+  // Sign-in first (NX-31 R17, behind the server switch): with no session and no book, "Begin the book" waits, except
+  // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
+  const { state: authState } = useAuth();
+  const gateAllows = beginTheBookAllowed(
+    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0 }),
+  );
+  const showContinue = joining.begin && gateAllows;
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
