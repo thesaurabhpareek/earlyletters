@@ -132,3 +132,15 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Way back: revert PR #520; the Erase everything row, the Delete this book screens and the four settings keys go, and the age-gate hook returns to its previous behaviour.
 - Revisit when: the founder walks S1-133 on a phone; counsel answers the absolutes and the Terms 8.1 question; the signed-in erase (F17-REQ-026) is built.
 - Signed: Chief Compliance Officer (Claude role, not counsel)
+
+### CPO-2 A person with one book keeps the 30-day promise: onboarding shows the existing Recently deleted row while a deleted book waits (BL-776) (9 Nov 2026, CPO, read in the council round of 9 Nov and filed by Karma's session; not user research)
+- Question: BL-776. A person who deletes the only book and then restarts the app lands on first run, and nothing there leads to Recently deleted, so the 30-day undo window cannot be used. Which of the three options in the row: (a) onboarding shows a quiet way to Recently deleted while a deleted book is waiting, (b) the delete step says what to do after a restart, (c) Delete this book is not offered on the only book?
+- Tier and type: T2 (a user-visible promise: a deleted book can be restored for 30 days); complicated.
+- Options considered: (a), (b), (c) as written in the row.
+- Ruling: option (a). Onboarding shows the existing Recently deleted row while a deleted book is waiting. No new line: the row and its words already exist, so no new user-facing wording is introduced and the founder's approval for new lines (D-144) is not triggered. The CDesO places it on the screen. Acceptance, from the CPO's answer: delete the only book, cold start, Restore brings it back, walked on a phone.
+- Why: the CPO's reason is that the 30-day promise holds with one book. The answer gives no further reasons against (b) or (c).
+- What this record does not do: it does not change the backlog row. `docs/BACKLOG.md` BL-776 is `needs-decision` until the product agent moves it to ready (PR #715 holds the row's current edits), and the build is the mobile engineer's, reviewed by `design-systems`. The council round that gave the ruling is not in the repository; this entry is its first record. A D- id, if the founder wants one for it, is his to merge (D-125).
+- Door: two-way (a build change).
+- Way back: revert the build PR.
+- Revisit when: the phone walk in the acceptance above fails, or the CDesO places the row differently.
+- Signed: Chief Product Officer (Claude role)
