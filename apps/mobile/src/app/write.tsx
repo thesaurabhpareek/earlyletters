@@ -40,7 +40,6 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View, useWindowDimensions, type TextInput } from 'react-native';
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
@@ -57,7 +56,7 @@ import { PlusLine } from '@/components/tonight/plus-line';
 import { plusLineShows } from '@/components/tonight/tonight-plus.logic';
 import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { armKeep } from '@/lib/capture/keep-intent';
-import { copy, pendingCopy } from '@/lib/copy';
+import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -232,7 +231,7 @@ export default function Write() {
     haptic('tap');
     setPromptKey(next.prompt.key);
     // Said once; focus stays on the button so a second double-tap swaps again.
-    announce(renderTemplate(next.prompt.text, { child: child.name }));
+    announce(fill(next.prompt.text, { child: child.name }));
   };
 
   /** "Add to Asha's book" or "Keep private": one tap keeps the letter (S20). Nothing is kept unless the words are on this phone first. */
@@ -318,7 +317,7 @@ export default function Write() {
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
             <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>
               <Text variant="prompt" tone="muted" testID="write.prompt">
-                {renderTemplate(prompt.text, { child: child.name })}
+                {fill(prompt.text, { child: child.name })}
               </Text>
             </Animated.View>
           )}

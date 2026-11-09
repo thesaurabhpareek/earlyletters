@@ -31,8 +31,17 @@ export function withBrandName<T>(value: T, name: string = brand.name): T {
 
 export const copy: typeof en = withBrandName(en);
 
+/**
+ * The words shown for a child with no name (NX-31-R3): onboarding.childFallback, "your child". The name may stay
+ * empty; the stored value is never replaced, only the sentence is filled.
+ */
+export function childLabel(name: string | null | undefined): string {
+  return name?.trim() ? name : copy.onboarding.childFallback;
+}
+
 export function fill(text: string, values: Record<string, string | number> = {}): string {
-  return renderTemplate(text, values);
+  const child = values.child;
+  return renderTemplate(text, typeof child === 'string' && !child.trim() ? { ...values, child: childLabel(child) } : values);
 }
 
 /** English plural choice for counted strings until packages/content has plural forms (TDD 09 7.2 item 2). */
