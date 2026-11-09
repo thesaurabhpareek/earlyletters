@@ -13,7 +13,7 @@ import { selectPrompt, type Prompt, type SelectInput } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
 import { PROMPTS } from '../src';
 
-const BEFORE = PROMPTS.filter((p) => p.band === 'before');
+const BEFORE = PROMPTS.filter((p) => p.band === 'before' && !p.retired);
 const base: SelectInput = { ageMonths: 5, daysSinceLastEntry: 1, hardStretch: false, role: 'parent', together: false, recentKeys: [], seed: '2026-10-28' };
 const render = (p: Prompt) => p.text.replace(/\{child\}/g, 'Asha');
 

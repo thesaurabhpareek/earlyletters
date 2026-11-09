@@ -19,8 +19,16 @@ describe('[NX-31-R3] first run, name optional, date required', () => {
     expect(firstRunBookNames(['  '])).toEqual(['']);
     // every place that shows the name shows "your child"; the stored name stays empty
     expect(fill(copy.onboarding.welcome.body, { child: '' })).toContain('your child');
-    expect(fill(copy.book.title, { child: '' })).toBe("your child's book");
+    expect(fill(copy.book.title, { child: '' })).toBe("Your child's book");
     expect(fill(copy.onboarding.welcome.body, { child: '' })).not.toContain('{child}');
+  });
+
+  it('[NX-31-R3] the fallback starts with a capital when it opens a string, and a typed name is left as typed', () => {
+    expect(fill("{child}'s book stays with your co-parent.", { child: ' ' })).toBe("Your child's book stays with your co-parent.");
+    expect(fill('Anything to tell {child} today?', { child: '' })).toBe('Anything to tell your child today?');
+    expect(fill("{child}'s book is back.", { child: 'asha' })).toBe("asha's book is back.");
+    expect(fill('A letter for {child}', { child: '' })).toBe('A letter for your child');
+    expect(fill(copy.notifications.birthday.title, { child: '' })).toBe('Happy birthday to your child');
   });
 
   it('[NX-31-R3] a name and no date: Continue waits and the reason line shows', () => {

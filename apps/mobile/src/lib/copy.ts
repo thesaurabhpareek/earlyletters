@@ -41,7 +41,11 @@ export function childLabel(name: string | null | undefined): string {
 
 export function fill(text: string, values: Record<string, string | number> = {}): string {
   const child = values.child;
-  return renderTemplate(text, typeof child === 'string' && !child.trim() ? { ...values, child: childLabel(child) } : values);
+  if (typeof child !== 'string' || child.trim()) return renderTemplate(text, values);
+  const label = childLabel(child);
+  const out = renderTemplate(text, { ...values, child: label });
+  // A string that opens with {child} ("{child}'s book") starts with a capital when the words stand in for the name.
+  return out.startsWith(label) ? out.charAt(0).toUpperCase() + out.slice(1) : out;
 }
 
 /** English plural choice for counted strings until packages/content has plural forms (TDD 09 7.2 item 2). */

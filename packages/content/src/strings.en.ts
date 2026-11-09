@@ -150,7 +150,7 @@ export const en = {
     },
 
     nameCheck: {
-      title: "Say {child}'s name three times",
+      title: "Say the name three times",
       body: "So we hear it the way you say it.",
       countLabel: "{count} of 3",
       listeningLabel: "Listening",
@@ -160,7 +160,7 @@ export const en = {
       fixButton: "Let me spell it",
       spellPlaceholder: "Type it your way",
       doneTitle: "Got it.",
-      doneBody: "{child} will be spelled your way in every letter.",
+      doneBody: "The name will be spelled your way in every letter.",
       cta: "Continue",
     },
 
@@ -664,10 +664,10 @@ export const en = {
     evening: [
       { title: "A minute for {child}?", body: "Tell {child} one thing about today. A sentence is plenty." },
       { title: "A letter tonight?", body: "What made you smile today? Say it out loud and keep it." },
-      { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
+      { title: "A letter for {child}", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
+      { title: "Your voice, kept", body: "Talk for a minute. One day {child} will hear it, just as you said it." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
@@ -689,7 +689,7 @@ export const en = {
       body: "A new month in {child}'s book is open.",
     },
     birthday: {
-      title: "Happy birthday, {child}",
+      title: "Happy birthday to {child}",
       body: "A year of letters. Want to read them together today?",
     },
   },
@@ -753,7 +753,7 @@ export const en = {
       refundLabel: "Request a refund",
       // Plus reaches a co-parent only through Apple Family Sharing (Terms 14.12, D-080).
       includedByFamilySharing: "Included through Family Sharing",
-      familySharingHelp: "Plus is shared through Apple Family Sharing. {child}'s other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
+      familySharingHelp: "Plus is shared through Apple Family Sharing. The other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
     },
     // Settings > Account. The sign-in emails name these exact labels.
     account: {

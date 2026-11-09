@@ -11,7 +11,9 @@ import type { Prompt } from '@scribe/core';
 export type { Prompt, PromptBand, PromptKind } from '@scribe/core';
 // 3: added the `before` band, eight openings for a book whose child is not born yet (P3 critics' pass S2).
 // 4: four more `before` openings, twelve in all (BL-535, F13-REQ-008). No earlier key is reused or reworded.
-export const PROMPT_LIBRARY_VERSION = 4;
+// 5: two prompts read wrongly with the words for a child with no name (NX-31-R3): `opening.before.name` and
+//    `together.37-60.older-self` are retired, `opening.before.name-story` and `together.37-60.hello-later` replace them.
+export const PROMPT_LIBRARY_VERSION = 5;
 
 export const PROMPTS: Prompt[] = [
   // Openings, any age
@@ -96,7 +98,8 @@ export const PROMPTS: Prompt[] = [
 
   // Openings, before the birth: the weeks now, the name, the home, what is hoped for. Band `before`.
   { key: "opening.before.ordinary-day", text: "What does an ordinary day look like in your home these weeks?", band: "before", kind: "opening" },
-  { key: "opening.before.name", text: "Where did the name {child} come from? Who said it out loud first?", band: "before", kind: "opening" },
+  { key: "opening.before.name", text: "Where did the name {child} come from? Who said it out loud first?", band: "before", kind: "opening", retired: true },
+  { key: "opening.before.name-story", text: "Where did the name come from? Who said it out loud first?", band: "before", kind: "opening" },
   { key: "opening.before.hope", text: "What is one thing you hope {child} gets to love?", band: "before", kind: "opening" },
   { key: "opening.before.reminds", text: "What is one thing in your home that makes you think of {child}?", band: "before", kind: "opening" },
   { key: "opening.before.talking", text: "Who has been talking about {child} lately? What do they say?", band: "before", kind: "opening" },
@@ -152,7 +155,8 @@ export const PROMPTS: Prompt[] = [
   { key: "together.25-36.love-who", text: "Ask {child}: who do you love? Let the list run long.", band: "25-36", kind: "together" },
   { key: "together.25-36.animal", text: "Ask {child}: if you were an animal, which one?", band: "25-36", kind: "together" },
   { key: "together.37-60.grown-up", text: "Ask {child}: what will you do when you are big?", band: "37-60", kind: "together" },
-  { key: "together.37-60.older-self", text: "Ask {child} to say hello to the {child} who reads this later.", band: "37-60", kind: "together" },
+  { key: "together.37-60.older-self", text: "Ask {child} to say hello to the {child} who reads this later.", band: "37-60", kind: "together", retired: true },
+  { key: "together.37-60.hello-later", text: "Ask {child} to say hello to the grown-up who reads this later.", band: "37-60", kind: "together" },
   { key: "together.37-60.tell-story", text: "Let {child} tell you a story. You just listen and keep it.", band: "37-60", kind: "together" },
   { key: "together.37-60.about-you", text: "Ask {child}: what is something you know about me?", band: "37-60", kind: "together" },
   { key: "together.37-60.funny", text: "Ask {child}: what is the silliest thing that happened today?", band: "37-60", kind: "together" },
