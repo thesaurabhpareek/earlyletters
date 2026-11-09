@@ -10,7 +10,10 @@
  *   is the literary line in `prompt` textMuted above the page. Typed text keeps the keyboard's own autocorrect;
  *   the machine never touches it.
  * - Above the keyboard, the two destinations stacked as Review's footer is: "Add to Asha's book" full width and
- *   "Keep private" quiet beneath, off until there is text (P4 critics' pass S2).
+ *   "Keep private" quiet beneath, off until there is text (P4 critics' pass S2). From accessibility text sizes up they
+ *   ride at the end of the scroll instead of pinned, as Review's and Tonight's do (lib/review-layout.logic.ts
+ *   `footerPlacement`), so a footer taller than the room above the keyboard can never push "Add to the book" off the
+ *   screen; the page then follows the last line typed, not the buttons (review-view.logic `pageEndOffset`).
  * - "Saved on this phone" is a quiet status after a pause, announced at most every 10 s, and it stays. A write that
  *   fails shows "Not saved yet" in the same place and is tried again on the next pause. Neither is a status colour:
  *   this is lit paper (D-110).
@@ -29,7 +32,8 @@
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
  *
  * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
- * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.
+ * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), under the two destinations so
+ * VoiceOver reads it last, after the buttons.
  * Never in an alpha build (PLUS_ALPHA; Karma ruling on #508). Letters kept is read once when Write opens and never
  * awaited: until it is read the line is absent, so the first frame and typing never wait on it.
  */
@@ -43,7 +47,7 @@ import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion, useAnimatedS
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
+import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, pageEndOffset, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
 import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -61,6 +65,7 @@ import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
+import { footerPlacement } from '@/lib/review-layout.logic';
 import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
 
 const ANNOUNCE_EVERY_MS = 10_000;
@@ -246,6 +251,9 @@ export default function Write() {
   // At accessibility text sizes the autosave line has its own row under the header, where it can wrap, instead of
   // running into Close (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+  // The same rule as Review's and Tonight's footer: pinned under the page at the default size, at the end of the scroll
+  // from accessibility sizes up.
+  const inlineFooter = footerPlacement(large) === 'inline';
 
   // KeyboardAvoidingView measures itself inside the sheet but the keyboard from the top of the screen; the sheet's
   // own top closes the gap (sheetKeyboardOffset), so the page and both destinations sit above the keyboard.
@@ -264,8 +272,20 @@ export default function Write() {
   // The page grows with the words and the sheet scrolls, so the line being written stays in view above the keyboard.
   const scroll = useRef<ScrollView>(null);
   const selectionEnd = useRef<number | null>(null);
+  // Measured, never state: reading them must not render. The footer's height only matters while it rides in the scroll.
+  const viewportHeight = useRef(0);
+  const footerHeight = useRef(0);
+  // Pinned footer: the end of the content is the end of the page, so the field growing scrolls to the end.
   const onContentSizeChange = () => {
-    if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
+    if (!inlineFooter && followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
+  };
+  // Footer inline: the end of the page is the end of the field, so the buttons below it do not push the last line typed
+  // out of sight. The scroll's own size is read here, after the buttons are counted in it; scrolling to its end would
+  // show them instead of the words.
+  const onScrollContentSizeChange = (_width: number, contentHeight: number) => {
+    if (!inlineFooter || !followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) return;
+    const y = pageEndOffset({ contentHeight, footerHeight: footerHeight.current, viewportHeight: viewportHeight.current });
+    if (y !== null) scroll.current?.scrollTo({ y, animated: false });
   };
 
   // "Another thought" fades out at the first character and back in when the page is empty again, keeping its space.
@@ -284,6 +304,25 @@ export default function Write() {
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const empty = !text.trim();
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
+  // "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action never breaks over two lines
+  // (P4 critics' pass S2), then the standing Plus line: under the buttons, so VoiceOver reads it last. Defined once and
+  // drawn in exactly one place, by `inlineFooter`.
+  const footer = (
+    <View
+      className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}
+      onLayout={(e) => {
+        footerHeight.current = e.nativeEvent.layout.height;
+      }}>
+      <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
+      <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
+      {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
+      {showPlusLine ? (
+        <View className="pt-1">
+          <PlusLine />
+        </View>
+      ) : null}
+    </View>
+  );
   const status =
     saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
@@ -310,7 +349,14 @@ export default function Write() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset} className="flex-1">
         <ModalHeader onClose={close} leading={large ? null : status} />
         {large && status ? <View className="px-5 pb-1">{status}</View> : null}
-        <ScrollView ref={scroll} contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scroll}
+          contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4"
+          keyboardShouldPersistTaps="handled"
+          onContentSizeChange={onScrollContentSizeChange}
+          onLayout={(e) => {
+            viewportHeight.current = e.nativeEvent.layout.height;
+          }}>
           <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
             {dateline}
           </Text>
@@ -347,19 +393,12 @@ export default function Write() {
             scrollEnabled={false}
             placeholder={copy.tonight.typing.placeholder}
           />
+          {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
+              above the keyboard and push "Add to the book" off the screen. */}
+          {inlineFooter ? footer : null}
         </ScrollView>
-        {/* Stacked as Review's footer is: "Add to Asha's book" full width, "Keep private" quiet beneath, so the main
-            action never breaks over two lines (P4 critics' pass S2). */}
-        <View className="gap-1 border-t border-border bg-background px-5 pb-2 pt-3">
-          {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
-          {showPlusLine ? (
-            <View className="pb-1">
-              <PlusLine />
-            </View>
-          ) : null}
-          <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
-          <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
-        </View>
+        {/* The default size: pinned under the page, in the thumb zone, always on screen. */}
+        {inlineFooter ? null : footer}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );

@@ -407,7 +407,9 @@ describe('S19: Write', () => {
     expect(field).toMatch(/scrollEnabled=\{false\}/);
     expect(field).toMatch(/className="mt-3 flex-none"\s*inputClassName="flex-none"/);
     expect(field).toMatch(/onContentSizeChange=\{onContentSizeChange\}/);
-    expect(write).toMatch(/if \(followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
+    // Pinned footer: scroll to the end of the content, as before. With the footer inline (accessibility sizes) the scroll
+    // follows the end of the field instead (test/write-footer-large-text.test.ts).
+    expect(write).toMatch(/if \(!inlineFooter && followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
   });
 
   it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {

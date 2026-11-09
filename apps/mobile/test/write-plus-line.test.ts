@@ -65,10 +65,11 @@ describe('Write wires it', () => {
     expect(screen).not.toMatch(/await lettersKeptNow/);
   });
 
-  it('draws the line above the two destinations, only when the rule says so', () => {
-    const footer = screen.slice(screen.indexOf('border-t border-border'));
+  it('draws the line under the two destinations (VoiceOver reads it last), only when the rule says so', () => {
+    const footer = screen.slice(screen.indexOf('const footer = ('), screen.indexOf('const status ='));
     expect(footer.indexOf('{showPlusLine ? (')).toBeGreaterThan(-1);
-    expect(footer.indexOf('<PlusLine />')).toBeLessThan(footer.indexOf('testID="write.keep.book"'));
     expect(footer.indexOf('testID="write.keep.book"')).toBeLessThan(footer.indexOf('testID="write.keep.private"'));
+    expect(footer.indexOf('testID="write.keep.private"')).toBeLessThan(footer.indexOf('<PlusLine />'));
+    expect(footer.indexOf('<PlusLine />')).toBeGreaterThan(footer.indexOf('{showPlusLine ? ('));
   });
 });
