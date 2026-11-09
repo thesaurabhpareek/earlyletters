@@ -9,7 +9,10 @@
  *
  * Accessibility contract
  * - One element per row; role button (pressable) or text. Min height 44, grows with type.
- * - At AX sizes the trailing value moves under the title (TDD 09 2.3); nothing truncates.
+ * - At AX sizes the trailing value, or a trailing node, moves under the title (TDD 09 2.3); nothing truncates.
+ * - `actionWord` (the word a tap does: Stop, Download, Remove) is the last part of the label, so Voice Control can say
+ *   "Tap Stop" and VoiceOver with hints off still hears what a tap does (list-row.logic.ts rowLabel). The visible
+ *   word is hidden from VoiceOver by its owner, so it is read once, in the label.
  * - ToggleRow: the switch (platform/toggle) carries label and description; the visible
  *   text is hidden from VoiceOver so it is read once, as "Label, switch, on".
  * Haptics: none (navigation is not a haptic moment; the native switch has its own).
@@ -21,7 +24,7 @@ import { Toggle } from '@/components/platform/toggle';
 import { Text } from '@/components/ui/text';
 import { useIsAccessibilitySize, useTheme } from '@/lib/a11y';
 import { cn } from '@/lib/utils';
-import { DIVIDER_INSET, showsChevron, withDividers } from './list-row.logic';
+import { DIVIDER_INSET, rowLabel, showsChevron, trailingNodePlacement, withDividers } from './list-row.logic';
 
 export function ListSection({ title, footer, children, className }: { title?: string; footer?: string; children: React.ReactNode; className?: string }) {
   // Fragments count as one row; pass rows directly (arrays and conditionals are fine).
@@ -63,6 +66,8 @@ export type ListRowProps = {
   leading?: React.ReactNode;
   trailing?: 'chevron' | 'none' | string | React.ReactNode;
   variant?: 'default' | 'destructive';
+  /** The word a tap does, drawn by the `trailing` node (Stop, Download, Remove). Added to the row's label, last, on a pressable row. */
+  actionWord?: string;
   /** A value shown before the chevron (Apple Settings "Reminders  Few times a week  >"). With a string `trailing`, that string wins. */
   value?: string;
   onPress?: () => void;
@@ -74,12 +79,13 @@ export type ListRowProps = {
   testID?: string;
 };
 
-export function ListRow({ title, subtitle, leading, trailing = 'none', value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', testID }: ListRowProps) {
+export function ListRow({ title, subtitle, leading, trailing = 'none', actionWord, value: valueProp, variant = 'default', onPress, disabled, accessibilityHint, accessibilityRole = 'button', testID }: ListRowProps) {
   const { c } = useTheme();
   const ax = useIsAccessibilitySize();
   const value = typeof trailing === 'string' && trailing !== 'chevron' && trailing !== 'none' ? trailing : (valueProp ?? null);
   const node = trailing !== 'chevron' && trailing !== 'none' && typeof trailing !== 'string' ? trailing : null;
-  const label = [title, subtitle, value].filter(Boolean).join(', ');
+  const label = rowLabel({ title, subtitle, value, actionWord, pressable: !!onPress, disabled });
+  const nodeAt = trailingNodePlacement({ ax, hasNode: node !== null });
   const chevron = showsChevron({ pressable: !!onPress, disabled, destructive: variant === 'destructive', hasTrailingNode: node !== null, android: Platform.OS === 'android' });
 
   const body = (
@@ -97,8 +103,9 @@ export function ListRow({ title, subtitle, leading, trailing = 'none', value: va
             {value}
           </Text>
         ) : null}
+        {nodeAt === 'under' ? <View className="self-start">{node}</View> : null}
       </View>
-      {node}
+      {nodeAt === 'beside' ? node : null}
       {chevron ? <CaretRightIcon size={16} color={c.textMuted} weight="bold" /> : null}
     </>
   );
