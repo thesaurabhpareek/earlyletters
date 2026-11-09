@@ -133,14 +133,15 @@ Rulings by the council executives other than the CTO (Karma's are in `docs/agent
 - Revisit when: the founder walks S1-133 on a phone; counsel answers the absolutes and the Terms 8.1 question; the signed-in erase (F17-REQ-026) is built.
 - Signed: Chief Compliance Officer (Claude role, not counsel)
 
-### CPO-2 A person with one book keeps the 30-day promise: onboarding shows the existing Recently deleted row while a deleted book waits (BL-776) (9 Nov 2026, CPO, read in the council round of 9 Nov and filed by Karma's session; not user research)
-- Question: BL-776. A person who deletes the only book and then restarts the app lands on first run, and nothing there leads to Recently deleted, so the 30-day undo window cannot be used. Which of the three options in the row: (a) onboarding shows a quiet way to Recently deleted while a deleted book is waiting, (b) the delete step says what to do after a restart, (c) Delete this book is not offered on the only book?
-- Tier and type: T2 (a user-visible promise: a deleted book can be restored for 30 days); complicated.
-- Options considered: (a), (b), (c) as written in the row.
-- Ruling: option (a). Onboarding shows the existing Recently deleted row while a deleted book is waiting. No new line: the row and its words already exist, so no new user-facing wording is introduced and the founder's approval for new lines (D-144) is not triggered. The CDesO places it on the screen. Acceptance, from the CPO's answer: delete the only book, cold start, Restore brings it back, walked on a phone.
-- Why: the CPO's reason is that the 30-day promise holds with one book. The answer gives no further reasons against (b) or (c).
-- What this record does not do: it does not change the backlog row. `docs/BACKLOG.md` BL-776 is `needs-decision` until the product agent moves it to ready (PR #715 holds the row's current edits), and the build is the mobile engineer's, reviewed by `design-systems`. The council round that gave the ruling is not in the repository; this entry is its first record. A D- id, if the founder wants one for it, is his to merge (D-125).
-- Door: two-way (a build change).
-- Way back: revert the build PR.
-- Revisit when: the phone walk in the acceptance above fails, or the CDesO places the row differently.
-- Signed: Chief Product Officer (Claude role)
+### CPO-10 A person with one book keeps the 30-day promise: onboarding shows the existing Recently deleted row while a deleted book waits (BL-776) (9 Nov 2026, CPO in the council round of 9 Nov, filed by Karma's session)
+- Filed by Karma's session from the CPO's council answer of 9 Nov 2026 (`council-9nov/cpo.md`, outside this repository; the twelve seats each answered the status note, and the CPO's answer is the only source for this ruling). Fields marked (CPO) come from that answer. Fields marked (filer) are the filing session's, not the CPO's.
+- Why CPO-10: CPO-2 to CPO-9 are cited in code, tests and open PRs and are in no file of the log (CPO-2 is the app-lock ruling, F1, cited in `onboarding.tsx`, `app.config.ts` and the app-lock code), so I took CPO-10. Checked on 9 Nov 2026: `develop` and the patches of the 158 open PRs hold no CPO-10 or above. Not checked: the Project docs (`infra/exec-rulings-*`), which this session cannot read, so the number is unverified against them. (filer)
+- Question (filer, from the BL-776 row): a person who deletes the only book and then restarts the app lands on first run, and nothing there leads to Recently deleted, so the 30-day undo window cannot be used. Which of the three options in the row: (a) onboarding shows a quiet way to Recently deleted while a deleted book is waiting, (b) the delete step says what to do after a restart, (c) Delete this book is not offered on the only book?
+- Ruling (CPO): option (a). "Onboarding shows the existing Recently deleted row while a deleted book waits. No new line. The CDesO places it." The reason given is that the 30-day promise holds with one book. Acceptance: delete the only book, cold start, Restore brings it back.
+- Condition (filer, from the BL-776 row and CCO-6): the row sends any new line to the founder (D-132 keeps what users are promised with him). The CPO says no new line is needed, and the Recently deleted row's words exist today. If the CDesO's placement turns out to need a word that does not exist, that word goes to the founder before it is built.
+- Other seats (filer): the CDesO places the row on the screen; the CPO's ruling is the product choice and does not decide the design. The CTO view is mine: (a) is a build change with no data change, and I agree. The CDesO has not given a written view of the placement yet, and this entry does not claim one.
+- Tier and door (filer): T2 (a user-visible promise); two-way, a build change.
+- No D- id: executive rulings are recorded in this log (COUNCIL section 5), so no D- id will be made for this. The BL-776 row says a D- id is assigned at the ruling; this entry is that ruling, and the row becomes ready when this entry merges (the product agent's edit, in PR #715).
+- Way back (filer): revert the build PR.
+- Revisit when (filer): the acceptance walk fails on a phone, or the CDesO's placement needs a new word.
+- Signed: Chief Product Officer (Claude role) for the ruling; filed by Karma
