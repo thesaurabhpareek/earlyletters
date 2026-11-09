@@ -220,18 +220,21 @@ export function productionChecks(input) {
   {
     const found = signInCapabilities(cfg, input.introspected);
     const serversOn = cfg?.extra?.serverFeatures === true;
+    // Build 12 has no Google sign-in. This reads the built artifact (URL scheme, plugin); a Google client-id check on the
+    // profile's env names (#698) is a different input, so the two do not duplicate.
+    const google = found.filter((f) => f.startsWith('Google URL scheme') || f.includes('google-signin'));
     const evaluated = Boolean(cfg) && Boolean(input.introspected);
     const hasApple = found.includes('ios.usesAppleSignIn') && found.some((f) => f === `entitlement ${SIGN_IN_ENTITLEMENTS[0]}`);
     const hasDomains = found.some((f) => f.startsWith('ios.associatedDomains')) && found.includes(`entitlement ${SIGN_IN_ENTITLEMENTS[1]}`);
     check(
-      evaluated && (serversOn ? hasApple && hasDomains : found.length === 0),
+      evaluated && (serversOn ? hasApple && hasDomains && google.length === 0 : found.length === 0),
       serversOn
         ? 'sign-in capabilities in the servers-on build: Sign in with Apple entitlement and associated domains present (app.config.ts signInCapable)'
         : 'no sign-in capability in the store build: no Sign in with Apple entitlement, no associated domains, no Google URL scheme (guideline 2.5.19; the native modules stay linked, dormant)',
       !evaluated
         ? `\`expo config --type introspect\` did not evaluate with the ${PROFILE} profile's env${input.introspectError ? `: ${input.introspectError}` : ''}, so the entitlements cannot be checked.`
         : serversOn
-          ? `The ${PROFILE} profile has server features on but the evaluated config lacks the Sign in with Apple entitlement or the associated domains (found: ${found.join('; ') || 'none'}). app.config.ts signInCapable keeps them whenever server features are on.`
+          ? `The ${PROFILE} profile has server features on but the evaluated config lacks the Sign in with Apple entitlement or the associated domains, or carries a Google URL scheme or plugin, which build 12 does not offer (found: ${found.join('; ') || 'none'}). app.config.ts signInCapable keeps them whenever server features are on.`
           : `The ${PROFILE} config carries ${found.join('; ')}, but this build offers no sign-in (guideline 2.5.19, "no hidden, dormant, or undocumented features"). app.config.ts signInCapable leaves them out of a production build with server features off.`,
       'sign-in',
     );

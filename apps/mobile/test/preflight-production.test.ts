@@ -135,6 +135,16 @@ describe('the sign-in check follows the servers switch (a servers-on production 
     const r = (productionChecks(on()) as Result[]).find((x) => x.id === 'sign-in');
     expect(r?.level).toBe('PASS');
   });
+  it('servers on with a Google URL scheme in Info.plist: sign-in FAILs (build 12 has no Google sign-in)', () => {
+    const i = on();
+    i.introspected.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] });
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
+  it('servers on with the Google Sign-In plugin in the config: sign-in FAILs', () => {
+    const i = on();
+    i.cfg.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]];
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
   it('servers on without the Apple entitlement or associated domains: sign-in FAILs', () => {
     const r = (productionChecks({ ...good(), cfg: { ...good().cfg, extra: { ...good().cfg.extra, serverFeatures: true } } }) as Result[]).find((x) => x.id === 'sign-in');
     expect(r?.level).toBe('FAIL');

@@ -96,4 +96,23 @@ describe('sign-in capabilities per build (guideline 2.5.19)', () => {
     expect(entitlements(intro)).toEqual(expect.arrayContaining([APPLE, DOMAINS]));
     expect(urlSchemes(intro)).toContain(GOOGLE_SCHEME);
   }, 120_000);
+  // Fail closed: the switch is on only for "on" (isOn in app.config.ts, which trims and lowercases). Anything else in production is a
+  // servers-off build, so it carries no sign-in capability. Mutation proof (run: isOn accepting "true" fails the "true" row): change isOn to accept "true", "1" or any
+  // truthy string, or trim/lowercase differently, and the "ON" row (still on) or a malformed row here fails; make
+  // signInCapable return true for production regardless of the switch and every row fails.
+  it.each([
+    ['unset', ''],
+    ['"true"', 'true'],
+    ['"1"', '1'],
+    ['"yes"', 'yes'],
+    ['"onn" (typo)', 'onn'],
+    ['"of" (typo)', 'of'],
+    ['"off"', 'off'],
+  ])('production with the servers switch %s fails closed: no sign-in capability, serverFeatures false', (_n, v) => {
+    const env = profileEnv('production', { EXPO_PUBLIC_SERVER_FEATURES: v });
+    const pub = evaluate('public', env) as Cfg & { extra?: { serverFeatures?: boolean } };
+    const intro = evaluate('introspect', env);
+    expect(pub.extra?.serverFeatures).toBe(false);
+    expect(signInCapabilities(pub, intro)).toEqual([]);
+  }, 120_000);
 });
