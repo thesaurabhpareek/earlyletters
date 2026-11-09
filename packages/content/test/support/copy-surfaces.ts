@@ -418,10 +418,10 @@ export const SURFACES: readonly Surface[] = [
     filled: ['confirm.body'],
     // The held deletion disclosure (counsel C8) and `what.deletedFamily` (KEEP; never shown in v1.0: family
     // contributors come in v1.1, D-055).
-    we: { re: WE, allowed: ['what.intro', 'what.introProposed', 'what.deletedFamily'] },
+    we: { re: WE, allowed: ['what.intro', 'what.deletedFamily'] },
     banned: [
-      // Held for counsel (C8): today's intro still says photos until counsel clears S64's words.
-      { ...PHOTOS, allowed: ['what.intro'] },
+      // Build 12: no line names photos (the intro dropped them with the recordings it does not hold on our servers).
+      PHOTOS,
       E2E_OR_FAMILY_KEYS,
       ONLY_YOU,
       // `notConfigured` is the kill path's own sentence. `what.onThisPhone` ("On this phone, your letters stay. ...") says it in a

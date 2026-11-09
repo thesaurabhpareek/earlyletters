@@ -1,8 +1,12 @@
 // Moved from apps/mobile/src/lib/auth/copy.ts on 3 Oct 2026; that file now re-exports this one.
 import { en } from '../strings.en';
 
-/** errors.network's first sentence, also said under the code field while the email is on its way (S54, P8a critics S2). */
-const lettersSafe = 'Your letters are safe on this phone.';
+/**
+ * errors.network's first sentence, also said under the code field while the email is on its way (S54, P8a critics S2).
+ * Build 12: it says where the letters are, not that they are "safe" (VOICE.md, "safe"): there is no recording backup, so
+ * a promise of safety is one the build does not make. The key keeps its name (`code.lettersSafe`) so the screen is untouched.
+ */
+const lettersSafe = 'Your letters are still on this phone.';
 
 /**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
@@ -18,21 +22,22 @@ const lettersSafe = 'Your letters are safe on this phone.';
 export const authCopy = {
   sheet: {
     titles: {
-      first_letter: "Keep {child}'s book on any phone",
-      // A book has at most two parents in v1.0, so "the book", not "the family book".
-      invite: 'Sign in to join the book',
-      invite_create: 'Sign in to invite a co-parent',
+      // Build 12: the words of a letter sync to the account; recordings stay on the phone that made them (no backup).
+      first_letter: "Keep {child}'s words on any phone",
+      // Build 12 hides co-parent surfaces (BL-604, D-126), so these two name no book, no invite and no co-parent.
+      invite: 'Sign in',
+      invite_create: 'Sign in',
       sign_in: 'Welcome back',
       settings: 'Sign in',
     },
     bodies: {
-      // What is true, in one sentence; never "sign in so". account.signedOutBody says the same, word for word.
-      first_letter: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
-      invite: 'You each write from your own phone, in the same book.',
-      invite_create: 'You both sign in, each on your own phone.',
+      // What is true, in two short sentences; never "sign in so". account.signedOutBody says the same, word for word.
+      first_letter: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      invite: 'Sign in on this phone to carry on.',
+      invite_create: 'Sign in on this phone to carry on.',
       // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
-      settings: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+      settings: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
     },
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
@@ -50,7 +55,7 @@ export const authCopy = {
       passkey: 'Last time you used a passkey.',
     },
     // The kill path only (a build with no project settings).
-    notConfigured: 'Signing in is not available right now. Your letters are safe on this phone.',
+    notConfigured: 'Signing in is not available right now. Nothing on this phone has changed.',
     busy: 'Signing you in',
   },
 
@@ -118,20 +123,20 @@ export const authCopy = {
     network: `${lettersSafe} Sign in once you are back online.`,
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
-    code_paused: 'Your letters are safe. You can try a code again in 15 minutes.',
+    code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
     // SIGN-01. A 429 has more than one cause (the per-address wait between emails, the project's hourly email cap, the
     // per-IP verify limit), and the app cannot tell them apart from the answer, so neither line names a length it cannot
     // know, and neither names a provider the build may not offer. `email_wait`: a 429 while sending an email.
     // `rate_limited`: a 429 anywhere else (checking a code or a link), where no email was being sent.
-    email_wait: "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
-    rate_limited: 'Your letters are safe. Too many tries for now. Wait a few minutes, then try again.',
+    email_wait: "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
+    rate_limited: 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
     invalid_email: "That email doesn't look quite right.",
-    not_available: "Your letters are safe. This way of signing in isn't available right now. Try another way.",
-    provider: 'Your letters are safe. That sign-in did not finish. Try again, or try another way.',
-    session_expired: 'Your letters are safe on this phone. Sign in again to keep sharing them.',
+    not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
+    provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+    session_expired: 'Your letters are still on this phone. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
-    unknown: 'That did not go through. Your letters are safe on this phone.',
+    consent_unavailable: 'Nothing has changed. Setting up your account did not finish. Try again.',
+    unknown: 'That did not go through. Nothing has changed.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
     // SIGN-06: the same refusal, reached after the link was already checked with the server (verify started), so the
@@ -172,8 +177,8 @@ export const authCopy = {
   account: {
     title: 'Account',
     signedOutTitle: 'Not signed in',
-    // S52's body, word for word.
-    signedOutBody: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+    // `sheet.bodies.first_letter`, word for word (Build 12: no co-parent, recordings stay on the phone).
+    signedOutBody: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
     signIn: 'Sign in',
     signedInWith: {
       apple: 'Signed in with Apple',
@@ -182,7 +187,7 @@ export const authCopy = {
       other: 'Signed in',
     },
     syncTitle: 'Sync',
-    syncLabel: 'Sync and sharing',
+    syncLabel: 'Sync across your phones',
     sync: {
       on: 'On',
       off: 'Off, kept on this phone',

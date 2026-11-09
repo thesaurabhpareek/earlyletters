@@ -121,7 +121,7 @@ The voice promise (`en.trust.voice`), said where a recording is made or kept: "W
 
 A line that sounds automatic stops being heard. These earned their place once and then spread; reach for the specific fact instead.
 
-- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save, a crash, and the sign-in errors the S52 table leads with it).
+- **"safe".** Say what happened and where the words are: "Nothing you saved has changed", "Your words are still here", "Every letter you have kept is still in the book". Keep "safe" for the few places that need it (a failed save and a crash, where the words are on the phone). Sign-in and account errors say "Nothing has changed." or "Your letters are still on this phone.": with no recording backup in Build 12, "safe" is a promise the build does not make, and an error on a new phone is read where no letters are (packages/content/test/build12-untrue-copy.test.ts).
 - **"That did not work this time".** Name what did not finish: "That did not save", "That sign-in did not finish", "That did not go through".
 - **"Nothing (else) to do".** Say it once in an email, never in both the preheader and the body.
 - **"Here is ...".** Say the thing: "Your confirmation code", not "Here is your code".
