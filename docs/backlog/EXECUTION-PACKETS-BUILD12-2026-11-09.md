@@ -1,6 +1,6 @@
 # Execution packets for the Build 12 cut (9 Nov 2026)
 
-Written by `product`, docs only, 9 Nov 2026 (UTC). It decides nothing. Rows are in `docs/BACKLOG.md` section "Build 12 cut, founder decisions of Mon 9 Nov 2026" (BL-775 to BL-815). The merge order, gates, metrics and rollout are in `docs/backlog/BUILD12-PLAN-2026-11-09.md`. Earlier packets (BL-764, 765, 770, 772) stay in `EXECUTION-PACKETS-2026-11-08.md`.
+Written by `product`, docs only, 9 Nov 2026 (UTC). It decides nothing. Rows are in `docs/BACKLOG.md` section "Build 12 cut, founder decisions of Mon 9 Nov 2026" (BL-784 to BL-815 and BL-817 to BL-825). The merge order, gates, metrics and rollout are in `docs/backlog/BUILD12-PLAN-2026-11-09.md`. Earlier packets (BL-764, 765, 770, 772) stay in `EXECUTION-PACKETS-2026-11-08.md`.
 
 How this was checked: PR numbers, heads and states by `gh api repos/thesaurabhpareek/earlyletters/pulls/<n>` on 9 Nov; file lists by `.../pulls/<n>/files`; test titles read from the PR head blobs. I ran no test and no build (no `node_modules` on this machine). "Fails on old code" is the PR's or requirement file's claim. Anything I did not read is marked UNVERIFIED.
 
@@ -18,7 +18,7 @@ How this was checked: PR numbers, heads and states by `gh api repos/thesaurabhpa
 - Build 12 profile facts to keep in view (read from `apps/mobile/eas.json`): the `production` profile has `EXPO_PUBLIC_SERVER_FEATURES` off, `EXPO_PUBLIC_BACKUP` off, `EXPO_PUBLIC_ACCOUNT_DELETION` on today. Account-first turns the first one on in the production flip PR, which is not yours.
 - Hand-back format (PR body, last section, and one line in your journal): PR number and full head sha; the packet id; files changed (count); each test title run with pass or fail and the command; the claim-check output (or "no overlap"); device rows needed and who runs them; UNVERIFIED list; anything you did not touch that you expected to.
 
-## 1. Packet BL-776: Family tab hidden in the servers-on store build
+## 1. Packet BL-818: Family tab hidden in the servers-on store build
 
 Customer outcome: the bar a stranger sees in Build 12 is Tonight, Book, You, with no door to a feature that is not in the listing.
 Engineer: `mobile`. Reviewer: `red-team`, `design-systems`. Status: blocked until #665 merges.
@@ -36,17 +36,17 @@ Do NOT touch: `eas.json`, `capabilities.ts` values, invite flows, `(tabs)/_layou
 Done when: the new title and the two alpha titles pass; `tab-bar.test.ts` (from #699) asserts three tabs for the servers-on store build.
 Open question for the founder: the draft D-152 reading of D-126 (the plan file section 7).
 
-## 2. Packet BL-775: land the You tab (PR #699)
+## 2. Packet BL-817: land the You tab (PR #699)
 
 Engineer: the author (`mobile`); `product` only checks. Status: in-review, draft, stacked on #665.
 Claim-check regex: `app/\(tabs\)/(_layout|you)|settings/_layout|docs/design/IA.md|tab-labels|tab-bar`
 
-Steps to merge: (1) #665 merges; (2) rebase `git rebase --onto origin/develop a8614c5e` (the stack base); (3) add BL-776 first or in the same stack, so a servers-on store build is three tabs; (4) BL-807's SemiBold selected cue, if design agrees in time, as a separate small PR; (5) ready for review, then `qa` runs the NX-30a R2 and R3 tap counts on the SE 3.
+Steps to merge: (1) #665 merges; (2) rebase `git rebase --onto origin/develop a8614c5e` (the stack base); (3) add BL-818 first or in the same stack, so a servers-on store build is three tabs; (4) BL-807's SemiBold selected cue, if design agrees in time, as a separate small PR; (5) ready for review, then `qa` runs the NX-30a R2 and R3 tap counts on the SE 3.
 Tests that must pass on the rebased head (exact titles): `[NX-30a-R1] the last tab is You and it opens Settings home`; `[NX-30a-R4] every tab sets the Large Content Viewer title and fixed label size`; `[NX-30a-R6] no visible tab leads to a coming-soon page`; `[NX-30a-R7] the You tab draws no lamp and has one level 1 heading`; `[NX-30a-R8] four tabs at 320 pt and 375 pt keep 44 pt targets and whole labels` (rename to "three tabs" for Build 12: the title says four, the Build 12 bar is three; ask the author); `[NX-30a-R9] tab titles are single words from copy.tabs`.
 Do NOT touch: `settings/index.tsx` content; Photos route; Family code.
 Note: the You label `copy.tabs.you` is a placeholder (NX-30-R6). The word is the founder's; do not argue it in the PR.
 
-## 3. Packet BL-777: #700, the server accepts an empty child name
+## 3. Packet BL-819: #700, the server accepts an empty child name
 
 Engineer: `data-architect`. Reviewer: `red-team`; the founder labels and applies. Status: in-review (draft).
 Claim-check regex: `supabase/migrations/2026110|children_entitlements|child_name_optional|supabase/tests/grants`
@@ -59,9 +59,9 @@ Open items before ready:
 4. Label `approve-migration` (founder) and a `red-team` review; both on the current head.
 5. Add the line in `supabase/APPLY.md` (next file number 32 at the time of writing; recheck with `node scripts/agents/next-id.mjs`).
 Do NOT touch: any applied migration; `.github/migrations-applied.txt` (the founder's apply step does).
-Done when: `npm run test:db` passes with the titles above and the migration is applied on production before BL-778 reaches a servers-on build.
+Done when: `npm run test:db` passes with the titles above and the migration is applied on production before BL-820 reaches a servers-on build.
 
-## 4. Packet BL-778 and BL-780: #701 then #703, names that may be empty
+## 4. Packet BL-820 and BL-822: #701 then #703, names that may be empty
 
 Engineer: `mobile` (#701), `content` (#703). Reviewer: `red-team`; founder for the nine strings.
 Claim-check regex: `app/onboarding|components/onboarding/child-step|packages/core/src/child|apps/mobile/src/lib/copy|packages/content/src/(strings|prompts)|first-run-child-name|nameless-child|app/\(tabs\)/index|app/write|app/listen`
@@ -72,7 +72,7 @@ Steps: merge #700 first (council order); #701; then rebase #703 with `git rebase
 Do NOT touch: the add-book form's name rule (a name stays required for later books; the founder may widen it, one line); the print order; server code.
 Also open: F03-U02 says Continue is disabled on an empty name; it is stale. The edit is in the plan file section 7 as a draft for the founder.
 
-## 5. Packet BL-779: #702, the session counter
+## 5. Packet BL-821: #702, the session counter
 
 Engineer: `mobile`. Reviewer: `privacy`. Claim-check regex: `lib/asks/|kept-letter-sessions`
 Head 48b0d44e. Titles: `[NX-31-R14] a session counts only when it ends with a kept letter`; `... a session in which nothing was kept is not counted, and an empty phone counts 0`; `... the count survives a restart and ignores a value that is not a number`; `... reads and writes the settings table, and a second counter on the same table agrees`; `... the counter imports no analytics, network or logging, and every kept letter reaches it through askAfterSave`.
@@ -130,7 +130,7 @@ Do NOT touch: any screen file, `review.tsx`, `listen.tsx`, `(tabs)/index.tsx`. C
 
 ## 12. Packet BL-798: the nav usability test (a study, not an engineer packet)
 
-Owner: `user-research`, founder runs it. Needs a TestFlight build with BL-775. Script and thresholds: NX-30 section on the evaluation plan and NX-30a. Use the founder and 3 to 5 parents on one phone. Hand back: one page under `docs/qa/evidence/` with times, taps and quotes, no names of children, no recordings kept. The thresholds are proposed; a miss is a finding, not a veto.
+Owner: `user-research`, founder runs it. Needs a TestFlight build with BL-817. Script and thresholds: NX-30 section on the evaluation plan and NX-30a. Use the founder and 3 to 5 parents on one phone. Hand back: one page under `docs/qa/evidence/` with times, taps and quotes, no names of children, no recordings kept. The thresholds are proposed; a miss is a finding, not a veto.
 
 ## 13. Packet BL-814: the Free-to-Pro line in the ops sheet
 
@@ -140,7 +140,7 @@ Owner: `ops`. Claim-check regex: `docs/ops/`. One short section in the Build 12 
 
 | Row | Why not | Who unblocks |
 |---|---|---|
-| BL-781, 782, 783, 784, 787, 791 | Account-first waits on G1 to G7, a hosted project (BL-757, BL-758), #676 closed and the D-153, D-145 and D-146 entries | founder, `ops`, `security` |
+| BL-823, 824, 825, 784, 787, 791 | Account-first waits on G1 to G7, a hosted project (BL-757, BL-758), #676 closed and the D-153, D-145 and D-146 entries | founder, `ops`, `security` |
 | BL-786 | The reviewer path is chosen by the founder (F5, F7, F14, F15) | founder |
 | BL-792 Photos, BL-793 backup | Not in Build 12 | founder (after 1.0) |
 | BL-796, 797 motion S1, S2 | After Build 12 | design systems |
