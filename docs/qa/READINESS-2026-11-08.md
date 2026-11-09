@@ -1,6 +1,8 @@
-# Readiness for TestFlight build 9, 8 Nov 2026
+# Readiness for TestFlight build 9, 8 Nov 2026 (updated 9 Nov)
 
-Status: **At risk.** Everything that runs on a Linux box is green on `origin/develop` (29dcd7d). Nothing that needs a phone, Maestro, a browser or a sandbox account has run. None of the 13 candidate fixes is on `develop` yet (all open), so these results describe `develop` without them. Re-run the table's first rows on the build 9 commit once the fixes merge.
+Update 9 Nov: this is a snapshot from 8 Nov. Build 9 has shipped, and builds 10 and 11 followed. Merge state of the 13 PRs on 9 Nov (REST check): merged are #540, #595, #589, #544, #532, #519, #508, #523, #522, #520, #517, #510; open is #521 only. Build 10 (13980751) contains #540, #595, #589, #544 and #519 (per Review A); it does not contain #532, #508, #523, #522 or #510. What build 11 contains is UNVERIFIED here. The 8 Nov text below is kept as written, except where marked.
+
+Status: **At risk.** Everything that runs on a Linux box is green on `origin/develop` (29dcd7d, the 8 Nov base; stale now). Nothing that needs a phone, Maestro, a browser or a sandbox account has run. On 8 Nov none of the 13 candidate fixes was on `develop` (all open), so these results describe `develop` without them. That is no longer true (see the update above); re-run the first rows on the commit that build 11 was cut from. That re-run is UNVERIFIED.
 Ask for the founder: run `docs/qa/TESTFLIGHT-BUILD-9-DEVICE-CHECK.md` on the phone after the build installs, and tell qa which pull requests the build contains.
 
 Run on 8 Nov 2026 at about 08:30 to 10:00 UTC, Linux, 2 cores, Node 22.23.4, one `npm ci`. The only changes versus `develop` are docs, the catalog rows and the board claim.
@@ -17,7 +19,7 @@ Run on 8 Nov 2026 at about 08:30 to 10:00 UTC, Linux, 2 cores, Node 22.23.4, one
 | Preflight for build 1 | `cd apps/mobile && node scripts/preflight-testflight.mjs` | PASS: 0 fail, 2 warn, 3 unverified, 58 pass. Unverified: EAS "preview" env contents, the published pack manifest. Warn: ITMS-91053 email after upload, ExpoFileSystem framework manifest |
 | Seam guard, unit | `node --test .github/scripts/seam-guard.test.mjs` | PASS, 21 of 21 |
 | Seam guard, store bundles | `node .github/scripts/seam-guard.mjs --store-profiles --e2e-control` | PASS: testflight, preview and production bundles hold none of the 10 seam identifiers; the e2e control bundle does carry the seam, so the search can see it |
-| Database access rules | `npm run test:db` | PASS, 38 files |
+| Database access rules | `npm run test:db` | PASS, 38 files (the count of `*.test.mjs` files that `supabase/tests/run.mjs` picks up on this branch; CLAUDE.md says 32 and is out of date) |
 | Web journeys | `npm run e2e:web -w @scribe/mobile` | NOT RUN: no Playwright browser is installed on this box, and a full run took 16 minutes on 2 cores in #532, with load-dependent flakes (#533) |
 | Edge Function tests | `npm run test:functions` | NOT RUN: needs Deno through npx; not attempted in this window |
 | Maestro flows (E2E-01 to E2E-16) | `apps/mobile/e2e` | NOT RUN: needs a Mac and a simulator. Maestro cannot drive a physical iPhone |
@@ -47,7 +49,7 @@ Run on 8 Nov 2026 at about 08:30 to 10:00 UTC, Linux, 2 cores, Node 22.23.4, one
 
 ## Risks to read before the build
 
-- **Local database v9 (#522).** It is a migration on an install over build 8; check 1 and check 21 cover it. PR #522 says to renumber if another lane lands a v9 first.
+- **Local database v9 (#522).** It is a migration on an install over the previous build (build 8 on 8 Nov; build 10 for build 11); check 1 and check 21 cover it. PR #522 says to renumber if another lane lands a v9 first.
 - **Overlap in `listen.tsx`.** #595, #523 and #532 all edit it; the later two to merge rebase. Re-run the Listen unit tests on the merged head.
 - **Shared catalog and plan files.** #517 and #540 and #544 also edit `release-test-catalog.csv` or `DEVICE_TEST_PLAN.md`. This PR only appends rows and one new Part 4, so the CSV needs `node scripts/qa/release-catalog.mjs` after each merge (the catalog test fails if it is stale).
 - **Freeze (D-130).** #508, #517, #520, #544 say they merge after the 9 Nov go/no-go unless Karma takes them as S1. Whether they are in build 9 is the coordinator's call.

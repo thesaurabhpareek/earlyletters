@@ -1,5 +1,7 @@
 # TestFlight build 9: device check for the founder's phone
 
+Note 9 Nov: build 9 has shipped. This sheet is reused for build 11 over build 10; the file name keeps "build 9". Rows for fixes that build 10 lacked (#532, #508, #523, #522, #510) apply only if build 11 contains them, which is UNVERIFIED.
+
 Owner: qa. 8 Nov 2026. Fictional family only: use Asha, Avi, Mama, Papa for every name, note and screenshot.
 Each line is one action and one expected result. Rows marked **DEVICE** need a real iPhone, a second device type, or a sandbox account; nobody has run them. A fix is in your build only if its pull request merged before the build was cut: tick only the lines for fixes the build contains. Catalog rows: `RT-B9-01` to `RT-B9-13` in `docs/qa/release-test-catalog.csv`.
 
@@ -7,7 +9,7 @@ Result column: write Pass, Fail or Skip. A Fail gets a GitHub issue with `beta` 
 
 | # | Fix | Action | Expected | Mark | Result |
 |---|---|---|---|---|---|
-| 1 | Install | Install build 9 over build 8 with 2 letters in the book | App opens on Tonight; both letters and the free-letter count are unchanged | DEVICE | |
+| 1 | Install | Install the new build over the previous one (build 9 over build 8 on 8 Nov; build 11 over build 10 on 9 Nov) with 2 letters in the book | App opens on Tonight; both letters and the free-letter count are unchanged | DEVICE | |
 | 2 | #540 DOB | First run or Add a child: tap Choose a date once | The calendar opens on that one tap | DEVICE | |
 | 3 | #540 | Pick a day and tap Done | The saved day is the day you tapped | DEVICE | |
 | 4 | #540 | Tap Done without touching the calendar | Today is filled in and Continue is ready | DEVICE | |
