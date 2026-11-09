@@ -102,8 +102,8 @@ export interface YouTabView {
   accountReady: boolean;
 }
 
-/** While consent is being asked or a sign-out is under way the person is neither settled in nor out: no deletion entry. */
-const SETTLED: ReadonlySet<AuthState['status']> = new Set(['checkingConsent', 'ready']);
+/** While consent is being checked or asked, or a sign-out is under way, the person is neither settled in nor out: no deletion entry (Karma ruling on #738). */
+const SETTLED: ReadonlySet<AuthState['status']> = new Set(['ready']);
 
 export function youTabView(input: { signIn: boolean; status: AuthState['status']; owner: string | null }): YouTabView {
   if (!input.signIn) return { state: 'noSignIn', signedOutCard: false, localStartLine: false, accountReady: false };
