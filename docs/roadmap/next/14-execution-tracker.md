@@ -290,3 +290,41 @@ Age is days since creation. Behind is commits develop has that the head lacks. L
 | #32 | draft | 660e633c | fix/db-pending-hardening | - | 36 | 468 | unknown | not checked | unmapped |
 | #30 | ready | dafb5ff4 | ci/hardening | - | 36 | 430 | unknown | not checked | unmapped |
 | #26 | draft | 7048dc1e | test/db-harness-defaults | - | 36 | 468 | unknown | not checked | unmapped |
+
+## Update, Mon 9 Nov 2026 (UTC), by `product`: Build 12 cut, new PRs and states changed since the 8 Nov read
+
+Added in a new commit; nothing above is edited, so the 8 Nov text still shows what was true then. States read with `gh api repos/thesaurabhpareek/earlyletters/pulls/<n>` on 9 Nov. CI results were not read except where stated. The backlog rows are BL-775 to BL-815 in PR "docs: Build 12 cut" (branch `docs/backlog-build12-cut-9nov`); the merge order, gates and metrics are in `docs/backlog/BUILD12-PLAN-2026-11-09.md` on that branch.
+
+### New PRs for the Build 12 cut (all draft, base `develop`)
+
+| PR (head) | What | BL | Rank / lane | State on 9 Nov | Next action |
+|---|---|---|---|---|---|
+| #699 (cab3713a) | The You tab, Settings home as a tab | BL-775 | 17 (B12 list), stacked on #665 | draft, clean | Merge #665 and BL-776 first; rebase `--onto origin/develop a8614c5e` |
+| #700 (e81c426f) | Child name optional on the server; migration `20261109000000_child_name_optional.sql` | BL-777 | 5 (database) | draft, clean | `red-team` review, `approve-migration` label, timestamp clash of #634 and #677 settled, then live on production before #701 reaches production |
+| #701 (4e322591) | Child name optional on the phone | BL-778 | 17 (B12 list) | draft, clean | Merge after #700 is live |
+| #702 (48b0d44e) | Count sessions that end in a kept letter, on the phone only | BL-779 | 17 (B12 list) | draft, clean | Merge any time before BL-789; nothing reads it yet |
+| #703 (09283722) | Words that read well with and without a name; stacked on #701 | BL-780 | 17 (B12 list) | draft, `unstable` (13 success, 1 in progress, 1 skipped) | Full tests on a full checkout; founder approves nine strings and two prompts; rebase `--onto origin/develop 4e322591` after #701 |
+
+New rows with no PR yet: BL-776 (Family tab hidden in a servers-on store build), BL-781 to BL-787 (account-first, blocked by gates G1 to G7), BL-788 (mail preflight), BL-789 (lock to session 3, after #702), BL-790 (Tonight From the book row), BL-794 (backup stays off), BL-795 (motion S0), BL-798 (nav usability test), BL-799 to BL-815 (specifications, council pass 2 items).
+
+### Merged or closed since the 8 Nov table (the "State, CI" cells above are stale for these)
+
+| PR | Was | Now | Effect |
+|---|---|---|---|
+| #520 (a28a64e2) delete a book, erase everything | ready, FAIL compliance-fence | merged | Rank 9's "founder CCO line after #635" row: re-read; NX-33-R7 and the erase test now extend a merged file |
+| #666 (1cba10e5) production profile store-ready | ready | merged | Rank 12: `eas.json` production profile changed since my reading of it; the production flip PR is the next change there |
+| #678 (e192b8a3) CR-60 hold on 0.9.0 pages | ready | merged | Rank 2 legal pages: G2 still needs the v1 text deployed (#672) |
+| #689 (776df5f6) English-only list in build 12 | not in table | merged | NX-31 R16 and screen 5 may rely on English only |
+| #640 (4a74548a) app lock | (merged before) | merged, bc3b8209 on `develop` | The lock offer move (BL-789) waits on #702, not on #640 |
+
+### Heads and states that moved (rows above keep the 8 Nov value)
+
+#635 (7566abd0): open, ready, now `dirty`. #615 (2553f9d6) and #618 (06b9cd02): open, `dirty`. #669 head a3d2405e (was 2846bff3), `dirty`. #670 head e7b73bf3 (was df72953d), `dirty`. #591 and #599: `dirty`. #634 (786ef15d): `unstable`. #677 (3a5fd733): `blocked`; its migration `20261108000000_analytics_first_party_events.sql` clashes with #634's `20261108000000_consent_record_fields.sql`. #680, #681, #683: `clean`. #685 (68c56a33): open, ready, `blocked`. #676 (f0f9a74d): still open, `dirty`; it removes sign-in from the store build and is the opposite of account-first.
+
+### Merge order for the Build 12 cut (from council pass 2)
+
+Close #676; rename one of the #634 and #677 timestamps; #665; BL-776; #699; #700 with the label and live on production; #701; #703; #702; then BL-789 and BL-790; account-first (BL-781 to BL-787) only with G1 to G8 evidence files, otherwise the staged on-device binary ships and account-first is 1.0.1.
+
+### Not verified in this update
+
+CI conclusions for every PR except #703; whether #634 redefines `create_child_row`; the counted-review state in issue #659 (not re-read); heads of PRs not listed here.
