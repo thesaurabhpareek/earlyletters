@@ -119,6 +119,7 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash, settleTake } from '@/lib/capture/recorder';
+import { wordsAfterSettle } from '@/components/capture/take-settle.logic';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -341,8 +342,10 @@ export default function Review() {
       if (!alive) return;
       if (out.kind === 'gone') return;
       setDraft(out.draft);
-      if (out.kind === 'settled' && out.draft.state === 'ready') requestWords(out.draft.id);
-      else if (out.kind === 'settled') setPhase('waiting');
+      // Words only for a finished take; a take that did not finish (no sound, or the save never settled) goes to the
+      // waiting state, which says the recording is kept, instead of a words line that never resolves.
+      if (wordsAfterSettle(out) === 'ask') requestWords(out.draft.id);
+      else setPhase('waiting');
     });
     return () => {
       alive = false;
@@ -553,6 +556,15 @@ export default function Review() {
     saving.current = true;
     heldInBook.current = inBook;
     writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
+    // Defence in depth (BL-563): words only arrive for a finished take, so this is not reachable today. A screen
+    // whose draft was read while the take was still being saved never keeps it: its length and hash would be missing.
+    if (draft.state === 'recording') {
+      const settledNow = await settleTake(draft.id);
+      saving.current = false;
+      if (settledNow.kind === 'settled') setDraft(settledNow.draft); // Keep again, on the finished row
+      else setSaveFailed(true); // untouched; trying again joins the same save
+      return;
+    }
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).

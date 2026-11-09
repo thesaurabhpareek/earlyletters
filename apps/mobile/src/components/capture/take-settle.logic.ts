@@ -62,3 +62,8 @@ export async function settleTake<D extends HasState>(
   if (!now) return { kind: 'gone' };
   return now.state === 'recording' ? { kind: 'pending', draft: now } : { kind: 'settled', draft: now };
 }
+
+/** What Review does with a settled result: ask for words only for a finished take; otherwise show the waiting state. */
+export function wordsAfterSettle(out: Settled<HasState>): 'ask' | 'waiting' {
+  return out.kind === 'settled' && out.draft.state === 'ready' ? 'ask' : 'waiting';
+}

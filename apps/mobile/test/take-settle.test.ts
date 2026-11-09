@@ -6,7 +6,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { afterFinish, settleTake } from '../src/components/capture/take-settle.logic';
+import { afterFinish, settleTake, wordsAfterSettle } from '../src/components/capture/take-settle.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 type Row = { id: string; state: 'recording' | 'ready' | 'unrecoverable'; audioDurationMs: number; audioSha256: string | null };
@@ -74,6 +74,17 @@ describe('[BL-563] settleTake: Review never uses a take that is still being save
   });
 });
 
+describe('[BL-563] wordsAfterSettle: no words line that never resolves', () => {
+  it('asks for words only for a finished take', () => {
+    expect(wordsAfterSettle({ kind: 'settled', draft: { state: 'ready' } })).toBe('ask');
+  });
+  it('a save that never settled goes to the waiting state, as does a take with no sound', async () => {
+    const hung = await settleTake({ running: () => Promise.reject(new Error('x')), read: () => ({ state: 'recording' }) });
+    expect(wordsAfterSettle(hung)).toBe('waiting');
+    expect(wordsAfterSettle({ kind: 'settled', draft: { state: 'unrecoverable' } })).toBe('waiting');
+  });
+});
+
 describe('[BL-563] the screens and the queue use it', () => {
   const strip = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
   it('Listen routes the finishing outcome through afterFinish', () => {
@@ -83,6 +94,9 @@ describe('[BL-563] the screens and the queue use it', () => {
     const review = strip(src('app/review.tsx'));
     expect(review).toMatch(/settleTake\(draft\.id\)\.then/);
     expect(review).toMatch(/await settleTake\(draft\.id\)/);
+    expect(review.match(/await settleTake\(draft\.id\)/g)?.length).toBe(2);
+    expect(review).toMatch(/if \(draft\.state === 'recording'\) \{\s*const settledNow = await settleTake/); // with-words Keep and recording-only Keep
+    expect(review).toMatch(/wordsAfterSettle\(out\)/);
   });
   it('the words queue skips a draft that is still recording', () => {
     expect(strip(src('lib/transcription-queue/index.ts'))).toMatch(/d\.state !== 'recording'/);
