@@ -68,6 +68,7 @@ import { authCopy } from '@/lib/auth/copy';
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
+import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { invitedDoorShown } from '@/lib/first-run/welcome.logic';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -126,7 +127,15 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   const nameFields = useRef<(TextInput | null)[]>([]);
   const signsAsField = useRef<TextInput>(null);
   const dateField = useRef<DateFieldHandle>(null);
-  const [step, setStep] = useState<Step>('welcome');
+  // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
+  // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
+  // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
+  const { state: authState, configured } = useAuth();
+  const [start] = useState<Step>(() =>
+    firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen }),
+  );
+  const accountFirst = start !== 'welcome';
+  const [step, setStep] = useState<Step>(start);
   const [names, setNames] = useState<string[]>(['']);
   const [expecting, setExpecting] = useState(false);
   // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days".
@@ -176,7 +185,6 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   const joinLine = joining.line;
   // Sign-in first (NX-31 R17, behind the server switch): with no session and no book, "Begin the book" waits, except
   // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
-  const { state: authState } = useAuth();
   const gateAllows = beginTheBookAllowed(
     gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0, localStartChosen }),
   );
@@ -248,6 +256,10 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
     router.replace('/');
   };
 
+  // The account-first name field says the name is optional (NX-36 S7); other builds keep "Name" and no help line.
+  const nameWords = (index: number, value: string) =>
+    childNameFieldWords({ accountFirst, index, nearLimit: nearLimit(textLength(value), CHILD_NAME_MAX), multiple: names.length > 1 }, o.child);
+
   // Why Continue is waiting, in words (never only a greyed button).
   const today = todayISO();
   const childBlock = firstRunChildBlock({ names, expecting, birthday, dueDate, today });
@@ -316,7 +328,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
-            {step !== 'welcome' && <BackButton onPress={back} />}
+            {backShown({ accountFirst, step }) && <BackButton onPress={back} />}
           </View>
 
           {shown === step ? (
@@ -377,7 +389,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
                         ref={(r) => {
                           nameFields.current[i] = r;
                         }}
-                        label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
+                        label={i === 0 ? nameWords(i, n).label : o.child.nameLabelMore}
                         face="serif"
                         value={n}
                         onChangeText={(v) => setNameAt(i, v)}
@@ -393,7 +405,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
                             ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
                             : i === names.length - 1 && names.length > 1
                               ? o.child.addAnotherHelp
-                              : undefined
+                              : (nameWords(i, n).help ?? undefined)
                         }
                         trailing={
                           i > 0 ? (

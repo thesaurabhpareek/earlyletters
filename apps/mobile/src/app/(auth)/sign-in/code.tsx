@@ -31,6 +31,8 @@ import { useChildren } from '@/components/child/use-children';
 import { useEffect, useRef, useState } from 'react';
 import { Linking, Platform, TextInput, View } from 'react-native';
 import { tokens } from '@scribe/design-tokens';
+import { announce } from '@/lib/a11y';
+import { appleSignInAvailable } from '@/lib/auth/apple';
 import { Button } from '@/components/ui/button';
 import { useFontsReady } from '@/components/ui/fonts';
 import { Text } from '@/components/ui/text';
@@ -40,9 +42,10 @@ import { EMAIL_CODE_LENGTH, RESEND_WAIT_MS } from '@/lib/auth/email';
 import { codeEntryPause, looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail, wrongCodeTimes } from '@/lib/auth/pending';
-import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
-import { ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { AppleButton, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
+import { recoverySet, shouldAnnounceRecovery } from '@/lib/first-run/handoff.logic';
+import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
@@ -98,6 +101,18 @@ export default function CodeStep() {
   }, [sentAt]);
 
   const canResend = sentAt === null || now >= sentAt + RESEND_WAIT_MS;
+  // The recovery set (NX-31-R11, NX-36 S5): after the minute, "Send a new email", "Use a different email" and Apple together.
+  const [appleReady, setAppleReady] = useState(false);
+  useEffect(() => {
+    void appleSignInAvailable().then(setAppleReady);
+  }, []);
+  const recovery = recoverySet({ sentAt, now, waitMs: RESEND_WAIT_MS, appleAvailable: appleReady });
+  // Said once, when the minute passes (a change), never on arrival at a screen that is already open.
+  const wasOpen = useRef(recovery.open);
+  useEffect(() => {
+    if (shouldAnnounceRecovery(wasOpen.current, recovery.open)) announce(k.announceResend);
+    wasOpen.current = recovery.open;
+  }, [recovery.open, k.announceResend]);
   const address = email.trim();
   // Read at every render, so the pause shows from the fifth wrong code on; `now` only schedules the render when it lifts.
   const pause = codeEntryPause(wrongCodeTimes(address), Date.now());
@@ -174,7 +189,28 @@ export default function CodeStep() {
   };
 
   // While paused, one line in one live region: the pause, and the ways in that still work (VoiceOver hears both).
-  const message = paused ? `${authErrorMessage('code_paused')} ${k.pausedOtherWays}` : authErrorMessage(error);
+  // A brand-new install has no letters, so its errors read without "Your letters are safe" (NX-36 2.6).
+  const holdsBook = !!active;
+  const message = paused ? `${signInErrorMessage('code_paused', holdsBook)} ${k.pausedOtherWays}` : signInErrorMessage(error, holdsBook);
+
+  const signInWithApple = async () => {
+    if (inFlight.current) return;
+    inFlight.current = true;
+    setBusy(true);
+    setError(null);
+    let r: Outcome;
+    try {
+      r = await auth.signInWithApple();
+    } finally {
+      inFlight.current = false;
+      setBusy(false);
+    }
+    // Cancelled at Apple's sheet: nothing recorded as a failure, the person stays here.
+    if (r.ok) {
+      setPendingEmail(null);
+      router.replace('/sign-in/consent');
+    } else if (r.error !== 'cancelled') setError(r.error);
+  };
 
   return (
     <SheetFrame
@@ -304,6 +340,13 @@ export default function CodeStep() {
             else router.replace('/sign-in/email');
           }}
         />
+        {/* After the minute: Apple joins the two options above, then one plain help line, then the trouble link. */}
+        {recovery.options.includes('apple') ? <AppleButton signIn disabled={busy} onPress={() => void signInWithApple()} /> : null}
+        {recovery.open ? (
+          <Text variant="footnote" tone="muted" className="text-center">
+            {k.noMailHelp}
+          </Text>
+        ) : null}
         <QuietButton label={copy.auth.troubleButton} onPress={() => setHelpOpen((v) => !v)} />
         {helpOpen ? (
           <Text variant="subhead" tone="muted" accessibilityLiveRegion="polite">

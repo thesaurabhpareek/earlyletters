@@ -54,6 +54,8 @@ import { authCopy } from '@/lib/auth/copy';
 import type { ConsentStep } from '@/lib/auth/machine.logic';
 import { getSignInTrigger } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
+import { consentHandoff } from '@/lib/first-run/handoff.logic';
+import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -97,7 +99,10 @@ export default function ConsentSteps() {
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name || k.childFallback;
-  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
+  // What comes after the answer is the merge-back rule's (lib/first-run/merge-back.logic.ts, NX-36 4.2): agreed with
+  // letters on this phone, the claim screen first and nothing uploaded before it; declined, the book still opens.
+  const handoff = consentHandoff({ status: s.status, sync: s.status === 'ready' ? s.sync : null, claimPending: auth.claimPending });
+  const claiming = handoff === 'askClaim';
   // "Agree and sync" after an earlier "Keep on this phone": the sensitive-data step, whatever the gate's step list says.
   const turningOn = params.step === 'sensitive' && s.status === 'ready' && s.sync === 'off';
   const fromAgreeAndSync = params.step === 'sensitive';
@@ -251,7 +256,8 @@ export default function ConsentSteps() {
   }
 
   const step = s.steps[0];
-  const error = authErrorMessage(s.error);
+  // A brand-new install has no letters, so its error reads without "Your letters are safe" (NX-36 2.6, S6).
+  const error = signInErrorMessage(s.error, children.length > 0);
   return (
     <StepFade step={step}>
       {step === 'terms' ? (

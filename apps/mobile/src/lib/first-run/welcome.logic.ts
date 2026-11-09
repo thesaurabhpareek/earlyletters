@@ -66,3 +66,21 @@ export function welcomeErrorMessage(kind: AuthErrorKind | null): string | null {
   if (kind === 'not_available') return e.notAvailable;
   return authErrorMessage(kind);
 }
+
+/**
+ * The words for an error on the email, code and consent screens (NX-36 S4, S5, S6). A phone that holds a book keeps
+ * the existing lines ("Your letters are safe..."). A brand-new install has no letters, so it reads the first-run
+ * variants without that sentence. Kinds with no variant keep their existing words either way.
+ */
+export function signInErrorMessage(kind: AuthErrorKind | null | undefined, phoneHoldsBook: boolean): string | null {
+  if (!kind || kind === 'cancelled') return null;
+  if (phoneHoldsBook) return authErrorMessage(kind);
+  const e = authCopy.firstRun.errors;
+  switch (kind) {
+    case 'network': return e.network;
+    case 'code_paused': return e.codePaused;
+    case 'consent_unavailable': return e.consentUnavailable;
+    case 'unknown': return e.unknown;
+    default: return welcomeErrorMessage(kind);
+  }
+}

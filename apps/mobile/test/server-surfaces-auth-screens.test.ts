@@ -226,7 +226,7 @@ describe('[S54] Check your email', () => {
     // That read is Date.now() at each render, so the React Compiler must leave the component as written.
     expect(codeStep).toMatch(/export default function CodeStep\(\) \{\s*'use no memo';/);
     // One line in one live region: the pause, then the ways in that still work (VoiceOver hears both).
-    expect(codeStep).toMatch(/const message = paused \? `\$\{authErrorMessage\('code_paused'\)\} \$\{k\.pausedOtherWays\}` : authErrorMessage\(error\);/);
+    expect(codeStep).toMatch(/const message = paused \? `\$\{signInErrorMessage\('code_paused', holdsBook\)\} \$\{k\.pausedOtherWays\}` : signInErrorMessage\(error, holdsBook\);/);
     expect(codeStep.match(/<ErrorLine /g), 'one error line').toHaveLength(1);
     expect(codeStep).not.toMatch(/k\.pausedOtherWay\b/);
     // "Send a new email" stays offered while paused (its link signs in, F02-U14), with its own minute's wait, and the send
