@@ -59,6 +59,8 @@ export const en = {
     tonight: "Tonight",
     book: "Book",
     family: "Family",
+    // PLACEHOLDER (founder to confirm "You", "Yours" or "Settings", NX-30a): the tab that holds Settings and Account.
+    you: "You",
   },
 
   onboarding: {

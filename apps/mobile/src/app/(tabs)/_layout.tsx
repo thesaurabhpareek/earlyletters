@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router/js-tabs';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { MoonStarsIcon } from 'phosphor-react-native/src/icons/MoonStars';
+import { UserIcon } from 'phosphor-react-native/src/icons/User';
 import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
 import type { Icon } from 'phosphor-react-native';
 import { Platform, Pressable, type ColorValue, type PressableProps } from 'react-native';
@@ -15,7 +16,7 @@ import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
 
 /**
- * Three tabs: Tonight, Book, Family (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
+ * Tabs: Tonight, Book, Family, You (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
  * actions; always visible; single-word labels). JS tabs + Phosphor so iOS, Android and
  * the web preview match; NativeTabs (Liquid Glass) is the recorded next step after a
  * device spike (docs/design/COMPONENT_LIBRARY.md section 0.1).
@@ -70,6 +71,23 @@ export default function TabsLayout() {
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
           <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
+          {/* You (NX-30a, founder 9 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
+              last in the bar. It has no lamp and no Back; the header carries the one title. Its rows push the Settings pages
+              onto the root stack, which goes back to this tab ("You"). Label is a placeholder (copy.tabs.you). */}
+          <Tabs.Screen
+            name="you"
+            options={{
+              title: t.you,
+              tabBarIcon: icon(UserIcon),
+              tabBarButton: button(t.you),
+              headerShown: true,
+              headerTitle: copy.settings.title,
+              headerStyle: { backgroundColor: c.bg },
+              headerTitleStyle: { color: c.text },
+              headerShadowVisible: false,
+              sceneStyle: { backgroundColor: c.bg },
+            }}
+          />
         </Tabs>
         {/* The reminder card after the first letter, over the Book (C-REQ-001 Rev; Review asks for it, lib/asks). Inside
             this ToastHost so its "No reminders" line sits above the tab bar, not over it. */}
