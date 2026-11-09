@@ -92,7 +92,8 @@ export default function ChildSettings() {
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      <Stack.Screen options={{ title: fill(s.title, { child: name }) }} />
+      {/* A book with no name yet reads "Your child's book", not "'s book" (GAP 6). */}
+      <Stack.Screen options={{ title: name.trim() ? fill(s.title, { child: name }) : copy.settingsHome.childFallback }} />
 
       {/* The due-date card: never presumes a birth, never celebrates, never counts days (S46). */}
       {showBorn && editing !== 'born' ? (
