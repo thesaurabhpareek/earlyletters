@@ -1,7 +1,7 @@
 /// <reference types="node" />
 /**
  * Call and Text on "If you are struggling" and "Lines in other countries" keep a visible shape (WCAG 1.4.11 Non-text
- * Contrast; design-systems audit 9 Nov 2026, row 4). They were `secondary` buttons: an accentSoft fill on the flat
+ * Contrast). They were `secondary` buttons: an accentSoft fill on the flat
  * card (the `muted` surface), 1.08:1 in light and 1.33:1 in dark, so the shape disappeared on the page people open on
  * their worst nights. They are now `outline` buttons: the control edge (`input`, which is controlBorder) on that same
  * surface. The colours are read from the design tokens and from the real class names in card.tsx and button.tsx, so
@@ -93,6 +93,11 @@ describe('[WCAG 1.4.11] Call and Text keep a visible shape on the flat helpline 
         expect(best, `${used}, ${mode}${hc ? ' high contrast' : ''}`).toBeGreaterThanOrEqual(3);
       }
     }
+  });
+
+  it('Increase Contrast reaches the outline edge: the provider sets --color-input from the high-contrast controlBorder', () => {
+    // The 12.98:1 and 14.94:1 figures above come from the token table. This pins the line that applies them on a phone.
+    expect(code('components/ui/provider.tsx')).toMatch(/'--color-input':\s*hc\.controlBorder/);
   });
 
   it('the outline label stays readable on the card (4.5:1), in both modes', () => {

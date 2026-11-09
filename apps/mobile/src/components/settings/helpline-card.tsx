@@ -8,7 +8,8 @@
  * with accentSoft, which is 1.08:1 against that surface in light and 1.33:1 in dark, so the button's shape vanished on
  * the page people open on their worst nights. Outline draws the control edge (`input`, controlBorder: 3.36:1 light and
  * 4.27:1 dark on the surface, WCAG 1.4.11) and leaves the card's fill, so every line carries two quiet buttons and the
- * emergency button above stays the one filled button on the page. Test: test/helpline-buttons-visible.test.ts.
+ * emergency button above stays the one filled button on "If you are struggling" ("Lines in other countries" has no
+ * emergency button, so no filled button). Test: test/helpline-buttons-visible.test.ts.
  */
 import * as React from 'react';
 import { View } from 'react-native';
