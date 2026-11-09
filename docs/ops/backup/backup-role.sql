@@ -38,9 +38,17 @@
 --              pseudonymises a consent record for a person id they already
 --              know. (b) auth.users itself holds one-time-token hash columns
 --              (confirmation_token, recovery_token, email_change_token_new,
---              reauthentication_token) and a password hash column; they are
---              short-lived and hashed, but they are in the table the backup
---              needs. Treat the URL like a key to every family's letters.
+--              reauthentication_token) and a password hash column. UNVERIFIED
+--              (8 Nov 2026): whether hosted Supabase still fills these
+--              columns, and how it hashes a one-time code. A reviewer notes
+--              that GoTrue hashes a code as SHA-224 of the email plus the
+--              code, and the code is 6 digits by default, so an UNEXPIRED
+--              hash could be brute-forced offline. Do not rely on them being
+--              "short-lived and hashed". Until the token-column check in block 3
+--              is done, assume this URL could be used to sign in as a
+--              user whose code is still unexpired.
+--              Treat the backup URL as sensitive as the database itself:
+--              every family's letters, the pepper, and possibly sign-in codes.
 --
 -- Why it bypasses row-level security (BYPASSRLS), and why that is needed:
 -- pg_dump turns row security off for its session and stops with an error on
@@ -146,6 +154,16 @@ select s as schema, has_schema_privilege('scribe_backup', s, 'usage') as can_use
 -- The two Auth tables it does read (accounts): expect true | true (or true | null).
 select has_table_privilege('scribe_backup', 'auth.users', 'select') as users,
        case when to_regclass('auth.identities') is null then null else has_table_privilege('scribe_backup', 'auth.identities', 'select') end as identities;
+-- One-time founder check, as `postgres` (not as scribe_backup): how many token columns hold a value right now.
+-- It reads names and counts only, never a value, and works whatever columns this Auth version has.
+-- Expect: no rows on a quiet project; any row means unexpired codes sit in auth.users, so keep the URL
+-- exactly as protected as the database. Write the answer (counts only) in the PR; UNVERIFIED until it is run.
+select e.key as token_column, count(*) as rows_with_a_value
+  from auth.users u, lateral jsonb_each_text(to_jsonb(u)) e
+ where e.key in ('confirmation_token', 'recovery_token', 'email_change_token_new', 'email_change_token_current',
+                 'reauthentication_token', 'phone_change_token')
+   and coalesce(e.value, '') <> ''
+ group by 1 order by 1;
 select setconfig from pg_db_role_setting where setrole = 'scribe_backup'::regrole;
 -- {default_transaction_read_only=on}
 
