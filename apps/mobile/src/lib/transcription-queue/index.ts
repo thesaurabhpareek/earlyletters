@@ -30,7 +30,6 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
-import { capabilities } from '../capabilities';
 import { removeWholeFrameCopies } from '../capture/adts-file';
 import {
   deleteSetting,
@@ -75,6 +74,7 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
+import { heardLanguagesForBuild } from '../language/heard-languages';
 import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
@@ -160,7 +160,7 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
   // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
-  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(heardLanguagesForBuild())] });
   // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
   // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
   try {
