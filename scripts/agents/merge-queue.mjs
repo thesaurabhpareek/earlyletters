@@ -18,8 +18,9 @@
 // - A review counts only if the FIRST LINE of a PR comment is exactly
 //   `## Review A at <40 hex>: PASS` (or `Review B`). The sha must equal the PR head, all
 //   40 characters. Later lines are never read, so words like failure or until in the body
-//   cannot change the result. Comment authors are not filtered (U: trust rules in lib.mjs
-//   are not applied here).
+//   cannot change the result.
+// - Only comments by OWNER, MEMBER or COLLABORATOR (author_association) count; the repo is
+//   public. An ignored PASS prints a note under the table.
 // - Reviews at an older 40-char sha are shown as stale, never as passes.
 // - "Age of last push" is minutes since the head commit's committer date (a proxy: the
 //   REST API has no push time; a rebase or amend gives a new committer date).
@@ -71,16 +72,32 @@ export function parseReview(body) {
   return m ? { lens: m[1], sha: m[2] } : null;
 }
 
-/** Which lenses passed at head, and which at some other (older) sha. */
+export const TRUSTED_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR"];
+
+/**
+ * Which lenses passed at head, and which at some other (older) sha. The repo is public:
+ * only comments whose author_association is OWNER, MEMBER or COLLABORATOR count. A
+ * matching PASS from anyone else is listed in `untrusted` (lenses not otherwise met).
+ */
 export function reviewState(comments, head) {
   const atHead = new Set();
   const stale = new Set();
+  const ignored = new Set();
   for (const c of comments) {
     const r = parseReview(c.body);
     if (!r) continue;
+    if (!TRUSTED_ASSOCIATIONS.includes(c.author_association)) {
+      if (r.sha === head) ignored.add(r.lens);
+      continue;
+    }
     (r.sha === head ? atHead : stale).add(r.lens);
   }
-  return { A: atHead.has("A"), B: atHead.has("B"), staleLenses: [...stale].filter((l) => !atHead.has(l)) };
+  return {
+    A: atHead.has("A"),
+    B: atHead.has("B"),
+    staleLenses: [...stale].filter((l) => !atHead.has(l)),
+    untrusted: [...ignored].filter((l) => !atHead.has(l)),
+  };
 }
 
 /** Newest run per name -> state string: missing, pending, or the conclusion. */
@@ -213,8 +230,9 @@ export function formatTable(rows) {
   ]);
   const w = head.map((h, i) => Math.max(h.length, ...body.map((b) => b[i].length)));
   const line = (cells) => cells.map((c, i) => c.padEnd(w[i])).join("  ").trimEnd();
+  const held = rows.filter((r) => r.reviews.untrusted.length).map((r) => `note: #${r.number} held back, Review ${r.reviews.untrusted.join("/")} PASS at head came from a commenter who is not OWNER, MEMBER or COLLABORATOR (ignored)`);
   const asks = rows.filter((r) => r.founderAsk).map((r) => r.founderAsk);
-  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...asks].join("\n");
+  return [line(head), ...body.map(line), "", "rev: AB = counted PASS at this head; lowercase = PASS only at an older sha; - = none", ...held, ...asks].join("\n");
 }
 
 function ghApi(path, { method = "GET" } = {}) {

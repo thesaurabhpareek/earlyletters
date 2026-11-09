@@ -7,7 +7,7 @@ const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
 const NOW = new Date("2026-11-09T12:00:00Z");
 const ago = (min) => new Date(NOW - min * 60000).toISOString();
-const review = (lens, sha, extra = "") => ({ body: `## Review ${lens} at ${sha}: PASS\n${extra}` });
+const review = (lens, sha, extra = "", author_association = "MEMBER") => ({ body: `## Review ${lens} at ${sha}: PASS\n${extra}`, author_association });
 const run = (id, name, conclusion, status = "completed") => ({ id, name, status, conclusion });
 const good = [run(1, "required", "success"), run(2, "compliance-fence", "success"), run(3, "applied migrations unchanged", "success")];
 const PROT = { required_status_checks: { contexts: ["applied migrations unchanged", "required", "compliance-fence"] } };
@@ -158,4 +158,20 @@ test("claims are read from table rows and by-lines; flags parse", async () => {
   assert.equal(rows[0].claim, "ops");
   assert.deepEqual(parseArgs(["--json", "--quiet-minutes", "3", "--only", "ready"]), { json: true, quietMinutes: 3, only: "READY", repo: "thesaurabhpareek/earlyletters" });
   assert.throws(() => parseArgs(["--merge"]));
+});
+
+test("a PASS from NONE, CONTRIBUTOR or FIRST_TIME_CONTRIBUTOR is ignored; trusted ones count", async () => {
+  for (const who of ["NONE", "CONTRIBUTOR", "FIRST_TIME_CONTRIBUTOR", null]) {
+    const r = await verdict({ comments: [review("A", HEAD, "", who), review("B", HEAD, "", who)] });
+    assert.equal(r.verdict, "NEEDS-REVIEW", String(who));
+    assert.deepEqual(r.reviews.untrusted, ["A", "B"]);
+    assert.match(formatTable([r]), /note: #7 held back/);
+  }
+  for (const who of ["OWNER", "MEMBER", "COLLABORATOR"]) {
+    assert.equal((await verdict({ comments: [review("A", HEAD, "", who), review("B", HEAD, "", who)] })).verdict, "READY", who);
+  }
+  const mixed = await verdict({ comments: [review("A", HEAD), review("B", HEAD, "", "NONE")] });
+  assert.equal(mixed.verdict, "NEEDS-REVIEW");
+  const out = formatTable((await buildQueue({ api: fake({ comments: [review("A", HEAD), review("B", HEAD)] }), now: NOW })));
+  assert.doesNotMatch(out, /held back/);
 });
