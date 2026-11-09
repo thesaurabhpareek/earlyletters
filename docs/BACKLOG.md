@@ -3236,7 +3236,7 @@ How to read these rows:
 ### Account-first: the sign-in gate, the outage path, signed-out states (NX-31; all behind the gates)
 
 #### BL-781 Account first: no child, signature or Tonight screen without a session (NX-31-R17, R22; root gate)
-- Status: blocked (gates G1 to G7 open on 9 Nov; BL-757 and BL-758 for the hosted project; PR #676 must be closed; D-144, D-145 draft entries decided). Mode: pair. Owner: mobile engineer, security engineer. Milestone: M14. Size: M.
+- Status: blocked (gates G1 to G7 open on 9 Nov; BL-757 and BL-758 for the hosted project; PR #676 must be closed; D-153, D-145 draft entries decided). Mode: pair. Owner: mobile engineer, security engineer. Milestone: M14. Size: M.
 - Who: `mobile`, `security`; review `security-architect` (auth code, a counted second review per D-041), `red-team`.
 - Satisfies: NX-31-R17, NX-31-R22, F02-REQ-001, F02-REQ-007. Also cited: NX-30-R17 (no tab bar before the book opens), D-100.
 - Source: NX-31 section 2 and R17 and R22. Both code paths must exist behind `EXPO_PUBLIC_SERVER_FEATURES` (NX-31 section 0, fallback; section 13 step 2): off is Build 11 behaviour, the staged on-device binary.

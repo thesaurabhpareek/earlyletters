@@ -140,7 +140,7 @@ Owner: `ops`. Claim-check regex: `docs/ops/`. One short section in the Build 12 
 
 | Row | Why not | Who unblocks |
 |---|---|---|
-| BL-781, 782, 783, 784, 787, 791 | Account-first waits on G1 to G7, a hosted project (BL-757, BL-758), #676 closed and the D-144 to D-146 entries | founder, `ops`, `security` |
+| BL-781, 782, 783, 784, 787, 791 | Account-first waits on G1 to G7, a hosted project (BL-757, BL-758), #676 closed and the D-153, D-145 and D-146 entries | founder, `ops`, `security` |
 | BL-786 | The reviewer path is chosen by the founder (F5, F7, F14, F15) | founder |
 | BL-792 Photos, BL-793 backup | Not in Build 12 | founder (after 1.0) |
 | BL-796, 797 motion S1, S2 | After Build 12 | design systems |
