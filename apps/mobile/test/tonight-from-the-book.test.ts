@@ -1,0 +1,214 @@
+/// <reference types="node" />
+/**
+ * Tonight's "From the book" card and the day-zero card (NX-36 S13, BL-790). The pure picker and the card model run
+ * here; the screen's use of them is checked in its source (Node cannot load React Native). Fixtures: the fictional
+ * family Asha only (CLAUDE.md).
+ */
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
+
+import {
+  cappedWords,
+  dayZeroCard,
+  daysSinceEpoch,
+  excerptOf,
+  fromTheBookCard,
+  LABEL_MAX_WORDS,
+  pickFromTheBook,
+  showsDayZero,
+  type BookLetter,
+} from '../src/components/tonight/from-the-book.logic';
+import { dayDate } from '../src/lib/dates';
+
+const SRC = join(__dirname, '..', 'src');
+const read = (rel: string) => readFileSync(join(SRC, rel), 'utf8');
+
+const TODAY = '2026-10-17';
+const WORDS = 'She laughed at the dog this morning, the whole way through breakfast, and then looked at me to be sure I had seen it. I had.';
+const letter = (id: string, occurredOn: string, over: Partial<BookLetter> = {}): BookLetter => ({
+  id,
+  kind: 'letter',
+  inBook: true,
+  occurredOn,
+  capturedAt: `${occurredOn}T19:00:00.000Z`,
+  finalText: WORDS,
+  ...over,
+});
+const days = (n: number) => {
+  // n days before TODAY, as YYYY-MM-DD
+  const d = new Date(Date.UTC(2026, 9, 17, 12) - n * 864e5);
+  return d.toISOString().slice(0, 10);
+};
+const BIRTHDAY = '2026-03-14';
+const asha = { birthday: BIRTHDAY, signsAs: 'Mama' };
+
+describe('[NX-36-S13] the pick', () => {
+  const book = [letter('a', '2026-05-02'), letter('b', '2026-06-11'), letter('c', '2026-07-20'), letter('d', '2026-08-09')];
+
+  it('[NX-36-S13] the From the book pick is stable per day, skips private, mark, month-only and today\'s letters, and shows 0 numerals', () => {
+    // Stable: the same letter however often it is asked, on any order of the same book.
+    const first = pickFromTheBook(book, TODAY);
+    expect(first?.kind).toBe('fromTheBook');
+    for (let i = 0; i < 5; i += 1) expect(pickFromTheBook([...book].reverse(), TODAY)?.letter.id).toBe(first?.letter.id);
+    // Date-seeded, oldest first, the day count mod n: no score.
+    const oldestFirst = ['a', 'b', 'c', 'd'];
+    expect(first?.letter.id).toBe(oldestFirst[daysSinceEpoch(TODAY) % 4]);
+    // It moves on the next day, by one place, and wraps.
+    const ids = [0, 1, 2, 3, 4].map((i) => pickFromTheBook(book, `2026-10-${17 + i}`)?.letter.id);
+    expect(new Set(ids.slice(0, 4)).size).toBe(4);
+    expect(ids[4]).toBe(ids[0]);
+    // Never private, a quiet-day mark, a month-only letter, today's letter, a letter with no words.
+    const skipped = [
+      letter('p', '2026-05-03', { inBook: false }),
+      letter('q', '2026-05-04', { kind: 'not_much', finalText: '' }),
+      letter('m', '2026-05-05', { occurredPrecision: 'month' }),
+      letter('t', TODAY),
+      letter('w', '2026-05-06', { finalText: '  ' }),
+    ];
+    for (const s of skipped) expect(pickFromTheBook([s], TODAY), s.id).toBeNull();
+    for (let i = 0; i < 12; i += 1) {
+      const got = pickFromTheBook([...skipped.filter((x) => x.id !== 't'), letter('only', '2026-06-01')], `2026-10-${10 + i}`);
+      expect(got?.letter.id).toBe('only');
+    }
+    // One kept letter, not from today: that letter every day. Written today: nothing.
+    expect(pickFromTheBook([letter('one', '2026-10-01')], TODAY)?.letter.id).toBe('one');
+    expect(pickFromTheBook([letter('one', TODAY)], TODAY)).toBeNull();
+    // Zero numerals about letters or days in the strings the card adds (the age and date are facts, not counts).
+    const card = fromTheBookCard(pickFromTheBook(book, TODAY)!, asha);
+    expect(card.kicker).toBe('From the book');
+    expect(`${card.kicker} ${card.signature}`).not.toMatch(/\d/);
+    expect(dayZeroCard('Asha').title + dayZeroCard('Asha').line).not.toMatch(/\d/);
+    expect(dayZeroCard('').title + dayZeroCard('').line).not.toMatch(/\d/);
+  });
+
+  it('[NX-36-S13] a letter 28 to 35 days old takes priority with the kicker A month ago, the newest of them', () => {
+    const near = [letter('old', '2026-05-02'), letter('edge35', days(35)), letter('edge28', days(28)), letter('mid', days(30))];
+    const pick = pickFromTheBook(near, TODAY);
+    expect(pick?.kind).toBe('monthAgo');
+    expect(pick?.letter.id).toBe('edge28');
+    expect(fromTheBookCard(pick!, asha).kicker).toBe('A month ago');
+    expect(pickFromTheBook([letter('x35', days(35))], TODAY)?.kind).toBe('monthAgo');
+    // 27 and 36 days old are in the rotation, with the book's own kicker.
+    expect(pickFromTheBook([letter('x27', days(27))], TODAY)?.kind).toBe('fromTheBook');
+    expect(pickFromTheBook([letter('x36', days(36))], TODAY)?.kind).toBe('fromTheBook');
+    // A private or month-only letter in the window does not take the priority.
+    expect(pickFromTheBook([letter('p', days(30), { inBook: false }), letter('o', '2026-05-02')], TODAY)?.letter.id).toBe('o');
+    expect(pickFromTheBook([letter('m', days(30), { occurredPrecision: 'month' }), letter('o', '2026-05-02')], TODAY)?.letter.id).toBe('o');
+  });
+
+  it('[NX-36-S13] with more than one letter the pick never repeats yesterday\'s', () => {
+    const today = pickFromTheBook(book, TODAY)!;
+    expect(pickFromTheBook(book, TODAY, today.letter.id)?.letter.id).not.toBe(today.letter.id);
+    // One letter: the same letter, since there is nothing else.
+    expect(pickFromTheBook([letter('one', '2026-10-01')], TODAY, 'one')?.letter.id).toBe('one');
+  });
+
+  it('[NX-36-S13] the day count does not move with the time zone: it is a calendar date', () => {
+    expect(daysSinceEpoch('1970-01-02') - daysSinceEpoch('1970-01-01')).toBe(1);
+    expect(daysSinceEpoch('2026-11-02') - daysSinceEpoch('2026-10-31')).toBe(2); // clocks go back on 1 November 2026
+  });
+});
+
+describe('[NX-36-S13] the words are the parent\'s own', () => {
+  it('[NX-36-S13] the excerpt is a verbatim prefix of the letter and is cut only at a space', () => {
+    const long = Array.from({ length: 200 }, (_, i) => `word${i}`).join(' ');
+    const ex = excerptOf(long);
+    expect(long.startsWith(ex)).toBe(true);
+    expect(ex.length).toBeLessThanOrEqual(320);
+    expect(long[ex.length]).toBe(' '); // the next character is the space the cut sat on: no word is split
+    // A short letter is returned as it is, character for character, line breaks included.
+    const poem = 'First line,\nsecond line, "quoted" -- and an apostrophe\'s.\n\nThird.';
+    expect(excerptOf(poem)).toBe(poem);
+    expect(excerptOf(`  ${poem}  `)).toBe(poem);
+    // No added or changed character, in any state, for any cut length.
+    for (const max of [1, 7, 20, 41, 99]) {
+      const e = excerptOf(WORDS, max);
+      expect(WORDS.startsWith(e)).toBe(true);
+      expect(e === WORDS || /\s/.test(WORDS[e.length]) || e === '').toBe(true);
+    }
+    // The card carries it unchanged, and the stored letter is never touched.
+    const stored = letter('v', '2026-06-01', { finalText: long });
+    const before = JSON.stringify(stored);
+    const card = fromTheBookCard({ letter: stored, kind: 'fromTheBook' }, asha);
+    expect(long.startsWith(card.excerpt)).toBe(true);
+    expect(JSON.stringify(stored)).toBe(before);
+  });
+
+  it('[NX-36-S13] the From the book label is capped to whole words', () => {
+    const long = Array.from({ length: 90 }, (_, i) => `word${i}`).join(' ');
+    const capped = cappedWords(long);
+    expect(capped.split(' ')).toHaveLength(LABEL_MAX_WORDS);
+    expect(long.startsWith(capped)).toBe(true);
+    expect(long[capped.length]).toBe(' ');
+    expect(cappedWords('One two  three\nfour.')).toBe('One two three four.');
+    const card = fromTheBookCard({ letter: letter('v', '2026-06-01', { finalText: long }), kind: 'fromTheBook' }, asha);
+    // kicker, the first words, the date, "Opens the letter.": not the whole letter.
+    expect(card.a11yLabel).toBe(`From the book. ${capped}. A letter from ${dayDate('2026-06-01')}. Opens the letter.`);
+    expect(card.a11yLabel).not.toContain('word26');
+    expect(card.a11yLabel.split(/\s+/).length).toBeLessThan(45);
+  });
+});
+
+describe('[NX-36-S13] the card model', () => {
+  it('[NX-36-S13] the footer carries the child\'s age at the letter, the day and the signature', () => {
+    const c = fromTheBookCard({ letter: letter('v', '2026-06-20'), kind: 'fromTheBook' }, asha);
+    expect(c.dateline).toBe(`Month 3 · ${dayDate('2026-06-20')}`);
+    expect(c.signature).toBe('From Mama');
+    expect(fromTheBookCard({ letter: letter('w', '2026-06-20', { authorSignsAs: 'Papa' }), kind: 'fromTheBook' }, asha).signature).toBe('From Papa');
+    expect(fromTheBookCard({ letter: letter('b', '2026-01-02'), kind: 'fromTheBook' }, asha).dateline.startsWith('Before You')).toBe(true);
+    expect(fromTheBookCard({ letter: letter('n', '2026-03-20'), kind: 'fromTheBook' }, asha).dateline.startsWith('The first weeks')).toBe(true);
+  });
+
+  it('[NX-36-S13] a nameless child: no name in the card, no empty or "undefined" string anywhere', () => {
+    const nameless = { birthday: BIRTHDAY, signsAs: 'Mama' };
+    const c = fromTheBookCard({ letter: letter('v', '2026-06-20'), kind: 'fromTheBook' }, nameless);
+    for (const v of Object.values(c)) expect(String(v)).not.toMatch(/undefined|null|^\s*$/);
+    const z = dayZeroCard('');
+    expect(z.title).toBe("Your child's book");
+    expect(z.a11yLabel).toBe("Your child's book. Ready for its first letter. Opens the book.");
+    expect(dayZeroCard('   ').title).toBe("Your child's book");
+  });
+});
+
+describe('[NX-36-S13] day zero', () => {
+  it('[NX-36-S13] the empty-book card reads as spec and shows only while no letter exists', () => {
+    const z = dayZeroCard('Asha');
+    expect(z).toEqual({ title: "Asha's book", line: 'Ready for its first letter.', a11yLabel: "Asha's book. Ready for its first letter. Opens the book." });
+    expect(showsDayZero([])).toBe(true);
+    expect(showsDayZero([{ kind: 'not_much' }])).toBe(true); // a quiet day is not a letter
+    expect(showsDayZero([{ kind: 'letter' }])).toBe(false);
+    expect(showsDayZero([{ kind: 'not_much' }, { kind: 'letter' }])).toBe(false);
+  });
+});
+
+describe('[NX-36-S13] the screen (source)', () => {
+  const screen = read('app/(tabs)/index.tsx');
+  const card = read('components/tonight/resurfaced-card.tsx');
+  const zero = read('components/tonight/day-zero-card.tsx');
+
+  it('[NX-36-S13] the slot follows the waiting letters, enters on the existing stagger, and opens the letter or the Book', () => {
+    expect(screen.indexOf('{/* After the waiting letters')).toBeGreaterThan(screen.indexOf('rows.map('));
+    expect(screen).toContain('entering={enter(3 + rows.length)}');
+    expect(screen).toContain("pathname: '/letter/[id]', params: { id: fromTheBook.id }");
+    expect(screen).toContain("router.push('/book')");
+    expect(screen).toContain('pickFromTheBook(room?.entries ?? [], today)');
+  });
+
+  it('[NX-36-S13] no new motion, no analytics event, no audio, no count, no new dependency', () => {
+    for (const [name, src] of [['logic', read('components/tonight/from-the-book.logic.ts')], ['card', card], ['zero', zero]] as const) {
+      expect(src, name).not.toMatch(/track[A-Z]\w*\(|analytics|reanimated|tokens\.motion|Audio|Sound|useAudio/);
+    }
+    expect(screen).not.toMatch(/track\w*\(.*(fromTheBook|resurface)/);
+    expect(zero).toContain('animate={false}');
+  });
+
+  it('[NX-36-S13] the card is one element with a capped label and an Opens-the-letter hint', () => {
+    expect(card).toContain('accessibilityLabel={card.a11yLabel}');
+    expect(card).toContain('accessibilityHint={copy.reader.openHint}');
+    expect(zero).toContain('accessibilityLabel={card.a11yLabel}');
+    expect(zero).toContain('copy.tonight.fromTheBook.emptyA11yHint');
+  });
+});
