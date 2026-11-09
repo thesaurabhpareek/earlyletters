@@ -74,8 +74,8 @@ Tonight                         Book (unchanged, #674)
 | ASHA . 7 MONTHS    [gear]|    | Asha's book        [gear]|
 |                          |    | 7 months                 |
 | Good evening, Mama.      |    | [ Read together ]        |
-| ...prompt...             |    | [Months]                 |
-|                          |    | ...                      |
+| (the prompt)             |    | [Months]                 |
+|                          |    | (months)                    |
 +--------------------------+    +--------------------------+
 | (moon) Tonight | (book) Book|
 +--------------------------+
@@ -119,7 +119,7 @@ Trade-off against the brand: B adds a tab bar item that a parent may read as "mo
 | From the book                    |
 | +------------------------------+ |
 | | A month ago           (play) | |
-| | "She laughed at the dog..."  | |
+| | "She laughed at the dog"  | |
 | +------------------------------+ |
 +----------------------------------+
 ```
@@ -134,7 +134,7 @@ Trade-off against the brand: B adds a tab bar item that a parent may read as "mo
 | ASHA . 7 MONTHS            [gear]|
 | [cover: Asha's book, 7 months]   |
 | Good evening, Mama.              |
-| ...prompt...  Speak  Type        |
+| (the prompt)  Speak  Type        |
 | Hear a letter                    |
 | ( play )  Month 2, in your voice |
 +----------------------------------+
