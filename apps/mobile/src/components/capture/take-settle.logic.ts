@@ -67,3 +67,8 @@ export async function settleTake<D extends HasState>(
 export function wordsAfterSettle(out: Settled<HasState>): 'ask' | 'waiting' {
   return out.kind === 'settled' && out.draft.state === 'ready' ? 'ask' : 'waiting';
 }
+
+/** A Keep tapped while the take is still being saved: show the finished row to Keep again, or say it is not saved yet. */
+export function keepWhileSaving(out: Settled<HasState>): 'show-finished' | 'not-saved' {
+  return out.kind === 'settled' ? 'show-finished' : 'not-saved';
+}

@@ -93,6 +93,7 @@ import {
   progressClock,
   recordingKept,
   stopLine,
+  saveNeverSettled,
   takeFile,
   waitingHints,
   wordsActionLabel,
@@ -119,7 +120,7 @@ import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
 import { ensureAudioHash, settleTake } from '@/lib/capture/recorder';
-import { wordsAfterSettle } from '@/components/capture/take-settle.logic';
+import { keepWhileSaving, wordsAfterSettle } from '@/components/capture/take-settle.logic';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -561,7 +562,7 @@ export default function Review() {
     if (draft.state === 'recording') {
       const settledNow = await settleTake(draft.id);
       saving.current = false;
-      if (settledNow.kind === 'settled') setDraft(settledNow.draft); // Keep again, on the finished row
+      if (keepWhileSaving(settledNow) === 'show-finished' && settledNow.kind === 'settled') setDraft(settledNow.draft); // Keep again, on the finished row
       else setSaveFailed(true); // untouched; trying again joins the same save
       return;
     }
@@ -751,7 +752,7 @@ export default function Review() {
     phase === 'transcribing' || phase === 'waiting'
       ? wordsCard({
           emptyFile: file === 'empty',
-          unreadable: file === 'unreadable',
+          unreadable: file === 'unreadable' || saveNeverSettled(draft, phase),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),

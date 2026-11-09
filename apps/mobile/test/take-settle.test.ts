@@ -6,7 +6,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { afterFinish, settleTake, wordsAfterSettle } from '../src/components/capture/take-settle.logic';
+import { en } from '@scribe/content';
+import { saveNeverSettled, wordsCard, type WordsInput } from '../src/components/capture/words-state.logic';
+import { keepWhileSaving, afterFinish, settleTake, wordsAfterSettle } from '../src/components/capture/take-settle.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 type Row = { id: string; state: 'recording' | 'ready' | 'unrecoverable'; audioDurationMs: number; audioSha256: string | null };
@@ -82,6 +84,36 @@ describe('[BL-563] wordsAfterSettle: no words line that never resolves', () => {
     const hung = await settleTake({ running: () => Promise.reject(new Error('x')), read: () => ({ state: 'recording' }) });
     expect(wordsAfterSettle(hung)).toBe('waiting');
     expect(wordsAfterSettle({ kind: 'settled', draft: { state: 'unrecoverable' } })).toBe('waiting');
+  });
+});
+
+describe('[BL-563] the card for a save that never settled says the recording is kept', () => {
+  const input = (unreadable: boolean): WordsInput => ({
+    emptyFile: false,
+    unreadable,
+    job: null,
+    download: { ask: false, progress: null, hold: null, lowSpace: false, size: '', mb: 0, neededSize: '' },
+    hints: { long: false, later: false },
+    playing: false,
+  });
+  it('is true only in the waiting phase on a draft still recording', () => {
+    expect(saveNeverSettled({ state: 'recording' }, 'waiting')).toBe(true);
+    expect(saveNeverSettled({ state: 'recording' }, 'transcribing')).toBe(false); // the normal short wait
+    expect(saveNeverSettled({ state: 'ready' }, 'waiting')).toBe(false);
+  });
+  it('shows the kept-recording card, not "writing down what you said"', () => {
+    const hung = wordsCard(input(saveNeverSettled({ state: 'recording' }, 'waiting')));
+    expect(hung.state).toBe('unreadable');
+    expect(hung.body).toBe(en.errors.transcriptionFailed.body); // "The recording is kept."
+    expect(wordsCard(input(false)).state).toBe('writing'); // what it showed before this change
+  });
+});
+
+describe('[BL-563] a Keep tapped while the take is still being saved', () => {
+  it('keeps nothing: a hung save says not saved, a finished one shows the row to Keep again', async () => {
+    const hung = await settleTake({ running: () => Promise.reject(new Error('x')), read: () => ({ state: 'recording' }) });
+    expect(keepWhileSaving(hung)).toBe('not-saved');
+    expect(keepWhileSaving({ kind: 'settled', draft: { state: 'ready' } })).toBe('show-finished');
   });
 });
 

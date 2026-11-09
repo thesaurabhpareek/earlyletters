@@ -255,6 +255,14 @@ export function takeFile(d: { state: string; audioBytes: number | null }): 'empt
   return d.audioBytes ? 'unreadable' : 'empty';
 }
 
+/**
+ * A take whose save never settled (BL-563): Review gave up waiting (`waiting` phase) and the row is still `recording`.
+ * No words job exists for it, so the card must not say words are being written; it uses the kept-recording card.
+ */
+export function saveNeverSettled(d: { state: string }, phase: string): boolean {
+  return phase === 'waiting' && d.state === 'recording';
+}
+
 /** Whether the card on screen stands over a kept recording: not when the file is empty or missing (S16). */
 export function recordingKept(card: Pick<WordsCard, 'state'> | null): boolean {
   return !(card && (card.state === 'emptyTake' || card.state === 'fileMissing'));

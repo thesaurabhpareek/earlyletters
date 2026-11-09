@@ -272,7 +272,7 @@ describe('Review uses the card (source)', () => {
     expect(review).toMatch(/<InlineState\s+kind=\{card\.kind\}\s+art=\{card\.art\}\s+still=\{card\.still\}/);
     // Empty only with no bytes, the same rule as Tonight's card (review A H1).
     expect(review).toMatch(/const file = takeFile\(draft\);/);
-    expect(review).toMatch(/emptyFile: file === 'empty',\s*unreadable: file === 'unreadable',/);
+    expect(review).toMatch(/emptyFile: file === 'empty',\s*unreadable: file === 'unreadable' \|\| saveNeverSettled\(draft, phase\),/);
     expect(review).not.toMatch(/emptyFile: phase === 'waiting'/);
   });
 
