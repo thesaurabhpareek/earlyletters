@@ -166,7 +166,7 @@ Typed words are stored exactly as typed, trimmed at the ends and nothing else (`
 
 S1-36 (typing at speed), S1-142 (the Plus line on Write at the default size), S1-152 (Another thought), and **S1-165** (Write at large text: the buttons ride in the scroll, the page follows the words, VoiceOver order, the AX1 switch point, the Plus line at AX5 on a production build), which PR #717 adds. S1-24 (a) holds the emulated AX5 figure quoted in section 3.
 
-S1-165 does not cover two things this spec names: the rotor's Headings on Write (item 3 below) and a book with no name (item 7). They have no row yet. Add them to S1-165 after #717 merges; they are not repeated here.
+S1-165 does not cover two things this spec names: the rotor's Headings on Write (item 3 below) and a book with no name (item 8). They have no row yet. Add them to S1-165 after #717 merges; they are not repeated here.
 
 ## 11. Where the build departs from this spec
 
@@ -178,13 +178,14 @@ Line numbers at `6cd2223b`.
 4. **Two documents describe the old footer.** EXPERIENCE_PASS S19 says the buttons sit side by side; S1-142 row (b) expected both above the keyboard at AX5 (#717 points that sentence at S1-165).
 5. **The page field has no `layout` transition** (`write.tsx:331-349`; only the prompt and the button wrapper have one, `:319`, `:327`). When a new line has a different height the field may jump, where S1-152 row (a) expects it to slide. **Device** (S1-152 row (a)). Low.
 6. **Numbers that are literals:** the two status icons are `size={14}` (`write.tsx:290`, `:297`), and the autosave announcement throttle is `ANNOUNCE_EVERY_MS = 10_000` (`write.tsx:66`). Use a token for the icon size and name the throttle where the other motion and timing values live. Owner design-systems. Low.
-7. After #701, #703 and #716 merge, the dateline (`write.tsx:284`) and the Add label (`addButtonLabel(child.name)`, `:360`) must read well with no name. That is theirs; no device row yet (section 10).
+7. **Autosave has no maximum wait, so a kill or a power loss in a long burst of typing loses more than the last half second** (`createWriteSession.change()` restarts the 500 ms timer on every keystroke, `write-session.logic.ts:74-82`). Spec: F04-REQ-011 and RT-WRT-05 (`06-nfr.md:59`, `:189`): at most the last 500 ms. Closing, a swipe down and backgrounding are flushed (`write.tsx:161-162`), so the exposure is a crash or a power loss mid-burst, which loses everything since the last pause of 500 ms or more. This is words that could be lost, so it is the worst class of defect in this repo. Proposed fix: write at least every 500 ms while typing (arm the timer on the first change and do not re-arm it), pinned by a fake-timer test. Owner `mobile`. Proposed severity: **High**; the CPO sets it. **Device:** not testable on a phone without a crash harness; the fake-timer test is the proof.
+8. After #701, #703 and #716 merge, the dateline (`write.tsx:284`) and the Add label (`addButtonLabel(child.name)`, `:360`) must read well with no name. That is theirs; no device row yet (section 10).
 
 The Plus line's position is not a departure: the build and the spec agree (above), and "below" is only PROPOSED (section 3).
 
 ## 12. Hand-offs
 
-- `mobile`: items 3 (once decided), 5 and 6. Items 1 and 2 are #717.
+- `mobile`: item 7 first (words), then items 3 (once decided), 5 and 6. Items 1 and 2 are #717.
 - `content`: nothing new. The Plus line's words stay as they are.
 
 ## 13. OPEN decisions
