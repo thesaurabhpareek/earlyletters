@@ -64,13 +64,13 @@ describe('the named states', () => {
 });
 
 describe('Delete account: one meaning of signed in for the card and the row (GAP 2)', () => {
-  it('the row needs the build flag, a session and a settled session; absent during needsConsent and signingOut', () => {
+  it('the row needs the build flag, a session and a settled session; absent during checkingConsent, needsConsent and signingOut', () => {
     const m = home.match(/\{([^{}?]+)\?\s*\(\s*<ListSection>\s*<ListRow title=\{h\.deleteAccountLabel\}/);
     expect(m, 'the Delete account row and its condition').not.toBeNull();
     const shown = new Function('capabilities', 'auth', 'you', `return Boolean(${m![1]});`) as (c: unknown, a: unknown, y: unknown) => boolean;
     for (const status of SESSION) {
       const you = youTabView({ signIn: true, status, owner: 'user-1' });
-      const want = status === 'ready' || status === 'checkingConsent';
+      const want = status === 'ready';
       expect(shown({ accountDeletion: true }, { signedIn: true }, you), status).toBe(want);
       // The card is the Account card in the same four statuses: the two cannot disagree about having an account.
       expect(you.state, status).toBe('account');
@@ -83,6 +83,17 @@ describe('Delete account: one meaning of signed in for the card and the row (GAP
   it('the gate is not loosened: the row still reads capabilities.accountDeletion and auth.signedIn, and the route is unchanged', () => {
     expect(home).toMatch(/\{capabilities\.accountDeletion && auth\.signedIn && you\.accountReady \? \(/);
     expect(code(read('app/settings/delete-account.tsx'))).toMatch(/return capabilities\.accountDeletion \? <DeleteAccount \/> : <Redirect href="\/settings" \/>;/);
+  });
+});
+
+describe('Account passkey rows are hidden, not removed (Build 12)', () => {
+  it('they draw only behind passkeysAvailable(), which is off unless EXPO_PUBLIC_PASSKEYS=1; no build profile sets it', () => {
+    expect(account).toMatch(/const showPasskeys = auth\.signedIn && passkeysAvailable\(\);/);
+    expect(account).toMatch(/\{showPasskeys && \(\s*<ListSection title=\{a\.passkeysTitle\}/);
+    expect(read('lib/auth/passkey.ts')).toMatch(/const ENABLED = process\.env\.EXPO_PUBLIC_PASSKEYS === '1';\s*[\s\S]*if \(!ENABLED \|\| Platform\.OS !== 'ios'\) return false;/);
+    // The code stays: add and remove handlers are still there.
+    expect(account).toMatch(/registerPasskey\(client\)/);
+    expect(account).toMatch(/deletePasskey\(client, p\.id\)/);
   });
 });
 
