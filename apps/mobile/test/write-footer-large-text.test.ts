@@ -4,8 +4,8 @@
  * "Add to Asha's book", "Keep private" and, in a store build, the standing Plus line (#668) were pinned under the page
  * at every text size. From AX3 the footer is taller than the room above the keyboard, so "Add to the book" could leave
  * the screen. Review and Tonight already move their footer into the scroll from accessibility sizes up
- * (lib/review-layout.logic.ts `footerPlacement`); Write now uses the same rule. The Plus line sits under the buttons, so
- * VoiceOver reads it last. No new words, and the buttons and the Plus line's rule are unchanged.
+ * (lib/review-layout.logic.ts `footerPlacement`); Write now uses the same rule. The Plus line stays above the buttons,
+ * where #668 put it. No new words, and the buttons and the Plus line's rule are unchanged.
  *
  * Node cannot load React Native, so the rules run here and the screen's use of them is checked in its source (as
  * test/draft-card.test.ts does for Tonight). What the footer measures at AX3 and AX5 with the keyboard up is a phone's
