@@ -56,9 +56,11 @@ describe('[BL-565] the served 0.9.0 text', () => {
   });
 });
 
-describe('[BL-778] nothing in the hosting settings can change which text is served', () => {
+describe('[BL-778] no environment variable names the folder the legal texts are read from', () => {
   // The sha256 pins above run in CI. The hosting build runs no test, so a setting made only in the hosting project
-  // would swap the served text unseen. The folder the pages read therefore takes no input from the environment.
+  // would name another folder unseen. The files that locate and read the texts therefore take no input from the
+  // environment. This is a tripwire over three files, not a proof: the check after a deploy (the sha256 of the two raw
+  // files, CR-60) is the gate for the build command, node options and root directory.
   const readsEnvironment = /process\s*(\.\s*env|\[)|import\.meta\.env|\bgetenv\b/;
 
   it('the files that locate and read the legal texts never read the environment', () => {
