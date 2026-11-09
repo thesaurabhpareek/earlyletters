@@ -5,6 +5,7 @@
 import { authCopy } from '@scribe/content';
 import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
 import { authErrorMessage } from '@/lib/auth/messages';
+import { familySurfacesShown } from '@/lib/family/surfaces.logic';
 
 /** The connection facts expo-network gives (`NetworkState`), as far as this app reads them. */
 export interface ConnectionFacts {
@@ -51,7 +52,7 @@ export function failureStillCounts(state: AuthState, setAside: AuthState | null)
 export const INVITED_DOOR_IN_STORE_BUILD = false;
 
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.coParent && (input.alpha || INVITED_DOOR_IN_STORE_BUILD);
+  return input.coParent && (input.alpha || INVITED_DOOR_IN_STORE_BUILD) && familySurfacesShown(input);
 }
 
 /**

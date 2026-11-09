@@ -100,7 +100,10 @@ export interface IncomingLinkPlan {
  * invite link opens the coming-soon presentation and its token is dropped (it could never be redeemed
  * by this build, and it expires on its own).
  */
-export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boolean; gateStopped: boolean; path: string }): IncomingLinkPlan {
+export function planIncomingLink(
+  link: IncomingLink,
+  opts: { serverFeatures: boolean; gateStopped: boolean; path: string; /** False in a servers-on store build (surfaces.logic.ts): an invite link opens Tonight and keeps no token. Default true. */ familySurfaces?: boolean },
+): IncomingLinkPlan {
   const none = { keepInviteToken: false, keepAuthLink: false };
   switch (link.kind) {
     case 'auth-link':
@@ -108,7 +111,7 @@ export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boo
     case 'auth-code':
       return { route: opts.serverFeatures ? '/sign-in/code' : '/', ...none };
     case 'invite':
-      if (opts.gateStopped) return { route: '/', ...none };
+      if (opts.gateStopped || opts.familySurfaces === false) return { route: '/', ...none };
       return { route: '/invite', keepInviteToken: inviteDestination('invite_link', opts.serverFeatures) === 'flow', keepAuthLink: false };
     case 'provider-redirect':
       return { route: null, ...none };

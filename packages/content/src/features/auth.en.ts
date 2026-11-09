@@ -152,6 +152,13 @@ export const authCopy = {
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
+    // Account-first slice 4a (exec council 9 Nov 2026, D; RW-21, RW-23, RW-27). Shown when the account already has a book
+    // and this phone holds a book or letters: "Keep in this account" adds the phone's book as a second book. Nothing is
+    // merged or deleted, and the recordings stay on the phone. Each says where letters go, so counsel reads it, and each
+    // needs founder word approval.
+    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
+    recordingsNote: 'The recordings are kept on this phone.',
+    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 
   errors: {

@@ -7,6 +7,7 @@ import { router, usePathname, useRootNavigationState } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { serverFeaturesEnabled } from '../capabilities';
 import { readPendingInvite } from './pending-invite';
+import { inviteScreensHidden } from './surfaces';
 
 export function PendingInviteWatcher() {
   const nav = useRootNavigationState();
@@ -19,6 +20,8 @@ export function PendingInviteWatcher() {
     checked.current = true;
     // v1.0 keeps no invite tokens (lib/family/entry.logic.ts), so there is nothing to look for.
     if (!serverFeaturesEnabled()) return;
+    // A servers-on store build hides the join flow (NX-38-R5): a token left by an earlier build opens nothing.
+    if (inviteScreensHidden()) return;
     if (pathname.startsWith('/invite')) return;
     void readPendingInvite().then((p) => {
       if (p) router.push('/invite');

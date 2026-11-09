@@ -66,6 +66,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { authCopy } from '@/lib/auth/copy';
 import { useAuth } from '@/lib/auth/session-provider';
+import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
 import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
@@ -130,7 +131,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
   // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
-  const { state: authState, configured } = useAuth();
+  const { state: authState, configured, account, signOut } = useAuth();
   const [start] = useState<Step>(() =>
     firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen }),
   );
@@ -452,6 +453,10 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
                         {expecting ? <Text variant="footnote">{o.child.expectingHelp}</Text> : null}
                       </View>
                     </Animated.View>
+                  ) : null}
+                  {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
+                  {accountFirst && hasSessionState(authState) ? (
+                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={() => void signOut()} />
                   ) : null}
                 </>
               )}
