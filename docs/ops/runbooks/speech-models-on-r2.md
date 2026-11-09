@@ -33,14 +33,14 @@ The other two models in the catalog are not carried: the Hindi model is not host
 
 ## Before you start
 
-- Steps 1 to 5 of `docs/ops/PACKS_HOSTING.md` are done: the two signing keys exist (`el-2026-11` and `el-2026-11-backup` in `packages/api/src/keys.ts`, V), the bucket and the custom domain serve the v1 manifest (S-11 PASS in the gap map, R), and `~/.config/early-letters/r2.env` holds the four `PACKS_S3_*` values with an Object Read & Write token for this one bucket.
+- Steps 1 to 5 of `docs/ops/PACKS_HOSTING.md` are done: the two signing keys exist (`el-2026-11` and `el-2026-11-backup` in `packages/api/src/keys.ts`, V), the bucket and the custom domain serve the v1 manifest (`docs/release/setup-steps.json` S-11, `ledger.status: "done"`, 2026-11-01, R; `publish.ts verify` run by you today is the live check), and `~/.config/early-letters/r2.env` holds the four `PACKS_S3_*` values with an Object Read & Write token for this one bucket.
 - The publishing computer, with the private key file outside every git checkout (`~/.config/early-letters/signing.env`).
 - About 1 GB free on disk, and a network that can send about 765 MB (Assumption: about 5 minutes at 20 Mbit/s up, from `PACKS_HOSTING.md`).
 - A clean checkout of `develop` with `npm ci` run.
 
 ## Steps (about 30 minutes, mostly waiting)
 
-1. **Build the release with the models on our host.** In your own terminal:
+1. **Build the release with the models on our host.** Start with an empty `dist/release` (it is git-ignored; `rm -rf dist/release` if an earlier run left files). The tool refuses a folder holding files this release does not include and stops with `dist/release holds N file(s) this release does not include, left by an earlier run with other --models or --languages: ... Use an empty --out, or delete them.` (V: `release.ts`). In your own terminal:
    ```bash
    npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env \
      --models download --strict-models --languages en
@@ -61,18 +61,47 @@ The other two models in the catalog are not carried: the Hindi model is not host
    npx tsx scripts/packs/publish.ts upload --languages en --dry-run
    npx tsx scripts/packs/publish.ts upload --languages en
    ```
-   The dry run lists three model files and the three documents, and nothing else. The upload sends the packs first and the manifest last, so a phone never sees a manifest that points at a file not yet there. It never deletes and never overwrites a versioned path. The 574 MB file goes up as a single PUT; that this is within R2's single-upload limit is my reading of Cloudflare's limits page, not rechecked today (UNVERIFIED).
-
-4. **Verify from outside.**
-   ```bash
-   npx tsx scripts/packs/publish.ts verify
-   curl -sI -H 'Range: bytes=0-15' https://packs.earlyletters.app/speech-model.whisper-large-v3-turbo-q5_0/1/ggml-large-v3-turbo-q5_0.bin
+   The dry run ends with this line (V: `publish.ts`), where `(...)` is a size of about 765 MB:
    ```
-   Every `verify` line is `ok`. For each model there is a line with `Range supported (packs.earlyletters.app)` and a line with `mirror huggingface.co has <bytes> bytes`. The `curl` answers `206`. `verify` hashes only files of 5 MB or less, so for the two Whisper files it checks size and Range, and the phone checks the hash.
+   Dry run: nothing was sent. 6 files (...) would be checked against the bucket and put if missing.
+   ```
+   Six is the three model files and the three signed documents (manifest, remote config, content bundle), and nothing else. If it says any other number, stop and read the lines above it.
 
-5. **Commit the two `published.ts` files** exactly as `PACKS_HOSTING.md` step 8 says (`secret-scan --staged` first, then a PR). It must merge before the next `eas build`. Phones pick up the new manifest at their next check (at most 6 hours while the app is open, R).
+   The real upload sends the packs first and the manifest last, so a phone never sees a manifest that points at a file not yet there. It never deletes and never overwrites a versioned path. It ends with:
+   ```
+   6 uploaded (...), 0 already there.
+   ```
+   A re-run after an interruption shows fewer uploaded and more "already there"; that is fine. The 574 MB file goes up as a single PUT; that this is within R2's single-upload limit is my reading of Cloudflare's limits page, not rechecked today (UNVERIFIED).
 
-6. **On a phone**, one row in the device session (Asha book only): on a test iPhone with no speech model (a fresh install, or Settings > Storage > Remove), choose the download on Wi-Fi and record a short letter. Expected: the model downloads, the letter gets its words, nothing asks again. Optional: on a phone that already has the model, nothing downloads. Neither has been run (UNVERIFIED until you do).
+   **When the upload is done, close this terminal window.** `r2.env` was loaded into its environment; closing it is the simplest way to leave the R2 secrets nowhere.
+
+4. **Read the upload's own check; do not repeat it.** Unless you passed `--no-verify`, `upload` finishes by running the same check as `publish.ts verify` against the public host (V: `publish.ts`, the `checkHosted` call after the upload). Its last lines are that check, under `Checking https://packs.earlyletters.app as a phone would:`. For each model you should see a line with `Range supported (packs.earlyletters.app)` and a line with `mirror huggingface.co has <bytes> bytes`. `verify` hashes only files of 5 MB or less, so for the two Whisper files it checks size and Range, and the phone checks the hash. The pass is the final line:
+   ```
+   Live. Commit supabase/functions/*/published.ts and scripts/packs/remote-config.json now: git is the audit log of what was served.
+   ```
+   **If the last line is instead `Uploaded, but the public host does not serve it correctly yet (custom domain, cache or key): see docs/ops/PACKS_HOSTING.md, "Verify".`, stop. Do not go on to step 5**, and do not commit `published.ts`; read the `FAIL` lines above it against the `PACKS_HOSTING.md` troubleshooting table (the command exits 1). Once fixed, run `npx tsx scripts/packs/publish.ts verify` alone (no key needed) until it ends `Every check passed: a build with this host and these keys will download these packs.` (exit 0). Then run the commit step.
+
+   One optional hand check of a Range read (a GET, so the host answers like a phone's request; `-o /dev/null -D -` prints the headers only):
+   ```bash
+   curl -s -o /dev/null -D - -H 'Range: bytes=0-15' https://packs.earlyletters.app/speech-model.whisper-large-v3-turbo-q5_0/1/ggml-large-v3-turbo-q5_0.bin
+   ```
+   The first line should be `HTTP/2 206`. I did not run it (UNVERIFIED); `verify` already checks Range.
+
+5. **Commit the files the release changed, on this run's own branch.** `PACKS_HOSTING.md` step 8 is written for the first key ceremony (branch `chore/packs-signing-key`, a "first signing key" message, `keys.ts` included). Do not reuse it. `keys.ts` has not changed in this run, so it is not added. This run changes three files: the two `published.ts` counters and the audit log of the served kill-switch state, `scripts/packs/remote-config.json` (listed even if `git diff` shows it unchanged; adding an unchanged file is harmless).
+   ```bash
+   git switch -c chore/packs-models-on-r2
+   git add supabase/functions/config/published.ts supabase/functions/content/published.ts scripts/packs/remote-config.json
+   node scripts/packs/secret-scan.mjs --staged
+   ```
+   The scan must print exactly `secret scan: no signing key or upload secret in the staged files` and exit 0 (V: `secret-scan.mjs`). If it prints `SECRET <file>:<line>: <name>` lines instead, stop, unstage the named file, and do not commit.
+   ```bash
+   git commit -m "chore(packs): serve the speech models from our host with Hugging Face as the mirror (manifest v2)"
+   git push -u origin chore/packs-models-on-r2
+   gh pr create --base develop --fill
+   ```
+   It must merge before the next `eas build`: `published.ts` is the counter the next release adds one to, and if it is not committed the next release reuses a version number with different content and `upload` stops. Merge rules are as in `PACKS_HOSTING.md` step 8 (D-107, D-117). Phones pick up the new manifest at their next check (at most 6 hours while the app is open, R).
+
+6. **On a phone**, one row in the device session (Asha book only): on a test iPhone with no speech model (a fresh install, or Settings > Storage > Remove), choose the download on Wi-Fi and record a short letter. Pass: the model finishes downloading, the letter gets its words, and nothing asks to download again. Fail: any download error, a letter that stays waiting, or a second download; write the screen and the time in the evidence row and open an issue. Optional second row, on a phone that already has the model: nothing downloads. This runbook does not quote the on-screen wording (UNVERIFIED), and neither row has been run.
 
 ## If something goes wrong
 
