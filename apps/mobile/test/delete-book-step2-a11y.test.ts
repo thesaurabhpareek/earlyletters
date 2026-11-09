@@ -65,10 +65,12 @@ describe('[S1-133 (a)] Delete this book, step 2: the screen uses them (source pi
   });
 
   it('gives the disabled confirm the hint, from the existing string, and keeps its label, disabled state and press', () => {
-    expect(screen).toMatch(/accessibilityHint=\{confirmHint\(ready, d\.bookTypeToConfirmLabel\)\}/);
-    expect(screen).toMatch(/disabled=\{!ready\}/);
-    expect(screen).toMatch(/accessibilityLabel=\{d\.bookConfirm\}/);
-    expect(screen).toMatch(/onPress=\{confirm\}/);
+    // Read inside the confirm button's own element, so the hint cannot pass on another button (Keep, Export, Continue).
+    const confirmButton = screen.slice(0, screen.indexOf('testID="deleteBook.confirm"')).split('<Button').pop() ?? '';
+    expect(confirmButton).toMatch(/accessibilityHint=\{confirmHint\(ready, d\.bookTypeToConfirmLabel\)\}/);
+    expect(confirmButton).toMatch(/disabled=\{!ready\}/);
+    expect(confirmButton).toMatch(/accessibilityLabel=\{d\.bookConfirm\}/);
+    expect(confirmButton).toMatch(/onPress=\{confirm\}/);
     // Still no autoFocus on the field: it would take focus from the title.
     expect(screen).not.toMatch(/autoFocus/);
   });
