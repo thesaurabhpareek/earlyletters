@@ -64,6 +64,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
+import { authCopy } from '@/lib/auth/copy';
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
@@ -608,6 +609,12 @@ export default function Onboarding() {
  */
 function FirstRun() {
   const route = useFirstRunRoute();
+  // "Sign in is back." when the outage screen gives way to the Welcome (NX-36 S3), said once, politely.
+  const lastStep = useRef(route.step);
+  useEffect(() => {
+    if (lastStep.current === 'outage' && route.step === 'signIn') announce(authCopy.outage.backOnline);
+    lastStep.current = route.step;
+  }, [route.step]);
   if (route.step === 'signIn') return route.restoring ? <SafeAreaView className="flex-1 bg-background" /> : <WelcomeSignIn />;
   if (route.step === 'outage' && route.outage) {
     return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;

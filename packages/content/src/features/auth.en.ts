@@ -33,7 +33,11 @@ export const authCopy = {
       // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
       settings: "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
+      // NX-36 S2 (backup-off default, 4.1): where the book is available; says nothing about recordings being kept.
+      sign_in_first: 'Your book opens on any phone you sign in on.',
     },
+    // NX-36 S2, above the two buttons, with Terms of Service and Privacy Policy as links (the labels are consent.terms.*).
+    agreeLine: 'By continuing you agree to the Terms of Service and Privacy Policy.',
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
     email: 'Sign in with email',
@@ -88,22 +92,33 @@ export const authCopy = {
   },
 
   /**
-   * Account-first Welcome (NX-36 S2) and the outage screen (S3), behind the server-features switch. PLACEHOLDER words,
-   * each needing founder word approval (the NX-36 text was not readable when they were written). The Apple button is
-   * Apple's own (ASAuthorizationAppleIDButton, type "Sign in with Apple"), so it has no string here. The agreement line
-   * above the buttons is `consent.terms.agreeLine`, registered text, not repeated. Button words: 22 characters at most.
+   * Account-first first run (NX-36 S2 and S3), behind the server-features switch. The key names and placeholder words
+   * are NX-36's own (sections 4 S2, 4.1, S3); each needs founder word approval. The Apple button is Apple's
+   * (ASAuthorizationAppleIDButton, "Sign in with Apple"). No line here says a recording is kept safe or backed up.
+   * Without "Your letters are safe": a brand-new install has no letters (NX-36 2.6).
    */
-  welcome: {
-    email: 'Sign in with email',
+  firstRun: {
+    errors: {
+      provider: 'That sign-in did not finish. Try again, or try another way.',
+      rateLimited: 'Too many tries for now. Wait a few minutes, then try again.',
+      notAvailable: 'This way of signing in is not available right now. Try another way.',
+    },
   },
+  // S3, sign-in cannot be reached. The button is the 22-character form; the long sentence is its note.
   outage: {
-    offlineTitle: 'You are offline',
-    offlineBody: 'Signing in needs a connection. It tries again by itself when you are back online.',
-    outageTitle: 'Sign in is out of reach',
-    outageBody: 'Try again in a moment.',
-    // The button is the 22-character form; the long sentence is this note, shown with the button.
-    localStart: 'Start on this phone',
-    localStartNote: 'Or start the book on this phone for now. You can sign in later.',
+    // Differs from NX-36 ("We can't reach sign-in right now."): the content rules allow no "we" outside registered lines.
+    title: 'Sign in cannot be reached right now.',
+    body: 'Try again in a moment, or start the book on this phone and sign in later.',
+    retry: 'Try again',
+    startLocal: 'Start on this phone',
+    startLocalNote: 'Start the book on this phone for now. You can sign in later to bring it to your account.',
+    // Announcement only, when the connection or sign-in comes back.
+    backOnline: 'Sign in is back.',
+  },
+  offline: {
+    title: 'Sign in needs a connection.',
+    // Differs from NX-36 ("We will try again when you are back online."): no "we".
+    body: 'It tries again by itself when you are back online.',
   },
 
   verify: {

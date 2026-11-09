@@ -297,8 +297,8 @@ const AUTH_BUTTONS = [
   'sheet.passkey',
   'sheet.later',
   // NX-36 S2 and S3 (placeholders, founder word approval).
-  'welcome.email',
-  'outage.localStart',
+  'outage.retry',
+  'outage.startLocal',
   'email.send',
   'code.verify',
   'code.openMail',

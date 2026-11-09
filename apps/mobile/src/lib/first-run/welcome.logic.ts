@@ -2,7 +2,9 @@
  * Pure rules behind the account-first Welcome (S2) and the outage screen (S3), slice 2 of NX-31 revision 3.
  * No React Native, tested in Node (test/first-run-welcome.test.ts). Reads nothing, sends nothing, records nothing.
  */
+import { authCopy } from '@scribe/content';
 import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
+import { authErrorMessage } from '@/lib/auth/messages';
 
 /** The connection facts expo-network gives (`NetworkState`), as far as this app reads them. */
 export interface ConnectionFacts {
@@ -50,4 +52,17 @@ export const INVITED_DOOR_IN_STORE_BUILD = false;
 
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
   return input.coParent && (input.alpha || INVITED_DOOR_IN_STORE_BUILD);
+}
+
+/**
+ * The words under the buttons on the Welcome. A brand-new install has no letters, so the three failures NX-36 S2 names
+ * use the first-run variants without "Your letters are safe"; every other kind keeps its existing words.
+ */
+export function welcomeErrorMessage(kind: AuthErrorKind | null): string | null {
+  if (!kind || kind === 'cancelled') return null;
+  const e = authCopy.firstRun.errors;
+  if (kind === 'provider') return e.provider;
+  if (kind === 'rate_limited' || kind === 'email_wait') return e.rateLimited;
+  if (kind === 'not_available') return e.notAvailable;
+  return authErrorMessage(kind);
 }
