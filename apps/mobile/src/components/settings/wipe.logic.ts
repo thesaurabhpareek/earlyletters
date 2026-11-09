@@ -8,6 +8,15 @@ export function typedWordMatches(typed: string, word: string): boolean {
   return typed.trim().toLowerCase() === word.toLowerCase();
 }
 
+/**
+ * The hint on the dimmed "Delete the book" button: until the word matches, it says what turns the button on (the same
+ * line as the field above it, "Type delete to confirm"). Once the word matches the button needs no hint. A hint is
+ * spoken after the label; VoiceOver also says "dimmed".
+ */
+export function confirmHint(ready: boolean, whatTurnsItOn: string): string | undefined {
+  return ready ? undefined : whatTurnsItOn;
+}
+
 /** One button of a native confirm (React Native's Alert button shape). */
 export type ConfirmButton = { text: string; style: 'cancel' | 'destructive'; onPress?: () => void };
 
