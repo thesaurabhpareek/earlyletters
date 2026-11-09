@@ -279,23 +279,23 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder step still open (the production ascAppId) and the production update channel (RS-07); every other check passes', () => {
+  it('fails no check: the production ascAppId is set and the production profile names no update channel (S-12b); every check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
     const results = productionChecks(readInputs(APP, shell)) as Result[];
     const failing = results.filter((r) => r.level === 'FAIL');
     // signing-keys passes since #512 (el-2026-11 and el-2026-11-backup) and must stay passing.
-    // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
-    // asc-app-id from this set. project-id passes since #487 and must stay passing.
+    // asc-app-id passes since S-12b: submit.production.ios.ascAppId is 6829377245, the production record
+    // (docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md, state read 1 Nov). project-id passes since #487 and must stay passing.
     // pack-manifest passes since #527 (pack release v1, signed by el-2026-11, live at packs.earlyletters.app) and must stay passing.
-    // update-channel FAILs on purpose (RS-07): eas.json build.production sets "channel": "production" and expo-updates
-    // is not a dependency, so `eas build --profile production --non-interactive` would stop (D-091; build 1, #538).
-    // REL-06/RS-15 removes the channel after the 9 Nov go/no-go (D-124 item 1) and removes update-channel from this set.
-    // Do not drop it from this list to make the test pass: fix eas.json instead.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'update-channel']);
-    expect(failing.find((r) => r.id === 'update-channel')?.msg).toContain('"production"');
-    // Guideline 2.5.19 (build 12 store compliance review, risk 5): no dormant sign-in capability. Must stay passing.
+    // update-channel passes since S-12b (REL-06/RS-15): build.production names no channel, and expo-updates is not a
+    // dependency (D-091; build 1, #538). A channel on any profile without expo-updates would stop a non-interactive build.
+    // Do not add an id to this list to make the test pass: fix eas.json instead.
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual([]);
+    expect(results.find((r) => r.id === 'update-channel')?.level).toBe('PASS');
+    expect(results.find((r) => r.id === 'asc-app-id')?.msg).toContain('6829377245');
+    // Guideline 2.5.19 (build 12 store compliance review, risk 5): sign-in capabilities follow the servers switch. Must stay passing.
     expect(results.find((r) => r.id === 'sign-in')?.level).toBe('PASS');
   }, 120_000);
 
