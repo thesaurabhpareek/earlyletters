@@ -67,6 +67,10 @@ import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y'
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
+import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
+import { invitedDoorShown } from '@/lib/first-run/welcome.logic';
+import { OutageScreen } from '@/components/onboarding/outage-screen';
+import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
@@ -112,7 +116,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRun() {
+function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolean }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -137,7 +141,8 @@ function FirstRun() {
   const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  const doors = visibleCoParentDoors(capabilities.coParent);
+  // "I was invited" is hidden in a servers-on store build (9 Nov ruling); alpha builds keep it. Servers off: hidden as before.
+  const doors = { ...visibleCoParentDoors(capabilities.coParent), joinButton: invitedDoorShown({ alpha: PLUS_ALPHA, coParent: visibleCoParentDoors(capabilities.coParent).joinButton }) };
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
@@ -172,7 +177,7 @@ function FirstRun() {
   // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
   const { state: authState } = useAuth();
   const gateAllows = beginTheBookAllowed(
-    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0 }),
+    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0, localStartChosen }),
   );
   const showContinue = joining.begin && gateAllows;
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
@@ -594,4 +599,18 @@ export default function Onboarding() {
   if (gate.screen === 'deletion' && gate.request) return <OpenDeletionScreen request={gate.request} />;
   if (gate.screen === 'checking') return <CheckingScreen />;
   return <FirstRun />;
+}
+
+/**
+ * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
+ * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. Everything else, and every build with the switch
+ * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`).
+ */
+function FirstRun() {
+  const route = useFirstRunRoute();
+  if (route.step === 'signIn') return route.restoring ? <SafeAreaView className="flex-1 bg-background" /> : <WelcomeSignIn />;
+  if (route.step === 'outage' && route.outage) {
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
+  }
+  return <FirstRunSteps localStartChosen={route.localStartChosen} />;
 }

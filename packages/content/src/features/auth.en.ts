@@ -87,6 +87,25 @@ export const authCopy = {
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
   },
 
+  /**
+   * Account-first Welcome (NX-36 S2) and the outage screen (S3), behind the server-features switch. PLACEHOLDER words,
+   * each needing founder word approval (the NX-36 text was not readable when they were written). The Apple button is
+   * Apple's own (ASAuthorizationAppleIDButton, type "Sign in with Apple"), so it has no string here. The agreement line
+   * above the buttons is `consent.terms.agreeLine`, registered text, not repeated. Button words: 22 characters at most.
+   */
+  welcome: {
+    email: 'Sign in with email',
+  },
+  outage: {
+    offlineTitle: 'You are offline',
+    offlineBody: 'Signing in needs a connection. It tries again by itself when you are back online.',
+    outageTitle: 'Sign in is out of reach',
+    outageBody: 'Try again in a moment.',
+    // The button is the 22-character form; the long sentence is this note, shown with the button.
+    localStart: 'Start on this phone',
+    localStartNote: 'Or start the book on this phone for now. You can sign in later.',
+  },
+
   verify: {
     title: 'Signing you in',
     // Heading over the two refusals (F02-U11 `errors.other_phone`, F02-U27 `errors.already_signed_in`): nothing is signing in.

@@ -130,6 +130,8 @@ export function gateInputsFromAuth(args: {
   authState: AuthState;
   hasLocalBook: boolean;
   localStartChosen?: boolean;
+  /** From the connectivity source (use-online.ts). Omitted means unknown, which counts as online. */
+  online?: boolean;
 }): FirstRunGateInput {
   const s = args.authState;
   const hasSession = s.status === 'checkingConsent' || s.status === 'needsConsent' || s.status === 'ready' || s.status === 'signingOut';
@@ -139,8 +141,8 @@ export function gateInputsFromAuth(args: {
     ageAnswered: 'yes',
     hasSession,
     hasLocalBook: args.hasLocalBook,
-    // No connectivity source exists in the app yet (no dependency was added): unknown counts as online.
-    online: true,
+    // Unknown counts as online (A-NFR-001: no launch waits on the network). The route passes expo-network's view.
+    online: args.online ?? true,
     signInFailed: s.status === 'signedOut' && s.error !== undefined && OUTAGE_ERRORS.has(s.error),
     localStartFallback: LOCAL_START_FALLBACK,
     localStartChosen: args.localStartChosen,
