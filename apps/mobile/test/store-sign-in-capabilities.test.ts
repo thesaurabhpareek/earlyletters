@@ -57,9 +57,9 @@ describe('sign-in capabilities per build (guideline 2.5.19)', () => {
     expect(SIGN_IN_ENTITLEMENTS).toEqual([APPLE, DOMAINS]);
   });
 
-  it('production (the store build, servers off): no Sign in with Apple entitlement, no associated domains, no Google URL scheme', () => {
-    expect(EAS.build.production?.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-    const env = profileEnv('production');
+  // The switch is forced here, so this holds whichever way eas.json sets production (servers on is the build 12 plan, #698).
+  it('production with servers off (the store build as first shipped): no Sign in with Apple entitlement, no associated domains, no Google URL scheme', () => {
+    const env = profileEnv('production', { EXPO_PUBLIC_SERVER_FEATURES: 'off' });
     const pub = evaluate('public', env);
     const intro = evaluate('introspect', env);
     expect(pub.ios?.usesAppleSignIn).toBeFalsy();

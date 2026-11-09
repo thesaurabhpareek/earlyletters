@@ -121,6 +121,26 @@ describe('the store preflight on a store-ready fixture', () => {
   });
 });
 
+describe('the sign-in check follows the servers switch (a servers-on production profile must not contradict it)', () => {
+  const on = (): Input => {
+    const i = good();
+    i.cfg.extra.serverFeatures = true;
+    i.cfg.ios.usesAppleSignIn = true;
+    i.cfg.ios.associatedDomains = ['applinks:example.com'];
+    i.introspected.ios.entitlements['com.apple.developer.applesignin'] = ['Default'];
+    i.introspected.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com'];
+    return i;
+  };
+  it('servers on with the capabilities present: sign-in PASSes', () => {
+    const r = (productionChecks(on()) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('PASS');
+  });
+  it('servers on without the Apple entitlement or associated domains: sign-in FAILs', () => {
+    const r = (productionChecks({ ...good(), cfg: { ...good().cfg, extra: { ...good().cfg.extra, serverFeatures: true } } }) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('FAIL');
+  });
+});
+
 describe('one failing fixture per check: only that check FAILs', () => {
   const cases: [string, string, Input][] = [
     ['app-env', 'EXPO_PUBLIC_APP_ENV=preview (an alpha build: no letter limit, no Plus)', withEnv({ EXPO_PUBLIC_APP_ENV: 'preview' })],
@@ -135,7 +155,7 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['analytics', 'a PostHog key in the profile', withEnv({ EXPO_PUBLIC_POSTHOG_KEY: 'phc_asha' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=on', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'on' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES unwritten', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: undefined })],
-    ['servers', 'the evaluated config says serverFeatures true', withCfg((c) => (c.extra.serverFeatures = true))],
+    ['servers', 'the evaluated config says serverFeatures true', { ...withCfg((c) => { c.extra.serverFeatures = true; c.ios.usesAppleSignIn = true; c.ios.associatedDomains = ['applinks:example.com']; }), introspected: { ios: { entitlements: { 'com.apple.developer.applesignin': ['Default'], 'com.apple.developer.associated-domains': ['applinks:example.com'] }, infoPlist: { CFBundleURLTypes: [] } } } }],
     ['backup', 'EXPO_PUBLIC_BACKUP=on', withEnv({ EXPO_PUBLIC_BACKUP: 'on' })],
     ['backup', 'EXPO_PUBLIC_BACKUP unwritten', withEnv({ EXPO_PUBLIC_BACKUP: undefined })],
     ['status-report', 'EXPO_PUBLIC_STATUS_REPORT=on', withEnv({ EXPO_PUBLIC_STATUS_REPORT: 'on' })],
