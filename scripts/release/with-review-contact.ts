@@ -71,7 +71,7 @@ export function serversOnNotes(inviteLink: unknown, inviteExpiry: unknown, now: 
   if (day === null) throw new Error('ASC_REVIEW_CONTACT_JSON inviteExpiry must be a date written YYYY-MM-DD (value not shown)');
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   if (day < today) throw new Error('ASC_REVIEW_CONTACT_JSON inviteExpiry has already passed: make a fresh invite link (value not shown)');
-  if (day > today + 8 * DAY_MS) throw new Error('ASC_REVIEW_CONTACT_JSON inviteExpiry is more than 7 days away, but an invite link lasts 7 days (IAM-R18): check the date (value not shown)');
+  if (day > today + 8 * DAY_MS) throw new Error('ASC_REVIEW_CONTACT_JSON inviteExpiry is more than 8 days away; an invite link lasts 7 days (IAM-R18) plus one day of slack for time zones: check the date (value not shown)');
   const d = new Date(day);
   const written = `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`;
   const { inviteLink: linkSlot, inviteExpiry: expirySlot } = appReviewCopy.placeholders;

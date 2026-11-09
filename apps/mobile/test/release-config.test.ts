@@ -179,12 +179,12 @@ describe('App Review contact (added in CI only)', () => {
       expect(fails({ inviteLink: 12345 })).toMatch(/missing inviteLink/);
     });
 
-    it('checks the expiry date: a real day, not past, no more than a week ahead', () => {
+    it('checks the expiry date: a real day, not past, no more than 8 days ahead (7 plus a day of slack)', () => {
       expect(send({ inviteExpiry: '2026-11-09' }).apple.review.notes).toContain('until 9 November 2026');
       expect(send({ inviteExpiry: '2026-11-17' }).apple.review.notes).toContain('until 17 November 2026');
       for (const bad of ['', 'tomorrow', '15/11/2026', '2026-11-31', '2026-02-30', '2026-13-01']) expect(fails({ inviteExpiry: bad })).toMatch(/inviteExpiry/);
       expect(fails({ inviteExpiry: '2026-11-08' })).toMatch(/already passed/);
-      expect(fails({ inviteExpiry: '2026-11-18' })).toMatch(/more than 7 days away/);
+      expect(fails({ inviteExpiry: '2026-11-18' })).toMatch(/more than 8 days away/);
       expect(fails({ inviteExpiry: undefined })).toMatch(/missing inviteExpiry/);
       // never echoes the date or the link
       expect(fails({ inviteExpiry: '2026-11-18' })).not.toContain('2026-11-18');
