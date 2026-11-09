@@ -17,7 +17,7 @@ Strings are keys, no word is typed in a screen.
 
 ## 1. Purpose
 
-A parent types a letter the way they would say it. It feels like paper, not a form. A pause of 500 ms in typing saves a draft on the phone (`WRITE_AUTOSAVE_MS`, `components/capture/write-session.logic.ts:18`). Closing, a swipe down, and the app going to the background write the newest words at once, so none of those lose anything. A crash or a kill in the middle of a burst of typing loses at most the last half second (RT-WRT-05). Typed words are kept exactly as typed; the machine never touches them (CLAUDE.md constitution). Write also opens from Review for a recording whose words could not be written down (`?draftId=`).
+A parent types a letter the way they would say it. It feels like paper, not a form. A pause of 500 ms in typing saves a draft on the phone (`WRITE_AUTOSAVE_MS`, `components/capture/write-session.logic.ts:18`). Closing, a swipe down, and the app going to the background write the newest words at once, so none of those lose anything. A kill in the middle of a burst of typing loses what was typed since the last pause of 500 ms or more, because the timer starts again at every keystroke and has no maximum wait (`write-session.logic.ts:74-82`). RT-WRT-05 and F04-REQ-011 ask for at most the last half second; that kill run is a gap, not run, and the code does not give that bound. Typed words are kept exactly as typed; the machine never touches them (CLAUDE.md constitution). Write also opens from Review for a recording whose words could not be written down (`?draftId=`).
 
 ## 2. Layout
 

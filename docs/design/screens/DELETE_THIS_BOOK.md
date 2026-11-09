@@ -204,7 +204,7 @@ COORDINATION section 10 gives a requirement the parts Shown, Records, Never and 
 7. No keyboard inset on step 2 (`delete-book.tsx:52`). **Device** first; then `KeyboardAvoidingView` as Write does (`app/write.tsx:310`).
 8. The shelf's help and empty lines name letters only (`strings.en.ts:821-822`, used at `recently-deleted.tsx:149`, `:139`). OPEN (`content` with counsel and the founder: D-085 sent the shelf's 30-day wording to counsel, and D-132 keeps what people are promised with the founder).
 9. Book cards leave the shelf without the fade letter cards have (`recently-deleted.tsx:110-121`). Low.
-10. The ready confirm gets its fill from a class override on a variant that has none (`delete-book.tsx:78`, `components/ui/button.tsx:58`). COMPONENTS 2.1 allows a destructive fill only on a confirm; this is a confirm page. Spec: 2.1 records this page's form (an edge until the typed word matches, then a `destructive` fill with an `onDestructive` label). Until then it is a departure. Low.
+10. The ready confirm gets its fill from a class override on a variant that has none (`delete-book.tsx:78`, `components/ui/button.tsx:58`). COMPONENTS 2.1 now records this page's form as PROPOSED (an edge until the typed word matches, then a `destructive` fill with an `onDestructive` label, only on a confirm page). Until design-systems decides it (OPEN 9) it is a departure. Low.
 
 ## 12. OPEN decisions
 
