@@ -102,7 +102,7 @@ Tonight                         Book (unchanged, #674)
 Tonight                       Book                       Photos
 +------------------------+    +------------------------+ +------------------------+
 | ASHA . 7 MONTHS  [gear]|    | Asha's book      [gear]| | Photos           [gear]|
-| Good evening, Mama.    |    | ...                    | | Asha                   |
+| Good evening, Mama.    |    | (months)                 | | Asha                   |
 | (the prompt)           |    |                        | | +------+ +------+      |
 | [Speak]   [Type]       |    |                        | | | pic  | | pic  |      |
 | From the book (row)    |    |                        | | +------+ +------+      |
