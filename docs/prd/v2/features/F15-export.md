@@ -6,7 +6,7 @@
 | Priority and rank | P0, rank 13 (`05-feature-map.md` section 2) |
 | Personas | P1, P2, P5 (receives the PDF), P6 |
 | Existing IDs | C-REQ-017, C-REQ-018, C-NFR-004, C-NFR-007, DATA-REQ-050, DATA-REQ-051, DATA-REQ-052, DATA-REQ-053, DATA-REQ-054 (P1), DATA-REQ-055 (P1), DATA-REQ-056, LEGAL-REQ-013, LEGAL-REQ-034, LEGAL-REQ-035 (v1.1), LEGAL-REQ-036 (P1), LEGAL-REQ-050, PRD-REQ-004, PRD-REQ-009, K-05, K-32, D-033, BL-150, BL-243, BL-284 |
-| Depends on | F08 (original files, hashes), F09 (chapters, signatures, `LetterText` rules), F11 (what a co-parent's letters include), F05 (language packs that carry fonts), F17 (Your letters, deletion), F02 (account fields for `account.json`) |
+| Depends on | F08 (original files, hashes), F09 (chapters, signatures, `LetterText` rules), F11 (what a co-parent's letters include), F05 (language packs that carry fonts), F17 (Your data, deletion), F02 (account fields for `account.json`) |
 | Status | Draft V2, 3 Oct 2026. Reconciled on 13 Oct 2026 with D-073 (owner backup), D-084, D-085, ADR 0015 (listening copies never exported) and the export code on `develop` (`apps/mobile/src/lib/export/`). Revised 14 Oct 2026 after critique round 1: letters not yet saved (held at the Keep step, waiting to be read back, typed drafts) are exported; direction per letter; copy keys checked against `develop` (disposition in `reviews/DISPOSITION-C.md`). Round 2 (15 Oct): the `waiting/` row no longer says drafts never sync (R8 R2A-05) |
 
 ## 1. Why
