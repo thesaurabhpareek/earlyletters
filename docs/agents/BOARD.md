@@ -95,6 +95,10 @@ The agent harness is called Chakra, an internal name (`HARNESS.md`); nothing is 
 | qa (wave 1, Karma hand-out) | review evidence for #669 and #680; read what #533 is | none (PR comments) | 2026-11-08 | active |
 | content (wave 1, Karma hand-out) | rank 14: three phone-is-full keys for the Finish screen, no screen | packages/content/src/**listen*, packages/content/test/** (new keys only) | 2026-11-08 | active; words need design-systems and founder approval |
 | product (wave 1, Karma hand-out) | confirmed backlog 08 rows into BACKLOG entries, _ID-MAP.md; ids only from next-id.mjs | docs/BACKLOG.md (new rows only), docs/roadmap/next/_ID-MAP.md | 2026-11-08 | active |
+| product (G-1, Karma hand-out) | core capability gap analysis | docs/roadmap/next/15-core-capability-gaps.md | 2026-11-09 | active; docs only |
+| design-systems (G-2, Karma hand-out) | NX-30 navigation and landing requirement | docs/roadmap/next/03-requirements/NX-30-*.md | 2026-11-09 | active; docs only |
+| product (G-3, Karma hand-out) | NX-31 new-customer onboarding and account creation | docs/roadmap/next/03-requirements/NX-31-*.md | 2026-11-09 | active; docs only |
+| security-architect (G-4, Karma hand-out) | NX-32 account management | docs/roadmap/next/03-requirements/NX-32-*.md | 2026-11-09 | active; docs only |
 
 ## Build 2 merge sequence (coordinator, 28 Oct 2026)
 Every thread syncs to this order. PR state, heads and review counts are from the GitHub API at 06:45 UTC on 28 Oct (Tue 27 Oct, 11:45 PM PT); a push changes the head, so read it again before acting.
