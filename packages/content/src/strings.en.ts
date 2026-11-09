@@ -1295,6 +1295,16 @@ export const en = {
     cardHint: {
       account: "Opens Account.",
     },
+    // You tab, signed out (YOU-TAB-STATES-9nov, section 4; BL-801). Each says where the letters are and names no
+    // co-parent, family or sharing. Founder word approval and counsel read pending; see the PR body.
+    signedOut: {
+      body: "Your letters are on this phone. Sign in to open your book on any phone.",
+    },
+    localStart: {
+      body: "This book is on this phone. When you sign in, it moves to your account after you agree.",
+    },
+    // Spoken hint of the You tab button (spec key tabs.youA11yHint; kept here so tabs stays single words, NX-30a-R9).
+    youTabHint: "Settings and account",
     legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",

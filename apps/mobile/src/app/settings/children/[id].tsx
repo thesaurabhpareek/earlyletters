@@ -10,7 +10,7 @@ import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
-import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
+import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, childRowTitle, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
@@ -93,7 +93,8 @@ export default function ChildSettings() {
 
   return (
     <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-      <Stack.Screen options={{ title: fill(s.title, { child: name }) }} />
+      {/* A book with no name yet reads "Your child" (develop's childRowTitle), not "'s book" (GAP 6). */}
+      <Stack.Screen options={{ title: name.trim() ? fill(s.title, { child: name }) : childRowTitle(name) }} />
 
       {/* The due-date card: never presumes a birth, never celebrates, never counts days (S46). */}
       {showBorn && editing !== 'born' ? (

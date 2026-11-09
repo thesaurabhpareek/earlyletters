@@ -48,7 +48,9 @@ export default function TabsLayout() {
   const button = (title: string) =>
     Platform.OS === 'ios'
       ? (props: Record<string, unknown>) => {
-          const { href: _href, ...rest } = props;
+          const { href: _href, ...base } = props;
+          // The You tab says what it holds, from content (the spec's tabs.youA11yHint).
+          const rest = title === t.you ? { ...base, accessibilityHint: copy.settingsHome.youTabHint } : base;
           return <Pressable {...(rest as PressableProps)} {...LARGE_CONTENT(title)} />;
         }
       : undefined;
