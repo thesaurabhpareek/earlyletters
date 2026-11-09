@@ -5,7 +5,7 @@ Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6c
 How to read this file:
 - **Built** is what the code does. **Spec** is what the screen should do; every place the build differs is in section 11 with file and line.
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
-- File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
+- File and line numbers are at `6cd2223b`; later merges (#712, #713, #714, #717) moved some, so resolve a citation with `git show 6cd2223b:<path>`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
 
 Sources: EXPERIENCE_PASS S19 and S20 and 5.8 rows 3, 3a and 5a (`docs/design/EXPERIENCE_PASS_2026-10.md`); F14-REQ-040 and journey row 2b (`docs/prd/v2/features/F14-plus.md` lines 427 and 158), F04-REQ-045 and founder decision F5 for the standing Plus line (BL-560 is the Write half of it and states no position); BL-E1 for Another thought; the design-systems audit of 9 Nov (rows 1, 16) and the Chief Design Officer's note of 9 Nov (defect 2). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `engagement.md`, which is not in the repo; the rules for the Plus line on Tonight are in `screens/TONIGHT_AND_MEMORIES.md` section 3 once PR #596 lands.
 
@@ -71,7 +71,7 @@ Tokens: `motion.fadeMs`, `motion.exitMs`, `motion.enter.durationMs`, `target.min
 
 ### The footer rule at accessibility sizes (Spec; built by PR #717, merged)
 
-`footerPlacement(useIsAccessibilitySize())` decides, as it does on Review and Tonight (`lib/review-layout.logic.ts:14`; `app/review.tsx:199`, `app/(tabs)/index.tsx:123`). `'pinned'` below AX1 (as built on develop). `'inline'` from AX1 up: the Plus line (when shown) and both buttons are the last children of the `ScrollView`'s content, after the page, with no top border and no background of their own. Develop does not import `footerPlacement` in `write.tsx` (imports at `:46-64`); #717 does.
+`footerPlacement(useIsAccessibilitySize())` decides, as it does on Review and Tonight (`lib/review-layout.logic.ts:14`; `app/review.tsx:199`, `app/(tabs)/index.tsx:123`). `'pinned'` below AX1 (as built on develop). `'inline'` from AX1 up: the Plus line (when shown) and both buttons are the last children of the `ScrollView`'s content, after the page, with no top border and no background of their own. At `6cd2223b` `write.tsx` did not import `footerPlacement` (imports at `:46-64`); #717 added it.
 
 Why: by a rough count a pinned footer of this size cannot fit with the keyboard up. The Plus line since #668 is 89 characters in `footnote` (14/19 pt). A rough count, not measured:
 - AX3 (2.643x): about 18 to 21 characters on a 335 pt line, so 4 to 5 lines of about 50 pt, roughly 210 to 250 pt for the line alone.

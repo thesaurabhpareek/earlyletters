@@ -5,7 +5,7 @@ Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6c
 How to read this file:
 - **Built** is what the code does. **Spec** is what the screen should do; every place the build differs is in section 11 with file and line.
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
-- File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
+- File and line numbers are at `6cd2223b`; later merges (#712, #713, #714, #717) moved some, so resolve a citation with `git show 6cd2223b:<path>`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
 
 Sources: EXPERIENCE_PASS S40 (`docs/design/EXPERIENCE_PASS_2026-10.md`); D-034 and D-059 (a static row, no classifier; D-034 is recorded "Recommended, needs founder OK", and it covers the row, not the region read); CCO-11 (lines we could not read on their own official page are held); F20-REQ-005 and F20-REQ-007 (a tap opens Phone or Messages and never dials by itself; where it cannot open, the number is shown to copy); the design-systems audit of 9 Nov (rows 4, 15) and the Chief Design Officer's note of 9 Nov (defect 3). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `struggling-page.md`, which is not in the repo; this file replaces it as the design reference.
 
@@ -114,7 +114,7 @@ Light / dark, from `tokens.ts` with the WCAG 2.x formula.
 | Call, Text edge, Spec | `controlBorder` on `surface` (3:1 needed) | 3.36 / 4.27 |
 | Call, Text label, Spec | `text` on `surface` | 12.98 / 14.94 |
 
-Built, the label passes AA but the button's shape disappears: a pale tint on a pale card. This is the page people open on the worst nights, and the buttons are the reason they came. **Spec (design-systems): Call and Text are `outline`** (open PR #713 builds exactly this): a 1 pt `controlBorder` edge (3.36 / 4.27 on the card), label `text`. Both have the same weight, because a person may want to text and neither should look like the page's main action; the one primary is the emergency button. Increase Contrast swaps `controlBorder` to `#2B2722` / `#F2ECE4`.
+Built, the label passes AA but the button's shape disappears: a pale tint on a pale card. This is the page people open on the worst nights, and the buttons are the reason they came. **Spec (design-systems): Call and Text are `outline`** (PR #713, merged 9 Nov 2026, built exactly this): a 1 pt `controlBorder` edge (3.36 / 4.27 on the card), label `text`. Both have the same weight, because a person may want to text and neither should look like the page's main action; the one primary is the emergency button. Increase Contrast swaps `controlBorder` to `#2B2722` / `#F2ECE4`.
 
 Light mode is checked by arithmetic only. **Device**: the S1-150 (a) screenshot in light and dark, and S1-153 row (d).
 
@@ -150,7 +150,7 @@ S1-150 rows (a) to (f): order, regions, Germany, other countries, the iPad, Voic
 
 Line numbers at `6cd2223b`.
 
-1. **Call and Text are `secondary` on a flat card** (`components/settings/helpline-card.tsx:34`, card variant at `:20`, `components/ui/card.tsx:26`). Fill 1.08 / 1.33 against the card. Spec: `outline`. Owner design-systems for the rule, `mobile` or design-systems for the two props. Pin: a contrast row, and a source test that the card passes no `secondary`. Done in open PR #713 (`variant="outline"`, `test/helpline-buttons-visible.test.ts`).
+1. **Call and Text are `secondary` on a flat card** (`components/settings/helpline-card.tsx:34`, card variant at `:20`, `components/ui/card.tsx:26`). Fill 1.08 / 1.33 against the card. Spec: `outline`. Owner design-systems for the rule, `mobile` or design-systems for the two props. Pin: a contrast row, and a source test that the card passes no `secondary`. Done in PR #713 (merged; `variant="outline"`, `test/helpline-buttons-visible.test.ts`).
 2. **No country in the emergency card** (`struggling.tsx:42-58`). PROPOSED, section 4.
 3. **Heading levels** (`struggling.tsx:43`, `helpline-card.tsx:22`): section 8. Low, and web only in effect.
 4. **S1-150 (f)** says "At AX5 the Call and Text buttons stack" and nothing about the rotor. Row (d) of S1-153 adds it.

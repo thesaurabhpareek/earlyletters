@@ -5,9 +5,9 @@ Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6c
 How to read this file:
 - **Built** is what the code does. **Spec** is what the screen should do; every place the build differs is in section 11 with file and line.
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
-- File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`. `delete-book.tsx` is `app/settings/children/delete-book.tsx`.
+- File and line numbers are at `6cd2223b`; later merges (#712, #713, #714, #717) moved some, so resolve a citation with `git show 6cd2223b:<path>`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`. `delete-book.tsx` is `app/settings/children/delete-book.tsx`.
 
-Sources: F17 6.2 D, DATA-REQ-014, DATA-REQ-053, F17-REQ-080 (as the code names them); D-085 (30 days, Restore, Erase now); EXPERIENCE_PASS S38 and S39 for the letter shelf this extends; BL-776 and the CPO's ruling on it, CPO-10 (open PR #723); the design-systems audit of 9 Nov (rows 5, 6, 14) and the Chief Design Officer's note of 9 Nov (defect 5, the CCO-6 open item). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used.
+Sources: F17 6.2 D, DATA-REQ-014, DATA-REQ-053, F17-REQ-080 (as the code names them); D-085 (30 days, Restore, Erase now); EXPERIENCE_PASS S38 and S39 for the letter shelf this extends; BL-776 and the CPO's ruling on it, CPO-10 (merged 9 Nov 2026, `docs/agents/exec/RULINGS.md`); the design-systems audit of 9 Nov (rows 5, 6, 14) and the Chief Design Officer's note of 9 Nov (defect 5, the CCO-6 open item). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used.
 
 Strings are keys in `packages/content/src/strings.en.ts`, `copy.settings.delete.*` unless another prefix is written. No word is typed in a screen. This spec adds no new words except where marked PROPOSED WORDING.
 
@@ -114,7 +114,7 @@ Both steps promise 30 days to change your mind, and the toast says the book is i
 
 What the person sees in the same session right after Delete the book, and whether `dismissTo('/settings')` or the Book tab's redirect to first run wins, only a phone can show (**Device**, S1-153 row (a)).
 
-**Ruling.** The CPO ruled option (a) of BL-776: onboarding shows the existing Recently deleted row while a deleted book waits. No new line: the row and its words (`settings.delete.recentlyDeleted`) already exist. If the CDesO's placement turns out to need a word that does not exist, that word goes to the founder first (D-132; CPO-10 says so). The CDesO places it on the screen. The acceptance in the ruling: delete the only book, cold start, Restore brings it back. The ruling is CPO-10 in `docs/agents/exec/RULINGS.md`, in open PR #723 and not merged yet. `docs/BACKLOG.md` BL-776 still reads `needs-decision` until `product` moves it (PR #715 holds that row's edits). The council round that gave the ruling is not in the repository. The other two options in BL-776, (b) the delete step says what to do after a restart and (c) Delete this book is not offered on the only book, were considered and not chosen.
+**Ruling.** The CPO ruled option (a) of BL-776: onboarding shows the existing Recently deleted row while a deleted book waits. No new line: the row and its words (`settings.delete.recentlyDeleted`) already exist. If the CDesO's placement turns out to need a word that does not exist, that word goes to the founder first (D-132; CPO-10 says so). The CDesO places it on the screen. The acceptance in the ruling: delete the only book, cold start, Restore brings it back. The ruling is CPO-10 in `docs/agents/exec/RULINGS.md` (merged with PR #723, 9 Nov 2026). `docs/BACKLOG.md` BL-776 reads `needs-decision` on develop until PR #715 (the backlog hygiene PR) moves it to ready, Mode pair. The council round that gave the ruling is not in the repository. The other two options in BL-776, (b) the delete step says what to do after a restart and (c) Delete this book is not offered on the only book, were considered and not chosen.
 
 **Spec.** While a deleted book waits (`listDeletedBooks().length > 0`) and the phone has no visible book, first run shows the existing Recently deleted row, which opens the shelf. Nothing else on first run changes, and a new install sees nothing. The root layout adds the tabs as soon as a book exists (`useTabsInStack`), so what the person sees after Restore there is **Device** (S1-153 row (a)).
 
@@ -169,7 +169,7 @@ Order, step 2: back, the title, the heading, the second body line, the field "Ty
 Spec:
 - On Continue, focus moves to the new step's heading (`useFocusOnMount`, `lib/a11y.ts:77`, keyed on the step), the rule `Sheet` already follows and the one `screens/SETTINGS_AND_ACCOUNT.md` section 1 sets for Settings pages once PR #596 lands. Built: no focus move and no announcement, so focus likely stays on the removed Continue button. **Device** (S1-153 row (b)).
 - The heading text is the same in both steps, so the focus move alone may not tell a listener that anything changed. **OPEN (CDesO with `content`)**: give step 2 its own heading words, or send focus to the field. Until then the default is the heading.
-- The disabled Delete the book carries a hint that says what turns it on. PROPOSED: reuse `bookTypeToConfirmLabel` ("Type delete to confirm") as the hint, and no hint once the word matches. No new words. Open PR #714 does this.
+- The disabled Delete the book carries a hint that says what turns it on. PROPOSED: reuse `bookTypeToConfirmLabel` ("Type delete to confirm") as the hint, and no hint once the word matches. No new words. PR #714 (merged 9 Nov 2026) does this.
 - The delete result is spoken by the toast. Recently deleted reads each book card as one group (name and date line), then its two buttons. Restore and Erase now each announce their toast.
 - The destructive button reads its words; colour is never the signal.
 
@@ -195,9 +195,9 @@ COORDINATION section 10 gives a requirement the parts Shown, Records, Never and 
 
 ## 11. Where the build departs from this spec
 
-1. No focus move or announcement on Continue (`delete-book.tsx:111`, `:52`). Fix for `mobile`: `useFocusOnMount` on the step heading. Pin: a source test that the hook is used. Done in open PR #714.
+1. No focus move or announcement on Continue (`delete-book.tsx:111`, `:52`). Fix for `mobile`: `useFocusOnMount` on the step heading. Pin: a source test that the hook is used. Done in PR #714 (merged).
 2. The sole-book promise is not kept after a cold start (section 4). Ruled: BL-776 option (a), CPO-10. `mobile` builds it; the CDesO places the row.
-3. The disabled confirm has no hint (`delete-book.tsx:72-82`). Fix for `mobile`: `accessibilityHint={d.bookTypeToConfirmLabel}` while the word does not match. Done in open PR #714 (`confirmHint`).
+3. The disabled confirm has no hint (`delete-book.tsx:72-82`). Fix for `mobile`: `accessibilityHint={d.bookTypeToConfirmLabel}` while the word does not match. Done in PR #714 (merged; `confirmHint`).
 4. Destructive actions carry an icon plus words (DESIGN_LANGUAGE 2), and this one does not: `delete-book.tsx:72-82`. The Delete this book row has none either (`children/[id].tsx:158-164`; `ListRow` draws none, `components/ui/list-row.tsx:83-102`). Erase now already has the Trash icon (`recently-deleted.tsx:118`, `:206`). Fix: pass `icon={TrashIcon}`; give a destructive `ListRow` a leading icon (design-systems).
 5. A failed delete does nothing (`delete-book.tsx:46-49`). Needs an error line; words OPEN.
 6. A missing book or a signed-in phone shows a blank page (`delete-book.tsx:37`). Fix: `StateScreen` `notFound`.

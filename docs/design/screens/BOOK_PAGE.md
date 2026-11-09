@@ -5,7 +5,7 @@ Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6c
 How to read this file:
 - **Built** is what the code does. **Spec** is what the screen should do; every place the build differs is in section 11 with file and line.
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
-- File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
+- File and line numbers are at `6cd2223b`; later merges (#712, #713, #714, #717) moved some, so resolve a citation with `git show 6cd2223b:<path>`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
 
 Sources: EXPERIENCE_PASS S24 to S26 and S36, 5.8 rows 5 and 7 (`docs/design/EXPERIENCE_PASS_2026-10.md`); the design-systems audit of 9 Nov (rows 7 to 10, 12, 18) and the Chief Design Officer's note of 9 Nov (defect 4). Both were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `proposals/book-page.md`, which is not in the repo; this file replaces it as the reference.
 
