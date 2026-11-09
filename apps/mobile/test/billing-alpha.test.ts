@@ -156,7 +156,7 @@ describe('the Keep step, through the real gate and ledger', () => {
 });
 
 describe('the alpha allowance boundary (PL-1, BL-736)', () => {
-  it('[PL-1] alpha build: letters 1 to 100 kept free, letter 101 meets the Keep sheet', async () => {
+  it('[PL-1] [NX-08-R7] alpha build: letters 1 to 100 kept free, letter 101 meets the Keep sheet', async () => {
     wire('preview');
     const base = { lapsed: false, heldOn: 'tonight' as const, synced: false, offline: false, storeSupport: 'available' as const };
     for (let n = 1; n <= 100; n++) {
@@ -177,7 +177,7 @@ describe('the alpha allowance boundary (PL-1, BL-736)', () => {
     expect(h.events.filter((e) => e.name === 'keep_gate_shown')).toHaveLength(1);
   });
 
-  it('[PL-1] alpha build: Tonight never shows the needs-Plus line at 99, 100 or 101 letters', () => {
+  it('[PL-1] [NX-08-R7] alpha build: Tonight never shows the needs-Plus line at 99, 100 or 101 letters', () => {
     const plan = NO_PLAN;
     const allowance = allowanceSourceFor(true, () => undefined)();
     for (const lettersKept of [0, 1, 2, 99, 100, 101, 250]) {
