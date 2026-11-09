@@ -85,12 +85,14 @@
     "production": {},
     "preview": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     },
     "testflight": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     }
   }
