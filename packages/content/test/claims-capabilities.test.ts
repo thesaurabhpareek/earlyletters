@@ -263,29 +263,10 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
   // "Exactly as you said it" in the store build's first run (D-133 decision 2). PR #502 changes both lines.
   { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
   { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
-
-  // "Only you and the people you invite": nobody can be invited in production.
-  { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
-
-  // The website's /j invite page and /auth/confirm page: only a build with server features sends links to them.
-  { key: 'web.site.authConfirm.title', rule: 'sync', claim: 'signing in', removedBy: 'BL-558', reason: '"Finish signing in": production has no sign-in.' },
-  { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
-  { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
-  { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },
-  { key: 'web.site.invite.steps[0]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Copy the invite": production has no invites.' },
-  { key: 'web.site.invite.steps[1]', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Step "I was invited": a door production hides (BL-391).' },
-  { key: 'web.site.invite.steps[2]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Paste the invite": production has no invites.' },
-  { key: 'web.site.invite.copy', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Button "Copy the invite": production has no invites.' },
-  { key: 'web.site.invite.copied', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.copyFailed', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"This page opened without its invite": production has no invites.' },
-  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.noScript', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
-  { key: 'web.site.invite.notYou', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"If you were not expecting an invite": production has no invites.' },
 ];
 
 /** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
-const KNOWN_VIOLATIONS_CAP = 17;
+const KNOWN_VIOLATIONS_CAP = 2;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
@@ -336,7 +317,8 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    expect(profile).toEqual({ englishOnly: true, signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false });
+    // Build 12 (founder, 8 Nov 2026) is servers on: sign-in, sync and co-parent are true; backup stays off.
+    expect(profile).toEqual({ englishOnly: true, signIn: true, sync: true, coParent: true, backup: false, wordsExactlyAsSaid: false });
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {

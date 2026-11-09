@@ -7,7 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { accountDeletionDecision, productionChecks, readInputs, SEAM_FLAGS } from '../scripts/preflight-production.mjs';
+import { accountDeletionDecision, GOOGLE_FLAGS, productionChecks, readInputs, SEAM_FLAGS, SERVERS_ON_COLLECTED } from '../scripts/preflight-production.mjs';
 import { productionFindings, repoFindings } from '../../../scripts/release/doctor';
 
 const APP = join(__dirname, '..');
@@ -20,7 +20,7 @@ const ENVIRONMENTS = [
   '| Profile | Use | `SERVER_FEATURES` | `ACCOUNT_DELETION` |',
   '|---|---|---|---|',
   '| `preview` | alpha build 2 | **on** | **not written**: from the EAS `preview` environment |',
-  '| `production` | the App Store app | off | on (hide-until-proven is for the alpha only) |',
+  '| `production` | the App Store app | **on** | on (hide-until-proven is for the alpha only) |',
 ].join('\n');
 
 const key = (id: string) => `  { keyId: '${id}', publicKey: 'QXNoYSBmaWN0aW9uYWwga2V5LCBub3QgYSByZWFsIGtleQ==', kinds: ['pack-manifest'] },\n`;
@@ -29,13 +29,21 @@ const KEYS = `export const TRUSTED_SIGNING_KEYS = [\n  // { keyId: 'example', pu
 const PROFILE_ENV = {
   EXPO_PUBLIC_DOCS_BASE_URL: 'https://packs.earlyletters.app',
   EXPO_PUBLIC_APP_ENV: 'production',
-  EXPO_PUBLIC_SERVER_FEATURES: 'off',
+  EXPO_PUBLIC_SERVER_FEATURES: 'on',
   EXPO_PUBLIC_BACKUP: 'off',
   EXPO_PUBLIC_STATUS_REPORT: 'off',
   EXPO_PUBLIC_ANALYTICS: 'off',
   EXPO_PUBLIC_ACCOUNT_DELETION: 'on',
   EXPO_PUBLIC_ENGLISH_ONLY: 'on',
 };
+
+/** One collected data type as privacy-manifest.ts emits it: linked, never for tracking, App Functionality only. */
+const collected = (type: string) => ({
+  NSPrivacyCollectedDataType: type,
+  NSPrivacyCollectedDataTypeLinked: true,
+  NSPrivacyCollectedDataTypeTracking: false,
+  NSPrivacyCollectedDataTypePurposes: ['NSPrivacyCollectedDataTypePurposeAppFunctionality'],
+});
 
 /** A store-ready repository, as productionChecks reads it. */
 function good(): Input {
@@ -46,8 +54,8 @@ function good(): Input {
     },
     cfg: {
       version: '1.0.0',
-      extra: { appEnv: 'production', serverFeatures: false, backup: false, statusReport: false, accountDeletion: false, eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } },
-      ios: { privacyManifests: { NSPrivacyTracking: false, NSPrivacyTrackingDomains: [], NSPrivacyAccessedAPITypes: [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] }], NSPrivacyCollectedDataTypes: [] } },
+      extra: { appEnv: 'production', serverFeatures: true, backup: false, statusReport: false, accountDeletion: false, eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } },
+      ios: { privacyManifests: { NSPrivacyTracking: false, NSPrivacyTrackingDomains: [], NSPrivacyAccessedAPITypes: [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] }], NSPrivacyCollectedDataTypes: SERVERS_ON_COLLECTED.map(collected) } },
     },
     environmentsMd: ENVIRONMENTS,
     keysSource: KEYS,
@@ -91,6 +99,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'english-only',
       'analytics',
       'servers',
+      'google-signin',
       'backup',
       'status-report',
       'account-deletion',
@@ -116,16 +125,19 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY=off', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: 'off' })],
     ['analytics', 'EXPO_PUBLIC_ANALYTICS=on', withEnv({ EXPO_PUBLIC_ANALYTICS: 'on' })],
     ['analytics', 'a PostHog key in the profile', withEnv({ EXPO_PUBLIC_POSTHOG_KEY: 'phc_asha' })],
-    ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=on', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'on' })],
+    ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=off (build 12 is servers on)', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'off' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES unwritten', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: undefined })],
-    ['servers', 'the evaluated config says serverFeatures true', withCfg((c) => (c.extra.serverFeatures = true))],
+    ['servers', 'the evaluated config says serverFeatures false', withCfg((c) => (c.extra.serverFeatures = false))],
+    ['google-signin', 'a Google web client id in the profile (Google sign-in is out of v1.0)', withEnv({ EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID: 'asha-web.apps.example' })],
+    ['google-signin', 'a Google iOS client id in the profile', withEnv({ EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 'asha-ios.apps.example' })],
+    ['google-signin', 'a Google client id in this shell', { ...good(), shellEnv: { PATH: '/usr/bin', EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID: 'asha-ios.apps.example' } }],
     ['backup', 'EXPO_PUBLIC_BACKUP=on', withEnv({ EXPO_PUBLIC_BACKUP: 'on' })],
     ['backup', 'EXPO_PUBLIC_BACKUP unwritten', withEnv({ EXPO_PUBLIC_BACKUP: undefined })],
     ['status-report', 'EXPO_PUBLIC_STATUS_REPORT=on', withEnv({ EXPO_PUBLIC_STATUS_REPORT: 'on' })],
     ['status-report', 'EXPO_PUBLIC_STATUS_REPORT unwritten', withEnv({ EXPO_PUBLIC_STATUS_REPORT: undefined })],
     ['account-deletion', 'EXPO_PUBLIC_ACCOUNT_DELETION=off where the decision is on', withEnv({ EXPO_PUBLIC_ACCOUNT_DELETION: 'off' })],
     ['account-deletion', 'EXPO_PUBLIC_ACCOUNT_DELETION unwritten where the decision is on', withEnv({ EXPO_PUBLIC_ACCOUNT_DELETION: undefined })],
-    ['account-deletion', 'a decision of "not written" with the profile writing on', { ...good(), environmentsMd: ENVIRONMENTS.replace('| off | on (hide', '| off | **not written** (hide') }],
+    ['account-deletion', 'a decision of "not written" with the profile writing on', { ...good(), environmentsMd: ENVIRONMENTS.replace('| **on** | on (hide', '| **on** | **not written** (hide') }],
     ['account-deletion', 'no readable decision', { ...good(), environmentsMd: '# Environments\n' }],
     ['signing-keys', 'no key (develop today)', { ...good(), keysSource: "export const TRUSTED_SIGNING_KEYS = [\n  // { keyId: 'el-2026-10', publicKey: 'x' },\n];\n" }],
     ['signing-keys', 'one key, no backup', { ...good(), keysSource: `export const TRUSTED_SIGNING_KEYS = [\n${key('asha-2026-10')}];\n` }],
@@ -141,7 +153,13 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['pack-manifest', 'unparseable text', { ...good(), publishedSource: 'PACK_MANIFEST ??? {' }],
     ['privacy-manifest', 'no privacy manifest', withCfg((c) => delete c.ios.privacyManifests)],
     ['privacy-manifest', 'tracking true', withCfg((c) => (c.ios.privacyManifests.NSPrivacyTracking = true))],
-    ['privacy-manifest', 'collected data with servers off', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = [{ NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress' }]))],
+    ['privacy-manifest', 'no collected data although servers are on (the old servers-off manifest)', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = []))],
+    ['privacy-manifest', 'Audio Data declared (backup is off)', withCfg((c) => c.ios.privacyManifests.NSPrivacyCollectedDataTypes.push(collected('NSPrivacyCollectedDataTypeAudioData')))],
+    ['privacy-manifest', 'Purchase History declared (the status report is off)', withCfg((c) => c.ios.privacyManifests.NSPrivacyCollectedDataTypes.push(collected('NSPrivacyCollectedDataTypePurchaseHistory')))],
+    ['privacy-manifest', 'one servers-on type missing (Sensitive Info)', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = c.ios.privacyManifests.NSPrivacyCollectedDataTypes.filter((t: any) => !t.NSPrivacyCollectedDataType.endsWith('SensitiveInfo'))))],
+    ['privacy-manifest', 'a collected type used for tracking', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes[0].NSPrivacyCollectedDataTypeTracking = true))],
+    ['privacy-manifest', 'a collected type not linked to the person', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes[0].NSPrivacyCollectedDataTypeLinked = false))],
+    ['privacy-manifest', 'a collected type with an analytics purpose', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes[0].NSPrivacyCollectedDataTypePurposes = ['NSPrivacyCollectedDataTypePurposeAnalytics']))],
     ['version', 'version.json is not x.y.z', { ...good(), versionJson: '{ "version": "1.0" }' }],
     ['version', 'the config version differs from version.json', withCfg((c) => (c.version = '1.0.1'))],
     ['version', 'app.config.ts writes a version literal', { ...good(), appConfigSource: "export default () => ({ version: '1.0.0' });\n" }],
@@ -179,6 +197,17 @@ describe('one failing fixture per check: only that check FAILs', () => {
 
   it('the seam list is the e2e and web-preview flags', () => {
     expect(SEAM_FLAGS).toEqual(['EXPO_PUBLIC_E2E', 'EXPO_PUBLIC_WEB_PREVIEW']);
+  });
+
+  it('the Google flags are the two client ids, and the servers-on set is the five types of the privacy worksheet', () => {
+    expect(GOOGLE_FLAGS).toEqual(['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID']);
+    expect(SERVERS_ON_COLLECTED).toEqual([
+      'NSPrivacyCollectedDataTypeEmailAddress',
+      'NSPrivacyCollectedDataTypeName',
+      'NSPrivacyCollectedDataTypeOtherUserContent',
+      'NSPrivacyCollectedDataTypeSensitiveInfo',
+      'NSPrivacyCollectedDataTypeUserID',
+    ]);
   });
 
   it('fails without an evaluated config instead of passing the config checks', () => {
@@ -222,7 +251,7 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
   it('reads on, off and not written from the profile table', () => {
     expect(accountDeletionDecision(ENVIRONMENTS)).toBe('on');
     expect(accountDeletionDecision(ENVIRONMENTS, 'preview')).toBe('unset');
-    expect(accountDeletionDecision(ENVIRONMENTS.replace('| off | on (hide', '| off | off (hide'))).toBe('off');
+    expect(accountDeletionDecision(ENVIRONMENTS.replace('| **on** | on (hide', '| **on** | off (hide'))).toBe('off');
     expect(accountDeletionDecision('no table')).toBeNull();
   });
 

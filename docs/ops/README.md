@@ -18,6 +18,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [runbooks/staging-smoke.md](runbooks/staging-smoke.md) | The content-free check after every staging deploy (RA-07-06): policy versions, pepper, statement logging, cron, function health routes, sign-up |
 | [runbooks/suspected-data-leak.md](runbooks/suspected-data-leak.md) | First hour of a suspected exposure |
 | AUTH_SETUP.md, APP_STORE_CONNECT_SUBSCRIPTIONS.md, APP_SIZE.md | Other owners (sign-in, subscriptions, app size) |
+| [PRODUCTION_VARIABLES.md](PRODUCTION_VARIABLES.md) | The `production` build profile and EAS environment variables for build 12, names only: written, set by the founder, and forbidden |
 | [RELEASE.md](RELEASE.md) | The release train: lanes, branches, tags, builds, TestFlight, submission checklist, rollback (qa-e2e for the coordinator; D-089) |
 
 ## The deletion pipeline in one picture

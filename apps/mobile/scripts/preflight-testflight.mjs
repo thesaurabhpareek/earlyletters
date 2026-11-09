@@ -189,7 +189,9 @@ if (prof) {
 }
 {
   const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-  check(!onProfiles.includes('production'), `server features are on only in: ${onProfiles.join(', ') || 'none'} (never production before the store submission is re-planned)`, 'The production profile has EXPO_PUBLIC_SERVER_FEATURES=on. Turning the switch on in the store profile is the founder\'s call after the R-17 gate and the legal pages (D-100); put it back to "off".');
+  // Build 12 (founder, 8 Nov 2026): the production profile is servers on, against scribe-prod. Whether it must be on, with backup, the
+  // status report and analytics off, is checked by `npm run preflight:production`; this script only lists where the switch is on.
+  pass(`server features are on in: ${onProfiles.join(', ') || 'none'} (the production profile's switch is checked by preflight:production)`);
   const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }
