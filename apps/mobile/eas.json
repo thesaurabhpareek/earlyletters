@@ -48,7 +48,8 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "production": {
@@ -63,7 +64,8 @@
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
         "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "testflight": {
@@ -77,7 +79,8 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     }
   },

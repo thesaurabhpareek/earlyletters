@@ -44,7 +44,7 @@ export function classify(text: string): SafetyTier {
   return 0;
 }
 
-/** The helpline list lives in one place only: packages/content `copy.struggling` (D-087). */
+/** The helpline list lives in one place only: packages/content `helplines.ts` (D-087), shown on `copy.struggling`'s page by the phone's region. */
 
 /** Fixed copy. Never generated. PENDING CLINICIAN REVIEW. */
 export const SAFETY_COPY = {

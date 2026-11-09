@@ -26,8 +26,9 @@ const M = tokens.motion;
  * How a route comes on screen, by what the move means:
  *   dissolve    the room changes and you stay where you are (Listen, Review, Read together): a cross-dissolve
  *   sheet       a page held over the room (Write, sign-in, invites, the purchase confirmation): the platform's rise
- *   push        one step further, the way back at the left edge (Settings, a letter until P5): the platform's push
- *   cardToPage  the tapped card grows into its page (MOTION 5f, CardToPage), drawn by the page itself
+ *   push        one step further, the way back at the left edge (Settings): the platform's push
+ *   cardToPage  the tapped card grows into its page (MOTION 5f, CardToPage), drawn by the page itself. The route adds
+ *               no move of its own (no slide under the grow) and no native header (the page draws its own Back)
  *   cut         first run: no move of its own. It continues the age question's lit room (R1), so it is on screen at
  *               once, on any path that brings it (the stack's first route, or a redirect from a tab)
  *   none        the tab root
@@ -47,9 +48,9 @@ export const ROUTES = {
   review: { rows: [4, 5], presentation: 'fullScreenModal', move: 'dissolve' },
   write: { rows: [3, '5a'], presentation: 'modal', move: 'sheet' },
   'read-together': { rows: [8], presentation: 'fullScreenModal', move: 'dissolve' },
-  // Row 7 is card to page. It switches here (move 'cardToPage') when the letter page mounts CardToPage (P5);
-  // until then the page keeps the platform push, so nothing appears without motion.
-  'letter/[id]': { rows: [7], move: 'push' },
+  // Row 7 is card to page: the letter page mounts CardToPage (CARD_MODE in app/letter/[id].tsx) and draws the whole
+  // move itself, so the route must not push as well (build 1 played a slide and the grow at once).
+  'letter/[id]': { rows: [7], move: 'cardToPage' },
   settings: { rows: [9], move: 'push' },
   '(auth)': { rows: [10], presentation: 'modal', move: 'sheet' },
   invite: { rows: [10], presentation: 'modal', move: 'sheet' },
@@ -64,6 +65,8 @@ export type RouteOptions = {
   animation?: 'fade' | 'none';
   /** iOS: honoured for a fade on a push; a modal cross-dissolves at the platform's own length (accepted, 5.1). */
   animationDuration?: number;
+  /** Card to page only: the page draws its own Back, so no native header shows over the paper, even for a frame. */
+  headerShown?: false;
   contentStyle?: { backgroundColor: 'transparent' };
 };
 
@@ -73,7 +76,7 @@ export function moveOptions(move: Move, reduced: boolean): RouteOptions {
       return { animation: 'fade', animationDuration: reduced ? M.fadeMs : M.route.dissolveMs };
     case 'cardToPage':
       // CardToPage draws the growth itself (and its own 200 ms cross-fade under Reduce Motion).
-      return { presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } };
+      return { presentation: 'transparentModal', animation: 'none', headerShown: false, contentStyle: { backgroundColor: 'transparent' } };
     case 'cut':
       // Nothing slides, under either setting: first run's own scenes carry the change (stepMotion, the lamp).
       return { animation: 'none' };

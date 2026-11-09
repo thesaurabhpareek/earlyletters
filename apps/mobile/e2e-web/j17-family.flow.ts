@@ -10,15 +10,16 @@ test('[J17] switch off: co-parent sharing is coming soon (the kill path)', async
   const step = journey(record, 'J17', 'family-coming-soon', 1, 'J16-01');
   await seeded(app);
   await app.getByText('Family', { exact: true }).last().click();
-  await expect(app.getByText('Write to Asha, together')).toBeVisible();
-  await step('happy', 'Family tab: coming soon', 'The tab keeps its place and describes what is coming (one book, two voices; each from their own phone; private to the family) with a promise that every letter stays on this phone until then. With server features off there is no invite flow (J21 is the same app with them on).');
+  await expect(app.getByText('For now, this book is yours.')).toBeVisible();
+  await expect(app.getByText("In a later update, Asha's other parent can add letters too, from their own phone.")).toBeVisible();
+  await step('happy', 'Family tab: coming soon', 'The tab keeps its place and says it plainly: the drawing, "For now, this book is yours.", and one line, that in a later update the other parent can add letters too, from their own phone. No badge, no list and no footer. With server features off there is no invite flow (J21 is the same app with them on).');
   // SET-08: no "Tell me when it's here" until the arrival card that keeps its promise ships with sharing.
   await expect(btn(app, /Tell me when it/)).toHaveCount(0);
   await app.getByText('Book', { exact: true }).last().click();
   await app.getByRole('button', { name: 'Settings' }).click();
   await app.getByText('Asha', { exact: true }).first().click();
   await app.getByText(/Write this book together/).click();
-  await expect(app.getByText('Write to Asha, together').last()).toBeVisible();
+  await expect(app.getByText('For now, this book is yours.').last()).toBeVisible();
   await step('happy', 'From a child\'s settings', 'The "Write this book together: Soon" row opens the same coming-soon sheet, with Close.');
 });
 

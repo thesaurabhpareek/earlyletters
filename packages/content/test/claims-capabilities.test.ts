@@ -40,6 +40,8 @@ const EAS_JSON = fileURLToPath(new URL('../../../apps/mobile/eas.json', import.m
 
 type Profile = {
   englishOnly: boolean;
+  /** The spoken languages the build hears (lib/language/heard-languages.ts): a language named in a claim must be one. */
+  heard: readonly string[];
   signIn: boolean;
   sync: boolean;
   coParent: boolean;
@@ -70,8 +72,12 @@ beforeAll(async () => {
   vi.resetModules();
   // capabilities.ts reads its switches when it loads, so it is loaded after the env is set.
   const { capabilities } = await import('../../../apps/mobile/src/lib/capabilities');
+  const { heardLanguagesForBuild, hearsOnlyEnglish } = await import('../../../apps/mobile/src/lib/language/heard-languages');
+  const heard = heardLanguagesForBuild();
   profile = {
-    englishOnly: capabilities.englishOnly,
+    // English only by either switch: ENGLISH_ONLY on, or a spoken-language list of English alone (D-125 item 2).
+    englishOnly: capabilities.englishOnly || hearsOnlyEnglish(heard),
+    heard: [...heard],
     signIn: capabilities.signIn,
     sync: capabilities.sync,
     coParent: capabilities.coParent,
@@ -101,8 +107,30 @@ type Rule = {
   /** True lines that share words with a claim. Their text is taken out before the claims are matched. */
   truths?: readonly RegExp[];
   trueWhen: (p: Profile) => boolean;
+  /**
+   * When set, decides each claim on its own instead of trueWhen (D-125 item 2): a language named in a claim is true
+   * only if the build hears that language.
+   */
+  trueFor?: (p: Profile, claim: string) => boolean;
   needs: string;
 };
+
+/**
+ * The language names that are true of a build that hears the language with this code (packages/core LANGUAGES).
+ * Every other name in LANGUAGE_NAMES is never true: the app hears no other language.
+ */
+export const NAME_TO_CODE: Readonly<Record<string, string>> = {
+  hindi: 'hi',
+  spanish: 'es',
+  chinese: 'zh',
+  mandarin: 'zh',
+  french: 'fr',
+  arabic: 'ar',
+  portuguese: 'pt',
+};
+
+/** Is this one claim true of the profile? */
+const claimTrue = (r: Rule, p: Profile, claim: string) => (r.trueFor ? r.trueFor(p, claim) : r.trueWhen(p));
 
 /**
  * Languages by their English names: the ISO 639-1 names of the widely spoken languages, and the names a parent uses
@@ -140,7 +168,15 @@ const RULES: readonly Rule[] = [
     // A line that says more languages come later is true of every build.
     truths: [/\b(?:other|more) languages (?:are coming|follow)\b/gi],
     trueWhen: (p) => !p.englishOnly,
-    needs: 'languages other than English (EXPO_PUBLIC_ENGLISH_ONLY off)',
+    // A named language: only one the build hears. Any language at all, or a count: only a build that hears more than
+    // English, as before.
+    trueFor: (p, claim) => {
+      const name = (LANGUAGE_NAMES as readonly string[]).find((n) => n.toLowerCase() === claim);
+      if (name === undefined) return !p.englishOnly;
+      const code = NAME_TO_CODE[claim];
+      return code !== undefined && p.heard.includes(code);
+    },
+    needs: 'the named language in EXPO_PUBLIC_SPOKEN_LANGUAGES, or languages other than English (EXPO_PUBLIC_ENGLISH_ONLY off)',
   },
   {
     id: 'coParent',
@@ -263,7 +299,7 @@ const cachedSurfaces = (p: Profile) => surfaceCache.get(p) ?? surfaceCache.set(p
 
 function claims(p: Profile): Claim[] {
   return cachedSurfaces(p).flatMap(({ path, text }) =>
-    RULES.filter((r) => !r.trueWhen(p)).flatMap((r) => claimsOf(r, text).map((claim) => ({ key: path, rule: r.id, claim }))),
+    RULES.flatMap((r) => claimsOf(r, text).filter((claim) => !claimTrue(r, p, claim)).map((claim) => ({ key: path, rule: r.id, claim }))),
   );
 }
 
@@ -356,7 +392,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    expect(profile).toEqual({ englishOnly: true, signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false });
+    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false });
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
@@ -404,8 +440,9 @@ describe('public claims match the production profile (RT-REL-03)', () => {
 });
 
 describe('the claim rules', () => {
-  const offEverything: Profile = { englishOnly: true, signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false };
-  const hits = (text: string) => RULES.filter((r) => !r.trueWhen(offEverything) && claimsOf(r, text).length > 0).map((r) => r.id);
+  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false };
+  const falseIn = (r: Rule, p: Profile, text: string) => claimsOf(r, text).filter((c) => !claimTrue(r, p, c));
+  const hits = (text: string) => RULES.filter((r) => falseIn(r, offEverything, text).length > 0).map((r) => r.id);
   const claimed = (rule: RuleId, text: string) => claimsOf(RULES.find((r) => r.id === rule)!, text);
 
   it('catches each kind of claim the production build cannot keep', () => {
@@ -491,8 +528,8 @@ describe('the claim rules', () => {
   });
 
   it('drops a rule once its capability is on', () => {
-    const on: Profile = { englishOnly: false, signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false, editKeptLetter: false };
+    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false, editKeptLetter: false };
     const text = 'Hindi; invite your co-parent; sign in to sync; backed up to iCloud; exactly as you said it; fix anything later';
-    expect(RULES.filter((r) => !r.trueWhen(on) && claimsOf(r, text).length > 0).map((r) => r.id)).toEqual(['exactWords', 'editKept']);
+    expect(RULES.filter((r) => falseIn(r, on, text).length > 0).map((r) => r.id)).toEqual(['exactWords', 'editKept']);
   });
 });

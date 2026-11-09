@@ -14,6 +14,6 @@ describe('[SET-06] onboarding language row', () => {
 
   it('onboarding renders the row only through that rule', () => {
     const src = readFileSync(join(__dirname, '..', 'src', 'app', 'onboarding.tsx'), 'utf8');
-    expect(src).toMatch(/\{showOnboardingLanguageRow\(capabilities\.englishOnly\) && \(\s*<View className="gap-4">\s*<Separator \/>\s*<ListSection>\s*<ListRow\s+title=\{copy\.settingsHome\.languageLabel\}/);
+    expect(src).toMatch(/\{showOnboardingLanguageRow\(hearsOnlyEnglish\(heardLanguagesForBuild\(\)\)\) && \(\s*<View className="gap-4">\s*<Separator \/>\s*<ListSection>\s*<ListRow\s+title=\{copy\.settingsHome\.languageLabel\}/);
   });
 });
