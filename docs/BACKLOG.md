@@ -1179,7 +1179,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J03 (J03-07), J01 (J01-08, J01-10); `apps/mobile/test/dates.test.ts`; `updateChild` cases in `apps/mobile/test/store.repos.test.ts`.
 
 #### BL-387 Delete a book and erase everything on this phone, each with a calm confirm [High]
-- Status: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: M.
+- Status: done in code (PR #520, 73fcc1ea); the phone check, S1-133 in `docs/qa/DEVICE_TEST_PLAN.md`, is the founder's and has not been run. Follow-ups BL-775 to BL-777. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: M.
 - Severity: major. Raised by: product, quality (5 findings). Steps: J03-07, J16-01; system-wide (`_journey` entries).
 - Satisfies: `docs/legal/DELETION_AND_EXPORT_SPEC.md` (delete book); D-053 (on-device, no accounts in v1.0); BL-233.
 - Scope: Per-book "Delete this book" in child settings and "Erase everything on this phone" under Your data. Export is offered first. Erase wipes the database, audio, settings and Keychain items. Retention for a deleted book follows the deletion spec; where the spec is silent the PR says so for counsel and uses an export offer plus a typed confirm.
