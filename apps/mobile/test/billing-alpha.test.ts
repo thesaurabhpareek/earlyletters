@@ -22,7 +22,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
     throw new Error('native open must not be used in tests');
   },
 }));
-vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: NO_PLAN, details: {}, checkedAt: null }) }));
+vi.mock('../src/lib/billing/plan-store', () => ({ getPlan: () => ({ view: NO_PLAN, details: {}, checkedAt: null }), planReadiness: async () => 'read' }));
 vi.mock('../src/lib/analytics/track', () => ({ track: (name: string, props: unknown) => void h.events.push({ name, props }) }));
 
 const store = await import('../src/lib/store');
@@ -33,6 +33,7 @@ const { allowanceSourceFor, isAlphaBuild, plusLineFor } = await import('../src/l
 const { keepSheetView } = await import('../src/components/child/plus-gate.logic');
 const { planScreen } = await import('../src/components/settings/plan.logic');
 const { planRow } = await import('../src/components/settings/settings-home.logic');
+const { plusLineShows } = await import('../src/components/tonight/tonight-plus.logic');
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -151,6 +152,39 @@ describe('the Keep step, through the real gate and ledger', () => {
   it('development: the same as preview', async () => {
     wire('development');
     for (const t of ['One.', 'Two.', 'Three.']) expect((await keep(t)).sheet, t).toBe(false);
+  });
+});
+
+describe('the alpha allowance boundary (PL-1, BL-736)', () => {
+  it('[PL-1] [NX-08-R7] alpha build: letters 1 to 100 kept free, letter 101 meets the Keep sheet', async () => {
+    wire('preview');
+    const base = { lapsed: false, heldOn: 'tonight' as const, synced: false, offline: false, storeSupport: 'available' as const };
+    for (let n = 1; n <= 100; n++) {
+      const r = await keep(`Letter ${n}.`);
+      // Letters 1 to 100 are kept free: no sheet, and never the store build's "second free letter" line.
+      expect(r, `letter ${n}`).toEqual({ sheet: false, secondFree: false });
+    }
+    expect(h.events.map((e) => e.name)).not.toContain('keep_gate_shown');
+    const g = await keepSheetFor('Letter 101.');
+    expect(g, 'letter 101 meets the Keep sheet').not.toBeNull();
+    expect(g?.decision.kind).toBe('offer');
+    expect(g?.lettersKept).toBe(100);
+    expect(g?.allowance).toBe(MAX_FREE_LETTERS);
+    // The sheet in alpha carries the alpha note and no Plus or store wording.
+    const v = keepSheetView({ ...base, alpha: true });
+    expect(v.body).toBe(NOTE);
+    expect(v.canOpenStore).toBe(false);
+    expect(h.events.filter((e) => e.name === 'keep_gate_shown')).toHaveLength(1);
+  });
+
+  it('[PL-1] [NX-08-R7] alpha build: Tonight never shows the needs-Plus line at 99, 100 or 101 letters', () => {
+    const plan = NO_PLAN;
+    const allowance = allowanceSourceFor(true, () => undefined)();
+    for (const lettersKept of [0, 1, 2, 99, 100, 101, 250]) {
+      expect(plusLineShows({ plan, now: '2026-11-01T09:00:00.000Z', lettersKept, allowance, alpha: true }), `${lettersKept}`).toBe(false);
+    }
+    // The same count in the store build with a 100 allowance would show it at 100: the alpha flag is what holds it back.
+    expect(plusLineShows({ plan, now: '2026-11-01T09:00:00.000Z', lettersKept: 100, allowance, alpha: false })).toBe(true);
   });
 });
 
