@@ -166,7 +166,7 @@ const PROFILE_VARIABLES = [
  * Named only in the two alpha profiles (D-111 item 4: the alpha offers English only). Every other profile
  * leaves it unset, which reads as off (lib/capabilities.ts; pinned per profile in capabilities.test.ts).
  */
-const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY'] as const;
+const ALPHA_ONLY_VARIABLES = ['EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SPOKEN_LANGUAGES'] as const;
 const ALPHA_PROFILES: readonly string[] = ['preview', 'testflight'];
 
 /**
@@ -235,6 +235,8 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         const englishOnly = alpha || name === 'production';
         expect(Object.keys(env).sort(), name).toEqual([...PROFILE_VARIABLES, ...(englishOnly ? ALPHA_ONLY_VARIABLES : []), ...(alpha ? [] : NON_ALPHA_ONLY_VARIABLES)].sort());
         expect(env.EXPO_PUBLIC_ENGLISH_ONLY, name).toBe(englishOnly ? 'on' : undefined);
+        // D-125 item 2: the spoken-language list sits next to it and names English alone, so these builds hear as before.
+        expect(env.EXPO_PUBLIC_SPOKEN_LANGUAGES, name).toBe(englishOnly ? 'en' : undefined);
         expect(env.EXPO_PUBLIC_ACCOUNT_DELETION, name).toBe(alpha ? undefined : 'on');
         for (const k of FROM_EAS_ONLY) expect(env[k], `${name} ${k}`).toBeUndefined();
         expect(env.EXPO_PUBLIC_DOCS_BASE_URL).toBe('https://packs.earlyletters.app');

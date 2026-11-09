@@ -35,6 +35,7 @@ const PROFILE_ENV = {
   EXPO_PUBLIC_ANALYTICS: 'off',
   EXPO_PUBLIC_ACCOUNT_DELETION: 'on',
   EXPO_PUBLIC_ENGLISH_ONLY: 'on',
+  EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en',
 };
 
 /** A store-ready repository, as productionChecks reads it. */
@@ -100,6 +101,7 @@ describe('the store preflight on a store-ready fixture', () => {
     expect(ids).toEqual([
       'app-env',
       'english-only',
+      'spoken-languages',
       'analytics',
       'servers',
       'backup',
@@ -126,6 +128,9 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['app-env', 'the evaluated config says appEnv preview', withCfg((c) => (c.extra.appEnv = 'preview'))],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY unset', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: undefined })],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY=off', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: 'off' })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES unset (every language)', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: undefined })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES=en,es before Spanish has its gate', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en,es' })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES blank', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: ' ' })],
     ['analytics', 'EXPO_PUBLIC_ANALYTICS=on', withEnv({ EXPO_PUBLIC_ANALYTICS: 'on' })],
     ['analytics', 'a PostHog key in the profile', withEnv({ EXPO_PUBLIC_POSTHOG_KEY: 'phc_asha' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=on', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'on' })],
