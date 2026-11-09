@@ -19,7 +19,7 @@ import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { remindersSummary } from '@/lib/reminders';
-import { getActiveChild, listChildren, listHiddenChildren, subscribe, type Child } from '@/lib/store';
+import { getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
 
 /**
@@ -62,6 +62,7 @@ const ROUTES = {
   backup: '/settings/backup',
   appearance: '/settings/appearance',
   deleteAccount: '/settings/delete-account',
+  erase: '/settings/erase',
   struggling: '/settings/struggling',
   legal: '/settings/legal',
 } as const;
@@ -148,6 +149,11 @@ export default function Settings() {
         {/* Encrypted backup (WP-F08-B5c): only in a build with capabilities.backup on; gate.ts loads nothing otherwise. */}
         {backupInBuild() ? <ListRow title={backupCopy.title} value={backupRowValue()} trailing="chevron" onPress={go(ROUTES.backup)} /> : null}
         <ListRow title={h.storageLabel} subtitle={h.storageHelp} trailing="chevron" onPress={go(ROUTES.storage)} />
+        {/* Erase everything on this phone (BL-387, F17 6.2 F): last in Your letters, only on a phone that never signed in
+            (signed in, F17-REQ-026 offers account deletion first; not built here). */}
+        {localDeletionAllowed() ? (
+          <ListRow title={copy.settings.erase.rowLabel} variant="destructive" trailing="chevron" onPress={go(ROUTES.erase)} testID="settings.erase" />
+        ) : null}
       </ListSection>
 
       <ListSection title={h.sections.privacy}>

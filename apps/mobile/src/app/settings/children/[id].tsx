@@ -7,7 +7,7 @@ import { familyCopy } from '@/lib/family/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
+import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
 import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
@@ -150,6 +150,20 @@ export default function ChildSettings() {
           <ListRow title={s.hideLabel} onPress={hide} testID="child.hide" />
         </ListSection>
       )}
+
+      {/* Delete this book (BL-387, F17 6.2 D): below Hide, which is offered first for a parent who may only need quiet.
+          Only on a phone that never signed in; it opens the export-first step, then the typed confirm. */}
+      {localDeletionAllowed() ? (
+        <ListSection>
+          <ListRow
+            title={copy.settings.delete.deleteBookRow}
+            variant="destructive"
+            trailing="chevron"
+            onPress={() => router.push({ pathname: '/settings/children/delete-book', params: { id: child.id } })}
+            testID="child.deleteBook"
+          />
+        </ListSection>
+      ) : null}
     </ScrollView>
   );
 }
