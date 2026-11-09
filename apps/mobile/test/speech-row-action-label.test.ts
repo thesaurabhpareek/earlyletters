@@ -69,8 +69,10 @@ describe('[S1-97b] the components use the rules (source pins)', () => {
   });
 
   it('the visible word and ring stay hidden from VoiceOver by their wrappers: the word is read once, in the label', () => {
-    expect(speech).toMatch(/function TrailingWord[\s\S]*?accessible=\{false\} importantForAccessibility="no-hide-descendants"/);
-    expect(speech).toMatch(/function ProgressRing[\s\S]*?accessible=\{false\} importantForAccessibility="no-hide-descendants"/);
+    // Each wrapper is checked inside its own function body, so one cannot pass on the other's wrapper.
+    const body = (name: string) => speech.slice(speech.indexOf(`function ${name}`)).split(/\n(?=function )/)[0];
+    expect(body('TrailingWord')).toMatch(/accessible=\{false\} importantForAccessibility="no-hide-descendants"/);
+    expect(body('ProgressRing')).toMatch(/accessible=\{false\} importantForAccessibility="no-hide-descendants"/);
   });
 
   it('ListRow builds the label of both its branches (pressable and not) with rowLabel, from the action word', () => {
