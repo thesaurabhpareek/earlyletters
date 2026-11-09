@@ -85,7 +85,7 @@ async function finish(): Promise<void> {
   finishEraseEverything();
 }
 
-/** Settings > Your data > Erase everything on this phone, after the typed confirm. */
+/** Settings > Your letters > Erase everything on this phone, after the confirm alert. */
 export async function eraseEverything(): Promise<EraseEverythingResult> {
   if (!eraseEverythingPending()) {
     try {
