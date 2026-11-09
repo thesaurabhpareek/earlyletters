@@ -1,6 +1,6 @@
 # Write: screen spec
 
-Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6cd2223b`. Not run on a device. What only a phone can show is marked **Device** and has a row in S1-36, S1-142, S1-152 or S1-165 (`docs/qa/DEVICE_TEST_PLAN.md`; S1-165 comes with PR #717).
+Owner: `design-systems`. Status: written 9 Nov 2026 from the code at develop `6cd2223b`. Not run on a device. What only a phone can show is marked **Device** and has a row in S1-36, S1-142, S1-152 or S1-165 (`docs/qa/DEVICE_TEST_PLAN.md`; S1-165 came with PR #717, merged 9 Nov 2026).
 
 How to read this file:
 - **Built** is what the code does. **Spec** is what the screen should do; every place the build differs is in section 11 with file and line.
@@ -10,7 +10,7 @@ How to read this file:
 Sources: EXPERIENCE_PASS S19 and S20 and 5.8 rows 3, 3a and 5a (`docs/design/EXPERIENCE_PASS_2026-10.md`); F14-REQ-040 and journey row 2b (`docs/prd/v2/features/F14-plus.md` lines 427 and 158), F04-REQ-045 and founder decision F5 for the standing Plus line (BL-560 is the Write half of it and states no position); BL-E1 for Another thought; the design-systems audit of 9 Nov (rows 1, 16) and the Chief Design Officer's note of 9 Nov (defect 2). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `engagement.md`, which is not in the repo; the rules for the Plus line on Tonight are in `screens/TONIGHT_AND_MEMORIES.md` section 3 once PR #596 lands.
 
 In flight:
-- **PR #717** (`fix/mobile-write-footer-large-text`, reviewed) builds departures 1 and 2 below: the footer inline from AX1, and a page that follows the words by the footer's own layout. It adds device step S1-165. Merge order: #717 first; this PR then merges develop and resolves the one S1-142 hunk in the device plan. When #717 has merged, items 1 and 2 of section 11 are done and the line numbers for `write.tsx` move. #717 keeps the Plus line above the buttons and leaves its placement undecided.
+- **PR #717** (`fix/mobile-write-footer-large-text`, merged 9 Nov 2026 as 95df5c41) built departures 1 and 2 below: the footer inline from AX1, and a page that follows the words by the footer's own layout. It added device step S1-165. Items 1 and 2 of section 11 are done; this spec's line numbers for `write.tsx` are at `6cd2223b` and have moved. #717 keeps the Plus line above the buttons and leaves its placement undecided.
 - PRs #701, #703 and #716 make the first book's name optional and edit `app/write.tsx`. The labels in this spec use `{child}`.
 
 Strings are keys, no word is typed in a screen.
@@ -39,7 +39,7 @@ Write is a modal page sheet (`lib/transitions.logic.ts:49`). At standard text si
 
 The two buttons are stacked at every size, "Add to Asha's book" full width and "Keep private" quiet under it, so the main action never breaks over two lines (P4 critics' pass S2). EXPERIENCE_PASS S19 still says side by side; the build and this spec say stacked.
 
-At accessibility sizes (AX1 and up), **Spec** (PR #717 builds it):
+At accessibility sizes (AX1 and up), **Spec** (built by PR #717):
 
 ```
   [ Close ]                                                     ModalHeader
@@ -69,7 +69,7 @@ At accessibility sizes (AX1 and up), **Spec** (PR #717 builds it):
 
 Tokens: `motion.fadeMs`, `motion.exitMs`, `motion.enter.durationMs`, `target.min`, `target.primary`. No colour is a literal. Two icon sizes and one throttle are (section 11, item 6).
 
-### The footer rule at accessibility sizes (Spec; built in PR #717)
+### The footer rule at accessibility sizes (Spec; built by PR #717, merged)
 
 `footerPlacement(useIsAccessibilitySize())` decides, as it does on Review and Tonight (`lib/review-layout.logic.ts:14`; `app/review.tsx:199`, `app/(tabs)/index.tsx:123`). `'pinned'` below AX1 (as built on develop). `'inline'` from AX1 up: the Plus line (when shown) and both buttons are the last children of the `ScrollView`'s content, after the page, with no top border and no background of their own. Develop does not import `footerPlacement` in `write.tsx` (imports at `:46-64`); #717 does.
 
@@ -164,15 +164,15 @@ Typed words are stored exactly as typed, trimmed at the ends and nothing else (`
 
 ## 10. Device steps
 
-S1-36 (typing at speed), S1-142 (the Plus line on Write at the default size), S1-152 (Another thought), and **S1-165** (Write at large text: the buttons ride in the scroll, the page follows the words, VoiceOver order, the AX1 switch point, the Plus line at AX5 on a production build), which PR #717 adds. S1-24 (a) holds the emulated AX5 figure quoted in section 3.
+S1-36 (typing at speed), S1-142 (the Plus line on Write at the default size), S1-152 (Another thought), and **S1-165** (Write at large text: the buttons ride in the scroll, the page follows the words, VoiceOver order, the AX1 switch point, the Plus line at AX5 on a production build), which PR #717 added. S1-24 (a) holds the emulated AX5 figure quoted in section 3.
 
-S1-165 does not cover two things this spec names: the rotor's Headings on Write (item 3 below) and a book with no name (item 8). They have no row yet. Add them to S1-165 after #717 merges; they are not repeated here.
+S1-165 does not cover two things this spec names: the rotor's Headings on Write (item 3 below) and a book with no name (item 8). They have no row yet. Add them to S1-165 (#717 has merged); they are not repeated here.
 
 ## 11. Where the build departs from this spec
 
 Line numbers at `6cd2223b`.
 
-1. **The footer is pinned at every size and sits outside the scroll view** (`write.tsx:353-362`). Spec: `footerPlacement`, inline from AX1. Owner `mobile`. **High.** Built in open PR #717, with its tests; mark done when it merges.
+1. **The footer is pinned at every size and sits outside the scroll view** (`write.tsx:353-362`). Spec: `footerPlacement`, inline from AX1. Owner `mobile`. **High.** **Done:** built by PR #717 (merged 9 Nov 2026), with its tests.
 2. **Scroll-to-end follows the content's end** (`write.tsx:264-269`). Needed with item 1: the page follows the words, not the footer. Built in #717 (`pageEndOffset`).
 3. **No heading on the page** (`write.tsx:314-316`). PROPOSED, **Device** first.
 4. **Two documents describe the old footer.** EXPERIENCE_PASS S19 says the buttons sit side by side; S1-142 row (b) expected both above the keyboard at AX5 (#717 points that sentence at S1-165).
