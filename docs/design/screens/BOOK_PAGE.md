@@ -7,7 +7,7 @@ How to read this file:
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
 - File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
 
-Sources: EXPERIENCE_PASS S24 to S26 and S36, 5.8 rows 5 and 7 (`docs/design/EXPERIENCE_PASS_2026-10.md`); the design-systems audit of 9 Nov (rows 7 to 10, 12, 18); the Chief Design Officer's note of 9 Nov (defect 4). The code also cites `proposals/book-page.md`, which is not in the repo; this file replaces it as the reference.
+Sources: EXPERIENCE_PASS S24 to S26 and S36, 5.8 rows 5 and 7 (`docs/design/EXPERIENCE_PASS_2026-10.md`); the design-systems audit of 9 Nov (rows 7 to 10, 12, 18) and the Chief Design Officer's note of 9 Nov (defect 4). Both were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `proposals/book-page.md`, which is not in the repo; this file replaces it as the reference.
 
 Strings are keys: `copy.book.*` in `packages/content/src/strings.en.ts`, and `bookCopy` in `components/book/copy.ts` (feature-local words that `content` has not moved yet).
 
@@ -36,7 +36,7 @@ At the top of the list (`app/(tabs)/book.tsx:338-355`, `components/book/cover-ba
   | From Papa                 (wave) Voice 1:06 |
   +------------------------------------------+
   ---------------------------------------------   hairline above every month but the first
-   16 months ...
+   16 months, etc.
                   (quotation pair)                end of the book
 ```
 
@@ -70,7 +70,7 @@ Where a person gets to the other parts: the gear opens Settings (a push); Months
 ### The cover band
 
 - **Title row.** Placed over the space kept for it. The trailing buttons (Months, gear) and the switcher are `position: absolute` (`cover-band.tsx:121`, `:126-131`); the title carries a `marginRight` equal to the width of the trailing buttons, so it wraps before them.
-- **Age.** `coverAge`: "17 months", "1 month", "3 weeks" in the first month, "Before You" before the birthday or without one. Months only, never "and 2 weeks" (`components/book/book-page.logic.ts:18-23`). With no birthday and no due date the band still says "Before You".
+- **Age.** `coverAge`: "17 months", "1 month", "7 days" or "3 weeks" in the first month (days under 14 days old), "Before You" before the birthday or without one. Months only, never "and 2 weeks" (`components/book/book-page.logic.ts:18-23`). With no birthday and no due date the band still says "Before You".
 - **Plain.** Under Increase Contrast or Reduce Transparency the band has a plain 1 pt `line` edge and no glow (`cover-band.tsx:58`, `:98`, `:104`).
 - **At AX sizes** the band stacks in the same order as VoiceOver: title, age, switcher, Read together grown to fit its label, then Months and the gear in a wrapping row, right-aligned (`cover-band.tsx:105-113`).
 - **Nothing moves.** Haptics: none (MOTION 6). The first view per session settles the header once (`Settle`, MOTION 5a): opacity 0.6 to 1 and up 6 pt on `gentle`; under Reduce Motion a `fadeMs` fade.
@@ -113,7 +113,7 @@ Where a person gets to the other parts: the gear opens Settings (a push); Months
 - **Month heading.** Kicker and dates stop at 2.4x, the month at 1.8x (`title1`). Every line wraps.
 - **Cards.** Two lines of excerpt from AX1 up; the footer stacks. The marker's glyph does not scale (14 pt) while its word does. **Device**: how it looks beside 50 pt text at AX5.
 - **Months sheet.** Rows wrap and scroll (section 4).
-- **Inline bar.** Built: the same at every size. Its title row is at least 44 pt and its title carries `maxFontSizeMultiplier={1.3}` (`book.tsx:372`); the Months label and the compact month scale fully. The compact month's two lines wrap and never truncate. The CDesO's arithmetic puts the bar at nearly half an SE 3 screen at AX5 (note of 9 Nov, defect 4). A rough count of lines from the type ramp (`footnote` 14/19, `subhead` 16/21, `labelSmall` 16/20, all at 3.571x) gives about 330 of the SE 3's 667 pt. Neither figure is measured: **Device** (S1-153 row (d)).
+- **Inline bar.** Built: the same at every size. Its title row is at least 44 pt and its title carries `maxFontSizeMultiplier={1.3}` (`book.tsx:372`); the Months label and the compact month scale fully. The compact month's two lines wrap and never truncate. The CDesO's arithmetic puts the bar at nearly half an SE 3 screen at AX5 (note of 9 Nov, defect 4). A rough count of lines from the type ramp (`footnote` 14/19, `subhead` 16/21, `labelSmall` 16/20, all at 3.571x) gives about 330 of the SE 3's 667 pt. Neither figure is measured: **Device** (S1-153 row (c)).
   - **PROPOSED (CDesO, 9 Nov): from AX1 up the bar shows the title row only.** The compact month goes (the heading it names is still in the list).
   - **OPEN (CDesO):** or no bar at all from AX1 up. Then the band's Months and gear scroll away with it and the person scrolls back up to reach them, as on any long page.
   - Removing the 1.3 cap before this is decided would make the bar taller (section 11, item 2).
@@ -126,7 +126,8 @@ Where a person gets to the other parts: the gear opens Settings (a push); Months
 | Dateline, voice word, month dates | `textMuted` on `surfaceRaised` | 5.83 / 7.32 |
 | Month heading and dates on the page | `text`, `textMuted` on `bg` | 14.00 and 5.51 / 15.66 and 8.01 |
 | Muted text on the lit band, over the lamp at its peak | `textMuted` on the lit mix | at least 4.5, asserted in both schemes and under Increase Contrast (`test/book-page.test.ts:207-231`); dark is 4.56 at strength 0.35 (`book-page.logic.ts:27-32`) |
-| Read together label | `accent` on `accentSoft` | 4.74 / 5.99 |
+| Read together label | `text` on `accentSoft` (`secondary-foreground`, `button.tsx:71-77`) | 12.07 / 11.20 |
+| Read together icon | `accent` on `accentSoft` | 4.74 / 5.99 |
 | Read together fill against the band | `accentSoft` on the lit band | not measured; the fill is a tint with no edge. See section 11, item 8 |
 | Private chip | `text` on `accentSoft` | 12.07 / 11.20 |
 
@@ -140,7 +141,7 @@ Dark mode draws a raised card with a 1 pt `line` edge, and the padding gives tha
 
 ## 9. VoiceOver
 
-Order of the band (the views are in this order in the tree): "Asha's book" (heading, level 1), "17 months", then with several books "For Asha", "Read together" (hint: the long line), "Months" (hint: "Shows the months that have letters."), "Settings". The switcher and the trailing buttons are placed over the space kept for them, and iOS may order by screen position instead, so **Device** (S1-151 row (e), S1-153 row (d)). If it differs, group the title block or stack the band always.
+Order of the band (the views are in this order in the tree): "Asha's book" (heading, level 1), "17 months", then with several books "For Asha", "Read together" (hint: the long line), "Months" (hint: "Shows the months that have letters."), "Settings". The switcher and the trailing buttons are placed over the space kept for them, and iOS may order by screen position instead, so **Device** (S1-151 row (e), S1-153 row (c)). If it differs, group the title block or stack the band always.
 
 - Month headings are headers, one per month: "This month, 17 months, October 12 to November 11". The rotor's Headings moves by month. The parts inside are not reachable on their own. The title is set as level 1 and the months as level 2 (`aria-level`), which only the web build uses: React Native 0.86.3 passes no heading level to iOS, so VoiceOver on an iPhone sees headers without levels (see `screens/STRUGGLING.md` section 8).
 - A card is one element: "From Papa. Sunday, November 1, 2026, 17 months. Voice recording, 1 minute 6 seconds." then every word of the letter, then "Private" when it is, then the live reason, then "Recording kept on this phone" for the reader's own spoken letters (`letter-card.logic.ts`). Hint: `reader.openHint`, "Opens the letter."
@@ -161,20 +162,20 @@ Order of the band (the views are in this order in the tree): "Asha's book" (head
 Line numbers at `6cd2223b`. The first three can fail a person at a large text size or with Increase Contrast.
 
 1. **The inline bar has no large-text form** (`book.tsx:361-386`). Spec: title row only from AX1 (PROPOSED), or no bar (OPEN). Owner `mobile` once the CDesO chooses.
-2. **The bar's title is capped at 1.3x** (`book.tsx:372`; also `app/letter/[id].tsx:340`). COMPONENTS 0.1 says caps come from tokens only, and `headline` has none. Remove the cap, after item 1 is decided. Pin: the cap allowlist test.
+2. **The bar's title is capped at 1.3x** (`book.tsx:372`). COMPONENTS 0.1 says caps come from tokens only, and `headline` has none. Remove the cap, after item 1 is decided. Pin: a new test that the bar title carries no `maxFontSizeMultiplier`. (The same 1.3 cap is on the Reading Size button label, `app/letter/[id].tsx:340`; that is another screen and not covered here.)
 3. **Increase Contrast alone leaves the bar translucent** (`components/platform/blur-surface.ios.tsx:15-17` reads `reduceTransparency` only), against the file's own claim (`book.tsx:8-9`). `CoverBand` does both (`cover-band.tsx:58`). Fix (design-systems): solid when `highContrast || reduceTransparency`. **Device** (S1-151 row (g)).
 4. **Under Reduce Motion the bar's buttons go live before it is visible.** The bar is invisible until offset 96 (`book.tsx:259`) but takes touches and is read from offset 76 (`book.tsx:263-268`). Between 76 and 96 an invisible bar is reachable. Fix for `mobile`: use one threshold under Reduce Motion. **Device**.
 5. **The band's VoiceOver order rests on JSX order.** Absolute placement at `cover-band.tsx:116-133` may make iOS order by position. The test at `test/book-page.test.ts:234` checks the source order only. **Device.**
-6. **A scroll view inside `BottomSheetView`** (`months-sheet.tsx:22`, `components/ui/sheet.tsx:186`) with content panning on: a long month list may drag the sheet instead of scrolling. **Device** at 60 months (S1-151 row (h)).
+6. **A scroll view inside `BottomSheetView`** (`months-sheet.tsx:22`, `components/ui/sheet.tsx:186`) with content panning on: a long month list may drag the sheet instead of scrolling. **Device**. S1-151 (h) is a jump check on a 400-letter book and does not scroll the list inside the sheet; S1-153 row (c) does.
 7. **The same hint on every month row** (`months-sheet.tsx:24`). VoiceOver repeats it 60 times. Spec: drop it; the title says where it goes.
-8. **Read together's fill is a tint with no edge** on the band (`cover-band.tsx:75`). The label passes (4.74 / 5.99). See `screens/STRUGGLING.md` section 7 for the one rule proposed for `secondary` on a host.
+8. **Read together's fill is a tint with no edge** on the band (`cover-band.tsx:75`). The label passes (12.07 / 11.20; the icon is `accent`, 4.74 / 5.99). See `screens/STRUGGLING.md` section 6 for the one rule proposed for `secondary` on a host.
 9. **Numbers that have a token or should:** `BAR_HEIGHT = 44` (`book.tsx:80`), `insets.top + 4` (`book.tsx:340`), `paddingBottom: 40` (`book.tsx:417`), the glyph `size={14}` (`letter-card.tsx:138`). Use `space` and `target.min`. Owner design-systems.
 10. **No focus after a jump** (PROPOSED, section 9).
-11. **Two words for one thing.** The Book now says "17 months". Other screens still say "Month 7": Read together (`readTogether.nowReading`, `endOfMonth`, `nextMonthButton`), the letter dateline for a month-only date (`book.dateline.monthOnly`), the saved moment's chip (`review.destination.filedChip`) and the switcher's rows (`components/child/child-switcher.tsx:28-30`). The code names this as `content`'s call (`components/book/copy.ts:14-17`). OPEN (`content`).
+11. **Two words for one thing.** The Book now says "17 months". Other screens still say "Month 7": Read together (`readTogether.nowReading`, `endOfMonth`, `nextMonthButton`), the letter dateline for a month-only date (`book.dateline.monthOnly`), the saved moment's chip (`review.destination.filedChip`), the date sheet's rows and its "Moved to Month 2." toast (`components/book/date-change.logic.ts:79`, `:125`), the book export's chapter names (`lib/export/build.logic.ts:254-258`) and the switcher's rows (`components/child/child-switcher.tsx:28-30`). The code names this as `content`'s call (`components/book/copy.ts:14-17`). OPEN (`content` with the CDesO).
 
 ## 12. Device steps
 
-S1-151 is the Book page's step: (a) one letter, (b) excerpt, (c) footer and marker, (d) card to page, (e) VoiceOver order, (f) AX5, (g) scroll and the bar, (h) Months sheet, (i) haptics, (j) regression. S1-153 row (d) records the inline bar at AX5 and the band's VoiceOver walk on the build as it is today.
+S1-151 is the Book page's step: (a) one letter, (b) excerpt, (c) footer and marker, (d) card to page, (e) VoiceOver order, (f) AX5, (g) scroll and the bar, (h) Months sheet, (i) haptics, (j) regression. S1-153 row (c) records the inline bar at AX5, the band's VoiceOver walk and the scroll of a long Months list on the build as it is today.
 
 The old step S1-38 checked the month numeral and the lit month card, which #674 removed; it is marked superseded.
 
@@ -183,5 +184,6 @@ The old step S1-38 checked the month numeral and the lit month card, which #674 
 | # | Question | Owner |
 |---|---|---|
 | 1 | The bar at AX sizes: title row only, or no bar | CDesO |
-| 2 | Whether "Month 7" in Read together, the month-only dateline, the saved moment's chip and the switcher becomes "7 months" | `content` |
+| 2 | Whether "Month 7" in Read together, the month-only dateline, the saved moment's chip, the date sheet, the export and the switcher becomes "7 months" | `content` with the CDesO |
 | 3 | One rule for `secondary` buttons on a tinted or lit host | design-systems |
+| 4 | The current month's lit card is gone (#674), where F09-book.md line 55 says "The current month's open card stays"; sticky headers and a cover photo are called not planned for v1.0, which is scope. S1-151 has not been run on a phone | CPO |

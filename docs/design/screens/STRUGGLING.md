@@ -7,7 +7,7 @@ How to read this file:
 - **PROPOSED** is a proposal waiting for the person named. **OPEN (owner)** is a design decision nobody has made yet. Words marked PROPOSED WORDING are the founder's to approve.
 - File and line numbers are at `6cd2223b`. Paths start at `apps/mobile/src/` unless they start with `packages/` or `docs/`.
 
-Sources: EXPERIENCE_PASS S40 (`docs/design/EXPERIENCE_PASS_2026-10.md`); D-034 (a static row, no classifier) and D-059; CCO-11 (lines we could not read on their own official page are held); F20-REQ-005 and F20-REQ-007 (a tap opens Phone or Messages and never dials by itself; where it cannot open, the number is shown to copy); the design-systems audit of 9 Nov (rows 4, 15); the Chief Design Officer's note of 9 Nov (defect 3). The code also cites `struggling-page.md`, which is not in the repo; this file replaces it as the design reference.
+Sources: EXPERIENCE_PASS S40 (`docs/design/EXPERIENCE_PASS_2026-10.md`); D-034 and D-059 (a static row, no classifier; D-034 is recorded "Recommended, needs founder OK", and it covers the row, not the region read); CCO-11 (lines we could not read on their own official page are held); F20-REQ-005 and F20-REQ-007 (a tap opens Phone or Messages and never dials by itself; where it cannot open, the number is shown to copy); the design-systems audit of 9 Nov (rows 4, 15) and the Chief Design Officer's note of 9 Nov (defect 3). The audit and the note were written in the council round of 9 Nov and are not in the repository, so each verdict this file takes from them is stated where it is used. The code also cites `struggling-page.md`, which is not in the repo; this file replaces it as the design reference.
 
 The words on this page are founder-owned (FT-36). Every number and line is `content`'s, with its source page and the day it was read. This spec fixes no number and adds no line.
 
@@ -15,7 +15,7 @@ Strings are keys, `copy.struggling.*` and `copy.helpLinks.*`, plus `HELPLINES` i
 
 ## 1. Purpose
 
-A parent having a hard night finds the right number fast: the emergency number first, then the lines for their region, each with a Call and a Text button that open the phone's own apps. The page is calm and plain: no drawing, no lamp, no motion. Nothing on it is recorded, counted, logged or sent. The region is read on the phone, needs no permission and no network, and is never stored or sent (D-034).
+A parent having a hard night finds the right number fast: the emergency number first, then the lines for their region, each with a Call and a Text button that open the phone's own apps. The page is calm and plain: no drawing, no lamp, no motion. Nothing on it is recorded or sent (its own line, `struggling.privacy`), and the code counts and logs nothing. The region is read on the phone, needs no permission and no network, and is never stored or sent (the header of `components/settings/struggling.logic.ts` says so).
 
 ## 2. Layout
 
@@ -34,7 +34,7 @@ Settings > If you are struggling (`app/settings/struggling.tsx`), one tap from S
   | Call or text 1-833-852-6262. Free and confidential.|      subhead, muted
   | [   Call   ]  [   Text   ]                         |      Button secondary, small
   +----------------------------------------------------+
-  ... 988 Lifeline, Postpartum Support International
+  (988 Lifeline, Postpartum Support International, etc.)
   [ Find a free helpline near you  >  ]                       only when the region has no lines
   [ Lines in other countries        >  ]
   Nothing on this page is recorded or sent.                   subhead, muted
@@ -82,7 +82,7 @@ PROPOSED (CDesO, 9 Nov): name the country in the emergency card, and add a point
 | Option | What is added | New words |
 |---|---|---|
 | A. The country alone | A `subhead` muted line in the emergency card under its heading, the country's name ("United Kingdom"). | None beyond the name, which is data (`RegionHelplines.country`, `helplines.ts:51`). |
-| B. The country and a pointer | A. plus the CDesO's line "Not in {country}? Lines in other countries", which opens the existing page. | PROPOSED WORDING, founder approves. The "Lines in other countries" row already sits lower on the page; B moves a pointer to where the traveller looks. |
+| B. The country and a pointer | A. plus the CDesO's line "Not in {country}? Lines in other countries", which opens the existing page. | PROPOSED WORDING, founder approves. It is 42 characters, so it is a row or a link, not a `Button` (the 22-character label rule). The "Lines in other countries" row already sits lower on the page; B moves a pointer to where the traveller looks. |
 
 Open points for either option:
 - For the six regions we hold the country name exists. For a region we do not hold there is no name in the data, and the card already says "your local emergency number". Whether the device can supply a name for the rest (`Intl.DisplayNames` on Hermes) is not verified. **OPEN (`mobile` to check)**.
@@ -109,14 +109,14 @@ Light / dark, from `tokens.ts` with the WCAG 2.x formula.
 | Emergency button fill against its card | `accent` on `accentSoft` (3:1 needed) | 4.74 / 5.99 |
 | Line card text | `text` on `surface` | 12.98 / 14.94 |
 | `how` line | `textMuted` on `surface` | 5.11 / 7.65 |
-| Call, Text label, built | `accent` on `accentSoft` | 4.74 / 5.99 |
+| Call, Text label, built | `text` on `accentSoft` (`secondary-foreground`, `button.tsx:71-77`) | 12.07 / 11.20 |
 | **Call, Text fill against the card, built** | `accentSoft` on `surface` | **1.08 / 1.33** |
 | Call, Text edge, Spec | `controlBorder` on `surface` (3:1 needed) | 3.36 / 4.27 |
 | Call, Text label, Spec | `text` on `surface` | 12.98 / 14.94 |
 
 Built, the label passes AA but the button's shape disappears: a pale tint on a pale card. This is the page people open on the worst nights, and the buttons are the reason they came. **Spec (design-systems): Call and Text are `outline`** (open PR #713 builds exactly this): a 1 pt `controlBorder` edge (3.36 / 4.27 on the card), label `text`. Both have the same weight, because a person may want to text and neither should look like the page's main action; the one primary is the emergency button. Increase Contrast swaps `controlBorder` to `#2B2722` / `#F2ECE4`.
 
-Light mode is checked by arithmetic only. **Device**: the S1-150 (a) screenshot in light and dark, and S1-153 row (e).
+Light mode is checked by arithmetic only. **Device**: the S1-150 (a) screenshot in light and dark, and S1-153 row (d).
 
 The same weakness is on every `secondary` button that sits on a card or the lit band: Restore the book (`screens/DELETE_THIS_BOOK.md` section 6) and Read together (`screens/BOOK_PAGE.md` section 7). **PROPOSED (design-systems), for `COMPONENTS.md` 2.1:** a `secondary` button is used only on `bg`, where its tint is a label surface; on any card or tinted host, use `outline`. A row in `packages/design-tokens/test/tokens.test.ts` for each button fill against its host surface would pin it (the next design-systems run, not this PR).
 
@@ -132,7 +132,7 @@ Order: back, the title "If you are struggling", the body line, the emergency hea
 
 - The visible label is "Call" or "Text" and the accessible name starts with it, so Voice Control's "Tap Call" matches (WCAG 2.5.3).
 - The fallback sheet takes focus on its title; Copy number is a button; "Number copied" is announced.
-- **Heading levels.** Built: the emergency heading is level 2 and each line's name is level 3, which makes the lines children of a heading they do not sit under (`struggling.tsx:43`, `helpline-card.tsx:22`). Spec: both are level 2 on this page; on "Lines in other countries" the country is level 2 and its line names level 3, which is right. `HelplineCard` takes the level as a prop (default 3). The effect has a limit: the `aria-level` that `Text` sets is for the web (`components/ui/text.tsx:101`), and a search of `node_modules/react-native` 0.86.3 for `aria-level`, `accessibilityLevel` and `ariaLevel` finds nothing. On iOS the rotor therefore lists every heading flat, with no levels. The fix is right for the web preview and costs nothing, but it does not change what a VoiceOver user on an iPhone hears. **Device**: the rotor's Headings (S1-153 row (e)).
+- **Heading levels.** Built: the emergency heading is level 2 and each line's name is level 3, which makes the lines children of a heading they do not sit under (`struggling.tsx:43`, `helpline-card.tsx:22`). Spec: both are level 2 on this page; on "Lines in other countries" the country is level 2 and its line names level 3, which is right. `HelplineCard` takes the level as a prop (default 3). The effect has a limit: the `aria-level` that `Text` sets is for the web (`components/ui/text.tsx:101`), and a search of `node_modules/react-native` 0.86.3 for `aria-level`, `accessibilityLevel` and `ariaLevel` finds nothing. On iOS the rotor therefore lists every heading flat, with no levels. The fix is right for the web preview and costs nothing, but it does not change what a VoiceOver user on an iPhone hears. **Device**: the rotor's Headings (S1-153 row (d)).
 
 ## 9. Copy keys
 
@@ -144,7 +144,7 @@ Data: `HELPLINES` (region, country, emergency, lines with `how`, `tel`, `sms`, `
 
 ## 10. Device steps
 
-S1-150 rows (a) to (f): order, regions, Germany, other countries, the iPad, VoiceOver and AX5. S1-153 row (e): Call and Text visible in light and dark, and the rotor's Headings. Do not complete a call or a text to any helpline: back out before it dials or sends.
+S1-150 rows (a) to (f): order, regions, Germany, other countries, the iPad, VoiceOver and AX5. S1-153 row (d): Call and Text visible in light and dark, and the rotor's Headings. Do not complete a call or a text to any helpline: back out before it dials or sends.
 
 ## 11. Where the build departs from this spec
 
@@ -153,7 +153,7 @@ Line numbers at `6cd2223b`.
 1. **Call and Text are `secondary` on a flat card** (`components/settings/helpline-card.tsx:34`, card variant at `:20`, `components/ui/card.tsx:26`). Fill 1.08 / 1.33 against the card. Spec: `outline`. Owner design-systems for the rule, `mobile` or design-systems for the two props. Pin: a contrast row, and a source test that the card passes no `secondary`. Done in open PR #713 (`variant="outline"`, `test/helpline-buttons-visible.test.ts`).
 2. **No country in the emergency card** (`struggling.tsx:42-58`). PROPOSED, section 4.
 3. **Heading levels** (`struggling.tsx:43`, `helpline-card.tsx:22`): section 8. Low, and web only in effect.
-4. **S1-150 (f)** says "At AX5 the Call and Text buttons stack" and nothing about the rotor. Row (e) of S1-153 adds it.
+4. **S1-150 (f)** says "At AX5 the Call and Text buttons stack" and nothing about the rotor. Row (d) of S1-153 adds it.
 
 ## 12. OPEN decisions
 
