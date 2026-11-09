@@ -1,7 +1,7 @@
 // Tests for merge-queue.mjs. A fake API is injected: no network, no gh, no real repo state.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildQueue, parseReview, parseClaims, parseArgs, formatTable } from "./merge-queue.mjs";
+import { buildQueue, parseReview, parseClaims, parseArgs, formatTable, reviewState, touchesNative, clean } from "./merge-queue.mjs";
 
 const OLD = "c5cfa0cfaa96a0ba97ca5f34629747ab0badf438";
 const HEAD = "a83634ced2a5ecf32717bf833f941b892fc660b9";
@@ -56,9 +56,10 @@ test("words like failure, unless, until in the first 15 lines do not change the 
   const noise = Array.from({ length: 15 }, (_, i) => `line ${i}: no failure unless fixed until later`).join("\n");
   const r = await verdict({ comments: [review("A", HEAD, noise), review("B", HEAD, noise)] });
   assert.equal(r.verdict, "READY");
-  assert.deepEqual(parseReview(`## Review A at ${HEAD}: PASS\r\nfailure`), { lens: "A", sha: HEAD });
+  assert.deepEqual(parseReview(`## Review A at ${HEAD}: PASS\r\nfailure`), { lens: "A", sha: HEAD, word: "PASS" });
   assert.equal(parseReview(`intro\n## Review A at ${HEAD}: PASS`), null, "must be the first line");
-  assert.equal(parseReview(`## Review A at ${HEAD}: FAIL`), null);
+  assert.equal(parseReview(`## Review A at ${HEAD}: FAIL`).word, "FAIL");
+  assert.equal(parseReview(`## Review A at ${HEAD.toUpperCase()}: PASS`), null);
 });
 
 test("head pushed 2 minutes ago is WAIT-QUIET; passes with --quiet-minutes 1", async () => {
@@ -156,7 +157,7 @@ test("claims are read from table rows and by-lines; flags parse", async () => {
   assert.deepEqual(claims, { 7: "ops", 9: "mobile" });
   const rows = await buildQueue({ api: fake({ comments: [] }), now: NOW, claims });
   assert.equal(rows[0].claim, "ops");
-  assert.deepEqual(parseArgs(["--json", "--quiet-minutes", "3", "--only", "ready"]), { json: true, quietMinutes: 3, only: "READY", repo: "thesaurabhpareek/earlyletters" });
+  assert.deepEqual(parseArgs(["--json", "--quiet-minutes", "3", "--only", "ready"]), { json: true, quietMinutes: 3, only: "READY", repo: "thesaurabhpareek/earlyletters", base: "develop", allBases: false });
   assert.throws(() => parseArgs(["--merge"]));
 });
 
@@ -174,4 +175,115 @@ test("a PASS from NONE, CONTRIBUTOR or FIRST_TIME_CONTRIBUTOR is ignored; truste
   assert.equal(mixed.verdict, "NEEDS-REVIEW");
   const out = formatTable((await buildQueue({ api: fake({ comments: [review("A", HEAD), review("B", HEAD)] }), now: NOW })));
   assert.doesNotMatch(out, /held back/);
+});
+
+const at = (n) => ({ created_at: `2026-11-09T10:0${n}:00Z`, id: n });
+const v = (lens, word, n, who = "MEMBER") => ({ body: `## Review ${lens} at ${HEAD}: ${word}\nbody`, author_association: who, ...at(n) });
+
+test("veto: newest trusted verdict per lens at head decides", async () => {
+  assert.equal((await verdict({ comments: [v("A", "PASS", 1), v("B", "PASS", 2), v("A", "BLOCKED", 3)] })).verdict, "BLOCKED-REVIEW");
+  assert.equal((await verdict({ comments: [v("A", "BLOCKED", 1), v("A", "PASS", 2), v("B", "PASS", 3)] })).verdict, "READY");
+  assert.equal((await verdict({ comments: [v("A", "PASS", 1), v("B", "PASS", 2), v("B", "CHANGES", 5)] })).verdict, "BLOCKED-REVIEW");
+  const cr = await verdict({ comments: [{ ...review("A", OLD), ...at(1) }, v("B", "PASS", 2), v("A", "CHANGES", 3)] });
+  assert.equal(cr.verdict, "BLOCKED-REVIEW", "CHANGES at head with an older PASS is not met");
+  assert.match(formatTable([cr]), /note: #7 review not met, newest at head: A=CHANGES/);
+  // array order is used when created_at and id are absent
+  assert.equal((await verdict({ comments: [review("A", HEAD), review("B", HEAD), { body: `## Review A at ${HEAD}: BLOCKED`, author_association: "OWNER" }] })).verdict, "BLOCKED-REVIEW");
+});
+
+test("PASS WITH NOTES and PASS. are not met (chosen: only the exact word PASS)", async () => {
+  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS", 2)] })).verdict, "BLOCKED-REVIEW");
+  assert.equal(reviewState([v("A", "PASS.", 1)], HEAD).A, false);
+});
+
+test("an untrusted BLOCKED does not veto a trusted PASS", async () => {
+  assert.equal((await verdict({ comments: [v("A", "PASS", 1), v("B", "PASS", 2), v("A", "BLOCKED", 3, "NONE")] })).verdict, "READY");
+});
+
+test("the exact poc sequence from the review: PASS, PASS, A BLOCKED, B CHANGES", () => {
+  const c = (b) => ({ body: b, author_association: "MEMBER" });
+  const s = reviewState([c(`## Review A at ${HEAD}: PASS`), c(`## Review B at ${HEAD}: PASS`), c(`## Review A at ${HEAD}: BLOCKED\nissues`), c(`## Review B at ${HEAD}: CHANGES`)], HEAD);
+  assert.equal(s.A, false);
+  assert.equal(s.B, false);
+  assert.deepEqual(s.blocked, { A: "BLOCKED", B: "CHANGES" });
+  for (const b of [`## review A at ${HEAD}: PASS`, ` ## Review A at ${HEAD}: PASS`, `## Review A  at ${HEAD}: PASS`, `\uFEFF## Review A at ${HEAD}: PASS`]) assert.equal(parseReview(b), null);
+});
+
+function multiBase(opts) {
+  const base = fake(opts);
+  return async (path, o) => {
+    const p = path.split("?")[0];
+    if (p.endsWith("/pulls")) return [{ number: 7, draft: false, head: { sha: HEAD }, base: { ref: "develop" } }, { number: 9, draft: false, head: { sha: HEAD }, base: { ref: "main" } }];
+    if (p.endsWith("/pulls/9")) return base(path.replace("/pulls/9", "/pulls/7"), o);
+    if (p.includes("/issues/9/")) return base(path.replace("/issues/9/", "/issues/7/"), o);
+    if (p.endsWith("/pulls/9/files")) return base(path.replace("/pulls/9/", "/pulls/7/"), o);
+    return base(path, o);
+  };
+}
+
+test("default lists develop only; --all-bases shows OTHER-BASE with no Merge ask", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  const rows = await buildQueue({ api: multiBase({ comments }), now: NOW });
+  assert.deepEqual(rows.map((r) => r.number), [7]);
+  const all = await buildQueue({ api: multiBase({ comments }), now: NOW, allBases: true });
+  assert.deepEqual(all.map((r) => [r.number, r.verdict]), [[7, "READY"], [9, "OTHER-BASE"]]);
+  const out = formatTable(all);
+  assert.match(out, /Merge #7 at /);
+  assert.doesNotMatch(out, /Merge #9/);
+  const main = await buildQueue({ api: multiBase({ comments }), now: NOW, base: "main" });
+  assert.deepEqual(main.map((r) => [r.number, r.verdict, !!r.founderAsk]), [[9, "READY", true]]);
+});
+
+test("ANSI and control characters are stripped from check names, base and claim holders", async () => {
+  assert.equal(clean("a\u001b[31mred\u001b[0m\u0007b\n"), "aredb");
+  const claims = parseClaims("| #7 | ops\u001b[2J | x |");
+  assert.equal(claims[7], "ops");
+  const runs = [...good, run(9, "evil\u001b[31m\u0007 check", "success")];
+  const rows = await buildQueue({ api: fake({ comments: [], runs }), now: NOW });
+  const out = formatTable(rows) + JSON.stringify(rows);
+  assert.doesNotMatch(out, /[\u0000-\u0008\u000b-\u001f]/.source ? /\u001b|\u0007/ : /x/);
+  const mac = [...good, run(10, "iOS simulator build\u001b[31m (x)", "failure")];
+  const wr = await buildQueue({ api: fake({ comments: [review("A", HEAD), review("B", HEAD)], runs: mac, files: ["package-lock.json"] }), now: NOW });
+  assert.doesNotMatch(JSON.stringify(wr) + formatTable(wr), /\u001b/);
+});
+
+test("--repo is validated", () => {
+  for (const bad of ["a", "a/b/c", "a/b;rm", "a b/c", "../x", "a/b\u001b[0m"]) assert.throws(() => parseArgs(["--repo", bad]), /--repo/, bad);
+  assert.equal(parseArgs(["--repo", "o.w-n_1/re.po-1"]).repo, "o.w-n_1/re.po-1");
+  assert.equal(parseArgs(["--all-bases"]).allBases, true);
+  assert.equal(parseArgs(["--base", "main"]).base, "main");
+});
+
+test("rename out of a native path is caught through previous_filename", async () => {
+  assert.equal(touchesNative([{ filename: "docs/moved.m", previous_filename: "apps/mobile/ios/Podfile" }]), true);
+  assert.equal(touchesNative([{ filename: "docs/a.md", previous_filename: "docs/b.md" }]), false);
+  const api = fake({ comments: [review("A", HEAD), review("B", HEAD)] });
+  const wrapped = async (path, o) => (path.includes("/pulls/7/files") ? [{ filename: "docs/m", previous_filename: "apps/mobile/modules/x.swift" }] : api(path, o));
+  assert.equal((await buildQueue({ api: wrapped, now: NOW }))[0].verdict, "WAIT-CI", "native rule applies, macOS checks missing");
+});
+
+test("an unparsable or missing head commit date is not quiet", async () => {
+  const comments = [review("A", HEAD), review("B", HEAD)];
+  for (const date of ["not a date", undefined]) {
+    const api = fake({ comments });
+    const w = async (path, o) => (path.endsWith(`/commits/${HEAD}`) ? { commit: { committer: { date } } } : api(path, o));
+    const r = (await buildQueue({ api: w, now: NOW }))[0];
+    assert.equal(r.verdict, "WAIT-QUIET", String(date));
+    assert.equal(r.pushAgeMinutes, null);
+  }
+});
+
+test("hitting the 30-page cap warns instead of stopping silently", async () => {
+  const notices = [];
+  const full = Array.from({ length: 100 }, (_, i) => ({ body: `c${i}` }));
+  const api = fake({ comments: full });
+  const w = async (path, o) => (path.includes("/issues/7/comments") ? full : api(path, o));
+  await buildQueue({ api: w, now: NOW, notices });
+  assert.ok(notices.some((n) => /pagination cap of 30 pages/.test(n)));
+});
+
+test("a head that moved between the list and the detail call is not trusted (WAIT-CI)", async () => {
+  const api = fake({ comments: [review("A", HEAD), review("B", HEAD)] });
+  const w = async (path, o) => (path.endsWith("/pulls/7") ? { mergeable_state: "clean", head: { sha: OLD } } : api(path, o));
+  assert.equal((await buildQueue({ api: w, now: NOW }))[0].verdict, "WAIT-CI");
 });
