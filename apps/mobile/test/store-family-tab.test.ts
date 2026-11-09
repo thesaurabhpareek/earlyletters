@@ -10,10 +10,11 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { en } from '@scribe/content';
 import { isAlphaBuild } from '../src/lib/billing/alpha';
 import { resolveAppEnv } from '../src/lib/build-env';
 import { parseServerFeatures } from '../src/lib/capabilities';
-import { familySurfacesShown, inviteDestination } from '../src/lib/family/entry.logic';
+import { CO_PARENT_IN_STORE_BUILD, familySurfacesShown, inviteDestination } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -31,9 +32,10 @@ function profile(name: string): { alpha: boolean; coParent: boolean; shown: bool
 }
 
 describe('familySurfacesShown', () => {
-  it('hides only in a store build with server features off', () => {
+  it('hides in a store build whatever the server switch says, and shows in every alpha build', () => {
     expect(familySurfacesShown({ alpha: false, coParent: false })).toBe(false);
-    expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(true);
+    // BL-776: Build 12 turns server features on in the store build, and the Family tab still stays out (was `true` in #665).
+    expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(false);
     expect(familySurfacesShown({ alpha: true, coParent: false })).toBe(true);
     expect(familySurfacesShown({ alpha: true, coParent: true })).toBe(true);
   });
@@ -80,6 +82,47 @@ describe('the screens use the switch', () => {
 
   it('the switch reads nothing a person can set: only the bundle-time APP_ENV and server switch', () => {
     const logic = read('src/lib/family/entry.logic.ts');
-    expect(logic).toMatch(/export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n\s*return input\.alpha \|\| input\.coParent;\n\}/);
+    expect(logic).toMatch(
+      /export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n\s*return input\.alpha \|\| \(input\.coParent && CO_PARENT_IN_STORE_BUILD\);\n\}/,
+    );
+    // One named constant, off in Build 12; a family release flips it.
+    expect(logic).toMatch(/export const CO_PARENT_IN_STORE_BUILD = false;/);
+  });
+});
+
+describe('[NX-36-S0] the store build keeps three tabs when server features are on (BL-776)', () => {
+  /** The tab names in the layout, in order, without the Family tab when its guard is false (expo-router drops it). */
+  function bar(shown: boolean): string[] {
+    const layout = read('src/app/(tabs)/_layout.tsx')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    const names = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) => m[1]);
+    return names.filter((n) => n !== 'family' || shown);
+  }
+
+  /** eas.json's production profile as Build 12 will run it: the same env, with server features switched on (#698). */
+  function productionWithServersOn() {
+    const env: Record<string, string> = { ...eas.build.production?.env, EXPO_PUBLIC_SERVER_FEATURES: 'on' };
+    const alpha = isAlphaBuild(resolveAppEnv(env.EXPO_PUBLIC_APP_ENV)!);
+    const coParent = parseServerFeatures(env.EXPO_PUBLIC_SERVER_FEATURES);
+    return { alpha, coParent, shown: familySurfacesShown({ alpha, coParent }) };
+  }
+
+  it('[NX-36-S0] a servers-on production build still shows exactly Tonight, Book and You', () => {
+    const p = productionWithServersOn();
+    expect(p).toEqual({ alpha: false, coParent: true, shown: false });
+    expect(bar(p.shown)).toEqual(['index', 'book', 'you']);
+    expect(bar(p.shown).map((n) => ({ index: en.tabs.tonight, book: en.tabs.book, you: en.tabs.you })[n])).toEqual(['Tonight', 'Book', 'You']);
+  });
+
+  it('[NX-36-S0] the same build shows no Write this book together row either, and flipping the one constant is what would bring both back', () => {
+    expect(CO_PARENT_IN_STORE_BUILD).toBe(false);
+    expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(CO_PARENT_IN_STORE_BUILD);
+    // The row is drawn by the same predicate (see the screens test above).
+    expect(read('src/app/settings/children/[id].tsx')).toMatch(/familySurfacesShown\(\{ alpha: PLUS_ALPHA, coParent: capabilities\.coParent \}\) && \(/);
+  });
+
+  it('[NX-36-S0] every alpha build with servers on keeps four tabs, so the TestFlight family check still works', () => {
+    expect(bar(profile('preview').shown)).toEqual(['index', 'book', 'family', 'you']);
   });
 });

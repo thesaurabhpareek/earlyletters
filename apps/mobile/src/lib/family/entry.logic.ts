@@ -63,25 +63,34 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
  * build still lacks). "I was invited" needs an invite only a server can make: shown with the
  * switch on (D-100 amends D-087), hidden with it off. "Family can read" is the family-contributor
  * switch, and contributors are absent from v1.0 whatever the switch (B1, F11 D4): hidden in both.
- * The Family tab and the Settings row stay in every alpha build and in a store build with the switch on; a store build
- * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build.
+ * The Family tab and the Settings row stay in every alpha build; a store build hides both, switch on or off, until a
+ * family release flips CO_PARENT_IN_STORE_BUILD (familySurfacesShown, D-126, BL-776). The invite-link landing stays in every build.
  */
 export function visibleCoParentDoors(coParent: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
   return { joinButton: coParent, familyCanReadSwitch: false };
 }
 
 /**
- * The Family tab and the child Settings row "Write this book together" in this build (D-126, BL-604; store-listing
+ * Whether the store build (`production` profile, `alpha` false) shows the Family surfaces when server features are on
+ * (BL-776, NX-36 S0). Build 12 turns server features on for sign-in, sync and the account, but not co-parent sharing:
+ * the listing promises three places (Tonight, Book, You) and no door to a feature that is not in it. A family release
+ * flips this one constant, and nothing else. Alpha builds do not read it.
+ */
+export const CO_PARENT_IN_STORE_BUILD = false;
+
+/**
+ * The Family tab and the child Settings row "Write this book together" in this build (D-126, BL-604, BL-776; store-listing
  * BL-621). The store build (`production` profile, `alpha` false: billing/alpha.ts isAlphaBuild, the same bundle-time
- * APP_ENV switch as PLUS_ALPHA) with server features off has no co-parent sharing, so it shows no "coming soon" door
- * to it: both are hidden. Every alpha build (`testflight`, `preview`, development) keeps them exactly as before, and a
- * store build with server features on shows them as the real flow. Nothing a person can set reaches either input.
+ * APP_ENV switch as PLUS_ALPHA) has no co-parent sharing in Build 12, so it shows neither: with server features off
+ * there is no "coming soon" door, and with them on the real flow is not offered either, whatever `coParent` says, until
+ * CO_PARENT_IN_STORE_BUILD is flipped by a family release. Every alpha build (`testflight`, `preview`, development) keeps
+ * both exactly as before. Nothing a person can set reaches either input.
  *
  * Not hidden: the invite-link landing (/invite). A link opened from outside still needs a calm page (D-087), and the
  * link allowlist below sends nothing else there.
  */
 export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.alpha || input.coParent;
+  return input.alpha || (input.coParent && CO_PARENT_IN_STORE_BUILD);
 }
 
 /**
