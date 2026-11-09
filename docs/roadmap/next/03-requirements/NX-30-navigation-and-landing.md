@@ -1,15 +1,27 @@
 # Theme 30: A richer way around the app, and a Tonight that is not dull
 
-Readiness: 17 of 28. Author's score (`design-systems`), `qa` to confirm. Remains: the founder's three answers below (what "landing page" and "more things" mean), a no-research check of the dull hypotheses, the capability gap analysis (file 15, written by another lane, not read), and a device row number confirmed by a re-scan at merge time. The rows that need no answer (R1, R2, R4, R7) are finished.
+Readiness: 21 of 28 after the founder's answers of 9 Nov (see "What the founder has now said"). Author's score (`design-systems`), `qa` to confirm. Remains: which part of "dull" he means (still a hypothesis, L1 is the default), the decision entry for the third tab (`product`), NX-33 (Photos, the content of that tab) being ready, and a device row number confirmed by a re-scan at merge time. Revised 9 Nov after his answers; the earlier version of this file is what sits on the roadmap branch at 0a613585, take this one.
 
 | | |
 |---|---|
 | Working label | NX-30 (working id, see `_CONVENTIONS.md`); no backlog rank assigned yet |
 | Refines | `docs/design/IA.md` ("Rules for adding a place"), `docs/design/DESIGN_LANGUAGE.md` section 12 (Tonight, tab bar), F09 (book), F12 (children), F17 (settings), F14-REQ-040 and -041 (Tonight Plus line, held row). UNVERIFIED: F14 in `docs/prd/v2/features/` is `F14-plus.md`, not a home or engagement spec; the brief's "F14 home/engagement, F15 book" does not match the file names (F09 is the book, F15 is export). Read at header level only |
 | Tag | EVIDENCE for the current state (code, 9 Nov, `origin/develop` at e15e307b). HYPOTHESIS for every statement about why it feels dull or what the founder meant |
-| Size | S for R1, R2 (one screen each); M if option B or L2 is chosen |
-| Gate | Founder answers Q1 to Q3 below. No counsel gate for R1, R2, R4, R7. Any new tab needs a decision entry (IA.md rule) |
+| Size | S for R1, R2, R11 (one screen each); S for the tab slot R12 and R13 (the Photos tab itself is NX-33, size M there); M if L2 is chosen |
+| Gate | Decision entry for the third tab (IA.md rule; the founder has chosen it, the entry is not written). The tab ships only with NX-33 behind it. No counsel gate for R1, R2, R4, R7 or R11; the Photos tab inherits NX-33's counsel gate |
 | Order | After the Build 12 store programme lane (see "What I assume" below); alongside NX-31 (onboarding) and NX-32 (account management), which this file references and does not repeat |
+
+## What the founder has now said (9 Nov, relayed in chat; not a document)
+
+| Statement | Status |
+|---|---|
+| "Landing page" is the Tonight tab | CONFIRMED (answers Q1) |
+| Navigation should have "more tabs" | CONFIRMED |
+| Settings and account should be easier to reach | CONFIRMED |
+| The extra tab holds Photos first (add a photo to a letter, local first) | CONFIRMED. Specified in NX-33; this file holds only the tab slot |
+| Search, share and family were not chosen | CONFIRMED (not specified; R5 stays a parked question) |
+| He tested Build 12, which "we also push to public" | NOTED. Photos is not in Build 12 (no image picker in `apps/mobile/package.json`, per file 15 searched 9 Nov; UNVERIFIED on a branch) |
+| Why Tonight is "dull" | STILL A HYPOTHESIS (H1 to H3 below). He has not said whether it means flat, empty of his own book, or one thing to do. L1 stays the recommendation as the cheapest answer to H1; a letter's photo on that row (R14) makes it livelier once Photos exists |
 
 ## The founder's words
 
@@ -44,9 +56,9 @@ Conflict check: NX-30 touches `apps/mobile/src/app/(tabs)/index.tsx` and `(tabs)
 |---|---|---|---|
 | H1 | Tonight has one thing to look at and one thing to do, and for a parent with no waiting draft it is the same screen every night | Greeting, a prompt, two buttons. The "A month ago" card shows only when no draft waits and only for letters 28 to 35 days old, so most days there is nothing of the family's own book on screen | Show 5 parents a week-three phone with and without a row from their own book; ask what the screen is for |
 | H2 | The lamp is subtle by design and may read as plain paper, especially in light mode, with Increase Contrast or Reduce Transparency on (those show plain paper by design) | `Lamp` scene `tonight`; DESIGN_LANGUAGE 2b | Photograph on a device at default brightness; compare with the website hero |
-| H3 | A two-tab bar (after #665) looks thin, and "navigation should add more things" may be this | Tonight, Book only; Settings is hidden two taps deep | Ask Q2 |
-| H4 | The founder looked for something that is not built: search, milestones, share, print | None exists (see above) | Ask Q2; file 15 lists capability gaps |
-| H5 | "Landing page" is the website or the welcome | Both are named "landing" in the experience-pass docs | Ask Q1 |
+| H3 | A two-tab bar (after #665) looks thin, and "navigation should add more things" may be this | Tonight, Book only; Settings is hidden two taps deep | CONFIRMED in part: he wants more tabs and easier Settings and account |
+| H4 | The founder looked for something that is not built: search, milestones, share, print | None exists (see above) | Answered: he chose Photos; search and share were not chosen |
+| H5 | "Landing page" is the website or the welcome | Both are named "landing" in the experience-pass docs | Answered: it is Tonight. H5 closed |
 
 Nothing here says the founder is wrong. The brand rules (no streaks, points, badges, gap counts, fear or guilt language; celebrate what exists) narrow what "less dull" may mean: it cannot be a progress ring or a "you have written 14 letters" tile.
 
@@ -56,17 +68,17 @@ Nothing here says the founder is wrong. The brand rules (no streaks, points, bad
 - The website: no `web` handle in the roster (backlog file 08, column key); routed to `ops`. If Q1 is the website, this file's rows do not apply and `product` opens a web row.
 - The app after sign-in on a new phone (a returning parent lands on the Book, `EXPERIENCE_PASS` 5.8 row 13): not touched.
 
-## The three questions for the founder (do not block the file; defaults below)
+## The three questions, and what came back
 
-1. When you said "landing page", which screen were you looking at: Tonight (what opens after the first letter), the welcome before you begin, or the website? Default used here: Tonight.
-2. Which things did you go looking for in the navigation and not find? Pick any: Settings, search, milestones, share a letter, print or order the book, family. Default used here: Settings and search, because they are the two a user expects from any app.
-3. What does "dull" mean on that screen: it looks flat (colour, picture, light), it shows nothing of your own book, or it offers only one thing to do? Default used here: "shows nothing of your own book".
+1. Which screen is "landing page"? Answered: Tonight.
+2. Which things were missing in the navigation? Answered: more tabs, and Settings and account easier to reach; the extra tab holds Photos first. Search, share and family not chosen.
+3. What does "dull" mean on Tonight? NOT answered. Asked again as the one open question: does it look flat (colour, picture, light), show nothing of your own book, or offer one thing to do? Default kept: nothing of your own book (L1).
 
 ## Navigation options
 
-Two tabs (Tonight, Book) is the store build after #665. Both options keep the tab bar to navigation, never actions (HIG; DESIGN_LANGUAGE 12).
+The store build after #665 has two tabs (Tonight, Book). Tabs are navigation, never actions (HIG; DESIGN_LANGUAGE 12). The founder has chosen "more tabs" and the first extra tab is Photos, so option B below is now the plan; option A stays as the doors that ship with it.
 
-### Option A: two tabs, more doors (recommended for the store build)
+### Option A: two tabs, more doors (kept: the doors are part of the plan)
 
 ```
 Tonight                         Book (unchanged, #674)
@@ -75,30 +87,36 @@ Tonight                         Book (unchanged, #674)
 |                          |    | 7 months                 |
 | Good evening, Mama.      |    | [ Read together ]        |
 | (the prompt)             |    | [Months]                 |
-|                          |    | (months)                    |
+|                          |    | (months)                 |
 +--------------------------+    +--------------------------+
 | (moon) Tonight | (book) Book|
 +--------------------------+
 ```
 
-- Adds one door: Settings (gear) on Tonight, second path to the same screen.
-- Search stays a HYPOTHESIS row (R5), shown in the Book header only if the founder asks for it in Q2.
-- No new tab. IA.md: a new tab needs a decision entry.
+- The gear on Tonight opens Settings home in 1 tap. Settings home's header card opens Account when sign-in is on (`headerCard()`, #614, as NX-32 describes), so Account is 2 taps from Tonight (3 today: Book, gear, card). Tonight gets no second account control: one gear, not a gear and an avatar. NX-32 owns what is inside Account and keeps Delete account where it is (NX-32-R19).
+- Without a third tab the bar is thin (H3). That is the reason for B.
 
-### Option B: three tabs, third is "Keepsakes" (later, only when it has a job)
+### Option B (now recommended): three tabs, the third is Photos
 
 ```
-+--------------------------------------------+
-| (moon) Tonight | (book) Book | (gift) Keep |
-+--------------------------------------------+
-Keep: Read together | Export your book | Share a letter | (Year One book, later)
+Tonight                       Book                       Photos
++------------------------+    +------------------------+ +------------------------+
+| ASHA . 7 MONTHS  [gear]|    | Asha's book      [gear]| | Photos           [gear]|
+| Good evening, Mama.    |    | ...                    | | Asha                   |
+| (the prompt)           |    |                        | | +------+ +------+      |
+| [Speak]   [Type]       |    |                        | | | pic  | | pic  |      |
+| From the book (row)    |    |                        | | +------+ +------+      |
++------------------------+    +------------------------+ | This month             |
+| (moon)Tonight|(book)Book|(image)Photos|                | +------+ +------+      |
++----------------------------------------+                +------------------------+
 ```
 
-- Holds what the parent does with the book, not what they write. Today that is two things (Read together, Export), so the tab would be thin on day one.
-- "Share a letter" and "Year One" do not exist (BRAND.md: not promised in v1.0). A tab for features that do not exist breaks "celebrate what exists".
-- The label is a placeholder, not a content key; counsel and `content` name it.
+- The tab label is "Photos", a noun, one word (the HIG and `DESIGN_LANGUAGE` rules the existing tabs follow). Icon: a Phosphor image glyph, 25 pt, filled when selected (UNVERIFIED which glyph file exists under `phosphor-react-native/src/icons`; `design-systems` picks and checks the import path the way `_layout.tsx` does).
+- What the tab shows, the picker, limits, storage, privacy and erase are NX-33 (not repeated here). This file only fixes the slot: third position, after Book, same lamp-free paper, same no-count rule, the gear in its top row.
+- Where family surfaces are on (alpha `preview`), Family would be a fourth tab. That is UNVERIFIED as a design (4 labels at AX5) and not recommended: the store build hides Family (#665) and Photos does not need it. Decision for `product`: in `preview`, is Family a fourth tab or a row inside Settings.
+- The tab appears only when the Photos feature is on in the build (R12). With it off the bar is the two-tab bar above, with no empty "Photos" tab. A tab for a feature that does not exist breaks "celebrate what exists".
 
-Trade-off against the brand: B adds a tab bar item that a parent may read as "more to keep up with". A adds nothing to scan. A is also safer at AX5: the bar's labels do not scale (13 pt, LCV), so a third item at 390 pt wide is still 130 pt per item, which fits; I did not measure it (UNVERIFIED).
+Trade-off against the brand: a third item is one more thing to scan, so it must be a place where the parent sees what they have (their own photos), never a place with a count of what is missing, a "first photo" prompt or a badge. The bar's labels do not scale (13 pt, Large Content Viewer at accessibility sizes), and three items at 390 pt is about 130 pt each, which should fit; not measured (UNVERIFIED, R13 proves it).
 
 ## Landing options (Tonight)
 
@@ -145,29 +163,32 @@ Trade-off against the brand: B adds a tab bar item that a parent may read as "mo
 
 Trade-off against the brand: both show only what exists, never a count, never a gap. L2's voice row is the stronger emotional payoff and the larger risk (audio in a room where the person is about to record; a recording that plays aloud near a sleeping child).
 
-## Recommendation (5 lines)
+## Recommendation (revised 9 Nov)
 
-1. Treat "landing page" as Tonight and "navigation" as the tab bar and the doors out of it; ask Q1 to Q3 anyway.
-2. Navigation: option A. Keep two tabs in the store build; add a Settings gear on Tonight (one tap instead of two). No third tab until Share or Year One exists.
-3. Landing: option L1. Show a kept letter from the book on Tonight every day it has one, below Speak and Type.
-4. Do not add search, milestones or print until file 15 and Q2 say they matter; each is a feature, not a navigation tweak.
-5. Ship after #665 merges; no new tab, no counts, no new motion.
+1. Landing: Tonight (confirmed). Keep L1: one kept letter from the book under Speak and Type every day there is one. "Dull" is still a hypothesis until the founder answers question 3.
+2. Navigation: option B plus the doors of option A. A third tab, Photos, behind the build switch NX-33 owns; the gear on Tonight opens Settings in 1 tap and Account in 2 (via the header card).
+3. Order: after #665 merges (it edits `(tabs)/_layout.tsx`), and the Photos tab ships only when NX-33's add-a-photo flow does. The gear and the From the book row (R1, R2) can ship first and alone.
+4. No search, share or family tab (not chosen), no counts or badges, no new motion.
+5. A letter's photo shows as a thumbnail on the From the book row once Photos exists (R14).
 
 ## The check
 
 | Label | Tag | Given, When, Then | Fails on old code because | Source |
 |---|---|---|---|---|
-| NX-30-R1 | EVIDENCE | Given Tonight (store build, one child), When I tap the gear named "Settings" in Tonight's top row, Then Settings home opens in 1 tap and back returns to Tonight. | Tonight has no top row; Settings is reached from the Book gear only (2 taps, `cover-band.tsx`). | `IA.md` Book section |
+| NX-30-R1 | EVIDENCE | Given Tonight (store build, one child), When I tap the gear named "Settings" in Tonight's top row, Then Settings home opens in 1 tap and back returns to Tonight. Given sign-in is on and the phone is signed in, Then the Settings header card (existing, #614) opens Account in 1 more tap (2 from Tonight), and Tonight itself holds 0 account controls. | Tonight has no top row; Settings is reached from the Book gear only (2 taps, `cover-band.tsx`). | `IA.md` Book section |
 | NX-30-R2 | EVIDENCE | Given a book with at least 1 kept letter that is not private, When Tonight shows (with 0, 1 or 3 waiting drafts), Then 1 "From the book" row shows a kept letter below Speak and Type, and the waiting drafts stay above the actions' row, unchanged in order. | `resurfaced()` is read only when `cards.length === 0` and the newest letter is 28 to 35 days old (`index.tsx`, `draft-card.logic.ts:190`). | design intent (L1) |
 | NX-30-R3 | EVIDENCE | Given a private letter (marked Private), When Tonight picks the row, Then it is never chosen, and the row's words are the person's own first words, ending on a whole word. | Same rule exists for "A month ago"; the new rule must not weaken it (`resurfaced` tests). | existing S09 rule |
 | NX-30-R4 | EVIDENCE | Given any Tonight state, Then the screen shows 0 numerals about letters kept, days since or time left, and no new badge, ring or dot on a tab or the gear (scan of the visible text and accessibility labels of 5 states). | Passes today; the row exists to stop R2 and R1 breaking it. | CLAUDE.md content rules; Tonight header comment |
-| NX-30-R5 | HYPOTHESIS | Given Q2 names search, When it is specified, Then it is a separate theme (not a navigation tweak) with its own privacy review: searched words are letter text and never reach analytics or logs. Test: none, study (`user-research`, then `product`). | No search exists. | Q2 |
-| NX-30-R6 | HYPOTHESIS | Given the store build has two tabs, When a third tab is proposed, Then a decision entry and IA.md row precede it, and the tab bar still lays out at AX5 with the Large Content Viewer. Test: none, decision (`product`, founder). | IA.md "Rules for adding a place". | IA.md |
+| NX-30-R5 | HYPOTHESIS | Given search is ever wanted (the founder did not choose it on 9 Nov), When it is specified, Then it is a separate theme (not a navigation tweak) with its own privacy review: searched words are letter text and never reach analytics or logs. Test: none, study (`user-research`, then `product`). | No search exists. | Q2 |
+| NX-30-R6 | HYPOTHESIS | Decided 9 Nov by the founder in chat: a third tab, Photos. Given that, When `product` writes the decision entry and the IA.md row, Then it records the tab, its label and its build switch, and says what Family does in `preview` (fourth tab or a Settings row). Test: none, decision (`product`, founder). The build rows are R12 and R13. | IA.md "Rules for adding a place" requires an entry; none is written. | IA.md |
 | NX-30-R7 | EVIDENCE | Given Dynamic Type at AX5 and VoiceOver on, When Tonight opens, Then focus order is: dateline, greeting (heading), prompt, Another thought, Speak, Type, Not much today, From the book row, Settings, and every control is 44 pt or larger; the greeting and the row's words are never truncated. | The top row and the new row do not exist yet. | A-NFR-005 to A-NFR-007; DESIGN_LANGUAGE H1 |
 | NX-30-R8 | EVIDENCE | Given Reduce Motion on, When Tonight opens or a letter changes, Then the new row appears without movement, and it enters once per cold launch (not on tab switch or return from Listen). | The row is new. | MOTION 5.8 rule 2 |
 | NX-30-R9 | HYPOTHESIS | Given option L2 is chosen, When a parent taps "Hear a letter", Then audio plays only on the tap, stops on Speak, Type and when the app goes to the background, and never plays in a capture room. Test: device row only; not handed to engineering until Q3 says "a voice". | Not built. | L2 |
 | NX-30-R10 | HYPOTHESIS | Given 5 parents shown Tonight with and without the From the book row, Then most name the row as the reason to open it (a study, not a pass bar). Test: none, study (`user-research`). | No study exists; H1 to H3 are untested. | H1 |
-
+| NX-30-R11 | EVIDENCE | Given Tonight, Book and Photos each draw their own top row, When the person taps the gear on any of the three, Then Settings home opens (1 tap) and back returns to the tab they were on. | Only the Book draws a gear (`cover-band.tsx`). | IA.md |
+| NX-30-R12 | EVIDENCE | Given the Photos feature switch (owned by NX-33) is on, When the app opens, Then the bar shows exactly 3 tabs in the order Tonight, Book, Photos, with the titles from `copy.tabs`, 25 pt icons, 13 pt labels and a 44 pt target each; Given the switch is off, Then exactly 2 tabs (Tonight, Book) and 0 Photos route reachable by link. | `_layout.tsx` declares `index`, `book`, `family`; no Photos route exists. | DESIGN_LANGUAGE 12 |
+| NX-30-R13 | EVIDENCE | Given 3 tabs at Dynamic Type AX5 on an iPhone SE 3 (320 pt wide) and VoiceOver, Then all 3 labels show in full with 0 clipped, VoiceOver reads "Tonight, tab, 1 of 3", "Book, tab, 2 of 3", "Photos, tab, 3 of 3", and a long press shows the Large Content Viewer with the tab's title. | The bar has `tabBarAllowFontScaling: false` and a Large Content Viewer; not proven with 3 items on a small phone (UNVERIFIED). | A-NFR-005 to -007 |
+| NX-30-R14 | EVIDENCE | Given the From the book row (R2) picks a letter that has a photo (NX-33), When Tonight shows it, Then the row shows that photo as a thumbnail beside the letter's own first words, with no caption added, and the row's accessibility label is the letter's words only (never a generated description). Given the letter has no photo, Then the row is unchanged. | The row and the photo do not exist. Waits for NX-33. | NX-33; constitution |
 **Shown / Records / Never / Decline:** no person agrees to anything in these rows, so no door lines. A letter shown on Tonight stays on the phone; the row opens the same page the Book opens.
 
 ## Edge cases
@@ -192,7 +213,7 @@ A count, streak, badge, dot or "you have not written for N days" on Tonight, the
 | `tonight.resurfaced.a11y` | exists | A letter from {date}. Opens the letter. |
 | `tabs.tonight`, `tabs.book` | exist | Tonight, Book |
 | `tabs.family` | exists; hidden in the store build by #665 | Family |
-| Option B only: tab title | new, not drafted | owner `content`; not a registered string |
+| `tabs.photos` | new; owner `content`, NX-33 holds the other Photos keys | Photos |
 | Option L2 only: "Hear a letter" | new, not drafted | owner `content` |
 
 All new strings go through `packages/content/test/rules.test.ts`. No "AI", "entry", "draft", "take" in a parent string. Never gender the child; use {child}.
@@ -206,15 +227,16 @@ All analytics are off in every 1.0 profile (D-124 item 3); an event "in catalog"
 | `book_opened` | in catalog (`packages/analytics/src/catalog.ts:579`) | existing |
 | `settings_opened` with `from: oneOf('book','tonight')` | add to catalog first (catalog and `docs/analytics/TRACKING_PLAN.md` in the same PR) | no content, no child name |
 | `tonight_book_row_opened` | add to catalog first | none |
+| `tab_selected` (which tab) | not in the catalog (the catalog has `book_opened` and the Family teaser event only); not proposed here. If `product` wants tab use, add to catalog first with `tab: oneOf('tonight','book','photos')` and no content | |
 | any search event | not allowlisted; none proposed | letter text must never enter analytics |
 
 ## Device rows
 
-I scanned the patches of the 101 open PRs on 9 Nov for `S1-1xx` ids. Used: S1-110, -112, -131 to -135, -140, -144, -150, -151, -152 (the highest on `develop` is S1-152, in `docs/qa/DEVICE_TEST_PLAN.md`). #684 and #680 both claim S1-133 to -135 in different files (a clash, not mine). I take none yet. Proposed, to confirm by a fresh scan when `qa` merges: S1-160 (Settings gear and the From the book row, rows (a) gear opens Settings in 1 tap, (b) row with drafts waiting, (c) AX5 and VoiceOver order, (d) Reduce Motion, (e) dark mode) and S1-161 (option L2 playback, only if chosen). Record: phone, iOS version, build number, text size, a screen recording with Asha only.
+I scanned the patches of the 101 open PRs on 9 Nov for `S1-1xx` ids. Used: S1-110, -112, -131 to -135, -140, -144, -150, -151, -152 (the highest on `develop` is S1-152, in `docs/qa/DEVICE_TEST_PLAN.md`). #684 and #680 both claim S1-133 to -135 in different files (a clash, not mine). I take none yet. Proposed, to confirm by a fresh scan when `qa` merges: S1-160 (Settings gear and the From the book row, rows (a) gear opens Settings in 1 tap, (b) row with drafts waiting, (c) AX5 and VoiceOver order, (d) Reduce Motion, (e) dark mode) and S1-161 (the Photos tab at AX5 on a small phone, R12 and R13, with NX-33's rows) and S1-162 (option L2 playback, only if chosen). NX-33 proposes its own rows after S1-162; take numbers from one fresh scan, not two. Record: phone, iOS version, build number, text size, a screen recording with Asha only.
 
 ## Dependencies
 
-#665 (hide Family) before any tab change. #674 and #614 are merged and assumed. File 15 (capability gap analysis, other lane, not read) for search, milestones, share, print. NX-31 (onboarding) and NX-32 (account management, includes where Account and Sign out live) are referenced, not duplicated: if NX-32 moves Account or Settings entry points, R1 follows it.
+#665 (hide Family) before any tab change; it edits the same `_layout.tsx` as R12. NX-33 (Photos) for the tab's content and for R14. NX-32 for the Account screen and its header-card entry (R1 only adds the gear). #674 and #614 are merged and assumed. File 15 (capability gap analysis, other lane, not read) for search, milestones, share, print. NX-31 (onboarding) and NX-32 (account management, includes where Account and Sign out live) are referenced, not duplicated: if NX-32 moves Account or Settings entry points, R1 follows it.
 
 ## Engineering block
 
@@ -246,21 +268,25 @@ Id convention: `_CONVENTIONS.md`. Paths marked proposed do not exist yet.
 | NX-30-R6 | IA.md | none, decision | none |
 | NX-30-R7 | A-NFR-005 to -007 | proposed `apps/mobile/test/tonight-a11y-order.test.ts`; `[NX-30-R7] reading order and 44 pt targets at AX5` | S1-160 (c) |
 | NX-30-R8 | MOTION 5.8 | same file as R2; `[NX-30-R8] the row never moves under Reduce Motion and enters once per launch` | S1-160 (d) |
+| NX-30-R11 | IA.md | proposed `apps/mobile/test/tonight-settings-door.test.ts`; `[NX-30-R11] the gear on every tab opens Settings and back returns` | S1-160 (a) |
+| NX-30-R12 | DESIGN_LANGUAGE 12 | proposed `apps/mobile/test/tabs-photos.test.ts`; `[NX-30-R12] three tabs with Photos on, two with it off, no Photos route when off` | S1-161 |
+| NX-30-R13 | A-NFR-005 to -007 | same file; `[NX-30-R13] three tab labels at AX5 are whole and ordered for VoiceOver` | S1-161 |
+| NX-30-R14 | NX-33 | proposed `apps/mobile/test/tonight-from-the-book.test.ts`; `[NX-30-R14] the row shows the letter's photo and adds no caption` | S1-160 (b) |
 | NX-30-R9 | none | none until L2 is chosen | S1-161 (proposed) |
 | NX-30-R10 | none | none, study (`user-research`) | none |
 
-Trace: NX-30-R1..R10 -> IA.md (rules for adding a place), F09, F14-REQ-040, F14-REQ-041, A-NFR-005, A-NFR-006, A-NFR-007.
+Trace: NX-30-R1..R14 -> IA.md (rules for adding a place), F09, F14-REQ-040, F14-REQ-041, A-NFR-005, A-NFR-006, A-NFR-007.
 
 ## Founder-only decisions
 
 | Decision | Recommended default |
 |---|---|
-| Q1: which screen is "landing page" | Tonight |
-| Q2: which things were missing from navigation | Settings and search; search is a separate theme |
-| Q3: what "dull" means | Shows nothing of your own book (option L1) |
-| Add a third tab | Not before Share or Year One exists |
-| A build switch for the new row | No runtime flag; build-time constant off in `production` until the device row passes, if he wants one |
+| Which screen is the landing page | Decided: Tonight |
+| More tabs and easier Settings and account | Decided: Photos tab, gear on Tonight |
+| What "dull" means on Tonight (question 3) | Open. Default: shows nothing of your own book (L1) |
+| Family in `preview`: a fourth tab or a Settings row | A Settings row (a fourth tab strains AX5 and the store build has none) |
+| A build switch for Tonight's new row | No runtime flag; a build-time constant off in `production` until the device row passes, if he wants one |
 
 ## Not verified
 
-The Tonight the founder actually saw (build number, light or dark mode, text size). Whether the TestFlight build matches `origin/develop` e15e307b. The content of `proposals/v1-experience/daily-home.md`, `library.md`, `memories.md` and `proposals/book-page.md` (not in the repo). File 15. The F14 and F15 spec text (header read only). The `apps/web` landing page and which version is live. Whether the AX5 tab bar fits a third item. The Book gear's content key name. Whether `lamp.test.ts` needs a new measured box. The launch-time budget. Whether #665 merges unchanged. Everything in "What feels dull" is a hypothesis; no user was asked.
+The Tonight the founder actually saw (build number, light or dark mode, text size). Whether the TestFlight build matches `origin/develop` e15e307b. The content of `proposals/v1-experience/daily-home.md`, `library.md`, `memories.md` and `proposals/book-page.md` (not in the repo). File 15. The F14 and F15 spec text (header read only). The `apps/web` landing page and which version is live. Whether the AX5 tab bar fits a third item. The Book gear's content key name. Whether `lamp.test.ts` needs a new measured box. The launch-time budget. Whether #665 merges unchanged. Whether a Phosphor image glyph is importable the way `_layout.tsx` imports the others. How Family sits next to Photos in `preview`. Everything in "What feels dull" is a hypothesis; no user was asked.
