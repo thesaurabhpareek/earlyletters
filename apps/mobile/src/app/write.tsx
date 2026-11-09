@@ -32,8 +32,7 @@
  * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
  *
  * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
- * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), under the two destinations so
- * VoiceOver reads it last, after the buttons.
+ * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.
  * Never in an alpha build (PLUS_ALPHA; Karma ruling on #508). Letters kept is read once when Write opens and never
  * awaited: until it is read the line is absent, so the first frame and typing never wait on it.
  */
@@ -272,19 +271,20 @@ export default function Write() {
   // The page grows with the words and the sheet scrolls, so the line being written stays in view above the keyboard.
   const scroll = useRef<ScrollView>(null);
   const selectionEnd = useRef<number | null>(null);
-  // Measured, never state: reading them must not render. The footer's height only matters while it rides in the scroll.
+  // Measured, never state: reading them must not render. The footer's top only matters while it rides in the scroll.
   const viewportHeight = useRef(0);
-  const footerHeight = useRef(0);
+  const footerTop = useRef(0);
   // Pinned footer: the end of the content is the end of the page, so the field growing scrolls to the end.
   const onContentSizeChange = () => {
     if (!inlineFooter && followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
   };
-  // Footer inline: the end of the page is the end of the field, so the buttons below it do not push the last line typed
-  // out of sight. The scroll's own size is read here, after the buttons are counted in it; scrolling to its end would
-  // show them instead of the words.
-  const onScrollContentSizeChange = (_width: number, contentHeight: number) => {
+  // Footer inline: the end of the page is the top of the footer, so the buttons below do not push the last line typed
+  // out of sight (scrolling to the very end would show them instead of the words). The footer's own layout is the signal:
+  // it moves down when the field grows, and its top is read from that same layout, so there is no order of events to
+  // guess between two callbacks. The viewport's layout (it shrinks when the keyboard opens) asks again.
+  const followPageEnd = () => {
     if (!inlineFooter || !followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) return;
-    const y = pageEndOffset({ contentHeight, footerHeight: footerHeight.current, viewportHeight: viewportHeight.current });
+    const y = pageEndOffset({ footerTop: footerTop.current, viewportHeight: viewportHeight.current });
     if (y !== null) scroll.current?.scrollTo({ y, animated: false });
   };
 
@@ -304,23 +304,23 @@ export default function Write() {
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const empty = !text.trim();
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
-  // "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action never breaks over two lines
-  // (P4 critics' pass S2), then the standing Plus line: under the buttons, so VoiceOver reads it last. Defined once and
-  // drawn in exactly one place, by `inlineFooter`.
+  // The standing Plus line, then "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action
+  // never breaks over two lines (P4 critics' pass S2). Defined once and drawn in exactly one place, by `inlineFooter`.
   const footer = (
     <View
       className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}
       onLayout={(e) => {
-        footerHeight.current = e.nativeEvent.layout.height;
+        footerTop.current = e.nativeEvent.layout.y;
+        followPageEnd();
       }}>
-      <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
-      <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
       {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
       {showPlusLine ? (
-        <View className="pt-1">
+        <View className="pb-1">
           <PlusLine />
         </View>
       ) : null}
+      <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
+      <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
     </View>
   );
   const status =
@@ -353,9 +353,9 @@ export default function Write() {
           ref={scroll}
           contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4"
           keyboardShouldPersistTaps="handled"
-          onContentSizeChange={onScrollContentSizeChange}
           onLayout={(e) => {
             viewportHeight.current = e.nativeEvent.layout.height;
+            followPageEnd();
           }}>
           <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
             {dateline}

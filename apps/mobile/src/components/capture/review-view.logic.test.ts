@@ -171,22 +171,23 @@ describe('a typed letter (S19, S20)', () => {
     expect(followCaretToEnd({ selectionEnd: 4, length: 12 })).toBe(false);
   });
 
-  it('with the buttons at the end of the scroll (large text) the page rests at the end of the field, not at the buttons (S1-165)', () => {
-    // 1000 pt of content, the last 380 of it the footer, 300 pt of room above the keyboard: the field ends at 620, so the
-    // top of the view is 320 and the last line typed sits at the bottom of the view with the scroll's padding under it.
-    expect(pageEndOffset({ contentHeight: 1000, footerHeight: 380, viewportHeight: 300 })).toBe(320);
-    // Scrolling to the very end would be 700: the buttons, with the words 380 pt out of sight above them.
-    expect(pageEndOffset({ contentHeight: 1000, footerHeight: 380, viewportHeight: 300 })).toBeLessThan(1000 - 300);
-    // A page that fits in the view does not scroll; the offset is never negative.
-    expect(pageEndOffset({ contentHeight: 500, footerHeight: 380, viewportHeight: 600 })).toBe(0);
-    expect(pageEndOffset({ contentHeight: 1000.4, footerHeight: 380.2, viewportHeight: 300.1 })).toBe(320);
+  it('with the buttons at the end of the scroll (large text) the page rests with its bottom edge at the top of the buttons, not at their end (S1-165)', () => {
+    // The footer starts 620 pt into the content and the room above the keyboard is 300 pt: the top of the view is 320,
+    // so the view's bottom edge is at 620, the field's end plus the gap above the footer. The footer's own layout y
+    // already counts the scroll's top padding and the gap, so no spacing is added here.
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 300 })).toBe(320);
+    // Scrolling to the very end would put the view's bottom edge at the end of the buttons, hiding the words above them.
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 300 })).toBeLessThan(620);
+    // A page that fits in the view does not scroll; the offset is never negative, and it is whole points.
+    expect(pageEndOffset({ footerTop: 200, viewportHeight: 600 })).toBe(0);
+    expect(pageEndOffset({ footerTop: 620.4, viewportHeight: 300.1 })).toBe(320);
   });
 
-  it('the page is left where it is until the content, the viewport and the footer are all measured (it never jumps to the buttons while opening)', () => {
-    expect(pageEndOffset({ contentHeight: 0, footerHeight: 380, viewportHeight: 300 })).toBeNull();
-    expect(pageEndOffset({ contentHeight: 1000, footerHeight: 0, viewportHeight: 300 })).toBeNull();
-    expect(pageEndOffset({ contentHeight: 1000, footerHeight: 380, viewportHeight: 0 })).toBeNull();
-    expect(pageEndOffset({ contentHeight: 1000, footerHeight: Number.NaN, viewportHeight: 300 })).toBeNull();
+  it('the page is left where it is until the footer and the viewport are both measured (it never jumps while opening)', () => {
+    expect(pageEndOffset({ footerTop: 0, viewportHeight: 300 })).toBeNull();
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: 0 })).toBeNull();
+    expect(pageEndOffset({ footerTop: Number.NaN, viewportHeight: 300 })).toBeNull();
+    expect(pageEndOffset({ footerTop: 620, viewportHeight: Number.NaN })).toBeNull();
   });
 
   it('back in Review it keeps Write\'s heading, "Your letter"; a letter with a recording reads "Read it back"', () => {

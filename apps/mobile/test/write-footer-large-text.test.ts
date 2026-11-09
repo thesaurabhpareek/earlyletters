@@ -74,16 +74,14 @@ describe('[S1-165] Write uses the rule Review and Tonight use', () => {
     expect(write).toContain("className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}");
   });
 
-  it('the Plus line is the last thing in the footer, so VoiceOver reads the buttons first and it last (source)', () => {
+  it('the Plus line stays where #668 put it: the first thing in the footer, above the two buttons (source)', () => {
     const footer = between('const footer = (', 'const status =');
+    const plus = footer.indexOf('<PlusLine />');
     const book = footer.indexOf('testID="write.keep.book"');
     const quiet = footer.indexOf('testID="write.keep.private"');
-    const plus = footer.indexOf('<PlusLine />');
-    expect(book).toBeGreaterThan(-1);
+    expect(plus).toBeGreaterThan(-1);
+    expect(plus).toBeLessThan(book);
     expect(book).toBeLessThan(quiet);
-    expect(quiet).toBeLessThan(plus);
-    // nothing but the Plus line's own wrapper closes the footer after it
-    expect(footer.slice(plus)).toMatch(/^<PlusLine \/>\s*<\/View>\s*\) : null\}\s*<\/View>\s*\);\s*$/);
   });
 
   it('no new words and no new behaviour: the same buttons, labels, press handlers and Plus rule (source)', () => {
@@ -101,19 +99,20 @@ describe('[S1-165] inline, the page follows the last line typed, not the buttons
     expect(write).toMatch(/const onContentSizeChange = \(\) => \{\s*if \(!inlineFooter && followCaretToEnd\(/);
   });
 
-  it('the scroll\'s size change places the page by pageEndOffset, only while inline and only when writing on at the end (source)', () => {
-    const handler = between('const onScrollContentSizeChange =', 'offerAnother');
+  it('the page is placed by pageEndOffset from the footer\'s top, only while inline and only when writing on at the end (source)', () => {
+    const handler = between('const followPageEnd =', 'offerAnother');
     expect(handler).toMatch(/if \(!inlineFooter \|\| !followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) return;/);
-    expect(handler).toMatch(/pageEndOffset\(\{ contentHeight, footerHeight: footerHeight\.current, viewportHeight: viewportHeight\.current \}\)/);
+    expect(handler).toMatch(/pageEndOffset\(\{ footerTop: footerTop\.current, viewportHeight: viewportHeight\.current \}\)/);
     expect(handler).toMatch(/if \(y !== null\) scroll\.current\?\.scrollTo\(\{ y, animated: false \}\);/);
     // never to the very end of the content, which is the buttons
     expect(handler).not.toMatch(/scrollToEnd/);
-    expect(write).toMatch(/<ScrollView[^>]*onContentSizeChange=\{onScrollContentSizeChange\}/);
   });
 
-  it('the viewport and the footer are measured into refs, never state: a layout does not render Write (source)', () => {
-    expect(write).toMatch(/const viewportHeight = useRef\(0\);\s*const footerHeight = useRef\(0\);/);
-    expect(write).toMatch(/viewportHeight\.current = e\.nativeEvent\.layout\.height;/);
-    expect(write).toMatch(/footerHeight\.current = e\.nativeEvent\.layout\.height;/);
+  it('the footer\'s own layout and the viewport\'s layout ask for it, and the measures go into refs, never state (source)', () => {
+    expect(write).toMatch(/const viewportHeight = useRef\(0\);\s*const footerTop = useRef\(0\);/);
+    expect(write).toMatch(/footerTop\.current = e\.nativeEvent\.layout\.y;\s*followPageEnd\(\);/);
+    expect(write).toMatch(/viewportHeight\.current = e\.nativeEvent\.layout\.height;\s*followPageEnd\(\);/);
+    // no ScrollView size-change handler is needed: the footer moves when the field grows
+    expect(write).not.toMatch(/onScrollContentSizeChange/);
   });
 });
