@@ -1041,3 +1041,61 @@ describe('[DATA-REQ-024] Erase everything page: wording, order and the Plus line
     }
   });
 });
+
+describe('[BL-387][F17 6.2 F][DATA-REQ-024] the Erase everything row on Settings home is pinned (Review A on #520: a deleted row left 139 tests green)', () => {
+  const src = (p: string) => readFileSync(join(__dirname, '..', p), 'utf8');
+  const home = () => src('src/app/settings/index.tsx');
+  const rowLabel = 'copy.settings.erase.rowLabel';
+
+  /** The Your letters group: from its section to the next one (Privacy and security). */
+  function lettersGroup() {
+    const s = home();
+    const from = s.indexOf('<ListSection title={h.sections.letters}>');
+    const to = s.indexOf('<ListSection title={h.sections.privacy}>');
+    expect(from, 'the Your letters group is on Settings home').toBeGreaterThan(-1);
+    expect(to, 'Privacy and security follows it').toBeGreaterThan(from);
+    return s.slice(from, to);
+  }
+
+  /** The row element and the text just before and after it. */
+  function eraseRow() {
+    const s = home();
+    expect(s.split(rowLabel), 'one row names the Erase everything label').toHaveLength(2);
+    const at = s.indexOf(rowLabel);
+    const start = s.lastIndexOf('<ListRow', at);
+    const end = s.indexOf('/>', at) + 2;
+    return { element: s.slice(start, end), before: s.slice(0, start), after: s.slice(end) };
+  }
+
+  it('the row is there: the Erase everything label, destructive, testID settings.erase, opening ROUTES.erase', () => {
+    expect(typeof en.settings.erase.rowLabel).toBe('string');
+    expect(en.settings.erase.rowLabel.length).toBeGreaterThan(0);
+    const { element } = eraseRow();
+    expect(element).toMatch(/^<ListRow\s/);
+    expect(element).toContain(`title={${rowLabel}}`);
+    expect(element).toContain('variant="destructive"');
+    expect(element).toContain('testID="settings.erase"');
+    expect(element).toContain('onPress={go(ROUTES.erase)}');
+  });
+
+  it('only a phone that never signed in sees it: the row is the body of localDeletionAllowed() and nothing else', () => {
+    const { before, after } = eraseRow();
+    expect(home()).toMatch(/import \{[^}]*\blocalDeletionAllowed\b[^}]*\} from '@\/lib\/store';/);
+    expect(before.trimEnd().endsWith('{localDeletionAllowed() ? ('), 'the row opens a localDeletionAllowed() branch').toBe(true);
+    expect(after.trimStart().startsWith(') : null}'), 'and shows nothing otherwise').toBe(true);
+  });
+
+  it('it sits inside Your letters (before Privacy and security), after the Storage row', () => {
+    const group = lettersGroup();
+    const erase = group.indexOf(rowLabel);
+    const storage = group.indexOf('onPress={go(ROUTES.storage)}');
+    expect(erase, 'the Erase everything row is in the Your letters group').toBeGreaterThan(-1);
+    expect(storage, 'the Storage row is in the Your letters group').toBeGreaterThan(-1);
+    expect(erase).toBeGreaterThan(storage);
+  });
+
+  it("ROUTES.erase is '/settings/erase' and that screen exists", () => {
+    expect(home()).toMatch(/const ROUTES = \{[^}]*\berase: '\/settings\/erase',[^}]*\} as const;/);
+    expect(existsSync(join(__dirname, '..', 'src/app/settings/erase.tsx')), 'src/app/settings/erase.tsx exists').toBe(true);
+  });
+});
