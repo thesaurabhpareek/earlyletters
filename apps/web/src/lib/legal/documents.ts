@@ -43,10 +43,14 @@ export interface LegalSource {
   body: string;
 }
 
-/** `content/legal` under the web app, whether the process starts in apps/web (next, vitest) or at the repo root. */
+/**
+ * `content/legal` under the web app, whether the process starts in apps/web (next, vitest) or at the repo root.
+ * Nothing sets it from the environment (BL-778): the pins on these bytes run in CI, not in the hosting build, so a
+ * setting made only in the hosting project could swap the text the site serves without any test seeing it.
+ */
 function contentDir(): string {
   const here = join(process.cwd(), 'content', 'legal');
-  return process.env.LEGAL_CONTENT_DIR ?? (existsDir(here) ? here : join(process.cwd(), 'apps', 'web', 'content', 'legal'));
+  return existsDir(here) ? here : join(process.cwd(), 'apps', 'web', 'content', 'legal');
 }
 
 function existsDir(path: string): boolean {

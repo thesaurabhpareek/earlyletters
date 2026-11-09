@@ -8,7 +8,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { legalDocs } from '../src/lib/legal/documents';
+import { legalDocs, readLegalSource } from '../src/lib/legal/documents';
 import { legalRawResponse } from '../src/lib/legal/serve';
 
 const WEB = fileURLToPath(new URL('..', import.meta.url));
@@ -53,5 +53,26 @@ describe('[BL-565] the served 0.9.0 text', () => {
   it('a version that does not exist is not served', () => {
     expect(() => legalRawResponse('terms', '9.9.9')).toThrow();
     expect(() => legalRawResponse('terms', '../0.9.0')).toThrow();
+  });
+});
+
+describe('[BL-778] nothing in the hosting settings can change which text is served', () => {
+  // The sha256 pins above run in CI. The hosting build runs no test, so a setting made only in the hosting project
+  // would swap the served text unseen. The folder the pages read therefore takes no input from the environment.
+  const readsEnvironment = /process\s*(\.\s*env|\[)|import\.meta\.env|\bgetenv\b/;
+
+  it('the files that locate and read the legal texts never read the environment', () => {
+    for (const file of ['documents.ts', 'serve.ts', 'versions.ts']) {
+      expect(readFileSync(join(WEB, 'src/lib/legal', file), 'utf8'), file).not.toMatch(readsEnvironment);
+    }
+  });
+
+  it('the bytes the pages read are the committed files, which are the pinned ones', () => {
+    for (const doc of legalDocs) {
+      const committed = readFileSync(join(WEB, 'content/legal', doc, '0.9.0.md'));
+      const read = readLegalSource(doc, '0.9.0');
+      expect(Buffer.compare(read.raw, committed)).toBe(0);
+      expect(sha256(read.raw)).toBe(PINNED[doc]);
+    }
   });
 });
