@@ -24,7 +24,13 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
   const noteBox = await about.boundingBox();
   expect(noteBox!.y).toBeGreaterThan(versionBox!.y);
   expect(signOffBox!.y).toBeGreaterThan(noteBox!.y);
-  await step('happy', 'Settings', 'Every destination one tap away: Plan, children, spoken language, Your words, reminders, appearance, privacy, export, Recently deleted, Where your letters live, storage, help, If you are struggling, legal, Licenses and version. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
+  // Regroup (settings-ia.md 3, CCO-9): the header card says where the book is kept; the Plan row sits under it.
+  await expect(app.getByTestId('settings.headerCard').getByText('On this phone', { exact: true })).toBeVisible();
+  await expect(app.getByTestId('settings.plan').getByText('Plan', { exact: true })).toBeVisible();
+  await expect(app.getByText('Your letters', { exact: true })).toBeVisible();
+  await expect(app.getByText('Privacy and security', { exact: true })).toBeVisible();
+  await expect(app.getByTestId('settings.appLock')).toBeVisible();
+  await step('happy', 'Settings', 'A header card (the name the parent signs as, and On this phone), then the Plan row right under it (the plan status, or in alpha the alpha note), then five groups: Children; Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock, Privacy); Help and legal (Help, If you are struggling, Legal); then About. No Account or Delete account rows with server features off. The short privacy line is on Privacy now, and the early-version note is About\'s footer, word for word, with no heading of its own, so About says "early" once; then the sign-off "Made with care in California". On web there is no installed build number, so Version shows the version alone.');
 
   await app.getByText('Privacy', { exact: true }).first().click();
   // CPrivO-5: the promise word for word at the top, no icons; facts, then what you can do, then the documents.
@@ -44,14 +50,21 @@ test('[J16] settings: home, privacy, appearance, help, licenses, about', async (
 
   // S40: a row that pushes its own page, never an accordion inside the list.
   await app.getByText('If you are struggling', { exact: true }).click();
-  await expect(app.getByText('The early months can be very hard.', { exact: false })).toBeVisible();
-  await expect(app.getByRole('link', { name: /National Maternal Mental Health Hotline/ })).toBeVisible();
-  await expect(app.getByRole('link', { name: /988 Lifeline/ })).toBeVisible();
-  await expect(app.getByRole('link', { name: /Postpartum Support International/ })).toBeVisible();
-  await expect(app.getByText('If you or your baby are in danger right now, call 911.')).toBeVisible();
-  await step('happy', 'If you are struggling', 'Always available, never behind a flag, one tap from Settings: its own page with the three free, confidential lines (each row starts a call) and the 911 line, word for word. No drawing, no light, no motion.');
+  await expect(app.getByText('The early months ask a lot of anyone.', { exact: false })).toBeVisible();
+  await expect(app.getByText('Are you or your baby in danger right now?', { exact: true })).toBeVisible();
+  await expect(app.getByText('Lines in other countries', { exact: true })).toBeVisible();
+  await expect(app.getByText('Nothing on this page is recorded or sent.', { exact: true })).toBeVisible();
+  await step('happy', 'If you are struggling', 'Always available, never behind a flag, one tap from Settings: its own page with the emergency line first, then the lines for the phone\'s own region, each with Call and Text (a region with no lines held shows "Call your local emergency number." and Find a free helpline near you), then Lines in other countries and "Nothing on this page is recorded or sent." No drawing, no light, no motion.');
+  await app.getByText('Lines in other countries', { exact: true }).click();
+  await expect(app.getByText('United Kingdom', { exact: true })).toBeVisible();
+  await expect(app.getByText('Find a free helpline near you', { exact: true })).toBeVisible();
+  await step('happy', 'Lines in other countries', 'Every region held (United States, Canada, United Kingdom, Australia, New Zealand, India), each with its emergency number and its lines, then the directory.');
+  await app.goBack();
   await app.goBack();
 
+  // Licenses sits on the Legal page with the Terms and the Privacy Policy (settings-ia.md 3).
+  await app.getByText('Legal', { exact: true }).click();
+  await expect(app.getByText('Terms of Service', { exact: true })).toBeVisible();
   await app.getByText('Licenses', { exact: true }).click();
   await expect(app.getByText('This app is built with the help of open work by many people. Thank you.')).toBeVisible();
   await expect(app.getByText('Language data', { exact: true })).toBeVisible();
@@ -64,11 +77,13 @@ test('[J16b] settings with server features on, signed out: Account, and no Delet
   await app.goto(`${process.env.E2E_WEB_ON_URL}/?seed=asha`);
   await expect(app.locator('body')).not.toBeEmpty();
   await app.goto(`${process.env.E2E_WEB_ON_URL}/settings?seed=asha`);
-  await expect(btn(app, /^Account/)).toBeVisible();
+  // The header card opens Account with sign-in in the build, and a Plan row sits right under it (CCO-9).
+  await expect(app.getByTestId('settings.headerCard').getByText('Not signed in', { exact: true })).toBeVisible();
+  await expect(app.getByTestId('settings.plan')).toBeVisible();
   // Signed out there is no account here to delete, so the row waits for sign-in (#358 review; settings-home.test.ts
   // runs the row's condition for signed in, signed out and server features off).
   await expect(btn(app, /^Delete account/)).toHaveCount(0);
   await expect(app.getByTestId('settings.about.beta').getByText(EARLY_BODY)).toBeVisible();
   await expect(app.getByText(EARLY, { exact: true })).toHaveCount(0);
-  await step('happy', 'Settings, server features on', 'With sign-in in the build, Account sits at the top of the first section (S40). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
+  await step('happy', 'Settings, server features on', 'With sign-in in the build, the header card says Not signed in and opens Account, with the Plan row right under it, as in every build (CCO-9). Delete account, in its own section above Help, shows only once the person is signed in, so it is not here while signed out. The early-version note is still only under About.');
 });

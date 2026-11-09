@@ -686,6 +686,19 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Record:** S1-97b rows (a) to (d) with the build number, phone and iOS version; for (a) the percent when you stopped it and the percent shown a few seconds after you started it again; if you tried it with a recording waiting, the row after you leave the app and come back (it can be back on "Getting ready, n%" with Stop); screenshots with Asha only.
 - **Update:** If (a) starts again from 0 after the percent had passed 3%: `apps/mobile/src/lib/packs/engine.ts` `cancel` and `download` (the `.part` file in staging). If a stopped download starts again by itself with no recording waiting: `lib/transcription-queue/index.ts` `refreshReady`. `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 9 where a result differs.
 
+### S1-150 If you are struggling, by the phone's region: emergency first, Call and Text, other countries (struggling-page.md 2 and 3; CCO-11; F20-REQ-005; branch feat/mobile-struggling-region)
+- **Needs:** a TestFlight build with this branch on an iPhone with a SIM; an iPad (or an iPhone with no SIM) for (e); VoiceOver and AX5 for (f). Do not complete a call or a text to any helpline: back out of Phone or Messages before it dials or sends.
+- **Steps:** (a) iOS Settings, General, Language and Region, Region: United States. Open the app, Settings > If you are struggling. Read it top to bottom. Tap Call on the first line, then back out of Phone; tap Text, then back out of Messages. Tap Call 911 and back out before it dials. (b) Set Region to United Kingdom, then Australia, then India, then Ireland (leave the language as it is); open the page each time. (c) Set Region to Germany; open the page; tap Find a free helpline near you, then close the browser. (d) On the page, tap Lines in other countries and scroll to the end. (e) On the iPad or the no-SIM phone, tap Call on a line, then Copy number; tap Text on a line. (f) VoiceOver on, at AX5: swipe through the page from the top, and through Lines in other countries.
+- **Expected:**
+  - (a) Order: the line "The early months ask a lot of anyone...", the "Are you or your baby in danger right now?" card with Call 911, then National Maternal Mental Health Hotline, 988 Lifeline, Postpartum Support International, each with its words and Call and Text, then Lines in other countries, then "Nothing on this page is recorded or sent." Call opens Phone with the number shown and never dials by itself; Text opens Messages with the number in the To field and nothing sent.
+  - (b) Each region shows its own emergency button (Call 999, Call 000, Call 112) and only its own lines (Samaritans; Lifeline and PANDA National Helpline). India shows Call 112 and Find a free helpline near you, with no line (Tele-MANAS is held until a current official source is read). Ireland (like Germany) shows "Call your local emergency number." with no button and Find a free helpline near you (its lines are held). No US line shows.
+  - (c) Germany: "Call your local emergency number." with no button, then Find a free helpline near you, which opens findahelpline.com in the in-app browser.
+  - (d) All six countries (United States, Canada, United Kingdom, Australia, New Zealand, India) with their emergency number and lines (India: its emergency number only, for now), then Find a free helpline near you.
+  - (e) Call shows the sheet with the number and Copy number; once copied it says "Number copied". Text either opens Messages or shows the same sheet titled "Text from a phone"; a tap never does nothing.
+  - (f) Each line reads its name (heading), its words, then "Call {name}" and "Text {name}" as buttons, with a hint. At AX5 the Call and Text buttons stack, and no line is cut off.
+- **Record:** S1-150 rows (a) to (f): phone, iOS version, build number, the Region set for each; screenshots of (a), (b) and (c). If a region shows another region's lines, note the Region and the phone's language.
+- **Update:** If the region read is wrong: `apps/mobile/src/components/settings/phone-region.ts` (AppleLocale, then Intl) and `struggling.logic.ts` `regionFromLocale`. If a number or its words are wrong: `packages/content/src/helplines.ts`, with the source page, its `readOn` (and `datedOn` if the page states a date) and a new `verifiedOn`.
+
 ### S1-141 The early-version note in the store build (BL-607; D-060, D-030; branch test/mobile-bl607-store-early-note)
 - **Needs:** a build of the `production` profile and a TestFlight build of the `testflight` profile, each with Asha's book.
 - **Steps:** (a) In each build: Settings, scroll to About; read the version row and the note under it. (b) Larger Text at AX5 in the production build: the same. (c) VoiceOver on: swipe from the version row to the sign-off.
@@ -695,6 +708,19 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) VoiceOver reads the version row, then the note as one element, then the sign-off.
   - If the founder has amended D-060 for the store build before this row is run, stop and record "superseded".
 - **Record:** S1-141 rows (a) to (c): phone, iOS version, build number and profile; one screenshot of About per build, with Asha only.
+
+### S1-152 "Another thought" on Write (engagement.md section 3, Option A; BL-E1; branch feat/mobile-write-another-thought)
+- **Needs:** a TestFlight build with this branch; Asha's book with at least one letter; VoiceOver, AX5 and Reduce Motion for (e) and (f).
+- **Steps:** (a) Tonight: note the prompt, tap Type. On Write, tap Another thought five times, slowly. (b) Type one word. Delete it. Tap Another thought once more, then type a short letter and Add to Asha's book. Open the letter in the Book. (c) Keep tapping Another thought on a new Write (about 30 times). (d) From Review, open Type for a recording whose words could not be written down (or open a typed draft from Tonight's draft card). (e) VoiceOver on: swipe from the top of Write, double-tap Another thought, then double-tap again without moving. (f) Reduce Motion on, then AX5: tap Another thought.
+- **Expected:**
+  - (a) The keyboard stays up and the cursor stays in the field. Each tap: one light tap haptic, the old line fades out and a new one fades in where it stood, and the field slides down or up with the new height instead of jumping. Never the same line twice in a row; no count or "no more" anywhere.
+  - (b) At the first character Another thought fades out but its space stays (the field does not move); when the word is deleted it fades back. The kept letter's question (if the letter page shows one) is the one on screen when the words were typed, not the one Write opened with.
+  - (c) No line comes back until many different ones have shown; it never stops offering one.
+  - (d) No Another thought: a letter already under way keeps its question.
+  - (e) Order: dateline, prompt, Another thought, the page. The new line is read once; focus stays on Another thought, so a second double-tap swaps again.
+  - (f) Reduce Motion: the line swaps at once with no slide. AX5: the button wraps under the prompt, its label is never cut, and it is at least 44 pt tall.
+- **Record:** S1-152 rows (a) to (f): phone, iOS version, build number, text size; a screen recording of (a) and (b) with Asha only.
+- **Update:** `apps/mobile/src/app/write.tsx` (the swap, the fade, the space kept) and `components/tonight/prompt.logic.ts` `anotherThought` (the draw).
 
 ### S1-111 Plus lines, F5 (founder decision F5, 1 Nov 2026; PL-3, PL-4, PL-5, PL-8; branch feat/billing-f5-lines)
 - **Needs:** (a) a TestFlight build of the `testflight` or `preview` profile on a fresh install; (b) to (d) a build of the `production` profile on a fresh install, with a sandbox Apple Account for (c) and (d).
@@ -763,6 +789,19 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) The export finishes with no connection, with the same `waiting/` files.
   - A letter let go before the export is not in it.
 - **Record:** S1-110 rows (a) to (c): phone, iOS version, build number and profile; the list of files under `waiting/`; the shasum line for one recording; screenshots with Asha only.
+
+### S1-95 Settings home, regrouped: header card, the Plan row and five groups (settings-ia.md 3; CDesO-1, CCO-9; branch feat/mobile-settings-regroup)
+- **Needs:** a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book set up as Mama; the production-profile build of build 12 for (f); any phone; Larger Text at AX5 and VoiceOver.
+- **Steps:** (a) Open Settings. Read the card at the top, the row under it, then each group heading and its rows top to bottom. (b) Tap the card, then tap Plan. (c) Go back, tap Legal, then each of its three rows. (d) At AX5, read the card and every row. (e) With VoiceOver, swipe from the card to the last line. (f) On the production-profile build, read the Plan row with Plus off, then follow "Settings, Plan, Manage subscription" as the Subscription Terms write it.
+- **Expected:**
+  - (a) The card reads "Mama", then "On this phone", with no chevron and no plan word. Directly under it, a row labelled "Plan" with "Plus is not part of this test. Every letter is free while you test." Then: Children (Asha, Add a child); Writing (Spoken language, Your words, Reminders, Appearance); Your letters (Where your letters live, Export your book, Recently deleted, Storage); Privacy and security (App lock with On or Off, then Privacy); Help and legal (Help, If you are struggling, Legal); About (version, the early-version note, the sign-off). No Account or Delete account rows, and no "Private by default" line on home.
+  - (b) Tapping the card does nothing. Plan opens in one tap (CCO-9, "Settings, Plan").
+  - (c) Legal lists Terms of Service, Privacy Policy and Licenses. The two documents open in the in-app browser; Licenses opens its own page.
+  - (d) Nothing truncates; the card grows and its lines stack.
+  - (e) The card is one element, read as the name and "On this phone", not as a button; Plan is read as a button with its value; each group heading is a heading.
+  - (f) The Plan row reads "Plan", value "Free", and "Your first two letters are free. Plus lets you keep adding letters." Settings, Plan, Manage subscription reaches Apple's subscription page in the steps the Subscription Terms write.
+- **Record:** S1-95 rows (a) to (f) with the build number, profile, phone, iOS version and text size; screenshots with Asha only.
+- **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 6 where a result differs.
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).

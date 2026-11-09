@@ -1203,21 +1203,32 @@ export const en = {
     versionLabel: "Version",
   },
 
-  // Settings home (PRD C, C-REQ-016). Rows, in order: Account, Language, Plus, Reminders, Export your
-  // book, Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, version.
+  // Settings home (PRD C, C-REQ-016; regrouped 8 Nov 2026 per proposals/account-security settings-ia.md 3, CDesO-1,
+  // CCO-9; settings-ia.md 3 [F] read literally, CTO ruling 8 Nov 2026): a header card (the name and "On this phone",
+  // or the sign-in line; it opens Account with sign-in and nothing without), then the Plan row under it in every build
+  // (the "Settings, Plan" path the Terms and Subscription Terms name), then Children, Writing, Your letters, Privacy
+  // and security, Help and legal, About. Words from account-security/content.md 4.6. Removed with the regroup:
+  // settingsHome.sections.account ("Account") and sections.data ("Your data"), no longer read.
   settingsHome: {
     sections: {
-      account: "Account",
       writing: "Writing",
       plus: "Plus",
-      data: "Your data",
-      privacy: "Privacy and space",
+      letters: "Your letters",
+      privacy: "Privacy and security",
       help: "Help and legal",
       about: "About",
     },
+    // Header card (content 4.6). Build without sign-in: "On this phone"; signed in or out lines reuse
+    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; with sign-in its hint says it
+    // opens Account. Without sign-in the card opens nothing: the Plan row under it is the one way to Plan.
+    cardOnPhone: "On this phone",
+    cardHint: {
+      account: "Opens Account.",
+    },
+    legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
-    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your data); Your words
+    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your letters); Your words
     // replaces the Word for word switch (Writing).
     whereLive: "Where your letters live",
     yourWords: "Your words",
@@ -1298,38 +1309,36 @@ export const en = {
     footer: "Either way, we never rewrite your words.",
   },
 
-  // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
-  // on mchb.hrsa.gov, 988lifeline.org and postpartum.net. Clinician and counsel to review the wording.
-  // Scope (D-087): the app ships in the US storefront only (LEGAL-REQ-058), so the list says it is for the
-  // United States and nothing picks lines by region. FOUNDER TASK (FT-36): before submit, check primary
-  // sources (988lifeline.org, postpartum.net) including the 988 language options. Only after that check
-  // may the 988 line below say "Press 2 for Spanish, or say your language to reach an interpreter."
-  // Do NOT add that sentence on the strength of search snippets.
+  // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
+  // flag. The lines are picked by the phone's own region (struggling-page.md section 2; CCO-11): helplines.ts holds
+  // them for US, CA, GB, IE, AU, NZ and IN, each with the official pages it rests on and the day they were read, and
+  // helplines.test.ts fails when a reading passes 90 days (`helplinesDueOn()`). Any other region gets the general
+  // emergency words and Find A Helpline. This replaces D-087's "keep the US list with a clear scope line"; the
+  // amendment is the founder's (see PR #675). FT-36: the 988 line says "Press 2 for Spanish", read on
+  // 988lifeline.org/get-help on 8 Nov 2026; interpreters are not described there, so they stay out. Clinician
+  // (BL-105) and counsel (Q25) review the wording and the non-US lines before a public release. The words below are
+  // pinned exactly in test/helplines.test.ts, so none changes unnoticed.
   struggling: {
     title: "If you are struggling",
-    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential. They are for people in the United States.",
-    resources: [
-      {
-        name: "National Maternal Mental Health Hotline",
-        how: "Call or text 1-833-852-6262, any time, in English or Spanish.",
-        tel: "18338526262",
-      },
-      {
-        name: "988 Lifeline",
-        how: "Call or text 988, any time.",
-        tel: "988",
-      },
-      {
-        name: "Postpartum Support International",
-        how: "Call 1-800-944-4773 and a trained volunteer calls you back.",
-        tel: "18009444773",
-      },
-    ],
-    emergency: "If you or your baby are in danger right now, call 911.",
+    // struggling-page.md section 4 working copy; the lines themselves live in helplines.ts with their sources.
+    body: "The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",
+    emergencyTitle: "Are you or your baby in danger right now?",
+    emergencyCall: "Call {n}",
+    emergencyLocal: "Call your local emergency number.",
+    call: "Call",
+    text: "Text",
+    callA11y: "Call {name}",
+    textA11y: "Text {name}",
+    directory: "Find a free helpline near you",
+    directoryBody: "A directory of verified lines in many countries.",
+    otherCountries: "Lines in other countries",
+    otherCountriesBody: "If you are travelling, or your phone is set to somewhere you are not.",
+    emergencyIn: "Emergency: {n}",
+    privacy: "Nothing on this page is recorded or sent.",
   },
 
   // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
-  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  // `struggling.*` is founder-owned (FT-36); these words are about the tap, not the lines.
   helpLinks: {
     // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
     callHint: "Starts a call.",
@@ -1337,6 +1346,11 @@ export const en = {
     // When this device cannot call: the number to copy.
     noCallTitle: "Call from a phone",
     noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    // When this device cannot send a text: the number to copy.
+    noTextTitle: "Text from a phone",
+    noTextBody: "Messages did not open on this device. Copy the number and use it on a phone.",
+    textHint: "Opens Messages, or shows the number to copy.",
+    webHint: "Opens the directory in a browser.",
     copyNumber: "Copy number",
     numberCopied: "Number copied",
     // When Mail cannot open: our address to copy.
