@@ -44,8 +44,9 @@ export function fill(text: string, values: Record<string, string | number> = {})
   if (typeof child !== 'string' || child.trim()) return renderTemplate(text, values);
   const label = childLabel(child);
   const out = renderTemplate(text, { ...values, child: label });
-  // A string that opens with {child} ("{child}'s book") starts with a capital when the words stand in for the name.
-  return out.startsWith(label) ? out.charAt(0).toUpperCase() + out.slice(1) : out;
+  // A template that opens with {child} ("{child}'s book") starts with a capital when the words stand in for the name.
+  // Only the template decides: text that merely begins with the same words is left as written.
+  return text.startsWith('{child}') ? out.charAt(0).toUpperCase() + out.slice(1) : out;
 }
 
 /** English plural choice for counted strings until packages/content has plural forms (TDD 09 7.2 item 2). */

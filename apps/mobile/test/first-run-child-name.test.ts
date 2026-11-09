@@ -31,6 +31,16 @@ describe('[NX-31-R3] first run, name optional, date required', () => {
     expect(fill(copy.notifications.birthday.title, { child: '' })).toBe('Happy birthday to your child');
   });
 
+  it('[NX-31-R3] a template that opens with the words your child is not capitalised', () => {
+    expect(fill('your child is welcome here, {child}.', { child: '' })).toBe('your child is welcome here, your child.');
+    expect(fill('your child, {child}', { child: 'Asha' })).toBe('your child, Asha');
+  });
+
+  it('[NX-31-R3] a typed name that is literally "your child" is left exactly as typed', () => {
+    expect(fill("{child}'s book", { child: 'your child' })).toBe("your child's book");
+    expect(fill('A letter for {child}', { child: 'your child' })).toBe('A letter for your child');
+  });
+
   it('[NX-31-R3] a name and no date: Continue waits and the reason line shows', () => {
     const reason = firstRunChildBlock({ names: ['Asha'], expecting: false, birthday: null, dueDate: null, today });
     expect(reason).toContain('Asha');

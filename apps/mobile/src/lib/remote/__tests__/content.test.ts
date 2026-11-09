@@ -37,7 +37,7 @@ describe('prompts', () => {
     const r = promptLibrary(ctx(v2), PROMPTS);
     expect(r.source).toBe('packaged');
     // A book before the birth therefore still has its set, and no age-band prompt stands in for it.
-    expect(r.prompts.filter((p) => p.band === 'before').map((p) => p.key)).toEqual(PROMPTS.filter((p) => p.band === 'before').map((p) => p.key));
+    expect(r.prompts.filter((p) => p.band === 'before').map((p) => p.key)).toEqual(PROMPTS.filter((p) => p.band === 'before' && !p.retired).map((p) => p.key));
     // The same bundle with the `before` blocks is used.
     expect(promptLibrary(ctx(bundle(promptBlocks)), PROMPTS).source).toBe('server');
   });
