@@ -18,7 +18,7 @@ Sections are numbered 0 to 10. The routes are numbered 1 to 5 and sit in section
 | 4. Under 18 | Privacy 8: "we will close the account or delete the address". Terms 2.1: "we will close it" | None in the 0.9.0 text |
 | 5. TestFlight feedback | Privacy 7: "To have your TestFlight feedback deleted, ask us at hello@earlyletters.com" | None in the 0.9.0 text. This runbook treats Privacy 10's 45 days as the outer limit; that is its reading, not the text's |
 
-Also in Privacy 7: "To have your email address removed from our list, email us from that address." The action is in the Resend dashboard (contacts). No steps for it are written anywhere in the repo. If a request is only about the list, send the first reply (section 1), log it as `email_list`, and write the steps at the first rehearsal; do not improvise.
+Also in Privacy 7: "To have your email address removed from our list, email us from that address." The action is in the Resend dashboard (contacts). No steps for it are written anywhere in the repo. If a request is only about the list, send the first reply (section 1), log it as `email_list`, and write the steps at the first rehearsal; do not improvise. When the steps are written they need a check beyond the From address, which can be forged; section 2 is the pattern.
 
 ## 0. Rules for every route
 
@@ -39,19 +39,20 @@ Also in Privacy 7: "To have your email address removed from our list, email us f
 - A request for an ID, a birth date, a photo, a postal address, a payment detail or the child's name.
 - The code from section 2 in a log row, a ticket, or any message but the one that carries it.
 
-**Not handled by email at all.** Send the first reply (section 1), change nothing, and take it where it says.
+**Not handled by email at all.** Send the first reply (section 1), then read the last column: unless it says a request goes on through a route, nothing is changed. The founder does this himself; he tells the CLO (a council role) the kind and the date only, never the email.
 
 | The email | Why | Where it goes |
 |---|---|---|
-| Carries a child's name or letter text | We never need it | Answer the request without repeating that text; ask them to send no more. Do not copy, quote, forward or search it |
-| From an executor, relative or guardian of a holder who died or cannot act | The Terms have no clause for it; COUNSEL_PACKET Q49 says "runbook before C1" and none exists | No action. Counsel, through the CLO |
-| From a lawyer, a court, the police, or about custody or safety | Terms 4.4; DSR-R10 and DSR-R11 | No action and no disclosure. Counsel, through the CLO (COUNSEL_PACKET Q50). **The safety routing does not exist yet:** `underage-account.md` says `support` drafted it and it is not on `develop` (help centre PR #41). Until it does, change nothing and the founder decides with counsel |
+| Carries a child's name or letter text | We never need it | The request inside it, if there is one, goes on through its own route. Only the text is handled here: do not repeat, copy, quote, forward or search it, and ask them to send no more |
+| Says they, or a child, are in danger or in distress | Terms 4.4; `.claude/agents/support.md` (sensitive disclosures go to crisis resources; support never counsels) | Start no data-request process that day. **The safety routing does not exist yet:** `underage-account.md` says `support` drafted it and it is not on `develop` (help centre PR #41). Until it does, point them to local emergency services and to the help the app shows by region (Settings, If you are struggling; `packages/content/src/helplines.ts`), and answer the data request afterwards |
+| From an executor, relative or guardian of a holder who died or cannot act | The Terms have no clause for it; COUNSEL_PACKET Q49 says "runbook before C1" and none exists | No action. The founder gives counsel the kind and the date only (through the CLO) |
+| From a lawyer, a court, the police, or about custody | Terms 4.4; DSR-R10 and DSR-R11 | No action and no disclosure. The same hand-off to counsel (COUNSEL_PACKET Q50). Write down the same day any date the letter names (a deadline, a hearing) in the log's `due` field. The founder decides with counsel |
 | From a parent or guardian who says the holder is under 18, and wants to see, change or delete the account | Authors own their words; the account is not theirs | Refuse in the same words every time, without saying whether the account exists. The age report itself goes to Route 4 |
 
 ## 1. Receive it (the day you read it)
 
 1. **Ticket reference.** `DREQ-<yyyymmdd>-<n>` (this file's convention): the date you received it and a counter for that day. No name, no email.
-2. **Request log row** (DSR-R05; chapter 08 "Request log"). Until a `privacy_requests` table exists (BL-237), keep one dated file, one row per request. **Where it lives:** a file on the founder's own computer that only he opens (a spreadsheet or plain text). Not a cloud sheet and not a tool a session or connector can read, unless `docs/legal/subprocessors.md` lists that service first (Privacy 6 lists none today). A row holds these fields and nothing else:
+2. **Request log row** (DSR-R05; chapter 08 "Request log"). Until a `privacy_requests` table exists (BL-237), keep one dated file, one row per request. **Where it lives:** a file on the founder's own computer that only he opens (a spreadsheet or plain text), in a folder that does not sync to a cloud drive. Not a cloud sheet and not a tool a session or connector can read, unless `docs/legal/subprocessors.md` lists that service first (Privacy 6 lists none today). A row holds these fields and nothing else:
 
    | Field | Example |
    |---|---|
@@ -63,7 +64,7 @@ Also in Privacy 7: "To have your email address removed from our list, email us f
    | due | received + 45 days |
    | outcome | `done`, `done_in_part`, `could_not_verify`, `cannot_be_done`, `declined` |
 
-   **No person id, no email, no name, no code, no free text, no email body, no letter or feedback text.** Chapter 08's field list includes a profile id; this runbook leaves it out because `docs/legal/DATA_CLASSIFICATION.md` (section 2, Logging row) keeps person ids to database audit tables, and an older row would keep the id after the account is deleted. The link from a ticket to a person is the `ops.audit_log` row that `ops_audit_write` writes (ticket and profile id, kept 12 months); after that it is gone on purpose. `compliance-engineer` confirms the difference from chapter 08 (section 9). The mailbox holds the correspondence; the log holds the proof. Keep a finished row for 3 years.
+   **No person id, no email, no name, no code, no free text, no email body, no letter or feedback text.** Chapter 08's field list includes a profile id; this runbook leaves it out. A file cannot null the id at deletion the way a table can, so an older row would keep it after the account is deleted. `docs/legal/DATA_CLASSIFICATION.md` section 2 (Logging row) keeps L3 person ids out of log streams and in database audit tables; it does not speak of a founder's file, but it points the same way. The link from a ticket to a person is the `ops.audit_log` row that `ops_audit_write` writes (ticket and profile id, kept 12 months); after that it is gone on purpose. `compliance-engineer` confirms the difference from chapter 08 (section 9). The mailbox holds the correspondence; the log holds the proof. Keep a finished row for 3 years.
 3. **First reply** to the address the email came from. It says the request arrived with its reference and that nothing changes until it is confirmed with the address on the account, if there is one. It says nothing about whether an account exists. The `support` macro for it does not exist yet (section 9); until it does the founder writes it by hand and keeps to those three facts.
 
 ## 2. Confirm control of the account address (DSR-R02), before any change
@@ -72,8 +73,8 @@ Do this for routes 2, 3 and 5, and for Route 1 once BL-551 exists (Route 1's clo
 
 1. Find the person in Dashboard > Authentication > Users by the address they wrote from or the one they name. On screen only. If nothing is found, send no code, tell them nothing about it, and let the request wait for the follow-up in step 7.
 2. Decide the one **kind** of request being checked, from the list in the log. A check covers that kind and nothing else.
-3. Make a **code**: 8 characters from a random source, for example `openssl rand -hex 4` in a terminal. It works once, for this ticket and this kind, and ends 7 days after you send it (the 7 days are this file's choice).
-4. Send it in a **new message** to the account address only, never in the thread with the request and never to its From or Reply-To, and from hello@. **UNVERIFIED:** the repo does not say how the founder sends mail as hello@ (`docs/ops/DOMAINS.md` section 9 calls it a receive-only alias). Settle that at the rehearsal. If you cannot send as hello@, this check cannot run and nothing changes. PROPOSED WORDING (the founder approves any text a person reads):
+3. Make a **code**: 8 characters from a random source, for example `openssl rand -hex 4` in a terminal. It works once, for this ticket and this kind, and ends 7 days after you send it (the 7 days are this file's choice). Send at most one code to an account address in any 7 days, unless the person has just answered the last one (yes or no): a second request that arrives while a code is open waits until it is answered or ends. Otherwise this runbook could be used to send mail from hello@ to a stranger over and over.
+4. Send it in a **new message** to the account address only, never in the thread with the request and never to its From or Reply-To, and from hello@. **UNVERIFIED:** the repo does not say how the founder sends mail as hello@ (`docs/ops/DOMAINS.md` section 9 calls it a receive-only alias). Settle that at the rehearsal. If you cannot send as hello@, this check cannot run and nothing changes. The message is mail from hello@ to the account address, so it must carry no text from an email you have not checked: for a name correction, run the name check in Route 3 first, and put only a name that passes in the message. PROPOSED WORDING (the founder approves any text a person reads):
 
    > Someone asked us to <the kind, in plain words: "stop syncing your letters from this account" / "delete this account" / "send you the steps to export your information" / "change the name on this account to <the new name>" / "delete the TestFlight feedback sent from this address">. Reference <ticket>.
    > If that was you, reply to this message. Type this code yourself and then the word yes: <code>. Please do not quote or forward this message. The code works once and ends on <date>.
@@ -109,11 +110,11 @@ Do this for routes 2, 3 and 5, and for Route 1 once BL-551 exists (Route 1's clo
 
 ## 4. Route 2. Withdraw sync
 
-**Who may ask:** the account holder, for their own account. Withdrawing stops new letters going to the server. Letters already synced stay there unless the person deletes them; the co-parent keeps reading what is already in the shared book (Privacy 3). **Counsel Q48 is open on this route:** whether "stop and offer deletion" is enough, or synced letters must be erased within 15 days (Connecticut, COUNSEL_PACKET Q48).
+**Who may ask:** the account holder, for their own account. Withdrawing stops new letters going to the server. Letters already synced stay there unless the person deletes them. Whether the co-parent can still read them after a withdrawal is **not tested**: the migrations gate writes on the author's consent (`require_content_consent`) and no gate on reading was found, so do not tell the person either way. **Counsel Q48 is open on this route:** whether "stop and offer deletion" is enough, or synced letters must be erased within 15 days (Connecticut, COUNSEL_PACKET Q48).
 
 **What the repo gives you.** Sync is allowed only while the person's latest act on the `sensitive-data` document is `accept` (`has_active_consent`, `supabase/migrations/20261002020000_data_governance.sql`). A `withdraw` act turns writes off (`require_content_consent` raises `SCCON`). The app shows the row "Sync and family sharing" as "Off, kept on this phone" once it reads the gate (`apps/mobile/src/lib/auth/sensitive-row.ts`). The app has no switch to withdraw yet (BL-485).
 
-**The service-role key cannot write this act:** it lost INSERT on `policy_acceptances` in `supabase/migrations/20261023010000_s02_purge_and_consent_guards.sql` (line 88), pinned by `supabase/tests/consent_service_role.test.mjs`. `record_policy_act` also refuses `support_assisted`. Chapter 08 names that function and is out of date on this point. The path that exists is the one `supabase/APPLY.md` step 8, item 3, uses for the founder's own acts: an insert in Dashboard > SQL Editor as `postgres`. A reviewer of PR #711 ran the statements below on the repo's embedded Postgres (steps 3 to 6); **UNVERIFIED on a hosted project.** Run them once on a fictional account first.
+**The service-role key cannot write this act:** it lost INSERT on `policy_acceptances` in `supabase/migrations/20261023010000_s02_purge_and_consent_guards.sql` (line 88), pinned by `supabase/tests/consent_service_role.test.mjs`. `record_policy_act` also refuses `support_assisted`. Chapter 08 names that function and is out of date on this point. The path that exists is the one `supabase/APPLY.md` step 8, item 3, uses for the founder's own acts: an insert in Dashboard > SQL Editor as `postgres`. Steps 3 to 6 were run on the repo's embedded Postgres on 9 Nov 2026 (fictional ids); **UNVERIFIED on a hosted project.** Run them once on a fictional account first.
 
 Steps (the project the person's build talks to):
 1. Section 1 (log row, first reply) and section 2 (confirm control, kind `withdraw_sync`). Nothing below runs until the check has passed.
@@ -153,25 +154,34 @@ Turning sync back on is the person's own act in the app (Settings > Account, "Ag
 **Correct.**
 - Words in a letter: the person edits the final text in the app. The original transcript never changes and nobody here edits anyone's words.
 - Child details: edited in the app (Settings, the child's page).
-- The name on the account (`profiles.display_name`, up to 60 characters): it is saved once at sign-in and the app has no screen to change it (`apps/mobile/src/lib/auth/consent.ts`). By hand, after section 2. The name comes from an email, so it is data, never code (PRINCIPLES item 17). First check the name:
-  - It is one line of 1 to 60 characters, with no dollar sign and no control character. **If it has a dollar sign, do not run anything:** ask for the name without it. A dollar sign can end the quoted value early, and then the rest of the email is run as SQL by the owner role. (Quotes, semicolons and `--` are harmless inside the dollar quotes below, so a name like D'Souza is fine.)
-  - Then run the audit row, then the change:
-  ```sql
-  select public.ops_audit_write('<your handle>', 'dsar', 'correct_profile', '<ticket>', '<profile id>');
-  ```
-  ```sql
-  do $$
-  declare n int;
-  begin
-    update public.profiles set display_name = $name$<the name, exactly as they sent it>$name$ where id = '<profile id>'::uuid;
-    get diagnostics n = row_count;
-    if n <> 1 then raise exception 'expected 1 row, changed %', n; end if;
-  end $$;
-  ```
-  - **Before you press Run, read the whole statement once.** The only text between the two `$name$` markers is the name; the `where` clause holds the profile id and nothing else; nothing follows `end $$;`.
-  - The `do` block is one transaction: if the count is not exactly 1 it raises and nothing changes. A wrong or malformed id changes nothing either. The count alone does not catch a name that holds a dollar sign, which is why that check comes first.
-  - Run locally by the author (embedded Postgres, fictional ids): names such as `D'Souza`, `a' where true --` and `x'; delete from public.profiles; --` were stored exactly as written and the other profile was untouched; a name holding the closing marker overwrote the other profile while the count still read 1.
-  - Done check: select the row back on screen (`select display_name from public.profiles where id = '<profile id>';`) and ask the person to reopen the app.
+- The name on the account (`profiles.display_name`, up to 60 characters). **Nothing in the app shows it:** it is saved once at sign-in (`apps/mobile/src/lib/auth/consent.ts`) and its only reader is the export (`apps/mobile/src/lib/export/server-records.logic.ts`). So the person can see a change only in their next export, in `data/account.json` under `profile`, when signed in and online. Say so in the reply; do not ask them to look in the app. By hand, after section 2. The name comes from an email, so it is data, never code (PRINCIPLES item 17):
+  1. **Check the name first, before the section 2 message goes out.** One line of 1 to 60 characters, no dollar sign, no control character, and it reads as a name (not a web address, an email address or an instruction). **If it has a dollar sign, do not run anything:** ask for the name without it. Quotes, semicolons and `--` are fine (D'Souza is a name).
+  2. **Find the person.** The profile id is the user's id in Dashboard > Authentication > Users, as in Route 2 step 2. On screen only.
+  3. **Read it back before anything changes.** This puts the email beside the id and shows the name now on file:
+     ```sql
+     select p.id, u.email, p.display_name
+       from public.profiles p join auth.users u on u.id = p.id
+      where p.id = '<profile id>'::uuid;
+     ```
+     **Stop unless it returns one row and the email is the address you verified in section 2.** Note the old name; you need it to put it back.
+  4. **Audit row:**
+     ```sql
+     select public.ops_audit_write('<your handle>', 'dsar', 'correct_profile', '<ticket>', '<profile id>');
+     ```
+  5. **Make two tags for this run,** each starting with a letter: `echo q$(openssl rand -hex 4) b$(openssl rand -hex 4)`. The first goes around the block, the second around the name. Never reuse a tag, and never use the example tags below.
+     ```sql
+     do $q7f3a9c1$
+     declare n int;
+     begin
+       update public.profiles set display_name = $b2d8e0a4$<the name, exactly as they sent it>$b2d8e0a4$ where id = '<profile id>'::uuid;
+       get diagnostics n = row_count;
+       if n <> 1 then raise exception 'expected 1 row, changed %', n; end if;
+     end $q7f3a9c1$;
+     ```
+  6. **Before you press Run, read the whole statement once.** The only text between the two name tags is the name; the `where` clause holds the profile id and nothing else; nothing follows the last `;`.
+  7. **Done check:** run the step 3 select again. The email must still be the verified address and the name the new one. If the email is not the verified address, put the old name back at once with the same block.
+  - What the block does. It is one transaction: it raises, and nothing changes, unless exactly one row changed. An id that matches no profile changes nothing. **It does not stop a valid id that belongs to someone else:** run locally, it renamed the other person and returned ok. Step 3 is what stops that.
+  - Why random tags. Text in the name cannot end the quoted value early. Run on the repo's embedded Postgres on 9 Nov 2026 (fictional ids): `D'Souza`, `a' where true --`, `x'; delete from public.profiles; --`, `x$name$ where true; --` and `$$; delete from auth.users; $$` were each stored exactly as written, and nothing else changed. With one fixed tag in place of random ones, a name holding that tag overwrote another profile or every profile while the row count still read 1. The no-dollar-sign rule in step 1 is a second guard. The embedded Postgres stubs `auth.users` with an id only; the email column in step 3 was added there for the test and is **UNVERIFIED** on a hosted project.
 - The sign-in email is not changed by hand (section 0, Never by email). Tell the person plainly that we cannot change it for them.
 - An audit row is written only when you touch the database. Pointing someone to the export needs none.
 
@@ -191,7 +201,7 @@ Follow `underage-account.md`. It holds the steps; this file does not repeat them
 
 Steps:
 1. Section 1, then find the tester's feedback in App Store Connect as above. Do not open screenshots beyond what you need to match the sender. Download nothing: the download icon would make a copy of the tester's content.
-2. **No email on the feedback means no deletion by email.** A public-link tester who gave no address cannot be matched to the sender or sent a code. Reply: we cannot tie that feedback to this address; they can write again from the address shown on the feedback (the one they were invited with). Log `could_not_verify`. Whether Apple's TestFlight app lets a tester remove their own feedback is **UNVERIFIED** and not in the repo; do not say that it does.
+2. **No email on the feedback means no deletion by email.** Feedback shows an address when the tester was invited by email, or entered one with that feedback; a public-link tester who entered none shows as anonymous. There is nothing to tie anonymous feedback to the sender and nowhere to send a code. Reply plainly that we cannot find or verify it, so we cannot delete it by email. Log `cannot_be_done`. Whether Apple's TestFlight app lets a tester remove their own feedback is **UNVERIFIED** and not in the repo; do not say that it does.
 3. Section 2, with the code sent to the tester's address as Apple lists it.
 4. Delete each item with "Delete Feedback". Use "Delete Tester & Feedback" only if they also ask to stop testing, and tell them first that it removes them from TestFlight.
 5. Remove other copies. Feedback emailed from the TestFlight app goes to the Feedback Email in Test Information; which mailbox that is for each app record is **UNVERIFIED** (`docs/ops/RELEASE.md` says `hello@earlyletters.com`; `TESTFLIGHT_TESTERS.md` recommends a dedicated one). Delete threads that hold only that feedback, then empty the bin; how long deleted mail stays is **UNVERIFIED** for this mailbox. Do the same for Help-row mail in `hello@`. Issues in the repository hold none by rule (`docs/release/AUTOMATION.md` 2.7); look for a pointer issue that names the submission. Keep the request thread itself, with no feedback text in it.
@@ -236,7 +246,7 @@ Steps:
 | How authorized agents are handled, how an appeal is decided, and the 45-day start | Section 0 holds the safe default; no counsel item names the first two | counsel |
 | Counsel Q48: erase synced letters within 15 days on withdrawal? | Route 2 stops sync and cannot delete | counsel |
 
-**UNVERIFIED, to check at the rehearsal:** that hello@earlyletters.com reaches the founder (CR-60 lists it as a founder fact) and how he sends as it; which mailbox the TestFlight Feedback Email is; Apple's screens (the Help page was read once, on 9 Nov 2026); the Supabase dashboard and SQL Editor steps on the real project, and whether the editor keeps a history; that the Route 2 insert and the `has_active_consent` call run as written; that the purge worker is deployed; mail to Apple relay addresses.
+**UNVERIFIED, to check at the rehearsal:** that hello@earlyletters.com reaches the founder (CR-60 lists it as a founder fact) and how he sends as it; which mailbox the TestFlight Feedback Email is; Apple's screens (the Help page was read once, on 9 Nov 2026); the Supabase dashboard and SQL Editor steps on the real project, and whether the editor keeps a history; that the Route 2 insert and the `has_active_consent` call run as written; that the purge worker is deployed; mail to Apple relay addresses; whether the co-parent can still read synced letters after a withdrawal (not tested); the Route 3 read-back's email column on the hosted project.
 
 ## 10. Rehearsal checklist
 
@@ -246,9 +256,9 @@ Run each route once on a fictional account (the family "Asha", an address you co
 |---|---|
 | Section 2 | A code reaches the account address only. A reply that only quotes it, a "no" or "not me", and a reply with no yes each change nothing; a changed request needs a new code |
 | 2. Withdraw sync | `has_active_consent` is `false`; the phone reads "Off, kept on this phone"; the log row has no id and no letter text |
-| 3. See, export, correct | The export runs; the changed name shows after reopening the app; a name with an apostrophe is stored as typed; a name with a dollar sign is refused before running |
+| 3. See, export, correct | The export runs; the read-back shows the verified email beside the id before the update; the new name appears in the next export (`data/account.json`, `profile`, signed in and online); a name with an apostrophe is stored as typed; a name with a dollar sign is refused before anything is sent or run |
 | 4. Under 18 | `underage-account.md` sections 1 and 2 run; section 4 waits for BL-551 |
-| 5. TestFlight feedback | A test item is deleted in App Store Connect; feedback with no email is refused; the log row has no tester content |
+| 5. TestFlight feedback | A test item is deleted in App Store Connect; anonymous feedback is refused; the log row has no tester content |
 
 ## The person-facing lines (COORDINATION section 10)
 
