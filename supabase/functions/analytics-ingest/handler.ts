@@ -1,6 +1,6 @@
 /**
  * analytics-ingest: receives batches of allowlisted analytics events from phones whose owners said yes
- * and stores them through public.ingest_app_events (migration 20261108000000).
+ * and stores them through public.ingest_app_events (migration 20261109010000).
  *
  * POST /functions/v1/analytics-ingest/v1
  *   {"id": "<random analytics id>", "events": [{"event": "...", "props": {...}, "ago_s": 0}, ...1 to 50]}

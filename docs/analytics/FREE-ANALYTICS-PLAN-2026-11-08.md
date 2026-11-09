@@ -102,7 +102,7 @@ phone  --(consent yes)-->  client.track  -- sanitizeEvent -->  memory queue (1 M
                                k-anonymised views (k = 10) for insights_reader; table for service_role only
 ```
 
-Three walls: client validator, server validator, table constraints. The sink is `packages/analytics/src/first-party.ts`; the function is `supabase/functions/analytics-ingest`; the tables and views are in migration `20261108000000_analytics_first_party_events.sql`. Views: `app_event_daily`, `app_event_breakdown`, `app_active_weekly`.
+Three walls: client validator, server validator, table constraints. The sink is `packages/analytics/src/first-party.ts`; the function is `supabase/functions/analytics-ingest`; the tables and views are in migration `20261109010000_analytics_first_party_events.sql`. Views: `app_event_daily`, `app_event_breakdown`, `app_active_weekly`.
 
 Known limits of this first cut, all deliberate:
 - The durable outbox is built and tested in the package, but the mobile wiring passes no storage (memory only) so no new device key is added without a DATA_CLASSIFICATION 4.5 row. Offline events are lost if the app is closed before the next flush. Decide whether to add `scribe.analytics.outbox` (L2) before launch.
@@ -152,7 +152,7 @@ Known limits of this first cut, all deliberate:
 ### D-NNN First-party opt-in analytics on our own Supabase (founder, <date>)
 - Status: Decided (founder). Reverses D-124 item 3 and the 1.0-line part of D-095 for the builds named below; D-095's build switch stays the control.
 - Decision: <founder's own words here>. Opt-in usage counts are collected from families who say yes, into our own Supabase (schema insights_events), through the existing allowlist. No SDK and no vendor. Apple's App Store Connect numbers are read alongside it. The switch stays off in the store build until counsel approves the label and consent wording.
-- Effects: migration 20261108000000 applied to staging then production on approve-migration; function analytics-ingest deployed; EXPO_PUBLIC_ANALYTICS=on and EXPO_PUBLIC_ANALYTICS_ENDPOINT set in <named profiles> only; app-store-privacy-labels and subprocessors wording changed by counsel before any store build with the switch on.
+- Effects: migration 20261109010000 applied to staging then production on approve-migration; function analytics-ingest deployed; EXPO_PUBLIC_ANALYTICS=on and EXPO_PUBLIC_ANALYTICS_ENDPOINT set in <named profiles> only; app-store-privacy-labels and subprocessors wording changed by counsel before any store build with the switch on.
 - Owner: analytics engineer; founder for reversal.
 ```
 The founder's own words are required; an agent cannot supply them.

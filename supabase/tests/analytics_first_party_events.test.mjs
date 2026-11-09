@@ -1,4 +1,4 @@
-// First-party analytics events (20261108000000_analytics_first_party_events.sql).
+// First-party analytics events (20261109010000_analytics_first_party_events.sql).
 // Proves: the table refuses content-shaped rows; only service_role writes and reads the table;
 // insights_reader sees only k-anonymised views; forget and purge work; the daily cap holds.
 // Fictional family "Asha" only (CLAUDE.md).
