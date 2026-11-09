@@ -1,7 +1,8 @@
 /**
  * Write: the Type half of capture (COMPONENTS.md 2.8; EXPERIENCE_PASS_2026-10 S19, S20 and 5.8 rows 3, 3a and 5a,
- * package P4b). Feels like paper, not a form. Every pause in typing autosaves to a local draft, so a closed sheet
- * or a crash loses nothing. Also reached from Review with ?draftId= to type a letter for a recording that could not
+ * package P4b). Feels like paper, not a form. The words are written to a local draft at least every 500 ms while
+ * someone types (silently) and again after every pause, so a closed sheet or a crash loses at most the last half
+ * second (F04-REQ-011). Also reached from Review with ?draftId= to type a letter for a recording that could not
  * be written down (capture mode becomes "mixed").
  *
  * Design (docs/design/BENCHMARK.md, "Screens"; S19):
@@ -113,12 +114,27 @@ export default function Write() {
   // when Write opens or on a keystroke.
   const history = useRef<{ recentKeys: string[]; daysSinceLastEntry: number | null } | null>(null);
 
-  /** Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so. */
-  const persist = (value: string): boolean => {
+  /** "Saved on this phone" is announced at most every 10 s. */
+  const announceSaved = () => {
+    const now = Date.now();
+    if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
+      lastAnnounced.current = now;
+      announce(pendingCopy.write.savedOnPhone);
+    }
+  };
+
+  /**
+   * Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so.
+   * `quiet` is a write inside an unbroken burst of typing (the session writes at least every 500 ms, F04-REQ-011): the
+   * words go to the phone and nothing else happens. No autosave line, no announcement and no render, so a long burst
+   * shows no flicker, says nothing aloud and never disturbs the uncontrolled field (D-057). All of that waits for the pause.
+   */
+  const persist = (value: string, quiet = false): boolean => {
     if (!child) return false;
     const create = (v: string) => createDraft({ childId: child.id, captureMode: 'typed', promptKey, audioUri: null, audioDurationMs: null, typedText: v }).id;
     const r = writeWords({ create, update: setDraftTyped }, draftId.current, value);
     draftId.current = r.draftId;
+    if (quiet) return r.ok;
     // "Not saved yet" after a write that did not go through; the next good write puts "Saved on this phone" back and
     // releases Close, Android's back and the swipe.
     if (r.saveState) setSaveState(r.saveState);
@@ -126,23 +142,30 @@ export default function Write() {
     // The words as of this write, for the swipe and the destinations (one render per pause, not per keystroke).
     setText(value);
     if (!r.ok) return false;
-    const now = Date.now();
-    if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
-      lastAnnounced.current = now;
-      announce(pendingCopy.write.savedOnPhone);
-    }
+    announceSaved();
     return true;
   };
 
-  // The words between the keyboard and this phone (write-session.logic.ts): each keystroke lands there, a pause writes
-  // them, and every way out (Close, a destination, a swipe down) writes the newest words first, so the last keystrokes
-  // inside the pause are never dropped. `persist` is read through a ref: the session outlives the render that made it.
+  /** Typing paused and a quiet write had already put the newest words on the phone: the pause's half of `persist`. */
+  const settled = (value: string) => {
+    setSaveState('saved');
+    setText(value);
+    announceSaved();
+  };
+
+  // The words between the keyboard and this phone (write-session.logic.ts): each keystroke lands there, the words are
+  // written at least every 500 ms while typing and after a pause, and every way out (Close, a destination, a swipe down)
+  // writes the newest words first, so the last keystrokes are never dropped. `persist` and `settled` are read through
+  // refs: the session outlives the render that made it.
   const persistRef = useRef(persist);
   persistRef.current = persist;
+  const settledRef = useRef(settled);
+  settledRef.current = settled;
   const [session] = useState(() =>
     createWriteSession(
       {
-        persist: (value) => persistRef.current(value),
+        persist: (value, quiet) => persistRef.current(value, quiet),
+        settled: (value) => settledRef.current(value),
         draftId: () => draftId.current,
         // An empty typed draft is nothing; a recording draft is always kept.
         hasRecording: (id) => !!getDraft(id)?.audioUri,
