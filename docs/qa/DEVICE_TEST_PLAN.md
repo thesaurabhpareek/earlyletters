@@ -591,7 +591,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
 - **Record:** S1-47 rows (a) to (i): phone, iOS version, text size, VoiceOver yes or no, Reduce Motion yes or no; pass or fail with the step and what was seen; screenshots with Asha only. Row (e) on whether Deliver Quietly is detected (yes, no).
 
-### S1-133 A reminder at the chosen time, and the same words never twice in a row (NX-10-R1, NX-10-R2; planner test `apps/mobile/test/reminders-planner.test.ts`, "[NX-10-R2]")
+### S1-135 A reminder at the chosen time, and the same words never twice in a row (NX-10-R1, NX-10-R2; planner test `apps/mobile/test/reminders-planner.test.ts`, "[NX-10-R2]")
 - **Needs:** a TestFlight build, an iPhone SE 3, Asha's book with a birth date, notifications allowed (S1-47 first), Names in notifications off. Five days, one reminder a day, so allow a week. A second pass on the same phone with Names on.
 - **Steps:** (a) Settings, Reminders: choose Every evening and a time 5 minutes from now. Lock the phone and watch the clock. (b) Repeat (a) on four more days at four other times, once with the phone in Do Not Disturb with Focus set to allow the app, and once after changing the phone's time zone in iPhone Settings. (c) Each evening, photograph the lock screen the moment the reminder arrives, then open the app from it. (d) After the fifth reminder, lay the five photographs side by side. (e) Turn Names on and repeat (c) and (d) for three more evenings.
 - **Expected:**
@@ -600,7 +600,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (c) Opening from the reminder lands on Tonight.
   - (d) No two reminders on consecutive evenings have the same title and body, and none of the same title within 4 evenings. No line counts days, gaps or letters.
   - (e) With Names on, Asha's name appears in the words and nowhere else on the lock screen; the same no-repeat holds.
-- **Record:** S1-133 rows (a) to (e): phone, iOS version, the chosen time and the arrival time (to the second) for each of the 5 runs, the five lock screen titles in order, Names on or off; pass or fail; screenshots with Asha only. The planner test proves the choice of words over a year; only this row proves the time on a phone.
+- **Record:** S1-135 rows (a) to (e): phone, iOS version, the chosen time and the arrival time (to the second) for each of the 5 runs, the five lock screen titles in order, Names on or off; pass or fail; screenshots with Asha only. The planner test proves the choice of words over a year; only this row proves the time on a phone.
 
 ### S1-38 Book month card type: the numeral and one left edge (founder report on TestFlight build 1, "18 is merging. Font alignment can be cleaner."; PR #544)
 - **Needs:** a build with PR #544; the founder's iPhone and the SE 3; Asha's book seeded with letters in the current month and at least one past month, and a month of age of 10 or more (two figures, ideally 18 or 11). Fictional family only (Asha, Papa).
