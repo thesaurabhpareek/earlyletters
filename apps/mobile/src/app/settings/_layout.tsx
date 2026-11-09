@@ -47,6 +47,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="children/new" options={{ title: copy.children.add.title }} />
       <Stack.Screen name="children/[id]" options={{ title: copy.children.settings.sectionTitle }} />
       <Stack.Screen name="struggling" options={{ title: copy.struggling.title }} />
+      <Stack.Screen name="struggling-elsewhere" options={{ title: copy.struggling.otherCountries }} />
       <Stack.Screen name="licenses" options={{ title: licences.title }} />
       <Stack.Screen name="legal" options={{ title: copy.settingsHome.legalLabel }} />
     </Stack>

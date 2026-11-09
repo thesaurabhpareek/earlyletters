@@ -165,19 +165,40 @@ describe('[CCO-9, CDesO-1] Settings home regroup (settings-ia.md 3; SETTINGS_AND
 
 describe('[S40] If you are struggling', () => {
   const page = code('app/settings/struggling.tsx');
+  const elsewhere = code('app/settings/struggling-elsewhere.tsx');
 
-  it('is one tap from Settings home and shows the line, the three resources and the 911 line, unchanged', () => {
-    expect(en.struggling.resources).toHaveLength(3);
-    expect(page).toMatch(/\{s\.body\}/);
-    expect(page).toMatch(/s\.resources\.map\(\(r\) => \(\s*<ListRow key=\{r\.tel\} title=\{r\.name\} subtitle=\{r\.how\}/);
-    // The call goes through help-links.logic.ts (tel:${r.tel}, with the copy fallback: RT-SET-02, F20-REQ-005).
-    expect(page).toMatch(/onPress=\{\(\) => link\.open\(callTarget\(r\)\)\}/);
-    expect(page).toMatch(/\{s\.emergency\}/);
-    expect(en.struggling.emergency).toBe('If you or your baby are in danger right now, call 911.');
+  it('is one tap from Settings home: the line, the emergency line first, this region\'s lines, other countries, the privacy line', () => {
+    const order = ['{s.body}', 's.emergencyTitle', 'local.lines.map', 's.otherCountries', '{s.privacy}'].map((k) => page.indexOf(k));
+    for (const i of order) expect(i).toBeGreaterThan(-1);
+    expect([...order].sort((x, y) => x - y)).toEqual(order);
+    // The lines come from packages/content helplines.ts by the phone's region; calls and texts go through
+    // help-links.logic.ts with the copy fallback (RT-SET-02, F20-REQ-005).
+    expect(page).toMatch(/const local = localLines\(usePhoneRegion\(\)\)/);
+    expect(page).toMatch(/onPress=\{\(\) => link\.open\(emergency\.target!\)\}/);
+    // The baby is named, as the earlier line did (nomenclature audit R-F).
+    expect(en.struggling.emergencyTitle).toBe('Are you or your baby in danger right now?');
+  });
+
+  it('a region we hold no lines for gets the directory and the general emergency words, never a guessed number', () => {
+    expect(page).toMatch(/\{showDirectory\(local\) \? \(\s*<ListRow\s+title=\{s\.directory\}/);
+    expect(page).toMatch(/\{local && local\.lines\.length > 0 \? \(/);
+    expect(page).toMatch(/WebBrowser\.openBrowserAsync\(HELPLINE_DIRECTORY\.url\)/);
+    expect(page).toMatch(/\{emergency\.label\}/);
+  });
+
+  it('Lines in other countries is its own page with every region and the directory', () => {
+    expect(page).toMatch(/router\.push\(ELSEWHERE_ROUTE as Href\)/);
+    expect(page).toMatch(/const ELSEWHERE_ROUTE = '\/settings\/struggling-elsewhere'/);
+    expect(elsewhere).toMatch(/otherCountries\(\)\.map/);
+    expect(elsewhere).toMatch(/HELPLINE_DIRECTORY\.url/);
+    const layout = code('app/settings/_layout.tsx');
+    expect(layout).toMatch(/<Stack\.Screen name="struggling-elsewhere" options=\{\{ title: copy\.struggling\.otherCountries \}\} \/>/);
   });
 
   it('has no drawing, no lamp, no motion, and records nothing', () => {
-    expect(page).not.toMatch(/LineArt|Lamp|Animated|entering|track\(|haptic/);
+    for (const c of [page, elsewhere, code('components/settings/helpline-card.tsx'), code('components/settings/phone-region.ts'), code('components/settings/struggling.logic.ts')]) {
+      expect(c).not.toMatch(/LineArt|Lamp|Animated|entering|track\(|haptic|console\.|analytics|AsyncStorage|setItem/);
+    }
   });
 });
 
