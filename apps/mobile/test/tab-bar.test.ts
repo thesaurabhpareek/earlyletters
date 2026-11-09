@@ -47,12 +47,10 @@ describe('the You tab', () => {
     expect(layout).not.toMatch(/options=\{\{[^}]*\bhref:/);
   });
 
-  it('[NX-30a-R6] no visible tab leads to a coming-soon page', () => {
-    // Family is the only tab that can be a coming-soon page; it is out of the navigator where it would be (D-126).
-    expect(layout).toMatch(/<Tabs\.Protected guard=\{FAMILY_TAB\}>\s*<Tabs\.Screen name="family"/);
-    // You is never inside a guard: it is in every build.
+  it('[NX-30a-R6] You is in every build, never inside a guard', () => {
+    // The Family-tab guard belongs to #665 (BL-604), which this branch does not carry; when it lands it must keep You outside it.
     expect(layout).not.toMatch(/Tabs\.Protected[^>]*>\s*<Tabs\.Screen name="you"/);
-    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('</Tabs.Protected>'));
+    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('name="family"'));
   });
 
   it('[NX-30a-R7] the You tab draws no lamp and has one level 1 heading', () => {
