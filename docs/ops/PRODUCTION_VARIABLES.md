@@ -1,8 +1,8 @@
 # Production build variables (names only)
 
-Owner: ops. Written 9 Nov 2026 for build 12, the first public App Store build. **Names only: no value, key, URL or token is ever written in this file.** Values are typed by the founder into the EAS `production` environment.
+Owner: ops. Written 9 Nov 2026 for build 12, the first public App Store build. **Names only: no secret value, key, URL or token is ever written in this file.** (The public pack host and the on/off literals are listed because they are not secret.) Values are typed by the founder into the EAS `production` environment.
 
-Status: **draft with PR `feat/ops-production-servers-on`; not in force until the founder names that PR for merge.** Build 12 runs with server features on against the production backend (`scribe-prod`) by founder decision on 8 Nov 2026. That decision, automatic release and the Free plan still need a recorded D-### entry in `docs/DECISIONS.md`, which this PR does not write. It reverses D-121 item 1 and the "`production` keeps server features off" line of `docs/release/ENVIRONMENTS.md`, which this PR does not edit (release owns it; handoff in the PR body).
+Status: **draft with PR `feat/ops-production-servers-on`; not in force until the founder names that PR for merge.** Build 12 runs with server features on against the production backend (`scribe-prod`) by founder decision on 8 Nov 2026. That decision, automatic release and the Free plan still need a recorded D-### entry in `docs/DECISIONS.md`, which this PR does not write. It reverses D-121 item 1 and the "`production` keeps server features off" line of `docs/release/ENVIRONMENTS.md`, which this PR edits (the profile table row and the "Production stays unbuilt" bullet).
 
 Sources: `apps/mobile/eas.json` (profile `production`), `apps/mobile/scripts/preflight-production.mjs`, `apps/mobile/src/lib/capabilities.ts`, `docs/ops/AUTH_SETUP.md`, `proposals/privacy-label-servers-on.md`.
 

@@ -254,7 +254,8 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         expect(exp.extra?.statusReport).toBe(false);
         // Needs the server switch too, so it reads false wherever servers are off; in the alpha profiles it is false because the profile leaves it unwritten.
         // Production writes it on and has servers on (build 12), so it reads true there; it was false while production was servers off.
-        expect(exp.extra?.accountDeletion).toBe(on && eas.build[name].env?.EXPO_PUBLIC_ACCOUNT_DELETION === 'on');
+        if (name === 'production') expect(exp.extra?.accountDeletion).toBe(true);
+        else expect(exp.extra?.accountDeletion).toBe(on && eas.build[name].env?.EXPO_PUBLIC_ACCOUNT_DELETION === 'on');
       });
     }
   });

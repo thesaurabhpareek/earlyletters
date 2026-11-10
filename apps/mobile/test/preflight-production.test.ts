@@ -154,6 +154,11 @@ describe('the sign-in check follows the servers switch (a servers-on production 
     i.cfg.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]];
     expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
   });
+  it('servers off but the sign-in capabilities present: sign-in FAILs (the capabilities follow the servers switch)', () => {
+    const i = on();
+    i.cfg.extra.serverFeatures = false;
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
   it('servers on without the Apple entitlement or associated domains: sign-in FAILs', () => {
     const i = good();
     delete i.introspected.ios.entitlements['com.apple.developer.applesignin'];
