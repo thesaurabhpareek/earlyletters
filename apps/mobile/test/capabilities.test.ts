@@ -48,7 +48,7 @@ describe('server features switch: off unless a build says on', () => {
   it('is off in this process (no EXPO_PUBLIC_SERVER_FEATURES), and every capability follows it', () => {
     expect(process.env.EXPO_PUBLIC_SERVER_FEATURES ?? '').not.toBe('on');
     expect(serverFeaturesEnabled()).toBe(false);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false, photos: false, mediaMetadata: false, mediaLibrary: false, moments: false, mediaBackground: false, occasions: false });
   });
 
   it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
@@ -87,7 +87,7 @@ describe('server features switch: off unless a build says on', () => {
   it('the override is for tests only, and goes back to the build value', () => {
     setServerFeaturesForTests(true);
     // Analytics, English only and the two build flags have their own switches: server features on does not turn them on.
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false, photos: false, mediaMetadata: false, mediaLibrary: false, moments: false, mediaBackground: false, occasions: false });
     setServerFeaturesForTests(null);
     expect(serverFeaturesEnabled()).toBe(false);
     const saved = process.env.VITEST;
@@ -215,7 +215,7 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     // And turning it on changes no other capability.
     setServerFeaturesForTests(null);
     setEnglishOnlyForTests(true);
-    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true });
+    expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: true, photos: false, mediaMetadata: false, mediaLibrary: false, moments: false, mediaBackground: false, occasions: false });
   });
 
   it('the override is for tests only, and goes back to the build value', () => {
@@ -240,7 +240,11 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(reads.sort()).toEqual([
+      'EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY',
+      'EXPO_PUBLIC_LIBRARY_CHOOSER', 'EXPO_PUBLIC_MEDIA_METADATA', 'EXPO_PUBLIC_MOMENTS', 'EXPO_PUBLIC_MOMENTS_BACKGROUND',
+      'EXPO_PUBLIC_OCCASIONS', 'EXPO_PUBLIC_PHOTOS', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT',
+    ]);
     expect(code).toMatch(/const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string\[\] \| null = parseLanguageList\(process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES\);/);
     expect(code.match(/process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES/g)?.length).toBe(1);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);
@@ -286,6 +290,58 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     const block = preflight.slice(preflight.indexOf('if (prof) {'), preflight.indexOf("check(prof.autoIncrement === true"));
     expect(block).toMatch(/check\(\s*profEnv\.EXPO_PUBLIC_ENGLISH_ONLY === 'on',/);
     expect(block).toMatch(/D-111 item 4/);
+  });
+});
+
+describe('[NX-39-R39] Memory Library phase switches: every one exists and is off in every profile', () => {
+  const MEDIA_FLAGS = {
+    photos: 'EXPO_PUBLIC_PHOTOS',
+    mediaMetadata: 'EXPO_PUBLIC_MEDIA_METADATA',
+    mediaLibrary: 'EXPO_PUBLIC_LIBRARY_CHOOSER',
+    moments: 'EXPO_PUBLIC_MOMENTS',
+    mediaBackground: 'EXPO_PUBLIC_MOMENTS_BACKGROUND',
+    occasions: 'EXPO_PUBLIC_OCCASIONS',
+  } as const;
+  const saved = { ...process.env };
+  afterEach(() => {
+    for (const key of Object.keys(process.env)) if (!(key in saved)) delete process.env[key];
+    Object.assign(process.env, saved);
+    vi.resetModules();
+  });
+
+  it('is off with nothing set, even with the server switch on', async () => {
+    for (const v of Object.values(MEDIA_FLAGS)) delete process.env[v];
+    process.env.EXPO_PUBLIC_SERVER_FEATURES = 'on';
+    vi.resetModules();
+    const { capabilities: caps } = await import('../src/lib/capabilities');
+    for (const name of Object.keys(MEDIA_FLAGS) as (keyof typeof MEDIA_FLAGS)[]) expect(caps[name], name).toBe(false);
+  });
+
+  it('turns on only for the exact value `on`, and each variable moves only its own switch', async () => {
+    for (const [name, variable] of Object.entries(MEDIA_FLAGS)) {
+      for (const v of Object.values(MEDIA_FLAGS)) delete process.env[v];
+      process.env[variable] = 'true';
+      vi.resetModules();
+      let mod = await import('../src/lib/capabilities');
+      expect(mod.capabilities[name as keyof typeof MEDIA_FLAGS], `${variable}=true`).toBe(false);
+      process.env[variable] = ' ON ';
+      vi.resetModules();
+      mod = await import('../src/lib/capabilities');
+      const on = (Object.keys(MEDIA_FLAGS) as (keyof typeof MEDIA_FLAGS)[]).filter((k) => mod.capabilities[k]);
+      expect(on, variable).toEqual([name]);
+    }
+  });
+
+  it('is written in no eas.json profile, so no build turns a phase on', () => {
+    const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
+    const on = Object.entries(eas.build).flatMap(([profile, b]) =>
+      Object.values(MEDIA_FLAGS).filter((v) => parseServerFeatures(b.env?.[v])).map((v) => `${profile}: ${v}`),
+    );
+    expect(on).toEqual([]);
+  });
+
+  it('is not a remote kill-switch key: remote config can pause a phase later, never start one', () => {
+    expect(Object.keys(KILL_SWITCH_FLAG).filter((k) => /photo|media|moment|occasion|library/i.test(k))).toEqual([]);
   });
 });
 

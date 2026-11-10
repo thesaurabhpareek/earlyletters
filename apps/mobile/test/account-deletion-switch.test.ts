@@ -126,7 +126,7 @@ describe('the capability: only "on" is on, and only with the server switch (the 
   it('it changes no other capability, and no other flag changes it', () => {
     setServerFeaturesForTests(true);
     setBuildFlagForTests('accountDeletion', true);
-    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: true, analytics: false, englishOnly: false });
+    expect(capabilities).toEqual({ signIn: true, sync: true, coParent: true, backup: false, statusReport: false, accountDeletion: true, analytics: false, englishOnly: false, photos: false, mediaMetadata: false, mediaLibrary: false, moments: false, mediaBackground: false, occasions: false });
     setBuildFlagForTests('accountDeletion', null);
     setBuildFlagForTests('backup', true);
     setBuildFlagForTests('statusReport', true);

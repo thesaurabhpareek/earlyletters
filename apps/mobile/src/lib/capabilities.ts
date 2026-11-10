@@ -152,6 +152,20 @@ const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_
 /** Delete account (founder, 30 Oct 2026). Same rule: only `on` is on, so a build with the variable unset hides the row. */
 const ACCOUNT_DELETION_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_ACCOUNT_DELETION);
 
+/**
+ * Memory Library phase switches (NX-39 v2 section 3, R39). Every one is off: the variable is unset in every eas.json
+ * profile and no code reads a photo, a date or a place yet. Each is its own switch (not tied to the server switch:
+ * nothing here touches a server), only `on` is on, and remote config has no key for any of them, so a kill switch can
+ * pause a phase later and nothing remote can start one. The claims test (packages/content) reads these to decide
+ * which promise lines may be said; it fails a line until the flag it needs is on in the production profile.
+ */
+const PHOTOS_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_PHOTOS);
+const MEDIA_METADATA_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_MEDIA_METADATA);
+const LIBRARY_CHOOSER_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_LIBRARY_CHOOSER);
+const MOMENTS_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_MOMENTS);
+const MOMENTS_BACKGROUND_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_MOMENTS_BACKGROUND);
+const OCCASIONS_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_OCCASIONS);
+
 /** The build flags that sit on top of the server switch. */
 export type BuildFlag = 'backup' | 'statusReport' | 'accountDeletion';
 
@@ -233,6 +247,30 @@ export const capabilities = {
   /** The language picker offers English only (D-111 item 4). Its own switch, on in the two alpha profiles. */
   get englishOnly(): boolean {
     return englishOnlyEnabled();
+  },
+  /** NX-39 P0: one picked photo per letter, stripped copy. Off. */
+  get photos(): boolean {
+    return PHOTOS_BUILD_VALUE;
+  },
+  /** NX-39 P1: the date (and a city name) from the picked file. Off. */
+  get mediaMetadata(): boolean {
+    return MEDIA_METADATA_BUILD_VALUE;
+  },
+  /** NX-39 P2a: "Add from your library", the chooser with photo-library read permission. Off. */
+  get mediaLibrary(): boolean {
+    return LIBRARY_CHOOSER_BUILD_VALUE;
+  },
+  /** NX-39 P2b (with P4b): "Suggest days", the index and the in-app card. Off. */
+  get moments(): boolean {
+    return MOMENTS_BUILD_VALUE;
+  },
+  /** NX-39 P2c: the optional best-effort background top-up. Off, and needs the founder's ruling on UIBackgroundModes. */
+  get mediaBackground(): boolean {
+    return MOMENTS_BACKGROUND_BUILD_VALUE;
+  },
+  /** NX-39 P4a: occasions the parent types and local reminders on those days. Off. */
+  get occasions(): boolean {
+    return OCCASIONS_BUILD_VALUE;
   },
 } as const;
 
