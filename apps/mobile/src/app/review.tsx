@@ -120,7 +120,7 @@ import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSav
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
-import { ensureAudioHash, finishingTake } from '@/lib/capture/recorder';
+import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -631,7 +631,7 @@ export default function Review() {
         saving.current = false;
         // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
         // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
-        if (finishingTake(draft.id)) toast.show({ message: copy.review.keepStillSaving });
+        if (isFinishing(draft.id)) toast.show({ message: copy.review.keepStillSaving });
         return;
       }
       const audio = await ensureAudioHash(settled);
