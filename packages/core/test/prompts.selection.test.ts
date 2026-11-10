@@ -9,7 +9,7 @@
  * over the real library in packages/content/test/prompts.preBirth.test.ts.
  */
 import { describe, expect, it } from 'vitest';
-import { AVOID_RECENT, bandFor, GAP_DAYS, kindFor, MIN_ALTERNATIVES, renderTemplate, selectPrompt, type Prompt, type PromptBand, type SelectInput } from '../src';
+import { AVOID_RECENT, bandFor, GAP_DAYS, isNameThemed, kindFor, MIN_ALTERNATIVES, renderTemplate, selectPrompt, type Prompt, type PromptBand, type SelectInput } from '../src';
 
 const LIB: Prompt[] = [
   { key: 'o.any.1', text: 'What did {child} do today?', band: 'any', kind: 'opening' },
@@ -434,5 +434,42 @@ describe('[S4] selectPrompt: a press of "Another thought" never shows the prompt
     ];
     // both are recent, one is on screen: the other is served
     for (let d = 0; d < 20; d++) expect(selectPrompt({ ...base, ageMonths: 70, seed: `d${d}`, recentKeys: ['a', 'b'], excludeKeys: ['a'] }, two).key).toBe('b');
+  });
+});
+
+describe('[NX-31-R3] a child with no name is never asked about the name', () => {
+  const NAMED: Prompt[] = [
+    ...LIB,
+    { key: 'opening.0-3.name', text: 'Tell {child} how the name was chosen.', band: '0-3', kind: 'opening' },
+    { key: 'opening.before.name-story', text: 'Where did the name {child} come from?', band: 'before', kind: 'opening' },
+    { key: 'opening.before.weeks', text: 'How are the weeks going?', band: 'before', kind: 'opening' },
+    { key: 'together.13-18.name-things', text: 'Let {child} name the things in the room.', band: '13-18', kind: 'together' },
+  ];
+
+  it('[NX-31-R3] isNameThemed matches the name prompts by their last key segment only', () => {
+    expect(isNameThemed('opening.0-3.name')).toBe(true);
+    expect(isNameThemed('opening.before.name-story')).toBe(true);
+    expect(isNameThemed('together.13-18.name-things')).toBe(false);
+    expect(isNameThemed('opening.any.remember')).toBe(false);
+  });
+
+  it('[NX-31-R3] a blank name skips the name prompts on every night, born or not yet born', () => {
+    for (let d = 0; d < 60; d++) {
+      const born = selectPrompt({ ...base, ageMonths: 1, seed: `n${d}`, childNameBlank: true }, NAMED).key;
+      const before = selectPrompt({ ...base, ageMonths: 0, beforeBirth: true, seed: `n${d}`, childNameBlank: true }, NAMED).key;
+      expect(isNameThemed(born)).toBe(false);
+      expect(isNameThemed(before)).toBe(false);
+    }
+  });
+
+  it('[NX-31-R3] without the flag the name prompts are still offered, so a named child loses nothing', () => {
+    const seen = new Set<string>();
+    for (let d = 0; d < 200; d++) seen.add(selectPrompt({ ...base, ageMonths: 1, seed: `n${d}` }, NAMED).key);
+    expect(seen.has('opening.0-3.name')).toBe(true);
+  });
+
+  it('[NX-31-R3] if only name prompts exist, one is still returned and nothing throws', () => {
+    const only: Prompt[] = [{ key: 'opening.0-3.name', text: 'Tell {child} how the name was chosen.', band: '0-3', kind: 'opening' }];
+    expect(selectPrompt({ ...base, ageMonths: 1, childNameBlank: true }, only).key).toBe('opening.0-3.name');
   });
 });
