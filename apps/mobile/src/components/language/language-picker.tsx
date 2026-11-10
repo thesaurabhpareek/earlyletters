@@ -18,7 +18,8 @@
  * names ("Not on this phone, 575 MB"), from this phone's plan, never a typed number. Choosing it only stores the
  * choice: nothing downloads from this sheet.
  *
- * English only (D-111 item 4, `capabilities.englishOnly`, on in the two alpha profiles): the sheet lists English
+ * English only (D-111 item 4, `capabilities.englishOnly`, on in the two alpha profiles, read with the spoken-language
+ * list through heardLanguagesForBuild): the sheet lists English
  * alone, without the search field, and one line says other languages come in a later update
  * (language-picker.logic.ts). A language already chosen on the phone is left as it is.
  */
@@ -32,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useTheme } from '@/lib/a11y';
-import { capabilities } from '@/lib/capabilities';
+import { heardLanguagesForBuild } from '@/lib/language/heard-languages';
 import { fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { isSpeechLanguage } from '@/lib/models/catalog';
@@ -73,8 +74,8 @@ export interface LanguagePickerProps {
 
 export function LanguagePicker({ visible, onClose, onSelect, selected, unavailable = [], title = languageCopy.picker.title }: LanguagePickerProps) {
   const [query, setQuery] = useState('');
-  // The build decides what is offered: every language, or English alone in the alpha (D-111 item 4).
-  const view = languagePickerView(capabilities.englishOnly);
+  // The build decides what is offered: every language, English alone in the alpha (D-111 item 4), or the listed ones (D-125 item 2).
+  const view = languagePickerView(heardLanguagesForBuild());
   const results = useMemo(() => searchLanguages(query, view.languages), [query, view.languages]);
   // Read once per opening: what this phone holds does not change while the sheet is up (nothing downloads here).
   const absent = useMemo(

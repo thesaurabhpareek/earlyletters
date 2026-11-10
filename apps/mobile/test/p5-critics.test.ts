@@ -396,7 +396,8 @@ describe('[L4] Read together shows on the Book for what it can read', () => {
 
   it('the Book asks the same question as the screen (source)', () => {
     const book = code(src('app/(tabs)/book.tsx'));
-    expect(book).toMatch(/\{readableInBook\(entries\)\.length > 0 && \(/);
+    expect(book).toMatch(/const canRead = readableInBook\(entries\)\.length > 0;/);
+    expect(book).toMatch(/readTogether=\{canRead \? \{/);
     expect(book).not.toMatch(/entries\.some\(\(e\) => e\.inBook && !isQuietMark\(e\)\)/);
     expect(code(src('app/read-together.tsx'))).toMatch(/readableInBook\(listEntriesForChild\(child\.id\)\)/);
   });

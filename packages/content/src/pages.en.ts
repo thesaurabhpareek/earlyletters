@@ -68,7 +68,7 @@ export const pages = {
         paragraphs: [
           "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
-          "Recordings stay on your phone, and in your iPhone's own backup if you use one. We do not upload them.",
+          "Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
           "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, and we hold the keys. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
           "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics stay off until you say yes, and they never include letter text, recordings, photos, names or birthdays.",
           "You can export your whole book, free, at any time, and delete your own letters, recordings or account whenever you like. The Privacy Policy has the full detail.",
