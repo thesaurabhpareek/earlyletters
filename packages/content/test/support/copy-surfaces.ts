@@ -400,7 +400,7 @@ export const SURFACES: readonly Surface[] = [
     placeholders: ['child', 'signsAs', 'inviter', 'coParent', 'date'],
     // The share message is the parent's own voice, which they see and can change in the share sheet before they send
     // it (S58 KEEP, D-113 item 3): its "we" is the two parents, never the app. `soon.*` is the kill path (S48, S57).
-    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed'], allowedPrefixes: ['soon.'] },
+    we: { re: /\b(?:we|our)\b/i, allowed: ['create.shareMessage', 'create.shareMessageNamed', 'create.shareMessageNoName', 'create.shareMessageNamedNoName', 'create.shareTitleNoName'], allowedPrefixes: ['soon.'] },
     banned: [
       PHOTOS,
       E2E_OR_FAMILY_KEYS,

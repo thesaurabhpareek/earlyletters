@@ -131,7 +131,7 @@ describe('wiring (source checks; the card and the sheet are on the device list)'
     expect(card).toMatch(/noteReminderPrimeShown\(\)/);
     // BL-532: the card says the child's name, in the app only; the words carry {child} and the card fills it.
     expect(en.onboarding.reminder.body).toContain("{child}");
-    expect(card).toMatch(/renderTemplate\(r\.body, \{ child: getActiveChild\(\)\?\.name \|\| 'your little one' \}\)/);
+    expect(card).toMatch(/renderTemplate\(r\.body, \{ child: childLabel\(getActiveChild\(\)\?\.name\) \}\)/);
     expect(en.onboarding.reminder.body.replace('{child}', 'Asha')).toMatch(/to add to Asha's book/);
     // "No reminders" never opens the OS alert.
     const none = card.slice(card.indexOf('const none = () =>'), card.indexOf('return (', card.indexOf('const none = () =>')));

@@ -60,7 +60,7 @@ import { PlusLine } from '@/components/tonight/plus-line';
 import { plusLineShows } from '@/components/tonight/tonight-plus.logic';
 import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { armKeep } from '@/lib/capture/keep-intent';
-import { copy, fill, pendingCopy } from '@/lib/copy';
+import { childLabel, copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -323,7 +323,7 @@ export default function Write() {
 
   if (!child) return null;
   const age = ageText(child, todayISO());
-  const dateline = age ? `${child.name} · ${age}` : child.name;
+  const dateline = age ? `${childLabel(child.name)} · ${age}` : childLabel(child.name);
   const empty = !text.trim();
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   // The standing Plus line, then "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action
