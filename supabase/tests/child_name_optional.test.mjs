@@ -56,4 +56,11 @@ check('[NX-31-R28] users still cannot call create_child_row', (await codeOf(() =
 const cfg = (await sys(`select p.proconfig cfg, p.prosecdef def from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname='create_child_row'`)).rows[0];
 check('[NX-31-R28] create_child_row stays a definer with pg_temp last', cfg.def === true && /search_path=pg_catalog, public, pg_temp/.test((cfg.cfg ?? []).join('|')));
 
+// Post-apply check: the old 1-to-60 rule is really gone and children_name_check is the new one.
+// A hosted project that named the old constraint differently would keep both and fail here.
+const checks = (await sys(`select conname, pg_get_constraintdef(oid) def from pg_constraint where conrelid='public.children'::regclass and contype='c' and pg_get_constraintdef(oid) ~ '\\(name[) ,]'`)).rows;
+check('[NX-31-R28] exactly one check mentions name, children_name_check, and it is <= 60 only',
+  checks.length === 1 && checks[0].conname === 'children_name_check'
+  && /char_length\(name\) <= 60/.test(checks[0].def) && !/>= 1|> 0|between/i.test(checks[0].def));
+
 done();

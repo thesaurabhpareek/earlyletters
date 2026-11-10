@@ -10,7 +10,19 @@
 --   alter table public.children drop constraint children_name_check;
 --   alter table public.children add constraint children_name_check
 --     check (char_length(name) between 1 and 60);
---   and re-create create_child_row from 20261004000000_plus_on_device_only.sql.
+--   and re-create create_child_row from the 20261004000000_plus_on_device_only.sql definition
+--   but WITH `set search_path = pg_catalog, public, pg_temp` (that file has `public,
+--   pg_catalog`, no pg_temp, which the pg_temp_search_path tests refuse), then re-run:
+--   revoke all on function public.create_child_row(uuid, uuid, text, date, date)
+--     from public, anon, authenticated, service_role;
+--
+-- VERIFY AFTER APPLY (the drop below is "if exists": a hosted project whose check had a
+-- different name would keep the old rule AND gain the new one, and an empty name would
+-- still fail with 23514 after a "successful" apply). Run in the SQL Editor:
+--   select conname, pg_get_constraintdef(oid) from pg_constraint
+--    where conrelid = 'public.children'::regclass and contype = 'c';
+-- It must show children_name_check with exactly `CHECK ((char_length(name) <= 60))` and no
+-- other check on the name column (children_nickname_check is a different column). If an older name check is listed, drop it by its name.
 --
 -- Decision: empty string, not NULL. The column stays NOT NULL and may hold '' (length 0 to
 -- 60). The phone's own table is `name TEXT NOT NULL` and stores '' for no name, so the same
