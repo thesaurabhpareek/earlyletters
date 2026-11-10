@@ -669,7 +669,7 @@ export const en = {
       { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
+      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
