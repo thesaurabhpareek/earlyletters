@@ -26,8 +26,8 @@ import { secureStorage } from '../supabase/secure-storage';
 import { appleCaptureBody, APPLE_TOKEN_FUNCTION, captureVerdict, CAPTURE_ATTEMPTS, CAPTURE_RETRY_MS, type CaptureResult } from './apple-token.logic';
 import { makeNonce } from './nonce';
 
-const APPLE_USER_KEY = 'scribe.auth.appleUser';
-const PENDING_NAME_KEY = 'scribe.auth.pendingName';
+export const APPLE_USER_KEY = 'scribe.auth.appleUser';
+export const PENDING_NAME_KEY = 'scribe.auth.pendingName';
 
 export async function appleSignInAvailable(): Promise<boolean> {
   if (Platform.OS !== 'ios') return false;
