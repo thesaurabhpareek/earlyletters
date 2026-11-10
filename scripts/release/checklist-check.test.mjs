@@ -69,6 +69,6 @@ test('the real checklist and template in the repo pass', () => {
 });
 
 test('the real files have no dash, curly quote, ellipsis or emoji characters', () => {
-  const banned = /[–—‘’“”…]|\p{Extended_Pictographic}/u;
+  const banned = /[\u2013\u2014\u2018\u2019\u201c\u201d\u2026]|\p{Extended_Pictographic}/u;
   for (const p of [REAL_CHECKLIST, REAL_TEMPLATE]) assert.ok(!banned.test(readFileSync(p, 'utf8')), p);
 });
