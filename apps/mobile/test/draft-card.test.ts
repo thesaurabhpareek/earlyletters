@@ -676,8 +676,9 @@ describe('[S4] "Another thought" never shows the prompt that is on screen', () =
     const screen = code('app/(tabs)/index.tsx');
     expect(screen).toMatch(/haptic\('tap'\);\s*setLeftKey\(prompt\.key\);\s*setShuffle\(\(s\) => s \+ 1\);/);
     expect(screen).toContain('const [leftKey, setLeftKey] = useState<string | null>(null);');
-    // it is a dependency of the memo, so the draw sees it
-    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey(, childName)?\]/);
+    // both are dependencies of the memo, so the draw sees them: a draw without childName would keep a prompt chosen
+    // for the old name (or for no name) after the name changes
+    expect(screen).toMatch(/\[birthday, daysSince, recent, today, shuffle, leftKey, childName\]/);
   });
 });
 

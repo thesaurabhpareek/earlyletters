@@ -1,10 +1,11 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
-import { serverFeaturesEnabled } from '@/lib/capabilities';
-import { copy, fill } from '@/lib/copy';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
+import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { childLabel, copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
-import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
+import { familySurfacesShown, inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
@@ -25,7 +26,7 @@ import { ordinalOf, track } from '@/lib/analytics/track';
 export default function ChildSettings() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [child, setChild] = useState(() => getChild(id));
-  const doors = visibleCoParentDoors(serverFeaturesEnabled());
+  const doors = visibleCoParentDoors(serverFeaturesEnabled(), PLUS_ALPHA);
   const [editing, setEditing] = useState<'name' | 'date' | 'signsAs' | 'born' | null>(null);
   const [hiddenFor, setHiddenFor] = useState(() => readHidden(id));
   const [members, setMembers] = useState(() => (id ? listMembers(id) : []));
@@ -112,7 +113,7 @@ export default function ChildSettings() {
       {editing === 'born' ? <BornEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection title={s.detailsLabel}>
-        <ListRow title={x.edit.nameLabel} trailing={name} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
+        <ListRow title={x.edit.nameLabel} trailing={childLabel(name)} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
         <ListRow title={dateRow.title} trailing={dateRow.value} onPress={openDate} accessibilityHint={x.edit.rowHint} />
         <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>
@@ -134,9 +135,12 @@ export default function ChildSettings() {
       {/* "Write this book together": coming soon with server features off; the invite with one parent, the Family tab
           with two (child-settings.logic.ts bookRow). The label is familyCopy.bookRow.label with server features on, and
           the kill path's familyCopy.soon.settingsRow with them off (the same words, S46). */}
-      <ListSection footer={row.footer}>
-        <ListRow title={serverFeaturesEnabled() ? familyCopy.bookRow.label : familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
-      </ListSection>
+      {/* D-126 (BL-604): the store build with server features off has no such row; every alpha build keeps it. */}
+      {familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent }) && (
+        <ListSection footer={row.footer}>
+          <ListRow title={serverFeaturesEnabled() ? familyCopy.bookRow.label : familyCopy.soon.settingsRow} value={row.value} trailing="chevron" onPress={() => router.push(row.href as Href)} testID="child.bookRow" />
+        </ListSection>
+      )}
 
       {/* A switch that cannot be turned on is hidden until co-parent sharing exists (D-087). */}
       {doors.familyCanReadSwitch && (

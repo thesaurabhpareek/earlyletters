@@ -10,8 +10,9 @@ import { PROMPTS } from '@scribe/content';
 import { isNameThemed, selectPrompt } from '@scribe/core';
 import { describe, expect, it } from 'vitest';
 import { coverName, coverSignature } from '../src/components/book/book-cover.logic';
-import { childRowTitle } from '../src/components/child/child-settings.logic';
-import { tonightDateline } from '../src/components/tonight/draft-card.logic';
+import { childRowTitle, nameEditorError } from '../src/components/child/child-settings.logic';
+import { tonightDateline, writeDateline } from '../src/components/tonight/draft-card.logic';
+import { copy } from '../src/lib/copy';
 import { anotherThought, tonightPromptInput } from '../src/components/tonight/prompt.logic';
 
 const SRC = join(__dirname, '..', 'src');
@@ -30,6 +31,45 @@ describe('[NX-36-S7] Tonight dateline for a nameless child', () => {
   });
 });
 
+describe('[NX-36-S13] Write has the same dateline as Tonight', () => {
+  const names = ['', '   ', 'Asha', 'Nila'];
+  const stages: (string | null)[] = ['7 months', 'Before You', null];
+  it('[NX-31-R3] a blank name gives the stage alone on Write: no leading dot, no "your child", spoken the same', () => {
+    expect(writeDateline('', '7 months')).toEqual({ text: '7 months', a11y: '7 months' });
+    expect(writeDateline('   ', 'Before You')).toEqual({ text: 'Before You', a11y: 'Before You' });
+    for (const name of ['', '   ']) {
+      for (const stage of ['7 months', 'Before You']) {
+        const d = writeDateline(name, stage);
+        expect(d.text).not.toMatch(/^\s*·|your child/i);
+        expect(d.a11y).not.toMatch(/^\s*[,·]|your child/i);
+      }
+    }
+  });
+  it('[NX-31-R3] with no stage Write shows the name, or nothing at all for a blank one (it has no day to fall back to)', () => {
+    expect(writeDateline('Asha', null)).toEqual({ text: 'Asha', a11y: 'Asha' });
+    expect(writeDateline('', null)).toEqual({ text: '', a11y: '' });
+    expect(writeDateline('   ', null)).toEqual({ text: '', a11y: '' });
+  });
+  it('[NX-36-S13] a named child reads as it did: "Asha · 7 months", spoken "Asha, 7 months"', () => {
+    expect(writeDateline('Asha', '7 months')).toEqual({ text: 'Asha · 7 months', a11y: 'Asha, 7 months' });
+  });
+  it('[NX-36-S13] Write and Tonight say the same words for every name and stage', () => {
+    for (const name of names) {
+      for (const stage of stages) {
+        const tonight = tonightDateline(name, stage, name.trim());
+        expect(writeDateline(name, stage)).toEqual(tonight);
+      }
+    }
+  });
+  it('[NX-36-S13] the Write screen builds its dateline from that function, draws nothing for an empty one, and has no rule of its own', () => {
+    const write = code('app/write.tsx');
+    expect(write).toContain('const dateline = writeDateline(child.name, age);');
+    expect(write).toContain('{dateline.text ? (');
+    expect(write).toContain('accessibilityLabel={dateline.a11y}');
+    expect(write).not.toMatch(/\$\{child\.name\} · |childLabel\(/);
+  });
+});
+
 describe('[NX-36-S7] Settings, Children row for a nameless child', () => {
   it('[NX-31-R3] a blank name shows the fallback with a capital; a name shows as stored', () => {
     expect(childRowTitle('')).toBe('Your child');
@@ -40,6 +80,32 @@ describe('[NX-36-S7] Settings, Children row for a nameless child', () => {
     const home = code('app/settings/index.tsx');
     expect(home).toContain('title={childRowTitle(ch.name)}');
     expect(home).not.toContain('title={ch.name}');
+  });
+});
+
+describe('[NX-31-R3] Settings, the book, Name on a nameless book', () => {
+  it('[NX-31-R3] opening the field empty says nothing: this row is how a name is added later', () => {
+    expect(nameEditorError('', '')).toBeNull();
+  });
+  it('[NX-31-R3] typing a name says nothing, and deleting it again returns to the opened state without a warning', () => {
+    expect(nameEditorError('', 'N')).toBeNull();
+    expect(nameEditorError('', 'Nila')).toBeNull();
+    expect(nameEditorError('', '')).toBeNull();
+  });
+  it('[NX-31-R3] spaces alone, once typed, still say a name is needed', () => {
+    expect(nameEditorError('', '   ')).toBe(copy.childrenExtra.edit.nameEmpty);
+  });
+  it('[NX-31-R3] a named book is unchanged: clearing the name says "Add a name to save." and a name is silent', () => {
+    expect(nameEditorError('Asha', 'Asha')).toBeNull();
+    expect(nameEditorError('Asha', 'Nila')).toBeNull();
+    expect(nameEditorError('Asha', '')).toBe(copy.childrenExtra.edit.nameEmpty);
+    expect(nameEditorError('Asha', '  ')).toBe(copy.childrenExtra.edit.nameEmpty);
+    expect(copy.childrenExtra.edit.nameEmpty).toBe('Add a name to save.');
+  });
+  it('[NX-31-R3] the Name editor takes its error line from that rule, not from the bare check', () => {
+    const editors = code('components/child/child-editors.tsx');
+    expect(editors).toContain('error={nameEditorError(child.name, draft)}');
+    expect(editors).not.toContain('check.ok ? null : e.nameEmpty');
   });
 });
 

@@ -36,6 +36,7 @@ import { ListeningAura } from '@/components/capture/listening-aura';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
+  afterFinish,
   afterForeground,
   createListenAnnouncer,
   elapsedClock,
@@ -248,9 +249,10 @@ export default function Listen() {
     // (the recorder has stopped), never on the timeout: leaving Listen unmounts it, and unmount always resets the gate.
     const kept = await finishWithin(finalizeTake(recorder, id, reason, lastDuration.current).finally(() => closeTake(token)));
     haptic('press'); // record stop (MOTION 6), after the session ends: iOS mutes haptics while recording
-    const draft = kept.ok ? kept.value : null;
-    // Review says why in one honest line when leaving the app or a call ended the take (S14).
-    if (draft) router.replace({ pathname: '/review', params: reviewParams(draft.id, reason) });
+    // Review says why in one honest line when leaving the app or a call ended the take (S14). A slow save (timeout)
+    // still opens Review on the known draft id; only a save that threw leaves without it.
+    const next = afterFinish(id, reason, kept);
+    if (next.to === 'review') router.replace({ pathname: '/review', params: next.params });
     else if (router.canGoBack()) router.back();
     else router.replace('/');
   };

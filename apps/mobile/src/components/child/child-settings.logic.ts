@@ -15,7 +15,7 @@
  * tab. The screen labels it `familyCopy.bookRow.label` with server features on and `familyCopy.soon.settingsRow` with
  * them off (the same words, S46).
  */
-import { dueDatePassed } from '@scribe/core';
+import { checkChildName, dueDatePassed } from '@scribe/core';
 import { familyCopy } from '@scribe/content';
 import { childLabel, copy, fill } from '@/lib/copy';
 
@@ -27,6 +27,16 @@ import { childLabel, copy, fill } from '@/lib/copy';
 export function childRowTitle(name: string | null | undefined): string {
   const label = childLabel(name);
   return name?.trim() ? label : label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+/**
+ * The line under the Name field in Settings, the book, Name: why the name cannot be saved, or null. A book made without
+ * a name (NX-31-R3) opens this field empty, and that is not a mistake: this row is how a name gets added later. So
+ * nothing is said until the field differs from what it opened with. Clearing a name that was there still says so.
+ */
+export function nameEditorError(stored: string, draft: string): string | null {
+  if (draft === stored) return null;
+  return checkChildName(draft).ok ? null : copy.childrenExtra.edit.nameEmpty;
 }
 
 /** Per-book setting on this phone: the due-date card was put away with "Hide". Holds the due date it was hidden for. */

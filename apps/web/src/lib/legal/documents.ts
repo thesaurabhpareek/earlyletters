@@ -43,10 +43,16 @@ export interface LegalSource {
   body: string;
 }
 
-/** `content/legal` under the web app, whether the process starts in apps/web (next, vitest) or at the repo root. */
+/**
+ * `content/legal` under the web app, whether the process starts in apps/web (next, vitest) or at the repo root.
+ * No environment variable names it (BL-778): the pins on these bytes run in CI, not in the hosting build, so a variable
+ * set only in the hosting project could point the site at another folder without any test seeing it. The build command,
+ * node options and root directory are not covered by this: the check after a deploy (the sha256 of the two raw files,
+ * CR-60) is the gate for those.
+ */
 function contentDir(): string {
   const here = join(process.cwd(), 'content', 'legal');
-  return process.env.LEGAL_CONTENT_DIR ?? (existsDir(here) ? here : join(process.cwd(), 'apps', 'web', 'content', 'legal'));
+  return existsDir(here) ? here : join(process.cwd(), 'apps', 'web', 'content', 'legal');
 }
 
 function existsDir(path: string): boolean {

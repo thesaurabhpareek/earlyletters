@@ -27,7 +27,7 @@
  * `gentleReturn`, plan notices, per-book "pause celebrations".
  */
 import { en } from '@scribe/content';
-import { renderTemplate } from '@scribe/core';
+import { childLabel, fill } from '../copy';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -240,10 +240,6 @@ export function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-function fill(text: string, values: Record<string, string | number>): string {
-  return renderTemplate(text, values);
-}
-
 function eveningCopy(variant: number, date: CalendarDate, childName: string | null): { title: string; body: string } {
   const values = { child: childName ?? '', weekday: reminderCopy.weekdays[weekdayOf(date)] };
   const v = childName ? en.notifications.evening[variant] : reminderCopy.neutral.evening[variant];
@@ -257,7 +253,7 @@ interface DayNote {
 }
 
 function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: string } {
-  const childNames = joinNames(note.children.map((c) => c.child.name));
+  const childNames = joinNames(note.children.map((c) => childLabel(c.child.name)));
   const months = note.children[0].months;
   if (note.kind === 'birthday') {
     if (names) return { title: fill(en.notifications.birthday.title, { child: childNames }), body: en.notifications.birthday.body };

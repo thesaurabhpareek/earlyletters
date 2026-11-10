@@ -66,6 +66,10 @@ export const familyCopy = {
     share: 'Share invite link',
     working: 'Getting the link ready',
     shareTitle: "Join {child}'s book",
+    /** Used instead of the three keys around it when the book has no name (NX-31-R3): the parent is talking to their co-parent. */
+    shareTitleNoName: "Join our book of letters",
+    shareMessageNoName: "I started a book of letters for our child. Join me, so we can both write in it:",
+    shareMessageNamedNoName: "{signsAs}, I started a book of letters for our child. Join me, so we can both write in it:",
     shareMessage: "I started a book of letters for {child}. Join me, so we can both write to {child}:",
     shareMessageNamed: "{signsAs}, I started a book of letters for {child}. Join me, so we can both write to {child}:",
     done: 'The invite waits on the Family tab until they join.',
