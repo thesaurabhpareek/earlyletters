@@ -1,12 +1,14 @@
 # Release path order: a draft section for `docs/BACKLOG.md` (HV2-B14)
 
-Owner: product. Written Sun 1 Nov 2026 against `origin/develop` at b79982d0. Satisfies HV2-021 (release-path section first, a Done-when line on every release-path task). Retro refs: PRD-5, PRD-6. The coordinator moves this section to the top of `docs/BACKLOG.md`; this PR does not edit `docs/BACKLOG.md`.
+> **Historical draft, dated 1 Nov 2026, unverified. Do not move this into `docs/BACKLOG.md`.** Every date, status and "build 1" or "build 2" reference below was written against `origin/develop` at b79982d0 and is out of date. Later builds exist: `docs/release/BUILD_GATE_2026-11-08.md` (on develop) reads the build gate on 8 Nov, #697 (merged) adds preview-record TestFlight builds to the Family group, and builds 9 to 12 are recorded in the Project docs (`infra/build-10-record-2026-11-08.md`, `infra/build-11-record-2026-11-08.md`, `infra/cto-rulings-2026-11-09-build12-cut.md`) and in open PRs #613 and #707. Those Project docs were not re-read for this edit. A current release-path section would have to be re-based on the build 12 programme and the go/no-go of 9 Nov by whoever owns the release path; this file is kept as a record of how the path looked on 1 Nov.
+
+Owner: product. Written Sun 1 Nov 2026 against `origin/develop` at b79982d0. Satisfies HV2-021 (release-path section first, a Done-when line on every release-path task) as of that date only. Retro refs: PRD-5, PRD-6. This PR does not edit `docs/BACKLOG.md`.
 
 ## How to read this
 
 - The release path is the chain that decides the date: build 1 on TestFlight, the device sitting on build 1, the freeze, build 2, the go/no-go. Everything else in the backlog waits behind it. Order below is the order to do things, not the order of ids.
 - Dates: freeze Tue 3 Nov 5:00 AM PT (13:00 UTC; the hour is the coordinator's), go/no-go Mon 9 Nov, both D-130 (`docs/release/TESTFLIGHT.md:5`, `docs/release/FOUNDER_QUEUE.md:20`). After the freeze only S0 and S1 fixes land (`docs/BACKLOG.md:538`).
-- Status is what a document says, not what anyone checked. As of this draft no session has verified that build 1 exists on TestFlight. `docs/release/TESTFLIGHT.md:225` says no build had been made on 30 Oct; nothing newer in the repo contradicts it, and `docs/qa/ALPHA_GO_NO_GO.md:22` still says "no build made yet". Every status below is `U` (unverified) unless it cites a merged PR.
+- Status is what a document says, not what anyone checked. As of 1 Nov no session had verified that build 1 existed on TestFlight (`docs/release/TESTFLIGHT.md:225` said no build had been made on 30 Oct). That is no longer a safe reading: see the note at the top. Every status below is the 1 Nov reading and is `U` (unverified) unless it cites a merged PR.
 - Ids: rows are `RP-##` (release path). Where an existing task or founder item already holds the work, the row cites it and does not copy it (`BL-###`, `FQ` = row of `docs/release/FOUNDER_QUEUE.md` section 0, `Q2-##` = its section 2, `B1-##`/`B2-##` = `docs/qa/ALPHA_GO_NO_GO.md`). No new `BL-` id is taken; the coordinator assigns them with `node scripts/agents/next-id.mjs` when this moves. Owner `founder` means a step only the founder can take.
 - Mode `human` = founder account, device, vendor or secret. `agent` = none of those.
 
