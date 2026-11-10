@@ -31,6 +31,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 | 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
+| 32 | `20261109000000_child_name_optional.sql` | **Not applied; needs approve-migration; must be applied before any servers-on build containing #701** | A book's name may be empty on the server, the date stays required (section "File 32") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -1220,3 +1221,11 @@ What it changes:
 - Tests: `audit_append_only` (new).
 
 **Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.
+
+## File 32: a child's name is optional (9 Nov 2026, data-architect, PR #700)
+
+`20261109000000_child_name_optional.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). It must be applied (staging, then production) before any servers-on build that contains #701: that build stores an empty name for the first book, and today's `create_child_row` refuses it (22023), so the whole first-run batch would be rejected and the account would have no book.
+
+What it changes: `children_name_check` becomes `char_length(name) <= 60` (was 1 to 60), and `create_child_row` stores a blank or missing name as `''` (over 60 is still refused; a birthday or due date is still required). `book_update` now trims a name on edit and stores `''` for spaces only or null, like create. No row changes, no new object, no grant change.
+
+**Apply** after file 31 (the audit append-only file). **Check:** `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.children'::regclass and contype = 'c';` must list `children_name_check` as `CHECK ((char_length(name) <= 60))` and no other check on name (if an older name check is listed under another name, drop it by that name). **Rollback:** only while no book has an empty name: restore the 1 to 60 check, re-create `book_update` from `20261015000000`, and re-create `create_child_row` from `20261004000000` with `set search_path = pg_catalog, public, pg_temp`, then re-run its `revoke all ... from public, anon, authenticated, service_role`.
