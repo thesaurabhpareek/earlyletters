@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { en } from '@scribe/content';
 import { cardLabel } from '../src/components/book/letter-card.logic';
+import { provenanceLine } from '../src/lib/provenance';
 
 const base = { signature: 'From Mama', dateline: 'Tuesday, October 14, 2026, Asha is 7 months old', text: 'Asha laughed at the dog', inBook: true, privateLabel: 'Private', recordingOnPhone: en.book.recordingOnPhone };
 
@@ -23,5 +24,28 @@ describe('[NX-36-S17] a card label says Recording kept on this phone only when t
     const card = readFileSync(join(__dirname, '..', 'src', 'components', 'book', 'letter-card.tsx'), 'utf8');
     expect(card).toMatch(/audioUri: entry\.audioUri,/);
     expect(card).not.toMatch(/spoken,\s*\n\s*own:/);
+  });
+});
+
+describe('[NX-36-S17] the letter page line says Recording kept on this phone only when the letter has a recording reference on this phone', () => {
+  const words = en.book.provenance;
+  const spoken = { captureMode: 'spoken', rawTranscript: 'Asha um laughed', finalText: 'Asha laughed' };
+  const line = (audioUri: string | null | undefined, own = true) => provenanceLine(spoken, { own, audioUri, words, recordingOnPhone: en.book.recordingOnPhone });
+
+  it('[NX-36-S17] with an audioUri an own spoken letter says so, word for word', () => {
+    expect(line('file:///rec/1.m4a')).toBe('Spoken, with small fixes. Recording kept on this phone.');
+  });
+  it('[NX-36-S17] a spoken own letter pulled onto a new phone (no audioUri) says how it was made and nothing about a recording here', () => {
+    for (const none of [null, undefined, '']) {
+      expect(line(none)).toBe('Spoken, with small fixes');
+      expect(line(none)).not.toMatch(/Recording kept|phone/);
+    }
+  });
+  it('[NX-36-S17] the other parent\'s letter never names a place, whatever audioUri holds', () => {
+    expect(line('file:///rec/1.m4a', false)).toBe('Spoken');
+  });
+  it('[NX-36-S17] the page passes entry.audioUri to the line and nothing about speaking or owning decides the place', () => {
+    const page = readFileSync(join(__dirname, '..', 'src', 'app', 'letter', '[id].tsx'), 'utf8');
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, audioUri: entry\.audioUri,/);
   });
 });

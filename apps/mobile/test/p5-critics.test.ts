@@ -327,7 +327,7 @@ describe('[S7] a Book card says where the recording is only when this phone hold
 
 describe('[S8] the letter page claims no fixes it cannot know', () => {
   const words = en.book.provenance;
-  const line = (entry: { captureMode: string; finalText: string; rawTranscript: string }, own: boolean) => provenanceLine(entry, { own, words, recordingOnPhone: en.book.recordingOnPhone });
+  const line = (entry: { captureMode: string; finalText: string; rawTranscript: string }, own: boolean) => provenanceLine(entry, { own, audioUri: 'file:///rec/1.m4a', words, recordingOnPhone: en.book.recordingOnPhone });
   const fixed = { captureMode: 'spoken', rawTranscript: 'Asha um laughed', finalText: 'Asha laughed' };
   const exact = { captureMode: 'spoken', rawTranscript: 'Asha laughed', finalText: 'Asha laughed' };
   // The other parent's phone never holds the author's working material (book_entries leaves it out).
@@ -379,7 +379,7 @@ describe('[S8] the letter page claims no fixes it cannot know', () => {
 
   it('the page composes the line from lib/provenance (source)', () => {
     const page = code(src('app/letter/[id].tsx'));
-    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, audioUri: entry\.audioUri, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
     expect(page).not.toMatch(/copy\.book\.provenance\[/);
   });
 });
