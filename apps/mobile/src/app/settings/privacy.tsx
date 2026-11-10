@@ -1,10 +1,11 @@
-import { Stack } from 'expo-router';
+import { router, Stack, useFocusEffect, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ScrollView } from 'react-native';
 import { brand } from '@scribe/brand';
-import { NeverList } from '@/components/consent/never-list';
 import { consentCopy } from '@/components/consent/copy';
+import { privacyPage } from '@/components/settings/privacy.logic';
+import { Text } from '@/components/ui/text';
 import { capabilities } from '@/lib/capabilities';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { copy, fill } from '@/lib/copy';
@@ -12,32 +13,58 @@ import { getActiveChild } from '@/lib/store';
 import { grantAnalytics, withdrawAnalytics } from '@/lib/analytics';
 import { useAnalyticsConsent } from '@/lib/analytics/use-analytics-consent';
 import { sensitiveStatusWords, useSensitiveDataStatus } from '@/lib/analytics/privacy-sources';
+import { lockScreenNamesOn } from '@/lib/reminders';
+import { readLockAbility, useAppLock } from '@/lib/app-lock/controller';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import type { LockMethod } from '@/lib/app-lock/machine';
 
 /**
- * Settings > Privacy (PRD.md K-01, K-17; C-REQ-016; LEGAL-REQ-003, -006).
- * Each consent is visible and changeable here, within two taps of Settings.
+ * Settings > Privacy (PRD.md K-01, K-17; C-REQ-016; LEGAL-REQ-003, -006), as ruled 1 Nov 2026 (CPrivO-5;
+ * proposals/privacy-settings.md 3 and 4; docs/design/screens/SETTINGS_AND_ACCOUNT.md 11). Facts first, then what a
+ * parent can do, then the documents:
  *
- * - Usage and crash reports: the same switch as the consent sheet. Off stops
- *   sending within the session (PRD-REQ-018); on starts a new random id.
- * - Sync and family sharing (sensitive-data consent): the session provider registers its status (BL-485 (b)), read-only:
- *   no `open`, so ListRow draws a plain row (no chevron, no press). No withdrawal yet (BL-485 (a)); lib/analytics/privacy-sources.
- * - What we never do, then the full documents.
- * v1.0: no sync and no account (lib/capabilities.ts), so the sync consent row is not shown;
- * no analytics either (capabilities.analytics, 15 Oct), so the usage switch is not shown.
+ * - Top: `trust.promise`, word for word, plain text, no icon (D-061; VOICE.md: no locks, no shields). It replaces
+ *   the "What we never do" list, whose third line named photos, a feature v1.0 does not have (M13 rule 4).
+ * - Where your book is kept: P2 (no sync, or sync status 'off') or P2b (status 'on'), none while unknown or signed
+ *   out; the iPhone backup line (CCO-8 wording, same as Where your letters live); P3; P4 or the usage switch
+ *   (capabilities.analytics; P4 only where the build cannot collect, D-095); the sync row when the build has sync.
+ * - Who can see it: the plain fact while the app lock is off (`whoLockOff`), and "You, after Face ID or your passcode."
+ *   (`appLock.privacy.whoLockOn.*`, by the phone's method) while it is on; the App lock row, On or Off, which opens
+ *   Settings > App lock (CDesO-1: one setting, two doors); Names in notifications, which opens Reminders; P8 as the
+ *   footer. Until the device answers, the lock-on line is the passcode one, which is true on every phone.
+ * - What you can do: Export your book, Recently deleted, and P9 in a build with no account. Delete account stays on
+ *   Settings home only (D-129: the one screen that names its route). ERASE_ROW: "Erase everything on this phone"
+ *   joins here when #520 lands (design.md 2.11).
+ * - Our promises in full: the Privacy Policy and the Terms, the two pages the website serves
+ *   (test/privacy-documents.test.ts). Then `trust.short`, the "Private by default" line, moved here from Settings home.
  *
- * EXPERIENCE_PASS_2026-10 S44 (package P6): the never-lines are a plain list on paper with a glyph each (NeverList),
- * not rows that look tappable; their words are registered claims, unchanged. The documents stay rows, rendered from
- * content: the Privacy Policy and the Terms, the two pages the website serves. #169 took /health-privacy and
- * /subprocessors off the site before #163 landed, so their rows went from here first (P6b critics' M1, #370); the
- * content keys `healthPrivacyLink` and `subprocessorsLink` wait for S14 and #163 to retire (spec S44, counsel C9).
- * test/privacy-documents.test.ts fails if a row opens a route the website removed.
+ * Each consent stays visible and changeable here, within two taps of Settings. Which lines show is decided by
+ * privacyPage() (components/settings/privacy.logic.ts), so test/privacy-page.test.ts runs every build's variant.
  */
 export default function PrivacySettings() {
   const p = copy.settings.privacy;
   const analytics = useAnalyticsConsent();
   const sensitive = useSensitiveDataStatus();
   const [busy, setBusy] = useState(false);
+  const [names, setNames] = useState(lockScreenNamesOn);
+  // Names in notifications changes on the Reminders page: re-read it when Privacy comes back.
+  useFocusEffect(useCallback(() => setNames(lockScreenNamesOn()), []));
   const child = getActiveChild()?.name ?? consentCopy.childFallback;
+  const lockOn = useAppLock().enabled;
+  const [method, setMethod] = useState<LockMethod>('passcode');
+  useEffect(() => {
+    let live = true;
+    void readLockAbility().then((a) => live && a.available && setMethod(a.method));
+    return () => {
+      live = false;
+    };
+  }, []);
+  const page = privacyPage({
+    sync: capabilities.sync,
+    syncStatus: sensitive.status,
+    analytics: capabilities.analytics,
+    signIn: capabilities.signIn,
+  });
 
   const setAnalytics = async (on: boolean) => {
     if (busy) return;
@@ -50,25 +77,31 @@ export default function PrivacySettings() {
     }
   };
 
-  const sensitiveValue = sensitiveStatusWords(sensitive.status);
   const open = (url: string) => () => void WebBrowser.openBrowserAsync(url);
-
+  const go = (route: string) => () => router.push(route as Href);
 
   return (
     <>
       <Stack.Screen options={{ title: p.title }} />
       <ScrollView contentContainerClassName="gap-7 px-5 pb-12 pt-4" contentInsetAdjustmentBehavior="automatic">
-        {capabilities.analytics ? (
-          <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
-            <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
-          </ListSection>
-        ) : null}
+        {/* The promise, word for word, at the top (D-061, CPrivO-5). No icon. */}
+        <Text variant="body" className="px-4" testID="privacy.promise">
+          {copy.trust.promise}
+        </Text>
 
-        {capabilities.sync ? (
-          <ListSection title={consentCopy.sensitiveSection} footer={fill(p.sensitiveHelp, { child })}>
+        <ListSection title={p.whereTitle}>
+          {page.facts.map((key) => (
+            <ListRow key={key} title={p[key]} testID={`privacy.fact.${key}`} />
+          ))}
+          <ListRow title={p.iphoneBackupTitle} subtitle={p.iphoneBackup} testID="privacy.iphoneBackup" />
+        </ListSection>
+
+        {/* Sync and family sharing (build 2, D-128): read-only, no withdrawal yet (BL-485). */}
+        {page.syncRow ? (
+          <ListSection footer={fill(p.sensitiveHelp, { child })}>
             <ListRow
               title={p.sensitiveLabel}
-              value={sensitiveValue}
+              value={sensitiveStatusWords(sensitive.status)}
               trailing={sensitive.open ? 'chevron' : 'none'}
               onPress={sensitive.open}
               disabled={!sensitive.open && sensitive.status === 'signed_out'}
@@ -76,11 +109,41 @@ export default function PrivacySettings() {
           </ListSection>
         ) : null}
 
-        <NeverList />
+        {capabilities.analytics ? (
+          <ListSection title={consentCopy.analyticsSection} footer={p.analyticsOffNote}>
+            <ToggleRow title={p.analyticsLabel} description={p.analyticsHelp} value={analytics === 'granted'} onValueChange={setAnalytics} disabled={busy} />
+          </ListSection>
+        ) : null}
+
+        <ListSection title={p.whoTitle} footer={p.notificationsLine}>
+          <ListRow title={lockOn ? appLockCopy.privacy.whoLockOn[method] : p.whoLockOff} testID="privacy.who" />
+          <ListRow
+            title={appLockCopy.settingsHome.appLock}
+            value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+            trailing="chevron"
+            onPress={go('/settings/app-lock')}
+            testID="privacy.appLock"
+          />
+          <ListRow
+            title={p.lockScreenLabel}
+            value={names ? p.namesValueOn : p.namesValueOff}
+            trailing="chevron"
+            onPress={go('/settings/reminders')}
+            testID="privacy.names"
+          />
+        </ListSection>
+
+        <ListSection title={p.canDoTitle} footer={page.noAccountLine ? p.noAccount : undefined}>
+          <ListRow title={copy.settingsHome.exportLabel} trailing="chevron" onPress={go('/settings/export')} />
+          <ListRow title={copy.settings.delete.recentlyDeleted} trailing="chevron" onPress={go('/settings/recently-deleted')} />
+          {/* ERASE_ROW: "Erase everything on this phone" (#520) joins here once it is merged. */}
+          {/* No Delete account row here: D-129 keeps Settings home the only screen that names that route
+              (test/account-deletion-switch.test.ts). */}
+        </ListSection>
 
         {/* Only documents the website serves (P6b critics' M1): it took /health-privacy and /subprocessors down (#169), and
             their content sits inside /privacy. Their content keys wait for S14 and #163. */}
-        <ListSection title={p.documentsTitle}>
+        <ListSection title={p.documentsTitle} footer={copy.trust.short}>
           <ListRow accessibilityRole="link" title={p.privacyPolicyLink} trailing="chevron" onPress={open(brand.web.privacy)} />
           <ListRow accessibilityRole="link" title={p.termsLink} trailing="chevron" onPress={open(brand.web.terms)} />
         </ListSection>

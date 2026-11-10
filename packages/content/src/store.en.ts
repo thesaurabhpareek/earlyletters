@@ -11,7 +11,9 @@
 // - no other platform's name (App Review 2.3.10); Apple's own Family Sharing is fine;
 // - adults only: no "kids", "for children" or child-directed phrases (LEGAL-REQ-045, App Review 2.3.8);
 // - English only (D-121 item 1); the other six languages return one by one as each passes its gate (D-125 item 2);
-// - no co-parent sharing, sign-in or sync in this build (D-121, D-126): nothing invites anyone;
+// - no co-parent sharing, sign-in or sync promised in the listing (D-121, D-126): nothing invites anyone. Build 12 runs
+//   with servers on (founder, 8 Nov 2026; no D-### yet), so every line must also be true of a servers-on build: the
+//   privacy paragraph says what holds without an account and claims nothing about the servers (#672 claim 3);
 // - "exactly as you said it" is held from the listing until counsel clears it at T30 (D-125 item 9);
 // - recordings: no backup of our own (backup flag off); the person's own iPhone backup plus Export;
 //   no family listening and no word highlight in Read together (D-059);
@@ -44,8 +46,9 @@ export const storeListing = {
   subtitle: brand.subtitle,
   promotionalText:
     "Tell your child about today in a minute. It stays in your words. Every change is marked, and your original recording is kept unchanged.",
-  keywords: "diary,keepsake,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,private,talk,mama",
-  description: `${brand.name} is the baby memory book you fill by talking.
+  // D-139: no word from the name or subtitle; "memory" and "book" keep those searches matching. 100 of 100 bytes.
+  keywords: "diary,keepsake,memory,book,voice,newborn,toddler,child,parenting,audio,recorder,bedtime,mom,dad,mama",
+  description: `${brand.name}: letters to your child, in your own words and voice.
 
 Tell your child one thing about today. The first laugh, the long night, the song you made up in the car. It becomes a letter in your own words, with your voice kept beside it.
 
@@ -70,7 +73,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} There is no account to make, and your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -97,8 +100,9 @@ Privacy Policy: ${brand.web.privacy}`,
   supportEmail: brand.support.email,
   /**
    * App Review notes (guideline 2.1; D-004 positioning). Sent by the release workflow, never shown to families.
-   * First draft for BL-341, which adds how to reach Plus. True for the on-device v1.0 only (PR #54): update it
-   * when sign-in ships.
+   * True for a production build with server features off only (PR #54). A servers-on build sends
+   * `appReviewCopy.notesServersOn` (release/app-review.en.ts) instead; with-review-contact.ts refuses these words for
+   * a servers-on build (NO_SIGN_IN), so the wrong notes cannot be sent.
    */
   reviewNotes:
     "A family memory journal: parents speak or type short letters to their child. The app never rewrites what a person says. It makes only small marked fixes to the transcript (stray sounds, repeated words, a misheard name from the family's own word list, punctuation), and each fix can be put back. Version 1.0 keeps everything on the phone: there is no account to create and no server copy of letters. The birthday or due date a parent enters is used to file letters by month of age. This is not a health or medical service and gives no health advice.",

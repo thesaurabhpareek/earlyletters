@@ -35,6 +35,7 @@ const PROFILE_ENV = {
   EXPO_PUBLIC_ANALYTICS: 'off',
   EXPO_PUBLIC_ACCOUNT_DELETION: 'on',
   EXPO_PUBLIC_ENGLISH_ONLY: 'on',
+  EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en',
 };
 
 /** A store-ready repository, as productionChecks reads it. */
@@ -48,6 +49,12 @@ function good(): Input {
       version: '1.0.0',
       extra: { appEnv: 'production', serverFeatures: false, backup: false, statusReport: false, accountDeletion: false, eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } },
       ios: { privacyManifests: { NSPrivacyTracking: false, NSPrivacyTrackingDomains: [], NSPrivacyAccessedAPITypes: [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] }], NSPrivacyCollectedDataTypes: [] } },
+    },
+    introspected: {
+      ios: {
+        entitlements: { 'com.apple.developer.default-data-protection': 'NSFileProtectionCompleteUntilFirstUserAuthentication' },
+        infoPlist: { CFBundleURLTypes: [{ CFBundleURLSchemes: ['scribe', 'com.example.scribe'] }, { CFBundleURLSchemes: ['exp+scribe'] }] },
+      },
     },
     environmentsMd: ENVIRONMENTS,
     keysSource: KEYS,
@@ -80,6 +87,11 @@ const withCfg = (mutate: (cfg: Record<string, any>) => void): Input => {
   mutate(i.cfg as Record<string, any>);
   return i;
 };
+const withIntrospected = (mutate: (cfg: Record<string, any>) => void): Input => {
+  const i = good();
+  mutate(i.introspected as Record<string, any>);
+  return i;
+};
 
 describe('the store preflight on a store-ready fixture', () => {
   it('fails nothing, and gives every check an id', () => {
@@ -89,6 +101,7 @@ describe('the store preflight on a store-ready fixture', () => {
     expect(ids).toEqual([
       'app-env',
       'english-only',
+      'spoken-languages',
       'analytics',
       'servers',
       'backup',
@@ -97,6 +110,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'signing-keys',
       'pack-manifest',
       'privacy-manifest',
+      'sign-in',
       'version',
       'project-id',
       'update-channel',
@@ -107,6 +121,36 @@ describe('the store preflight on a store-ready fixture', () => {
   });
 });
 
+describe('the sign-in check follows the servers switch (a servers-on production profile must not contradict it)', () => {
+  const on = (): Input => {
+    const i = good();
+    i.cfg.extra.serverFeatures = true;
+    i.cfg.ios.usesAppleSignIn = true;
+    i.cfg.ios.associatedDomains = ['applinks:example.com'];
+    i.introspected.ios.entitlements['com.apple.developer.applesignin'] = ['Default'];
+    i.introspected.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com'];
+    return i;
+  };
+  it('servers on with the capabilities present: sign-in PASSes', () => {
+    const r = (productionChecks(on()) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('PASS');
+  });
+  it('servers on with a Google URL scheme in Info.plist: sign-in FAILs (build 12 has no Google sign-in)', () => {
+    const i = on();
+    i.introspected.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] });
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
+  it('servers on with the Google Sign-In plugin in the config: sign-in FAILs', () => {
+    const i = on();
+    i.cfg.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]];
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
+  it('servers on without the Apple entitlement or associated domains: sign-in FAILs', () => {
+    const r = (productionChecks({ ...good(), cfg: { ...good().cfg, extra: { ...good().cfg.extra, serverFeatures: true } } }) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('FAIL');
+  });
+});
+
 describe('one failing fixture per check: only that check FAILs', () => {
   const cases: [string, string, Input][] = [
     ['app-env', 'EXPO_PUBLIC_APP_ENV=preview (an alpha build: no letter limit, no Plus)', withEnv({ EXPO_PUBLIC_APP_ENV: 'preview' })],
@@ -114,11 +158,14 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['app-env', 'the evaluated config says appEnv preview', withCfg((c) => (c.extra.appEnv = 'preview'))],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY unset', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: undefined })],
     ['english-only', 'EXPO_PUBLIC_ENGLISH_ONLY=off', withEnv({ EXPO_PUBLIC_ENGLISH_ONLY: 'off' })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES unset (every language)', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: undefined })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES=en,es before Spanish has its gate', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: 'en,es' })],
+    ['spoken-languages', 'EXPO_PUBLIC_SPOKEN_LANGUAGES blank', withEnv({ EXPO_PUBLIC_SPOKEN_LANGUAGES: ' ' })],
     ['analytics', 'EXPO_PUBLIC_ANALYTICS=on', withEnv({ EXPO_PUBLIC_ANALYTICS: 'on' })],
     ['analytics', 'a PostHog key in the profile', withEnv({ EXPO_PUBLIC_POSTHOG_KEY: 'phc_asha' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=on', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'on' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES unwritten', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: undefined })],
-    ['servers', 'the evaluated config says serverFeatures true', withCfg((c) => (c.extra.serverFeatures = true))],
+    ['servers', 'the evaluated config says serverFeatures true', { ...withCfg((c) => { c.extra.serverFeatures = true; c.ios.usesAppleSignIn = true; c.ios.associatedDomains = ['applinks:example.com']; }), introspected: { ios: { entitlements: { 'com.apple.developer.applesignin': ['Default'], 'com.apple.developer.associated-domains': ['applinks:example.com'] }, infoPlist: { CFBundleURLTypes: [] } } } }],
     ['backup', 'EXPO_PUBLIC_BACKUP=on', withEnv({ EXPO_PUBLIC_BACKUP: 'on' })],
     ['backup', 'EXPO_PUBLIC_BACKUP unwritten', withEnv({ EXPO_PUBLIC_BACKUP: undefined })],
     ['status-report', 'EXPO_PUBLIC_STATUS_REPORT=on', withEnv({ EXPO_PUBLIC_STATUS_REPORT: 'on' })],
@@ -142,6 +189,13 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['privacy-manifest', 'no privacy manifest', withCfg((c) => delete c.ios.privacyManifests)],
     ['privacy-manifest', 'tracking true', withCfg((c) => (c.ios.privacyManifests.NSPrivacyTracking = true))],
     ['privacy-manifest', 'collected data with servers off', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = [{ NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress' }]))],
+    ['sign-in', 'ios.usesAppleSignIn in the config', withCfg((c) => (c.ios.usesAppleSignIn = true))],
+    ['sign-in', 'associated domains in the config', withCfg((c) => (c.ios.associatedDomains = ['applinks:example.com']))],
+    ['sign-in', 'the Google Sign-In plugin in the config', withCfg((c) => (c.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]]))],
+    ['sign-in', 'the Sign in with Apple entitlement after mods (expo-apple-authentication adds it on its own)', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.applesignin'] = ['Default']))],
+    ['sign-in', 'the associated-domains entitlement after mods', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com']))],
+    ['sign-in', 'a Google URL scheme in Info.plist', withIntrospected((c) => c.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] }))],
+    ['sign-in', 'the introspected config did not evaluate', { ...good(), introspected: null, introspectError: 'boom' }],
     ['version', 'version.json is not x.y.z', { ...good(), versionJson: '{ "version": "1.0" }' }],
     ['version', 'the config version differs from version.json', withCfg((c) => (c.version = '1.0.1'))],
     ['version', 'app.config.ts writes a version literal', { ...good(), appConfigSource: "export default () => ({ version: '1.0.0' });\n" }],
@@ -235,22 +289,24 @@ describe('the ACCOUNT_DELETION decision comes from docs/release/ENVIRONMENTS.md'
 });
 
 describe('the real repository', () => {
-  it('fails exactly the founder step still open (the production ascAppId) and the production update channel (RS-07); every other check passes', () => {
+  it('fails no check: the production ascAppId is set and the production profile names no update channel (S-12b); every check passes', () => {
     // This process's environment minus the build switches a developer shell may hold, so only the repository decides.
     const shell: NodeJS.ProcessEnv = { ...process.env };
     for (const k of Object.keys(shell)) if (k.startsWith('EXPO_PUBLIC_') || k === 'EAS_BUILD_PROFILE') delete shell[k];
     const results = productionChecks(readInputs(APP, shell)) as Result[];
     const failing = results.filter((r) => r.level === 'FAIL');
     // signing-keys passes since #512 (el-2026-11 and el-2026-11-backup) and must stay passing.
-    // asc-app-id: submit.production is empty on develop. S-12b (after 9 Nov, D-124 item 1) adds it and removes
-    // asc-app-id from this set. project-id passes since #487 and must stay passing.
+    // asc-app-id passes since S-12b: submit.production.ios.ascAppId is 6829377245, the production record
+    // (docs/ops/APP_STORE_CONNECT_SUBSCRIPTIONS.md, state read 1 Nov). project-id passes since #487 and must stay passing.
     // pack-manifest passes since #527 (pack release v1, signed by el-2026-11, live at packs.earlyletters.app) and must stay passing.
-    // update-channel FAILs on purpose (RS-07): eas.json build.production sets "channel": "production" and expo-updates
-    // is not a dependency, so `eas build --profile production --non-interactive` would stop (D-091; build 1, #538).
-    // REL-06/RS-15 removes the channel after the 9 Nov go/no-go (D-124 item 1) and removes update-channel from this set.
-    // Do not drop it from this list to make the test pass: fix eas.json instead.
-    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual(['asc-app-id', 'update-channel']);
-    expect(failing.find((r) => r.id === 'update-channel')?.msg).toContain('"production"');
+    // update-channel passes since S-12b (REL-06/RS-15): build.production names no channel, and expo-updates is not a
+    // dependency (D-091; build 1, #538). A channel on any profile without expo-updates would stop a non-interactive build.
+    // Do not add an id to this list to make the test pass: fix eas.json instead.
+    expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual([]);
+    expect(results.find((r) => r.id === 'update-channel')?.level).toBe('PASS');
+    expect(results.find((r) => r.id === 'asc-app-id')?.msg).toContain('6829377245');
+    // Guideline 2.5.19 (build 12 store compliance review, risk 5): sign-in capabilities follow the servers switch. Must stay passing.
+    expect(results.find((r) => r.id === 'sign-in')?.level).toBe('PASS');
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
