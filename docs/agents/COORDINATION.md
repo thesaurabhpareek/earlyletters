@@ -12,19 +12,19 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 | **Other threads** | Other chats (App Store setup, website, naming) | Work in their own area (see section 6); never push to `develop` or `main` |
 
 ## 2. Before you start: claim your area
-Claims now live in `docs/agents/CLAIMS.md` (live rows only, 72 h expiry); `BOARD.md` points to it and to `BOARD-ARCHIVE.md`. Where this section says `BOARD.md`, read `CLAIMS.md`.
-1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/BOARD.md`.
-2. Add a **claim** line to the "Active claims" table in `BOARD.md`: agent name or id, area, file globs, start time (UTC).
+Claims live in `docs/agents/CLAIMS.md` (live rows only, 72 h expiry). `BOARD.md` is a pointer to it and to `BOARD-ARCHIVE.md`, the old board kept as history; do not claim there.
+1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/CLAIMS.md`.
+2. Add a **claim** row to the table in `CLAIMS.md`: agent name or id, area, file globs, start and expiry time (UTC).
 3. If your globs overlap someone else's live claim, do not edit those files. Message the owner (`ListAgents`, then `SendMessage`) or note it on the board for the coordinator. Pick another slice of work meanwhile.
-4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
+4. `CLAIMS.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
 - Every ~20 tool calls or ~30 minutes, append **at most 3 lines** to your own check-in file, `docs/agents/checkins/<agent>.md`, named after the agent in your claim line (for example `S10.md` or `experience-p1-visual-system.md`; create it on your first check-in). Time is UTC, from `date -u`:
   `HH:MM (DD Mon) <agent> | done: ... | next: ... | blocked/needs: ...`
-- Never append check-ins to `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section in `BOARD.md` stays as history.
+- Never append check-ins to `CLAIMS.md` or `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section, now in `BOARD-ARCHIVE.md`, stays as history.
 - Before each check-in, read the newest check-ins on every branch: `git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' && git log --remotes -n 20 -p --format='%h %ci %s' -- docs/agents/checkins/`. File times in a fresh clone are checkout times, so don't sort by them. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
 - When you finish, change your claim to `done` and put a pointer to your report in the claim line.
-- In `BOARD.md`, add your claim line when you start (section 2); after that, change only your own claim line. Re-read the file right before writing.
+- In `CLAIMS.md`, add your claim row when you start (section 2); after that, change only your own row. Re-read the file right before writing.
 
 ## 4. One answer per question: propose, debate, converge
 Some choices shape other people's work: a library, a data shape, an API contract, a naming scheme, a UX pattern, a copy convention, a folder layout. For those:
@@ -50,6 +50,7 @@ Never copy a constant, type, colour or string into a second place. Import it.
 
 ## 6. Releases: one train, no surprise publishes
 - **Agents never commit, push, deploy, publish packs or config, apply migrations, change DNS or send email to real people.**
+- **Walls:** actions a session is refused, and the one-action hand-off to the founder for each, are in `docs/agents/WALLS.md`. Never retry a refused wall action.
 - **Integration happens per wave.** Agents finish and the coordinator runs all checks (`npm test`, `npm run test:db`, mobile `tsc`, the Deno tests). Green means a commit on the wave branch `auto/<date>-<topic>`, then a merge to `develop`, then push.
 - **`main`** changes only through a release PR from `develop`, approved by the founder. Store builds come only from tagged commits: `ios-v<x.y.z>-rc.<n>` on a `release/*` branch builds a candidate; `ios-v<x.y.z>` marks the candidate that was released. Preview-lane TestFlight builds come from `develop` (`docs/release/TESTFLIGHT.md`). Details: ADR 0022, `docs/ops/RELEASE.md`.
 - **Live migrations:** the founder applies them in the order given in `supabase/APPLY.md`. Every applied file is added to `.github/migrations-applied.txt`. Applied migrations are never edited.
@@ -58,8 +59,8 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - **Merging into `develop` (D-107, D-117):** the coordinator may merge a pull request that changes app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests once two independent review agents pass it and CI is green on its head (D-107). D-117 records the founder's blanket approval of 23 Oct 2026 in the founder's words, and under it the coordinator's operating rule (the coordinator's, not the founder's words; the founder may reverse any of it): the coordinator also merges the founder-only path classes of D-107, which are `supabase/**` (database, migrations, access rules), auth, payments (billing, StoreKit, `packages/core/src/plan.ts`), `.github/**`, `apps/mobile/eas.json` and `apps/mobile/app.config.ts`, the engine files (`EditType`, `verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`), and production deploys of the alpha queue. A merge needs two independent passing reviews on the current head and green CI (`npm run test:db` green for database pull requests). Steps that only the founder can perform stay the founder's, as a matter of fact: applying migrations to the hosted projects; the Apple, Expo, Supabase and Vercel accounts and their secrets; the signing and escrow keys. Legal text is counsel's to sign. Production deploys outside the alpha queue (the website on `main`, the App Store, TestFlight external groups) stay the founder's approval (D-107).
 
 ## 7. Cross-thread coordination
-- Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `BOARD.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
-- Before acting on anything shared, other threads read that doc: domains, DNS, Apple account, store listing, website, legal URLs, brand assets. They post their updates there, and the coordinator copies them into `BOARD.md`.
+- Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `CLAIMS.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
+- Before acting on anything shared, other threads read that doc: domains, DNS, Apple account, store listing, website, legal URLs, brand assets. They post their updates there, and the coordinator copies them into `CLAIMS.md`.
 - If two threads need the same thing (for example store screenshots, or DNS records), the first one to claim it on the board owns it. The other one reviews it.
 
 ## 8. Repo layout rules
@@ -77,3 +78,16 @@ This covers anything the founder reads: PR descriptions, reports, status updates
 - Say "unverified" when it is. Don't hedge what you checked.
 - A decision for the founder comes with a recommendation and the date it's needed.
 - Tables for comparisons; bullets only for parallel items. The content rules in `CLAUDE.md` apply here too.
+
+## 10. Writing requirements (1 Nov 2026, CR-47)
+This covers every requirement, backlog item, spec row, design note and acceptance criterion, from any agent, session or partner. Write it so a person reads it as written by a careful colleague, not a model.
+- **Voice.** `docs/prd/v2/_AUTHORING.md` section 7 and section 9 above. Plain words, short sentences, active voice, numbers instead of adjectives. No em dashes, en dashes, curly quotes, ellipsis characters or emoji. None of the banned words. No closing summary that repeats the item.
+- **Shape.** The requirement rules RR-1 to RR-13 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md` section 1, adopted with changes in D-123): one behaviour per id, Given/When/Then with a number or an observable state, the device it is checked on, the test that proves it, and who answers anything unknown, by when.
+- **The door.** A requirement that touches sign-in, the account holder's name or email, Terms or Privacy acceptance, any consent, the age step, account deletion or a support action on an account also has these lines:
+  - **Shown:** the exact words the person sees, by `packages/content` key, and the versioned links.
+  - **Records:** which act it writes and that the row follows PRIV-R21 (`docs/engineering/07-privacy-engineering.md`): document, version, action, method, surface, server and phone times, app version and build number, OS major version, platform, text language, the hash of the words shown, allowlisted context.
+  - **Never:** what it must not collect or store (PRIV-R02, PRIV-R10 and the PRIV-R21 never-list).
+  - **Decline and withdraw:** what happens on No, Not now and later withdrawal, and that export and deletion still work (PRIV-R09).
+- **Who writes what.** `product` writes the requirement and acceptance criteria; `design-systems` and `content` write the Shown line and its states, including the largest Dynamic Type; `mobile`, `sync` and `data-architect` write the Records line and the tests; `privacy`, `compliance-engineer` and `regulatory-affairs` review the Records and Never lines; `legal` confirms anything a user is promised, and the founder merges legal text (D-125). Partners and outside contributors follow the same rules.
+- **Evidence.** A fact about a law, Apple, a vendor or a device carries a source read that session and its date, or is marked unverified (`_AUTHORING.md` section 6).
+

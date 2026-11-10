@@ -35,6 +35,11 @@ export interface TranscribeProgress {
   stage: 'preparing' | 'listening';
   done: number;
   total: number;
+  /**
+   * The whole run's share written down (0..1), when the recogniser reports within a part (whisper.rn's per-call
+   * onProgress, 0 to 100). Only ever rises. Absent: progress steps per part (done / total).
+   */
+  fraction?: number;
 }
 
 export interface Word {

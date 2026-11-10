@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # Apple App Store listing, US English (v1.0.0)
 
 Generated from listing.json by render.mjs. Edit the JSON, run check.mjs, then render.mjs. Prices and trials come from apps/web/src/content/pricing.ts only.
@@ -28,10 +30,10 @@ journal,diary,keepsake,newborn,toddler,parents,mom,dad,family,audio,scrapbook,di
 - Secondary: Productivity (suggestion only; not stated in the repo. Alternative: leave unset).
 - Avoid Education and Kids: the brand never positions the product as learning, and the app is for adults.
 
-### Description (2775/4000)
+### Description (2783/4000)
 
 ```text
-Early Letters is the baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by month of age. Over time it becomes a book your child can read, and hear, for years.
 

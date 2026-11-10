@@ -114,10 +114,16 @@ export function exitCode(findings) {
   return findings.length ? 1 : 0;
 }
 
+/** Row ids and details come from a file a PR can edit: print only printable ASCII, no control bytes. Pure. */
+export const clean = (s) => String(s ?? '').replace(/[^\x20-\x7e]/g, '?').slice(0, 120);
+
 export function render(findings, rowCount) {
   const head = `CLAIMS.md: ${rowCount} row(s), ${findings.length} finding(s).`;
-  return [head, ...findings.map((f) => `${f.code} ${f.id}: ${f.detail}`)].join('\n');
+  return [head, ...findings.map((f) => `${clean(f.code)} ${clean(f.id)}: ${clean(f.detail)}`)].join('\n');
 }
+
+/** owner/name with letters, digits, dot, underscore, hyphen only, so it is safe to print into shell text. Pure. */
+export const validRepo = (repo) => /^[\w.-]+\/[\w.-]+$/.test(String(repo ?? ''));
 
 // Stale-PR sweep (HV2-B08). Policy: an open PR created more than 14 days ago may be closed by the
 // founder; branches stay. KEEP are harness PRs held to the 9 Nov go/no-go. HARVEST are PRs whose
@@ -136,12 +142,13 @@ export function sweepList(open, now, { keep = SWEEP_KEEP, harvest = SWEEP_HARVES
 
 /** The paste-ready shell text. Numbers and fixed words only. Pure. */
 export function renderSweep(list, repo, { keep = SWEEP_KEEP, harvest = SWEEP_HARVEST } = {}) {
+  if (!validRepo(repo)) throw new Error('--repo must look like owner/name (letters, digits, . _ - only)');
   if (!list.length) return '# Nothing to sweep: no open PR is over 14 days old outside the keep and harvest lists.';
   return [
     `# Stale-PR sweep: ${list.length} open PR(s) created over 14 days ago. Printed only; nothing has been run.`,
     `# Not listed: held to 9 Nov (${keep.map((n) => `#${n}`).join(' ')}); harvest first (${harvest.map((n) => `#${n}`).join(' ')}).`,
     '# Read each one, edit the reason, then paste. Branches stay; reopen if still wanted.',
-    `R=${repo}`,
+    `R='${repo}'`,
     `for n in ${list.join(' ')}; do`,
     '  gh pr close "$n" --repo "$R" --comment "Closing in the 1 Nov stale sweep: open for more than 14 days, reason: <superseded by #N | not needed | rebuilt later>. Branch kept; reopen if still wanted."',
     'done',
@@ -163,6 +170,7 @@ export async function listOpenPrs(get, repo) {
 async function main(argv) {
   const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i >= 0 ? argv[i + 1] : d; };
   const repo = opt('repo', DEFAULT_REPO);
+  if (!validRepo(repo)) { console.log('--repo must look like owner/name (letters, digits, . _ - only)'); process.exitCode = 2; return; }
   const file = opt('file', new URL('../../docs/agents/CLAIMS.md', import.meta.url));
   const now = opt('now', new Date().toISOString());
   if (argv.includes('--sweep')) {

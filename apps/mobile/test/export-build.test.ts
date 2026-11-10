@@ -336,6 +336,13 @@ describe('HTML helpers and the printable book', () => {
     expect(two.indexOf('2026') < two.indexOf('2027')).toBe(true);
   });
 
+  it('bookHtml: past the due date with no birthday, the printed dateline is before birth, never an age (QE-01)', () => {
+    const expecting: SnapshotChild = { ...ASHA, birthday: null, dueDate: '2026-11-11' };
+    const html = bookHtml(expecting, [entry({ id: 'a', occurredOn: '2026-11-23' })], 'en-US');
+    expect(html).toContain('Monday, November 23, 2026. Before Asha was born.');
+    expect(html).not.toMatch(/Asha is \d+ days? old/);
+  });
+
   it('bookHtml never prints a quiet-day mark, a waiting letter or a private letter even when handed them', () => {
     const html = bookHtml(
       ASHA,

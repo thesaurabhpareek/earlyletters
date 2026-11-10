@@ -13,6 +13,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { COPARENT_NOTIFY_KEY, coParentNotifyRequestedOn, hasRequestedCoParentNotify, requestCoParentNotify } from '../src/lib/family/coming-soon.logic';
+import { isAlphaBuild } from '../src/lib/billing/alpha';
 import { allowedLinkRoute, INVITE_ENTRIES, inviteDestination, inviteHref, LEAVE_BOOK_OFFERED, LINK_ROUTE_ALLOWLIST, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');
@@ -202,31 +203,53 @@ describe('coming-soon copy', () => {
   });
 
   it('personalises with {child} and never genders the child', () => {
-    expect(s.title).toContain('{child}');
     expect(s.lead).toContain('{child}');
     expect(JSON.stringify(s)).not.toMatch(/\b(she|he|her|him|his|hers)\b/i);
   });
 
-  it('is true about today: letters stay on this phone; three points', () => {
-    expect(s.building).toMatch(/stays on this phone/);
-    expect(s.points).toHaveLength(3);
+  it('rewrite B (founder, 8 Nov 2026): a heading and one line, word for word; the quiet title matches', () => {
+    expect(`${s.title} ${s.lead}`).toBe("For now, this book is yours. In a later update, {child}'s other parent can add letters too, from their own phone.");
+    expect(s.quiet.title).toBe('For now, this book is yours.');
+  });
+
+  it('no badge, points or footer: the footer said letters stay on this phone, and recordings are also in the iPhone backup', () => {
+    const soon = s as Record<string, unknown>;
+    expect(soon.points).toBeUndefined();
+    expect(soon.building).toBeUndefined();
+    const ui = src('components/family/coparent-soon.tsx');
+    expect(ui).not.toMatch(/StatusChip|s\.status|s\.points|s\.building/);
+    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.title : s\.title, \{ child \}\)/);
+    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.body : s\.lead, \{ child \}\)/);
   });
 });
 
 describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-391 rescoped)', () => {
-  it('off: no "I was invited"; on: "I was invited" is back (D-100 amends D-087)', () => {
-    expect(visibleCoParentDoors(false).joinButton).toBe(false);
-    expect(visibleCoParentDoors(true).joinButton).toBe(true);
+  it('off: no "I was invited"; on in an alpha build: "I was invited" is back (D-100 amends D-087)', () => {
+    expect(visibleCoParentDoors(false, true).joinButton).toBe(false);
+    expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
+  });
+
+  // B12-5. Mutation: make joinButton `coParent` alone (the old rule) and the store assertions below fail.
+  it('[B12-5] the store build hides "I was invited" even with servers on; alpha, preview and testflight keep it', () => {
+    for (const env of ['development', 'preview'] as const) expect(visibleCoParentDoors(true, isAlphaBuild(env)).joinButton, env).toBe(true);
+    expect(visibleCoParentDoors(true, isAlphaBuild('production')).joinButton).toBe(false);
+    expect(visibleCoParentDoors(false, isAlphaBuild('production')).joinButton).toBe(false);
+    expect(visibleCoParentDoors(false, isAlphaBuild('preview')).joinButton).toBe(false);
+  });
+
+  it('[B12-5] both screens pass the build rule, not the bare switch', () => {
+    expect(src('app/onboarding.tsx')).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)/);
+    expect(src('app/settings/children/[id].tsx')).toMatch(/visibleCoParentDoors\(serverFeaturesEnabled\(\), PLUS_ALPHA\)/);
   });
 
   it('[F11-REQ-003] "Family can read" is the family-contributor switch: hidden in both builds (contributors are absent from v1.0, B1, D4)', () => {
-    expect(visibleCoParentDoors(false).familyCanReadSwitch).toBe(false);
-    expect(visibleCoParentDoors(true).familyCanReadSwitch).toBe(false);
+    expect(visibleCoParentDoors(false, true).familyCanReadSwitch).toBe(false);
+    expect(visibleCoParentDoors(true, true).familyCanReadSwitch).toBe(false);
   });
 
   it('first run and child settings render them only through that rule', () => {
     const onboarding = src('app/onboarding.tsx');
-    expect(onboarding).toMatch(/visibleCoParentDoors\(capabilities\.coParent\)/);
+    expect(onboarding).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)/);
     expect(onboarding).toMatch(/doors\.joinButton \?/);
     const child = src('app/settings/children/[id].tsx');
     expect(child).toMatch(/doors\.familyCanReadSwitch &&/);
@@ -243,7 +266,7 @@ describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-
 
 describe('server features on: the shared flows are live (D-100; option B for the alpha, D-106)', () => {
   it('Welcome shows "I was invited", and it opens the join sheet', () => {
-    expect(visibleCoParentDoors(true).joinButton).toBe(true);
+    expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
     expect(inviteHref('onboarding_join', true)).toBe('/invite');
     expect(familyCopy.accept.invitedTitle).toBe('You were invited to a book');
   });

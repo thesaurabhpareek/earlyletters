@@ -1,8 +1,10 @@
 [
-  { "id": "01-tonight", "screen": "tonight", "headline": "A minute is plenty.", "sub": "Open it, say one thing about today, put the phone down.", "bg": "dusk" },
-  { "id": "02-listening", "screen": "listening", "headline": "Just talk.", "sub": "Pause, laugh, lose your thread. It is listening.", "bg": "night" },
-  { "id": "03-review", "screen": "review", "headline": "Every change is marked.", "sub": "Put any fix back with one tap. Nothing is added.", "bg": "paper" },
-  { "id": "04-book", "screen": "book", "headline": "A book that grows by month.", "sub": "Every letter is filed by your child's age.", "bg": "paperwarm" },
-  { "id": "05-letter", "screen": "letter", "headline": "Said once. Heard for years.", "sub": "Read it, and hear the voice that said it.", "bg": "dawn" },
-  { "id": "06-letter-night", "screen": "letternight", "headline": "Bedtime, in your voice.", "sub": "Night mode for late reading.", "bg": "night" }
+  {"id": "01-tonight", "screen": "tonight", "headline": "Tell your child about today.", "sub": "A minute is plenty. It becomes a letter.", "bg": "dusk"},
+  {"id": "02-review", "screen": "review", "headline": "Every change is marked.", "sub": "We only fix small slips. Tap one to put it back.", "bg": "paper"},
+  {"id": "03-letter", "screen": "letter", "headline": "Your voice stays with each letter.", "sub": "The original recording is kept unchanged.", "bg": "dawn"},
+  {"id": "04-book", "screen": "book", "headline": "A book that grows by month.", "sub": "Each letter goes into your child's month of age.", "bg": "paperwarm"},
+  {"id": "05-letter-night", "screen": "letternight", "headline": "Read together at bedtime.", "sub": "One letter at a time, oldest first.", "bg": "night"},
+  {"id": "06-privacy", "screen": "privacy", "headline": "Your book stays on your phone.", "sub": "Private by default. Never sold, never used for ads.", "bg": "paper"},
+  {"id": "07-quiet-day", "screen": "quietday", "headline": "Quiet days are fine.", "sub": "Tap Not much today. That is enough.", "bg": "dusk"},
+  {"id": "08-listening", "screen": "listening", "headline": "Pause, laugh, start again.", "sub": "Take your time. Say it however it comes.", "bg": "night"}
 ]

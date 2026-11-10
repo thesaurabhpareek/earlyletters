@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { parseClaims, checkClaims, globsOverlap, exitCode, render, MAX_ROWS, sweepList, renderSweep, listOpenPrs, SWEEP_KEEP, SWEEP_HARVEST } from './board-check.mjs';
+import { parseClaims, checkClaims, globsOverlap, exitCode, render, MAX_ROWS, sweepList, renderSweep, validRepo, clean, listOpenPrs, SWEEP_KEEP, SWEEP_HARVEST } from './board-check.mjs';
 
 const NOW = '2026-11-01T12:00:00Z';
 const HEAD = '| id | owner session | branch | PR | globs | claimed UTC | expires UTC | note |\n|---|---|---|---|---|---|---|---|\n';
@@ -122,8 +122,8 @@ test('the live CLAIMS.md parses with no malformed rows and stays within the limi
   assert.ok(rows.length <= MAX_ROWS);
 });
 
-test('T9: the archive is byte-identical to the old BOARD.md (git blob hash from origin/develop at 01a07627)', () => {
-  const OLD_BLOB = '799a75b8b3ebef66dfac5d00e319bf1ad1a28129';
+test('T9: the archive is byte-identical to the old BOARD.md (git blob hash of BOARD.md on origin/develop at d6d250ee)', () => {
+  const OLD_BLOB = 'cbbf0c0ad877ea43e808d6556612323861fe8704';
   const file = new URL('../../docs/agents/BOARD-ARCHIVE.md', import.meta.url).pathname;
   assert.equal(execFileSync('git', ['hash-object', file], { encoding: 'utf8' }).trim(), OLD_BLOB);
 });
@@ -198,4 +198,48 @@ test('brief.mjs no longer references BOARD.md for live claims', () => {
   const src = fs.readFileSync(new URL('./brief.mjs', import.meta.url), 'utf8');
   assert.ok(!/BOARD\.md/.test(src));
   assert.match(src, /CLAIMS\.md/);
+});
+
+// Review B low notes: nothing typed on the command line or read from CLAIMS.md becomes shell text or terminal control bytes.
+test('sweep: the repo is quoted in the printed text and only owner/name is accepted', () => {
+  assert.match(renderSweep([5], 'o/r.x-y_z'), /^R='o\/r\.x-y_z'$/m);
+  for (const bad of ['a b/c', 'o/r;rm -rf x', 'o/$(id)', "o/r'", 'o/r\nX=1', 'o', '', undefined, '/r', 'o/']) {
+    assert.equal(validRepo(bad), false, String(bad));
+    assert.throws(() => renderSweep([5], bad), /owner\/name/);
+  }
+});
+
+test('sweep: the command line refuses a bad --repo with exit 2 and prints no shell text', () => {
+  const run = (arg) => { try { return { out: execFileSync('node', [new URL('./board-check.mjs', import.meta.url).pathname, '--sweep', '--repo', arg], { encoding: 'utf8' }), code: 0 }; } catch (e) { return { out: String(e.stdout), code: e.status }; } };
+  const r = run('x;touch /tmp/pwned');
+  assert.equal(r.code, 2);
+  assert.doesNotMatch(r.out, /R=|for n in|touch/);
+});
+
+test('render: control and non-ASCII bytes in a row id or detail never reach the output', async () => {
+  const f = await run(HEAD + row({ id: 'ev\u001b[31mil\u0007\u202e', expires: '2026-11-01T11:00Z', pr: 'none' }));
+  const text = render(f, 1);
+  assert.doesNotMatch(text, /[^\n\x20-\x7e]/);
+  assert.match(text, /^C2 ev\?\[31mil\?\?: expired/m);
+  assert.equal(clean('a'.repeat(500)).length, 120);
+});
+
+// Claims moved to CLAIMS.md: no instruction file may still send a reader to claim in BOARD.md.
+test('docs: every file that tells readers where to claim points to CLAIMS.md, not BOARD.md', () => {
+  const root = new URL('../../', import.meta.url);
+  const files = ['docs/agents/COORDINATION.md', 'docs/agents/OPERATING_MODEL.md', 'docs/agents/HARNESS.md', 'docs/agents/checkins/README.md',
+    'docs/agents/lanes/agent-lane.prompt.md', 'docs/agents/lanes/docs-run.prompt.md', 'docs/agents/lanes/prd-daily.prompt.md'];
+  for (const f of files) {
+    const text = fs.readFileSync(new URL(f, root), 'utf8');
+    assert.match(text, /CLAIMS\.md/, f);
+    for (const line of text.split('\n')) assert.doesNotMatch(line, /(claims?|claimed|claiming)\b[^.\n]{0,60}`(docs\/agents\/|\.\.\/)?BOARD\.md`|`BOARD\.md`[^.\n]{0,40}\bclaim|Active claims/i, `${f}: ${line.slice(0, 80)}`);
+  }
+  const coord = fs.readFileSync(new URL('docs/agents/COORDINATION.md', root), 'utf8');
+  assert.match(coord, /`CLAIMS\.md` is the single place to claim files/);
+  assert.doesNotMatch(coord, /`BOARD\.md` is the single place/);
+});
+
+test('docs: CLAIMS.md holds no expired seeded row', () => {
+  const { rows } = parseClaims(fs.readFileSync(new URL('../../docs/agents/CLAIMS.md', import.meta.url), 'utf8'));
+  assert.deepEqual(rows.filter((r) => r.expires < Date.parse('2026-11-10T00:00:00Z')).map((r) => r.id), []);
 });

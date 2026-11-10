@@ -1,9 +1,11 @@
 // web: apps/web/components/book/letter-card.tsx (not yet) | android: same
 /**
- * LetterCard (COMPONENTS 2.5, EXPERIENCE_PASS S26): dateline, two lines of the person's words ending in a fade,
- * signature, private tag, and a quiet "has a recording" line. One VoiceOver element with a composed label; the
- * excerpt is cut visually only (ExcerptFade: whole lines at every Dynamic Type size, never an ellipsis glyph, the
- * stored letter never cut).
+ * LetterCard (COMPONENTS 2.5, EXPERIENCE_PASS S26; book-page.md 2 "Letter card", BL-660): dateline, up to three
+ * lines of the person's words (two at accessibility sizes) ending on a whole word, the fade covering only that last
+ * word (ExcerptFade, BL-659); the signature in the `signature` italic; the Private tag; and a quiet "Voice 1:06"
+ * marker with a small waveform glyph, never a fake play button. One VoiceOver element with a composed label that
+ * carries every word of the letter (D-027) and the recording's length in words; the excerpt is cut visually only
+ * (never an ellipsis glyph, the stored letter never cut). At accessibility sizes the footer stacks.
  * Look: Airbnb listing card (radius md 14, no hard border in light, whole card one tap target, metadata muted below)
  * on paper; press scale 0.98 from press-in (Card, Things 3 "objects"), so the finger sees the card take the touch
  * before it grows into its page.
@@ -17,7 +19,7 @@
  * another phone) collapses out of its row: a fade over exitMs while the rows below close up on `standard`.
  */
 import { LockSimpleIcon } from 'phosphor-react-native/src/icons/LockSimple';
-import { MicrophoneIcon } from 'phosphor-react-native/src/icons/Microphone';
+import { WaveformIcon } from 'phosphor-react-native/src/icons/Waveform';
 import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { FadeOut, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -32,8 +34,9 @@ import { copy, fill, pendingCopy } from '@/lib/copy';
 import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
 import { authorOf, isOwnEntry } from '@/components/child/child-store';
-import { datelineA11y, shortDateline } from './chapters';
+import { entryDateline, entryDatelineA11y } from './date-change.logic';
 import { AppNote } from './app-note';
+import { bookExcerptLines, cardFooterStacks, voiceMarker } from './book-page.logic';
 import { bookCopy } from './copy';
 import { cardLabel } from './letter-card.logic';
 import { letterWords } from './letter-words.logic';
@@ -57,11 +60,6 @@ export const CARD_TEXT_INSET = 36;
 /** The raised card's edge in dark mode (Card: `dark:border`, 1 pt), which its padding gives back. */
 export const CARD_EDGE_DARK = 1;
 
-function clock(ms: number): string {
-  const s = Math.round(ms / 1000);
-  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
-}
-
 /** What a card or a page shows for a letter's words: the words, or the app's own note about the recording. */
 export function excerptOf(entry: Entry): { note: boolean; text: string } {
   const words = letterWords(entry);
@@ -80,7 +78,8 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
   const fontScale = useFontScale();
   const signsAs = authorOf(entry, child);
   const signature = fill(copy.book.signature, { signsAs });
-  const date = shortDateline(child, entry.occurredOn);
+  // A letter dated to a month shows the month only (F09-REQ-003), the same words as its page.
+  const date = entryDateline(child, entry);
   const spoken = entry.captureMode !== 'typed';
   const words = letterWords(entry);
   // No words to show (waiting for them, or no words in the recording): the app's own note, small and
@@ -88,10 +87,14 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
   const { note, text } = excerptOf(entry);
   const signed = showsSignature(words);
   const rtl = !note && isRtl(text);
+  const lines = bookExcerptLines(fontScale);
+  const stacked = cardFooterStacks(fontScale);
+  const voice = spoken ? voiceMarker(entry.audioDurationMs) : null;
 
   const label = cardLabel({
     signature: signed ? signature : null,
-    dateline: datelineA11y(child, entry.occurredOn),
+    dateline: entryDatelineA11y(child, entry),
+    voice: voice?.a11y ?? null,
     text,
     inBook: entry.inBook,
     privateLabel: copy.book.privateLabel,
@@ -119,24 +122,25 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
         <Text variant="letterDateline" caps>
           {date}
         </Text>
-        {note ? <AppNote>{text}</AppNote> : <ExcerptFade text={text} lines={2} variant="letterBody" surface={c.surfaceRaised} />}
+        {note ? <AppNote>{text}</AppNote> : <ExcerptFade text={text} lines={lines} variant="letterBody" surface={c.surfaceRaised} />}
       </CardText>
 
-      <View className="flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5">
-        {signed ? (
-          <Text variant="labelSmall" tone="muted">
-            {signature}
-          </Text>
-        ) : null}
+      <View className={stacked ? 'items-start gap-1 pt-0.5' : 'flex-row flex-wrap items-center gap-x-3 gap-y-1 pt-0.5'}>
+        {signed ? <Text variant="signature">{signature}</Text> : null}
         {!entry.inBook && <PrivateChip color={c.text} />}
-        <View className="flex-1" />
-        {spoken && entry.audioDurationMs ? (
-          <View className="flex-row items-center gap-1.5" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        {stacked ? null : <View className="flex-1" />}
+        {reason || voice ? (
+          // Said in the card's own label; hidden here so VoiceOver hears it once.
+          <View className="flex-row flex-wrap items-center gap-1.5" accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
             {reason ? <Text variant="footnote">{reason}</Text> : null}
-            <MicrophoneIcon size={14} color={c.textMuted} weight="regular" />
-            <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
-              {clock(entry.audioDurationMs)}
-            </Text>
+            {voice ? (
+              <View className="flex-row items-center gap-1.5" testID="book.card.voice">
+                <WaveformIcon size={14} color={c.textMuted} weight="regular" />
+                <Text variant="footnote" style={{ fontVariant: ['tabular-nums'] }}>
+                  {voice.text}
+                </Text>
+              </View>
+            ) : null}
           </View>
         ) : null}
       </View>

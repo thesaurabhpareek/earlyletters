@@ -1,6 +1,6 @@
 # Policy Versioning and Consent Records
 
-Version 1.3.0, 31 Oct 2026 (changelog at the end). Status: draft for counsel.
+Version 1.4.0, 8 Nov 2026 (changelog at the end). Status: draft for counsel.
 
 > **AI-drafted for counsel review. Not legal advice.** Drafted 2 Oct 2026. This file defines process and data structures; counsel decides whether any particular change is material. Statements marked **Unverified** were not checked against an opened source.
 
@@ -68,6 +68,7 @@ Typos, formatting, broken links, contact details formatting, translation fixes t
 - **When in doubt, it is major.** The classification and its one-paragraph rationale are written in the changelog and approved by counsel.
 - A version number is never reused, even for an unpublished draft that leaked.
 - The `version` in the frontmatter of a draft in `docs/legal/` is an internal revision number, not a published version. The published sequence for each document lives in `packages/content/legal/<key>/` and starts at `0.9.0` for the TestFlight beta text (DEBATES Q-009) and `1.0.0` for the first counsel-approved text, which is published as `major` with `requires_reconsent = true` and counsel-approved short notice for beta testers.
+- The 0.9.0 test texts for `terms` and `privacy` are kept in `docs/legal/beta/<key>-0.9.0.md` (BL-565, D-138 item 1), because `packages/content/legal/` does not exist yet. That file is the published source: the website serves it byte for byte at `/legal/<key>/0.9.0.md`, renders it at `/legal/<key>/0.9.0`, and `policy_versions.content_sha256` is its sha256, pinned in `packages/content/test/legal-beta.test.ts`. When `packages/content/legal/` is built, the files move there unchanged (same bytes, same hash).
 - Translations (en-US, en-IN, Hindi later) share the version of the English source. A translation-only fix is a patch on that locale file; the English file is unchanged and the manifest records per-locale hashes.
 - Consent texts (`sensitive-data`, `ai-processing`, `analytics`) are versioned like any other document. Changing a consent's scope is major and needs fresh consent; the old consent does not cover the new scope.
 
@@ -478,6 +479,7 @@ Roles: **Owner** (founder) keeps the register and calendar; **Approver** (counse
 
 | Version | Date | Change |
 |---|---|---|
+| 1.4.0 | 2026-11-08 | Minor, process only. Section 2.4 says where the 0.9.0 test texts live (`docs/legal/beta/`), how the website serves them and where their hash is pinned (BL-565). No change to what is versioned or to any consent rule. |
 | 1.3.0 | 2026-10-31 | Patch, links only. Notes that /health-privacy, /subprocessors and /delete-account are no longer served by the website (content moved into /privacy, #169) so the floating-URL list and the delete-account row do not point readers at dead pages. No change to what is versioned or how. Version 1.3.0 because 1.2.0 is used (POLICY_VERSIONING 2.4). |
 | 1.2.0 | 2026-10-15 | Option B (founder, 15 Oct 2026): new `backup` consent key for v1.0 (F08 6.5 A step 3), with its 7.3 row; `backup-recovery` kept for the later mode choice; `analytics` not used in v1.0 (D-095); `auto-renewal-terms` recorded through the D-081 consent facts for signed-in purchasers; `health-privacy` not published in v1.0 pending counsel (Q32). Nothing else re-read in this pass; the SQL in section 7.2 does not yet list the `backup` key in `policy_documents` (a migration request to S02). |
 | 1.1.0 | 2026-10-03 | Draft frontmatter versions declared internal; published sequence 0.9.0 (beta) then 1.0.0 (DEBATES Q-009). Alignment with the founder decisions of 3 Oct 2026, second round. `ai-processing`, `contributor-notice` and `backup-recovery` marked not used in v1.0 (D-055, D-059). `auto-renewal-terms`: the purchase act is Apple's and not recorded by us (D-053, ADR 0013); the Plus row of 7.3 changed to match; proof is Apple's transaction plus the per-release evidence pack (Q-003 memo). Section 4 uses earlyletters.com and the four floating URLs decided in D-063. Sync note updated for D-023. SQL comment rules made ASCII. Version line added (the 2 Oct text is 1.0.0). |

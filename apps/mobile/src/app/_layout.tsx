@@ -8,6 +8,7 @@ import * as SystemUI from 'expo-system-ui';
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { Uniwind } from 'uniwind';
 import { effectiveFreeLetters } from '@scribe/api';
+import { AppLockLayer } from '@/components/app-lock/app-lock-layer';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
@@ -16,12 +17,14 @@ import { UIProvider } from '@/components/ui/provider';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
 import { startAnalytics } from '@/lib/analytics';
+import { startAppLock } from '@/lib/app-lock/controller';
 import { startAnalyticsObservers } from '@/lib/analytics/observers';
 import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startBackup } from '@/lib/backup/gate';
-import { PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
+import { resumeEraseAtLaunch } from '@/lib/erase-everything';
+import { allowanceSourceFor, PLUS_ALPHA, PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
 import { PendingInviteWatcher } from '@/lib/family/pending-invite-watcher';
@@ -95,8 +98,9 @@ let servicesStarted = false;
 function startServices(launchedAt: number): void {
   if (servicesStarted) return;
   servicesStarted = true;
-  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters).
-  setFreeLettersAllowanceSource(() => effectiveFreeLetters(getRemoteConfig()));
+  // Free letters (D-082): remote config may only raise the reviewed 2 (packages/api effectiveFreeLetters). Alpha builds
+  // (APP_ENV development or preview, set at bundle time) have no letter limit (founder, 1 Nov 2026; billing/alpha.ts).
+  setFreeLettersAllowanceSource(allowanceSourceFor(PLUS_ALPHA, () => effectiveFreeLetters(getRemoteConfig())));
   safely(startRemote); // signed config, pack manifest, content bundle
   safely(startPacks); // after remote: installs pack updates when a newer manifest arrives
   // After packs: the queue registers the speech plan as a language resolver on the
@@ -138,6 +142,14 @@ export default function RootLayout() {
 function Root() {
   // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
   useE2eSeams();
+  // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
+  // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
+  useState(() => void resumeEraseAtLaunch());
+  // App lock (F1, CISO-1): read during this first render, from two settings and nothing awaited, so a locked book is
+  // covered in the very first frame (lib/app-lock/controller.ts; A-NFR-001, A-NFR-002). It comes after the resume
+  // above on purpose: an Erase everything finished at launch removes the lock settings with the rest, so the lock
+  // reads "off" and the phone starts as on first run instead of locking an empty book.
+  useState(startAppLock);
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().
   const { c, scheme } = useTheme();
@@ -217,6 +229,9 @@ function Root() {
             <PlanNoticeHost />
             {/* The analytics ask: a later session after the first letter, on a tab root only (TRACKING_PLAN 9). */}
             <AnalyticsConsentAsk />
+            {/* App lock: the cover and the lock screen over every screen and sheet, last so it is on top. It only
+                covers; nothing under it unmounts, so a take being kept finishes underneath (components/app-lock). */}
+            <AppLockLayer />
           </SessionProvider>
         )}
       </UIProvider>

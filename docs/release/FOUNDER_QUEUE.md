@@ -1,5 +1,10 @@
 # Founder queue: every step only you can do, in one order
 
+**Run `npm run release:ready` before asking the founder anything.** It reads every setup step in [`setup-steps.json`](setup-steps.json) live (DNS, the site, the pack host, GitHub REST) and changes nothing.
+- `npm run release:ready -- --brief` prints at most 25 lines: what is FAIL or UNKNOWN, and the next three founder steps. Paste it into any ask or subagent prompt.
+- `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
+- If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
+
 Status at Wed 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct). Written for retro package R1-01. Read against `origin/develop` at 6bfb94a9 and GitHub REST.
 
 - **Wave 0: 10 of 15 open, 3 partly done, 2 done** (counts of 30 Oct; W0-14 moved from open to partly done). Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting is still on), item 6 (secret scanning and push protection are on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, is done on 29 Oct; b to f are open).
@@ -47,7 +52,7 @@ Each row carries Karma's recommendation. Nothing here is settled until you answe
 | T3 | Before the 1.0 release | Agree to one real-money purchase and cancel after release (RT-PAY-14), and one production offer code with a small limit (RT-OFC-08). Karma recommends yes: about one month of Plus, and the only proof that production products and codes work | 10 | The day 0 to 7 checks |
 | T4 | Before testers move to the store app | Wording for TestFlight testers: the store app is a separate app, so export first; nothing suggests the letters carry over (RT-LCH-05). Karma recommends one line in What to Test and the release notes | 5 | Testers keep their letters |
 | T5 | With counsel | Portrait lock against WCAG 1.3.4 while LEGAL-REQ-051 claims 2.2 AA (RT-A11Y-17). Karma recommends listing it as a known gap in the accessibility statement for 1.0 | 10 | An accessibility claim that is true |
-| T6 | Before the go/no-go | A payer whose renewal falls while offline keeps Plus for at most 1 day in code, against 7 days in the PRD (RT-SUB-13, C-NFR-004). This is technical, so Karma rules on it after reading the PRD line; it is listed here only so you see it | 0 | RT-SUB-13 |
+| T6 | Settled, nothing for you to do | Settled by CR-46 (1 Nov): a payer whose renewal falls while offline keeps Plus for 7 days past the last verified expiry, as C-NFR-004 says; after that the letter is held, never lost (RT-SUB-13). The code change is PR #517 | 0 | RT-SUB-13 |
 
 ## 1. Wave 0: this week, smallest first
 
@@ -118,6 +123,10 @@ Source: retro synthesis section 4, Wave 0 (28 Oct). Agents can prepare text for 
 **W0-15 Decide /support and its mailbox, and start a content-free data-request log** before anyone outside the founding family installs. Open. 20 minutes.
 
 ---
+
+**W0-16 Four calls from the build 1 audit (CR-47).** Answered 1 Nov 15:40 UTC (D-138): publish beta texts; no paid backup, free path; agree line above the buttons; 5% battery per 30 minutes.
+
+**W0-17 Set up the free staging backup.** Open. About 20 minutes, once, before the first build 2 sign-in. Steps 1 to 5 in `docs/ops/runbooks/staging-backup-free.md`: make an `age` key on the Mac, create the private repository `earlyletters-backups`, create the read-only backup role in staging, add two secrets, run it once. Then the monthly restore drill (15 minutes).
 
 ## 2. Next: build 2 and the alpha
 

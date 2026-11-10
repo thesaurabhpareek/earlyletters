@@ -8,10 +8,13 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { en, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   afterForeground,
   elapsedClock,
+  afterFinish,
+  finishWithin,
+  FINISH_TIMEOUT_MS,
   isMicProblem,
   listenRoom,
   promptLine,
@@ -233,9 +236,11 @@ describe('the screen uses them (source)', () => {
   });
 
   it('[review A L2] a take that finishes starting after the screen has gone is kept, as any other exit', () => {
+    // The path is listen.logic `startTake` (behaviour in listen-voiceover.test.ts); the screen wires "gone" to keeping it.
     const start = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
-    expect(start).toMatch(/if \(!mounted\.current\) \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draft\.id, 'dismiss', 0\);\s*return;\s*\}/);
-    expect(start.indexOf('if (!mounted.current)')).toBeLessThan(start.indexOf('takeId.current = draft.id'));
+    expect(start).toMatch(/alive: \(\) => mounted\.current,/);
+    expect(start).toMatch(/keepOrphan: \(draftId\) => \{\s*ended\.current = true;\s*void finalizeTake\(recorder, draftId, 'dismiss', 0\);\s*\},/);
+    expect(start).toMatch(/if \(out\.kind === 'gone'\) return;\s*takeId\.current = out\.draftId;/);
   });
 
   it('5.8 rule 3: Pause and Finish are on screen in every moment of the room; Let it go keeps its slot', () => {
@@ -262,7 +267,8 @@ describe('the screen uses them (source)', () => {
 
   it('[P4 critics S5] at accessibility sizes the clock and "Listening." are pinned with Pause and Finish, so the screen always says it is recording', () => {
     const block = c.slice(c.indexOf('const clockAndLine = ('), c.indexOf('return (', c.indexOf('const clockAndLine = (')));
-    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', 'accessibilityLiveRegion="polite"']) expect(block, part).toContain(part);
+    // The line is a live region whenever VoiceOver may speak; while a take captures it is off (SR-C-02, listen-voiceover.test.ts).
+    for (const part of ['elapsedClock(status.durationMillis)', 'accessibilityLabel={elapsedA11y}', '{line}', "accessibilityLiveRegion={speakable ? 'polite' : 'none'}"]) expect(block, part).toContain(part);
     const pinned = c.slice(c.indexOf('</ScrollView>'));
     expect(pinned).toMatch(/<View className="gap-2 px-5 pb-4">\s*\{large && clockAndLine\}\s*<ButtonRow>/);
     expect(c.match(/clockAndLine\}/g)).toHaveLength(2); // once in the room, once pinned: never both
@@ -278,9 +284,18 @@ describe('the screen uses them (source)', () => {
     expect(start).toMatch(/style=\{\{ position: 'absolute', width: DISC, height: DISC, borderRadius: DISC \/ 2 \}\}/);
     expect(c).toMatch(/<Text variant="headline" tone="muted" className="text-center" style=\{\{ fontVariant: \['tabular-nums'\] \}\} accessibilityLabel=\{elapsedA11y\}>/);
     const begin = c.slice(c.indexOf('const start = async'), c.indexOf('const grantedNow'));
-    expect(begin).toMatch(/AccessibilityInfo\.announceForAccessibility\(t\.listening\)/);
-    expect(begin.indexOf("haptic('press')")).toBeGreaterThan(-1);
-    expect(begin.indexOf("haptic('press')")).toBeLessThan(begin.indexOf("await setAudioMode('recording')"));
+    // "Listening." is offered to the gate, which drops it while the take is live (SR-C-02, B2-21): VoiceOver never
+    // speaks into a recording. The room's line and the red circle say it on screen.
+    expect(begin).toMatch(/announcer\.say\(t\.listening, \{ phase: 'recording', capturing: capturingNow\(\) \}\)/);
+    expect(begin).not.toMatch(/AccessibilityInfo/);
+    // The start haptic plays before the session activates (iOS mutes haptics while recording): the screen passes it to
+    // startTake, which calls it before setRecordingMode (order checked by behaviour in listen-voiceover.test.ts).
+    expect(begin).toMatch(/pressHaptic: \(\) => startTick\.press\(\(\) => haptic\('press'\)\),/); // one tick per take, counting Speak's (recording-haptics.test.ts)
+    expect(begin).toMatch(/setRecordingMode: \(\) => setAudioMode\('recording'\),/);
+    const logic = code(src('components/capture/listen.logic.ts'));
+    const path = logic.slice(logic.indexOf('export async function startTake'));
+    expect(path.indexOf('d.pressHaptic()')).toBeGreaterThan(-1);
+    expect(path.indexOf('d.pressHaptic()')).toBeLessThan(path.indexOf('await d.setRecordingMode()'));
   });
 
   it('[review B L1] when a take ends the glow releases from where the voice left it, over releaseMs', () => {
@@ -294,5 +309,100 @@ describe('the screen uses them (source)', () => {
   it('the screen types no user-facing words (packages/content only)', () => {
     const jsxText = [...c.matchAll(/>\s*([A-Za-z][^<>{}]*?)\s*</g)].map((m) => m[1]).filter((t) => /[a-z]{3,}/i.test(t));
     expect(jsxText).toEqual([]);
+  });
+});
+
+describe('a long take does not grow memory (#480)', () => {
+  const c = code(listen);
+  const body = c.slice(c.indexOf('export default function Listen()'));
+  // The store functions this screen imports, read from its import line.
+  const storeFns = (c.match(/import \{([^}]*)\} from '@\/lib\/store';/)?.[1] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  it('reads the active child once on mount, not on every render', () => {
+    // useAudioRecorderState re-renders this screen every 50 ms while recording. The active child is three synchronous
+    // database reads, and on web each one allocates a 1 MB SharedArrayBuffer (expo-sqlite WorkerChannel), which ran
+    // J05e out of memory at about 65 s.
+    expect(storeFns).toContain('getActiveChild');
+    expect(body).toMatch(/const \[child\] = useState\(getActiveChild\);/);
+    expect(body).not.toMatch(/getActiveChild\(\)/);
+  });
+
+  it('calls no store read in the render body (a lazy initializer, an effect or a handler instead)', () => {
+    // The render body is the component's top level: lines indented one level (two spaces). Hook callbacks,
+    // handlers and JSX sit deeper.
+    const topLevel = body
+      .split('\n')
+      .filter((l) => /^ {2}\S/.test(l))
+      .join('\n');
+    const reads = storeFns.filter((f) => /^(get|list|count|find|read)/.test(f));
+    expect(reads.length).toBeGreaterThan(0);
+    for (const f of reads) expect(topLevel, f).not.toMatch(new RegExp(`\\b${f}\\(`));
+  });
+});
+
+describe('[BL-563] Listen never sticks on "finishing", and never offers Let it go there', () => {
+  it('finishing offers no discard: the only control left never deletes the take', () => {
+    expect(listenRoom('finishing').discard).toBe(false);
+    expect(listenRoom('recording').discard).toBe(true);
+    expect(listenRoom('paused').discard).toBe(true);
+  });
+
+  it('a save that throws (a full disk) resolves as failed instead of escaping', async () => {
+    const r = await finishWithin(Promise.reject(new Error('SQLITE_FULL')), 3000);
+    expect(r).toEqual({ ok: false, why: 'failed' });
+  });
+
+  it('a save that hangs lets the screen leave within 3 s', async () => {
+    vi.useFakeTimers();
+    try {
+      const pending = finishWithin(new Promise<never>(() => {}));
+      vi.advanceTimersByTime(FINISH_TIMEOUT_MS);
+      await expect(pending).resolves.toEqual({ ok: false, why: 'timeout' });
+      expect(FINISH_TIMEOUT_MS).toBeLessThanOrEqual(3000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a save that works passes the kept take through', async () => {
+    await expect(finishWithin(Promise.resolve({ id: 'd1' }))).resolves.toEqual({ ok: true, value: { id: 'd1' } });
+  });
+
+  it('the screen waits through finishWithin and never deletes the draft on that path', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
+    expect(end).not.toMatch(/deleteDraft|abandonTake/);
+  });
+
+  it('a slow save (timeout) still opens Review on the known draft id', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('a slow save keeps the honest reason line for background and interruption', () => {
+    expect(afterFinish('d1', 'background', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'background' } });
+    expect(afterFinish('d1', 'interruption', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'interruption' } });
+  });
+
+  it('a save that worked opens Review', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: { id: 'd1' } })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('only a save that threw leaves early', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'failed' })).toEqual({ to: 'leave' });
+  });
+
+  it('a save that finished with no row (the take was let go meanwhile) leaves, so Review never opens on a missing draft', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: null })).toEqual({ to: 'leave' });
+  });
+
+  it('the screen routes through afterFinish and does not read the draft from the wait', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/afterFinish\(id, reason, kept\)/);
+    expect(end).not.toMatch(/kept\.value/);
   });
 });

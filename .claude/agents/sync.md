@@ -18,6 +18,7 @@ Letters written offline always arrive, exactly once, on every device of the fami
 - `supabase/functions/**`: edge functions.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/adr/0004-sync-engine.md`, `docs/tdd/02-sync-backend.md`, `docs/ARCHITECTURE.md`.
 - The latest `docs/agents/BRIEF-*.md`, decision 17 (API and service quality).
 

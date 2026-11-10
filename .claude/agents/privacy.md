@@ -18,6 +18,7 @@ Parents never have reason to doubt that their letters are private, never sold, n
 - `docs/privacy/**`.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - The `regulatory-compliance` skill (`.claude/skills/regulatory-compliance/SKILL.md`) for anything touching sign-up, age, sanctions, consent or a law change; consult `regulatory-affairs` on the account-creation checks.
 - `docs/legal/DATA_CLASSIFICATION.md`, `docs/legal/data-policy.md`, `docs/legal/app-store-privacy-labels.md`, `docs/legal/privacy-policy.md`.
 - `docs/tdd/05-privacy-compliance.md`.

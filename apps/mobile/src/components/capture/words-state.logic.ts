@@ -32,6 +32,7 @@ import { speechConsentCopy, speechSettingsCopy, wordsCopy } from '@scribe/conten
 import type { StateKind } from '@/components/ui/state-screen.logic';
 import type { LineArtName } from '@/components/ui/line-art.data';
 import { copy, fill } from '@/lib/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { waitingForLanguageNote } from '@/lib/transcription-queue/language-hold';
 import type { Job } from '@/lib/transcription-queue/machine';
 
@@ -123,7 +124,11 @@ function writing(i: WordsInput): WordsCard {
     still: i.playing,
     title: total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing,
     body: i.hints.long ? copy.review.waitingLong : undefined,
-    bar: total > 1 ? done / total : undefined,
+    // The recogniser's own progress within each part when it reports it (whisper.rn), else a step per part; no bar
+    // before the first part starts (preparing: reading the recording, finding speech, opening the model).
+    // If the recogniser never reports (no callback), the first part shows its words and no bar, never an empty bar
+    // that looks stuck; later parts step per part.
+    bar: progress?.fraction !== undefined && total > 0 ? progress.fraction : total > 1 && done > 0 ? done / total : undefined,
     primary: null,
     quiet: i.hints.later ? 'later' : null,
   };
@@ -153,7 +158,7 @@ function languageDownload(i: WordsInput): WordsCard {
         : d.hold === 'offline'
           ? speechSettingsCopy.downloadFailures.offline
           : d.progress !== null
-            ? fill(speechSettingsCopy.downloading, { n: Math.floor(d.progress * 100) })
+            ? downloadingLine(d.progress, (n) => fill(speechSettingsCopy.downloading, { n }))
             : undefined;
   return {
     state: 'downloading',
