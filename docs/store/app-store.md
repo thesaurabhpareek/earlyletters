@@ -87,7 +87,7 @@ Eight frames: 1 to 6 are the set, 7 and 8 are optional. Captured from the real a
 | 3 | Your voice stays with each letter. | The original recording is kept unchanged. | A letter from Mama with "Hear Mama" | light |
 | 4 | A book that grows by month. | Each letter goes into your child's month of age. | Asha's book after Add to the book: this month and the month before | light |
 | 5 | Read together at bedtime. | One letter at a time, oldest first. | Read together, dark: one letter, Back one and Next letter | dark |
-| 6 | Your book stays on your phone. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
+| 6 | Your book is private. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
 | 7 | Quiet days are fine. | Tap Not much today. That is enough. | "A quiet day, kept." after Not much today | dark |
 | 8 | Pause, laugh, start again. | Take your time. Say it however it comes. | Listening: no words on screen while you talk | dark |
 

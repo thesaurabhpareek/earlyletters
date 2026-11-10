@@ -193,7 +193,7 @@ const REGISTERED: Record<string, Text> = {
   'en.trust.settings.body':
     'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
   'en.trust.settings.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
-  'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
+  'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child.',
   // Also registered (P0 rule 3): the sensitive-data consent (consumer-health-data-notice.md HN-4; counsel approves).
   'en.sensitiveConsent.title': 'Before your book syncs',
   'en.sensitiveConsent.body':

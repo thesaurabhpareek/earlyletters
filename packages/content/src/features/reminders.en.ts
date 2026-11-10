@@ -16,7 +16,7 @@ export const reminderCopy = {
       { title: 'Dear little one,', body: 'Anything to tell your little one today? A line or two is enough.' },
       { title: 'The house is quiet', body: 'A good moment for a few words to your little one.' },
       { title: 'One small thing', body: 'What happened today that you want to remember?' },
-      { title: 'Your voice, kept', body: 'Talk for a minute. It will be heard one day, just as you said it.' },
+      { title: 'Your voice, kept', body: 'Talk for a minute. One day it can be heard, just as you sounded.' },
       { title: 'Before you sleep', body: 'Something your little one did, said or tried. Or just tap Not much today.' },
       { title: 'A page for {weekday}', body: 'Something from today for the book?' },
     ],
