@@ -18,9 +18,14 @@ vi.mock('react', async () => {
 });
 vi.mock('react-native', () => ({ AppState: { addEventListener: () => ({ remove: () => {} }) } }));
 vi.mock('../src/lib/family/pending-invite', () => ({ clearPendingInvite: () => Promise.resolve() }));
+vi.mock('expo-constants', () => ({ default: { expoConfig: { version: '1.0.0' } } }));
 vi.mock('../src/lib/store', () => {
   const notify = () => [...h.listeners].forEach((l) => l());
   return {
+    // Terms already agreed: this file tests the age answer and the erase subscription, not Before you begin.
+    hasAgreement: () => true,
+    recordAgreement: () => {},
+    uuidv7: () => 'id',
     getSetting: (k: string) => h.settings.get(k) ?? null,
     setSetting: (k: string, v: string) => {
       h.settings.set(k, v);
