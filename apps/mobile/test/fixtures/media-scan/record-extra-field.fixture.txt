@@ -1,0 +1,7 @@
+// fixture: record-extra-field. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/asset-record.ts
+// expect: record-field
+type AssetRecord = { opaqueId: string };
+export function toAssetRecord(raw: Record<string, unknown>): AssetRecord {
+  return { opaqueId: String(raw.id), cameraSerial: String(raw.serial) } as AssetRecord;
+}
