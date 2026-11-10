@@ -139,9 +139,9 @@ describe('[NX-31-R3] every visible line with a blank name reads "your child", ne
     const page = hiddenBooksPage([{ id: 'b1', name: '' } as never]);
     expect(page.books[0].name).toBe('your child');
     expect(page.books[0].buttonLabel).toBe(`${copy.children.settings.showButton}, your child`);
-    for (const f of ['../src/app/settings/index.tsx', '../src/app/settings/children/[id].tsx']) {
-      expect(readFileSync(join(__dirname, f), 'utf8')).toContain('childLabel(');
-    }
+    expect(readFileSync(join(__dirname, '../src/app/settings/children/[id].tsx'), 'utf8')).toContain('childLabel(');
+    // The You tab's book rows read "Your child's book" through bookTitle (#738/#740 GAP 6; pinned in you-tab-states.test.ts), not childLabel.
+    expect(readFileSync(join(__dirname, '../src/app/settings/index.tsx'), 'utf8')).toContain('bookTitle(');
   });
 });
 
