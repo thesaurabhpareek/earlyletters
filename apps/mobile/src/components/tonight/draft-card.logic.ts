@@ -26,7 +26,7 @@
  */
 import { reminderCopy } from '@scribe/content';
 import { tokens, type Daypart, type TypeToken } from '@scribe/design-tokens';
-import { copy, fill, greetingKey } from '@/lib/copy';
+import { childLabel, copy, fill, greetingKey } from '@/lib/copy';
 import { dayDate, isMonthOnly, isoOf } from '@/lib/dates';
 import type { Draft, Entry } from '@/lib/store';
 
@@ -215,7 +215,8 @@ export function resurfaced(
  * "Before You" (prompt.logic tonightStageLabel), so its dateline always names the child.
  */
 export function tonightDateline(child: string, age: string | null, dayFallback: string): { text: string; a11y: string } {
-  return age ? { text: `${child} · ${age}`, a11y: `${child}, ${age}` } : { text: dayFallback, a11y: dayFallback };
+  const shown = childLabel(child);
+  return age ? { text: `${shown} · ${age}`, a11y: `${shown}, ${age}` } : { text: dayFallback, a11y: dayFallback };
 }
 
 /**
