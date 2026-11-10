@@ -67,11 +67,26 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
  * would lead nowhere. Alpha, preview and testflight builds are unchanged. `alpha` is
  * isAlphaBuild(APP_ENV) (lib/billing/alpha.ts PLUS_ALPHA), decided at bundle time.
  * "Family can read" is the family-contributor switch, and contributors are absent from v1.0
- * whatever the switch (B1, F11 D4): hidden in both. The Family tab, the Settings row and the
- * invite-link landing stay in both builds.
+ * whatever the switch (B1, F11 D4): hidden in both.
+ * The Family tab and the Settings row stay in every alpha build and in a store build with the switch on; a store build
+ * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build.
  */
 export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
   return { joinButton: coParent && alpha, familyCanReadSwitch: false };
+}
+
+/**
+ * The Family tab and the child Settings row "Write this book together" in this build (D-126, BL-604; store-listing
+ * BL-621). The store build (`production` profile, `alpha` false: billing/alpha.ts isAlphaBuild, the same bundle-time
+ * APP_ENV switch as PLUS_ALPHA) with server features off has no co-parent sharing, so it shows no "coming soon" door
+ * to it: both are hidden. Every alpha build (`testflight`, `preview`, development) keeps them exactly as before, and a
+ * store build with server features on shows them as the real flow. Nothing a person can set reaches either input.
+ *
+ * Not hidden: the invite-link landing (/invite). A link opened from outside still needs a calm page (D-087), and the
+ * link allowlist below sends nothing else there.
+ */
+export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }): boolean {
+  return input.alpha || input.coParent;
 }
 
 /**

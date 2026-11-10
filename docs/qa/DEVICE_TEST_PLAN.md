@@ -683,6 +683,16 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (l) Lock off: Who can see it reads "Anyone who can unlock this iPhone can open the book." and the App lock row says Off. Lock on: it reads "You, after Face ID or your passcode." (Touch ID on the SE 3) and the row says On; the row opens Settings > App lock.
 - **Record:** S1-131 rows (a) to (l) with the build number, phone and iOS version; screenshots of the snapshot (b) with Asha only; cold start times for (k).
 
+### S1-190 Two tabs in the store build, three in the alpha (D-126, BL-604; branch feat/mobile-bl604-store-family-tab)
+- **Needs:** (a) to (c) a build of the `production` profile (servers off) on a fresh install, with Asha's book set up; (d) a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book.
+- **Steps:** (a) Production: look at the tab bar on Tonight and on the Book, in light and dark. (b) Production: Settings, Asha's book; scroll the whole page. (c) Production: Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Testflight: repeat (a) and (b), then tap Family and the "Write this book together" row.
+- **Expected:**
+  - (a) Two tab items, Tonight and Book, sharing the bar width; no Family item and no gap where it was.
+  - (b) No "Write this book together" row and no empty section where it sat; every other row as before.
+  - (c) VoiceOver reads two tabs ("Tonight, tab, 1 of 2", "Book, tab, 2 of 2"); the Large Content Viewer shows each title.
+  - (d) Alpha unchanged: three tabs; Family shows the coming-soon page; the row opens the coming-soon sheet.
+- **Record:** S1-190 rows (a) to (d): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
 - **Steps:** (a) Settings > Privacy. Read top to bottom. (b) Tap Names in notifications. In Reminders, turn reminders on first (the Names switch shows only while reminders are on), then turn names on; come back. (c) Tap Export your book, then Recently deleted, coming back each time. (d) Tap Privacy Policy, then Terms of Service. (e) Repeat (a) at AX5, with VoiceOver, and in dark mode.
@@ -971,7 +981,7 @@ PENDING: not merged and not decided. D-121 item 1 would be reversed; no D-### en
 - **UNVERIFIED:** everything on a device; that the purge worker works on production; that the EAS `production` environment holds the URL and key; that `scribe-prod` and the legal pages are live; that the privacy label is answered; and the decision itself.
 
 ### S1-176 PENDING (#665, open): the Family tab in the store build
-PENDING: not merged. The pull request carries its own device row, S1-140 (two tabs in the store build with servers off). This row is the pointer and the servers-on case S1-140 does not cover. Three open pull requests (#665, #699, #720) already propose the id S1-140; whoever merges first keeps it and the others renumber.
+PENDING: not merged. The pull request carries its own device row, S1-190 (two tabs in the store build with servers off). This row is the pointer and the servers-on case S1-190 does not cover. This pull request proposed S1-140 together with #699 and #720, so it uses S1-190, which no branch or develop claims.
 - **Unit tests the pull request adds:** `apps/mobile/test/store-family-tab.test.ts` (`familySurfacesShown({ alpha, coParent })`).
 - **Needs:** a `production` build, servers off for (a); servers on for (b); an alpha `testflight` build for (c).
 - **Steps:** (a) Servers off: count the tabs; Settings > Asha for "Write this book together". (b) Servers on: the same. Tap Family. (c) Alpha: the same as today.
