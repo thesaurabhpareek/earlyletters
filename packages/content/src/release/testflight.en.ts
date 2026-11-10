@@ -56,16 +56,29 @@ const feedbackBlock = [
 const plusLine = 'Plus is not part of this test, so every letter you keep is free. Purchases in this test cost nothing.';
 
 // The ask comes at the end of first run, and again in Review while words are waiting if the person chose "Not now"
-// (speechConsentCopy, features/speech.en.ts).
+// (speechConsentCopy, features/speech.en.ts). The lock is offered at the same point (apps/mobile onboarding, LockOffer),
+// hidden on a phone with no passcode, and off until turned on (CPO-2). The offer is on first setup only, so the text also
+// says where the App lock row is, for a phone that installed this build over an earlier one.
 const speechLine =
-  'At the end of setting up, the app offers a one-time download on Wi-Fi so it can write down your words. If you tap "Not now", it asks again when words are waiting. Until the download finishes, your recordings are kept and the words follow.';
+  'At the end of setting up, the app offers a one-time download on Wi-Fi so it can write down your words. On a phone with a passcode it also offers a lock for the book. The lock stays off until you turn it on, at the offer or later in Settings, Privacy and security, App lock. If you tap "Not now" on the download, it asks again when words are waiting. Until the download finishes, your recordings are kept and the words follow.';
+
+// The Erase row is the last row of Your letters in Settings, and it shows only on a phone that never signed in. Build 1 has
+// no sign-in, but the testflight and preview profiles share one bundle id, so a phone that signed in on a servers-on build
+// has no Erase row until it is reset (apps/mobile store.ts localDeletionAllowed).
+// The row is named by its place, not its label: the label ends "everything on this phone", and testflight.test.ts
+// (5.2) bars that phrase from every text, because feedback and crash reports do leave the phone. Not the Erase screen's
+// own lines (D-144): those stay on that screen.
+const eraseLine =
+  'The Erase row, the last row of Your letters in Settings, removes every book, letter and recording from this phone. It cannot be undone, so save a copy first.';
 
 const pleaseTryCore = [
   "- Setting up the book: your child's name, a birthday or due date, and how you sign your letters.",
   '- Speaking a letter, reading it back and keeping it.',
   '- Typing a letter.',
-  '- The Book, a letter on its own page, and Read together.',
+  '- "Another thought" under the question, when you start a typed letter.',
+  '- The Book, a letter on its own page, and Read together. Once the book has letters in two months, the "Months" button opens a list of them.',
   '- Tapping "Not much today" on a quiet day.',
+  '- Settings: Your words under Writing, App lock under Privacy and security, and Recently deleted under Your letters.',
   '- Dark mode and larger text, if you use them.',
 ];
 
@@ -99,7 +112,7 @@ function build2Text(withDeleteRow: boolean): string {
   ].join('\n\n');
 }
 
-const describeApp = `It is the baby memory book you fill by talking: you tell your child something about the day, and it keeps your words and your voice as a letter.`;
+const describeApp = `It keeps letters to your child, in your own words and voice: you tell your child something about the day, and it keeps your words and your recording as a letter.`;
 const earlyTest = 'It is an early test version, so it can make mistakes, and it will change. You must be 18 or older to take part.';
 
 export const testflightCopy = {
@@ -114,8 +127,8 @@ export const testflightCopy = {
    * invitation, read by Beta App Review). The same for every build on the record, so it says only what both builds do.
    */
   betaAppDescription: [
-    `${brand.name}, the baby memory book you fill by talking.`,
-    'Tap the red circle and tell your child something about today. Your words are written down on your phone and kept as a letter, exactly as you said them, with the recording beside it. Small slips, like an um or a word said twice, are marked, and you can put any of them back.',
+    `${brand.name}: letters to your child, in your own words and voice.`,
+    'Tap the red circle and tell your child something about today. Your words are written down on your phone and kept as a letter, in your own words, with the recording beside it. Small slips, like an um or a word said twice, are marked, and you can put any of them back.',
     'Letters gather in your child\'s book, month by month, to read and hear together for years. You can also type a letter, or tap "Not much today" on a quiet day.',
     'This is an early test version for a small group of family and friends. It can make mistakes, and it will change. You must be 18 or older to take part. Purchases in this test cost nothing.',
   ].join('\n\n'),
@@ -131,7 +144,8 @@ export const testflightCopy = {
       ['Please try:', ...pleaseTryCore].join('\n'),
       speechLine,
       plusLine,
-      'This test app is separate from the App Store version, so letters written here do not move across on their own. To keep a copy, use Settings, Export your book.',
+      'This test app is separate from the App Store version, so letters written here do not move across on their own. To keep a copy, use Settings, Your letters, Export your book.',
+      eraseLine,
       feedbackBlock,
     ].join('\n\n'),
 
