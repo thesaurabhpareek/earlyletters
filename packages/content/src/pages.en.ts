@@ -44,12 +44,12 @@ export const pages = {
     path: "/about",
     title: `About ${brand.name}`,
     metaDescription:
-      `${brand.name} is the baby memory book you fill by talking. It stays in your words, private by default, made by an independent maker.`,
+      `${brand.name}: letters to your child, in your own words and voice. It stays in your words, private by default, made by an independent maker.`,
     sections: [
       {
         heading: "What it is",
         paragraphs: [
-          `${brand.name} is the baby memory book you fill by talking. Parents speak or type notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
+          `${brand.name} keeps letters to your child, in your own words and voice. Parents fill the book by talking, or by typing notes and letters to a child. A note is quick. A letter is longer. Both belong.`,
           "Each letter is filed under {child}'s age that month, signed with the name of the person who wrote it, like From Mama or From Papa, and kept with its original recording. One day {child} can read it, and hear it.",
           `${brand.name} is for families in the United States. Accounts are for adults 18 and over.`,
         ],
@@ -68,7 +68,7 @@ export const pages = {
         paragraphs: [
           "Letters are private by default. Only you, and {child}'s other parent if you invite them, can read what you add to the book. Each child has their own book.",
           "Transcription happens on your phone. No audio leaves your phone to turn speech into text.",
-          "Recordings stay on your phone, and in your iPhone's own backup if you use one. We do not upload them.",
+          "Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
           "When you sign in, your letter text syncs to our servers in the United States so your co-parent and your next phone can read it. It is encrypted in transit and at rest, and we hold the keys. Our staff look only if you ask for help, to deal with a security problem or serious misuse, or when the law requires it. Each access is logged and reviewed.",
           "There are no ads. We never sell your data or share it with advertisers, and we never use your letters, recordings or photos to train models of any kind. Analytics stay off until you say yes, and they never include letter text, recordings, photos, names or birthdays.",
           "You can export your whole book, free, at any time, and delete your own letters, recordings or account whenever you like. The Privacy Policy has the full detail.",
@@ -277,7 +277,7 @@ export const pages = {
   notFound: {
     path: "/404",
     title: "Page not found",
-    metaDescription: `This page is not in the book. Head back to ${brand.name}, the baby memory book you fill by talking.`,
+    metaDescription: `This page is not in the book. Head back to ${brand.name}: letters to your child, in your own words and voice.`,
     sections: [
       {
         heading: "We looked under every month. This page is not in the book.",

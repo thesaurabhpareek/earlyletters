@@ -4,6 +4,7 @@
 // and held to the content rules by rules.test.ts (the `accountDeletionCopy` row of test/support/copy-surfaces.ts).
 // Content rules apply: no em or en dashes, curly quotes, ellipsis or emoji; calm, no fear or
 // loss language; never gender the child. Placeholders: {child}, {coParent}, {count}, {date}.
+import { brand } from '@scribe/brand';
 
 export const accountDeletionCopy = {
   title: 'Delete account',
@@ -99,8 +100,11 @@ export const accountDeletionCopy = {
     // The name of the moment of paper a phone shows while the server is asked (read by a screen reader, never drawn).
     checking: 'One moment.',
   },
-  // The kill path only (no server client in this build): the one place these words may say "stays on this phone".
-  notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
+  // The kill path only: a build whose server client is missing (isSupabaseConfigured false, delete-account.tsx). In a
+  // servers-on build the person may still have an account, with letters on our servers, made on another phone, so this
+  // line claims nothing about the servers and gives the email route (Privacy Policy 8, docs/legal/delete-account-page.md).
+  // Not "everything": the iPhone backup, exports and the Keychain letter count are not on this phone's storage (#672).
+  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
 
   // Each failure says first, or says plainly, that nothing has changed.
   errors: {

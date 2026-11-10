@@ -772,7 +772,9 @@ describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
   it('the quotation pair sits only on the gate, first run and the empty states, never on a voice screen', () => {
     const pair = mounts(/<QuotePair[\s/>]/);
     expect(pair.length).toBeGreaterThan(0);
-    for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx'], f).toContain(f);
+    // The end of the Book carries the mark once, after the oldest chapter (book-page.md 2 "End of book"); it is not a
+    // voice screen and holds no heading, so the pair stays decorative there.
+    for (const f of pair) expect(['app/onboarding.tsx', 'components/gate/age-gate-screen.tsx', 'components/ui/empty-state.tsx', 'components/book/end-of-book.tsx'], f).toContain(f);
     // The empty Book leads with the book cover instead (S24): the closed cover at 160 x 214, with the child's name and
     // "From {signsAs}", and no quotation pair through the empty state's device.
     const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');

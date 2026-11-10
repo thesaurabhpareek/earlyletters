@@ -115,3 +115,45 @@ export function updateChannelMessage(profile, channel) {
 export function privacyManifestDeclared(pm) {
   return Boolean(pm && pm.NSPrivacyTracking === false && Array.isArray(pm.NSPrivacyAccessedAPITypes) && pm.NSPrivacyAccessedAPITypes.length > 0);
 }
+
+/**
+ * The permissions a build may ask for (LEGAL-REQ-007; ENGINEERING_REQUIREMENTS 1.3.0 "Face ID only if the app lock
+ * ships"): the microphone, notifications (no Info.plist key on iOS; asked at the moment of use) and Face ID for the
+ * app lock (F1, CPO-2, CISO-1). Nothing else: every unused permission is a question App Review will ask.
+ */
+export const ALLOWED_PERMISSION_NAMES = Object.freeze([
+  'microphonePermission',
+  'notificationPermission',
+  'notificationsPermission',
+  'faceIDPermission',
+  'NSMicrophoneUsageDescription',
+  'NSFaceIDUsageDescription',
+]);
+
+/** The Info.plist usage strings a generated native project must hold, exactly: the microphone and Face ID. */
+export const REQUIRED_PLIST_USAGE = Object.freeze(['NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription']);
+
+/** Every permission a config names (plugin options or infoPlist keys), from its JSON text. */
+export function permissionNames(configText) {
+  const re = /(camera|photo|photos|location|contacts|faceID|microphone|bluetooth|calendars|reminders|motion|speechRecognition|userTracking|notifications?)Permission|NS[A-Za-z]+UsageDescription/g;
+  return [...new Set(String(configText).match(re) ?? [])];
+}
+
+/** Names in the config that are not on the allowed list (empty when the build asks only for the three). */
+export function extraPermissions(configText) {
+  return permissionNames(configText).filter((n) => !ALLOWED_PERMISSION_NAMES.includes(n));
+}
+
+/** Usage keys of a generated Info.plist against REQUIRED_PLIST_USAGE: which are missing, which are extra. */
+export function plistUsageProblems(usageKeys) {
+  const keys = [...new Set(usageKeys)];
+  return { missing: REQUIRED_PLIST_USAGE.filter((k) => !keys.includes(k)), extra: keys.filter((k) => !REQUIRED_PLIST_USAGE.includes(k)).sort() };
+}
+
+/** Null when a purpose string is real; otherwise why not (missing, a library default, or a placeholder left in). */
+export function purposeStringProblem(value) {
+  const v = String(value ?? '');
+  if (v.length <= 20) return 'missing or too short';
+  if (/\{app\}|TODO|example\.com|\$\(PRODUCT_NAME\)/.test(v)) return 'holds a placeholder or a library default';
+  return null;
+}

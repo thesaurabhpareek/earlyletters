@@ -17,7 +17,10 @@ import {
   STORE_CONFIG_PATH,
 } from '../../../scripts/release/store-config';
 import { storeListing } from '../../../packages/content/src/store.en';
-import { REVIEW_NOTES, withReviewContact } from '../../../scripts/release/with-review-contact';
+import { REVIEW_NOTES, serversOnNotes, withReviewContact } from '../../../scripts/release/with-review-contact';
+import { appReviewCopy } from '../../../packages/content/src/release/app-review.en';
+import { brand } from '../../../packages/brand';
+import { parseInviteInput } from '../src/lib/family/invite-link.logic';
 
 const APP = join(__dirname, '..');
 const config = () => appConfig({ config: {} } as Parameters<typeof appConfig>[0]);
@@ -37,6 +40,18 @@ describe('version and build number', () => {
     const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8'));
     expect(eas.cli.appVersionSource).toBe('remote');
     expect(eas.build.production.autoIncrement).toBe(true);
+  });
+});
+
+describe('TestFlight submit profiles (founder, 8 Nov 2026)', () => {
+  it('adds every preview-record build to the internal group "Family", and leaves production alone', () => {
+    const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8'));
+    for (const profile of ['testflight', 'preview']) {
+      expect(eas.submit[profile].ios.groups).toEqual(['Family']);
+      expect(eas.submit[profile].ios.ascAppId).toMatch(/^\d+$/);
+      expect(eas.submit[profile].ios).not.toHaveProperty('appleTeamId');
+    }
+    expect(eas.submit.production.ios?.groups).toBeUndefined();
   });
 });
 
@@ -118,16 +133,100 @@ describe('App Review contact (added in CI only)', () => {
     expect(() => withReviewContact({}, JSON.stringify({ ...secret, phone: '+1 (555) 010-0100' }), 'off')).not.toThrow();
   });
 
-  it('needs a demo account and sign-in-true notes when the production build has server features on (D-100)', () => {
-    expect(() => withReviewContact({}, JSON.stringify(secret), 'on')).toThrow(/demoUsername, demoPassword/);
-    const demo = { ...secret, demoUsername: 'asha.reviewer@example.org', demoPassword: 'fictional-only' };
-    expect(() => withReviewContact({}, JSON.stringify({ ...demo, notes: 'There is no sign-in.' }), 'on')).toThrow(/no sign-in/);
-    const out = withReviewContact({}, JSON.stringify({ ...demo, notes: 'Sign in with the demo account below.' }), 'on') as unknown as { apple: { review: Record<string, unknown> } };
-    expect(out.apple.review).toMatchObject({ demoRequired: true, demoUsername: 'asha.reviewer@example.org', notes: 'Sign in with the demo account below.' });
-    expect(() => withReviewContact({}, JSON.stringify(secret), 'off')).not.toThrow();
-    // fail closed: an unset or odd switch must not skip the demo-account checks
-    expect(() => withReviewContact({}, JSON.stringify(secret), undefined)).toThrow(/must be "on" or "off"/);
-    expect(() => withReviewContact({}, JSON.stringify(secret), 'maybe')).toThrow(/must be "on" or "off"/);
+  describe('a servers-on build is reviewed with Sign in with Apple and a pasted invite link (CTO ruling 8 Nov 2026)', () => {
+    // Fictional only (CLAUDE.md): the token is made up and never a real invite; the date is a made-up day.
+    const NOW = new Date('2026-11-09T12:00:00Z');
+    const TOKEN = 'ashaAshaashaAshaashaAshaashaAshaashaAsha';
+    const LINK = `${brand.web.origin}/j#t=${TOKEN}`;
+    const on = { ...secret, inviteLink: LINK, inviteExpiry: '2026-11-15' };
+    const send = (extra: Record<string, unknown>, now = NOW) => withReviewContact({}, JSON.stringify({ ...on, ...extra }), 'on', now) as unknown as { apple: { review: Record<string, unknown> } };
+    const fails = (extra: Record<string, unknown>, now = NOW) => {
+      try {
+        send(extra, now);
+      } catch (e) {
+        return (e as Error).message;
+      }
+      throw new Error('expected a refusal');
+    };
+
+    it('sends notesServersOn with the link and the date filled, demoRequired false and no demo credential', () => {
+      const r = send({}).apple.review;
+      expect(r.demoRequired).toBe(false);
+      expect(r).not.toHaveProperty('demoUsername');
+      expect(r).not.toHaveProperty('demoPassword');
+      expect(r).not.toHaveProperty('inviteLink');
+      expect(r).not.toHaveProperty('inviteExpiry');
+      expect(r).toMatchObject({ firstName: 'Asha', email: 'review@earlyletters.com' });
+      const notes = r.notes as string;
+      expect(notes).toBe(appReviewCopy.notesServersOn.split('{inviteLink}').join(LINK).split('{inviteExpiry}').join('15 November 2026'));
+      expect(notes).toContain(`Continue: ${LINK}`);
+      expect(notes).toContain('until 15 November 2026');
+      expect(notes).not.toMatch(/\{invite/);
+      expect(notes).toContain('no demo user name or password');
+      expect(new TextEncoder().encode(notes).length).toBeLessThanOrEqual(4000);
+    });
+
+    it('accepts only a link the app itself reads: the check is the app\'s parseInviteUrl, not a code format', () => {
+      expect(parseInviteInput(LINK, brand.web.origin)).toBe(TOKEN);
+      expect(() => send({ inviteLink: `https://www.${brand.web.origin.replace('https://', '')}/j#t=${TOKEN}` })).not.toThrow();
+      for (const bad of [
+        '7K3M9PQR', // a typed 8-character code: this build says "not recognised"
+        'ASHA-7K3M-9PQR',
+        TOKEN, // a bare token is read by the app, but the notes say "Paste this invite link"
+        `${brand.web.origin}/j?t=${TOKEN}`, // the query is never read
+        `http://${brand.web.origin.replace('https://', '')}/j#t=${TOKEN}`,
+        `https://example.org/j#t=${TOKEN}`,
+        `${brand.web.origin}/i/${TOKEN}`,
+        `${LINK} and some words`,
+        `${brand.web.origin}/j#t=short`,
+        '',
+        '   ',
+      ]) {
+        const m = fails({ inviteLink: bad });
+        expect(m).toMatch(/inviteLink/);
+        if (bad.trim()) expect(m).not.toContain(bad.trim());
+        expect(m).not.toContain(TOKEN);
+      }
+      expect(fails({ inviteLink: undefined })).toMatch(/missing inviteLink/);
+      expect(fails({ inviteLink: 12345 })).toMatch(/missing inviteLink/);
+    });
+
+    it('checks the expiry date: a real day, not past, no more than 8 days ahead (7 plus a day of slack)', () => {
+      expect(send({ inviteExpiry: '2026-11-09' }).apple.review.notes).toContain('until 9 November 2026');
+      expect(send({ inviteExpiry: '2026-11-17' }).apple.review.notes).toContain('until 17 November 2026');
+      for (const bad of ['', 'tomorrow', '15/11/2026', '2026-11-31', '2026-02-30', '2026-13-01']) expect(fails({ inviteExpiry: bad })).toMatch(/inviteExpiry/);
+      expect(fails({ inviteExpiry: '2026-11-08' })).toMatch(/already passed/);
+      expect(fails({ inviteExpiry: '2026-11-18' })).toMatch(/more than 8 days away/);
+      expect(fails({ inviteExpiry: undefined })).toMatch(/missing inviteExpiry/);
+      // never echoes the date or the link
+      expect(fails({ inviteExpiry: '2026-11-18' })).not.toContain('2026-11-18');
+      expect(fails({ inviteLink: 'nonsense' })).not.toContain(TOKEN);
+    });
+
+    it('refuses a shared sign-in credential and a notes override: Sign in with Apple needs neither', () => {
+      expect(fails({ demoUsername: 'asha.reviewer@example.org' })).toMatch(/remove demoUsername/);
+      expect(fails({ demoPassword: 'fictional-only' })).toMatch(/remove demoPassword/);
+      expect(fails({ notes: 'There is no sign-in.' })).toMatch(/remove notes/);
+      expect(fails({ demoUsername: 'a', demoPassword: 'b', notes: 'c' })).toMatch(/demoUsername, demoPassword, notes/);
+    });
+
+    it('a servers-off build keeps the servers-off notes and refuses a stray invite link', () => {
+      const off = withReviewContact({}, JSON.stringify(secret), 'off') as unknown as { apple: { review: Record<string, unknown> } };
+      expect(off.apple.review.notes).toBe(REVIEW_NOTES);
+      expect(off.apple.review.notes).not.toContain('invite link');
+      expect(() => withReviewContact({}, JSON.stringify(on), 'off')).toThrow(/server features off/);
+      expect(() => withReviewContact({}, JSON.stringify({ ...secret, notes: 'Custom notes.' }), 'off')).not.toThrow();
+    });
+
+    it('fails closed on an unset or odd switch before any of this', () => {
+      expect(() => withReviewContact({}, JSON.stringify(on), undefined, NOW)).toThrow(/must be "on" or "off"/);
+      expect(() => withReviewContact({}, JSON.stringify(on), 'maybe', NOW)).toThrow(/must be "on" or "off"/);
+    });
+
+    it('serversOnNotes leaves no placeholder and keeps the copy it was given', () => {
+      const notes = serversOnNotes(LINK, '2026-11-12', NOW);
+      expect(notes.replace(LINK, '').replace('12 November 2026', '')).toBe(appReviewCopy.notesServersOn.replace('{inviteLink}', '').replace('{inviteExpiry}', ''));
+    });
   });
 
   it('keeps review notes within the App Store Connect limit (4,000 bytes)', () => {
