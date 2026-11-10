@@ -1,1 +1,2 @@
 16:40 (10 Nov) design-nav | done: NAV-TAB-ROLES-10nov.md (audit, 3 jobs, 4 nav options, quiet coming soon, states, wireframes, PR collisions) | next: founder and product answers to section 10 | blocked/needs: #738 guard re-base (owner of #738)
+17:20 (10 Nov) design-nav | done: v2 for four tabs (Home, two middle, Me): 3 middle options, rec Book+Library gated, quiet coming soon in Me, collisions incl #721 | next: founder answers section 13 | blocked/needs: #738 guard re-base; NX-42 not on any branch
