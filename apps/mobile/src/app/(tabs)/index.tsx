@@ -184,9 +184,10 @@ export default function Tonight() {
   const family = room?.family;
   const birthday = family?.childBirthday ?? null;
 
+  const childName = family?.childName;
   const prompt = useMemo(
-    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS),
-    [birthday, daysSince, recent, today, shuffle, leftKey],
+    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey, childName }), PROMPTS),
+    [birthday, daysSince, recent, today, shuffle, leftKey, childName],
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
@@ -206,8 +207,9 @@ export default function Tonight() {
   const child = book.childName;
   const daypart = clock.daypart;
   const greeting = greetingParts(t.greeting[daypart], book.signsAs);
-  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the child;
-  // the day's date is only the function's fallback for its other caller, the Family tab.
+  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the stage,
+  // and the child too when the book has a name (NX-36 S13); the day's date is only the function's fallback for its
+  // other caller, the Family tab.
   const dateline = tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today));
   // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
   const lampLevel = tonightLampIntensity(daypart, !!markOn(room.entries, today));
