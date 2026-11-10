@@ -152,13 +152,48 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
     expect(authCopy.code.lettersSafe).toBe('Your letters are still on this phone.');
     for (const l of leaves(authCopy.errors, 'errors')) expect(l.text, l.path).not.toMatch(/\bletters?\b.*\bon this phone\b|\bon this phone\b.*\bletters?\b/i);
     expect(authCopy.errors.network).toBe('Nothing has changed. Sign in once you are back online.');
-    expect(authCopy.errors.session_expired).toBe('Nothing has changed. Sign in again to carry on.');
+    expect(authCopy.errors.session_expired).toBe('You were signed out. Sign in again to carry on.');
   });
 
-  it('no line says a recording is on, sent to or removed from our servers: Build 12 keeps recordings on the phone', () => {
-    const onServers = (text: string) => /\brecordings?\b[^.]*\b(?:servers?|our side|the cloud)\b/i.test(text);
-    expect(onServers('Every letter and recording will be removed from this phone and from our servers.')).toBe(true);
-    expect(onServers('Every letter will be removed from this phone and from our servers. Every recording will be removed from this phone.')).toBe(false);
+  it('no line says a recording (or audio, or a voice) is on, sent to or removed from our servers: Build 12 keeps recordings on the phone', () => {
+    const SOUND = String.raw`(?:recordings?|audio|voices?)`;
+    const PLACE = String.raw`(?:servers?|our side|the cloud)`;
+    const NEGATED = /\b(?:not|never|nor|no|without|isn't|aren't|don't|doesn't)\b/i;
+    const sentences = (text: string) => text.split(/(?<=[.!?])\s+/);
+    const within = (sentence: string) =>
+      !NEGATED.test(sentence) &&
+      (new RegExp(String.raw`\b${SOUND}\b[^.]*\b${PLACE}\b`, 'i').test(sentence) || new RegExp(String.raw`\b${PLACE}\b[^.]*\b${SOUND}\b`, 'i').test(sentence));
+    // A claim split over a full stop ("Your recordings are kept. They are on our servers."): a sentence about the sound that
+    // does not say it stays on the phone, beside a neighbour that names the servers, within a short window.
+    const split = (all: string[], i: number) =>
+      new RegExp(String.raw`\b${SOUND}\b`, 'i').test(all[i]) &&
+      !/\b(?:this (?:i)?phone|the (?:i)?phone|your (?:i)?phone)\b/i.test(all[i]) &&
+      !NEGATED.test(all[i]) &&
+      [all[i - 1], all[i + 1]].some((n) => n !== undefined && !NEGATED.test(n) && new RegExp(String.raw`\b${PLACE}\b`, 'i').test(n) && all[i].length + n.length <= 140);
+    const onServers = (text: string) => {
+      const all = sentences(text);
+      return all.some((sentence, i) => within(sentence) || split(all, i));
+    };
+    // Positive samples: each is a claim the rule must catch.
+    for (const claim of [
+      'Every letter and recording will be removed from this phone and from our servers.',
+      'Our servers hold your letters and recordings.',
+      'Your recordings are kept. They are on our servers.',
+      'Our servers keep your letters. Your recordings go there too, on the cloud.',
+      'Your audio is sent to our servers.',
+      'Our servers hold the audio of each letter.',
+      'Your voice is kept on our servers.',
+      'Our servers store every voice you record.',
+    ]) expect(onServers(claim), claim).toBe(true);
+    // Negative samples: true lines the rule must leave alone.
+    for (const fine of [
+      'Every letter will be removed from this phone and from our servers. Every recording will be removed from this phone.',
+      'Your letters are kept on this phone and on our servers, so they reach your other devices. Your recordings are kept on this phone.',
+      'Recordings stay on this phone and never reach our servers.',
+      'Your recordings are not sent to our servers.',
+      'Speak in your own voice.',
+      'Your letters are kept on this iPhone and on our servers. Your recordings are kept on this iPhone.',
+    ]) expect(onServers(fine), fine).toBe(false);
     for (const l of ALL) expect(onServers(l.text), `${l.path} claims a recording on our servers`).toBe(false);
     expect(en.settings.delete.bookBody).toBe("Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.");
   });

@@ -37,8 +37,8 @@ const CHAPTER_7: Record<string, string> = {
   'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
   'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
-  'errors.session_expired': 'Nothing has changed. Sign in again to carry on.',
-  'errors.consent_unavailable': 'Nothing has changed. Setting up your account did not finish. Try again.',
+  'errors.session_expired': 'You were signed out. Sign in again to carry on.',
+  'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
   'errors.unknown': 'That did not go through. Nothing has changed.',
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
@@ -243,13 +243,21 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // Build 12 (test/build12-untrue-copy.test.ts): no line promises the letters are "safe"; a service failure leads with
     // what is true: "Nothing has changed." or "Your letters are still on this phone." (VOICE.md, "safe").
     const SAFE = /^(?:Nothing has changed|Your letters are still on this phone)\./;
-    const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
+    // session_expired follows a sign-out the person did not ask for, and consent_unavailable can follow a successful sign-in,
+    // so "Nothing has changed." would not be true of either: each says what happened instead.
+    const SAYS_WHAT_HAPPENED: Record<string, string> = { session_expired: 'You were signed out.', consent_unavailable: 'Setting up your account did not finish.' };
+    const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
+    const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
     const INPUT = ['wrong_code', 'expired', 'invalid_email'];
     const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in'];
     const errors = authCopy.errors as Record<string, string>;
-    expect(Object.keys(errors).sort()).toEqual([...LEADS, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
+    expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
     for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);
+    for (const kind of HAPPENED) {
+      expect(errors[kind], kind).toMatch(new RegExp(`^${SAYS_WHAT_HAPPENED[kind]}`));
+      expect(errors[kind], kind).not.toMatch(/Nothing has changed|\bsafe\b/);
+    }
     for (const kind of SECOND) {
       expect(errors[kind], kind).not.toMatch(SAFE);
       expect(errors[kind], kind).toMatch(/\. Nothing has changed\.$/);

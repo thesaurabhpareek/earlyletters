@@ -135,9 +135,9 @@ export const authCopy = {
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
     provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
-    session_expired: 'Nothing has changed. Sign in again to carry on.',
+    session_expired: 'You were signed out. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
-    consent_unavailable: 'Nothing has changed. Setting up your account did not finish. Try again.',
+    consent_unavailable: 'Setting up your account did not finish. Try again.',
     unknown: 'That did not go through. Nothing has changed.',
     // BL-347: F02-U11 (`auth.link.otherDevice`) and F02-U27, worded as the spec gives them.
     other_phone: 'Type the code from the email on this phone instead.',
