@@ -12,12 +12,12 @@
  *    sweep pairs a stale path by name; a row whose exact path is listed
  *    always keeps its own file.
  *
- * The wipes still to be built, "Erase everything on this phone"
- * (DATA-REQ-024) and the wipe after an account is deleted (DATA-REQ-023),
- * must remove recordings through recordingFolders() and keep
- * `Documents/models`. They must also remove the temporary whole-frame copies
- * a transcription run makes in Caches (adts-file.ts
- * `removeWholeFrameCopies(0)`), which this listing leaves out.
+ * "Erase everything on this phone" (DATA-REQ-024, lib/erase-everything.ts)
+ * removes recordings through listRecordingFiles() and keeps
+ * `Documents/models`, and removes the temporary whole-frame copies a
+ * transcription run makes in Caches (adts-file.ts `removeWholeFrameCopies(0)`),
+ * which this listing leaves out. The wipe after an account is deleted
+ * (DATA-REQ-023), still to be built, must do the same.
  *
  * Not recursive, on purpose: Documents also holds the database (`SQLite/`)
  * and the speech models (`models/`), and on Android the packs and remote

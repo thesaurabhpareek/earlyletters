@@ -448,7 +448,8 @@ describe('[P3] whole-line excerpts at every Dynamic Type size, xSmall, Small and
     const src = code('components/motion/excerpt-fade.tsx');
     // The clip and the drawn text share one line height, from lineHeightFor with the same variant, fontScale and scale.
     expect(src).toContain('const lh = lineHeightFor(variant, fontScale, scale ?? 1);');
-    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]}>");
+    // (The container also measures its width, for the word ending's fade, BL-659.)
+    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]} onLayout=");
     expect(src).toMatch(/<Text variant=\{variant\} scale=\{scale\}/);
     // Callers cannot pass numberOfLines (it is left out of the props), and the component sets no ellipsis itself.
     expect(src).toContain("Omit<TextProps, 'children' | 'variant' | 'numberOfLines'>");

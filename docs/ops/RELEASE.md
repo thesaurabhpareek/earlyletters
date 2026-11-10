@@ -151,7 +151,7 @@ Proposed (17 Oct, not decided; ADR 0026 decision 1, Proposed; SR-3 and SR-11 in 
 | Name (environment secret of `app-store`) | What | Used by |
 |---|---|---|
 | `EXPO_TOKEN` | Expo robot token used only for the store lane (FT-17); a robot token needs `owner` in app config | RC build, metadata push |
-| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Optional `notes` overrides `storeListing.reviewNotes`; `demoUsername`, `demoPassword` and `demoRequired` only if a demo account exists (v1.1) | metadata push |
+| `ASC_REVIEW_CONTACT_JSON` | `{"firstName","lastName","email","phone","copyright"}`. `phone` is international format with a leading `+`. `copyright` becomes `apple.copyright`, for example "2026" and the publisher's legal name, which is never in code (D-004). Servers-off production profile: optional `notes` overrides `storeListing.reviewNotes`. Servers-on production profile (build 12, `scripts/release/with-review-contact.ts`): `inviteLink` (one co-parent invite link to the fictional Asha sample book, `https://<our site>/j#t=<token>`, made fresh before each submission; a typed code is refused because this build reads only a pasted link) and `inviteExpiry` (`YYYY-MM-DD`, at most 8 days ahead: 7 days plus a day of slack for time zones) are required; `demoUsername`, `demoPassword` and `notes` are refused. The script sends `appReviewCopy.notesServersOn` with both filled in and `demoRequired: false`; review is by Sign in with Apple, with no shared credential. Never put a real link or date in the repository | metadata push |
 
 A malformed secret fails with a fixed message and is never echoed to the public log. The App Store Connect API key and signing credentials stay in EAS credentials (4), never in GitHub.
 
@@ -219,7 +219,7 @@ Tick every line in the release PR's description with the evidence file it rests 
 
 ### 6.4 App Review information
 - [ ] **Contact information** (name, email, phone in international format) and **Notes** (at most 4,000 bytes) (V: Apple "Platform version information"). Both are pushed by the metadata job (3.4): contact from `ASC_REVIEW_CONTACT_JSON`, notes from `storeListing.reviewNotes` in `packages/content` (BL-341 finishes them).
-- [ ] **No demo account for v1.0.** v1.0 is on this phone only: no sign-in, account or sync (PR #54), so "Sign-in required" is No. The notes say so. If sign-in ships (v1.1), the demo-account plan returns: a non-expiring account on production with the fictional family "Asha" only, kept between versions.
+- [ ] **Review path.** Servers-off build: no sign-in, account or sync, so "Sign-in required" is No and the notes say so (`storeListing.reviewNotes`). Servers-on build (build 12): "Sign-in required" stays No and the demo user name and password stay empty; the reviewer uses their own Apple Account with Sign in with Apple and joins the Asha sample book by pasting a single-use invite link, which the founder makes fresh before each submission and puts, with its last valid day, in the `ASC_REVIEW_CONTACT_JSON` secret (`inviteLink`, `inviteExpiry`). `with-review-contact.ts` refuses a typed code, a link the app does not read, a past or more-than-a-week-away date, and any demo credential or notes override. Before each submission check that invites are not paused and the link opens the sample book on a clean install. A reviewer note that says "no sign-in" on a servers-on build is refused (BL-341).
 - [ ] Notes cover: a family memory journal parents fill by talking or typing; everything stays on the phone; answer Yes to the 18+ question; how to reach Plus (BL-341); speech models and language packs download as data checked against a signed manifest and contain no code (guideline 2.5.2, V); a birthday or due date files letters by month and nothing is a health service (D-004 5.1.1(ix) positioning). Describe every feature specifically; generic notes are rejected under 2.3.1(a) (V).
 
 ### 6.5 Export compliance (encryption)
@@ -327,6 +327,7 @@ Release ios-vX.Y.Z (RC tag ios-vX.Y.Z-rc.N, build N), commit <sha> on release/X.
 - [ ] TF-04 smoke on SE 3; TF-10 privacy manifest; TF-03 update over the previous build
 - [ ] DEVICE_TEST_PLAN items for this milestone, including S2-17 (plan reminders, D-094) and TF-11 (no analytics host, D-095) once #123 merges: evidence file <path>
 - [ ] Submission checklist RELEASE 6.1 to 6.8 (first version and any version that changes data collection, age rating, screenshots or subscriptions)
+- [ ] 0.9.0 test pages (CR-60): the founder has released the hold on them, or this release PR does not carry `apps/web/content/legal/*/0.9.0.md` and the versioned routes
 - [ ] Release option: manual (1.0) or phased (updates)
 - [ ] After release: tag ios-vX.Y.Z on the RC's commit; G5 watch for 7 days; DECISIONS go/no-go note (coordinator)
 ```

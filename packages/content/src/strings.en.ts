@@ -846,7 +846,25 @@ export const en = {
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",
       bookConfirm: "Delete the book",
-      bookTypeToConfirmLabel: "Type {child}'s name to confirm",
+      // Rev (F17 6.2 D step 4, section 13 Q8): the same typed word as account deletion, not the child's name.
+      bookTypeToConfirmLabel: "Type delete to confirm",
+      bookTypeWord: "delete",
+      // BL-387, F17 6.2 D: a phone that never signed in. The book is only here, so the line names no server.
+      bookBodyThisPhone: "Every letter and recording in {child}'s book will be removed from this phone.",
+      // Child settings row (F17 6.2 D step 1), under Hide this book.
+      deleteBookRow: "Delete this book",
+      // Back out of the book delete flow.
+      bookKeep: "Keep the book",
+      bookDeletedToast: "{child}'s book is in Recently deleted.",
+      // Recently deleted: a deleted book waits as one card (F17 6.2 D step 5).
+      bookCardTitle: "{child}'s book",
+      restoreBookButton: "Restore the book",
+      bookRestoredToast: "{child}'s book is back.",
+      bookEraseNowTitle: "Erase {child}'s book now?",
+      bookEraseNowBody: "Every letter and recording in it is erased for good.",
+      bookErasedToast: "Book erased.",
+      // A file would not go: the erase is already begun, so the book leaves Recently deleted and the next launch finishes it.
+      bookEraseFailedToast: "The book was not erased yet. The app finishes the next time it opens.",
       accountTitle: "Delete your account",
       accountConfirm: "Delete account",
       // Shown while a deletion request is in its 30-day grace period. The date is shown beside it.
@@ -854,6 +872,50 @@ export const en = {
       accountScheduledBody: "Until then you can export everything, or cancel and keep your account just as it is.",
       accountScheduledDateLabel: "Deletion date",
       cancelDeletionButton: "Cancel deletion",
+    },
+    // Erase everything on this phone (BL-387; F17 6.2 F step 1; DATA-REQ-024). Signed out only. Claims here are
+    // proven by apps/mobile/test/erase-all.test.ts (rows and files gone, no request sent, the free count reset).
+    erase: {
+      rowLabel: "Erase everything on this phone",
+      // Final strings: proposals/account-security/content.md 4.11 (design 2.12), word for word: title, body, exportFirst,
+      // exportButton, button, confirmTitle, confirmBody, confirmButton, busy, doneA11y. `failed`, `backups` and
+      // `plusStays` are the council's wording of 8 Nov (founder decision), not 4.11's.
+      title: "Erase everything on this phone",
+      heading: "What is erased",
+      body: "This removes every book, letter and recording from this iPhone, and your settings. We hold no copy.",
+      // D-083: the free count starts again, because the person asked for deletion. Store build only, last of the
+      // notes and in the same muted style as the others (council on #520, founder decision of 8 Nov).
+      freeLetters: "Your free letters start again.",
+      // F17 6.2 F step 3: speech stays, it holds nothing of the person's.
+      speechStays: "Your spoken language stays ready, because it holds nothing of yours. You can remove it in Storage.",
+      onThisPhone: "This happens on this phone only. Nothing is sent anywhere.",
+      // Privacy Review A on #520 and the council of 8 Nov: the same facts the deletion page states (pages.en.ts, "What
+      // stays"). Read straight after the body; names exports because the screen itself offers "Save a copy first?".
+      backups: "Exports you already saved, and backups of this phone such as iCloud Backup, are not changed.",
+      // Council on #520 (founder decision, 8 Nov): the account-deletion screen's Plus line (features/account-deletion.en.ts
+      // subscription.body) with this screen's own first words. Store build only, and only while Plus will renew
+      // (showSubscriptionNotice); never in alpha.
+      plusStays: "Erasing does not cancel Plus. Billing continues through Apple until you cancel.",
+      exportFirst: "Save a copy first?",
+      exportButton: "Export your book",
+      // Step 1's button: destructive, not the large button. It opens the confirm.
+      button: "Erase everything",
+      confirmTitle: "Erase everything on this phone?",
+      confirmBody: "This cannot be undone.",
+      // Second in the confirm, never the default.
+      confirmButton: "Erase",
+      // The confirm's way back (first, the cancel button).
+      back: "Keep everything",
+      // The Erasing screen (StateScreen loading), with no way out until the erase ends. Titles take no full stop.
+      busy: "Erasing",
+      // Announced as the app returns to the start.
+      doneA11y: "Everything on this phone is erased.",
+      // A file would not go: the rows stay and the mark stays. Erase everything again finishes it now; the next launch
+      // finishes it too, and it erases every row then present, so a letter added in between goes as well
+      // (store.ts eraseEverythingLocal, lib/erase-everything.ts resumeEraseAtLaunch; pinned in erase-all.test.ts).
+      failed: "Erasing did not finish. Try again now. If you wait, the app finishes it the next time it opens, and that erases anything you add before then.",
+      // A phone that has signed in (F17-REQ-026 is not built here): the row is hidden, this guards a deep link.
+      signedIn: "This phone is signed in. Delete your account from Settings instead.",
     },
     reminders: {
       cadenceLabel: "Reminders",
@@ -951,7 +1013,11 @@ export const en = {
     title: "Before your book syncs",
     body: "Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.",
     use: "We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.",
-    changeLater: "You can change this any time in Settings, Privacy.",
+    // Names only controls that exist (in-app-disclosures.md row "Sensitive-data agreement": no withdrawal control yet,
+    // D-128, BL-485, so the sheet promises none). Settings, Account shows "Agree and sync" after a no (account-view.logic.ts
+    // `offerSync`) in every servers-on build. It says nothing about deleting: Delete account is hidden in the preview
+    // profile (no EXPO_PUBLIC_ACCOUNT_DELETION), and the erasure clocks (30, 31, 38, 45 days) are not a sheet sentence.
+    changeLater: "You can turn them on later in Settings, Account.",
     // v1.0 has no backup (D-059); counsel to re-approve this line with the HN-4 text.
     declineHelp: "If you keep it on this phone, syncing and sharing stay off.",
     agreeButton: "Agree and sync",
@@ -1203,21 +1269,32 @@ export const en = {
     versionLabel: "Version",
   },
 
-  // Settings home (PRD C, C-REQ-016). Rows, in order: Account, Language, Plus, Reminders, Export your
-  // book, Privacy, Storage, Recordings, Appearance, Delete account, Terms, Privacy Policy, Help, version.
+  // Settings home (PRD C, C-REQ-016; regrouped 8 Nov 2026 per proposals/account-security settings-ia.md 3, CDesO-1,
+  // CCO-9; settings-ia.md 3 [F] read literally, CTO ruling 8 Nov 2026): a header card (the name and "On this phone",
+  // or the sign-in line; it opens Account with sign-in and nothing without), then the Plan row under it in every build
+  // (the "Settings, Plan" path the Terms and Subscription Terms name), then Children, Writing, Your letters, Privacy
+  // and security, Help and legal, About. Words from account-security/content.md 4.6. Removed with the regroup:
+  // settingsHome.sections.account ("Account") and sections.data ("Your data"), no longer read.
   settingsHome: {
     sections: {
-      account: "Account",
       writing: "Writing",
       plus: "Plus",
-      data: "Your data",
-      privacy: "Privacy and space",
+      letters: "Your letters",
+      privacy: "Privacy and security",
       help: "Help and legal",
       about: "About",
     },
+    // Header card (content 4.6). Build without sign-in: "On this phone"; signed in or out lines reuse
+    // auth.account.signedInWith and signedOutTitle. The card is one VoiceOver element; with sign-in its hint says it
+    // opens Account. Without sign-in the card opens nothing: the Plan row under it is the one way to Plan.
+    cardOnPhone: "On this phone",
+    cardHint: {
+      account: "Opens Account.",
+    },
+    legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",
-    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your data); Your words
+    // Rows from account-security/content.md 4.6: Where your letters live replaces Recordings (Your letters); Your words
     // replaces the Word for word switch (Writing).
     whereLive: "Where your letters live",
     yourWords: "Your words",
@@ -1298,38 +1375,36 @@ export const en = {
     footer: "Either way, we never rewrite your words.",
   },
 
-  // Static resources row (D-034): v1.0 has no on-device safety classifier. Resources verified 3 Oct 2026
-  // on mchb.hrsa.gov, 988lifeline.org and postpartum.net. Clinician and counsel to review the wording.
-  // Scope (D-087): the app ships in the US storefront only (LEGAL-REQ-058), so the list says it is for the
-  // United States and nothing picks lines by region. FOUNDER TASK (FT-36): before submit, check primary
-  // sources (988lifeline.org, postpartum.net) including the 988 language options. Only after that check
-  // may the 988 line below say "Press 2 for Spanish, or say your language to reach an interpreter."
-  // Do NOT add that sentence on the strength of search snippets.
+  // If you are struggling (D-034): v1.0 has no on-device safety classifier; this is a static page, never behind a
+  // flag. The lines are picked by the phone's own region (struggling-page.md section 2; CCO-11): helplines.ts holds
+  // them for US, CA, GB, IE, AU, NZ and IN, each with the official pages it rests on and the day they were read, and
+  // helplines.test.ts fails when a reading passes 90 days (`helplinesDueOn()`). Any other region gets the general
+  // emergency words and Find A Helpline. This replaces D-087's "keep the US list with a clear scope line"; the
+  // amendment is the founder's (see PR #675). FT-36: the 988 line says "Press 2 for Spanish", read on
+  // 988lifeline.org/get-help on 8 Nov 2026; interpreters are not described there, so they stay out. Clinician
+  // (BL-105) and counsel (Q25) review the wording and the non-US lines before a public release. The words below are
+  // pinned exactly in test/helplines.test.ts, so none changes unnoticed.
   struggling: {
     title: "If you are struggling",
-    body: "The early months can be very hard. You do not have to carry it alone. These lines are free and confidential. They are for people in the United States.",
-    resources: [
-      {
-        name: "National Maternal Mental Health Hotline",
-        how: "Call or text 1-833-852-6262, any time, in English or Spanish.",
-        tel: "18338526262",
-      },
-      {
-        name: "988 Lifeline",
-        how: "Call or text 988, any time.",
-        tel: "988",
-      },
-      {
-        name: "Postpartum Support International",
-        how: "Call 1-800-944-4773 and a trained volunteer calls you back.",
-        tel: "18009444773",
-      },
-    ],
-    emergency: "If you or your baby are in danger right now, call 911.",
+    // struggling-page.md section 4 working copy; the lines themselves live in helplines.ts with their sources.
+    body: "The early months ask a lot of anyone. If you want to talk to someone, these lines are there.",
+    emergencyTitle: "Are you or your baby in danger right now?",
+    emergencyCall: "Call {n}",
+    emergencyLocal: "Call your local emergency number.",
+    call: "Call",
+    text: "Text",
+    callA11y: "Call {name}",
+    textA11y: "Text {name}",
+    directory: "Find a free helpline near you",
+    directoryBody: "A directory of verified lines in many countries.",
+    otherCountries: "Lines in other countries",
+    otherCountriesBody: "If you are travelling, or your phone is set to somewhere you are not.",
+    emergencyIn: "Emergency: {n}",
+    privacy: "Nothing on this page is recorded or sent.",
   },
 
   // Help links (F20-REQ-005, F20-REQ-007): shared by every help row, the crisis lines and Write to us alike.
-  // `struggling.*` is founder-owned (FT-36) and stays untouched; these words are about the tap, not the lines.
+  // `struggling.*` is founder-owned (FT-36); these words are about the tap, not the lines.
   helpLinks: {
     // VoiceOver hints on a phone row: a call is promised only where the device says it can make one.
     callHint: "Starts a call.",
@@ -1337,6 +1412,11 @@ export const en = {
     // When this device cannot call: the number to copy.
     noCallTitle: "Call from a phone",
     noPhoneBody: "This device cannot make calls right now. Copy the number and use it on a phone.",
+    // When this device cannot send a text: the number to copy.
+    noTextTitle: "Text from a phone",
+    noTextBody: "Messages did not open on this device. Copy the number and use it on a phone.",
+    textHint: "Opens Messages, or shows the number to copy.",
+    webHint: "Opens the directory in a browser.",
     copyNumber: "Copy number",
     numberCopied: "Number copied",
     // When Mail cannot open: our address to copy.

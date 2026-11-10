@@ -85,11 +85,12 @@ import {
   type CarryText,
   type Rect,
 } from '@/lib/transitions.logic';
-import { FadeEdge } from './excerpt-fade';
-import { FADE_FRACTION } from './excerpt-fade.logic';
+import { ExcerptFadeSpanContext, FadeEdge } from './excerpt-fade';
+import { FADE_FRACTION, type FadeSpan } from './excerpt-fade.logic';
 import { PressHoldContext, type PressHold } from './press';
 
-type Remembered = { card: Rect; text?: CarryText; rtl?: boolean };
+/** `fade`: where the card's excerpt fade sat on its last line (BL-659's word ending), for the carry to draw it there. */
+type Remembered = { card: Rect; text?: CarryText; rtl?: boolean; fade?: FadeSpan };
 
 /** Where each card and its words were when it was last touched, by id. In memory only, never stored. */
 const rects = new Map<string, Remembered>();
@@ -109,7 +110,7 @@ const measure = (v: View | null) =>
     v.measureInWindow((x, y, width, height) => resolve(width > 0 && height > 0 ? { x, y, width, height } : undefined));
   });
 
-type TextSlot = { ref: RefObject<View | null>; lineHeight: number; rtl?: boolean };
+type TextSlot = { ref: RefObject<View | null>; lineHeight: number; rtl?: boolean; fade: RefObject<FadeSpan | null> };
 const CardSourceContext = createContext<((slot: TextSlot | null) => void) | null>(null);
 
 /** Wraps a card so its place on screen (and its words' place) is known the moment a finger lands on it. */
@@ -119,7 +120,7 @@ export function CardSource({ id, children, style }: { id: string; children: Reac
   const remember = useCallback(() => {
     const slot = text.current;
     void Promise.all([measure(ref.current), measure(slot?.ref.current ?? null)]).then(([card, words]) => {
-      if (card) cardRects.set(id, { card, text: words && slot ? { ...words, lineHeight: slot.lineHeight } : undefined, rtl: slot?.rtl });
+      if (card) cardRects.set(id, { card, text: words && slot ? { ...words, lineHeight: slot.lineHeight } : undefined, rtl: slot?.rtl, fade: slot?.fade.current ?? undefined });
     });
   }, [id]);
   const register = useCallback((slot: TextSlot | null) => void (text.current = slot), []);
@@ -149,14 +150,19 @@ export function CardSource({ id, children, style }: { id: string; children: Reac
 export function CardText({ children, lineHeight, rtl, style }: { children: ReactNode; lineHeight: number; rtl?: boolean; style?: StyleProp<ViewStyle> }) {
   const register = useContext(CardSourceContext);
   const ref = useRef<View>(null);
+  // The excerpt inside reports where its fade sits (ExcerptFade); read when the card is touched, so no render.
+  const fade = useRef<FadeSpan | null>(null);
+  const onFade = useCallback((span: FadeSpan | null) => void (fade.current = span), []);
   useEffect(() => {
-    register?.({ ref, lineHeight, rtl });
+    register?.({ ref, lineHeight, rtl, fade });
     return () => register?.(null);
   }, [register, lineHeight, rtl]);
   return (
-    <View ref={ref} collapsable={false} style={style}>
-      {children}
-    </View>
+    <ExcerptFadeSpanContext.Provider value={onFade}>
+      <View ref={ref} collapsable={false} style={style}>
+        {children}
+      </View>
+    </ExcerptFadeSpanContext.Provider>
   );
 }
 
@@ -453,6 +459,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 
   const rtl = !!remembered.current?.rtl;
   const lineHeight = remembered.current?.text?.lineHeight ?? 0;
+  const fadeSpan = remembered.current?.fade;
   const showCarry = carry && phase === 'moving';
   const ctx = useMemo<PageContext>(
     () => ({
@@ -490,7 +497,7 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
             {/* The card's own words: always there, carried whole. */}
             <Animated.View style={[{ overflow: 'hidden' }, excerptBox]}>
               {opening(null)}
-              <Animated.View style={[fadeEdgeBox(lineHeight, rtl), cardFade]}>
+              <Animated.View style={[fadeEdgeBox(lineHeight, rtl, fadeSpan), cardFade]}>
                 <FadeEdge color={c.surfaceRaised} side={rtl ? 'left' : 'right'} style={StyleSheet.absoluteFill} />
                 <Animated.View style={[StyleSheet.absoluteFill, cardFadeDip]}>
                   <FadeEdge color={c.bg} side={rtl ? 'left' : 'right'} style={StyleSheet.absoluteFill} />
@@ -509,6 +516,8 @@ export function CardToPage({ id, opening, onClosed, children }: { id: string; op
 }
 
 /** The card's fade over the end of its last line, at the bottom of the carried excerpt. */
-function fadeEdgeBox(lineHeight: number, rtl: boolean): ViewStyle {
+function fadeEdgeBox(lineHeight: number, rtl: boolean, span?: FadeSpan): ViewStyle {
+  // The card's own span (its last whole word, BL-659), or build 1's last 40 percent when the card did not report one.
+  if (span) return { position: 'absolute', bottom: 0, height: lineHeight, left: span.left, width: span.width };
   return { position: 'absolute', bottom: 0, height: lineHeight, width: `${FADE_FRACTION * 100}%`, [rtl ? 'left' : 'right']: 0 };
 }
