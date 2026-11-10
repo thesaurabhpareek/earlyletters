@@ -4,7 +4,7 @@ Written 1 Nov 2026 by Karma's session. One page. Source: the retrospective, requ
 
 ## Do these today (no PR needed)
 1. **BL, D, ADR and APPLY ids come from `node scripts/agents/next-id.mjs`; it does not print CR ids.** Before using any D, CR, BL or ADR number, also search open PRs for it, and for a CR number read the end of `docs/agents/cto/RULINGS.md` as well (the CR and D numbers collided three times: CR-22, CR-25, and D-138 versus merged PR #557). Example: `gh api 'repos/thesaurabhpareek/earlyletters/pulls?state=open&per_page=100' --jq '.[].number'`, then grep each patch.
-2. **A review counts only at the full 40-character head sha** (CR-44 as proposed in PR #555; it is not in `docs/agents/cto/RULINGS.md` until #555 merges, and develop's file ends at CR-42). Format: `## Review A at <40-char sha>: PASS` as a PR comment. Re-check the head sha right before you merge. If it moved, the review is stale.
+2. **A review counts only at the full 40-character head sha** (CR-44 as proposed in PR #555; it is not in `docs/agents/cto/RULINGS.md` until #555 merges). Format: `## Review A at <40-char sha>: PASS` as a PR comment. Re-check the head sha right before you merge. If it moved, the review is stale.
 3. **One merge owner per PR.** A chat "approved" is not a counted pass. Name the PR when you ask the founder to merge.
 4. **Read counts live, never from a doc or memory.** Open PR count was 69, 70, 72 and 91 within one day in four different notes. Quote the command and the time.
 5. **Do not write what you cannot source.** Founder decisions in `docs/DECISIONS.md` quote his words. If you only have a paraphrase, say so (see D-139's draft).
