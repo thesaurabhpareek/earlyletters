@@ -143,7 +143,7 @@ describe("the other parent's letter, first seen on this phone (option B)", () =>
 describe('the Book screen (S24 to S26, source)', () => {
   const book = code(src('app/(tabs)/book.tsx'));
 
-  it('has no tinted explainer box; the current month is a lit opener with no sentence', () => {
+  it('has no tinted explainer box; each month opens with its heading (book-page.md 2: no lit month card)', () => {
     expect(book).not.toMatch(/variant="tinted"/);
     expect(book).not.toMatch(/book\.empty\.chapterBody|book\.empty\.chapterTitle/);
     expect(book).toMatch(/<MonthOpener opener=\{openerOf\(section\)\}/);
@@ -159,9 +159,10 @@ describe('the Book screen (S24 to S26, source)', () => {
     expect(book).toMatch(/<CardSource id=\{item\.id\}>/);
   });
 
-  it('every excerpt is the two-line fade, never an ellipsis (letter cards)', () => {
+  it('every excerpt is the fade over whole lines, three or two at accessibility sizes, never an ellipsis (letter cards; book-page.md 2)', () => {
     const card = code(src('components/book/letter-card.tsx'));
-    expect(card).toMatch(/<ExcerptFade text=\{text\} lines=\{2\} variant="letterBody"/);
+    expect(card).toMatch(/const lines = bookExcerptLines\(fontScale\);/);
+    expect(card).toMatch(/<ExcerptFade text=\{text\} lines=\{lines\} variant="letterBody"/);
     expect(card).not.toMatch(/numberOfLines=/);
     expect(code(src('components/book/app-note.tsx'))).not.toMatch(/numberOfLines=/);
   });

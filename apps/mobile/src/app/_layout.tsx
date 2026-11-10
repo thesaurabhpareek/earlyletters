@@ -25,6 +25,7 @@ import { useScreenViews } from '@/lib/analytics/use-screen-views';
 import { startListeningCopies } from '@/lib/audio-enhance';
 import { SessionProvider } from '@/lib/auth/session-provider';
 import { startBackup } from '@/lib/backup/gate';
+import { resumeEraseAtLaunch } from '@/lib/erase-everything';
 import { allowanceSourceFor, PLUS_ALPHA, PlanNoticeHost, setFreeLettersAllowanceSource, startLetterLedger, startPlus } from '@/lib/billing';
 import { runLaunchSweep } from '@/lib/capture/sweep';
 import { cleanupExports } from '@/lib/export';
@@ -146,8 +147,13 @@ export default function RootLayout() {
 function Root() {
   // E2E seams (RA-20-18): a no-op in every build without EXPO_PUBLIC_E2E=1 and a non-store app env (src/dev/e2e-seams.ts).
   useE2eSeams();
+  // An Erase everything a kill cut short is finished before anything below reads the store (files and rows go
+  // inside this call; lib/erase-everything.ts), so the first frame shows the age question, as on first run.
+  useState(() => void resumeEraseAtLaunch());
   // App lock (F1, CISO-1): read during this first render, from two settings and nothing awaited, so a locked book is
-  // covered in the very first frame (lib/app-lock/controller.ts; A-NFR-001, A-NFR-002).
+  // covered in the very first frame (lib/app-lock/controller.ts; A-NFR-001, A-NFR-002). It comes after the resume
+  // above on purpose: an Erase everything finished at launch removes the lock settings with the rest, so the lock
+  // reads "off" and the phone starts as on first run instead of locking an empty book.
   useState(startAppLock);
   useAppearance();
   // One scheme for everything: navigation chrome, status bar and every screen read it from useTheme().

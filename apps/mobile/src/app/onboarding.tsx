@@ -64,6 +64,7 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { capabilities } from '@/lib/capabilities';
+import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
@@ -133,7 +134,7 @@ function FirstRun() {
   const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  const doors = visibleCoParentDoors(capabilities.coParent);
+  const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
@@ -468,7 +469,7 @@ function FirstRun() {
                     <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
                   {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
-                  {showOnboardingLanguageRow(capabilities.englishOnly) && (
+                  {showOnboardingLanguageRow(hearsOnlyEnglish(heardLanguagesForBuild())) && (
                     <View className="gap-4">
                       <Separator />
                       <ListSection>
