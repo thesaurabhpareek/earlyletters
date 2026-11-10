@@ -1,19 +1,23 @@
 /**
  * Book: chapters by month of age, newest first, read like a printed book (DESIGN_LANGUAGE 12, EXPERIENCE_PASS S24 to
- * S26, S36; 5.8 rows 5 and 7).
- * Benchmarks (docs/design/BENCHMARK.md, "Screens"):
- * - Apple large title: "Asha's book" scrolls under a material bar that fades in with an
- *   inline title (Apple Books Library, Journal). Reduce Motion: the bar switches, no fade.
- * - A printed book's chapter openers: a kicker, a large numeral and the dates, a hairline between chapters; the
- *   current month lit like the page under a lamp (MonthOpener). No explainer box, no counts of gaps.
- * - Airbnb cards: letter cards with generous radius, metadata muted below; excerpts end in a fade.
+ * S26, S36; 5.8 rows 5 and 7; proposals/book-page.md, the Book page redesign).
+ * Benchmarks (docs/design/BENCHMARK.md, "Screens"; book-page.md 2): Day One and Apple Journal (the entry is the
+ * object), Airbnb (card restraint), Calm and Headspace (one warm focal point).
+ * - The cover band is the one lit object: "Asha's book", the age in words, Read together full width, the gear on the
+ *   title row (CoverBand). It scrolls under a material bar that fades in with the inline title, the Months button,
+ *   the gear and the compact month at the top of the list (the sticky header). Reduce Motion: the bar switches, no
+ *   fade. Reduce Transparency and Increase Contrast: the bar is solid (BlurSurface).
+ * - Months are chapters: a typographic heading, "This month" on the current one only (MonthOpener). No explainer
+ *   box, no counts of gaps; the count line lives in the Months sheet, which lists only months with letters.
+ *   Choosing one cross-fades the list there over fadeMs, never an animated scroll.
+ * - Airbnb cards: letter cards with generous radius, metadata muted below; excerpts end on a whole word.
+ * - The end of the book: the quotation-pair mark after the oldest chapter (EndOfBook).
  * Motion: the first view per session settles the header (MOTION 5a) and the first 6 cards enter (5f); after that
  * nothing re-enters (5.8 rule 2). A kept letter arrives in place with the 1.6 s wash (5e, row 5). A card grows into
  * its page (CardToPage, row 7) and the page goes back into it. A deleted card collapses out of its row, and Undo
  * puts it back with the wash (S36). Lamp: the still `book` scene, sharing the tabs' light.
  */
 import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
-import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { SectionList, View } from 'react-native';
@@ -22,6 +26,8 @@ import Animated, {
   FadeIn,
   interpolate,
   ReduceMotion,
+  runOnJS,
+  useAnimatedReaction,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -35,13 +41,14 @@ import { BookCover } from '@/components/book/book-cover';
 import { BlurSurface } from '@/components/platform/blur-surface';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { Button, IconButton } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 import { EmptyState } from '@/components/ui/empty-state';
 import { Lamp } from '@/components/ui/lamp';
-import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { planFor } from '@/lib/models/speech-packs';
 import { springConfig, useMotion } from '@/lib/motion';
 import { isReadItBack } from '@/lib/read-it-back';
@@ -53,6 +60,11 @@ import { bookChapters, openerOf, type Chapter } from '@/components/book/chapters
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { letterWords } from '@/components/book/letter-words.logic';
 import { MonthOpener } from '@/components/book/month-opener';
+import { compactMonth, coverAge, jumpTarget, monthRows, runJump, showsMonthsButton, topChapterKey, type MonthRow } from '@/components/book/book-page.logic';
+import { bookCopy } from '@/components/book/copy';
+import { CoverBand } from '@/components/book/cover-band';
+import { EndOfBook } from '@/components/book/end-of-book';
+import { MonthsSheet } from '@/components/book/months-sheet';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
 import { isOwnEntry } from '@/components/child/child-store';
@@ -64,6 +76,8 @@ import { useChildren } from '@/components/child/use-children';
 const AnimatedSectionList = Animated.createAnimatedComponent(SectionList<Entry, Chapter>);
 /** Scroll distance over which the large title hands over to the inline bar. */
 const TITLE_FADE = { start: 56, end: 96 };
+/** The inline bar's title row, under the status bar. */
+const BAR_HEIGHT = 44;
 /** The other parent's letters this phone has shown (ids only, never words), so each washes once. */
 const SEEN_KEY = 'book.seenFromOthers';
 
@@ -85,6 +99,12 @@ export default function Book() {
   const toast = useToast();
   const deleteToastUp = useRef(false);
   const listRef = useRef<SectionList<Entry, Chapter> | null>(null);
+  // The Months sheet, the chapter at the top of the list (the bar's compact month), whether the bar is up (its
+  // buttons take touches and VoiceOver only then), and the list's cross-fade for a jump to a month.
+  const [monthsOpen, setMonthsOpen] = useState(false);
+  const [topKey, setTopKey] = useState<string | null>(null);
+  const [barUp, setBarUp] = useState(false);
+  const listFade = useSharedValue(1);
   // The first view this session settles the header and staggers the first cards; returns move nothing (5.8 rule 2).
   const [firstView] = useState(firstBookViewThisSession);
   const [stagger, setStagger] = useState(firstView && !params.arrived);
@@ -109,6 +129,7 @@ export default function Book() {
   const today = todayISO();
   const shown = useMemo(() => (active ? withLeaving(entries, leaving, active.id) : []), [entries, leaving, active]);
   const chapters = useMemo(() => (active ? bookChapters(shown, active, today) : []), [shown, active, today]);
+  const rows = useMemo(() => monthRows(chapters), [chapters]);
   const readBack = useMemo(() => new Set(entries.filter((e) => e.captureMode !== 'typed' && isReadItBack(e.id)).map((e) => e.id)), [entries]);
 
   const wash = useCallback((ids: string[]) => {
@@ -238,6 +259,61 @@ export default function Book() {
     const o = reduced ? (y.value > TITLE_FADE.end ? 1 : 0) : interpolate(y.value, [TITLE_FADE.start, TITLE_FADE.end], [0, 1], Extrapolation.CLAMP);
     return { opacity: o };
   }, [reduced]);
+  // The bar's buttons are live once it is mostly in, and gone (no touches, not read) while the band is in view.
+  useAnimatedReaction(
+    () => y.value > (TITLE_FADE.start + TITLE_FADE.end) / 2,
+    (up, was) => {
+      if (up !== was) runOnJS(setBarUp)(up);
+    },
+  );
+  const listStyle = useAnimatedStyle(() => ({ opacity: listFade.value }));
+  // The chapter at the top of the list, for the compact month in the bar: a render only when it changes.
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { section?: { key?: string } | null }[] }) => {
+    const key = topChapterKey(viewableItems);
+    if (key) setTopKey((k) => (k === key ? k : key));
+  }).current;
+  // Going to a month (book-page.md 3): no animated scroll. The list fades out, moves at once, and fades back in,
+  // over fadeMs in all (a fade either way, so Reduce Motion keeps it). runJump (book-page.logic.ts) always fades the
+  // list back in, finds the month again by its key when the fade ends (the list may have changed since the tap), and
+  // tries a month the list has not measured yet again after the next layout, a bounded number of times.
+  const chaptersNow = useRef(chapters);
+  chaptersNow.current = chapters;
+  const barHeight = useRef(0);
+  const jumpFailed = useRef(false);
+  const pendingJump = useRef<(() => void) | null>(null);
+  const runPendingJump = useCallback(() => {
+    const retry = pendingJump.current;
+    pendingJump.current = null;
+    retry?.();
+  }, []);
+  const jumpTo = useCallback(
+    (row: MonthRow) => {
+      setMonthsOpen(false);
+      const half = tokens.motion.fadeMs / 2;
+      runJump({
+        fadeOut: (next) => {
+          listFade.value = withTiming(0, { duration: half, reduceMotion: ReduceMotion.Never }, () => runOnJS(next)());
+        },
+        locate: () => jumpTarget(chaptersNow.current, row.key),
+        scroll: (sectionIndex) => {
+          jumpFailed.current = false;
+          // The bar's whole height (status bar, title row and the compact month), so the heading lands under it.
+          const viewOffset = barHeight.current || insets.top + BAR_HEIGHT;
+          listRef.current?.scrollToLocation({ sectionIndex, itemIndex: 0, viewPosition: 0, viewOffset, animated: false });
+          return !jumpFailed.current;
+        },
+        afterLayout: (retry) => {
+          pendingJump.current = retry;
+          // The next content size change runs it; a frame later at the latest, if the size does not change.
+          requestAnimationFrame(() => requestAnimationFrame(runPendingJump));
+        },
+        fadeIn: () => {
+          listFade.value = withTiming(1, { duration: half, reduceMotion: ReduceMotion.Never });
+        },
+      });
+    },
+    [insets.top, listFade, runPendingJump],
+  );
 
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;
 
@@ -256,41 +332,55 @@ export default function Book() {
   for (const ch of chapters) for (const e of ch.data) indexOf.set(e.id, n++);
   const entering = (id: string) => (stagger ? enter(indexOf.get(id) ?? 99) : undefined);
 
+  const canRead = readableInBook(entries).length > 0;
+  const months = showsMonthsButton(rows) ? { label: bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) } : null;
+  const openSettings = () => router.push('/settings');
   const header = (
     <Settle run={firstView && !params.arrived} reduced={reduced}>
-      <View className="gap-3 px-5 pb-2" style={{ paddingTop: insets.top + 4 }}>
-        <View className="min-h-11 flex-row items-center justify-between">
-          {/* One book: "Asha's book" already says the name (S24). */}
-          {children.length > 1 ? <ChildSwitcher /> : <View />}
-          <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={() => router.push('/settings')} className="-mr-2" />
-        </View>
-        <Text variant="display" asHeading={1}>
-          {title}
-        </Text>
-        {/* Only what Read together can read: kept letters with words, as the screen itself reads them (L4). */}
-        {readableInBook(entries).length > 0 && (
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={BookOpenTextIcon}
-            label={copy.readTogether.title}
-            className="self-start"
-            onPress={() => router.push({ pathname: '/read-together', params: { childId: active.id } })}
-            accessibilityHint={fill(copy.readTogether.subtitle, { child })}
-          />
-        )}
+      <View className="px-5 pb-2" style={{ paddingTop: insets.top + 4 }}>
+        {/* The cover band (book-page.md 2): the one lit object. One book: "Asha's book" already says the name (S24).
+            Read together only for what it can read: kept letters with words, as the screen itself reads them (L4). */}
+        <CoverBand
+          title={title}
+          age={coverAge(active, today)}
+          switcher={children.length > 1 ? <ChildSwitcher /> : null}
+          readTogether={canRead ? { label: copy.readTogether.title, hint: fill(copy.readTogether.subtitle, { child }), onPress: () => router.push({ pathname: '/read-together', params: { childId: active.id } }) } : null}
+          months={chapters.length > 0 ? months : null}
+          settings={{ label: copy.settings.title, onPress: openSettings }}
+        />
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
             recordings come back to a new phone. It lands with P8c's file. */}
       </View>
     </Settle>
   );
 
+  // The inline bar after scroll (book-page.md 2): the title, Months and the gear, then the compact month at the top of
+  // the list, which wraps and never truncates. It cross-fades in with the scroll; while it is out, nothing in it takes a
+  // touch or is read (the band is in view with the same buttons).
+  const compact = compactMonth(chapters, topKey ?? chapters[0]?.key ?? null);
   const topBar = (
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, barStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <BlurSurface edge="bottom" style={{ paddingTop: insets.top, height: insets.top + 44, justifyContent: 'center', alignItems: 'center' }}>
-        <Text variant="headline" numberOfLines={1} maxFontSizeMultiplier={1.3}>
-          {title}
-        </Text>
+    <Animated.View
+      pointerEvents={barUp ? 'box-none' : 'none'}
+      style={[{ position: 'absolute', top: 0, left: 0, right: 0 }, barStyle]}
+      onLayout={(e) => {
+        barHeight.current = e.nativeEvent.layout.height;
+      }}
+      accessibilityElementsHidden={!barUp}
+      importantForAccessibility={barUp ? 'auto' : 'no-hide-descendants'}>
+      <BlurSurface edge="bottom" style={{ paddingTop: insets.top, paddingBottom: tokens.space[2], paddingHorizontal: tokens.space[5] }}>
+        <View className="flex-row items-center gap-2" style={{ minHeight: BAR_HEIGHT }}>
+          <Text variant="headline" className="flex-1" maxFontSizeMultiplier={1.3}>
+            {title}
+          </Text>
+          {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}
+          <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={openSettings} className="-mr-2" testID="book.bar.settings" />
+        </View>
+        {compact ? (
+          <View accessible accessibilityRole="header" accessibilityLabel={compact.a11yLabel} className="flex-row flex-wrap items-baseline gap-x-3" testID="book.bar.month">
+            <Text variant="subhead">{compact.heading}</Text>
+            {compact.range ? <Text variant="footnote">{compact.range}</Text> : null}
+          </View>
+        ) : null}
       </BlurSurface>
     </Animated.View>
   );
@@ -315,18 +405,26 @@ export default function Book() {
           </View>
         ) : (
           <>
+            <Animated.View className="flex-1" style={listStyle}>
             <AnimatedSectionList
               ref={listRef as never}
               sections={chapters}
               keyExtractor={(e: Entry) => e.id}
               ListHeaderComponent={header}
+              ListFooterComponent={EndOfBook}
+              onViewableItemsChanged={onViewableItemsChanged}
               stickySectionHeadersEnabled={false}
               contentContainerStyle={{ paddingBottom: 40 }}
               onScroll={onScroll}
               scrollEventThrottle={16}
-              onContentSizeChange={scrollToArrival}
+              onContentSizeChange={() => {
+                scrollToArrival();
+                runPendingJump();
+              }}
               onScrollToIndexFailed={(info: { averageItemLength: number; index: number }) => {
-                // Not measured yet: go near it, then the next layout finishes the job.
+                // Not measured yet: go near it, then the next layout finishes the job (the arrival's pendingScroll, or
+                // the jump's retry).
+                jumpFailed.current = true;
                 (listRef.current as unknown as { getScrollResponder?: () => { scrollTo?: (o: { y: number; animated: boolean }) => void } } | null)
                   ?.getScrollResponder?.()
                   ?.scrollTo?.({ y: info.averageItemLength * info.index, animated: false });
@@ -349,7 +447,9 @@ export default function Book() {
                 )
               }
             />
+            </Animated.View>
             {topBar}
+            <MonthsSheet open={monthsOpen} rows={rows} onClose={() => setMonthsOpen(false)} onChoose={jumpTo} />
           </>
         )}
       </Animated.View>
@@ -371,7 +471,7 @@ function WaitingCard(props: Omit<Parameters<typeof LetterCard>[0], 'reason'>) {
   const reason = !language
     ? null
     : download.progress !== null
-      ? fill(s.downloading, { n: Math.floor(download.progress * 100) })
+      ? downloadingLine(download.progress, (n) => fill(s.downloading, { n }))
       : download.hold === 'waiting_for_wifi'
         ? fill(s.waitingForWifi, { n: Math.round(planFor([language]).bytes / 1e6) })
         : null;

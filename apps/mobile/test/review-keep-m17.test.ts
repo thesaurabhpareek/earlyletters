@@ -28,6 +28,7 @@ vi.mock('../src/lib/db/repos/open-native', () => ({
 }));
 vi.mock('../src/lib/billing/plan-store', () => ({
   getPlan: () => ({ view: plan.view, details: {}, checkedAt: null }),
+  planReadiness: async () => 'read',
 }));
 vi.mock('../src/lib/analytics/track', () => ({ track: () => {} }));
 

@@ -51,7 +51,7 @@ export interface PackResult {
   manifest: Manifest;
   manifestSha256: string;
   bytesWritten: number;
-  /** Entry ids whose recording no longer matches its capture hash (DATA-REQ-046). Ids only, never content. */
+  /** Entry ids (and waiting letters' draft ids) whose recording no longer matches its capture hash (DATA-REQ-046). Ids only, never content. */
   mismatched: string[];
 }
 
@@ -76,10 +76,10 @@ export const estimatePdfBytes = (letters: number) => 60_000 + letters * 3_000;
 export function estimateExportBytes(snapshot: ExportSnapshot): number {
   const plan = planExport(snapshot);
   const text = plan.textFiles.reduce((n, f) => n + f.text.length * 1.2, 0);
-  const audio = plan.audio.reduce((n, a) => n + (a.sizeHint ?? 2_000_000), 0);
+  const audio = [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 2_000_000), 0);
   const books = plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0);
-  const data = snapshot.entries.length * 2_500;
-  const headers = (plan.textFiles.length + plan.audio.length + plan.books.length + 6) * 200;
+  const data = (snapshot.entries.length + (snapshot.waiting?.length ?? 0)) * 2_500;
+  const headers = (plan.textFiles.length + plan.audio.length + plan.waitingAudio.length + plan.books.length + 7) * 200;
   return Math.ceil(text + audio + books + data + headers);
 }
 
@@ -111,7 +111,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   // Progress by planned bytes: text and data are small, recordings are most of it.
   const total =
     plan.textFiles.reduce((n, f) => n + f.text.length, 0) +
-    plan.audio.reduce((n, a) => n + (a.sizeHint ?? 1_000_000), 0) +
+    [...plan.audio, ...plan.waitingAudio].reduce((n, a) => n + (a.sizeHint ?? 1_000_000), 0) +
     plan.books.reduce((n, b) => n + estimatePdfBytes(b.letters), 0) +
     snapshot.entries.length * 2_500 +
     1;
@@ -192,9 +192,30 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
     await yieldToUi();
   }
 
+  // 4b. Recordings of letters that are waiting (1.6.0, PL-2), the same way, under waiting/.
+  const waitingResults = new Map<string, AudioResult>();
+  const waitingMismatched: string[] = [];
+  for (const job of plan.waitingAudio) {
+    check();
+    let data: Uint8Array;
+    try {
+      data = await deps.readFile(job.uri);
+    } catch {
+      // Vanished between the snapshot and now: listed in waiting.json with audio_missing.
+      report('recordings', job.sizeHint ?? 1_000_000);
+      continue;
+    }
+    const sha256 = await deps.sha256(data);
+    await add(job.path, data, job.mediaType, sha256);
+    waitingResults.set(job.entryId, { sha256, bytes: data.length });
+    if (job.recordedSha256 && job.recordedSha256 !== sha256) waitingMismatched.push(job.entryId);
+    report('recordings', job.sizeHint ?? data.length);
+    await yieldToUi();
+  }
+
   // 5. Data files, with the hashes of the recordings actually written.
   const sha256Text = (text: string) => deps.sha256(strToU8(text));
-  const data = await dataFiles(snapshot, plan, audioResults, sha256Text);
+  const data = await dataFiles(snapshot, plan, audioResults, sha256Text, waitingResults);
   for (const f of data.files) {
     await add(f.path, strToU8(f.text), f.mediaType);
     report('data', f.text.length);
@@ -213,6 +234,7 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
       entries: entriesCount,
       audio: audioResults.size,
       audio_missing: data.audioMissing,
+      // Letters only, as before 1.6.0; a waiting recording's integrity is in data/waiting.json.
       audio_mismatch: mismatched.length,
       photos: 0,
       books: plan.books.length,
@@ -228,5 +250,5 @@ export async function packExport(snapshot: ExportSnapshot, deps: PackDeps): Prom
   if (zipError) throw zipError;
   if (!finished) throw new Error('export_zip_unfinished');
   deps.onProgress?.({ phase: 'data', fraction: 1 });
-  return { manifest, manifestSha256, bytesWritten: written, mismatched };
+  return { manifest, manifestSha256, bytesWritten: written, mismatched: [...mismatched, ...waitingMismatched] };
 }

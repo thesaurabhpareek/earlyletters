@@ -8,7 +8,8 @@
  * (packages/core/src/age.ts). Screens never call toLocaleDateString or
  * build dates themselves.
  */
-import { ageLabel, ageOn, dateline } from '@scribe/core';
+import { ageLabel, ageOn, chapterOf, dateline, isBeforeBirth } from '@scribe/core';
+import { copy, fill } from './copy';
 import type { Child } from './store';
 
 function deviceLocale(): string {
@@ -54,15 +55,46 @@ export function longDate(iso: string, locale?: string): string {
 
 /**
  * Full letter dateline: "Tuesday, September 29, 2026. Asha is 7 months old."
- * Uses the due date while expecting ("before Asha was born").
+ * The age sentence counts only from a birthday. A letter the Book files in Before You (no birthday yet, or a day
+ * before it) reads "Before Asha was born.", the same test the Book uses (`isBeforeBirth`). A due date is never an age
+ * anchor: past the due date with no birthday set, the letter is still before birth (QE-01).
  */
-export function letterDateline(child: Pick<Child, 'name' | 'birthday' | 'dueDate'>, iso: string, locale?: string): string {
-  const anchor = child.birthday ?? child.dueDate;
-  if (!anchor) return `${dayDate(iso, locale)}.`;
+export function letterDateline(child: Pick<Child, 'name' | 'birthday'>, iso: string, locale?: string): string {
+  const day = dayDate(iso, locale);
+  if (isBeforeBirth(child.birthday, iso)) return `${day}. ${fill(copy.book.dateline.beforeBirth, { child: child.name })}`;
   // Core gives "<date>. <Age sentence>."; keep its age sentence, use the locale date.
-  const core = dateline(iso, child.name, anchor);
+  const core = dateline(iso, child.name, child.birthday!);
   const cut = core.indexOf('. ');
-  return cut < 0 ? `${dayDate(iso, locale)}.` : `${dayDate(iso, locale)}. ${core.slice(cut + 2)}`;
+  return cut < 0 ? `${day}.` : `${day}. ${core.slice(cut + 2)}`;
+}
+
+/**
+ * A letter dated to a month, not a day (F09-REQ-003, F04-REQ-015): "Sometime in Month 3", "Sometime in the first
+ * weeks" or "Before You". No weekday, no day: the stored day is only where the month starts, never a day the parent
+ * gave. One function for the app, the export (text, offline reader, printable book) and Tonight.
+ */
+export function monthOnlyDateline(child: Pick<Child, 'birthday'>, iso: string): string {
+  if (isBeforeBirth(child.birthday, iso)) return copy.book.beforeYouChapter;
+  const month = chapterOf(child.birthday!, iso);
+  if (month === 0) return copy.book.dateline.monthOnlyNewborn;
+  return fill(copy.book.dateline.monthOnly, { month });
+}
+
+/** The letter's precision: `month` when the parent named only a month. Anything else is a day. */
+export const isMonthOnly = (e: { occurredPrecision?: string | null }): boolean => e.occurredPrecision === 'month';
+
+/** The full dateline for a letter: letterDateline for a day, the month only for a month-only letter. */
+export function entryLetterDateline(
+  child: Pick<Child, 'name' | 'birthday'>,
+  e: { occurredOn: string; occurredPrecision?: string | null },
+  locale?: string,
+): string {
+  return isMonthOnly(e) ? monthOnlyDateline(child, e.occurredOn) : letterDateline(child, e.occurredOn, locale);
+}
+
+/** The short date for a letter: the day ("Tuesday, September 29, 2026"), or the month only. */
+export function entryDayDate(child: Pick<Child, 'birthday'>, e: { occurredOn: string; occurredPrecision?: string | null }, locale?: string): string {
+  return isMonthOnly(e) ? monthOnlyDateline(child, e.occurredOn) : dayDate(e.occurredOn, locale);
 }
 
 /** Short age for capture headers: "7 months and 1 week", or null before birth or without a birthday. */
