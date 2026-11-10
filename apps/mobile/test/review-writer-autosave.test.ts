@@ -48,7 +48,7 @@ afterEach(() => {
 
 const SAID = 'um Asha, you you laughed at the rain today.';
 const BASE = wordsBase(SAID);
-const MORE = ' We stood at the window and Papa said the rain was singing to her, softly, all afternoon long.';
+const MORE = ' We stood at the window and Papa said the rain was singing to you, softly, all afternoon long.';
 
 /** One call to the callback review.tsx gives the writer: when, what, and what the store said. */
 type Call = { at: number; text: string | null | undefined; result: boolean | 'threw' };

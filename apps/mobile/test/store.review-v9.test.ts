@@ -162,11 +162,11 @@ describe('[SR-C-06] restoring: the machine adds nothing from storage', () => {
 });
 
 describe('[F04-REQ-011] typed words are written within 500 ms', () => {
-  it('the debounce is at most 500 ms', () => {
+  it('the wait for typed words is at most 500 ms', () => {
     expect(TYPED_WRITE_DEBOUNCE_MS).toBeLessThanOrEqual(500);
   });
 
-  it('writes the last words after the quiet, put-backs and the view at once, and flush writes now', () => {
+  it('writes the last words after the wait, put-backs and the view at once, and flush writes now', () => {
     vi.useFakeTimers();
     try {
       const writes: unknown[] = [];

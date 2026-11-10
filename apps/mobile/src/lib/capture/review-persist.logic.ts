@@ -157,7 +157,7 @@ export interface ReviewWriter {
   text(text: string | null): void;
   /** Writes typed words still waiting, now, and leaves no timer (leaving the foreground, Done, Close, unmount, Keep). */
   flush(): void;
-  /** Drops typed words still waiting and the timer (Keep: the letter took them; Let it go). */
+  /** Drops typed words still waiting and the timer. review.tsx does not call it today: Keep flushes first, and the letter takes its words from state. */
   cancel(): void;
 }
 
