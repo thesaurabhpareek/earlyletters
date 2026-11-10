@@ -620,6 +620,24 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (i) "Yes, evenings" then Allow: the toast "Reminders are on. Next: ..." with Change, which opens Settings, Reminders. Don't Allow: "Notifications are off" with Open Settings.
 - **Record:** S1-47 rows (a) to (i): phone, iOS version, text size, VoiceOver yes or no, Reduce Motion yes or no; pass or fail with the step and what was seen; screenshots with Asha only. Row (e) on whether Deliver Quietly is detected (yes, no).
 
+### S1-112 Before you begin: the age question and the agreement on one screen (founder decision F2, 8 Nov 2026; LEGAL-REQ-002; branch feat/mobile-before-you-begin)
+- **Needs:** a TestFlight build with feat/mobile-before-you-begin; (a) to (e) on a fresh install; (f) on a phone that already has build 1 installed and past the age question (update over it, do not delete). Fictional family only (Asha). VoiceOver for (d).
+- **Steps:**
+  - (a) Fresh install: read the first screen without touching it. Tap Continue.
+  - (b) Tap Yes, then Continue, with the box unticked. Then tick the box, tap Terms of Service, come back; tap Privacy Policy, come back.
+  - (c) Delete and reinstall. Tick the box, tap No, then Continue. Force-quit and reopen. Set the clock forward 25 hours and reopen.
+  - (d) Fresh install with VoiceOver on: swipe through the screen from the top; tap Continue with nothing answered; answer Yes and tap Continue.
+  - (e) Fresh install at AX5 on the SE 3: reach every control; answer Yes, tick, Continue.
+  - (f) Update over build 1 and open the app. Tick, Continue. Force-quit and reopen.
+- **Expected:**
+  - (a) "Are you 18 or older?", Yes and No with neither selected, an unticked box "I agree to the Terms of Service and Privacy Policy.", the two links under it, and Continue (not dimmed). Continue shows "Choose Yes or No." above it, with a mark in the text colour (no red or amber), and nothing else changes.
+  - (b) "Check the box to continue." and VoiceOver focus on the box; each link opens in the in-app browser, and after Done the answer and the tick are as they were. Ticked plus Continue: the words go up and out and the welcome takes the light.
+  - (c) The stop line "... is currently for adults 18 and over" and nothing else; after the relaunch the same; after 25 hours "I answered by mistake", which brings the question back with nothing selected and the box unticked.
+  - (d) Order: the question (heading), Yes, No, the box read as "checkbox, not checked" with the sentence, Terms of Service and Privacy Policy as links with the hint "Opens in a browser inside the app.", Continue. The reason line is spoken when it appears. A tap on the box reads "checked".
+  - (e) Nothing truncated; the box stays top-aligned beside the wrapping sentence; the links stack; Continue scrolls into reach.
+  - (f) Once: "Before you continue", the box, the two links and Continue, with no age question. After the tick it never shows again, and the book is as it was.
+- **Record:** S1-112 rows (a) to (f): phone, iOS version, text size, VoiceOver yes or no, build number, pass or fail; screenshots with Asha only. For (c) and (f), if a Mac is at hand, run `apps/mobile/e2e/bin/inspect-container.sh` on a simulator install for the same steps (two agreement rows after Yes, none after No, no age column). No agreement row content in the record beyond pass or fail.
+
 ### S1-38 Book month card type: the numeral and one left edge (founder report on TestFlight build 1, "18 is merging. Font alignment can be cleaner."; PR #544)
 - **Superseded (9 Nov 2026):** PR #674 removed the month numeral and the lit month card this row checks. Do not run it. S1-151 (a), (f) and (g) check the cover band and the month heading, and `docs/design/screens/BOOK_PAGE.md` is the spec.
 - **Needs:** a build with PR #544; the founder's iPhone and the SE 3; Asha's book seeded with letters in the current month and at least one past month, and a month of age of 10 or more (two figures, ideally 18 or 11). Fictional family only (Asha, Papa).
