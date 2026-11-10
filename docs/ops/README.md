@@ -12,11 +12,13 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [PACKS_HOSTING.md](PACKS_HOSTING.md) | Language packs, speech models and signed documents on `packs.earlyletters.app`: signing key, bucket, upload, verify, rollback, cost |
 | [well-known/](well-known/) | Files the website must serve: `apple-app-site-association`, `security.txt` |
 | [runbooks/stuck-deletion.md](runbooks/stuck-deletion.md) | An account deletion that has not finished |
+| [runbooks/data-requests-by-email.md](runbooks/data-requests-by-email.md) | The by-hand routes the 0.9.0 Terms and Privacy promise: delete an account (closed until BL-551), withdraw sync, see/export/correct, under 18, TestFlight feedback; the check of the account email first |
 | [runbooks/purge-failing.md](runbooks/purge-failing.md) | The purge or the worker is not running, or Storage deletes fail; installing the schedule |
 | [runbooks/incident-notification.md](runbooks/incident-notification.md) | Who was affected, notification clocks and email templates (LEGAL-REQ-039) |
 | [runbooks/restore-drill.md](runbooks/restore-drill.md) | Quarterly restore drill, and what to do after a real restore (DATA-REQ-030, -031) |
 | [runbooks/staging-smoke.md](runbooks/staging-smoke.md) | The content-free check after every staging deploy (RA-07-06): policy versions, pepper, statement logging, cron, function health routes, sign-up |
 | [runbooks/suspected-data-leak.md](runbooks/suspected-data-leak.md) | First hour of a suspected exposure |
+| [runbooks/speech-models-on-r2.md](runbooks/speech-models-on-r2.md) | Founder steps to serve the speech models from `packs.earlyletters.app` with Hugging Face as the mirror, before external testers and public users |
 | AUTH_SETUP.md, APP_STORE_CONNECT_SUBSCRIPTIONS.md, APP_SIZE.md | Other owners (sign-in, subscriptions, app size) |
 | [PRODUCTION_VARIABLES.md](PRODUCTION_VARIABLES.md) | The `production` build profile and EAS environment variables for build 12, names only: written, set by the founder, and forbidden |
 | [RELEASE.md](RELEASE.md) | The release train: lanes, branches, tags, builds, TestFlight, submission checklist, rollback (qa-e2e for the coordinator; D-089) |

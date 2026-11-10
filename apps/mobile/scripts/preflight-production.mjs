@@ -83,7 +83,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
  * - `mobilePackage`: apps/mobile/package.json, parsed (absent or unreadable counts as no expo-updates)
  *
- * Each result has an `id`: app-env, english-only, analytics, servers, google-signin, backup, status-report, account-deletion, signing-keys,
+ * Each result has an `id`: app-env, english-only, spoken-languages, analytics, servers, google-signin, backup, status-report, account-deletion, signing-keys,
  * pack-manifest, privacy-manifest, version, project-id, update-channel, asc-app-id, seams, secrets (and config when
  * `expo config` failed).
  */
@@ -112,6 +112,15 @@ export function productionChecks(input) {
     `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the first store build offers English only, D-121 item 1)`,
     `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(env.EXPO_PUBLIC_ENGLISH_ONLY)}; the store build must say "on" (D-121 item 1), or the picker offers languages the listing does not name.`,
     'english-only',
+  );
+
+  // D-121 item 1, D-125 item 2: the spoken-language list is written out and names English alone. A language joins it
+  // only in the release whose listing names it, after its own gate; that pull request changes this check with it.
+  check(
+    (env.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').trim().toLowerCase() === 'en',
+    `${PROFILE} profile: EXPO_PUBLIC_SPOKEN_LANGUAGES=en (the store build hears English only, D-121 item 1)`,
+    `${PROFILE} profile EXPO_PUBLIC_SPOKEN_LANGUAGES is ${JSON.stringify(env.EXPO_PUBLIC_SPOKEN_LANGUAGES)}; the store build must say "en" (D-121 item 1, D-125 item 2): unset means every language, and any other language needs its gate and a listing that names it.`,
+    'spoken-languages',
   );
 
   // D-088: no analytics in the first store build, and no PostHog key named in the profile.

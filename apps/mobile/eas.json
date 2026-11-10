@@ -48,12 +48,12 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production",
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
@@ -63,7 +63,8 @@
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
         "EXPO_PUBLIC_ACCOUNT_DELETION": "on",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     },
     "testflight": {
@@ -77,20 +78,27 @@
         "EXPO_PUBLIC_BACKUP": "off",
         "EXPO_PUBLIC_STATUS_REPORT": "off",
         "EXPO_PUBLIC_ANALYTICS": "off",
-        "EXPO_PUBLIC_ENGLISH_ONLY": "on"
+        "EXPO_PUBLIC_ENGLISH_ONLY": "on",
+        "EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"
       }
     }
   },
   "submit": {
-    "production": {},
+    "production": {
+      "ios": {
+        "ascAppId": "6829377245"
+      }
+    },
     "preview": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     },
     "testflight": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     }
   }

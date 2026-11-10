@@ -5,7 +5,8 @@
  * The machine never hears a recording in a language the person did not choose: telling the recogniser "English"
  * for speech made in another language could put an English guess or a translation in raw_transcript, which can
  * never be changed (the constitution; VOICE.md, the multilingual rule). So while the English-only switch is on
- * (`capabilities.englishOnly`, the two alpha profiles), every language but English is on hold: a recording noted in
+ * (`capabilities.englishOnly`, the two alpha profiles), every language but English is on hold, and with a spoken-language
+ * list (`EXPO_PUBLIC_SPOKEN_LANGUAGES`, D-125 item 2) every language the list leaves out is: a recording noted in
  * another language (a choice stored before the switch, on a `.preview` install made without it) waits for its
  * language in the queue (machine.ts `waiting_for_language`). It is never handed to the recogniser, never fails and
  * asks for no download. Every other job proceeds. Review and the letter page show `languageCopy.waitingForLanguage`,
@@ -22,9 +23,17 @@ import type { Job } from './machine';
 const NONE: readonly SpeechLanguage[] = [];
 const ALL_BUT_ENGLISH: readonly SpeechLanguage[] = SPEECH_LANGUAGES.filter((l) => l !== 'en');
 
-/** The languages this build holds back from the recogniser: every one but English while the switch is on; none otherwise. */
-export function languagesOnHold(englishOnly: boolean): readonly SpeechLanguage[] {
-  return englishOnly ? ALL_BUT_ENGLISH : NONE;
+/**
+ * The languages this build holds back from the recogniser. `heard` is what the build hears
+ * (lib/language/heard-languages.ts): every language it does not hear waits, and English never does. As a boolean,
+ * the English-only switch alone: every one but English while it is on; none otherwise.
+ */
+export function languagesOnHold(heard: boolean | readonly SpeechLanguage[]): readonly SpeechLanguage[] {
+  if (typeof heard === 'boolean') return heard ? ALL_BUT_ENGLISH : NONE;
+  const held = SPEECH_LANGUAGES.filter((l) => l !== 'en' && !heard.includes(l));
+  if (held.length === 0) return NONE;
+  if (held.length === ALL_BUT_ENGLISH.length) return ALL_BUT_ENGLISH;
+  return held;
 }
 
 /** The notice for a recording waiting for its language (Review, the letter page), or null for any other job. */
