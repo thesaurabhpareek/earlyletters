@@ -339,6 +339,13 @@ const motion = {
   /** The book cover opening in first run (S08): the front holds `holdMs`, then cross-fades to the flyleaf with a `dx` shift, on `standard`. */
   cover: { holdMs: 300, dx: 8 },
   /**
+   * The first-run story (motion spec FIRST-RUN-MOTION-SPEC-10nov section 2, tier B). `dwellMs`: how long a card rests before
+   * moving on by itself (never shortened for larger text; auto-advance is switched off instead). `holdMs`: a press longer
+   * than this is a hold (pause), up to it is a tap. `edgeZone`: the leading 30 percent of the card is back, the rest next.
+   * `linearBar`: the progress fill is a clock, so it is linear. dwellMs and holdMs are UNVERIFIED on device.
+   */
+  story: { dwellMs: 6000, holdMs: 200, edgeZone: 0.3, linearBar: true },
+  /**
    * A letter card growing into its page (MOTION 5f): the page's own content fades in from `contentFrom` of the way.
    * The Book goes under a veil of the page's paper over lamp.leaveMs, and the card holds `holdMs` before it grows, so
    * by the time the paper's edge is `clearPt` past the card (short of the next card's words, 28 pt on) the Book is 95
