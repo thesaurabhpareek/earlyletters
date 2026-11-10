@@ -61,13 +61,18 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
 /**
  * Doors that would lead nowhere are hidden (D-087, BL-391 rescoped by M14: hide only what the
  * build still lacks). "I was invited" needs an invite only a server can make: shown with the
- * switch on (D-100 amends D-087), hidden with it off. "Family can read" is the family-contributor
- * switch, and contributors are absent from v1.0 whatever the switch (B1, F11 D4): hidden in both.
+ * switch on (D-100 amends D-087), hidden with it off. B12-5 (CTO ruling, 9 Nov 2026): it is also
+ * hidden in the store build (`alpha` false), even with servers on, because the join path needs
+ * the Family surfaces (D-152) that an invited co-parent cannot use in that build, so the button
+ * would lead nowhere. Alpha, preview and testflight builds are unchanged. `alpha` is
+ * isAlphaBuild(APP_ENV) (lib/billing/alpha.ts PLUS_ALPHA), decided at bundle time.
+ * "Family can read" is the family-contributor switch, and contributors are absent from v1.0
+ * whatever the switch (B1, F11 D4): hidden in both.
  * The Family tab and the Settings row stay in every alpha build and in a store build with the switch on; a store build
  * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build.
  */
-export function visibleCoParentDoors(coParent: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
-  return { joinButton: coParent, familyCanReadSwitch: false };
+export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
+  return { joinButton: coParent && alpha, familyCanReadSwitch: false };
 }
 
 /**

@@ -12,7 +12,7 @@
 export const permissionCopy = {
   // permissions.microphone (Info.plist NSMicrophoneUsageDescription)
   microphone:
-    '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
+    '{app} uses the microphone to record the letters you speak to your child.',
   // permissions.faceId (Info.plist NSFaceIDUsageDescription, through the expo-local-authentication plugin).
   // Draft pending counsel (account-security/content.md section 3, option 2).
   faceId: '{app} uses Face ID to open your book and confirm it is you.',

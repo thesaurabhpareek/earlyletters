@@ -12,6 +12,8 @@ export function cardLabel(o: {
   signature: string | null;
   /** The spoken dateline, with the child's age. */
   dateline: string;
+  /** "Voice recording, 1 minute 6 seconds" (book.card.voiceA11y), or null without a recording length. */
+  voice?: string | null;
   /** The letter's words, or the app's own note when there are none. */
   text: string;
   inBook: boolean;
@@ -23,5 +25,5 @@ export function cardLabel(o: {
   own: boolean;
   recordingOnPhone: string;
 }): string {
-  return [o.signature, o.dateline, o.text, o.inBook ? null : o.privateLabel, o.reason ?? null, o.spoken && o.own ? o.recordingOnPhone : null].filter(Boolean).join('. ');
+  return [o.signature, o.dateline, o.voice ?? null, o.text, o.inBook ? null : o.privateLabel, o.reason ?? null, o.spoken && o.own ? o.recordingOnPhone : null].filter(Boolean).join('. ');
 }

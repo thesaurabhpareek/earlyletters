@@ -1,0 +1,1 @@
+07:58 (10 Nov) first-run-research | done: FIRST-RUN-RESEARCH-10nov.md drafted (benchmark, evidence, heuristic review, 6-session plan, ranked implications) | next: PR, compare with other team docs | blocked/needs: none

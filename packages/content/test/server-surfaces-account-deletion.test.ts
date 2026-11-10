@@ -16,6 +16,7 @@
  * The page that shows these words is pinned in apps/mobile/test/delete-account.test.ts.
  */
 import { describe, expect, it } from 'vitest';
+import { brand } from '@scribe/brand';
 import { accountDeletionCopy, accountEmails } from '../src';
 
 type Leaf = { path: string; text: string };
@@ -39,7 +40,8 @@ const CHANGED: Record<string, string> = {
   'what.copies': 'A copy you exported stays wherever you saved it.',
   'exportFirst.body': 'Export everything, free: the book as a PDF, your letters as text and your recordings.',
   'scheduled.emailNote': 'A confirmation is on its way to your email.',
-  notConfigured: 'Accounts are not available right now. Everything stays on this phone, and deleting the app removes it.',
+  // Not S64's words (#672 claim 2): "Everything stays on this phone" was untrue for an account made on another phone.
+  notConfigured: `Accounts are not available on this phone right now, so an account cannot be deleted here. The letters on this phone stay until you delete the app. To delete your account, write to ${brand.support.email}.`,
   'errors.offline': 'Nothing has changed. Deleting an account needs a connection.',
   'errors.failed': 'That did not go through. Nothing has changed.',
 };
