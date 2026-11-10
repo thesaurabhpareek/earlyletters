@@ -9,6 +9,7 @@ import {
   createFaultStore,
   errorCode,
   installGlobalErrorHandlers,
+  shouldInstallGlobalHandlers,
   type ErrorUtilsLike,
   type FaultRecord,
   type RejectionTrackerLike,
@@ -164,5 +165,18 @@ describe('[BL-568] wiring', () => {
     expect(install).toBeGreaterThan(-1);
     expect(install).toBeLessThan(src.indexOf('export default function RootLayout'));
     expect(src).toMatch(/if \(globalFault\.fault\) return <GlobalFaultScreen/);
+  });
+
+  it('[BL-568] only the production profile installs the handler; testflight, preview and development keep the native crash', async () => {
+    expect(shouldInstallGlobalHandlers('production')).toBe(true);
+    for (const env of ['preview', 'development'] as const) expect(shouldInstallGlobalHandlers(env), env).toBe(false);
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../src/lib/resilience/global-errors.ts', import.meta.url), 'utf8');
+    expect(src).toMatch(/!shouldInstallGlobalHandlers\(APP_ENV\)/);
+    // The testflight EAS profile is a preview build (EXPO_PUBLIC_APP_ENV), so it is covered by the line above.
+    const eas = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8')).build;
+    expect(eas.testflight.env.EXPO_PUBLIC_APP_ENV).toBe('preview');
+    expect(eas.preview.env.EXPO_PUBLIC_APP_ENV).toBe('preview');
+    expect(eas.production.env.EXPO_PUBLIC_APP_ENV).toBe('production');
   });
 });

@@ -9,9 +9,22 @@
  * a letter, a transcript or a child's name, so the error itself is read for its class and dropped.
  *
  * A fatal throw shows the recovery screen (the same calm screen as the root error boundary) instead of the
- * hard crash a Release build gives by default. A rejected promise is recorded and nothing is shown: the
+ * hard crash a Release build gives by default. That is for the production profile only (founder, 10 Nov 2026):
+ * the testflight and preview profiles (both EXPO_PUBLIC_APP_ENV=preview) and development keep the native
+ * crash, so testers' crashes still reach Apple's crash reports and the console, and a bug cannot hide behind
+ * a calm screen. See `shouldInstallGlobalHandlers`. A rejected promise is recorded and nothing is shown: the
  * screen the person is on still works, and every caller that matters already handles its own failure.
  */
+
+import type { AppEnv } from '../build-env';
+
+/**
+ * Only the production build (App Store) installs the handlers. A preview build (the testflight and preview EAS
+ * profiles) and a development build leave React Native's own handler alone, so a fatal throw crashes natively.
+ */
+export function shouldInstallGlobalHandlers(appEnv: AppEnv): boolean {
+  return appEnv === 'production';
+}
 
 /** Built-in error classes we can name without reading the error's words. Anything else is `error` or `non_error`. */
 export const ERROR_CODES = [
