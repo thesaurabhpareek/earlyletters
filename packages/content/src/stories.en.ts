@@ -77,3 +77,30 @@ export const alternateStories: readonly StoryCard[] = [
     visual: 'two-hands',
   },
 ];
+
+/**
+ * The first-run deck (journey spec PR #776, docs/design/specs/FIRST-RUN-WORDS-10nov.md): three cards, then the sign-in
+ * screen. Card 2 is new wording under a new id; cards 1 and 3 are the packaged cards, reused by id so they cannot drift.
+ * No card names invitations, co-parent, a price, a language count or "on your phone", so the deck makes only claims the
+ * Build 12 binary keeps. The old cards 2 and 4 stay in the packaged deck above, unused here. Not read by the claims
+ * scanner (it reads `onboardingStories`). COUNSEL-READ: the card 2 line is a promise about our behaviour.
+ */
+const packaged = (id: string): StoryCard => {
+  const card = onboardingStories.find((c) => c.id === id);
+  if (!card) throw new Error(`packaged story card missing: ${id}`);
+  return card;
+};
+
+export const firstRunStories: readonly StoryCard[] = [
+  { ...packaged('story.talk.v1'), order: 1 },
+  {
+    type: 'story',
+    // v3 (10 Nov 2026): the headline is the brand pillar, not "Exactly as you said it." (known false claim, D-133).
+    id: 'story.exact.v3',
+    order: 2,
+    headline: "It stays in your words.",
+    line: "We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words.",
+    visual: 'letter-underline',
+  },
+  { ...packaged('story.voice.v1'), order: 3 },
+];
