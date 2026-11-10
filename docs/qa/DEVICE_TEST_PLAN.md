@@ -827,6 +827,14 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - A letter let go before the export is not in it.
 - **Record:** S1-110 rows (a) to (c): phone, iOS version, build number and profile; the list of files under `waiting/`; the shasum line for one recording; screenshots with Asha only.
 
+### S1-178 "I was invited" on the Welcome screen: shown in the alpha, hidden in the store build (CTO ruling B12-5)
+- **Needs:** a fresh install of each build, on a phone that has never signed in: the `preview` alpha (servers on) and the `production`-profile build (servers on once draft #698 lands). Fictional family only (Asha).
+- **Steps and expected:**
+  - (a) `preview` alpha: first run to the Welcome step. Under the main button the quiet "I was invited" button shows next to sign in, and it opens the join sheet.
+  - (b) `production` build: the same step shows no "I was invited" button. Sign in, if offered, is the only quiet button; nothing else moved.
+  - (c) `production` build: Settings > Asha has no new or missing row compared with the `preview` alpha other than what the build already differs by.
+- **Record:** S1-178 rows (a) to (c): build number and profile, phone, iOS version, pass or fail, a screenshot of the Welcome step for each build.
+
 ### S1-133 Delete this book, Restore, Erase now, and Erase everything on this phone (PR #520; RT-BK-12, SR-C-07; DATA-REQ-014, DATA-REQ-024, F17-REQ-080; D-083, D-103; design 2.12; CTO ruling 8 Nov; council and founder decision 8 Nov)
 - **Needs:** a build with PR #520 on a phone that has never signed in (both rows are hidden once a phone signs in); the SE 3 and the founder's iPhone; two fictional books, Asha's with spoken and written letters and a draft, and a second one with one letter; reminders on; the English speech download installed. Fictional family only (Asha, Papa). For (i), a development build and a Mac with Xcode. For (j), a build with App lock (PR #640, S1-131) and a passcode set on the phone. For (k), a phone that still has build 9 installed with letters and recordings in it (any phone for the first part; for the second part only a test phone with Asha's book, or a phone whose book has been exported and saved off the phone first, see the warning in (k)). For (l), a TestFlight build of the `production` profile (bundle id `com.earlyletters.scribe`, after Mon 9 Nov) on a drill phone and a drill Apple Account (AL-09 "Drill identities"): the Plus products load only there, and (l) cannot run on the `.preview` alpha or a development build.
 - **Steps and expected:**

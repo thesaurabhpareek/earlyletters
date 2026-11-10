@@ -5,6 +5,7 @@ import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
@@ -25,7 +26,7 @@ import { ordinalOf, track } from '@/lib/analytics/track';
 export default function ChildSettings() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [child, setChild] = useState(() => getChild(id));
-  const doors = visibleCoParentDoors(serverFeaturesEnabled());
+  const doors = visibleCoParentDoors(serverFeaturesEnabled(), PLUS_ALPHA);
   const [editing, setEditing] = useState<'name' | 'date' | 'signsAs' | 'born' | null>(null);
   const [hiddenFor, setHiddenFor] = useState(() => readHidden(id));
   const [members, setMembers] = useState(() => (id ? listMembers(id) : []));
