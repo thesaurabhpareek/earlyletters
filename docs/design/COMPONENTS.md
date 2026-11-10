@@ -21,11 +21,16 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 | `Chip`, `ChipGroup` | same | `label`, `variant` suggestion, filter, tag; `selected`, `icon`, `onPress`, `role` button, radio, checkbox, `accessibilityLabel` | 36 pt visual, 44 pt with hitSlop; selected = fill + edge + check; radio and checkbox read as checked |
 | `Sheet` | same | `open`, `onClose`, `title`, `description`, `footer`, `hideClose`, `dismissible` | heading focus on open, modal for VoiceOver, escape gesture, visible Close; `dismissible={false}` for permission priming |
 | `ListSection`, `ListRow`, `ToggleRow` | same | `title`, `subtitle`, `leading`, `trailing` (chevron, value, node), `variant` destructive, `onPress` | one element per row; value stacks under title at AX; a pressable row always shows a chevron, a value then chevron, or its own control (`showsChevron`) |
+| `SpeechRow` | `@/components/settings/speech-row` | `language`; also exports `languagesInUse()` and `packsShownAsLanguages()` | One `ListRow` per spoken language in Storage, from `speechRow(state)`: here (word Remove, which asks first), downloading (22 pt progress ring and the word Stop), waiting for Wi-Fi (Stop), no space and unknown (no action), absent (Download). The row is the button; the subtitle carries the state and the percent; the hint says what a tap does. The ring never spins. Departed at `6cd2223b` and fixed by PR #712 (merged 9 Nov 2026): the action word was hidden from VoiceOver and not in the row's label, so Voice Control could not say "Tap Stop" (WCAG 2.5.3), and at AX5 the node stayed beside the title instead of stacking under it. Now the word is in the label (`ListRow` `actionWord`) and the node stacks; S1-97b (e) checks it on a phone |
 | `Toast`, `ToastHost`, `useToast()` | same | `show({ message, action, durationMs, onDismiss })` | announced; with an action it never times out; swipe or Close; a new show() replaces the toast on screen in any host (2.14) |
+| `PlusLine` | `@/components/tonight/plus-line` | none; shown when `plusLineShows` is true | The one standing Plus line (F14-REQ-040): `footnote` in `textMuted`, centred, no count, no price, nothing to press, no entrance. One plain element; wraps at every size. Hosts: Tonight and Write (`screens/WRITE.md`). Position: above Speak and Type on Tonight; on Write it is where #668 put it, above the two buttons (F14-REQ-040 says "above Speak and on Write"; journey row 2b). Below the buttons is PROPOSED by the CDesO, for the CPO and the founder to decide (`screens/WRITE.md` section 3) |
+| `HelplineCard` | `@/components/settings/helpline-card` | `line` (a `Helpline`), `open(target)`, `callHint` | One crisis line on "If you are struggling" and "Lines in other countries": a `Card flat`, the name as a `headline` heading (level 3), the `how` line in `subhead` muted, and Call and Text in a `ButtonRow` (stacks from xxxLarge). Each button's name adds the line ("Call {name}"); a tap opens Phone or Messages and never dials, or shows the number to copy. Haptics none (`screens/STRUGGLING.md`). Departed at `6cd2223b` and fixed by PR #713 (merged 9 Nov 2026): the buttons were `secondary`, whose fill is 1.08 : 1 (light) and 1.33 : 1 (dark) against the card; they are now `outline`; S1-150 (g) checks it on a phone |
 | `EmptyState` | same | `art` (any LineArt name), `title`, `body`, `action`, `align` | heading; drawing decorative; breath off under Reduce Motion |
 | `StateScreen`, `StateScreenView`, `InlineState` | same | `kind` empty, error, notFound, loading; `title`, `body`, `art`, `glyph` (Phosphor), `drawing` (StateScreen: any picture), `primary` ({label, onPress, icon}), `quiet` (list), `header` (StateScreen) | the one pattern for loading, empty, error and not-found (2.15a); centred, 20 pt gutters; heading first; live region polite; loading is `busy`; actions are buttons |
 | `Lamp`, `LampView`, `useUnlitRoom()` | `@/components/ui/lamp` | `scene`, `daypart`, `anchor`, `intensity` (a multiplier), `still`, `persistKey` (`firstRun`, `tabs`), `arrive`; `LampView` adds `focused` | decorative, no touches, hidden from VoiceOver; none under Increase Contrast or Reduce Transparency; still under Reduce Motion (2.16a) |
 | `BookCover` | `@/components/book/book-cover` | `name`, `signsAs`, `size` sm, thumb, md, lg; `state` closed, open; `openOnMount`, `behindName` (twins), `animate`, `accessibilityLabel` | decorative unless labelled; never an ellipsis glyph; type does not scale (artwork; the name is real text around it); a new name or signature cross-fades (2.24) |
+| `CoverBand` | `@/components/book/cover-band` | `title`, `age` (the prop allows null; the Book passes `coverAge`, which never returns null: it says "Before You" without a birthday), `switcher`, `readTogether` ({label, hint, onPress} or null), `months` ({label, hint, onPress} or null), `settings` ({label, onPress}) | The Book's one lit object (`screens/BOOK_PAGE.md`). `display` title as heading level 1, `callout` age, Read together as a full-width 48 pt `secondary` button with its icon; the Months button and the gear are placed over the space kept for them, and so is the switcher. VoiceOver order in the tree: title, age, switcher, Read together, Months, Settings (on a device iOS may order by position). A 1 pt amber edge at 40 percent and a still gold radial at the scheme's peak times 0.35; Increase Contrast or Reduce Transparency: a plain 1 pt `line` edge, no light. From AX1 it stacks in the same order and Read together grows with its label. Haptics none, nothing moves. Departs: Read together's fill is a tint with no edge on the band |
+| `MonthsSheet` | `@/components/book/months-sheet` | `open`, `rows` (`MonthRow[]` from `monthRows`), `onClose`, `onChoose` | A `Sheet` titled "Go to a month" (the title takes focus; modal; escape gesture; Close) over one `ListRow` per month that has letters, newest first: the month in words as the title, the spoken count line ("3 letters, from Mama and Papa") as the subtitle, a chevron. Scrolls inside the sheet, at most 60 percent of the window high. No haptic. Choosing a month is a fade, never an animated scroll. Departs: the same hint on every row |
 | `ExcerptFade`, `FadeEdge` | `@/components/motion/excerpt-fade` | `text`, `lines`, `variant`, `surface`, `scale` | the whole text stays in the element (VoiceOver reads it all); no ellipsis glyph |
 | `PageTurn` | `@/components/motion/page-turn` | `pageKey`, `direction`, `renderPage`, `onSwipe`, `canNext`, `canBack` | the leaving page is hidden (VoiceOver, TalkBack, and `aria-hidden` on web) and takes no touches; the screen keeps its buttons (MOTION 5m) |
 | `CardSource`, `CardText`, `CardToPage`, `PageOpening`, `useCardToPageClose()`, `useCardToPagePhase()`, `useHiddenBehindCardPage()` | `@/components/motion/card-transition` | `CardSource`: `id`; `CardText` (the card's dateline and excerpt): `lineHeight` (its body's, from `lineHeightFor`), `rtl`; `CardToPage`: `id`, `opening` (a function of `focus`: the page's dateline and whole letter, in the card's column, with `focus` on the dateline or heading), `onClosed`; `PageOpening`: `lineHeight`, places `opening` in the page; `useCardToPagePhase()`: `phase`, `carried`, `home` (the carried words are within 4 pt of their place), for the page to bring in the rest of itself; `useHiddenBehindCardPage()`: props for the Book's root | the card's words are carried, never redrawn; only the rest cross-fades in. The card's press (a `Card` inside the `CardSource`) is held through the hold, and the move starts from the card as pressed. Under Reduce Motion, with no measured card, or when the page's column or type size differs from the card's, nothing moves: inside one 200 ms fade the Book goes under the veil and the whole page fades in after it (a hand-off, both ways). Modal for screen readers (the Book hidden behind it); focus lands on `focus` once the page has arrived. The Book goes under a full-screen veil of the page's paper over the lamp's leaving time while the card holds, then the paper grows, so no edge cuts a legible line and nothing blinks; back, the veil lifts over the lamp's return time once the paper is home (MOTION 5f) |
@@ -38,6 +43,8 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 | `announce`, `useFocusOnMount`, `isAccessibilitySize`, `useIsAccessibilitySize`, `useIsLargeText`, `useContrastPreference`, `useTheme` | `@/lib/a11y` | | |
 | `useMotion`, `useReducedMotion`, `layoutSpring` | `@/lib/motion` | | |
 | `haptic` | `@/lib/haptics` | `tap`, `press`, `soft`, `success`, `warning` | |
+
+**Rows added 9 Nov 2026** (`CoverBand`, `MonthsSheet`, `SpeechRow`, `PlusLine`, `HelplineCard`), written from the code at develop `6cd2223b`; the screens that use them are in `screens/` (`BOOK_PAGE.md`, `WRITE.md`, `STRUGGLING.md`, `DELETE_THIS_BOOK.md`). Since PR #674 no screen uses the `numeral` type or `trim="figures"`; both remain in `Text`.
 
 **Changed from the specs below (Oct 3):** Button plays no haptic by default (MOTION 6 policy: outcomes only); the Sheet is @gorhom/bottom-sheet, not an Expo Router form sheet (COMPONENT_LIBRARY 0.1); SegmentedControl is served by `ChoiceGroup layout="segmented"` until a native segmented control is needed; AudioPlayer is owned by the player agent (`components/player/audio-player.tsx`).
 
@@ -115,7 +122,7 @@ Format per component: purpose · variants · props · states · accessibility ·
 
 ### 2.1 Button
 - **Purpose:** the main way to act. One `primary` per screen at most.
-- **Variants:** `primary` (accent fill, `onAccent` text), `secondary` (`surfaceRaised` fill, `text`), `quiet` (no fill, `accent` text, for "Not much today" or "Skip"), `destructive` (`caution` text on `surface`; fills only inside a confirm Dialog). Sizes: `md` (48pt), `lg` (56pt, CTAs).
+- **Variants:** `primary` (accent fill, `onAccent` text), `secondary` (`accentSoft` fill, `text` label, `accent` icon; a tint with no edge, so on a card or a lit host use `outline`: PROPOSED, `screens/STRUGGLING.md` section 6), `outline` (1 pt `controlBorder` edge, `text` label), `quiet` (no fill, `accent` text, for "Not much today" or "Skip"), `destructive` (no fill, `destructive`-tone label; the word carries the meaning). PROPOSED, not yet a rule (`screens/DELETE_THIS_BOOK.md` section 11, item 10; design-systems to decide): a destructive fill on a confirm page only, by a class from the caller. Today Delete this book draws an edge until the typed word matches, then a `destructive` fill with an `onDestructive` label from a class in the screen. Sizes: `sm` (44pt), `md` (48pt), `lg` (56pt, CTAs), `capture` (64pt, Speak and Type), `icon` (44 x 44). The built table above is the prop list; the block below is the original sketch.
 ```ts
 type ButtonProps = {
   variant?: 'primary' | 'secondary' | 'quiet' | 'destructive';
@@ -132,7 +139,7 @@ type ButtonProps = {
 };
 ```
 - **States:** default, pressed, disabled (still announced; built Oct 16: a filled button that is not ready drops its fill for a 1 pt `controlBorder` outline with the label in `textMuted`, never a pale fill or 40% opacity, EXPERIENCE_PASS S01), loading (spinner replaces icon, label stays for VoiceOver, `aria-busy`), focus-visible.
-- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height 48 (above 44). Label wraps to 2 lines at large Dynamic Type sizes, never truncates.
+- **A11y:** `role="button"`, label = `label`, `accessibilityState={{ disabled, busy: loading }}`. Min height is the size's floor (`sm` 44, `md` 48, `lg` 56). Label wraps to 2 lines at large Dynamic Type sizes, never truncates.
 - **Haptics:** as above; fires on press-in, not release.
 - **Motion:** press scale on `snappy`; loading cross-fade on `standard`.
 - **Builds on:** RNR `button.tsx` (rewrite `group-active` to the Pressable `pressed` render prop). Web: shadcn `Button`, variants renamed `default→primary`, `ghost→quiet`.
@@ -311,7 +318,7 @@ type ToggleProps = { label: string; description?: string; value: boolean; onValu
 
 ### 2.11 ListRow
 - **Purpose:** settings, family members, and export options.
-- **Variants:** `navigation` (chevron), `toggle` (trailing Toggle), `value` (trailing muted value), `destructive` (`caution` label), `author` (leading Avatar).
+- **Variants:** `navigation` (chevron), `toggle` (trailing Toggle), `value` (trailing muted value), `destructive` (title in the `destructive` tone, no chevron, the words say the action; DESIGN_LANGUAGE 2 also asks for an icon, which no caller passes yet: `ListRow` has a `leading` slot), `author` (leading Avatar).
 ```ts
 type ListRowProps = {
   title: string; subtitle?: string;
@@ -491,25 +498,25 @@ type EditUnderlineProps = {
 - **Builds on:** nested RN `Text` with `onPress` + an inline expansion card (no Sheet, no Expo UI `Popover`). Web: `<span>` with `text-decoration: underline dotted` + an inline disclosure.
 - **Android later:** same code. Check nested-`Text` press targets and the dotted underline (`textDecorationStyle` support on Android is **Unverified**; fall back to an SVG or border underline under the span).
 
-### 2.20 MonthOpener (was MonthChapterHeader)
-- **Purpose:** the book is organised by month of age. Each month opens like a chapter of a printed book (EXPERIENCE_PASS S26). Built: `components/book/month-opener.tsx`; the words come from `openerOf` in `components/book/chapters.ts`.
+### 2.20 MonthOpener (was MonthChapterHeader; rewritten 9 Nov 2026 to match the code after PR #674)
+- **Purpose:** the book is organised by month of age. Each month opens like a chapter of a printed book, as a typographic heading and not a box (EXPERIENCE_PASS S26). Built: `components/book/month-opener.tsx`; the words come from `openerOf` in `components/book/chapters.ts`. Screen: `screens/BOOK_PAGE.md`.
 ```ts
 type Opener = {
-  kicker: string | null;     // "Month", or "This month" on the current one; caps by style
-  numeral: string | null;    // "7"; null for "The first weeks" and "Before You"
-  name: string | null;       // "The first weeks" / "Before You", in title1, in place of the numeral
-  line: string;              // "2 letters · From Mama" (no count of gaps)
-  lineSpoken: string;        // "2 letters, from Mama"
-  range: string | null;      // "September 13 to October 12"
-  a11yLabel: string;         // "This month, Month 7. 2 letters, from Mama. September 13 to October 12"
-  lit: boolean;              // the current month
+  kicker: string | null;     // "This month" on the current month only; caps by style
+  heading: string;           // "17 months", "1 month", "The first weeks", "Before You" (title1)
+  range: string | null;      // "October 12 to November 11"; null for Before You
+  a11yLabel: string;         // "This month, 17 months, October 12 to November 11"
+  current: boolean;          // the month the child is in today
+  lineSpoken: string;        // "3 letters, from Mama and Papa"; not drawn here, the Months sheet uses it
 };
 ```
-- **Type and rhythm:** kicker `letterDateline` caps; numeral `numeral` with `trim="figures"`; line `footnote`; range `letterDateline`. With the numeral trimmed to its ink the gaps are the spacing scale: `space.1` from the kicker to the numeral, `space.2` from the numeral to the line (`gap-1` plus `pt-1`), `space.1` to the range. All four share one optical left edge (the trim removes the numeral's side bearing, under 3 pt at its cap).
-- **Variants:** plain (on the paper at the gutter, a hairline above every opener but the first, `space.6` under it); lit (the current month): a `radius.lg` card with a 1 pt edge in the lamp's amber at 40 percent and a still gold radial inside; its side padding is `CARD_TEXT_INSET - gutter - edge` (15 pt), so its words start 36 pt from the screen edge, where a letter card's words start. Increase Contrast or Reduce Transparency: a plain 1 pt `line` edge and no light.
-- **A11y:** one element, `role="header"`, the composed label above (the separator is never spoken). Dynamic Type: the numeral caps at 1.4x (90 pt) and the trim follows the cap; the kicker reaches 2.4x; the line and range are uncapped.
-- **Haptics:** none. **Motion:** none; the opener is still (the first Book view settles the header only, MOTION 5a).
-- **Android later:** same code; check the trim against Android's own line placement (RN Android does not centre the face the way iOS and CSS do; **Unverified**).
+- **Type and rhythm:** kicker `letterDateline` caps (current month only), heading `title1`, dates `letterDateline` `textMuted`; `space.1` between lines; `px-5 pb-3 pt-6`. A hairline in `line` (`StyleSheet.hairlineWidth`) sits above every opener but the first, then `space.6`.
+- **Variants:** none. The current month differs only by its kicker. Build 1's numeral, its `trim="figures"` and its lit card (a `radius.lg` box with an amber edge and gold radial) were removed in PR #674: with one letter the frame outweighed the letter, and a bare "18" stood alone. The light now belongs to the cover band (`CoverBand`), and the count line lives in the Months sheet (`MonthsSheet`). A month is never boxed, counted or marked as empty.
+- **A11y:** one element per opener, `role="header"`, the composed label above (the separator is never spoken); the parts are not reachable on their own. `aria-level={2}` is set for the web; React Native 0.86.3 passes no heading level to iOS, so VoiceOver there sees a header without a level. Dynamic Type: kicker and dates cap at 2.4x, the heading at 1.8x, and every line wraps.
+- **Haptics:** none. **Motion:** none; the opener is still (the first Book view settles the cover band only, MOTION 5a).
+- **Not built, and not planned for v1.0:** a cover photo (no photos in v1.0, `docs/ops/RELEASE.md` section 6.1), sticky headers (`stickySectionHeadersEnabled={false}` in `(tabs)/book.tsx`), a `full` and `sticky` pair with a scroll cross-fade. The inline bar after scroll shows the month at the top of the list as its own line (`compactMonth`), outside this component.
+- **Status:** as built after PR #674. S1-151 has not been run on a phone. **OPEN (CPO):** `docs/prd/v2/features/F09-book.md` line 55 says "The current month's open card stays", and the build removed the lit month card; calling sticky headers and a cover photo "not planned for v1.0" is a scope statement that is the CPO's to make.
+- **Android later:** same code.
 
 ### 2.21 AudioPlayer
 - **Purpose:** play the original recording of a note or letter.
