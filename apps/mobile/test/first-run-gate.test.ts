@@ -209,3 +209,17 @@ describe('[NX-31-R22] a phone with a book is never locked out', () => {
     expect(src).not.toMatch(/from '@\/lib\/(store|export|capture)/);
   });
 });
+
+describe('[NX-31-R17] gateInputsFromAuth treats a running route as age Yes only because the root gate comes first', () => {
+  it('[NX-31-R17] the root layout renders the age gate instead of the session and every route until it passes', () => {
+    expect(gateInputsFromAuth({ serverFeatures: true, authState: { status: 'signedOut' }, hasLocalBook: false }).ageAnswered).toBe('yes');
+    const layout = readFileSync(join(__dirname, '..', 'src', 'app', '_layout.tsx'), 'utf8');
+    const gateAt = layout.indexOf("gate.decision !== 'pass' ? (");
+    const sessionAt = layout.indexOf('<SessionProvider');
+    const stackAt = layout.indexOf('<Stack ');
+    expect(gateAt).toBeGreaterThan(-1);
+    expect(gateAt).toBeLessThan(sessionAt);
+    expect(sessionAt).toBeLessThan(stackAt);
+    expect(layout.slice(gateAt, sessionAt)).toContain('<AgeGateScreen');
+  });
+});

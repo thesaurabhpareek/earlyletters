@@ -8,6 +8,10 @@ import { addChildBlock } from '../src/components/child/add-child-form.logic';
 import { children } from '../src/lib/db/repos';
 import { copy, fill } from '../src/lib/copy';
 import { fixture, type Fixture } from './helpers/store-fixture';
+import { ashaSnapshot } from './helpers/asha-export';
+import { bookHtml, planExport } from '../src/lib/export/build.logic';
+import { DEFAULT_PREFS, planReminders, type PlannerChild } from '../src/lib/reminders/planner';
+import { zonedToEpoch } from '../src/lib/reminders/tz';
 
 const today = '2026-10-04';
 const born = { expecting: false, birthday: '2026-03-01', dueDate: null, today };
@@ -58,5 +62,51 @@ describe('[NX-31-R28] the phone stores an empty name as empty', () => {
     expect(children.get(f.ctx, 'child-none')?.name).toBe('Asha');
     children.update(f.ctx, 'child-none', { name: '' });
     expect(children.get(f.ctx, 'child-none')?.name).toBe('');
+  });
+});
+
+describe('[NX-31-R3] the two places that used to print the raw empty name', () => {
+  it('[NX-31-R3] an exported letter to a book with no name says "To: your child", never a blank', () => {
+    const snap = ashaSnapshot();
+    snap.children = snap.children.map((c) => (c.name === 'Asha' ? { ...c, name: '' } : c));
+    const plan = planExport(snap);
+    const letters = plan.textFiles.filter((t) => t.path.startsWith('letters/'));
+    expect(letters.length).toBeGreaterThan(0);
+    const toLines = letters.flatMap((t) => t.text.split('\n').filter((l) => l.startsWith('To:')));
+    expect(toLines.length).toBeGreaterThan(0);
+    for (const l of toLines) expect(l.trim()).not.toMatch(/^To:\s*$/);
+    expect(toLines.some((l) => l.includes('your child'))).toBe(true);
+  });
+
+  it('[NX-31-R3] the book pages never print an empty name either', () => {
+    const snap = ashaSnapshot();
+    const child = { ...snap.children[0], name: '' };
+    const html = bookHtml(child, snap.entries.filter((e) => e.childId === child.id), snap.locale);
+    expect(html).toContain('your child');
+    expect(html).not.toMatch(/(^|[>\s])'s /);
+  });
+
+  it('[NX-31-R3] month notes with names on say "your child", never "\'s first month" or a dangling "and"', () => {
+    const LA = 'America/Los_Angeles';
+    const blank: PlannerChild = { id: 'child-none', name: '', birthday: '2026-03-08', included: true };
+    const dev: PlannerChild = { id: 'child-dev', name: 'Dev', birthday: '2024-05-31', included: true };
+    const run = (children: PlannerChild[]) =>
+      planReminders({
+        now: zonedToEpoch({ y: 2026, m: 10, d: 5, hh: 12, mm: 0 }, LA),
+        timeZone: LA,
+        children,
+        lastSaveAt: null,
+        lastForegroundAt: null,
+        monthHorizonDays: 60,
+        prefs: { ...DEFAULT_PREFS, enabled: true, cadence: 'off', namesOnLockScreen: true },
+      });
+    const one = run([blank]);
+    expect(one.length).toBeGreaterThan(0);
+    for (const n of one) {
+      expect(`${n.title} ${n.body}`).toContain('your child');
+      expect(`${n.title} ${n.body}`).not.toMatch(/(^|\s)'s /);
+    }
+    const twins = run([blank, { ...dev, birthday: '2026-03-08' }]);
+    for (const n of twins) expect(`${n.title} ${n.body}`).toContain('your child and Dev');
   });
 });
