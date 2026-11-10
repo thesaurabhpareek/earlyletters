@@ -50,4 +50,4 @@ gh api repos/thesaurabhpareek/earlyletters/pulls/557/files --jq '.[]|select(.fil
 node scripts/agents/decisions-check.mjs --patch /tmp/pr557.patch
 ```
 
-(The `patch` field has no `---`/`+++` header; the checker reads only lines that start with `+`.) A workflow step is not proposed here; that is a later item (`.github/**` is not edited before the founder applies workflow text on or after 10 Nov, D-124).
+(The `patch` field has no `---`/`+++` header; the checker reads only lines that start with `+`.) GitHub leaves out `patch` for a file with a large diff; the file is then empty or `null`, and the checker exits 2 ("patch has no added lines") instead of reporting no findings. For such a PR use `gh pr diff <N>` as the patch file. A workflow step is not proposed here; that is a later item (`.github/**` is not edited before the founder applies workflow text on or after 10 Nov, D-124).

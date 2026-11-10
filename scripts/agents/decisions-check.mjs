@@ -12,7 +12,11 @@
 //   node scripts/agents/decisions-check.mjs [--file docs/DECISIONS.md] [--patch pr557.diff ...]
 //        [--capacity-adopted] [--strict] [--json]
 // Exit: 0 clean or advisory, 1 findings with --strict (a patch collision always exits 1), 2 usage error.
+// A --patch file with no added line at all (empty, "null", or a diff GitHub left out because it was
+// too large: the REST "patch" field is then missing) exits 2, never "No findings". Fetch the raw diff
+// (gh pr diff N) for such a PR.
 import { readFileSync, existsSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 
 export const FREEZE_UTC = "2026-11-03T13:00:00Z";
 export const FREEZE_DATE = "2026-11-03";
@@ -88,6 +92,11 @@ export function checkCapacity(parsed, { adopted = false, freezeDate = FREEZE_DAT
   return out;
 }
 
+/** True when a unified diff has at least one added line ("+" but not the "+++" file header). */
+export function hasAddedLines(diffText) {
+  return diffText.split("\n").some((l) => l.startsWith("+") && !l.startsWith("+++"));
+}
+
 /** D ids a unified diff adds as an index row or a heading. */
 export function patchIds(diffText) {
   const ids = new Set();
@@ -140,7 +149,13 @@ function main(argv) {
     else { console.error(`unknown argument: ${a}`); return 2; }
   }
   for (const f of [opts.file, ...opts.patches]) if (!f || !existsSync(f)) { console.error(`missing file: ${f}`); return 2; }
-  const findings = run({ text: readFileSync(opts.file, "utf8"), patches: opts.patches.map((f) => ({ name: f, text: readFileSync(f, "utf8") })), adopted: opts.adopted });
+  const patches = opts.patches.map((f) => ({ name: f, text: readFileSync(f, "utf8") }));
+  const empty = patches.filter((p) => !hasAddedLines(p.text));
+  if (empty.length) {
+    console.error(`patch has no added lines (empty, null, or its diff was too large for the API): ${empty.map((p) => p.name).join(", ")}. Fetch the raw diff with gh pr diff <N> instead.`);
+    return 2;
+  }
+  const findings = run({ text: readFileSync(opts.file, "utf8"), patches, adopted: opts.adopted });
   if (opts.json) console.log(JSON.stringify(findings, null, 2));
   else {
     for (const f of findings) console.log(`${f.kind}: ${f.message}`);
@@ -150,4 +165,4 @@ function main(argv) {
   return dup || (opts.strict && findings.length) ? 1 : 0;
 }
 
-if (import.meta.url === `file://${process.argv[1]}`) process.exit(main(process.argv.slice(2)));
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) process.exit(main(process.argv.slice(2)));

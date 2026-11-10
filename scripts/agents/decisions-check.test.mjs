@@ -2,9 +2,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdtempSync, mkdirSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDecisions, amendTargets, checkAmended, checkCapacity, checkDuplicates, patchIds, run } from "./decisions-check.mjs";
+import { parseDecisions, amendTargets, checkAmended, checkCapacity, checkDuplicates, patchIds, hasAddedLines, run } from "./decisions-check.mjs";
 
 const here = (f) => fileURLToPath(new URL(f, import.meta.url));
 const FX = readFileSync(here("./fixtures/decisions-check.fixture.md"), "utf8");
@@ -77,4 +79,45 @@ test("the real log parses: D-100, D-101 and D-121 each have a row and an entry",
     assert.ok(p.entries.some((e) => e.id === id), `entry ${id}`);
   }
   assert.ok(run({ text: "" }).length === 0);
+});
+
+test("an entry that names its own id in Amends is not asked for its own marker", () => {
+  const text = "| D-150 | self | x | Yes | 2026-11-01 |\n| D-151 | other | x | Yes | 2026-11-01 |\n\n### D-150 self\n- **Amends:** D-150, D-151\n";
+  const p = parseDecisions(text);
+  assert.deepEqual(amendTargets(p.entries[0]), ["D-151"]);
+  assert.deepEqual(checkAmended(p).map((f) => `${f.id}<-${f.by}`), ["D-151<-D-150"]);
+});
+
+test("a base heading and its (update) heading are one definition; two base headings are a duplicate", () => {
+  const ok = "| D-160 | a | x | Yes | 2026-11-01 |\n\n### D-160 title\n- a\n\n### D-160 (update)\n- b\n";
+  assert.deepEqual(checkDuplicates(parseDecisions(ok)), []);
+  const two = ok.replace("### D-160 (update)", "### D-160 again");
+  assert.deepEqual(checkDuplicates(parseDecisions(two)).map((f) => f.kind), ["DUPLICATE"]);
+});
+
+test("a patch with no added lines (empty, null, header only) exits 2, not No findings", () => {
+  assert.equal(hasAddedLines(""), false);
+  assert.equal(hasAddedLines("null\n"), false);
+  assert.equal(hasAddedLines("+++ b/docs/DECISIONS.md\n context\n-removed\n"), false);
+  assert.equal(hasAddedLines("@@ -1 +1 @@\n+| D-170 | x |\n"), true);
+  const dir = mkdtempSync(join(tmpdir(), "dc-"));
+  const file = here("./fixtures/decisions-check.fixture.md");
+  for (const [name, body] of [["empty.diff", ""], ["null.diff", "null\n"], ["nolines.diff", "+++ b/x\n-gone\n"]]) {
+    const f = join(dir, name);
+    writeFileSync(f, body);
+    const r = cli("--file", file, "--patch", f);
+    assert.equal(r.status, 2, name);
+    assert.doesNotMatch(r.stdout, /No findings/, name);
+    assert.match(r.stderr, /no added lines/, name);
+  }
+});
+
+test("cli runs from a path with a space (URL-escaped argv[1])", () => {
+  const dir = join(mkdtempSync(join(tmpdir(), "dc-")), "a b");
+  mkdirSync(dir);
+  const copy = join(dir, "decisions-check.mjs");
+  writeFileSync(copy, readFileSync(SCRIPT, "utf8"));
+  const r = spawnSync(process.execPath, [copy, "--file", here("./fixtures/decisions-check.fixture.md"), "--strict"], { encoding: "utf8" });
+  assert.equal(r.status, 1);
+  assert.match(r.stdout, /AMENDED/);
 });
