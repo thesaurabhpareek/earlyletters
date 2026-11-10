@@ -266,6 +266,17 @@ export const authCopy = {
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
+    // Account sections (YOU-TAB-STATES-9nov 5; NX-36 S15; slice 4c). Placeholders: founder word approval pending, see the PR body.
+    // Signs letters as: the value is the name from the book's own sign-as editor; Account holds no copy (NX-32-R3).
+    signsAsTitle: 'Signs letters as',
+    // Ways to sign in: read only, no Add or Remove (Build 12). Names of the methods, then the date each was added.
+    methodsTitle: 'Ways to sign in',
+    methodNames: { apple: 'Apple', google: 'Google', email: 'Email', other: 'Another way' },
+    methodThisOne: 'This is how you signed in',
+    // The date follows it as written by the phone's own date format (rules.test.ts allows no {date} placeholder in this file).
+    methodAdded: 'Added',
+    // Account's grouping of Plan, Sync and Export (item 6). Not on the Settings home, where settingsHome.sections.data stays retired.
+    dataTitle: 'Your data',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).
     signOutEarly: 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
     cancel: 'Cancel',
