@@ -44,7 +44,7 @@ const SERVICE_ONLY = [
   `select public.ops_ledger_between(now(), now(), 10)`, `select public.ops_retention(now())`,
   `select public.ops_audit_write('op', 'deletion', 'test', 'T-1')`, `select public.ops_incident_scope('{}')`,
   `select public.ops_replay_ledger('[]')`, `select public.ops_row_counts()`, `select public.ops_raw_sha(null, 1, now())`,
-  `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`,
+  `select public.ops_schema_health()`, `select public.ops_deletion_request_status('${A}')`, `select public.ops_deletion_consent_records('${A}')`,
 ];
 for (const sql of SERVICE_ONLY) {
   const name = sql.match(/public\.(\w+)/)[1];
