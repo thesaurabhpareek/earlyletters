@@ -39,6 +39,12 @@ export const EXCERPT_MAX_CHARS = 320;
 /** VoiceOver reads at most this many words of the letter before the date. */
 export const LABEL_MAX_WORDS = 25;
 
+/**
+ * ...and at most this many characters. Text without spaces (Japanese, Chinese) is one "word", so the word cap alone
+ * would read the whole letter aloud.
+ */
+export const LABEL_MAX_CHARS = 200;
+
 export type FromTheBookKind = 'monthAgo' | 'fromTheBook';
 
 export type FromTheBookPick = { letter: BookLetter; kind: FromTheBookKind };
@@ -83,16 +89,22 @@ export function pickFromTheBook(letters: readonly BookLetter[], today: string, y
 export function excerptOf(finalText: string, max: number = EXCERPT_MAX_CHARS): string {
   const text = finalText.trimStart();
   if (text.length <= max) return text.trimEnd();
-  if (/\s/.test(text[max])) return text.slice(0, max).trimEnd();
-  const cut = text.slice(0, max);
+  const cut = Array.from(text).slice(0, max).join(''); // by code point: never half of a surrogate pair
+  if (/\s/.test(text.charAt(cut.length))) return cut.trimEnd();
   const space = cut.search(/\s\S*$/);
-  // One word longer than the whole excerpt: keep the text whole; ExcerptFade clips it by height, never mid-word here.
-  return (space > 0 ? cut.slice(0, space) : text).trimEnd();
+  // No space in the whole opening (Japanese, Chinese, one very long word): cut at `max` characters, still a verbatim prefix.
+  return (space > 0 ? cut.slice(0, space) : cut).trimEnd();
 }
 
-/** The first `max` whole words of the text, single-spaced, for a screen reader. */
-export function cappedWords(text: string, max: number = LABEL_MAX_WORDS): string {
-  return text.split(/\s+/).filter(Boolean).slice(0, max).join(' ');
+/**
+ * The first `max` whole words of the text, single-spaced, for a screen reader, and never more than `maxChars`
+ * characters: whole words are dropped to fit, and a single run with no spaces is cut at `maxChars` characters.
+ */
+export function cappedWords(text: string, max: number = LABEL_MAX_WORDS, maxChars: number = LABEL_MAX_CHARS): string {
+  const words = text.split(/\s+/).filter(Boolean).slice(0, max);
+  while (words.length > 1 && words.join(' ').length > maxChars) words.pop();
+  const out = words.join(' ');
+  return Array.from(out).length > maxChars ? Array.from(out).slice(0, maxChars).join('') : out;
 }
 
 export type FromTheBookCard = {
@@ -104,7 +116,7 @@ export type FromTheBookCard = {
   dateline: string;
   /** "From Mama". */
   signature: string;
-  /** One element for VoiceOver: kicker, the first words (capped), the date, "Opens the letter." */
+  /** One element for VoiceOver: kicker, the first words (capped), the date. "Opens the letter." is the hint, read once */
   a11yLabel: string;
 };
 
@@ -152,5 +164,5 @@ export function showsDayZero(entries: readonly Pick<Entry, 'kind'>[]): boolean {
 export function dayZeroCard(childName: string): DayZeroCard {
   const f = copy.tonight.fromTheBook;
   const title = childName.trim() ? fill(f.emptyTitle, { child: childName }) : f.emptyTitleNameless;
-  return { title, line: f.emptyLine, a11yLabel: spoken([title, f.emptyLine, f.emptyA11yHint]) };
+  return { title, line: f.emptyLine, a11yLabel: spoken([title, f.emptyLine]) };
 }

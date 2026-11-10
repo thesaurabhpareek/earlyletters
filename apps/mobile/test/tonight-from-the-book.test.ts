@@ -14,13 +14,16 @@ import {
   cappedWords,
   dayZeroCard,
   daysSinceEpoch,
+  EXCERPT_MAX_CHARS,
   excerptOf,
   fromTheBookCard,
+  LABEL_MAX_CHARS,
   LABEL_MAX_WORDS,
   pickFromTheBook,
   showsDayZero,
   type BookLetter,
 } from '../src/components/tonight/from-the-book.logic';
+import { copy } from '../src/lib/copy';
 import { dayDate } from '../src/lib/dates';
 
 const SRC = join(__dirname, '..', 'src');
@@ -124,7 +127,7 @@ describe('[NX-36-S13] the words are the parent\'s own', () => {
     expect(excerptOf(poem)).toBe(poem);
     expect(excerptOf(`  ${poem}  `)).toBe(poem);
     // No added or changed character, in any state, for any cut length.
-    for (const max of [1, 7, 20, 41, 99]) {
+    for (const max of [7, 20, 41, 99]) {
       const e = excerptOf(WORDS, max);
       expect(WORDS.startsWith(e)).toBe(true);
       expect(e === WORDS || /\s/.test(WORDS[e.length]) || e === '').toBe(true);
@@ -145,10 +148,39 @@ describe('[NX-36-S13] the words are the parent\'s own', () => {
     expect(long[capped.length]).toBe(' ');
     expect(cappedWords('One two  three\nfour.')).toBe('One two three four.');
     const card = fromTheBookCard({ letter: letter('v', '2026-06-01', { finalText: long }), kind: 'fromTheBook' }, asha);
-    // kicker, the first words, the date, "Opens the letter.": not the whole letter.
-    expect(card.a11yLabel).toBe(`From the book. ${capped}. A letter from ${dayDate('2026-06-01')}. Opens the letter.`);
+    // kicker, the first words, the date: not the whole letter, and not the hint (it is read once, as the hint).
+    expect(card.a11yLabel).toBe(`From the book. ${capped}. A letter from ${dayDate('2026-06-01')}.`);
+    expect(card.a11yLabel).not.toContain('Opens');
     expect(card.a11yLabel).not.toContain('word26');
     expect(card.a11yLabel.split(/\s+/).length).toBeLessThan(45);
+  });
+});
+
+describe('[NX-36-S13] text without spaces is capped by characters', () => {
+  const jp = '今日は初めてお散歩に行きました。'.repeat(60); // about 960 characters, no space
+  it('the label reads at most LABEL_MAX_CHARS of an unspaced letter, as a verbatim prefix', () => {
+    const capped = cappedWords(jp);
+    expect(Array.from(capped)).toHaveLength(LABEL_MAX_CHARS);
+    expect(jp.startsWith(capped)).toBe(true);
+    const card = fromTheBookCard({ letter: letter('j', '2026-06-01', { finalText: jp }), kind: 'fromTheBook' }, asha);
+    expect(card.a11yLabel.length).toBeLessThan(LABEL_MAX_CHARS + 80);
+    expect(card.a11yLabel).not.toContain(jp.slice(0, 400));
+  });
+  it('a few long unspaced runs drop whole runs first, then cut', () => {
+    const run = '你'.repeat(150);
+    expect(cappedWords(`${run} ${run} ${run}`)).toBe(run);
+    expect(cappedWords(`${'你'.repeat(300)} tail`)).toBe('你'.repeat(LABEL_MAX_CHARS));
+    expect(cappedWords('short words stay whole')).toBe('short words stay whole');
+  });
+  it('the excerpt is cut at EXCERPT_MAX_CHARS, verbatim, and never splits a surrogate pair', () => {
+    const ex = excerptOf(jp);
+    expect(Array.from(ex)).toHaveLength(EXCERPT_MAX_CHARS);
+    expect(jp.startsWith(ex)).toBe(true);
+    const emoji = '\u{1F600}'.repeat(400); // astral characters, two UTF-16 units each
+    const e2 = excerptOf(emoji, 10);
+    expect(Array.from(e2)).toHaveLength(10);
+    expect(emoji.startsWith(e2)).toBe(true);
+    expect(excerptOf('Short 日本語.')).toBe('Short 日本語.');
   });
 });
 
@@ -168,7 +200,7 @@ describe('[NX-36-S13] the card model', () => {
     for (const v of Object.values(c)) expect(String(v)).not.toMatch(/undefined|null|^\s*$/);
     const z = dayZeroCard('');
     expect(z.title).toBe("Your child's book");
-    expect(z.a11yLabel).toBe("Your child's book. Ready for its first letter. Opens the book.");
+    expect(z.a11yLabel).toBe("Your child's book. Ready for its first letter.");
     expect(dayZeroCard('   ').title).toBe("Your child's book");
   });
 });
@@ -176,7 +208,7 @@ describe('[NX-36-S13] the card model', () => {
 describe('[NX-36-S13] day zero', () => {
   it('[NX-36-S13] the empty-book card reads as spec and shows only while no letter exists', () => {
     const z = dayZeroCard('Asha');
-    expect(z).toEqual({ title: "Asha's book", line: 'Ready for its first letter.', a11yLabel: "Asha's book. Ready for its first letter. Opens the book." });
+    expect(z).toEqual({ title: "Asha's book", line: 'Ready for its first letter.', a11yLabel: "Asha's book. Ready for its first letter." });
     expect(showsDayZero([])).toBe(true);
     expect(showsDayZero([{ kind: 'not_much' }])).toBe(true); // a quiet day is not a letter
     expect(showsDayZero([{ kind: 'letter' }])).toBe(false);
@@ -210,5 +242,8 @@ describe('[NX-36-S13] the screen (source)', () => {
     expect(card).toContain('accessibilityHint={copy.reader.openHint}');
     expect(zero).toContain('accessibilityLabel={card.a11yLabel}');
     expect(zero).toContain('copy.tonight.fromTheBook.emptyA11yHint');
+    // The hint is spoken once: it is the prop, never inside the label.
+    expect(copy.tonight.resurfaced.a11y).not.toMatch(/Opens/);
+    expect(dayZeroCard('Asha').a11yLabel).not.toContain(copy.tonight.fromTheBook.emptyA11yHint);
   });
 });

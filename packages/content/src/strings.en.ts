@@ -260,7 +260,7 @@ export const en = {
     // never a private letter (S09, DESIGN_LANGUAGE 12).
     resurfaced: {
       kicker: "A month ago",
-      a11y: "A letter from {date}. Opens the letter.",
+      a11y: "A letter from {date}.",
     },
     // NX-36 S13 (BL-790): the family's own kept letter on Tonight, and the empty book on the first day. These four
     // strings need founder word approval before release (NX-36 section 6).
