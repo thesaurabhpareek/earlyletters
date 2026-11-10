@@ -348,6 +348,6 @@ describe('Keep the recording while the recording is still being saved', () => {
     const { en } = await import('@scribe/content');
     const src = readFileSync(join(__dirname, '..', 'src', 'app', 'review.tsx'), 'utf8');
     expect(src).toMatch(/if \(!settled\) \{\s*saving\.current = false;\s*(?:\/\/[^\n]*\s*)*if \(isFinishing\(draft\.id\)\) toast\.show\(\{ message: copy\.review\.keepStillSaving \}\);\s*return;/);
-    expect(en.review.keepStillSaving).toBe('Your recording is still being saved. Wait a moment and try again.');
+    expect(en.review.keepStillSaving).toBe('This recording is still being saved. Give it a moment, then tap Keep again.');
   });
 });
