@@ -12,6 +12,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   afterForeground,
   elapsedClock,
+  afterFinish,
   finishWithin,
   FINISH_TIMEOUT_MS,
   isMicProblem,
@@ -375,5 +376,33 @@ describe('[BL-563] Listen never sticks on "finishing", and never offers Let it g
     const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
     expect(end).toMatch(/await finishWithin\(finalizeTake\(/);
     expect(end).not.toMatch(/deleteDraft|abandonTake/);
+  });
+
+  it('a slow save (timeout) still opens Review on the known draft id', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('a slow save keeps the honest reason line for background and interruption', () => {
+    expect(afterFinish('d1', 'background', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'background' } });
+    expect(afterFinish('d1', 'interruption', { ok: false, why: 'timeout' })).toEqual({ to: 'review', params: { draftId: 'd1', stopped: 'interruption' } });
+  });
+
+  it('a save that worked opens Review', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: { id: 'd1' } })).toEqual({ to: 'review', params: { draftId: 'd1' } });
+  });
+
+  it('only a save that threw leaves early', () => {
+    expect(afterFinish('d1', 'user', { ok: false, why: 'failed' })).toEqual({ to: 'leave' });
+  });
+
+  it('a save that finished with no row (the take was let go meanwhile) leaves, so Review never opens on a missing draft', () => {
+    expect(afterFinish('d1', 'user', { ok: true, value: null })).toEqual({ to: 'leave' });
+  });
+
+  it('the screen routes through afterFinish and does not read the draft from the wait', () => {
+    const c = readFileSync(join(__dirname, '..', 'src', 'app', 'listen.tsx'), 'utf8');
+    const end = c.slice(c.indexOf('const endTake = async'), c.indexOf('const start = async'));
+    expect(end).toMatch(/afterFinish\(id, reason, kept\)/);
+    expect(end).not.toMatch(/kept\.value/);
   });
 });

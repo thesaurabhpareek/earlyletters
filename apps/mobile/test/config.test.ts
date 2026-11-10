@@ -496,11 +496,15 @@ describe('no remote push in any build (docs/ops/RELEASE.md section 4)', () => {
   }
 
   for (const name of Object.keys(easFile.build)) {
-    it(`${name}: the introspected entitlements carry no aps-environment and keep the other three`, async () => {
+    // The store build (production, servers off) has no sign-in, so it also carries neither sign-in entitlement
+    // (guideline 2.5.19; app.config.ts signInCapable; test/store-sign-in-capabilities.test.ts). Every other build keeps them.
+    const store = name === 'production' && String(easFile.build[name]?.env?.EXPO_PUBLIC_SERVER_FEATURES ?? '').toLowerCase() !== 'on';
+    it(`${name}: the introspected entitlements carry no aps-environment and keep ${store ? 'only data protection' : 'the other three'}`, async () => {
       const ent = await introspectedEntitlements(name);
-      expect(Object.keys(ent).sort(), name).toEqual(['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', DATA_PROTECTION_KEY].sort());
+      const expected = store ? [DATA_PROTECTION_KEY] : ['com.apple.developer.applesignin', 'com.apple.developer.associated-domains', DATA_PROTECTION_KEY];
+      expect(Object.keys(ent).sort(), name).toEqual(expected.sort());
       expect(ent[DATA_PROTECTION_KEY]).toBe(DATA_PROTECTION_CLASS);
-      expect(ent['com.apple.developer.associated-domains']).toEqual([`applinks:${brand.publisher.domain}`]);
+      if (!store) expect(ent['com.apple.developer.associated-domains']).toEqual([`applinks:${brand.publisher.domain}`]);
     }, 60_000);
   }
 

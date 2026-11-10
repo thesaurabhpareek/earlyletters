@@ -206,6 +206,20 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Record:** S1-14 row.
 - **Update:** TDD 03 FM-5; PRD 7.7.
 
+### S1-40 Stopping a take on a filling phone, and a long take: Review opens and the take is kept (BL-563 follow-up; PR #618)
+- **Needs:** a build with PR #618 (the `testflight` or `preview` profile); the SE 3; Asha's book; Settings > General > iPhone Storage to read free space; large videos, or filler files saved through Files in pieces of about 100 MB, to fill the phone; a stopwatch (a screen recording shows seconds). Fictional family only (Asha). Listen does not start a take below 50 MB free (it shows "This phone is full"), so (a) starts above that line and fills the phone during the take.
+- **Steps:**
+  - (a) Free space down to about 55 MB. Open Listen and start a take. While it records, fill the phone in pieces until iPhone Storage shows under 1 MB free (if iOS frees space by itself, fill again), then keep talking for at least 2 more minutes. Tap stop and start the stopwatch at the tap. Note the seconds until the next screen and which screen it is. If it is Review, tap Close (not Keep), then note whether Tonight lists the take.
+  - (b) Free a few GB. Force-quit the app, open it again, read Tonight's unfinished letters, then open the card.
+  - (c) With plenty of space (more than 1 GB free), record a take of 60 minutes (talk, or leave a radio on) and tap stop. Note the take length, the seconds from the tap to the next screen and which screen it is.
+- **Expected:**
+  - (a) Within about 3 s of the tap the screen leaves "finishing" on its own and lands on Review, or, if the save failed, on Tonight (home). It never stays on "finishing", "Let it go" never shows while finishing, and nothing crashes. After Close on Review, Tonight may not list the take until the app is opened again; that is (b).
+  - (b) The take from (a) is there as an unfinished letter ("Recorded before the app closed." or "Read it back"), opens in Review, and plays its sound up to the point the phone filled. Nothing was deleted. If the file could not be written at all, Review says so in its own words and never claims a recording is kept.
+  - (c) The next screen is Review, with the take kept and the words coming; it is never "finishing" for more than about 3 s, whether the save was quick or slow.
+- **Record:** S1-40 rows (a) to (c): phone, iOS version, build number, free space when stopped, take length, seconds from the tap to the next screen, the screen reached, and for (b) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
+- **Known unverified on a phone:** when the save is slow, Review opens on the take before the save has finished, so its length may be up to 5 s short and its words may start from a file that is still being closed. Report any case where the words look cut short, Review shows no words, or the length on Review differs from the take.
+- **Not covered:** a line on Tonight saying the take was kept after a failed save (needs a new content key from `content`); Android.
+
 ### S1-15 Speech model download (ADR 0015, ADR 0016, D-046)
 - **Steps:** Choose English on a phone with no model: watch the download (574 MB turbo on a full-tier phone, 190 MB small on compact; F: `lib/models/catalog.ts`). On cellular only: it waits for Wi-Fi. Kill the app at about 40%, relaunch: it resumes. Airplane mode mid-download: it waits, then resumes. Time the SHA-256 check after the last byte. Remove the model in Settings > Recordings (or Storage) and confirm letters and recordings stay.
 - **Expected:** Range-resumable download (no restart from 0); Wi-Fi by default; the hash check finishes without freezing the UI (ADR 0016 U: Hermes hashing of 574 MB "may take tens of seconds" unless the native `sha256File` is used); removal frees the space and the next spoken letter waits for words.
@@ -827,6 +841,14 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - A letter let go before the export is not in it.
 - **Record:** S1-110 rows (a) to (c): phone, iOS version, build number and profile; the list of files under `waiting/`; the shasum line for one recording; screenshots with Asha only.
 
+### S1-178 "I was invited" on the Welcome screen: shown in the alpha, hidden in the store build (CTO ruling B12-5)
+- **Needs:** a fresh install of each build, on a phone that has never signed in: the `preview` alpha (servers on) and the `production`-profile build (servers on once draft #698 lands). Fictional family only (Asha).
+- **Steps and expected:**
+  - (a) `preview` alpha: first run to the Welcome step. Under the main button the quiet "I was invited" button shows next to sign in, and it opens the join sheet.
+  - (b) `production` build: the same step shows no "I was invited" button. Sign in, if offered, is the only quiet button; nothing else moved.
+  - (c) `production` build: Settings > Asha has no new or missing row compared with the `preview` alpha other than what the build already differs by.
+- **Record:** S1-178 rows (a) to (c): build number and profile, phone, iOS version, pass or fail, a screenshot of the Welcome step for each build.
+
 ### S1-133 Delete this book, Restore, Erase now, and Erase everything on this phone (PR #520; RT-BK-12, SR-C-07; DATA-REQ-014, DATA-REQ-024, F17-REQ-080; D-083, D-103; design 2.12; CTO ruling 8 Nov; council and founder decision 8 Nov)
 - **Needs:** a build with PR #520 on a phone that has never signed in (both rows are hidden once a phone signs in); the SE 3 and the founder's iPhone; two fictional books, Asha's with spoken and written letters and a draft, and a second one with one letter; reminders on; the English speech download installed. Fictional family only (Asha, Papa). For (i), a development build and a Mac with Xcode. For (j), a build with App lock (PR #640, S1-131) and a passcode set on the phone. For (k), a phone that still has build 9 installed with letters and recordings in it (any phone for the first part; for the second part only a test phone with Asha's book, or a phone whose book has been exported and saved off the phone first, see the warning in (k)). For (l), a TestFlight build of the `production` profile (bundle id `com.earlyletters.scribe`, after Mon 9 Nov) on a drill phone and a drill Apple Account (AL-09 "Drill identities"): the Plus products load only there, and (l) cannot run on the `.preview` alpha or a development build.
 - **Steps and expected:**
@@ -857,6 +879,106 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (f) The Plan row reads "Plan", value "Free", and "Your first two letters are free. Plus lets you keep adding letters." Settings, Plan, Manage subscription reaches Apple's subscription page in the steps the Subscription Terms write.
 - **Record:** S1-95 rows (a) to (f) with the build number, profile, phone, iOS version and text size; screenshots with Asha only.
 - **Update:** `docs/design/screens/SETTINGS_AND_ACCOUNT.md` section 6 where a result differs.
+
+## Build 12 sync (9 Nov 2026): rows S1-170 to S1-177
+
+Build 12 is the first public App Store build: bundle `com.earlyletters.scribe`, the `production` profile, servers ON against production Supabase, automatic release (founder instruction; standing rule that test cases and this plan are written as development happens). S1-170 to S1-173 cover what has merged to `develop` since 8 Nov. S1-174 to S1-177 are **PENDING**: their pull requests are open, so the rows are written ahead of the code and nothing in them is asserted as built. When a pull request merges, `qa` removes PENDING from its row, re-reads the diff, and corrects any step that no longer matches. Until then, do not run a PENDING row as a gate and do not cite it as coverage. The catalog rows are RT-B12-01 to RT-B12-12.
+
+All rows use Asha's book only. A "store-profile build" is a build of the `production` profile: a TestFlight upload of it, or the build submitted for review. The `testflight` and `preview` profiles are alpha builds and are not a substitute for these rows.
+
+### S1-170 Spoken languages: English only in the store build (#689; D-125 item 2; EXPO_PUBLIC_SPOKEN_LANGUAGES)
+- **Unit and preflight tests that exist:** `apps/mobile/test/heard-languages.test.ts` (the list, the English-only switch winning, English always heard, unknown codes ignored, the four readers), `apps/mobile/test/capabilities.test.ts`, `apps/mobile/test/config.test.ts` (profile values), `apps/mobile/test/language-picker-english-only.test.ts`, `apps/mobile/test/onboarding-language-row.test.ts`, `apps/mobile/test/preflight-production.test.ts` and `packages/content/test/claims-capabilities.test.ts` (no line promises a language the build does not hear).
+- **Needs:** a build of the `production` profile on a fresh install; Asha's book; Larger Text at AX5 for (c).
+- **Steps:** (a) First run: reach the language row; open it. (b) Finish first run. Settings > Language, and Settings > Storage. (c) Repeat (a) at AX5. (d) Read the store listing and Settings > Help for any line that names a language other than English.
+- **Expected:**
+  - (a) English is the only language; no search field is needed, no "later update" line promises more, and nothing is greyed out.
+  - (b) Language offers no Add; Storage lists the English speech model only.
+  - (c) The same, with nothing cut off.
+  - (d) Nothing promises Spanish, Hindi or any other language.
+- **Record:** S1-170 rows (a) to (d): phone, iOS version, build number and profile; a screenshot of the language row, with Asha only.
+- **UNVERIFIED:** that the value `en` is inlined into the shipped JavaScript bundle (the tests read `eas.json` and the parser; no test inspects a built bundle). That the development and e2e profiles, which leave the list unset on purpose, still hear every language is covered by `heard-languages.test.ts`, not by a device.
+- **Update:** `apps/mobile/eas.json` and `apps/mobile/src/lib/language/heard-languages.ts` if a result differs.
+
+### S1-171 Speech models served from our R2 host (#690; docs/ops/runbooks/speech-models-on-r2.md; ADR 0016)
+- **Unit tests that exist:** `scripts/packs/lib.test.ts` and `scripts/packs/release.test.ts` (our host first, the pinned upstream URL as mirror, the SHA-256 refused on a mismatch, resume). There is no test that the live manifest lists R2: #690 is a runbook and changed no code.
+- **Needs:** the founder has run the runbook (R2 primary, Hugging Face mirror) and says so in writing; a `production` or `testflight` build; a fresh install; Wi-Fi; a way to see the phone's requests (a Mac as a proxy, or the host's R2 request log).
+- **Steps:** (a) Fresh install; finish first run on Wi-Fi so the English speech model downloads. (b) Watch the host the phone asks: `packs.earlyletters.app` or `huggingface.co`. (c) Record Asha's 20 second test take after the download and read the words. (d) Update over a phone that already has the model (TF-03 style): note whether the model downloads again.
+- **Expected:**
+  - (b) The model, the voice detector and nothing else come from `packs.earlyletters.app`; Hugging Face is not asked while R2 answers.
+  - (c) Words arrive as in S1-15; the hash check passes.
+  - (d) No second download: the id, version and hash are unchanged.
+- **Record:** S1-171 rows (a) to (d): the host seen, download time on Wi-Fi, build number. No transcript text.
+- **UNVERIFIED:** everything about the live host. As of 9 Nov nothing in the repository shows the three objects are uploaded or that a signed manifest v2 lists R2 first. Until the founder confirms, (b) will most likely show `huggingface.co`, which is the runbook's reason for existing. Whether Hugging Face is used as a fallback when R2 is slow is not exercised by any device row.
+
+### S1-172 Servers-on App Review notes and the invite-link check (#691; scripts/release/with-review-contact.ts; proposals/app-review-demo-signin.md)
+- **Unit tests that exist:** `apps/mobile/test/release-config.test.ts` describe "a servers-on build is reviewed with Sign in with Apple and a pasted invite link": the notes get the link and the date, the link must be one the app's `parseInviteUrl` accepts (a code, a bare token, `/j?t=`, `http://`, another host or a link inside prose is refused), the expiry is a real day within 8 days, no demo credential or notes override, a servers-off build keeps the old notes, an unset switch fails closed, and the 4,000 byte limit.
+- **Needs:** a servers-on `production` build on a fresh install (so after #698 merges, or a build with the switch on); a freshly made invite link to Asha's sample book from a second phone, never reused; the next review submission's notes text.
+- **Steps:** (a) Read the notes the release would send (the secret is not read aloud; open the filled text in App Store Connect after the metadata job). (b) On the fresh install, signed out, choose "I was invited" and paste the link. Then, in order: "You were invited to a book" with Sign in and Not now; tap Sign in and use Sign in with Apple; "Opening the invite"; "Join this book as a parent?" with "Invited by" and the sign-off, then "Join the book" and Not now; tap "Join the book"; the account step if consent and sync are not yet on (consent as in S1-27, then Agree and sync); "Joining the book"; "You're in Asha's book" with "Your letters and Mama's sit side by side, each signed."; the line "Asha's book is on its way to this phone." until the book arrives; then the field "What does Asha call you?" (type Papa); then tap "Open the book". (c) On a second fresh install, paste or type the 8 character code instead of the link, then Continue. (d) Paste the same link again after it was used, and one made more than 7 days ago.
+- **Expected:**
+  - (a) The notes name Sign in with Apple, give the link and its date, and say there is no shared sign-in. No "no sign-in" or "no account" wording.
+  - (b) Each screen above appears in that order. Before sign-in nothing names the child or the inviter. "Join the book" is the only thing that joins; Not now forgets the link. After "Open the book" the app lands on the Book with Asha's sample book. While the sign-off field is empty the sheet says "Add what Asha calls you to open the book." and Open waits. No child name on the invite web page.
+  - (c) The line "That doesn't look like an invite link. Check the message and try again." and the paste field stays. Source: `packages/content/src/features/family.en.ts` (`accept.notRecognised`), returned by `readPasted` in `apps/mobile/src/components/family/join-sheet.logic.ts`. UNVERIFIED on a device: the code path is read from source; the 8 character code is not a case in `join-sheet.test.ts` that I checked.
+  - (d) The expired or used line with "Paste another link", and no book opened. The exact words come from `familyCopy.errors`; UNVERIFIED here.
+- **Record:** S1-172 rows (a) to (d): build number, the link's age in days (never the link itself), what the reviewer would see. The link is a bearer secret: never paste it into evidence.
+- **UNVERIFIED:** App Review accepting these notes, a reviewer's Apple Account being able to join (the invite must accept an unknown Apple Account), the link surviving until the review day, and the metadata job running with the real secret (only fixtures are tested).
+
+### S1-173 Preview and testflight builds go to the Family group (#697; apps/mobile/eas.json submit.testflight and submit.preview; docs/release/TESTFLIGHT.md)
+- **Unit tests that exist:** `apps/mobile/test/release-config.test.ts` "adds every preview-record build to the internal group Family, and leaves production alone" (groups equal Family, ascAppId numeric, no appleTeamId, none on production).
+- **Needs:** the TestFlight group "Family" exists and has Asha-account test members; one `eas submit` of a `preview` or `testflight` build.
+- **Steps:** (a) Submit a build. (b) In App Store Connect > TestFlight > Internal Testing > Family: look for the build once processing ends. (c) On a tester's phone open TestFlight. (d) Submit a `production` build later and look at the group.
+- **Expected:**
+  - (a) The submission finishes without an Apple Team ID prompt, or the prompt is the one in `docs/ops/proposed/testflight-apple-team-id.md`.
+  - (b) and (c) The build is in Family and the tester is offered it.
+  - (d) The production build is not attached to Family.
+- **Record:** S1-173 rows (a) to (d): build number, whether the build was in Family without a manual step.
+- **UNVERIFIED (from the pull request):** that `groups` is applied when EAS skips TestFlight setup (the server attaches it, not the CLI), and that Apple accepts it with Build Distribution set to Manual for Xcode Builds. Builds 9 to 11 were not attached; this row is the first proof.
+
+### S1-174 PENDING (#676, open): sign-in capabilities follow the servers switch
+PENDING: not merged. Written from the pull request description, not from code on `develop`.
+- **Unit and preflight tests the pull request adds:** `apps/mobile/test/store-sign-in-capabilities.test.ts` (forces the switch off and on), `apps/mobile/test/config.test.ts`, `apps/mobile/test/preflight-production.test.ts` (a `sign-in` check: servers off, no capability may be present; servers on, the Apple entitlement and associated domains must be present).
+- **Needs:** a `production` build with servers off (this row's (a)) and one with servers on (b); the built `.ipa` or the Xcode entitlements of the archive.
+- **Steps:** (a) Servers off: read the entitlements of the archive; look in Settings > Asha > Family for any sign-in control. (b) Servers on: read the entitlements; sign in with Apple on a fresh install. (c) Open a universal invite link to the app.
+- **Expected:**
+  - (a) No `com.apple.developer.applesignin`, no associated domains, no Google URL scheme.
+  - (b) Both entitlements present; Apple sign-in completes.
+  - (c) With servers on the link opens the app; with servers off it opens the web page.
+- **UNVERIFIED:** (c) on a store profile; that the native sign-in modules left autolinked in a servers-off build are harmless (the pull request says unlinking them needs its own device check); the real archive, since the tests read the evaluated config, not signed entitlements.
+
+### S1-175 PENDING (#698, open, draft, not to merge before a recorded decision): production servers ON for build 12
+PENDING: not merged and not decided. D-121 item 1 would be reversed; no D-### entry exists yet.
+- **Unit and preflight tests the pull request changes:** `apps/mobile/test/preflight-production.test.ts` (the `servers` check requires on; the `privacy-manifest` check requires exactly Name, Email Address, Sensitive Info, Other User Content and User ID, each linked, not tracking, App Functionality only; a new `google-signin` check fails on either Google client id), `apps/mobile/test/privacy-manifest.test.ts`, `apps/mobile/test/account-deletion-switch.test.ts`, `apps/mobile/test/capabilities.test.ts`, `apps/mobile/test/config.test.ts`, `packages/content/test/claims-capabilities.test.ts`.
+- **Needs:** a `production` build with the switch on, pointed at production Supabase (the URL and publishable key in the EAS `production` environment); two phones on two Apple Accounts for (d); the privacy label answers in App Store Connect.
+- **Steps:** (a) Open the archive's `PrivacyInfo.xcprivacy`; list the collected data types. (b) Settings > Account area: look for any Google sign-in button; open the sign-in sheet. (c) Settings > Account: find Delete account. (d) Sign in with Apple, save a letter, and see it on the second phone (S1-22 steps). (e) Compare the App Store Connect privacy answers with (a).
+- **Expected:**
+  - (a) Exactly five types: Name, Email Address, Sensitive Info, Other User Content, User ID; each linked to the person, none used for tracking, purpose App Functionality only.
+  - (b) Apple and email only; no Google anywhere.
+  - (c) Delete account is shown.
+  - (d) Sync works within 30 s (S1-22) against production, with no raw transcript on the other phone.
+  - (e) The two lists are identical.
+- **UNVERIFIED:** everything on a device; that the purge worker works on production; that the EAS `production` environment holds the URL and key; that `scribe-prod` and the legal pages are live; that the privacy label is answered; and the decision itself.
+
+### S1-176 PENDING (#665, open): the Family tab in the store build
+PENDING: not merged. The pull request carries its own device row, S1-140 (two tabs in the store build with servers off). This row is the pointer and the servers-on case S1-140 does not cover. Three open pull requests (#665, #699, #720) already propose the id S1-140; whoever merges first keeps it and the others renumber.
+- **Unit tests the pull request adds:** `apps/mobile/test/store-family-tab.test.ts` (`familySurfacesShown({ alpha, coParent })`).
+- **Needs:** a `production` build, servers off for (a); servers on for (b); an alpha `testflight` build for (c).
+- **Steps:** (a) Servers off: count the tabs; Settings > Asha for "Write this book together". (b) Servers on: the same. Tap Family. (c) Alpha: the same as today.
+- **Expected:**
+  - (a) Tonight and Book only; no row.
+  - (b) Three tabs; Family opens the real flow, not "coming soon"; the row is there.
+  - (c) Three tabs; Family shows the coming-soon page.
+- **UNVERIFIED:** (b), which depends on #698; whether D-126 wants the alpha builds to hide Family too (the pull request asks Karma); the invite-link door, which the pull request says is not hidden.
+
+### S1-177 PENDING (#644, open): words are fixed in Review, before Keep
+PENDING: not merged. Wording from the pull request: "Your words are kept as you said them. We can mishear, so read each letter back and fix anything we got wrong before you keep it."
+- **Unit tests the pull request adds or changes:** `packages/content/test/claims-capabilities.test.ts` (an `editKept` rule: no line promises to fix, change or edit words unless it says before you keep, save or it joins), `packages/content/test/experience-pass.test.ts` (the word-for-word pin).
+- **Needs:** any build of the current branch; Asha's book with one kept letter; AX5.
+- **Steps:** (a) Settings > Help: read the line about mistakes. (b) Open a kept letter; look for any control that changes its words. (c) Record a new take; on Read it back, change one word, then Keep. (d) Repeat (a) at AX5.
+- **Expected:**
+  - (a) The new sentence, word for word.
+  - (b) Only Make private, Change the date and Delete; no edit of the words.
+  - (c) The words can be changed before Keep and the change shows in the saved letter, with the original kept.
+  - (d) The whole sentence wraps with nothing cut off.
+- **UNVERIFIED:** that no other screen, store line or email still promises a fix after Keep (the pull request searched the repository; no device or web pass has).
 
 ### B1-01 Backup spike WP-F08-B1 (F08 section 11.2; M16). Two iPhones, one Apple Account
 - **Needs:** S05's spike build of `apps/mobile/modules/scribe-keys` (development client) on both phones; both phones signed in to the same Apple Account with iCloud Keychain on; Wi-Fi; a 15 MB test file made from a fictional recording (P-08); the staging Storage bucket S05 names for the spike. S05 pairs with the tester (mode `pair`).
@@ -993,6 +1115,26 @@ Needs a TestFlight build with PR #121, and a Sandbox Apple Account set to the 1-
 - **Expected:** no "Help us make it better?" sheet ever appears; Settings, Privacy has no usage switch; no request to any PostHog host (or any analytics host) in the traffic. The only network destinations are the docs, pack and speech model hosts, and Apple.
 - **Record:** TF-11 row: the hosts seen in the traffic.
 - **Update:** the data map and `docs/legal/app-store-privacy-labels.md` if any other host appears.
+
+## Part 4. Build 9 (8 Nov 2026)
+
+New block: ids are `RT-B9-01` to `RT-B9-13` in `docs/qa/release-test-catalog.csv`, one per candidate fix, so open pull requests cannot collide with existing ids. No existing row is renumbered. The founder's phone script is `docs/qa/TESTFLIGHT-BUILD-9-DEVICE-CHECK.md`; results go in the evidence file for the build as usual. Every row is planned and has not run.
+
+| Row | Fix (PR) | Test case | Expected |
+|---|---|---|---|
+| RT-B9-01 | DOB picker (#540) | Check lines 2 to 6 | One tap opens; saved day equals day tapped; follows app theme; no jump. Also V-02 and V-10 in S1-23 once #540 merges |
+| RT-B9-02 | Listen finishing (#595, BL-563) | Check lines 7 and 8 | Back in about 3 s, draft kept, no Let it go while finishing |
+| RT-B9-03 | Consent links (#589, BL-564) | Check line 37 | Terms and Privacy rows only, both live |
+| RT-B9-04 | Book month type (#544) | Check lines 27 and 28 | S1-38 once #544 merges |
+| RT-B9-05 | Listen reads the child once (#532, issue #480) | Check line 9 | 30-minute take is steady |
+| RT-B9-06 | Help rows (#519) | Check lines 23 to 26 | Call or copy sheet; V-10 hint |
+| RT-B9-07 | Tonight Plus line (#508) | Check lines 16 to 18 | Plain line, one held row |
+| RT-B9-08 | VoiceOver and primer (#523) | Check lines 10 to 12 | Silent take; primer first |
+| RT-B9-09 | Review survives a kill (#522) | Check lines 20 to 22 | Same text, view and put-back fix |
+| RT-B9-10 | Age gate confirm (#521) | Check lines 13 to 15 | Confirm before the stop is stored |
+| RT-B9-11 | Delete a book, Erase everything (#520) | Check lines 29 to 32 | Matches DL-01 |
+| RT-B9-12 | Plus offline and grace (#517) | Check lines 33 to 36 | Offline line; held letter; 7-day grace in AL-09 |
+| RT-B9-13 | Notes count (#510) | Check line 19 | Keep sheet on the third item |
 
 ## Facts and assumptions this plan rests on
 
