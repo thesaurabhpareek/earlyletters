@@ -5,6 +5,10 @@ Founder direction, 10 Nov 2026: each tab on the nav should be unique and serve v
 Tags: [read] = page opened this session, listed in section 8. [repo] = read in this repo. [UNVERIFIED] = not read, remembered, or seen only as a search-result title. [H] = hypothesis or judgement.
 Status: DRAFT. Nothing here is cleared by counsel. Anything about App Review is a question for the compliance lead, not a ruling.
 
+## Update, later on 10 Nov
+
+The founder changed direction after this was first written: a four-tab bar with a Home tab on the left (actions plus memories surfaced), a Me tab on the right holding all settings, and two middle tabs still to identify. Section 10 covers it with its own evidence, three candidate pairs and a default. Where it conflicts with R1 to R3 or with section 3's advice to take "A month ago" off Tonight, section 10 is newer and wins.
+
 ## Answer in five lines
 
 1. The outside evidence on this exact question is thin. Most of what is citable is practitioner guidance and vendor write-ups, not measured studies of tab bars. Treat sections 1 to 4 as principles with precedent, not proof. The Apple HIG tab bar page could not be read this session, so every HIG claim about tab bars is UNVERIFIED.
@@ -176,3 +180,115 @@ Repo files read: CLAUDE.md; packages/content/BRAND.md (glossary, positioning); p
 - The numbering "2.5.19" for the hidden, dormant, undocumented features rule: it came from the fetched text via the summariser and I did not see the page itself. Verify the number and the wording.
 - Competitor tab bars (Tinybeans, Qeepsake, Day One, Apple Journal, Apple Photos): UNVERIFIED. Store pages and release notes I read do not describe them.
 - Any figure for how often parents skip, tap, or abandon a tab, or for how much a coming-soon item helps or hurts: none found. No statistics in this document come from outside the sources above.
+
+## 10. Founder direction: Home, two middle tabs, Me
+
+Founder, 10 Nov (verbatim): "The navigation need to feel unique and carrying material info in each tab so one tab on right can be me which includes everything settings. Default home tab on left most is where you see actions memorities etc and then identify what other 2 tabs need to be that are relevant."
+
+Shape under study: [ Home | middle A | middle B | Me ]. Home = what to do now plus memories surfaced. Me = everything settings. Same tags as above ([read], [repo], [UNVERIFIED], [H]).
+
+### 10.1 What comparable apps put in their middle tabs [read]
+
+| App | Bar as I could read it | Middle tabs and what they hold | Right-most tab | Source |
+|---|---|---|---|---|
+| Slack mobile | Home, Direct messages, Mentions and reactions, You | DMs: a list of one-to-one conversations. Mentions and reactions: your mentions and reactions in one place. Both are views of the same stream sorted by what needs you | "You": status, away, snooze notifications, preferences | Slack blog [read] |
+| Apple Photos, iOS 26 | Library, Collections, Search | Collections: albums, memories and media types | None (no Me tab) | SlashGear [read] |
+| Apple Photos, iOS 18 | No tabs: one scrolling view, Library grid on top, Collections (Recent Days, People and Pets, Memories, Trips, Shared Albums and more) below | Not applicable | None | MacRumors guide and Six Colors [read] |
+| Day One (iOS 2025.6) | Journals and More were added "to simplify navigation"; I could not read the other tabs | Journals: all journals in one place. More: Notifications, On This Day, Daily Prompt, Add from Photo Library, Streaks | More (a catch-all, not settings) | Day One release note [read] |
+| Day One views | List, Calendar, Media, Map, "along the top of the app" | Not bottom tabs | | Day One guide [read] |
+| Tinybeans, Qeepsake, 1 Second Everyday, Apple Journal | The pages I read do not name any tabs. Tinybeans lists a date-sorted journal, family and friends page, photo books; Qeepsake sorts entries into a journal per child and prints books; 1SE describes a timeline, monthly view, compiled videos and reminders | UNVERIFIED | UNVERIFIED | App Store pages, Tinybeans FAQ, 1SE site [read] |
+
+What the table says, and what it does not:
+- The only comparable bars I could read are Slack's and Photos'. For baby, memory-book and journaling apps I could not read a single bottom bar. Their tab names and middle tabs are UNVERIFIED and need installs or screenshots.
+- Naming in what I read: content nouns (Library, Collections, Journals), a person-to-person word (DMs), a filter by attention (Mentions and reactions), and one catch-all ("More"). "You" is Slack's word for the profile tab. "Me" is not in anything I read.
+- Middle tabs earn their slot by being a different cut of the same material: a different grouping (Collections), a different filter (Mentions), a different container (Journals). Slack says Mentions became "a core part of daily usage" once it moved to a prominent spot [read, vendor claim, no data].
+- Evidence cuts both ways on tabs in a photo app: iOS 18 removed Photos' separate tabs for one scrolling view (Six Colors describes the old bottom tabs as something few people used; that is the article's framing, not data), and iOS 26 restored a bottom tab bar, with the article quoting Apple's Craig Federighi saying "Many of you missed using tabs in the Photos app" [read]. One product reversed itself within two releases. Neither direction is proven.
+
+### 10.2 How to keep each tab carrying unique information
+
+Principle [H, consistent with 10.1]: a tab is allowed to exist only if it shows something no other tab shows, and each piece of information has one home. Other tabs may link to it, never repeat it.
+
+| Tab | Its own material information (content, never counts) | Not allowed here |
+|---|---|---|
+| Home | The question for tonight, the unfinished letters, Speak and Type, and one surfaced memory (a letter from a month ago, a quiet day note) | The full list of letters, any setting, anything about the account |
+| Middle A | The whole book: months, letter cards, search later | Capture prompts, reminders |
+| Middle B | Depends on the pair (10.4) | |
+| Me | The person and the app: signature, account, children's books, reminders, lock, backup, export, Plus, help and legal | Letters, prompts, counts of anything |
+
+Rules that fall out of the repo's own constitution [repo]:
+- No counts, streaks, points, badges or "gaps" as the "material info" (CLAUDE.md content rules). That rules out the usual way apps make a tab feel alive. Material info here has to be words: the question, a real letter, a name, a date.
+- Home now owns "memories surfaced". This reverses section 3's suggestion to take "A month ago" off Tonight. It is consistent with the founder's wording. The cost moves to the Book: since Home shows a taste of the past, the Book's job must be the full, browsable, paper-like archive, or the "same" feeling returns. Keep the lamp on Home and make the Book paper (section 3, item 1).
+- A surfaced memory on Home opens the letter inside the Book; it does not create a second reading screen.
+
+### 10.3 What a Me tab typically holds, and what goes wrong
+
+What is typical [read]: Slack's You holds status, away, snooze and preferences, and Slack's stated reason is that these were in "a menu that was hard to discover and easy to forget". A Me tab earns its slot by making configuration findable. A catch-all like Day One's More holds features (prompts, On This Day, Streaks, photo import) beside notifications, which is a bucket, not a profile.
+
+What goes wrong (these are risks from the repo and from judgement, not findings from a source I read):
+1. Sprawl. The settings folder already has 21 screens: account, app-lock, appearance, backup, children (with sub-screens), delete-account, erase, export, language, legal, licenses, plus, privacy, recently-deleted, reminders, storage, struggling, struggling-elsewhere, where-letters-live, your-words, and an index [repo]. Putting all of that behind one tab without grouping makes a long list.
+2. Duplicated entry points. Files outside settings that route into settings screens today include the speech row, the reminder prime ask, the child switcher, content blocks, and the gear on the Book cover [repo]. If the gear stays and a Me tab is added, there are two front doors to the same room.
+3. A "More" bucket. Anything that does not fit another tab drifts into Me and the tab stops being about the person.
+4. Mixing a person's identity with app switches. Account and signature are about who writes; lock and appearance are about the phone.
+
+Proposed handling [H]:
+- Top of Me: the person ("From Mama", account) and each child's book as the first group.
+- Then at most five or six named groups (Reminders; Privacy and lock; Backup and export; Plus; Help and legal). Rare and heavy screens (Erase, Delete account, licences, Recently deleted, the two "struggling" pages) sit one level in, under their group.
+- One owner per setting. A contextual ask (reminder prime, speech download) opens that same Me screen; it does not ship its own copy of the control.
+- Remove the gear from the Book cover when Me ships, or make it open Me. One front door.
+
+### 10.4 Three candidate pairs for the middle two
+
+Home is fixed on the left, Me on the right. Middle pairs:
+
+| Pair | Bar | Evidence for | Evidence against | Open risk |
+|---|---|---|---|---|
+| 1. Book + Family | Home, Book, Family, Me | It is the existing design with Tonight renamed Home and Me added [repo]. Two distinct nouns: the archive and the people. Shared-journal-with-invited-family is the normal shape of this category (Tinybeans, Qeepsake store pages [read]). Slack's bar shows people-centred and content-centred tabs together [read] | Family is not usable yet, which is the empty-tab problem the founder raised. A tab with no action is the pattern section 4 recommends against | Ships empty until sharing works; fine as the destination bar, not as today's bar |
+| 2. Book + Read together | Home, Book, Read together, Me | A different posture from reading (phone down, bedtime, own voice) and real material to show: the letters that have a recording. Photos' Collections add curated playback to a library [read]. It is a v1.0 feature already (BRAND) [repo] | Our own rule: tabs navigate, they do not act (DESIGN_LANGUAGE H4) [repo]. Read together is currently a button on the Book cover, so a tab duplicates an entry point. No source I read puts playback in its own tab. The name must stay two words, capital R only (BRAND) | Risk of a tab that is one big Play button; the test must show whether it has enough to hold |
+| 3. Book + Children | Home, Book, Children, Me | Qeepsake sorts entries into a journal per child; Day One's Journals tab lists all journals in one place [read]. Children's books sit under settings today [repo], so this moves a heavy area out of Me and shortens it | For a one-child family this tab is a list of one, which fails "unique information". Adds a concept (books) for most parents | Only earns a slot for families with two or more children; could appear later, or be a row in Me |
+
+Not carried forward: a Search tab (Photos has one [read]; a small book does not need it yet); a Prompts or Ideas tab (Day One keeps Daily Prompt in More, the weakest slot [read]); a Keepsakes tab for print and export (printed books are not promised for v1.0 per BRAND [repo], and export is a settings row).
+
+### 10.5 Default and sequencing
+
+Default: Pair 1 as the destination, shipped in two steps.
+- Step 1 (now): Home, Book, Me. Three tabs, each with a job, each working. Family is out of the bar until sharing is usable; its coming-soon page remains behind a quiet row in Me and at invite entry points (section 4, pattern A). This answers "coming soon can be less prominent" and "the third is empty".
+- Step 2 (when co-parent sharing works): Family becomes the third tab, giving Home, Book, Family, Me, exactly the founder's four-tab shape with Me on the right.
+
+If the founder wants four tabs in the first build: use Pair 2 as a test candidate, not as a decision. It is the only option on the list with real content today, and it has the highest risk of duplicating the Book cover button. Pair 3 is not recommended for a first build.
+
+Why this default: it is the only pair where both middle tabs are distinct nouns with their own information, and it uses mechanisms already in the code (a tab left out of the bar when its feature is off, D-126) [repo]. Confidence that Pair 1 is the best long-run shape: low to medium; it rests on category precedent (store pages) and first principles, not on a study of tab bars.
+
+### 10.6 Names
+
+Evidence on names is thin. Home is Slack's word and a common one; it is generic where "Tonight" is warm and specific to this app's night-time use [H]. Me versus You: Slack uses "You"; the product addresses the parent as "you" in copy and signs letters "From Mama" [repo]. Test both with parents. Neither choice is backed by a source I read. Single-word labels stay (DESIGN_LANGUAGE H4) [repo].
+
+### 10.7 Additions to the five-parent test (section 6)
+
+Add to the same sessions, same consent and privacy rules:
+1. First-click on the four-tab bar: "Where would you turn on Face ID? Change the reminder time? Get your letters out as a file? See a letter from a few months back? Add tonight's letter?" Record first tap, hesitation, and any answer of "I would look in Me/You".
+2. Name probe: show the bar with "Me", then with "You", then with "Tonight" versus "Home". Ask what they expect behind each, without hinting.
+3. Home contents: show Home with and without a surfaced memory. "Does this feel like a place to add a letter, or a place to browse?"
+4. Me: show a grouped list versus a flat list. Ask them to find "delete my account" and "reminders". Count taps and wrong turns.
+5. If Pair 2 is run: ask what they expect to find behind "Read together" as a tab, and whether it feels like a button or a place.
+Bars (written before data, N=5, directional): at least 4 of 5 pick Me/You for settings tasks on the first tap; at most 1 of 5 expects letters or prompts inside Me; at least 4 of 5 describe Home and Book differently without prompting.
+
+### 10.8 Sources opened for this section
+
+- Slack blog (above, section 8).
+- SlashGear, iOS 26 Photos tab bar: https://www.slashgear.com/1887900/iphone-photo-app-ios-26-returning-features-fix-biggest-user-complaint
+- Six Colors, iOS 18 Photos Collections: https://sixcolors.com/post/2024/09/in-ios-18-photos-brings-collections-to-the-fore/
+- MacRumors, iOS 18 Photos guide: https://www.macrumors.com/guide/ios-18-photos/
+- Day One iOS guides index (read; did not name the tabs): https://dayoneapp.com/guides/day-one-ios/
+- Tinybeans FAQ (read; names no sections): https://tinybeans.com/faqs
+- Tinybeans help, What is Tinybeans (read; names no sections): https://tinybeans.helpscoutdocs.com/article/11-what-is-tinybeans
+- 1 Second Everyday home page (read; features only): https://1se.co/
+- Repo: apps/mobile/src/app/settings/ directory listing, files that route to settings, packages/content/BRAND.md lines on Read together, print and export.
+
+### 10.9 UNVERIFIED and blocked for this section
+
+- Bottom tabs of Tinybeans, Qeepsake, 1 Second Everyday, Apple Journal, Huckleberry and Day One's remaining tabs: UNVERIFIED. The pages I could read describe features, not bars.
+- Blocked, not read: Apple Photos support page and Google Photos help (not in the allowed URL set), and the Qeepsake help centre article on its mobile app (permission not answered in time).
+- The claim in Six Colors that few people used the old Photos tabs is the article's own characterisation, passed to me through a summary; I did not see the sentence itself. Treat as opinion.
+- Whether Notion's mobile bar is relevant: the page I read describes a four-item bar (Home, AI Chats, Meeting Notes, Inbox) with no date and no profile tab; I did not use it.
+- Apple HIG on tab bars, still UNVERIFIED (section 9). Nothing here relies on it.
+- No data was found on how often people open a profile or settings tab, nor on any measured effect of a Me tab. No statistics in this section come from outside the sources above.
