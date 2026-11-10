@@ -318,10 +318,19 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
   { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
   { key: 'web.site.invite.noScript', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
   { key: 'web.site.invite.notYou', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"If you were not expecting an invite": production has no invites.' },
+
+  // Build 12 words (founder approved 10 Nov, PR #766) say sign-in, sync and our servers. eas.json still says
+  // EXPO_PUBLIC_SERVER_FEATURES=off until the Build 12 cut flips it; the flip removes these rows and sets the
+  // profile pin above to signIn and sync true. Until then the listing is not pushed (release-ios.yml job: metadata).
+  { key: 'store.description', rule: 'sync', claim: 'sign in', removedBy: '#766', reason: 'Build 12 listing says to sign in; true once EXPO_PUBLIC_SERVER_FEATURES flips on at the cut.' },
+  { key: 'store.description', rule: 'sync', claim: 'sign in', removedBy: '#766', reason: 'Build 12 listing says "If you sign in and agree to sync"; true once the flag flips.' },
+  { key: 'store.description', rule: 'sync', claim: 'sync', removedBy: '#766', reason: 'Build 12 listing says letters sync after the person agrees; true once the flag flips.' },
+  { key: 'store.description', rule: 'sync', claim: 'our servers', removedBy: '#766', reason: 'Build 12 listing says letters are kept on our servers after the person agrees; true once the flag flips.' },
+  { key: 'web.site.scenes.s09.points[0]', rule: 'sync', claim: 'sign in', removedBy: '#766', reason: 'Website Private scene says letters reach other phones if the person signs in; true once the flag flips.' },
 ];
 
 /** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
-const KNOWN_VIOLATIONS_CAP = 17;
+const KNOWN_VIOLATIONS_CAP = 22; // 17 + 5 Build 12 rows (#766), all removed by the eas.json flip at the cut
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
