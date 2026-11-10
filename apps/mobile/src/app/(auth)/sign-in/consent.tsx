@@ -99,7 +99,7 @@ export default function ConsentSteps() {
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name || k.childFallback;
-  // What comes after the answer is the merge-back rule's (lib/first-run/merge-back.logic.ts, NX-36 4.2): agreed with
+  // What comes after the answer is consentHandoff's (lib/first-run/handoff.logic.ts, NX-36 4.2): agreed with
   // letters on this phone, the claim screen first and nothing uploaded before it; declined, the book still opens.
   const handoff = consentHandoff({ status: s.status, sync: s.status === 'ready' ? s.sync : null, claimPending: auth.claimPending });
   const claiming = handoff === 'askClaim';

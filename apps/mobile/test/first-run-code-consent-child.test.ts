@@ -94,12 +94,21 @@ describe('[NX-36-S6] the sensitive-data consent sheet', () => {
     expect(consentHandoff({ status: 'ready', sync: 'on', claimPending: false })).toBe('continue');
     expect(consentHandoff({ status: 'needsConsent', sync: null, claimPending: false })).toBe('continue');
   });
-  it('[NX-36-S6] the sheet asks the merge-back rule (merge-back.logic.ts) for the claim step, and uploads nothing itself', () => {
+  it('[NX-36-S6] the sheet asks consentHandoff for the claim step, and uploads nothing itself', () => {
     const c = uncomment(consent);
     expect(c).toMatch(/consentHandoff\(\{/);
     expect(c).toMatch(/const claiming = handoff === 'askClaim'/);
     expect(c).not.toMatch(/lib\/sync|startSync|syncAllowed/);
-    expect(src('lib', 'first-run', 'handoff.logic.ts')).toMatch(/from '\.\/merge-back\.logic'/);
+    // consentHandoff states its own two-line rule; it does not borrow merge-back.logic (that file's cases 4 and 5 are not shipped).
+    expect(src('lib', 'first-run', 'handoff.logic.ts')).not.toMatch(/merge-back\.logic|mergeBack\(/);
+  });
+  it('[NX-36-S6] consentHandoff over every input: the claim screen only for agreed + ready + letters on this phone, keep only for a decline', () => {
+    for (const status of ['restoring', 'signedOut', 'signingIn', 'checkingConsent', 'needsConsent', 'ready', 'signingOut'] as const)
+      for (const sync of ['on', 'off', 'unknown', null] as const)
+        for (const claimPending of [true, false]) {
+          const want = status !== 'ready' ? 'continue' : sync === 'off' ? 'keepOnPhone' : sync === 'on' && claimPending ? 'askClaim' : 'continue';
+          expect(consentHandoff({ status, sync, claimPending }), `${status}/${sync}/${claimPending}`).toBe(want);
+        }
   });
   it('[NX-36-S6] Agree and Keep on this phone stay the same size, stacked, not pre-selected, with the registered words', () => {
     expect(consent).toMatch(/label=\{sc\.agreeButton\}/);
