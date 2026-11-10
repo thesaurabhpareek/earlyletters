@@ -1,8 +1,8 @@
 ---
 title: Early Letters App Privacy answers, privacy manifest and permission strings
-version: 2.1.0
+version: 2.2.0
 status: draft-for-counsel
-last_updated: 2026-10-31
+last_updated: 2026-11-08
 effective_date: TBD
 owner: founder
 reviewers: outside privacy counsel (TBD), iOS engineer
@@ -10,7 +10,9 @@ reviewers: outside privacy counsel (TBD), iOS engineer
 
 # App Privacy answers, privacy manifest and permission strings
 
-Drafted for counsel. Not legal advice. Version 2.1.0 describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (3.0.0) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
+Drafted for counsel. Not legal advice. Version 2.2.0 keeps the 2.1.0 text of sections 1 to 3.4, which describes the v1.0 build under option B (founder, 15 Oct 2026; D-100): sign-in, sync and co-parent sharing with two parents per book, with encrypted recording backup and a recovery key we hold once backup ships. The subscription status report, reminder emails, push notifications and new-device notices are planned but not built (checked 16 Oct 2026; COUNSEL_PACKET section 0), so the answers below leave them out and section 3.4 says what changes when each ships. There is no analytics SDK in v1.0 (D-095). These answers are statements to Apple: re-check each one against the release build before every submission, and keep them in line with the Privacy Policy (3.0.0) and the privacy manifest. Counsel approves this draft before App Store Connect is filled in (F17 section 8.5, F21-REQ-007; COUNSEL_PACKET Q54).
+
+**2.2.0 (8 Nov 2026), build 12.** The founder's answer of 8 Nov, relayed by the coordinator, is that build 12, the first public store build, runs with server features on against the production Supabase project. No `docs/DECISIONS.md` entry records it yet, and `apps/mobile/eas.json` `production` still writes servers `off` (`docs/release/BUILD12-GAP-MAP-2026-11-08.md` section 0). Section 3.5 gives the draft answers for that build, with backup and the status report off unless founder decisions F-8 and F-9 in the store 1.0 drafts say otherwise. They follow the draft Privacy Policy 1.0.0 (`docs/legal/drafts/store-1.0/privacy-1.0.0.md`). [COUNSEL Q S-28 (packet Q54): approve section 3.5.]
 
 ## 1. Apple's rules we rely on
 
@@ -80,8 +82,37 @@ All purposes use Apple's names. "Linked" means linked to the user's identity. Ev
 | Backup on (`capabilities.backup`) | Audio Data Yes and Device ID Yes |
 | Status report on | Purchase History Yes; Email Address purpose adds reminder emails |
 | New-device notice on | Device ID Yes (`account_sessions_seen`) |
-| Build 1 (`testflight` profile) and the first store build (`production` profile): server features off (D-121) | Only what the build still sends (the download hosts, section 3.2); the D-088 answer (no data collected) is the working default for the first store build, subject to counsel (D-121 item 3); with sign-in off there are no Contact Info, Identifiers, Purchases or User Content rows. Re-run this file before submitting one |
+| Build 12 (`production` profile, server features on, founder 8 Nov 2026, not yet in `eas.json`) | Section 3.5 |
+| Build 1 (`testflight` profile), and the first store build as D-121 planned it (`production` profile, server features off; replaced for build 12 by the 8 Nov answer) | Only what the build still sends (the download hosts, section 3.2); the D-088 answer (no data collected) is the working default for the first store build, subject to counsel (D-121 item 3); with sign-in off there are no Contact Info, Identifiers, Purchases or User Content rows. Re-run this file before submitting one |
 | A later build with opt-in analytics (v1.1) | Add Usage Data and Diagnostics for Analytics, and Analytics on the identifier rows; the Linked or Not linked question (COUNSEL_PACKET Q7) returns |
+
+### 3.5 Draft answers for build 12 (draft, 2.2.0)
+
+Checked against `develop` at `1189fdff`. Every row is App Functionality, linked, not used for tracking. These answers hold only for a `production` build with `EXPO_PUBLIC_SERVER_FEATURES=on`, `EXPO_PUBLIC_BACKUP` and `EXPO_PUBLIC_STATUS_REPORT` off, `EXPO_PUBLIC_ANALYTICS` off, and no `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` or `EXPO_PUBLIC_PASSKEYS`. Any other build means re-running this section.
+
+| Question or category | Data type | Build 12 answer | Evidence |
+|---|---|---|---|
+| Collect data? | | **Yes** | Accounts and sync (`lib/capabilities.ts`; `lib/auth`; `lib/sync`) |
+| Tracking? | | **No** | No ad SDK, no IDFA or IDFV, `NSPrivacyTracking` false |
+| Contact Info | Name | **Yes** | `profiles.display_name`, `profiles.signs_as`; the name Apple shares at first sign-in (`scribe.auth.pendingName`). Google is not in this build |
+| Contact Info | Email Address | **Yes** | Supabase Auth user; sign-in codes and links; the deletion requested, cancelled and completed emails (`purge-worker/account.ts`). No Plus emails (status report off) |
+| Sensitive Info | Sensitive Info | **Yes** | `children.due_date` syncs once the person agrees to sync (Apple names "pregnancy or childbirth information") |
+| User Content | Other User Content | **Yes** | Letter text, `raw_transcript` and `machine_edits` (author-only), earlier versions, held letters, names and words, child name, nickname and birthday, book membership |
+| User Content | Audio Data | **No** | Backup off (F-8 option A). Recordings stay on the phone and in the person's iPhone backup |
+| User Content | Photos or Videos | **No** | No photo picker in `apps/mobile/package.json`; the `entry-photos` and `child-photos` buckets are not reachable from the app |
+| User Content | Customer Support | **No** | Help opens Mail with our address and a fixed subject (`help-links.logic.ts`); the person sends the email outside the app. [COUNSEL Q S-2] |
+| Identifiers | User ID | **Yes** | Supabase account id |
+| Identifiers | Device ID | **No** | `backup_devices` is used only with backup on. No IDFV |
+| Purchases | Purchase History | **No** | Status report off; `subscription_status` and `subscription_consents` are written only by it (`billing/actions.ts`, `capabilities.statusReport`) |
+| Financial Info, Location, Contacts, Health and Fitness, Browsing, Search, Usage Data, Diagnostics, Surroundings, Body, Other | all | **No** | As section 3.2. No analytics or crash SDK. Apple's own crash sharing ("Share with App Developers") is Apple's collection; the Privacy Policy discloses it. [COUNSEL Q S-13] |
+
+**IP addresses.** Supabase (API and its sign-in log), Cloudflare R2 (packs.earlyletters.app), Hugging Face and Vercel see an IP address with each request. No row declares them: none is used to work out a location, and our code stores none. The founder has still to confirm log retention at Cloudflare and Supabase. [COUNSEL Q S-1 (packet Q12): is the Supabase sign-in log's IP address "collected" Coarse Location or another data type?]
+
+**Expected label for build 12:** Data Linked to You: Contact Info (Name, Email Address), Sensitive Info, User Content (Other User Content), Identifiers (User ID). Data Used to Track You: none. Data Not Linked to You: none.
+
+**Manifest for build 12:** the 2.1.0 section 4 block without the AudioData, DeviceID and PurchaseHistory entries. `privacyManifest()` in `apps/mobile/src/lib/privacy-manifest.ts` must produce exactly that when `serverFeatures` is true and backup and the status report are off; recheck it before the upload.
+
+**Privacy Policy URL:** the address founder decision F-4 picks for Privacy 1.0.0 (`/privacy` serving 1.0.0, or `/legal/privacy/1.0.0`).
 
 ## 4. Privacy manifest (`PrivacyInfo.xcprivacy`)
 
@@ -112,7 +143,7 @@ Required-reason API declarations stay as 1.3.0 listed them (UserDefaults CA92.1,
 |---|---|---|
 | `NSMicrophoneUsageDescription` | {app} uses the microphone to record the letters you speak to your child. | **Changed in 1.4.0.** The second sentence ("Your recordings stay on this phone.") is dropped: a purpose string is shown to every user and must be true whatever their backup setting (F08-REQ-036, R4 PT-01). Request to the content owner (S16) for `packages/content/src/permissions.en.ts` and `apps/mobile/src/lib/permission-copy.ts`; both files on develop still carry the second sentence today (strings are held, not changed here). If denied, the app shows `The microphone is off. Turn it on in Settings, or type this one.` (`errors.micDenied`, with "Type instead" and "Open Settings"; merged from develop, 31 Oct 2026). The microphone is asked the first time someone taps record, never at launch |
 | Notifications | No Info.plist string | iOS shows its own prompt after our priming card. Used for writing reminders and plan reminders, both scheduled on the phone. Server pushes (co-parent letter notices, backup restore requests) are planned, not built; when they ship they carry no letter text and no names |
-| `NSFaceIDUsageDescription` | Not used unless the app lock ships (F17, P1) | If it ships: "{app} uses Face ID to open the app and confirm it's you." Needs a LEGAL-REQ-007 amendment (F17 Q3) |
+| `NSFaceIDUsageDescription` | {app} uses Face ID to open your book and confirm it is you. | **Changed in 2.2.0.** The app lock ships (#640, in build 11; off until the parent turns it on). The string is the one in `packages/content/src/permissions.en.ts` and `apps/mobile/src/lib/permission-copy.ts` on develop; it replaces this file's earlier draft wording. Still needs counsel review or a dated founder deferral (LEGAL-REQ-007, F17 Q3; store review G7) |
 | Photos, camera, speech recognition, location, contacts, tracking | Not used | |
 
 ## 6. Check before each submission
@@ -126,11 +157,13 @@ Required-reason API declarations stay as 1.3.0 listed them (UserDefaults CA92.1,
 - [ ] No photo picker, no new SDK since the last review (`apps/mobile/package.json` diff).
 - [ ] Review notes describe sign-in, backup and the recovery key, and give a demo account with a two-parent book for the fictional child Asha (F21 6.4).
 - [ ] The Privacy Policy URL is live at the version the app links to.
+- [ ] Build 12: the `production` profile's switches match section 3.5, and the microphone string on develop no longer carries "Your recordings stay on this phone." (it still does on 8 Nov).
 
 ## Changelog
 
 | Version | Date | Change |
 |---|---|---|
+| 2.2.0 | 2026-11-08 | Draft answers for build 12, the first public store build, with server features on against production (founder, 8 Nov, relayed; no decision entry yet): new section 3.5, a build-state row, IP addresses at Supabase, Cloudflare, Hugging Face and Vercel, and the manifest for that build. Face ID row updated to the shipped app lock string. Checklist item for build 12. Draft for counsel (S-28, packet Q54). |
 | 2.1.0 | 2026-10-31 | Merge of develop (31 Oct 2026): microphone-denied string added to the permission row. Analytics wording made exact (no `posthog-react-native` dependency; analytics and status report off in every `eas.json` profile, D-095, D-121). Purchases row names the flag. Build-state rows map to the `testflight`, `preview` and `production` profiles; first store build has the D-088 working default. Privacy choices URL moved to /privacy (the /delete-account page was removed from the website). Version 2.1.0 because 1.4.0 is this branch's own draft and 2.0.0 is used by another branch (POLICY_VERSIONING 2.4). Record only. |
 | 1.4.0 | 2026-10-16 | Drafted for option B (founder, 15 Oct 2026; D-100; F17 8.5, R4 PT-24): Audio Data Yes (backup with a recovery key we hold, D-102); Purchase History Yes for App Functionality (status report, D-080, D-081); Email adds billing reminders; Device ID added (random install ID for backup and new-device notices; counsel to confirm); Usage Data and Diagnostics No (no analytics SDK in v1.0, D-095); every row App Functionality; microphone string drops "Your recordings stay on this phone."; build-state variants; manifest to match. The 2.0.0 answer of pull request #81 ("Data Not Collected", on-device build, never merged) is superseded and kept only in this history. 16 Oct (review of PR #163): Audio Data, Device ID and Purchase History are No until backup and the status report are built; push tokens and new-device notices are not built; download hosts follow #126. Draft for counsel. |
 | 1.3.0 | 2026-10-03 | Draft for the signed-in build without backup or the status report, with opt-in analytics and the Linked analysis. Earlier text and its changelog are in git history. |
