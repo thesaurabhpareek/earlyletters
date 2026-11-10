@@ -1182,3 +1182,41 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 29: a consent record carries the build, the OS major version, the words shown and their language (8 Nov 2026, data-architect, BL-577)
+
+`20261108000000_consent_record_fields.sql`. Before this file a consent record could not tell build 1 from build 2 (both "1.0.0"), and a sheet act could be recorded with no hash of the words shown and no language (PRIV-R21).
+
+What it changes:
+- **`policy_acceptances.app_build`** (L2, the EAS build number) and **`policy_acceptances.os_major`** (L2, the major OS version only). `locale` now means the language of the text shown.
+- **`record_policy_act`** takes `p_app_build` and `p_os_major` last, both optional. The old function is dropped and the new one created, so the API sees one candidate. Today's app records exactly as before.
+- **Sheet acts** (`signin_sheet`, `consent_sheet`, `reconsent_sheet`) need `rendered_sha256` and `locale` (23502) when the call carries a build number, and for every call once `app.consent_fields_required` is on. Existing rows are untouched; pseudonymisation at account deletion still works on them.
+- **`policy_acceptances_guard`** also freezes the two new columns.
+- Tests: `consent_record_fields` (new); `data_governance` looks the function up by name.
+
+**Apply** after file 27 (and file 28 if it is applied first; they touch different objects). Changes one function signature; drops no data. **Check:** `select pg_get_function_identity_arguments('public.record_policy_act'::regproc);` ends in `p_app_build text, p_os_major integer`, and a sign-in on the current TestFlight build still records its acts. **Do not turn on yet:** `alter database postgres set app.consent_fields_required = 'on';` only after the shared record builder (BL-577, app half) ships and no older build is in use; from then an older build's sheet act is refused. **Rollback:** see the file header; only before any row carries `app_build`.
+
+## File 30: a deletion request id still finds the person's pseudonymised consent rows (8 Nov 2026, data-architect, BL-578)
+
+`20261108010000_deletion_subject_hash.sql`. Before this file `finalize_account_deletion` nulled the request's `profile_id` and kept no hash; the only link from a request to the consent rows was the raw account id in `purge_ledger`, which is trimmed after 60 days. From day 61 the request id in the receipt email found nothing, though the rows are kept 3 years.
+
+What it changes:
+- **`deletion_requests.subject_hash`** (L3): the same peppered SHA-256 as the consent rows, set when the request completes (and on the person's earlier completed or cancelled requests). It goes with the request after 3 years, as the consent rows do.
+- **`finalize_account_deletion`** refuses (55000, nothing changed) when `app.consent_pepper` is missing or short, like the pseudonymise triggers. Otherwise unchanged.
+- **`public.ops_deletion_consent_records(p_request)`**, service role only: the request's status and dates and the person's rows in `policy_acceptances` and `subscription_consents`, without account id or hash. An unknown id or a book request is P0002. The runbook that calls it writes its own `ops.audit_log` row (`ops_audit_write`).
+- An index on `policy_acceptances (subject_hash)` for pseudonymised rows.
+- Tests: `deletion_subject_hash` (new); `grants.mjs` lists the new service-role function.
+
+**Apply** after file 29 (or file 27; they touch different objects). Adds one column, one index and one function; redefines `finalize_account_deletion`. Deletions completed before this file keep no hash; for those under 60 days old, `purge_ledger` still holds the id. **Check:** `select public.consent_pepper_ready();` is true first; then `select public.ops_deletion_consent_records('<a completed request id>');` from the SQL Editor returns its rows. **Rollback:** see the file header.
+
+## File 31: the audit and consent tables refuse rewrites and truncation (8 Nov 2026, data-architect, BL-585)
+
+`20261108020000_audit_append_only.sql`. Before this file `audit_events` had no row guard, and `policy_acceptances` and `ops.audit_log` had no truncate guard (a row guard never stops TRUNCATE). No API role holds these privileges; the guards protect against the owner's own paths (a migration, a definer function, the SQL Editor).
+
+What it changes:
+- **`audit_events`**: UPDATE and DELETE fail with SCIMM, except `finalize_account_deletion` nulling the purged person as actor or as a `profile` or `membership` subject (nothing else in the row may change), and the 24-month retention delete while `app.retention_purge` is on.
+- **`purge_due`** turns `app.retention_purge` on before its `audit_events` delete instead of after it. Nothing else in it changes.
+- **TRUNCATE** fails with SCIMM on `audit_events`, `policy_acceptances` and `ops.audit_log`, as on `subscription_consents`.
+- Tests: `audit_append_only` (new).
+
+**Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.

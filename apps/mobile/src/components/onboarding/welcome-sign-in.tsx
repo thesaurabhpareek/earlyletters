@@ -71,7 +71,7 @@ export function WelcomeSignIn() {
   const [busy, setBusy] = useState<AuthMethod | null>(null);
   // Set before the first await: a second tap in the same frame starts no second sign-in.
   const inFlight = useRef(false);
-  const invited = invitedDoorShown({ alpha: PLUS_ALPHA, coParent: visibleCoParentDoors(capabilities.coParent).joinButton });
+  const invited = invitedDoorShown({ alpha: PLUS_ALPHA, coParent: visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA).joinButton });
 
   // The existing consent sheet reads this to know how sign-in began.
   useEffect(() => setSignInTrigger('sign_in'), []);
