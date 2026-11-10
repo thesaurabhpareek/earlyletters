@@ -28,6 +28,10 @@ export const firstRunCopy = {
 
   auth: {
     title: 'Start your book',
+    // Journey Option A (FIRST-RUN-AND-SIGN-IN-JOURNEY section 2.4, founder: "log in or sign up"): the Welcome heading names
+    // creating and signing in, because they are one flow. Added by the tier A mobile PR; COUNSEL-READ not needed (no promise).
+    // The words doc prefers `title` above and one verb; the founder picks. The Welcome reads this key, so swapping needs no code.
+    titleBoth: 'Create your account or sign in',
     // SERVERS-ON, COUNSEL-READ: true of sync, which production has off until eas.json flips.
     body: 'Sign in once and your letters come with you to a new phone.',
     // One path in the code (shouldCreateUser), so one set of buttons and no "sign up" door.

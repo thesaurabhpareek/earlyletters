@@ -18,7 +18,7 @@ const get = (path: string): unknown => path.split('.').reduce<unknown>((o, k) =>
 
 const KEYS = [
   'story.skipButton', 'story.nextButton', 'story.startButton', 'story.backA11y', 'story.skipA11y', 'story.nextA11y',
-  'auth.title', 'auth.body', 'auth.newOrBack', 'auth.appleButton', 'auth.privacy',
+  'auth.title', 'auth.titleBoth', 'auth.body', 'auth.newOrBack', 'auth.appleButton', 'auth.privacy',
   'auth.codeExpired', 'auth.codePaused', 'auth.offline', 'auth.didNotFinish', 'auth.invalidEmail', 'auth.waitAMoment',
   'auth.notAvailable', 'auth.emailAlreadyUsed', 'auth.accountDeleted', 'auth.unknown',
   'lock.tryAgain', 'lock.lockedOut',
