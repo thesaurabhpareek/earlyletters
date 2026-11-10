@@ -2,7 +2,8 @@
  * The account-first Welcome (NX-36 S2; NX-31 R2, R8, R17): the first screen of a build with server features on, after
  * the age question. One screen, two doors of equal weight: Apple's own "Sign in with Apple" and "Sign in with email"
  * (solid accent), both 56 pt. A returning parent signs in with the same two buttons, so there is no third door. No
- * password, name or phone field. Top to bottom: lockup, descriptor (heading 1), body, one benefit line, then the footer:
+ * password, name or phone field. Top to bottom: lockup, heading 1 that names both creating an account and signing in
+ * (journey Option A: one flow, `firstRunCopy.auth.titleBoth`), the descriptor, the new-or-back line, then the footer:
  * the agreement line with its two links directly above the buttons, and "I was invited" where the build shows it.
  * At default sizes the footer is pinned; at accessibility sizes it sits in the scroll after the benefit line.
  *
@@ -27,13 +28,13 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { useFocusOnMount, useIsAccessibilitySize } from '@/lib/a11y';
 import { appleSignInAvailable } from '@/lib/auth/apple';
-import { authCopy } from '@/lib/auth/copy';
+import { authCopy, firstRunCopy } from '@/lib/auth/copy';
 import type { AuthMethod } from '@/lib/auth/machine.logic';
 import { setSignInTrigger } from '@/lib/auth/pending';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { AppleButton, Busy, ErrorLine, SHEET } from '@/lib/auth/ui';
 import { capabilities } from '@/lib/capabilities';
-import { copy, fill } from '@/lib/copy';
+import { copy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { inlineErrorKind, invitedDoorShown, welcomeErrorMessage } from '@/lib/first-run/welcome.logic';
@@ -124,17 +125,17 @@ export function WelcomeSignIn() {
           <WelcomeLockup label={o.title} style={{ marginTop: WELCOME_LOCKUP.top }} />
           <View style={{ marginTop: 32 }}>
             <Text ref={heading} variant="hero" asHeading={1} className="text-center">
-              {o.subtitle}
+              {firstRunCopy.auth.titleBoth}
             </Text>
           </View>
           <View style={{ marginTop: tokens.space[4] }}>
             <Text variant="body" tone="muted" className="text-center">
-              {fill(o.body, { child: copy.onboarding.childFallback })}
+              {o.subtitle}
             </Text>
           </View>
           <View style={{ marginTop: tokens.space[3] }}>
             <Text variant="callout" tone="muted" className="text-center">
-              {authCopy.sheet.bodies.sign_in_first}
+              {firstRunCopy.auth.newOrBack}
             </Text>
           </View>
         </View>
