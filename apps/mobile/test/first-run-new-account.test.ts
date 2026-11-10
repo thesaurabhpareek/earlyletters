@@ -182,7 +182,7 @@ describe('the child step identity line and Use another account', () => {
 
 describe('[NX-38-R6] claiming into an account that already has a book', () => {
   it('[NX-38-R6] nothing uploads before Keep in this account', () => {
-    const asked = mergeBack({ consent: 'accepted', claim: 'pending', accountHasBook: true, localKeptLetters: 4, destination: null });
+    const asked = mergeBack({ consent: 'accepted', claim: 'pending', accountHasBook: true, destination: null });
     expect(asked.phase).toBe('askClaim');
     expect(asked.uploads).toBe(false);
     const t = src('app/(auth)/sign-in/consent.tsx');
@@ -205,11 +205,11 @@ describe('[NX-38-R6] claiming into an account that already has a book', () => {
     expect(own).toContain("SELECT * FROM children WHERE server_state = 'local'");
     expect(own).not.toMatch(/destination/i);
   });
-  it('Build 12 does not use the merge-back phases for the existing book or a removed empty book', () => {
-    const five = mergeBack({ consent: 'accepted', claim: 'keep', accountHasBook: true, localKeptLetters: 3, destination: null });
+  it('Build 12 does not use the merge-back phases for the existing book, and no outcome removes a book', () => {
+    // #722's review fix: the rule has no kept-letter count and no field that could say "remove" (first-run-merge-back.test.ts).
+    const five = mergeBack({ consent: 'accepted', claim: 'keep', accountHasBook: true, destination: null });
     expect(five.phase).toBe('askDestination');
-    const four = mergeBack({ consent: 'accepted', claim: 'keep', accountHasBook: true, localKeptLetters: 0, destination: null });
-    expect(four.removesLocalBook).toBe(true);
+    expect(Object.keys(five)).not.toContain('removesLocalBook');
     const t = src('app/(auth)/sign-in/consent.tsx') + src('lib/first-run/handoff.logic.ts');
     expect(t).not.toMatch(/askDestination|removesLocalBook|saysEmptyBookRemoved|local_merge_choice/);
   });

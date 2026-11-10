@@ -68,8 +68,8 @@ import { authCopy } from '@/lib/auth/copy';
 import { useAuth } from '@/lib/auth/session-provider';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
 import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
+import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
@@ -118,7 +118,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolean }) {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false }: { localStartChosen?: boolean }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -132,7 +132,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
   const { state: authState, configured, account, signOut } = useAuth();
   const [start] = useState<Step>(() =>
-    firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen }),
+    firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
   );
   const accountFirst = start !== 'welcome';
   const [step, setStep] = useState<Step>(start);
@@ -182,12 +182,19 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   // welcome ends the wait.
   const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
   const joinLine = joining.line;
-  // Sign-in first (NX-31 R17, behind the server switch): with no session and no book, "Begin the book" waits, except
-  // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
-  const gateAllows = beginTheBookAllowed(
-    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0, localStartChosen }),
-  );
-  const showContinue = joining.begin && gateAllows;
+  // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
+  // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
+  // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
+  // The local start was chosen on the outage screen (route) or by tapping "Begin the book" here: either keeps the button.
+  const [chosenHere, setLocalStartChosen] = useState(false);
+  const localStartChosen = chosenOnOutage || chosenHere;
+  const showContinue = continueMayShow({
+    begin: joining.begin,
+    onWelcome: step === 'welcome',
+    authState,
+    localStartChosen,
+    hasLocalBook: () => listChildren().length > 0,
+  });
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
@@ -227,7 +234,11 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
     return () => clearTimeout(id);
   }, [step, shown]);
 
-  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const next = () => {
+    // "Begin the book" with no session is the local start (R18): remembered here, in memory, so the way back is not closed.
+    if (continueTapIsLocalStart({ onWelcome: step === 'welcome', authState })) setLocalStartChosen(true);
+    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  };
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));

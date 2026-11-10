@@ -7,7 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import type { AuthState } from '../src/lib/auth/machine.logic';
+import type { AuthErrorKind, AuthState } from '../src/lib/auth/machine.logic';
 import {
   LOCAL_START_FALLBACK,
   SIGN_IN_OUTAGE_MS,
@@ -156,10 +156,16 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
       expect(beginTheBookAllowed(gateInputsFromAuth({ serverFeatures: false, authState: { status }, hasLocalBook: false }))).toBe(true);
     }
   });
-  it('[NX-31-R17] the onboarding route asks the gate only through beginTheBookAllowed, which is true with the switch off', () => {
+  it('[NX-31-R17] the onboarding route asks the gate only through route.logic and composes nothing itself', () => {
+    // The behaviour is tested in first-run-route.test.ts. This pins that the route calls it with the pieces it owns.
     const src = readFileSync(join(__dirname, '..', 'src', 'app', 'onboarding.tsx'), 'utf8');
-    expect(src).toMatch(/beginTheBookAllowed\(/);
-    expect(src).toMatch(/const showContinue = joining\.begin && /);
+    expect(src).toMatch(/const showContinue = continueMayShow\(\{\s*begin: joining\.begin,\s*onWelcome: step === 'welcome',\s*authState,\s*localStartChosen,\s*hasLocalBook: \(\) => listChildren\(\)\.length > 0,\s*\}\);/);
+    expect(src).toMatch(/if \(continueTapIsLocalStart\(\{ onWelcome: step === 'welcome', authState \}\)\) setLocalStartChosen\(true\);/);
+    // No second copy of the composition, and the switch is not read in the screen.
+    expect(src).not.toMatch(/gateInputsFromAuth|beginTheBookAllowed/);
+    // The one other read of the switch is the opening step (handoff.logic firstRunStartStep, #728), never the gate's composition.
+    const reads = src.match(/serverFeaturesEnabled\(\)/g) ?? [];
+    expect(reads.length).toBe((src.match(/firstRunStartStep\(\{ serverFeatures: serverFeaturesEnabled\(\)/g) ?? []).length);
   });
   it('[NX-31-R17] while the session is being read the book cannot begin (no flash of a child step)', () => {
     const inputs = gateInputsFromAuth({ serverFeatures: true, authState: { status: 'restoring' }, hasLocalBook: false });
@@ -180,6 +186,75 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
     expect(inputs.signInFailed).toBe(true);
     expect(beginTheBookAllowed(inputs)).toBe(true);
     expect(beginTheBookAllowed({ ...inputs, localStartFallback: false })).toBe(false);
+  });
+});
+
+const KINDS_AS_OUTAGE: Record<AuthErrorKind, boolean> = {
+  // Sign-in cannot be reached (QA section 9: a 429 is an outage, not a wrong code).
+  network: true, rate_limited: true, email_wait: true, not_available: true, unknown: true,
+  // The sign-in did not finish, or the person stopped it: inline errors on screen 2, never the outage screen.
+  cancelled: false, expired: false, wrong_code: false, code_paused: false, invalid_email: false, provider: false,
+  session_expired: false, under_18: false, consent_unavailable: false, other_phone: false, other_phone_spent: false,
+  already_signed_in: false,
+};
+const AUTH_STATES: Record<AuthState['status'], { state: AuthState; session: boolean }> = {
+  restoring: { state: { status: 'restoring' }, session: false },
+  signedOut: { state: { status: 'signedOut' }, session: false },
+  signingIn: { state: { status: 'signingIn', method: 'email' }, session: false },
+  awaitingCode: { state: { status: 'awaitingCode', sentAt: 1 }, session: false },
+  checkingConsent: { state: { status: 'checkingConsent', userId: 'u', method: null }, session: true },
+  needsConsent: { state: { status: 'needsConsent', userId: 'u', method: null, steps: ['terms'] }, session: true },
+  ready: { state: { status: 'ready', userId: 'u', sync: 'on' }, session: true },
+  signingOut: { state: { status: 'signingOut', userId: 'u', reason: 'user', waitingForUploads: false, sync: 'on' }, session: true },
+};
+const fromAuth = (authState: AuthState, over: { hasLocalBook?: boolean; localStartChosen?: boolean } = {}) =>
+  gateInputsFromAuth({ serverFeatures: true, authState, hasLocalBook: false, ...over });
+
+describe('[NX-31-R18] which sign-in failures are an outage (gateInputsFromAuth)', () => {
+  it('[NX-31-R18] network, rate_limited, email_wait and unknown are outages: the local start is offered', () => {
+    for (const error of ['network', 'rate_limited', 'email_wait', 'unknown'] as const) {
+      const inputs = fromAuth({ status: 'signedOut', error });
+      expect(inputs.signInFailed, error).toBe(true);
+      expect(firstRunGate(inputs).step, error).toBe('outage');
+      expect(beginTheBookAllowed(inputs), error).toBe(true);
+    }
+  });
+  it('[NX-31-R18] wrong_code and cancelled are not outages: the person stays on sign-in, no local start', () => {
+    for (const error of ['wrong_code', 'cancelled'] as const) {
+      const inputs = fromAuth({ status: 'signedOut', error });
+      expect(inputs.signInFailed, error).toBe(false);
+      expect(firstRunGate(inputs).step, error).toBe('signIn');
+      expect(beginTheBookAllowed(inputs), error).toBe(false);
+    }
+  });
+  it('[NX-31-R18] every error kind is placed on one side (a new kind fails to compile here until it is)', () => {
+    for (const [kind, outage] of Object.entries(KINDS_AS_OUTAGE) as [AuthErrorKind, boolean][]) {
+      expect(fromAuth({ status: 'signedOut', error: kind }).signInFailed, kind).toBe(outage);
+    }
+  });
+  it('[NX-31-R18] only signedOut is read: a 429 on a code check (awaitingCode) belongs to the code screen, not the gate', () => {
+    expect(fromAuth({ status: 'awaitingCode', sentAt: 1, error: 'rate_limited' }).signInFailed).toBe(false);
+    expect(fromAuth({ status: 'signedOut' }).signInFailed).toBe(false);
+    expect(beginTheBookAllowed(fromAuth({ status: 'awaitingCode', sentAt: 1, error: 'rate_limited' }))).toBe(false);
+  });
+});
+
+describe('[NX-31-R17] which auth states count as a session (gateInputsFromAuth)', () => {
+  it('[NX-31-R17] checkingConsent, needsConsent, ready and signingOut are a session; the rest are not', () => {
+    for (const [status, { state, session }] of Object.entries(AUTH_STATES)) {
+      expect(fromAuth(state).hasSession, status).toBe(session);
+    }
+  });
+  it('[NX-31-R17] signingOut is a session: a parent in the middle of signing out is not sent back to sign-in', () => {
+    const inputs = fromAuth(AUTH_STATES.signingOut.state);
+    expect(inputs.hasSession).toBe(true);
+    expect(firstRunGate(inputs).step).toBe('childStep');
+    expect(beginTheBookAllowed(inputs)).toBe(true);
+  });
+  it('[NX-31-R17] a person with no session and no failure is held at sign-in, whichever waiting state it is', () => {
+    for (const status of ['restoring', 'signedOut', 'signingIn', 'awaitingCode'] as const) {
+      expect(beginTheBookAllowed(fromAuth(AUTH_STATES[status].state)), status).toBe(false);
+    }
   });
 });
 
@@ -207,5 +282,19 @@ describe('[NX-31-R22] a phone with a book is never locked out', () => {
   it('[NX-31-R22] the gate reads no input that could remove reading, recording or export: it only returns a step', () => {
     const src = readFileSync(join(__dirname, '..', 'src', 'lib', 'first-run', 'gate.logic.ts'), 'utf8');
     expect(src).not.toMatch(/from '@\/lib\/(store|export|capture)/);
+  });
+});
+
+describe('[NX-31-R17] gateInputsFromAuth treats a running route as age Yes only because the root gate comes first', () => {
+  it('[NX-31-R17] the root layout renders the age gate instead of the session and every route until it passes', () => {
+    expect(gateInputsFromAuth({ serverFeatures: true, authState: { status: 'signedOut' }, hasLocalBook: false }).ageAnswered).toBe('yes');
+    const layout = readFileSync(join(__dirname, '..', 'src', 'app', '_layout.tsx'), 'utf8');
+    const gateAt = layout.indexOf("gate.decision !== 'pass' ? (");
+    const sessionAt = layout.indexOf('<SessionProvider');
+    const stackAt = layout.indexOf('<Stack ');
+    expect(gateAt).toBeGreaterThan(-1);
+    expect(gateAt).toBeLessThan(sessionAt);
+    expect(sessionAt).toBeLessThan(stackAt);
+    expect(layout.slice(gateAt, sessionAt)).toContain('<AgeGateScreen');
   });
 });
