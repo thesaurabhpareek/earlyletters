@@ -1,6 +1,6 @@
 # NX-41: Unique tabs: Tonight, Book and the third place each do one job a parent can name
 
-Status: v1, 10 Nov 2026 (UTC). Docs only. Author: `product`, for the unique-tabs programme (brief: Karma). Build 13 scope, not Build 12. Nothing here is reserved in `DECISIONS.md`. NX-41 is the next free NX id (NX-40 is the highest on `develop` and on open PRs; NX-37 is unused). Backlog rows BL-898 to BL-905 are in `docs/BACKLOG.md` (ids from `scripts/agents/next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge, other teams may take the same numbers).
+Status: v2, 10 Nov 2026 (UTC), revised the same day for FOUR tabs after the founder's second message (section 4). v1 recommended three tabs (Tonight, Book, You); that is superseded. Docs only. Author: `product`, for the unique-tabs programme (brief: Karma). Build 13 scope, not Build 12. Nothing here is reserved in `DECISIONS.md`. NX-41 is the next free NX id (NX-40 is the highest on `develop` and on open PRs; NX-37 is unused). Backlog rows BL-898 to BL-905 are in `docs/BACKLOG.md` (ids from `scripts/agents/next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge, other teams may take the same numbers).
 
 Tag: EVIDENCE = a repo file, a PR file list or PR body read this session (named). HYPOTHESIS = anything about what a parent feels, wants or does, and every target number. UNVERIFIED = not read. Every promise or privacy line is COUNSEL-READ, not cleared.
 
@@ -51,18 +51,51 @@ The open stack in order: #699 (You tab) before #720 (three tabs when servers on)
 
 D-126 is the standing rule that the store build shows no "coming soon" surface; the 10 Nov decision relayed in #767 amends it for Build 12 to one coming-soon state (BL-882 in #767). R8 to R11 below are consistent with that and ask for the quieter version in Build 13.
 
-## 4. One job per tab (the core of this file)
+## 4. The four tabs (revision 2, 10 Nov, after the founder's second message)
 
-The jobs are proposals. Karma and the founder rule (section 10). The test of a job: a parent can say "I go to X to ..." in a sentence with a verb, and the sentence is not true of any other tab.
+Founder, 10 Nov, verbatim: "The navigation need to feel unique and carrying material info in each tab so one tab on right can be me which includes everything settings. Default home tab on left most is where you see actions memorities etc and then identify what other 2 tabs need to be that are relevant." This replaces the three-tab proposal of revision 1 (Tonight, Book, You). In this file "Tonight" still names today's Tonight screen, which becomes Home.
 
-| Tab | Job, in a parent's words (HYPOTHESIS) | Verb | The room | What it must not do |
+### 4.1 The model
+
+| Position | Tab | Job, in a parent's words (HYPOTHESIS) | Verb | Founder / source |
 |---|---|---|---|---|
-| Tonight | "I go to Tonight to say something to {child} now." | Say | Evening, forward-looking, unfinished. Shows today's prompt, Speak and Type, and anything not yet kept. Nothing finished lives here except at most one resurfaced past letter | Show the book's finished letters as a list; show a count or a to-do |
-| Book | "I go to the Book to read and hear what we have kept." | Read, hear | Paper, finished, backward-looking. Every kept letter, in months, with the recording beside it | Hold waiting drafts or the prompt as the main thing; start a capture as its main action |
-| You | "I go to You to look after the book and my account." | Look after | Quiet, administrative: who writes, sign in, plan, lock, export, delete, help | Hold anything the parent made |
-| Family (alpha builds with servers on only) | "I go to Family to see who writes to {child} with me." | Share | The real co-parent screens, as they exist | Appear in a build where it is only a promise |
+| 1, default | Home | "I come here to say something to {child} now, and to be reminded of what we kept." | Say, remember | Founder: "actions memories etc". Requirement: NX-43 |
+| 2 | Book | "I come here to read and hear what we kept, and to find a letter." | Read, hear, find | Recommended. F09, F10, F08; Find is F09-REQ-015 |
+| 3 | Moments | "I come here for the pictures and days around my letters." | Look back, add a picture | Recommended, gated. NX-39, NX-33 |
+| 4, right-most | Me | "I come here to look after my book, my account and who can see it." | Look after | Founder: "me which includes everything settings". NX-32, YOU-TAB-STATES |
 
-NX-30 proposes a fourth tab, Photos, and NX-39 specifies the Memory Library behind it. Neither is in Build 12 or committed to Build 13. If the founder rules that Photos ships in Build 13, its job is "I go to Photos to find the moments I lived and add them to a letter" and this file's tree becomes Tonight, Book, Photos, You (FD-2). If not, the Build 13 tree is Tonight, Book, You in a store build.
+Labels are `content`'s: "Home" and "Me" are the founder's words; "Tonight" and "You" are the current labels in code and tests (`copy.tabs`, `tab-labels.test.ts`); "Moments" is mine and a placeholder (BRAND.md glossary has no such word). Recommendation: "Home" over "Tonight" because the tab now holds memories as well as tonight's question (HYPOTHESIS); "Tonight" can stay as the greeting.
+
+### 4.2 My recommendation for the middle two: Book and Moments, with a three-tab ladder
+
+Reasons, in order:
+1. Book is the one tab every parent already needs and every capability that shipped feeds (C10 to C16 in NX-42). It keeps its job, gains Find (F09-REQ-015) and, later, Firsts (NX-44, a proposal) and the export and print entries. It is where the "material info" accumulates.
+2. The second candidate has to carry material on day one, not just after months of letters, or it repeats the founder's complaint of an empty tab. The only capability whose material comes from the parent's phone before they have written anything is the Memory Library (NX-39): their own pictures and dates (HYPOTHESIS that this is wanted; NX-39's own parent study BL-857 and BL-879 has not run). That makes Moments the strongest middle-two candidate on day one.
+3. Moments is also the most gated: counsel answers, device spikes (BL-843, BL-871, BL-872) and a parent study are open (NX-39 section 0). So the recommendation has a ladder: **if the Moments gates close for Build 13, four tabs (Home, Book, Moments, Me); if not, three tabs (Home, Book, Me).** We do not ship a tab that is only a promise; that was the Family tab's fault.
+4. Conflict: the design lead's draft (PR #789, head c5897792, 10 Nov) and NX-30a argued against a Photos tab (no photo feature in Build 12, PRD forbids photo-only entries, brand) and recommended three. Moments here is not photo-only entries: every picture belongs to a letter and the tab is a way to find days and attach (NX-39 R6 and the constitution check). The design lead is revising; I record the conflict and do not edit that doc.
+
+Candidates considered and why not (each a HYPOTHESIS; no parent evidence):
+
+| Candidate | Material on day 1 | Material at 80 letters | Why not the middle-two |
+|---|---|---|---|
+| Ideas (browse the 111 prompts by age) | Full | Full | Conflicts with F13-REQ-004 and REQ-005: a prompt counts as shown once, none repeats in 365 days, and an exhausted pool shows nothing. A browse view would either break that or show prompts the parent has seen. It also invites picking "unanswered" prompts, which is gap counting. Keep prompts on Home ("Another thought") |
+| Hear (play letters and Read together) | Empty | Rich | Overlaps Book: Read together is already on the Book cover band (F10) and playback is on each letter page. A tab for listening alone splits one object across two tabs |
+| Together / Family | Empty | Empty until co-parent is live | The founder's complaint. Co-parent is "coming soon" in Build 12 (BL-882), at most two parents per book (D-069). It lives under Me (People) |
+| Find | Empty | Rich | A feature of Book, not a place |
+| Firsts | Empty | Sparse | A proposal that may not be built (NX-44); a view inside Book |
+
+### 4.3 What each tab shows: first day versus many letters
+
+| Tab | First day (no letters) | Many letters (80+) | Never |
+|---|---|---|---|
+| Home | Date line, greeting, the prompt, Speak, Type, Not much today. No memory, no empty box | Same top; drafts folded into one row at two or more; one memory (a letter from a month or a year ago) as a flat row; the Plus line only if it applies | A list of kept letters, a count, a streak, "days since", a goal |
+| Book | Closed cover, "The first page is waiting.", a quiet button to Home | Months newest first, letter cards, Months sheet, Find a letter (if built), Read together, export entry | Starting a letter as its main action; waiting drafts as cards |
+| Moments (if shipped) | A short, true line about what it does and one button to choose a picture with the system picker (no permission needed, NX-39 P0); no library read until the parent says so | Letters that have a picture; "days away" cards only for a parent who switched suggestions on (P2b); date only on a card, never a place (NX-39 R16) | A count, a place on a card, a notification derived from the library (NX-39 R26, R27), a picture without a letter |
+| Me | Account card or Sign-in card, Plan, Children, Settings groups, Help; the People row only where co-parent is live or coming soon (one quiet row) | Same; the list does not grow | Anything the parent made; a nag, badge or colour change |
+
+### 4.4 Me, in one list (everything settings)
+
+Order proposed, from the existing Settings home (`settings/index.tsx` per the design lead's audit at #738) and the capability map (NX-42 C15, C22 to C43): 1 Account (or Sign in, or "On this phone"); 2 Plan (Plus); 3 Children (the books); 4 People (Who writes to {child}; one quiet "Coming soon" row where co-parent is not live, NX-41 R8 to R11); 5 Writing (spoken language, Your words, Reminders, Appearance); 6 Your letters (Where your letters live, Export, Recently deleted, Storage, Erase on a phone that never signed in); 7 Privacy and security (App lock, Privacy, analytics choice); 8 Delete account (only while signed in); 9 Help (Help, "If you are struggling" always present, Legal, About). No new row is invented; this is the existing list with People placed where co-parent now lives. Safety resources stay one tap from Me and are never behind a flag (D-034).
 
 ## 5. Requirements (Given, When, Then)
 
@@ -78,7 +111,7 @@ Ids are `NX-41-R#`.
 | R6 | Same facts, one place. Given a fact (a draft, a kept letter, a setting), Then there is one tab where it is the main object; other tabs may point to it with a word, never a count |
 | R7 | Labels. Given `copy.tabs` in `packages/content`, Then the labels stay single words from the BRAND.md glossary (HIG tab bars: single-word labels, `_layout.tsx` header); any new label is `content`'s, and passes `packages/content/test/rules.test.ts` and `tab-labels.test.ts` |
 | R8 | No tab is only a promise. Given a build where co-parent is not live (store builds; TestFlight if the founder agrees, FD-3), Then there is no tab whose body is the coming-soon presentation. The Family tab is not in the bar |
-| R9 | Coming soon, quiet. Given co-parent sharing is not live, Then it appears in one place only, on You, as one quiet row ("Write this book together", value "Coming soon"; the strings exist as `familyCopy.soon.settingsRow` and `status`), with no badge, no colour accent, no count, no date, no notify button (SET-08 stays), and it opens the existing sheet from `coparent-soon.tsx` with its Close |
+| R9 | Coming soon, quiet. Given co-parent sharing is not live, Then it appears in one place only, in Me (People), as one quiet row ("Write this book together", value "Coming soon"; the strings exist as `familyCopy.soon.settingsRow` and `status`), with no badge, no colour accent, no count, no date, no notify button (SET-08 stays), and it opens the existing sheet from `coparent-soon.tsx` with its Close |
 | R10 | Quiet means measurable. Given the You tab on a phone, Then the coming-soon row is not above the fold on the first screen of You in State A (signed in), is not larger than any neighbouring row, and uses the muted text token. Judged on a device |
 | R11 | Never a dead end. Given a parent who opens the coming-soon row, Then they can close it in one tap and nothing is recorded about them; the existing content-free `coparent_soon_opened` (surface enum `tab`/`sheet`) is the only count and only fires for a parent who opted in |
 | R12 | Alpha stays whole. Given a `preview` build with servers on (`alpha` true), Then the Family tab with the real co-parent screens stays; this file removes only the promise-only presentation |
@@ -117,7 +150,7 @@ Format: As a ..., I want ..., so that .... Acceptance is Given/When/Then.
 | Id | Case | Required behaviour | Source |
 |---|---|---|---|
 | U1 | Servers off (store build before the stack, TestFlight build 1) | Tonight, Book work on the phone. No Family tab (R8) if the founder agrees (FD-3); otherwise the Family tab stays with the quieter treatment in Q2 | D-126; #720 |
-| U2 | Servers on, store build | Tonight, Book, You. Family hidden by `CO_PARENT_IN_STORE_BUILD = false` (#720); the coming-soon row is on You | #720 |
+| U2 | Servers on, store build | Tonight, Book, You. Family hidden by `CO_PARENT_IN_STORE_BUILD = false` (#720); the coming-soon row is on You (Me in revision 2) | #720 |
 | U3 | Signed out, no book yet | First run owns the screen (NX-40/NX-31); no tab bar before an account (NX-40-R1, H1). Not this file | NX-40 |
 | U4 | Signed out with a book (local start, or session ended) | Tonight and Book keep working (NX-31-R26). You shows State B or C: a Sign in card first, then the groups; the coming-soon row still sits below. The roles do not change | #738; NX-31-R26 |
 | U5 | Offline | Tonight, Book, You work. Rows that need the network say so in their own words; no tab shows an error as its first line | NX-31-R18 |
@@ -153,12 +186,12 @@ The tab changes ask nothing new of a parent. The one row that mentions a future 
 
 | Id | Decision | Recommendation | Default if no answer |
 |---|---|---|---|
-| FD-1 | The jobs in section 4: Say / Read / Look after | Accept as written; the design lead refines the rooms | Accept |
-| FD-2 | Does Photos (NX-30, NX-39) take the fourth slot in Build 13? | No. Build 13 is Tonight, Book, You; Photos waits for NX-39's gates (counsel, device spikes, parent study) and a ruling | No; revisit when NX-39 gates close |
+| FD-1 | The four jobs in section 4.1 and the labels Home and Me (content confirms) | Accept; the design lead refines the rooms | Accept |
+| FD-2 | The middle two tabs: Book and Moments (Moments is the Memory Library tab, NX-39), with the ladder in section 4.2: four tabs if the Moments gates close for Build 13, else three (Home, Book, Me) | Accept the ladder | Three tabs until the gates close |
 | FD-3 | Does the Family tab leave the bar in TestFlight and `testflight` profile too, or stay as a quieter tab there? | Leave the bar in every build that has co-parent off; the coming-soon row on You replaces it. Keep the tab only where servers are on in `preview` | Leave the bar |
 | FD-4 | Amend D-126: it says no coming-soon surface; Build 12 allowed one state; Build 13 asks for one quiet row. Draft entry proposed below | Yes, as Proposed text | D-126 stands as amended for Build 12 only |
 
-Proposed decision text (for the founder; not added to `DECISIONS.md`): "D-### (Proposed): From Build 13 the tab bar is Tonight, Book, You in every build where co-parent is off; the coming-soon presentation is a single quiet row on You, never a tab. Supersedes the Build 12 tab-level coming-soon state under D-126's amendment. Alpha builds with servers on keep the Family tab."
+Proposed decision text (for the founder; not added to `DECISIONS.md`): "D-### (Proposed): From Build 13 the tab bar is Home, Book, [Moments when its gates close], Me in every build where co-parent is off; the coming-soon presentation is a single quiet row in Me, never a tab. Supersedes the Build 12 tab-level coming-soon state under D-126's amendment. Alpha builds with servers on keep the Family tab."
 
 ## 11. Dependencies and collisions with the open stack, and the sibling doc
 
@@ -170,10 +203,10 @@ Proposed decision text (for the founder; not added to `DECISIONS.md`): "D-### (P
 | #740 Account sections (draft, stacked on #738) | same file set as #738 plus `account-sections.test.ts` | Same | Same |
 | #764 S17 tier 0 (draft, stacked on #738) | `(tabs)/book.tsx`, `letter-card.tsx`, `letter-card.logic.ts`, `gate.logic.ts`, `onboarding.tsx`, many others | It edits Book. BL-903 (Book) must wait for #764 | Order: after #764 |
 | #767 co-parent groom (BL-882) | one coming-soon state for every co-parent surface | R9 refines BL-882's state; the row and the sheet must be one definition | BL-901 cites BL-882 and does not duplicate it |
-| NX-30 four-button bar (branch `docs/nx-30-nav-landing-8nov`) | Proposes Tonight, Book, Photos, You; says option C needs #665 | Photos slot: FD-2 | If FD-2 says yes, NX-30's text wins on the fourth slot and this file's tree adds one tab |
+| NX-30 / NX-30a four-button bar (branches `docs/nx-30-nav-landing-8nov`, `docs/nav-eval-9nov`) | Proposed Tonight, Book, Photos, You; NX-30a later argued against Photos | Moments takes the Photos slot in revision 2 (FD-2) | The founder's 10 Nov model supersedes both on the left (Home) and right (Me) ends; the Photos question is FD-2 |
 | NX-39 Memory Library | Tonight card (date only), composer shelf | Adds a Tonight card from the library. R2 allows one resurfaced card; a library card must share that single slot or R2 needs a rewrite | Note for NX-39's order; not decided here |
 | NX-40 first run | `gate.logic.ts`, `use-first-run-route.ts`, `onboarding.tsx`, `book.tsx` (via #764) | No overlap in files for BL-898, 899, 900, 904; BL-903 waits for #764 | As above |
-| `NAV-TAB-ROLES-10nov.md` (design lead, `docs/nav-tab-roles-10nov`) | The rooms and R4's three differences | **Not on origin** when I wrote this, so nothing was read | BL-898: when it lands, record every difference in a "Reconciliation" section here (job sentences, the third place, Photos, the quiet row's place); where it and this file disagree on the job of a tab, the founder rules, not either author |
+| `NAV-TAB-ROLES-10nov.md` (design lead, PR #789, branch `docs/nav-tab-roles-10nov`) | The rooms and R4's three differences | Read at head c5897792 (first draft, three tabs; revision for four tabs pending). Aligned: one job per tab; Tonight lists no kept letters, Book starts nothing; waiting items as flat rows; coming soon as a row not a tab; Family not a tab. Conflicts: (a) it recommends three tabs and rejects a Photos tab (section 2.4, 3); (b) it puts People under You only while a co-parent or invite exists and the coming-soon row in the child's page, where this file puts one quiet row in Me (People); (c) it keeps the month-ago row only when nothing waits (NX-43 R6 differs) | BL-898: when it lands, record every difference in a "Reconciliation" section here (job sentences, the third place, Photos, the quiet row's place); where it and this file disagree on the job of a tab, the founder rules, not either author |
 
 ## 12. Conflicts and open points
 
@@ -190,11 +223,20 @@ Proposed decision text (for the founder; not added to `DECISIONS.md`): "D-### (P
 | Q1 | Is "a row on You" quiet enough, or does the founder want coming soon visible somewhere a parent sees more often? | Row on You, plus the existing child-settings row; nothing on Tonight or Book. Re-test with five parents (BL-900) |
 | Q2 | If FD-3 says TestFlight keeps the tab: what does the tab show? | The real, short You-like list "Who writes to {child}" with you alone and one quiet "Co-parent: coming soon" line, not a full-screen drawing |
 | Q3 | Should Book have any way to start a letter? | Only the existing empty-state "Write a letter" (goes to Tonight). Nothing on a book with letters |
-| Q4 | Should Tonight's "A month ago" card stay on Tonight, or move to Book as "This month last year" style? | Stay (it is a prompt to say something now); the design lead may disagree. Count it as Tonight's one resurfaced card |
+| Q4 | (revised 2) Should Home's "A month ago" card stay on Tonight, or move to Book as "This month last year" style? | Stay (it is a prompt to say something now); the design lead may disagree. Count it as Tonight's one resurfaced card |
+
+Added in revision 2:
+
+| Id | Question | Recommendation |
+|---|---|---|
+| Q5 | Is Moments the right second tab, given the gates? | Yes as the target, with the three-tab ladder; do not ship an empty or promise-only tab |
+| Q6 | Should the label be "Home" or stay "Tonight"? | "Home"; the greeting keeps the evening feel |
+| Q7 | Where does the coming-soon co-parent row live: Me (People) or the child's page (design lead)? | I lean to the design lead's child's-page row (it exists and needs no new surface), plus nothing in Me until co-parent is live. R9 and BL-901 are written for Me (People); they change if the founder picks the child's page. Default: Me (People) |
+| Q8 | Do Firsts (NX-44) get built? | Not in Build 13; study first |
 
 ## 14. UNVERIFIED list
 
-- Contents of `docs/design/specs/NAV-TAB-ROLES-10nov.md` and of any branch other than those named; the NX-30 branch was read in part (about the first 90 lines).
+- The design lead's revision for four tabs (only the first draft, head c5897792, was read, partly: about 260 of 467 lines); the contents of any branch other than those named; the NX-30 branch was read in part (about the first 90 lines).
 - What the founder saw on the TestFlight build; "third is empty coming soon" is read as the Family tab, which is my inference.
 - Code of #699, #720, #738, #740, #764 beyond file lists, PR bodies and the layout on the account-sections branch; whether their heads and order moved after 10 Nov.
 - Full definitions of the `book_opened` and `capture_started` events.
@@ -205,3 +247,4 @@ Proposed decision text (for the founder; not added to `DECISIONS.md`): "D-### (P
 ## 15. Trace
 
 R1 to R7: founder direction; DESIGN_LANGUAGE 12; IA.md; NX-30. R8 to R12: founder ("coming soon can be less prominent"), D-126, #720, #767, `coparent-soon.tsx`. R13: NX-31-R26. R14: NX-35. R15, R16: CLAUDE.md, D-124 item 3. Backlog: BL-898 (reconcile with the design doc and propose the D-### text), BL-899 (words), BL-900 (user-research read-through), BL-901 (third place: Family leaves the bar, one quiet row), BL-902 (Tonight), BL-903 (Book), BL-904 (QA rows), BL-905 (IA.md and device plan once the stack merges). Order in `docs/BACKLOG.md`.
+Revision 2 (four tabs): BL-906 to BL-915 (Home memory, labels, study, Find, Firsts, four-tab bar, QA, Moments gate); capability map NX-42; Home NX-43; Firsts NX-44.

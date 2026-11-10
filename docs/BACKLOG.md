@@ -3134,7 +3134,7 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 
 ### Unique tabs (NX-41, 10 Nov 2026)
 
-Written by `product`, docs only, Build 13 scope (not Build 12). Source: `docs/roadmap/next/03-requirements/NX-41-unique-tabs.md` (R1 to R16, stories H1 to H6, edge cases U1 to U12, founder decisions FD-1 to FD-4). Ids BL-898 to BL-905 come from `next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge. Order: BL-898, BL-899 and BL-900 can start now (docs and research). BL-901 waits for #699 and #720. BL-902 waits for #738 and #740. BL-903 waits for #764. BL-904 and BL-905 follow the code rows.
+Written by `product`, docs only, Build 13 scope (not Build 12). Revised the same day for four tabs (Home, Book, Moments, Me); BL-901 now puts the coming-soon row in Me (People); the new rows BL-906 to BL-915 follow the capability map (`NX-42`), Home (`NX-43`) and Firsts (`NX-44`). Source: `docs/roadmap/next/03-requirements/NX-41-unique-tabs.md` (R1 to R16, stories H1 to H6, edge cases U1 to U12, founder decisions FD-1 to FD-4). Ids BL-898 to BL-905 come from `next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge. Order: BL-898, BL-899 and BL-900 can start now (docs and research). BL-901 waits for #699 and #720. BL-902 waits for #738 and #740. BL-903 waits for #764. BL-904 and BL-905 follow the code rows.
 
 #### BL-898 Reconcile NX-41 with the design lead's NAV-TAB-ROLES doc and draft the D-### text
 - Status: blocked (`docs/design/specs/NAV-TAB-ROLES-10nov.md` not on origin on 10 Nov). Mode: agent. Owner: design systems. Milestone: M15. Size: S.
@@ -3154,10 +3154,10 @@ Written by `product`, docs only, Build 13 scope (not Build 12). Source: `docs/ro
 - Scope: three first screens with names hidden; ask what each tab is for; record verbs only, no parent details in the repo (fictional family "Asha" in any screenshot).
 - Done when: a note in `docs/research/` states how many of five matched section 4 for each tab, and whether the coming-soon row was found.
 
-#### BL-901 The third place: Family leaves the bar where co-parent is off, one quiet coming-soon row on You
+#### BL-901 The third place: Family leaves the bar where co-parent is off, one quiet coming-soon row in Me (People)
 - Status: blocked (#699, #720 merged; FD-3). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-899.
 - Satisfies: NX-41-R8, R9, R10, R11, R12.
-- Scope: use `CO_PARENT_IN_STORE_BUILD` and `familySurfacesShown` as #720 defines them; extend the rule to the `testflight` profile only if the founder rules (FD-3); one row on You below the account rows, muted, opening the existing sheet. Reuse BL-882's single coming-soon state (#767). Alpha with servers on keeps Family.
+- Scope: use `CO_PARENT_IN_STORE_BUILD` and `familySurfacesShown` as #720 defines them; extend the rule to the `testflight` profile only if the founder rules (FD-3); one row in Me (People) below the account rows, muted, opening the existing sheet. Reuse BL-882's single coming-soon state (#767). Alpha with servers on keeps Family.
 - Done when: `tab-bar.test.ts` pins tab names per profile (store 3, `preview` with servers 4) and a test shows the row is below the first account row and uses the muted token.
 
 #### BL-902 Tonight: only what is for now
@@ -3183,6 +3183,68 @@ Written by `product`, docs only, Build 13 scope (not Build 12). Source: `docs/ro
 - Satisfies: NX-41-R1.
 - Scope: one edit of the Tabs table in `docs/design/IA.md` and the tab rows in `docs/qa/DEVICE_TEST_PLAN.md`; four open PRs edit the same lines, so this waits for them.
 - Done when: the table lists each tab, its job sentence and the builds it appears in, matching the code.
+
+Four tabs and the capability map (revision 2). Order: BL-906 and BL-908 can start now; BL-907 waits for the design lead's four-tab revision and #738/#740; BL-909 and BL-913 can start now; BL-910 waits for the founder (F09 Q4); BL-911 and BL-912 wait for the founder (NX-44 FD-1); BL-914 follows code; BL-915 is a founder gate.
+
+#### BL-906 Home memory selection: a pure function with a property test
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: NX-43-R2, R3, R4, R9, R11.
+- Scope: one function from the local store, the local date and the Home setting to at most one letter; never a quiet day, a deleted or hidden letter, a letter still getting its words, or the same letter within 90 days of being opened or dismissed (number proposed). No UI.
+- Done when: the property test passes over a simulated two-year history.
+
+#### BL-907 Home: one memory as a flat row, "Not now", and the Settings switch
+- Status: blocked (BL-906; BL-908; the design lead's four-tab spec; #738 and #740 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-906, BL-908.
+- Satisfies: NX-43-R1, R5, R6, R7, R8, R10, R12.
+- Scope: the row below the drafts, opening the letter page; Not now for the day; the switch in Me (Writing). No new event. No change to `gate.logic.ts` or `book.tsx`.
+- Done when: tests pin that no count or list renders, the app-lock cover hides it, and a device check passes at AX5 and with Reduce Motion.
+
+#### BL-908 Words for Home's memory row, the Home and Me labels and the Moments placeholder
+- Status: blocked (FD-1 and Q6 in NX-41). Mode: agent. Owner: content. Milestone: M15. Size: S.
+- Satisfies: NX-43-R13, NX-41-R7.
+- Scope: "A month ago", "A year ago", "Read it", "Not now", the Settings switch line; the labels Home and Me; a candidate word for the third tab, each checked against BRAND.md and the glossary; no gap, guilt or counting language.
+- Done when: `rules.test.ts` and `tab-labels.test.ts` pass.
+
+#### BL-909 Five-parent read-through for Home and its memory, including a hard-day question
+- Status: needs-founder (recruiting). Mode: pair. Owner: user researcher. Milestone: M15. Size: S.
+- Satisfies: NX-43-R14, U11.
+- Scope: what is Home for; is the past letter welcome; does it ever land badly. Verbs only; no parent details in the repo; screens use the fictional family "Asha".
+- Done when: a note in `docs/research/` records the answers and a recommendation to keep, change or drop R3.
+
+#### BL-910 Find a letter, built from F09-REQ-015
+- Status: needs-decision (F09 Q4: search at v1.0 or later). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-903.
+- Satisfies: F09-REQ-015 (cited, not copied), NX-42-C13.
+- Scope: WP-F09-11 as written in `docs/prd/v2/features/F09-book.md`; local only; the query never leaves the phone or reaches a log; the `book_search_used` event only as the spec defines it (bucketed count, opt-in).
+- Done when: the F09 tests for REQ-015 pass on an iPhone SE 3 class device.
+
+#### BL-911 Firsts: founder decision and a five-parent study before any build
+- Status: needs-founder (NX-44 FD-1). Mode: pair. Owner: user researcher. Milestone: M15. Size: S.
+- Satisfies: NX-44 (all).
+- Scope: ask the founder whether Firsts is wanted; if yes, test whether parents understand it without a suggested list.
+- Done when: the founder's answer is recorded and, if yes, the study note names what changes in NX-44.
+
+#### BL-912 Firsts: the mark, the label and the view
+- Status: blocked (BL-911 yes; BL-910). Mode: agent. Owner: mobile engineer. Milestone: M16. Size: M. Depends on: BL-911.
+- Satisfies: NX-44-R1 to R12.
+- Scope: one boolean and up to 40 characters on the letter (a local migration; `data-architect` reviews the export schema move); the mark on the letter page; the view in Book; nothing appears with no firsts.
+- Done when: tests pin no count anywhere, no suggestion list, the words untouched, and export carries the fields.
+
+#### BL-913 The four-tab bar: Home, Book, third slot behind a switch, Me
+- Status: blocked (#699, #720, #738, #740 merged; FD-1, FD-2; the design lead's four-tab spec). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-901.
+- Satisfies: NX-41-R1, R7, R8, R12.
+- Scope: left-most Home (default), Book, a third slot that renders only when its switch is on and its gates are closed (otherwise the bar has three tabs), Me at the right; labels from `copy.tabs`; `tab-bar.test.ts` pins names and order per profile.
+- Done when: the test pins the tab list for store, `testflight` and `preview` profiles and a device shows the bar at AX5.
+
+#### BL-914 QA rows for Home's memory, Find, Firsts and the four-tab bar
+- Status: blocked (BL-907, BL-910, BL-913). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-913.
+- Satisfies: NX-43-R2, R9, R10; NX-41-R1.
+- Scope: Maestro and device rows for first day, 80 letters, a deleted memory, a locked app, two books, offline.
+- Done when: rows merged with an owner for each device-only row.
+
+#### BL-915 Moments gate: what must be closed for the third tab to ship in Build 13
+- Status: needs-decision (FD-2). Mode: agent. Owner: design systems. Milestone: M15. Size: S.
+- Satisfies: NX-41-R8; NX-39 gates.
+- Scope: list the NX-39 gate rows (counsel, BL-843, BL-871, BL-872, BL-857, BL-879) with their state on the Build 13 decision day and state ship or three-tab.
+- Done when: the founder's word is recorded in NX-41.
 
 ## Memory Library (NX-39 v2, 10 Nov 2026)
 

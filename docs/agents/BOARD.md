@@ -250,3 +250,4 @@ Every thread syncs to this order. PR state, heads and review counts are from the
 07:55 (10 Nov) content first-run words | claimed docs/design/specs/FIRST-RUN-WORDS-10nov.md on docs/first-run-words-10nov | done: draft PR
 10 Nov qa first-run test plan (docs/first-run-test-plan-10nov) | claim: docs/qa/FIRST-RUN-TEST-PLAN-10nov.md | status: done (docs only)
 10 Nov product unique tabs (docs/nav-tabs-requirements-10nov) | claim: docs/roadmap/next/03-requirements/NX-41-unique-tabs.md, BL-898 to BL-905 | status: done (docs only)
+10 Nov product four-tab model (docs/nav-tabs-requirements-10nov) | claim: NX-41 rev 2, NX-42 capability map, NX-43 Home, NX-44 Firsts, BL-906 to BL-915 | status: done (docs only)
