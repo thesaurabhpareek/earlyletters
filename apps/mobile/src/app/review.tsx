@@ -64,7 +64,7 @@ import {
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
-import { settleDraft } from '@/components/capture/review-settle.logic';
+import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
@@ -335,7 +335,7 @@ export default function Review() {
     // wait for that save, show the finished row, and only then ask for words (BL-563; review-settle.logic).
     if (phase !== 'transcribing' || !draft?.audioUri) return;
     let live = true;
-    void settleDraft(draft.id, { getDraft, running: finishingTake }).then((settled) => {
+    void settleDraft(draft.id, { getDraft, running: finishingTake, waitMs: null }).then((settled) => {
       if (!live || !settled) return;
       if (settled !== draft) setDraft(settled);
       if (settled.state !== 'recording') requestWords(settled.id);
@@ -623,8 +623,15 @@ export default function Review() {
     player.pause();
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
+    // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
+    // (BL-563). The take stays; the words wait in Review starts when the save ends.
+    const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
+    if (!settled) {
+      saving.current = false;
+      return;
+    }
     try {
-      const audio = await ensureAudioHash(getDraft(draft.id) ?? draft);
+      const audio = await ensureAudioHash(settled);
       // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
       // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
       // It counts later, at the save where its words are first on screen.

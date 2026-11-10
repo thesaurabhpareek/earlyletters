@@ -14,7 +14,8 @@ export type SettleDeps = {
   getDraft: (id: string) => Draft | null;
   /** The save that is running for this take, or null when none is (recorder.finishingTake). */
   running: (id: string) => Promise<unknown> | null;
-  waitMs?: number;
+  /** Longest wait in ms; `null` waits for the save however long it takes (words start whenever it ends). */
+  waitMs?: number | null;
 };
 
 /**
@@ -26,14 +27,29 @@ export async function settleDraft(id: string, deps: SettleDeps): Promise<Draft |
   if (!first || first.state !== 'recording') return first;
   const job = deps.running(id);
   if (!job) return first;
+  const done = job.then(() => undefined, () => undefined);
+  if (deps.waitMs === null) {
+    await done;
+    return deps.getDraft(id) ?? first;
+  }
   let timer: ReturnType<typeof setTimeout> | undefined;
   const late = new Promise<void>((resolve) => {
     timer = setTimeout(resolve, deps.waitMs ?? SETTLE_WAIT_MS);
   });
   try {
-    await Promise.race([job.then(() => undefined, () => undefined), late]);
+    await Promise.race([done, late]);
   } finally {
     if (timer) clearTimeout(timer);
   }
   return deps.getDraft(id) ?? first;
+}
+
+/**
+ * The row to keep as a recording, or null when it must not be kept yet: still `recording` after the wait (a save that
+ * has not finished has no real length or hash, so keeping it now would keep the take wrong). The caller does nothing
+ * then; the take stays on the phone and Review's own wait starts words when the save ends.
+ */
+export async function settleForKeep(id: string, deps: SettleDeps): Promise<Draft | null> {
+  const row = await settleDraft(id, deps);
+  return row && row.state !== 'recording' ? row : null;
 }
