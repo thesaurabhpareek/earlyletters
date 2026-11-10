@@ -131,9 +131,23 @@ export function screenTwoInputs(state: ScreenTwoState): { online: boolean; signI
 
 /**
  * Errors that mean "sign-in cannot be reached" rather than "that sign-in did not finish": a 429 is an outage and not a
- * wrong code (QA section 9). A cancel, a wrong code or an invalid address stay inline errors on screen 2.
+ * wrong code (QA section 9). A cancel, a wrong code or an invalid address stay inline errors on screen 2. Pinned kind
+ * by kind in test/first-run-gate.test.ts (a new AuthErrorKind has to be placed there, on one side or the other).
+ *
+ * Only `signedOut` is read (see `gateInputsFromAuth`). A 429 on a CODE CHECK lands on `awaitingCode` with
+ * `rate_limited` (machine.logic.ts), or in the code screen's own state, and never reaches this set: the code screen
+ * owns it and shows it inline, where the person is (app/(auth)/sign-in/code.tsx; the account-first rework of that
+ * screen is slice 3, #728). A 429 while SENDING an email (`email_wait`) ends in `signedOut` and does count here.
  */
 const OUTAGE_ERRORS: ReadonlySet<AuthErrorKind> = new Set<AuthErrorKind>(['network', 'rate_limited', 'email_wait', 'not_available', 'unknown']);
+
+/**
+ * A session exists on this phone. `signingOut` counts: the person is still signed in until the sign-out finishes, so the
+ * gate never sends them back to sign-in in the middle of it. `restoring` does not (the Welcome waits a moment instead).
+ */
+export function hasSessionIn(s: AuthState): boolean {
+  return s.status === 'checkingConsent' || s.status === 'needsConsent' || s.status === 'ready' || s.status === 'signingOut';
+}
 
 export function gateInputsFromAuth(args: {
   serverFeatures: boolean;
@@ -144,12 +158,11 @@ export function gateInputsFromAuth(args: {
   online?: boolean;
 }): FirstRunGateInput {
   const s = args.authState;
-  const hasSession = s.status === 'checkingConsent' || s.status === 'needsConsent' || s.status === 'ready' || s.status === 'signingOut';
   return {
     serverFeatures: args.serverFeatures,
     // The root age gate renders no route until the answer is Yes, so a route that runs has the Yes.
     ageAnswered: 'yes',
-    hasSession,
+    hasSession: hasSessionIn(s),
     hasLocalBook: args.hasLocalBook,
     // Unknown counts as online (A-NFR-001: no launch waits on the network). The route passes expo-network's view.
     online: args.online ?? true,
