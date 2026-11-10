@@ -2,21 +2,23 @@
 
 Status: proposal, 1 Nov 2026, for the founder to apply on or after 10 Nov (D-124, CR-22). Nothing under `.github/` or in `package.json` is changed by this pull request.
 
-Base for line numbers: `origin/develop` at `246debbd`. The PRs named below are open drafts; apply a row only after its PR merges, or `npm test` fails on a missing file.
+Base for line numbers: `origin/develop` at `246debbd` (section 1 was re-checked against `61988d26`; other line numbers may have moved). The PRs named below are open drafts; apply a row only after its PR merges, or `npm test` fails on a missing file.
 
 ## 1. Root `npm test` line (package.json, line 11)
 
-Current:
+Current, on `origin/develop` at `61988d26` (it already runs the setup-steps and setup-state suites):
 
 ```
-"test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
+"test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs scripts/release/setup-steps.test.mjs scripts/release/setup-state.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
 ```
 
-Proposed, once every row of the table in section 2 has merged (drop the paths of PRs that have not):
+Do not replace this line with a copy from this file. Re-read line 11 on the day you apply it and append the new paths after `scripts/release/setup-state.test.mjs` and before `\"compliance/**/*.test.mjs\"`, keeping every path already there. Append only the rows of section 2 whose PR has merged. With every row merged, the appended paths are:
 
 ```
-"test": "npm run test --workspaces --if-present && node --test scripts/trace.test.mjs scripts/qa/evidence-check.test.mjs scripts/ci/workflow-lint.test.mjs scripts/ci/skip-guard.test.mjs scripts/ci/pipeline-ledger.test.mjs scripts/release/checklist-check.test.mjs scripts/review-gate/decide.test.mjs scripts/status/today.test.mjs \"compliance/**/*.test.mjs\" && node scripts/trace.mjs --no-write",
+scripts/qa/evidence-check.test.mjs scripts/ci/workflow-lint.test.mjs scripts/ci/skip-guard.test.mjs scripts/ci/pipeline-ledger.test.mjs scripts/release/checklist-check.test.mjs scripts/review-gate/decide.test.mjs scripts/status/today.test.mjs
 ```
+
+After applying, check that `scripts/release/setup-steps.test.mjs` and `scripts/release/setup-state.test.mjs` are still in the line.
 
 Paths were read from each PR's file list with `gh api repos/thesaurabhpareek/earlyletters/pulls/<n>/files` (1 Nov 2026).
 
@@ -28,7 +30,7 @@ Paths were read from each PR's file list with `gh api repos/thesaurabhpareek/ear
 | `scripts/trace.test.mjs` (modified; `--scope b1` cases) | #556 (HV2-B10) | yes, already listed | none |
 | `scripts/release/checklist-check.test.mjs` | #558 (HV2-B01) | no | add |
 | `scripts/review-gate/decide.test.mjs` | #559 (HV2-B06) | no | add |
-| `scripts/qa/evidence-check.test.mjs` | #560 (HV2-B02) | #560 adds it to package.json itself | none beyond merging #560; keep it in the line above |
+| `scripts/qa/evidence-check.test.mjs` | #560 (HV2-B02) | #560 adds it to package.json itself | none beyond merging #560; keep it in the appended paths above |
 | `scripts/ci/pipeline-ledger.test.mjs` | #563 (HV2-B03) | no | add |
 | `scripts/agents/board-check.test.mjs` | #564 (HV2-B04, B08) | no, but `agents-check.yml:36` runs `node --test 'scripts/agents/*.test.mjs'` on changes under `scripts/agents/**` | none needed; leave out of the root line |
 | `scripts/status/today.test.mjs` | #565 (HV2-B07) | no | add |
