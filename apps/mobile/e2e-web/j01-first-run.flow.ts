@@ -30,7 +30,7 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(app.getByText('For example')).toBeVisible();
   await expect(app.getByTestId('promise.mark')).toHaveCount(2);
   await expect(app.getByText('We can mishear')).toHaveCount(0);
-  await step('happy', 'The promise', 'One promise and one sample: "Exactly as you said it." over a sentence the engine has fixed, with its two small fixes struck through the Review way. The voice is kept on this phone, and the book is private by default.');
+  await step('happy', 'The promise', 'One promise and one sample: "It stays in your words." over a sentence the engine has fixed, with its two small fixes struck through the Review way. The voice is kept on this phone, and the book is private by default.');
   await app.getByTestId('promise.mark').first().click();
   await expect(app.getByText('Put back.')).toBeVisible();
   await expect(app.getByTestId('promise.mark')).toHaveCount(1);
