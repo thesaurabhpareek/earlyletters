@@ -5,7 +5,8 @@
 //   pin   every `uses:` that is not local (./) must end in @<40 hex characters> (SEC-R10).
 //   prt   a workflow triggered by `pull_request_target` must not check out PR head code, run
 //         `gh pr checkout` or fetch pull refs, and must not interpolate PR title, body or head ref
-//         into a `run:` line outside `env:` (SEC-R11).
+//         (also head label, head repo name, github.head_ref, comment, review and issue text) into a line
+//         outside `env:` (SEC-R11).
 //
 // Usage (from the repo root, no install needed, Node 22+):
 //   node scripts/ci/workflow-lint.mjs                      lint .github/workflows
@@ -23,7 +24,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const SHA40 = /@[0-9a-f]{40}$/;
+const SHA40 = /@[0-9a-f]{40}$/i;
+const DOCKER_DIGEST = /^docker:\/\/\S+@sha256:[0-9a-f]{64}$/i;
+// Untrusted text a pull_request_target run can hold: PR fields, the head ref and label, and comment/issue text.
+const INTERP = /\$\{\{\s*github\.(?:head_ref|event\.(?:pull_request\.(?:title|body|head\.(?:ref|label|repo\.full_name))|comment\.body|review\.body|review_comment\.body|issue\.(?:title|body)))\s*\}\}/;
 const HEADISH = /head|refs\/pull|merge/i;
 
 const indentOf = (l) => l.length - l.trimStart().length;
@@ -42,6 +46,7 @@ export function lintText(file, text) {
     if (!m) return;
     const ref = clean(m[1]);
     if (ref.startsWith('./')) return;
+    if (DOCKER_DIGEST.test(ref)) return; // docker://image@sha256:<64 hex> is a digest pin
     if (!SHA40.test(ref)) add(i, 'pin', `not pinned to a 40-character sha: ${ref}`);
   });
 
@@ -51,7 +56,8 @@ export function lintText(file, text) {
 
   lines.forEach((l, i) => {
     if (isComment(l)) return;
-    if (/^\s*(?:-\s+)?uses:\s*actions\/checkout\b/.test(l)) {
+    const um = l.match(/^\s*(?:-\s+)?uses:\s*(.+)$/);
+    if (um && /^actions\/checkout\b/.test(clean(um[1]))) {
       // Step window: from the step's first line to just before the next step.
       let start = i;
       while (start > 0 && !/^\s*-\s/.test(lines[start])) start--;
@@ -75,10 +81,11 @@ export function lintText(file, text) {
     if (l.trim() === '' || isComment(l)) return;
     const ind = indentOf(l);
     if (envIndent >= 0 && ind <= envIndent) envIndent = -1;
-    if (/^\s*env:\s*$/.test(l)) { envIndent = ind; return; }
+    const envm = l.match(/^(\s*(?:-\s+)?)env:\s*$/); // "- env:" puts the key after the dash
+    if (envm) { envIndent = envm[1].length; return; }
     if (envIndent >= 0) return;
-    if (/\$\{\{\s*github\.event\.pull_request\.(title|body|head\.ref)\s*\}\}/.test(l)) {
-      add(i, 'prt', 'PR title, body or head ref interpolated outside env: (script injection)');
+    if (INTERP.test(l)) {
+      add(i, 'prt', 'PR title, body, head ref or label, or comment text interpolated outside env: (script injection)');
     }
   });
   return out.sort((a, b) => a.line - b.line);
