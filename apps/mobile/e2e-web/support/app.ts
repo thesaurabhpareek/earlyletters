@@ -7,9 +7,13 @@ export const SIGNS_AS = 'Mama';
 
 export const btn = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
 
-/** Age gate: Yes, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
+/** The agreement box on Before you begin (F2): a native checkbox named by its sentence. */
+export const agreeBox = (page: Page) => page.getByRole('checkbox', { name: 'I agree to the Terms of Service and Privacy Policy.' });
+
+/** Before you begin: Yes, the agreement box, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
 export async function passAgeGate(page: Page) {
   await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
 }
