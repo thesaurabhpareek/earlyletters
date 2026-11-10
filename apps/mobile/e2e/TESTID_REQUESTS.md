@@ -30,13 +30,17 @@ Fact found on 3 Oct 2026: `apps/mobile/src` has **zero** `testID` props on scree
 
 Column "Flows" names the flow files that use the id (E2E-nn). Ids marked *(optional)* are not used yet but keep the naming whole.
 
-### Entry: 18+ gate (`components/gate/age-gate-screen.tsx`)
+### Entry: Before you begin, the 18+ gate and the agreement (`components/gate/age-gate-screen.tsx`, F2)
 | testID | Element | Flows |
 |---|---|---|
-| `gate.screen` | question view `ScrollView` | 01, 02, 12, 13, 15 |
+| `gate.screen` | the gate's root view (question, agreement and stop) | 01, 02, 12, 13, 15 |
 | `gate.yes` | Yes segment (radio) | 01, 02, 13, 15 |
 | `gate.no` | No segment (radio) | 01 |
-| `gate.continue` | Continue button (disabled until a choice: this is how flows prove nothing is preselected) | 01, 02, 13, 15 |
+| `gate.continue` | Continue button (never disabled: tapped too early it shows `gate.reason`, which is how flows prove nothing is preselected) | 01, 02, 13, 15 |
+| `gate.agree` | the agreement checkbox row (`AgreementRow`), unticked on arrival | 01, 02, 13, 15 |
+| `gate.terms` | Terms of Service link (own target, in-app browser) | none yet |
+| `gate.privacy` | Privacy Policy link (own target, in-app browser) | none yet |
+| `gate.reason` | reason line above Continue ("Choose Yes or No." or "Check the box to continue.") | 01, 02, 13, 15 |
 | `gate.stop` | stop view root | 01 |
 | `gate.stop.mistake` | "I answered by mistake" button (only after 24 h) | 01 |
 

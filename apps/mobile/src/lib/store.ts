@@ -28,7 +28,10 @@ import { parsePutBack, parseView, type ReviewPatch, type ReviewSaved } from './c
 import type { SweepDraft, SweepEntry } from './capture/sweep.logic';
 import { migrate, userVersion, type MigrationResult } from './db/migrations';
 import type { SqlDb } from './db/sql';
+import type { AgreementDocument, AgreementRow } from './agreements.logic';
+import { AGE_GATE_PASSED_KEY, AGE_GATE_STOPPED_KEY } from './age-gate.logic';
 import {
+  agreements,
   children,
   createChangeBus,
   drafts,
@@ -277,6 +280,29 @@ export function setSetting(key: string, value: string): void {
 
 export function deleteSetting(key: string): void {
   settings.deleteSetting(ctx(), key);
+  bus.emit('settings');
+}
+
+// ── Agreements (Before you begin; lib/agreements.logic.ts) ───────────────
+/** True when this phone holds an accept of `document`. Never logged. */
+export function hasAgreement(document: AgreementDocument): boolean {
+  return agreements.hasAccepted(ctx(), document);
+}
+
+/**
+ * Records an accept made on Before you begin: the agreement rows, and with `passAge` the age boolean
+ * (`ageGate.passed`, D-026) in the same transaction, so a kill never leaves one without the other. Rows already
+ * recorded for the same document, version and action are kept as they were (written once).
+ */
+export function recordAgreement(rows: readonly AgreementRow[], passAge: boolean): void {
+  const c = ctx();
+  c.db.transaction(() => {
+    agreements.insertOnce(c, rows);
+    if (passAge) {
+      settings.setSetting(c, AGE_GATE_PASSED_KEY, '1');
+      settings.deleteSetting(c, AGE_GATE_STOPPED_KEY);
+    }
+  });
   bus.emit('settings');
 }
 
