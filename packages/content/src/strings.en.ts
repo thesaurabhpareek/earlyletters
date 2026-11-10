@@ -347,6 +347,8 @@ export const en = {
     // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
     waitingLong: "Long recordings take a little more time.",
     laterButton: "Read it back later",
+    // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
+    keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
@@ -676,7 +678,7 @@ export const en = {
       { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
+      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],

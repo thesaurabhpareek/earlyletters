@@ -43,6 +43,18 @@ describe('version and build number', () => {
   });
 });
 
+describe('TestFlight submit profiles (founder, 8 Nov 2026)', () => {
+  it('adds every preview-record build to the internal group "Family", and leaves production alone', () => {
+    const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8'));
+    for (const profile of ['testflight', 'preview']) {
+      expect(eas.submit[profile].ios.groups).toEqual(['Family']);
+      expect(eas.submit[profile].ios.ascAppId).toMatch(/^\d+$/);
+      expect(eas.submit[profile].ios).not.toHaveProperty('appleTeamId');
+    }
+    expect(eas.submit.production.ios?.groups).toBeUndefined();
+  });
+});
+
 describe('store.config.json (EAS Metadata)', () => {
   it('is up to date with packages/content and version.json', () => {
     expect(readFileSync(STORE_CONFIG_PATH, 'utf8')).toBe(renderStoreConfig());

@@ -931,10 +931,22 @@ describe('[DATA-REQ-024] Erase everything, design 2.12: final strings, the confi
     expect(log).toEqual(['failed:null', 'phase:erasing', 'phase:review', 'failed:failed']);
   });
 
-  it('[DATA-REQ-024] the failed line is the one the page shows for an unfinished erase, beside the Erase everything button it tells the person to press', () => {
+  it('[DATA-REQ-024] the failed line is the one the page shows for an unfinished erase', () => {
     const s = screen();
     expect(s).toMatch(/failed \? <ErrorLine message=\{failed === 'signed_in' \? e\.signedIn : e\.failed\} \/> : null/);
-    expect(s.indexOf('<ErrorLine')).toBeLessThan(s.indexOf('label={e.button}'));
+    expect(s.match(/<ErrorLine/g)).toHaveLength(1);
+  });
+
+  // Council of 9 Nov 2026, design seat defect 1. This replaces the pin that said the line sat "beside the Erase everything
+  // button it tells the person to press" (before the button). The page remounts at the top after a failed erase, and a
+  // line at the foot of a long page, at a large text size, was below the fold: the warning is now the first thing.
+  it('[DATA-REQ-024] the failed line is the first thing on the page, above the heading, so it is seen and read before anything else', () => {
+    const s = screen();
+    expect(s).toMatch(/<ScrollView key="review"[^>]*>\s*\{header\}\s*\{failed \? <ErrorLine message=\{failed === 'signed_in' \? e\.signedIn : e\.failed\} \/> : null\}\s*<View className="gap-2">\s*<Text variant="title2" asHeading>\s*\{e\.heading\}/);
+    expect(s.indexOf('<ErrorLine')).toBeLessThan(s.indexOf('{e.heading}'));
+    expect(s.indexOf('{e.heading}')).toBeLessThan(s.indexOf('label={e.button}'));
+    // Not repeated at the foot, so it is never read twice.
+    expect(s.indexOf('<ErrorLine')).toBe(s.lastIndexOf('<ErrorLine'));
   });
 });
 

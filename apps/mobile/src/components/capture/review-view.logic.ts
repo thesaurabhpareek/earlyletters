@@ -277,6 +277,20 @@ export function followCaretToEnd(input: { selectionEnd: number | null; length: n
   return input.selectionEnd === null || input.selectionEnd >= input.length;
 }
 
+/**
+ * Where Write's scroll rests so the last line typed stays in view, when the two buttons and the Plus line ride at the
+ * end of the scroll (accessibility text sizes, lib/review-layout.logic.ts `footerPlacement` 'inline'). Scrolling to the
+ * very end would show the buttons and push the words being written out of sight, so the end of the page is the top of
+ * the footer, which the footer's own layout reports (its `y` inside the scroll's content, so the scroll's padding and
+ * the gap above the footer are already counted): the view's bottom edge rests there, and the last line typed sits one
+ * gap above it. Null until the footer and the viewport have both been measured: the page is then left where it is, so
+ * it never jumps while it opens. Never negative: a page that fits in the view does not scroll.
+ */
+export function pageEndOffset(input: { footerTop: number; viewportHeight: number }): number | null {
+  if (!(input.footerTop > 0) || !(input.viewportHeight > 0)) return null;
+  return Math.max(0, Math.round(input.footerTop - input.viewportHeight));
+}
+
 /** What one write of Write's words did: the draft it wrote to, and the autosave line to show (null: unchanged). */
 export type WriteResult = { ok: boolean; draftId: string | null; saveState: 'saved' | 'failed' | null };
 
