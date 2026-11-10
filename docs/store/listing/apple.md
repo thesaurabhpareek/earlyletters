@@ -41,7 +41,7 @@ IT STAYS IN YOUR WORDS
 Your speech is written down on your phone. Early Letters fixes only small slips: an um, an accidental repeat, a name spelled the way you spell it, a capital letter, a full stop. It never adds a word. Every change is marked, and you can put any of them back. A microphone can mishear, so read each letter before you keep it. Letters you type stay exactly as you typed them.
 
 YOUR VOICE, KEPT
-Each letter you speak keeps its original recording, unchanged. It stays on your phone, and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it.
+Each letter you speak keeps its original recording, unchanged. It is kept on the phone that made it, and in your iPhone's own backup if you use one. Years from now, your child can hear how you sounded when you said it.
 
 READ TOGETHER
 Open the book at bedtime and hear the letters you spoke, in your own voice, with the words on the page.
@@ -53,7 +53,7 @@ IN ENGLISH
 Early Letters works in English.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Your book stays on your phone. Delete a letter and it waits 30 days in Recently deleted, or you can erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Sign in to keep your book across your phones. If you sign in and agree to sync, your letters are kept on your phone and on our servers, so they reach your other phones. Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one. Delete a letter and it waits 30 days in Recently deleted, or you can erase it at once.
 
 A BOOK FOR EACH CHILD
 Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.

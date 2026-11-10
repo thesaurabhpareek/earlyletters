@@ -70,8 +70,8 @@ export const site = {
 
   comingSoon: {
     line: 'A baby book you fill by talking. Say what happened today, out loud, and it stays in your own words.',
-    // Re-check at the first release with sync or backup (1.0.x): "stay on your iPhone" is true for the first build only (D-121).
-    trust: 'Your letters and recordings stay on your iPhone, and none of it is sent to us.',
+    // Build 12 has sign-in and sync, so no "stays on your iPhone" claim here (D-121 re-check done, 10 Nov). Registered wording only.
+    trust: 'Private by default. Never sold, never used for ads.',
     shareButton: 'Share with a friend',
     howTitle: 'How it works',
     writeToUs: 'Write to us any time:',
@@ -202,9 +202,9 @@ export const site = {
     },
     s09: {
       label: 'Private',
-      headline: 'Kept on your iPhone.',
+      headline: 'Private by default.',
       points: [
-        'Letters and recordings stay on your iPhone. We never receive them.',
+        'Your recordings are kept on the phone that made them. Your letters reach your other phones only if you sign in and agree.',
         'No ads. We never sell your data.',
         'Your letters are never used to train AI.',
         'Export your letters whenever you want.',
@@ -289,7 +289,7 @@ export const site = {
     promises: [
       'We never rewrite your words.',
       'Each letter you speak keeps its original recording, unchanged.',
-      'Your letters and recordings stay on your iPhone. No ads, and we never sell your data.',
+      'Your letters and recordings are private. No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,

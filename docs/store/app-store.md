@@ -48,7 +48,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Sign in to keep your book across your phones. If you sign in and agree to sync, your letters are kept on your phone and on our servers, so they reach your other phones. Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
@@ -87,7 +87,7 @@ Eight frames: 1 to 6 are the set, 7 and 8 are optional. Captured from the real a
 | 3 | Your voice stays with each letter. | The original recording is kept unchanged. | A letter from Mama with "Hear Mama" | light |
 | 4 | A book that grows by month. | Each letter goes into your child's month of age. | Asha's book after Add to the book: this month and the month before | light |
 | 5 | Read together at bedtime. | One letter at a time, oldest first. | Read together, dark: one letter, Back one and Next letter | dark |
-| 6 | Your book stays on your phone. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
+| 6 | Your book is private. | Private by default. Never sold, never used for ads. | Settings, Privacy: "What we never do" | light |
 | 7 | Quiet days are fine. | Tap Not much today. That is enough. | "A quiet day, kept." after Not much today | dark |
 | 8 | Pause, laugh, start again. | Take your time. Say it however it comes. | Listening: no words on screen while you talk | dark |
 

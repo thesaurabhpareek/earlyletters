@@ -718,8 +718,11 @@ describe('brand name and v1.0 claims', () => {
     }
   });
 
-  it('promises no co-parent sharing, sign-in or invitation in the first store build (D-121, D-126)', () => {
-    const SHARING = /\b(co-parent|invite[sd]?|sign[- ]in|sync(s|ed)?|write it together|write together)\b/i;
+  it('promises no co-parent sharing or invitation in the store build (D-121, D-126)', () => {
+    // Build 12 has sign-in and sync (10 Nov 2026), and the listing now says where letters are kept, so "sign in" and
+    // "sync" are no longer held out. Co-parent surfaces stay hidden, so those words still are. claims-capabilities.test.ts
+    // judges the sign-in and sync lines against the production profile.
+    const SHARING = /\b(co-parent|invite[sd]?|write it together|write together)\b/i;
     expect(offenders(leaves(storeListing, 'store'), SHARING)).toEqual([]);
   });
 
@@ -1274,8 +1277,9 @@ describe('claims that must be true of what the first build does', () => {
     expect(offenders(status, /\b(arrives?|coming|later in the|not open yet|beta)\b/i)).toEqual([]);
   });
 
-  it('the site reference describes the first build only: no invite, sync, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
-    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|sync|vault|cloud|gift|same sentence/i;
+  it('the site reference describes the first build only: no invite, backup, gift or mixed languages (Q3, D-121, D-126)', () => {
+    // "sync" is no longer held out: the site says letters reach other phones only if the person signs in and agrees (Build 12).
+    const held = /private by design|invite|grandparent|co-parent|backs up|backed up|vault|cloud|gift|same sentence/i;
     expect(offenders(SITE, held)).toEqual([]);
   });
 

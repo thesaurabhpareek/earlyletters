@@ -36,7 +36,7 @@ const screenshots = [
   { id: '03-letter', caption: "Your voice stays with each letter.", subline: "The original recording is kept unchanged.", scheme: 'light' },
   { id: '04-book', caption: "A book that grows by month.", subline: "Each letter goes into your child's month of age.", scheme: 'light' },
   { id: '05-letter-night', caption: "Read together at bedtime.", subline: "One letter at a time, oldest first.", scheme: 'dark' },
-  { id: '06-privacy', caption: "Your book stays on your phone.", subline: "Private by default. Never sold, never used for ads.", scheme: 'light' },
+  { id: '06-privacy', caption: "Your book is private.", subline: "Private by default. Never sold, never used for ads.", scheme: 'light' },
   { id: '07-quiet-day', caption: "Quiet days are fine.", subline: "Tap Not much today. That is enough.", scheme: 'dark' },
   { id: '08-listening', caption: "Pause, laugh, start again.", subline: "Take your time. Say it however it comes.", scheme: 'dark' },
 ] as const;
@@ -73,7 +73,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-${en.trust.promise} Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+${en.trust.promise} Sign in to keep your book across your phones. If you sign in and agree to sync, your letters are kept on your phone and on our servers, so they reach your other phones. Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.

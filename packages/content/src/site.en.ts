@@ -25,7 +25,7 @@ export const site = {
   hero: {
     headline: "Letters to your child, in your own words and voice",
     subhead:
-      `${brand.name} is a book you fill by talking. It stays in your words, and your letters stay on your iPhone.`,
+      `${brand.name} is a book you fill by talking. It stays in your words, and it is private by default.`,
   },
   primaryCta: "Join the waitlist",
   price,
@@ -73,10 +73,10 @@ export const site = {
     title: "Our promise, in plain words",
     lead: en.trust.promise,
     points: [
-      "Your letters and recordings stay on your iPhone. They are not sent to us.",
+      "Your letters are kept on your phone. They reach your other phones only if you sign in and agree to sync, and then they are kept on our servers too.",
       "We never rewrite your words. Transcription happens on your phone.",
       // D-085 (amends D-073): no backup of our own in v1.0.
-      "Your recordings stay on your phone, and in your iPhone's own backup if you use one.",
+      "Your recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
       "No ads. We never sell your data or share it with advertisers.",
       "You can export your book, free, at any time.",
       "You can delete your own letters and recordings whenever you like.",
@@ -85,7 +85,7 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "Only you, on your phone. Letters and recordings stay on your iPhone and are not sent to us. If you use your iPhone's own backup, it holds them too.",
+      a: "Only you. Your letters are kept on your phone, and on our servers if you sign in and agree to sync. Recordings are kept on the phone that made them, and your iPhone's own backup holds them too if you use one.",
     },
     {
       q: "Do you rewrite my words?",
@@ -110,7 +110,7 @@ export const site = {
     },
     {
       q: "What happens to my recordings?",
-      a: "Each recording stays on your phone by default, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
+      a: "Each recording is kept on the phone that made it, attached to its letter, and is part of your iPhone's own backup if you use one. Export them any time to keep a copy of your own, and delete your recordings and letters whenever you like.",
     },
   ],
   waitlist: {
