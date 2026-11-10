@@ -26,13 +26,13 @@ export class DecisionError extends Error {
 /** An opaque photo key the caller makes at chooser time. It is never a local_id (R40, ML-4). */
 const MAX_PHOTO_KEY_LENGTH = 200;
 
-export type Decision =
+export type ParentDecision =
   | { readonly kind: 'day'; readonly id: string; readonly day: string }
   | { readonly kind: 'stretch'; readonly id: string; readonly from: string; readonly until: string }
   | { readonly kind: 'photo'; readonly id: string; readonly day: string; readonly key: string };
 
 export interface DecisionsState {
-  readonly entries: readonly Decision[];
+  readonly entries: readonly ParentDecision[];
 }
 
 /** An inclusive run of calendar days. */
@@ -42,7 +42,7 @@ export interface DayRange {
 }
 
 export const emptyDecisions = (): DecisionsState => ({ entries: [] });
-export const listDecisions = (state: DecisionsState): readonly Decision[] => state.entries;
+export const listDecisions = (state: DecisionsState): readonly ParentDecision[] => state.entries;
 
 function dayNumber(day: string): number {
   const n = dayNumberOf(day);
@@ -50,9 +50,9 @@ function dayNumber(day: string): number {
   return n;
 }
 
-function add(state: DecisionsState, entry: Decision): DecisionsState {
+function add(state: DecisionsState, entry: ParentDecision): DecisionsState {
   if (state.entries.some((e) => e.id === entry.id)) return state;
-  const start = (d: Decision) => (d.kind === 'stretch' ? d.from : d.day);
+  const start = (d: ParentDecision) => (d.kind === 'stretch' ? d.from : d.day);
   const entries = [...state.entries, entry].sort((a, b) => {
     const [sa, sb] = [start(a), start(b)]; // ISO days sort as text; no locale involved
     if (sa !== sb) return sa < sb ? -1 : 1;
