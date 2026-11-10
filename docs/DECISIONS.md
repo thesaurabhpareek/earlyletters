@@ -661,6 +661,10 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 | D-138 | Four calls from the build 1 audit: publish beta app Terms and Privacy (0.9.0) before build 2 signs anyone in; no paid backup for the alpha, use a free nightly encrypted dump; the agree line sits above the sign-in buttons; a 30-minute take uses 5% of battery or less on an SE 3 | Decided (founder) | Yes | 2026-11-01 |
 | D-139 | Positioning A: everywhere a parent reads first, Early Letters is introduced as letters to your child, in your own words and voice; the App Store name is "Early Letters: Baby Journal" and the subtitle "For parents who'd rather talk". Replaces the descriptor "the baby memory book you fill by talking" | Decided (founder, 1 Nov 2026) | Yes | 2026-11-01 |
 | D-144 | Erase everything on this phone (PR #520) ships with its four lines and three wording edits; "Your free letters start again." stays in quiet text; the 0.9.0 Terms and Privacy are published at versioned addresses only. Open: whether the four lines may be used outside the app. Karma's, under CR-60: #616 and #652 merged to `develop` on his selection alone, and the website deploy held | Decided (founder: the three answers); the merge of #616 and #652 rests on his paraphrased selection alone and the deploy hold is Karma's recommendation (CR-60), and he may ask for a revert or a release; public use of the four lines is open | Yes | 2026-11-08 |
+| D-157 | Build 12 turns server features on in the production backend, and there is no staging rehearsal first. This changes the on-device-only first store build of D-121. Go/no-go outcome of 9 Nov: founder to record | Decided (founder, 10 Nov 2026) | Yes | 2026-11-10 |
+| D-158 | Build 12 is released automatically when App Review approves it | Decided (founder, 10 Nov 2026) | Yes | 2026-11-10 |
+| D-159 | The production Supabase project stays on the Free plan, with a daily keep-alive, a nightly backup and a weekly limits check | Decided (founder, 10 Nov 2026) | Yes | 2026-11-10 |
+| D-160 | Sign-in is required in Build 12, and the co-parent surfaces may show "coming soon" | Decided (founder, 10 Nov 2026) | Yes | 2026-11-10 |
 
 ### D-100 Server features are on in v1.0 (founder)
 - **Status:** Decided by the founder, 13 Oct 2026, from options offered (on-device only; server on; on-device plus an anonymous status endpoint). PRD V2 M14.
@@ -1118,4 +1122,34 @@ Renumbered on 15 Oct 2026 by the merge train: these six entries were drafted as 
 - **Fact, not a decision:** counsel has not read "We hold no copy", "Nothing is sent anywhere" or the question whether Terms 8.1 should say that Erase everything resets the free count. The option he chose was described to him as shipping now with counsel reading the absolutes in parallel (CCO-6). The asks are not yet in `docs/legal/COUNSEL_PACKET.md` (BL-780; the founder merges `docs/legal`).
 - **Amends:** none. It relates to D-083 and D-103 (Erase everything resets the free count; unchanged here, and the counsel confirmation D-083 asked for is still open) and to D-138 item 1 (the beta texts are published at a permanent URL; this entry fixes which URLs, and item 1 is not met until the held deploy is released).
 - **Follow-ups:** BL-775 to BL-783 in `docs/BACKLOG.md`; CR-60 in `docs/agents/cto/RULINGS.md`. #520 is merged (73fcc1ea) and BL-387 is done in code, so BL-775 and BL-781 are `ready`; BL-782 (device owner authentication before Erase everything) is the deferral that has a row.
+- **Owner:** founder; Karma.
+
+### D-157 Build 12 runs with server features on in production, with no staging rehearsal (founder, 10 Nov 2026)
+- **Numbering:** D-157 to D-160. #707 uses D-144 to D-153 and #733 uses up to D-156 (read from the open PR diffs on 10 Nov 2026), so these four numbers clash with none of them. #707 does collide with `develop` on D-144, which this entry does not touch. Re-check with `node scripts/agents/next-id.mjs` before merging.
+- **Status:** Decided by the founder, 10 Nov 2026.
+- **Source: the founder's words to Karma in chat on 10 Nov 2026, relayed by Karma. I have not seen the chat itself; the wording below is Karma's relay and the founder should confirm it reads true.**
+- **Decision:** the Build 12 production backend runs with server features on, and Build 12 goes out without a staging rehearsal first.
+- **Amends:** the part of D-121 that made the first store build on-device only. The privacy label rows follow (`docs/legal/app-store-privacy-labels.md` 2.2.0, `docs/store/compliance/privacy-labels-apple.md`), subject to counsel.
+- **Not decided here:** `go/no-go: founder to record`. The go/no-go of Mon 9 Nov (D-130) is not recorded because its outcome was not given to Karma. Whether the label answers and the policy wording are cleared by counsel for a server-on first store build is also open.
+- **Owner:** founder; Karma.
+
+### D-158 Build 12 is released automatically when App Review approves it (founder, 10 Nov 2026)
+- **Status:** Decided by the founder, 10 Nov 2026.
+- **Source: the founder's words to Karma in chat on 10 Nov 2026, relayed by Karma. I have not seen the chat itself; the wording below is Karma's relay and the founder should confirm it reads true.**
+- **Decision:** when App Review approves Build 12, the release goes out on its own, with no manual step in between.
+- **Open:** where this is set (App Store Connect release option) was not stated and is not checked here.
+- **Owner:** founder; Karma.
+
+### D-159 Production Supabase stays on the Free plan, with three routine checks (founder, 10 Nov 2026)
+- **Status:** Decided by the founder, 10 Nov 2026.
+- **Source: the founder's words to Karma in chat on 10 Nov 2026, relayed by Karma. I have not seen the chat itself; the wording below is Karma's relay and the founder should confirm it reads true.**
+- **Decision:** the production Supabase project stays on the Free plan. To live with that, there is a daily keep-alive, a nightly backup and a weekly check of the plan's limits.
+- **Open:** whether those three jobs are all built and running was not stated and is not verified here.
+- **Owner:** founder; Karma.
+
+### D-160 Sign-in is required in Build 12; co-parent surfaces may say "coming soon" (founder, 10 Nov 2026)
+- **Status:** Decided by the founder, 10 Nov 2026.
+- **Source: the founder's words to Karma in chat on 10 Nov 2026, relayed by Karma. I have not seen the chat itself; the wording below is Karma's relay and the founder should confirm it reads true.**
+- **Decision:** a person signs in to use Build 12. Anything to do with a co-parent may show "coming soon" instead of working.
+- **Effects:** the label rows for Build 12 assume sign-in, so Name, Email Address, User ID, Other User Content and Sensitive Info are collected (see D-157).
 - **Owner:** founder; Karma.
