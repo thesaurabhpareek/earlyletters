@@ -28,6 +28,7 @@
  */
 import { en } from '@scribe/content';
 import { renderTemplate } from '@scribe/core';
+import { QUIET_WINDOW, SHARED_PENDING_CEILING } from './budget';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -124,8 +125,8 @@ export interface PlannedNotification {
 }
 
 export const ID_PREFIX = 'el.';
-export const EARLIEST_MINUTES = 7 * 60; // 07:00
-export const LATEST_MINUTES = 21 * 60 + 30; // 21:30
+export const EARLIEST_MINUTES = QUIET_WINDOW.endMinutes; // 07:00
+export const LATEST_MINUTES = QUIET_WINDOW.startMinutes; // 21:30
 export const STEP_MINUTES = 15;
 export const DEFAULT_WINDOW: ReminderWindow = { earliest: EARLIEST_MINUTES, latest: LATEST_MINUTES };
 export const DEFAULT_TIME: ReminderTime = { hour: 20, minute: 30 };
@@ -291,7 +292,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
 
   const horizon = Math.max(1, input.horizonDays ?? 21);
   const monthHorizon = Math.max(horizon, input.monthHorizonDays ?? 92);
-  const max = input.maxNotifications ?? 60;
+  const max = input.maxNotifications ?? SHARED_PENDING_CEILING;
   const window = normalizeWindow(input.window);
   const time = clampReminderTime(prefs.time, window).time;
   const birthdayTime = clampReminderTime(BIRTHDAY_TIME, window).time;
