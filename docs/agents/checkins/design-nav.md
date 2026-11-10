@@ -1,0 +1,1 @@
+16:40 (10 Nov) design-nav | done: NAV-TAB-ROLES-10nov.md (audit, 3 jobs, 4 nav options, quiet coming soon, states, wireframes, PR collisions) | next: founder and product answers to section 10 | blocked/needs: #738 guard re-base (owner of #738)
