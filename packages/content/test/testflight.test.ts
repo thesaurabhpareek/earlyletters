@@ -201,3 +201,54 @@ describe('[D-129] build 2 and the Delete account row: the sentence is in the tex
     expect(offenders(others, /Delete account|delete your account/i)).toEqual([]);
   });
 });
+
+describe('[CMO 9 Nov] build 1 and the description say what the build has, and nothing the build does not do', () => {
+  const { build1 } = whatToTest;
+  const description = testflightCopy.betaAppDescription;
+
+  it('names "Another thought", and the Months button with the condition under which it shows', () => {
+    expect(build1).toContain(`"${en.tonight.newPromptButton}"`);
+    expect(build1).toMatch(/Once the book has letters in two months, the "Months" button opens a list of them\./);
+  });
+
+  it('places Your words, App lock and Recently deleted under the Settings groups that hold them, and does not call them groups', () => {
+    const s = en.settingsHome.sections;
+    const placed: [string, string][] = [
+      [en.settingsHome.yourWords, s.writing],
+      ['App lock', s.privacy],
+      [en.settings.delete.recentlyDeleted, s.letters],
+    ];
+    for (const [row, group] of placed) expect(build1).toContain(`${row} under ${group}`);
+    // A row is not a group: if a label ever becomes a group title, the sentence has to be read again.
+    for (const [row] of placed) expect(Object.values(s)).not.toContain(row);
+    expect(build1).not.toMatch(/arranged in groups/);
+  });
+
+  it('says the lock is offered at the end of setting up and stays off until it is turned on', () => {
+    expect(build1).toMatch(/At the end of setting up, the app offers [^]*it also offers a lock for the book[^]*The lock stays off until you turn it on/);
+    // The offer is on first setup only, so the text says where the row is for a phone that installed over an earlier build.
+    expect(build1).toContain(`or later in Settings, ${en.settingsHome.sections.privacy}, App lock.`);
+  });
+
+  it('gives the export path as Settings, Your letters, Export your book', () => {
+    expect(build1).toContain(`Settings, ${en.settingsHome.sections.letters}, ${en.settingsHome.exportLabel}`);
+    expect(build1).not.toMatch(/Settings, Export your book/);
+  });
+
+  it('says plainly that the Erase row removes every book, letter and recording, cannot be undone, and a copy comes first', () => {
+    expect(build1).toMatch(/Erase row, the last row of Your letters in Settings, removes every book, letter and recording from this phone\. It cannot be undone, so save a copy first\./);
+  });
+
+  it('never reuses the Erase screen\'s own lines, or the free-letter count, outside that screen (D-144, CCO-6)', () => {
+    const erase = en.settings.erase;
+    for (const l of [...WHAT_TO_TEST, ...FRIENDS_READ]) {
+      for (const line of [erase.body, erase.freeLetters, erase.onThisPhone, erase.backups, erase.speechStays]) expect(l.text, l.path).not.toContain(line);
+      expect(l.text, l.path).not.toMatch(/We hold no copy|Nothing is sent anywhere|free letters start again/i);
+    }
+  });
+
+  it('does not promise the words are exactly as said: raw text is machine output until the English speech gate runs (D-125 item 9, D-133)', () => {
+    expect(offenders(ALL, /exactly as you said|as you said them|never adds a word/i)).toEqual([]);
+    expect(description).toMatch(/kept as a letter, in your own words, with the recording beside it/);
+  });
+});

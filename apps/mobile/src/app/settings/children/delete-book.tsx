@@ -1,14 +1,14 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { FileTextIcon } from 'phosphor-react-native/src/icons/FileText';
-import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { typedWordMatches } from '@/components/settings/wipe.logic';
+import { useRef, useState } from 'react';
+import { ScrollView, View, type Text as RNText } from 'react-native';
+import { confirmHint, typedWordMatches } from '@/components/settings/wipe.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useToast } from '@/components/ui/toast';
-import { useTheme } from '@/lib/a11y';
+import { useFocusOnMount, useTheme } from '@/lib/a11y';
 import { copy, fill } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { deleteBook, getChild, localDeletionAllowed } from '@/lib/store';
@@ -22,6 +22,9 @@ const PAGE = 'gap-7 px-5 pb-12 pt-4';
  * waits in Recently deleted for 30 days, restorable, and the launch purge erases it (store.ts deleteBook, eraseBook).
  * Nothing is sent. Calm words only: no loss language, no countdown.
  *
+ * Each step is its own page for VoiceOver: when step 2 appears, focus moves to its title (as account deletion's does),
+ * and until the word matches the dimmed confirm button says what turns it on (a hint).
+ *
  * A phone that has signed in is not offered this here: the server holds the book too (request_book_deletion and the
  * co-parent rule are F17 6.2 D step 5, not built in this screen). The row in child settings is hidden then.
  */
@@ -33,6 +36,10 @@ export default function DeleteBook() {
   const toast = useToast();
   const colors = useTheme().c;
   const d = copy.settings.delete;
+  // Step 2 replaces step 1 under the same page title, so VoiceOver would stay on a button that is gone: move it to the
+  // step's title. These hooks stay above the early return below (the order of hooks must not change).
+  const confirmTitle = useRef<RNText>(null);
+  useFocusOnMount(confirmTitle, step === 'confirm', step);
 
   if (!child || !localDeletionAllowed()) return null;
   const name = child.name;
@@ -52,7 +59,7 @@ export default function DeleteBook() {
       <ScrollView key="confirm" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled">
         {header}
         <View className="gap-2">
-          <Text variant="title2" asHeading>
+          <Text ref={confirmTitle} variant="title2" asHeading>
             {d.bookTitle}
           </Text>
           <Text variant="body">{d.bookUndo}</Text>
@@ -75,6 +82,7 @@ export default function DeleteBook() {
             fullWidth
             disabled={!ready}
             accessibilityLabel={d.bookConfirm}
+            accessibilityHint={confirmHint(ready, d.bookTypeToConfirmLabel)}
             className={ready ? 'bg-destructive' : 'border border-input'}
             onPress={confirm}
             testID="deleteBook.confirm">

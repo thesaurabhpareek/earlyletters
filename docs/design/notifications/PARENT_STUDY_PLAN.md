@@ -120,6 +120,12 @@ Thresholds:
 - Inferred wording passes only if at least 8 of 10 find it welcome and none finds it presumptuous; otherwise ship the neutral one. Any hard season participant calling any photo nudge "painful" blocks date-triggered nudges until reviewed.
 - Privacy label guard: any level that reads the library changes the privacy story (label says Data Not Collected; reading on device only keeps that, but needs counsel confirmation [unverified]).
 
+### Q5 extension: Memory Library (BL-857, 10 Nov 2026)
+
+NX-39 v2 (PR #747) proposes a library read for dates at P2a and reopens D9. Q5 is extended, not replaced, by `docs/research/studies/MEMORY-LIBRARY-STUDY-PLAN-10nov.md`. That file keeps this plan's sample rules, care protocol, consent rules and "the study can only loosen a default" rule, and adds: the three L1 pre-sheet variants and the plain versus polished full-read sheet from PR #752, promise-line candidates for counsel, a comfortable-No measure, the typed-days flow, signed pass and stop bars, and a second-runner rule. Where the two files differ on photo permission, the Memory Library file wins. The Q5 L2 line above is unchanged in one respect: L2 is shown for comfort only and nothing is built from this study.
+
+Q4 is narrowed for the same study: NX-39 R25 allows parent-typed days only, so designs A and C are not compared there. The Q4 opt-in bar (5 of 10 continue, fewer than 4 demote) is kept and measured on the typed-days flow.
+
 ## 3. Scripts and stimuli
 
 Session guide (30 min, founder or second runner, audio only, no video, no recording by default; notes by code P01 to P10):
