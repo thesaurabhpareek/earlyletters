@@ -5,6 +5,7 @@ export { storeListing } from './store.en';
 export { site } from './site.en';
 export { PLUS_PRICE, PLUS_TRIAL, plusPriceLine } from './pricing';
 export { book } from './book.en';
+export { nav } from './nav.en';
 export { permissions } from './permissions.en';
 export { pages } from './pages.en';
 export type { PageCopy, PageSection, PageId } from './pages.en';

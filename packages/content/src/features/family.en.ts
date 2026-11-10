@@ -35,7 +35,7 @@ export const familyCopy = {
   /**
    * A child's book settings with server features on (S46, P6 builds the row in settings/children/[id].tsx): in
    * place of `soon.settingsRow`. One parent: it opens the invite sheet. Two parents: its value is the co-parent's
-   * signature and it opens the Family tab.
+   * signature and it opens People and sharing in Me.
    */
   bookRow: {
     label: 'Write this book together',
@@ -72,7 +72,7 @@ export const familyCopy = {
     shareMessageNamedNoName: "{signsAs}, I started a book of letters for our child. Join me, so we can both write in it:",
     shareMessage: "I started a book of letters for {child}. Join me, so we can both write to {child}:",
     shareMessageNamed: "{signsAs}, I started a book of letters for {child}. Join me, so we can both write to {child}:",
-    done: 'The invite waits on the Family tab until they join.',
+    done: 'The invite waits in Me, under People and sharing, until they join.',
     /** F11-REQ-004: shown instead of Share when the book already has two parents (D-069). */
     full: "{child}'s book has two parents.",
   },
