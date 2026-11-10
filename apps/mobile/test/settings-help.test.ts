@@ -12,13 +12,14 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { brand, supportMailto } from '@scribe/brand';
-import { en } from '@scribe/content';
-import { callTarget, fallbackWords, mailTarget, openHelpTarget, probePhone, readableNumber, rowHint, type HelpTarget, type Linker } from '../src/components/settings/help-links.logic';
+import { en, HELPLINES } from '@scribe/content';
+import { callTarget, fallbackWords, mailTarget, openHelpTarget, probePhone, rowHint, textTarget, type HelpTarget, type Linker } from '../src/components/settings/help-links.logic';
+import { lineActions } from '../src/components/settings/struggling.logic';
 
 const SRC = join(__dirname, '..', 'src');
 const code = (rel: string) => readFileSync(join(SRC, rel), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/.*$/gm, '$1');
 
-const lines = en.struggling.resources;
+const lines = HELPLINES.flatMap((r) => r.lines);
 const fake = (can: boolean | Error, open: 'ok' | Error = 'ok') => {
   const linker = {
     canOpenURL: vi.fn(async () => {
@@ -33,7 +34,9 @@ const fake = (can: boolean | Error, open: 'ok' | Error = 'ok') => {
   return linker;
 };
 
-const targets: HelpTarget[] = [...lines.map((l) => callTarget(l)), mailTarget(en.settingsHome.helpSubject), mailTarget()];
+const calls: HelpTarget[] = lines.flatMap((l) => lineActions(l).filter((a) => a.kind === 'call').map((a) => a.target));
+const texts: HelpTarget[] = lines.flatMap((l) => lineActions(l).filter((a) => a.kind === 'text').map((a) => a.target));
+const targets: HelpTarget[] = [...calls, ...HELPLINES.map((r) => callTarget(r.emergency.tel, r.emergency.shown)), mailTarget(en.settingsHome.helpSubject), mailTarget()];
 
 describe('[RT-SET-02] opening a help link', () => {
   it('opens the link when the device can', async () => {
@@ -61,27 +64,40 @@ describe('[RT-SET-02] opening a help link', () => {
   });
 
   it('canOpenURL rejecting: the copy fallback too', async () => {
-    const t = callTarget(lines[0]);
+    const t = calls[0];
     await expect(openHelpTarget(t, fake(new Error('not allowed')))).resolves.toEqual({ kind: 'fallback', target: t });
   });
 });
 
 describe('[F20-REQ-005] the crisis lines', () => {
-  it('each line calls its digits, and the number to copy is the one its words show', () => {
+  it('each line calls and texts its digits, and the number to copy is the one its words show', () => {
     for (const r of lines) {
-      const t = callTarget(r);
-      expect(t).toEqual({ kind: 'call', url: `tel:${r.tel}`, value: readableNumber(r.tel) });
-      expect(t.value.replace(/\D/g, '')).toBe(r.tel);
-      expect(r.how).toContain(t.value);
+      for (const a of lineActions(r)) {
+        const n = a.kind === 'call' ? r.tel! : r.sms!;
+        const scheme = a.kind === 'call' ? 'tel' : 'sms';
+        expect(a.target).toEqual({ kind: a.kind, url: `${scheme}:${n}`, value: a.kind === 'call' ? r.telShown : r.smsShown });
+        expect(a.target.value.replace(/\D/g, '')).toBe(n);
+        expect(r.how).toContain(a.target.value);
+      }
     }
-    expect(readableNumber('18338526262')).toBe('1-833-852-6262');
-    expect(readableNumber('988')).toBe('988');
+    expect(callTarget('988')).toEqual({ kind: 'call', url: 'tel:988', value: '988' });
+    expect(textTarget('50808')).toEqual({ kind: 'text', url: 'sms:50808', value: '50808' });
   });
 
-  it('struggling.* (FT-36) keeps its shape: no key added for the fallback, no Text rows', () => {
-    expect(Object.keys(en.struggling).sort()).toEqual(['body', 'emergency', 'resources', 'title']);
-    for (const r of lines) expect(Object.keys(r).sort()).toEqual(['how', 'name', 'tel']);
-    expect(code('app/settings/struggling.tsx')).not.toMatch(/sms:|textRow|Send a text/);
+  it('a text opens Messages without asking canOpenURL (sms is not a declared query scheme), and falls back if refused', async () => {
+    for (const t of texts) {
+      const l = fake(false);
+      await expect(openHelpTarget(t, l)).resolves.toEqual({ kind: 'opened' });
+      expect(l.canOpenURL).not.toHaveBeenCalled();
+      expect(l.openURL).toHaveBeenCalledWith(t.url);
+      await expect(openHelpTarget(t, fake(true, new Error('Unable to open URL')))).resolves.toEqual({ kind: 'fallback', target: t });
+    }
+    expect(texts.length).toBeGreaterThan(0);
+  });
+
+  it('the text fallback says Messages did not open, with the same Copy number and "Number copied"', () => {
+    const h = en.helpLinks;
+    expect(fallbackWords('text')).toEqual({ title: h.noTextTitle, body: h.noTextBody, copy: h.copyNumber, copied: 'Number copied' });
   });
 
   it('the fallback for a number says "Number copied" once copied, from the shared helpLinks words', () => {
@@ -110,11 +126,16 @@ describe('[F20-REQ-005] the VoiceOver hint says what a tap does on this device (
     expect(l.canOpenURL).toHaveBeenCalledWith(expect.stringMatching(/^tel:/));
   });
 
-  it('the page takes its hint from rowHint, never a fixed "Starts a call."', () => {
-    const page = code('app/settings/struggling.tsx');
-    expect(page).toMatch(/const can = usePhoneAbility\(\)/);
-    expect(page).toMatch(/accessibilityHint=\{rowHint\(can\)\}/);
-    expect(page).not.toMatch(/callHint/);
+  it('both pages take the call hint from rowHint, never a fixed "Starts a call."', () => {
+    for (const f of ['app/settings/struggling.tsx', 'app/settings/struggling-elsewhere.tsx']) {
+      const page = code(f);
+      expect(page, f).toMatch(/const can = usePhoneAbility\(\)/);
+      expect(page, f).toMatch(/callHint=\{rowHint\(can\)\}/);
+      expect(page, f).not.toMatch(/helpLinks\.callHint/);
+    }
+    expect(code('app/settings/struggling.tsx')).toMatch(/label=\{emergency\.label\} accessibilityHint=\{rowHint\(can\)\}/);
+    const card = code('components/settings/helpline-card.tsx');
+    expect(card).toMatch(/accessibilityHint=\{a\.kind === 'call' \? callHint : copy\.helpLinks\.textHint\}/);
   });
 });
 
@@ -138,10 +159,14 @@ describe('[RT-SET-02] the screens', () => {
     }
   });
 
-  it('If you are struggling: each call goes through the fallback, and the sheet is on the page', () => {
-    const page = code('app/settings/struggling.tsx');
-    expect(page).toMatch(/onPress=\{\(\) => link\.open\(callTarget\(r\)\)\}/);
-    expect(page).toMatch(/\{link\.sheet\}/);
+  it('If you are struggling and Lines in other countries: every call and text goes through the fallback, and the sheet is on each page', () => {
+    for (const f of ['app/settings/struggling.tsx', 'app/settings/struggling-elsewhere.tsx']) {
+      const page = code(f);
+      expect(page, f).toMatch(/<HelplineCard key=\{line\.id\} line=\{line\} open=\{link\.open\}/);
+      expect(page, f).toMatch(/\{link\.sheet\}/);
+    }
+    expect(code('app/settings/struggling.tsx')).toMatch(/onPress=\{\(\) => link\.open\(emergency\.target!\)\}/);
+    expect(code('components/settings/helpline-card.tsx')).toMatch(/onPress=\{\(\) => open\(a\.target\)\}/);
   });
 
   it('every Write to us row goes through the fallback, and each screen draws the sheet', () => {

@@ -85,7 +85,8 @@ export function SpeechRow({ language }: { language: SpeechLanguage }) {
     for (const id of plan.packs) cancelPack(id);
   };
 
-  // One element for VoiceOver: the row is the button, its trailing word says what a tap does (S42).
+  // One element for VoiceOver: the row is the button. Its trailing word says what a tap does (S42) and is also the last
+  // part of the row's label (actionWord), so Voice Control hears "Tap Stop" and the word is read once, in the label.
   return (
     <ListRow
       title={name}
@@ -105,6 +106,7 @@ export function SpeechRow({ language }: { language: SpeechLanguage }) {
           'none'
         )
       }
+      actionWord={row.trailing ?? undefined}
       onPress={
         row.action === 'remove' ? confirmRemove : row.action === 'download' ? () => void startSpeechDownload(language) : row.action === 'stop' ? stop : undefined
       }

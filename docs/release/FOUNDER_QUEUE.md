@@ -20,6 +20,80 @@ Never paste a secret into a chat, an issue, the repo or an email (`docs/FOUNDER_
 
 ---
 
+## Build 12 founder actions (Tue 10 Nov 2026, newest first, read before everything below)
+
+Written by the release and operations engineer from the founder's 10 Nov answers to Karma's list and Karma's resulting rulings. Heads were read through GitHub REST on 10 Nov 2026 (UTC); a head moves when a branch is pushed, so re-read before you type a sha. One entry per action. "Words" is the exact sentence that unblocks it; a merge always names the PR and the full 40-character sha, so nobody merges a head you did not see.
+
+### What the rulings are (so every other document can be checked against them)
+
+- Sign-in is REQUIRED in Build 12 and signup must work (founder, 10 Nov, in his own words). Co-parent surfaces may show "coming soon" in Build 12; this replaces the earlier "hidden". Anything that says sign-in is optional, or that the reviewer joins the Asha sample book with an invite link, is stale.
+- Your answers of 10 Nov, as Karma recorded them: item 1 "Sure." (settled by Karma on 10 Nov as the ruling above; see F1); item 2 "Decide. I approve." (the words are approved); item 3 "You decide." (Karma set the two-phone test, F5); item 4 "Approved" (Memory Library F1 to F15 as Karma recommended).
+- Decision-day fallback rule for Build 12, in plain words (from `product`'s Build 12 plan of 9 Nov, gates G1 to G8): on the decision day, which is two working days before the submit date, ask one question per gate G1 to G8: is its dated evidence file in the release record, yes or no. Every answer yes: submit the account-first Build 12. Any answer no: submit the staged on-device binary (server features off) and ship account-first as 1.0.1. There is no partial account-first. The submit date itself is UNVERIFIED (the programme document was not read), so the decision day has no calendar date yet; F2 asks you to name it. The gate table is in the pull request that carries this change.
+- Two-phone test slide rule: the test is Thu 12 Nov only if you do F2 and F3 by the end of Wed 11 Nov (time zone not stated; I assume Pacific). If you do not, the test moves one day for every day F2 or F3 is late, and so does everything that waits for it.
+
+### Heads read through REST on 10 Nov 2026 (all open, all draft, none merged)
+
+| PR | Base | Head (40 characters) |
+|---|---|---|
+| #700 child name optional on the server (migration) | develop | `4bf5c449ed0485c7f3853c003d4f7500d999726e` |
+| #701 first book name may be empty, date required | develop | `dc7bf25fbdba580eb87167ec3b0a1b4d1d97658d` |
+| #722 sign-in-first gate, outage and local-start logic | develop | `df703307135f7102cb80a2d3b3f8abe54a7159f9` |
+| #724 account-first Welcome and sign in, outage and offline screens | develop | `d4a9983b22fcd121fcf0bd43736d91246a643d11` |
+| #728 account-first code screen, consent hand-off | develop | `3da02d5fb920cd57f03eb5f99d528de581b9a69b` |
+| #738 the You tab as signed in, signed out and local start | develop | `0cd8e1f176ab6bbd50404a401e8fd0d4dc96db57` |
+| #764 S17 tier 0, Opening your book on a new phone | `feat/mobile-you-tab-states` (a stack branch, not develop) | `6787af24a525ede3e257d80c6a92162f4a9356de` |
+| #760 counsel packet addendum (Q78 to Q91, Q103) | develop | `f6e08de98407960f8293c542410254b5e433410f` |
+| #761 founder-device run sheet, Memory Library spikes | develop | `1a3f8cce1fde008ffd7787840bbdc5ea325b3d31` |
+| #763 Memory Library parent study plan | develop | `a510bb61ddc3d97c5c8fd31e955e29afeb0baf03` |
+| #768 store, microphone, site and reminder lines true whether or not servers are on | develop | `67fd7c3ac7970b05e825feb4ddf93ca59f393e97` |
+| #769 store and site lines for sign-in and sync | `fix/content-store-copy-true-either-way-10nov` (stacked on #768) | read it fresh; it changes (last read `c55cc73247c98ebe39e23a83403201daed57198b`) |
+| #766 | develop | superseded by #768 and #769; do not merge (last read `3767bcaf86246fb650fd997cb9cfa2ab3ae3bb9a`) |
+| #767 groom co-parent work (BL-882 to BL-889) | develop | `046fcd3ec730ce7cadfe051bfa2e2dfae7620142` |
+
+The #760, #761 and #763 heads match the ones you were given. #700 is stamped `20261109000000`; as of `origin/develop` at `526c9b8b3` it is not in `.github/migrations-applied.txt`.
+
+### The actions
+
+| # | By | Who | What | How long | Blocks | Words to unblock |
+|---|---|---|---|---|---|---|
+| F1 | Settled 10 Nov | Founder | Nothing to do. Item 1 is settled: sign-in is required in Build 12 and signup must work. Co-parent surfaces may show "coming soon". Kept so the numbering holds | 0 | Nothing | None |
+| F2 | Wed 11 Nov | Founder | Name each stack merge: the PR and the 40-character head, for #700, #701, #722, #724, #728, #738 and, when its base has merged, #764. Merge #700 first (its migration must be applied before any servers-on build that contains #701; see F4). Re-read each head right before you type it | 10 minutes to read, plus the merge clicks | The two-phone test (F5); Build 12 itself | "merge #700 at 4bf5c449ed0485c7f3853c003d4f7500d999726e", then one such line per PR with the head you see that day |
+| F3 | Wed 11 Nov | Founder | Say "build": the go to cut the Build 12 candidate from the merged stack | 1 minute | The two-phone test (F5); the release candidate | "build" |
+| F4 | After #700 merges | Founder (production database access) | Apply the #700 migration to production, then record it in `supabase/APPLY.md` and `.github/migrations-applied.txt` (gate G8). Applying production changes is yours; the ops role does not touch it | 15 minutes (my estimate, not measured) | Any servers-on build that contains #701 reaching a person | "applied 20261109000000 on production" |
+| F5 | Thu 12 Nov, one block | Founder with two phones, and a second runner if you name one | The two-phone test, gate G9 (the S17 Tier 0 screen, #764, on a new phone). One block of about 2.5 hours | 150 minutes | G9; the Build 12 decision | "start the two-phone test" on the day, after F2 and F3 are done |
+| F6 | Wed 11 Nov | Founder | Send the counsel packet yourself (#760: Q78 to Q91 plus Q103). Only you merge `docs/legal`, so nobody else sends or merges it | 15 minutes to send (my estimate) | Counsel's read of Q78 to Q91 and Q103; gate G7 counts counsel's answers or your written risk acceptance | "sent the counsel packet" and then "merge #760 at f6e08de98407960f8293c542410254b5e433410f" |
+| F7 | Before the NX-05 step below | Founder | Sign off the reviewer sign-in path (NX-05). It stays a founder step: you make the path a reviewer can use to sign in, and the Notes for Review must describe exactly that path. Today's committed notes still describe the retired path (see the stale list in the pull request) | Not measured | Gate G6 (Notes for Review) and G4 (a reviewer path run by someone who is not you) | "NX-05 reviewer path is <the path>" |
+| F8 | Before the spikes | Founder | Give the explicit build go for the Memory Library spike harness. Not given yet | 1 minute | Everything in F9 | "build the spike harness" |
+| F9 | Over 16 days after F8 | Founder with three phones | Run the Memory Library device spikes from the run sheet in #761: about 8 hours 40 minutes in total over 16 days | 520 minutes in all | The Memory Library decision | "spike run <n> done" per sheet, and "merge #761 at 1a3f8cce1fde008ffd7787840bbdc5ea325b3d31" |
+| F10 | Before the study opens | Founder | Parent study (#763): sign the bars | Not measured | The study starting | "I sign the bars in #763 at a510bb61ddc3d97c5c8fd31e955e29afeb0baf03" |
+| F11 | Before the study opens | Founder | Set the incentive figure | 2 minutes | Recruiting | "the incentive is <amount>" |
+| F12 | Before the study opens | Founder | Set the participant count | 2 minutes | Recruiting | "the study has <n> parents" |
+| F13 | Before the study opens | Founder | Choose the recruiting routes | Not measured | Recruiting | "recruit through <routes>" |
+| F14 | Before the study opens | Founder | Name a second runner | 2 minutes | Running sessions when you cannot | "second runner is <name>" |
+| F15 | Before the study opens | Founder | Verify the support lines (the addresses and numbers participants are given) work | Not measured | Starting the study | "support lines checked" |
+| F16 | Before the Build 12 cut | Founder | Merge #768 (store, microphone, site and reminder lines true either way). The microphone string is compiled into the app, so it must be in before the cut; it holds counsel-read lines, so read them first. #766 is superseded by #768 and #769: do not merge #766 | 10 minutes to read (my estimate) | The Build 12 cut | "merge #768 at 67fd7c3ac7970b05e825feb4ddf93ca59f393e97" |
+| F17 | After the decision day, with the servers-on flip | Founder | Merge #769 only together with the `eas.json` servers-on flip, and only if account-first ships. If the fallback ships (staged on-device binary), do not merge it. Its head moves, so read it fresh | 5 minutes (my estimate) | The store and site lines for sign-in and sync | "merge #769 at <40-char sha read that day>" |
+| F18 | After the Build 12 screenshots are final | Founder (by hand) | Re-render `docs/store/screenshots/ios-6.9in/06-privacy.png` from `captions.json`, then upload it in App Store Connect by hand. Nobody else touches the store account | Not measured | The privacy screenshot matching the new lines | "06-privacy.png uploaded" |
+
+None of F8 and F10 to F15 has been given. #676 (drop dormant sign-in capabilities) is merged and resolved: Karma confirms it keeps the Apple sign-in entitlement and associated domains when servers are on, so it does not conflict with required sign-in (not re-read by me). F7 and F8 to F15 have no date from the founder; "before" means ahead of the thing it blocks.
+
+### Co-parent decisions (from the #767 body, BL-882 to BL-889; none blocks Build 12)
+
+#767 is an open draft at `046fcd3ec730ce7cadfe051bfa2e2dfae7620142`. Each line is the question and the recommendation written in that PR; none is decided. Say the number and "yes" or your change.
+
+1. Who may be invited first: a second parent only (two-parent cap, D-099, D-124)? Recommended: yes; grandparents later (D-055).
+2. Must the invitee have their own account and confirm 18+ before seeing anything? Recommended: yes, with Decline leaving no row.
+3. Is Leave offered in the first sharing release? Recommended: no, until left books are listed with read, export and delete (D-113); BL-885 does that first.
+4. When a parent deletes their account, what happens to the shared book? Recommended: the other parent keeps it; the leaver's letters are deleted or exported per the spec; counsel confirms.
+5. Ship the separated-households safety floor (FAM-11) with first sharing? Recommended: yes.
+6. Counsel: invitee consent wording and second-parent consent for a child's data (D-050 is Washington-specific). Recommended: send the BL-883 spec to counsel before BL-884 is built.
+7. Should the coming-soon page name a date or offer "tell me"? Recommended: neither (SET-08).
+8. Fold BL-882 (the one coming-soon state) into #720, or a separate PR? Recommended: fold in.
+9. Which release carries real sharing (a 1.0.x under D-121)? Recommended: decide after BL-883 sizes it.
+
+Open and unverified in that PR: whether Apple accepts a visible "coming soon" placeholder (guideline 2.1). The Notes for Review must say it is a placeholder and what Build 12 includes, and hiding the surfaces stays the fallback. D-126 ("no coming soon surface") needs a D-### entry from you to be amended for Build 12; none is written.
+
+
 ## 0. Dated steps from the CTO run (Fri 30 Oct 2026)
 
 The coordinator's proposed order for the weekend, from `docs/release/TESTFLIGHT.md` ("Where build 1 stands"). The freeze is Tue 3 Nov 5:00 AM PT and the go/no-go Mon 9 Nov (the two dates were confirmed by the founder on 30 Oct and the hour is the coordinator's; the earlier proposal was Thu 5 Nov, `docs/release/AUTOMATION.md` section 6). The other dates below are proposals. Minutes are your hands-on time: the named steps' own figures where they give one, and the coordinator's estimate for rows 1, 4, 5a, 5b and 7; the waits are not yours. Never paste a secret into a chat. This section repeats steps that W0-08, W0-09, W0-14 and Q2-01 to Q2-10 hold, in the order for the weekend; those ids stay the record.

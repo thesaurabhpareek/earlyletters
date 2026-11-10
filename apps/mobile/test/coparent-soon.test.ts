@@ -13,6 +13,7 @@ import { brand } from '@scribe/brand';
 import { familyCopy } from '@scribe/content';
 import { classifyIncomingUrl } from '../src/lib/auth/links.logic';
 import { COPARENT_NOTIFY_KEY, coParentNotifyRequestedOn, hasRequestedCoParentNotify, requestCoParentNotify } from '../src/lib/family/coming-soon.logic';
+import { isAlphaBuild } from '../src/lib/billing/alpha';
 import { allowedLinkRoute, INVITE_ENTRIES, inviteDestination, inviteHref, LEAVE_BOOK_OFFERED, LINK_ROUTE_ALLOWLIST, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');

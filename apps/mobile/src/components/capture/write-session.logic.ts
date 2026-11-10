@@ -1,9 +1,15 @@
 /**
  * Write's words between the keyboard and this phone (S19; founder report on TestFlight build 1; PR #545 review B).
  *
- * The page is uncontrolled: each keystroke lands here (`change`), never back in the field. A pause of `delayMs`
- * writes the words to this phone. Every way out writes the newest words first, so the last keystrokes typed inside
- * the pause are never dropped:
+ * The page is uncontrolled: each keystroke lands here (`change`), never back in the field. The words reach this phone
+ * at least every `delayMs` while someone types (F04-REQ-011, RT-WRT-05): the first keystroke after a write arms one
+ * timer, later keystrokes do not move it, and when it fires it writes the newest words, not the ones it was armed with.
+ * So a kill, a crash or a flat battery loses at most the last `delayMs` of typing, however long the burst. That write
+ * is quiet (`persist(value, true)`): it puts the words on the phone and the page does nothing else, so the autosave
+ * line, its announcement and a render of Write still come only after a real pause. A second timer, moved by every
+ * keystroke, finds that pause: after `delayMs` with no keystroke the newest words are written, or, when a quiet write
+ * already put them there, only `settled` is told (words already on the phone are not written twice).
+ * Every way out writes the newest words first, so the last keystrokes typed inside the window are never dropped:
  * - Close (`close`): an empty typed draft is deleted (a recording draft is always kept); words that cannot be written
  *   keep Write open (false), so they are never lost.
  * - "Add to Asha's book" and "Keep private" (`keep`): the words are written now, then the draft is handed to Review;
@@ -11,15 +17,24 @@
  * - A swipe down or any other unmount (`unmount`): a pending write, or one that did not go through, is written now with
  *   the newest words.
  * - The app leaving the foreground (`background`, on AppState `inactive` or `background`; QE-06): the newest words are
- *   written now, because iOS pauses timers in the background and may end the app before the pause ever fires. A write
+ *   written now, because iOS pauses timers in the background and may end the app before the timer ever fires. A write
  *   that did not go through is tried again here too. Words already on the phone are not written twice.
- * Pure and timer-injected, so it runs in Node with fake timers against the real store (test/write-session.test.ts).
+ * A write that did not go through is tried again by the next quiet write (a keystroke later, within `delayMs`), and
+ * shown, as "Not saved yet", at the next pause.
+ * Pure and timer-injected, so it runs in Node with fake timers against the real store (test/write-session.test.ts,
+ * test/write-autosave.test.ts).
  */
 export const WRITE_AUTOSAVE_MS = 500;
 
 export type WriteSessionIo = {
-  /** Write the words to this phone (write.tsx `persist`: writeWords, then the autosave line). False when it did not go through. */
-  persist: (value: string) => boolean;
+  /**
+   * Write the words to this phone (write.tsx `persist`: writeWords, then the autosave line). False when it did not go
+   * through. `quiet` is a write inside an unbroken burst of typing: only the words go to the phone, with no autosave
+   * line, announcement or render, which wait for the pause.
+   */
+  persist: (value: string, quiet: boolean) => boolean;
+  /** Typing paused and the newest words were already on this phone (a quiet write put them there): the autosave line says so now. */
+  settled: (value: string) => void;
   /** The typed draft written so far, if any. */
   draftId: () => string | null;
   /** Whether the draft holds a recording (reached from Review with ?draftId=): such a draft is never deleted here. */
@@ -34,7 +49,7 @@ export type WriteSession = {
   change: (value: string) => void;
   /** The newest words. */
   latest: () => string;
-  /** Whether a write is waiting for the pause. */
+  /** Whether a write, or the pause that follows typing, is waiting on a timer. */
   pending: () => boolean;
   /** Close: true when Write may leave. */
   close: () => boolean;
@@ -56,32 +71,52 @@ export function createWriteSession(
   const delay = opts.delayMs ?? WRITE_AUTOSAVE_MS;
   const timers: Timers = opts.timers ?? { set: (fn, ms) => setTimeout(fn, ms), clear: (h) => clearTimeout(h as ReturnType<typeof setTimeout>) };
   let latest = opts.initial;
-  let timer: unknown = null;
+  // Moved by every keystroke: fires after `delay` with no keystroke, the pause that shows the autosave line.
+  let pause: unknown = null;
+  // Armed by the first keystroke after a write and then left alone: fires within `delay` of it, mid-burst or not.
+  let wait: unknown = null;
   // Words typed since the last write that went through: what `background` must still put on the phone.
   let unsaved = false;
-  const write = (value: string): boolean => {
-    const ok = io.persist(value);
+  const write = (value: string, quiet = false): boolean => {
+    const ok = io.persist(value, quiet);
     if (ok && value === latest) unsaved = false;
     return ok;
   };
 
+  const cancelPause = () => {
+    if (pause !== null) timers.clear(pause);
+    pause = null;
+  };
+  const cancelWait = () => {
+    if (wait !== null) timers.clear(wait);
+    wait = null;
+  };
   const cancel = () => {
-    if (timer !== null) timers.clear(timer);
-    timer = null;
+    cancelPause();
+    cancelWait();
   };
 
   return {
     change(value) {
       latest = value;
       unsaved = true;
-      cancel();
-      timer = timers.set(() => {
-        timer = null;
-        write(value);
+      cancelPause();
+      pause = timers.set(() => {
+        pause = null;
+        cancelWait(); // the pause comes first: nothing is left for the other timer to write
+        if (unsaved) write(latest);
+        else io.settled(latest);
       }, delay);
+      // Not re-armed by later keystrokes: that would make this a debounce again, and a long burst would write nothing.
+      if (wait === null) {
+        wait = timers.set(() => {
+          wait = null;
+          if (unsaved) write(latest, true); // `latest` now, not the words this timer was armed with
+        }, delay);
+      }
     },
     latest: () => latest,
-    pending: () => timer !== null,
+    pending: () => pause !== null || wait !== null,
     close() {
       // Close writes now and disarms the pause, so a later flush never writes twice or brings back a deleted draft.
       cancel();
@@ -101,12 +136,12 @@ export function createWriteSession(
       return io.draftId();
     },
     unmount() {
-      if (timer === null && !unsaved) return;
       cancel();
-      write(latest);
+      if (unsaved) write(latest); // words a quiet write already put on the phone are not written twice
     },
     background() {
-      if (timer === null && !unsaved) return;
+      // Nothing unsaved: a pause still waiting just says so when it fires (iOS pauses the timer, it resumes on return).
+      if (!unsaved) return;
       cancel();
       write(latest);
     },
