@@ -49,6 +49,28 @@ export function accountDeletionDecision(environmentsMd, profile = PROFILE) {
   return null;
 }
 
+/** Entitlement keys only a build that can sign in carries (app.config.ts SIGN_IN_ENTITLEMENTS). */
+export const SIGN_IN_ENTITLEMENTS = ['com.apple.developer.applesignin', 'com.apple.developer.associated-domains'];
+const GOOGLE_PLUGIN = '@react-native-google-signin/google-signin';
+
+/**
+ * Every sign-in capability an evaluated config still carries: `cfg` is the public config, `introspected` the
+ * `expo config --type introspect` result, which holds the entitlements and Info.plist that prebuild writes (mods
+ * included, so the Sign in with Apple key that expo-apple-authentication adds on its own shows up there).
+ */
+export function signInCapabilities(cfg, introspected) {
+  const ent = Object.keys(introspected?.ios?.entitlements ?? {});
+  const schemes = (introspected?.ios?.infoPlist?.CFBundleURLTypes ?? []).flatMap((t) => t?.CFBundleURLSchemes ?? []);
+  const plugins = (cfg?.plugins ?? []).map((p) => (Array.isArray(p) ? p[0] : p));
+  return [
+    ...(cfg?.ios?.usesAppleSignIn ? ['ios.usesAppleSignIn'] : []),
+    ...((cfg?.ios?.associatedDomains ?? []).length ? [`ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')})`] : []),
+    ...ent.filter((k) => SIGN_IN_ENTITLEMENTS.includes(k)).map((k) => `entitlement ${k}`),
+    ...schemes.filter((u) => /^com\.googleusercontent\.apps\./.test(String(u))).map((u) => `Google URL scheme ${u}`),
+    ...(plugins.includes(GOOGLE_PLUGIN) ? [`the ${GOOGLE_PLUGIN} plugin`] : []),
+  ];
+}
+
 const isOff = (v) => String(v ?? '').trim().toLowerCase() === 'off';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,6 +79,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *
  * - `eas`: apps/mobile/eas.json, parsed
  * - `cfg`: `expo config --type public --json` with the production profile's env, or null when it did not evaluate
+ * - `introspected`: `expo config --type introspect --json` with the same env (entitlements and Info.plist after mods), or null
  * - `environmentsMd`: docs/release/ENVIRONMENTS.md
  * - `keysSource`: packages/api/src/keys.ts
  * - `publishedSource`: supabase/functions/config/published.ts
@@ -66,9 +89,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
  * - `mobilePackage`: apps/mobile/package.json, parsed (absent or unreadable counts as no expo-updates)
  *
- * Each result has an `id`: app-env, english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
- * pack-manifest, privacy-manifest, version, project-id, update-channel, asc-app-id, seams, secrets (and config when
- * `expo config` failed).
+ * Each result has an `id`: app-env, english-only, spoken-languages, analytics, servers, backup, status-report, account-deletion,
+ * signing-keys, pack-manifest, privacy-manifest, sign-in, version, project-id, update-channel, asc-app-id, seams, secrets
+ * (and config when `expo config` failed).
  */
 export function productionChecks(input) {
   const { results, pass, fail, unverified, check } = createReport();
@@ -95,6 +118,15 @@ export function productionChecks(input) {
     `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the first store build offers English only, D-121 item 1)`,
     `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(env.EXPO_PUBLIC_ENGLISH_ONLY)}; the store build must say "on" (D-121 item 1), or the picker offers languages the listing does not name.`,
     'english-only',
+  );
+
+  // D-121 item 1, D-125 item 2: the spoken-language list is written out and names English alone. A language joins it
+  // only in the release whose listing names it, after its own gate; that pull request changes this check with it.
+  check(
+    (env.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').trim().toLowerCase() === 'en',
+    `${PROFILE} profile: EXPO_PUBLIC_SPOKEN_LANGUAGES=en (the store build hears English only, D-121 item 1)`,
+    `${PROFILE} profile EXPO_PUBLIC_SPOKEN_LANGUAGES is ${JSON.stringify(env.EXPO_PUBLIC_SPOKEN_LANGUAGES)}; the store build must say "en" (D-121 item 1, D-125 item 2): unset means every language, and any other language needs its gate and a listing that names it.`,
+    'spoken-languages',
   );
 
   // D-088: no analytics in the first store build, and no PostHog key named in the profile.
@@ -177,6 +209,34 @@ export function productionChecks(input) {
         ? 'No privacy manifest in the production config (ios.privacyManifests), tracking is not false, or it declares no required-reason category.'
         : `The production privacy manifest declares collected data (${collected.map((c) => c.NSPrivacyCollectedDataType).join(', ')}) in a build with server features off.`,
       'privacy-manifest',
+    );
+  }
+
+  // Guideline 2.5.19 (no dormant features; store compliance review for build 12, risk 5): the store build with servers
+  // off has no sign-in, so it carries no Sign in with Apple entitlement, no associated domains and no Google URL
+  // scheme (app.config.ts signInCapable). With servers ON (the sign-in build) the reverse holds: the Apple entitlement
+  // and associated domains must be present, or sign-in would ship without its capabilities. Read from the introspected
+  // config, which is what prebuild writes.
+  {
+    const found = signInCapabilities(cfg, input.introspected);
+    const serversOn = cfg?.extra?.serverFeatures === true;
+    // Build 12 has no Google sign-in. This reads the built artifact (URL scheme, plugin); a Google client-id check on the
+    // profile's env names (#698) is a different input, so the two do not duplicate.
+    const google = found.filter((f) => f.startsWith('Google URL scheme') || f.includes('google-signin'));
+    const evaluated = Boolean(cfg) && Boolean(input.introspected);
+    const hasApple = found.includes('ios.usesAppleSignIn') && found.some((f) => f === `entitlement ${SIGN_IN_ENTITLEMENTS[0]}`);
+    const hasDomains = found.some((f) => f.startsWith('ios.associatedDomains')) && found.includes(`entitlement ${SIGN_IN_ENTITLEMENTS[1]}`);
+    check(
+      evaluated && (serversOn ? hasApple && hasDomains && google.length === 0 : found.length === 0),
+      serversOn
+        ? 'sign-in capabilities in the servers-on build: Sign in with Apple entitlement and associated domains present (app.config.ts signInCapable)'
+        : 'no sign-in capability in the store build: no Sign in with Apple entitlement, no associated domains, no Google URL scheme (guideline 2.5.19; the native modules stay linked, dormant)',
+      !evaluated
+        ? `\`expo config --type introspect\` did not evaluate with the ${PROFILE} profile's env${input.introspectError ? `: ${input.introspectError}` : ''}, so the entitlements cannot be checked.`
+        : serversOn
+          ? `The ${PROFILE} profile has server features on but the evaluated config lacks the Sign in with Apple entitlement or the associated domains, or carries a Google URL scheme or plugin, which build 12 does not offer (found: ${found.join('; ') || 'none'}). app.config.ts signInCapable keeps them whenever server features are on.`
+          : `The ${PROFILE} config carries ${found.join('; ')}, but this build offers no sign-in (guideline 2.5.19, "no hidden, dormant, or undocumented features"). app.config.ts signInCapable leaves them out of a production build with server features off.`,
+      'sign-in',
     );
   }
 
@@ -292,10 +352,15 @@ export function readInputs(mobileDir, shellEnv = process.env) {
   }
   const r = expo(mobileDir, ['config', '--type', 'public', '--json'], mobileDir, buildEnv);
   const cfg = parseJsonOut(r);
+  const ri = expo(mobileDir, ['config', '--type', 'introspect', '--json'], mobileDir, buildEnv);
+  const introspected = parseJsonOut(ri);
+  const tail = (x) => (x.stderr || x.stdout || '').trim().split('\n').slice(-3).join(' | ');
   return {
     eas,
     cfg,
-    cfgError: cfg ? undefined : (r.stderr || r.stdout || '').trim().split('\n').slice(-3).join(' | '),
+    cfgError: cfg ? undefined : tail(r),
+    introspected,
+    introspectError: introspected ? undefined : tail(ri),
     environmentsMd: read(join(repo, 'docs/release/ENVIRONMENTS.md')),
     keysSource: read(join(repo, 'packages/api/src/keys.ts')),
     publishedSource: read(join(repo, 'supabase/functions/config/published.ts')),

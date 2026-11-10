@@ -38,11 +38,13 @@ import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, latestDueDate, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { LockOffer } from '@/components/app-lock/lock-offer';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
+import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
 import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
@@ -62,6 +64,7 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { capabilities } from '@/lib/capabilities';
+import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { ordinalOf, track } from '@/lib/analytics/track';
@@ -131,7 +134,7 @@ function FirstRun() {
   const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  const doors = visibleCoParentDoors(capabilities.coParent);
+  const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
@@ -426,8 +429,7 @@ function FirstRun() {
                               value={expecting ? dueDate : birthday}
                               onChange={expecting ? setDueDate : setBirthday}
                               startISO={today}
-                              min={expecting ? today : undefined}
-                              max={expecting ? latestDueDate(today) : today}
+                              {...dateRange(expecting ? 'due' : 'born', today)}
                             />
                           </View>
                         </View>
@@ -467,7 +469,7 @@ function FirstRun() {
                     <Text variant="footnote">{o.signsAs.notYetHelp}</Text>
                   </View>
                   {/* The spoken language, under a hairline, with no footer (S06). Hidden in an English-only build (SET-06). */}
-                  {showOnboardingLanguageRow(capabilities.englishOnly) && (
+                  {showOnboardingLanguageRow(hearsOnlyEnglish(heardLanguagesForBuild())) && (
                     <View className="gap-4">
                       <Separator />
                       <ListSection>
@@ -510,6 +512,9 @@ function FirstRun() {
                   <View className="self-stretch">
                     <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
                   </View>
+                  {/* The app lock, offered once with two equal buttons and off until turned on (F1, CPO-2). Hidden on a
+                      phone with no passcode (components/app-lock/lock-offer.tsx). */}
+                  <LockOffer child={child} />
                 </>
               )}
             </Animated.View>

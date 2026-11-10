@@ -19,7 +19,7 @@ The registry masters (`packages/brand/registry.json`, `packages/brand/assets/`) 
 | `play/feature-graphic-1024x500-night.png` | 1024x500 | Same, night, for A/B or dark listing. |
 | `social/link-preview-paper-1200x630.png` | 1200x630 | Open Graph / Twitter large card, default. Content sits inside the centre 1000x500. |
 | `social/link-preview-night-1200x630.png` | 1200x630 | Night variant (campaign links). |
-| `social/link-preview-category-1200x630.png` | 1200x630 | Adds the category line "The baby memory book you fill by talking." and "Your words. Your voice. Every change marked." for first contact (BRAND.md naming rule). |
+| `social/link-preview-category-1200x630.png` | 1200x630 | Adds the descriptor line "Letters to your child, in your own words and voice." (D-139) and "Your words. Your voice. Every change marked." for first contact (BRAND.md naming rule). |
 | `promo/promo-square-1080x1080-paper.png` | 1080x1080 | App Store / social promotional art, "Said once. Heard for years." |
 | `promo/promo-story-1080x1920-night.png` | 1080x1920 | 9:16 story / Apple promotional art, "It stays in your words." |
 
