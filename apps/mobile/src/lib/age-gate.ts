@@ -1,23 +1,22 @@
 /**
- * App glue for the 18+ entry gate (rules in age-gate.logic.ts). The root
- * layout calls useAgeGate() and renders no route at all until it says
- * 'pass', so first run, Tonight, invites and deep links all sit behind it.
+ * App glue for the 18+ entry gate and Before you begin (rules in age-gate.logic.ts and agreements.logic.ts). The
+ * root layout calls useAgeGate() and renders no route at all until it says 'pass', so first run, Tonight, invites
+ * and deep links all sit behind it. An install that passed the old gate but holds no Terms agreement (build 1) gets
+ * 'agree': the agreement once, without the age question.
  */
+import Constants from 'expo-constants';
 import { useCallback, useEffect, useState } from 'react';
 import { AppState } from 'react-native';
-import { answerGate, decideGate, type GateDecision } from './age-gate.logic';
+import { AGE_GATE_PASSED_KEY as PASSED, AGE_GATE_STOPPED_KEY as STOPPED_AT, answerGate, decideGate } from './age-gate.logic';
+import { agreementRows, decideEntry, type AgreementSurface, type EntryDecision } from './agreements.logic';
 import { clearPendingInvite } from './family/pending-invite';
-import { deleteSetting, getSetting, setSetting, subscribeTo } from './store';
+import { deleteSetting, getSetting, hasAgreement, recordAgreement, setSetting, subscribeTo, uuidv7 } from './store';
 
-// Keys from docs/DECISIONS.md D-026 (DATA_CLASSIFICATION 4.6, L2).
-const PASSED = 'ageGate.passed';
-const STOPPED_AT = 'ageGate.stoppedAt';
-
-function readDecision(now = Date.now()): GateDecision {
+function readDecision(now = Date.now()): EntryDecision {
   const stoppedAt = getSetting(STOPPED_AT);
   const r = decideGate({ passed: getSetting(PASSED) === '1', stoppedAt }, now);
   if (r.stoppedAt && r.stoppedAt !== stoppedAt) setSetting(STOPPED_AT, r.stoppedAt);
-  return r.decision;
+  return decideEntry(r.decision, r.decision === 'pass' ? hasAgreement('terms') : false);
 }
 
 /**
@@ -36,13 +35,29 @@ export function answerAgeGate(answer: 'yes' | 'no'): void {
   }
 }
 
+/**
+ * Yes plus a ticked box (or the tick alone on an install that already passed the age question): the Terms and
+ * Privacy rows, and with `passAge` the age boolean, in one transaction. `sentence` is the agreement text exactly as
+ * rendered; only its hash is kept. Nothing here is logged.
+ */
+export function acceptBeforeYouBegin(sentence: string, surface: AgreementSurface, passAge: boolean): void {
+  const rows = agreementRows({
+    sentence,
+    surface,
+    now: new Date().toISOString(),
+    appVersion: Constants.expoConfig?.version ?? '0.0.0',
+    newId: () => uuidv7(),
+  });
+  recordAgreement(rows, passAge);
+}
+
 /** The 24 hours have passed and the parent asked to answer again. */
 export function reopenAgeGate(): void {
   deleteSetting(STOPPED_AT);
 }
 
-export function useAgeGate(): { decision: GateDecision; refresh: () => void } {
-  const [decision, setDecision] = useState<GateDecision>(() => readDecision());
+export function useAgeGate(): { decision: EntryDecision; refresh: () => void } {
+  const [decision, setDecision] = useState<EntryDecision>(() => readDecision());
   const refresh = useCallback(() => setDecision(readDecision()), []);
   // Erase everything (lib/erase-everything.ts) removes the stored answer with every other setting: the question
   // comes back at once, as on first run. A settings change only moves the decision away from 'pass'; the move to
@@ -68,3 +83,4 @@ export function useAgeGate(): { decision: GateDecision; refresh: () => void } {
   return { decision, refresh };
 }
 
+// android: same
