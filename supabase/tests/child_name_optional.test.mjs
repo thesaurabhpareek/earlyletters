@@ -50,6 +50,16 @@ check('[NX-31-R28] create_first_run_children still refuses a book without a date
 check('[NX-31-R28] a later edit may set the name', (await codeOf(() => as(A, `select public.book_update($1, '{"name": "Asha"}'::jsonb)`, [empty]))) === 'ok' && (await stored(empty))?.name === 'Asha');
 check('[NX-31-R28] a later edit may clear the name', (await codeOf(() => as(A, `select public.book_update($1, '{"name": ""}'::jsonb)`, [empty]))) === 'ok' && (await stored(empty))?.name === '');
 check('[NX-31-R28] a later edit still cannot pass 60 characters', (await codeOf(() => as(A, `select public.book_update($1, $2::jsonb)`, [empty, JSON.stringify({ name: 'a'.repeat(61) })]))) === '23514');
+check('[NX-31-R28] a later edit trims the name, like create',
+  (await codeOf(() => as(A, `select public.book_update($1, '{"name": "  Asha  "}'::jsonb)`, [empty]))) === 'ok' && (await stored(empty))?.name === 'Asha');
+check('[NX-31-R28] a later edit of spaces only, or null, stores the empty string, like create',
+  (await codeOf(() => as(A, `select public.book_update($1, '{"name": "   "}'::jsonb)`, [empty]))) === 'ok' && (await stored(empty))?.name === ''
+  && (await codeOf(() => as(A, `select public.book_update($1, '{"name": "Asha"}'::jsonb)`, [empty]))) === 'ok'
+  && (await codeOf(() => as(A, `select public.book_update($1, '{"name": null}'::jsonb)`, [empty]))) === 'ok' && (await stored(empty))?.name === '');
+check('[NX-31-R28] a later edit of 60 characters plus spaces is accepted, 61 after trimming is refused',
+  (await codeOf(() => as(A, `select public.book_update($1, $2::jsonb)`, [empty, JSON.stringify({ name: ' ' + 'a'.repeat(60) + ' ' })]))) === 'ok'
+  && (await stored(empty))?.name === 'a'.repeat(60)
+  && (await codeOf(() => as(A, `select public.book_update($1, $2::jsonb)`, [empty, JSON.stringify({ name: ' ' + 'a'.repeat(61) })]))) === '23514');
 
 // Access rules are unchanged: nobody but the server's own code calls the row writer.
 check('[NX-31-R28] users still cannot call create_child_row', (await codeOf(() => as(A, `select public.create_child_row($1, $2, '', '2025-04-12', null)`, [A, uuid7()]))) === '42501');

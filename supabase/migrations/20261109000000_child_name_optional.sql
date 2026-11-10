@@ -10,6 +10,7 @@
 --   alter table public.children drop constraint children_name_check;
 --   alter table public.children add constraint children_name_check
 --     check (char_length(name) between 1 and 60);
+--   and re-create book_update from the 20261015000000 definition (name = d ->> 'name'),
 --   and re-create create_child_row from the 20261004000000_plus_on_device_only.sql definition
 --   but WITH `set search_path = pg_catalog, public, pg_temp` (that file has `public,
 --   pg_catalog`, no pg_temp, which the pg_temp_search_path tests refuse), then re-run:
@@ -37,8 +38,10 @@
 --      it and validate nothing themselves, so they need no new definition. A name of spaces
 --      or a missing name is stored as ''. More than 60 characters is still refused (22023).
 --      A birthday or a due date is still required (22023); each refusal has its own message.
---   3. book_update writes the name straight to the column, so a later edit may now set or
---      clear it; the table check still stops 61 characters (23514). Not redefined.
+--   3. book_update (from 20261015000000, only the name line changes): a later edit follows
+--      the same rule as create. The name is trimmed; spaces only, '' or a JSON null store ''
+--      (before: spaces were stored as spaces, and null raised 23502). A later edit may set
+--      or clear the name; the table check still stops 61 characters after trimming (23514).
 --
 -- Access: unchanged. create_child_row stays callable by no client role. search_path is
 -- pinned with pg_temp last (20261028000000). No new function, table or column, so nothing
@@ -89,3 +92,45 @@ $$;
 
 -- Same grants as before, stated again so this file is the whole picture: no client role.
 revoke all on function public.create_child_row(uuid, uuid, text, date, date) from public, anon, authenticated, service_role;
+
+-- From 20261015000000: the name rule only. Same trim-or-empty rule as create_child_row, in the
+-- SET and in the "did anything change" comparison, so a no-op edit still writes no row.
+create or replace function public.book_update(p_child uuid, p_data jsonb)
+returns void language plpgsql volatile security definer set search_path = pg_catalog, public, pg_temp as $$
+declare
+  v_uid uuid := public.require_user();
+  d jsonb := coalesce(p_data, '{}'::jsonb);
+begin
+  if jsonb_typeof(d) <> 'object' then
+    raise exception 'book data must be an object' using errcode = '22023';
+  end if;
+  if exists (select 1 from jsonb_object_keys(d) x
+              where x not in ('name', 'nickname', 'date_of_birth', 'due_date', 'family_can_read')) then
+    raise exception 'unknown book field' using errcode = '22023';
+  end if;
+  if p_child is null or not public.is_child_member(p_child) then
+    raise exception 'book not found' using errcode = 'P0002';
+  end if;
+  perform public.require_content_consent();
+  if not public.is_child_parent(p_child) then
+    raise exception 'children: only a parent can change book settings' using errcode = 'SCPAR';
+  end if;
+  update children c set
+    name = case when d ? 'name' then coalesce(btrim(d ->> 'name'), '') else c.name end,
+    nickname = case when d ? 'nickname' then nullif(btrim(d ->> 'nickname'), '') else c.nickname end,
+    date_of_birth = case when d ? 'date_of_birth' then (d ->> 'date_of_birth')::date else c.date_of_birth end,
+    due_date = case when d ? 'due_date' then (d ->> 'due_date')::date else c.due_date end,
+    family_can_read = case when d ? 'family_can_read' then (d ->> 'family_can_read')::boolean else c.family_can_read end
+  where c.id = p_child
+    and (c.name, c.nickname, c.date_of_birth, c.due_date, c.family_can_read) is distinct from
+        (case when d ? 'name' then coalesce(btrim(d ->> 'name'), '') else c.name end,
+         case when d ? 'nickname' then nullif(btrim(d ->> 'nickname'), '') else c.nickname end,
+         case when d ? 'date_of_birth' then (d ->> 'date_of_birth')::date else c.date_of_birth end,
+         case when d ? 'due_date' then (d ->> 'due_date')::date else c.due_date end,
+         case when d ? 'family_can_read' then (d ->> 'family_can_read')::boolean else c.family_can_read end);
+end;
+$$;
+
+-- Same grants as 20261015000000, stated again: signed-in people only.
+revoke execute on function public.book_update(uuid, jsonb) from public, anon;
+grant execute on function public.book_update(uuid, jsonb) to authenticated;
