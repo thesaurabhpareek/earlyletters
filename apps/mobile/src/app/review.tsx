@@ -623,14 +623,14 @@ export default function Review() {
     player.pause();
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
-    // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
-    // (BL-563). The take stays; the words wait in Review starts when the save ends.
-    const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
-    if (!settled) {
-      saving.current = false;
-      return;
-    }
     try {
+      // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
+      // (BL-563). The take stays; the words wait in Review starts when the save ends.
+      const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
+      if (!settled) {
+        saving.current = false;
+        return;
+      }
       const audio = await ensureAudioHash(settled);
       // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
       // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
