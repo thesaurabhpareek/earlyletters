@@ -175,7 +175,7 @@ TDD 10 found about 150 PRD requirements, 50 P0 LEGAL-REQ and 55 DATA-REQ marked 
 ### 3.2 Section B: first run, family, privacy, personalization
 | ID | P | Area | Requirement | Rev |
 |---|---|---|---|---|
-| B-REQ-001 | P0 | First run | Only name and birthday or due date required | |
+| B-REQ-001 | P0 | First run | Only birthday or due date required; child name optional ("Your child" when empty) | NX-31-R3, R28 (10 Nov 2026) |
 | B-REQ-002 | P0 | First run | Signature before the first letter | |
 | B-REQ-003 | P0 | First run | Languages and Hindi script drive transcription | |
 | B-REQ-004 | P0 | Children | Multiple children, switcher, "To {child}"; detailed by PRD-REQ-011 to 015 | K-12 |
@@ -645,7 +645,7 @@ Each line is a pass or fail test. Automated tests are marked [auto]; manual scri
 - [ ] [auto] Sign out or Apple revocation never discards an unsynced letter (A-REQ-033).
 
 ### 6.2 First run, family, privacy
-- [ ] [auto] Only name plus birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
+- [ ] [auto] Only a birthday or due date is required (the child name is optional); nothing asks for surname, gender, photo or contacts (B-REQ-001).
 - [ ] [auto] A Hindi plus Devanagari choice transcribes with Hindi enabled and renders Devanagari, untranslated (B-REQ-003).
 - [ ] [auto] A contributor calling invite creation is rejected; a parent invite carries an explicit role (B-REQ-007; `create_child_invite` fix, LEGAL-REQ-024).
 - [ ] [manual] (1.3) A grandparent invited as Family installs the app from the invite link, passes the 18+ gate, signs in, and saves a first letter to the named child's book; both parents see it as pending (B-REQ-007, B-REQ-009, K-35).

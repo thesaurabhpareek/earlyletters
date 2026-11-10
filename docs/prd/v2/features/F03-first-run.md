@@ -166,7 +166,7 @@ Renamed on 14 Oct 2026 (R5 EQ-05): F03-REQ-010 and F03-REQ-011 replace rows that
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
-| B-REQ-001 | P0 | Only name and birthday or due date required | Given "Asha" and a birthday, When Continue, Then a child exists with no other fields and nothing asked for surname, gender, photo or contacts; Given no date, Then Continue is disabled with the help line | B-REQ-001 |
+| B-REQ-001 Rev (NX-31-R3, R28) | P0 | Only birthday or due date required; child name optional | Given "Asha" and a birthday, When Continue, Then a child exists with no other fields and nothing asked for surname, gender, photo or contacts; Given a birthday and no name, Then a child exists and the app says "Your child"; Given no date, Then Continue is disabled with the help line | B-REQ-001, ruling B12-4, #700, #701 |
 | B-REQ-002 | P0 | Signature before the first letter | Given "Papa", Then letters to this child are signed "From Papa"; Given different signatures for two children, Then each book shows its own | B-REQ-002 |
 | B-REQ-003 Rev (B4, DR-01) | P0 | Per-author letter languages from the seven; transcription only for languages that passed their gate; script or variety where relevant | Given Hindi and Devanagari with Hindi passed, When recording, Then transcription runs with `language: hi` and renders Devanagari, untranslated; Given Arabic (not passed), Then the recording is kept, the author types, and no model transcribes it | B-REQ-003, DR-01, R5 8.1 |
 | B-REQ-005 | P0 | Due-date mode creates the book | Given Not here yet and a due date, When a letter is saved, Then it files into Before You (F09) | B-REQ-005 |

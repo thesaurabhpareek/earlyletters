@@ -160,7 +160,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 
 | ID | P | Requirement |
 |---|---|---|
-| B-REQ-001 | P0 | Required: child name and birthday or due date. All else optional. |
+| B-REQ-001 Rev | P0 | Required: birthday or due date. The child's name is optional; a child with no name shows "Your child". All else optional. |
 | B-REQ-002 | P0 | Author signature ("What does {child} call you?") captured before the first letter. |
 | B-REQ-003 | P0 | Languages and Hindi script preference, driving transcription. |
 | B-REQ-004 | P0 | Multiple children; switcher; "To {child}" while recording; changeable before save. |
@@ -193,6 +193,8 @@ P0 launch blocker, P1 launch quarter, P2 later.
 **B-REQ-001**
 - Given "Asha" and a birthday, When Continue, Then a child exists with no other fields, And nothing asks for surname, gender, photo or contacts.
 - Given no birthday or due date, Then Continue stays disabled with "We sort letters by {child}'s month of age."
+- Given a birthday and no name, When Continue, Then a child exists, And wherever the name would show, the app says "Your child".
+- Rev note (10 Nov 2026): the name was required; it is now optional and the date stays required. Decided by the founder, via Karma, on 9 to 10 Nov 2026 (NX-31-R3, NX-31-R28; ruling B12-4, `infra/cto-rulings-2026-11-09-build12-cut.md`). Evidence: #700 (migration), #701 (phone side).
 
 **B-REQ-002**
 - Given the parent picks "Papa", Then their letters to this child are signed "From Papa".
