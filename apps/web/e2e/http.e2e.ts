@@ -15,13 +15,14 @@ test.describe('robots.txt and sitemap.xml', () => {
     expect(text).toContain(`Sitemap: ${siteOrigin}/sitemap.xml`);
   });
 
-  test('sitemap.xml lists the home page, /privacy and /terms, all on the primary domain, with each page date', async ({ request }) => {
+  test('sitemap.xml lists the home page, /privacy and /terms, all on the primary domain, with each page date, and not the versioned test texts', async ({ request }) => {
     const res = await request.get('/sitemap.xml');
     expect(res.status()).toBe(200);
     expect(res.headers()['content-type']).toMatch(/xml/);
     const xml = await res.text();
     const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
     expect(locs).toEqual([siteOrigin, ...legalSlugs.map((slug) => `${siteOrigin}/${slug}`)]);
+    expect(xml, 'the versioned test texts are noindex and unlisted').not.toContain('/legal/');
     expect(xml).not.toMatch(/\/lab|\/api|\/unsubscribe|\/health-privacy|\/subprocessors|\/delete-account/);
     // Only url and lastmod; no changefreq or priority hints.
     expect(xml).not.toMatch(/<changefreq>|<priority>/);

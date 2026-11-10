@@ -407,12 +407,14 @@ describe('S19: Write', () => {
     expect(field).toMatch(/scrollEnabled=\{false\}/);
     expect(field).toMatch(/className="mt-3 flex-none"\s*inputClassName="flex-none"/);
     expect(field).toMatch(/onContentSizeChange=\{onContentSizeChange\}/);
-    expect(write).toMatch(/if \(followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
+    // Pinned footer: scroll to the end of the content, as before. With the footer inline (accessibility sizes) the scroll
+    // follows the end of the field instead (test/write-footer-large-text.test.ts).
+    expect(write).toMatch(/if \(!inlineFooter && followCaretToEnd\(\{ selectionEnd: selectionEnd\.current, length: session\.latest\(\)\.length \}\)\) scroll\.current\?\.scrollToEnd\(\{ animated: false \}\);/);
   });
 
   it('after a write that did not go through, neither the swipe down nor Android\'s back can close Write, until the next write works (follow-up L3)', () => {
     // Every write goes through writeWords; its answer sets the autosave line, which the swipe reads.
-    const persist = write.slice(write.indexOf('const persist = (value: string): boolean =>'), write.indexOf('const persistRef = useRef(persist)'));
+    const persist = write.slice(write.indexOf('const persist = (value: string, quiet = false): boolean =>'), write.indexOf('const persistRef = useRef(persist)'));
     expect(persist).toMatch(/const r = writeWords\(\{ create, update: setDraftTyped \}, draftId\.current, value\);\s*draftId\.current = r\.draftId;/);
     expect(persist).toMatch(/if \(r\.saveState\) setSaveState\(r\.saveState\);/);
     expect(persist).toMatch(/if \(!r\.ok\) return false;/);

@@ -203,11 +203,12 @@ describe('Asha export (golden)', () => {
   });
 
   it('[F09-REQ-003, RT-BK-05] a month-only letter never states a day: precision in entries.json, month-only datelines everywhere (schema 1.5.0)', async () => {
-    expect(EXPORT_SCHEMA_VERSION).toBe('1.5.0');
+    // Since 1.5.0; 1.6.0 added waiting letters (PL-2). Exact, so the next bump updates this line on purpose.
+    expect(EXPORT_SCHEMA_VERSION).toBe('1.6.0');
     const { zip } = await makeExport();
     const files = unzipSync(zip);
     const entries = JSON.parse(strFromU8(files['data/entries.json'])) as EntriesFile;
-    expect(entries.schema_version).toBe('1.5.0');
+    expect(entries.schema_version).toBe(EXPORT_SCHEMA_VERSION);
     const e11 = entries.entries.find((e) => e.id === 'e11')!;
     expect(e11).toMatchObject({ occurred_on: '2026-07-08', occurred_precision: 'month', text_file: 'letters/Asha/2026-07/2026-07_e11.txt' });
     expect(entries.entries.find((e) => e.id === 'e3')!.occurred_precision).toBe('day');

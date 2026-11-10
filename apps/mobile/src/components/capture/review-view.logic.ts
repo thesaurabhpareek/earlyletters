@@ -127,10 +127,20 @@ export function typedFinalText(raw: string): string {
 }
 
 /**
+ * The "Put back. Undo" line after a fix is put back (QE-02). It speaks only about the letter with its fixes, so it shows
+ * only while that letter is on the sheet: never while the person is changing the words, and never once they have
+ * their own words (`userText`), because Undo there would change the fixes under words that no longer use them and
+ * nothing on screen would move. Change words also clears it (review.tsx), so it does not come back after Done.
+ */
+export function putBackNoteShows(input: { restored: boolean; editing: boolean; userText: string | null }): boolean {
+  return input.restored && !input.editing && input.userText === null;
+}
+
+/**
  * Whether Review holds changes the person made that are not on the phone yet: their own words from Change words, a fix
- * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). All of them live
- * only on this screen until Keep (#274 N1; storing them on the draft is build 3's item), so Close must not say "Saved
- * on this phone" while any is there (P4 critics' pass S1; #289 lens B).
+ * they put back, or the other view ("Exactly as said" when Review opened with the small fixes, or back). A draft now
+ * stores them as they happen (SR-C-06, lib/capture/review-persist.logic.ts); Close still does not say "Saved on this
+ * phone" while any is there (P4 critics' pass S1; #289 lens B) until design and copy decide it should.
  */
 export function reviewHasOwnChanges(input: { userText: string | null; applied: number; proposed: number; view: ReviewView; openedView: ReviewView }): boolean {
   return input.userText !== null || input.applied < input.proposed || input.view !== input.openedView;
@@ -265,6 +275,20 @@ export function sheetKeyboardOffset(windowHeight: number, sheetHeight: number): 
  */
 export function followCaretToEnd(input: { selectionEnd: number | null; length: number }): boolean {
   return input.selectionEnd === null || input.selectionEnd >= input.length;
+}
+
+/**
+ * Where Write's scroll rests so the last line typed stays in view, when the two buttons and the Plus line ride at the
+ * end of the scroll (accessibility text sizes, lib/review-layout.logic.ts `footerPlacement` 'inline'). Scrolling to the
+ * very end would show the buttons and push the words being written out of sight, so the end of the page is the top of
+ * the footer, which the footer's own layout reports (its `y` inside the scroll's content, so the scroll's padding and
+ * the gap above the footer are already counted): the view's bottom edge rests there, and the last line typed sits one
+ * gap above it. Null until the footer and the viewport have both been measured: the page is then left where it is, so
+ * it never jumps while it opens. Never negative: a page that fits in the view does not scroll.
+ */
+export function pageEndOffset(input: { footerTop: number; viewportHeight: number }): number | null {
+  if (!(input.footerTop > 0) || !(input.viewportHeight > 0)) return null;
+  return Math.max(0, Math.round(input.footerTop - input.viewportHeight));
 }
 
 /** What one write of Write's words did: the draft it wrote to, and the autosave line to show (null: unchanged). */
