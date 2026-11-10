@@ -4,33 +4,35 @@ Status: proposal, 1 Nov 2026. Nothing under `.github/` is changed by this pull r
 
 This pairs with `docs/ops/proposed/dependabot.yml` (same PR). It does not replace PR #30's dated gate (`audit-gate.mjs`); see `docs/ops/proposed/harvest-pr-30.md`.
 
-## Current audit output (run 1 Nov 2026)
+## Current audit output (rerun 10 Nov 2026)
 
-Command: `npm audit --omit=dev --json` at the repo root on develop 45aa2197 (`package-lock.json` sha256 prefix 2a0c9a2e1c33). The network was available through the session proxy, so this is a live registry result, not an offline lockfile reading. Exit status 1.
+Command: `npm audit --omit=dev --json` at the repo root on develop `61988d26` (`package-lock.json` sha256 prefix b4dcbfad4b97), run on 10 Nov 2026 through the session proxy, so a live registry result. Exit status 1.
 
-Totals: 26 vulnerable packages: 1 critical, 6 high, 15 moderate, 4 low. 883 production dependencies in the tree.
+Totals: 20 vulnerable packages: 0 critical, 6 high, 11 moderate, 3 low. 885 production dependencies in the tree.
+
+Earlier snapshot, 1 Nov 2026 (develop 45aa2197, now out of date): 26 vulnerable, 1 critical, 6 high, 15 moderate, 4 low. The critical entry was `next` 16.3.8. Develop's `apps/web/package.json` now pins `next` 16.4.3 (the version the audit named as the fix), so `next` no longer appears and the critical count is 0.
 
 Direct dependencies with advisories:
 
-| Package | Severity | Our version | Fix npm reports |
-|---|---|---|---|
-| `next` | critical | 16.3.8 (`apps/web/package.json:24`) | 16.4.3, not a major bump |
-| `expo-router` | high | (apps/mobile) | 58.0.29, flagged as a semver-major bump |
-| `expo`, `expo-sharing`, `expo-splash-screen`, `react-email` | moderate | | Expo SDK upgrade |
-| `@react-email/render` | low | | |
+| Package | Severity | Fix npm reports |
+|---|---|---|
+| `expo-router` | high | 58.0.30, flagged as a semver-major bump |
+| `expo` | moderate | Expo SDK upgrade (npm names `expo@53.0.11`, a major change) |
+| `react-email` | moderate | fix available |
+| `@react-email/render` | low | fix available |
 
-Advisories at high or critical (ids from the report):
+Advisories at high (ids from the report):
 
-- `next` <=16.4.0: GHSA-2464-fhr4-w9xw (critical, unauthenticated RCE in the Image Optimization API when SVG files are used), GHSA-673q-mjm6-r5xr (critical, unauthenticated RCE in `use cache` functions returning typed arrays), GHSA-p3m5-59mp-jv5r (high, denial of service via Server Actions).
 - `node-forge` <=1.4.0: GHSA-86w9-cpqp-85rv, GHSA-7wch-p9px-956x, GHSA-jc66-7q78-782g, GHSA-8hrf-8g6f-7xwp, GHSA-hqq3-7jhf-c5jx, GHSA-5x38-2vff-x55p (all high). Reached through the Expo CLI (build tooling).
-- `decode-uri-component` <=0.5.0: GHSA-qr28-fpjm-wq7f (high), through Expo Router query parsing.
+- `decode-uri-component` <=0.5.0: GHSA-qr28-fpjm-wq7f (high), and `query-string` (high), both through Expo Router query parsing.
 - `zod` <4.6.6: GHSA-mrhx-c7xc-m3w5 (high), through the Expo CLI.
+- `@expo/cli` (high), through the packages above.
 
 Exploitability in our use (a reading, not a test):
 
-- `next` is the one that matters. `apps/web` is the public website on Next 16.3.8, inside the vulnerable range. Whether the two RCE paths are reachable depends on whether the site enables image optimization with SVG sources or uses `use cache` (I grepped `apps/web/next.config.ts` for `images` and `output` and `apps/web` for `"use cache"` and found no hits, but that is a keyword search, not a review). The fix is a minor bump to 16.4.3. Recommend the founder or the web agent take it as its own PR now, not wait for 10 Nov. This is a finding for `product` to put on the backlog.
+- `next` is no longer in the report: develop is on 16.4.3. The two critical RCE advisories that applied to `next` <=16.4.0 (GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr) and the high denial-of-service advisory (GHSA-p3m5-59mp-jv5r) are outside our version range. Any web branch still on 16.3.8 needs the same bump.
 - `node-forge`, `zod`, `glob`, `minimatch`, `deepmerge`: build and dev-client tooling on the developer machine and CI; they do not run in the shipped app on family data. Low urgency; they move with an Expo upgrade.
-- `decode-uri-component` via Expo Router: parses query strings in the app; denial of service only. Moderate urgency.
+- `decode-uri-component` and `query-string` via Expo Router: parse query strings in the app; denial of service only. Moderate urgency.
 
 Not run: `npm audit` for the dev tree (`--omit=dev` is the request), and `npm audit fix` (never run with `--force`).
 
@@ -88,7 +90,7 @@ jobs:
 Why this shape:
 
 - `continue-on-error: true` at job level: a red advisory job does not make a workflow or PR fail. It only turns the check amber in the run list.
-- Schedule and manual only: a newly published advisory should not red every open PR (there are 91 open PRs on 1 Nov; the WIP limit is 72).
+- Schedule and manual only: a newly published advisory should not red every open PR.
 - The JSON is parsed, not grepped, and "audit did not run" (an npm `error` object) is distinguished from "advisories found". The tested fail-closed version of this idea is `audit-gate.mjs` in PR #30.
 
 Not tested: I could not run the workflow YAML (no Actions runner) and did not run `actionlint`. I did run the two inline `node -e` programs locally against the saved audit JSON (they printed the summary and exited 1 because a critical advisory exists, as designed); I did not run the surrounding shell as a workflow.
