@@ -102,6 +102,10 @@ export const site = {
       eyebrow: 'On iPhone',
       /** Accessible name for the official badge link. The badge artwork carries its own words. */
       badgeLabel: `Download ${NAME} on the App Store`,
+      /** Desktop QR (fine pointer only, launch mode only). The QR replaces the badge there; the link is the text way in. */
+      qrHint: 'Scan with your iPhone camera.',
+      qrAlt: `QR code that opens ${NAME} in the App Store`,
+      qrLink: 'Open the App Store',
     },
   },
 
