@@ -47,8 +47,8 @@ describe('the You tab', () => {
     expect(layout).not.toMatch(/options=\{\{[^}]*\bhref:/);
   });
 
-  it('[NX-30a-R6] no visible tab leads to a coming-soon page', () => {
-    // Family is the only tab that can be a coming-soon page; it is out of the navigator where it would be (D-126).
+  it('[NX-30a-R6] the Family tab sits behind one guard and the You tab sits outside every guard', () => {
+    // This checks wiring only. In a servers-on store build the Family tab is shown and says coming soon (BL-882); the guard hides it only when familySurfacesShown is false.
     expect(layout).toMatch(/<Tabs\.Protected guard=\{FAMILY_TAB\}>\s*<Tabs\.Screen name="family"/);
     // You is never inside a guard: it is in every build.
     expect(layout).not.toMatch(/Tabs\.Protected[^>]*>\s*<Tabs\.Screen name="you"/);
