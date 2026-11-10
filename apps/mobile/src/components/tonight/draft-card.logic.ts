@@ -223,8 +223,8 @@ export function tonightDateline(child: string, age: string | null, dayFallback: 
 
 /**
  * The dateline on Write: the same words as Tonight's, from the same function, so the two screens never say different
- * things (NX-36 S13). Write has no day to fall back to: with no age the line is the name, and for a book with no name it
- * is empty, which the screen leaves out.
+ * things (NX-36 S13). Write passes the age, which is null before the birth, and has no day to fall back to: with no age
+ * the line is the name, and for a book with no name it is empty, which the screen leaves out.
  */
 export function writeDateline(child: string, age: string | null): { text: string; a11y: string } {
   return tonightDateline(child, age, child.trim());
