@@ -1306,10 +1306,13 @@ export const en = {
     // You tab, signed out (YOU-TAB-STATES-9nov, section 4; BL-801). Each says where the letters are and names no
     // co-parent, family or sharing. Founder word approval and counsel read pending; see the PR body.
     signedOut: {
-      body: "Your letters are on this phone. Sign in to open your book on any phone.",
+      // Red-team 10 Nov: no "any phone" claim (recordings stay on the phone; with consent declined not even the words move).
+      // TODO(founder, counsel): placeholder, needs word approval.
+      body: "Your letters are on this phone.",
     },
     localStart: {
-      body: "This book is on this phone. When you sign in, it moves to your account after you agree.",
+      // Red-team 10 Nov: it is added, not moved (the phone keeps it). TODO(founder, counsel): placeholder, needs word approval.
+      body: "This book is on this phone. Signing in adds it to your account after you agree.",
     },
     // A book with no name yet: its row on Settings home and its page title (GAP 6).
     childFallback: "Your child's book",

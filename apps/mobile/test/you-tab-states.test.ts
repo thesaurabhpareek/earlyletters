@@ -109,8 +109,10 @@ describe('Erase everything and Delete this book follow the code (founder ruling 
 
 describe('the Sign in card (B and C)', () => {
   it('names where the letters are, with the words in packages/content; C adds one paragraph; no co-parent, family or sharing', () => {
-    expect(en.settingsHome.signedOut.body).toBe('Your letters are on this phone. Sign in to open your book on any phone.');
-    expect(en.settingsHome.localStart.body).toBe('This book is on this phone. When you sign in, it moves to your account after you agree.');
+    expect(en.settingsHome.signedOut.body).toBe('Your letters are on this phone.');
+    expect(en.settingsHome.signedOut.body).not.toMatch(/any phone|new phone|opens?\b/i);
+    expect(en.settingsHome.localStart.body).toBe('This book is on this phone. Signing in adds it to your account after you agree.');
+    expect(en.settingsHome.localStart.body).not.toMatch(/\bmoves?\b/i);
     expect(en.settingsHome.childFallback).toBe("Your child's book");
     expect(en.settingsHome.youTabHint).toBe('Settings and account');
     const words = [en.settingsHome.signedOut.body, en.settingsHome.localStart.body, authCopy.account.signedOutTitle, authCopy.account.signIn].join(' ');
