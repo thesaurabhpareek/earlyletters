@@ -338,6 +338,8 @@ export const en = {
     // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
     waitingLong: "Long recordings take a little more time.",
     laterButton: "Read it back later",
+    // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
+    keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
