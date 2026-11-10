@@ -20,7 +20,7 @@ Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, confl
 ## How a scheduled run uses this file
 
 1. Pull `develop`. Read `CLAUDE.md`, `docs/agents/COORDINATION.md`, then this file.
-2. Any task whose `bl-###` appears in an open PR branch, or that is `in-progress` on `docs/agents/BOARD.md`, is taken.
+2. Any task whose `bl-###` appears in an open PR branch, or that has a live claim row in `docs/agents/CLAIMS.md` (its `bl-###` in the row id or note), is taken.
 3. Pick the **first** task in file order with `Status: ready`, `Mode: agent`, and every `Depends on` task `done`. Skip `human`, `pair`, `blocked`, `needs-founder`, `needs-decision`, `in-progress`, `superseded` and `deferred` tasks.
 4. One task per run and per PR. Branch: `<type>/<area>-bl-###-<slug>`. PR title: `BL-###: <title>`.
 5. Meet the Definition of Done. If a task is bigger than one PR, split it here (free ids above, same `Satisfies`) and stop.
@@ -31,7 +31,7 @@ Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, confl
 
 **Agent team (ADR 0018).** Unattended work is now assigned by `scripts/agents/dispatch.mjs` to the agent whose `backlog_owner_names` in `agents/roster.json` include the task's first non-founder Owner. Rules 1 to 9 above still apply to every run. A task `blocked` only by backlog ids that are all `done` counts as ready. Only the `product` agent edits tasks other than its own status line.
 
-Status values: `ready`; `blocked (reason)`; `needs-founder (FT-##)`: waits on a step in `docs/FOUNDER_TASKS.md`; `needs-decision (D-### or Q-###)`; `in-progress (<agent>)`: claimed on BOARD.md this wave; `in-review (PR #n)`; `done (evidence)`; `superseded (by D-### or BL-###)`; `deferred (release, FUTURE id)`.
+Status values: `ready`; `blocked (reason)`; `needs-founder (FT-##)`: waits on a step in `docs/FOUNDER_TASKS.md`; `needs-decision (D-### or Q-###)`; `in-progress (<agent>)`: claimed in `docs/agents/CLAIMS.md` this wave; `in-review (PR #n)`; `done (evidence)`; `superseded (by D-### or BL-###)`; `deferred (release, FUTURE id)`.
 Mode values: `agent`, `human` (founder, device, store, vendor or secrets), `pair` (interactive session with the founder).
 Severity tags: **[Critical]** blocks launch or makes a published statement false; **[High]** must land before the related feature reaches non-founder users.
 

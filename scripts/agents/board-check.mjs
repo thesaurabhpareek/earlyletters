@@ -60,7 +60,7 @@ export function liveClaims(text, now = Date.now()) {
 export function claimsLines(text, now = Date.now()) {
   if (text === undefined) return ["`docs/agents/CLAIMS.md` could not be read, so live claims are unknown. Say so in your journal and check open PRs before touching shared files."];
   const { rows, problems } = liveClaims(text, now);
-  const out = rows.map((r) => `- ${r.owner}: ${r.globs.map((g) => `\`${g}\``).join(", ")}${r.pr ? ` (PR #${r.pr}` : " (no PR yet"}, since ${new Date(r.claimed).toISOString().slice(0, 16).replace("T", " ")} UTC)`);
+  const out = rows.map((r) => `- ${clean(r.owner)}: ${r.globs.map((g) => `\`${clean(g)}\``).join(", ")}${r.pr ? ` (PR #${r.pr}` : " (no PR yet"}, since ${new Date(r.claimed).toISOString().slice(0, 16).replace("T", " ")} UTC)`);
   if (problems.length) out.push(`- ${problems.length} malformed row(s) in \`docs/agents/CLAIMS.md\` were skipped; treat claims as incomplete.`);
   return out.length ? out : ["No live claims right now."];
 }

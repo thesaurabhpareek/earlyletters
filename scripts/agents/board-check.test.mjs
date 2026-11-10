@@ -224,16 +224,33 @@ test('render: control and non-ASCII bytes in a row id or detail never reach the 
   assert.equal(clean('a'.repeat(500)).length, 120);
 });
 
+test('main: the non-sweep path also refuses a bad --repo with exit 2 and the owner/name message', () => {
+  const bin = new URL('./board-check.mjs', import.meta.url).pathname;
+  let out = '', code = 0;
+  try { out = execFileSync('node', [bin, '--repo', 'x;touch /tmp/pwned'], { encoding: 'utf8' }); } catch (e) { out = String(e.stdout); code = e.status; }
+  assert.equal(code, 2);
+  assert.match(out, /owner\/name/);
+});
+
+test('brief: control and non-ASCII bytes in a row owner or glob never reach the brief', () => {
+  const lines = claimsLines(HEAD + row({ owner: 'ev\u001b[31mil\u0007\u202e', globs: '`a\u001b/**`' }), Date.parse(NOW));
+  assert.equal(lines.length, 1);
+  assert.doesNotMatch(lines[0], /[^\n\x20-\x7e]/);
+  assert.match(lines[0], /^- ev\?\[31mil\?\?: `a\?\/\*\*`/);
+});
+
 // Claims moved to CLAIMS.md: no instruction file may still send a reader to claim in BOARD.md.
 test('docs: every file that tells readers where to claim points to CLAIMS.md, not BOARD.md', () => {
   const root = new URL('../../', import.meta.url);
   const files = ['docs/agents/COORDINATION.md', 'docs/agents/OPERATING_MODEL.md', 'docs/agents/HARNESS.md', 'docs/agents/checkins/README.md',
-    'docs/agents/lanes/agent-lane.prompt.md', 'docs/agents/lanes/docs-run.prompt.md', 'docs/agents/lanes/prd-daily.prompt.md'];
+    'docs/agents/lanes/agent-lane.prompt.md', 'docs/agents/lanes/docs-run.prompt.md', 'docs/agents/lanes/prd-daily.prompt.md', 'docs/BACKLOG.md'];
   for (const f of files) {
     const text = fs.readFileSync(new URL(f, root), 'utf8');
     assert.match(text, /CLAIMS\.md/, f);
     for (const line of text.split('\n')) assert.doesNotMatch(line, /(claims?|claimed|claiming)\b[^.\n]{0,60}`(docs\/agents\/|\.\.\/)?BOARD\.md`|`BOARD\.md`[^.\n]{0,40}\bclaim|Active claims/i, `${f}: ${line.slice(0, 80)}`);
   }
+  const backlog = fs.readFileSync(new URL('docs/BACKLOG.md', root), 'utf8');
+  assert.doesNotMatch(backlog, /in-progress`? on `?docs\/agents\/BOARD\.md|claimed on BOARD\.md/);
   const coord = fs.readFileSync(new URL('docs/agents/COORDINATION.md', root), 'utf8');
   assert.match(coord, /`CLAIMS\.md` is the single place to claim files/);
   assert.doesNotMatch(coord, /`BOARD\.md` is the single place/);

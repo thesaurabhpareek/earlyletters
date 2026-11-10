@@ -1044,7 +1044,7 @@ Every accepted task names the metric, the target and the report week to read it,
 
 ### 6.4 Fit with the agent coordination protocol
 
-1. **Claim.** The insights agent adds a claim line to `docs/agents/BOARD.md` at the start of each run, for example `insights-weekly 2027-01-11 | docs/insights/2027-01-11.md, docs/backlog/proposals/2027-01-11-* | <start UTC> | active`. It posts at most 3 check-in lines and marks the claim `done (PR #n)` at the end.
+1. **Claim.** The insights agent adds a claim row to `docs/agents/CLAIMS.md` at the start of each run, for example `insights-weekly 2027-01-11 | docs/insights/2027-01-11.md, docs/backlog/proposals/2027-01-11-* | <start UTC> | active`. It posts at most 3 check-in lines and deletes its claim row in the PR at the end.
 2. **Hand-over.** It pushes one docs-only branch, `docs/insights-YYYY-MM-DD`, and opens a draft PR, never merging. This is the ADR 0011 scheduled-run pattern and needs the one-line exception proposed in Q-007, because COORDINATION 6 says agents never push. If the coordinator chooses Q-007 option (b), the agent writes files only and the coordinator commits them in the next wave.
 3. **Single source of truth.** Proposals live in `docs/backlog/proposals/` and never in `BACKLOG.md` until the coordinator merges them (COORDINATION 5: backlog owned by PM leads, merged by the coordinator).
 4. **Debate.** If an accepted proposal touches another owner's area, the triager opens a DEBATES entry and messages that owner (COORDINATION 4). The insights agent itself never debates.
