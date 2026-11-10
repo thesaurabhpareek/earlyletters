@@ -105,7 +105,7 @@ describe('Review and the words queue use it', () => {
     expect(review).toMatch(/if \(settled\.state !== 'recording'\) requestWords/);
     expect(review).toMatch(/audioDurationMs: live\.audioDurationMs/);
     expect(review).toMatch(/waitMs: null/);
-    expect(review).toMatch(/settleForKeep\(draft\.id, { getDraft, running: finishingTake }\);\s*if \(!settled\) \{\s*saving\.current = false;\s*return;/);
+    expect(review).toMatch(/settleForKeep\(draft\.id, { getDraft, running: finishingTake }\);\s*if \(!settled\) \{\s*saving\.current = false;[^\n]*\s*(?:\/\/[^\n]*\s*)*if \(finishingTake\(draft\.id\)\) toast\.show\(\{ message: copy\.review\.keepStillSaving \}\);\s*return;/);
   });
   it('the queue never takes a draft that is still recording', () => {
     expect(queue).toMatch(/d\.state !== 'recording' && d\.audioUri/);

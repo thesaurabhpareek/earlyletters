@@ -629,7 +629,9 @@ export default function Review() {
       const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
       if (!settled) {
         saving.current = false;
-        toast.show({ message: copy.review.keepStillSaving }); // nothing was kept; say why
+        // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
+        // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
+        if (finishingTake(draft.id)) toast.show({ message: copy.review.keepStillSaving });
         return;
       }
       const audio = await ensureAudioHash(settled);
