@@ -29,6 +29,23 @@ export const REQUIRED_ROWS = [
   'S1-24',
 ];
 
+// Rows that must be a real pass for a pass verdict. The kit allows n/a only for server-off rows
+// and AL-07, so a sitting that marks these n/a ran nothing (KIT-B1.md "How the sitting ends").
+export const MUST_PASS_ROWS = ['TF-04', ...range('AL-01', 0, 12), ...range('AL-02', 0, 12)];
+export const MIN_KILL_RUNS = 10;
+
+// Numbers cell words that are filler, not evidence.
+const PLACEHOLDER = /^(?:tbd|todo|tba|x+|n\/?a|na|yes|no|ok|okay|none|nil|null|pass|done|-+|\.+|\?+|_+)$/i;
+const PLACEHOLDER_WORD = /\b(?:tbd|todo|tba|fixme|xxx+)\b/i;
+/** Returns a short reason when the Numbers cell is not evidence, or '' when it is. */
+export function numbersProblem(cell) {
+  const t = String(cell ?? '').trim();
+  if (!t) return 'is empty';
+  if (PLACEHOLDER.test(t) || PLACEHOLDER_WORD.test(t)) return `"${t}" is a placeholder`;
+  if (!/\d/.test(t)) return `"${t}" has no digit; give the number with its unit`;
+  return '';
+}
+
 export const RESULT_WORDS = ['pass', 'fail', 'stop', 'blocked', 'n/a', 'not run'];
 export const FICTIONAL_NAMES = ['Asha', 'Avi', 'Mama', 'Papa'];
 
@@ -197,10 +214,14 @@ export function checkEvidence(text) {
       errors.push(`${r.id}: Result "${r.result}" must be just "${word}"; put detail in Numbers`);
       continue;
     }
-    if (word === 'pass' && !r.numbers) errors.push(`${r.id}: pass with no Numbers; a row without its numbers is not evidence`);
+    if (word === 'pass') {
+      if (!r.numbers) errors.push(`${r.id}: pass with no Numbers; a row without its numbers is not evidence`);
+      else { const p = numbersProblem(r.numbers); if (p) errors.push(`${r.id}: pass Numbers ${p}; a row without its numbers is not evidence`); }
+    }
     if (word === 'fail') {
       anyFail = true;
       if (!r.numbers) errors.push(`${r.id}: fail with no Numbers`);
+      else { const p = numbersProblem(r.numbers); if (p) errors.push(`${r.id}: fail Numbers ${p}`); }
       if (!r.issue) errors.push(`${r.id}: fail with no Issue number`);
     }
     if (word === 'stop') {
@@ -223,6 +244,14 @@ export function checkEvidence(text) {
     } else if (tally.lost > 0 || tally.doubled > 0) {
       errors.push(`kill tally shows lost ${tally.lost}, doubled ${tally.doubled}; that is an S0, so the verdict is stop`);
       verdict = 'stop';
+    } else if (tally.runs < MIN_KILL_RUNS) {
+      errors.push(`kill tally shows runs ${tally.runs}; a pass needs at least ${MIN_KILL_RUNS} runs (kit: The kill tally)`);
+    }
+    for (const id of MUST_PASS_ROWS) {
+      const r = byId.get(id);
+      if (r && r.result && splitResult(r.result).word !== 'pass') {
+        errors.push(`${id}: must be pass for a pass verdict (n/a is for server-off rows and AL-07 only); a sitting that skipped it is a fail or stop`);
+      }
     }
   } else if (tally && (tally.lost > 0 || tally.doubled > 0)) {
     verdict = 'stop';

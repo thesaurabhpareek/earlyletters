@@ -8,7 +8,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { checkEvidence, REQUIRED_ROWS, parseRows } from './evidence-check.mjs';
+import { checkEvidence, REQUIRED_ROWS, MUST_PASS_ROWS, numbersProblem, parseRows } from './evidence-check.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const SCRIPT = join(ROOT, 'scripts/qa/evidence-check.mjs');
@@ -16,7 +16,7 @@ const SCRIPT = join(ROOT, 'scripts/qa/evidence-check.mjs');
 // A filled, valid, passing file. `edit` can change any row or add text.
 function build({ rows = {}, extra = '', verdict = 'pass', tally = 'Kill tally: runs 10, lost 0, doubled 0', issues = '', tester = 'SP', drop = [] } = {}) {
   const lines = REQUIRED_ROWS.filter((id) => !drop.includes(id)).map((id) => {
-    const r = { result: 'pass', numbers: 'yes', captured: 'about.png', issue: '', ...(rows[id] ?? {}) };
+    const r = { result: 'pass', numbers: '12 s', captured: 'about.png', issue: '', ...(rows[id] ?? {}) };
     return `| ${id} | ${r.result} | ${r.numbers} | ${r.captured} | ${r.issue} | no |`;
   });
   return `# Device session 2026-11-05, build 1.0.0 (1), se3
@@ -110,6 +110,32 @@ test('[HV2-014] pass with no numbers is refused', () => {
   assert.ok(has(build({ rows: { 'AL-01.5': { numbers: '' } } }), 'AL-01.5: pass with no Numbers'));
 });
 
+test('[HV2-014] placeholder Numbers are refused on pass and fail (TBD, x, -, TODO, no digit)', () => {
+  for (const numbers of ['TBD', 'x', '-', 'TODO', 'yes', 'n/a', 'YYYY-MM-DD hh:mm', 'looked fine', 'TBD 3']) {
+    assert.ok(has(build({ rows: { 'AL-01.5': { numbers } } }), 'AL-01.5: pass Numbers'), numbers);
+  }
+  assert.ok(has(build({ rows: { 'AL-03.1': { result: 'fail', numbers: 'TBD', issue: '#12' } }, verdict: 'fail' }), 'AL-03.1: fail Numbers'));
+  assert.equal(numbersProblem('0.8 s'), '');
+  assert.equal(numbersProblem('3 of 3'), '');
+});
+
+test('[HV2-014] a file where every row is n/a (reason) is refused; a pass needs the core rows to pass', () => {
+  const rows = Object.fromEntries(REQUIRED_ROWS.map((id) => [id, { result: 'n/a (build 1, servers off)', numbers: '' }]));
+  const text = build({ rows });
+  assert.ok(errs(text).length > 0);
+  assert.ok(has(text, 'TF-04: must be pass'));
+  assert.ok(has(text, 'AL-02.12: must be pass'));
+  assert.deepEqual(MUST_PASS_ROWS.filter((id) => !REQUIRED_ROWS.includes(id)), []);
+  assert.ok(has(build({ rows: { 'AL-01.3': { result: 'n/a (servers off)', numbers: '' } } }), 'AL-01.3: must be pass'));
+  assert.deepEqual(errs(build({ rows: { 'AL-08.2': { result: 'n/a (build 1, servers off)', numbers: '' } } })), []);
+});
+
+test('[HV2-014] a kill tally of runs 0 (or under 10) is refused for a pass', () => {
+  assert.ok(has(build({ tally: 'Kill tally: runs 0, lost 0, doubled 0' }), 'at least 10 runs'));
+  assert.ok(has(build({ tally: 'Kill tally: runs 9, lost 0, doubled 0' }), 'at least 10 runs'));
+  assert.deepEqual(errs(build({ tally: 'Kill tally: runs 10, lost 0, doubled 0' })), []);
+});
+
 test('[HV2-014] n/a and blocked need a reason, in the Result or the Numbers cell', () => {
   assert.ok(has(build({ rows: { 'AL-07.1': { result: 'n/a', numbers: '' } } }), 'AL-07.1: n/a needs a reason'));
   assert.ok(has(build({ rows: { 'AL-07.2': { result: 'blocked', numbers: '' } } }), 'AL-07.2: blocked needs a reason'));
@@ -201,7 +227,7 @@ test('[HV2-014] text inside the template HTML comment is ignored', () => {
 test('[HV2-014] parseRows reads ids and cells', () => {
   const rows = parseRows(build());
   assert.equal(rows.length, REQUIRED_ROWS.length);
-  assert.deepEqual(rows[0], { id: 'TF-04', result: 'pass', numbers: 'yes', captured: 'about.png', issue: '' });
+  assert.deepEqual(rows[0], { id: 'TF-04', result: 'pass', numbers: '12 s', captured: 'about.png', issue: '' });
 });
 
 test('[HV2-014] CLI: exit 0 on a valid file, 1 on a bad one, 2 on usage', () => {

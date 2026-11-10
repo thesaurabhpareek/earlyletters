@@ -43,7 +43,7 @@ The last line of the Sign-off section is `Verdict: pass`, `Verdict: fail` or `Ve
 node scripts/qa/evidence-check.mjs "docs/qa/evidence/<your file>.md"
 ```
 
-- **pass**: every row is pass, or n/a with a reason; the kill tally shows lost 0 and doubled 0; no S0 in "Issues filed".
+- **pass**: `TF-04`, `AL-01.*` and `AL-02.*` are pass; every other row is pass, or n/a with a reason; the kill tally shows at least 10 runs, lost 0 and doubled 0; no S0 in "Issues filed".
 - **fail**: any row is fail. Commit the file anyway; a failure is evidence. Open one `device-fail` issue per failed row, write the issue number in the row's Issue column, and run that row again on the next build in a new file.
 - **stop**: any S0 (a letter or recording lost or changed, data seen by the wrong person, anything made after an under-18 answer, a consent skipped). Stop the sitting. Keep the phone as it is for diagnosis and file the issue first. Rows you did not reach are `not run`; the checker allows that only under a stop verdict.
 
@@ -51,7 +51,8 @@ node scripts/qa/evidence-check.mjs "docs/qa/evidence/<your file>.md"
 
 - A required row missing, or a row with an empty Result.
 - Result words other than pass, fail, stop, blocked, n/a, not run (so "pass or stop" left from the template is refused).
-- pass or fail with an empty Numbers cell; n/a or blocked with no reason; fail with no Issue.
+- pass or fail with an empty Numbers cell, a placeholder (TBD, TODO, x, -, yes, n/a) or no digit; n/a or blocked with no reason; fail with no Issue.
+- A pass verdict where `TF-04`, `AL-01.*` or `AL-02.*` is n/a, or a kill tally under 10 runs.
 - Email addresses, links, tokens, long hex or base64 strings, user ids, and a person's name that is not Asha, Avi, Mama or Papa, anywhere in the file.
 - A Verdict line that is missing or does not match the rows.
 
