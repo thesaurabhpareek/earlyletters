@@ -37,8 +37,10 @@ import { Directory, File, Paths } from 'expo-file-system';
 import { useEffect } from 'react';
 import { Settings } from 'react-native';
 import { ScribeAudio, scribeAudioErrorCode } from '../../modules/scribe-audio';
+import { acceptBeforeYouBegin } from '@/lib/age-gate';
 import { setAudioMode } from '@/lib/audio-mode';
 import { afterLetterKept } from '@/lib/billing';
+import { copy } from '@/lib/copy';
 import { adtsLengthEvidence, breaksInside } from '@/lib/capture/adts';
 import { scanRecordingFile, wholeFramesCopy } from '@/lib/capture/adts-file';
 import { VOICE_RECORDING_OPTIONS, beginTake, ensureAudioHash, hashAudioFile } from '@/lib/capture/recorder';
@@ -162,6 +164,8 @@ function prepare(): void {
   }
   if (!owned) setSetting(OWNED_SETTING, '1');
   setSetting('ageGate.passed', '1'); // the gate boolean only (PRD-REQ-019, D-026)
+  // A seeded dev install has accepted Before you begin, so it opens on the book, not the one-time agreement.
+  acceptBeforeYouBegin(copy.beforeBegin.agree, 'first_run.before_you_begin', true);
   if (listChildren().length === 0) {
     addChild({ name: 'Asha', birthday: todayISO(new Date(Date.now() - 120 * DAY)), dueDate: null, signsAs: 'Mama' });
   }

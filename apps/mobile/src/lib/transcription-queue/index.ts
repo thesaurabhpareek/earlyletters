@@ -30,7 +30,6 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
-import { capabilities } from '../capabilities';
 import { removeWholeFrameCopies } from '../capture/adts-file';
 import { captureBusy, onCaptureBusy } from '../capture/busy';
 import {
@@ -77,6 +76,7 @@ import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
 import { RUNNING_MARKER, countsAsMemoryKill, runningMarker } from './kill-marker';
+import { heardLanguagesForBuild } from '../language/heard-languages';
 import { languagesOnHold } from './language-hold';
 import {
   initialQueue,
@@ -166,7 +166,7 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   started = true;
   migrateSpeechConsent(); // once per phone: an existing choice or model counts as a yes (models/speech-consent.logic.ts)
   // Before any job can start: a language this build does not hear yet waits for its language (language-hold.ts).
-  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(capabilities.englishOnly)] });
+  state = reduce(state, { type: 'onHold', languages: [...languagesOnHold(heardLanguagesForBuild())] });
   // No job runs before the queue starts, so a whole-frame copy in Caches now is left from a run the app was
   // killed in (ADR 0027): a second copy of a voice, removed before the first job (privacy).
   try {
@@ -469,7 +469,8 @@ interface Source {
 
 function sourceFor(job: Job): Source | null {
   const d = getDraft(job.id);
-  if (d) return d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
+  // A take still being saved (state 'recording') has no final file or length yet: words wait for it (BL-563).
+  if (d) return d.state !== 'recording' && d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
   const e = getEntry(job.id);
   if (e && e.transcriptStatus === 'waiting' && e.audioUri) return { audioUri: e.audioUri, durationMs: e.audioDurationMs ?? null, childId: e.childId };
   return null;

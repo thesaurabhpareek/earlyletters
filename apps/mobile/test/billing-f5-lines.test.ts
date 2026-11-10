@@ -105,6 +105,12 @@ describe('[F5, PL-3] the Settings Plan row', () => {
   it('the row keeps its place and title, and reads the cached plan without asking StoreKit', () => {
     const home = code('app/settings/index.tsx');
     expect(home).toMatch(/<ListRow title=\{h\.planLabel\} subtitle=\{planRowView\.subtitle\} value=\{planRowView\.value\} trailing="chevron" onPress=\{go\(ROUTES\.plan\)\}/);
+    // In every build, including the store build without sign-in: the row is drawn with no condition around it, so the
+    // "Settings, Plan" path the Terms and Subscription Terms name is there as written (CCO-9; CTO ruling 8 Nov 2026).
+    const at = home.indexOf('<ListRow title={h.planLabel}');
+    const before = home.slice(home.lastIndexOf('<ListSection', at), at);
+    expect(before).not.toMatch(/\?\s*\(?\s*$|&&\s*\(?\s*$|capabilities\.|planRow/);
+    expect(home).toMatch(/testID="settings\.plan"/);
     expect(home).toMatch(/useSyncExternalStore\(subscribePlan, getPlan, getPlan\)/);
     expect(home).not.toMatch(/usePlan\(|refreshPlan|presentPlusStore|restorePurchases/);
   });

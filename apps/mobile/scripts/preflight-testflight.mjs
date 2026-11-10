@@ -163,6 +163,12 @@ if (prof) {
     `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the language picker offers English only, D-111 item 4)`,
     `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(profEnv.EXPO_PUBLIC_ENGLISH_ONLY)}; both alpha builds must say "on" (D-111 item 4: the alpha transcribes English only), or the picker offers all seven languages.`,
   );
+  // D-125 item 2: the spoken-language list says English alone too, so the two switches agree in both alpha builds.
+  check(
+    (profEnv.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').trim().toLowerCase() === 'en',
+    `${PROFILE} profile: EXPO_PUBLIC_SPOKEN_LANGUAGES=en (the alpha hears English only, D-111 item 4)`,
+    `${PROFILE} profile EXPO_PUBLIC_SPOKEN_LANGUAGES is ${JSON.stringify(profEnv.EXPO_PUBLIC_SPOKEN_LANGUAGES)}; both alpha builds must say "en" (D-111 item 4, D-125 item 2).`,
+  );
   for (const [flag, what] of [
     ['EXPO_PUBLIC_BACKUP', 'recording backup (T27, after the restore drill)'],
     ['EXPO_PUBLIC_STATUS_REPORT', 'the subscription status report (when WP-F14-15 ships)'],

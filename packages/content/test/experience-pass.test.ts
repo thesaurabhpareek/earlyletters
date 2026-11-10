@@ -193,13 +193,13 @@ const REGISTERED: Record<string, Text> = {
   'en.trust.settings.body':
     'Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models.',
   'en.trust.settings.voice': 'We never imitate your voice. Your original recording is always kept exactly as you made it.',
-  'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child. Your recordings stay on this phone.',
+  'permissions.microphone': '{app} uses the microphone to record the letters you speak to your child.',
   // Also registered (P0 rule 3): the sensitive-data consent (consumer-health-data-notice.md HN-4; counsel approves).
   'en.sensitiveConsent.title': 'Before your book syncs',
   'en.sensitiveConsent.body':
     'Letters can hold private things, like health details about you or {child}. To sync your book and share it with the family you choose, we store what you write on our servers.',
   'en.sensitiveConsent.use': 'We use it only to keep and show your book. We never sell it, use it for ads or use it to train machine learning models.',
-  'en.sensitiveConsent.changeLater': 'You can change this any time in Settings, Privacy.',
+  'en.sensitiveConsent.changeLater': 'You can turn them on later in Settings, Account.',
   'en.sensitiveConsent.declineHelp': 'If you keep it on this phone, syncing and sharing stay off.',
   'en.sensitiveConsent.agreeButton': 'Agree and sync',
   'en.sensitiveConsent.declineButton': 'Keep on this phone',

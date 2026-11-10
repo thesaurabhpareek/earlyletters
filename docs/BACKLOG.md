@@ -1179,12 +1179,12 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J03 (J03-07), J01 (J01-08, J01-10); `apps/mobile/test/dates.test.ts`; `updateChild` cases in `apps/mobile/test/store.repos.test.ts`.
 
 #### BL-387 Delete a book and erase everything on this phone, each with a calm confirm [High]
-- Status: ready. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: M.
+- Status: done in code (PR #520, 73fcc1ea), except device owner authentication before Erase everything, which is deferred to the 1 Dec build (BL-782). The phone check, S1-133 in `docs/qa/DEVICE_TEST_PLAN.md`, is the founder's and has not been run. Follow-ups BL-775 to BL-777, BL-781 and BL-782. Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M-JR. Size: M.
 - Severity: major. Raised by: product, quality (5 findings). Steps: J03-07, J16-01; system-wide (`_journey` entries).
 - Satisfies: `docs/legal/DELETION_AND_EXPORT_SPEC.md` (delete book); D-053 (on-device, no accounts in v1.0); BL-233.
-- Scope: Per-book "Delete this book" in child settings and "Erase everything on this phone" under Your data. Export is offered first. Erase wipes the database, audio, settings and Keychain items. Retention for a deleted book follows the deletion spec; where the spec is silent the PR says so for counsel and uses an export offer plus a typed confirm.
-- Done when: After Delete this book, the child, its letters and recordings are gone from the phone and from Export. After Erase everything, the database, audio folder and settings are empty and the app starts at first run.
-- Test: Journeys J03 (J03-07) and J16 (J16-01) with new steps; `apps/mobile/test/store.repos.test.ts`; `apps/mobile/test/erase-all.test.ts` (new).
+- Scope: Per-book "Delete this book" in child settings and "Erase everything on this phone", last in Your letters on Settings home (it was Your data before the #614 regroup). Export is offered first. Erase wipes the database, audio, settings and Keychain items. Retention for a deleted book follows the deletion spec; where the spec is silent the PR says so for counsel and uses an export offer plus a typed word for Delete this book and a confirm alert for Erase everything.
+- Done when: After Delete this book, the book is gone from the Book tab, Tonight, Export and the reminders at once and waits 30 days in Recently deleted, where Restore brings it back; after Erase now, or at day 30, it is gone from the phone. After Erase everything, the database, audio folder and settings are empty and the app starts at first run.
+- Test: `apps/mobile/test/erase-all.test.ts` (new, 55 cases with the follow-up pin), `age-gate-erase.test.ts`, `reminders-erase.test.ts`; device plan S1-133. #520 adds no erase steps to journeys J03 (J03-07) or J16 (J16-01) and no erase cases to `store.repos.test.ts`.
 
 #### BL-388 Export is complete and safe: drafts, orphans and deleted letters included; ZIP64; share-cancel keeps the file [High]
 - Status: ready. Mode: agent. Owner: export owner, mobile engineer. Milestone: M-JR. Size: L.
@@ -1326,7 +1326,7 @@ Note on D-051: `docs/DECISIONS.md` on `develop` has D-051 "Standard over custom"
 - Test: Journeys J16 (J16-01, J16-02, J16-06) and J03 (J03-06); Settings layout case in the component harness (BL-278).
 
 #### BL-405 Helplines follow the device region, with an international fallback and a Call row [High]
-- Status: ready. Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: S.
+- Status: needs-decision (the founder: the D-087 amendment that F20-REQ-022 (proposed in PR #726) needs, and the FT-36 check of non-US numbers; #675 on `develop` ships regional lines, which this row's Done-when says a non-US region must not show). Mode: agent. Owner: content, mobile engineer. Milestone: M-JR. Size: S.
 - Severity: major. Raised by: design, quality (3 findings). Steps: J16-05.
 - Satisfies: D-059 (the static row ships in v1.0); BL-158; FT-36 (founder checks the resources before submission).
 - Scope: The helpline list comes from the device region; every other region gets the international fallback (findahelpline.com). Each helpline is a 44 pt row with a Call label; when `tel:` cannot open, the number is shown to copy. The US list is unchanged. Non-US numbers are added only after the FT-36 check.
@@ -2519,7 +2519,7 @@ All six belong to resuming PR #306 (`fix/invite-redeem-by-code`) under BL-445. T
 
 ### Release-path follow-ups (1 Nov 2026, CR-45 lanes)
 - **BL-559 Deleted books never leave the phone at first sign-in.** Status: ready. Owner: `sync` with `privacy`. When: before sign-in is switched on for anyone (D-121). Scope: `apps/mobile/src/lib/sync/ownership.ts` (lines 54 and 78 at #520's head) must skip books in Recently deleted. `backup/local-store.ts` (line 54) must not back up their recordings. The signed-in erase flow (F17-REQ-026) must exist. Found by the privacy review of #520. Done when: tests prove a book deleted on the phone is never uploaded or backed up, and a signed-in Erase everything reaches the server.
-- **BL-560 The Plus line on Write.** Status: blocked (on #508). Owner: `mobile`. When: after #508 merges. Scope: the Write half of F14-REQ-040, the same standing line with no count and no button. Done when: the line shows on Write under the same rule as Tonight, with a test.
+- **BL-560 The Plus line on Write.** Status: done in code (#668, a8bf1576; #508, which it waited for, merged as 9898add2). The phone check is S1-142 in `docs/qa/DEVICE_TEST_PLAN.md`: rows (a) to (c) need a build of the `production` profile, because PLUS_ALPHA hides the line in a TestFlight alpha, and row (d) is the TestFlight check that no line shows; none has been run. Owner: `mobile`. Scope: the Write half of F14-REQ-040, the same standing line with no count and no button. Done when: the line shows on Write under the same rule as Tonight, with a test.
 - **BL-561 The age question and a thumb slip (SR-C-04).** Status: needs-founder. Needs counsel. Owner: CCO, then `regulatory-affairs` and `mobile`. Today a slip on No locks a parent out for 24 hours, until "I answered by mistake" appears. #521 added a confirm step after No, but writing nothing until the confirm breaks LEGAL-REQ-002's anti-retry rule (P0) and D-026, so it is held. Karma's recommendation: keep the immediate stop, and make "I answered by mistake" clearer and kinder. A confirm step needs a DECISIONS entry first, must treat both answers the same, and must record the first answer. Done when: the founder decides with counsel, and the chosen design passes a CCO review.
 - **BL-562 Data classification rows for the new local columns.** Status: needs-founder. Owner: `legal`; founder merges (docs/legal). When: with #522 and #520. Scope: four 4.5 rows for `drafts.review_put_back`, `review_view`, `review_text` (L4, the person's words) and `review_base` (L4, a hash of the words), as written in the data-steward review of #522. Also Privacy Policy lines 159 and 225, per the privacy review of #520. Done when: the founder merges the legal PR.
 
@@ -2564,6 +2564,7 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 #### BL-566 Staging has a daily backup and one restore drill before real letters land (DATA-01)
 - Status: needs-founder (W0-17). Mode: human. Owner: platform. Severity: S0. Area: ops. **Decided: no paid backup; the free path (D-138 item 2).** Build it per `docs/ops/runbooks/staging-backup-free.md`: a nightly encrypted dump in a private GitHub repository, plus a monthly restore drill from the founder's Mac.
 - Who: `ops`.
+- Built (8 Nov 2026, PR #622, draft): the workflow for the private repository (`docs/ops/proposed/workflows/supabase-backup.yml`), the read-only role (`docs/ops/backup/backup-role.sql`) and the drill's row count (`scripts/ops/restore-check.ts`); the runbook points at them. Left: the founder's steps 1 to 6 (W0-17) and the first drill. Unverified until they run: whether Supabase lets `postgres` grant `pg_read_all_data`, the session pooler user form for a custom role, staging's Postgres major version.
 - Problem: staging will hold family letters in build 2. No backup tier is recorded (`docs/release/ENVIRONMENTS.md:70-75`), Free has no backups (supabase.com/docs/guides/platform/backups, read 1 Nov 2026), and the restore drill log is empty (`docs/ops/runbooks/restore-drill.md:27`). Storage objects are never in Supabase backups.
 - Requirement: before the first build 2 sign-in, staging has a backup under 24 hours old and one restore drill has passed on a synthetic project.
 - Acceptance:
@@ -2875,6 +2876,162 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the Asha fixture on one project, when moved to another, then letter counts, `raw_sha256` and consent rows match, and each phone resyncs with no duplicates.
   - Given the pepper differs between projects, then pseudonymised rows still resolve, or the pepper is carried over as a documented step.
 
+### Shipped on develop before its backlog row existed (9 Nov 2026)
+
+Written 9 Nov 2026 by `product`, from `develop` at d4b8f5f1. These changes merged with ids that exist only in an open pull request, in a test comment or in a Project document. This section adds no `####` row for an id that an open PR defines, so the id check stays clean and nothing is defined twice; when #599 merges, its rows for these ids are set to the status written here. Every device step named below has not been run on a phone. Requirement ids marked proposed (F05-REQ-052, F05-REQ-053, F09-REQ-034 to F09-REQ-038, F20-REQ-022 and the F17 6.2 rename) are Proposed rows in the feature specs, held in PR #726 until the CPO confirms them; until it merges they are not on `develop`, `trace.mjs` lists them as cited but undefined (report mode), and they are not decisions. Statements about what the CPO recommended come from the CPO's 9 Nov council answer, which is outside the repository and in no executive-log entry; only CPO-10 (BL-776) is filed.
+
+- **BL-659, BL-660, BL-675, BL-676: the Book page redesign.** Status: done in code (#674, 6ca2491a), waiting for the phone check. Open #599 defines all four (there BL-659 is needs-decision, for the CDesO; BL-660 is blocked on BL-659; BL-675 and BL-676 are deferred to 1.0.1), and the code and `apps/mobile/test/book-page.test.ts` already cite them, so no row is added here. #674 built BL-659 as option (b), the fade over the last whole word only (`EXCERPT_ENDING`); no ruling on that pick is on file. Satisfies: F09-REQ-034 to F09-REQ-038 (proposed in PR #726, not on `develop` until it merges). The page differs from F09 6.2 steps 2 to 4, F09-REQ-005, F09-REQ-006 and Q3; two of those differences are older than #674 (F09 Q8). Device step: S1-151. Who must rule: the CDesO on BL-659; the founder and the CPO on F09-REQ-005 and F09-REQ-006 (F09 Q8). Whether #674 goes into the next build is the founder's decision (release scope); the CPO's recommendation is to hold it until S1-151 passes on an iPhone SE (3rd generation). The design, `book-page.md`, is a Project document and is not in the repo. The page's words ("Voice {duration}", "Months", "Go to a month", "{n} months") sit in `apps/mobile/src/components/book/copy.ts`, not in `packages/content`; the content lane moves them.
+- **BL-E1: Another thought on Write.** Status: done in code (#679, 461b9645). "BL-E1" is the id `engagement.md` (a Project document) gives this work; it is not a backlog id. The row that covers the same work is BL-670 in open #599 (Another thought on Write and Listen, deferred to 1.0.1); #679 built the Write half only, so no row is added here and BL-670 keeps the Listen half open. Satisfies: F13-REQ-006 (the next eligible prompt, and skipping never blocks capture); F13-REQ-004 and F13-REQ-005 only in part, because the draw leaves out what the sheet has already shown and writes nothing to the 365-day history (BL-671 in #599 is about that). F04 6.1 names "Another thought" on Tonight only, so no requirement names it on Write. Device step: S1-152. Who must rule: the CPO, on whether F04 gets a requirement row for Write.
+- **#614: Settings home in five groups.** Status: done in code (e229f2c6). Open #599 defines it as BL-633 (blocked there on BL-622, BL-629 and BL-631); BL-629 (Where your letters live) and BL-631 (Your words) look like what #631 (058d08ea) shipped, which I did not check against those rows. No row is added here. When #599 merges, BL-633 and any part that is built are set to the status written here. F17 6.2 A carries the new group name (a Proposed edit in PR #726). Device step: S1-95. The design, `settings-ia.md`, is a Project document and is not in the repo. Who must rule: nobody.
+- **#661, #662 and #675 shipped with no backlog id.** #661 (Stop on a language row, caba0215, and #712) is F05-REQ-052 and #662 (no 0% in the wait line, cda0ba83) is F05-REQ-053, both proposed in PR #726 (`F05-transcription.md`), with device steps S1-97b, S1-15a and S1-15b. #675 (If you are struggling by the phone's region, 0c7b9175, and #713) is F20-REQ-022, proposed in PR #726 (`F20-help-safety.md`), with device step S1-150. BL-405 is the older row for #675's page: #675 builds its region and Call parts, but BL-405's Done-when says a non-US region shows the international fallback only, and that non-US numbers wait for the founder's FT-36 check, so BL-405 is set to needs-decision. Who must rule: the founder, who records the D-087 amendment that F20-REQ-022 needs and says whether BL-405's Done-when changes.
+
+### Follow-ups from the 8 Nov 2026 rulings (Erase everything on PR #520; the 0.9.0 texts)
+
+Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `docs/agents/cto/RULINGS.md`, and the founder's answers in D-144. CCO-6 says its three open points are "not yet in the backlog (Karma adds the rows after the merge)"; they are BL-775 to BL-777. BL-778 to BL-781 come from CR-60 and D-144. BL-387 (the row PR #520 builds) is done in code since #520 merged (73fcc1ea), so BL-775 and BL-781 are `ready`. BL-782 comes from the review of the BL-387 follow-up. BL-783 (written 9 Nov 2026) comes from reading the 0.9.0 texts against the Settings regroup of #614; it points at BL-448 and BL-501 for the strings they already own. Written 8 Nov 2026 by the docs lane; severities are proposals for `product` to confirm. Files named for BL-775 to BL-777 were first read at the head of PR #520 (3ae9eab2) or on `develop` (6ca2491a) and are checked on `develop` at 25daad04 (9 Nov 2026), now that #520 is merged; the one reference that had moved is corrected in BL-776.
+
+#### BL-775 A failed Erase everything that the person keeps using erases only what existed when it began
+- Status: ready (BL-387 is done in code). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Severity: S1. Area: front. Why S1: it can lose a word, which the legend puts at S0, but the failed line warns the person first, it needs a failed erase that the person chose to start, and CCO-6 rules it not blocking.
+- Satisfies: DATA-REQ-024 (Erase everything on a phone that never signed in); DATA-REQ-014 and F17-REQ-080 (the Delete this book half of BL-387, same wipe path). Also cited: D-144, CCO-6. No requirement yet says that a retry spares what is written after a failed erase; the Requirement line below is that rule (CCO-6 rules the gap not blocking, and the CPO's 9 Nov council answer, which is outside the repository and in no executive-log entry, lists it among the things to build next). Who must rule: nobody before the work starts; the founder approves any new failed-line words before they merge (D-144).
+- Who: `mobile`; review `privacy`, `data-steward`.
+- Problem: PR #520, which is BL-387's work, is merged. In #520, `eraseEverythingLocal` (`apps/mobile/src/lib/store.ts:1030`) writes the pending mark `erase.everything.pending` (a time) and, when a recording file will not go, returns `incomplete` with the rows and the mark still there. The person can then keep using the app. The next launch (`resumeEraseAtLaunch`, `apps/mobile/src/lib/erase-everything.ts:124`) and a retry from the screen both call `eraseEverythingLocal` again, which removes every row then present, so a letter written after the failure goes too. The failed line tells the person so (it ends "and that erases anything you add before then", D-144), so the screen is true, but new words are lost with no way back. `apps/mobile/test/erase-all.test.ts:588` pins today's behaviour. CCO-6 lists it as open and not blocking.
+- Requirement: a retry and the launch resume erase only what existed when the mark was written. What the person writes after the mark is kept, and the PR says how it tells old from new for each table and for the files.
+- Acceptance:
+  - Given an Erase everything that ended `incomplete` because one recording would not go, and a new letter kept after it, when the file can be removed and the erase runs again (a retry, or the next launch), then every row and file that existed when the mark was written is gone and the new letter and its recording are still there.
+  - Given a kill part way through an erase and nothing written afterwards, when the app next opens, then the store is empty and the 18+ question shows, as today.
+  - Given the new behaviour, when the content tests run, then `copy.settings.erase.failed` no longer says that anything added is erased, and the founder has approved the new wording (D-144: a change to these lines goes back to him).
+- Tests: change the case at `erase-all.test.ts:588` and add the two above, each failing on the old code.
+- Extends: PR #520, BL-387, CCO-6, D-144.
+
+#### BL-776 A person with one book can reach Recently deleted after a cold start (CPO-10: onboarding shows the existing row)
+- Status: ready (ruled by CPO-10, option (a), in `docs/agents/exec/RULINGS.md`; no D- id will be made). Mode: pair. Owner: mobile engineer. Milestone: M-JR. Size: S. Severity: S2. Area: front. Mode is pair because the CDesO places the row on the onboarding screen before mobile builds it (CPO-10: "The CDesO places it", and when it is built is not decided there); PR #520 (BL-387) is merged.
+- Satisfies: DATA-REQ-014 and F17-REQ-080 (a sole parent's deleted book can be restored for 30 days), F17 6.2 D (Delete a book; 6.2 C step 8 still says its sole-parent shelf is not built, which #520 made stale: Restore the book exists), LEGAL-REQ-031 (the 30-day undo window). Also cited: D-085, CCO-6, CPO-10. Who must rule: nobody on the choice (CPO-10 rules option (a): onboarding shows the existing Recently deleted row while a deleted book waits, with no new line). Open: the CDesO places the row; if the placement needs a word that does not exist, that word goes to the founder before it is built (CPO-10, D-132, D-144).
+- Who: the CDesO places the row; `mobile` builds; review `design-systems`.
+- Problem: CCO-6 says a sole-book person cannot reach Recently deleted after a cold start until a new book exists. Read in code on `develop` (re-checked at d4b8f5f1, 9 Nov 2026), not run on a phone: `(tabs)/book.tsx:318` and `(tabs)/index.tsx:203` redirect to `/onboarding` when the phone has no visible book, and `onboarding.tsx` does not route to Settings. Recently deleted is reached from Settings (`settings/index.tsx:148`, `settings/privacy.tsx:138`) or from a letter (`letter/[id].tsx:549`). In #520, Delete this book on the only book leaves a book waiting for 30 days that the person has no way to Restore after the next cold start, unless they add a book first.
+- Requirement: CPO-10, option (a): onboarding shows the existing Recently deleted row while a deleted book waits. No new line. The CDesO places it on the screen; if the placement needs a word that does not exist, that word goes to the founder before it is built (D-132, D-144). Options (b) and (c) of the earlier row are not taken.
+- Acceptance:
+  - Given a phone whose only book was deleted, and a cold start, when onboarding shows, then the existing Recently deleted row is there while that book waits, it opens the shelf, and a device step in `docs/qa/DEVICE_TEST_PLAN.md` walks it.
+  - Given the same phone and a restore, when Restore is tapped, then the book, its letters and its choices are back as they were (CPO-10: delete the only book, cold start, Restore brings it back).
+  - Given a phone with no deleted book waiting (none deleted, or after Erase now or day 30), when onboarding shows, then the row is not there. (This bullet is the row author's inference from CPO-10's "while a deleted book waits", not the CPO's words.)
+- Extends: PR #520, BL-387, CCO-6, CPO-10, D-085.
+
+#### BL-777 The VoiceOver line after Erase everything says no more than the screen
+- Status: needs-decision (CCO-6; the CPrivO and the CDesO rule in the executive log, `docs/agents/exec/RULINGS.md`, and the founder then approves the words, D-144). Mode: agent after the ruling. Owner: content, mobile engineer. Milestone: M-JR. Size: XS. Severity: S2. Area: front. PR #520 (BL-387) is merged, so the build waits only for the ruling.
+- Satisfies: LEGAL-REQ-051 (WCAG 2.2 AA across the app; its manual VoiceOver script covers deletion), LEGAL-REQ-044 (a spoken line is a claim in app content). Also cited: D-144, CCO-6. Who must rule: the CPrivO and the CDesO on the line, then the founder approves the wording (D-144); the CPO's 9 Nov council answer, outside the repository, asks for this to be taken in one note with BL-776.
+- Who: the CPrivO and the CDesO rule; `content` and `mobile` build; review `design-systems`, `privacy`.
+- Problem: `copy.settings.erase.doneA11y` is "Everything on this phone is erased." and is announced as the app returns to the start (`apps/mobile/src/app/settings/erase.tsx:84`). The screen before it says the spoken language stays ready (`speechStays`) and that saved exports and device backups are not changed (`backups`). CCO-6 adds that plan reminders stay too (not re-checked here). So the announcement says more than the screen did. The string comes from the account-security proposal, `content.md` 4.11 (a Project document, in no registered map), word for word.
+- Requirement: the CPrivO and the CDesO rule on a line that names only what was erased (books, letters, recordings and settings), or on dropping the announcement. A new line is a promise, so the founder approves the wording (D-144).
+- Acceptance:
+  - Given Erase everything finishes with VoiceOver on, when the announcement plays, then every thing it names was erased and nothing it names stays (the speech model, saved exports, device backups and plan reminders).
+  - Given the ruled line, when the content tests run, then a test pins it, and the VoiceOver step of S1-133 (in #520) reads it back on a phone.
+- Extends: PR #520, CCO-6, D-144.
+
+#### BL-778 Delete or document the build-time override LEGAL_CONTENT_DIR before the 0.9.0 pages are deployed
+- Status: done in code (#710, ae15e212; `git grep -n LEGAL_CONTENT_DIR -- apps .github` finds nothing at d4b8f5f1; the post-deploy sha256 check of CR-60 stays the gate). Mode: pair. Owner: platform. Milestone: M9. Size: XS. Severity: S1. Area: web.
+- Satisfies: LEGAL-REQ-001 (the versioned page a person agrees to serves the version recorded). Also cited: BL-565, CR-60. Who must rule: nobody; #710 made the change. #710's guard test over the three files that read the texts is a tripwire, not a proof.
+- Who: the web lane (the website thread, outside the roster) makes the change; the Mode is `pair` so the dispatcher does not take it (`docs/agents/HARNESS.md` section 6: it never assigns the website thread's tasks); the owner name is `platform` (`ops`) because the row gates the deploy of the 0.9.0 pages; review `security`.
+- Problem (as found on 8 Nov 2026, before #710): `apps/web/src/lib/legal/documents.ts:49` reads `process.env.LEGAL_CONTENT_DIR` before the committed folder `apps/web/content/legal`. In code, `git grep LEGAL_CONTENT_DIR -- apps .github` on 8 Nov 2026 finds only that line; the only other mention is CR-60. The 0.9.0 pages and raw `.md` files are pinned by sha256 in `packages/content/test/legal-beta.test.ts` and `apps/web/test/legal-served.test.ts`, which run in CI where nothing sets the variable. The web build (`next build`, `apps/web/vercel.json`) checks no hash. If the variable were set in the hosting project only, the live pages could serve other bytes than the ones pinned. No test or build step would catch that; the post-deploy `curl | sha256sum` check (#616 step 6, CR-60) would.
+- Requirement: delete the override, or keep it, document in `documents.ts` and in `docs/ops` what sets it, who may and that the production project must not, and pin that with a test. CR-60 puts this before the first deploy of the 0.9.0 pages.
+- Acceptance:
+  - Given the repository, when `git grep LEGAL_CONTENT_DIR -- apps .github` runs, then it finds nothing (the override is deleted), or finds only `documents.ts` with its comment and the test below, and `docs/ops` says the production project does not set it.
+  - Given the override kept, when the variable points at a folder whose bytes differ from the pinned ones, then a test in `apps/web/test` fails.
+  - Given the override deleted, when the web tests run, then the pins still pass and the pages read the committed folder only.
+- Extends: CR-60, BL-565, PR #652.
+
+#### BL-779 A written route for withdraw sync, see/export/correct and deleting TestFlight feedback by email
+- Status: needs-founder (the first rehearsal of the runbook, which the founder walks alone; the runbook itself is done, #711, d4b8f5f1; the emailed account deletion, Route 1, waits for BL-551). Mode: human. Owner: platform. Milestone: M9. Size: XS. Severity: S1. Area: ops.
+- Satisfies: LEGAL-REQ-036 (verified rights requests by email), LEGAL-REQ-031 (deletion service levels). Also cited: BL-551, BL-237, CR-60, DSR-R02, DSR-R05. Who must rule: the founder, whether the 0.9.0 deploy waits for the emailed account deletion that BL-551 closes (CR-60); the hello@ route being live is his to confirm; counsel confirms the runbook's reading of when the 45 days start (its section 0).
+- Who: `ops` with `support` and `privacy`; review `privacy`.
+- Problem (as found on 8 Nov 2026, before #711): the 0.9.0 texts promise these routes by hand: withdraw the agreement to sync ("by emailing us, and we will do it by hand", Privacy section 9), see, export, correct or delete ("email hello@earlyletters.com and we will do it by hand", Privacy section 10), delete an account (Terms 10.1) and delete TestFlight feedback (Privacy section 7). Runbooks exist for closing an under-18 account (`docs/ops/runbooks/underage-account.md`) and for a deletion that did not finish (`stuck-deletion.md`). There is none for withdrawing sync, for see/export/correct, or for TestFlight feedback, and the tool that opens a deletion from an email is BL-551 (`ops_open_account_deletion`, in no migration). The request matrix in `docs/engineering/08-data-rights-and-legal-requests.md` already lists the routes: delete account by email (verify by a link to the account address), export/access and correction by email (correction by profile fields only, "through a runbook"), and withdraw consent (`record_policy_act`, method `support_assisted`). The same chapter's DSR-R02 requires support to confirm control of the account email, by a sign-in link or code that is used, before any destructive action asked for by email, and DSR-R05 requires a request log row at receipt (the founder keeps it in the support mailbox until the table exists; the `privacy_requests` log is the remainder of BL-237, where a dated spreadsheet is acceptable at v1.0 volume). CR-60 holds the website deploy partly for this.
+- Requirement: done (#711): `docs/ops/runbooks/data-requests-by-email.md` has the five routes, the DSR-R02 check first (its section 2), the request log (section 1) and the list of what cannot be kept by hand (section 9). Open: its rehearsal checklist (section 10), which the founder walks with a test address, and the lines the runbook itself marks UNVERIFIED. BL-551 stays its own row: Route 1 stays closed until BL-551 exists, and Route 2's offer to delete what was synced cannot be kept either (the runbook's Route 2 step 7).
+- Acceptance (the runbook's text is read at d4b8f5f1 to cover the four cases, not walked; the rehearsal checks them):
+  - Given an email asking to withdraw sync, when the runbook is followed, then a code goes to the account address first, nothing changes until it is used, and the log row holds no letter text.
+  - Given an email asking to see, export or correct, when the runbook is followed, then it ends with what the person receives or what changed, and the same check came first.
+  - Given an email asking to delete TestFlight feedback, when the runbook is followed, then the feedback is deleted where Apple holds it, or the person is told plainly that it cannot be, and a log row exists.
+  - Given an email asking to delete an account and BL-551 not built, when the runbook is read, then it says that route is closed and what the person is told; the founder decides whether the deploy waits (CR-60).
+- Extends: BL-551, BL-237, BL-565, CR-60, the request matrix in chapter 08, DSR-R02, DSR-R05, `underage-account.md`, `stuck-deletion.md`.
+
+#### BL-780 Counsel asks for the packet: the absolutes in Erase everything, and whether Terms 8.1 says it resets the free count
+- Status: needs-founder (FT-18; the founder merges `docs/legal`, D-132). Mode: human. Owner: legal. Milestone: M9. Size: S. Severity: S2. Area: legal.
+- Satisfies: LEGAL-REQ-044 (each absolute in Erase everything is a claim that needs evidence and counsel's reading). Also cited: D-083, D-103, D-144, CCO-6. Who must rule: counsel answers; the founder merges `docs/legal` (D-132).
+- Who: `legal`, through the CLO; the founder merges `docs/legal`.
+- Problem: PR #520 ships "We hold no copy." and "Nothing is sent anywhere." and "Your free letters start again." (D-144). Counsel has not read them. `docs/legal/COUNSEL_PACKET.md` (1.5.0, 1 Nov 2026) has no entry for them, none for D-083's own ask that counsel confirm the free count held in the Keychain (`grep -i keychain` finds nothing), and none for whether Terms 8.1 should mention the reset. Terms 4.1.0 section 8.1 says "the count is kept on your phone so that reinstalling the app does not reset it" and is silent on Erase everything, which D-083 and D-103 say does reset it.
+- Requirement: add three questions, numbered from the next free Q (the packet's last is Q57; #598 proposes Q58 to Q74, so take the next free number after it), each with the default the product follows until counsel answers:
+  1. The absolutes. "We hold no copy" and "Nothing is sent anywhere" are true only where the row can show, a phone that has never signed in (`localDeletionAllowed`), and `apps/mobile/test/erase-all.test.ts` proves the erase makes no network call. "We hold no copy." is already in the app on `develop` (the footer of Where your letters live, `packages/content/src/strings.en.ts`, `whereLive.footer`), shown only where nothing can have reached us. For counsel: whether the absolutes can stand beside what the person may have sent as TestFlight feedback (0.9.0 Privacy, section 2, "TestFlight"; my reading, not a finding) and beside the exports and device backups the screen names.
+  2. Terms 8.1. Whether it should say that Erase everything resets the free count.
+  3. The Keychain count (D-083). Whether holding the free count in the Keychain so a reinstall does not reset it is acceptable.
+- Acceptance:
+  - Given the packet, when read, then each of the three has an entry with the facts above and a default, and the changelog has a new version row.
+  - Given counsel's answers, when they arrive, then the entry for each is updated and, if an answer changes a line, BL-781 and a content PR follow.
+- Extends: D-083, D-103, D-144, CCO-6, Q31, Q44.
+
+#### BL-781 The claims inventory records the four Erase everything lines, used in the app only for now
+- Status: ready (BL-387 is done in code). Mode: agent. Owner: content. Milestone: M-JR. Size: S. Severity: S2. Area: front.
+- Satisfies: LEGAL-REQ-044 (claims registry and content test). Also cited: D-144, CCO-6. Who must rule: the founder, on whether the four Erase lines may ever be used outside the app (D-144); until he decides, they stay in the app only. BL-637 in open #599 (registry rows, `erase.*` among them, owner legal, founder merges) covers the same lines in the registry file; take the two in one hand.
+- Who: `content`, `legal`; the CMO keeps the registry (`docs/agents/exec/COUNCIL.md`); review `compliance-engineer`.
+- Problem: the claims inventory is `docs/reviews/2026-10-claims-inventory.md` (a 28 Oct snapshot, section 3f added 30 Oct; the CMO keeps the registry). Its row S12 says of Erase everything: "UI not opened". The four lines of D-144 have no row. PR #520 (BL-387's work) is merged, so the lines and `erase-all.test.ts` are on `develop`. The marketing seat's condition is that the lines stay in the app only; the founder has not decided public use (CCO-6, D-144). A registry file of its own, `docs/legal/CLAIMS.md`, is proposed in PR #37 and is not on `develop` (D-123 deferred it). The open PR #599 holds a separate task for registry rows for the new privacy and recovery lines (BL-637 there).
+- Requirement: a row for each of the four lines (`body`, `onThisPhone`, `freeLetters`, `backups`), each saying: the words, the surface (Settings > Your letters > Erase everything on this phone, a phone that has never signed in; the row is last in Your letters after the Settings regroup of #614, while F17 6.2 F, `docs/prd/v2/features/F17-settings-privacy.md:208`, still says Your data), the decision of record (D-083, D-103, D-144), the proof (`apps/mobile/test/erase-all.test.ts`: rows and files gone, no request sent, the free count reset), the builds where it is false or not shown (`freeLetters` shows in the store build only), and "used in the app only for now; public use is undecided (D-144)". Where the inventory does not take new rows, the row says so and names the file that does.
+- Acceptance:
+  - Given the inventory, when read, then each of the four lines has a row whose verdict comes from `erase-all.test.ts` and which says the lines are used in the app only for now.
+  - Given the store listing, website and page copy sources (`packages/content/src/store.en.ts`, `site.en.ts`, `pages.en.ts`), when a content test scans them, then none contains any of the four sentences, until the founder decides public use.
+- Extends: D-144, CCO-6, BL-118, BL-780.
+
+#### BL-782 Ask for Face ID or the passcode before Erase everything (deferred to the 1 Dec build)
+- Status: deferred (to the 1 Dec build, by the CTO ruling of 8 Nov 2026, which is not in the repo and is recorded in the #520 conversation; see the header comment of `apps/mobile/src/app/settings/erase.tsx`). Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Severity: S2. Area: front. The severity is a proposal for `product` to confirm.
+- Satisfies: DATA-REQ-024 (Erase everything with export first); F17 6.2 F step 1 (device owner authentication; that step has no REQ id of its own, and the signed-in case is F17-REQ-026, unbuilt, P0). Also cited: BL-387, CCO-6. Who must rule: the CTO ruling of 8 Nov deferred it to the 1 Dec build and is not in the repository; whether it moves into build 12 is the founder's decision (release scope). The CPO's 9 Nov council answer, outside the repository, recommends building it next (a cancelled Face ID erases nothing).
+- Who: `mobile`; review `security`, `privacy` (the Face ID step).
+- Problem: design.md 2.12 of the account-security proposal (a Project document, not in the repository; `docs/design/COMPONENTS.md` 2.12 is the unrelated Sheet) and F17 6.2 F put device owner authentication before Erase everything. PR #520 defers it to the 1 Dec build; the header of `erase.tsx` cites "the CTO ruling of 8 Nov", which is in the PR conversation and not in `docs/agents/cto/RULINGS.md`, so this row is its only record in the repository. The app lock (#640) is in the build, and asking it here is the follow-up. Until then anyone holding an unlocked phone (handed over, or left on a table) can erase the book with two taps and an alert.
+- Requirement: before the Erase step, ask for Face ID or the passcode through the same authentication the app lock uses, and do nothing if the person cancels or it fails. No new data is kept.
+- Acceptance: Given a phone that has never signed in and Asha's book, when the person taps Erase everything and then Erase, then the system asks for Face ID or the passcode first; when it is cancelled, nothing is erased and the screen stays; when it passes, the erase runs as today. With no passcode set on the phone the row behaves as today (nothing to ask) and the device plan says so.
+- Extends: PR #520, BL-387, CCO-6, F1 (the app lock, #640).
+
+#### BL-783 Say Settings, Your letters, Export your book in the 0.9.0 texts and the website pages before they go live
+- Status: needs-founder (the founder merges `docs/legal`, D-132; the content lane can fix the two email strings in item 2 in the same PR). Mode: pair. Owner: legal, content. Milestone: M9. Size: S. Severity: S2. Area: legal. The severity is a proposal for `product` to confirm.
+- Satisfies: C-REQ-016 (Settings information architecture), LEGAL-REQ-044 (a Settings path in a published text is a claim). Also cited: F17 6.2 A (updated 9 Nov 2026), BL-448, BL-501, CR-60. Who must rule: the founder, who confirms the POLICY_VERSIONING reading of whether 0.9.0 keeps its number before the texts are edited (see the Requirement line); the founder merges `docs/legal` (D-132). After the pages deploy, the fix costs 0.9.1.
+- Who: `legal`, through the CLO, for `docs/legal/beta` (the founder merges `docs/legal`); the web lane (the website thread, outside the roster) for the two copies in `apps/web/content/legal`; `content` for the email strings and the store compliance row in item 4; review `compliance-engineer`, `privacy`.
+- Problem: the Settings regroup of #614 (e229f2c6) removed the group Your data. The Settings home (`apps/mobile/src/app/settings/index.tsx`) now has the group `copy.settingsHome.sections.letters`, "Your letters", which holds the Export your book row (`copy.settingsHome.exportLabel`) and the Recently deleted row (`copy.settings.delete.recentlyDeleted`). Delete account (`copy.settingsHome.deleteAccountLabel`) is its own section above Help, shown only while signed in and with the deletion switch on. Words that still send a reader to Your data, from `git grep -n -F "Your data"` on `develop` at 19a3c8d7 (9 Nov 2026), among others:
+  1. The 0.9.0 texts, which are this row's own work. Terms 7.3 and Privacy say "in Settings, Your data, Export your book": `docs/legal/beta/terms-0.9.0.md:98` and `docs/legal/beta/privacy-0.9.0.md:117`. The two pages the site serves, `/legal/terms/0.9.0` and `/legal/privacy/0.9.0`, read `apps/web/content/legal/terms/0.9.0.md:98` and `apps/web/content/legal/privacy/0.9.0.md:117`, the same bytes (`cmp`), pinned by sha256.
+  2. Two email strings no other row names, both in `packages/content/src/emails`: `account.en.ts` `privacy-request-received` ("Settings, Your data, Export everything", `:216`) and `family.en.ts` `family-book-closing` ("Tap Settings. Then tap Your data, and Export everything.", `:58`). Both also name the row "Export everything"; the row is "Export your book" and Export everything is the button on its screen (`copy.settings.export.button`). The generated copies in `packages/emails/generated/resend.ts` repeat them and are regenerated with `npm run export:resend -w @scribe/emails` (`packages/emails/test/resend-export.test.ts` fails if they are stale).
+  3. Strings other rows already own; whoever edits one fixes the group name in the same edit, and this row does not list them again. `pages.en.ts:199` and `:223` (the website Delete account page): BL-501 item 7 and BL-448 item 3; the path there is "Settings, Delete account". `account.en.ts` `policy-update` (`:254`, with its pin in `server-surfaces-account-deletion.test.ts`): BL-501 items 3 and 4. `docs/ops/runbooks/incident-notification.md:54`: BL-501 item 6. `account.en.ts` `book-deletion-scheduled` (`:112`, "go to Settings, Your data"): BL-448 item 2, which is about its export promise. The in-app place a book waiting to be deleted is listed, as the Settings home is built, is Settings, Your letters, Recently deleted; I did not trace the server flow behind that email (`request_book_deletion`), so whether a book deleted from another phone shows there is for BL-448 to settle.
+  4. The App Review notes row of `docs/store/compliance/data-and-account-deletion.md` (`:88`, and the path in `:37`) says "Settings, Your data, Delete account". The notes themselves are now in `packages/content/src/release/app-review.en.ts` and say "Settings, Delete account"; the table row is a planning copy.
+  5. `docs/legal` drafts, all the founder's merge (counsel's edits under BL-448 and BL-501 are the route): `privacy-policy.md:114` and `:127`, `delete-account-page.md:32` and `:36`, `in-app-disclosures.md:37`, `TESTFLIGHT_TESTERS.md:116` and `:140`, `DELETION_AND_EXPORT_SPEC.md:196` and `:258`, `ENGINEERING_REQUIREMENTS.md:236`. BL-448 items 3 to 5, BL-500 item 1 (the Delete account clause at `TESTFLIGHT_TESTERS.md:116`) and BL-501 items 5 and 7 name some of them, at line numbers that have since moved. Named by none of them: `privacy-policy.md:127`, the export clauses at `TESTFLIGHT_TESTERS.md:116` and `:140`, and `DELETION_AND_EXPORT_SPEC.md:258` (Erase everything, now in Your letters).
+  6. Not a path a reader sees: the unread label `copy.settings.sections.data` ("Your data") and `apps/mobile/src/lib/export/index.ts:6` (a code comment). The design and requirement documents (`docs/design`, `docs/prd`, `docs/engineering/08-data-rights-and-legal-requests.md`) also use the old group name; they are not edited here. `testflight.en.ts:84` and `:134` say "Settings, Export your book" without a group; that is not wrong and needs no change.
+- Requirement: say the path the app shows. Export: "Settings, Your letters, Export your book" (the 0.9.0 texts, the two email strings). Delete account: "Settings, Delete account" (BL-501, BL-448, and the review-notes row). A book waiting to be deleted: "Settings, Your letters, Recently deleted" (BL-448 item 2). This changes navigation paths, not promises, but the texts are the founder's (D-132), so the PR says so and he merges the `docs/legal` part. If the 0.9.0 text is edited, 0.9.0 keeps its number only while no `policy_versions` row exists and the pages are not deployed to `main` (CR-60, `docs/agents/cto/RULINGS.md:548`). No row for 0.9.0 is recorded in the repo (`git grep -F 0.9.0 -- supabase` finds none); the hosted database was not checked. `docs/legal/POLICY_VERSIONING.md:69` says a number is never reused even for an unpublished draft that leaked, so the founder confirms that reading before the edit. Re-pin in the same PR: run `sha256sum` on both files in `docs/legal/beta`, copy them byte for byte to `apps/web/content/legal/{terms,privacy}/0.9.0.md`, update the pins at `packages/content/test/legal-beta.test.ts:21-22`, `apps/web/test/legal-served.test.ts:19-20` and `apps/web/e2e/legal-versions.e2e.ts:18-19`, and the hash table in #616's description (APPLY step 8.2). If the deploy happens first, the correction is 0.9.1 instead.
+- Acceptance:
+  - Given the 0.9.0 pages and raw files, when a reader follows the Settings path they are told, then it matches the app: Settings, Your letters, Export your book.
+  - Given the two email strings in item 2, when a reader follows the Settings path they are told, then it matches the app, and once this row, BL-448 and BL-501 are done `git grep -n -F "Your data" -- packages/content/src apps/web/src` finds no line that names a Settings path (the unread label and its removal comment in `strings.en.ts` may stay). The 0.9.0 copies in `apps/web/content/legal` keep the words until the founder merges the `docs/legal` edit, so this check does not cover them.
+  - Given the 0.9.0 text was edited, when `sha256sum` runs on the files in `docs/legal/beta` and `apps/web/content/legal`, then each pair is identical, the three pins hold that value, and `legal-beta.test.ts` and `legal-served.test.ts` pass.
+  - Given the review-notes row of `docs/store/compliance/data-and-account-deletion.md` (owner `content`, review `compliance-engineer`), when read, then it gives the path the notes in `packages/content/src/release/app-review.en.ts` give, "Settings, Delete account", or says that file supersedes the row.
+- Extends: BL-448, BL-501, D-144, CR-60.
+
+### Follow-up from the 9 Nov 2026 Write autosave fix (#725)
+
+#### BL-816 Review's typed-text writer has no maximum wait, so a crash in a long burst of editing loses more than the last 300 ms
+- Status: done in code (#750, fc7c0afb, merged 10 Nov 2026). It is not run on a phone and it is in no TestFlight build yet: the last successful `testflight.yml` runs I found are from d26335da (8 Nov 2026), which still has the old debounce writer; I did not check whether either run reached testers or whether a build was cut by hand, so which installed builds have the loss described below is not established. Severity: the founder accepted S1 in chat on 9 Nov 2026 (Pacific). His words were "Ok continue with your recommendation", in answer to a list whose item on this row read "BL-816 severity: I recommend S1. S0 would hold the next alpha."; he did not name BL-816 or the C0 to C1 step. Under `docs/ops/RELEASE.md` 5.4 and TF-09 as quoted below, an S1 does not hold the C0 to C1 step; that is Karma's reading of those documents, not something he said. No D- entry has been made. Moving this row to done in code does not clear it: Karma's reading is that it stays an open S1 for the submission step until S1-166 has been walked and passed, and the founder has not ruled on when it closes. The gates that say no open S0 or S1 (TF-09, B2-18, RT-REL-12) read an issue list with labels; the repo has no `S0` or `S1` label yet (BL-005, FT-20; checked 10 Nov 2026) and no GitHub issue names BL-816, so a gate check run from the issue list will not see this row. S1-166 in `docs/qa/DEVICE_TEST_PLAN.md` has not been run (as of 10 Nov 2026) and the phone check stays open until it is walked; what a write every 300 ms costs on the SE 3 is judged there by feel, in (d), and was measured only in Node (about 0.5 ms median). Differences from this row, as built: the bound is 300 ms, chosen for its margin under the 500 ms ceiling and not from a phone measurement; the writer has one timer, not the two the Requirement words, and Review B of #750 accepted that, finding that its writes match a two-timer writer's unless a write throws, and then the words wait for the next change or flush instead of one retry on a timer; RT-REV-02 and RT-REV-07 are `partial`, not `gap`, because a Node case and a written device step now exist (Review B of #750 accepted that too); the new cases are in `review-writer-autosave.test.ts` (24 cases, 9 of which fail on the old logic and 15 of which pin behaviour that must not change), not in `store.review-v9.test.ts`; S1-166 (c) checks the recording only and the original words are checked in Node. Still open: the PRD rewording (Problem item 7, the CPO's) and BL-377's stale status. Mode: agent. Owner: mobile engineer. Milestone: M-JR. Size: S. Severity: S1 (accepted by the founder on 9 Nov 2026; see Status). Area: front. The legend of the 1 Nov audit section puts anything that can lose a word at S0, and F06-REQ-036 is P0 with the acceptance "100 of 100 kills reopen with the same text", which a burst of editing in Review broke before #750. S0 versus S1 is a release gate: `docs/ops/RELEASE.md` 5.4 and TF-09 let a cohort go from C0 to C1 only with no open S0, and let the submission step go only with no open S0 or S1. So the call is release scope, which is the founder's. Karma recommended S1 on 9 Nov 2026 and the founder accepted S1 (see Status). The reasons are Karma's, and the founder did not see them in the list he answered: S1 for the next TestFlight build, because the loss needs a crash, a kill or a power loss inside an unbroken burst (a pause of 300 ms or more flushes, which ordinary typing usually has; not measured), every graceful exit flushes first, and only that session's edits on top of saved words are at risk; Karma's plan is to have it fixed before the 1 Dec submission. Unlike BL-775, no CCO-6 ruling calls this not blocking, and the loss is silent: nothing on screen warns the person.
+- Satisfies: F06-REQ-036 (P0: Review never loses work; any change in Review is written to the draft within 500 ms, and 100 of 100 kills in Review reopen with the same text; also `docs/prd/v2/06-nfr.md:190`), which was not met in a burst before #750; F04-REQ-011 and RT-WRT-05 (typed text: at most the last 500 ms of typing lost; the requirement's home is Write, and Change words in Review is typed text too). Before #750 (read on 9 Nov 2026; #750 made RT-REV-02 and RT-REV-07 `partial` and pointed them at its test and S1-166), no release-catalog row named Review's writer or a bound on typed words lost in Review: RT-WRT-05 names `write-autosave.test.ts` and S1-36, both Write's; RT-REV-02 (edits put back survive a kill, SR-C-06) and RT-REV-07 (kills in Review keep text, kind, date and child) were both `gap` at `scripts/qa/release-catalog.rows.mjs:94` and `:99`, and the catalog listed no evidence at all for RT-REV-07, though the replay test's header names both. Who must rule: the founder accepted S1 on 9 Nov 2026 (see Status); the bound is the mobile owner's call (below); the PRD rewording (Problem item 7) is the CPO's proposal to take up.
+- Who: `mobile`; review `qa`, `privacy`. Dispatch: the dispatcher takes the first eligible task in file order with no severity ordering (`scripts/agents/dispatch.mjs:332`), and on 9 Nov 2026 BL-816 was position 46 of 46 in the `mobile` queue (the first is BL-355). If it must land before outside testers, Karma assigns it to a mobile session directly or the row moves up the file; Mode stays agent. Done means done in code: the row is done in code when the fix and its tests merge, and the phone check stays open until the Review device step below is walked.
+- Problem: read in code on `develop` at c350be3e (9 Nov 2026), not run on a phone.
+  1. `reviewWriter().text()` in `apps/mobile/src/lib/capture/review-persist.logic.ts` (lines 188-192) sets `pending`, stops the timer and starts a new one for `TYPED_WRITE_DEBOUNCE_MS` (300 ms, line 25) on every call. It is a pure debounce with no maximum wait, the shape Write's autosave had before #725 (e5cc7ecd; `docs/design/screens/WRITE.md` section 11 item 7). A burst of editing with no gap of 300 ms writes nothing until the burst ends, so a kill in the middle loses all of it, not "at most the keystrokes of the last 300 ms" as the comment above the constant (lines 20-24) says; that holds only after a pause.
+  2. Review's edits of the person's words do go through it: the Change words field (`review.tsx:981`, `onChangeText={setUserText}`) reaches `writer.text(userText)` (`:321-325`), whose callback is `setDraftReview` (`:306-308`), which writes `drafts.review_text` (`apps/mobile/src/lib/db/repos/drafts.ts:261-286`). That is the only autosave of those words. The write is silent: Review shows no autosave line, makes no announcement and does not render for it. It never touches the recording, `raw_transcript` or `typed_text`.
+  3. The 300 ms is the quiet window the file puts under F04-REQ-011's 500 ms. #522 (34f848b7) added it; no reason for 300 rather than 500 is recorded. Each write is a synchronous SQLite write while the person types, and Write's is 500 ms.
+  4. The flush paths, all of which write the newest words first: the app leaving the foreground (`inactive` or `background`, `review.tsx:311-313`), the screen unmounting (`:314-317`), Done (`:327-329`), Close (`:886-889`) and Keep (`:539`); `review-persist.wiring.test.ts` pins them. So the exposure is a crash, an OS kill of the foreground app, a flat battery or a force restart in the middle of a burst, the same as Write's, and not the app switcher or leaving the app. `review.tsx` never calls `cancel`; only `store.review-v9.test.ts:188` does.
+  5. The replay test (`apps/mobile/test/review-persist.replay.test.ts`) models the debounce: its `durableText` moves only after 300 ms of quiet, so it counts a whole burst as lost and passes today. A writer with a maximum wait fails it at seed 40, so the model must change with the fix. The catalog lists no evidence for RT-REV-07 although this test's header names RT-REV-02 and RT-REV-07; the fix updates both rows.
+  6. A second defect in the same function, the retry. `flush` clears `pending` before it writes, and `safe` swallows a throw, so a write that throws is retried only by a later change; the comment in `safe` says Done and Close retry it too, and they do not, because `flush` then finds nothing pending. `setDraftReview` returns false for a draft in `recording` or `discarding`, a missing draft or an empty base (`drafts.ts:261-286`); that is a refusal, not a failure, and the writer neither sees it nor should retry it.
+  7. F04-REQ-011 (`docs/prd/v2/features/F04-capture.md:319`) and `docs/prd/v2/06-nfr.md:59` still say "written 500 ms after the last keystroke", which is the debounce #725 fixed in Write. The bound that holds is the second sentence of F04-REQ-011 and `06-nfr.md:189`: at most the last 500 ms of typing lost. A rewording to "written at least every 500 ms while typing" is a proposal for the CPO; `docs/prd` is not edited by this row or its PR.
+  8. Two comments are stale and are corrected with the change: the header of `review-persist.logic.ts` (line 14) cites `test/review-persist.test.ts`, which does not exist, and the comment above the constant (item 1).
+- Requirement: at most the last `TYPED_WRITE_DEBOUNCE_MS` of editing in Review is lost on a kill, however long the burst. The number is the owner's call: 300 ms (today's) or up to 500 ms both meet the P0 ceiling of 500 ms (F04-REQ-011, F06-REQ-036); the owner states in the PR what a write costs on the phone they measured and prefers 500, as Write does, unless 300 is justified by it. As #725 did for Write: the first change after a write arms a write timer that later changes do not move, and when it fires it writes the newest words, not the words it was armed with; the quiet-window timer stays, so a real pause is still found where it is. With two timers, `cancel` clears both and `flush` leaves none. Nothing visible changes: the mid-burst write goes through the same silent callback, so Review gains no status line, announcement or render; if the owner adds any "saved" line or announcement to Review, it comes only after a real pause, as in #725 (`persist(value, quiet)` and `settled`, `write-session.logic.ts`). Words a mid-burst write already took are not written twice. Retry: a write that throws leaves the words pending, and they are tried again at the next change, at Done, at Close and at the unmount, and only there: no timer re-arms itself after a failure, so a draft that is gone cannot loop. A false return is a refusal and is not retried. The words written, `base` and `drafts.review_*` are unchanged; raw_transcript and typed_text are never read for writing.
+- Acceptance (labelled by defect, so a reviewer can reject one half):
+  - Maximum wait. Given Review on Asha's letter and Change words typing, one change every 100 ms for 3 s with no pause, when everything in memory is dropped at any moment (the kill model of `review-persist.replay.test.ts`, fake timers, the real writer and store), then the draft holds the newest words but at most `TYPED_WRITE_DEBOUNCE_MS` of typing, and the reopened Review (`mountReview`) shows them. This fails on the old logic, which writes nothing during the burst.
+  - Maximum wait. Given the same burst running for 30 s, then writes keep coming at the same interval, each holding the newest words and not the words that armed the timer.
+  - Maximum wait. Given one change and then a pause, then one write at the bound and no second write; given a burst and then a pause, then the newest words are written once.
+  - Maximum wait. Given a burst, when Done, Close, the app leaving the foreground or Keep calls `flush`, then the newest words are written once and no timer is left; given a burst, when `cancel` is called, then nothing is written afterwards (a case beside `store.review-v9.test.ts:188`; the screen does not call `cancel` today).
+  - Maximum wait. Given a burst, then nothing reaches the screen: the callback in `review.tsx` only calls `setDraftReview` (source pin, as #725's quiet test).
+  - Maximum wait. Given the 100 seeded runs of the replay test with its model changed to the new bound (words durable within the window after the first unwritten change, not after quiet), then all 100 reopen with all but at most the last `TYPED_WRITE_DEBOUNCE_MS` of typing.
+  - Retry after a throw. Given a write that throws in the middle of a burst, then the words stay pending and the next change, Done, Close and the unmount write them again; nothing is retried on a timer after the throw.
+  - Retry after a throw. Given a write that is refused (the callback returns false or the draft is gone), then it is not retried and nothing reaches the screen.
+  - Device: Review has no hard-stop step. S1-36 (m) is Write's (type for about 10 s with no gap of half a second, force restart with Volume Up, Volume Down and the side button, never the app switcher, then compare the draft). Add a Review equivalent with an unused S1 id (`git grep` the id on `develop` and in open PRs first): open Review on a letter, tap Change words, type with no gap of 300 ms for about 10 s, force restart as in (m), reopen the draft from Tonight, and expect all but about the last second of the edit, with the recording and the original words intact. Point RT-REV-02 and RT-REV-07 (`scripts/qa/release-catalog.rows.mjs` and `docs/qa/release-test-catalog.csv`) at the new test and step, as #725 did for RT-WRT-05; they stay `gap` until the step is walked.
+- Tests: new cases in `apps/mobile/test/store.review-v9.test.ts` beside the `[F04-REQ-011]` block, titles naming F06-REQ-036 and F04-REQ-011; the replay model in `review-persist.replay.test.ts` changed; each new case fails with only the source change reverted.
+- Extends: #725 (e5cc7ecd), #522 (34f848b7), F06-REQ-036, F04-REQ-011, RT-WRT-05, RT-REV-02, RT-REV-07; and BL-377, which still reads ready with Depends on BL-148 although #522 cites it, so its status is stale (not changed here; this row does not close it).
+
 ### Speed, size and release evidence
 
 #### BL-588 Measure the launch and record budgets on a phone (APP-05, APP-06)
@@ -2928,6 +3085,427 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
 - Who: `speech`.
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
+
+### First run and sign-in, end to end (NX-40, 10 Nov 2026)
+
+Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
+
+#### BL-891 Reconcile the first-run requirements with the journey lead state map and the words file
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M14. Size: S.
+- Satisfies: NX-40-R1, NX-40-R16. Also cited: NX-31-R17, R18, R19.
+- Scope: when `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` merges, replace the section names in NX-40 with its state ids; no state map is copied.
+- Done when: NX-40 cites the journey ids and the merged heads of the sibling files.
+
+#### BL-892 Intro scaffolding behind a build switch, mounted before the age gate in its own gate step
+- Status: blocked (#764 merged; FD-1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: #764.
+- Satisfies: NX-40-R1, NX-40-R3, NX-40-R8, NX-40-R19.
+- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step that precedes the age gate; no edit to `gate.logic.ts` before #764 merges.
+- Done when: with the switch off the first screen is unchanged; with it on the step shows once per install.
+
+#### BL-893 The story intro screen: 3 to 4 frames, Skip, Reduce Motion, VoiceOver
+- Status: blocked (BL-892; words and motion spec). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-892.
+- Satisfies: NX-40-R2, R4, R5, R9, R10, R17, R20.
+- Scope: frames from `packages/content` (final words by `content`), timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip of at least 48 pt from the first frame.
+- Done when: the QA rows for H2, U11, U12 pass on a device and the content rules test passes.
+
+#### BL-894 Test seams and Maestro rows for the happy paths H1 to H9 and edge cases U1 to U15
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M14. Size: M.
+- Satisfies: NX-40-R7, R11 to R16. Also cited: NX-31-R23.
+- Scope: rows against the stack; a test that Google and passkey buttons are absent in the Build 12 profile; no bypass flag in a store build.
+- Done when: the rows are merged with an owner for each device-only row.
+
+#### BL-895 Intro events in the analytics allowlist, content-free
+- Status: blocked (BL-893; FD-1). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-893.
+- Satisfies: NX-40-R18. Also cited: D-124 item 3.
+- Scope: `intro_shown`, `intro_skipped`, `intro_finished` (names proposed) with one enum prop; off unless the parent opted in.
+- Done when: the catalog test passes and no free-text prop exists.
+
+#### BL-896 Sign in with Apple asks for the email only
+- Status: needs-decision (FD-5). Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S.
+- Satisfies: NX-31-R9, NX-40-R7.
+- Scope: `apps/mobile/src/lib/auth/apple.ts` line 51 requests FULL_NAME and EMAIL; NX-31-R9 says email only. Not to be edited while #724 and its stack are open; do it after they merge.
+- Done when: the scope list is email only and a test pins it.
+
+#### BL-897 Record how long a session lasts and what the parent sees at the end
+- Status: ready. Mode: agent. Owner: platform. Milestone: M14. Size: S.
+- Satisfies: NX-40-R14, R15.
+- Scope: read the auth settings of the project (refresh token life, reuse interval) and write the numbers in `docs/ops/AUTH_SETUP.md`; no setting is changed.
+- Done when: the doc states the numbers and the date read.
+
+## Memory Library (NX-39 v2, 10 Nov 2026)
+
+Written by `product`, docs only, after the nine-lens council review and the CTO's rulings. Source: `docs/roadmap/next/03-requirements/NX-39-memory-library.md` (v2: one phase table, rows R1 to R61, founder decisions F1 to F15) and `docs/roadmap/next/03-requirements/NX-39-council-record-10nov.md`. Ids BL-841 to BL-858 are rewritten in place; BL-859 to BL-880 are new, from `next-id.mjs` on 10 Nov (it printed BL-859; run `node scripts/agents/id-collisions.mjs` before merge). BL-757 to BL-825 and BL-830 to BL-840 are not used. Milestone M15 is a proposed label for work after Build 12 (M14). Nothing here is a Build 12 task. Every row from P2 onward builds behind a switch that is off in `production`.
+
+Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether it needs `npm install` (only one install agent at a time: disk is tight), and whether it needs the founder's device, hours or money. Rows that cite BL-542 to BL-545 refer to rows already in this file.
+
+#### BL-841 Counsel brief for photos, videos, places, background reads and occasions (NX-39 council record section 5, CB-1 to CB-27)
+- Status: ready. Mode: agent. Owner: legal. Milestone: M15. Size: M.
+- Who: `legal`, `regulatory-affairs`, `privacy`; the founder takes it to counsel.
+- Satisfies: NX-39-R1, NX-39-R38, NX-39-R47. Also cited: LEGAL-REQ-007, LEGAL-REQ-011, LEGAL-REQ-013, DATA_CLASSIFICATION rule 6.
+- Scope: one memo under `docs/legal/` carrying the merged counsel brief (tiers A, B, C, the dedup map and the candidate promise forms PW-A to PW-D), with the facts, the recommended answer and what changes in the label, policy and claims registry. It states what was not verified and numbers the questions from Q58 in `COUNSEL_PACKET.md`.
+- Fails on old code: no memo covers a library read, city-level place, video, a background read or occasion reminders.
+- Done when: the memo is merged and the founder has the tier A list to send.
+- Plan: all phases; no install; needs the founder's money for counsel hours (F2).
+
+#### BL-842 The promise, the permission string and the parent words for each phase (NX-39 section 5)
+- Status: needs-decision (counsel on PW-A to PW-D; NX-39 F4). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-841.
+- Who: `content`; review `privacy`, `legal`.
+- Satisfies: NX-39-R1, NX-39-R3, NX-39-R44, NX-39-R56. Also cited: BL-830 pattern, `packages/content/test/rules.test.ts`.
+- Scope: `packages/content` keys for the phase lines, the pre-sheets (CS-S1, CS-S4a), the Settings rows, the card and the failure lines; claims registry rows; the `NSPhotoLibraryUsageDescription` text (one active sentence, purpose only, background named only in a P2c build). No string states or implies a frequency. Words need counsel and the founder.
+- Fails on old code: `[NX-39-R1] a promise line shows only when its phase is on, and none denies a read the build does`.
+- Done when: that title, `[NX-39-R56] the plist purpose string equals the content string and names background use only when it exists`, and the content rules pass.
+- Plan: P0 to P2c; install yes (content tests); needs the founder to choose wording.
+
+#### BL-843 Device spike: what a picked file carries, Live Photos, iCloud-only and limited access
+- Status: needs-founder (a phone with a real library; Mac session). Mode: human. Owner: mobile engineer. Milestone: M15. Size: S.
+- Who: `mobile`, `qa`, `security-architect`.
+- Satisfies: NX-39-R2, NX-39-R5, NX-39-R12, NX-39-R13. Also cited: NX-33 "Apple permission wording".
+- Scope: on a test phone with only synthetic pictures, record whether the picker returns the capture date and place with no permission prompt, also when the person picks from Limited; whether it returns an asset identifier; whether the person can drop location in the picker; how a Live Photo and an iCloud-only asset arrive. Write each as verified or not into NX-39 section 14. P1 copy waits for this.
+- Fails on old code: none; this closes UNVERIFIED lines.
+- Done when: the findings are in `docs/qa/` with the iOS version.
+- Plan: P1 gate; no install beyond a dev build (existing); needs the founder's device and hours (F12).
+
+#### BL-844 A city key from a bundled table, with no network (NX-39-R6, R7)
+- Status: needs-decision (NX-39 D4; default is the bundled table). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `mobile`, `security-architect`.
+- Satisfies: NX-39-R6, NX-39-R7. Also cited: LEGAL-REQ-013 source line.
+- Scope: a pure function in `packages/core` taking a coordinate and returning a city key and name from a bundled table (region where a city is small); size and accuracy measured on synthetic points; no venue names; no network; nothing finer than a city is returned or stored. Reports the table size.
+- Fails on old code: `[NX-39-R6] only a city key is kept and no coordinate survives`.
+- Done when: that title, `[NX-39-R7] the place lookup makes 0 network calls` and the size note are in the PR.
+- Plan: P1; install yes; no founder hours.
+
+#### BL-845 Metadata-only guard: an AST scanner with positive controls, an adapter field allowlist, and the plist checks (NX-39-R9)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M.
+- Who: `qa`, `security-architect`, `compliance-engineer`.
+- Satisfies: NX-39-R9, NX-39-R23, NX-39-R50. Also cited: SEC-ML-1, SEC-ML-2.
+- Scope: a TypeScript-AST scan (resolves aliased imports and dynamic requires) that fails on Vision, ML Kit, face, caption, classify, scene, people, `CLGeocoder`, `createAsset`, smart-album, moment, People and Places collections, collection titles, speech on a video and `fetch` in a media path; one fixture per banned call that must make it fail; a typed adapter record with exactly the allowed fields and a test that 30 extra fields do not survive; a proposed CODEOWNERS entry for the allowlist file. It runs against an empty media folder today, so it can land before any media code. Fixtures use the family "Asha". It does not scan native code inside a dependency (BL-878 covers that).
+- Fails on old code: `[NX-39-R9] media code reads only allowlisted fields, calls no analysis or network API, and the scanner fails on every banned fixture`.
+- Done when: that title passes and runs in `npm test`.
+- Plan: P1 on; install yes; parallel with BL-859 to BL-863 only if one install is shared; no founder hours.
+
+#### BL-846 Local schema, classification rows, the index shape and the erase and export design for media and derived fields (NX-39-R30, R31, R40, R41, R43)
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Who: `data-architect`, `privacy`, `principal-architect`; the ADR amendment reviewed by `principal-architect`.
+- Satisfies: NX-39-R30, NX-39-R31, NX-39-R32, NX-39-R40, NX-39-R41, NX-39-R43. Also cited: DATA_CLASSIFICATION rules 2 and 6, DATA-REQ-011, DATA-REQ-047.
+- Scope: a design doc and an amendment to the ADR draft: the stored copy, size, hash, date and city name on a kept item; the index as moments rows only (start day, end day, city key or null, flags, rule version), with `library_asset` and `library_moment_asset` deleted; the parent-decisions store keyed by day range; the cursor and last-looked time; protection class and backup flag per file; wipe paths including `-wal` and `-shm`; a committed device column register that a Node test checks (interim until BL-016); L4 rows for `docs/legal/DATA_CLASSIFICATION.md` (founder merges legal text). No migration in this row.
+- Fails on old code: no media rows are classified.
+- Done when: the doc and ADR amendment are merged and name each field with a class.
+- Plan: P1 to P2b; no install; no founder hours.
+
+#### BL-847 P0: one photo with a letter, as NX-33 designs it
+- Status: blocked (Build 12 ships; NX-39 F1 names a release; BL-846; BL-864; NX-33 D1 to D5). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-846.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R2, NX-39-R8, NX-39-R14, NX-39-R31, NX-39-R33, NX-39-R36, NX-39-R37, NX-39-R53. Also cited: NX-33-R1 to NX-33-R14 (no backlog ids were found for NX-33 on 10 Nov, UNVERIFIED).
+- Scope: the picker, the stripped JPEG, temp-file cleanup, erase and export, the app-switcher snapshot check, the P0 switch `EXPO_PUBLIC_PHOTOS`, off in `production`.
+- Fails on old code: `[NX-39-R8] 0 of 10 stored files carry any metadata segment, after export too`.
+- Done when: NX-33's R1 to R14 titles and the NX-39 titles above pass.
+- Plan: P0; install yes; needs counsel tier A answers and the founder's release call.
+
+#### BL-848 P1: the date, and a city name if the spike passes, under each picked picture (NX-39-R5, R6, R10, R12, R13)
+- Status: blocked (BL-843, BL-844, BL-846, BL-847, BL-842; NX-39 D2, D5). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-847.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R5, NX-39-R6, NX-39-R10, NX-39-R12, NX-39-R13, NX-39-R32.
+- Scope: read the date (and the city key if BL-843 and BL-844 pass; date only if not) from the original in a temporary file, store in separate fields, show "From the photo" lines the parent can change or clear, Live Photo stills, iCloud on demand; the day rule is the phone's zone; switch `EXPO_PUBLIC_MEDIA_METADATA`.
+- Fails on old code: `[NX-39-R10] date and place lines never enter the words, the transcript or the search index`.
+- Done when: that title and the R5, R6, R12, R13 titles pass.
+- Plan: P1; install yes; waits for the spike (founder's device).
+
+#### BL-849 Specs for the chips, the date-only card, the pre-sheet, the ledger, Hidden choices and the permission states (NX-39 sections 5, 7; #751 CS-S1 to CS-S15)
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: M.
+- Who: `design-systems`, `content`, `user-research`.
+- Satisfies: NX-39-R16, NX-39-R17, NX-39-R35, NX-39-R48, NX-39-R49. Also cited: NX-33-R9 to NX-33-R13.
+- Scope: fold the consent and surfacing spec (#751) into `docs/design/COMPONENTS.md` and the flows: the card shows a date range only (no place, no thumbnail), the one numbers table of NX-39 section 6 replaces the figures in #746, the media badge token is named `mediaScrim` (the existing `scrim` stays), no digest, no widget, no frequency in any string, the Hidden choices page behind App Lock, light, dark and AX5.
+- Fails on old code: none; this is a design row.
+- Done when: the specs are merged, each NX-39 screen row has a picture, and #746 and #751 cite section 6 of NX-39.
+- Plan: P1 to P2b; no install; no founder hours.
+
+#### BL-850 The privacy label design, the data map and the log canary design for media (NX-39-R30, R34)
+- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: M.
+- Who: `privacy`, `compliance-engineer`, `legal`.
+- Satisfies: NX-39-R30, NX-39-R34, NX-39-R47. Also cited: LEGAL-REQ-014, LEGAL-REQ-042.
+- Scope: a table of what each phase would put on the App Privacy label under each answer to CB-2; data map rows; the canary design (BL-862 builds it); the three consent acts and their Shown, Records, Never and Decline lines. Founder enters any label.
+- Fails on old code: `[NX-39-R30] a fake city, id and date never appear in any log, analytics event or crash report`.
+- Done when: the table and canary design are merged.
+- Plan: P1 to P2c; no install; no founder hours.
+
+#### BL-851 Threat model for media on the phone: the app switcher, thumbnails, device backups, restore, temporary files, protection class (NX-39-R36, R43, R53)
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Who: `security`, `security-architect`.
+- Satisfies: NX-39-R36, NX-39-R43, NX-39-R53, NX-39-R42. Also cited: NX-33 "Not verified", SEC-ML-7, SEC-ML-14.
+- Scope: a short doc in `docs/security/` listing where a picture, a date or a city could persist or leak and the control for each; the scripted snapshot check for App lock (a P0 gate); the file class per file and what the background reader costs (`CompleteUntilFirstUserAuthentication`, not `complete`); restore distrust; marks each claim verified or not.
+- Fails on old code: none; this is a review row.
+- Done when: the doc is merged with a device row proposed for each open item.
+- Plan: P0 to P2c; no install; no founder hours.
+
+#### BL-852 The sync payload carries no media and no derived field (NX-39-R33)
+- Status: blocked (BL-846). Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: BL-846.
+- Who: `sync`, `qa`.
+- Satisfies: NX-39-R33. Also cited: NX-33-R16.
+- Scope: a contract test over every schema in `packages/api` for banned keys (library, local_id, asset, place, geohash, moment, occasion, taken_at, media) and an allowlist test on the outbox serializer; the second phone's "The photo is on the other phone." line.
+- Fails on old code: `[NX-39-R33] the sync payload carries no media and no derived field`.
+- Done when: that title passes.
+- Plan: all; install yes; no founder hours.
+
+#### BL-853 P2b: "Suggest days" on open, one date-only card, and the in-app "days away" card (NX-39-R3, R11, R15 to R20, R42, R45)
+- Status: blocked (BL-871; BL-862 and BL-845 running; BL-877; BL-859, BL-860, BL-861; the study pass line (BL-857, BL-879); counsel tier B; NX-39 D9, D14). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-877.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R3, NX-39-R11, NX-39-R15, NX-39-R16, NX-39-R17, NX-39-R18, NX-39-R19, NX-39-R20, NX-39-R29, NX-39-R42, NX-39-R45.
+- Scope: wire the pure engine (BL-859), the decisions store (BL-860) and the consent machine (BL-861) to the index (BL-877) and the screens; permission asked on a tap only; Limited honoured; the status is checked before every read; one catch-up per foreground session; the card shows a date range only; Tonight and the composer shelf are the only surfaces; no notification; switch `EXPO_PUBLIC_MOMENTS`, off in `production`.
+- Fails on old code: `[NX-39-R15] the same {day, cityKey} list always makes the same moments, with reason codes and no forbidden import`.
+- Done when: the R3, R11, R15 to R20, R42 and R45 titles pass.
+- Plan: P2b and P4b; install yes; needs the founder's device for the acceptability harness (BL-880).
+
+#### BL-854 P3: a video with a letter, local, with limits and a typed description (NX-39-R21 to R24, R8)
+- Status: blocked (NX-39 F13; BL-848; counsel CB-9). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-848.
+- Who: `mobile`, `design-systems`, `qa`.
+- Satisfies: NX-39-R8, NX-39-R21, NX-39-R22, NX-39-R23, NX-39-R24. Size note: if the conversion work does not fit one PR, split into conversion, playback and export.
+- Scope: pick, convert off the main thread with Cancel, store with a container scan for location atoms, play without autoplay, offer a typed description on every video, export by choice with a size line; switch `EXPO_PUBLIC_VIDEO`. A native transcode module goes through BL-878 first.
+- Fails on old code: `[NX-39-R23] no speech engine ever receives a video's audio`.
+- Done when: the R21 to R24 titles pass.
+- Plan: P3; install yes; needs an SE-class phone (founder's or borrowed).
+
+#### BL-855 P4a: occasions the parent types, and quiet local reminders on those days (NX-39-R25, R26, R28, R29, R61)
+- Status: blocked (BL-869; NX-39 F6; counsel CB-21 asked; BL-542 re-scoped to typed only). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-869.
+- Who: `mobile`, `content`, `design-systems`.
+- Satisfies: NX-39-R25, NX-39-R26, NX-39-R28, NX-39-R29, NX-39-R61. Also cited: BL-542, BL-543.
+- Scope: the occasions screen with the parent's own name and date, no list, no default, no festival word; local reminders whose body is a fixed content key, with a random id in `userInfo`, no place, photo, count or "waiting"; the tap handler routes by enum; one shared cap and the quiet window; switch `EXPO_PUBLIC_OCCASIONS`. Does not depend on any library work and may ship before P2a.
+- Fails on old code: `[NX-39-R26] a reminder carries a fixed key, a random id, and nothing from the library`.
+- Done when: the R25, R26, R28, R29, R61 titles pass.
+- Plan: P4a; install yes; no founder hours once F6 is taken.
+
+#### BL-856 Media analytics events, catalog first, none that depend on library content (NX-39-R34)
+- Status: blocked (BL-848). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-848.
+- Who: `analytics`, `privacy`.
+- Satisfies: NX-39-R34. Also cited: D-124 item 3.
+- Scope: add `media_added` (source, kind) and `occasion_reminder_changed` to `packages/analytics/src/catalog.ts` and `docs/analytics/TRACKING_PLAN.md` in one PR; `moments_switch_changed` (on or off only) ships dark until counsel answers CB-2; no moment, suggestion or card event; no prop is a place, date or count.
+- Fails on old code: `[NX-39-R34] the catalog has no event that depends on library content`.
+- Done when: that title passes.
+- Plan: P1 on; install yes; no founder hours.
+
+#### BL-857 Parent study plan: extend PARENT_STUDY_PLAN Q5 with bars written before it runs (NX-39 section 12)
+- Status: ready. Mode: agent. Owner: user researcher. Milestone: M15. Size: M.
+- Who: `user-research`, `design-systems`, `legal`.
+- Satisfies: NX-39-R48, NX-39-R59, NX-39-R60, NX-39-R38. Also cited: `docs/design/notifications/PARENT_STUDY_PLAN.md` Q4 and Q5.
+- Scope: extend Q5 (do not start a second plan) under `docs/research/studies/2026-11-library-permission/`: sessions first, diary second; adults only; synthetic stimuli; no real library; no child named or photographed; the pass and stop bars of NX-39 section 12 copied in before any data; comprehension questions with correct answers written in advance; plain versus polished sheet; promise candidates PW-A to PW-D; date-only versus place-naming card; hard-season stimuli last with a visible skip; a second runner for at least 3 permission sessions; consent page with Shown, Records, Never and Decline lines (checked against COORDINATION section 10). Consent design is judged by comprehension and a comfortable No.
+- Fails on old code: none; this is a study row.
+- Done when: the plan is merged; the read-out (BL-879) gates BL-874 copy and BL-853.
+- Plan: P2a, P2b; no install; the run itself is BL-879.
+
+#### BL-858 Phase switches, TestFlight text, App Review notes and a kill-switch drill (NX-39-R37, R39)
+- Status: blocked (BL-847; Build 12 ships). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: BL-847.
+- Who: `ops`, `mobile`, `content`.
+- Satisfies: NX-39-R37, NX-39-R39, NX-39-R60. Also cited: NX-33 "Switch, off behaviour".
+- Scope: the seven switches of NX-39 section 3 in `eas.json` and `lib/capabilities.ts`, all off in `production`; What to Test text per phase; App Review notes that name every permission key in the built plist, with a reviewer path that needs no real library; a drill that the remote `photos` switch removes P2a and later and can pause but never start.
+- Fails on old code: `[NX-39-R37] each phase switch removes its screens and reads and leaves export and erase working`.
+- Done when: that title passes and the drill is recorded.
+- Plan: all; install yes; the drill needs the founder's TestFlight device.
+
+#### BL-859 The moment engine: a pure function from {day, cityKey} to moments with reason codes (NX-39-R15, R5)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `mobile`, `qa`.
+- Satisfies: NX-39-R5, NX-39-R15. Also cited: CAIO-3, CAIO-11.
+- Scope: `packages/core/src/moments.ts` and `packages/core/test/moments.test.ts`. Input: a list of `{day, cityKey}` and a `RULE_VERSION`; output: moments with a reason code from a closed enum. No import of network, clock, locale, randomness or storage; an import-graph test. Day bucket is the phone's zone, passed in: `dayKeyAt(epochMs, utcOffsetMinutes)` stays in `moments.ts` as a pure helper (the caller supplies the offset). Reason codes and `cityKey` null for a moment with two or more cities are as defined in R15. Tests: determinism over 100 shuffles, order invariance, idempotence, monotonicity in the limited form of R15 (adding no-city items or a city the day already has never uncovers a day; a different city between matching days may split a moment), midnight, DST, flight day, empty, null place, one huge day; fictional family "Asha". Not wired to any screen.
+- Fails on old code: `[NX-39-R15] the same {day, cityKey} list always makes the same moments, with reason codes and no forbidden import`.
+- Done when: that title and `[NX-39-R15] adding items with no city, or a city the day already has, never uncovers a day; a different city between matching days may split a moment` pass.
+- Plan: P2b; install yes (vitest in `packages/core`); no founder hours.
+
+#### BL-860 Parent decisions logic: hide a day, a stretch or a photo, surviving every rebuild (NX-39-R20, R41)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Who: `mobile`, `data-architect`.
+- Satisfies: NX-39-R20, NX-39-R41. Also cited: CDO-4.
+- Scope: `packages/core/src/decisions.ts` and tests: day-range algebra (hide a day, a stretch with from and until), keyed by calendar day with no `local_id`, and no photo key of any kind (ML-13); applying decisions to a list of moments (a hidden day trims or splits a moment as a barrier, and each leftover piece re-qualifies under the R15 rule by running the engine on the items inside the piece, so a lone leftover day is dropped; this needs the items passed in, not moments alone, ML-14); the 14-day snooze and "Not now" for cards are records with an expiry in the same store; all survive rebuild, a rule-version change, a revoke and re-grant, Recently Deleted purging, Forget the list and Stop these; removed only by Erase everything, Delete account or Clear hidden choices (snoozes and hides alike). Persistence is BL-877. "Asha" fixtures.
+- Fails on old code: `[NX-39-R41] parent decisions survive every rebuild path and go only on Erase or Clear`.
+- Done when: that title passes; the store has no photo-key field or function; the follow-up in BL-881 is merged before this row is marked done.
+- Plan: P2b; install yes; no founder hours.
+
+#### BL-861 The consent state machine: layers, states and acts, never at launch (NX-39-R3, R47, R48)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `mobile`, `privacy`.
+- Satisfies: NX-39-R3, NX-39-R47, NX-39-R48. Also cited: PRIV-R21, CDESO-1, CPO-15.
+- Scope: a pure state machine for `media_read`, `media_background` and `occasions`: Not asked, Held, All, Limited, Denied, Narrowed, Revoked; the only caller of an authorization request is the Continue event; Not now holds and never returns from a note; no switch on without its act; an adapter interface for the PRIV-R21 act writer (its location and act vocabulary are UNVERIFIED and counsel-adjacent; do not guess them). Acts are `agreed` and `withdrawn` only: "Not now", a cancel and a system revoke record none. After "Not now", a chooser tap shows no sheet and the picker keeps working; only opening the control does. Narrowed records no new act, wipes the index and leaves one plain ledger note (counsel question CB-28). `media_background` and `occasions` follow the state tables in NX-39 section 7.3.1 (the seven states, with Limited and Narrowed only for `media_read`). Tests drive every launch path (cold, warm, notification tap, deep link, first run) and assert 0 requests.
+- Fails on old code: `[NX-39-R3] no launch path requests photo authorization and Not now holds`.
+- Done when: that title and `[NX-39-R47] each consent layer records its own act and no switch is on without it` pass against a fake writer.
+- Plan: P2a, P2b, P2c, P4a; install yes; no founder hours.
+
+#### BL-862 Log canary harness and the closed native-error code enum (NX-39-R30, R50)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: M.
+- Who: `qa`, `privacy`, `security-architect`.
+- Satisfies: NX-39-R30, NX-39-R50. Also cited: OBS-R10, LEGAL-REQ-014, CDO-10, SEC-ML-5.
+- Scope: a fixture library with a unique fake city, id and date run through scan, index, attach, export, erase and a forced native error; assert 0 hits in logs, breadcrumbs, crash payloads and analytics queue; the adapter maps every native error to a closed enum code and drops the message; a canary in the native error text yields 0 hits. Marks R30 built, and makes it a gate for P2b and P2c.
+- Fails on old code: `[NX-39-R30] a fake city, id and date never appear in any log, analytics event or crash report`.
+- Done when: that title and `[NX-39-R50] native errors cross the bridge as closed codes` pass.
+- Plan: P1 on; install yes; no founder hours.
+
+#### BL-863 Claims-capabilities rules for media: capability fields, denial claims, no frequency claim (NX-39-R1, R44, R55)
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: M.
+- Who: `content`, `compliance-engineer`, `privacy`.
+- Satisfies: NX-39-R1, NX-39-R44, NX-39-R55. Also cited: BL-830 pattern, PRIV-R17, CPO-14, CLO-1.
+- Scope: extend `packages/content/test/claims-capabilities.test.ts`: `Profile` gets `mediaMetadata`, `mediaLibrary`, `mediaBackground`, `occasions` read from `capabilities.ts`, one rule each; denial claims fail while the capability is on; the frequency and freshness patterns (two or three or a few times a day, every day, up to date, in the background, when closed) fail in every profile; "stay on your phone", "stays on this phone" and "nothing is sent to us" fail unless on the registry; new content paths and the occasion notification strings join the read set; a check fails if a `memoryLibrary` subtree exists in `packages/content` and is not listed; `KNOWN_VIOLATIONS` stays capped at today's count. No new content is added.
+- Fails on old code: `[NX-39-R55] a claim ships only with its capability and its proof, and no frequency claim ships at all`.
+- Done when: that title passes and the existing rules still pass.
+- Plan: P0 on; install yes; no founder hours.
+
+#### BL-864 Plist and preflight lint per phase; UIBackgroundModes stays forbidden (NX-39-R4, R51)
+- Status: ready. Mode: agent. Owner: platform. Milestone: M15. Size: S.
+- Who: `ops`, `security-architect`, `compliance-engineer`.
+- Satisfies: NX-39-R4, NX-39-R51. Also cited: LEGAL-REQ-007, LEGAL-REQ-011, SEC-ML-10, CPO-11.
+- Scope: extend `apps/mobile/scripts/preflight-testflight.mjs` and the plist test: keep failing on any `UIBackgroundModes` and any `BGTaskSchedulerPermittedIdentifiers` (lines 575 to 576 stay until a recorded founder ruling after counsel); fail on `NSLocation*`, `NSPhotoLibraryAddUsageDescription`, any WidgetKit, share-extension or notification-extension target, any `application-groups` entitlement; the library key only when its flag is on and equal to the content string; `PHPhotoLibraryPreventAutomaticLimitedAccessAlert` true when it exists; a positive control per rule; a prebuild diff test for the P2c flag on and off (the flag stays off).
+- Fails on old code: `[NX-39-R4] the plist adds keys only for the phases that are on`.
+- Done when: that title and `[NX-39-R51] no widget, share extension, notification extension or app group exists` pass.
+- Plan: P0 to P2c; probably no install (a node test; UNVERIFIED, confirm); no founder hours.
+
+#### BL-865 Privacy Policy major bump: draft revision and in-app disclosure text (counsel-gated; NX-39 F5)
+- Status: blocked (BL-841 answers CB-1, CB-2, CB-3, CB-5; the founder merges `docs/legal/**`). Mode: agent. Owner: legal. Milestone: M15. Size: M. Depends on: BL-841.
+- Who: `legal`, `privacy`, `regulatory-affairs`.
+- Satisfies: NX-39-R1, NX-39-R47. Also cited: POLICY_VERSIONING 2.1 items 1, 2, 7, 9, 2.4, section 3; CLO-7.
+- Scope: a draft Privacy revision 3.0.0 to 4.0.0 (published 2.0.0 if 1.0.0 is out) that removes "photos" from the not-collected sentence only with the on-device qualifier, adds reading on the phone, the index and its deletion, that iOS decides when background work runs (only for a P2c build), and the 30-day notice; one text per phase release; `in-app-disclosures.md`; the labels doc (`app-store-privacy-labels.md`) and the data policy rows for `photo_path` and `entry-photos`; the new `media-library` consent key. Text may describe only what is built.
+- Fails on old code: none; this is a legal-text row.
+- Done when: the drafts are in a PR for the founder with the counsel questions they depend on.
+- Plan: P0 on; no install; needs the founder's merge and counsel.
+
+#### BL-866 Terms major bump: right-to-add clause and a one-line first-add notice (counsel-gated; NX-39 F5)
+- Status: blocked (BL-841 answers CB-6, CB-7, CB-9; the founder merges `docs/legal/**`). Mode: agent. Owner: legal. Milestone: M15. Size: S. Depends on: BL-841.
+- Who: `legal`, `regulatory-affairs`.
+- Satisfies: NX-39-R38, NX-39-R47. Also cited: Terms 4.1.0 sections 5.1, 5.2, 5.5, 9; CLO-8.
+- Scope: a draft Terms revision 4.1.0 to 5.0.0 with a right-to-add clause for media the parent did not make, the audio-of-others position for video, and the NCMEC sentence check; a one-line first-add notice with Shown, Records (version and time only), Never and Decline.
+- Fails on old code: none; this is a legal-text row.
+- Done when: the draft is in a PR for the founder with the counsel questions it depends on.
+- Plan: P1; no install; needs the founder's merge and counsel.
+
+#### BL-867 Claims registry, compliance-register rows and the counsel packet entries for media (NX-39-R1, R55)
+- Status: ready. Mode: agent. Owner: legal. Milestone: M15. Size: M.
+- Who: `legal`, `compliance-engineer`.
+- Satisfies: NX-39-R1, NX-39-R55. Also cited: PRIV-R17, CLO-2, CLO-13.
+- Scope: create `docs/legal/CLAIMS.md` (absent today) with a row per promise line (id, text hash, capability, evidence test, counsel version, date); proposed edits to `compliance-register.md` (CR-083 updated with the phase gates, CR-040 extended, CR-031 a place row, six new rows R-A to R-F named in the council record section 5); the brief's CB-1 to CB-27 as `COUNSEL_PACKET.md` Q58 onward with the dedup map. Founder merges.
+- Fails on old code: none; PRIV-R17's registry exists only as a test today.
+- Done when: the files are in a PR for the founder.
+- Plan: all; no install; founder merge.
+
+#### BL-868 Fix the export spec: the stored stripped copy only, and per-item filenames (NX-39-R32)
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: S.
+- Who: `data-architect`, `legal`.
+- Satisfies: NX-39-R32. Also cited: DELETION_AND_EXPORT_SPEC 4.2 line 335, LEGAL-REQ-013, DATA-REQ-056.
+- Scope: a proposed edit to `docs/legal/DELETION_AND_EXPORT_SPEC.md` 4.2: "original bytes" becomes "the stored copy, re-encoded, with no Exif, XMP, IPTC or location; HEIC may also carry a .jpg copy"; one directory name; filenames `<entry_id>/<media_id>.<ext>` or `<media_id>.<ext>` so several items per letter do not collide; the export format version bump and the published JSON schema; a README line saying the derived index and the parent's hidden choices are not exported. Founder merges legal text.
+- Fails on old code: the spec's "original bytes" line contradicts LEGAL-REQ-013.
+- Done when: the edit is in a PR for the founder.
+- Plan: P0; no install; founder merge.
+
+#### BL-869 Name the shared notification cap and the quiet window, and register every notification class (NX-39-R26, R61)
+- Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: S.
+- Who: `mobile`, `qa`.
+- Satisfies: NX-39-R26, NX-39-R27, NX-39-R61. Also cited: CAIO-7, CFO-2, `apps/mobile/src/lib/reminders/planner.ts`.
+- Scope: export one constant for the shared cap (today the code has a `Cadence` of off, weekly, fewTimes, everyEvening and no numeric weekly cap; the default stays the cadence the parent chose) and one for the quiet window; a registry that every class (evening, month, occasion) joins and counts against; a test that adding a class cannot raise the total; a test that `planner.ts` imports no media module and that the occasion class plus the existing classes never exceed 60 of 64 pending. No number changes; the founder's number (F6) replaces the default later.
+- Fails on old code: `[NX-39-R61] one shared cap covers every notification class`.
+- Done when: that title and `[NX-39-R27] no notification is derived from the library` pass.
+- Plan: P4a; install yes; no founder hours.
+
+#### BL-870 The photo bucket accepts no writes and no payload carries a photo path (NX-39-R54)
+- Status: ready. Mode: agent. Owner: sync owner. Milestone: M15. Size: S.
+- Who: `sync`, `qa`.
+- Satisfies: NX-39-R33, NX-39-R54. Also cited: CLO-10, compliance-register CR-113.
+- Scope: a test in `supabase/tests` that the `entry-photos` bucket policies deny writes for every role and that `photo_path` is null in sync fixtures. If the test fails, stop and write the finding; a migration then needs its own task and the founder's `approve-migration`. No migration here.
+- Fails on old code: `[NX-39-R54] the photo bucket accepts no writes and no payload carries a photo path` (UNVERIFIED which way it fails today).
+- Done when: that title passes, or the finding is filed.
+- Plan: all; install yes (`test:db`, embedded Postgres); no founder hours unless a migration is needed.
+
+#### BL-871 Device spike CAIO-1: are new photos visible under Limited access?
+- Status: needs-founder (a physical iPhone). Mode: human. Owner: mobile engineer. Milestone: M15. Size: S.
+- Who: `mobile`, `qa`.
+- Satisfies: NX-39-R11. Also cited: CAIO-1.
+- Scope: with a Limited selection made on a physical iPhone, take a new photo and a new video with the system camera, import one photo by AirDrop with an old date, reopen the app, and record which are visible to a fetch. Also record observer or change-token behaviour across a selection change. Result goes into the counsel brief and NX-39 section 14. If new items are not visible, P2b copy for Limited says so plainly or P2b is Full access only.
+- Fails on old code: none; closes UNVERIFIED items 4 and 5.
+- Done when: the findings are in `docs/qa/` with the iOS version.
+- Plan: gates P2b and P2c; a dev build (no new install if the existing dev client has the media module; otherwise yes); needs the founder's device and hours (F12).
+
+#### BL-872 Device spike CAIO-2: how often does iOS actually run a background look?
+- Status: needs-founder (three phones for 14 days; counsel not required for a dev build, UNVERIFIED). Mode: human. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `mobile`, `qa`, `security-architect`.
+- Satisfies: NX-39-R44, NX-39-R46. Also cited: CAIO-2, CDESO-7.
+- Scope: a dev build that logs only the time of each background-task launch and each foreground catch-up (no content) on three phones for 14 days: normal use, Low Power Mode on most days, Background App Refresh off. Pass bar written before: report median runs a day and the share of days with zero runs. Also answers whether a locked-phone run can read. The dev build declares a background mode; it must never be a TestFlight or production profile (the preflight keeps failing there).
+- Fails on old code: none.
+- Done when: the data and the pass bar's verdict are in `docs/qa/`.
+- Plan: gates P2c; needs a native background-task module (BL-878 review first) so an install and a dev build; needs three phones and 14 days (F12).
+
+#### BL-873 Content keys: fixed reminder lines for typed days, and the new parent words
+- Status: ready. Mode: agent. Owner: content. Milestone: M15. Size: S.
+- Who: `content`, `design-systems`.
+- Satisfies: NX-39-R17, NX-39-R25, NX-39-R26. Also cited: CMO O5, O9.
+- Scope: a small set of fixed neutral reminder lines for days the parent typed, with no waiting, missed, still, forgot or don't, no place, photo, count or occasion name by default, passing the content rules; a glossary proposal for the new words in #751 section 9 (look, list, forget, hide, a stretch) with a note to test whether "look" reads as surveillance; replace the pre-sheet clause that offers the parent "a few words about it" with a clause that offers the parent a chance to speak. Not live strings until BL-842.
+- Fails on old code: none; content rules run on the keys.
+- Done when: the keys are merged unreferenced and the content rules pass.
+- Plan: P4a, P2a; install yes; no founder hours.
+
+#### BL-874 P2a: "Add from your library", a chooser by date range (NX-39-R3, R11, R42, R56)
+- Status: blocked (NX-39 D9; counsel CB-2, CB-5, CB-15; BL-850; BL-861; BL-848; the promise comprehension bar from BL-879). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-848.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R3, NX-39-R11, NX-39-R19, NX-39-R42, NX-39-R56.
+- Scope: a date-range chooser, Limited first-class, several per letter up to the limit in NX-39 section 6, photo permission asked on a tap and never at launch, the app (not the system) shows the selection sheet, status checked before every read, nothing persisted beyond the attached copies (each attached item carries its own opaque random key in the letter's media row), switch `EXPO_PUBLIC_LIBRARY_CHOOSER`, off in `production`. After "Not now", tapping the chooser entry shows no sheet and the picker keeps working. A parent's "Hide this photo" on a photo not attached to a letter holds for the open chooser session only, in memory, and is gone when the chooser closes; nothing is written to the decisions store or anywhere else, and the chooser says so in plain words and points to hiding a day or a stretch for the durable choice (NX-39 R20, R41, ML-13). No asset id, no hash or other value derived from one, and no stored per-photo key for an unattached photo (ML-4). An attached item keeps its own opaque random key in the letter's media row, at most 200 characters. A native media module goes through BL-878 first.
+- Fails on old code: `[NX-39-R11] limited, denied and narrowed states each behave as specified`.
+- Done when: the R3, R11, R19, R42, R56 titles pass, and a test shows a photo hidden in one chooser session is offered again in the next with nothing persisted.
+- Plan: P2a; install yes; needs the founder's counsel answers and wording.
+
+#### BL-875 P2c: "Also look when the app is closed", a best-effort top-up behind a flag that is off (NX-39-R44, R46)
+- Status: blocked (BL-871, BL-872; counsel CB-19, CB-20, CB-27; NX-39 F11 recorded; the study pass line; BL-853; the canary in the background path). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-853.
+- Who: `mobile`, `security-architect`, `content`.
+- Satisfies: NX-39-R44, NX-39-R46, NX-39-R47.
+- Scope: its own switch, consent sheet (CS-S4a) and act; a ceiling of 3 reads a day and no floor; the background mode and task identifier only when `EXPO_PUBLIC_MOMENTS_BACKGROUND` is on, and that flag off in every shipped profile until the gates pass; a run checks permission first, ends well under 30 seconds, persists the cursor, imports no network, analytics, breadcrumb or push-token module; the ledger shows the last-looked time and no count; not offered when Background App Refresh is off or restricted; no number in any string.
+- Fails on old code: `[NX-39-R46] the background top-up exists only behind its own flag and consent, and reads nothing without permission`.
+- Done when: that title and the R44 title pass, and the prebuild diff shows no change with the flag off.
+- Plan: P2c; install yes; may be built behind the flag after the spikes; does not ship without F11.
+
+#### BL-876 The ledger page, Forget the list, and the Hidden choices page (NX-39-R49)
+- Status: blocked (BL-860, BL-849). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-849.
+- Who: `mobile`, `design-systems`.
+- Satisfies: NX-39-R17, NX-39-R18, NX-39-R49. Also cited: CDESO-3, CDESO-4, CDESO-10.
+- Scope: the Settings page of #751 CS-S3: master switch off in one tap with no dialog, access level, separate Dates and Places switches (Places default off), last-looked time, a Never block, Forget the list (turns looking off, leaves photos, letters, hidden choices and card snoozes), and the Hidden choices page behind App Lock listing hidden days and stretches with Undo, no counts, and the plain line from NX-39 R49 that hiding one photo lasts only while the parent is choosing and that a day or a stretch is the durable way (ML-13), and an explicit "Clear hidden choices" that also removes the card snoozes.
+- Fails on old code: `[NX-39-R49] the ledger turns off in one tap, forgets in one tap, and the Hidden choices page is visible and undoable`.
+- Done when: that title passes at AX5.
+- Plan: P2b; install yes; no founder hours.
+
+#### BL-877 The index store: moments rows, backup flag, protection class, rebuild, wipe, restore distrust (NX-39-R18, R40, R42, R43)
+- Status: blocked (BL-846, BL-859, BL-860). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-846.
+- Who: `mobile`, `data-architect`, `security`.
+- Satisfies: NX-39-R18, NX-39-R40, NX-39-R42, NX-39-R43. Also cited: CDO-12, SEC-ML-4.
+- Scope: `memory-library.db` with the schema of BL-846 (no per-asset row, no finer-than-day time, no place finer than a city key); the backup-exclusion flag and the stated protection class set again on every open and rebuild and read back, including sidecars; permission checked before every read, with deletion of the file and sidecars on a failed check; a restored index is rebuilt; drop after 90 days off; wipe on off, revoke, narrowing, Erase everything and Delete account (the decisions store, which holds hidden days, stretches and card snoozes and no photo key, only on the last two and on Clear hidden choices); no per-photo key for an unattached photo is stored in the index or the decisions store (ML-13); an interrupted wipe resumes. Not exposed to any screen without BL-853.
+- Fails on old code: `[NX-39-R40] no per-asset row, no finer-than-day time, and no place finer than a city key is persisted`.
+- Done when: that title and the R42 and R43 titles pass with a fake adapter and a fake clock.
+- Plan: P2b; install yes; device row for the real flags.
+
+#### BL-878 Native module gate: dependency review checklist for media, background and transcode packages (NX-39-R52)
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Who: `security`, `security-architect`.
+- Satisfies: NX-39-R52. Also cited: SEC-ML-11, SEC-R10, CODE-R18.
+- Scope: a checklist doc and a proposed CODEOWNERS entry for `package-lock.json` and `apps/mobile/app.config.ts`: lockfile diff review, prebuild plist and entitlement diff attached, licence and maintainer recorded, no network permission listed, exact version pin. Applies to the media library, image picker, a background-task package and a transcode module. Records the packages' SDK 57 plugin output as verified or UNVERIFIED.
+- Fails on old code: none; this is a process row.
+- Done when: the doc is merged and BL-854, BL-871, BL-874 and BL-875 cite it.
+- Plan: P1 to P3; no install; no founder hours.
+
+#### BL-879 Run the parent study (founder hours, money and a second runner)
+- Status: needs-founder (F3: recruiting route, incentive, second runner, verified support-line numbers, signed bars). Mode: human. Owner: user researcher. Milestone: M15. Size: M. Depends on: BL-857.
+- Who: `user-research`; the founder approves.
+- Satisfies: NX-39-R48, NX-39-R59, NX-39-R60. Also cited: PARENT_STUDY_PLAN section 2.
+- Scope: run the sessions (about 5 days) and then the diary; write `FINDINGS.md` under `docs/research/studies/` against the bars; aggregate counts only for hard-season grouping; raw notes outside the repo.
+- Fails on old code: none.
+- Done when: `FINDINGS.md` is merged and states pass or stop against each bar.
+- Plan: P2a copy, P2b, P2c; no install; needs the founder's money and hours.
+
+#### BL-880 Acceptability harness: aggregate shape on the founder's own phone, dev only
+- Status: blocked (BL-859, BL-853). Mode: human. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-859.
+- Who: `mobile`, `privacy`.
+- Satisfies: NX-39-R15, NX-39-R30. Also cited: CAIO section 4 item 4.
+- Scope: a dev-only screen that prints moments per month and median span in days, never dates or places, never committed or logged. Rule written before looking: if more than half of the cards on the founder's phone would be hidden at first sight, change the rule, not the copy. Real family metadata never enters the repo (`no-real-family-data.test.ts`).
+- Fails on old code: none.
+- Done when: the founder records pass or change-the-rule in `docs/qa/` with no dates or places.
+- Plan: P2b; a dev build (install if the module is new); needs the founder's phone.
+
+#### BL-881 Follow-up on PR #754: applyDecisions judges leftover pieces with the R15 rule, and the photo key is removed (NX-39-R20, R41, ML-13, ML-14)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-859, BL-860.
+- Who: `mobile`, `data-architect`.
+- Satisfies: NX-39-R15, NX-39-R20, NX-39-R41.
+- Scope: one follow-up commit on `feat/core-memlib-moment-engine-10nov` (PR #754, head de11e2d0dee10a7aa57273b001ea8697f3b89af3), no force push. (1) `applyDecisions` in `packages/core/src/decisions.ts` takes the items (`{day, cityKey}`) as well as the moments; a hidden day is a barrier; each leftover piece is judged by running the R15 function from `moments.ts` on the items inside the piece, so reasons, city key and `RULE_VERSION` come from that run and not from the parent moment, and a lone leftover day with fewer than 3 items is dropped (ML-14). (2) Remove any hidden-photo key type, field, function and test from the decisions store (ML-13). No new import of network, clock, locale, randomness or storage in `packages/core`; the import-graph test stays green. "Asha" fixtures.
+- Fails on old code: `[NX-39-R20] each leftover piece of a trimmed or split moment is judged by the R15 rule on the items inside it, with the hidden day as a barrier`.
+- Done when: these named tests pass: `[NX-39-R20] a middle hidden day splits a moment and the hidden day is a barrier the gap rule cannot bridge`; `[NX-39-R20] a lone leftover day with fewer than 3 items is dropped`; `[NX-39-R20] a leftover piece with 2 active days or 3 items survives with reasons from running R15 on its own items`; `[NX-39-R20] pieces do not copy the parent moment's reasons or city key`; `[NX-39-R41] the decisions store has no photo-key field and no function that stores one`; and the old test "pieces keep the moment city key, reasons and rule version" is removed or rewritten to the above.
+- Plan: P2b; install yes; no founder hours.
 
 ## Appendix: TDD proposal to BL mapping
 
