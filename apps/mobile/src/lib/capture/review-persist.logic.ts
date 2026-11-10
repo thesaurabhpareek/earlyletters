@@ -11,16 +11,20 @@
  * verifyEdits) and `restoreApplied` only LEAVES OUT the ones the person put back. A stored fix is never applied from
  * storage. raw_transcript is never read for writing and never changed.
  *
- * Pure: no React Native. Tested in Node (test/review-persist.test.ts, test/review-persist.replay.test.ts).
+ * Pure: no React Native. Tested in Node (test/store.review-v9.test.ts, test/review-writer-autosave.test.ts,
+ * test/review-persist.replay.test.ts, test/review-persist.wiring.test.ts).
  */
 import type { Edit } from '@scribe/core';
 /** Review's view (components/capture/review-view.logic ReviewView; the same two values). */
 export type ReviewView = 'fixes' | 'exact';
 
 /**
- * How long typed words wait before they are written (F04-REQ-011: at most 500 ms). A kill inside this window loses at
- * most the keystrokes of the last 300 ms; Review also writes at once when the app leaves the foreground, when Done is
- * tapped and when Review closes, so a kill from the app switcher loses nothing.
+ * The most that typed words wait before they are written (F04-REQ-011: at most 500 ms; F06-REQ-036: any change in Review
+ * is on the draft within 500 ms). The first change after a write arms one timer and later changes do not move it, so
+ * however long the burst of editing, a kill, a crash or a flat battery loses at most the keystrokes of the last 300 ms.
+ * The name says debounce because it was one; it is now the maximum wait. Review also writes at once when the app
+ * leaves the foreground, when Done is tapped, when Review closes and before Keep, so a kill from the app switcher
+ * loses nothing.
  */
 export const TYPED_WRITE_DEBOUNCE_MS = 300;
 
@@ -149,51 +153,82 @@ export interface ReviewWriter {
   putBack(list: Edit[]): void;
   /** The view chosen: written at once. */
   view(view: ReviewView): void;
-  /** The person's words changed: written after TYPED_WRITE_DEBOUNCE_MS of quiet. */
+  /** The person's words changed: written within TYPED_WRITE_DEBOUNCE_MS, however long the editing goes on. */
   text(text: string | null): void;
-  /** Writes typed words still waiting, now (leaving the foreground, Done, Close). */
+  /** Writes typed words still waiting, now, and leaves no timer (leaving the foreground, Done, Close, unmount, Keep). */
   flush(): void;
-  /** Drops typed words still waiting (Keep: the letter took them; Let it go). */
+  /** Drops typed words still waiting and the timer (Keep: the letter took them; Let it go). */
   cancel(): void;
 }
 
 /**
  * Review's writer. `write` takes a patch and stores it on the draft with `base` (store.setDraftReview). A failed
- * write never reaches the screen: the words are still on screen and the next change writes again.
+ * write never reaches the screen: the words are still on screen and are written again later.
+ *
+ * Typed words (F06-REQ-036, F04-REQ-011; the same shape as Write's autosave, write-session.logic.ts): the first change
+ * after a write arms one timer, later changes do not move it, and when it fires it writes the newest words, not the
+ * ones it was armed with. A pause needs no timer of its own: the timer was armed by the first change after the last
+ * write, so it is never later than a pause would be. Words a timer already wrote are not written twice.
+ *
+ * A write that throws (the store failed) leaves the words waiting and disarms the timer: they are written again at the
+ * next change, at flush (Done, Close, unmount, leaving the foreground, Keep), and only there. Nothing retries on a
+ * timer, so a draft that is gone can never loop. setDraftReview returns false for a refusal (the draft is being
+ * recorded or let go, or is gone, or has no base); that is not a failure, so the return value is not looked at: the
+ * words stop waiting, as if written, and are not retried (review.tsx's callback returns nothing either).
  */
-export function reviewWriter(write: (patch: ReviewPatch) => void, delayMs = TYPED_WRITE_DEBOUNCE_MS, timers: Timers = realTimers): ReviewWriter {
-  let pending: { text: string | null } | null = null;
+export function reviewWriter(
+  write: (patch: ReviewPatch) => void,
+  delayMs = TYPED_WRITE_DEBOUNCE_MS,
+  timers: Timers = realTimers,
+): ReviewWriter {
+  // The newest typed words not yet on the draft, or null when none wait.
+  let waiting: { text: string | null } | null = null;
   let handle: unknown = null;
+  const disarm = () => {
+    if (handle !== null) timers.clearTimeout(handle);
+    handle = null;
+  };
+  // Writes the words that wait, now. They stop waiting once the store has answered, true or false (a refusal is final);
+  // a throw leaves them waiting.
+  const send = () => {
+    if (!waiting) return;
+    try {
+      write({ text: waiting.text });
+    } catch {
+      // Kept on screen and kept waiting; written again with the next change, Done, Close or unmount.
+      return;
+    }
+    waiting = null;
+  };
+  // Put-backs and the view are written at once. Only typed words wait, so a throw here is not retried: the next
+  // put-back or view change writes its own value again.
   const safe = (patch: ReviewPatch) => {
     try {
       write(patch);
     } catch {
-      // Kept on screen; written again with the next change, Done or Close.
+      // Nothing reaches the screen.
     }
   };
-  const stop = () => {
-    if (handle !== null) timers.clearTimeout(handle);
-    handle = null;
-  };
   const flush = () => {
-    stop();
-    if (!pending) return;
-    const p = pending;
-    pending = null;
-    safe({ text: p.text });
+    disarm();
+    send();
   };
   return {
     putBack: (list) => safe({ putBack: list }),
     view: (view) => safe({ view }),
     text: (text) => {
-      pending = { text };
-      stop();
-      handle = timers.setTimeout(flush, delayMs);
+      waiting = { text };
+      // Not re-armed by later changes: that would make this a debounce again, and a long burst would write nothing.
+      if (handle !== null) return;
+      handle = timers.setTimeout(() => {
+        handle = null;
+        send(); // the newest words now, not the words this timer was armed with
+      }, delayMs);
     },
     flush,
     cancel: () => {
-      stop();
-      pending = null;
+      disarm();
+      waiting = null;
     },
   };
 }
