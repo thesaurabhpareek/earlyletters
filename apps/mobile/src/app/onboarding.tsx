@@ -65,8 +65,8 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
-import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
+import { capabilities } from '@/lib/capabilities';
+import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
@@ -168,13 +168,18 @@ function FirstRun() {
   // welcome ends the wait.
   const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
   const joinLine = joining.line;
-  // Sign-in first (NX-31 R17, behind the server switch): with no session and no book, "Begin the book" waits, except
-  // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
+  // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
+  // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
+  // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
   const { state: authState } = useAuth();
-  const gateAllows = beginTheBookAllowed(
-    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0 }),
-  );
-  const showContinue = joining.begin && gateAllows;
+  const [localStartChosen, setLocalStartChosen] = useState(false);
+  const showContinue = continueMayShow({
+    begin: joining.begin,
+    onWelcome: step === 'welcome',
+    authState,
+    localStartChosen,
+    hasLocalBook: () => listChildren().length > 0,
+  });
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
@@ -214,7 +219,11 @@ function FirstRun() {
     return () => clearTimeout(id);
   }, [step, shown]);
 
-  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const next = () => {
+    // "Begin the book" with no session is the local start (R18): remembered here, in memory, so the way back is not closed.
+    if (continueTapIsLocalStart({ onWelcome: step === 'welcome', authState })) setLocalStartChosen(true);
+    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  };
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));
