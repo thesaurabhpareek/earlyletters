@@ -73,6 +73,8 @@ import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } fr
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { invitedDoorShown } from '@/lib/first-run/welcome.logic';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
+import { NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
+import { ARRIVAL_SETTING, arrivalToWrite } from '@/lib/first-run/new-phone.logic';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
@@ -82,7 +84,7 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
+import { addChild, getActiveChildId, getSetting, listChildren, setActiveChildId, setSetting, subscribe, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -187,7 +189,8 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   // Sign-in first (NX-31 R17, behind the server switch): with no session and no book, "Begin the book" waits, except
   // where the local start is offered (R18). With server features off this is always true (lib/first-run/gate.logic.ts).
   const gateAllows = beginTheBookAllowed(
-    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0, localStartChosen }),
+    // FirstRunSteps only renders once the route has decided (child step, or the earlier local start): `new`.
+    gateInputsFromAuth({ serverFeatures: serverFeaturesEnabled(), authState, hasLocalBook: listChildren().length > 0, localStartChosen, newPhone: 'new' }),
   );
   const showContinue = joining.begin && gateAllows;
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
@@ -632,6 +635,19 @@ function FirstRun() {
     if (lastStep.current === 'outage' && route.step === 'signIn') announce(authCopy.outage.backOnline);
     lastStep.current = route.step;
   }, [route.step]);
+  // NX-36-S17: the book reached this phone from the account. Owe the arrival line once, then Tonight.
+  const { signOut } = useAuth();
+  useEffect(() => {
+    if (!route.arrivedFromAccount) return;
+    const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));
+    if (next) setSetting(ARRIVAL_SETTING, next);
+    router.replace('/');
+  }, [route.arrivedFromAccount]);
+  const tryAnother = () => void signOut();
+  if (route.arrivedFromAccount || route.step === 'openingBook') return <OpeningBookScreen />;
+  if (route.step === 'slowBook') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.step === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.step === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;
   if (route.step === 'signIn') return route.restoring ? <SafeAreaView className="flex-1 bg-background" /> : <WelcomeSignIn />;
   if (route.step === 'outage' && route.outage) {
     return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;

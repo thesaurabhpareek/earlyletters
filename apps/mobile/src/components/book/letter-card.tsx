@@ -33,7 +33,7 @@ import { useFontScale, useTheme } from '@/lib/a11y';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { layoutSpring, type Motion } from '@/lib/motion';
 import type { Child, Entry } from '@/lib/store';
-import { authorOf, isOwnEntry } from '@/components/child/child-store';
+import { authorOf } from '@/components/child/child-store';
 import { entryDateline, entryDatelineA11y } from './date-change.logic';
 import { AppNote } from './app-note';
 import { bookExcerptLines, cardFooterStacks, voiceMarker } from './book-page.logic';
@@ -99,8 +99,7 @@ export function LetterCard({ entry, child, onPress, wash, reason }: Props) {
     inBook: entry.inBook,
     privateLabel: copy.book.privateLabel,
     reason,
-    spoken,
-    own: isOwnEntry(entry),
+    audioUri: entry.audioUri,
     recordingOnPhone: copy.book.recordingOnPhone,
   });
 

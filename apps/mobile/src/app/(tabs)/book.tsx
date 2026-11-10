@@ -46,6 +46,8 @@ import { EmptyState } from '@/components/ui/empty-state';
 import { Lamp } from '@/components/ui/lamp';
 import { useToast } from '@/components/ui/toast';
 import { childIndexOf, track, trackBookOpened } from '@/lib/analytics/track';
+import { authCopy } from '@/lib/auth/copy';
+import { ARRIVAL_SETTING, ARRIVAL_SHOWN, arrivalLineOwed } from '@/lib/first-run/new-phone.logic';
 import { copy, fill } from '@/lib/copy';
 import { speechSettingsCopy } from '@/lib/models/copy';
 import { downloadingLine } from '@/lib/models/speech-download.logic';
@@ -114,6 +116,20 @@ export default function Book() {
   useFocusEffect(
     useCallback(() => {
       if (joinedArrival.take()) setJoinedAt((t) => t || startJoinedArrival());
+    }, []),
+  );
+
+  // NX-36-S17 (D4): the plain arrival line on the first Book after a book arrived from the account. It is read when the
+  // Book comes into focus and written as shown when the Book is left, so it shows once and never on Tonight. Phone-local.
+  const [arrivalLine, setArrivalLine] = useState(false);
+  useFocusEffect(
+    useCallback(() => {
+      if (!arrivalLineOwed(getSetting(ARRIVAL_SETTING))) return;
+      setArrivalLine(true);
+      return () => {
+        setSetting(ARRIVAL_SETTING, ARRIVAL_SHOWN);
+        setArrivalLine(false);
+      };
     }, []),
   );
 
@@ -348,6 +364,11 @@ export default function Book() {
           months={chapters.length > 0 ? months : null}
           settings={{ label: copy.settings.title, onPress: openSettings }}
         />
+        {arrivalLine ? (
+          <Text variant="callout" tone="muted" style={{ marginBottom: tokens.space[3] }} testID="book.arrivalLine">
+            {authCopy.newPhone.arrivedPlain}
+          </Text>
+        ) : null}
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
             recordings come back to a new phone. It lands with P8c's file. */}
       </View>

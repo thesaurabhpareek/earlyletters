@@ -298,29 +298,28 @@ describe('[S6] Erase now fails with a word', () => {
   });
 });
 
-describe('[S7] a Book card says where the recording is only for the reader\'s own letters', () => {
-  const base = { signature: 'From Mama', dateline: 'Tuesday, October 14, 2026, Asha is 7 months old', text: 'Asha laughed at the dog', inBook: true, privateLabel: 'Private', spoken: true, own: true, recordingOnPhone: en.book.recordingOnPhone };
+describe('[S7] a Book card says where the recording is only when this phone holds it', () => {
+  // Rewritten for NX-36-S17 G3: the clause reads audioUri alone (test/card-recording-label.test.ts has the full table).
+  const base = { signature: 'From Mama', dateline: 'Tuesday, October 14, 2026, Asha is 7 months old', text: 'Asha laughed at the dog', inBook: true, privateLabel: 'Private', audioUri: 'file:///rec/1.m4a', recordingOnPhone: en.book.recordingOnPhone };
 
-  it('names the recording\'s place on the reader\'s own spoken letter, word for word', () => {
+  it('names the recording\'s place when the phone holds it, word for word', () => {
     expect(cardLabel(base)).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog. Recording kept on this phone');
   });
 
-  it('leaves it out for the other parent\'s letter, and for a typed one', () => {
-    expect(cardLabel({ ...base, own: false })).not.toMatch(/Recording kept on this phone/);
-    expect(cardLabel({ ...base, own: true, spoken: false })).not.toMatch(/Recording kept on this phone/);
-    // Everything else the card says is unchanged.
-    expect(cardLabel({ ...base, own: false })).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog');
+  it('leaves it out when the phone holds no recording (the other parent\'s letter, a typed one, a pulled one)', () => {
+    expect(cardLabel({ ...base, audioUri: null })).not.toMatch(/Recording kept on this phone/);
+    expect(cardLabel({ ...base, audioUri: null })).toBe('From Mama. Tuesday, October 14, 2026, Asha is 7 months old. Asha laughed at the dog');
   });
 
   it('still carries the private mark and the waiting reason, in their places', () => {
     expect(cardLabel({ ...base, inBook: false, reason: 'Getting ready, 40%' })).toMatch(/Asha laughed at the dog\. Private\. Getting ready, 40%\. Recording kept on this phone$/);
-    expect(cardLabel({ ...base, own: false, inBook: false, reason: 'Ready to read back' })).toMatch(/Private\. Ready to read back$/);
+    expect(cardLabel({ ...base, audioUri: null, inBook: false, reason: 'Ready to read back' })).toMatch(/Private\. Ready to read back$/);
   });
 
-  it('the held words are untouched, and the card asks isOwnEntry (source)', () => {
+  it('the held words are untouched, and the card passes audioUri (source)', () => {
     expect(en.book.recordingOnPhone).toBe('Recording kept on this phone');
     const card = code(src('components/book/letter-card.tsx'));
-    expect(card).toMatch(/own: isOwnEntry\(entry\),/);
+    expect(card).toMatch(/audioUri: entry\.audioUri,/);
     expect(card).toMatch(/recordingOnPhone: copy\.book\.recordingOnPhone,/);
     expect(card).not.toMatch(/spoken \? copy\.book\.recordingOnPhone/);
   });

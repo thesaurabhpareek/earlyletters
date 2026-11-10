@@ -130,9 +130,9 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
       expect(r.mayBeginBook).toBe(false);
     }
   });
-  it('[NX-31-R17] a session and no book goes to the child step, a signed-in parent is never sent back to sign-in', () => {
+  it('[NX-31-R17] a session and no book, once the account has said it is new, goes to the child step (NX-36-S17: not before), a signed-in parent is never sent back to sign-in', () => {
     for (const online of [true, false]) for (const failed of [true, false]) {
-      const r = gate({ hasSession: true, online, signInFailed: failed });
+      const r = gate({ hasSession: true, online, signInFailed: failed, newPhone: 'new' });
       expect(r.step).toBe('childStep');
       expect(r.mayBeginBook).toBe(true);
       expect(r.localStartOffered).toBe(false);
@@ -149,7 +149,7 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
           serverFeatures: false, ageAnswered: age, hasSession: session, hasLocalBook: book,
           online, signInFailed: failed, localStartFallback: constant, localStartChosen: chosen,
         });
-        expect(r).toEqual({ step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false });
+        expect(r).toEqual({ step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false, arrivedFromAccount: false });
       }
     // The adapter used by the route also does nothing with the switch off, whatever the auth state says.
     for (const status of ['restoring', 'signedOut'] as const) {
@@ -172,7 +172,7 @@ describe('[NX-31-R17] the sign-in-first gate', () => {
       { status: 'ready', userId: 'u', sync: 'on' },
     ];
     for (const authState of signedInStates) {
-      expect(beginTheBookAllowed(gateInputsFromAuth({ serverFeatures: true, authState, hasLocalBook: false }))).toBe(true);
+      expect(beginTheBookAllowed(gateInputsFromAuth({ serverFeatures: true, authState, hasLocalBook: false, newPhone: 'new' }))).toBe(true);
     }
   });
   it('[NX-31-R17] a failed sign-in in the auth state is the outage input; the local start then allows the book', () => {

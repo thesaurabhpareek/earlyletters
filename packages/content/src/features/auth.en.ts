@@ -131,6 +131,21 @@ export const authCopy = {
     // Differs from NX-36 ("We will try again when you are back online."): no "we".
     body: 'It tries again by itself when you are back online.',
   },
+  // NX-36-S17 Tier 0 (docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md section 4.2): a signed-in phone with no book, on an
+  // account that has one. None of these is a registered row. Words are the spec's, pending the founder's approval of
+  // each row. Not here on purpose: arrivedWords and the recording sentence (Tier 1 and 2, counsel-read).
+  newPhone: {
+    // State A: the heading, then one sentence. States no place and no count.
+    loading: 'Opening your book.',
+    loadingBody: 'Your letters are coming across.',
+    // The arrival line on the first Book after arrival (D4: one place), and for an empty book.
+    arrivedPlain: 'Your book is here.',
+    // State C. The buttons reuse outage.retry and consent.noBook.tryAnother.
+    slowTitle: 'Your book is taking a while.',
+    slowBody: 'Check your connection, then try again.',
+    // State D. Its sentence reuses offline.body.
+    offlineTitle: 'Opening your book needs a connection.',
+  },
 
   verify: {
     title: 'Signing you in',

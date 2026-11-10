@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { subscribe, listChildren } from '@/lib/store';
 import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, restoreBlocksScreen, type FirstRunGateResult } from './gate.logic';
+import { useNewPhone } from './use-new-phone';
 import { useOnline } from './use-online';
 import { failureStillCounts } from './welcome.logic';
 
@@ -20,6 +21,9 @@ export interface FirstRunRoute extends FirstRunGateResult {
   chooseLocalStart: () => void;
   /** Set the failure aside and read the connection again. */
   tryAgain: () => void;
+  /** NX-36-S17: Try again on the slow screen, and "Start a book" on No book here yet. */
+  retryOpening: () => void;
+  startBook: () => void;
 }
 
 export function useFirstRunRoute(): FirstRunRoute {
@@ -55,13 +59,19 @@ export function useFirstRunRoute(): FirstRunRoute {
   const chooseLocalStart = useCallback(() => setLocalStartChosen(true), []);
 
   // A build with no sign-in settings has no sign-in to wait for: the gate stands aside (the app is fully local).
+  const hasLocalBook = listChildren().length > 0;
+  // A ready session with sync on and no book asks its account first (NX-36-S17). A session that has not agreed to sync
+  // cannot be sent a book, so it keeps the earlier route (`new`).
+  const asks = serverFeaturesEnabled() && auth.configured && auth.state.status === 'ready' && auth.state.sync === 'on';
+  const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });
   const inputs = gateInputsFromAuth({
     serverFeatures: serverFeaturesEnabled() && auth.configured,
     authState: auth.state,
-    hasLocalBook: listChildren().length > 0,
+    hasLocalBook,
     localStartChosen,
     online,
+    newPhone: np.view ?? 'new',
   });
   const result = firstRunGate({ ...inputs, signInFailed: inputs.signInFailed && failureStillCounts(auth.state, setAside) });
-  return { ...result, localStartChosen, online, restoring: restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0), chooseLocalStart, tryAgain };
+  return { ...result, localStartChosen, online, restoring: restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0), chooseLocalStart, tryAgain, retryOpening: np.retry, startBook: np.startBook };
 }
