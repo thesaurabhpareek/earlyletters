@@ -142,7 +142,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Scope: a short "Work selection" section linking this file, `docs/backlog/FUTURE.md`, `docs/FOUNDER_TASKS.md` and the run protocol; add the `-bl-###-` branch pattern. Under 10 lines.
 
 #### BL-002 Traceability check
-- Status: ready. Mode: agent. Owner: QA engineer. Verified: `scripts/trace.mjs` does not exist.
+- Status: done (PR #176, 5a1f5c4d, merged 16 Oct 2026: `scripts/trace.mjs`, `docs/TRACE.md`, called from `npm test`). Mode: agent. Owner: QA engineer. Verified: `scripts/trace.mjs` does not exist.
 - Scope: as before: collect defined ids (A/B/C-REQ and -NFR, LEGAL-REQ, DATA-REQ, PRD-REQ), collect cited ids in this file, test titles and the PR template, fail on unknown ids, write `docs/TRACE.md`, `npm run trace` called from `npm test`.
 
 #### BL-003 Pull request template
@@ -2227,7 +2227,7 @@ Found in the P8a critics' pass of 28 Oct (its Later table, `docs/design/reviews/
 - Done when: each point has a test or a recorded result that fails on its mutant, or is recorded here as left as it is; points 2 and 7 are settled where their entries say.
 
 #### BL-496 Two defects from #393's round-3 delta review: a late answer from an earlier account replaces the next account's answer, and Try again can show a passive error
-- Status: ready. Mode: agent. Owner: mobile engineer (S14: lib/account-deletion and the deletion screen), qa engineer. Milestone: M9. Size: S. Depends on: none.
+- Status: done (PR #400, 23455808, merged 30 Oct 2026). Mode: agent. Owner: mobile engineer (S14: lib/account-deletion and the deletion screen), qa engineer. Milestone: M9. Size: S. Depends on: none.
 - Priority: Medium. The delta review's one Should (PASS WITH NOTES, no Must); the coordinator waived it for build 2.
 - Gate: waived for build 2 by the coordinator (30 Oct); before the next build that real families use with sign-in on.
 - Satisfies: none given. Cited: C-REQ-019 (`docs/legal/ENGINEERING_REQUIREMENTS.md:224`).
