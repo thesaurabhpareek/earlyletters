@@ -134,6 +134,14 @@ test("line 13: WIP is a red line, not a gate", () => {
   assert.match(renderToday(model({ data: { ...fixture(), open: Array.from({ length: 26 }, (_, i) => pr(i)) } }))[12], /^WIP RED: 26 open/);
 });
 
+test("line 13: draft PRs are not counted against an owner label", () => {
+  const drafts = Array.from({ length: 4 }, (_, i) => pr(900 + i, { draft: true, labels: [{ name: "agent:owner-x" }] }));
+  assert.deepEqual(wipCounts(drafts), { open: 4, drafts: 4, ownersOver: 0 });
+  assert.match(renderToday(model({ data: { ...fixture(), open: drafts } }))[12], /^WIP ok: 4 open \(4 drafts\)/);
+  const live = Array.from({ length: 4 }, (_, i) => pr(950 + i, { labels: [{ name: "agent:owner-x" }] }));
+  assert.equal(wipCounts(live).ownersOver, 1);
+});
+
 test("line 14: claims counts, or why they are missing", () => {
   assert.equal(renderToday(model())[13], "Claims: expired 2, closed-PR 1, overlapping 1, unreadable 0.");
   assert.match(renderToday(model({ claims: { missing: "board-check" } }))[13], /board-check is not on this branch/);
@@ -144,6 +152,9 @@ test("line 14: claims counts, or why they are missing", () => {
 test("line 15: D- ids cited in 7-day merges and absent from DECISIONS.md", () => {
   assert.equal(renderToday(model())[14], "Decisions cited in 7-day merges: 3; not in DECISIONS.md: 1. D-777.");
   assert.deepEqual([...decisionIds("### D-130 x\n## D-9 y\ntext D-500\n")], ["D-130"]);
+  assert.deepEqual([...decisionIds("| ID | Decision |\n|---|---|\n| D-006 | Adults only | PRD |\n|D-051|x|y|\n| D-9 | short | z |\n| D-006 to D-014 | range | w |\n")].sort(), ["D-006", "D-051"]);
+  const tableOnly = model({ decisionsText: "### D-130 x\n\n| D-777 | table only | k |\n" });
+  assert.equal(tableOnly.decisions.missing.includes("D-777"), false);
   assert.deepEqual(citedIds([{ title: "D-131 and D-130", body: "also D-130 and D-5" }]), ["D-130", "D-131"]);
   assert.match(renderToday(model({ decisionsText: undefined }))[14], /not read/);
 });

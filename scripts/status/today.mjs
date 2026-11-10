@@ -39,7 +39,12 @@ export function parseDates(json) {
 export const daysUntil = (date, now) => Math.round((Date.parse(date) - Date.parse(new Date(now).toISOString().slice(0, 10))) / D);
 
 /** D- ids written as headings in DECISIONS.md. Pure. */
-export const decisionIds = (text) => new Set([...String(text ?? "").matchAll(/^#{2,4}\s+(D-\d{2,4})\b/gm)].map((m) => m[1]));
+// A decision is known by its heading ("### D-130 ...") or by an index table row ("| D-006 | ... |").
+// 18 ids exist only as rows, so headings alone would report them as missing.
+export const decisionIds = (text) => new Set([
+  ...String(text ?? "").matchAll(/^#{2,4}\s+(D-\d{2,4})\b/gm),
+  ...String(text ?? "").matchAll(/^\|\s*(D-\d{2,4})\s*\|/gm),
+].map((m) => m[1]));
 
 /** D- ids cited in the title or body of PRs, matched by pattern only. Pure. */
 export const citedIds = (prs) => [...new Set((prs ?? []).flatMap((p) => `${p.title ?? ""}\n${p.body ?? ""}`.match(/\bD-\d{2,4}\b/g) ?? []))]
