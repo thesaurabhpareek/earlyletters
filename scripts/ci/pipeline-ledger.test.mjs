@@ -125,5 +125,5 @@ test('the release workflow list matches step names that exist in the workflow fi
 test('the real PIPELINE_LEDGER.md has the markers and no banned characters', () => {
   const doc = readFileSync(fileURLToPath(new URL('../../docs/release/PIPELINE_LEDGER.md', import.meta.url)), 'utf8');
   assert.ok(doc.includes('<!-- ledger:begin -->') && doc.includes('<!-- ledger:end -->'));
-  assert.ok(!/[–—‘’“”…]|\p{Extended_Pictographic}/u.test(doc));
+  assert.ok(!/[\u2013\u2014\u2018\u2019\u201c\u201d\u2026]|\p{Extended_Pictographic}/u.test(doc));
 });
