@@ -31,7 +31,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 | 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
-| 28 | `20261109000000_child_name_optional.sql` | **Not applied; needs approve-migration; must be applied before any servers-on build containing #701** | A book's name may be empty on the server, the date stays required (section "File 28") |
+| 31 | `20261109000000_child_name_optional.sql` | **Not applied; needs approve-migration; must be applied before any servers-on build containing #701** | A book's name may be empty on the server, the date stays required (section "File 31") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
