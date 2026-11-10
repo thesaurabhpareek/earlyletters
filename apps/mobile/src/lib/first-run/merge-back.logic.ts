@@ -1,4 +1,12 @@
 /**
+ * BUILD 12 NOTE (red-team 10 Nov): cases 4 and 5 below (`openAccountBook` with `removesLocalBook`, and `askDestination` /
+ * `moveLetters` with "In the existing book") are NOT shipped. Build 12 always adds the phone's book to the account as a
+ * SECOND book and deletes nothing (the later claim slice's `claimKeepOutcome` is the single rule for an account that
+ * already has a book). Only the consent and claim phases (`askConsent`, `keepOnPhone`, `askClaim`, `endSession`,
+ * `becomeAccountBook`) are called by the app today. `UNSHIPPED_PHASES` names the rest; nothing may wire them to a screen
+ * or to a delete without a new decision. A letter is never added twice because `takeOwnership` claims only rows whose
+ * `server_state` is `local` with UUIDv7 ids, not because of `dedupeByLetterId` (a label here, no dedupe code).
+ *
  * What is kept when a phone that holds a local-start book later signs in (NX-36 4.2; F02-REQ-019; NX-31 R18, R27).
  * PROPOSED rule (`product` and counsel to confirm): a data model and nothing else. No screen, no storage, no network.
  *
@@ -44,7 +52,7 @@ export interface MergeBackResult {
   uploads: boolean;
   syncOn: boolean;
   endsSession: boolean;
-  /** Only the empty local book, only beside an account book (step 4). */
+  /** Step 4 only: NOT shipped in Build 12, no code may act on it (removes nothing). */
   removesLocalBook: boolean;
   saysEmptyBookRemoved: boolean;
   /** No outcome deletes a letter. */
@@ -52,9 +60,12 @@ export interface MergeBackResult {
   /** Recordings stay on the phone while backup is off. */
   recordingsLeavePhone: false;
   destination: MergeDestination | null;
-  /** A letter already in the account's book is not added twice (the sync layer's job, UNVERIFIED). */
+  /** Label only, NOT shipped: there is no dedupe code here. Claim safety rests on `takeOwnership` (sync/ownership.ts). */
   dedupeByLetterId: boolean;
 }
+
+/** Phases the app does not use in Build 12 (see the note above). A test pins this list. */
+export const UNSHIPPED_PHASES: readonly MergePhase[] = ['openAccountBook', 'askDestination', 'moveLetters'];
 
 const out = (phase: MergePhase, over: Partial<MergeBackResult> = {}): MergeBackResult => ({
   phase, uploads: false, syncOn: false, endsSession: false, removesLocalBook: false, saysEmptyBookRemoved: false,

@@ -3,7 +3,9 @@
  * The rule is PROPOSED (`product` and counsel to confirm): these tests pin the proposal so a change is a visible diff.
  */
 import { describe, expect, it } from 'vitest';
-import { mergeBack, type MergeBackInput } from '../src/lib/first-run/merge-back.logic';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { mergeBack, UNSHIPPED_PHASES, type MergeBackInput } from '../src/lib/first-run/merge-back.logic';
 
 const base: MergeBackInput = { consent: 'accepted', claim: 'keep', accountHasBook: false, localKeptLetters: 3, destination: null };
 const run = (over: Partial<MergeBackInput>) => mergeBack({ ...base, ...over });
@@ -51,5 +53,11 @@ describe('[NX-31-R18] the merge-back rule after a local start', () => {
         if (r.uploads) { expect(consent).toBe('accepted'); expect(claim).toBe('keep'); }
         expect(r.deletesLetters).toBe(false);
       }
+  });
+  it('[NX-31-R18] Build 12 does not ship the existing-book or empty-book-removed phases, and says so', () => {
+    expect([...UNSHIPPED_PHASES].sort()).toEqual(['askDestination', 'moveLetters', 'openAccountBook']);
+    const src = readFileSync(join(__dirname, '..', 'src', 'lib', 'first-run', 'merge-back.logic.ts'), 'utf8');
+    expect(src).toMatch(/NOT shipped/);
+    expect(src).toMatch(/SECOND book/);
   });
 });

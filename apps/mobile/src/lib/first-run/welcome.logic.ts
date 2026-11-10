@@ -44,15 +44,12 @@ export function failureStillCounts(state: AuthState, setAside: AuthState | null)
 }
 
 /**
- * Hide "I was invited" on the first-run Welcome in a servers-on STORE build. Mirrors `familySurfacesShown` and
- * `CO_PARENT_IN_STORE_BUILD` of #720 (BL-776), which is not merged: when it is, this file's constant and function are
- * replaced by that import. Alpha builds (TestFlight, preview) keep the door. With server features off the door was
- * already hidden (`visibleCoParentDoors`), so a servers-off build is unchanged.
+ * Hide "I was invited" on the first-run Welcome in a servers-on STORE build. There is ONE flag for this decision:
+ * `familySurfacesShown` (family/surfaces.logic.ts, `CO_PARENT_IN_STORE_BUILD`). Alpha builds (TestFlight, preview) keep
+ * the door. With server features off the door was already hidden (`visibleCoParentDoors`), so a servers-off build is unchanged.
  */
-export const INVITED_DOOR_IN_STORE_BUILD = false;
-
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.coParent && (input.alpha || INVITED_DOOR_IN_STORE_BUILD) && familySurfacesShown(input);
+  return familySurfacesShown(input);
 }
 
 /**

@@ -6,10 +6,9 @@
  *   offer but the plain wait line. After it, "Send a new email", "Use a different email" and "Sign in with Apple" show
  *   together, so the screen is never a dead end. No ticking number.
  * - `firstRunStartStep`: which first-run step opens once a person is in (signed in, or on the local start).
- * - `consentHandoff`: what the consent sheet does next, decided by the merge-back rule (merge-back.logic.ts, NX-36 4.2).
+ * - `consentHandoff`: what the consent sheet does next (NX-36 4.2): two lines of its own, written out below.
  */
 import type { AuthState } from '@/lib/auth/machine.logic';
-import { mergeBack } from './merge-back.logic';
 
 export type RecoveryOption = 'resend' | 'differentEmail' | 'apple';
 
@@ -71,17 +70,16 @@ export function childNameFieldWords(input: { accountFirst: boolean; index: numbe
 export type ConsentNext = 'askClaim' | 'keepOnPhone' | 'continue';
 
 /**
- * After the sensitive-data answer, the merge-back rule says what comes next:
+ * After the sensitive-data answer, what comes next (NX-36 4.2):
  *  - agreed and this phone's letters belong to no account yet: the claim screen, before anything is uploaded;
  *  - declined: stay signed in with sync off, the book still opens (S7);
  *  - otherwise: carry on (the sheet closes onto the next first-run step).
- * Cases 4 and 5 of the rule (an account that already has a book) need the sync layer and are not drawn here.
+ * What the claim screen then does with an account that already has a book is not decided here (it adds the phone's book
+ * as a second book and deletes nothing: the later claim slice). This does not call the merge-back model, whose cases 4 and 5 are not shipped.
  */
 export function consentHandoff(input: { status: AuthState['status']; sync: 'on' | 'off' | 'unknown' | null; claimPending: boolean }): ConsentNext {
   if (input.status !== 'ready') return 'continue';
-  if (input.sync === 'off') return mergeBack({ consent: 'declined', claim: 'pending', accountHasBook: false, localKeptLetters: 0, destination: null }).phase === 'keepOnPhone' ? 'keepOnPhone' : 'continue';
-  if (input.sync === 'on' && input.claimPending) {
-    return mergeBack({ consent: 'accepted', claim: 'pending', accountHasBook: false, localKeptLetters: 0, destination: null }).phase === 'askClaim' ? 'askClaim' : 'continue';
-  }
+  if (input.sync === 'off') return 'keepOnPhone';
+  if (input.sync === 'on' && input.claimPending) return 'askClaim';
   return 'continue';
 }

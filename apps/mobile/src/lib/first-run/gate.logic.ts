@@ -36,6 +36,16 @@ export const LOCAL_START_FALLBACK = true;
 /** The screen-2 wait before the outage screen shows: the session gate's own timeout (session-provider.tsx GATE_TIMEOUT_MS). */
 export const SIGN_IN_OUTAGE_MS = 10_000;
 
+/**
+ * How long the first screen may stay blank while the session is read from the Keychain. After this the Welcome shows
+ * (a read that never settles must not leave the first screen empty; the session, if it comes, still replaces it).
+ */
+export const RESTORE_WAIT_MS = SIGN_IN_OUTAGE_MS;
+
+export function restoreBlocksScreen(status: AuthState['status'], waitedMs: number): boolean {
+  return status === 'restoring' && waitedMs < RESTORE_WAIT_MS;
+}
+
 export type AgeAnswer = 'yes' | 'no' | 'notAsked';
 
 export interface FirstRunGateInput {
