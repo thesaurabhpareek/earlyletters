@@ -1,0 +1,1 @@
+08:32 (10 Nov) mobile-story-clock | done: story-clock, zones, progress, cards logic and tests red-first, motion.story token | next: draft PR on #779 branch, then gate step after the stack merges | blocked/needs: device checks FR-DEV.2, FR-DEV.3, FR-DEV.15
