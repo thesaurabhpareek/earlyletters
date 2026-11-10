@@ -17,13 +17,13 @@ const at = (sec) => new Date(T0 + sec * 1000).toISOString();
 const post = (header, sec, extra = {}) => ({ id: nextId++, user: { login: OWNER, type: "User" }, created_at: at(sec), updated_at: at(sec), body: header + STUB, ...extra });
 const A = (sha, v = "PASS", sec = 0) => post(`## Review A at ${sha}: ${v}`, sec);
 const B = (sha, v = "PASS", sec = 0) => post(`## Review B at ${sha}: ${v}`, sec);
-const run = (comments, sec = 1000, extra = {}) => decide({ headSha: HEAD, comments, now: at(sec), ...extra });
+const run = (comments, sec = 1000, extra = {}) => decide({ headSha: HEAD, comments, now: at(sec), prNumber: 559, ...extra });
 const text = (r) => r.reasons.join("\n");
 
 test("two full-sha passes, window over: success, names sha and both verdicts", () => {
-  const r = run([A(HEAD, "PASS", 0), B(HEAD, "PASS WITH NOTES", 10)]);
+  const r = run([A(HEAD, "PASS", 0), B(HEAD, "PASS", 10)]);
   assert.equal(r.state, "success");
-  assert.match(r.description, /A PASS, B PASS WITH NOTES on 1a2b3c4/);
+  assert.match(r.description, /A PASS, B PASS on 1a2b3c4/);
   assert.match(r.description, /not approval/);
   assert.ok(r.description.length <= 140);
 });
@@ -33,7 +33,7 @@ test("RG-5: pending for 180 s after the newest comment, success at 180 s", () =>
   assert.equal(run(cs, 11).state, "pending");
   assert.equal(run(cs, 189).state, "pending");
   assert.equal(run(cs, 190).state, "success");
-  assert.equal(decide({ headSha: HEAD, comments: cs, now: at(40), pendingSeconds: 30 }).state, "success");
+  assert.equal(decide({ headSha: HEAD, comments: cs, now: at(40), prNumber: 559, pendingSeconds: 30 }).state, "success");
 });
 
 test("RG-1: missing lens fails; no comments fails", () => {
@@ -77,8 +77,50 @@ test("RG-2: 40-hex that differs in the last character does not count", () => {
   assert.doesNotMatch(text(r), /short sha/);
 });
 
-test("RG-2: upper case 40-hex head sha counts", () => {
-  assert.equal(run([A(HEAD.toUpperCase()), B(HEAD.toUpperCase())]).state, "success");
+test("an upper-case headSha argument is normalised; an upper-case sha in the comment is not the merge-queue form", () => {
+  assert.equal(run([A(HEAD), B(HEAD)], 1000, { headSha: HEAD.toUpperCase() }).state, "success");
+  const r = run([A(HEAD.toUpperCase()), B(HEAD.toUpperCase())]);
+  assert.equal(r.state, "failure");
+  assert.match(text(r), /no counted Review A or Review B/);
+});
+
+test("pass forms merge-queue refuses never count here: PASS WITH NOTES, lower case, ###, delta, trailing text", () => {
+  const forms = [
+    (l) => `## Review ${l} at ${HEAD}: PASS WITH NOTES`,
+    (l) => `## Review ${l} at ${HEAD}: pass`,
+    (l) => `### Review ${l} at ${HEAD}: PASS`,
+    (l) => `## Review ${l} delta at ${HEAD}: PASS`,
+    (l) => `## Review ${l} at ${HEAD}: PASS.`,
+    (l) => `Review ${l} at ${HEAD}: PASS`,
+  ];
+  for (const f of forms) {
+    const r = run([post(f("A"), 0), post(f("B"), 1)]);
+    assert.equal(r.state, "failure", f("A"));
+  }
+  // one exact pass plus one loose pass still fails on the loose lens
+  assert.equal(run([A(HEAD), post(`## Review B at ${HEAD}: PASS WITH NOTES`, 1)]).state, "failure");
+  // trailing spaces and CRLF are tolerated, as in merge-queue
+  assert.equal(run([post(`## Review A at ${HEAD}: PASS  `, 0), post(`## Review B at ${HEAD}: PASS\t`, 1)]).state, "success");
+});
+
+test("a missing or non-integer prNumber is a failure, never success", () => {
+  const cs = [A(HEAD), B(HEAD)];
+  for (const prNumber of [undefined, null, "559", 1.5, 0, -1, NaN]) {
+    assert.equal(decide({ headSha: HEAD, comments: cs, now: at(1000), prNumber }).state, "failure", String(prNumber));
+  }
+  // the free-text negative review that names this PR is seen only because prNumber is given
+  const neg = post("Review of PR #559 at " + HEAD.slice(0, 7) + ": CHANGES NEEDED, blocking issue", 50);
+  assert.equal(run([A(HEAD), B(HEAD), neg]).state, "failure");
+});
+
+test("a headSha that is not 40 hex is a failure (the 40-hex guard)", () => {
+  const short = HEAD.slice(0, 7);
+  const r = decide({ headSha: short, comments: [A(short), B(short)], now: at(1000), prNumber: 559 });
+  assert.equal(r.state, "failure");
+  assert.match(text(r), /not 40 hex/);
+  for (const headSha of [HEAD.slice(0, 39), HEAD + "a", "g".repeat(40), "", undefined, null]) {
+    assert.equal(decide({ headSha, comments: [], now: at(1000), prNumber: 559 }).state, "failure", String(headSha));
+  }
 });
 
 test("a FAIL at a short sha still blocks (only passes need the full sha)", () => {
@@ -124,7 +166,7 @@ test("RG-6: other logins and bots never count", () => {
   assert.equal(run([app(A(HEAD)), B(HEAD)]).state, "failure");
   // and a non-owner FAIL cannot block (it could not be trusted either way)
   assert.equal(run([A(HEAD), B(HEAD), other(B(HEAD, "FAIL", 50))]).state, "success");
-  assert.equal(decide({ headSha: HEAD, comments: [other(A(HEAD)), other(B(HEAD))], now: at(1000), owner: "someone-else" }).state, "success");
+  assert.equal(decide({ headSha: HEAD, comments: [other(A(HEAD)), other(B(HEAD))], now: at(1000), owner: "someone-else", prNumber: 559 }).state, "success");
 });
 
 test("hostile: a pass copied from another PR is ignored; a FAIL copied from another PR is ignored", () => {
@@ -161,18 +203,19 @@ test("hostile: CRLF body counts the same as LF", () => {
   assert.equal(run([c, B(HEAD)]).state, "success");
 });
 
-test("hostile: an edited comment is a new post (updated_at orders and restarts the window)", () => {
-  // B was PASS at t=0, edited to FAIL at t=900: failure.
+test("ordering is created_at then id, as in merge-queue; an edit restarts the pending window only", () => {
+  // B was PASS at t=0, edited to FAIL at t=900: the FAIL body is what is read, so failure.
   const b = { ...B(HEAD, "FAIL", 0), updated_at: at(900) };
   assert.equal(run([A(HEAD, "PASS", 10), b], 2000).state, "failure");
-  // A FAIL at t=0 edited into a PASS at t=900 counts as a PASS posted at 900, so the window restarts.
+  // An A edited into a PASS at t=900 is still ordered at t=0, but the window restarts from 900.
   const a = { ...A(HEAD, "PASS", 0), updated_at: at(900) };
   assert.equal(run([a, B(HEAD, "PASS", 10)], 1000).state, "pending");
   assert.equal(run([a, B(HEAD, "PASS", 10)], 1100).state, "success");
-  // An edit that lands after an earlier FAIL ranks after it.
-  const f = B(HEAD, "FAIL", 100);
+  // PASS created first, CHANGES created later, then the PASS comment edited: merge-queue orders by
+  // created_at, so the CHANGES is newest and the gate fails, not succeeds.
+  const f = B(HEAD, "CHANGES", 100);
   const edited = { ...B(HEAD, "PASS", 0), updated_at: at(500) };
-  assert.equal(run([A(HEAD), f, edited], 2000).state, "success");
+  assert.equal(run([A(HEAD), f, edited], 2000).state, "failure");
 });
 
 test("input order does not matter; ties break by id", () => {
@@ -182,14 +225,14 @@ test("input order does not matter; ties break by id", () => {
 });
 
 test("RG-8: bad input and thrown errors are failure, never success", () => {
-  assert.equal(decide({ headSha: "abc1234", comments: [], now: at(0) }).state, "failure");
-  assert.equal(decide({ headSha: HEAD, comments: null, now: at(0) }).state, "failure");
-  assert.equal(decide({ headSha: HEAD, comments: [], now: "not a time" }).state, "failure");
-  assert.equal(decide({ headSha: HEAD, comments: [], now: at(0), pendingSeconds: "x" }).state, "failure");
-  assert.equal(decide({ headSha: HEAD, comments: [{ ...A(HEAD), updated_at: "garbage", created_at: "garbage" }], now: at(0) }).state, "failure");
+  assert.equal(decide({ headSha: "abc1234", comments: [], now: at(0), prNumber: 559 }).state, "failure");
+  assert.equal(decide({ headSha: HEAD, comments: null, now: at(0), prNumber: 559 }).state, "failure");
+  assert.equal(decide({ headSha: HEAD, comments: [], now: "not a time", prNumber: 559 }).state, "failure");
+  assert.equal(decide({ headSha: HEAD, comments: [], now: at(0), pendingSeconds: "x", prNumber: 559 }).state, "failure");
+  assert.equal(decide({ headSha: HEAD, comments: [{ ...A(HEAD), updated_at: "garbage", created_at: "garbage" }], now: at(0), prNumber: 559 }).state, "failure");
   assert.equal(decide().state, "failure");
   const evil = { user: { login: OWNER }, get body() { throw new Error("boom"); }, created_at: at(0) };
-  const r = decide({ headSha: HEAD, comments: [evil], now: at(1000) });
+  const r = decide({ headSha: HEAD, comments: [evil], now: at(1000), prNumber: 559 });
   assert.equal(r.state, "failure");
   assert.match(text(r), /RG-8/);
 });
@@ -255,22 +298,25 @@ test("#512: success at merge time (07:29:32), pending in the window, failure aft
   const f = fx(512);
   assert.equal(f.mergedAt, "2026-11-01T07:29:32Z");
   const early = f.comments.slice(0, 2);
-  assert.equal(decide({ headSha: f.headSha, comments: early, now: "2026-11-01T06:56:00Z", prNumber: 512 }).state, "pending");
+  assert.equal(decide({ headSha: f.headSha, comments: early, now: "2026-11-01T06:56:00Z", prNumber: 512 }).state, "failure"); // B is "PASS WITH NOTES", not the exact form
   const atMerge = decide({ headSha: f.headSha, comments: early, now: f.mergedAt, prNumber: 512, headCommittedAt: f.headCommittedAt });
-  assert.equal(atMerge.state, "success"); // the documented limit: the gate was green when it merged
-  assert.match(atMerge.description, /A PASS, B PASS WITH NOTES on 1451475/);
+  // B's "PASS WITH NOTES" is not the exact merge-queue form, so the gate is now stricter than it was when it merged
+  assert.equal(atMerge.state, "failure");
+  assert.match(text(atMerge), /no counted Review B/);
+  assert.match(text(atMerge), /not the exact/);
   const after = real(512, "2026-11-01T07:35:00Z");
   assert.equal(after.state, "failure");
   assert.match(text(after), /Review B on 1451475: latest is CHANGES NEEDED/);
   // the late A PASS at 07:30:36 alone would only restart the window
   const lateA = decide({ headSha: f.headSha, comments: f.comments.slice(0, 3), now: "2026-11-01T07:30:50Z", prNumber: 512 });
-  assert.equal(lateA.state, "pending");
+  assert.equal(lateA.state, "failure"); // lens B has no exact pass
 });
 
-test("#512: the edited B comment (created 06:54:49, updated 06:54:54) orders by updated_at", () => {
+test("#512: the edited B comment (created 06:54:49, updated 06:54:54) restarts the window from updated_at", () => {
   const f = fx(512);
   assert.notEqual(f.comments[0].created_at, f.comments[0].updated_at);
-  assert.equal(decide({ headSha: f.headSha, comments: f.comments.slice(0, 2), now: "2026-11-01T06:58:00Z", prNumber: 512 }).state, "pending");
+  const r = decide({ headSha: f.headSha, comments: f.comments.slice(0, 2), now: "2026-11-01T06:58:00Z", prNumber: 512 });
+  assert.notEqual(r.state, "success"); // inside the window or missing the exact B pass, never green
 });
 
 test("#494: 7-char passes fail as short sha (CR-44 clause 2; the earlier design expected success)", () => {
@@ -288,4 +334,38 @@ test("fixtures hold no body text beyond the header line and a stub", () => {
       assert.ok(c.body.length < 200);
     }
   }
+});
+
+// ---- agreement with scripts/agents/merge-queue.mjs (reviewState) ----
+// decide() must never say success where merge-queue says a lens is not met. merge-queue.mjs lives on
+// develop; a branch cut before it landed has no copy, so this test reports a skip with the reason.
+const mq = await import("../agents/merge-queue.mjs").catch(() => undefined);
+test("agreement: decide() success implies merge-queue reviewState has both lenses met", { skip: mq ? false : "scripts/agents/merge-queue.mjs is not on this branch (sync develop to run)" }, () => {
+  const trusted = (c) => ({ ...c, author_association: "OWNER" });
+  const hdr = (l, sha, v) => post(`## Review ${l} at ${sha}: ${v}`, 0);
+  const negatives = ["CHANGES", "CHANGES NEEDED", "BLOCKED", "FAIL"];
+  const cases = [];
+  // loose pass forms
+  for (const v of ["PASS WITH NOTES", "pass", "PASS.", "MERGE"]) cases.push([hdr("A", HEAD, "PASS"), hdr("B", HEAD, v)]);
+  cases.push([post(`### Review A at ${HEAD}: PASS`, 0), hdr("B", HEAD, "PASS")]);
+  cases.push([post(`## Review A delta at ${HEAD}: PASS`, 0), hdr("B", HEAD, "PASS")]);
+  cases.push([hdr("A", HEAD.toUpperCase(), "PASS"), hdr("B", HEAD, "PASS")]);
+  cases.push([hdr("A", HEAD.slice(0, 7), "PASS"), hdr("B", HEAD.slice(0, 7), "PASS")]);
+  cases.push([hdr("A", OTHER, "PASS"), hdr("B", OTHER, "PASS")]);
+  // veto and clear, plus created-first-then-edited ordering
+  for (const n of negatives) {
+    cases.push([hdr("A", HEAD, "PASS"), hdr("B", HEAD, "PASS"), post(`## Review B at ${HEAD}: ${n}`, 50)]);
+    cases.push([hdr("A", HEAD, "PASS"), post(`## Review B at ${HEAD}: ${n}`, 5), post(`## Review B at ${HEAD}: PASS`, 50)]);
+    cases.push([hdr("A", HEAD, "PASS"), { ...post(`## Review B at ${HEAD}: PASS`, 0), updated_at: at(500) }, post(`## Review B at ${HEAD}: ${n}`, 100)]);
+  }
+  cases.push([hdr("A", HEAD, "PASS"), hdr("B", HEAD, "PASS")]);
+  for (const cs of cases) {
+    const d = run(cs, 5000);
+    const q = mq.reviewState(cs.map(trusted), HEAD);
+    if (d.state === "success") assert.ok(q.A && q.B, `decide says success, merge-queue disagrees: ${cs.map((c) => c.body.split("\n")[0]).join(" | ")}`);
+  }
+  // and the exact good case agrees on both sides
+  const good = [hdr("A", HEAD, "PASS"), hdr("B", HEAD, "PASS")];
+  assert.equal(run(good, 5000).state, "success");
+  assert.deepEqual([mq.reviewState(good.map(trusted), HEAD).A, mq.reviewState(good.map(trusted), HEAD).B], [true, true]);
 });

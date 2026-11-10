@@ -10,12 +10,21 @@
 // lens, a FAIL posted after a PASS, a merge during the pending window.
 //
 // Counting rules reuse scripts/status/page.mjs unchanged (parseLens, countedPass, sameSha).
-// Strictness is added here, not there: a pass counts only if its header names the FULL
-// 40-character head sha (CR-44 clause 2). page.mjs accepts 7 to 40 characters; the extra
-// check lives in this file so the founder page keeps its behaviour.
+// Strictness is added here, not there: a pass counts only if its first line is exactly
+// "## Review A|B at <40-char lower-case sha>: PASS" (CR-44 clause 2), the same form
+// scripts/agents/merge-queue.mjs counts, so a green status here is never contradicted there.
+// page.mjs accepts looser forms; the extra check lives in this file so the founder page keeps its
+// behaviour. Leniency is kept only on the non-pass side (a veto), where it is safe.
+// Ordering: comments are ordered by created_at then id, as merge-queue does. The pending window
+// still runs from the newest created_at or updated_at, so an edit restarts the wait.
 import { parseLens, countedPass, sameSha, PASSING } from "../status/page.mjs";
 
 export const FULL_SHA = /^[0-9a-f]{40}$/;
+// The only first line that counts as a pass. Same pattern as REVIEW_RE in scripts/agents/merge-queue.mjs:
+// exactly "## Review A|B at <40 lower-case hex>: PASS". "PASS WITH NOTES", lower-case "pass", extra
+// heading marks, "Review A delta" and an upper-case sha are all readable by page.mjs but never count here.
+export const STRICT_PASS = /^## Review ([AB]) at ([0-9a-f]{40}): PASS[ \t]*$/;
+const firstLine = (body) => String(body ?? "").split("\n", 1)[0].replace(/\r$/, "");
 export const DEFAULT_OWNER = "thesaurabhpareek";
 export const DEFAULT_PENDING_SECONDS = 180;
 
@@ -39,7 +48,7 @@ function lensOf(body) {
  * @param {string|number|Date} args.now  the moment of the decision
  * @param {number} [args.pendingSeconds=180]  RG-5 window after the newest owner comment
  * @param {string} [args.owner]  the only login whose comments count (RG-6)
- * @param {number} [args.prNumber]  lets forged "PR #166 at ..." headers from another PR be ignored
+ * @param {number} args.prNumber  required integer; lets forged "PR #166 at ..." headers from another PR be ignored
  * @param {string} [args.headCommittedAt]  when the head commit was made; a sha-less non-pass
  *   posted before it is history. Missing means every sha-less non-pass blocks (fail safe).
  * @returns {{state:"success"|"pending"|"failure", reasons:string[], description:string, lenses:object}}
@@ -56,21 +65,24 @@ function run({ headSha, comments, now, pendingSeconds, owner, prNumber, headComm
   const head = String(headSha ?? "").toLowerCase();
   if (!FULL_SHA.test(head)) return fail("head sha is not 40 hex characters");
   if (!Array.isArray(comments)) return fail("comments are not a list");
+  if (!Number.isInteger(prNumber) || prNumber <= 0) return fail("prNumber is missing or not a positive integer");
   const nowMs = now instanceof Date ? now.getTime() : typeof now === "number" ? now : ms(now);
   if (!Number.isFinite(nowMs)) return fail("now is not a time");
   if (!Number.isFinite(pendingSeconds) || pendingSeconds < 0) return fail("pendingSeconds is not a number");
   const headCommitMs = headCommittedAt === undefined ? undefined : ms(headCommittedAt);
   if (headCommittedAt !== undefined && !Number.isFinite(headCommitMs)) return fail("headCommittedAt is not a time");
 
-  // RG-6: only the owner's login, never a bot. Ordering key is updated_at (an edit is a new post).
+  // RG-6: only the owner's login, never a bot. Ordering key is created_at then id, as in merge-queue.
+  // `edited` (the later of created_at and updated_at) only restarts the pending window.
   const mine = [];
   for (const c of comments) {
     const login = c?.user?.login;
     if (typeof login !== "string" || login.toLowerCase() !== String(owner).toLowerCase()) continue;
     if (c.user.type === "Bot" || /\[bot\]$/i.test(login)) continue;
-    const at = ms(c.updated_at ?? c.created_at);
-    if (!Number.isFinite(at)) return fail(`comment ${c.id ?? "?"} has no usable time`);
-    mine.push({ c, at });
+    const at = ms(c.created_at ?? c.updated_at);
+    const edited = Math.max(at, ms(c.updated_at ?? c.created_at));
+    if (!Number.isFinite(at) || !Number.isFinite(edited)) return fail(`comment ${c.id ?? "?"} has no usable time`);
+    mine.push({ c, at, edited });
   }
   mine.sort((a, b) => a.at - b.at || (a.c.id ?? 0) - (b.c.id ?? 0));
 
@@ -83,7 +95,10 @@ function run({ headSha, comments, now, pendingSeconds, owner, prNumber, headComm
     const counted = countedPass(body);
     if (counted) {
       const sha = counted.sha.toLowerCase();
-      if (sha === head) {
+      if (sha === head && !STRICT_PASS.test(firstLine(body))) {
+        // Readable by page.mjs, refused by merge-queue: never counted here, and it cancels nothing.
+        notes.push(`not counted: "${firstLine(body).slice(0, 80)}" is not the exact "## Review A at <40-char lower-case sha>: PASS" form`);
+      } else if (sha === head) {
         // The header names the full head sha. A later pass replaces an earlier non-pass (RG-3).
         mark(counted.lens, { ok: true, verdict: counted.verdict, at, id: c.id });
       } else if (sha.length < 40 && head.startsWith(sha)) {
@@ -127,7 +142,7 @@ function run({ headSha, comments, now, pendingSeconds, owner, prNumber, headComm
   }
 
   // Both lenses pass on the head. RG-5: wait out the window after the newest owner comment.
-  const newest = mine.length ? mine[mine.length - 1].at : 0;
+  const newest = mine.reduce((m, x) => Math.max(m, x.edited), 0);
   const waitMs = newest + pendingSeconds * 1000 - nowMs;
   if (waitMs > 0) {
     const reason = `waiting ${Math.ceil(waitMs / 1000)}s: the window is ${pendingSeconds}s after the newest comment, so a late FAIL can land`;
