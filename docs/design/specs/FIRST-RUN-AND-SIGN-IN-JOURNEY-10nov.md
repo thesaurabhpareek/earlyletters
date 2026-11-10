@@ -49,7 +49,7 @@ Launch
 ```
 For an account that already has a book (a new phone), the path after sign-in is S17 (#755, #764): "Opening your book", then Tonight, with no child step.
 
-Why age first, then stories (EVIDENCE for the constraint): the root layout renders no route until the age answer is Yes (`_layout.tsx`: `gate.decision !== 'pass'` shows `AgeGateScreen`; the SessionProvider and every route sit inside it), and a red-team test pins that order (#724 commit `df7033071`). The first-run files in #764 treat the Yes as given. Putting stories before the age question would mean hosting them outside the gate. It is possible, because they collect nothing, but it changes the root layout and a pinned test, and counsel has not said whether content may precede the age question (UNVERIFIED). Default: age first. The cost is one tap before the first story. See open question 2.
+Why age first, then stories (EVIDENCE for the constraint): the root layout renders no route until the age answer is Yes (`_layout.tsx`: `gate.decision !== 'pass'` shows `AgeGateScreen`; the SessionProvider and every route sit inside it), and a red-team test pins that order (#724 commit `df7033071`). The first-run files in #764 treat the Yes as given. Putting stories before the age question would mean hosting them outside the gate. It is possible, because they collect nothing, but it changes the root layout and a pinned test, and counsel has not said whether content may precede the age question (UNVERIFIED). Default: age first. The cost is one tap before the first story. NX-40 FD-2 (#775) recommends the intro BEFORE the age question; Karma has ruled AFTER, because the age gate stays pinned at the root and moving it needs counsel. NX-40 FD-2 is overruled by Karma on 10 Nov; the ruling is reversible, and if counsel agrees later the intro can be hosted ahead of the gate without changing its content. See open question 2.
 
 ### 2.2 State table (names are the repo's `FirstRunStep` where one exists)
 
@@ -160,6 +160,8 @@ The lock layer is rendered inside the age gate and the SessionProvider, over eve
 | Session 3, after a kept letter | Not built. #702 counts sessions that end in a kept letter, on the phone only; "Nothing reads `keptLetterSessions()` yet" | Yes: the third such session, "Not now" holds 30 days (proposed) | Tier B for Build 12, tier A if `mobile` can do it with the counter alone (M). Until then the lock lives in Settings, App lock |
 | A returning parent on a new phone | Not offered | #755 section 6.4 recommends the counter starts at 0 on a new phone and arrival does not count | Agree |
 | Settings, Privacy and security, App lock | Built | n/a | No change |
+
+The founder's 10 Nov line "next time you come in Face ID" is true only after the parent has turned the lock on. NX-40 FD-3 (#775) recommends offering it on the second open instead of session 3. I keep session 3 as the default and record the second-open option as a founder decision (open question 5); I do not change NX-31-R14 here.
 
 If the session-3 card does not make Build 12, the honest state is: no offer anywhere except Settings. That is a smaller promise than today's end-of-first-run card, which a parent could take as a missed feature. It does not break any rule. The words of the lock offer are `content`'s; their Shown, Records, Never and Decline lines (PRIV-R21) are unchanged, since nothing is recorded but the setting.
 
@@ -276,6 +278,12 @@ The stories use no new `screen_view` route, because they are a step inside the f
 | Reviewer sign-in path (NX-05) | Stays a founder step; this spec adds nothing to it | n/a |
 | Stories as marketing inside the app | Fine as long as they teach the product; they must not look like a paywall or advertise Plus. No Plus line in the intro | Content review |
 
+### 7.1 Apple 5.1.1(v) in plain words
+
+The founder decided that sign-in is required in Build 12. Guideline 5.1.1(v), as fetched on 10 Nov 2026, says: "If your app doesn't include significant account-based features, let people use it without a login." That is an App Review risk and I name it plainly: with co-parent sharing "coming soon", the account-based feature a reviewer can see is syncing a book across phones, and a reviewer may call that not significant enough to require sign-in. I cannot say how App Review will read it. UNVERIFIED.
+- Cheapest check: read the current guideline text on developer.apple.com the day of submission (about two minutes), and read the Notes for Review draft to see that it names cross-phone sync as the reason for the account.
+- Fallback rule if App Review rejects on this ground: the existing local start (`LOCAL_START_FALLBACK`, `gate.logic.ts`) is already a compiled constant. Flipping its use from outage-only to always offered is a one-line change plus tests and a rebuild; it needs the founder's word and a new Notes for Review, and it is not done here.
+
 ## 8. Scope tiers and recommendation
 
 Sizes are unmeasured guesses of one engineer's work, not estimates from a velocity. "Build 12 word is due Wed 11 Nov" (founder): be honest, B probably does not fit with A in one day.
@@ -296,18 +304,19 @@ Recommendation: ship A in Build 12, with A4 only if it fits; ship B as code behi
 ## 9. Backlog items, tests, dependencies, file overlap
 
 ### 9.1 Items
-Ids from `node scripts/agents/next-id.mjs` run 10 Nov: next free `BL-891`. I reserve `BL-891` to `BL-898` here; re-run the script before merge and renumber if another PR took them. This PR does not add rows to `docs/BACKLOG.md`; the `product` agent files them with these ids.
+Ids: the `product` agent took `BL-891` to `BL-897` in #775 (NX-40: requirements and trace, intro scaffolding behind a flag, intro screen and a11y, test seams, analytics, Apple name scope, session length). I re-ran `node scripts/agents/next-id.mjs` after fetching that branch: next free is `BL-898`. My rows take `BL-898` to `BL-906`. Where an NX-40 row covers the same work, build once and close the duplicate (BL-895 and BL-896 in NX-40 overlap my intro and analytics rows; `product` decides). This PR adds no rows to `docs/BACKLOG.md`; `product` files them. Re-run the script before merge.
 
 | Id | Item | Owner | Tier |
 |---|---|---|---|
-| BL-891 | Auth entry words: heading names create and sign in; Option A or B | content, mobile | A |
-| BL-892 | Returning-user path tests: session valid, expired, signed out, with and without a book | mobile, qa | A |
-| BL-893 | Remove the lock offer from "The book is open." | mobile | A |
-| BL-894 | Session-3 lock card from the #702 counter (NX-31-R14, R29) | mobile | A stretch |
-| BL-895 | Story intro shell and `stories` gate step, flagged off | mobile | B |
-| BL-896 | `tokens.motion.story` block and test | design-systems | B |
-| BL-897 | Story words: ids `story.exact.v3`, deck list for Build 12, counsel read | content, legal | B |
-| BL-898 | Analytics proposals in section 6, and the `onboarding.storiesSeen` data-map row | analytics, data-architect | B |
+| BL-898 | Auth entry words: heading names create and sign in; Option A or B | content, mobile | A |
+| BL-899 | Returning-user path tests: session valid, expired, signed out, with and without a book | mobile, qa | A |
+| BL-900 | Remove the lock offer from "The book is open." | mobile | A |
+| BL-901 | Session-3 lock card from the #702 counter (NX-31-R14, R29) | mobile | A stretch |
+| BL-902 | Story intro shell and `stories` gate step, flagged off | mobile | B |
+| BL-903 | `tokens.motion.story` block and test | design-systems | B |
+| BL-904 | Story words: ids `story.exact.v3`, deck list for Build 12, counsel read | content, legal | B |
+| BL-905 | Analytics proposals in section 6, and the `onboarding.storiesSeen` data-map row | analytics, data-architect | B |
+| BL-906 | Bug: `renderBlock` in `components/content-blocks/blocks.tsx` (line 154) passes `total={block.order}` for a story, so a deck shows the wrong "Story n of N" to a screen reader. Pass the deck length | mobile | B (found while writing this spec) |
 
 ### 9.2 Red-first tests (write each failing before the code)
 
@@ -359,12 +368,13 @@ Ids from `node scripts/agents/next-id.mjs` run 10 Nov: next free `BL-891`. I res
 
 ## 10. Open questions for the founder
 
-Few, each with a recommendation and a default if unanswered by the time the build is cut.
+Few (five), each with a recommendation and a default if unanswered by the time the build is cut.
 
 | # | Question | Recommendation | Default |
 |---|---|---|---|
 | 1 | Do you want "Create account" and "Sign in" as two labelled choices (Option B), or one screen that says both (Option A)? | A. New and returning cannot differ for email, and the screen is built. B costs about a day more and adds words the glossary lacks | A |
-| 2 | Stories before or after the age question? | After. It is one tap, and the age question is pinned at the root; moving it needs counsel's view | After |
+| 2 | Stories before or after the age question? | After (Karma's ruling, overruling NX-40 FD-2; reversible). It is one tap, and the age question is pinned at the root; moving it needs counsel's view | After |
+| 5 | Lock timing against your line "next time you come in Face ID" (NX-40 FD-3): offer it on session 3 (NX-31-R14, decided 9 Nov), or on the second open? | Not changed here. Default stays session 3; the second-open option is yours to take, it changes NX-31-R14 | Session 3 |
 | 3 | Ship the story intro in the first Build 12 store build, or behind an off flag? | Behind an off flag; turn on once counsel has read cards 2 and 3 and a device run has timed the first frame and Skip | Off |
 | 4 | Is "Years from now, your child can hear how you sounded tonight." acceptable when a parent has turned Keep recordings off? | Yes for the card, with counsel to read | Counsel reads |
 
