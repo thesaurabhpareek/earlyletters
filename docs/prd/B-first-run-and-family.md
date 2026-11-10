@@ -9,7 +9,7 @@ Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict lo
 ## 1. Goals and non-goals
 
 **Goals**
-1. First saved letter with only two required child facts (name; birthday or due date). Evidence: USER_RESEARCH 6 (R1, R2), 2.1.
+1. First saved letter with only one required child fact (birthday or due date; the name is optional for a single first child). Evidence: USER_RESEARCH 6 (R1, R2), 2.1.
 2. Every author signs as who they are to the child ("From Nani") and speaks their own languages. Evidence: USER_RESEARCH 1.4 (multilingual row); COMPETITIVE_RESEARCH 2, takeaway (d).
 3. A grandparent can add a first letter from a link, with no app install and no password. Evidence: USER_RESEARCH 6 (R14); COMPETITIVE_RESEARCH 2 (Remento), 5.3.
 4. Parents control the book without ever editing anyone's words. Evidence: USER_RESEARCH 5 (fear 5), 6 (R13); the aunt incident [S28].
@@ -42,7 +42,7 @@ Owner: PM Lead B. Draft, 1 Oct 2026. **Revised Oct 2 2026 per PRD.md conflict lo
 
 ### F1. First run, new parent (after Section A's intro; sign-up timing is A's call)
 Target: R1, first saved letter at ≤ 90 s median (USER_RESEARCH 6).
-1. **Who is this book for?** Name field (required, 1 to 60 characters, any script). Placeholder: "First name, or a nickname" (EXPERIENCE_PASS S05: no help line under the field).
+1. **Who is this book for?** Name field (optional for a single first child, 1 to 60 characters when given, any script; twins or a second child still need each name so the books can be told apart). Placeholder: "First name, or a nickname" (EXPERIENCE_PASS S05: no help line under the field).
 2. **Birthday or Not here yet.** Segmented control. Birthday: date wheel, no future dates. Not here yet: due date wheel, today to +10 months.
    - Branch: "My partner already started one" → "Ask them to send you an invite from Family", then A's "I was invited" entry. Prevents duplicate books.
 3. **What does {child} call you?** `onboarding.signsAs.examples` chips or free text (1 to 30). Preview "From Papa". Required: every letter is signed.
@@ -194,6 +194,7 @@ P0 launch blocker, P1 launch quarter, P2 later.
 - Given "Asha" and a birthday, When Continue, Then a child exists with no other fields, And nothing asks for surname, gender, photo or contacts.
 - Given no birthday or due date, Then Continue stays disabled with "We sort letters by {child}'s month of age."
 - Given a birthday and no name, When Continue, Then a child exists, And wherever the name would show, the app says "Your child".
+- Given twins or a second child, When Continue, Then each child needs a name, so the books can be told apart.
 - Rev note (10 Nov 2026): the name was required; it is now optional and the date stays required. Decided by the founder, via Karma, on 9 to 10 Nov 2026 (NX-31-R3, NX-31-R28; ruling B12-4, `infra/cto-rulings-2026-11-09-build12-cut.md`). Evidence: #700 (migration), #701 (phone side).
 
 **B-REQ-002**

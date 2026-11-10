@@ -11,7 +11,7 @@
 
 ## 1. Why
 
-- [F] UR R1: median time from first launch to first saved letter 90 s or less, no tutorial before the first recording (UR S10, S24). UR R2: only the child's first name or nickname and a birth or due date are required (UR S9, S27).
+- [F] UR R1: median time from first launch to first saved letter 90 s or less, no tutorial before the first recording (UR S10, S24). UR R2: only the child's first name or nickname and a birth or due date were found to be needed (UR S9, S27); the name is now optional for a single first child (B-REQ-001 Rev, ruling B12-4).
 - [S] Tinybeans made child details optional; a designer's portfolio case study, not the company, reports +885% onboarding completion (R1-S51). Self-reported; not used for any decision here (R3 DX-31). Headspace's quiz doubled course starts (31% to 63%) but did not raise practice days (R1-S58): first-run questions buy first use, not habit.
 - [F] No competitor asks which languages a family speaks; Day One takes the transcription language from the keyboard and users ask for a separate setting (R1-S60, R1-S61).
 - [F] Among US Latino parents, 92% with a Latino partner and 55% with a non-Latino partner speak Spanish to their children (2015 survey, R2-S31). That is about speaking, in one community; whether a partner can read the other's letters is [A] (R3 DX-29). Languages are asked per author, not per family.
@@ -127,7 +127,8 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
 | F03-U01 | No date chosen | Continue disabled | The reason line `onboarding.child.needBirthday` "Choose {child}'s birthday to continue.", muted above Continue until the disabled button is tapped (S05) | Pick a date | Unit (B-REQ-001) |
-| F03-U02 | Name empty or spaces only | Continue disabled | `childrenExtra.nameRequired` | Type a name | Unit |
+| F03-U02 | Name empty or spaces only, single first child | Continue goes through; the book shows "Your child" | none | Add a name any time | Unit |
+| F03-U02b | Name empty with twins or a second child | Continue disabled | `onboarding.child.needNameMany` | Type each name | Unit |
 | F03-U03 | Name in Devanagari, Arabic or with diacritics | Stored exactly as typed | Same name everywhere | n/a | Unit with "आशा" and "Zoë" |
 | F03-U04 | Two to six children added together | One book each, one `first_run_batch`; no Plus sheet; the server accepts every child in `create_first_run_children` without Plus | Signature title uses `pendingCopy.onboarding.signsAsTitleMany` | n/a | Integration (checklist 6.8) |
 | F03-U05 | Seventh child | Add another child hidden at 6 (code cap `MAX_FIRST_RUN_CHILDREN`) | No button | Add later through F12 | Unit |
@@ -155,7 +156,7 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 
 | Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
 |---|---|---|---|---|---|---|
-| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled, with the reason line `onboarding.child.needBirthday` above it, until a date is picked | n/a | Name empty: `childrenExtra.nameRequired` under the field | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
+| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled, with the reason line `onboarding.child.needBirthday` above it, until a date is picked | n/a | Name empty: allowed for a single first child (shows "Your child"); with twins or more, `onboarding.child.needNameMany` | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
 | Signature step | Chips `onboarding.signsAs.examples`; preview hidden until a value | n/a | Over 30 characters: Continue disabled, counter hidden (no counts), help line | Identical | Chips wrap | Chips are toggle buttons with selected state |
 | Languages step | Seven chips, none selected unless the device language is English | n/a | n/a | Identical; gate labels from the last good manifest or the bundled snapshot | Chips wrap two per row; labels never truncate | Chip reads name, then "transcribed" or `onboarding.languages.recordAndType` |
 | Ready screen | n/a | Speech downloading: the `speechConsentCopy.chosenYes` footnote, no bar, no spinner | Not enough space: the F03-U13 line; cellular: the F03-U14 choice | The note says it starts on Wi-Fi | Stack | Note read after the title |
