@@ -186,7 +186,8 @@ describe('12. Acceptance checks', () => {
     expect(bookTitle('   ')).toBe("Your child's book");
     expect(bookTitle(null)).toBe("Your child's book");
     expect(bookTitle('Asha')).toBe('Asha');
-    expect(home).toMatch(/title=\{bookTitle\(ch\.name\)\}/);
+    // The row itself reads "Your child" through childRowTitle (#716, on develop); bookTitle is the page title's fallback.
+    expect(home).toMatch(/title=\{childRowTitle\(ch\.name\)\}/);
     expect(home).not.toMatch(/title=\{ch\.name\}/);
     expect(child).toMatch(/title: name\.trim\(\) \? fill\(s\.title, \{ child: name \}\) : copy\.settingsHome\.childFallback/);
   });

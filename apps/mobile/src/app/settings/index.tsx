@@ -10,7 +10,7 @@ import { useHelpLink } from '@/components/settings/help-fallback';
 import { mailTarget } from '@/components/settings/help-links.logic';
 import { hiddenBooksRow } from '@/components/settings/hidden-books.logic';
 import { SignedOutCard } from '@/components/settings/signed-out-card';
-import { bookTitle, headerCard, planRowFor, youTabView } from '@/components/settings/settings-home.logic';
+import { headerCard, planRowFor, youTabView } from '@/components/settings/settings-home.logic';
 import { appLockCopy } from '@/lib/app-lock/copy';
 import { useAppLock } from '@/lib/app-lock/controller';
 import { useAuth } from '@/lib/auth/session-provider';
@@ -19,6 +19,7 @@ import { getPlan, subscribePlan } from '@/lib/billing';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
+import { childRowTitle } from '@/components/child/child-settings.logic';
 import { remindersSummary } from '@/lib/reminders';
 import { currentUserId, getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
@@ -138,7 +139,7 @@ export default function Settings() {
         {s.children.map((ch: Child) => (
           <ListRow
             key={ch.id}
-            title={bookTitle(ch.name)}
+            title={childRowTitle(ch.name)}
             trailing={ch.birthday || ch.dueDate ? 'chevron' : copy.childrenExtra.notSet}
             onPress={() => router.push({ pathname: '/settings/children/[id]', params: { id: ch.id } })}
           />
