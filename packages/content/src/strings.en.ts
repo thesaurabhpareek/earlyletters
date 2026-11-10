@@ -843,7 +843,7 @@ export const en = {
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
       eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",
-      bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers.",
+      bookBody: "Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",

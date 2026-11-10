@@ -147,8 +147,20 @@ describe('Build 12 account, sign-in and deletion copy claims only what the build
   it('the error lines say what happened, never that the letters are safe', () => {
     const lines = [...leaves(authCopy.errors, 'errors'), ...leaves(authCopy.sheet.notConfigured, 'notConfigured'), { path: 'code.lettersSafe', text: authCopy.code.lettersSafe }];
     for (const l of lines) expect(l.text, l.path).not.toMatch(/\bsafe\b|\bsharing\b/i);
+    // lettersSafe is drawn only where a book exists (the code screen checks useChildren().active). An error line is read
+    // on a fresh install or a restored phone too, so none may say the letters are on this phone.
     expect(authCopy.code.lettersSafe).toBe('Your letters are still on this phone.');
-    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(true);
+    for (const l of leaves(authCopy.errors, 'errors')) expect(l.text, l.path).not.toMatch(/\bletters?\b.*\bon this phone\b|\bon this phone\b.*\bletters?\b/i);
+    expect(authCopy.errors.network).toBe('Nothing has changed. Sign in once you are back online.');
+    expect(authCopy.errors.session_expired).toBe('Nothing has changed. Sign in again to carry on.');
+  });
+
+  it('no line says a recording is on, sent to or removed from our servers: Build 12 keeps recordings on the phone', () => {
+    const onServers = (text: string) => /\brecordings?\b[^.]*\b(?:servers?|our side|the cloud)\b/i.test(text);
+    expect(onServers('Every letter and recording will be removed from this phone and from our servers.')).toBe(true);
+    expect(onServers('Every letter will be removed from this phone and from our servers. Every recording will be removed from this phone.')).toBe(false);
+    for (const l of ALL) expect(onServers(l.text), `${l.path} claims a recording on our servers`).toBe(false);
+    expect(en.settings.delete.bookBody).toBe("Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.");
   });
 
   it('Account and Privacy name sync, not sharing, and keptSynced names no co-parent', () => {

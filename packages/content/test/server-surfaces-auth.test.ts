@@ -27,7 +27,7 @@ const CHAPTER_7: Record<string, string> = {
   'sheet.bodies.invite': 'Sign in on this phone to carry on.',
   'sheet.bodies.invite_create': 'Sign in on this phone to carry on.',
   'sheet.notConfigured': 'Signing in is not available right now. Nothing on this phone has changed.',
-  'errors.network': 'Your letters are still on this phone. Sign in once you are back online.',
+  'errors.network': 'Nothing has changed. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
   // Led with "Your letters are safe." in the S52 table (amended 28 Oct, #360); Build 12 leads with "Nothing has changed." instead.
   'errors.not_available': "Nothing has changed. This way of signing in isn't available right now. Try another way.",
@@ -37,7 +37,7 @@ const CHAPTER_7: Record<string, string> = {
   'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
   'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
-  'errors.session_expired': 'Your letters are still on this phone. Sign in again to carry on.',
+  'errors.session_expired': 'Nothing has changed. Sign in again to carry on.',
   'errors.consent_unavailable': 'Nothing has changed. Setting up your account did not finish. Try again.',
   'errors.unknown': 'That did not go through. Nothing has changed.',
   // S53
@@ -170,9 +170,9 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const [key, words] of Object.entries(KEPT)) expect(at(key), key).toBe(words);
   });
 
-  it('has the lines the critics\' fixes added, word for word; the waiting line is errors.network\'s first sentence', () => {
+  it('has the lines the critics\' fixes added, word for word', () => {
     for (const [key, words] of Object.entries(CRITICS)) expect(at(key), key).toBe(words);
-    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(true);
+    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(false); // the waiting line is drawn only with a book; an error is read without one
     // The pause line (lens A2): only typing a code waits. The email's link and Apple or Google still sign in, and it
     // neither blames nor counts down (code_paused already says 15 minutes, once, as a fact).
     expect(authCopy.code.pausedOtherWays).toMatch(/link in the newest email still works/);

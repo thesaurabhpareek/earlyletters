@@ -2,7 +2,9 @@
 import { en } from '../strings.en';
 
 /**
- * errors.network's first sentence, also said under the code field while the email is on its way (S54, P8a critics S2).
+ * Said under the code field while the email is on its way (S54, P8a critics S2), and only where this phone holds a book:
+ * the code screen draws it only when a book exists (`useChildren().active`). It is NOT in any error line, because an error
+ * is also read on a fresh install or a restored phone, where there are no letters here to be "still" anywhere.
  * Build 12: it says where the letters are, not that they are "safe" (VOICE.md, "safe"): there is no recording backup, so
  * a promise of safety is one the build does not make. The key keeps its name (`code.lettersSafe`) so the screen is untouched.
  */
@@ -81,7 +83,7 @@ export const authCopy = {
     resendWait: 'You can send another in a minute.',
     resent: 'A new email is on its way.',
     differentEmail: 'Use a different email',
-    /** Under the code field while waiting for the email: errors.network's first sentence, the same words (P8a critics S2). */
+    /** Under the code field while waiting for the email, drawn only when a book is on this phone (P8a critics S2). */
     lettersSafe,
     /**
      * With `errors.code_paused`, in the same line, while the pause after five wrong codes holds (P8a critics S1, F02-U14):
@@ -118,9 +120,9 @@ export const authCopy = {
 
   errors: {
     // As the S52 table in docs/design/EXPERIENCE_PASS_2026-10.md words them (amended 28 Oct, #360): service- or
-    // network-caused errors say the letters are safe first (VOICE, the Error row); input errors (wrong_code,
+    // network-caused errors say nothing has changed first (VOICE, the Error row); input errors (wrong_code,
     // expired, invalid_email) keep their words; unknown says it second.
-    network: `${lettersSafe} Sign in once you are back online.`,
+    network: 'Nothing has changed. Sign in once you are back online.',
     expired: 'That link has expired. Send a new email for a fresh one.',
     wrong_code: "That code didn't match. Check the newest email, or send a new one.",
     code_paused: 'Nothing has changed. You can try a code again in 15 minutes.',
@@ -133,7 +135,7 @@ export const authCopy = {
     invalid_email: "That email doesn't look quite right.",
     not_available: "Nothing has changed. This way of signing in isn't available right now. Try another way.",
     provider: 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
-    session_expired: 'Your letters are still on this phone. Sign in again to carry on.',
+    session_expired: 'Nothing has changed. Sign in again to carry on.',
     under_18: '{app} is currently for adults 18 and over.',
     consent_unavailable: 'Nothing has changed. Setting up your account did not finish. Try again.',
     unknown: 'That did not go through. Nothing has changed.',
