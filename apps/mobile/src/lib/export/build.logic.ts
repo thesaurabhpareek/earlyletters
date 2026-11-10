@@ -524,7 +524,7 @@ article p{margin:0 0 8pt;orphans:3;widows:3}
 <div class="cover">
 <h1>${escapeHtml(brand.name)}</h1>
 <p class="sub" dir="auto">${escapeHtml(subtitle)}</p>
-<p class="ded" dir="auto">${escapeHtml(fill(bookWords.dedication, { child: child.name }))}</p>
+<p class="ded" dir="auto">${escapeHtml(child.name.trim() ? fill(bookWords.dedication, { child: child.name }) : bookWords.dedicationNoName)}</p>
 </div>
 <div class="about">
 <h2>${escapeHtml(about.title)}</h2>

@@ -8,7 +8,7 @@
  * reached any other way, says "No hidden books.". Every word is packages/content's (`children.settings.hiddenTitle`,
  * `showButton`, `hiddenEmpty`), except each book's own name. No count of hidden books is shown.
  */
-import { copy } from '@/lib/copy';
+import { childLabel, copy } from '@/lib/copy';
 
 export const HIDDEN_BOOKS_HREF = '/settings/children/hidden' as const;
 
@@ -33,6 +33,6 @@ export function hiddenBooksPage(hidden: readonly Book[]): HiddenBooksPage {
     title: s.hiddenTitle,
     empty: hidden.length === 0 ? s.hiddenEmpty : null,
     // VoiceOver hears which book each button brings back ("Show this book again, Avi"): the same words, then the name.
-    books: hidden.map((b) => ({ id: b.id, name: b.name, button: s.showButton, buttonLabel: `${s.showButton}, ${b.name}` })),
+    books: hidden.map((b) => ({ id: b.id, name: childLabel(b.name), button: s.showButton, buttonLabel: `${s.showButton}, ${childLabel(b.name)}` })),
   };
 }

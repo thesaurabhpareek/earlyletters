@@ -13,6 +13,8 @@ export const book = {
   backCover:
     "This book was spoken before it was written. Every letter inside comes from someone who loves {child}, said out loud on an ordinary day and kept in their own words. Some are long. Some are a single line. Read them slowly, read them together, and come back to them whenever you like.",
   dedication: "For {child}, from everyone who talked to you this year.",
+  /** Printed when the book has no name (NX-31-R3): "For your child, ... talked to you" would switch person. */
+  dedicationNoName: "For you, from everyone who talked to you this year.",
   aboutThisBook: {
     title: "About this book",
     // Q1 (docs/exec-rulings-claims-trust-2026-11-01.md): say what the engine does (core EditType) and no more.
