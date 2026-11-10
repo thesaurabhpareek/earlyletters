@@ -629,6 +629,7 @@ export default function Review() {
       const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
       if (!settled) {
         saving.current = false;
+        toast.show({ message: copy.review.keepStillSaving }); // nothing was kept; say why
         return;
       }
       const audio = await ensureAudioHash(settled);
