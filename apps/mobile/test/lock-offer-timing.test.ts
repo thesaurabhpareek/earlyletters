@@ -72,6 +72,12 @@ describe('[NX-31-R14, LK-16] answers: Not now holds 30 days; it is asked at most
     const r = afterLockOfferAnswer({ answers: 1, notNowAt: NOW - 5 }, 'turnedOn', NOW);
     expect(r).toEqual({ answers: 2, notNowAt: null });
   });
+  it('a phone that cannot hold a lock (no passcode) holds the card 30 days and uses up none of the two offers', () => {
+    const r = afterLockOfferAnswer(EMPTY_LOCK_OFFER_RECORD, 'unavailable', NOW);
+    expect(r).toEqual({ answers: 0, notNowAt: NOW });
+    expect(lockOfferDue(facts({ record: r, now: NOW + 1 }))).toBe(false);
+    expect(lockOfferDue(facts({ record: r, now: NOW + LOCK_OFFER_HOLD_MS }))).toBe(true);
+  });
   it('a stored record that is not numbers reads as no record', () => {
     expect(parseLockOfferRecord('x', 'y')).toEqual(EMPTY_LOCK_OFFER_RECORD);
     expect(parseLockOfferRecord('-4', '-1')).toEqual(EMPTY_LOCK_OFFER_RECORD);

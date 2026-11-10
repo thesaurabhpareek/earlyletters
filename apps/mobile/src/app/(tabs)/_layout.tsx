@@ -11,6 +11,7 @@ import { LARGE_CONTENT } from '@/components/ui/button';
 import { useFontsReady } from '@/components/ui/fonts';
 import { UIProvider } from '@/components/ui/provider';
 import { ToastHost } from '@/components/ui/toast';
+import { LockOfferAsk } from '@/components/asks/lock-offer-ask';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
@@ -94,6 +95,8 @@ export default function TabsLayout() {
         {/* The reminder card after the first letter, over the Book (C-REQ-001 Rev; Review asks for it, lib/asks). Inside
             this ToastHost so its "No reminders" line sits above the tab bar, not over it. */}
         <ReminderPrimeAsk />
+        {/* The lock card in session 3 (NX-31-R14), over the Book; Review asks for it, lib/asks. */}
+        <LockOfferAsk />
       </ToastHost>
     </UIProvider>
   );

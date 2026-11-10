@@ -1,7 +1,7 @@
 /**
  * Feeds `nextAsk` (./next-ask.logic, tested) what the phone knows, and remembers what was asked.
  * Review calls `askAfterSave()` once per kept letter, then acts on the answer after the Book lands:
- * `keep_book` opens the sign-in sheet, `reminder_prime` asks `<ReminderPrimeAsk>` (mounted in the tabs
+ * `keep_book` opens the sign-in sheet, `lock_offer` asks `<LockOfferAsk>` and `reminder_prime` asks `<ReminderPrimeAsk>` (mounted in the tabs
  * layout) to show the reminder card over the Book.
  *
  * Device settings (plain values, no names or text):
@@ -21,6 +21,9 @@
 import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
+import { lockOfferDue } from '@/lib/app-lock/offer.logic';
+import { readLockOfferRecord } from '@/lib/app-lock/offer';
+import { appLockOn } from '@/lib/app-lock/prefs';
 import { readPrefs } from '@/lib/reminders/prefs';
 import { createKeptSessionCounter } from './kept-sessions';
 import { localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
@@ -111,6 +114,8 @@ export function askAfterSave(input: { firstLetter: boolean; signInOffered: boole
       session,
       askShownThisSession: askSession === session,
       askShownToday: getSetting(K.lastAskDay) === localDay(now),
+      // NX-31-R14: the third session that ended in a kept letter, lock off. The count was updated just above.
+      lockOfferDue: lockOfferDue({ keptSessions: keptSessions.keptLetterSessions(), lockOn: appLockOn(), record: readLockOfferRecord(), now }),
     });
     if (ask === 'keep_book') {
       setSetting(K.keepBook, 'on');
@@ -142,4 +147,26 @@ export function takeReminderPrimeRequest(): boolean {
 export function subscribeReminderPrime(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
+}
+
+// ── The lock card's request, for <LockOfferAsk> (NX-31-R14, R29) ──────────────
+let lockRequested = false;
+const lockListeners = new Set<() => void>();
+
+/** Review: the Book is on screen after the save that made this the lock offer's session; show the card over it. */
+export function requestLockOffer(): void {
+  lockRequested = true;
+  for (const l of lockListeners) l();
+}
+
+/** The host took the request (it shows the card once). */
+export function takeLockOfferRequest(): boolean {
+  const was = lockRequested;
+  lockRequested = false;
+  return was;
+}
+
+export function subscribeLockOffer(listener: () => void): () => void {
+  lockListeners.add(listener);
+  return () => lockListeners.delete(listener);
 }

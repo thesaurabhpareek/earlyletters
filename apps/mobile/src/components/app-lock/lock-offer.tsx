@@ -1,6 +1,8 @@
 /**
- * The app lock offer at the end of first run, on "The book is open." (CPO-2: offered once, equal weight, off until
- * turned on; design.md 2.3; SETTINGS_AND_ACCOUNT.md section 3).
+ * The app lock offer (CPO-2: equal weight, off until turned on; design.md 2.3; SETTINGS_AND_ACCOUNT.md section 3). Offered
+ * in session 3, the third session that ended in a kept letter, over the Book (NX-31-R14; lib/app-lock/offer.logic.ts,
+ * components/asks/lock-offer-ask.tsx). It is not on "The book is open." any more: the first night is for the letter.
+ * Face ID here locks the book on this phone; it is not how anyone signs in, and the card never says it is.
  *
  * - `Card raised` with two `Button secondary lg` in a ButtonRow: equal weight, never a primary against a quiet one.
  *   ButtonRow stacks them at large text sizes; nothing truncates.
@@ -8,7 +10,9 @@
  * - Turn on asks the device first (`appLock.turnOnReason`), so the Face ID permission appears in context. Success: a
  *   `success` haptic and the toast `appLock.onToast.*` (the toast announces itself once, with the faceIdDenied line when it applies). Cancel: stays off, silent. Face ID turned
  *   off for the app: the passcode is the lock, and the card says so with `appLock.faceIdDenied`.
- * - Either answer closes the card (a cross-fade, swapMs, also the Reduce Motion form). Nothing is asked again.
+ * - Either answer closes the card (a cross-fade, swapMs, also the Reduce Motion form) and tells `onAnswered`, which records
+ *   it. Quitting before an answer records nothing. Cancelling the Face ID sheet is not an answer: the card stays, with no error.
+ *   `onShown` fires once when the card appears; `onUnavailable` when the phone cannot hold a lock (no passcode).
  * - VoiceOver: title (heading), body, Turn on, Not now.
  */
 import { useEffect, useState } from 'react';
@@ -28,18 +32,35 @@ import { haptic } from '@/lib/haptics';
 const SWAP_IN = FadeIn.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never);
 const SWAP_OUT = FadeOut.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.Never);
 
-export function LockOffer({ child }: { child: string }) {
+export type LockOfferAnswer = 'turnedOn' | 'notNow';
+
+export function LockOffer({
+  child,
+  onAnswered,
+  onShown,
+  onUnavailable,
+}: {
+  child: string;
+  onAnswered?: (answer: LockOfferAnswer) => void;
+  onShown?: () => void;
+  onUnavailable?: () => void;
+}) {
   const [ability, setAbility] = useState<LockAbility | null>(null);
   const [answered, setAnswered] = useState(false);
   const [busy, setBusy] = useState(false);
   const toast = useToast();
   useEffect(() => {
     let live = true;
-    void readLockAbility().then((a) => live && setAbility(a));
+    void readLockAbility().then((a) => {
+      if (!live) return;
+      setAbility(a);
+      if (a.available) onShown?.();
+      else onUnavailable?.();
+    });
     return () => {
       live = false;
     };
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ability || !ability.available || answered) return null;
   const method = ability.method;
@@ -55,6 +76,7 @@ export function LockOffer({ child }: { child: string }) {
     const message = appLockCopy.onToast[method];
     toast.show({ message: ability.faceIdDenied ? `${message} ${appLockCopy.faceIdDenied}` : message });
     setAnswered(true);
+    onAnswered?.('turnedOn');
   };
 
   return (
@@ -77,7 +99,10 @@ export function LockOffer({ child }: { child: string }) {
         </View>
         <ButtonRow>
           <Button variant="secondary" size="lg" fullWidth label={o.turnOn[method]} loading={busy} onPress={() => void onTurnOn()} testID="appLock.offer.turnOn" />
-          <Button variant="secondary" size="lg" fullWidth label={o.notNow} disabled={busy} onPress={() => setAnswered(true)} testID="appLock.offer.notNow" />
+          <Button variant="secondary" size="lg" fullWidth label={o.notNow} disabled={busy} onPress={() => {
+              setAnswered(true);
+              onAnswered?.('notNow');
+            }} testID="appLock.offer.notNow" />
         </ButtonRow>
       </Card>
     </Animated.View>
