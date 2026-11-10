@@ -68,7 +68,7 @@ Outcome: a parent names the child, gives a birthday or due date, says what the c
 |---|---|---|---|---|
 | Qeepsake | Journal name up to 14 characters, name inside prompts, age-adjusted questions from pregnancy [F] R1-S42, R1-S43, R1-S1 | 4.9 (15K) [F] R1-S1 | Age-inappropriate prompts outside the target range [S] R1-S56 | **Match** age-aware prompts; **Avoid** the 14-character cap [R] |
 | Qeepsake twins | One journal per child or one shared [F] R1-S43 | n/a | n/a | **Match** one book per child [R] (PRD-REQ-011) |
-| Tinybeans | Child details optional at sign-up [F] R1-S51 | +885% completion, self-reported in a designer's portfolio [S] R1-S51 | n/a | **Match** [R]: two required facts only (the principle, not the number) |
+| Tinybeans | Child details optional at sign-up [F] R1-S51 | +885% completion, self-reported in a designer's portfolio [S] R1-S51 | n/a | **Match** [R]: one required fact (the date), name optional (the principle, not the number) |
 | BabyPage | Pregnancy milestones [F] R1-S9 | 4.8 (4.1K) [F] R1-S9 | n/a | **Match** due-date mode (P3) [R] |
 | Day One | Transcription language from the keyboard [F] R1-S60 | n/a | Users ask for a separate setting [S] R1-S61 | **Avoid** [R]: ask languages per author |
 | From, Mama | Dictation with automatic name correction [F] R1-S20; method Unverified | 4.9 (48) [F] R1-S20 | n/a | **Innovate** [R]: names seed the dictionary at first run |
@@ -127,8 +127,9 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 | ID | Trigger | System behaviour | What the person sees | Recovery | Test |
 |---|---|---|---|---|---|
 | F03-U01 | No date chosen | Continue disabled | The reason line `onboarding.child.needBirthday` "Choose {child}'s birthday to continue.", muted above Continue until the disabled button is tapped (S05) | Pick a date | Unit (B-REQ-001) |
-| F03-U02 | Name empty or spaces only, single first child | Continue goes through; the book shows "Your child" | none | Add a name any time | Unit |
-| F03-U02b | Name empty with twins or a second child | Continue disabled | `onboarding.child.needNameMany` | Type each name | Unit |
+| F03-U02 | Name empty or spaces only, single first child | Continue goes through; the book shows "your child" | none | Add a name any time | Unit |
+| F03-U02b | First run with several children (twins or more), any name empty | Continue disabled | `onboarding.child.needNameMany` | Type each name | Unit |
+| F03-U02c | Add-book form (a later book), name empty | Save disabled; the form keeps requiring a name | `childrenExtra.nameRequired` | Type a name | Unit |
 | F03-U03 | Name in Devanagari, Arabic or with diacritics | Stored exactly as typed | Same name everywhere | n/a | Unit with "आशा" and "Zoë" |
 | F03-U04 | Two to six children added together | One book each, one `first_run_batch`; no Plus sheet; the server accepts every child in `create_first_run_children` without Plus | Signature title uses `pendingCopy.onboarding.signsAsTitleMany` | n/a | Integration (checklist 6.8) |
 | F03-U05 | Seventh child | Add another child hidden at 6 (code cap `MAX_FIRST_RUN_CHILDREN`) | No button | Add later through F12 | Unit |
@@ -156,7 +157,7 @@ After the gate, sign-in, Terms, sensitive-data consent and `accept_child_invite`
 
 | Screen | Empty | Loading | Error | Offline | AX5 (SE 3) | VoiceOver |
 |---|---|---|---|---|---|---|
-| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled, with the reason line `onboarding.child.needBirthday` above it, until a date is picked | n/a | Name empty: allowed for a single first child (shows "Your child"); with twins or more, `onboarding.child.needNameMany` | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
+| Child step | Name field with `onboarding.child.namePlaceholder`; Continue disabled, with the reason line `onboarding.child.needBirthday` above it, until a date is picked | n/a | Name empty: allowed for a single first child (shows "your child"); with several children at first run, `onboarding.child.needNameMany`; the add-book form keeps `childrenExtra.nameRequired` | Identical; nothing needs the network | Fields stack; date picker compact; Continue at the end of the scroll | Title is a header; each child row is a group "Child 1 of 2" |
 | Signature step | Chips `onboarding.signsAs.examples`; preview hidden until a value | n/a | Over 30 characters: Continue disabled, counter hidden (no counts), help line | Identical | Chips wrap | Chips are toggle buttons with selected state |
 | Languages step | Seven chips, none selected unless the device language is English | n/a | n/a | Identical; gate labels from the last good manifest or the bundled snapshot | Chips wrap two per row; labels never truncate | Chip reads name, then "transcribed" or `onboarding.languages.recordAndType` |
 | Ready screen | n/a | Speech downloading: the `speechConsentCopy.chosenYes` footnote, no bar, no spinner | Not enough space: the F03-U13 line; cellular: the F03-U14 choice | The note says it starts on Wi-Fi | Stack | Note read after the title |
@@ -167,7 +168,7 @@ Renamed on 14 Oct 2026 (R5 EQ-05): F03-REQ-010 and F03-REQ-011 replace rows that
 
 | ID | P | Requirement | Acceptance criteria | Source |
 |---|---|---|---|---|
-| B-REQ-001 Rev (NX-31-R3, R28) | P0 | Only birthday or due date required; child name optional | Given "Asha" and a birthday, When Continue, Then a child exists with no other fields and nothing asked for surname, gender, photo or contacts; Given a birthday and no name, Then a child exists and the app says "Your child"; Given no date, Then Continue is disabled with the help line | B-REQ-001, ruling B12-4, #700, #701 |
+| B-REQ-001 Rev (NX-31-R3, R28) | P0 | Only birthday or due date required; child name optional | Given "Asha" and a birthday, When Continue, Then a child exists with no other fields and nothing asked for surname, gender, photo or contacts; Given a birthday and no name, Then a child exists and the app says "your child"; Given no date, Then Continue is disabled with the help line | B-REQ-001, ruling B12-4, #700, #701 |
 | B-REQ-002 | P0 | Signature before the first letter | Given "Papa", Then letters to this child are signed "From Papa"; Given different signatures for two children, Then each book shows its own | B-REQ-002 |
 | B-REQ-003 Rev (B4, DR-01) | P0 | Per-author letter languages from the seven; transcription only for languages that passed their gate; script or variety where relevant | Given Hindi and Devanagari with Hindi passed, When recording, Then transcription runs with `language: hi` and renders Devanagari, untranslated; Given Arabic (not passed), Then the recording is kept, the author types, and no model transcribes it | B-REQ-003, DR-01, R5 8.1 |
 | B-REQ-005 | P0 | Due-date mode creates the book | Given Not here yet and a due date, When a letter is saved, Then it files into Before You (F09) | B-REQ-005 |
