@@ -31,7 +31,7 @@ import { brand } from '@scribe/brand';
 import { book as bookWords } from '@scribe/content';
 import { ageOn, chapterOf, renderTemplate } from '@scribe/core';
 import { containerOfRecording, RECORDING_FILES } from '../capture/recording-file';
-import { copy } from '../copy';
+import { childLabel, copy } from '../copy';
 import { pageProvenanceKey } from '../provenance';
 import { dayDate, entryDayDate, entryLetterDateline, isMonthOnly, isoOf } from '../dates';
 import { restorable, type ReviewSaved } from '../capture/review-persist.logic';
@@ -172,7 +172,9 @@ export const MEDIA = {
   pdf: 'application/pdf',
 } as const;
 
-const fill = (text: string, values: Record<string, string | number>) => renderTemplate(text, { app: brand.name, ...values });
+// A book with no name reads "your child" (NX-31-R3); the stored name stays empty.
+const fill = (text: string, values: Record<string, string | number>) =>
+  renderTemplate(text, { app: brand.name, ...values, ...(typeof values.child === 'string' ? { child: childLabel(values.child) } : {}) });
 
 // ── Names and paths ──────────────────────────────────────────────────────
 
@@ -272,7 +274,7 @@ function letterText(e: SnapshotEntry, child: SnapshotChild, locale: string): str
   // A quiet-day mark: the date and the label only. No author, no words, no signature (D-084).
   if (quiet(e)) return `${l.date}: ${entryLetterDateline(child, e, locale)}\n\n${copy.book.quietDay.label}\n`;
   const lines = [
-    `${l.to}: ${child.name}`,
+    `${l.to}: ${childLabel(child.name)}`,
     `${l.from}: ${signsAsOf(e, child)}`,
     `${l.date}: ${entryLetterDateline(child, e, locale)}`,
   ];
@@ -344,7 +346,7 @@ function waitingText(d: SnapshotWaiting, child: SnapshotChild, locale: string): 
   const l = exportCopy.letterFile;
   const w = exportCopy.waitingFile;
   const lines = [
-    `${l.to}: ${child.name}`,
+    `${l.to}: ${childLabel(child.name)}`,
     `${l.from}: ${child.signsAs}`,
     `${l.date}: ${entryLetterDateline(child, { occurredOn: waitingDay(d), occurredPrecision: d.occurredPrecision ?? 'day' }, locale)}`,
   ];
