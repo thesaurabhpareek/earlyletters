@@ -151,9 +151,10 @@ Status notes: CB-12b (the ADR index) and CB-16 (counts on a card) are reduced to
 - **CB-19** (new, batch). The founder wants a best-effort background read, with a ceiling and no promise, behind its own switch. Does an unseen, repeated read change any answer above (CB-1, CB-2, CB-10, CB-11)? What must the sheet, the purpose string and the Privacy text say? May the product ever state a frequency? (v2 answer by design: it will not.)
 - **CB-20** (new, batch; merges CLO CB-20 and CISO S6). Which Apple terms apply to scheduled background work and to deriving data from the library in the background (background modes, App Review 2.5.4, the license agreement)? Counsel's ruling on `UIBackgroundModes` and LEGAL-REQ-011 (`preflight-testflight.mjs` lines 575 to 576) is required before the flag for P2c can ever be on in a shipped build.
 - **CB-12b** (new, ADR index). Reduced to confirmation: v2 stores moments rows (a day range and a city key). Is that a location history or precise geolocation, even on the phone? Would computing on open and keeping nothing change the answer?
-- **CB-25** (new, design and privacy). The parent's hidden days and stretches are stored as bare dates on the phone. Is that sensitive data? Should it be excluded from device backup? Should it be exported?
+- **CB-25** (new, design and privacy). The parent's hidden days and stretches (and the 14-day snoozes, which are a date range plus an expiry) are stored as bare dates on the phone. Is that sensitive data? Should it be excluded from device backup? Should it be exported?
 - **CB-26** (new, design). The ledger's recent-looks list holds only times and a reason. Is that a new record needing disclosure?
 - **CB-27** (new, privacy and CMO). Purpose-string completeness per build: if the string must name background reading, and cannot, the background top-up does not ship.
+- **CB-28** (new, engineer's points 7 and 9, PR #754). When access narrows (All to Limited, or fewer photos shared) the app records no fresh consent act, wipes the index and shows the parent a plain note; when iOS access is revoked it records no withdrawn act. Is the existing record of the agreement still accurate and sufficient in both cases, or must a narrowing or a revoke produce its own act? Is the plain ledger note adequate notice? (Also read with CB-4 on the act vocabulary.)
 
 ### Tier C: before P4 (occasions, reminders)
 
@@ -172,7 +173,7 @@ Privacy Policy major bump; Terms major bump with the right-to-add clause and the
 
 ### Dedup map (from the CLO)
 
-C1=CB-2; C2=CB-5; C3=CB-10; C4=CB-21; C5=CB-7, CB-8; C6=CB-6, CB-7; C7=CB-12; C8=CB-13; C9=CB-1, CB-3; C10=CB-14, CB-15; C11=CB-23; C12=CB-1; C13=CB-9. Q1=CB-1; Q2=CB-2; Q3=CB-12; Q4=CB-5; Q5=CB-4; Q6=CB-3, CB-4; Q7=CB-10; Q8=CB-11; Q9, Q10=CB-10; Q11=CB-14; Q12=CB-21; Q13=CB-13; Q14, Q15=CB-6; Q16=CB-8; Q17=CB-17; Q18=CB-9; Q19, Q20=CB-8; Q21=CB-16; Q22=CB-1; Q23=CB-3; Q24=CB-18. New: CB-12b, CB-19, CB-20, CB-22 (reduced), CB-24, CB-25, CB-26, CB-27.
+C1=CB-2; C2=CB-5; C3=CB-10; C4=CB-21; C5=CB-7, CB-8; C6=CB-6, CB-7; C7=CB-12; C8=CB-13; C9=CB-1, CB-3; C10=CB-14, CB-15; C11=CB-23; C12=CB-1; C13=CB-9. Q1=CB-1; Q2=CB-2; Q3=CB-12; Q4=CB-5; Q5=CB-4; Q6=CB-3, CB-4; Q7=CB-10; Q8=CB-11; Q9, Q10=CB-10; Q11=CB-14; Q12=CB-21; Q13=CB-13; Q14, Q15=CB-6; Q16=CB-8; Q17=CB-17; Q18=CB-9; Q19, Q20=CB-8; Q21=CB-16; Q22=CB-1; Q23=CB-3; Q24=CB-18. New: CB-12b, CB-19, CB-20, CB-22 (reduced), CB-24, CB-25, CB-26, CB-27, CB-28.
 
 ## 6. Settled by the CTO and the CPO, not founder decisions
 
@@ -181,3 +182,33 @@ Not on the founder's list because they are ruled or follow from a rule the found
 ## 7. Design PR #751 folded in
 
 Taken: the `when` block in the pre-sheet, the ledger page (CS-S3), the second consent (CS-S4a) with its recent-looks list of times, Forget as one tap (CS-S13), the Hidden choices page (CS-S12c), the date-only card (CS-S6), the composer shelf (CS-S9), the state matrix (CS-S14), the `mediaScrim` rename, the typed video description, the plist key that stops the system's automatic limited-library sheet, the design agent's finding that Limited makes background surfacing thin. Not taken: the weekly digest (CS-S7), "up to 3 a day" in parent copy (CS-S4), the share-sheet route and the widget (CS-S10, CS-S11). Open design questions answered: background looks are P2c after the spikes; no frequency is shown; Dates and Places are separate; the digest is not offered. The design agent found no numeric weekly-cap constant in `planner.ts`; `product` confirmed it.
+
+## 8. Engineer's ten points on PR #754, and the rulings (10 Nov 2026, UTC)
+
+An engineer built the moment engine, the decisions store and the consent state machine from NX-39 v2 (PR #754, branch `feat/core-memlib-moment-engine-10nov`, head de11e2d0) and found ten ambiguities, written as comments in `packages/core/src/moments.ts`, `decisions.ts`, `media-consent.ts` and their tests. Karma (CTO) ruled on each. The rulings are reversible and the founder may overrule any of them. This section records that the rulings below answer those ten points, in the order Karma gave them, and where each landed in NX-39 v2 (same folder) and the backlog. `product` adopted every ruling; four need a note, listed after the table as tie-breaks the founder can reverse. The engineer's own wording of the ten points is in the code comments named above; this record does not restate it.
+
+| # | Ruling | Landed in |
+|---|---|---|
+| 1 | R15 monotonicity holds only for additions with no city key or a city the day already has. Adding a different city between matching days may split a moment. | R15 text and a second test title; BL-859 |
+| 2 | Hidden photo key: opaque, random, per item, made at chooser time, kept only in the decisions store, never an asset id and never derived from one, at most 200 characters. | R41, R20; BL-874 (creates it), BL-877 (stores and removes it), BL-860 |
+| 3 | The 14-day snooze and "Not now" for cards are records with an expiry in the decisions store. They survive a rebuild and go on Erase everything, Delete account and Clear hidden choices, not on Forget the list or Stop these. | R17, R41, R31, R18, R49; BL-860, BL-876, BL-877 |
+| 4 | Hiding a day inside a moment trims it, splits it if a middle day is hidden, and each leftover piece must re-qualify under the same rule (a lone leftover day is dropped). | R20; BL-860 |
+| 5 | Reason codes as the engineer defined them: `MIN_ITEMS_MET`, `DAY_RUN`, `SAME_CITY`, `NO_PLACE_JOINED`; a multi-city moment (a flight day) has `cityKey` null. | R15; BL-859 |
+| 6 | `dayKeyAt` stays in `moments.ts` as a pure helper for R5; the caller supplies the offset. | R5; BL-859 |
+| 7 | Acts are `agreed` and `withdrawn` only. "Not now" and a system revoke record no act. The PRIV-R21 act vocabulary and the writer's location are UNVERIFIED and counsel-adjacent. | R47, section 8 of NX-39 (door lines), section 14 item 30; BL-861; CB-28 |
+| 8 | After "Not now", tapping a chooser entry shows no consent sheet and the picker keeps working. Only opening the control brings the sheet back. | R3; BL-861, BL-874 |
+| 9 | Narrowed (All to Limited, or fewer photos): no fresh consent act, the index is wiped, the ledger shows a plain note. Flagged for counsel. | R11; CB-28 (new, Tier B); BL-861 |
+| 10 | `media_background` and `occasions` use the same seven states, except that Limited and Narrowed apply only to `media_read`. State tables added. | NX-39 section 7.3.1; BL-861 |
+
+### Tie-breaks the founder can reverse
+
+Rulings 1, 3, 5, 6, 8 and 9 are adopted as given with no reservation. Rulings 7 and 10 are adopted with a stated limit. Rulings 2 and 4 are adopted but are not enough on their own to build from; `product` thinks each needs the founder or Karma to confirm one more thing.
+
+- **Ruling 2 (hidden photo key).** Adopted as written. Limit, stated in the requirement: a random key that is not an asset id and not derived from one cannot find the same photo again in a later session, unless the key travels with the item (an item already attached to a letter) or the chooser holds its own session map. So "Hide this photo" can hold across sessions only where the app can re-match, and `product` does not know a way to re-match an unattached library photo without an asset id or a derived value. Recommendation: either accept that a hidden unattached photo is hidden for the open chooser session only (and say so in the Hidden choices page copy), or allow a per-install keyed hash of the asset id, which needs CISO and counsel (CB-25) first. BL-874 asks the engineer to say which. Reading of "what happens when the item is removed": an item leaving a letter, a letter being purged, or a photo leaving the phone's library changes nothing in the decisions store (the app cannot know, and decisions survive purging, R41); the key is then inert, at most 200 characters, and goes on Undo or the three removal paths. If Karma meant the key should also go when its item is removed, that is a one-line change in BL-877.
+- **Ruling 4 (re-qualify leftover pieces).** Adopted. It changes the built code: `applyDecisions` in PR #754 takes moments only and keeps the parent moment's reasons on each piece, and a moment carries no item count and no active-day count (R40, R15), so it cannot judge a piece. NX-39 R20 therefore says each piece is judged by running the R15 function on the items inside the piece with the hidden day as a barrier (without a barrier, removing a middle day would leave a one-empty-day gap that the rule bridges, and the split would not happen). The engineer's decisions test "pieces keep the moment city key, reasons and rule version" will change. This is a signature change for BL-860, not a ruling `product` disputes.
+- **Ruling 7 (no act for Not now or a system revoke).** Adopted. Limit: after a system revoke the last act on record still reads `agreed` while access is gone. That is truthful about what the person chose, but it is a question for counsel, so it sits in CB-28 beside ruling 9.
+- **Ruling 10 (state tables).** Adopted. Limit: `media_background` has no system question, so Denied is never entered (the parent's No is Held); the tables say so. The engineer's code also keeps the background layer's status at All with the switch off when the read layer goes away, where the table says Revoked; the outcome (switch off, requests cancelled, no read) is the same, and BL-861 reconciles the name.
+
+Nothing in the rulings reverses a founder decision, a LEGAL-REQ line or the constitution.
+
+Chief Product Officer (Claude role)
