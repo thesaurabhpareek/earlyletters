@@ -3085,6 +3085,154 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
+## Memory Library (NX-39, 10 Nov 2026)
+
+Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-39-memory-library.md` (supersede/keep table, rows R1 to R38, phases P0 to P4, founder decisions D1 to D14, counsel questions C1 to C13). Ids BL-841 to BL-858 come from `next-id.mjs` on 10 Nov; BL-757 to BL-825 and BL-830 to BL-840 are not used. Milestone M15 is a proposed label for work after Build 12 (M14). Nothing here is a Build 12 task. Rows that cite BL-542 to BL-545 refer to rows already in this file.
+
+#### BL-841 Counsel brief for photos, videos, places and occasions (NX-39 C1 to C13)
+- Status: ready. Mode: agent. Owner: legal. Milestone: M15. Size: M.
+- Who: `legal`, `regulatory-affairs`, `privacy`; the founder takes it to counsel.
+- Satisfies: NX-39-R1, NX-39-R38. Also cited: LEGAL-REQ-013, DATA_CLASSIFICATION rule 6.
+- Scope: one memo under `docs/legal/` that states each of C1 to C13 with the facts, the recommended answer and what changes in the label, policy and claims registry. It states what was not verified.
+- Fails on old code: no memo covers a library read, city-level place, video or occasion reminders.
+- Done when: the memo is merged and the founder has the list of questions to send.
+
+#### BL-842 The promise, the permission string and the parent words for each phase (NX-39 section 5)
+- Status: needs-decision (NX-39 D1 wording, C9). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-841.
+- Who: `content`; review `privacy`, `legal`.
+- Satisfies: NX-39-R1, NX-39-R3. Also cited: BL-830 pattern, `packages/content/test/rules.test.ts`.
+- Scope: `packages/content` keys for the P0 to P4 lines, the pre-sheet, the Settings rows, the card, the failure lines; claims registry rows; phase-keyed capability checks. The `NSPhotoLibraryUsageDescription` text. Words need the founder's approval.
+- Fails on old code: `[NX-39-R1] a promise line shows only when its phase is on and none denies a read that the build does`.
+- Done when: that title and the content rules pass.
+
+#### BL-843 Device spike: what a picked file carries, Live Photos, iCloud-only and limited access
+- Status: needs-founder (a phone with a real library; Mac session). Mode: human. Owner: mobile engineer. Milestone: M15. Size: S.
+- Who: `mobile`, `qa`, `security-architect`.
+- Satisfies: NX-39-R2, NX-39-R5, NX-39-R12, NX-39-R13. Also cited: NX-33 "Apple permission wording".
+- Scope: on a test phone with only synthetic pictures, record whether the picker returns the capture date and place, whether the person can drop location in the picker, how a Live Photo arrives, how an iCloud-only asset arrives offline and online, and what Limited access changes. Write it into the NX-39 "Not verified" list as verified or not.
+- Fails on old code: none; this closes the UNVERIFIED lines in NX-39 section 13.
+- Done when: the findings are in `docs/qa/` with the iOS version.
+
+#### BL-844 A place name from a bundled table, with no network (NX-39-R6, R7)
+- Status: needs-decision (NX-39 D4; default is the bundled table). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `mobile`, `security-architect`.
+- Satisfies: NX-39-R6, NX-39-R7. Also cited: LEGAL-REQ-013 source line.
+- Scope: a pure function in `packages/core` taking a coordinate and returning a city-level or region-level name from a bundled table; size and accuracy measured on synthetic points; no venue names; no network API. Reports the table size.
+- Fails on old code: `[NX-39-R6] only a city-level name is kept and no coordinate survives`.
+- Done when: that title, `[NX-39-R7] the place lookup makes 0 network calls` and the size note are in the PR.
+
+#### BL-845 Guard tests: no content analysis, no network, no location key, an allowlist of fields (NX-39-R2, R4, R9)
+- Status: blocked (BL-847). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-847.
+- Who: `qa`, `security-architect`, `compliance-engineer`.
+- Satisfies: NX-39-R2, NX-39-R4, NX-39-R9, NX-39-R23.
+- Scope: source scans and plist checks named in NX-39 section 8. Fixtures use the family "Asha".
+- Fails on old code: `[NX-39-R9] media code reads only allowlisted fields and calls no analysis or network API`.
+- Done when: those titles pass and run in `npm test`.
+
+#### BL-846 Local schema, classification rows and the erase and export design for media and derived fields (NX-39-R30, R31)
+- Status: ready. Mode: agent. Owner: data architect. Milestone: M15. Size: M.
+- Who: `data-architect`, `privacy`, `principal-architect`; ADR reviewed by `principal-architect`.
+- Satisfies: NX-39-R30, NX-39-R31, NX-39-R32. Also cited: DATA_CLASSIFICATION rules 2 and 6, DATA-REQ-011, DATA-REQ-047.
+- Scope: a design doc and an ADR draft for the phone's store (stored copy, size, hash, date, place name, dismissed list, cluster cache), L4 rows in `docs/legal/DATA_CLASSIFICATION.md` (founder merges legal text), and the erase and export hooks. No migration in this row.
+- Fails on old code: no media rows are classified.
+- Done when: the doc and ADR draft are merged and name each new field with a class.
+
+#### BL-847 P0: one photo with a letter, as NX-33 designs it
+- Status: blocked (Build 12 ships; NX-39 D11 names a release; NX-33 D1 to D5). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-846.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R2, NX-39-R8, NX-39-R14, NX-39-R31, NX-39-R33, NX-39-R37. Also cited: NX-33-R1 to NX-33-R14 (no backlog ids were found for NX-33 on 10 Nov, UNVERIFIED).
+- Scope: the picker, the stripped JPEG, erase and export, the P0 switch, behind `EXPO_PUBLIC_PHOTOS`, off in `production`.
+- Fails on old code: `[NX-39-R8] 0 of 10 stored files carry any metadata segment, after export too`.
+- Done when: NX-33's R1 to R14 titles and the NX-39 titles above pass.
+
+#### BL-848 P1: the date and a city-level place under each picked picture, shown to the parent only (NX-39-R5, R6, R10, R12, R13)
+- Status: blocked (BL-843, BL-844, BL-846, BL-847, BL-842; NX-39 D2, D5). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-847.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R5, NX-39-R6, NX-39-R10, NX-39-R12, NX-39-R13, NX-39-R32.
+- Scope: read the date and place from the original in a temporary file, store them in separate fields, show "From the photo" lines the parent can change or clear, Live Photo stills, iCloud on demand; switch `EXPO_PUBLIC_MEDIA_METADATA`.
+- Fails on old code: `[NX-39-R10] date and place lines never enter the words, the transcript or the search index`.
+- Done when: that title and the R5, R6, R12, R13 titles pass.
+
+#### BL-849 Specs for the chips, the moment card, the pre-sheet, the permission states and AX5 (NX-39 sections 4, 7)
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: M.
+- Who: `design-systems`, `content`, `user-research`.
+- Satisfies: NX-39-R16, NX-39-R17, NX-39-R35. Also cited: NX-33-R9 to NX-33-R13.
+- Scope: component specs in `docs/design/COMPONENTS.md` and a static wireframe file: "From the photo" lines, the Tonight moment card with "Not now", "Hide this one", "Stop these", the pre-sheet, Limited and Denied states, the iCloud progress line, light, dark and AX5. No counts anywhere.
+- Fails on old code: none; this is a design row.
+- Done when: the specs are merged and each NX-39 screen row has a picture.
+
+#### BL-850 The privacy label design, the data map and the log canary for media (NX-39-R30)
+- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M15. Size: M.
+- Who: `privacy`, `compliance-engineer`, `legal`.
+- Satisfies: NX-39-R30, NX-39-R34. Also cited: LEGAL-REQ-014, LEGAL-REQ-042.
+- Scope: a table of what each phase would put on the App Privacy label under each answer to C1, the data map rows, and a log canary design with a fake coordinate and the fictional family "Asha". Founder enters any label.
+- Fails on old code: `[NX-39-R30] a fake coordinate and place never appear in any log, analytics event or crash report`.
+- Done when: the table and canary design are merged.
+
+#### BL-851 Threat model for media on the phone: thumbnails, the app switcher, device backups, temporary files (NX-39-R36)
+- Status: ready. Mode: agent. Owner: security engineer. Milestone: M15. Size: S.
+- Who: `security`, `security-architect`.
+- Satisfies: NX-39-R36, NX-39-R30. Also cited: NX-33 "Not verified".
+- Scope: a short doc in `docs/security/` listing where a picture, a place or a date could persist or leak and the control for each; marks each claim verified or not.
+- Fails on old code: none; this is a review row.
+- Done when: the doc is merged with a device row proposed for each open item.
+
+#### BL-852 The sync payload carries no media and no derived field (NX-39-R33)
+- Status: blocked (BL-846). Mode: agent. Owner: sync owner. Milestone: M15. Size: S. Depends on: BL-846.
+- Who: `sync`, `qa`.
+- Satisfies: NX-39-R33. Also cited: NX-33-R16.
+- Scope: an allowlist test on the outbox serializer; the second phone's "The photo is on the other phone." line.
+- Fails on old code: `[NX-39-R33] the sync payload carries no media and no derived field`.
+- Done when: that title passes.
+
+#### BL-853 P2: limited-library access and one calm "days worth a few words" card (NX-39-R3, R11, R15 to R20)
+- Status: blocked (NX-39 D9, D14; BL-857 read-out; BL-848; counsel C1, C2, C10). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-848.
+- Who: `mobile`, `design-systems`, `content`.
+- Satisfies: NX-39-R3, NX-39-R11, NX-39-R15, NX-39-R16, NX-39-R17, NX-39-R18, NX-39-R19, NX-39-R20, NX-39-R29.
+- Scope: the clustering function in `packages/core`, the permission states, the pre-sheet, the Tonight card, the switch `EXPO_PUBLIC_MOMENTS`, off by default for the parent.
+- Fails on old code: `[NX-39-R15] the same metadata always makes the same moments and no model is called`.
+- Done when: the R3, R11, R15 to R20 titles pass.
+
+#### BL-854 P3: a video with a letter, local, with limits (NX-39-R21 to R24)
+- Status: blocked (NX-39 D6, D7; BL-848; counsel C13). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-848.
+- Who: `mobile`, `design-systems`, `qa`.
+- Satisfies: NX-39-R21, NX-39-R22, NX-39-R23, NX-39-R24. Size note: if the conversion work does not fit one PR, split into conversion, playback and export.
+- Scope: pick, convert off the main thread with Cancel, store, play without autoplay, export by choice with a size line; switch `EXPO_PUBLIC_VIDEO`.
+- Fails on old code: `[NX-39-R23] no speech engine ever receives a video's audio`.
+- Done when: the R21 to R24 titles pass.
+
+#### BL-855 P4: occasions the parent picks and a quiet reminder after days away (NX-39-R25 to R29)
+- Status: blocked (NX-39 D8; BL-542 list approved; BL-853; counsel C4, C11). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-853.
+- Who: `mobile`, `content`, `design-systems`.
+- Satisfies: NX-39-R25, NX-39-R26, NX-39-R27, NX-39-R28, NX-39-R29. Also cited: BL-542, BL-543.
+- Scope: the occasions screen with no default, local reminders with neutral words inside the daily budget and quiet window, scheduled at app open only; switch `EXPO_PUBLIC_OCCASIONS`.
+- Fails on old code: `[NX-39-R26] a reminder carries no picture, no place and no count, and obeys the quiet window and the daily budget`.
+- Done when: the R25 to R29 titles pass.
+
+#### BL-856 Media analytics events, counts only, catalog first (NX-39-R34)
+- Status: blocked (BL-848). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-848.
+- Who: `analytics`, `privacy`.
+- Satisfies: NX-39-R34. Also cited: D-124 item 3.
+- Scope: add the five events to `packages/analytics/src/catalog.ts` and `docs/analytics/TRACKING_PLAN.md` in one PR; no prop is a place, date or count.
+- Fails on old code: `[NX-39-R34] media events carry no place, date or count`.
+- Done when: that title passes.
+
+#### BL-857 Parent study: do the "From the photo" lines and the moments card help or feel watched
+- Status: ready. Mode: agent. Owner: user researcher. Milestone: M15. Size: M.
+- Who: `user-research`, `design-systems`, `legal`.
+- Satisfies: NX-39-R27, NX-39-R38. Also cited: NX-39 section 14, `docs/design/notifications/PARENT_STUDY_PLAN.md`.
+- Scope: a plan with thresholds written before the test; adults only; no child photographed or named; stimuli synthetic. Questions: does a date and city under a picture help; does a moments card feel kind or watched; what does "stays on this phone" mean to them; video expectations; occasion lists.
+- Fails on old code: none; this is a study row.
+- Done when: the plan is merged; the read-out gates BL-853.
+
+#### BL-858 Phase switches, TestFlight text, App Review notes and a kill-switch drill (NX-39-R37)
+- Status: blocked (BL-847; Build 12 ships). Mode: agent. Owner: platform. Milestone: M15. Size: S. Depends on: BL-847.
+- Who: `ops`, `mobile`, `content`.
+- Satisfies: NX-39-R37. Also cited: NX-33 "Switch, off behaviour".
+- Scope: the five switches in `eas.json` and `lib/capabilities.ts`, off in `production`; What to Test text per phase; App Review notes for the purpose string; a drill that the remote `photos` switch removes P2 and later.
+- Fails on old code: `[NX-39-R37] each phase switch removes its screens and reads and leaves export and erase working`.
+- Done when: that title passes and the drill is recorded.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
