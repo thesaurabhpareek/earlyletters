@@ -5,6 +5,7 @@
  * co-parent stays with them; a sole parent's book goes with the account),
  * PRD C-REQ-019 (export first, subscription notice, 30-day undo, type to confirm).
  */
+import { fill } from '../copy';
 import { accountDeletionCopy as c } from './copy';
 
 /** A book as `sync_books()` describes it (20261004100000_sync_engine.sql, section 8b). */
@@ -34,7 +35,8 @@ export function bookImpacts(books: SyncBook[], myLetters: (childId: string) => n
   });
 }
 
-const fillIn = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (m, k) => (k in v ? String(v[k]) : m));
+// A book with no name reads "your child" (NX-31-R3): shown only, the stored name stays empty.
+const fillIn = fill;
 
 /** The plain lines of "What happens", one or two per book, then the copies note. */
 export function impactLines(impacts: BookImpact[]): string[] {

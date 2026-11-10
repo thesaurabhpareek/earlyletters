@@ -22,7 +22,7 @@ import { brand } from '@scribe/brand';
 import type { AnnouncementBlock, ContentBlock, TipBlock } from '@scribe/api';
 import { renderTemplate, type Prompt } from '@scribe/core';
 import { Button, Card, LineArt, Text, type LineArtName } from '@/components/ui';
-import { copy, fill } from '@/lib/copy';
+import { childLabel, copy, fill } from '@/lib/copy';
 import { contentBlocksCopy } from './copy';
 import type { StoryCardLike } from '@/lib/remote/content.logic';
 
@@ -50,7 +50,7 @@ const ROUTE_HREF: Record<Extract<NonNullable<AnnouncementBlock['action']>, { kin
 
 /** Placeholders a block may use. Unknown ones were already rejected by the schema. */
 function fillText(text: string, values: { child?: string; signsAs?: string }): string {
-  return renderTemplate(text, { app: brand.name, ...(values.child ? { child: values.child } : {}), ...(values.signsAs ? { signsAs: values.signsAs } : {}) });
+  return renderTemplate(text, { app: brand.name, child: childLabel(values.child), ...(values.signsAs ? { signsAs: values.signsAs } : {}) });
 }
 
 export function StoryCard({ card, index, total }: { card: StoryCardLike; index: number; total: number }) {
