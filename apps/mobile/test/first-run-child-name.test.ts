@@ -32,8 +32,28 @@ describe('[NX-31-R3] first run, name optional, date required', () => {
     expect(firstRunBookNames(['  '])).toEqual(['']);
     // every place that shows the name shows "your child"; the stored name stays empty
     expect(fill(copy.onboarding.welcome.body, { child: '' })).toContain('your child');
-    expect(fill(copy.book.title, { child: '' })).toBe("your child's book");
+    // NX-36 S14 and S16 (and the name-absent audit): the Book title of a nameless book is "Your child's book" with a
+    // capital, through fill(). Develop pinned the lowercase form while fill() did not capitalise; the capital is back.
+    expect(fill(copy.book.title, { child: '' })).toBe("Your child's book");
     expect(fill(copy.onboarding.welcome.body, { child: '' })).not.toContain('{child}');
+  });
+
+  it('[NX-31-R3] the fallback starts with a capital when it opens a string, and a typed name is left as typed', () => {
+    expect(fill("{child}'s book stays with your co-parent.", { child: ' ' })).toBe("Your child's book stays with your co-parent.");
+    expect(fill('Anything to tell {child} today?', { child: '' })).toBe('Anything to tell your child today?');
+    expect(fill("{child}'s book is back.", { child: 'asha' })).toBe("asha's book is back.");
+    expect(fill('A letter for {child}', { child: '' })).toBe('A letter for your child');
+    expect(fill(copy.notifications.birthday.title, { child: '' })).toBe('Happy birthday to your child');
+  });
+
+  it('[NX-31-R3] a template that opens with the words your child is not capitalised', () => {
+    expect(fill('your child is welcome here, {child}.', { child: '' })).toBe('your child is welcome here, your child.');
+    expect(fill('your child, {child}', { child: 'Asha' })).toBe('your child, Asha');
+  });
+
+  it('[NX-31-R3] a typed name that is literally "your child" is left exactly as typed', () => {
+    expect(fill("{child}'s book", { child: 'your child' })).toBe("your child's book");
+    expect(fill('A letter for {child}', { child: 'your child' })).toBe('A letter for your child');
   });
 
   it('[NX-31-R3] a name and no date: Continue waits and the reason line shows', () => {
@@ -191,8 +211,10 @@ describe('[NX-31-R3] round two: deletion lines, the exported book, the invite wi
     const impacts = bookImpacts(rows, () => 2);
     expect(impacts.map((i) => i.child)).toEqual(['', '', '  ']);
     const lines = impactLines(impacts).join('\n');
-    expect(lines).toContain("your child's book stays with Papa");
-    expect(lines).toContain("your child's book will be deleted");
+    // NX-36 S16: these lines open with {child}, so with no name they begin "Your child's book" with a capital, via
+    // fill(). Develop pinned them lowercase while fill() did not capitalise; the capital is back.
+    expect(lines).toContain("Your child's book stays with Papa");
+    expect(lines).toContain("Your child's book will be deleted");
     expect(lines).toContain('Your letters to your child will be removed');
     expect(lines).not.toMatch(/(^|\s)'s |\{|\}/);
   });

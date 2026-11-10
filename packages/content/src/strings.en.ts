@@ -150,7 +150,7 @@ export const en = {
     },
 
     nameCheck: {
-      title: "Say the name three times",
+      title: "Say {child}'s name three times",
       body: "So we hear it the way you say it.",
       countLabel: "{count} of 3",
       listeningLabel: "Listening",
@@ -160,7 +160,7 @@ export const en = {
       fixButton: "Let me spell it",
       spellPlaceholder: "Type it your way",
       doneTitle: "Got it.",
-      doneBody: "The name will be spelled your way in every letter.",
+      doneBody: "{child} will be spelled your way in every letter.",
       cta: "Continue",
     },
 
@@ -755,7 +755,7 @@ export const en = {
       refundLabel: "Request a refund",
       // Plus reaches a co-parent only through Apple Family Sharing (Terms 14.12, D-080).
       includedByFamilySharing: "Included through Family Sharing",
-      familySharingHelp: "Plus is shared through Apple Family Sharing. The other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
+      familySharingHelp: "Plus is shared through Apple Family Sharing. {child}'s other parent gets it too if you are in the same Apple family. Otherwise each of you has your own plan, and everything free stays free for both of you.",
     },
     // Settings > Account. The sign-in emails name these exact labels.
     account: {
