@@ -1,0 +1,2 @@
+08:35 (08 Nov) qa | done: 13 RT-B9 catalog rows, build 9 device checklist, DEVICE_TEST_PLAN Part 4; typecheck, preflight, seam guard tests run | next: npm test result, readiness report, PR | blocked/needs: device, Maestro and sandbox rows are NOT RUN
+10 Nov first-run test plan (session_01WsZfAr14RMFfiXXQyKD8VR) | done: docs/qa/FIRST-RUN-TEST-PLAN-10nov.md, draft PR | next: map NX ids when product branch appears | blocked/needs: none
