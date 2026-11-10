@@ -206,16 +206,28 @@ describe('[CMO 9 Nov] build 1 and the description say what the build has, and no
   const { build1 } = whatToTest;
   const description = testflightCopy.betaAppDescription;
 
-  it('names the Months list, "Another thought", and the Settings groups with the labels Settings has', () => {
-    expect(build1).toMatch(/\bthe Months list\b/);
+  it('names "Another thought", and the Months button with the condition under which it shows', () => {
     expect(build1).toContain(`"${en.tonight.newPromptButton}"`);
-    expect(build1).toContain(en.settingsHome.yourWords);
-    expect(build1).toContain(en.settings.delete.recentlyDeleted);
-    expect(build1).toContain('App lock');
+    expect(build1).toMatch(/Once the book has letters in two months, the "Months" button opens a list of them\./);
+  });
+
+  it('places Your words, App lock and Recently deleted under the Settings groups that hold them, and does not call them groups', () => {
+    const s = en.settingsHome.sections;
+    const placed: [string, string][] = [
+      [en.settingsHome.yourWords, s.writing],
+      ['App lock', s.privacy],
+      [en.settings.delete.recentlyDeleted, s.letters],
+    ];
+    for (const [row, group] of placed) expect(build1).toContain(`${row} under ${group}`);
+    // A row is not a group: if a label ever becomes a group title, the sentence has to be read again.
+    for (const [row] of placed) expect(Object.values(s)).not.toContain(row);
+    expect(build1).not.toMatch(/arranged in groups/);
   });
 
   it('says the lock is offered at the end of setting up and stays off until it is turned on', () => {
-    expect(build1).toMatch(/At the end of setting up, the app offers [^]*and a lock for the book[^]*The lock stays off until you turn it on/);
+    expect(build1).toMatch(/At the end of setting up, the app offers [^]*it also offers a lock for the book[^]*The lock stays off until you turn it on/);
+    // The offer is on first setup only, so the text says where the row is for a phone that installed over an earlier build.
+    expect(build1).toContain(`or later in Settings, ${en.settingsHome.sections.privacy}, App lock.`);
   });
 
   it('gives the export path as Settings, Your letters, Export your book', () => {
@@ -224,7 +236,7 @@ describe('[CMO 9 Nov] build 1 and the description say what the build has, and no
   });
 
   it('says plainly that the Erase row removes every book, letter and recording, cannot be undone, and a copy comes first', () => {
-    expect(build1).toMatch(/Erase row, last in Settings, Your letters, removes every book, letter and recording from this phone\. It cannot be undone, so save a copy first\./);
+    expect(build1).toMatch(/Erase row, the last row of Your letters in Settings, removes every book, letter and recording from this phone\. It cannot be undone, so save a copy first\./);
   });
 
   it('never reuses the Erase screen\'s own lines, or the free-letter count, outside that screen (D-144, CCO-6)', () => {
