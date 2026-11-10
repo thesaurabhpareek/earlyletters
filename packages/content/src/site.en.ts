@@ -73,7 +73,7 @@ export const site = {
     title: "Our promise, in plain words",
     lead: en.trust.promise,
     points: [
-      "Your letters and recordings are private by default.",
+      "Your letters are kept on your phone. They reach your other phones only if you sign in and agree to sync, and then they are kept on our servers too.",
       "We never rewrite your words. Transcription happens on your phone.",
       // D-085 (amends D-073): no backup of our own in v1.0.
       "Your recordings are kept on the phone that made them, and in your iPhone's own backup if you use one.",
@@ -85,7 +85,7 @@ export const site = {
   faq: [
     {
       q: "Who can see my letters?",
-      a: "Only you. Recordings are kept on the phone that made them, and your iPhone's own backup holds them too if you use one.",
+      a: "Only you. Your letters are kept on your phone, and on our servers if you sign in and agree to sync. Recordings are kept on the phone that made them, and your iPhone's own backup holds them too if you use one.",
     },
     {
       q: "Do you rewrite my words?",

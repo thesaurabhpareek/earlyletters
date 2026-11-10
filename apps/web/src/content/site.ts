@@ -204,7 +204,7 @@ export const site = {
       label: 'Private',
       headline: 'Private by default.',
       points: [
-        'Your recordings are kept on the phone that made them.',
+        'Your recordings are kept on the phone that made them. Your letters reach your other phones only if you sign in and agree.',
         'No ads. We never sell your data.',
         'Your letters are never used to train AI.',
         'Export your letters whenever you want.',
@@ -289,7 +289,7 @@ export const site = {
     promises: [
       'We never rewrite your words.',
       'Each letter you speak keeps its original recording, unchanged.',
-      'Your letters and recordings stay on your iPhone. No ads, and we never sell your data.',
+      'Your letters and recordings are private. No ads, and we never sell your data.',
     ],
     closing: 'Until then, there is nothing you need to do.',
     signoff: `The ${NAME} team`,
