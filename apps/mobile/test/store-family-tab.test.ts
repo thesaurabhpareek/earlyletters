@@ -93,8 +93,18 @@ describe('[BL-882] one coming soon state for every co-parent surface, decided by
 });
 
 describe('both builds, from eas.json', () => {
-  it('the store build (production, servers off) hides the Family tab and the Settings row (the hide path stays)', () => {
-    expect(profile('production')).toEqual({ alpha: false, coParent: false, shown: false });
+  // Founder ruling, 10 Nov 2026: Family shows in the servers-on store build. The production profile's switch is read from
+  // eas.json (draft #698 flips it on), so this holds before and after that flip: shown exactly when co-parent is on.
+  it('the store build (production) shows the Family tab and the Settings row exactly when its server switch is on', () => {
+    const p = profile('production');
+    expect(p.alpha).toBe(false);
+    expect(p.shown).toBe(p.coParent);
+  });
+
+  it('the store build with servers off (the first-shipped case) hides both; with servers on shows both', () => {
+    expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures('off') })).toBe(false);
+    expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures(undefined) })).toBe(false);
+    expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures('on') })).toBe(true);
   });
 
   it('the alpha builds keep them: testflight (servers off) shows coming soon, preview (servers on) the real flow', () => {

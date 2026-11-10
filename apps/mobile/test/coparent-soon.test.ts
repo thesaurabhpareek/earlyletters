@@ -224,9 +224,22 @@ describe('coming-soon copy', () => {
 });
 
 describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-391 rescoped)', () => {
-  it('off: no "I was invited"; on: "I was invited" is back (D-100 amends D-087)', () => {
+  it('off: no "I was invited"; on in an alpha build: "I was invited" is back (D-100 amends D-087)', () => {
     expect(visibleCoParentDoors(false, true).joinButton).toBe(false);
     expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
+  });
+
+  // B12-5. Mutation: make joinButton `coParent` alone (the old rule) and the store assertions below fail.
+  it('[B12-5] the store build hides "I was invited" even with servers on; alpha, preview and testflight keep it', () => {
+    for (const env of ['development', 'preview'] as const) expect(visibleCoParentDoors(true, isAlphaBuild(env)).joinButton, env).toBe(true);
+    expect(visibleCoParentDoors(true, isAlphaBuild('production')).joinButton).toBe(false);
+    expect(visibleCoParentDoors(false, isAlphaBuild('production')).joinButton).toBe(false);
+    expect(visibleCoParentDoors(false, isAlphaBuild('preview')).joinButton).toBe(false);
+  });
+
+  it('[B12-5] both screens pass the build rule, not the bare switch', () => {
+    expect(src('app/onboarding.tsx')).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)/);
+    expect(src('app/settings/children/[id].tsx')).toMatch(/visibleCoParentDoors\(serverFeaturesEnabled\(\), PLUS_ALPHA\)/);
   });
 
   it('[F11-REQ-003] "Family can read" is the family-contributor switch: hidden in both builds (contributors are absent from v1.0, B1, D4)', () => {
