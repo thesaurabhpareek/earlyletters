@@ -51,7 +51,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
-import { decideReauth, parseSeenEpoch, REAUTH_EPOCH_KEY, type ReauthPhase } from './reauth.logic';
+import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
 import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
@@ -327,15 +327,18 @@ export function SessionProvider({ children, onUnder18 }: Props) {
   // BL-597 / F02-REQ-023: the founder raised `forceReauthEpoch`. A signed-in phone signs out once, after its queued
   // letters are up; a signed-out phone just notes the number. Letters on the phone stay (local sign-out only).
   const remoteEpoch = useRemoteConfig().forceReauthEpoch;
-  const reauthPhase: ReauthPhase = isSignedIn(state) ? 'signedIn' : state.status === 'signedOut' ? 'signedOut' : 'other';
+  const previousStatus = useRef<string | null>(null);
+  const reauthPhase = reauthPhaseOf(state.status, isSignedIn(state), previousStatus.current);
   useEffect(() => {
-    const seen = parseSeenEpoch(getSetting(REAUTH_EPOCH_KEY));
-    const decision = decideReauth({ remoteEpoch, seenEpoch: seen, phase: reauthPhase });
-    if (decision === 'record') setSetting(REAUTH_EPOCH_KEY, String(remoteEpoch));
-    if (decision === 'sign_out') {
+    const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
+    if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
+    if (step.signOut) {
       void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
     }
   }, [remoteEpoch, reauthPhase]);
+  useEffect(() => {
+    previousStatus.current = state.status;
+  });
 
   const remember = useCallback((m: AuthMethod) => {
     setSetting(LAST_METHOD_KEY, m);

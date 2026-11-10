@@ -33,6 +33,8 @@ What the app does today: `forceReauthEpoch` in the signed remote config is now r
 | L3 | Dashboard: the person's row in Authentication > Users | One person | Unknown which action exists and what it does | Drill D3 |
 | L4 | Ban the person (`ban_duration` through `updateUserById`) | One person | Not stated by the vendor | Drill D4; use only after the founder has chosen a service-role call by ticket |
 
+L1 is not an instant response to a compromise. A phone that is offline, or that has queued letters not yet uploaded, stays signed in until it is back online and the queue has drained (A-REQ-033: a sign-out never discards a letter). Until then its session still works. For a suspected takeover, do not wait for L1; use the server-side step in 3.1.
+
 Never use L3 or L4 to change an email address or link an identity. Support does not edit sign-in details by hand (BL-598).
 
 ## 3. Procedure (after the drills have been run; until then follow it as a plan, not a promise)
