@@ -1,0 +1,1 @@
+16:12 (10 Nov) research-nav | done: NAV-TABS-RESEARCH-10nov.md drafted (evidence, coming-soon patterns, tab count, 5-parent test, 3 recommendations) | next: draft PR | blocked/needs: Apple HIG tab bars and several NN/g pages could not be fetched (UNVERIFIED)
