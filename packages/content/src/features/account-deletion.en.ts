@@ -12,12 +12,11 @@ export const accountDeletionCopy = {
   // Step 1 of 2: what happens, export first, subscription.
   what: {
     heading: 'What happens',
-    // Held for counsel (spec chapter 7 and section 7, C8: the deletion lines P8 corrects go to counsel before they
-    // ship). The page shows `intro`, today's words, until counsel clears `introProposed` (S64's words: no photos,
-    // which v1.0 never makes, and the recording backup named). The switch is one line, `HELD.intro` in
-    // apps/mobile/src/components/settings/delete-account.logic.ts; then `introProposed` takes this key's place.
-    intro: 'Deleting your account removes your letters, recordings, photos and books from our servers. You have 30 days to change your mind.',
-    introProposed: 'Deleting your account removes your letters, recordings, books and recording backup from our servers. You have 30 days to change your mind.',
+    // Build 12 (servers on, recording backup off): letters and books are on our servers; recordings and any photos are
+    // not (recordings stay on the phone that made them, v1.0 makes no photos), so none is named. Whether and when
+    // deletion removes server data, and the 30 days, are retention promises that are counsel's (spec chapter 7 and
+    // section 7, C8): this line says no more than the screen did before, less what the build does not hold. For counsel.
+    intro: 'Deleting your account removes your letters and books from our servers. You have 30 days to change your mind.',
     staysNone: "{child}'s book stays with {coParent}, with their letters.",
     staysOne: "{child}'s book stays with {coParent}, with their letters. Your letter leaves it.",
     staysMany: "{child}'s book stays with {coParent}, with their letters. Your {count} letters leave it.",

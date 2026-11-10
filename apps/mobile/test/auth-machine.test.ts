@@ -266,7 +266,7 @@ describe('auth error kinds: a server that answered is not a connection that fail
     for (const context of CONTEXTS) {
       const kind = authErrorKind(retryable(503), context);
       expect(authErrorMessage(kind)).toBe(authErrorMessage(context === 'provider' || context === 'passkey' ? 'provider' : 'unknown'));
-      expect(authErrorMessage(kind)).toMatch(/letters are safe/);
+      expect(authErrorMessage(kind)).toMatch(/^(?:Nothing has changed|Your letters are still on this phone|You were signed out|Setting up your account did not finish)\.|\. Nothing has changed\.$/);
     }
     // The old reading, which a 503 must no longer get.
     expect(authErrorMessage(authErrorKind(retryable(503), 'send'))).not.toMatch(/back online|Sign in/);
