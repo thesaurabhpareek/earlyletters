@@ -18,7 +18,7 @@ import { fixture, type Fixture } from './helpers/store-fixture';
 import { ashaSnapshot } from './helpers/asha-export';
 import { bookHtml, planExport } from '../src/lib/export/build.logic';
 import { bookImpacts, impactLines } from '../src/lib/account-deletion/logic';
-import { book as bookWords } from '@scribe/content';
+import { book as bookWords, en as words, reminderCopy } from '@scribe/content';
 import { DEFAULT_PREFS, planReminders, type PlannerChild } from '../src/lib/reminders/planner';
 import { zonedToEpoch } from '../src/lib/reminders/tz';
 
@@ -136,6 +136,41 @@ describe('[NX-31-R3] the two places that used to print the raw empty name', () =
     }
     const twins = run([blank, { ...dev, birthday: '2026-03-08' }]);
     for (const n of twins) expect(`${n.title} ${n.body}`).toContain('your child and Dev');
+  });
+
+  // Why packages/content/test/nameless-child.test.ts does not render the evening lines that carry {child}: with no name
+  // they cannot be drawn. planner.ts eveningCopy uses the neutral lines for a blank name, with Names on or off.
+  it('[NX-31-R3] evening notes with names on draw only the neutral lines for a book with no name, never "your child"', () => {
+    const LA = 'America/Los_Angeles';
+    const blank: PlannerChild = { id: 'child-none', name: '', birthday: '2026-03-08', included: true };
+    const dev: PlannerChild = { id: 'child-dev', name: 'Dev', birthday: '2024-05-31', included: true };
+    const evenings = (children: PlannerChild[], namesOnLockScreen: boolean) =>
+      planReminders({
+        now: zonedToEpoch({ y: 2026, m: 10, d: 5, hh: 12, mm: 0 }, LA),
+        timeZone: LA,
+        children,
+        lastSaveAt: null,
+        lastForegroundAt: null,
+        horizonDays: 21,
+        prefs: { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening', monthNotes: false, namesOnLockScreen },
+      }).filter((n) => n.kind === 'evening');
+    // Every neutral line, on every weekday ("A page for {weekday}" carries the day).
+    const neutral = reminderCopy.neutral.evening.map((v) => reminderCopy.weekdays.map((weekday) => `${fill(v.title, { weekday })}|${fill(v.body, { weekday })}`));
+    const variantOf = (n: { title: string; body: string }) => neutral.findIndex((day) => day.includes(`${n.title}|${n.body}`));
+
+    // (A name is always saved trimmed, by checkChildName and checkFirstRunChildName, so a stored name is empty or has a letter.)
+    for (const namesOn of [true, false]) {
+      const only = evenings([blank], namesOn);
+      expect(only.length).toBeGreaterThanOrEqual(words.notifications.evening.length);
+      for (const n of only) expect(variantOf(n), `${n.title} | ${n.body}`).toBeGreaterThanOrEqual(0);
+      expect(new Set(only.map(variantOf)).size).toBe(reminderCopy.neutral.evening.length); // all eight neutral lines came up
+      for (const n of only) expect(`${n.title} ${n.body}`).not.toContain('your child');
+    }
+    // Beside a named book: the named lines are Dev's, the nameless book's turns are neutral, and "your child" never shows.
+    const both = evenings([blank, dev], true);
+    for (const n of both) expect(`${n.title} ${n.body}`).not.toContain('your child');
+    expect(both.some((n) => `${n.title} ${n.body}`.includes('Dev'))).toBe(true);
+    expect(both.some((n) => variantOf(n) >= 0)).toBe(true);
   });
 });
 
