@@ -39,6 +39,7 @@ import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { useAuth } from '@/lib/auth/session-provider';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { inviteDestination } from '@/lib/family/entry.logic';
 import { AccountGate, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
@@ -70,7 +71,7 @@ function useSettled<T>(value: T, ms: number): T {
 
 /** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon. */
 export default function InviteCoParentRoute() {
-  return inviteDestination('invite_new', serverFeaturesEnabled()) === 'flow' ? <InviteCoParent /> : <InviteComingSoon />;
+  return inviteDestination('invite_new', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <InviteCoParent /> : <InviteComingSoon />;
 }
 
 function InviteCoParent() {

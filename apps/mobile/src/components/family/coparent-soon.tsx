@@ -35,6 +35,7 @@ import { Text } from '@/components/ui/text';
 import { copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { track } from '@/lib/analytics/track';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { useRemoteConfig } from '@/lib/remote';
 
 export type CoParentSoonProps = {
@@ -50,7 +51,10 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
   const { familyTeaser } = useRemoteConfig().flags;
   const s = familyCopy.soon;
   const child = childName?.trim() || s.childFallback;
-  const quiet = familyTeaser === 'quiet';
+  // Server features on means a store build (an alpha build shows the real flow instead, entry.logic inviteDestination):
+  // its own words (BL-882), because the quiet variant says every letter stays on this phone.
+  const store = serverFeaturesEnabled();
+  const quiet = !store && familyTeaser === 'quiet';
   const sheet = presentation === 'sheet';
 
   // Content-free count of how often the teaser is seen. The tab stays mounted, so this fires each time it comes into focus.
@@ -74,10 +78,10 @@ export function CoParentSoon({ presentation, childName, onClose }: CoParentSoonP
           <LineArt name="together" width={232} />
         </Breathe>
         <Text variant="title1" asHeading={sheet ? 1 : 2} className="text-center">
-          {fill(quiet ? s.quiet.title : s.title, { child })}
+          {fill(store ? s.storeBuild.title : quiet ? s.quiet.title : s.title, { child })}
         </Text>
         <Text variant="body" tone="muted" className="max-w-[340px] text-center">
-          {fill(quiet ? s.quiet.body : s.lead, { child })}
+          {fill(store ? s.storeBuild.lead : quiet ? s.quiet.body : s.lead, { child })}
         </Text>
       </View>
     </ScrollView>

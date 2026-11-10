@@ -654,6 +654,17 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (d) Alpha unchanged: three tabs; Family shows the coming-soon page; the row opens the coming-soon sheet.
 - **Record:** S1-140 rows (a) to (d): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
 
+### S1-200 One coming soon for every co-parent surface in the store build with servers on (BL-882; branch feat/mobile-family-tab-servers-on)
+- **Needs:** a `production` profile build with server features on (Build 12) on a fresh install, signed in, with Asha's book set up; iPhone SE 3 for (c).
+- **Steps:** (a) Tap Family. (b) Settings, Asha's book, the "Write this book together" row. (c) Repeat (a) with VoiceOver on, then at Larger Text AX5. (d) With Mail or Notes, open an invite link (a copy of one made on a TestFlight build). (e) Welcome on a second fresh install: look for "I was invited".
+- **Expected:**
+  - (a) Tabs Tonight, Book, Family, You. Family shows the drawing, "Writing together is coming." and one line; no button, no member list, no invite sheet.
+  - (b) The row says "Coming soon", with the footer "Writing this book with a co-parent is coming in a later update."; it opens the same page as a sheet with Close.
+  - (c) VoiceOver reads the heading first; at AX5 neither line is clipped.
+  - (d) The app opens the same calm page. Nothing is kept: sign out and in again, and no join step appears.
+  - (e) There is no "I was invited" button.
+- **Record:** S1-200 rows (a) to (e): phone, iOS version, build number; screenshots of (a), (b) and (c) at AX5, with Asha only.
+
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
 - **Steps:** (a) Settings > Privacy. Read top to bottom. (b) Tap Names in notifications. In Reminders, turn reminders on first (the Names switch shows only while reminders are on), then turn names on; come back. (c) Tap Export your book, then Recently deleted, coming back each time. (d) Tap Privacy Policy, then Terms of Service. (e) Repeat (a) at AX5, with VoiceOver, and in dark mode.

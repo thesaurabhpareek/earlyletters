@@ -128,7 +128,7 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
     expect(unsigned).toBe(familyCopy.members.invitedName);
     expect(unsigned).toBe('Your co-parent');
     expect(hideFooter('Asha', unsigned)).toBe("Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted. Hiding is only for you. Your co-parent still sees Asha's book as before.");
-    expect(bookRow({ serverFeatures: true, coParent: unsigned, invite: inviteHref('settings_child', true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
+    expect(bookRow({ serverFeatures: true, alpha: true, coParent: unsigned, invite: inviteHref('settings_child', true, true, 'child-asha') })).toEqual({ value: 'Your co-parent', href: FAMILY_TAB_HREF });
     // The same words the Family tab uses for a member with no signature (peopleRows draws the tab's rows).
     const tabRows = peopleRows({ signsAs: 'Mama' }, [{ id: 'm2', role: 'parent', signsAs: '' }]);
     expect(tabRows[1]?.signature).toBe(familyCopy.members.invitedName);
@@ -139,11 +139,11 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
 
 describe('[S46] Write this book together', () => {
   it('server features off: the coming-soon row as today; on, one parent: the invite; two parents: the Family tab', () => {
-    const off = bookRow({ serverFeatures: false, coParent: null, invite: inviteHref('settings_child', false, 'child-asha') });
-    expect(off).toEqual({ value: familyCopy.soon.status, footer: familyCopy.soon.settingsRowHelp, href: inviteHref('settings_child', false, 'child-asha') });
-    const one = bookRow({ serverFeatures: true, coParent: null, invite: inviteHref('settings_child', true, 'child-asha') });
+    const off = bookRow({ serverFeatures: false, alpha: true, coParent: null, invite: inviteHref('settings_child', false, true, 'child-asha') });
+    expect(off).toEqual({ value: familyCopy.soon.status, footer: familyCopy.soon.settingsRowHelp, href: inviteHref('settings_child', false, true, 'child-asha') });
+    const one = bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(one).toEqual({ href: '/invite/new?childId=child-asha' });
-    const two = bookRow({ serverFeatures: true, coParent: 'Papa', invite: inviteHref('settings_child', true, 'child-asha') });
+    const two = bookRow({ serverFeatures: true, alpha: true, coParent: 'Papa', invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(two).toEqual({ value: 'Papa', href: FAMILY_TAB_HREF });
     // The label: P8's bookRow.label with server features on, the kill path's settingsRow with them off (the same words).
     expect(familyCopy.soon.settingsRow).toBe('Write this book together');

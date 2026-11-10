@@ -51,7 +51,9 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { capabilities } from '@/lib/capabilities';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { inviteDestination } from '@/lib/family/entry.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -88,7 +90,7 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
 
 /** Fixed per build (lib/capabilities.ts), so the choice never changes the hook order. */
 export default function FamilyTab() {
-  return capabilities.coParent ? <FamilyShared /> : <FamilySoon />;
+  return inviteDestination('family_tab', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <FamilyShared /> : <FamilySoon />;
 }
 
 function FamilySoon() {

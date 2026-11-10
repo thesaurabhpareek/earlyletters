@@ -28,28 +28,28 @@ describe('every invite entry point leads to coming soon when server features are
 
   it('off: coming soon, every one; on: the real flow (leave waits for D-113)', () => {
     for (const e of INVITE_ENTRIES) {
-      expect(inviteDestination(e, false), e).toBe('coming_soon');
-      expect(inviteDestination(e, true), e).toBe(e === 'invite_leave' ? 'coming_soon' : 'flow');
+      expect(inviteDestination(e, false, true), e).toBe('coming_soon');
+      expect(inviteDestination(e, true, true), e).toBe(e === 'invite_leave' ? 'coming_soon' : 'flow');
     }
   });
 
   it('buttons and rows push the invite modal, which presents coming soon (never sign-in)', () => {
-    expect(inviteHref('settings_child', false, 'child-1')).toBe('/invite?childId=child-1');
-    expect(inviteHref('onboarding_join', false)).toBe('/invite');
-    expect(inviteHref('family_tab', false, null)).toBe('/invite');
-    for (const e of ['settings_child', 'onboarding_join', 'family_tab'] as const) expect(inviteHref(e, false, 'x')).not.toMatch(/sign-in|\/invite\/new/);
+    expect(inviteHref('settings_child', false, true, 'child-1')).toBe('/invite?childId=child-1');
+    expect(inviteHref('onboarding_join', false, true)).toBe('/invite');
+    expect(inviteHref('family_tab', false, true, null)).toBe('/invite');
+    for (const e of ['settings_child', 'onboarding_join', 'family_tab'] as const) expect(inviteHref(e, false, true, 'x')).not.toMatch(/sign-in|\/invite\/new/);
     // v1.1: the invite flow itself.
-    expect(inviteHref('settings_child', true, 'child-1')).toBe('/invite/new?childId=child-1');
-    expect(inviteHref('onboarding_join', true)).toBe('/invite');
+    expect(inviteHref('settings_child', true, true, 'child-1')).toBe('/invite/new?childId=child-1');
+    expect(inviteHref('onboarding_join', true, true)).toBe('/invite');
   });
 
   it('the screens use the switch: Family tab, both invite routes, the child row, first run', () => {
-    expect(src('app/(tabs)/family.tsx')).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
-    expect(src('app/invite/index.tsx')).toMatch(/inviteDestination\('invite_join', serverFeaturesEnabled\(\)\) === 'flow' \? <JoinBook \/> : <InviteComingSoon \/>/);
-    expect(src('app/invite/new.tsx')).toMatch(/inviteDestination\('invite_new', serverFeaturesEnabled\(\)\) === 'flow' \? <InviteCoParent \/> : <InviteComingSoon \/>/);
-    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) \? <LeaveLater \/> : <InviteComingSoon \/>/);
-    expect(src('app/settings/children/[id].tsx')).toMatch(/inviteHref\('settings_child', serverFeaturesEnabled\(\), child\.id\)/);
-    expect(src('app/onboarding.tsx')).toMatch(/inviteHref\('onboarding_join', capabilities\.coParent\)/);
+    expect(src('app/(tabs)/family.tsx')).toMatch(/inviteDestination\('family_tab', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <FamilyShared \/> : <FamilySoon \/>/);
+    expect(src('app/invite/index.tsx')).toMatch(/inviteDestination\('invite_join', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <JoinBook \/> : <InviteComingSoon \/>/);
+    expect(src('app/invite/new.tsx')).toMatch(/inviteDestination\('invite_new', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <InviteCoParent \/> : <InviteComingSoon \/>/);
+    expect(src('app/invite/leave.tsx')).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <InviteComingSoon \/>/);
+    expect(src('app/settings/children/[id].tsx')).toMatch(/inviteHref\('settings_child', serverFeaturesEnabled\(\), PLUS_ALPHA, child\.id\)/);
+    expect(src('app/onboarding.tsx')).toMatch(/inviteHref\('onboarding_join', capabilities\.coParent, PLUS_ALPHA\)/);
   });
 
   it('sign-in is never offered with the switch off', () => {
@@ -64,8 +64,8 @@ describe('every invite entry point leads to coming soon when server features are
 });
 
 describe('deep links with server features off', () => {
-  const off = { serverFeatures: false, gateStopped: false };
-  const on = { serverFeatures: true, gateStopped: false };
+  const off = { serverFeatures: false, gateStopped: false, alpha: true };
+  const on = { serverFeatures: true, gateStopped: false, alpha: true };
 
   it('an invite link opens coming soon and keeps no token', () => {
     const path = `https://earlyletters.com/j#t=${TOKEN}`;
@@ -78,7 +78,7 @@ describe('deep links with server features off', () => {
   it('the 18+ stop still wins', () => {
     const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
-    expect(planIncomingLink(link, { serverFeatures: false, gateStopped: true, path }).route).toBe('/');
+    expect(planIncomingLink(link, { serverFeatures: false, gateStopped: true, alpha: true, path }).route).toBe('/');
   });
 
   it('sign-in links open home and keep nothing', () => {
@@ -217,34 +217,34 @@ describe('coming-soon copy', () => {
     expect(soon.building).toBeUndefined();
     const ui = src('components/family/coparent-soon.tsx');
     expect(ui).not.toMatch(/StatusChip|s\.status|s\.points|s\.building/);
-    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.title : s\.title, \{ child \}\)/);
-    expect(ui).toMatch(/fill\(quiet \? s\.quiet\.body : s\.lead, \{ child \}\)/);
+    expect(ui).toMatch(/fill\(store \? s\.storeBuild\.title : quiet \? s\.quiet\.title : s\.title, \{ child \}\)/);
+    expect(ui).toMatch(/fill\(store \? s\.storeBuild\.lead : quiet \? s\.quiet\.body : s\.lead, \{ child \}\)/);
   });
 });
 
 describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-391 rescoped)', () => {
   it('off: no "I was invited"; on: "I was invited" is back (D-100 amends D-087)', () => {
-    expect(visibleCoParentDoors(false).joinButton).toBe(false);
-    expect(visibleCoParentDoors(true).joinButton).toBe(true);
+    expect(visibleCoParentDoors(false, true).joinButton).toBe(false);
+    expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
   });
 
   it('[F11-REQ-003] "Family can read" is the family-contributor switch: hidden in both builds (contributors are absent from v1.0, B1, D4)', () => {
-    expect(visibleCoParentDoors(false).familyCanReadSwitch).toBe(false);
-    expect(visibleCoParentDoors(true).familyCanReadSwitch).toBe(false);
+    expect(visibleCoParentDoors(false, true).familyCanReadSwitch).toBe(false);
+    expect(visibleCoParentDoors(true, true).familyCanReadSwitch).toBe(false);
   });
 
   it('first run and child settings render them only through that rule', () => {
     const onboarding = src('app/onboarding.tsx');
-    expect(onboarding).toMatch(/visibleCoParentDoors\(capabilities\.coParent\)/);
+    expect(onboarding).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)/);
     expect(onboarding).toMatch(/doors\.joinButton \?/);
     const child = src('app/settings/children/[id].tsx');
     expect(child).toMatch(/doors\.familyCanReadSwitch &&/);
   });
 
   it('what stays: the Family tab, the Settings row and the invite landing still lead to coming soon', () => {
-    expect(inviteDestination('family_tab', false)).toBe('coming_soon');
-    expect(inviteDestination('settings_child', false)).toBe('coming_soon');
-    expect(inviteDestination('invite_link', false)).toBe('coming_soon');
+    expect(inviteDestination('family_tab', false, true)).toBe('coming_soon');
+    expect(inviteDestination('settings_child', false, true)).toBe('coming_soon');
+    expect(inviteDestination('invite_link', false, true)).toBe('coming_soon');
     expect(src('app/settings/children/[id].tsx')).toMatch(/familyCopy\.soon\.settingsRow\b/);
     expect(src('app/(tabs)/_layout.tsx')).toMatch(/family/);
   });
@@ -252,14 +252,14 @@ describe('doors that would lead nowhere are hidden (D-087, amended by D-100; BL-
 
 describe('server features on: the shared flows are live (D-100; option B for the alpha, D-106)', () => {
   it('Welcome shows "I was invited", and it opens the join sheet', () => {
-    expect(visibleCoParentDoors(true).joinButton).toBe(true);
-    expect(inviteHref('onboarding_join', true)).toBe('/invite');
+    expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
+    expect(inviteHref('onboarding_join', true, true)).toBe('/invite');
     expect(familyCopy.accept.invitedTitle).toBe('You were invited to a book');
   });
 
   it('the Family tab is the live view: members, open invites and the invite card', () => {
     const tab = src('app/(tabs)/family.tsx');
-    expect(tab).toMatch(/capabilities\.coParent \? <FamilyShared \/> : <FamilySoon \/>/);
+    expect(tab).toMatch(/inviteDestination\('family_tab', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <FamilyShared \/> : <FamilySoon \/>/);
     expect(tab).toMatch(/familyTabState\(/);
     expect(tab).toMatch(/state\.showInviteCard &&/);
   });
@@ -273,7 +273,7 @@ describe('server features on: the shared flows are live (D-100; option B for the
 
   it('[D-113] build 2 offers no Leave: no row on the Family tab or in a child\'s settings, and /invite/leave shows coming soon', () => {
     expect(LEAVE_BOOK_OFFERED).toBe(false);
-    for (const serverFeatures of [false, true]) expect(inviteDestination('invite_leave', serverFeatures)).toBe('coming_soon');
+    for (const serverFeatures of [false, true]) expect(inviteDestination('invite_leave', serverFeatures, true)).toBe('coming_soon');
     for (const screen of ['app/(tabs)/family.tsx', 'app/settings/children/[id].tsx']) {
       const code = src(screen).replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
       expect(code, screen).not.toMatch(/\/invite\/leave|testID="family\.leave"|state\.canLeave|leave\.row/);
@@ -282,28 +282,28 @@ describe('server features on: the shared flows are live (D-100; option B for the
     // With sharing on it says only that leaving comes later: the co-parent teaser's "letters stay on this
     // phone" would not be true once a book is shared.
     const leave = src('app/invite/leave.tsx');
-    expect(leave).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\)\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) \? <LeaveLater \/> : <InviteComingSoon \/>/);
+    expect(leave).toMatch(/inviteDestination\('invite_leave', serverFeaturesEnabled\(\), PLUS_ALPHA\) === 'flow' \? <LeaveBook \/> : serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <InviteComingSoon \/>/);
     expect(leave).toMatch(/familyCopy\.leave\.later/);
     expect(familyCopy.leave.later).toBe('Leaving a shared book is coming in a later update.');
     expect(leave).toMatch(/D-113/);
   });
 
   it('a child\'s settings row opens the invite itself, not a sign-in sheet or coming soon', () => {
-    expect(inviteHref('settings_child', true, 'child-1')).toBe('/invite/new?childId=child-1');
-    expect(inviteHref('family_tab', true, 'child-1')).toBe('/invite/new?childId=child-1');
+    expect(inviteHref('settings_child', true, true, 'child-1')).toBe('/invite/new?childId=child-1');
+    expect(inviteHref('family_tab', true, true, 'child-1')).toBe('/invite/new?childId=child-1');
   });
 
   it('[A-REQ-028] an invite link keeps its token for the join sheet; the 18+ stop still drops it', () => {
     const path = `https://earlyletters.com/j#t=${TOKEN}`;
     const link = classifyIncomingUrl(path, CFG);
-    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: false, path })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
-    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: true, path })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
+    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: false, alpha: true, path })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
+    expect(planIncomingLink(link, { serverFeatures: true, gateStopped: true, alpha: true, path })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
   });
 
   it('[D-087] no link opens the invite-making or leave screens, with the switch on or off', () => {
     for (const serverFeatures of [false, true]) {
       for (const p of ['/invite/new', '/invite/new?childId=x', '/invite/leave', '/invite/leave?childId=x', 'scribe://invite/leave', 'https://earlyletters.com/invite/new']) {
-        expect(planIncomingLink({ kind: 'other' }, { serverFeatures, gateStopped: false, path: p }).route, p).toBe('/');
+        expect(planIncomingLink({ kind: 'other' }, { serverFeatures, gateStopped: false, alpha: true, path: p }).route, p).toBe('/');
       }
     }
   });

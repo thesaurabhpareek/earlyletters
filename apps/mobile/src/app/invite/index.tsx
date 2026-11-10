@@ -46,6 +46,7 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { inviteDestination } from '@/lib/family/entry.logic';
@@ -66,7 +67,7 @@ const SIGNS_AS_MAX = 30;
 
 /** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon, and no token is kept. */
 export default function JoinBookRoute() {
-  return inviteDestination('invite_join', serverFeaturesEnabled()) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
+  return inviteDestination('invite_join', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
 }
 
 /** Where this sheet closes onto: first run's welcome step, or anywhere else (join-sheet.logic.ts openLanding), now. */

@@ -30,6 +30,7 @@ import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
 import { useAuth } from '@/lib/auth/session-provider';
 import { AccountGate, ErrorLine, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
@@ -43,7 +44,7 @@ import { syncNow } from '@/lib/sync';
 
 /** Fixed per build (lib/capabilities.ts, and D-113 for build 2). Off: there is no shared book to leave. */
 export default function LeaveBookRoute() {
-  return inviteDestination('invite_leave', serverFeaturesEnabled()) === 'flow' ? <LeaveBook /> : serverFeaturesEnabled() ? <LeaveLater /> : <InviteComingSoon />;
+  return inviteDestination('invite_leave', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <LeaveBook /> : serverFeaturesEnabled() && PLUS_ALPHA ? <LeaveLater /> : <InviteComingSoon />;
 }
 
 /**

@@ -26,7 +26,7 @@ import { ordinalOf, track } from '@/lib/analytics/track';
 export default function ChildSettings() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [child, setChild] = useState(() => getChild(id));
-  const doors = visibleCoParentDoors(serverFeaturesEnabled());
+  const doors = visibleCoParentDoors(serverFeaturesEnabled(), PLUS_ALPHA);
   const [editing, setEditing] = useState<'name' | 'date' | 'signsAs' | 'born' | null>(null);
   const [hiddenFor, setHiddenFor] = useState(() => readHidden(id));
   const [members, setMembers] = useState(() => (id ? listMembers(id) : []));
@@ -59,7 +59,7 @@ export default function ChildSettings() {
   const born = bornCard(name);
   const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
   const coParent = coParentOf(members);
-  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), child.id) });
+  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id) });
 
   /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */
   const hideBornCard = () => {

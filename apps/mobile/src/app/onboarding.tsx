@@ -133,7 +133,7 @@ function FirstRun() {
   const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  const doors = visibleCoParentDoors(capabilities.coParent);
+  const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.
@@ -532,7 +532,7 @@ function FirstRun() {
                 </Button>
               ) : null}
               {doors.joinButton ? (
-                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)}>
+                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent, PLUS_ALPHA) as Href)}>
                   <Text variant="callout">{o.welcome.joinButton}</Text>
                 </Button>
               ) : null}

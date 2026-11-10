@@ -18,6 +18,7 @@
 import { dueDatePassed } from '@scribe/core';
 import { familyCopy } from '@scribe/content';
 import { copy, fill } from '@/lib/copy';
+import { inviteDestination } from '@/lib/family/entry.logic';
 
 /** Per-book setting on this phone: the due-date card was put away with "Hide". Holds the due date it was hidden for. */
 export const BORN_CARD_HIDDEN_PREFIX = 'child.bornCardHidden.';
@@ -67,12 +68,15 @@ export type BookRow = { value?: string; footer?: string; href: string };
 export const FAMILY_TAB_HREF = '/family';
 
 /**
- * "Write this book together": coming soon (server features off), the invite (one parent) or the Family tab (two).
+ * "Write this book together": coming soon (server features off, or a store build before CO_PARENT_IN_STORE_BUILD,
+ * BL-882), the invite (one parent) or the Family tab (two).
  * `invite` is where the invite entry leads in this build (lib/family/entry.logic.ts inviteHref).
  */
-export function bookRow(input: { serverFeatures: boolean; coParent: string | null; invite: string }): BookRow {
+export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string }): BookRow {
   const soon = familyCopy.soon;
-  if (!input.serverFeatures) return { value: soon.status, footer: soon.settingsRowHelp, href: input.invite };
+  if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') {
+    return { value: soon.status, footer: input.serverFeatures ? soon.storeBuild.settingsRowHelp : soon.settingsRowHelp, href: input.invite };
+  }
   if (input.coParent) return { value: input.coParent, href: FAMILY_TAB_HREF };
   return { href: input.invite };
 }
