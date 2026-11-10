@@ -154,6 +154,7 @@ describe('[NX-31-R3] the first book may have no name', () => {
     expect(checkFirstRunChildName('')).toEqual({ ok: true, value: '' });
     expect(checkFirstRunChildName('   ')).toEqual({ ok: true, value: '' });
     expect(checkFirstRunChildName(' Asha ')).toEqual({ ok: true, value: 'Asha' });
+    expect(checkFirstRunChildName('a'.repeat(CHILD_NAME_MAX))).toEqual({ ok: true, value: 'a'.repeat(CHILD_NAME_MAX) });
     expect(checkFirstRunChildName('a'.repeat(CHILD_NAME_MAX + 1))).toEqual({ ok: false, reason: 'tooLong' });
   });
   it('later books keep their rule: checkChildName still refuses empty', () => {

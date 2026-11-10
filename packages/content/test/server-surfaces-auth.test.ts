@@ -21,33 +21,33 @@ const at = (path: string): unknown =>
 /** Chapter 7's CHG and NEW rows in auth.en.ts, as the spec words them (S52 to S56). */
 const CHAPTER_7: Record<string, string> = {
   // S52
-  'sheet.titles.invite': 'Sign in to join the book',
-  'sheet.bodies.first_letter': "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
-  'sheet.bodies.settings': "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
-  'sheet.bodies.invite': 'You each write from your own phone, in the same book.',
-  'sheet.bodies.invite_create': 'You both sign in, each on your own phone.',
-  'sheet.notConfigured': 'Signing in is not available right now. Your letters are safe on this phone.',
-  'errors.network': 'Your letters are safe on this phone. Sign in once you are back online.',
+  'sheet.titles.invite': 'Sign in',
+  'sheet.bodies.first_letter': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+  'sheet.bodies.settings': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+  'sheet.bodies.invite': 'Sign in on this phone to carry on.',
+  'sheet.bodies.invite_create': 'Sign in on this phone to carry on.',
+  'sheet.notConfigured': 'Signing in is not available right now. Nothing on this phone has changed.',
+  'errors.network': 'Nothing has changed. Sign in once you are back online.',
   'errors.expired': 'That link has expired. Send a new email for a fresh one.',
-  // Led with "Your letters are safe." as the S52 table now words them (amended 28 Oct, #360); the earlier words follow.
-  'errors.not_available': "Your letters are safe. This way of signing in isn't available right now. Try another way.",
-  'errors.code_paused': 'Your letters are safe. You can try a code again in 15 minutes.',
+  // Led with "Your letters are safe." in the S52 table (amended 28 Oct, #360); Build 12 leads with "Nothing has changed." instead.
+  'errors.not_available': "Nothing has changed. This way of signing in isn't available right now. Try another way.",
+  'errors.code_paused': 'Nothing has changed. You can try a code again in 15 minutes.',
   // SIGN-01 (comms validation, 31 Oct 2026): no length the app cannot know, no provider the build may not offer.
-  'errors.rate_limited': 'Your letters are safe. Too many tries for now. Wait a few minutes, then try again.',
-  'errors.email_wait': "Your letters are safe. Another email can't be sent just yet. Wait a few minutes, then try again.",
+  'errors.rate_limited': 'Nothing has changed. Too many tries for now. Wait a few minutes, then try again.',
+  'errors.email_wait': "Nothing has changed. Another email can't be sent just yet. Wait a few minutes, then try again.",
   // LNG-05: the stock "That did not work this time" says what did not finish.
-  'errors.provider': 'Your letters are safe. That sign-in did not finish. Try again, or try another way.',
-  'errors.session_expired': 'Your letters are safe on this phone. Sign in again to keep sharing them.',
-  'errors.consent_unavailable': 'Your letters are safe on this phone. Setting up your account did not finish. Try again.',
-  'errors.unknown': 'That did not go through. Your letters are safe on this phone.',
+  'errors.provider': 'Nothing has changed. That sign-in did not finish. Try again, or try another way.',
+  'errors.session_expired': 'You were signed out. Sign in again to carry on.',
+  'errors.consent_unavailable': 'Setting up your account did not finish. Try again.',
+  'errors.unknown': 'That did not go through. Nothing has changed.',
   // S53
   'email.help': 'A link and a code arrive by email. No password to remember.',
   // S54
   'code.sentToEmail': 'A link and a code are on their way to {email}.',
   'code.emailLabel': 'Your email address',
   // S56
-  'account.signedOutBody': "Your letters come with you to a new phone, and {child}'s other parent can write in the same book.",
-  'account.syncLabel': 'Sync and sharing',
+  'account.signedOutBody': 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+  'account.syncLabel': 'Sync across your phones',
   'account.sync.waiting': 'Not set up yet',
   'account.signOutBody': 'Your letters stay on this phone. Sign in again any time.',
   'account.signOutWaiting': 'Your newest letters are still on their way. This phone signs out once they are sent.',
@@ -55,8 +55,8 @@ const CHAPTER_7: Record<string, string> = {
 
 /** Chapter 7's KEEP rows: the words stay as they were on develop. */
 const KEPT: Record<string, string> = {
-  'sheet.titles.first_letter': "Keep {child}'s book on any phone",
-  'sheet.titles.invite_create': 'Sign in to invite a co-parent',
+  'sheet.titles.first_letter': "Keep {child}'s words on any phone",
+  'sheet.titles.invite_create': 'Sign in',
   'sheet.titles.sign_in': 'Welcome back',
   'sheet.titles.settings': 'Sign in',
   'sheet.bodies.sign_in': 'Sign in the same way as last time to see every letter.',
@@ -118,7 +118,7 @@ const KEPT: Record<string, string> = {
  * the new email's link does sign in (verifyEmailLink never reads the pause, F02-U14).
  */
 const CRITICS: Record<string, string> = {
-  'code.lettersSafe': 'Your letters are safe on this phone.',
+  'code.lettersSafe': 'Your letters are still on this phone.',
   'code.pausedOtherWays': 'The link in the newest email still works, and so do the other ways to sign in.',
 };
 
@@ -170,9 +170,9 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     for (const [key, words] of Object.entries(KEPT)) expect(at(key), key).toBe(words);
   });
 
-  it('has the lines the critics\' fixes added, word for word; the waiting line is errors.network\'s first sentence', () => {
+  it('has the lines the critics\' fixes added, word for word', () => {
     for (const [key, words] of Object.entries(CRITICS)) expect(at(key), key).toBe(words);
-    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(true);
+    expect(authCopy.errors.network.startsWith(`${authCopy.code.lettersSafe} `)).toBe(false); // the waiting line is drawn only with a book; an error is read without one
     // The pause line (lens A2): only typing a code waits. The email's link and Apple or Google still sign in, and it
     // neither blames nor counts down (code_paused already says 15 minutes, once, as a fact).
     expect(authCopy.code.pausedOtherWays).toMatch(/link in the newest email still works/);
@@ -240,22 +240,33 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
     // the provider, a lost session, setup, or a pause the service sets after too many emails or codes) says the
     // letters are safe as its first sentence. An error fixed by typing again (a wrong or expired code, an address)
     // keeps its words. `unknown` says it second. Every error is in exactly one list, so a new key must be placed.
-    const SAFE = /^Your letters are safe(?: on this phone)?\./;
-    const LEADS = ['network', 'session_expired', 'consent_unavailable', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
+    // Build 12 (test/build12-untrue-copy.test.ts): no line promises the letters are "safe"; a service failure leads with
+    // what is true: "Nothing has changed." or "Your letters are still on this phone." (VOICE.md, "safe").
+    const SAFE = /^(?:Nothing has changed|Your letters are still on this phone)\./;
+    // session_expired follows a sign-out the person did not ask for, and consent_unavailable can follow a successful sign-in,
+    // so "Nothing has changed." would not be true of either: each says what happened instead.
+    const SAYS_WHAT_HAPPENED: Record<string, string> = { session_expired: 'You were signed out.', consent_unavailable: 'Setting up your account did not finish.' };
+    const LEADS = ['network', 'provider', 'not_available', 'rate_limited', 'email_wait', 'code_paused'];
     const SECOND = ['unknown'];
+    const HAPPENED = Object.keys(SAYS_WHAT_HAPPENED);
     const INPUT = ['wrong_code', 'expired', 'invalid_email'];
     const NOT_A_FAILED_ATTEMPT = ['under_18', 'other_phone', 'other_phone_spent', 'already_signed_in'];
     const errors = authCopy.errors as Record<string, string>;
-    expect(Object.keys(errors).sort()).toEqual([...LEADS, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
+    expect(Object.keys(errors).sort()).toEqual([...LEADS, ...HAPPENED, ...SECOND, ...INPUT, ...NOT_A_FAILED_ATTEMPT].sort());
     for (const kind of LEADS) expect(errors[kind], kind).toMatch(SAFE);
+    for (const kind of HAPPENED) {
+      expect(errors[kind], kind).toMatch(new RegExp(`^${SAYS_WHAT_HAPPENED[kind]}`));
+      expect(errors[kind], kind).not.toMatch(/Nothing has changed|\bsafe\b/);
+    }
     for (const kind of SECOND) {
       expect(errors[kind], kind).not.toMatch(SAFE);
-      expect(errors[kind], kind).toMatch(/\. Your letters are safe on this phone\.$/);
+      expect(errors[kind], kind).toMatch(/\. Nothing has changed\.$/);
     }
-    for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe/);
+    for (const kind of [...INPUT, ...NOT_A_FAILED_ATTEMPT]) expect(errors[kind], kind).not.toMatch(/letters are safe|^Nothing has changed/);
+    for (const kind of Object.keys(errors)) expect(errors[kind], kind).not.toMatch(/\bsafe\b/);
     // The four the ruling changed keep their table words after the new first sentence.
-    expect(errors.provider).toBe('Your letters are safe. That sign-in did not finish. Try again, or try another way.');
-    expect(authCopy.sheet.notConfigured).toContain('Your letters are safe on this phone.');
+    expect(errors.provider).toBe('Nothing has changed. That sign-in did not finish. Try again, or try another way.');
+    expect(authCopy.sheet.notConfigured).toContain('Nothing on this phone has changed.');
   });
 
   it('the age step has only the question and its two answers (S55, LEGAL-REQ-002: nothing explains or hints)', () => {

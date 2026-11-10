@@ -31,6 +31,7 @@ Nothing here has been run against the live project yet. Do the steps in order; e
 | 25 | `20261023060000_explicit_grants.sql` | **Pending** | Every table, view and sequence gets explicit grants; on a new project this is what makes the app work (section "File 25") |
 | 26 | `20261028000000_pg_temp_last_and_purged_photos.sql` | **Pending** | `pg_temp` last on the `escrow_svc` role default; a purged letter's photo cannot be uploaded again (section "File 26") |
 | 27 | `20261028010000_invite_redeem_by_code.sql` | **Pending** | The call `invite-redeem` makes for a typed code: gate, lookup and failure count in one transaction (section "File 27") |
+| 32 | `20261109000000_child_name_optional.sql` | **Not applied; needs approve-migration; must be applied before any servers-on build containing #701** | A book's name may be empty on the server, the date stays required (section "File 32") |
 
 The unapplied draft `20261003041500_sync_cursor_pull.sql` was deleted on 3 Oct 2026: file 9 replaces it (its `sync_books()` moved into file 9). If your SQL editor history shows it was ever run somewhere, tell the coordinator before applying file 9.
 
@@ -1182,3 +1183,49 @@ What it adds:
 - Tests: `invite_redeem_by_code` (new), and new rows in `access_matrix` and `explicit_grants` (`supabase/tests/grants.mjs`).
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
+
+## File 29: a consent record carries the build, the OS major version, the words shown and their language (8 Nov 2026, data-architect, BL-577)
+
+`20261108000000_consent_record_fields.sql`. Before this file a consent record could not tell build 1 from build 2 (both "1.0.0"), and a sheet act could be recorded with no hash of the words shown and no language (PRIV-R21).
+
+What it changes:
+- **`policy_acceptances.app_build`** (L2, the EAS build number) and **`policy_acceptances.os_major`** (L2, the major OS version only). `locale` now means the language of the text shown.
+- **`record_policy_act`** takes `p_app_build` and `p_os_major` last, both optional. The old function is dropped and the new one created, so the API sees one candidate. Today's app records exactly as before.
+- **Sheet acts** (`signin_sheet`, `consent_sheet`, `reconsent_sheet`) need `rendered_sha256` and `locale` (23502) when the call carries a build number, and for every call once `app.consent_fields_required` is on. Existing rows are untouched; pseudonymisation at account deletion still works on them.
+- **`policy_acceptances_guard`** also freezes the two new columns.
+- Tests: `consent_record_fields` (new); `data_governance` looks the function up by name.
+
+**Apply** after file 27 (and file 28 if it is applied first; they touch different objects). Changes one function signature; drops no data. **Check:** `select pg_get_function_identity_arguments('public.record_policy_act'::regproc);` ends in `p_app_build text, p_os_major integer`, and a sign-in on the current TestFlight build still records its acts. **Do not turn on yet:** `alter database postgres set app.consent_fields_required = 'on';` only after the shared record builder (BL-577, app half) ships and no older build is in use; from then an older build's sheet act is refused. **Rollback:** see the file header; only before any row carries `app_build`.
+
+## File 30: a deletion request id still finds the person's pseudonymised consent rows (8 Nov 2026, data-architect, BL-578)
+
+`20261108010000_deletion_subject_hash.sql`. Before this file `finalize_account_deletion` nulled the request's `profile_id` and kept no hash; the only link from a request to the consent rows was the raw account id in `purge_ledger`, which is trimmed after 60 days. From day 61 the request id in the receipt email found nothing, though the rows are kept 3 years.
+
+What it changes:
+- **`deletion_requests.subject_hash`** (L3): the same peppered SHA-256 as the consent rows, set when the request completes (and on the person's earlier completed or cancelled requests). It goes with the request after 3 years, as the consent rows do.
+- **`finalize_account_deletion`** refuses (55000, nothing changed) when `app.consent_pepper` is missing or short, like the pseudonymise triggers. Otherwise unchanged.
+- **`public.ops_deletion_consent_records(p_request)`**, service role only: the request's status and dates and the person's rows in `policy_acceptances` and `subscription_consents`, without account id or hash. An unknown id or a book request is P0002. The runbook that calls it writes its own `ops.audit_log` row (`ops_audit_write`).
+- An index on `policy_acceptances (subject_hash)` for pseudonymised rows.
+- Tests: `deletion_subject_hash` (new); `grants.mjs` lists the new service-role function.
+
+**Apply** after file 29 (or file 27; they touch different objects). Adds one column, one index and one function; redefines `finalize_account_deletion`. Deletions completed before this file keep no hash; for those under 60 days old, `purge_ledger` still holds the id. **Check:** `select public.consent_pepper_ready();` is true first; then `select public.ops_deletion_consent_records('<a completed request id>');` from the SQL Editor returns its rows. **Rollback:** see the file header.
+
+## File 31: the audit and consent tables refuse rewrites and truncation (8 Nov 2026, data-architect, BL-585)
+
+`20261108020000_audit_append_only.sql`. Before this file `audit_events` had no row guard, and `policy_acceptances` and `ops.audit_log` had no truncate guard (a row guard never stops TRUNCATE). No API role holds these privileges; the guards protect against the owner's own paths (a migration, a definer function, the SQL Editor).
+
+What it changes:
+- **`audit_events`**: UPDATE and DELETE fail with SCIMM, except `finalize_account_deletion` nulling the purged person as actor or as a `profile` or `membership` subject (nothing else in the row may change), and the 24-month retention delete while `app.retention_purge` is on.
+- **`purge_due`** turns `app.retention_purge` on before its `audit_events` delete instead of after it. Nothing else in it changes.
+- **TRUNCATE** fails with SCIMM on `audit_events`, `policy_acceptances` and `ops.audit_log`, as on `subscription_consents`.
+- Tests: `audit_append_only` (new).
+
+**Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.
+
+## File 32: a child's name is optional (9 Nov 2026, data-architect, PR #700)
+
+`20261109000000_child_name_optional.sql`. Not applied; needs the founder's `approve-migration` label and a CI tag run (D-041). It must be applied (staging, then production) before any servers-on build that contains #701: that build stores an empty name for the first book, and today's `create_child_row` refuses it (22023), so the whole first-run batch would be rejected and the account would have no book.
+
+What it changes: `children_name_check` becomes `char_length(name) <= 60` (was 1 to 60), and `create_child_row` stores a blank or missing name as `''` (over 60 is still refused; a birthday or due date is still required). `book_update` now trims a name on edit and stores `''` for spaces only or null, like create. No row changes, no new object, no grant change.
+
+**Apply** after file 31 (the audit append-only file). **Check:** `select conname, pg_get_constraintdef(oid) from pg_constraint where conrelid = 'public.children'::regclass and contype = 'c';` must list `children_name_check` as `CHECK ((char_length(name) <= 60))` and no other check on name (if an older name check is listed under another name, drop it by that name). **Rollback:** only while no book has an empty name: restore the 1 to 60 check, re-create `book_update` from `20261015000000`, and re-create `create_child_row` from `20261004000000` with `set search_path = pg_catalog, public, pg_temp`, then re-run its `revoke all ... from public, anon, authenticated, service_role`.

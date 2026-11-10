@@ -15,8 +15,8 @@
  * Motion: a wrong code clears and refocuses the field, and its line fades in (swapMs, ErrorLine);
  * no shake, no red, no haptic.
  *
- * While the email is on its way, and only when this phone holds a book, "Your letters are safe on
- * this phone." sits under the field (a fresh install has no letters here). "Not now" sits top right, in
+ * While the email is on its way, and only when this phone holds a book, "Your letters are still
+ * on this phone." sits under the field (a fresh install has no letters here). "Not now" sits top right, in
  * the header, so it stays in reach with the number pad up at every text size; it closes the sheet and
  * changes nothing on this phone, as on the first step (P8a critics S2, lens A3).
  * After five wrong codes the pause (S01's rule, errors.logic codeEntryPause; the server's own limit still
@@ -71,7 +71,7 @@ export default function CodeStep() {
   // memoised render would read once. (The compiler also skips it today for its try/finally; this says it on purpose.)
   'use no memo';
   const auth = useAuth();
-  // The has-a-book signal the sign-in sheet uses for its cover: "safe on this phone" is true only with a book here.
+  // The has-a-book signal the sign-in sheet uses for its cover: "still on this phone" is true only with a book here.
   const { active } = useChildren();
   const c = useColors();
   const ready = useFontsReady();
