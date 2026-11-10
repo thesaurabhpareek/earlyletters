@@ -65,10 +65,11 @@ describe('[NX-31-R11] the code screen recovery set', () => {
 });
 
 describe('[NX-36-S5] first-run words carry no "Your letters are safe" (a new install has no letters)', () => {
-  it('[NX-36-S5] a phone with no book reads the first-run variants; a phone with a book keeps the existing words', () => {
+  it('[NX-36-S5] a phone with no book reads the first-run variants; a phone with a book keeps the existing words (#735 removed the claim there too)', () => {
     for (const kind of ['network', 'code_paused', 'consent_unavailable', 'unknown', 'provider', 'rate_limited', 'email_wait', 'not_available'] as const) {
       expect(signInErrorMessage(kind, false), kind).not.toMatch(/letters are safe/i);
-      expect(signInErrorMessage(kind, true), kind).toMatch(/letters are safe/i);
+      // #735 took "Your letters are safe" out of the existing lines too; a phone with a book keeps those lines, whatever they now say.
+      expect(signInErrorMessage(kind, true), kind).toBe(authCopy.errors[kind]);
     }
     expect(signInErrorMessage('wrong_code', false)).toBe(authCopy.errors.wrong_code);
     expect(signInErrorMessage('cancelled', false)).toBeNull();
