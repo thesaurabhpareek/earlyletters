@@ -12,6 +12,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [PACKS_HOSTING.md](PACKS_HOSTING.md) | Language packs, speech models and signed documents on `packs.earlyletters.app`: signing key, bucket, upload, verify, rollback, cost |
 | [well-known/](well-known/) | Files the website must serve: `apple-app-site-association`, `security.txt` |
 | [runbooks/stuck-deletion.md](runbooks/stuck-deletion.md) | An account deletion that has not finished |
+| [runbooks/data-requests-by-email.md](runbooks/data-requests-by-email.md) | The by-hand routes the 0.9.0 Terms and Privacy promise: delete an account (closed until BL-551), withdraw sync, see/export/correct, under 18, TestFlight feedback; the check of the account email first |
 | [runbooks/purge-failing.md](runbooks/purge-failing.md) | The purge or the worker is not running, or Storage deletes fail; installing the schedule |
 | [runbooks/incident-notification.md](runbooks/incident-notification.md) | Who was affected, notification clocks and email templates (LEGAL-REQ-039) |
 | [runbooks/restore-drill.md](runbooks/restore-drill.md) | Quarterly restore drill, and what to do after a real restore (DATA-REQ-030, -031) |

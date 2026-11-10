@@ -12,7 +12,10 @@ import { UIProvider } from '@/components/ui/provider';
 import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
+import { capabilities } from '@/lib/capabilities';
 import { copy } from '@/lib/copy';
+import { familySurfacesShown } from '@/lib/family/entry.logic';
 
 /**
  * Three tabs: Tonight, Book, Family (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
@@ -27,9 +30,15 @@ import { copy } from '@/lib/copy';
  * - The three titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
  * - UIProvider here is a no-op once the root layout mounts it; the ToastHost lifts toasts
  *   above the bar on tab screens.
+ * - D-126 (BL-604): the store build with server features off has two tabs, Tonight and Book. Family sits inside
+ *   `Tabs.Protected`, so with its guard false the screen is left out of the navigator (expo-router useSortedScreens drops
+ *   protected routes): no bar item and no route, rather than a hidden one. Not `href: null`: expo-router throws "Cannot use `href` and `tabBarButton` together", and every
+ *   tab here has an iOS tabBarButton. The guard is decided at bundle time (familySurfacesShown, lib/family/entry.logic).
  */
 const BAR = 58;
 const t = copy.tabs;
+/** Bundle-time only: APP_ENV and the server switch. Every alpha build keeps the Family tab (D-126, BL-604). */
+const FAMILY_TAB = familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent });
 
 export default function TabsLayout() {
   const { c } = useTheme();
@@ -69,7 +78,9 @@ export default function TabsLayout() {
           }}>
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
-          <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
+          <Tabs.Protected guard={FAMILY_TAB}>
+            <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
+          </Tabs.Protected>
         </Tabs>
         {/* The reminder card after the first letter, over the Book (C-REQ-001 Rev; Review asks for it, lib/asks). Inside
             this ToastHost so its "No reminders" line sits above the tab bar, not over it. */}
