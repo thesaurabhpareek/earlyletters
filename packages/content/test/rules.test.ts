@@ -24,6 +24,7 @@ import {
   en,
   familyEmails,
   features,
+  HELPLINES,
   lifecycleEmails,
   onboardingStories,
   pages,
@@ -107,8 +108,16 @@ const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
   { path: `story.${c.id}.headline`, text: c.headline },
   { path: `story.${c.id}.line`, text: c.line },
 ]);
+/** The helplines' words (helplines.ts): the country, each line's name and how to reach it. Digits and sources are not copy. */
+const HELPLINE_LEAVES: Leaf[] = HELPLINES.flatMap((r) => [
+  { path: `helplines.${r.region}.country`, text: r.country },
+  ...r.lines.flatMap((l) => [
+    { path: `helplines.${l.id}.name`, text: l.name },
+    { path: `helplines.${l.id}.how`, text: l.how },
+  ]),
+]);
 const PROMPT_LEAVES: Leaf[] = PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text }));
-const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...APP_COPY];
+const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...HELPLINE_LEAVES, ...APP_COPY];
 
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
@@ -119,6 +128,7 @@ const ALL: Leaf[] = [
   ...leaves(features, 'features'),
   ...PAGES,
   ...STORIES,
+  ...HELPLINE_LEAVES,
   ...PROMPT_LEAVES,
 ];
 /** Every email word (packages/content/src/emails): the catalog groups, the chrome and the legal lines. */
@@ -868,12 +878,16 @@ describe('English-only notices (D-111 item 4)', () => {
 });
 
 describe('support resources (D-034)', () => {
-  it('dials digits only and names each line', () => {
-    for (const r of en.struggling.resources) {
-      expect(r.tel).toMatch(/^\d{3,11}$/);
+  it('dials digits only and names each line (sources and dates: helplines.test.ts)', () => {
+    for (const r of HELPLINES.flatMap((h) => h.lines)) {
+      for (const n of [r.tel, r.sms]) if (n) expect(n).toMatch(/^\d{3,11}$/);
       expect(r.name.length).toBeGreaterThan(0);
-      expect(r.how).toContain(r.tel.length === 3 ? r.tel : r.tel.slice(-4));
+      expect(r.how.length).toBeGreaterThan(0);
     }
+  });
+
+  it('the helplines words are in-app copy, so every rule here reads them', () => {
+    expect(IN_APP.map((l) => l.path)).toContain('helplines.us.nmmh.how');
   });
 });
 

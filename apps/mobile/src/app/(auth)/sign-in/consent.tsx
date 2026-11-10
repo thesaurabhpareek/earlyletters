@@ -11,7 +11,7 @@
  *   session and closes the 18+ gate (the provider does both).
  * - Sensitive data: the counsel-approved screen from packages/content.
  *   "Keep on this phone" records a decline; the person stays signed in and
- *   can turn sync on later in Settings, Privacy.
+ *   can turn sync on later with "Agree and sync" in Settings, Account.
  * - Then, when this phone's letters belong to no account yet: the claim screen
  *   (BL-347, F02 6.2 step 6, F02-REQ-019). "Your letters on this phone will be
  *   kept in the account a***@example.com", "Keep in this account" and "Not my

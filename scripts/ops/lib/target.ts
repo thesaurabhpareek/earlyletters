@@ -37,6 +37,9 @@ export interface DbTarget {
   projectRef: string | null;
 }
 
+/** Hosts on this machine only (a restore drill's throwaway container). */
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]']);
+
 /** Control characters: a NUL makes spawn throw with the value in its message, so they never get that far. */
 const CONTROL_RE = /[\u0000-\u001f\u007f]/;
 
@@ -44,31 +47,37 @@ const CONTROL_RE = /[\u0000-\u001f\u007f]/;
  * Parses a Postgres URL into psql settings. Problems are fixed sentences that
  * never echo any part of the URL. TLS is required: `sslmode` may only be
  * `require` (the default), `verify-ca` or `verify-full`, so a pasted URL
- * cannot send the password in clear.
+ * cannot send the password in clear. With `allowPlainLocal`, and only for
+ * localhost, 127.0.0.1 or [::1], `sslmode=disable` is also accepted (the
+ * restore drill's local container has no TLS). `name` is the variable the
+ * problems name.
  */
-export function dbTargetOf(raw: string): { target: DbTarget; problem: null } | { target: null; problem: string } {
+export function dbTargetOf(raw: string, opts: { name?: string; allowPlainLocal?: boolean } = {}): { target: DbTarget; problem: null } | { target: null; problem: string } {
+  const name = opts.name ?? 'SUPABASE_DB_URL';
   const no = (problem: string) => ({ target: null, problem });
-  if (CONTROL_RE.test(raw.trim())) return no('SUPABASE_DB_URL holds a control character');
+  if (CONTROL_RE.test(raw.trim())) return no(`${name} holds a control character`);
   let u: URL;
   try {
     u = new URL(raw.trim());
   } catch {
-    return no('SUPABASE_DB_URL is not a postgres:// URL');
+    return no(`${name} is not a postgres:// URL`);
   }
-  if (u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') return no('SUPABASE_DB_URL is not a postgres:// URL');
-  if (!u.hostname || !u.username) return no('SUPABASE_DB_URL needs a host and a user');
+  if (u.protocol !== 'postgres:' && u.protocol !== 'postgresql:') return no(`${name} is not a postgres:// URL`);
+  if (!u.hostname || !u.username) return no(`${name} needs a host and a user`);
   let user: string, password: string, database: string;
   try {
     user = decodeURIComponent(u.username);
     password = decodeURIComponent(u.password);
     database = decodeURIComponent(u.pathname.replace(/^\//, ''));
   } catch {
-    return no('SUPABASE_DB_URL has a malformed percent escape');
+    return no(`${name} has a malformed percent escape`);
   }
-  if ([user, password, database].some((part) => CONTROL_RE.test(part))) return no('SUPABASE_DB_URL holds a control character');
-  const sslmode = u.searchParams.get('sslmode') ?? 'require';
-  if (!/^(require|verify-ca|verify-full)$/.test(sslmode)) return no('SUPABASE_DB_URL must use TLS: sslmode require, verify-ca or verify-full');
+  if ([user, password, database].some((part) => CONTROL_RE.test(part))) return no(`${name} holds a control character`);
   const host = u.hostname.toLowerCase();
+  const sslmode = u.searchParams.get('sslmode') ?? 'require';
+  // A throwaway Postgres on this machine (the restore drill's Docker container) may go without TLS; nothing else may.
+  const plainOk = opts.allowPlainLocal === true && LOCAL_HOSTS.has(host) && sslmode === 'disable';
+  if (!plainOk && !/^(require|verify-ca|verify-full)$/.test(sslmode)) return no(`${name} must use TLS: sslmode require, verify-ca or verify-full`);
   const direct = /^db\.([a-z0-9]{8,40})\.supabase\.co$/.exec(host);
   const pooled = /\.pooler\.supabase\.com$/.test(host) ? /^postgres\.([a-z0-9]{8,40})$/.exec(user) : null;
   return {
