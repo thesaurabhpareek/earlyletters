@@ -26,7 +26,7 @@ import { useToast } from '@/components/ui/toast';
 import { useTheme } from '@/lib/a11y';
 import { track } from '@/lib/analytics/track';
 import { noteReminderPrimeShown, subscribeReminderPrime, takeReminderPrimeRequest } from '@/lib/asks';
-import { copy } from '@/lib/copy';
+import { childLabel, copy } from '@/lib/copy';
 import { haptic } from '@/lib/haptics';
 import { getActiveChild } from '@/lib/store';
 import { nextLine, turnOnOutcome } from '@/components/settings/reminders.logic';
@@ -61,8 +61,8 @@ function ReminderPrimeCard({ onClose }: { onClose: () => void }) {
   const [picking, setPicking] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [time, setTime] = useState<ReminderTime>(() => readPrefs().time);
-  // In-app only: the lock screen stays neutral (D-025). A book always has a name; the fallback is the neutral phrase.
-  const [body] = useState(() => renderTemplate(r.body, { child: getActiveChild()?.name || 'your little one' }));
+  // In-app only: the lock screen stays neutral (D-025). A book may have no name (NX-31-R3): childLabel gives the shared "your child".
+  const [body] = useState(() => renderTemplate(r.body, { child: childLabel(getActiveChild()?.name) }));
 
   const yes = (chosen?: ReminderTime) => {
     haptic('tap');

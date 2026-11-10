@@ -119,9 +119,9 @@ describe('[S64] failures and the typed word', () => {
 });
 
 describe('[S64] held for counsel (C8)', () => {
-  it('the page shows today\'s intro until the one-line switch, and never the proposal before it', () => {
+  it('the page shows the intro Build 12 can stand behind, and no proposal exists beside it', () => {
     expect(HELD.intro).toBe(c.what.intro);
-    expect(HELD.intro).not.toBe(c.what.introProposed);
+    expect('introProposed' in c.what).toBe(false);
     expect(STATE.review()).toContain('{HELD.intro}');
     expect(page).not.toMatch(/c\.what\.intro\b|introProposed/);
   });
