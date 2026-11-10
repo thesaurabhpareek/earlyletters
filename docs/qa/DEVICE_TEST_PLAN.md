@@ -1116,6 +1116,26 @@ Needs a TestFlight build with PR #121, and a Sandbox Apple Account set to the 1-
 - **Record:** TF-11 row: the hosts seen in the traffic.
 - **Update:** the data map and `docs/legal/app-store-privacy-labels.md` if any other host appears.
 
+## Part 4. Build 9 (8 Nov 2026)
+
+New block: ids are `RT-B9-01` to `RT-B9-13` in `docs/qa/release-test-catalog.csv`, one per candidate fix, so open pull requests cannot collide with existing ids. No existing row is renumbered. The founder's phone script is `docs/qa/TESTFLIGHT-BUILD-9-DEVICE-CHECK.md`; results go in the evidence file for the build as usual. Every row is planned and has not run.
+
+| Row | Fix (PR) | Test case | Expected |
+|---|---|---|---|
+| RT-B9-01 | DOB picker (#540) | Check lines 2 to 6 | One tap opens; saved day equals day tapped; follows app theme; no jump. Also V-02 and V-10 in S1-23 once #540 merges |
+| RT-B9-02 | Listen finishing (#595, BL-563) | Check lines 7 and 8 | Back in about 3 s, draft kept, no Let it go while finishing |
+| RT-B9-03 | Consent links (#589, BL-564) | Check line 37 | Terms and Privacy rows only, both live |
+| RT-B9-04 | Book month type (#544) | Check lines 27 and 28 | S1-38 once #544 merges |
+| RT-B9-05 | Listen reads the child once (#532, issue #480) | Check line 9 | 30-minute take is steady |
+| RT-B9-06 | Help rows (#519) | Check lines 23 to 26 | Call or copy sheet; V-10 hint |
+| RT-B9-07 | Tonight Plus line (#508) | Check lines 16 to 18 | Plain line, one held row |
+| RT-B9-08 | VoiceOver and primer (#523) | Check lines 10 to 12 | Silent take; primer first |
+| RT-B9-09 | Review survives a kill (#522) | Check lines 20 to 22 | Same text, view and put-back fix |
+| RT-B9-10 | Age gate confirm (#521) | Check lines 13 to 15 | Confirm before the stop is stored |
+| RT-B9-11 | Delete a book, Erase everything (#520) | Check lines 29 to 32 | Matches DL-01 |
+| RT-B9-12 | Plus offline and grace (#517) | Check lines 33 to 36 | Offline line; held letter; 7-day grace in AL-09 |
+| RT-B9-13 | Notes count (#510) | Check line 19 | Keep sheet on the third item |
+
 ## Facts and assumptions this plan rests on
 
 | Item | Status |
