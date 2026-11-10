@@ -1,10 +1,13 @@
-# BL-566 (D-138 item 2): the free nightly backup of staging.
+# BL-566 (D-138 item 2), extended to production for the Free plan (founder, 8 Nov 2026): the free
+# nightly encrypted backup of ONE Supabase project. Today that project is scribe-prod; staging is
+# skipped for now. Runbooks: docs/ops/runbooks/free-tier-ops.md (production) and
+# docs/ops/runbooks/staging-backup-free.md (the role, the drill, the limits of this backup).
 #
 # This file does NOT run in the earlyletters repository. Copy it unchanged to
-# `.github/workflows/staging-backup.yml` in the separate PRIVATE repository
-# `earlyletters-backups` (runbook: docs/ops/runbooks/staging-backup-free.md).
+# `.github/workflows/supabase-backup.yml` in the separate PRIVATE repository `earlyletters-backups`.
+# Never in the public repository: its artifacts and issues would be public.
 #
-# Every night it: installs the Postgres client matching staging's major
+# Every night it: installs the Postgres client matching the server's major
 # version; refuses to go on if the server's major differs, the URL is not
 # TLS or not the session pooler, the role can write, or the role can read a
 # sign-in credential (sessions, refresh tokens, one-time tokens, vault) or
@@ -22,16 +25,21 @@
 # host, a role name, a URL or a password (GitHub also masks the secrets, and
 # a connection failure is printed as one category, not as the driver's text).
 #
+# On any failure of a scheduled run it also opens (or comments on) one `ops-alert` issue in this private
+# repository, with GITHUB_TOKEN only.
+#
 # Secrets (Settings > Secrets and variables > Actions > Secrets):
-#   STAGING_DB_URL        postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require
+#   BACKUP_DB_URL         postgresql://scribe_backup.<ref>:<password>@<session pooler host>:5432/postgres?sslmode=require
 #   BACKUP_AGE_RECIPIENT  the founder's age public key, the line starting age1
+# Variables (same page, Variables tab):
+#   BACKUP_TARGET         prod (the default) or staging: the label in file names and the summary
 #
 # Third-party actions are pinned to a full commit sha. Checked 8 Nov 2026 with
 # `git ls-remote https://github.com/actions/upload-artifact refs/tags/v7*`:
 #   actions/upload-artifact cf430e030ddbb5b0abf93d22962f4752f3646cd9 = tag v7.0.2 (and v7), the same pin
 #   this repository's ios-compile.yml and kill-harness.yml use.
 
-name: Nightly staging backup
+name: Nightly Supabase backup
 
 on:
   schedule:
@@ -42,7 +50,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: staging-backup
+  group: supabase-backup
   cancel-in-progress: false
 
 jobs:
@@ -50,8 +58,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      # Staging's Postgres major version. supabase/config.toml says 17; backup-role.sql block 0 reads the real one.
+      # The server's Postgres major version. supabase/config.toml says 17; backup-role.sql block 0 reads the real one.
       PG_MAJOR: '17'
+      TARGET: ${{ vars.BACKUP_TARGET || 'prod' }}
     steps:
       - name: Install the Postgres client and age
         run: |
@@ -72,14 +81,15 @@ jobs:
 
       - name: Check the connection, the server version and the role
         env:
-          DB_URL: ${{ secrets.STAGING_DB_URL }}
+          DB_URL: ${{ secrets.BACKUP_DB_URL }}
         run: |
           set -euo pipefail
-          [ -n "$DB_URL" ] || { echo "::error::The STAGING_DB_URL secret is not set"; exit 1; }
-          case "$DB_URL" in postgres://*|postgresql://*) ;; *) echo "::error::STAGING_DB_URL is not a postgres:// URL"; exit 1 ;; esac
-          case "$DB_URL" in *sslmode=disable*|*sslmode=allow*|*sslmode=prefer*) echo "::error::STAGING_DB_URL must use TLS (sslmode=require)"; exit 1 ;; esac
+          [[ "$TARGET" =~ ^(prod|staging)$ ]] || { echo "::error::BACKUP_TARGET must be prod or staging"; exit 1; }
+          [ -n "$DB_URL" ] || { echo "::error::The BACKUP_DB_URL secret is not set"; exit 1; }
+          case "$DB_URL" in postgres://*|postgresql://*) ;; *) echo "::error::BACKUP_DB_URL is not a postgres:// URL"; exit 1 ;; esac
+          case "$DB_URL" in *sslmode=disable*|*sslmode=allow*|*sslmode=prefer*) echo "::error::BACKUP_DB_URL must use TLS (sslmode=require)"; exit 1 ;; esac
           # The transaction pooler (6543) cannot hold pg_dump's one long snapshot; the session pooler (5432) can.
-          case "$DB_URL" in *:6543/*) echo "::error::STAGING_DB_URL is the transaction pooler (6543); use the session pooler (5432)"; exit 1 ;; esac
+          case "$DB_URL" in *:6543/*) echo "::error::BACKUP_DB_URL is the transaction pooler (6543); use the session pooler (5432)"; exit 1 ;; esac
           # Keep the host and the role name out of the log: GitHub masks the whole secret, not the pieces of it.
           rest="${DB_URL#*://}"; userinfo="${rest%%@*}"; hostport="${rest#*@}"
           SAFE_USER="${userinfo%%:*}"; SAFE_HOST="${hostport%%[:/?]*}"
@@ -117,7 +127,7 @@ jobs:
           major=$(( num / 10000 ))
           echo "Server major version: $major (client $PG_MAJOR)"
           if [ "$major" != "$PG_MAJOR" ]; then
-            echo "::error::Staging runs Postgres $major but this job installs the $PG_MAJOR client. Set PG_MAJOR to $major in this file."
+            echo "::error::The server runs Postgres $major but this job installs the $PG_MAJOR client. Set PG_MAJOR to $major in this file."
             exit 1
           fi
           # Expect: f t f on f 0 t. Not a superuser; bypasses RLS so the dump is whole; cannot write; read only by
@@ -139,7 +149,7 @@ jobs:
 
       - name: Dump, check, count, encrypt
         env:
-          DB_URL: ${{ secrets.STAGING_DB_URL }}
+          DB_URL: ${{ secrets.BACKUP_DB_URL }}
           RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
         run: |
           set -euo pipefail
@@ -205,14 +215,17 @@ jobs:
           done
           counts="${counts%,}"
           echo "Row counts in this dump: $counts"
-          age -r "$RECIPIENT" -o "staging-$stamp.pgc.age" dump.pgc
+          age -r "$RECIPIENT" -o "$TARGET-$stamp.pgc.age" dump.pgc
           shred -u dump.pgc
           rm -f toc.txt
-          [ "$(head -c 21 "staging-$stamp.pgc.age")" = "age-encryption.org/v1" ] || { echo "::error::The output is not an age file"; exit 1; }
-          echo "Encrypted: staging-$stamp.pgc.age, $(stat -c %s "staging-$stamp.pgc.age") bytes"
+          [ "$(head -c 21 "$TARGET-$stamp.pgc.age")" = "age-encryption.org/v1" ] || { echo "::error::The output is not an age file"; exit 1; }
+          echo "Encrypted: $TARGET-$stamp.pgc.age, $(stat -c %s "$TARGET-$stamp.pgc.age") bytes"
+          # GitHub Free gives 500 MB of artifact storage (docs.github.com, read 8 Nov 2026), and 7 nightly files share it.
+          size=$(stat -c %s "$TARGET-$stamp.pgc.age")
+          if [ "$size" -gt 60000000 ]; then echo "::warning::The encrypted dump is $size bytes; 7 of them near the 500 MB artifact quota. Lower retention-days or move the backup before it stops uploading."; fi
           {
-            echo "### Staging backup $stamp"
-            echo "- Encrypted file: \`staging-$stamp.pgc.age\`, $(stat -c %s "staging-$stamp.pgc.age") bytes, kept 7 days"
+            echo "### Backup of $TARGET, $stamp"
+            echo "- Encrypted file: \`$TARGET-$stamp.pgc.age\`, $(stat -c %s "$TARGET-$stamp.pgc.age") bytes, kept 7 days"
             echo "- Row counts of the required tables in this dump: \`$counts\`"
             echo "- The restore drill compares EVERY table with the dump itself (\`scripts/ops/dump-manifest.ts\`), not only these"
           } >> "$GITHUB_STEP_SUMMARY"
@@ -226,7 +239,30 @@ jobs:
       - name: Keep the encrypted file for 7 days
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          path: staging-*.pgc.age
+          path: '*.pgc.age'
           archive: false             # one file, uploaded as is; the artifact is named after it
           retention-days: 7
           if-no-files-found: error
+
+  # A failed scheduled (or hand-started) run opens one `ops-alert` issue, or comments on the open one.
+  # GITHUB_TOKEN only; the issue holds the run link and nothing from the database.
+  alert:
+    needs: backup
+    if: ${{ failure() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      issues: write
+    steps:
+      - name: Open or update the ops-alert issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TITLE: 'Nightly Supabase backup failed'
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          gh label create ops-alert --color B60205 --description 'Production operations alert' 2>/dev/null || true
+          body="The nightly backup failed: $RUN_URL. Read the failed step, fix it, then re-run the workflow by hand. Until a run is green, there is no backup newer than the last green run (kept 7 days)."
+          n=$(gh issue list --label ops-alert --state open --json number,title --jq ".[] | select(.title == \"$TITLE\") | .number" | head -n1)
+          if [ -n "$n" ]; then gh issue comment "$n" --body "$body"; else gh issue create --title "$TITLE" --label ops-alert --body "$body"; fi

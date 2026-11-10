@@ -1,10 +1,10 @@
-# Runbook: free nightly backup of staging (D-138, BL-566)
+# Runbook: free nightly backup of one Supabase project (D-138, BL-566; production on Free, 8 Nov 2026)
 
 The founder chose, on 1 Nov 2026, no paid backup for the alpha and asked for a free path. This is that path. Owner: `ops`; `privacy` reviews; the founder does the account steps. Built in the BL-566 PR; nothing in it has run against staging or GitHub yet (agents never touch hosted projects or accounts).
 
 The three files:
-- `docs/ops/backup/staging-backup.yml`: the workflow, copied unchanged into the private repository.
-- `docs/ops/backup/backup-role.sql`: the read-only role, run once in staging's SQL Editor.
+- `docs/ops/proposed/workflows/supabase-backup.yml`: the workflow, copied unchanged into the private repository. It backs up one project, named by the `BACKUP_TARGET` variable (`prod` by default; `staging` for staging). Production on the Free plan: `docs/ops/runbooks/free-tier-ops.md`.
+- `docs/ops/backup/backup-role.sql`: the read-only role, run once in the SQL Editor of the project to back up.
 - `scripts/ops/dump-manifest.ts` and `scripts/ops/restore-check.ts`: the table-by-table comparison at the end of the monthly drill.
 - `supabase/tests/backup_role.test.mjs`: the proof that the role reads what the dump needs and no sign-in credential.
 
@@ -13,7 +13,7 @@ Every night a GitHub Actions job in a separate **private** repository dumps the 
 
 ## Why this shape
 - Supabase Free includes no backups (supabase.com/pricing and /docs/guides/platform/backups, read 1 Nov 2026).
-- GitHub Free includes US $12 of Actions compute a month (an amount, not a number of minutes) and 500 MB of artifact storage shared with Packages (docs.github.com, "GitHub Actions billing", read 8 Nov 2026). A job of a few minutes a night is well inside the compute. Storage holds 7 nightly files, so each must stay under about 70 MB; the job prints the size every night.
+- GitHub Free includes US $12 of Actions compute a month (an amount, not a number of minutes) and 500 MB of artifact storage shared with Packages (docs.github.com, "GitHub Actions billing", read 8 Nov 2026). A job of a few minutes a night is well inside the compute. Storage holds 7 nightly files, so each must stay under about 60 MB (7 x 60 MB = 420 MB of the 500 MB); the job prints the size every night and warns above 60 MB.
 - A private repository, because the main repository is public.
 - Encryption with `age` to one public key, so a leak of the artifact or the repository shows nothing.
 
@@ -40,16 +40,16 @@ Sessions and refresh tokens are out of reach, but do not read that as "cannot be
 ## Founder steps (about 25 minutes, once)
 1. On the Mac: `brew install age`, then `age-keygen -o ~/.config/earlyletters/backup-key.txt`. Keep that file and a paper copy with the escrow papers. Copy the line that starts with `age1`: that is the public key.
 2. On GitHub: create a **private** repository `earlyletters-backups` (a README is fine).
-3. In Supabase staging, SQL Editor, as `postgres`: run `docs/ops/backup/backup-role.sql` one numbered block at a time and compare each answer with the comment under it. Block 0 tells you staging's Postgres major version; if it is not 17, change `PG_MAJOR` in the workflow before step 5. Block 2 grants table by table; if it prints "NOT granted" (Supabase may not let `postgres` grant on its Auth tables), stop and tell `ops`: the job will not run without `auth.users`, and there is no fallback that widens the role. Block 3 must show `false` for every sign-in credential table.
+3. In the Supabase project to back up (production), SQL Editor, as `postgres`: run `docs/ops/backup/backup-role.sql` one numbered block at a time and compare each answer with the comment under it. Block 0 tells you the project's Postgres major version; if it is not 17, change `PG_MAJOR` in the workflow before step 5. Block 2 grants table by table; if it prints "NOT granted" (Supabase may not let `postgres` grant on its Auth tables), stop and tell `ops`: the job will not run without `auth.users`, and there is no fallback that widens the role. Block 3 must show `false` for every sign-in credential table.
 4. Give the role a password and login (block 4 of the SQL file; `\password` from psql on the Mac is best, because the password then never sits in a query. If you use the SQL Editor, the password is in the clear in that query and the dashboard keeps a history of queries; change it from psql after the first green run). In the new repository, Settings > Secrets and variables > Actions:
-   - Secret `STAGING_DB_URL`: the **session pooler** string (Connect > Session pooler, port 5432) with the user changed to `scribe_backup.<project-ref>` and your password: `postgresql://scribe_backup.<project-ref>:<password>@<pooler host>:5432/postgres?sslmode=require`. Not the transaction pooler (6543): the job refuses it.
+   - Variable `BACKUP_TARGET`: `prod` (or `staging`). Secret `BACKUP_DB_URL`: the **session pooler** string (Connect > Session pooler, port 5432) with the user changed to `scribe_backup.<project-ref>` and your password: `postgresql://scribe_backup.<project-ref>:<password>@<pooler host>:5432/postgres?sslmode=require`. Not the transaction pooler (6543): the job refuses it.
    - Secret `BACKUP_AGE_RECIPIENT`: the `age1` line.
    - Record the date you set this password and the date it is next due (180 days later) in `docs/security/SECRETS_REVIEW.md` section 11, as a date only.
-5. Copy `docs/ops/backup/staging-backup.yml` to `.github/workflows/staging-backup.yml` in the new repository and commit it to its default branch (scheduled runs only start from there).
-6. Run it once by hand (Actions > Nightly staging backup > Run workflow). Check: the run is green, its summary shows the row counts of the required tables, and one artifact named `staging-<time>.pgc.age` is listed. Then do the first restore drill below the same day.
+5. Copy `docs/ops/proposed/workflows/supabase-backup.yml` to `.github/workflows/supabase-backup.yml` in the new repository and commit it to its default branch (scheduled runs only start from there).
+6. Run it once by hand (Actions > Nightly Supabase backup > Run workflow). Check: the run is green, its summary shows the row counts of the required tables, and one artifact named `<target>-<time>.pgc.age` is listed. Then do the first restore drill below the same day.
 
 ## The workflow
-It is `docs/ops/backup/staging-backup.yml`. In order, it:
+It is `docs/ops/proposed/workflows/supabase-backup.yml`. In order, it:
 1. Installs `age` and the Postgres client whose major version is `PG_MAJOR` (from the PostgreSQL project's apt repository if Ubuntu's own does not carry it) and checks `pg_dump --version`.
 2. Refuses to go on, before any dump, if: the URL is not `postgres://`, does not use TLS or is the transaction pooler; the server's major version differs from `PG_MAJOR`; or the role is a superuser, cannot bypass row-level security, can write to `entries`, does not start read only, holds `pg_read_all_data`, can read any sign-in credential table or the Vault, or cannot read `auth.users`. A connection failure prints one category ("the password was rejected", "timed out", and so on), never the driver's text, so the pooler host and the role name stay out of the log.
 3. Dumps the schemas `public`, `ops`, `insights`, `sync_private` and `auth` (`pg_dump --format=custom`), with every Auth table other than `users` and `identities` left out by name, and owners, row security policies and grants recorded.
@@ -61,7 +61,7 @@ The only third-party action, `actions/upload-artifact`, is pinned to commit `cf4
 ## Monthly restore drill (founder's Mac, about 25 minutes)
 Never into staging (ENVIRONMENTS.md, "Staging during the alpha"). Needs Docker, this repository checked out with Node 22, and the Postgres 17 tools (`brew install postgresql@17`, for `pg_restore` and `psql`; the same major as `PG_MAJOR`). Do all of it in one new empty folder, for example `mkdir ~/backup-drill && cd ~/backup-drill`.
 1. Download the newest artifact from the private repository into that folder. If it arrives as a `.zip`, unzip it.
-2. Decrypt: `age -d -i ~/.config/earlyletters/backup-key.txt -o dump.pgc staging-*.pgc.age`
+2. Decrypt: `age -d -i ~/.config/earlyletters/backup-key.txt -o dump.pgc *.pgc.age`
 3. Make the manifest from the decrypted dump (reads the file only, touches no database): `node <repository>/scripts/ops/dump-manifest.ts dump.pgc > manifest.txt`. It lists every table in the dump with its row count and the number of policies. If it prints a FINDING, the backup itself is missing something: write FAIL in the log and tell `ops`.
 4. Start a throwaway Postgres of the same major version, on this Mac only:
    `docker run --rm -d --name drill -e POSTGRES_PASSWORD=drill -p 127.0.0.1:55432:5432 postgres:17`
@@ -93,6 +93,6 @@ A real restore (`restore-drill.md` Part 2) is into a new project and starts with
 - Whether Supabase lets `postgres` grant `select` on `auth.users` and `auth.identities` (Supabase's own role owns the Auth schema). If it does not, the job refuses to run and the question goes to `ops`; the role is never widened to get around it.
 - That the Vault, cron, net and storage schemas are closed to a new role on the hosted project (backup-role.sql block 3 reads it; PostgreSQL 16 locally says yes).
 - That a custom role signs in through the session pooler as `scribe_backup.<project-ref>`. Supabase documents that form only for `postgres`; one community report (github.com/orgs/supabase/discussions/50229, Sep 2026) says a custom read-only role works in session mode and not in transaction mode.
-- Staging's actual Postgres major version (`supabase/config.toml` says 17; block 0 and the job's check read it).
+- The project's actual Postgres major version (`supabase/config.toml` says 17; block 0 and the job's check read it).
 - That a full dump as this role completes on Supabase. Rehearsed (8 Nov 2026) on local PostgreSQL 16 with this repository's 27 migrations and stand-in Auth, Storage and Vault schemas: the role check, the dump, the restore and the manifest comparison, including a PASS and a FAIL after a table was dropped.
 - The private repository's Actions limits beyond the billing page above, and how the artifact downloads with `archive: false` in the web interface.
