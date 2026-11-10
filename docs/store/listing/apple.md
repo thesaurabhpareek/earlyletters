@@ -53,7 +53,7 @@ IN ENGLISH
 Early Letters works in English.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Your book stays on your phone. Delete a letter and it waits 30 days in Recently deleted, or you can erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Sign in to keep your book across your phones. If you sign in and agree to sync, your letters are kept on your phone and on our servers, so they reach your other phones. Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one. Delete a letter and it waits 30 days in Recently deleted, or you can erase it at once.
 
 A BOOK FOR EACH CHILD
 Each child gets their own book, with their own months. Starting a book is free, and your first two letters are free across every book.

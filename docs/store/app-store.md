@@ -48,7 +48,7 @@ NAMES SPELLED YOUR WAY
 Add the names and home words you use, like a nickname or the name of a stuffed rabbit, so we spell them your way.
 
 PRIVATE BY DEFAULT
-Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Without an account, your book stays on your phone. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
+Your letters and recordings are private. We never sell them, never use them for ads and never use them to train machine learning models. Sign in to keep your book across your phones. If you sign in and agree to sync, your letters are kept on your phone and on our servers, so they reach your other phones. Recordings are kept on the phone that made them, and in your iPhone's own backup if you use one. Keep any letter just for you, out of the book. Delete one and it waits in Recently deleted for 30 days, or erase it at once.
 
 REMINDERS, ONLY IF YOU WANT THEM
 Reminders are off until you turn them on. You pick the days and the time, and none comes after 9:30 at night.
