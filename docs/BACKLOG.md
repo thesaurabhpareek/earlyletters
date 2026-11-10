@@ -3085,6 +3085,148 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
+## Co-parent: Build 12 coming-soon state and the real feature (BL-882 to BL-889; grooming of 10 Nov 2026)
+
+Founder decision, 10 Nov 2026: in Build 12 sign-in is required and the signup flow must work. The co-parent surfaces (Family tab, invite, share, "Write this book together") may show a "coming soon" state in Build 12 instead of being hidden. The real co-parent feature goes to grooming, below. This block supersedes D-126 for Build 12 only (D-126 said "show no coming soon surface"); the founder's 10 Nov message is the authority, and the DECISIONS entry is a proposal in the PR body, not made here.
+
+**What exists today (read on `origin/develop` at 526c9b8b3, 10 Nov 2026; not run on a phone).** The task brief named `apps/mobile/src/lib/family/surfaces.logic.ts`; that file does not exist. The switch lives in `apps/mobile/src/lib/family/entry.logic.ts` (`familySurfacesShown`, `inviteDestination`, `visibleCoParentDoors`) and `apps/mobile/src/lib/capabilities.ts` (`capabilities.coParent`, which follows `serverFeaturesEnabled()`). The presentation exists: `components/family/coparent-soon.tsx` (Family tab and invite routes, with `familyCopy.soon` and the remote flag `flags.familyTeaser`) and `invite-coming-soon.tsx`. On `develop` the store build with servers on would show the REAL invite flow (`inviteDestination` returns `flow` whenever server features are on), which is the wrong thing for Build 12. Open PRs, read through the REST API (not on `develop`): #720 (draft, BL-776 by its own label, which collides with the BL-776 in this file; stacked on #699 and #665) adds `CO_PARENT_IN_STORE_BUILD = false` so a store build hides the Family tab and the child Settings row whatever `coParent` says; #724 (draft, NX-36 S2 and S3, stacked on #722) is the account-first Welcome and sign in, and it hides "I was invited" in the store build (B12-5). Neither is merged. The founder decision turns #720's "hide" into "show coming soon", still behind its one constant.
+
+**Tier key (my reading; I did not find a written definition, so confirm).** T0: copy, docs or test only. T1: reversible app code behind a flag. T2: schema, auth, infrastructure, CI or a secret. T3: spend, counsel, or a decision only the founder can make.
+
+**Suggested order.** 882 (Build 12) -> 883 -> 884 -> 885 (needs counsel answers) -> 886 -> 887 -> 888 -> 889. 883 and 884 can run in parallel; 886 and 887 can run in parallel after 885's design is approved. Do not start 885 onward before the founder answers the questions in the PR body (cap, invitee consent, Leave).
+
+#### BL-882 Build 12: one "coming soon" state for every co-parent surface, driven by the one co-parent flag
+- Status: ready
+- Mode: agent
+- Owner: mobile engineer
+- Milestone: Build 12 (store build, servers on)
+- Size: S
+- Tier: T1. Privacy and legal flags: none new (no data is collected; the one content-free `coparent_soon_opened` event already exists and analytics is off in the store build).
+- Satisfies: the founder decision of 10 Nov 2026 (a coming-soon state is allowed); D-126 (amended for Build 12 only); NX-36 S0 as stacked in #720; B12-5 (no "I was invited" door that leads nowhere).
+- Who: `mobile`; copy by `content`; review `design-systems`, `qa`.
+- Scope: one constant decides, `CO_PARENT_IN_STORE_BUILD` (the constant #720 adds in `lib/family/entry.logic.ts`; do not add a second flag). When it is false and the build is a store build, every co-parent entry point shows the existing coming-soon presentation instead of being hidden or opening the real flow: the Family tab, `/invite`, `/invite/new`, the child Settings row "Write this book together", and an opened invite link (which keeps no token, as today). `inviteDestination` and `familySurfacesShown` read the one constant; alpha builds (`testflight`, `preview`, development) are unchanged. "I was invited" stays hidden in the store build (#724, B12-5), because a person cannot join in Build 12 and the invite link already lands on the calm page. Land on top of #720 and #724, or fold into #720 if the founder prefers one PR; do not duplicate their code. The words are written by the content lead (BL-882 does not write copy; it reads `familyCopy.soon` and may use a placeholder only in a test). Copy constraints the content lead must meet (`CLAUDE.md`, `packages/content/test/rules.test.ts`, `VOICE.md`, `BRAND.md` glossary): (1) no em dash, en dash, curly quote, ellipsis character or emoji; (2) no fear, guilt or loss language; (3) never count gaps and no streaks, points or badges; (4) never gender the child, use `{child}`; (5) glossary words only, so "co-parent" in settings and buttons and "{child}'s other parent" in prose, never "partner", "spouse", "coparent" or "member"; (6) never imply AI writes anything; (7) promise nothing the build cannot keep: no date, no "tell me when it's here" button (SET-08 removed it because no build keeps that promise), no grandparents or other family (D-055); (8) the name comes from `brand.name`, never typed.
+- Acceptance:
+  - Given a store build with server features on and `CO_PARENT_IN_STORE_BUILD` false, when a signed-in person opens the Family tab, then they see the coming-soon presentation, no invite button, no member list and no network call to an invite function.
+  - Given the same build, when they open Settings, a child's book, then the row "Write this book together" shows the same state and not a sign-in or invite sheet.
+  - Given the same build, when an invite link is opened, then the calm coming-soon page shows and no token is kept in the Keychain (`planIncomingLink` `keepInviteToken` false).
+  - Given an alpha build, then every co-parent screen behaves exactly as before (existing `coparent-soon.test.ts` and `entry` tests stay green).
+  - Given `CO_PARENT_IN_STORE_BUILD` set true in a test, then the real flow routes return and no other file changed (one switch).
+  - Given the copy, when `packages/content` tests run, then the content rules pass without edits to any test.
+  - Given VoiceOver and the largest Dynamic Type, then the heading is read first and the text is not clipped (device row: add an unused S1 id after a `git grep`).
+- Depends on: #720 and #724 merged or folded in; copy from `content`.
+- Extends: BL-776 as labelled in #720 (id collision, see the PR body), D-126, SET-08.
+
+#### BL-883 Co-parent real feature, decision record and threat model (design first)
+- Status: needs-decision (founder answers to the questions in this PR's body)
+- Mode: pair
+- Owner: family owner
+- Milestone: after Build 12 (a 1.0.x release, D-121)
+- Size: M
+- Tier: T3. Privacy and legal flags: children's data, invitee consent, deletion, counsel.
+- Satisfies: A-REQ (co-parent), LEGAL-REQ-005, LEGAL-REQ-010 as they bind, PRIV-R21, D-099 and D-124 (two-parent cap takes effect when sharing first ships), D-113 (Leave).
+- Who: `product` drafts; `privacy`, `legal`, `cto` review. Counsel is the founder's step (FT-47 list).
+- Scope: one written spec (no code) fixing: who can be invited (an adult with their own account, signed in, 18 or older), what an invitee sees before accepting (the Shown, Records, Never and Decline lines of COORDINATION section 10, citing LEGAL-REQ-006's sensitive-data text that names the co-parent), what the invitee's consent records, what each parent can read, what happens on removal, leave, a separated household (FAM-11 floor) and account deletion of either parent, and the two-parent cap. Produces the D-### proposals and the counsel questions. Cites `docs/backlog/future/06-coparent-sharing-v1-1.md` (CP-01 to CP-03, the flip-the-switch criteria) and FAM-01, FAM-11, FAM-12 rather than copying them.
+- Acceptance:
+  - Given the spec, when `privacy` and `legal` read it, then every datum is classified L1 to L4 (principle 10) and each public claim maps to code and a test (principle 14).
+  - Given the spec, then each of BL-884 to BL-889 below has its acceptance lines in the spec's terms and no requirement is invented (each line cites an existing id or is marked as a proposal).
+  - Given the counsel questions, then they are listed for the founder and none is answered by an agent.
+- Depends on: founder answers.
+
+#### BL-884 Invite and join server path: peek, redeem, rate limits, token never logged
+- Status: blocked (BL-883)
+- Mode: agent
+- Owner: sync owner
+- Milestone: after Build 12
+- Size: M
+- Tier: T2 (schema and Edge Function; needs the founder's `approve-migration` label, D-041). Privacy and legal flags: invitee consent (the join asks before it joins, BL-322); token only in the fragment and never in logs (A-NFR-012); deny and allow tests for every new function (principle 7).
+- Satisfies: BL-322, BL-331 and BL-334 outcomes as they apply, CP-01 dependency list, G-02 and G-04 in `docs/backlog/future/06-coparent-sharing-v1-1.md` (reuse branch `auto/2026-10-05-fixes`), A-NFR-012.
+- Who: `db`, `platform`; review `privacy`, `cto`.
+- Scope: `peek_invite`, redeem through an Edge Function with rate limits and request ids, 8-character code as well as link, invite expiry and cancel, idempotent on a client key. No client UI here.
+- Acceptance:
+  - Given an expired, used or cancelled invite, when redeemed, then a typed code returns and no row changes.
+  - Given 20 redeems from one user in a minute, then the limit holds and the response carries a request id and no user data.
+  - Given a third parent tries to join a two-parent book, then it is refused (cap) with a typed code.
+  - Given the function logs, when searched, then no token appears.
+- Depends on: BL-883.
+
+#### BL-885 Membership, leave and remove, with "private from now on" and the safety floor
+- Status: blocked (BL-883, BL-884)
+- Mode: agent
+- Owner: sync owner
+- Milestone: after Build 12
+- Size: M
+- Tier: T2. Privacy and legal flags: children's data (what the leaver and the remaining parent keep); deletion (D-113: left books must be listed with read, export and delete before Leave is offered); counsel on a separated household (FAM-11 floor); nobody deletes another author's words (principle 15).
+- Satisfies: BL-331, BL-175 (deferred), D-113, FAM-11 floor, LEGAL-REQ-040 kill switch `invites`.
+- Who: `db`, `mobile`; review `privacy`, `legal`.
+- Scope: `leave_child` and `remove_child_member` with tests, the left-books list under "Letters to {child}" (read, export, delete) that D-113 waits for, and a kill switch that stops invites within 5 minutes while the app keeps working locally.
+- Acceptance:
+  - Given a parent who leaves, then their own letters stay theirs and are listed, readable, exportable and deletable on their phone, and the other parent sees only what the spec says.
+  - Given a removed parent, then they read nothing new after removal (deny test).
+  - Given the `invites` switch stopped, when five minutes pass, then an open app cannot send or redeem an invite and keeps recording.
+- Depends on: BL-883, BL-884.
+
+#### BL-886 Invite and join screens: ask before joining, calm failure messages
+- Status: blocked (BL-884)
+- Mode: agent
+- Owner: mobile engineer
+- Milestone: after Build 12
+- Size: M
+- Tier: T1. Privacy and legal flags: invitee consent shown before accepting (Shown, Records, Never, Decline per PRIV-R21); sensitive-data consent names the co-parent; age 18 or older neutrally presented; no child name in the link, URL, push or analytics.
+- Satisfies: BL-322, A-REQ-028, PRIV-R21, LEGAL-REQ-006 consent text, D-087.
+- Who: `mobile`, `content` for words, `design-systems`; review `privacy`.
+- Scope: wire the existing screens (`app/invite/*`, `FamilyShared`) to the BL-884 path with the copy rules of BL-882; the join page states who invited them, what they will see, and has a real Decline. Reuses the code already in the repo; do not rewrite it.
+- Acceptance:
+  - Given a signed-in invitee on an invite link, when the page opens, then nothing is joined until they tap Join, and Decline leaves no row.
+  - Given a link opened while signed out, then sign-in comes first and the invite survives it.
+  - Given an expired link, then a calm message shows, not an error code.
+  - Given the content tests, then they pass unchanged.
+- Depends on: BL-884, copy from `content`.
+
+#### BL-887 Two parents, one book: sync, private letters and "From Papa" signing
+- Status: blocked (BL-883, BL-885)
+- Mode: pair
+- Owner: mobile engineer
+- Milestone: after Build 12
+- Size: L (split on first look: sync visibility, then signing)
+- Tier: T2. Privacy and legal flags: children's data on a server shared by two adults; a private letter never reaches the other phone; recordings stay on the author's phone until shared voice (D-059, FAM-03); deletion of either account.
+- Satisfies: CP-01 and CP-03 criteria 3 and 4 in `docs/backlog/future/06-coparent-sharing-v1-1.md`, BL-177 two-phone check, BL-174.
+- Who: `mobile`, `qa`; the two-phone device check needs the founder's devices.
+- Scope: two accounts share one book; each letter is signed by its author; private stays private; airplane mode then reconnect loses nothing.
+- Acceptance:
+  - Given two phones on two accounts, when each writes a letter, then each appears on the other after pull, and a private letter never does.
+  - Given airplane mode, when reconnected, then nothing is lost and nothing duplicates.
+  - Given either account deleted, then the book follows the spec of BL-883.
+- Depends on: BL-883, BL-885.
+
+#### BL-888 Co-parent claims, privacy label and App Review notes
+- Status: blocked (BL-883)
+- Mode: human
+- Owner: legal
+- Milestone: before the release that turns sharing on
+- Size: S
+- Tier: T3. Privacy and legal flags: Privacy Policy and privacy label say letters in a shared book are stored on our server; claims registry; counsel.
+- Satisfies: LEGAL-REQ-006, principle 14, CP-01 legal dependency, criterion 8 of `06-coparent-sharing-v1-1.md`.
+- Who: `legal`, `content`; founder merges legal texts (D-132).
+- Scope: update the claims inventory, the in-app disclosures and the Notes for Review (2.3.1) for sharing; remove `familyCopy.soon` when the real flow ships.
+- Acceptance:
+  - Given each public claim about sharing, when checked, then it names the code and the test behind it or is removed.
+  - Given the Notes for Review, then they explain sign-in and sharing and say how a reviewer can try it.
+- Depends on: BL-883.
+
+#### BL-889 Co-parent device test sheet and the switch-on gate
+- Status: blocked (BL-884, BL-885, BL-886, BL-887)
+- Mode: human
+- Owner: qa engineer
+- Milestone: before the release that turns sharing on
+- Size: S
+- Tier: T3 (the founder flips `CO_PARENT_IN_STORE_BUILD`). Privacy and legal flags: all of the above verified on a release build.
+- Satisfies: the eleven criteria of section 3 of `docs/backlog/future/06-coparent-sharing-v1-1.md`.
+- Who: `qa`, founder devices.
+- Scope: one run sheet of the invite, join, decline, leave, remove, two-phone sync, kill switch and deletion cases, and the independent review (D-041) of `lib/auth`, `lib/sync`, `lib/family` and the migrations on the flipping commit.
+- Acceptance:
+  - Given the sheet, when every row passes on two iPhones, then the founder flips the one constant in a separate PR.
+- Depends on: BL-884 to BL-887.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
