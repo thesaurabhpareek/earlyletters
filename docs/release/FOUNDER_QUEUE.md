@@ -5,9 +5,9 @@
 - `npm run release:ready -- --step S-04b` shows one step; `--json` is the machine copy. PASS was seen live; ATTESTED is the setup record's word with its date; UNKNOWN is never done.
 - If a step is PASS or ATTESTED, do not ask for it again. The rest of this file is the 28 Oct queue, kept for history.
 
-**This file is a list of steps, not a live status.** For where things stand now, read the TODAY page (`docs/release/TODAY.md`, generated) or the pinned status issue (#pending, until the generator in open PR #565 is merged and the issue exists). If this file and the TODAY page disagree, the TODAY page wins.
+**This file is a list of steps, not a live status.** For where things stand now, run `npm run release:ready` (it reads the setup steps live and changes nothing; see the top of `docs/release/FOUNDER_QUEUE.md`). If this file and the output of `release:ready` disagree, `release:ready` wins.
 
-Last verified: 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct), read against `origin/develop` at 6bfb94a9 and GitHub REST. The only later re-read was on 30 Oct and covered one item (W0-14a). Nothing below has been re-verified since; no session has verified that build 1 is on TestFlight.
+Last verified: 28 Oct 2026, 06:30 UTC (11:30 PM PT Tue 27 Oct), read against `origin/develop` at 6bfb94a9 and GitHub REST. The only later re-read was on 30 Oct and covered one item (W0-14a). Nothing below has been re-verified since. Build state has moved on since 30 Oct (see `docs/release/BUILD_GATE_2026-11-08.md` and merged #697); this file does not say where the builds stand.
 
 - **Counts as of 30 Oct, not today:** Wave 0 had 10 of 15 open, 3 partly done, 2 done. Done: items 2 and 3 (the agent lane and the daily PRD update are off). Partly done: item 4 (#309 closed; the Vercel setting was still on), item 6 (secret scanning and push protection on; Dependabot alerts could not be read) and item 14 (build 1 prerequisites: a, Apple enrolment, done on 29 Oct; b to f open).
 - **What the repo could see on 28 Oct** (`node scripts/founder/check.mjs`): default branch `main`; no branch protection on `develop` or `main` (`main` had only a ruleset: deletion, non-fast-forward, Copilot review); `nightly.yml`, `testflight.yml` and `agents.yml` not registered; `TRUSTED_SIGNING_KEYS` empty; 2 of 26 migration files recorded as applied. Run the checker again for today's answer.

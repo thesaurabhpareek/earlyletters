@@ -222,9 +222,9 @@ If a build goes out without step 4, add `whatToTest.withoutSpeech`. That can hap
 
 ## Where build 1 stands (30 Oct 2026)
 
-**Last verified 30 Oct 2026. This section is a snapshot, not a live status.** For where build 1 stands now, read the TODAY page (`docs/release/TODAY.md`, generated) or the pinned status issue (#pending, until the generator in open PR #565 is merged and the issue exists). No session has verified since 30 Oct whether any build has been made or uploaded, and this page does not claim it has.
+**Last verified 30 Oct 2026. This section is a snapshot, not a live status.** For the live state of the setup steps, run `npm run release:ready`; for the build gate as read on 8 Nov, see `docs/release/BUILD_GATE_2026-11-08.md`, and #697 (merged) added preview-record TestFlight builds to the Family group. Later builds exist, so the sentences below about build 1 are the 30 Oct reading and are out of date.
 
-Step 1 is done (Apple Developer Program, Active as of 29 Oct 2026). No build has been made and nothing has been uploaded. What is left for build 1 is what steps 2, 3 and 4 hand over, and then step 5.
+Step 1 is done (Apple Developer Program, Active as of 29 Oct 2026). As of 30 Oct, no build had been made and nothing had been uploaded (out of date; see the note above). What is left for build 1 is what steps 2, 3 and 4 hand over, and then step 5.
 
 **The preflight on `develop` at f04456e** (`npm run preflight:testflight -w @scribe/mobile`, run on 30 Oct in a clean worktree; it never goes online and needs no secret; exit code 1): 53 PASS, 2 FAIL, 4 WARN, 2 UNVERIFIED, 2 founder steps MISSING, 3 to CHECK.
 
