@@ -54,7 +54,6 @@
     },
     "production": {
       "autoIncrement": true,
-      "channel": "production",
       "environment": "production",
       "env": {
         "EXPO_PUBLIC_DOCS_BASE_URL": "https://packs.earlyletters.app",
@@ -85,15 +84,21 @@
     }
   },
   "submit": {
-    "production": {},
+    "production": {
+      "ios": {
+        "ascAppId": "6829377245"
+      }
+    },
     "preview": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     },
     "testflight": {
       "ios": {
-        "ascAppId": "6829163677"
+        "ascAppId": "6829163677",
+        "groups": ["Family"]
       }
     }
   }

@@ -341,6 +341,8 @@ export const en = {
     // Writing down a long take (S14): after 8 s, then a quiet way out after 15 s with no progress.
     waitingLong: "Long recordings take a little more time.",
     laterButton: "Read it back later",
+    // Keep the recording tapped while the save is still running (the hung-save case, #618): nothing is kept yet, so say so.
+    keepStillSaving: "This recording is still being saved. Give it a moment, then tap Keep again.",
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
@@ -670,7 +672,7 @@ export const en = {
       { title: "Dear {child},", body: "Anything to tell {child} today? A line or two is enough." },
       { title: "The house is quiet", body: "A good moment for a few words to {child}." },
       { title: "One small thing", body: "What did {child} do today that you want to remember?" },
-      { title: "Your voice, kept", body: "Talk for a minute. {child} will hear it one day, just as you said it." },
+      { title: "Your voice, kept", body: "Talk for a minute. One day {child} can hear how you sounded." },
       { title: "Before you sleep", body: "Something {child} did, said or tried. Or just tap Not much today." },
       { title: "A page for {weekday}", body: "Something from today for {child}'s book?" },
     ],
@@ -1483,6 +1485,21 @@ export const en = {
     // The stop screen's one line (S02, LEGAL-REQ-002), a title, so no full stop.
     stopTitle: "{app} is currently for adults 18 and over",
     mistakeButton: "I answered by mistake",
+  },
+  // Before you begin (founder decision F2, 8 Nov 2026; proposals/account-security/content.md 4.1, final strings word for
+  // word): the age question above plus an unticked agreement box, on one screen. The agreement sentence is hashed and
+  // stored with the local record (apps/mobile/src/lib/agreements.logic.ts), so changing a word here is a new record
+  // text, not a typo fix. Q-D (agree or acknowledge the Privacy Policy) is with counsel.
+  beforeBegin: {
+    agree: "I agree to the Terms of Service and Privacy Policy.",
+    termsLink: "Terms of Service",
+    privacyLink: "Privacy Policy",
+    linkA11yHint: "Opens in a browser inside the app.",
+    // The reason line under the links when Continue is tapped too early (announced).
+    chooseAnswer: "Choose Yes or No.",
+    tickBox: "Check the box to continue.",
+    // Installs that passed the old age gate see only the agreement row and Continue, once (counsel Q-C).
+    returningTitle: "Before you continue",
   },
 } as const;
 

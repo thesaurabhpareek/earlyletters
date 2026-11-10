@@ -70,7 +70,6 @@ import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { beginTheBookAllowed, gateInputsFromAuth } from '@/lib/first-run/gate.logic';
 import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
-import { invitedDoorShown } from '@/lib/first-run/welcome.logic';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
@@ -151,8 +150,7 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
   const child = joinNames(names, o.childFallback);
   const namedCount = names.filter((n) => n.trim()).length;
   const spoken = useSpokenLanguage();
-  // "I was invited" is hidden in a servers-on store build (9 Nov ruling); alpha builds keep it. Servers off: hidden as before.
-  const doors = { ...visibleCoParentDoors(capabilities.coParent), joinButton: invitedDoorShown({ alpha: PLUS_ALPHA, coParent: visibleCoParentDoors(capabilities.coParent).joinButton }) };
+  const doors = visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA);
   const [languageOpen, setLanguageOpen] = useState(false);
 
   // The cover: the name after each typing pause; a chip's signature at once, a typed one after a pause.

@@ -5,8 +5,10 @@
  * (node:sqlite, as store.shelf.test.ts), and at a seeded random moment every bit of in-memory state is dropped: no
  * flush, no unmount, the store closed as a kill leaves it. The database is opened again from the file and Review's
  * mount runs the functions review.tsx calls (mountReview, cleanSpoken, restoreApplied). The final text
- * must be the one on screen at the kill, except typed words still inside the 300 ms debounce, which may be lost and
- * nothing older (F04-REQ-011). 100 seeds. Fictional family "Asha" only.
+ * must be the one on screen at the kill, except typed words changed in the last 300 ms, which may be lost, and nothing
+ * older (F04-REQ-011, F06-REQ-036). The writer writes the newest words at most 300 ms after the first change it has
+ * not written, however long the editing goes on (a maximum wait, not a debounce), so the model's durable words move
+ * 300 ms after the first unwritten change, and not after 300 ms of quiet. 100 seeds. Fictional family "Asha" only.
  */
 import { copyFileSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -142,10 +144,13 @@ function run(seed: number) {
   const base = wordsBase(s.raw);
   const writer = reviewWriter((p) => void store.setDraftReview(draft.id, base, p), TYPED_WRITE_DEBOUNCE_MS, clock.timers);
 
-  // Typed words the screen holds but may not have written yet: when they changed, and what stood before them on disk.
-  let typedAt = -Infinity;
+  // Typed words the screen holds but may not have written yet: when the first unwritten change was made, and what
+  // stood on disk before it. The writer's timer is armed by that change and not moved by later ones (maximum wait).
+  let firstUnwrittenAt = -Infinity;
   let durableText: string | null = null; // the person's words a kill cannot lose
-  let pendingText: string | null | undefined; // set while a debounce is open
+  let pendingText: string | null | undefined; // set while words wait for the timer
+  // Every version of the person's words with the time it was made, to hold the bound without the model's help.
+  const versions: { at: number; text: string | null }[] = [{ at: -Infinity, text: s.userText }];
 
   const steps = 5 + Math.floor(r() * 40);
   const killAt = Math.floor(r() * (steps + 1));
@@ -170,8 +175,9 @@ function run(seed: number) {
       const cur = shown(s.raw, s);
       const text = r() < 0.7 ? `${cur} ${pick(WORDS)}` : cur.slice(0, Math.max(0, cur.length - 1 - Math.floor(r() * 5)));
       s = { ...s, userText: text };
+      if (pendingText === undefined) firstUnwrittenAt = clock.now();
       pendingText = text;
-      typedAt = clock.now();
+      versions.push({ at: clock.now(), text });
       writer.text(text);
     } else if (op < 0.9 && pendingText !== undefined) {
       writer.flush(); // Done, or the app leaving the foreground
@@ -179,7 +185,8 @@ function run(seed: number) {
       pendingText = undefined;
     }
     clock.advance(Math.floor(r() * 2 * TYPED_WRITE_DEBOUNCE_MS));
-    if (pendingText !== undefined && clock.now() - typedAt >= TYPED_WRITE_DEBOUNCE_MS) {
+    // The timer fired inside the advance: it wrote the newest words (a change comes only between advances).
+    if (pendingText !== undefined && clock.now() - firstUnwrittenAt >= TYPED_WRITE_DEBOUNCE_MS) {
       durableText = pendingText;
       pendingText = undefined;
     }
@@ -187,6 +194,7 @@ function run(seed: number) {
 
   // The kill: in-memory state is gone with no flush; the file is all that is left.
   const onScreen = shown(s.raw, s);
+  const killedAt = clock.now();
   const lostWindowOpen = pendingText !== undefined;
   const expectedText = shown(s.raw, { ...s, userText: lostWindowOpen ? durableText : s.userText });
   h.close();
@@ -197,6 +205,13 @@ function run(seed: number) {
   expect(back.raw).toBe(said); // raw_transcript untouched
   expect(shown(back.raw, back), `seed ${seed}`).toBe(expectedText);
   if (!lostWindowOpen) expect(shown(back.raw, back), `seed ${seed}`).toBe(onScreen);
+  // The bound itself, whatever the model above says (F06-REQ-036): the reopened words are the newest version made at
+  // least 300 ms before the kill, or a later one. Nothing made earlier than that window is lost, however long the burst.
+  const floor = versions.reduce((k, v, i) => (v.at <= killedAt - TYPED_WRITE_DEBOUNCE_MS ? i : k), 0);
+  expect(
+    versions.slice(floor).some((v) => v.text === back.userText),
+    `seed ${seed}: reopened words are older than the last ${TYPED_WRITE_DEBOUNCE_MS} ms of editing`,
+  ).toBe(true);
   // Everything shown after reopen is the person's or a fix the verifier accepted just now.
   const verified = cleanOf(back.raw);
   for (const e of back.applied) expect(verified).toContainEqual(e);
@@ -206,10 +221,10 @@ function run(seed: number) {
 }
 
 describe('[SR-C-06] RT-REV-02 replay: Review\'s final text survives a kill at any moment', () => {
-  it('100 seeded runs reopen to the same final text (typed words inside the debounce aside)', () => {
+  it('100 seeded runs reopen to the same final text (typed words of the last 300 ms aside)', () => {
     let windows = 0;
     for (let seed = 1; seed <= 100; seed++) if (run(seed)) windows++;
-    // The runs reach both cases: a kill with nothing pending, and one inside the typed debounce.
+    // The runs reach both cases: a kill with nothing pending, and one with words still waiting for the timer.
     expect(windows).toBeGreaterThan(0);
     expect(windows).toBeLessThan(100);
   }, 120_000);

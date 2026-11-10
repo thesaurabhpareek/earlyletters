@@ -445,7 +445,8 @@ interface Source {
 
 function sourceFor(job: Job): Source | null {
   const d = getDraft(job.id);
-  if (d) return d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
+  // A take still being saved (state 'recording') has no final file or length yet: words wait for it (BL-563).
+  if (d) return d.state !== 'recording' && d.audioUri && d.rawTranscript == null ? { audioUri: d.audioUri, durationMs: d.audioDurationMs, childId: d.childId } : null;
   const e = getEntry(job.id);
   if (e && e.transcriptStatus === 'waiting' && e.audioUri) return { audioUri: e.audioUri, durationMs: e.audioDurationMs ?? null, childId: e.childId };
   return null;

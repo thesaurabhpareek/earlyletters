@@ -40,6 +40,7 @@ import {
   bearerOf, clientIp, codeHmac, failReply, idempotencyKeyOf, incomingRequestId, okReply, parseJson, pausedReply,
   postgrestError, readBody, serverKilled, sessionOf, subjectHashes, timedRequest, unknownKillSwitches, upstreamJson, type EnvGetter, type FetchFn,
 } from '../_shared/http/http.ts';
+import { publishableKeyOf, secretKeyOf, serviceHeaders } from '../_shared/keys/keys.ts';
 
 export const MAX_BODY_BYTES = 1_024;
 const ROUTE_RE = /\/invite-redeem\/v1\/?$/;
@@ -101,8 +102,8 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
       }
 
       const supabaseUrl = (env('SUPABASE_URL') ?? '').replace(/\/+$/, '');
-      const anonKey = env('SUPABASE_ANON_KEY') ?? '';
-      const serviceKey = env('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+      const anonKey = publishableKeyOf(env) ?? '';
+      const serviceKey = secretKeyOf(env) ?? '';
       const pepper = env('INVITE_CODE_PEPPER') ?? '';
       const subjectSecret = env('RATE_SUBJECT_SECRET') ?? '';
       // Fail closed (BL-334): without the pepper a code could only be compared in clear, so nothing is compared.
@@ -143,7 +144,7 @@ export function makeRedeemHandler(env: EnvGetter, opts: RedeemOptions = {}): (re
       };
       const res = await timedRequest(fetchFn, `${supabaseUrl}/rest/v1/rpc/invite_redeem_by_code`, {
         method: 'POST',
-        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        headers: { ...serviceHeaders(serviceKey), 'Content-Type': 'application/json' },
         body: JSON.stringify(args),
       }, timeoutMs);
       if (!res) return unavailable({ provider: 'postgrest', status: 0, code: 'network' });

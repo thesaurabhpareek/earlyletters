@@ -46,7 +46,11 @@ describe('a take that ended by leaving the app says so', () => {
   // in test/listen.test.ts (reviewParams) and test/words-state.test.ts (stopLine). Here: the screens use them.
   it('Listening passes why the take stopped to Review (leaving the app, or a call or an alert)', () => {
     const listen = src('app/listen.tsx');
-    expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: reviewParams\(draft\.id, reason\) \}\)/);
+    expect(listen).toMatch(/afterFinish\(id, reason, kept\)/);
+    expect(listen).toMatch(/router\.replace\(\{ pathname: '\/review', params: next\.params \}\)/);
+    // The params come from afterFinish, which builds them with reviewParams (BL-563): so the reason reaches Review
+    // after a quick save and after a slow one.
+    expect(src('components/capture/listen.logic.ts')).toMatch(/return \{ to: 'review', params: reviewParams\(draftId, reason\) \}/);
   });
 
   it('Review shows one plain line for it', () => {
