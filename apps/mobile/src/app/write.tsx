@@ -1,7 +1,8 @@
 /**
  * Write: the Type half of capture (COMPONENTS.md 2.8; EXPERIENCE_PASS_2026-10 S19, S20 and 5.8 rows 3, 3a and 5a,
- * package P4b). Feels like paper, not a form. Every pause in typing autosaves to a local draft, so a closed sheet
- * or a crash loses nothing. Also reached from Review with ?draftId= to type a letter for a recording that could not
+ * package P4b). Feels like paper, not a form. The words are written to a local draft at least every 500 ms while
+ * someone types (silently) and again after every pause, so a closed sheet or a crash loses at most the last half
+ * second (F04-REQ-011). Also reached from Review with ?draftId= to type a letter for a recording that could not
  * be written down (capture mode becomes "mixed").
  *
  * Design (docs/design/BENCHMARK.md, "Screens"; S19):
@@ -10,7 +11,10 @@
  *   is the literary line in `prompt` textMuted above the page. Typed text keeps the keyboard's own autocorrect;
  *   the machine never touches it.
  * - Above the keyboard, the two destinations stacked as Review's footer is: "Add to Asha's book" full width and
- *   "Keep private" quiet beneath, off until there is text (P4 critics' pass S2).
+ *   "Keep private" quiet beneath, off until there is text (P4 critics' pass S2). From accessibility text sizes up they
+ *   ride at the end of the scroll instead of pinned, as Review's and Tonight's do (lib/review-layout.logic.ts
+ *   `footerPlacement`), so a footer taller than the room above the keyboard can never push "Add to the book" off the
+ *   screen; the page then follows the last line typed, not the buttons (review-view.logic `pageEndOffset`).
  * - "Saved on this phone" is a quiet status after a pause, announced at most every 10 s, and it stays. A write that
  *   fails shows "Not saved yet" in the same place and is tried again on the next pause. Neither is a status colour:
  *   this is lit paper (D-110).
@@ -43,7 +47,7 @@ import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion, useAnimatedS
 import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
+import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, pageEndOffset, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
 import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -61,6 +65,7 @@ import { copy, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
+import { footerPlacement } from '@/lib/review-layout.logic';
 import { createDraft, deleteDraft, getActiveChild, getDraft, listEntriesForChild, setDraftTyped, todayISO } from '@/lib/store';
 
 const ANNOUNCE_EVERY_MS = 10_000;
@@ -109,12 +114,27 @@ export default function Write() {
   // when Write opens or on a keystroke.
   const history = useRef<{ recentKeys: string[]; daysSinceLastEntry: number | null } | null>(null);
 
-  /** Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so. */
-  const persist = (value: string): boolean => {
+  /** "Saved on this phone" is announced at most every 10 s. */
+  const announceSaved = () => {
+    const now = Date.now();
+    if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
+      lastAnnounced.current = now;
+      announce(pendingCopy.write.savedOnPhone);
+    }
+  };
+
+  /**
+   * Write the words to this phone. False when the write did not go through: the words stay on screen, and "Not saved yet" says so.
+   * `quiet` is a write inside an unbroken burst of typing (the session writes at least every 500 ms, F04-REQ-011): the
+   * words go to the phone and nothing else happens. No autosave line, no announcement and no render, so a long burst
+   * shows no flicker, says nothing aloud and never disturbs the uncontrolled field (D-057). All of that waits for the pause.
+   */
+  const persist = (value: string, quiet = false): boolean => {
     if (!child) return false;
     const create = (v: string) => createDraft({ childId: child.id, captureMode: 'typed', promptKey, audioUri: null, audioDurationMs: null, typedText: v }).id;
     const r = writeWords({ create, update: setDraftTyped }, draftId.current, value);
     draftId.current = r.draftId;
+    if (quiet) return r.ok;
     // "Not saved yet" after a write that did not go through; the next good write puts "Saved on this phone" back and
     // releases Close, Android's back and the swipe.
     if (r.saveState) setSaveState(r.saveState);
@@ -122,23 +142,30 @@ export default function Write() {
     // The words as of this write, for the swipe and the destinations (one render per pause, not per keystroke).
     setText(value);
     if (!r.ok) return false;
-    const now = Date.now();
-    if (now - lastAnnounced.current > ANNOUNCE_EVERY_MS) {
-      lastAnnounced.current = now;
-      announce(pendingCopy.write.savedOnPhone);
-    }
+    announceSaved();
     return true;
   };
 
-  // The words between the keyboard and this phone (write-session.logic.ts): each keystroke lands there, a pause writes
-  // them, and every way out (Close, a destination, a swipe down) writes the newest words first, so the last keystrokes
-  // inside the pause are never dropped. `persist` is read through a ref: the session outlives the render that made it.
+  /** Typing paused and a quiet write had already put the newest words on the phone: the pause's half of `persist`. */
+  const settled = (value: string) => {
+    setSaveState('saved');
+    setText(value);
+    announceSaved();
+  };
+
+  // The words between the keyboard and this phone (write-session.logic.ts): each keystroke lands there, the words are
+  // written at least every 500 ms while typing and after a pause, and every way out (Close, a destination, a swipe down)
+  // writes the newest words first, so the last keystrokes are never dropped. `persist` and `settled` are read through
+  // refs: the session outlives the render that made it.
   const persistRef = useRef(persist);
   persistRef.current = persist;
+  const settledRef = useRef(settled);
+  settledRef.current = settled;
   const [session] = useState(() =>
     createWriteSession(
       {
-        persist: (value) => persistRef.current(value),
+        persist: (value, quiet) => persistRef.current(value, quiet),
+        settled: (value) => settledRef.current(value),
         draftId: () => draftId.current,
         // An empty typed draft is nothing; a recording draft is always kept.
         hasRecording: (id) => !!getDraft(id)?.audioUri,
@@ -246,6 +273,9 @@ export default function Write() {
   // At accessibility text sizes the autosave line has its own row under the header, where it can wrap, instead of
   // running into Close (P4 critics' pass S5).
   const large = useIsAccessibilitySize();
+  // The same rule as Review's and Tonight's footer: pinned under the page at the default size, at the end of the scroll
+  // from accessibility sizes up.
+  const inlineFooter = footerPlacement(large) === 'inline';
 
   // KeyboardAvoidingView measures itself inside the sheet but the keyboard from the top of the screen; the sheet's
   // own top closes the gap (sheetKeyboardOffset), so the page and both destinations sit above the keyboard.
@@ -264,8 +294,21 @@ export default function Write() {
   // The page grows with the words and the sheet scrolls, so the line being written stays in view above the keyboard.
   const scroll = useRef<ScrollView>(null);
   const selectionEnd = useRef<number | null>(null);
+  // Measured, never state: reading them must not render. The footer's top only matters while it rides in the scroll.
+  const viewportHeight = useRef(0);
+  const footerTop = useRef(0);
+  // Pinned footer: the end of the content is the end of the page, so the field growing scrolls to the end.
   const onContentSizeChange = () => {
-    if (followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
+    if (!inlineFooter && followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) scroll.current?.scrollToEnd({ animated: false });
+  };
+  // Footer inline: the end of the page is the top of the footer, so the buttons below do not push the last line typed
+  // out of sight (scrolling to the very end would show them instead of the words). The footer's own layout is the signal:
+  // it moves down when the field grows, and its top is read from that same layout, so there is no order of events to
+  // guess between two callbacks. The viewport's layout (it shrinks when the keyboard opens) asks again.
+  const followPageEnd = () => {
+    if (!inlineFooter || !followCaretToEnd({ selectionEnd: selectionEnd.current, length: session.latest().length })) return;
+    const y = pageEndOffset({ footerTop: footerTop.current, viewportHeight: viewportHeight.current });
+    if (y !== null) scroll.current?.scrollTo({ y, animated: false });
   };
 
   // "Another thought" fades out at the first character and back in when the page is empty again, keeping its space.
@@ -284,6 +327,25 @@ export default function Write() {
   const dateline = age ? `${child.name} · ${age}` : child.name;
   const empty = !text.trim();
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
+  // The standing Plus line, then "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action
+  // never breaks over two lines (P4 critics' pass S2). Defined once and drawn in exactly one place, by `inlineFooter`.
+  const footer = (
+    <View
+      className={inlineFooter ? 'gap-1 pt-2' : 'gap-1 border-t border-border bg-background px-5 pb-2 pt-3'}
+      onLayout={(e) => {
+        footerTop.current = e.nativeEvent.layout.y;
+        followPageEnd();
+      }}>
+      {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
+      {showPlusLine ? (
+        <View className="pb-1">
+          <PlusLine />
+        </View>
+      ) : null}
+      <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
+      <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
+    </View>
+  );
   const status =
     saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
@@ -310,7 +372,14 @@ export default function Write() {
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={keyboardOffset} className="flex-1">
         <ModalHeader onClose={close} leading={large ? null : status} />
         {large && status ? <View className="px-5 pb-1">{status}</View> : null}
-        <ScrollView ref={scroll} contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4" keyboardShouldPersistTaps="handled">
+        <ScrollView
+          ref={scroll}
+          contentContainerClassName="flex-grow gap-3 px-6 pb-6 pt-4"
+          keyboardShouldPersistTaps="handled"
+          onLayout={(e) => {
+            viewportHeight.current = e.nativeEvent.layout.height;
+            followPageEnd();
+          }}>
           <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
             {dateline}
           </Text>
@@ -347,19 +416,12 @@ export default function Write() {
             scrollEnabled={false}
             placeholder={copy.tonight.typing.placeholder}
           />
+          {/* Accessibility text sizes: the buttons scroll with the page, so they can never be taller than the room
+              above the keyboard and push "Add to the book" off the screen. */}
+          {inlineFooter ? footer : null}
         </ScrollView>
-        {/* Stacked as Review's footer is: "Add to Asha's book" full width, "Keep private" quiet beneath, so the main
-            action never breaks over two lines (P4 critics' pass S2). */}
-        <View className="gap-1 border-t border-border bg-background px-5 pb-2 pt-3">
-          {/* Before the person keeps, not only at the Keep step: new letters need Plus. Never a count or a price. */}
-          {showPlusLine ? (
-            <View className="pb-1">
-              <PlusLine />
-            </View>
-          ) : null}
-          <Button size="lg" fullWidth label={addButtonLabel(child.name)} onPress={() => keep(true)} disabled={empty} testID="write.keep.book" />
-          <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
-        </View>
+        {/* The default size: pinned under the page, in the thumb zone, always on screen. */}
+        {inlineFooter ? null : footer}
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
