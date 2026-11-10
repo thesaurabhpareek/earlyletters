@@ -1,6 +1,6 @@
 /**
- * Parent decisions (NX-39 v2 R20, R41, BL-860). Hidden days, hidden stretches
- * and hidden photos live in their own small store, keyed by calendar day with
+ * Parent decisions (NX-39 v2 R20, R41, BL-860). Hidden days and hidden
+ * stretches live in their own small store, keyed by calendar day with
  * no local_id, outside the disposable index. Pure logic only; persistence is
  * BL-877. Fixtures use the fictional family "Asha".
  */
@@ -15,10 +15,8 @@ import {
   emptyDecisions,
   hiddenRanges,
   hideDay,
-  hidePhoto,
   hideStretch,
   isDayHidden,
-  isPhotoHidden,
   listDecisions,
   onDecisionsEvent,
   parseDecisions,
@@ -27,6 +25,7 @@ import {
   type DecisionsEvent,
   type DecisionsState,
 } from '../src/decisions';
+import * as decisionsModule from '../src/decisions';
 import { buildMoments, RULE_VERSION, type MomentItem } from '../src/moments';
 
 const item = (day: string, cityKey: string | null = null): MomentItem => ({ day, cityKey });
@@ -43,7 +42,7 @@ const ASHA_ITEMS: MomentItem[] = [
 
 describe('[NX-39-R41] parent decisions survive every rebuild path and go only on Erase or Clear', () => {
   const asha = (): DecisionsState =>
-    hidePhoto(hideStretch(hideDay(emptyDecisions(), '2026-03-07'), '2026-03-20', '2026-03-21'), '2026-03-08', 'asha-photo-1');
+    hideDay(hideStretch(hideDay(emptyDecisions(), '2026-03-07'), '2026-03-20', '2026-03-21'), '2026-03-08');
 
   it('keeps every decision through each event that is not an erase or a clear', () => {
     const before = serializeDecisions(asha());
@@ -81,7 +80,7 @@ describe('[NX-39-R41] parent decisions survive every rebuild path and go only on
     const rebuilt = buildMoments(ASHA_ITEMS, RULE_VERSION);
     const restored = parseDecisions(saved);
     expect(restored).not.toBeNull();
-    expect(applyDecisions(rebuilt, restored!).map(range)).toEqual(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), asha()).map(range));
+    expect(applyDecisions(rebuilt, ASHA_ITEMS, restored!).map(range)).toEqual(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, asha()).map(range));
     expect(serializeDecisions(restored!)).toBe(saved);
   });
 
@@ -90,8 +89,21 @@ describe('[NX-39-R41] parent decisions survive every rebuild path and go only on
     expect(text).not.toMatch(/local_?id|asset|geohash|latitude|longitude/i);
     for (const d of listDecisions(asha())) {
       expect(Object.keys(d).sort()).toEqual(
-        d.kind === 'day' ? ['day', 'id', 'kind'] : d.kind === 'stretch' ? ['from', 'id', 'kind', 'until'] : ['day', 'id', 'key', 'kind'],
+        d.kind === 'day' ? ['day', 'id', 'kind'] : ['from', 'id', 'kind', 'until'],
       );
+    }
+  });
+
+  it('[NX-39-R41] the decisions store has no photo-key field and no function that stores one', () => {
+    expect(Object.keys(decisionsModule).filter((k) => /photo|key/i.test(k))).toEqual([]);
+    const src = readFileSync(new URL('../src/decisions.ts', import.meta.url), 'utf8');
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/photo/i);
+    expect(code).not.toMatch(/\bkey\b/);
+    // An old store that holds a photo entry is not readable as a store (it reads as null, never as an empty list).
+    expect(parseDecisions('{"v":1,"entries":[{"kind":"photo","day":"2026-03-01","key":"asha-photo-1"}]}')).toBeNull();
+    for (const d of listDecisions(hideStretch(hideDay(emptyDecisions(), '2026-03-07'), '2026-03-20', '2026-03-21'))) {
+      expect(Object.keys(d)).not.toContain('key');
     }
   });
 
@@ -108,50 +120,73 @@ describe('[NX-39-R41] parent decisions survive every rebuild path and go only on
 describe('[NX-39-R20] a range the parent excludes never produces a card', () => {
   it('a hidden day leaves no moment covering it, in any rebuild', () => {
     const state = hideDay(emptyDecisions(), '2026-03-07');
-    const moments = applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), state);
-    expect(moments.map(range)).toEqual(['2026-03-06..2026-03-06', '2026-03-08..2026-03-09', '2026-03-20..2026-03-21']);
+    const moments = applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, state);
+    expect(moments.map(range)).toEqual(['2026-03-08..2026-03-09', '2026-03-20..2026-03-21']);
     for (const m of moments) expect(m.startDay <= '2026-03-07' && '2026-03-07' <= m.endDay).toBe(false);
   });
 
   it('a hidden stretch with a from and an until removes both ends and everything between', () => {
     const state = hideStretch(emptyDecisions(), '2026-03-06', '2026-03-09');
-    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), state).map(range)).toEqual(['2026-03-20..2026-03-21']);
+    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, state).map(range)).toEqual(['2026-03-20..2026-03-21']);
   });
 
   it('a stretch that ends mid-moment trims, and one that covers a whole moment drops it', () => {
-    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), hideStretch(emptyDecisions(), '2026-03-01', '2026-03-07')).map(range))
+    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, hideStretch(emptyDecisions(), '2026-03-01', '2026-03-07')).map(range))
       .toEqual(['2026-03-08..2026-03-09', '2026-03-20..2026-03-21']);
-    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), hideStretch(emptyDecisions(), '2026-03-19', '2026-03-31')).map(range))
+    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, hideStretch(emptyDecisions(), '2026-03-19', '2026-03-31')).map(range))
       .toEqual(['2026-03-06..2026-03-09']);
   });
 
-  it('pieces keep the moment city key, reasons and rule version, and gain nothing', () => {
-    const [first] = applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), hideDay(emptyDecisions(), '2026-03-09'));
-    expect(first).toEqual({ ...buildMoments(ASHA_ITEMS, RULE_VERSION)[0]!, endDay: '2026-03-08' });
+  it('[NX-39-R20] a middle hidden day splits a moment and the hidden day is a barrier the gap rule cannot bridge', () => {
+    const items = [item('2026-03-05', 'asha-city-a'), item('2026-03-06', 'asha-city-a'), item('2026-03-07', 'asha-city-a'),
+      item('2026-03-08', 'asha-city-a'), item('2026-03-09', 'asha-city-a')];
+    const moments = buildMoments(items, RULE_VERSION);
+    expect(moments.map(range)).toEqual(['2026-03-05..2026-03-09']);
+    // Without a barrier, 06 and 08 are one empty day apart and the rule would join them again.
+    expect(applyDecisions(moments, items, hideDay(emptyDecisions(), '2026-03-07')).map(range)).toEqual(['2026-03-05..2026-03-06', '2026-03-08..2026-03-09']);
   });
 
-  it('a hidden photo hides no day and no moment; the photo and nothing else is hidden', () => {
-    const state = hidePhoto(emptyDecisions(), '2026-03-07', 'asha-photo-1');
-    expect(applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), state)).toEqual(buildMoments(ASHA_ITEMS, RULE_VERSION));
-    expect(isPhotoHidden(state, '2026-03-07', 'asha-photo-1')).toBe(true);
-    expect(isPhotoHidden(state, '2026-03-07', 'asha-photo-2')).toBe(false);
-    expect(isPhotoHidden(state, '2026-03-08', 'asha-photo-1')).toBe(false);
+  it('[NX-39-R20] a lone leftover day with fewer than 3 items is dropped', () => {
+    const moments = applyDecisions(buildMoments(ASHA_ITEMS, RULE_VERSION), ASHA_ITEMS, hideDay(emptyDecisions(), '2026-03-07'));
+    expect(moments.map(range)).not.toContain('2026-03-06..2026-03-06');
+    expect(moments.map(range)).toEqual(['2026-03-08..2026-03-09', '2026-03-20..2026-03-21']);
   });
 
-  it('a photo on a hidden day or inside a hidden stretch is hidden too', () => {
-    expect(isPhotoHidden(hideDay(emptyDecisions(), '2026-03-07'), '2026-03-07', 'asha-photo-9')).toBe(true);
-    expect(isPhotoHidden(hideStretch(emptyDecisions(), '2026-03-01', '2026-03-31'), '2026-03-07', 'asha-photo-9')).toBe(true);
+  it('[NX-39-R20] a leftover piece with 2 active days or 3 items survives with reasons from running R15 on its own items', () => {
+    const items = [item('2026-03-04', 'asha-city-a'), item('2026-03-05', 'asha-city-a'), item('2026-03-06', 'asha-city-a'),
+      item('2026-03-07', 'asha-city-a'), item('2026-03-07', 'asha-city-a'), item('2026-03-07', 'asha-city-a')];
+    const out = applyDecisions(buildMoments(items, RULE_VERSION), items, hideDay(emptyDecisions(), '2026-03-06'));
+    expect(out).toEqual([
+      { startDay: '2026-03-04', endDay: '2026-03-05', cityKey: 'asha-city-a', reasons: ['DAY_RUN', 'SAME_CITY'], ruleVersion: RULE_VERSION },
+      { startDay: '2026-03-07', endDay: '2026-03-07', cityKey: 'asha-city-a', reasons: ['MIN_ITEMS_MET'], ruleVersion: RULE_VERSION },
+    ]);
+  });
+
+  it('[NX-39-R20] pieces do not copy the parent moment\'s reasons or city key', () => {
+    const items = [item('2026-03-04', 'asha-city-a'), item('2026-03-05', 'asha-city-a'), item('2026-03-06', 'asha-city-a'),
+      item('2026-03-07'), item('2026-03-08')];
+    const [parent] = buildMoments(items, RULE_VERSION);
+    expect(parent!.cityKey).toBe('asha-city-a');
+    expect(parent!.reasons).toEqual(['DAY_RUN', 'SAME_CITY', 'NO_PLACE_JOINED', 'MIN_ITEMS_MET']);
+    const [left, right] = applyDecisions([parent!], items, hideDay(emptyDecisions(), '2026-03-06'));
+    expect(left).toEqual({ startDay: '2026-03-04', endDay: '2026-03-05', cityKey: 'asha-city-a', reasons: ['DAY_RUN', 'SAME_CITY'], ruleVersion: RULE_VERSION });
+    expect(right).toEqual({ startDay: '2026-03-07', endDay: '2026-03-08', cityKey: null, reasons: ['DAY_RUN', 'NO_PLACE_JOINED'], ruleVersion: RULE_VERSION });
+  });
+
+  it('a moment the parent did not touch comes back as it was', () => {
+    const moments = buildMoments(ASHA_ITEMS, RULE_VERSION);
+    expect(applyDecisions(moments, ASHA_ITEMS, hideDay(emptyDecisions(), '2026-04-01'))).toEqual(moments);
   });
 
   it('hiding changes only what is shown, never the rule: the same items still make the same moments', () => {
     const before = buildMoments(ASHA_ITEMS, RULE_VERSION);
-    applyDecisions(before, hideStretch(emptyDecisions(), '2026-03-01', '2026-03-31'));
+    applyDecisions(before, ASHA_ITEMS, hideStretch(emptyDecisions(), '2026-03-01', '2026-03-31'));
     expect(buildMoments(ASHA_ITEMS, RULE_VERSION)).toEqual(before);
   });
 
   it('does not mutate the moments it is given', () => {
     const moments = Object.freeze(buildMoments(ASHA_ITEMS, RULE_VERSION).map((m) => Object.freeze({ ...m })));
-    expect(() => applyDecisions(moments, hideDay(emptyDecisions(), '2026-03-07'))).not.toThrow();
+    expect(() => applyDecisions(moments, ASHA_ITEMS, hideDay(emptyDecisions(), '2026-03-07'))).not.toThrow();
   });
 });
 
@@ -197,15 +232,13 @@ describe('[NX-39-R41] day-range algebra', () => {
     expect(isDayHidden(hideDay(emptyDecisions(), '2028-02-29'), '2028-02-29')).toBe(true);
   });
 
-  it('refuses a bad day, a backwards stretch and an empty or oversized photo key, with a typed code', () => {
+  it('refuses a bad day, a backwards stretch and with a typed code', () => {
     const code = (fn: () => unknown) => {
       try { fn(); } catch (e) { return (e as DecisionError).code; }
       return 'none';
     };
     expect(code(() => hideDay(emptyDecisions(), '2026-02-30'))).toBe('INVALID_DAY');
     expect(code(() => hideStretch(emptyDecisions(), '2026-03-09', '2026-03-01'))).toBe('INVALID_RANGE');
-    expect(code(() => hidePhoto(emptyDecisions(), '2026-03-01', ''))).toBe('INVALID_PHOTO_KEY');
-    expect(code(() => hidePhoto(emptyDecisions(), '2026-03-01', 'x'.repeat(201)))).toBe('INVALID_PHOTO_KEY');
   });
 
   it('does not mutate the state it is given', () => {
