@@ -1183,18 +1183,6 @@ What it adds:
 
 **Apply** after file 26. Adds one table and one function; changes and drops nothing. **Check:** `select proname from pg_proc where proname = 'invite_redeem_by_code';` returns one row, and from the app's invite screen a wrong code answers "not found" instead of "try again later". **Rollback:** `drop function public.invite_redeem_by_code(uuid, text, bytea, text[], text[], text[]); drop table public.invite_redeem_failures;`; typed codes then answer 503 again.
 
-## File 31: the audit and consent tables refuse rewrites and truncation (8 Nov 2026, data-architect, BL-585)
-
-`20261108020000_audit_append_only.sql`. Before this file `audit_events` had no row guard, and `policy_acceptances` and `ops.audit_log` had no truncate guard (a row guard never stops TRUNCATE). No API role holds these privileges; the guards protect against the owner's own paths (a migration, a definer function, the SQL Editor).
-
-What it changes:
-- **`audit_events`**: UPDATE and DELETE fail with SCIMM, except `finalize_account_deletion` nulling the purged person as actor or as a `profile` or `membership` subject (nothing else in the row may change), and the 24-month retention delete while `app.retention_purge` is on.
-- **`purge_due`** turns `app.retention_purge` on before its `audit_events` delete instead of after it. Nothing else in it changes.
-- **TRUNCATE** fails with SCIMM on `audit_events`, `policy_acceptances` and `ops.audit_log`, as on `subscription_consents`.
-- Tests: `audit_append_only` (new).
-
-**Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.
-
 ## File 30: a deletion request id still finds the person's pseudonymised consent rows (8 Nov 2026, data-architect, BL-578)
 
 `20261108010000_deletion_subject_hash.sql`. Before this file `finalize_account_deletion` nulled the request's `profile_id` and kept no hash; the only link from a request to the consent rows was the raw account id in `purge_ledger`, which is trimmed after 60 days. From day 61 the request id in the receipt email found nothing, though the rows are kept 3 years.
@@ -1207,3 +1195,15 @@ What it changes:
 - Tests: `deletion_subject_hash` (new); `grants.mjs` lists the new service-role function.
 
 **Apply** after file 29 (or file 27; they touch different objects). Adds one column, one index and one function; redefines `finalize_account_deletion`. Deletions completed before this file keep no hash; for those under 60 days old, `purge_ledger` still holds the id. **Check:** `select public.consent_pepper_ready();` is true first; then `select public.ops_deletion_consent_records('<a completed request id>');` from the SQL Editor returns its rows. **Rollback:** see the file header.
+
+## File 31: the audit and consent tables refuse rewrites and truncation (8 Nov 2026, data-architect, BL-585)
+
+`20261108020000_audit_append_only.sql`. Before this file `audit_events` had no row guard, and `policy_acceptances` and `ops.audit_log` had no truncate guard (a row guard never stops TRUNCATE). No API role holds these privileges; the guards protect against the owner's own paths (a migration, a definer function, the SQL Editor).
+
+What it changes:
+- **`audit_events`**: UPDATE and DELETE fail with SCIMM, except `finalize_account_deletion` nulling the purged person as actor or as a `profile` or `membership` subject (nothing else in the row may change), and the 24-month retention delete while `app.retention_purge` is on.
+- **`purge_due`** turns `app.retention_purge` on before its `audit_events` delete instead of after it. Nothing else in it changes.
+- **TRUNCATE** fails with SCIMM on `audit_events`, `policy_acceptances` and `ops.audit_log`, as on `subscription_consents`.
+- Tests: `audit_append_only` (new).
+
+**Apply** after file 30 (or file 27; they touch different objects). Adds four trigger functions and four triggers; redefines `purge_due`. **Check:** `truncate audit_events;` in the SQL Editor fails with SCIMM, and the next scheduled `purge_due` run succeeds. **Rollback:** see the file header.
