@@ -3132,6 +3132,58 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Scope: read the auth settings of the project (refresh token life, reuse interval) and write the numbers in `docs/ops/AUTH_SETUP.md`; no setting is changed.
 - Done when: the doc states the numbers and the date read.
 
+### Unique tabs (NX-41, 10 Nov 2026)
+
+Written by `product`, docs only, Build 13 scope (not Build 12). Source: `docs/roadmap/next/03-requirements/NX-41-unique-tabs.md` (R1 to R16, stories H1 to H6, edge cases U1 to U12, founder decisions FD-1 to FD-4). Ids BL-898 to BL-905 come from `next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge. Order: BL-898, BL-899 and BL-900 can start now (docs and research). BL-901 waits for #699 and #720. BL-902 waits for #738 and #740. BL-903 waits for #764. BL-904 and BL-905 follow the code rows.
+
+#### BL-898 Reconcile NX-41 with the design lead's NAV-TAB-ROLES doc and draft the D-### text
+- Status: blocked (`docs/design/specs/NAV-TAB-ROLES-10nov.md` not on origin on 10 Nov). Mode: agent. Owner: design systems. Milestone: M15. Size: S.
+- Satisfies: NX-41-R1, NX-41-R4.
+- Scope: when the design lead's doc merges or is pushed, add a "Reconciliation" section to NX-41 listing every difference (job sentences, the third place, Photos, the place of the quiet row); draft the Proposed D-### text from NX-41 section 10 in `docs/DECISIONS.md` only if the founder asks. No edit to the design doc.
+- Done when: NX-41 lists each conflict with both sources named.
+
+#### BL-899 Words for the tab jobs and the quiet coming-soon row
+- Status: blocked (FD-1, FD-3). Mode: agent. Owner: content. Milestone: M15. Size: S. Depends on: BL-898.
+- Satisfies: NX-41-R7, R9, R15.
+- Scope: any changed tab label or first-screen heading, the You row, and the empty-state lines; reuse `familyCopy.soon` strings first. No "beta", date, count or notify promise.
+- Done when: `packages/content/test/rules.test.ts` and `tab-labels.test.ts` pass and the BRAND.md glossary has no new term.
+
+#### BL-900 Five-parent read-through: what is each tab for
+- Status: needs-founder (recruiting, as for other parent studies). Mode: pair. Owner: user researcher. Milestone: M15. Size: S. Depends on: BL-902, BL-903.
+- Satisfies: NX-41-R1, NX-41-R4.
+- Scope: three first screens with names hidden; ask what each tab is for; record verbs only, no parent details in the repo (fictional family "Asha" in any screenshot).
+- Done when: a note in `docs/research/` states how many of five matched section 4 for each tab, and whether the coming-soon row was found.
+
+#### BL-901 The third place: Family leaves the bar where co-parent is off, one quiet coming-soon row on You
+- Status: blocked (#699, #720 merged; FD-3). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-899.
+- Satisfies: NX-41-R8, R9, R10, R11, R12.
+- Scope: use `CO_PARENT_IN_STORE_BUILD` and `familySurfacesShown` as #720 defines them; extend the rule to the `testflight` profile only if the founder rules (FD-3); one row on You below the account rows, muted, opening the existing sheet. Reuse BL-882's single coming-soon state (#767). Alpha with servers on keeps Family.
+- Done when: `tab-bar.test.ts` pins tab names per profile (store 3, `preview` with servers 4) and a test shows the row is below the first account row and uses the muted token.
+
+#### BL-902 Tonight: only what is for now
+- Status: blocked (#738 and #740 merged; the design lead's spec; BL-898). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-898.
+- Satisfies: NX-41-R2, R4, R5, R6, R14.
+- Scope: Tonight shows the prompt, Speak and Type, waiting drafts and at most one resurfaced card; no list of kept letters; the visible differences from Book are the design spec's. No new motion beyond the motion spec; nothing counts.
+- Done when: tests pin that no kept-letter list is rendered and the Speak and Type pair is first interactive; a device check of R4 with three differences named.
+
+#### BL-903 Book: only what is kept
+- Status: blocked (#764 merged; the design lead's spec; BL-898). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-898.
+- Satisfies: NX-41-R3, R4, R5, R6, R14.
+- Scope: no waiting-draft cards in the Book list (one quiet pointer at most, no count); the Months sheet, cover band and Read together are unchanged (#674).
+- Done when: tests pin that a draft never renders as a Book list card, the empty state is unchanged, and a device check of R4 passes.
+
+#### BL-904 QA rows for the three rooms and the quiet row
+- Status: blocked (BL-901, BL-902, BL-903). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-901.
+- Satisfies: NX-41-R1, R8, R10, R13, R14; U1 to U10.
+- Scope: Maestro and device rows: first day, 80 letters, signed out, servers off, offline, two books, AX5, VoiceOver, Reduce Motion; a row that no tab body is only a promise.
+- Done when: the rows are merged with an owner for each device-only row.
+
+#### BL-905 Regenerate the IA.md Tabs table and the device test plan after the stack merges
+- Status: blocked (#699, #720, #738, #740 merged). Mode: agent. Owner: design systems. Milestone: M15. Size: S. Depends on: BL-901.
+- Satisfies: NX-41-R1.
+- Scope: one edit of the Tabs table in `docs/design/IA.md` and the tab rows in `docs/qa/DEVICE_TEST_PLAN.md`; four open PRs edit the same lines, so this waits for them.
+- Done when: the table lists each tab, its job sentence and the builds it appears in, matching the code.
+
 ## Memory Library (NX-39 v2, 10 Nov 2026)
 
 Written by `product`, docs only, after the nine-lens council review and the CTO's rulings. Source: `docs/roadmap/next/03-requirements/NX-39-memory-library.md` (v2: one phase table, rows R1 to R61, founder decisions F1 to F15) and `docs/roadmap/next/03-requirements/NX-39-council-record-10nov.md`. Ids BL-841 to BL-858 are rewritten in place; BL-859 to BL-880 are new, from `next-id.mjs` on 10 Nov (it printed BL-859; run `node scripts/agents/id-collisions.mjs` before merge). BL-757 to BL-825 and BL-830 to BL-840 are not used. Milestone M15 is a proposed label for work after Build 12 (M14). Nothing here is a Build 12 task. Every row from P2 onward builds behind a switch that is off in `production`.

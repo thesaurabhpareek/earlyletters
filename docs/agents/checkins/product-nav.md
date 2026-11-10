@@ -1,0 +1,1 @@
+10 Nov product-nav | done: NX-41 unique tabs requirements and BL-898 to BL-905, docs only | next: reconcile with NAV-TAB-ROLES-10nov when it is on origin (BL-898) | blocked/needs: design lead's doc not on origin; founder FD-1 to FD-4
