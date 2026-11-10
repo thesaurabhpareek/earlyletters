@@ -50,6 +50,12 @@ function good(): Input {
       extra: { appEnv: 'production', serverFeatures: false, backup: false, statusReport: false, accountDeletion: false, eas: { projectId: '123e4567-e89b-12d3-a456-426614174000' } },
       ios: { privacyManifests: { NSPrivacyTracking: false, NSPrivacyTrackingDomains: [], NSPrivacyAccessedAPITypes: [{ NSPrivacyAccessedAPIType: 'NSPrivacyAccessedAPICategoryUserDefaults', NSPrivacyAccessedAPITypeReasons: ['CA92.1'] }], NSPrivacyCollectedDataTypes: [] } },
     },
+    introspected: {
+      ios: {
+        entitlements: { 'com.apple.developer.default-data-protection': 'NSFileProtectionCompleteUntilFirstUserAuthentication' },
+        infoPlist: { CFBundleURLTypes: [{ CFBundleURLSchemes: ['scribe', 'com.example.scribe'] }, { CFBundleURLSchemes: ['exp+scribe'] }] },
+      },
+    },
     environmentsMd: ENVIRONMENTS,
     keysSource: KEYS,
     publishedSource: "export const REMOTE_CONFIG: string | null = null;\nexport const PACK_MANIFEST: string | null = '{\"fictional\":\"Asha\"}';\n",
@@ -81,6 +87,11 @@ const withCfg = (mutate: (cfg: Record<string, any>) => void): Input => {
   mutate(i.cfg as Record<string, any>);
   return i;
 };
+const withIntrospected = (mutate: (cfg: Record<string, any>) => void): Input => {
+  const i = good();
+  mutate(i.introspected as Record<string, any>);
+  return i;
+};
 
 describe('the store preflight on a store-ready fixture', () => {
   it('fails nothing, and gives every check an id', () => {
@@ -99,6 +110,7 @@ describe('the store preflight on a store-ready fixture', () => {
       'signing-keys',
       'pack-manifest',
       'privacy-manifest',
+      'sign-in',
       'version',
       'project-id',
       'update-channel',
@@ -106,6 +118,36 @@ describe('the store preflight on a store-ready fixture', () => {
       'seams',
       'secrets',
     ]);
+  });
+});
+
+describe('the sign-in check follows the servers switch (a servers-on production profile must not contradict it)', () => {
+  const on = (): Input => {
+    const i = good();
+    i.cfg.extra.serverFeatures = true;
+    i.cfg.ios.usesAppleSignIn = true;
+    i.cfg.ios.associatedDomains = ['applinks:example.com'];
+    i.introspected.ios.entitlements['com.apple.developer.applesignin'] = ['Default'];
+    i.introspected.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com'];
+    return i;
+  };
+  it('servers on with the capabilities present: sign-in PASSes', () => {
+    const r = (productionChecks(on()) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('PASS');
+  });
+  it('servers on with a Google URL scheme in Info.plist: sign-in FAILs (build 12 has no Google sign-in)', () => {
+    const i = on();
+    i.introspected.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] });
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
+  it('servers on with the Google Sign-In plugin in the config: sign-in FAILs', () => {
+    const i = on();
+    i.cfg.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]];
+    expect((productionChecks(i) as Result[]).find((x) => x.id === 'sign-in')?.level).toBe('FAIL');
+  });
+  it('servers on without the Apple entitlement or associated domains: sign-in FAILs', () => {
+    const r = (productionChecks({ ...good(), cfg: { ...good().cfg, extra: { ...good().cfg.extra, serverFeatures: true } } }) as Result[]).find((x) => x.id === 'sign-in');
+    expect(r?.level).toBe('FAIL');
   });
 });
 
@@ -123,7 +165,7 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['analytics', 'a PostHog key in the profile', withEnv({ EXPO_PUBLIC_POSTHOG_KEY: 'phc_asha' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES=on', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: 'on' })],
     ['servers', 'EXPO_PUBLIC_SERVER_FEATURES unwritten', withEnv({ EXPO_PUBLIC_SERVER_FEATURES: undefined })],
-    ['servers', 'the evaluated config says serverFeatures true', withCfg((c) => (c.extra.serverFeatures = true))],
+    ['servers', 'the evaluated config says serverFeatures true', { ...withCfg((c) => { c.extra.serverFeatures = true; c.ios.usesAppleSignIn = true; c.ios.associatedDomains = ['applinks:example.com']; }), introspected: { ios: { entitlements: { 'com.apple.developer.applesignin': ['Default'], 'com.apple.developer.associated-domains': ['applinks:example.com'] }, infoPlist: { CFBundleURLTypes: [] } } } }],
     ['backup', 'EXPO_PUBLIC_BACKUP=on', withEnv({ EXPO_PUBLIC_BACKUP: 'on' })],
     ['backup', 'EXPO_PUBLIC_BACKUP unwritten', withEnv({ EXPO_PUBLIC_BACKUP: undefined })],
     ['status-report', 'EXPO_PUBLIC_STATUS_REPORT=on', withEnv({ EXPO_PUBLIC_STATUS_REPORT: 'on' })],
@@ -147,6 +189,13 @@ describe('one failing fixture per check: only that check FAILs', () => {
     ['privacy-manifest', 'no privacy manifest', withCfg((c) => delete c.ios.privacyManifests)],
     ['privacy-manifest', 'tracking true', withCfg((c) => (c.ios.privacyManifests.NSPrivacyTracking = true))],
     ['privacy-manifest', 'collected data with servers off', withCfg((c) => (c.ios.privacyManifests.NSPrivacyCollectedDataTypes = [{ NSPrivacyCollectedDataType: 'NSPrivacyCollectedDataTypeEmailAddress' }]))],
+    ['sign-in', 'ios.usesAppleSignIn in the config', withCfg((c) => (c.ios.usesAppleSignIn = true))],
+    ['sign-in', 'associated domains in the config', withCfg((c) => (c.ios.associatedDomains = ['applinks:example.com']))],
+    ['sign-in', 'the Google Sign-In plugin in the config', withCfg((c) => (c.plugins = ['expo-router', ['@react-native-google-signin/google-signin', { iosUrlScheme: 'com.googleusercontent.apps.000000000000-asha' }]]))],
+    ['sign-in', 'the Sign in with Apple entitlement after mods (expo-apple-authentication adds it on its own)', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.applesignin'] = ['Default']))],
+    ['sign-in', 'the associated-domains entitlement after mods', withIntrospected((c) => (c.ios.entitlements['com.apple.developer.associated-domains'] = ['applinks:example.com']))],
+    ['sign-in', 'a Google URL scheme in Info.plist', withIntrospected((c) => c.ios.infoPlist.CFBundleURLTypes.push({ CFBundleURLSchemes: ['com.googleusercontent.apps.000000000000-asha'] }))],
+    ['sign-in', 'the introspected config did not evaluate', { ...good(), introspected: null, introspectError: 'boom' }],
     ['version', 'version.json is not x.y.z', { ...good(), versionJson: '{ "version": "1.0" }' }],
     ['version', 'the config version differs from version.json', withCfg((c) => (c.version = '1.0.1'))],
     ['version', 'app.config.ts writes a version literal', { ...good(), appConfigSource: "export default () => ({ version: '1.0.0' });\n" }],
@@ -256,6 +305,8 @@ describe('the real repository', () => {
     expect(failing.map((r) => r.id).sort(), failing.map((r) => r.msg).join('\n')).toEqual([]);
     expect(results.find((r) => r.id === 'update-channel')?.level).toBe('PASS');
     expect(results.find((r) => r.id === 'asc-app-id')?.msg).toContain('6829377245');
+    // Guideline 2.5.19 (build 12 store compliance review, risk 5): sign-in capabilities follow the servers switch. Must stay passing.
+    expect(results.find((r) => r.id === 'sign-in')?.level).toBe('PASS');
   }, 120_000);
 
   it('npm run preflight:production runs this script', () => {
