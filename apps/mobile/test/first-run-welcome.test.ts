@@ -10,7 +10,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AuthState } from '../src/lib/auth/machine.logic';
 import { firstRunGate, gateInputsFromAuth } from '../src/lib/first-run/gate.logic';
-import { INVITED_DOOR_IN_STORE_BUILD, failureStillCounts, inlineErrorKind, invitedDoorShown, isOnline, welcomeErrorMessage } from '../src/lib/first-run/welcome.logic';
+import { CO_PARENT_IN_STORE_BUILD } from '../src/lib/family/surfaces.logic';
+import { failureStillCounts, inlineErrorKind, invitedDoorShown, isOnline, welcomeErrorMessage } from '../src/lib/first-run/welcome.logic';
 
 const src = (...p: string[]) => readFileSync(join(__dirname, '..', 'src', ...p), 'utf8');
 const welcome = src('components', 'onboarding', 'welcome-sign-in.tsx');
@@ -184,7 +185,7 @@ describe('[NX-31-R19] the connectivity source', () => {
 
 describe('[NX-31-R17] "I was invited" in the first-run Welcome', () => {
   it('[NX-31-R17] hidden in a servers-on store build, kept in an alpha build, hidden with servers off', () => {
-    expect(INVITED_DOOR_IN_STORE_BUILD).toBe(false);
+    expect(CO_PARENT_IN_STORE_BUILD).toBe(false);
     expect(invitedDoorShown({ alpha: false, coParent: true })).toBe(false);
     expect(invitedDoorShown({ alpha: true, coParent: true })).toBe(true);
     expect(invitedDoorShown({ alpha: true, coParent: false })).toBe(false);

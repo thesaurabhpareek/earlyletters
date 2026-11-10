@@ -40,8 +40,10 @@ export const authCopy = {
       // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
       settings: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
-      // NX-36 S2 (backup-off default, 4.1): where the book is available; says nothing about recordings being kept.
-      sign_in_first: 'Your book opens on any phone you sign in on.',
+      // NX-36 S2: the Welcome line under the subtitle.
+      // Build 12 (red-team): claims nothing about phones, recordings or where letters go; a sign-in does not move anything
+      // before the person has agreed. TODO(founder, counsel): approve this line or replace it (placeholder, needs word approval).
+      sign_in_first: 'Sign in to begin your book.',
     },
     // NX-36 S2, above the two buttons, with Terms of Service and Privacy Policy as links (the labels are consent.terms.*).
     agreeLine: 'By continuing you agree to the Terms of Service and Privacy Policy.',
