@@ -119,14 +119,18 @@ describe('[NX-31-R3] the two places that used to print the raw empty name', () =
   });
 });
 
-describe('[NX-31-R3] every visible line with a blank name reads "your child", never a stray separator or a blank', () => {
-  it('[NX-31-R3] the Tonight and write datelines lead with "your child", not a bare separator', () => {
-    expect(tonightDateline('', '3 months', 'Sunday')).toEqual({ text: 'your child · 3 months', a11y: 'your child, 3 months' });
+describe('[NX-31-R3] every visible line with a blank name reads "your child" (the dateline: the stage alone), never a stray separator or a blank', () => {
+  // Changed from #701's pin, which wanted "your child · 3 months" here and childLabel in write.tsx. NX-36 S13 says the
+  // opposite for the dateline: "Nameless: the stage alone, 7 MONTHS ... omit the name and the dot" (name-audit table:
+  // "7 MONTHS (no name, no dot)"). So a blank name gives the stage alone, on Tonight and on Write, from one function.
+  it('[NX-31-R3] the Tonight and write datelines, for a blank name, are the stage alone: no dot, no "your child"', () => {
+    expect(tonightDateline('', '3 months', 'Sunday')).toEqual({ text: '3 months', a11y: '3 months' });
     expect(tonightDateline('Asha', '3 months', 'Sunday').text).toBe('Asha · 3 months');
     expect(tonightDateline('  ', null, 'Sunday').text).toBe('Sunday');
     const src = readFileSync(join(__dirname, '../src/app/write.tsx'), 'utf8');
     expect(src).not.toMatch(/\$\{child\.name\} · /);
-    expect(src).toContain('childLabel(child.name)');
+    expect(src).not.toContain('childLabel(');
+    expect(src).toContain('writeDateline(child.name, age)');
   });
 
   it('[NX-31-R3] the letter dateline says "Your child is ...", not " is ..."', () => {
@@ -135,13 +139,17 @@ describe('[NX-31-R3] every visible line with a blank name reads "your child", ne
     expect(letterDateline({ name: 'Asha', birthday: '2026-03-01' }, '2026-06-05')).toMatch(/\. Asha is /);
   });
 
-  it('[NX-31-R3] the hidden-books list and the settings rows show "your child" for a book with no name', () => {
+  // Changed from #701's pin, which wanted childLabel( in settings/index.tsx. NX-36 S14 wants the Children row title of
+  // a nameless book capitalised (its words are "Your child's book"; the row keeps the shorter "Your child", to sit
+  // beside rows that read "Asha"), and a lowercase "your child" starts a row badly. The Settings home now uses
+  // childRowTitle, which calls childLabel and capitalises it; the child's own page keeps childLabel for the value on
+  // its Name row.
+  it('[NX-31-R3] the hidden-books list shows "your child" for a book with no name, and the settings rows use the helper', () => {
     const page = hiddenBooksPage([{ id: 'b1', name: '' } as never]);
     expect(page.books[0].name).toBe('your child');
     expect(page.books[0].buttonLabel).toBe(`${copy.children.settings.showButton}, your child`);
-    for (const f of ['../src/app/settings/index.tsx', '../src/app/settings/children/[id].tsx']) {
-      expect(readFileSync(join(__dirname, f), 'utf8')).toContain('childLabel(');
-    }
+    expect(readFileSync(join(__dirname, '../src/app/settings/index.tsx'), 'utf8')).toContain('childRowTitle(');
+    expect(readFileSync(join(__dirname, '../src/app/settings/children/[id].tsx'), 'utf8')).toContain('childLabel(');
   });
 });
 
