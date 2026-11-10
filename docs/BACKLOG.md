@@ -3086,6 +3086,82 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
+## Build 12 must-have gaps (NX-38, 9 Nov 2026)
+
+Written by `product`, docs only. Source: `docs/requirements/NX-38-build12-must-have-gaps-9nov.md` (the trace of 42 obligations, the requirement rows R1 to R11 and the founder decisions). Ids BL-830 to BL-840 leave BL-817 to BL-825 free for PR #707's nine rows that collide with BL-775 to BL-783 on `develop` (NX-38 section 7). None of these rows adds scope beyond the founder's cut unless it says Founder decision. Rows that cite BL-757 to BL-815 cite PRs #684 and #707, which are not on `develop` yet.
+
+#### BL-830 Every Build 12 string and store line is true of the servers-on profile (NX-38-R1)
+- Status: ready. Mode: agent. Owner: content. Milestone: M14. Size: M.
+- Who: `content`, `mobile`; review `privacy`, `legal` for registered keys.
+- Satisfies: NX-38-R1, NX-31-R16, NX-31-R21. Also cited: BL-491, BL-804, BL-763, Apple 2.1(a), 5.1.1(i).
+- Scope: add a `build12` profile (co-parent off) to `claims-capabilities.test.ts`; a store-pack test over `store.en.ts`; reword the failing keys listed in R1 (Delete intro, sign-in and Account co-parent lines, "Your letters are safe." on screens a new person sees, caption and description lines). Words need the founder's approval.
+- Fails on old code: `[NX-38-R1] no string or listing line in the Build 12 profile claims a backup, another parent, photos, recordings on our servers or "no account"`.
+- Done when: that title and its sibling pass.
+
+#### BL-831 The public addresses are written down and checked (NX-38-R2)
+- Status: ready. Mode: agent. Owner: platform. Milestone: M14. Size: S.
+- Who: `ops`, `content`.
+- Satisfies: NX-38-R2, G2. Also cited: BL-759, BL-760, BL-768, Apple 5.1.1(i), 1.5.
+- Scope: `scripts/release/public-urls.mjs` and test; the live run is `ops` after the pages deploy.
+- Fails on old code: `[NX-38-R2] every address the app, listing and Notes name answers 200 with the policy version the rows hold`.
+- Done when: that title passes and the list is in the G2 evidence file.
+
+#### BL-832 The App Privacy label is built from the code (NX-38-R3)
+- Status: ready. Mode: agent. Owner: privacy engineer. Milestone: M14. Size: S.
+- Who: `privacy`, `compliance-engineer`; founder enters the label; counsel Q54.
+- Satisfies: NX-38-R3, G3. Also cited: LEGAL-REQ-042, BL-603.
+- Scope: a Build 12 table in `docs/legal/app-store-privacy-labels.md` (founder merges legal text) and `scripts/release/privacy-label.test.mjs`.
+- Fails on old code: `[NX-38-R3] the label table equals the privacy manifest and names every processor`.
+- Done when: both titles pass; the saved label screenshot is the founder's.
+
+#### BL-833 Age and region positions on record before submit (NX-38-R4)
+- Status: needs-decision (counsel Q46, Q57; founder F2). Mode: human. Owner: legal. Milestone: M14. Size: S.
+- Satisfies: NX-38-R4, D-131, D-136, D-137, CR-004, CR-005. Extends BL-345 and the tail of BL-759.
+- Scope: US-only availability screenshot; counsel's written Q46 answer; the founder's choice on the country check.
+- Done when: `G11-age-and-region.md` holds the three.
+
+#### BL-834 No co-parent entry point in Build 12 (NX-38-R5)
+- Status: needs-decision (founder F3; D-152 draft). Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S.
+- Satisfies: NX-38-R5, D-126, NX-30-R18. Extends BL-776.
+- Fails on old code: `[NX-38-R5] the Build 12 profile has no co-parent entry point`.
+- Done when: the title passes (option A) or the Notes name the flow (option B).
+
+#### BL-835 The local start ends in the account: the claim (NX-38-R6)
+- Status: blocked (BL-783, BL-784; read the claim code first). Mode: agent. Owner: mobile engineer, sync owner. Milestone: M14. Size: M.
+- Who: `mobile`, `sync`; review `red-team`, `privacy`.
+- Satisfies: NX-38-R6, NX-31-R18, R27, F02-REQ-019. Builds on BL-803.
+- Fails on old code: `[NX-38-R6] nothing uploads before Keep in this account`; `[NX-38-R6] an account with a book and a local book with kept letters deletes nothing and duplicates nothing`; `[NX-38-R6] a kill during the claim loses no letter`.
+- Done when: those titles pass and D38-4 is run.
+
+#### BL-836 The reviewer path survives the reviewer deleting the account (NX-38-R7)
+- Status: blocked (BL-786). Mode: pair. Owner: platform, qa engineer. Milestone: M14. Size: S.
+- Satisfies: NX-38-R7, NX-31-R24, R25, Apple 2.1(a).
+- Fails on old code: `[NX-38-R7] Notes say where Delete account is and what to tap after using it`.
+- Done when: D31-14 includes the second sign-in and passes.
+
+#### BL-837 Every public contact address receives mail and has a reader (NX-38-R8)
+- Status: needs-founder (who reads, and the promise). Mode: pair. Owner: platform, content. Milestone: M14. Size: S.
+- Satisfies: NX-38-R8, NX-16, F20-REQ-006, Apple 1.5. Overlaps BL-768 (take the unwritten half) and S-39.
+- Fails on old code: `[NX-38-R8] every public address is in the contact allowlist`.
+- Done when: the allowlist test passes and `G12` holds a message to each address and a reply.
+
+#### BL-838 Deletion proof includes token revocation and the completion email (NX-38-R9)
+- Status: blocked (BL-757, BL-760). Mode: pair. Owner: platform, qa engineer. Milestone: M14. Size: S.
+- Satisfies: NX-38-R9, NX-04-R2, BL-330, Apple 5.1.1(v). Extends BL-785.
+- Fails on old code: `[NX-38-R9] the drill ledger shows apple_token_revoke, storage_objects and auth_user ok`.
+- Done when: D31-16 evidence holds the ledger and the relay-address emails.
+
+#### BL-839 Production data can be restored: gate G9 (NX-38-R10)
+- Status: needs-decision (founder F4). Mode: pair. Owner: platform. Milestone: M14. Size: M.
+- Satisfies: NX-38-R10, NX-01-R5, DATA-REQ-030, DATA-REQ-031, D-138 item 2. Extends BL-761 and BL-814; overlaps #685.
+- Done when: `G9-recoverable.md` holds a timed restore that matches row counts, or the Pro plan page.
+
+#### BL-840 The store record is complete: gate G10 (NX-38-R11)
+- Status: needs-founder (S-12b, S-33, S-34; F5 on Plus). Mode: human. Owner: platform. Milestone: M14. Size: S.
+- Satisfies: NX-38-R11, G3, BL-767. Also cited: Apple 3.1.1.
+- Fails on old code: `[NX-38-R11] no open step that blocks the store`.
+- Done when: the title passes and `G10` holds the screenshots.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
