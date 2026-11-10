@@ -3,15 +3,15 @@
 Written 1 Nov 2026 by Karma's session. One page. Source: the retrospective, requirements and backlog in `docs/agents/harness-v2/` (PR #551). Items marked WAITING depend on a draft PR that is not merged; until it merges, do the manual version.
 
 ## Do these today (no PR needed)
-1. **Ids come from `node scripts/agents/next-id.mjs`.** Before using a D, CR, BL or ADR number, also search open PRs for it (the CR and D numbers collided three times: CR-22, CR-25, and D-138 versus open PR #557). Example: `gh api 'repos/thesaurabhpareek/earlyletters/pulls?state=open&per_page=100' --jq '.[].number'`, then grep each patch.
-2. **A review counts only at the full 40-character head sha** (CR-44). Format: `## Review A at <40-char sha>: PASS` as a PR comment. Re-check the head sha right before you merge. If it moved, the review is stale.
+1. **BL, D, ADR and APPLY ids come from `node scripts/agents/next-id.mjs`; it does not print CR ids.** Before using any D, CR, BL or ADR number, also search open PRs for it, and for a CR number read the end of `docs/agents/cto/RULINGS.md` as well (the CR and D numbers collided three times: CR-22, CR-25, and D-138 versus merged PR #557). Example: `gh api 'repos/thesaurabhpareek/earlyletters/pulls?state=open&per_page=100' --jq '.[].number'`, then grep each patch.
+2. **A review counts only at the full 40-character head sha** (CR-44 as proposed in PR #555; it is not in `docs/agents/cto/RULINGS.md` until #555 merges, and develop's file ends at CR-42). Format: `## Review A at <40-char sha>: PASS` as a PR comment. Re-check the head sha right before you merge. If it moved, the review is stale.
 3. **One merge owner per PR.** A chat "approved" is not a counted pass. Name the PR when you ask the founder to merge.
 4. **Read counts live, never from a doc or memory.** Open PR count was 69, 70, 72 and 91 within one day in four different notes. Quote the command and the time.
 5. **Do not write what you cannot source.** Founder decisions in `docs/DECISIONS.md` quote his words. If you only have a paraphrase, say so (see D-139's draft).
 6. **Disk is a fixed allowance.** Use sparse worktrees; never run a full `npm install` per worktree; delete `node_modules` from finished worktrees.
 7. **Resolve rebase conflicts hunk by hunk.** Never `git checkout --ours` a whole file; diff the result against both sides before pushing.
 8. **A green check is not proof it ran.** Say which suites ran, which skipped, and what you did not run.
-9. **Workflow, ruleset and settings changes are proposals** under `docs/ops/proposed/` until the founder applies them (CR-22, D-124). No `.github/**` edits before 9 Nov.
+9. **Workflow, ruleset and settings changes are proposals** under `docs/ops/proposed/` until the founder applies them (CR-22, D-124). The 1 Nov text said no `.github/**` edits before 9 Nov; that date has passed, but an agent still applies none without the founder's words.
 
 ## WAITING on a draft PR (do the manual version until it merges)
 | When merged | What changes | Manual version today |
@@ -23,7 +23,7 @@ Written 1 Nov 2026 by Karma's session. One page. Source: the retrospective, requ
 | #577 | Decisions checker (Amended by, id collisions) | Item 1 |
 | #558 | Build checklist and log | `docs/release/TESTFLIGHT.md` |
 | #560 | Device evidence kit | None; no device evidence exists yet |
-| #555 | CR-43 and CR-44 in the repo rulings file | Project doc `infra/cto-rulings-2026-11-01-karma-harness-v2.md` and CR-44 text |
+| #555 | CR-43 and CR-44 in the repo rulings file (proposed there, not yet rulings in the repo) | Project doc `infra/cto-rulings-2026-11-01-karma-credit.md`, the doc #555 and #551 both cite |
 
 ## Still true limits
 - Every review comes from one account and one model family. Independence is of method only (CR-32).
