@@ -84,17 +84,18 @@ function civilFromDays(z0: number): { y: number; m: number; d: number } {
 }
 
 const pad = (n: number, w: number) => String(n).padStart(w, '0');
-const formatDay = (n: number) => {
+/** The `YYYY-MM-DD` for a day number. */
+export function dayFromNumber(n: number): string {
   const { y, m, d } = civilFromDays(n);
   return `${pad(y, 4)}-${pad(m, 2)}-${pad(d, 2)}`;
-};
+}
 
-/** A day number for a valid `YYYY-MM-DD`, else null. */
-function parseDay(day: string): number | null {
+/** A day number (days since 1970-01-01) for a valid `YYYY-MM-DD`, else null. One parser, shared by decisions.ts. */
+export function dayNumberOf(day: string): number | null {
   const match = DAY_RE.exec(day);
   if (!match) return null;
   const n = daysFromCivil(Number(match[1]), Number(match[2]), Number(match[3]));
-  return formatDay(n) === day ? n : null;
+  return dayFromNumber(n) === day ? n : null;
 }
 
 /**
@@ -107,7 +108,7 @@ function parseDay(day: string): number | null {
 export function dayKeyAt(epochMs: number, utcOffsetMinutes: number): string {
   if (!Number.isFinite(epochMs)) throw new RangeError('dayKeyAt: instant must be a finite number of milliseconds');
   if (!Number.isFinite(utcOffsetMinutes)) throw new RangeError('dayKeyAt: offset must be a finite number of minutes');
-  return formatDay(Math.floor((epochMs + utcOffsetMinutes * MS_PER_MINUTE) / MS_PER_DAY));
+  return dayFromNumber(Math.floor((epochMs + utcOffsetMinutes * MS_PER_MINUTE) / MS_PER_DAY));
 }
 
 interface DayBucket {
@@ -119,7 +120,7 @@ interface DayBucket {
 function bucketByDay(items: readonly MomentItem[]): DayBucket[] {
   const byDay = new Map<number, DayBucket>();
   for (const it of items) {
-    const n = parseDay(it.day);
+    const n = dayNumberOf(it.day);
     if (n === null) continue; // not a day: skipped, never guessed
     let b = byDay.get(n);
     if (!b) {
@@ -180,8 +181,8 @@ export function buildMoments(items: readonly MomentItem[], ruleVersion: number =
     if (enoughItems) reasons.push('MIN_ITEMS_MET');
 
     out.push({
-      startDay: formatDay(run[0]!.dayNumber),
-      endDay: formatDay(run[run.length - 1]!.dayNumber),
+      startDay: dayFromNumber(run[0]!.dayNumber),
+      endDay: dayFromNumber(run[run.length - 1]!.dayNumber),
       cityKey: cities.size === 1 ? [...cities][0]! : null,
       reasons,
       ruleVersion,
