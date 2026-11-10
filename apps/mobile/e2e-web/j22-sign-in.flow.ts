@@ -271,7 +271,7 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   expect(keep!.width).toBeCloseTo(agree!.width, 0);
   expect(keep!.height).toBeCloseTo(agree!.height, 0);
   await expect(app.getByText('If you keep it on this phone, syncing and sharing stay off.')).toBeVisible();
-  await expect(app.getByText('You can change this any time in Settings, Privacy.')).toBeVisible();
+  await expect(app.getByText('You can turn them on later in Settings, Account.')).toBeVisible();
   await step('happy', 'Sensitive data', 'Every registered line, then "Agree and sync" and "Keep on this phone" at the same height and width: a no as easy as a yes (LEGAL-REQ-006).');
 
   await btn(app, 'Keep on this phone').click();
