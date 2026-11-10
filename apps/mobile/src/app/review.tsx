@@ -299,7 +299,8 @@ export default function Review() {
   }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
-  // after 300 ms of quiet (F04-REQ-011), and at once when the app leaves the foreground, at Done and at Close.
+  // at most 300 ms after the first change, however long the editing goes on (F04-REQ-011, F06-REQ-036), and at once
+  // when the app leaves the foreground, at Done and at Close.
   // Sample words (development builds) are never saved, so nothing is stored for them either.
   const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
   persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
@@ -317,7 +318,7 @@ export default function Review() {
       writer.flush();
     };
   }, [writer]);
-  // Every change of the person's words goes to the draft (debounced); the words restored on mount are already there.
+  // Every change of the person's words goes to the draft within 300 ms; the words restored on mount are already there.
   const lastWords = useRef(userText);
   useEffect(() => {
     if (userText === lastWords.current) return;
