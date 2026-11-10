@@ -7,10 +7,10 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { evaluate, parseDb, checkAllowlist, readWorkspaces, readDbFiles, parseArgs, main } from './skip-guard.mjs';
+import { evaluate, parseDb, parseDay, checkAllowlist, readWorkspaces, readDbFiles, parseArgs, main } from './skip-guard.mjs';
 
 const SCRIPT = fileURLToPath(new URL('./skip-guard.mjs', import.meta.url));
-const INFO = 'ℹ'; // the sign node:test's spec reporter prints before each count
+const INFO = '\u2139'; // the sign node:test's spec reporter prints before each count
 const TODAY = '2026-11-01';
 
 const WS = [
@@ -133,7 +133,7 @@ test('CLI: exit codes, files, stdin and the allowlist file (planted skip turns t
   w('test.log', core());
   w('planted.log', core(1));
   w('docs/qa/skip-allowlist.json', JSON.stringify([entry({ suite: 'packages/core', count: 1 })]));
-  const run = (args, input) => spawnSync(process.execPath, [SCRIPT, '--root', root, '--today', TODAY, ...args], { encoding: 'utf8', input });
+  const run = (args, input) => spawnSync(process.execPath, [SCRIPT, '--root', root, '--today', TODAY, ...args], { encoding: 'utf8', input, env: { ...process.env, SKIP_GUARD_TEST_TODAY: '1' } });
   assert.equal(run([path.join(root, 'test.log')]).status, 1, 'allowlist entry of 1 but 0 skipped');
   assert.equal(run([path.join(root, 'planted.log')]).status, 0);
   fs.writeFileSync(path.join(root, 'docs/qa/skip-allowlist.json'), '[]');
@@ -147,9 +147,29 @@ test('CLI: exit codes, files, stdin and the allowlist file (planted skip turns t
 });
 
 test('parseArgs and main reject bad usage', () => {
-  assert.throws(() => parseArgs(['--today', 'soon']), /YYYY-MM-DD/);
+  const TEST_ENV = { SKIP_GUARD_TEST_TODAY: '1' };
+  assert.throws(() => parseArgs(['--today', 'soon'], TEST_ENV), /YYYY-MM-DD/);
+  assert.throws(() => parseArgs(['--today', '2020-01-01'], {}), /tests only/);
+  assert.equal(parseArgs(['--today', '2020-01-01'], TEST_ENV).today, '2020-01-01');
   assert.throws(() => parseArgs(['--nope']), /unknown option/);
   let err = '';
-  assert.equal(main(['--today', 'x'], { err: (s) => { err += s; } }), 2);
+  assert.equal(main(['--today', 'x'], { env: TEST_ENV, err: (s) => { err += s; } }), 2);
   assert.match(err, /skip-guard/);
+});
+
+test('[HV2-010] EG-3: expires must be a real date, within the horizon', () => {
+  assert.equal(parseDay('2026-02-29'), null);
+  assert.notEqual(parseDay('2028-02-29'), null);
+  for (const bad of ['9999-99-99', '2026-13-45', '2026-02-30', '0000-00-00']) {
+    assert.match(checkAllowlist([entry({ expires: bad })], TODAY).join('\n'), /real date/, bad);
+  }
+  assert.match(checkAllowlist([entry({ expires: '2099-12-31' })], TODAY).join('\n'), /more than 60 days away/);
+  assert.deepEqual(checkAllowlist([entry({ expires: '2026-12-31' })], '2026-11-01'), []);
+  assert.equal(checkAllowlist([entry({ expires: '2027-01-01' })], '2026-11-01').length, 1);
+});
+
+test('[HV2-010] EG-3: a whitespace-only reason, owner or suite counts as missing', () => {
+  for (const f of ['reason', 'owner', 'suite']) {
+    assert.match(checkAllowlist([entry({ [f]: '  \t ' })], TODAY).join('\n'), new RegExp(`missing ${f}`));
+  }
 });

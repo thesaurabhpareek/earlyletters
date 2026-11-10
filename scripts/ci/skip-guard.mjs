@@ -36,7 +36,9 @@
 //   node scripts/ci/skip-guard.mjs --allow docs/qa/skip-allowlist.json test.log db.log
 // Pass every log of one run in a single call: an entry whose suite is in no log is stale and fails.
 // Options: --allow <file> (default docs/qa/skip-allowlist.json), --root <dir> (default the repo
-// root, where workspaces and supabase/tests are read), --today YYYY-MM-DD (default today, UTC).
+// root, where workspaces and supabase/tests are read), --today YYYY-MM-DD (tests only: refused
+// unless SKIP_GUARD_TEST_TODAY=1, because any other date turns expiry off; CI must not set either).
+// An entry's expires must be a real date no more than 60 days after today.
 // Not wired into package.json or any workflow; the CI patch is a founder-applied proposal (B20).
 //
 // Tests: node --test scripts/ci/skip-guard.test.mjs
@@ -55,6 +57,18 @@ const DB_OK = /^ALL PASSED \((\d+) checks\)\s*$/;
 const DB_OK_WORDS = /^All .+ checks passed\.\s*$/;
 const DB_BAD = /^(\d+) FAILED \((\d+) passed\)\s*$/;
 const FIELDS = ['suite', 'count', 'reason', 'owner', 'expires'];
+// An entry may not run longer than this from today, so a renewal needs a fresh review (EG-3).
+export const MAX_EXPIRY_DAYS = 60;
+
+/** Parse YYYY-MM-DD as a real calendar date (UTC). Returns epoch ms, or null when invalid. */
+export function parseDay(s) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(typeof s === 'string' ? s : '');
+  if (!m) return null;
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const d = new Date(t);
+  const back = `${String(d.getUTCFullYear()).padStart(4, '0')}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  return back === s ? t : null;
+}
 
 /** Workspace package name to path, and which workspaces are expected to print a summary. */
 export function readWorkspaces(root) {
@@ -130,10 +144,18 @@ export function checkAllowlist(list, today) {
   list.forEach((e, i) => {
     const at = `allowlist entry ${i + 1}${e && e.suite ? ` (${e.suite})` : ''}`;
     if (!e || typeof e !== 'object') { problems.push(`${at}: not an object`); return; }
-    for (const f of FIELDS) if (e[f] === undefined || e[f] === null || e[f] === '') problems.push(`${at}: missing ${f}`);
+    for (const f of FIELDS) {
+      const v = e[f];
+      if (v === undefined || v === null || (typeof v === 'string' && v.trim() === '')) problems.push(`${at}: missing ${f}`);
+    }
     if (e.count !== undefined && !(Number.isInteger(e.count) && e.count >= 0)) problems.push(`${at}: count must be a whole number`);
-    if (e.expires && !/^\d{4}-\d{2}-\d{2}$/.test(e.expires)) problems.push(`${at}: expires must be YYYY-MM-DD`);
-    else if (e.expires && e.expires < today) problems.push(`${at}: expired on ${e.expires}; fix the skip or renew with a new reason`);
+    if (e.expires !== undefined && e.expires !== null && e.expires !== '' && typeof e.expires === 'string' && e.expires.trim() !== '') {
+      const t = parseDay(e.expires);
+      const now = parseDay(today);
+      if (t === null) problems.push(`${at}: expires must be a real date in YYYY-MM-DD form`);
+      else if (now !== null && t < now) problems.push(`${at}: expired on ${e.expires}; fix the skip or renew with a new reason`);
+      else if (now !== null && t > now + MAX_EXPIRY_DAYS * 86400000) problems.push(`${at}: expires ${e.expires} is more than ${MAX_EXPIRY_DAYS} days away; renew in shorter steps`);
+    } else if (e.expires !== undefined && e.expires !== null && typeof e.expires !== 'string') problems.push(`${at}: expires must be a real date in YYYY-MM-DD form`);
     if (e.suite) { if (seen.has(e.suite)) problems.push(`${at}: listed twice`); seen.add(e.suite); }
   });
   return problems;
@@ -183,25 +205,26 @@ export function evaluate(inputs, { allow = [], workspaces = [], dbFiles = [], to
   return { problems, suites: [...all.values()] };
 }
 
-export function parseArgs(argv) {
+export function parseArgs(argv, env = process.env) {
   const o = { allow: 'docs/qa/skip-allowlist.json', root: REPO, today: new Date().toISOString().slice(0, 10), files: [], help: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--allow') o.allow = argv[++i];
     else if (a === '--root') o.root = path.resolve(argv[++i]);
-    else if (a === '--today') o.today = argv[++i];
+    else if (a === '--today') { o.today = argv[++i]; o.todayGiven = true; }
     else if (a === '-h' || a === '--help') o.help = true;
     else if (a.startsWith('-') && a !== '-') throw new Error(`unknown option ${a}`);
     else o.files.push(a);
   }
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(o.today || '')) throw new Error('--today needs YYYY-MM-DD');
+  if (o.todayGiven && env.SKIP_GUARD_TEST_TODAY !== '1') throw new Error('--today is for tests only and would turn expiry off; set SKIP_GUARD_TEST_TODAY=1 to use it');
+  if (parseDay(o.today) === null) throw new Error('--today needs a real date in YYYY-MM-DD form');
   if (!o.allow) throw new Error('--allow needs a file');
   return o;
 }
 
-export function main(argv = process.argv.slice(2), { stdin = () => fs.readFileSync(0, 'utf8'), out = (s) => process.stdout.write(s), err = (s) => process.stderr.write(s) } = {}) {
+export function main(argv = process.argv.slice(2), { stdin = () => fs.readFileSync(0, 'utf8'), env = process.env, out = (s) => process.stdout.write(s), err = (s) => process.stderr.write(s) } = {}) {
   let o;
-  try { o = parseArgs(argv); } catch (e) { err(`skip-guard: ${e.message}\n`); return 2; }
+  try { o = parseArgs(argv, env); } catch (e) { err(`skip-guard: ${e.message}\n`); return 2; }
   if (o.help) { out('usage: node scripts/ci/skip-guard.mjs [--allow file] [--root dir] [--today YYYY-MM-DD] <log>... (or stdin)\n'); return 0; }
   let inputs;
   let allow;
