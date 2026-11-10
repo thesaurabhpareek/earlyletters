@@ -17,6 +17,8 @@ import { inviteShareText } from '../src/lib/family/share-text';
 import { fixture, type Fixture } from './helpers/store-fixture';
 import { ashaSnapshot } from './helpers/asha-export';
 import { bookHtml, planExport } from '../src/lib/export/build.logic';
+import { bookImpacts, impactLines } from '../src/lib/account-deletion/logic';
+import { book as bookWords } from '@scribe/content';
 import { DEFAULT_PREFS, planReminders, type PlannerChild } from '../src/lib/reminders/planner';
 import { zonedToEpoch } from '../src/lib/reminders/tz';
 
@@ -89,7 +91,6 @@ describe('[NX-31-R3] the two places that used to print the raw empty name', () =
     const snap = ashaSnapshot();
     const child = { ...snap.children[0], name: '' };
     const html = bookHtml(child, snap.entries.filter((e) => e.childId === child.id), snap.locale);
-    expect(html).toContain('your child');
     expect(html).not.toMatch(/(^|[>\s])'s /);
   });
 
@@ -166,5 +167,70 @@ describe('[NX-31-R3] what leaves the phone or lands in a keepsake, for a book wi
     expect(html).not.toContain('For your child');
     const named = bookHtml(snap.children[0], snap.entries.filter((e) => e.childId === snap.children[0].id), snap.locale);
     expect(named).toContain(`For ${snap.children[0].name}, from everyone`);
+  });
+});
+
+const srcOf = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
+
+describe('[NX-31-R3] round two: deletion lines, the exported book, the invite wiring', () => {
+  it('[NX-31-R3] account deletion names a book with no name "your child", never a blank, and stores nothing', () => {
+    const me = { role: 'parent' as const, is_me: true, signs_as: 'Mumma' };
+    const rows = [
+      { id: 'b1', name: '', role: 'parent' as const, members: [me, { role: 'parent' as const, is_me: false, signs_as: 'Papa' }] },
+      { id: 'b2', name: '', role: 'parent' as const, members: [me] },
+      { id: 'b3', name: '  ', role: 'contributor' as const, members: [{ role: 'contributor' as const, is_me: true, signs_as: 'Aunty' }] },
+    ];
+    const impacts = bookImpacts(rows, () => 2);
+    expect(impacts.map((i) => i.child)).toEqual(['', '', '  ']);
+    const lines = impactLines(impacts).join('\n');
+    expect(lines).toContain("your child's book stays with Papa");
+    expect(lines).toContain("your child's book will be deleted");
+    expect(lines).toContain('Your letters to your child will be removed');
+    expect(lines).not.toMatch(/(^|\s)'s |\{|\}/);
+  });
+
+  it('[NX-31-R3] the exported book with no name never says "your child" and speaks to the child, in the cover, About page and index', () => {
+    const snap = ashaSnapshot();
+    const blank = { ...snap.children[0], name: '' };
+    const mine = snap.entries.filter((e) => e.childId === blank.id);
+    const html = bookHtml(blank, mine, snap.locale);
+    const front = html.slice(html.indexOf('<div class="cover">'), html.indexOf('<section class="chapter">'));
+    expect(front).not.toContain('your child');
+    expect(html).toMatch(/<p class="sub" dir="auto">Letters to you(, Year \d+)?<\/p>/);
+    expect(html).toContain(bookWords.aboutThisBook.bodyNoName.slice(0, 60));
+    expect(html).not.toContain("'s family");
+    const plan = planExport({ ...snap, children: snap.children.map((c) => (c.id === blank.id ? blank : c)) });
+    const index = plan.textFiles.find((t) => t.path === 'index.html')!.text;
+    expect(index).toContain(`<h2 dir="auto">${bookWords.indexTitleNoName}</h2>`);
+    expect(index).not.toMatch(/Letters to your child/);
+  });
+
+  it('[NX-31-R3] the no-name book words obey the rules and say the same as the named ones', () => {
+    const words = [bookWords.coverSubtitleNoName, bookWords.coverSubtitleAllNoName, bookWords.indexTitleNoName, bookWords.aboutThisBook.bodyNoName];
+    for (const w of words) {
+      expect(w).not.toMatch(/[\u2013\u2014\u2018\u2019\u201C\u201D\u2026]|\p{Extended_Pictographic}/u);
+      expect(w).not.toMatch(/\{child\}|your child/);
+    }
+    expect(bookWords.aboutThisBook.bodyNoName).toBe(bookWords.aboutThisBook.body.replace("{child}'s family", 'your family'));
+  });
+
+  it('[NX-31-R3] a named book prints the old words, and none of the no-name ones', () => {
+    const snap = ashaSnapshot();
+    const named = snap.children[0];
+    const html = bookHtml(named, snap.entries.filter((e) => e.childId === named.id), snap.locale);
+    expect(html).toMatch(new RegExp(`<p class="sub" dir="auto">Letters to ${named.name}(, Year \\d+)?</p>`));
+    expect(html).toContain(`Every word in this book was spoken or typed by ${named.name}`);
+    expect(html).not.toContain('typed by your family');
+    for (const w of [bookWords.coverSubtitleAllNoName, bookWords.aboutThisBook.bodyNoName, bookWords.dedicationNoName]) expect(html).not.toContain(w);
+    const index = planExport(snap).textFiles.find((t) => t.path === 'index.html')!.text;
+    expect(index).toContain(`Letters to ${named.name}</h2>`);
+    expect(index).not.toContain(bookWords.indexTitleNoName);
+  });
+
+  it('[NX-31-R3] the share sheet gets its words from inviteShareText, not from its own fill', () => {
+    const share = srcOf('lib/family/share.ts');
+    expect(share).toMatch(/import \{ inviteShareText \} from '\.\/share-text';/);
+    expect(share).toMatch(/inviteShareText\(child, signsAs\)/);
+    expect(share).not.toMatch(/shareMessage|shareTitle/);
   });
 });

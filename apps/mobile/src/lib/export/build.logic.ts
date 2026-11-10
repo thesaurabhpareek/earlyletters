@@ -428,7 +428,7 @@ ${audio}
             .join('\n')}`,
         )
         .join('\n');
-      return `<section>\n<h2 dir="auto">${escapeHtml(fill(r.title, { child: child.name }))}</h2>\n${chapters}\n</section>`;
+      return `<section>\n<h2 dir="auto">${escapeHtml(child.name.trim() ? fill(r.title, { child: child.name }) : bookWords.indexTitleNoName)}</h2>\n${chapters}\n</section>`;
     })
     .filter(Boolean)
     .join('\n');
@@ -475,8 +475,14 @@ export function bookHtml(child: SnapshotChild, entries: SnapshotEntry[], locale:
   const inBook = entries.filter(printable);
   const chapters = chaptersOf(child, inBook);
   const years = [...new Set(chapters.map((ch) => yearOf(ch.month)))];
-  const subtitle =
-    years.length === 1 ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] }) : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name });
+  const named = child.name.trim() !== '';
+  const subtitle = named
+    ? years.length === 1
+      ? fill(bookWords.coverSubtitle, { child: child.name, n: years[0] })
+      : fill(exportCopy.pdf.coverSubtitleAll, { child: child.name })
+    : years.length === 1
+      ? fill(bookWords.coverSubtitleNoName, { n: years[0] })
+      : bookWords.coverSubtitleAllNoName;
   const about = bookWords.aboutThisBook;
   let lastYear = 0;
   const body = chapters
@@ -524,11 +530,11 @@ article p{margin:0 0 8pt;orphans:3;widows:3}
 <div class="cover">
 <h1>${escapeHtml(brand.name)}</h1>
 <p class="sub" dir="auto">${escapeHtml(subtitle)}</p>
-<p class="ded" dir="auto">${escapeHtml(child.name.trim() ? fill(bookWords.dedication, { child: child.name }) : bookWords.dedicationNoName)}</p>
+<p class="ded" dir="auto">${escapeHtml(named ? fill(bookWords.dedication, { child: child.name }) : bookWords.dedicationNoName)}</p>
 </div>
 <div class="about">
 <h2>${escapeHtml(about.title)}</h2>
-<p dir="auto">${escapeHtml(fill(about.body, { child: child.name }))}</p>
+<p dir="auto">${escapeHtml(named ? fill(about.body, { child: child.name }) : about.bodyNoName)}</p>
 </div>
 ${body}
 <p class="colophon">${escapeHtml(fill(bookWords.colophon, {}))}</p>
