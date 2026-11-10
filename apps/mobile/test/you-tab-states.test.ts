@@ -188,7 +188,8 @@ describe('12. Acceptance checks', () => {
     expect(bookTitle('   ')).toBe("Your child's book");
     expect(bookTitle(null)).toBe("Your child's book");
     expect(bookTitle('Asha')).toBe('Asha');
-    expect(home).toMatch(/title=\{bookTitle\(ch\.name\)\}/);
+    // #701 (develop) owns the settings row: it reads childLabel, "your child" for a book with no name.
+    expect(home).toMatch(/title=\{childLabel\(ch\.name\)\}/);
     expect(home).not.toMatch(/title=\{ch\.name\}/);
     expect(child).toMatch(/title: name\.trim\(\) \? fill\(s\.title, \{ child: name \}\) : copy\.settingsHome\.childFallback/);
   });
