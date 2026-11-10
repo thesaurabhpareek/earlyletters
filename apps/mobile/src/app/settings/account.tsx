@@ -123,7 +123,7 @@ function AccountSettings() {
             {a.signedOutTitle}
           </Text>
           <Text variant="body" tone="muted">
-            {fill(a.signedOutBody, { child: active?.name ?? authCopy.consent.childFallback })}
+            {fill(a.signedOutBody, { child: active?.name || authCopy.consent.childFallback })}
           </Text>
           {endedEarly ? (
             <Text variant="body" testID="account.signOutEarly">

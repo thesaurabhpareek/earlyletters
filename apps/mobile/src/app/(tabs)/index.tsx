@@ -42,7 +42,7 @@ import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
-import { renderTemplate, selectPrompt } from '@scribe/core';
+import { selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
@@ -71,7 +71,7 @@ import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
 import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
-import { copy } from '@/lib/copy';
+import { copy, fill } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
@@ -289,7 +289,7 @@ export default function Tonight() {
         <Animated.View entering={enter(2)} className="mt-6">
           <Animated.View key={prompt.key} entering={shuffle === 0 ? undefined : promptIn} exiting={promptOut}>
             <Text variant="promptHero" accessibilityHint={t.promptLabel}>
-              {renderTemplate(prompt.text, { child })}
+              {fill(prompt.text, { child })}
             </Text>
           </Animated.View>
           <Button
