@@ -5,10 +5,10 @@
  * use of the rules is pinned in their source. Registered words are pinned word for word in
  * packages/content/test/experience-pass.test.ts; here they are read as they are. Fixtures: the fictional family Asha.
  */
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { billingCopy, en, exportCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
+import { billingCopy, en, exportCopy, packsCopy, reminderCopy, speechSettingsCopy } from '@scribe/content';
 import { fill } from '../src/lib/copy';
 import { appearanceSample, type SampleEntry } from '../src/components/settings/appearance.logic';
 import { exportEmpty, exportFailure, INSIDE } from '../src/components/settings/export.logic';
@@ -32,11 +32,14 @@ const screen = (over: Partial<Parameters<typeof planScreen>[0]> = {}) =>
   planScreen({ line: off, details: none, plusOn: false, storeSupport: 'available', noteLines: [], longDate, ...over });
 
 describe('[S41] Plan', () => {
-  it('Plus off: no status card, "See what Plus adds" first, the registered promise as the footer once, no Manage', () => {
+  it('Plus off: no status card, "See what Plus adds" first, the F5 line as the footer once (not the promise), no Manage', () => {
     const s = screen();
     expect(s.status).toBeNull();
     expect(s.seePlans).toEqual({ kind: 'open', title: 'See what Plus adds' });
-    expect(s.promise).toBe(billingCopy.store.promise);
+    // F5 (founder, 1 Nov 2026): Plus never had, the setup line is the footer; the promise would repeat its first sentence.
+    expect(s.freeLine).toBe(billingCopy.membership.line);
+    expect(s.promise).toBeNull();
+    expect(s.includes).toEqual({ title: 'What Plus includes', items: billingCopy.store.features });
     expect(s.manage).toBe(false);
     expect(s.redeem).toBe(true);
     // No StoreKit on this device (the web preview, an old iOS): the line that says why, and no Redeem.
@@ -90,7 +93,7 @@ describe('[S41] Plan', () => {
       { s: screen({ restored: HELD.restoreNothing }), note: [], restore: HELD.restoreNothing },
     ];
     for (const { s, note, restore } of states) {
-      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
+      const said = [s.status?.subtitle, s.seePlans?.title, s.promise, s.freeLine, ...(s.includes?.items ?? []), p.payment, s.manage ? p.manageHelp : null, p.restoreHelp, s.redeem ? p.redeemHelp : null, ...note, restore]
         .filter((x): x is string => !!x)
         .flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(said.length, said.join(' | ')).toBe(new Set(said).size);
@@ -98,7 +101,7 @@ describe('[S41] Plan', () => {
     }
     // The promise sits where plan.off and the old plus.promise (deleted, P7) once both said "Your first two letters are free.".
     const plan = code('app/settings/plus.tsx');
-    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.promise \?\? undefined\}>/);
+    expect(plan).toMatch(/<ListSection title=\{p\.statusTitle\} footer=\{screen\.freeLine \?\? screen\.promise \?\? undefined\}>/);
     expect(plan).not.toMatch(/p\.off\b/);
     expect(plan).toMatch(/\{screen\.manage \? \(/);
   });
@@ -145,7 +148,15 @@ describe('[S41] Plan', () => {
   });
 
   it('types no price, trial length or countdown anywhere it can show (D-083)', () => {
-    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' })].flatMap((s) => [s.status?.subtitle ?? '', s.seePlans?.title ?? '', s.promise ?? '']);
+    const ended = screen({ details: { status: 'expired', period: 'month', ownership: 'purchased', periodEnd: '2026-11-13T12:00:00.000Z' } });
+    const lines = [screen(), screen({ line: { kind: 'renews', on: '2026-11-13' }, details: monthly, plusOn: true }), screen({ storeSupport: 'unsupported' }), ended].flatMap((s) => [
+      s.status?.subtitle ?? '',
+      s.seePlans?.title ?? '',
+      s.promise ?? '',
+      s.freeLine ?? '',
+      s.includes?.title ?? '',
+      ...(s.includes?.items ?? []),
+    ]);
     for (const l of [...lines, p.payment, p.restoreHelp, p.manageHelp, p.redeemHelp]) expect(l, l).not.toMatch(/\$|\bprice\b|\d+\s*(days?|months?) (free|left)/i);
   });
 });
@@ -238,28 +249,63 @@ describe('[S42] Recordings', () => {
       const sentences = [c.body, c.footer].filter((x): x is string => !!x).flatMap((x) => x.split(/(?<=[.!?])\s+/));
       expect(sentences.length).toBe(new Set(sentences).size);
     }
-    const screen = code('app/settings/recordings.tsx');
-    expect(screen).not.toMatch(/r\.keepHelp/);
-    expect(screen).toMatch(/<ListSection title=\{r\.title\} footer=\{card\.footer \?\? undefined\}>/);
+    // The Recordings page is gone (8 Nov 2026): Where your letters live says where the book is kept
+    // (test/where-live.test.ts). recordingsCard stays for the backup build's held lines (C7).
+    expect(existsSync(join(SRC, 'app/settings/recordings.tsx'))).toBe(false);
   });
 
   it('the language row is actionable when the model is missing, and shows its progress while it downloads', () => {
     expect(speechRow({ kind: 'absent', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: 'download', trailing: 'Download', percent: null, hint: speechSettingsCopy.downloadHint });
-    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toMatchObject({ subtitle: 'Getting ready, 40%', action: null, percent: 40 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toMatchObject({ subtitle: 'Getting ready, 40%', action: 'stop', percent: 40 });
     expect(speechRow({ kind: 'here', mb: 575 })).toMatchObject({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: 'Remove' });
-    expect(speechRow({ kind: 'waitingForWifi', mb: 575 }).action).toBeNull();
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 }).action).toBe('stop');
     expect(speechRow({ kind: 'unknown', mb: 575 }).action).toBeNull();
-    // Each state's words and action, in full: Remove says what it frees; the rows that wait offer nothing to tap.
+    // Each state's words and action, in full: Remove says what it frees; the rows a tap cannot help (no space, no files to read) offer nothing.
     expect(speechRow({ kind: 'here', mb: 575 })).toEqual({ subtitle: 'On this phone, 575 MB', action: 'remove', trailing: speechSettingsCopy.confirmButton, percent: null, hint: speechSettingsCopy.removeHint });
     expect(speechSettingsCopy.removeHint).toBe('Removes this language from the phone to free space');
     expect(speechRow({ kind: 'noSpace', mb: 575 })).toEqual({ subtitle: 'Needs more free space, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
-    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: 'stop', trailing: 'Stop', percent: null, hint: speechSettingsCopy.stopHint });
     expect(speechRow({ kind: 'unknown', mb: 575 })).toEqual({ subtitle: 'Not on this phone, 575 MB', action: null, trailing: null, percent: null, hint: undefined });
-    // The ring and its words stay between 0 and 100, rounded down (never "100%" before it is done).
-    expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 100%', percent: 100 });
-    expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Getting ready, 0%', percent: 0 });
+    // The ring and its words stay between 0 and 99, rounded down: never "100%" before it is done, and below 1% the
+    // words say "Downloading" with no number (TestFlight build 1: never "Getting ready, 0%"), the ring at its start.
+    expect(speechRow({ kind: 'downloading', fraction: 1.7 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
+    expect(speechRow({ kind: 'downloading', fraction: -0.2 })).toMatchObject({ subtitle: 'Downloading', percent: 0 });
     expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ subtitle: 'Getting ready, 99%', percent: 99 });
-    expect(code('app/settings/recordings.tsx')).toMatch(/onPress=\{row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : undefined\}/);
+    expect(speechRow({ kind: 'downloading', fraction: 0.004 })).toMatchObject({ subtitle: 'Downloading', percent: 0 });
+    expect(speechRow({ kind: 'downloading', fraction: 0.01 })).toMatchObject({ subtitle: 'Getting ready, 1%', percent: 1 });
+    // The row moved to Storage with the language download (settings-ia.md 4).
+    expect(code('components/settings/speech-row.tsx')).toMatch(
+      /onPress=\{\s*row\.action === 'remove' \? confirmRemove : row\.action === 'download' \? \(\) => void startSpeechDownload\(language\) : row\.action === 'stop' \? stop : undefined\s*\}/,
+    );
+  });
+
+  it('[S1-97b] a running speech download can be stopped from its language row: Stop while it downloads or waits for Wi-Fi', () => {
+    // The packs a language row stands for are left out of Storage's In progress list (where-live.test.ts), so before
+    // this the row was the only place a language showed and it offered nothing: a running download had no Stop.
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 })).toEqual({ subtitle: 'Getting ready, 40%', action: 'stop', trailing: 'Stop', percent: 40, hint: speechSettingsCopy.stopHint });
+    expect(speechRow({ kind: 'waitingForWifi', mb: 575 })).toEqual({ subtitle: 'Waits for Wi-Fi, 575 MB', action: 'stop', trailing: 'Stop', percent: null, hint: speechSettingsCopy.stopHint });
+    // The word is the one Storage's In progress list already uses: no new button. The hint is the only new line.
+    expect(speechRow({ kind: 'downloading', fraction: 0.4 }).trailing).toBe(packsCopy.stopButton);
+    expect(packsCopy.stopButton.length).toBeLessThanOrEqual(22);
+    expect(speechSettingsCopy.stopHint).toBe('Stops getting this language ready for now');
+    // Stop at every point of the download keeps its percent for the ring, rounded down and clamped as before.
+    expect(speechRow({ kind: 'downloading', fraction: 0.999 })).toMatchObject({ action: 'stop', trailing: 'Stop', percent: 99 });
+    // What a tap cannot help stays without an action: no space, and the design preview that cannot read files.
+    expect(speechRow({ kind: 'noSpace', mb: 575 }).action).toBeNull();
+    expect(speechRow({ kind: 'unknown', mb: 575 }).action).toBeNull();
+    // Download and Remove are unchanged.
+    expect(speechRow({ kind: 'absent', mb: 575 })).toMatchObject({ action: 'download', trailing: 'Download' });
+    expect(speechRow({ kind: 'here', mb: 575 })).toMatchObject({ action: 'remove', trailing: 'Remove' });
+  });
+
+  it('[S1-97b] Stop on the language row pauses every pack the language needs (the detector and the speech model), through cancelPack', () => {
+    const row = code('components/settings/speech-row.tsx');
+    expect(row).toMatch(/import \{ cancelPack \} from '@\/lib\/packs';/);
+    expect(row).toMatch(/const stop = \(\) => \{\s*for \(const id of plan\.packs\) cancelPack\(id\);\s*\};/);
+    // Not the removal path: Stop keeps the partial file (the next Download carries on), Remove deletes it.
+    expect(row.match(/const stop = \(\) => \{[\s\S]*?\};/)?.[0]).not.toMatch(/removePack|removeSpeechPack/);
+    // Storage's In progress list still leaves a language's packs out, so a language is still never said twice.
+    expect(code('app/settings/storage.tsx')).toMatch(/!asLanguages\.has\(p\.id\) && ACTIVE\.includes/);
   });
 });
 
@@ -303,15 +349,11 @@ describe('[S43] Export', () => {
 });
 
 describe('[S44] Privacy', () => {
-  it('the never-lines are a plain list with a glyph each, not rows, with their registered words', () => {
-    const list = code('components/consent/never-list.tsx');
-    expect(list).not.toMatch(/ListRow|ListSection/);
-    expect(list).toMatch(/consentCopy\.never\.map/);
-    // LockSimple: the icon section 5.4 lists for S44 (the coordinator's ruling on #313).
-    expect(list).toMatch(/import \{ LockSimpleIcon \} from 'phosphor-react-native\/src\/icons\/LockSimple';/);
-    expect(list).toMatch(/<LockSimpleIcon size=\{20\} color=\{c\.textMuted\} \/>/);
-    expect(list).not.toMatch(/Prohibit/);
-    expect(code('app/settings/privacy.tsx')).toMatch(/<NeverList \/>/);
+  it('the never-list is gone: the promise opens the page, with no lock icon (CPrivO-5, VOICE.md)', () => {
+    expect(existsSync(join(SRC, 'components/consent/never-list.tsx'))).toBe(false);
+    const screen = code('app/settings/privacy.tsx');
+    expect(screen).not.toMatch(/NeverList|consentCopy\.never|Lock\w*Icon|Shield/);
+    expect(screen).toMatch(/\{copy\.trust\.promise\}/);
   });
 });
 

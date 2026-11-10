@@ -95,6 +95,19 @@
  *                     Production sets it on too: the first store build is English only
  *                     (D-121 item 1; D-124 item 1 lets this line land before the freeze).
  *
+ *   SPOKEN_LANGUAGES  `EXPO_PUBLIC_SPOKEN_LANGUAGES=en,es` in the build's env: the spoken
+ *                     languages this build hears, as a comma list of ISO 639-1 codes
+ *                     (D-125 item 2: a language unlocks one at a time, each after its own
+ *                     gate, in the release whose listing names it). Unset or blank: no
+ *                     list, every language as before. English is always heard, and a code
+ *                     the app does not know is ignored (lib/language/heard-languages.ts).
+ *                     It can only narrow what ENGLISH_ONLY allows: with that switch on the
+ *                     build hears English alone whatever the list says. Written as `en`
+ *                     next to ENGLISH_ONLY in testflight, preview and production, so those
+ *                     builds behave as before; development and e2e leave it unset.
+ *                     Inlined at build time like the others; remote config has no key for
+ *                     it, so a language can never appear in a reviewed binary by download.
+ *
  * Pure TypeScript (no React Native), so Node tests read it directly.
  */
 
@@ -118,6 +131,21 @@ const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_P
 
 let englishOnlyTestOverride: boolean | null = null;
 
+/**
+ * A comma list of language codes, trimmed, lower-cased and each once, in the order written; null when unset or blank
+ * (no list). Which codes count is decided in lib/language/heard-languages.ts, so this file still imports nothing.
+ */
+export function parseLanguageList(raw: string | undefined | null): readonly string[] | null {
+  const codes = [...new Set((raw ?? '').split(',').map((c) => c.trim().toLowerCase()).filter((c) => c.length > 0))];
+  return codes.length > 0 ? codes : null;
+}
+
+/** Inlined at bundle time, like the other switches (D-125 item 2). */
+const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string[] | null = parseLanguageList(process.env.EXPO_PUBLIC_SPOKEN_LANGUAGES);
+
+/** undefined: the build value. null: no list. */
+let spokenLanguagesTestOverride: readonly string[] | null | undefined;
+
 /** Per-feature build flags (F19-REQ-025). Inlined at bundle time; only `on` is on. */
 const BACKUP_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_BACKUP);
 const STATUS_REPORT_BUILD_VALUE: boolean = parseServerFeatures(process.env.EXPO_PUBLIC_STATUS_REPORT);
@@ -137,6 +165,11 @@ export function analyticsEnabled(): boolean {
 /** True only in a build made with `EXPO_PUBLIC_ENGLISH_ONLY=on` (the two alpha profiles, D-111 item 4, and the staged 1.0 production profile, D-121). */
 export function englishOnlyEnabled(): boolean {
   return englishOnlyTestOverride ?? ENGLISH_ONLY_BUILD_VALUE;
+}
+
+/** The build's `EXPO_PUBLIC_SPOKEN_LANGUAGES` list as written, or null for none. Read it through heardLanguagesForBuild(). */
+export function spokenLanguagesListed(): readonly string[] | null {
+  return spokenLanguagesTestOverride !== undefined ? spokenLanguagesTestOverride : SPOKEN_LANGUAGES_BUILD_VALUE;
 }
 
 /** The PostHog key the app may use: none at all unless the analytics switch is on. */
@@ -258,6 +291,13 @@ export function setEnglishOnlyForTests(value: boolean | null): void {
   const env = typeof process !== 'undefined' ? process.env : undefined;
   if (!env?.VITEST) throw new Error('setEnglishOnlyForTests is for tests only');
   englishOnlyTestOverride = value;
+}
+
+/** Tests only, like setServerFeaturesForTests: a spoken-language list (null for none); undefined goes back to the build value. */
+export function setSpokenLanguagesForTests(value: readonly string[] | null | undefined): void {
+  const env = typeof process !== 'undefined' ? process.env : undefined;
+  if (!env?.VITEST) throw new Error('setSpokenLanguagesForTests is for tests only');
+  spokenLanguagesTestOverride = value;
 }
 
 /**

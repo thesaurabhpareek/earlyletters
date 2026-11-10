@@ -10,7 +10,7 @@ import { AppState } from 'react-native';
 import { AGE_GATE_PASSED_KEY as PASSED, AGE_GATE_STOPPED_KEY as STOPPED_AT, answerGate, decideGate } from './age-gate.logic';
 import { agreementRows, decideEntry, type AgreementSurface, type EntryDecision } from './agreements.logic';
 import { clearPendingInvite } from './family/pending-invite';
-import { deleteSetting, getSetting, hasAgreement, recordAgreement, setSetting, uuidv7 } from './store';
+import { deleteSetting, getSetting, hasAgreement, recordAgreement, setSetting, subscribeTo, uuidv7 } from './store';
 
 function readDecision(now = Date.now()): EntryDecision {
   const stoppedAt = getSetting(STOPPED_AT);
@@ -59,6 +59,17 @@ export function reopenAgeGate(): void {
 export function useAgeGate(): { decision: EntryDecision; refresh: () => void } {
   const [decision, setDecision] = useState<EntryDecision>(() => readDecision());
   const refresh = useCallback(() => setDecision(readDecision()), []);
+  // Erase everything (lib/erase-everything.ts) removes the stored answer with every other setting: the question
+  // comes back at once, as on first run. A settings change only moves the decision away from 'pass'; the move to
+  // 'pass' stays with the gate screen, which calls refresh after its leave (age-gate-screen.tsx). No rule changes.
+  useEffect(
+    () =>
+      subscribeTo('settings', () => {
+        const next = readDecision();
+        if (next !== 'pass') setDecision(next);
+      }),
+    [],
+  );
   useEffect(() => {
     // Re-check when the app returns to the foreground and once a minute while stopped,
     // so a stop screen left open past its 24 hours can offer the question again.

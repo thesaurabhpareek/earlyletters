@@ -13,7 +13,12 @@
  * | `reminders.time` | `HH:MM`, 07:00 to 21:30 in 15-minute steps | `20:30` |
  * | `reminders.monthNotes` | `on` / `off` | `on` |
  * | `notifications.lockScreenNames` | `on` / `off` | `off` (D-025; remote config later, D-035) |
+ *
+ * While the app lock is on, names are off whatever that key says (F17-REQ-015; CDesO and CCO rule): the stored choice
+ * is kept, not overwritten, and comes back if the lock is turned off. Turning the lock on or off writes a setting, so
+ * the store listeners reschedule with the new answer (scheduler.ts).
  */
+import { appLockOn } from '../app-lock/prefs';
 import { currentUserId, getSetting, listChildren, listEntriesForChild, setSetting } from '../store';
 import {
   clampReminderTime,
@@ -84,7 +89,7 @@ export function readPrefs(): ReminderPrefs {
     weeklyDay: Number.isInteger(weekly) && weekly >= 0 && weekly <= 6 ? weekly : DEFAULT_WEEKLY_DAY,
     time: parseTime(getSetting(K.time)),
     monthNotes: onOff(K.monthNotes, true),
-    namesOnLockScreen: onOff(K.names, LOCK_SCREEN_NAMES_DEFAULT),
+    namesOnLockScreen: lockScreenNamesOn(),
   };
 }
 
@@ -102,6 +107,7 @@ export function writePrefs(patch: Partial<Omit<ReminderPrefs, 'enabled'>> & { en
 
 /** Whether notifications may name a child on the lock screen (for any feature that sends local notifications). */
 export function lockScreenNamesOn(): boolean {
+  if (appLockOn()) return false; // the app lock keeps every name off the lock screen (F17-REQ-015)
   return onOff(K.names, LOCK_SCREEN_NAMES_DEFAULT);
 }
 

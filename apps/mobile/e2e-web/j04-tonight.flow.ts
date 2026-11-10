@@ -164,3 +164,39 @@ test('[J04g] a book that is not born yet: the dateline names the child and the p
   expect(new Set(seen).size).toBeGreaterThan(3);
   await step('happy', 'Another thought, before the birth', 'Fourteen presses: each shows a different prompt from the eight, never the one that was on screen, and never a newborn one. Nothing is counted.');
 });
+
+test('[J04h] a test build past the free letters: no Plus line on Tonight and no Plus sheet', async ({ app, record }) => {
+  test.setTimeout(150_000);
+  const step = journey(record, 'J04', 'tonight-and-prompts', 11, 'J04-08');
+  // The e2e web build is an alpha build (support/global-setup.ts: EXPO_PUBLIC_APP_ENV=preview, so PLUS_ALPHA). In alpha
+  // there is no letter limit (#552, PL-1) and, by Karma's ruling on #508, the Tonight Plus line (F14-REQ-040, SR-C-08)
+  // never shows at any count. So: two letters kept, then a third and a fourth, and Tonight never says new letters need
+  // Plus and the Keep step never opens the Plus sheet. The store build's line (after the allowance, no number, F5) and
+  // the held-row fold (F14-REQ-041, "Letters waiting to be kept.", no count) are unit tested in test/tonight-plus.test.ts;
+  // a store-profile run is the device check.
+  const line = 'Adding new letters to the book needs Plus. Recording, reading and export are always free.';
+  await firstRun(app);
+  await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
+  await typeLetter(app, 'You held the spoon by yourself today.');
+  await noRemindersAfterFirstLetter(app);
+  await tab(app, 'Tonight').click();
+  await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
+  await typeLetter(app, 'You laughed at the rain.');
+  await tab(app, 'Tonight').click();
+  await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
+  await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
+  await expect(app.getByText(line, { exact: true })).toHaveCount(0);
+  await expect(btn(app, 'See Plus')).toHaveCount(0);
+  await step('happy', 'A test build past two letters: no Plus line', 'Two letters are kept on a test build, and Tonight shows no line about Plus above Speak and Type: every letter is free while testing (#552), so the line never shows in alpha.');
+
+  for (const words of ['You waved at the dog on the corner.', 'You pointed at the moon and said ball.']) {
+    await typeLetter(app, words);
+    await expect(app.getByText(/Added to/)).toBeVisible();
+    await expect(app.getByText("Keep adding to Asha's book")).toHaveCount(0);
+    await tab(app, 'Tonight').click();
+    await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
+    await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
+  }
+  await expect(app.getByTestId('tonight.heldRow')).toHaveCount(0);
+  await step('happy', 'Third and fourth letters go straight in', 'The third and fourth letters are added to the book like the first two: no Plus sheet, nothing held, and still no Plus line on Tonight.');
+});

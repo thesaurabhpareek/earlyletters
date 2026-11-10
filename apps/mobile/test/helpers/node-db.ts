@@ -5,6 +5,8 @@ import type { SqlDb, SqlParam } from '../../src/lib/db/sql';
 
 export function nodeDb(path = ':memory:'): { db: SqlDb; close: () => void } {
   const d = new DatabaseSync(path);
+  // As on the phone (expo-adapter.ts OPEN_PRAGMAS): deleted content is overwritten, not left in free pages.
+  d.exec('PRAGMA secure_delete = ON');
   const db: SqlDb = {
     exec: (sql) => d.exec(sql),
     run: (sql, ...params: SqlParam[]) => {

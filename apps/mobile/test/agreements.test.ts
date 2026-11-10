@@ -143,7 +143,8 @@ describe('[F2] [LEGAL-REQ-002] what each path stores, through the store', () => 
   afterEach(() => store.closeStore());
 
   const db = () => store.localSqlDb();
-  const settingKeys = () => db().all<{ key: string }>('SELECT key FROM settings ORDER BY key').map((r) => r.key);
+  // Not the person's answers: the store's own maintenance stamp (PR #622) is left out of what each path stores.
+  const settingKeys = () => db().all<{ key: string }>('SELECT key FROM settings ORDER BY key').map((r) => r.key).filter((k) => k !== store.SECURE_DELETE_VACUUM_SETTING);
   const agreementCount = () => db().get<{ n: number }>('SELECT count(*) AS n FROM agreements')!.n;
 
   it('a fresh install is asked, with nothing stored', () => {
