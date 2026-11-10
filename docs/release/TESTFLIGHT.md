@@ -162,7 +162,7 @@ When the gate passes and you approve it, the `testflight` profile turns on in **
 -        "EXPO_PUBLIC_SERVER_FEATURES": "off",
 +        "EXPO_PUBLIC_SERVER_FEATURES": "on",
 ```
-`apps/mobile/test/config.test.ts` holds `testflight` equal to `preview` in everything but that line, so the flip cannot carry anything else, and the tests (`config.test.ts`, `capabilities.test.ts`) pass on either side of it (one applies the flip to a copy and checks it): the flip PR changes that one line and nothing else. It is a founder merge. After it, friends may get servers-on builds. `production` stays off until the store submission is re-planned (D-106).
+`apps/mobile/test/config.test.ts` holds `testflight` equal to `preview` in everything but that line, so the flip cannot carry anything else, and the tests (`config.test.ts`, `capabilities.test.ts`) pass on either side of it (one applies the flip to a copy and checks it): the flip PR changes that one line and nothing else. Karma merges it under D-132, and only after the founder has signed the R-17 gate (B2-12) and said friends get servers-on builds (D-100, D-106). After it, friends may get servers-on builds. `production` stays off until the store submission is re-planned (D-106).
 
 Before any store submission: the App Store listing (`packages/content/src/store.en.ts`) must be brought to the shipped feature set; today it claims seven spoken languages and co-parent sharing, which a store build would not deliver: D-115 makes the speech English only, and `production` has server features off (`eas.json`, D-106), so a store build has no co-parent sharing. Owner S16. Not needed for TestFlight.
 
