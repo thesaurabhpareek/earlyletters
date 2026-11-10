@@ -8,7 +8,7 @@ import type { AuthState } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { subscribe, listChildren } from '@/lib/store';
-import { firstRunGate, gateInputsFromAuth, type FirstRunGateResult } from './gate.logic';
+import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, restoreBlocksScreen, type FirstRunGateResult } from './gate.logic';
 import { useOnline } from './use-online';
 import { failureStillCounts } from './welcome.logic';
 
@@ -24,10 +24,17 @@ export interface FirstRunRoute extends FirstRunGateResult {
 
 export function useFirstRunRoute(): FirstRunRoute {
   const auth = useAuth();
-  const { online, recheck } = useOnline();
+  const { online, recheck } = useOnline(serverFeaturesEnabled() && auth.configured);
   const [localStartChosen, setLocalStartChosen] = useState(false);
   const [setAside, setSetAside] = useState<AuthState | null>(null);
   const [, tick] = useState(0);
+  // The Keychain read has no timeout of its own: after RESTORE_WAIT_MS the screen stops waiting and shows the Welcome.
+  const [restoreWaitedOut, setRestoreWaitedOut] = useState(false);
+  useEffect(() => {
+    if (auth.state.status !== 'restoring') return;
+    const t = setTimeout(() => setRestoreWaitedOut(true), RESTORE_WAIT_MS);
+    return () => clearTimeout(t);
+  }, [auth.state.status]);
   const stateRef = useRef(auth.state);
   stateRef.current = auth.state;
   const wasOnline = useRef(online);
@@ -56,5 +63,5 @@ export function useFirstRunRoute(): FirstRunRoute {
     online,
   });
   const result = firstRunGate({ ...inputs, signInFailed: inputs.signInFailed && failureStillCounts(auth.state, setAside) });
-  return { ...result, localStartChosen, online, restoring: auth.state.status === 'restoring', chooseLocalStart, tryAgain };
+  return { ...result, localStartChosen, online, restoring: restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0), chooseLocalStart, tryAgain };
 }
