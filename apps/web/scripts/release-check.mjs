@@ -5,12 +5,21 @@
  * requests, security headers are present, and in a real browser (phone and desktop) the page loads with no errors,
  * no sideways scroll, and a move between pages completes and clears its transition.
  *
- *   node scripts/release-check.mjs [coming-soon|film]     (from apps/web; default checks both)
+ *   node scripts/release-check.mjs [coming-soon|film|launch]     (from apps/web; default checks coming-soon and film)
  *
  * It never calls a real email service: the placeholder RESEND values below only make the form render. Exits 1 on failure.
  */
 import { spawn, execFileSync } from 'node:child_process';
 import { chromium } from 'playwright-core';
+
+// `launch` is the launch rehearsal (flip on, made-up store link): docs/web/launch-flip.md step 6. Not part of the default run.
+if (process.argv[2] === 'launch') {
+  const { launchRehearsal } = await import('./launch-rehearsal.mjs');
+  const rehearsal = await launchRehearsal();
+  const bad = rehearsal.filter((r) => !r.ok);
+  console.log(`\n${rehearsal.length - bad.length}/${rehearsal.length} checks passed`);
+  process.exit(bad.length ? 1 : 0);
+}
 
 const modes = process.argv[2] ? [process.argv[2]] : ['coming-soon', 'film'];
 const results = [];
