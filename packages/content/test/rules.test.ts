@@ -26,6 +26,7 @@ import {
   features,
   HELPLINES,
   lifecycleEmails,
+  nav,
   onboardingStories,
   pages,
   permissions,
@@ -117,10 +118,11 @@ const HELPLINE_LEAVES: Leaf[] = HELPLINES.flatMap((r) => [
   ]),
 ]);
 const PROMPT_LEAVES: Leaf[] = PROMPTS.map((p) => ({ path: `prompt.${p.key}`, text: p.text }));
-const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...STORIES, ...HELPLINE_LEAVES, ...APP_COPY];
+const IN_APP: Leaf[] = [...leaves(en, 'en'), ...leaves(permissions, 'permissions'), ...leaves(features, 'features'), ...leaves(nav, 'nav'), ...STORIES, ...HELPLINE_LEAVES, ...APP_COPY];
 
 const ALL: Leaf[] = [
   ...leaves(en, 'en'),
+  ...leaves(nav, 'nav'),
   ...STORE,
   ...SITE,
   ...BOOK,
