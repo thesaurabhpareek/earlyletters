@@ -21,7 +21,7 @@ export const SERVICE_ROLE_FUNCTIONS = ['accept_child_invite_by_code(uuid,bytea)'
   'has_active_consent(uuid,text)', 'insights_aggregates(integer)',
   'invite_redeem_by_code(uuid,text,bytea,text[],text[],text[])', 'is_anonymous()', 'ops_alert_claim(text,integer)', 'ops_alert_reset(text)',
   'ops_apple_token_delete(uuid)', 'ops_apple_token_get(uuid)', 'ops_apple_token_put(uuid,text,integer,text)',
-  'ops_audit_write(text,text,text,text,uuid,uuid,uuid,jsonb)', 'ops_consume_forget_quota(uuid,integer)', 'ops_deletion_contributors(uuid)',
+  'ops_audit_write(text,text,text,text,uuid,uuid,uuid,jsonb)', 'ops_consume_forget_quota(uuid,integer)', 'ops_deletion_consent_records(uuid)', 'ops_deletion_contributors(uuid)',
   'ops_deletion_request_status(uuid)', 'ops_deletion_residue(uuid,text)', 'ops_deletion_sla(timestamp with time zone)',
   'ops_deletion_work(integer)', 'ops_incident_scope(jsonb)', 'ops_ledger_between(timestamp with time zone,timestamp with time zone,integer)',
   'ops_merge_deletion_receipt(uuid,jsonb)', 'ops_raw_sha(jsonb,integer,timestamp with time zone)', 'ops_replay_ledger(jsonb)',

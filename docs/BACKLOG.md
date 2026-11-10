@@ -3086,6 +3086,52 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 - Acceptance:
   - Given a full SE 3, when a 30-minute take runs with the screen on, then the drain is measured and recorded.
 
+### First run and sign-in, end to end (NX-40, 10 Nov 2026)
+
+Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
+
+#### BL-891 Reconcile the first-run requirements with the journey lead state map and the words file
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M14. Size: S.
+- Satisfies: NX-40-R1, NX-40-R16. Also cited: NX-31-R17, R18, R19.
+- Scope: when `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` merges, replace the section names in NX-40 with its state ids; no state map is copied.
+- Done when: NX-40 cites the journey ids and the merged heads of the sibling files.
+
+#### BL-892 Intro scaffolding behind a build switch, mounted before the age gate in its own gate step
+- Status: blocked (#764 merged; FD-1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: #764.
+- Satisfies: NX-40-R1, NX-40-R3, NX-40-R8, NX-40-R19.
+- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step that precedes the age gate; no edit to `gate.logic.ts` before #764 merges.
+- Done when: with the switch off the first screen is unchanged; with it on the step shows once per install.
+
+#### BL-893 The story intro screen: 3 to 4 frames, Skip, Reduce Motion, VoiceOver
+- Status: blocked (BL-892; words and motion spec). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-892.
+- Satisfies: NX-40-R2, R4, R5, R9, R10, R17, R20.
+- Scope: frames from `packages/content` (final words by `content`), timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip of at least 48 pt from the first frame.
+- Done when: the QA rows for H2, U11, U12 pass on a device and the content rules test passes.
+
+#### BL-894 Test seams and Maestro rows for the happy paths H1 to H9 and edge cases U1 to U15
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M14. Size: M.
+- Satisfies: NX-40-R7, R11 to R16. Also cited: NX-31-R23.
+- Scope: rows against the stack; a test that Google and passkey buttons are absent in the Build 12 profile; no bypass flag in a store build.
+- Done when: the rows are merged with an owner for each device-only row.
+
+#### BL-895 Intro events in the analytics allowlist, content-free
+- Status: blocked (BL-893; FD-1). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-893.
+- Satisfies: NX-40-R18. Also cited: D-124 item 3.
+- Scope: `intro_shown`, `intro_skipped`, `intro_finished` (names proposed) with one enum prop; off unless the parent opted in.
+- Done when: the catalog test passes and no free-text prop exists.
+
+#### BL-896 Sign in with Apple asks for the email only
+- Status: needs-decision (FD-5). Mode: agent. Owner: mobile engineer. Milestone: M14. Size: S.
+- Satisfies: NX-31-R9, NX-40-R7.
+- Scope: `apps/mobile/src/lib/auth/apple.ts` line 51 requests FULL_NAME and EMAIL; NX-31-R9 says email only. Not to be edited while #724 and its stack are open; do it after they merge.
+- Done when: the scope list is email only and a test pins it.
+
+#### BL-897 Record how long a session lasts and what the parent sees at the end
+- Status: ready. Mode: agent. Owner: platform. Milestone: M14. Size: S.
+- Satisfies: NX-40-R14, R15.
+- Scope: read the auth settings of the project (refresh token life, reuse interval) and write the numbers in `docs/ops/AUTH_SETUP.md`; no setting is changed.
+- Done when: the doc states the numbers and the date read.
+
 ## Memory Library (NX-39 v2, 10 Nov 2026)
 
 Written by `product`, docs only, after the nine-lens council review and the CTO's rulings. Source: `docs/roadmap/next/03-requirements/NX-39-memory-library.md` (v2: one phase table, rows R1 to R61, founder decisions F1 to F15) and `docs/roadmap/next/03-requirements/NX-39-council-record-10nov.md`. Ids BL-841 to BL-858 are rewritten in place; BL-859 to BL-880 are new, from `next-id.mjs` on 10 Nov (it printed BL-859; run `node scripts/agents/id-collisions.mjs` before merge). BL-757 to BL-825 and BL-830 to BL-840 are not used. Milestone M15 is a proposed label for work after Build 12 (M14). Nothing here is a Build 12 task. Every row from P2 onward builds behind a switch that is off in `production`.
