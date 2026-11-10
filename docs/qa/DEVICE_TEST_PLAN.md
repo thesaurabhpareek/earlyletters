@@ -206,6 +206,20 @@ Due before the build 2 freeze (Tue 3 Nov 13:00 UTC). Every iOS build cut from de
 - **Record:** S1-14 row.
 - **Update:** TDD 03 FM-5; PRD 7.7.
 
+### S1-40 Stopping a take on a filling phone, and a long take: Review opens and the take is kept (BL-563 follow-up; PR #618)
+- **Needs:** a build with PR #618 (the `testflight` or `preview` profile); the SE 3; Asha's book; Settings > General > iPhone Storage to read free space; large videos, or filler files saved through Files in pieces of about 100 MB, to fill the phone; a stopwatch (a screen recording shows seconds). Fictional family only (Asha). Listen does not start a take below 50 MB free (it shows "This phone is full"), so (a) starts above that line and fills the phone during the take.
+- **Steps:**
+  - (a) Free space down to about 55 MB. Open Listen and start a take. While it records, fill the phone in pieces until iPhone Storage shows under 1 MB free (if iOS frees space by itself, fill again), then keep talking for at least 2 more minutes. Tap stop and start the stopwatch at the tap. Note the seconds until the next screen and which screen it is. If it is Review, tap Close (not Keep), then note whether Tonight lists the take.
+  - (b) Free a few GB. Force-quit the app, open it again, read Tonight's unfinished letters, then open the card.
+  - (c) With plenty of space (more than 1 GB free), record a take of 60 minutes (talk, or leave a radio on) and tap stop. Note the take length, the seconds from the tap to the next screen and which screen it is.
+- **Expected:**
+  - (a) Within about 3 s of the tap the screen leaves "finishing" on its own and lands on Review, or, if the save failed, on Tonight (home). It never stays on "finishing", "Let it go" never shows while finishing, and nothing crashes. After Close on Review, Tonight may not list the take until the app is opened again; that is (b).
+  - (b) The take from (a) is there as an unfinished letter ("Recorded before the app closed." or "Read it back"), opens in Review, and plays its sound up to the point the phone filled. Nothing was deleted. If the file could not be written at all, Review says so in its own words and never claims a recording is kept.
+  - (c) The next screen is Review, with the take kept and the words coming; it is never "finishing" for more than about 3 s, whether the save was quick or slow.
+- **Record:** S1-40 rows (a) to (c): phone, iOS version, build number, free space when stopped, take length, seconds from the tap to the next screen, the screen reached, and for (b) whether the take was there and how long its sound plays. Screenshots with Asha only; no letter text.
+- **Known unverified on a phone:** when the save is slow, Review opens on the take before the save has finished, so its length may be up to 5 s short and its words may start from a file that is still being closed. Report any case where the words look cut short, Review shows no words, or the length on Review differs from the take.
+- **Not covered:** a line on Tonight saying the take was kept after a failed save (needs a new content key from `content`); Android.
+
 ### S1-15 Speech model download (ADR 0015, ADR 0016, D-046)
 - **Steps:** Choose English on a phone with no model: watch the download (574 MB turbo on a full-tier phone, 190 MB small on compact; F: `lib/models/catalog.ts`). On cellular only: it waits for Wi-Fi. Kill the app at about 40%, relaunch: it resumes. Airplane mode mid-download: it waits, then resumes. Time the SHA-256 check after the last byte. Remove the model in Settings > Recordings (or Storage) and confirm letters and recordings stay.
 - **Expected:** Range-resumable download (no restart from 0); Wi-Fi by default; the hash check finishes without freezing the UI (ADR 0016 U: Hermes hashing of 574 MB "may take tens of seconds" unless the native `sha256File` is used); removal frees the space and the next spoken letter waits for words.

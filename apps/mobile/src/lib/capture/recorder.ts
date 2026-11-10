@@ -139,6 +139,11 @@ export async function beginTake(recorder: AudioRecorder, input: { childId: strin
   return draft;
 }
 
+/** The save of this take that is still running (Listen's finalizeTake), or null when none is. Review joins it (BL-563). */
+export function finishingTake(draftId: string): Promise<Draft | null> | null {
+  return finalizing.get(draftId) ?? null;
+}
+
 /**
  * Stop and keep. Safe to call more than once and from several triggers; the
  * first call does the work and the rest await it. `knownDurationMs` is the
