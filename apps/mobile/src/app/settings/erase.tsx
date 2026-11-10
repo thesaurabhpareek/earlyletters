@@ -29,6 +29,10 @@ const PAGE = 'gap-7 px-5 pb-12 pt-4';
  * nothing is sent. Device owner authentication before erase (design 2.12, F17 6.2 F) is deferred to the 1 Dec build
  * by the CTO ruling of 8 Nov (the app lock, #640, is in the build; asking it here is the follow-up). The lock itself is
  * reset by the erase (lib/erase-everything.ts).
+ *
+ * An erase that does not finish brings the page back at the top (the Erasing screen was another tree), so its one
+ * failure line, the one that says it did not finish, is the first thing on the page, above the heading: seen without
+ * scrolling and read first by VoiceOver (council of 9 Nov 2026, design seat defect 1).
  */
 export default function EraseEverything() {
   const e = copy.settings.erase;
@@ -88,6 +92,7 @@ export default function EraseEverything() {
   return (
     <ScrollView key="review" contentContainerClassName={PAGE} contentInsetAdjustmentBehavior="automatic">
       {header}
+      {failed ? <ErrorLine message={failed === 'signed_in' ? e.signedIn : e.failed} /> : null}
       <View className="gap-2">
         <Text variant="title2" asHeading>
           {e.heading}
@@ -114,7 +119,6 @@ export default function EraseEverything() {
       </Card>
 
       <View className="gap-2">
-        {failed ? <ErrorLine message={failed === 'signed_in' ? e.signedIn : e.failed} /> : null}
         {/* Destructive, not the large button (design 2.12). */}
         <Button variant="destructive" fullWidth label={e.button} onPress={askToErase} testID="erase.continue" />
       </View>
