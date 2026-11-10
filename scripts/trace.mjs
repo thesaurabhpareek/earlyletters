@@ -562,8 +562,8 @@ export function parseBaseline(text) {
 
 /**
  * Ratchet: the uncited set may not gain an ID the baseline lacks (this also covers the count
- * rising). IDs in the baseline that are now cited, or no longer in scope, are `stale`: the PR
- * that cited them should lower the baseline file.
+ * rising). IDs in the baseline that are now cited, or no longer in scope, are `stale`: --check
+ * fails on them too, so the PR that cited them must delete the line and the baseline only shrinks.
  */
 export function ratchet(uncited, baseline) {
   const base = new Set(baseline);
@@ -592,12 +592,10 @@ function b1Scope({ repo, m, args, log }) {
   }
   if (!args.check) return 0;
   if (!hasBase) { log(`  FAIL: baseline file missing: ${path.relative(repo, baselineFile)}. Create it with --update-baseline.`); return 1; }
-  for (const id of r.stale) log(`  baseline lists ${id} but it is now cited or out of scope: remove it from the baseline in this PR.`);
-  if (r.added.length) {
-    for (const id of r.added) log(`  FAIL: ${id} is uncited and not in the baseline (baseline holds ${base.length}, now ${uncited.length}).`);
-    return 1;
-  }
-  return 0;
+  // A stale line is headroom: the ID could lose its citing test and --check would still pass. So it fails.
+  for (const id of r.stale) log(`  FAIL: baseline lists ${id} but it is now cited or out of scope: delete the line "${id}" from the baseline in this PR (or run --update-baseline).`);
+  for (const id of r.added) log(`  FAIL: ${id} is uncited and not in the baseline (baseline holds ${base.length}, now ${uncited.length}).`);
+  return r.added.length || r.stale.length ? 1 : 0;
 }
 
 const BASELINE_HEAD = '# B1 P0 requirement IDs with no test title citing them (HV2-012). One per line.\n' +

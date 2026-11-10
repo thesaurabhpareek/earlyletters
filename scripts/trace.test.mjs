@@ -310,8 +310,17 @@ test('[HV2-012] EG-6: a raised uncited set fails --check, the same set passes, a
   assert.equal(scope(repo, ['--check']), 0);
   fs.writeFileSync(path.join(repo, 'apps/mobile/test/age-gate.test.ts'), "it('[F01-REQ-001] gate', () => {});\n");
   const l3 = [];
-  assert.equal(scope(repo, ['--check'], l3), 0);
-  assert.ok(l3.some((l) => l.includes('baseline lists F01-REQ-001')));
+  assert.equal(scope(repo, ['--check'], l3), 1, 'a stale baseline line (now cited) fails');
+  assert.ok(l3.some((l) => l.includes('FAIL: baseline lists F01-REQ-001')));
+  fs.writeFileSync(path.join(repo, 'docs/qa/b1-p0-uncited.baseline'), 'A-REQ-002\n');
+  assert.equal(scope(repo, ['--check']), 0, 'deleting the stale line passes');
+});
+
+test('[HV2-012] a baseline line for an ID that is cited exits 1 with the exact line to delete', () => {
+  const repo = scopeRepo('F01-REQ-001\n');
+  const logs = [];
+  assert.equal(scope(repo, ['--check'], logs), 1);
+  assert.ok(logs.some((l) => l.includes('delete the line "F01-REQ-001"')));
 });
 
 test('[HV2-012] a swap (one cited, a different one uncited) still fails --check', () => {
