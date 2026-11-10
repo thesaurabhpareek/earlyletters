@@ -40,7 +40,6 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
-import { LockOffer } from '@/components/app-lock/lock-offer';
 import { BookCover } from '@/components/book/book-cover';
 import { CoverHeading, useCoverPlace } from '@/components/child/cover-heading';
 import { DateField, type DateFieldHandle } from '@/components/child/date-field';
@@ -536,9 +535,6 @@ function FirstRunSteps({ localStartChosen = false }: { localStartChosen?: boolea
                   <View className="self-stretch">
                     <SpeechConsentCard key={authorSpeechLanguage()} language={authorSpeechLanguage()} />
                   </View>
-                  {/* The app lock, offered once with two equal buttons and off until turned on (F1, CPO-2). Hidden on a
-                      phone with no passcode (components/app-lock/lock-offer.tsx). */}
-                  <LockOffer child={child} />
                 </>
               )}
             </Animated.View>
