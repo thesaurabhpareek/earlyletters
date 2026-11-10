@@ -122,7 +122,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
 - [ ] **FT-08 App Store Connect app record**
   - Time: 30 minutes.
   - Cost: US $0.
-  - Steps: **For the alpha, the `.preview` record only** (`docs/release/TESTFLIGHT.md` step 2.2): App Store Connect > Apps > New App: iOS; bundle ID `com.earlyletters.scribe.preview`; a name such as `Early Letters Preview`; primary language English (U.S.); SKU of your choice. The production record is AF-40 (`docs/release/AUTOMATION.md`), after the alpha: name `Early Letters: Memory Book` (`docs/store/app-store.md`); primary language English (U.S.); bundle ID `com.earlyletters.scribe`; SKU of your choice; category **Lifestyle** (never Health or Medical, D-004 point 4). If the name is taken, stop and tell the coordinator (it is also a trademark signal, FT-28).
+  - Steps: **For the alpha, the `.preview` record only** (`docs/release/TESTFLIGHT.md` step 2.2): App Store Connect > Apps > New App: iOS; bundle ID `com.earlyletters.scribe.preview`; a name such as `Early Letters Preview`; primary language English (U.S.); SKU of your choice. The production record is AF-40 (`docs/release/AUTOMATION.md`), after the alpha: name `Early Letters: Baby Journal` (D-139, `docs/store/app-store.md`); primary language English (U.S.); bundle ID `com.earlyletters.scribe`; SKU of your choice; category **Lifestyle** (never Health or Medical, D-004 point 4). If the name is taken, stop and tell the coordinator (it is also a trademark signal, FT-28).
   - By: Thu 8 Oct (ROADMAP).
   - Blocks: FT-09, FT-15 (App Store ID for the Google iOS client), FT-25 TestFlight; BL-103.
 
@@ -435,7 +435,7 @@ If the week runs short (it is about 22 hours of work against the 15 to 20 you pl
   - Time: 30 minutes, then answer any question within a day.
   - Cost: US $0.
   - Needs: FT-39 and FT-40 passed on this RC, FT-41, FT-43.
-  - Steps: select the release-candidate build that passed FT-39 (its build number is in `docs/release/1.0.0.md`); choose **manual release** so you pick the day; submit Mon 2 Nov (Fri 6 Nov at the latest). If App Review cites guideline 5.1.1(ix) (individual publisher, sensitive information), answer the same day with the D-004 positioning and tell the coordinator: the fallback is an organisation account (entity, D-U-N-S, enrolment; 2 to 6 weeks [U]).
+  - Steps: select the release-candidate build that passed FT-39 (its build number is in `docs/release/1.0.0.md`); choose **manual release** so you pick the day; submit on the day set after the 9 Nov go/no-go (D-106; D-121 targeted Tue 1 Dec). If App Review cites guideline 5.1.1(ix) (individual publisher, sensitive information), answer the same day with the D-004 positioning and tell the coordinator: the fallback is an organisation account (entity, D-U-N-S, enrolment; 2 to 6 weeks [U]).
   - By: Mon 2 Nov (ROADMAP).
   - Blocks: release.
 
