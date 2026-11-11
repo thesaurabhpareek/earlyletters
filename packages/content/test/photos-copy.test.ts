@@ -10,24 +10,24 @@ function leaves(o: unknown, path = 'photos'): { path: string; text: string }[] {
 }
 const ALL = leaves(photosCopy);
 
-describe('[NS-01-R25] the photo strings obey the content rules', () => {
-  it('[NS-01-R25] has no dash, curly quote, ellipsis character or emoji', () => {
+describe('[NS-01-R24] the photo strings obey the content rules', () => {
+  it('[NS-01-R24] has no dash, curly quote, ellipsis character or emoji', () => {
     for (const l of ALL) {
       expect(l.text, l.path).not.toMatch(/[–—‘’“”…]/);
       expect(l.text, l.path).not.toMatch(/\p{Extended_Pictographic}/u);
     }
   });
-  it('[NS-01-R25] never says memory, moment or album, and never implies a machine writes', () => {
+  it('[NS-01-R24] never says memory, moment or album, and never implies a machine writes', () => {
     for (const l of ALL) {
       expect(l.text, l.path).not.toMatch(/\b(memory|memories|moment|moments|album)\b/i);
       expect(l.text, l.path).not.toMatch(/\b(AI|auto|automatic|smart|generated|suggest\w*|caption\w*|describe\w*)\b/i);
     }
   });
-  it('[NS-01-R25] uses {child} and never a name, and only the placeholders it fills', () => {
+  it('[NS-01-R24] uses {child} and never a name, and only the placeholders it fills', () => {
     for (const l of ALL) for (const m of l.text.matchAll(/\{(\w+)\}/g)) expect(['child', 'date']).toContain(m[1]);
     expect(photosCopy.capture.ready).toContain('{child}');
   });
-  it('[NS-01-R25] keeps the Home button to 22 characters or fewer and names a photo', () => {
+  it('[NS-01-R24] keeps the Home button to 22 characters or fewer and names a photo', () => {
     expect(photosCopy.capture.startButton.length).toBeLessThanOrEqual(22);
     expect(photosCopy.capture.startButton).toMatch(/photo/i);
   });
@@ -38,10 +38,10 @@ describe('[NS-01-R25] the photo strings obey the content rules', () => {
     for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\d|\bphotos? (this|each)\b/i);
     expect(photosCopy.book.photos.a11yTile).not.toMatch(/\d|\bof\b \w+ photos/i);
   });
-  it('[NS-01-R23] no string offers the camera', () => {
+  it('[NS-01-R22] no string offers the camera', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/take a photo now|camera/i);
   });
-  it('[NS-01-R24] the lens has no "add" string; adding lives on the letter page only', () => {
+  it('[NS-01-R23] the lens has no "add" string; adding lives on the letter page only', () => {
     for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\badd\b/i);
     expect(photosCopy.book.letter.addPhoto).toMatch(/this letter/);
   });

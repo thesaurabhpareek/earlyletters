@@ -6,7 +6,7 @@ import { exportPhotos } from '../src/lib/photos/export';
 import { holdPhotoWithLetter, purgePhotoWithLetter, restorePhotoWithLetter, wipeAllPhotos } from '../src/lib/photos/lifecycle';
 import { photosLens } from '../src/lib/photos/lens';
 import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
-import { normalizePhotoText, photoA11yLabel, photoTextLength } from '../src/lib/photos/text';
+import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel, photoTextLength } from '../src/lib/photos/text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
 
@@ -137,12 +137,12 @@ describe('[NS-01-R8] picture changes never touch words or recording', () => {
   });
 });
 
-describe('[NS-01-R9][NS-01-R22] the picture has the parent\'s words or a fixed label', () => {
+describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
   it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
   });
-  it('[NS-01-R22] photo text is the parent\'s, optional and 140 characters', async () => {
+  it('[NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
     expect(normalizePhotoText(undefined)).toBeNull();
     expect(normalizePhotoText('x'.repeat(141))!.length).toBe(140);
     expect(photoTextLength('x'.repeat(140))).toBe(140);
@@ -155,6 +155,24 @@ describe('[NS-01-R9][NS-01-R22] the picture has the parent\'s words or a fixed l
     expect(store.get('e1')!.text).toBeNull(); // never filled in or suggested
     await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg(), text: 'y'.repeat(300) });
     expect(store.get('e2')!.text!.length).toBe(140);
+  });
+  it('[NS-01-R21] the typed place is optional, at most 60 characters, the parent\'s only, and kept in its own field', async () => {
+    expect(normalizePhotoPlace(undefined)).toBeNull();
+    expect(normalizePhotoPlace('  ')).toBeNull();
+    expect(normalizePhotoPlace('  Grandma\'s garden ')).toBe('Grandma\'s garden');
+    expect(normalizePhotoPlace('p'.repeat(61))!.length).toBe(60);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg({ exif: true }), text: 'Asha on the swing' }); // the file's own place is never read
+    expect(store.get('e1')!.place).toBeNull();
+    expect(store.get('e1')!.text).toBe('Asha on the swing');
+    await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg(), text: null, place: 'q'.repeat(90) });
+    expect(store.get('e2')!.place!.length).toBe(60);
+    expect(store.get('e2')!.text).toBeNull();
+    const s = new PhotoSession();
+    s.setPlace('  Park ');
+    expect(s.place).toBe('Park');
+    s.discard();
+    expect(s.place).toBeNull();
   });
 });
 
@@ -260,7 +278,7 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
 describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
   const L = (id: string, occurredOn: string, over: object = {}) => ({ id, occurredOn, capturedAt: `${occurredOn}T08:00:00Z`, inBook: true, ...over });
   const opts = { fullDate: (iso: string) => `date ${iso}` };
-  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, text: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
+  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
 
   it('[NS-01-R10] offered only when a kept letter has a picture; no empty state otherwise', () => {
     expect(photosLens([L('a', '2026-06-01')], [], opts)).toEqual({ visible: false, months: [] });

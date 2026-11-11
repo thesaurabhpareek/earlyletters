@@ -1,5 +1,7 @@
 /** Photo with a letter: shapes and the ports the logic runs against (tests use in-memory ones). */
 export const PHOTO_TEXT_MAX = 140;
+/** The parent's typed place for a picture (NS-01-R21, PROPOSED cap). Never read from the file. */
+export const PHOTO_PLACE_MAX = 60;
 /** Undo after a replace or a remove (NS-01-R7). */
 export const UNDO_WINDOW_MS = 10_000;
 /** One picture per letter at P0. */
@@ -12,6 +14,8 @@ export interface StoredPhoto {
   ext: typeof STORED_EXT;
   /** The parent's own words about the picture; null when they typed none. Never filled in by the app. */
   text: string | null;
+  /** A place the parent typed, or null. Never filled in, suggested or read from the picture's own data. */
+  place: string | null;
   addedAt: string;
   deletedAt: string | null;
 }

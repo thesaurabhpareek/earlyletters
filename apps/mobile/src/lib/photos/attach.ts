@@ -22,7 +22,7 @@ export type AttachResult =
 /** "Add a photo" on Review or the letter page. A letter that already has one asks before anything changes. */
 export async function addPhotoToLetter(
   deps: PhotoDeps,
-  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null },
+  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null },
   confirmedReplace = false,
 ): Promise<AttachResult | { status: 'replaced'; result: CommitResult; ticket: UndoTicket | null }> {
   const existing = deps.store.get(input.entryId);

@@ -24,6 +24,9 @@ export const photosCopy = {
     label: 'Words about this photo',
     optional: 'Optional',
     hint: 'Up to 140 characters. Only what you type is kept.',
+    // A place the parent types for the photo, up to 60 characters. Never filled in, never read from the photo.
+    placeLabel: 'Where was this?',
+    placeHint: 'Up to 60 characters. Only what you type is kept.',
   },
   book: {
     lens: {

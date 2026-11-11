@@ -44,7 +44,8 @@ describe('[NS-01-R1] only Home registers a photo start', () => {
       });
     }
     expect(renders.map((r) => rel(r.file))).toEqual([rel(HOME)]);
-    const parent = renders[0].node.parent as ts.JsxElement;
+    let parent: ts.Node = renders[0].node.parent;
+    while (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent)) parent = parent.parent;
     const siblings = parent.children.map(jsxName).filter(Boolean);
     expect(siblings).toContain('ButtonRow'); // the Speak and Type row is in the same cluster
   });
@@ -169,8 +170,8 @@ describe('[NS-01-R20] new controls', () => {
   });
 });
 
-describe('[NS-01-R23] the system picker is the only source', () => {
-  it('[NS-01-R23] no camera permission string, plugin, dependency or "Take a photo now" anywhere', () => {
+describe('[NS-01-R22] the system picker is the only source', () => {
+  it('[NS-01-R22] no camera permission string, plugin, dependency or "Take a photo now" anywhere', () => {
     const cfg = readFileSync(join(ROOT, 'app.config.ts'), 'utf8');
     const pkg = readFileSync(join(ROOT, 'package.json'), 'utf8');
     expect(cfg).not.toMatch(/NSCameraUsageDescription|expo-camera|launchCameraAsync/);
@@ -181,8 +182,8 @@ describe('[NS-01-R23] the system picker is the only source', () => {
   });
 });
 
-describe('[NS-01-R24] the Book empty button only moves to Home; the lens cannot start a letter', () => {
-  it('[NS-01-R24] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
+describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
+  it('[NS-01-R23] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
     const f = join(SRC, 'app', '(tabs)', 'book.tsx');
     const sf = parse(f);
     let found = false;
@@ -199,7 +200,7 @@ describe('[NS-01-R24] the Book empty button only moves to Home; the lens cannot 
     expect(importsOf(sf).filter((m) => /start-intent|capture|photos/.test(m))).toEqual([]);
     expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
   });
-  it('[NS-01-R24] the lens copy has no "Add photos" button word', () => {
+  it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
     expect(JSON.stringify(photos.book.lens)).not.toMatch(/add/i);
   });
 });

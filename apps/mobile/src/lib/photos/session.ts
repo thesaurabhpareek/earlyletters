@@ -2,13 +2,14 @@
  * Photo-first on Home (NS-01-R3 to R5, R17, R22): a picture chosen before any words. Nothing is written until Keep.
  * `PhotoSession` holds the picked source in memory only; `commitPhoto` is the single place a file and a row are made.
  */
-import { normalizePhotoText } from './text';
+import { normalizePhotoPlace, normalizePhotoText } from './text';
 import { carriesMetadata, stripJpeg } from './strip';
 import { photoPath, STORED_EXT, type PhotoDeps, type PhotoPicker, type PickedAsset, type PickOutcome, type StoredPhoto } from './types';
 
 export class PhotoSession {
   private asset: PickedAsset | null = null;
   private typed = '';
+  private typedPlace = '';
 
   /** The picked source, or null. Only the still of a Live Photo is ever kept: `pairedVideoUri` is dropped here. */
   pick(asset: PickedAsset): void {
@@ -20,6 +21,12 @@ export class PhotoSession {
   setText(typed: string): void {
     this.typed = typed;
   }
+  setPlace(typed: string): void {
+    this.typedPlace = typed;
+  }
+  get place(): string | null {
+    return normalizePhotoPlace(this.typedPlace);
+  }
   get source(): PickedAsset | null {
     return this.asset;
   }
@@ -30,6 +37,7 @@ export class PhotoSession {
   discard(): void {
     this.asset = null;
     this.typed = '';
+    this.typedPlace = '';
   }
 }
 
@@ -67,7 +75,7 @@ export type CommitResult =
  */
 export async function commitPhoto(
   deps: PhotoDeps,
-  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null },
+  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null },
 ): Promise<CommitResult> {
   if (!canKeepWithPhoto(input.finalText)) return { status: 'needs_words' };
   const stripped = stripJpeg(input.bytes);
@@ -83,6 +91,7 @@ export async function commitPhoto(
     mediaId: deps.newId(),
     ext: STORED_EXT,
     text: normalizePhotoText(input.text),
+    place: normalizePhotoPlace(input.place),
     addedAt: deps.now().toISOString(),
     deletedAt: null,
   };
