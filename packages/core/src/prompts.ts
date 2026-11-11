@@ -62,6 +62,24 @@ export interface SelectInput {
    * different one. Unlike `recentKeys` this is not a preference: it holds unless nothing else exists.
    */
   excludeKeys?: readonly string[];
+  /**
+   * The book's child has no name (NX-31-R3: the first book may be made with the name left empty). Prompts that are
+   * about the name itself ("Tell {child} how the name was chosen") are not offered. Absent means false. If skipping
+   * them would leave nothing, they are offered after all, so selection never throws for this.
+   */
+  childNameBlank?: boolean;
+}
+
+/**
+ * The last part of a prompt key that marks a prompt as being about the child's name, as in `opening.0-3.name` and
+ * `opening.before.name-story`. Matched on the last segment only: `together.13-18.name-things` is about naming
+ * objects in the room and stays.
+ */
+export const NAME_THEMED_SEGMENTS: readonly string[] = ['name', 'name-story'];
+
+/** True for a prompt whose question is the child's name, and so cannot be asked of a child who has none. */
+export function isNameThemed(key: string): boolean {
+  return NAME_THEMED_SEGMENTS.includes(key.slice(key.lastIndexOf('.') + 1));
 }
 
 export const GAP_DAYS = 5;
@@ -102,7 +120,9 @@ export function kindFor(input: Pick<SelectInput, 'hardStretch' | 'together' | 'r
  * fit this child. Without exclusions nothing is widened, so a night's first prompt does not depend on this.
  */
 export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Prompt {
-  const live = library.filter((p) => !p.retired);
+  const alive = library.filter((p) => !p.retired);
+  const unnamed = input.childNameBlank === true ? alive.filter((p) => !isNameThemed(p.key)) : alive;
+  const live = unnamed.length > 0 ? unnamed : alive;
   if (live.length === 0) throw new Error('selectPrompt: empty prompt library');
   const kind = kindFor(input);
   const preBirth = input.beforeBirth === true && live.some((p) => p.band === 'before');

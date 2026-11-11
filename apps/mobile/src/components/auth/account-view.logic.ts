@@ -3,7 +3,7 @@
  * test/account-view.test.ts runs it in Node against the real state machine. Presentational only: the states and their
  * transitions are S01's (lib/auth/machine.logic.ts), the outbox drain is S03's; this decides which row says what.
  *
- * - `sync`: the value beside "Sync and sharing". `waiting` ("Not set up yet") while consent is missing or the claim
+ * - `sync`: the value beside "Sync across your phones". `waiting` ("Not set up yet") while consent is missing or the claim
  *   screen (BL-347) was never answered; during a sign-out, the sign-out's own sync state (BL-451: a wait can start with
  *   sync not yet known, and a gate answer can turn it off), never a hard "on".
  * - `finishSetup`: the "Finish setting up" row, back to account setup.

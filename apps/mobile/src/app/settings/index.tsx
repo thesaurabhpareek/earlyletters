@@ -18,6 +18,7 @@ import { getPlan, subscribePlan } from '@/lib/billing';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
+import { childRowTitle } from '@/components/child/child-settings.logic';
 import { remindersSummary } from '@/lib/reminders';
 import { getActiveChild, listChildren, listHiddenChildren, localDeletionAllowed, subscribe, type Child } from '@/lib/store';
 import { backupCopy } from '@scribe/content';
@@ -125,7 +126,7 @@ export default function Settings() {
         {s.children.map((ch: Child) => (
           <ListRow
             key={ch.id}
-            title={ch.name}
+            title={childRowTitle(ch.name)}
             trailing={ch.birthday || ch.dueDate ? 'chevron' : copy.childrenExtra.notSet}
             onPress={() => router.push({ pathname: '/settings/children/[id]', params: { id: ch.id } })}
           />
