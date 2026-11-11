@@ -62,7 +62,7 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 |---|---|---|
 | Privacy Policy URL | `https://earlyletters.com/privacy` | **BLOCKED**: the live page covers only the website. Publish the app policy (`docs/legal/privacy-policy.md` 3.0.0) first |
 | User Privacy Choices URL | Empty | READY |
-| Data collection | Data Not Collected (D-088, D-095, D-124 item 3) | READY on three conditions: a proxy capture shows only packs, Hugging Face and Apple; counsel Q12 on IP addresses; no analytics or crash SDK in the build |
+| Data collection | Build 12 (`production`: servers on, sign-in required, recording backup and status report off), as `docs/legal/app-store-privacy-labels.md` section 3.2 and its Build 12 row: **Yes**, linked, no tracking, purpose App Functionality, for Name, Email Address, Sensitive Info, Other User Content and User ID. **No** for Audio Data, Device ID, Purchase History, Usage Data and Diagnostics. Do not choose Data Not Collected (D-157, D-160; that answer was D-088 for the servers-off Build 1 only) | **Subject to counsel.** Open: Other Data Types (push tokens, Q54; default No) and IP addresses at the hosts (Q12). Re-run the label against the binary and a proxy capture before Publish |
 | Tracking | No (no IDFA, no ATT prompt) | READY |
 | Publish | Click Publish after saving | FOUNDER |
 
@@ -84,9 +84,9 @@ passes. Publish only after the app is live.
 | Marketing URL | `https://earlyletters.com` | READY |
 | Copyright | `2026 <founder's legal name>`, typed only in App Store Connect | FOUNDER |
 | What's New | Not shown for a first version | n/a |
-| Build | EAS `production` 1.0.0: servers, backup, status report, analytics off; English only; with D-126 (or its fallback in the notes) and the TestFlight fixes | BLOCKED until built (after 9 Nov) |
+| Build | EAS `production` 1.0.0, Build 12: servers on (D-157), sign-in required (D-160); recording backup, status report and analytics off; English only (D-121); with the TestFlight fixes | BLOCKED until built |
 | Subscriptions | Add group Plus (`plus.monthly`, `plus.annual`) to the same submission | READY |
-| Release | Manually release this version (phased release is for updates only) | READY |
+| Release | Release automatically when App Review approves it (D-158); phased release is for updates only | READY |
 
 Subscription disclosure: with the standard EULA, the only Terms link on the product page is the one in the
 description, so the description ends with the renewal lines and the Terms of Use and Privacy Policy links. If the
@@ -98,7 +98,7 @@ founder keeps the standard EULA, the review lane also suggests the line
 
 | Field | Value | Status |
 |---|---|---|
-| Sign-in required | No | READY |
+| Sign-in required | Yes (D-160). App Review needs a demo sign-in: see `notes-for-review-1.0.txt` (NX-05) and `proposals/app-review-demo-signin.md`. Turn the switch on and enter the demo user name and password | FOUNDER, supplies the demo account; never in the repo |
 | Contact | Founder's name, email, phone in "+1 ..." form | FOUNDER, never in the repo |
 | Notes | `notes-for-review-1.0.txt` (under 4000 bytes); resolve the three brackets | FOUNDER |
 | Attachment | 60 to 90 s screen recording on a real iPhone with demo child "Asha": age question, setup, typed letter, Speak, the download prompt with its size, the Plus sheet | FOUNDER |
@@ -142,8 +142,8 @@ Quotes and detail are in the review lane's register; fix-by dates are Pacific ti
 | R5 | 3.1.1 restore, 2.1(b) purchases reachable | Low | Low | Sandbox buy, restore, cancel on the release build; multiseat No |
 | R6 | 3.1.2(a) ongoing value | Low to medium | Low to medium | Notes say exactly what Plus adds; promise no future features |
 | R7 | 4.2, 4.2.3(ii) the 575 MB download | Medium | Low | Notes explain it; attach a recording of speech working |
-| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app, no account, nothing leaves the device; keep "due date" out of the listing |
-| R9 | 5.1.1(i), 2.3 privacy label | Medium | Low | Policy live, proxy capture, counsel Q12 |
+| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app; sign-in is required, so give App Review a demo sign-in; say what the label says (section 4), not that nothing leaves the device; keep "due date" out of the listing |
+| R9 | 5.1.1(i), 2.3 privacy label | Medium | Low | Policy live, proxy capture, counsel Q12 and Q54, label matches the Build 12 row |
 | R10 | 2.2 betas: "Early version" note in Settings | Medium | Low | Hide or reword the About note in production (founder call, D-030) |
 | R11 | 2.3.8, 5.1.4 "For Kids" wording | Low | Low | Keep "For parents" first; never "for children" or "kids" |
 | R12 | 1.3 Kids Category | Low | Low | Made for Kids: No |
@@ -173,7 +173,7 @@ Early Letters keeps letters to your child, in your own words and voice. At the e
 
 What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a name spelled the family's way, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
 
-It is private by default. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models.
+It is private by default. Signing in is required, and recordings stay on the phone. Nothing is sold, used for ads or used to train models.
 
 It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read together goes through the book one letter at a time, oldest first, as a bedtime moment, in the parent's own voice.
 

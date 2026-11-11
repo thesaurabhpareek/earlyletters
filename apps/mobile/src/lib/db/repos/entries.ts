@@ -170,6 +170,19 @@ export function listForChild({ db }: RepoContext, childId: string): Entry[] {
     .map(fromRow);
 }
 
+/**
+ * Tombstoned letters of one book (Recently deleted), newest first. Export reads these while an account-deletion
+ * request is open (DATA-REQ-053, BL-446). Letters erased for good on the server are not on the phone to read.
+ */
+export function listDeletedForChild({ db }: RepoContext, childId: string): Entry[] {
+  return db
+    .all<EntryRow>(
+      `SELECT ${COLS} FROM entries WHERE deleted_at IS NOT NULL AND sync_state <> 'erased' AND child_id = ? ORDER BY occurred_on DESC, captured_at DESC, id DESC`,
+      childId,
+    )
+    .map(fromRow);
+}
+
 /** Spoken letters still waiting for their words, oldest first. */
 export function listWaiting({ db }: RepoContext, childId: string): Entry[] {
   return db

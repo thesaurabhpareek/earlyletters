@@ -10,6 +10,8 @@
  * each variable is read by name below and the parsing is a separate pure
  * function.
  */
+import { APP_ENV, type AppEnv } from '../build-env';
+
 export interface SupabaseEnv {
   url: string;
   key: string;
@@ -17,12 +19,17 @@ export interface SupabaseEnv {
 
 const LOCAL_HOST = /^http:\/\/(localhost|127\.0\.0\.1|10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+)(:\d+)?$/;
 
-/** Null when either value is missing or the URL is not https (a local stack over http is allowed). */
-export function parseSupabaseEnv(url: string | undefined, key: string | undefined): SupabaseEnv | null {
+/**
+ * Null when either value is missing or the URL is not https. A local stack over http (localhost or a private
+ * network address) is allowed in a development build only: a preview (TestFlight) or production (App Store)
+ * build sends a session token, so plain http is refused there whatever the address (BL-600, SEC-07, SEC-R16).
+ */
+export function parseSupabaseEnv(url: string | undefined, key: string | undefined, appEnv: AppEnv = APP_ENV): SupabaseEnv | null {
   const u = (url ?? '').trim().replace(/\/+$/, '');
   const k = (key ?? '').trim();
   if (!u || !k) return null;
-  if (!/^https:\/\/[^\s/]+$/.test(u) && !LOCAL_HOST.test(u)) return null;
+  const https = /^https:\/\/[^\s/]+$/.test(u);
+  if (!https && (appEnv !== 'development' || !LOCAL_HOST.test(u))) return null;
   return { url: u, key: k };
 }
 

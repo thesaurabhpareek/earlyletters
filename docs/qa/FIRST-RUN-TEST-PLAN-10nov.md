@@ -47,7 +47,7 @@ Columns: Id; Precondition; Steps; Expected; Layer; Tier; RF = red-first (write t
 | FR-09 | Auth entry reached from story | Back (swipe or button) | Returns to last slide or leaves the app cleanly; no dead end; no second story run after a finished first run | W | B | yes |
 | FR-10 | Mid-story | Home, wait 5 s, return | Timer stays paused while inactive or background; resumes on the same slide; no skipped slides | L, D | B | yes |
 | FR-11 | Mid-story | Rotate | Portrait locked, or layout holds and progress is kept (journey doc); no crash, no restart | D | B | no |
-| FR-12 | Dynamic Type at AX5 | Open story | No clipped line; Skip and Next remain 44 pt or larger; slide may scroll but timer pauses while scrolling | D, W | B | no |
+| FR-12 | Dynamic Type at AX5 | Open story | No clipped line; Skip is 48 pt or larger (CTO ruling 11 Nov); Back and Next remain 44 pt or larger (open for `design-systems`); slide may scroll but timer pauses while scrolling | D, W | B | no |
 | FR-13 | Reduce Motion on | Open story | No parallax or zoom; cross-fade or static; auto-advance either off or slowed per motion spec; content still readable (`useReducedMotion` path in `lib/motion.ts`) | L, D | B | yes |
 | FR-14 | VoiceOver on | Open story | Each slide is one element with its words; no auto-advance while VoiceOver is on (a person cannot read and listen in 5 s); Next and Skip are buttons with labels | W, D | B | yes |
 | FR-15 | Dark mode | Open story | Every slide legible, tokens from `packages/design-tokens`; splash matches first frame (A-REQ-001) | D | B | no |

@@ -12,7 +12,10 @@ import { AppLockLayer } from '@/components/app-lock/app-lock-layer';
 import { AnalyticsConsentAsk } from '@/components/consent/consent-ask';
 import { AgeGateScreen } from '@/components/gate/age-gate-screen';
 import { RootErrorBoundary } from '@/components/resilience/error-boundary';
+import { GlobalFaultScreen } from '@/components/resilience/global-fault-screen';
+import { startGlobalErrorHandlers, useGlobalFault } from '@/lib/resilience/global-errors';
 import { LaunchRecovery } from '@/components/resilience/launch-recovery';
+import { installGlobalErrorHandler } from '@/lib/resilience/global-handler';
 import { UIProvider } from '@/components/ui/provider';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
@@ -41,6 +44,7 @@ import { useStoreReady } from '@/dev/store-ready';
 import { useE2eSeams } from '@/dev/e2e-seams';
 
 SplashScreen.preventAutoHideAsync();
+startGlobalErrorHandlers(); // BL-568: before the first render; ids and error codes only (lib/resilience/global-errors.ts)
 
 /** Deep links (invites, sign-in) open as sheets over the tabs, never as the only screen. */
 export const unstable_settings = { initialRouteName: '(tabs)' };
@@ -120,6 +124,9 @@ function startServices(launchedAt: number): void {
 
 const launchedAt = Date.now();
 
+// BL-370: an error outside rendering is never logged and never ends the app unless it is fatal (lib/resilience/global-handler.ts).
+installGlobalErrorHandler((globalThis as { ErrorUtils?: Parameters<typeof installGlobalErrorHandler>[0] }).ErrorUtils, { dev: __DEV__ });
+
 /**
  * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again
  * and Go to Tonight, no error text, nothing logged (components/resilience/error-boundary.tsx).
@@ -135,6 +142,8 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
  */
 export default function RootLayout() {
   const launch = useLaunch(useStoreReady());
+  const globalFault = useGlobalFault();
+  if (globalFault.fault) return <GlobalFaultScreen onTryAgain={globalFault.clear} />;
   if (launch.status === 'recovery') return <LaunchRecovery onTryAgain={launch.retry} />;
   return launch.status === 'ok' ? <Root /> : null;
 }
