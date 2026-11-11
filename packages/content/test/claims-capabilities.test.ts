@@ -57,6 +57,14 @@ type Profile = {
 let profile: Profile;
 const savedEnv = { ...process.env };
 
+let capabilityCoParent = false;
+
+/** Does the store build (servers on, alpha off) let a person both invite and join? The join door is `joinButton`. */
+function storeCoParentFlow(entry: typeof import('../../../apps/mobile/src/lib/family/entry.logic')): boolean {
+  const keeps = entry.planIncomingLink({ kind: 'invite', token: 't' }, { serverFeatures: true, gateStopped: false, path: '/' }).keepInviteToken;
+  return coParentFlowInStoreBuild((e) => entry.inviteDestination(e as never, true), keeps, entry.visibleCoParentDoors(true, false).joinButton);
+}
+
 beforeAll(async () => {
   const eas = JSON.parse(readFileSync(EAS_JSON, 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
   const env = eas.build.production?.env;
@@ -67,6 +75,7 @@ beforeAll(async () => {
   // capabilities.ts reads its switches when it loads, so it is loaded after the env is set.
   const { capabilities } = await import('../../../apps/mobile/src/lib/capabilities');
   const { heardLanguagesForBuild, hearsOnlyEnglish } = await import('../../../apps/mobile/src/lib/language/heard-languages');
+  const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
   const heard = heardLanguagesForBuild();
   profile = {
     // English only by either switch: ENGLISH_ONLY on, or a spoken-language list of English alone (D-125 item 2).
@@ -74,10 +83,13 @@ beforeAll(async () => {
     heard: [...heard],
     signIn: capabilities.signIn,
     sync: capabilities.sync,
-    coParent: capabilities.coParent,
+    // Co-parent claims are judged against what the store build can do, not the server switch alone: the switch is on, but the
+    // store build hides "I was invited" (B12-5, visibleCoParentDoors with alpha false), so an invited person cannot join.
+    coParent: capabilities.coParent && storeCoParentFlow(entry),
     backup: capabilities.backup,
     wordsExactlyAsSaid: false,
   };
+  capabilityCoParent = capabilities.coParent;
   // Read every surface once (the web source is parsed with the TypeScript compiler); the tests below share it.
   cachedSurfaces(profile);
 }, 60_000);
@@ -299,14 +311,32 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
   // "Exactly as you said it" in the store build's first run (D-133 decision 2). PR #502 changes both lines.
   { key: 'en.onboarding.promise.title', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'First-run headline; D-133 says the store build uses the true line.' },
   { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
+
+  // Co-parent lines about a person being invited or joining: the switch is on in the store build, but "I was invited" is hidden
+  // there (B12-5), so nobody can join. They become true when the join door is shown, or the copy changes (BL-557, BL-558).
+  { key: 'stories.story.private.v1.line', rule: 'coParent', claim: 'invite', removedBy: 'BL-557', reason: 'The packaged first-run card promises invites production lacks.' },
+  { key: 'web.site.invite.title', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"An invite to share a book": production cannot invite.' },
+  { key: 'web.site.invite.line', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: '"Someone invited you to share a book": production cannot invite.' },
+  { key: 'web.site.invite.body', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Says the invite opens in the app; production has no invites.' },
+  { key: 'web.site.invite.steps[0]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Copy the invite": production has no invites.' },
+  { key: 'web.site.invite.steps[1]', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Step "I was invited": a door production hides (BL-391).' },
+  { key: 'web.site.invite.steps[2]', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Step "Paste the invite": production has no invites.' },
+  { key: 'web.site.invite.copy', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: 'Button "Copy the invite": production has no invites.' },
+  { key: 'web.site.invite.copied', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
+  { key: 'web.site.invite.copyFailed', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
+  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"This page opened without its invite": production has no invites.' },
+  { key: 'web.site.invite.missing', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
+  { key: 'web.site.invite.noScript', rule: 'coParent', claim: 'invited', removedBy: 'BL-558', reason: 'Points to "I was invited", which production hides.' },
+  { key: 'web.site.invite.notYou', rule: 'coParent', claim: 'invite', removedBy: 'BL-558', reason: '"If you were not expecting an invite": production has no invites.' },
 ];
 
 /**
  * Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. It was 17 before
- * PR #698 (servers on made the sign-in, sync and co-parent rows true); the two left are exactWords, true in no profile.
+ * PR #698. Servers on made the sign-in and sync rows true (the authConfirm row went); the co-parent rows stay because the store
+ * build hides the join door. Two are exactWords, true in no profile.
  * STORE_BUILD_CLAIMS below says which claims the store build may make and why.
  */
-const KNOWN_VIOLATIONS_CAP = 2;
+const KNOWN_VIOLATIONS_CAP = 16;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
@@ -357,8 +387,9 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    // Build 12 (founder, 8 Nov 2026) is servers on: sign-in, sync and co-parent are true; backup stays off.
-    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: true, sync: true, coParent: true, backup: false, wordsExactlyAsSaid: false });
+    // Build 12 (founder, 8 Nov 2026) is servers on: sign-in and sync are true; backup stays off.
+    // Co-parent is false here although the switch is on: the store build hides "I was invited" (see storeCoParentFlow).
+    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: true, sync: true, coParent: false, backup: false, wordsExactlyAsSaid: false });
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
@@ -406,65 +437,71 @@ describe('public claims match the production profile (RT-REL-03)', () => {
 });
 
 /**
- * What the store build (the `production` profile, App Store) may claim, and why (PR #698 turned servers on; the cap of
- * KNOWN_VIOLATIONS fell from 17 to 2 because sign-in, sync and co-parent claims became true). One row per rule. `allowed`
- * is what the test expects of the profile; `why` is the fact that makes it so. A row changes only with the fact.
+ * What the store build (the `production` profile, App Store) may claim, and why (PR #698 turned servers on). One row per
+ * rule. `allowed` is what the test expects of the profile; `why` is the fact that makes it so. A row changes only with the fact.
  *
- * The co-parent row is the one that needs care. `capabilities.coParent` follows the server switch alone. The invite flow
- * is a separate thing: inviting and joining are offered only in alpha builds once #720 and #737 land (`inviteDestination`
- * and `planIncomingLink` take the alpha flag; BL-882), so the store build can have the switch on and no flow. A claim
- * such as "Write it together" or "Only you and the people you invite" is true only if a person can do it, so the
- * co-parent claims are allowed exactly when the flow exists in the store build, not when the switch is on.
+ * The co-parent row needs care. `capabilities.coParent` follows the server switch alone, and it is on. But the store build
+ * hides "I was invited" (`visibleCoParentDoors(coParent, alpha).joinButton` is `coParent && alpha`; B12-5), so a person who
+ * is invited cannot join. "Write it together" and "someone invited you" are true only if a person can do it, so the profile
+ * the claims are judged against has coParent on only while the store build has the whole flow: send, receive and join.
  */
 const STORE_BUILD_CLAIMS: Readonly<Record<RuleId, { allowed: boolean | 'with the invite flow'; why: string }>> = {
   languages: { allowed: false, why: 'The first store build hears English only (D-121 item 1): no other language is named, and "more languages come later" is the one true line.' },
-  coParent: { allowed: 'with the invite flow', why: 'True only while the store build can invite and join. Alpha-only invites (#720, #737) make every co-parent claim false in the store build.' },
+  coParent: { allowed: 'with the invite flow', why: 'True only while the store build can invite and join. It hides "I was invited" (B12-5), so co-parent claims are false in it.' },
   sync: { allowed: true, why: 'Servers are on in production (Build 12, founder, 8 Nov 2026): sign-in and sync work against scribe-prod.' },
   backup: { allowed: false, why: 'EXPO_PUBLIC_BACKUP is off in production until the restore drill passes (T27).' },
   exactWords: { allowed: false, why: 'The default view removes ums and repeats and the speech model can mishear (D-086, D-133 item 2): never true in any profile.' },
 };
 
 /**
- * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true, false)` (servers on,
- * alpha off); `keepsInviteToken` is `planIncomingLink(invite, { serverFeatures: true, alpha: false }).keepInviteToken`.
- * Sending an invite and receiving one (the link) must both work for "invite your co-parent" to be true.
+ * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true)` (servers on);
+ * `keepsInviteToken` is `planIncomingLink(invite, { serverFeatures: true, ... }).keepInviteToken`; `joinDoorShown` is
+ * `visibleCoParentDoors(true, false).joinButton` (alpha off). Sending, receiving and joining must all work for
+ * "invite your co-parent" to be true.
  */
-export function coParentFlowInStoreBuild(destination: (entry: string) => string, keepsInviteToken: boolean): boolean {
-  return destination('invite_new') === 'flow' && destination('invite_link') === 'flow' && keepsInviteToken;
+export function coParentFlowInStoreBuild(destination: (entry: string) => string, keepsInviteToken: boolean, joinDoorShown: boolean): boolean {
+  return destination('settings_child') === 'flow' && destination('invite_link') === 'flow' && keepsInviteToken && joinDoorShown;
 }
 
 /** Why the capability and the flow disagree, or null when the tie holds. */
 export function coParentTie(capabilityCoParent: boolean, flowInStoreBuild: boolean): string | null {
   if (capabilityCoParent === flowInStoreBuild) return null;
   return capabilityCoParent
-    ? 'capabilities.coParent is true but the store build has no invite flow (alpha only): co-parent claims would ship in a build that cannot keep them. Make the capability depend on the flow, or keep the claims out.'
-    : 'the store build has the invite flow but capabilities.coParent is false: the true co-parent lines are being treated as false. Update the capability.';
+    ? 'capabilities.coParent is on but the store build cannot complete the invite flow (the join door is hidden): the claims profile must have coParent off and the co-parent rows listed.'
+    : 'the store build has the whole invite flow but capabilities.coParent is off: the true co-parent lines are being treated as false. Update the capability.';
 }
 
 describe('what the store build may claim (RT-REL-03; PR #698)', () => {
   const rule = (id: RuleId) => RULES.find((r) => r.id === id)!;
 
   async function storeFlow(): Promise<boolean> {
-    const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
-    // The alpha flag is the third argument once #720 and #737 land; before that it is ignored and the flow reads as present.
-    const destination = entry.inviteDestination as unknown as (e: never, serverFeatures: boolean, alpha?: boolean) => string;
-    const plan = entry.planIncomingLink as unknown as (l: { kind: 'invite'; token: string }, o: Record<string, unknown>) => { keepInviteToken: boolean };
-    const keeps = plan({ kind: 'invite', token: 't' }, { serverFeatures: true, alpha: false, gateStopped: false, path: '/' }).keepInviteToken;
-    return coParentFlowInStoreBuild((e) => destination(e as never, true, false), keeps);
+    return storeCoParentFlow(await import('../../../apps/mobile/src/lib/family/entry.logic'));
   }
 
-  it('claims co-parent in the store build only while the store build has the invite flow', async () => {
-    expect(coParentTie(profile.coParent, await storeFlow())).toBeNull();
+  it('judges co-parent claims by the store build\'s flow: the profile is the switch and the flow together', async () => {
+    const flow = await storeFlow();
+    expect(profile.coParent).toBe(capabilityCoParent && flow);
+    // The switch is on and the flow is not whole today (join door hidden): the tie reports it, and the claims follow the flow.
+    if (capabilityCoParent !== flow) expect(coParentTie(capabilityCoParent, flow)).not.toBeNull();
+    expect(profile.coParent).toBe(flow && capabilityCoParent);
   });
 
-  it('fails when the capability is on and the invite flow is alpha only, and the other way round', () => {
-    const alphaOnly = (e: string) => (e === 'invite_new' || e === 'invite_link' ? 'coming_soon' : 'flow');
-    expect(coParentFlowInStoreBuild(alphaOnly, false)).toBe(false);
-    expect(coParentTie(true, coParentFlowInStoreBuild(alphaOnly, false))).toMatch(/no invite flow/);
-    // Sending works but a link keeps no token: half a flow is no flow.
-    expect(coParentFlowInStoreBuild(() => 'flow', false)).toBe(false);
-    expect(coParentFlowInStoreBuild((e) => (e === 'invite_new' ? 'flow' : 'coming_soon'), true)).toBe(false);
-    expect(coParentFlowInStoreBuild(() => 'flow', true)).toBe(true);
+  it('shows the store build hides the join door and still sends and receives', async () => {
+    const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
+    expect(entry.visibleCoParentDoors(true, false).joinButton).toBe(false);
+    expect(entry.visibleCoParentDoors(true, true).joinButton).toBe(true);
+    expect(entry.inviteDestination('settings_child', true)).toBe('flow');
+  });
+
+  it('fails when the capability and the flow disagree, either way', () => {
+    const all = () => 'flow';
+    expect(coParentFlowInStoreBuild(all, true, true)).toBe(true);
+    // Each part missing makes half a flow, which is no flow.
+    expect(coParentFlowInStoreBuild(all, true, false)).toBe(false);
+    expect(coParentFlowInStoreBuild(all, false, true)).toBe(false);
+    expect(coParentFlowInStoreBuild((e) => (e === 'settings_child' ? 'flow' : 'coming_soon'), true, true)).toBe(false);
+    expect(coParentFlowInStoreBuild(() => 'coming_soon', true, true)).toBe(false);
+    expect(coParentTie(true, false)).toMatch(/join door is hidden/);
     expect(coParentTie(false, true)).toMatch(/treated as false/);
     expect(coParentTie(true, true)).toBeNull();
     expect(coParentTie(false, false)).toBeNull();
@@ -475,19 +512,15 @@ describe('what the store build may claim (RT-REL-03; PR #698)', () => {
     for (const r of RULES) {
       const row = STORE_BUILD_CLAIMS[r.id];
       expect(row.why.trim(), r.id).not.toBe('');
-      const expected = row.allowed === 'with the invite flow' ? flow : row.allowed;
-      // trueWhen is the rule's switch; a rule with a per-claim judge (languages) is true of "more come later" lines only.
+      const expected = row.allowed === 'with the invite flow' ? flow && capabilityCoParent : row.allowed;
       expect(r.trueWhen(profile), `${r.id}: ${row.why}`).toBe(expected);
     }
     expect(Object.keys(STORE_BUILD_CLAIMS).sort()).toEqual(RULES.map((r) => r.id).sort());
   });
 
-  it('keeps the only listed false claims to the exact-words rule, the one no build can keep', () => {
-    // The cap fell from 17 to 2 when servers went on. What is left is exactWords: false in every profile and not tied to
-    // any switch. Any other row means a claim the store build cannot keep, which is fixed in the copy, not listed.
-    expect(KNOWN_VIOLATIONS.filter((v) => v.rule !== 'exactWords')).toEqual([]);
+  it('lists as false only claims tied to a missing store-build fact: exact words, and the join door', () => {
+    expect(KNOWN_VIOLATIONS.filter((v) => v.rule !== 'exactWords' && v.rule !== 'coParent')).toEqual([]);
     expect(rule('exactWords').trueWhen(profile)).toBe(false);
-    expect(KNOWN_VIOLATIONS_CAP).toBe(2);
   });
 });
 
