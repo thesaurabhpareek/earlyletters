@@ -59,6 +59,15 @@ export function listHidden({ db }: RepoContext): Child[] {
   return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE ${HIDDEN} AND ${LISTED} ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
 }
 
+/**
+ * Books the server closed for good ('deleted'), which `LISTED` leaves out. A sole parent's account-deletion request
+ * closes hers, and the phone keeps her letters in Recently deleted for the grace period. Export reads these while a
+ * request is open (DATA-REQ-053, BL-446); nothing else lists them.
+ */
+export function listClosedByServer({ db }: RepoContext): Child[] {
+  return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'deleted' ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
+}
+
 export function get({ db }: RepoContext, id: string): Child | null {
   const r = db.get<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE c.id = ?`, id);
   return r ? fromRow(r) : null;
