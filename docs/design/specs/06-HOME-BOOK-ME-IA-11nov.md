@@ -143,7 +143,7 @@ Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-T
 8. Help and legal: Help, If you are struggling (always present, D-034), Terms, Privacy Policy, Licenses.
 9. About.
 
-Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, standing alone between "Your letters" and "Take the book with you" (so it is not under the export section, which would put it under an unrelated job), below the first-screen fold (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, second-hand through NX-41, UNVERIFIED; the line is static text: not tappable, no row, no sheet, no chevron (closed question N1, amended 10 Nov; the founder said even a prominent one is overkill). The sheet from `coparent-soon.tsx` is retired or unreachable from Me). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
+Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, standing alone between "Your letters" and "Take the book with you" (so it is not under the export section, which would put it under an unrelated job), below the first-screen fold (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `settingsRowHelp`, EVIDENCE in `packages/content/src/features/family.en.ts` lines 188 and 189). **Amended 11 Nov (founder, later instruction, replacing the "static text, not tappable, no sheet" wording I set earlier the same day):** the line is still one small quiet caption (no row, no chevron, no badge, no number, no date) but it is tappable and opens one sheet that explains what co-parent sharing will be and lets the parent say "tell me when it is ready", kept on this phone only. Closed question N1 is amended by the founder on 11 Nov to allow a tappable caption opening one sheet (the earlier ruling that even a prominent coming-soon is overkill still holds: the line itself stays small and below the fold). The full design, states, data flow and requirements are in `07-COPARENT-COMING-SOON-11nov.md`. It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
 
 ### 5.2 States
 
@@ -177,13 +177,13 @@ Existing (EVIDENCE): `tabs.tonight`, `tabs.book`, `tabs.family` (strings.en.ts l
 | `home.title` | The level 1 heading, if the greeting is not it | |
 | `book.empty.pointer` | The button on the empty Book that moves to Home | Must read as a pointer, not as starting a letter in the Book |
 | `me.takeBookSection` | Section title for export, where letters live, backup | Replaces the idea of a Share tab; not "share" as backup (glossary) |
-| `me.coparentCaption` | The one caption line | Reuse `familyCopy.soon.settingsRow`; static text, not tappable; no date, no notify promise |
+| `me.coparentCaption` | The one caption line, tappable, opens the sheet in spec 07 | Reuse `familyCopy.soon.settingsRowHelp`; underlined, not a row; no date; the notify words are in 07 section 8 (PROPOSED) |
 | `me.exportEmpty` | Export on an empty book | One line |
 | `book.lens.*`, `book.find.*`, `book.letter.*` | See specs 1, 2, 3, 4 | |
 
 Paths in copy that name old places must change in the same PR: "Tonight" in `billing.en.ts` (lines 51, 52, 59) and `strings.en.ts` (1159, 1165) must read Home; "Settings, Your letters" in `release/testflight.en.ts` (line 147) and any Family-tab mention (lines 104 and `family.en.ts` line 75) (all from NAV-TAB-ROLES section 10, second-hand through NAV-TAB-ROLES at a different head; UNVERIFIED on `da83fb1e`).
 
-Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the existing `familyCopy.soon` words; Records, nothing beyond the opt-in content-free count; Never, a date, a notify promise, a number; Decline, Close in one tap.
+Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the existing `familyCopy.soon` words; Records, nothing beyond the opt-in content-free count; Never, a date, a number, a push prompt, an email or any contact; Decline, Close in one tap. The reminder the sheet offers is on this phone only; its own Shown, Records, Never and Decline lines are in 07 section 7.
 
 ## 9. Requirements (working ids IA-R#)
 
@@ -196,7 +196,7 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 | IA-R5 | Job in the first line. Given each tab's first screen, shown with the tab label covered, When five parents are asked what it is for, Then at least four name the job in their own words with the same verb or a plain synonym (HYPOTHESIS: no parent evidence exists; the number is PROPOSED). Answers: `user-research`; by: before the Build 13 release candidate is cut (date from the release plan, UNVERIFIED) | device, five-parent read-through |
 | IA-R6 | Rooms differ. Given Home, Book, Me, Then at least three of lamp, card shape, type scale of the main line, main action, entry motion differ, judged by three people who have not seen the specs, of whom at least two name the same three differences (PROPOSED). Answers: `qa`; by: the Build 13 device pass | device |
 | IA-R7 | Me holds no letter, lamp or badge | device |
-| IA-R8 | Co-parent coming soon is one small static caption line in Me, below the fold of the first screen, muted, with no badge, no row, no sheet, no chevron, not tappable (N1) | device (NX-41 R10) |
+| IA-R8 | Co-parent coming soon is one small quiet caption line in Me, below the fold of the first screen, muted, with no badge, no row, no chevron, no number or date. It is tappable (amended by the founder 11 Nov, N1) and opens only the one sheet in spec 07; nothing else in Me opens it. Requirements CS-R1 to CS-R16 in `07-COPARENT-COMING-SOON-11nov.md` | device (NX-41 R10); 07 section 5 |
 | IA-R9 | Home lists no kept letters; at most one memory slip | device, AX5 |
 | IA-R10 | Accessibility per section 7 in both themes with Reduce Motion and Reduce Transparency | device |
 | IA-R11 | Content. New strings pass `rules.test.ts` and the tab-labels test | content tests |

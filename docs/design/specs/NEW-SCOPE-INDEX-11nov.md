@@ -14,7 +14,7 @@ Job clarity first. Design is utility-driven: every tab and every screen says its
 | Book | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading.) |
 | Me | Look after | I go to Me to look after my account and books. |
 
-Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me. The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 8.
+Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me (amended later on 11 Nov: the line is tappable and opens one sheet, spec 7). The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 8.
 
 Consequences I applied (PROPOSED, each is in the spec that owns it):
 1. A control that starts a letter exists in one place: Home's capture cluster (Speak, Type, Not much today, and the photo-first mode). OS surfaces (widget, Control Center control, Action button, Siri) open that same cluster's Ready state. They are doorways, not entries.
@@ -22,7 +22,7 @@ Consequences I applied (PROPOSED, each is in the spec that owns it):
 3. Outputs split by what they are: export and where letters live are care (Me); sharing one letter is an action on the letter (Book). Neither is a tab.
 4. Find and Photos and Firsts are ways to read (Book). Find is a header action, Photos and Firsts are lenses that appear only when they have material.
 
-## 2. The six specs, in build order (closed question X1)
+## 2. The seven specs, in build order (closed question X1)
 
 The file numbers are names, not rank. The build order is the order of this table, per closed question X1 in `infra/closed-questions-2026-11-11.md` (Project doc): photo, Find, the family-hears-it pilot (not a design spec here), the hands-free spike, share one letter, then Firsts and sealed letters. Spec 6 is the frame for all of them.
 
@@ -34,7 +34,10 @@ The file numbers are names, not rank. The build order is the order of this table
 | 4 (spike) | `05-HANDS-FREE-CAPTURE-STATES-11nov.md` | Start, hold and finish a take with hands busy | CAPTURE | Home |
 | 5 | `03-SHARE-ONE-LETTER-11nov.md` | Send one letter to one person, and the test for a Share tab | OUTPUT, as an object action | Book (the letter page) |
 | 6 | `04-FIRSTS-AND-SEALED-11nov.md` | Mark a first; seal a letter for a day; quick capture is not a second entry | CAPTURE (enrichers) and LENS | Home (Review), Book |
+| any (small) | `07-COPARENT-COMING-SOON-11nov.md` | Learn what co-parent sharing will be; say "tell me when it is ready", on this phone only | CARE (a caption in Me and one sheet); no capture | Me |
 | frame | `06-HOME-BOOK-ME-IA-11nov.md` | Three tabs, one job each, every state, and the navigation test | all | all |
+
+Spec 7 supersedes the line "static text, not tappable, no row, no sheet, no chevron" that I set in spec 6 (5.1, section 8 and IA-R8) earlier on 11 Nov, on the founder's later instruction (chat, 11 Nov, amending closed question N1: the caption is tappable and opens one sheet with an on-device "tell me when it is ready"). Spec 6 is updated to match. Spec 7 changes no tab, no verb and no capture entry.
 
 Read 6 first if you only read one: it holds the tab jobs, the states and the test that keeps the other five honest. Read 1 before 4: Firsts and seals reuse its "add to this letter" pattern.
 
@@ -77,7 +80,7 @@ J3 and J2 are machine-checked by the navigation test in `06-HOME-BOOK-ME-IA-11no
 
 ## 6. Shared accessibility and motion baseline (not repeated in each spec)
 
-These hold for all six; a spec lists only what it adds. Sources: `COMPONENTS.md` section 0, `MOTION.md`, `DESIGN_LANGUAGE.md`, TDD 09 (read in part, by headings and the lines cited; TDD 09 itself I did not open, so anything attributed to it is UNVERIFIED; device behaviour UNVERIFIED until `qa` runs it).
+These hold for all seven; a spec lists only what it adds. Sources: `COMPONENTS.md` section 0, `MOTION.md`, `DESIGN_LANGUAGE.md`, TDD 09 (read in part, by headings and the lines cited; TDD 09 itself I did not open, so anything attributed to it is UNVERIFIED; device behaviour UNVERIFIED until `qa` runs it).
 
 - Targets: 44 pt minimum (`target.min`), 56 pt primary (`target.primary`), 64 pt for Speak and Type (`target.capture`).
 - Letter text is never truncated at any Dynamic Type size (D-027). Where space is short the layout stacks and scrolls; it does not cut. A fade at a card's foot (ExcerptFade) is allowed only where the full text is one tap away and the screen reader reads the whole text.
@@ -89,7 +92,7 @@ These hold for all six; a spec lists only what it adds. Sources: `COMPONENTS.md`
 - Haptics: only the five intents in COMPONENTS 0.2.
 - No sound is added by any spec. Capture sounds stay as `SOUND.md` has them (none while recording).
 
-## 7. New tokens and components across the six (the whole list)
+## 7. New tokens and components across the seven (the whole list; spec 7 adds none)
 
 Tokens are added in `packages/design-tokens/src/tokens.ts` with their tests, by `design-systems`, in a later PR. None is added here.
 
@@ -130,7 +133,7 @@ Components, library first (`apps/mobile/src/components/ui/`, read as a directory
 | `user-research` | Five-parent reads for the job sentences, Find, Share and seals | 06 section 11 |
 | `data-architect` | Fields: first mark and label, photo description, share log (none). Exact question on the seal clock: reconcile ADR 0028 D3, which stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers, with PRD NS-06-B1, which stores one absolute UTC instant (the author's local midnight at the start of the chosen day, in the device's zone at sealing). Is it one stored field or two? Until then FS-R7, the 04 B6 clock rows and 02 FD-R9 seal transitions are PROVISIONAL (Karma ruling: the instant stays for now); ADR 0028 D4 (`searchable_letters` reads the local calendar date) is part of the same reconciliation. Owner: `data-architect`. Answer by Fri 20 Nov 2026 | 04, 01, 03 |
 
-## 9. Open design questions, all six, each with a default
+## 9. Open design questions, all seven (spec 7: CS-Q1 to CS-Q6 in its section 12; default CS-Q2 is the founder's to see), each with a default
 
 Listed per spec in its last section (question numbers are per spec; this table points to the section, not a number). The ones the founder should see first:
 
