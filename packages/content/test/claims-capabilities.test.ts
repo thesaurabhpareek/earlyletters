@@ -301,7 +301,11 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
   { key: 'stories.story.exact.v2.headline', rule: 'exactWords', claim: 'exactly as you said', removedBy: '#502', reason: 'Packaged first-run card headline "Exactly as you said it." (D-133).' },
 ];
 
-/** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
+/**
+ * Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. It was 17 before
+ * PR #698 (servers on made the sign-in, sync and co-parent rows true); the two left are exactWords, true in no profile.
+ * STORE_BUILD_CLAIMS below says which claims the store build may make and why.
+ */
 const KNOWN_VIOLATIONS_CAP = 2;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
@@ -398,6 +402,92 @@ describe('public claims match the production profile (RT-REL-03)', () => {
       expect(v.reason.trim(), id(v)).not.toBe('');
       expect(v.reason, id(v)).not.toMatch(/\n/);
     }
+  });
+});
+
+/**
+ * What the store build (the `production` profile, App Store) may claim, and why (PR #698 turned servers on; the cap of
+ * KNOWN_VIOLATIONS fell from 17 to 2 because sign-in, sync and co-parent claims became true). One row per rule. `allowed`
+ * is what the test expects of the profile; `why` is the fact that makes it so. A row changes only with the fact.
+ *
+ * The co-parent row is the one that needs care. `capabilities.coParent` follows the server switch alone. The invite flow
+ * is a separate thing: inviting and joining are offered only in alpha builds once #720 and #737 land (`inviteDestination`
+ * and `planIncomingLink` take the alpha flag; BL-882), so the store build can have the switch on and no flow. A claim
+ * such as "Write it together" or "Only you and the people you invite" is true only if a person can do it, so the
+ * co-parent claims are allowed exactly when the flow exists in the store build, not when the switch is on.
+ */
+const STORE_BUILD_CLAIMS: Readonly<Record<RuleId, { allowed: boolean | 'with the invite flow'; why: string }>> = {
+  languages: { allowed: false, why: 'The first store build hears English only (D-121 item 1): no other language is named, and "more languages come later" is the one true line.' },
+  coParent: { allowed: 'with the invite flow', why: 'True only while the store build can invite and join. Alpha-only invites (#720, #737) make every co-parent claim false in the store build.' },
+  sync: { allowed: true, why: 'Servers are on in production (Build 12, founder, 8 Nov 2026): sign-in and sync work against scribe-prod.' },
+  backup: { allowed: false, why: 'EXPO_PUBLIC_BACKUP is off in production until the restore drill passes (T27).' },
+  exactWords: { allowed: false, why: 'The default view removes ums and repeats and the speech model can mishear (D-086, D-133 item 2): never true in any profile.' },
+};
+
+/**
+ * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true, false)` (servers on,
+ * alpha off); `keepsInviteToken` is `planIncomingLink(invite, { serverFeatures: true, alpha: false }).keepInviteToken`.
+ * Sending an invite and receiving one (the link) must both work for "invite your co-parent" to be true.
+ */
+export function coParentFlowInStoreBuild(destination: (entry: string) => string, keepsInviteToken: boolean): boolean {
+  return destination('invite_new') === 'flow' && destination('invite_link') === 'flow' && keepsInviteToken;
+}
+
+/** Why the capability and the flow disagree, or null when the tie holds. */
+export function coParentTie(capabilityCoParent: boolean, flowInStoreBuild: boolean): string | null {
+  if (capabilityCoParent === flowInStoreBuild) return null;
+  return capabilityCoParent
+    ? 'capabilities.coParent is true but the store build has no invite flow (alpha only): co-parent claims would ship in a build that cannot keep them. Make the capability depend on the flow, or keep the claims out.'
+    : 'the store build has the invite flow but capabilities.coParent is false: the true co-parent lines are being treated as false. Update the capability.';
+}
+
+describe('what the store build may claim (RT-REL-03; PR #698)', () => {
+  const rule = (id: RuleId) => RULES.find((r) => r.id === id)!;
+
+  async function storeFlow(): Promise<boolean> {
+    const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
+    // The alpha flag is the third argument once #720 and #737 land; before that it is ignored and the flow reads as present.
+    const destination = entry.inviteDestination as unknown as (e: never, serverFeatures: boolean, alpha?: boolean) => string;
+    const plan = entry.planIncomingLink as unknown as (l: { kind: 'invite'; token: string }, o: Record<string, unknown>) => { keepInviteToken: boolean };
+    const keeps = plan({ kind: 'invite', token: 't' }, { serverFeatures: true, alpha: false, gateStopped: false, path: '/' }).keepInviteToken;
+    return coParentFlowInStoreBuild((e) => destination(e as never, true, false), keeps);
+  }
+
+  it('claims co-parent in the store build only while the store build has the invite flow', async () => {
+    expect(coParentTie(profile.coParent, await storeFlow())).toBeNull();
+  });
+
+  it('fails when the capability is on and the invite flow is alpha only, and the other way round', () => {
+    const alphaOnly = (e: string) => (e === 'invite_new' || e === 'invite_link' ? 'coming_soon' : 'flow');
+    expect(coParentFlowInStoreBuild(alphaOnly, false)).toBe(false);
+    expect(coParentTie(true, coParentFlowInStoreBuild(alphaOnly, false))).toMatch(/no invite flow/);
+    // Sending works but a link keeps no token: half a flow is no flow.
+    expect(coParentFlowInStoreBuild(() => 'flow', false)).toBe(false);
+    expect(coParentFlowInStoreBuild((e) => (e === 'invite_new' ? 'flow' : 'coming_soon'), true)).toBe(false);
+    expect(coParentFlowInStoreBuild(() => 'flow', true)).toBe(true);
+    expect(coParentTie(false, true)).toMatch(/treated as false/);
+    expect(coParentTie(true, true)).toBeNull();
+    expect(coParentTie(false, false)).toBeNull();
+  });
+
+  it('judges the store build rule by rule against the table of what it may claim', async () => {
+    const flow = await storeFlow();
+    for (const r of RULES) {
+      const row = STORE_BUILD_CLAIMS[r.id];
+      expect(row.why.trim(), r.id).not.toBe('');
+      const expected = row.allowed === 'with the invite flow' ? flow : row.allowed;
+      // trueWhen is the rule's switch; a rule with a per-claim judge (languages) is true of "more come later" lines only.
+      expect(r.trueWhen(profile), `${r.id}: ${row.why}`).toBe(expected);
+    }
+    expect(Object.keys(STORE_BUILD_CLAIMS).sort()).toEqual(RULES.map((r) => r.id).sort());
+  });
+
+  it('keeps the only listed false claims to the exact-words rule, the one no build can keep', () => {
+    // The cap fell from 17 to 2 when servers went on. What is left is exactWords: false in every profile and not tied to
+    // any switch. Any other row means a claim the store build cannot keep, which is fixed in the copy, not listed.
+    expect(KNOWN_VIOLATIONS.filter((v) => v.rule !== 'exactWords')).toEqual([]);
+    expect(rule('exactWords').trueWhen(profile)).toBe(false);
+    expect(KNOWN_VIOLATIONS_CAP).toBe(2);
   });
 });
 
