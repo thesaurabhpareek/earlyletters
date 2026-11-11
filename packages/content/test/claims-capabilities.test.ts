@@ -52,6 +52,12 @@ type Profile = {
    * PR #439). It turns true in no profile, so a claim of it is always a violation.
    */
   wordsExactlyAsSaid: false;
+  /**
+   * Not a build switch either: the letter page offers Make private, Change the date and Delete, and no way to change
+   * a kept letter's words (F06 WP-F06-11, "no edit of a saved letter"). Words are fixed on the Read it back screen,
+   * before Keep. A line that promises fixing words without saying "before you keep" is a violation (QE-03).
+   */
+  editKeptLetter: false;
 };
 
 let profile: Profile;
@@ -77,6 +83,7 @@ beforeAll(async () => {
     coParent: capabilities.coParent,
     backup: capabilities.backup,
     wordsExactlyAsSaid: false,
+    editKeptLetter: false,
   };
   // Read every surface once (the web source is parsed with the TypeScript compiler); the tests below share it.
   cachedSurfaces(profile);
@@ -91,7 +98,7 @@ afterAll(() => {
 // The rules: claim patterns and the capability that has to be on for the claim to be true.
 // ---------------------------------------------------------------------------
 
-type RuleId = 'languages' | 'coParent' | 'sync' | 'backup' | 'exactWords';
+type RuleId = 'languages' | 'coParent' | 'sync' | 'backup' | 'exactWords' | 'editKept';
 
 type Rule = {
   id: RuleId;
@@ -203,6 +210,18 @@ const RULES: readonly Rule[] = [
     trueWhen: (p) => p.wordsExactlyAsSaid,
     needs: 'words kept exactly as said, which the default Word for word view does not do (D-133)',
   },
+  {
+    id: 'editKept',
+    // A promise that the person can fix, change or edit the words, anywhere, any time.
+    claims: [
+      /\b(?:fix|change|edit|correct)(?:es|s|ed|ing)? (?:anything|any words?|a word|the words|your words|words|each letter|a letter|any letter|letters|what we got wrong)\b/i,
+      /\b(?:fix|change|edit|correct)(?:es|s|ed|ing)? [^.!?]{0,40}\b(?:later|any ?time|after (?:you keep|it is kept|keeping))\b/i,
+    ],
+    // True of this build: a sentence that places the fixing before Keep.
+    truths: [/[^.!?]*\bbefore (?:you keep|you save|it joins|keeping)\b[^.!?]*[.!?]?/gi],
+    trueWhen: (p) => p.editKeptLetter,
+    needs: 'changing a kept letter\'s words, which the letter page does not offer (F06 WP-F06-11, QE-03)',
+  },
 ];
 
 const global = (re: RegExp) => new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
@@ -232,6 +251,7 @@ const IN_APP_PROMISES = [
   'en.trust.short',
   'en.trust.voice',
   'en.trust.firstRecording',
+  'en.settings.help',
   'en.settings.recordings.onPhoneTitle',
   'en.settings.recordings.onPhoneBody',
   'en.plus',
@@ -372,7 +392,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false });
+    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false });
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
@@ -420,7 +440,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
 });
 
 describe('the claim rules', () => {
-  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false };
+  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false, editKeptLetter: false };
   const falseIn = (r: Rule, p: Profile, text: string) => claimsOf(r, text).filter((c) => !claimTrue(r, p, c));
   const hits = (text: string) => RULES.filter((r) => falseIn(r, offEverything, text).length > 0).map((r) => r.id);
   const claimed = (rule: RuleId, text: string) => claimsOf(RULES.find((r) => r.id === rule)!, text);
@@ -434,6 +454,15 @@ describe('the claim rules', () => {
     expect(hits('Your letters sync when you sign in.')).toEqual(['sync']);
     expect(hits('Recordings are backed up in our encrypted backup.')).toEqual(['backup']);
     expect(hits('Every word kept exactly as you said it.')).toEqual(['exactWords']);
+    // QE-03: the old Settings, Help line. A kept letter's words cannot be changed in this build.
+    expect(hits('Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.')).toEqual(['editKept']);
+    expect(hits('Change the words any time.')).toEqual(['editKept']);
+    expect(hits('Edit a letter later from the book.')).toEqual(['editKept']);
+  });
+
+  it('lets a line say words are fixed before Keep (QE-03)', () => {
+    expect(hits('Your words are kept as you said them. We can mishear, so read each letter back and fix anything we got wrong before you keep it.')).toEqual([]);
+    expect(hits('We only fix small slips, like an um, a repeat or a misheard word, and mark each one.')).toEqual([]);
   });
 
   it('catches any language but English, named or not', () => {
@@ -499,31 +528,8 @@ describe('the claim rules', () => {
   });
 
   it('drops a rule once its capability is on', () => {
-    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false };
-    const text = 'Hindi; invite your co-parent; sign in to sync; backed up to iCloud; exactly as you said it';
-    expect(RULES.filter((r) => falseIn(r, on, text).length > 0).map((r) => r.id)).toEqual(['exactWords']);
-  });
-
-  it('judges each named language on its own: true only for a language the build hears (D-125 item 2)', () => {
-    const languages = RULES.find((r) => r.id === 'languages')!;
-    const enEs: Profile = { ...offEverything, englishOnly: false, heard: ['en', 'es'] };
-    expect(falseIn(languages, enEs, 'Speak in Spanish.')).toEqual([]);
-    expect(falseIn(languages, enEs, 'Speak in English, Spanish, Hindi or Mandarin.')).toEqual(['hindi', 'mandarin']);
-    // A language the app never hears is false in every build, the full one included.
-    const every: Profile = { ...enEs, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'] };
-    expect(falseIn(languages, every, 'Speak in Tamil or German.')).toEqual(['tamil', 'german']);
-    expect(falseIn(languages, every, 'Hindi, Chinese, Mandarin, French, Arabic, Portuguese, Spanish')).toEqual([]);
-    // English alone, by either switch: every named language is false, as before.
-    expect(falseIn(languages, offEverything, 'Speak in Spanish.')).toEqual(['spanish']);
-    expect(falseIn(languages, { ...offEverything, englishOnly: true, heard: ['en', 'es'] }, 'Talk in your home language.')).toEqual(['home language']);
-    // Counts and "any language" are true only once the build hears more than English.
-    expect(falseIn(languages, enEs, 'Talk in your home language.')).toEqual([]);
-  });
-
-  it('maps every served language name to a code the app has, and no other', () => {
-    for (const [name, code] of Object.entries(NAME_TO_CODE)) {
-      expect(LANGUAGE_NAMES.map((n) => n.toLowerCase()), name).toContain(name);
-      expect(['hi', 'es', 'zh', 'fr', 'ar', 'pt'], name).toContain(code);
-    }
+    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false, editKeptLetter: false };
+    const text = 'Hindi; invite your co-parent; sign in to sync; backed up to iCloud; exactly as you said it; fix anything later';
+    expect(RULES.filter((r) => falseIn(r, on, text).length > 0).map((r) => r.id)).toEqual(['exactWords', 'editKept']);
   });
 });

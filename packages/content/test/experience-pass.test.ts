@@ -119,7 +119,8 @@ const REGISTERED: Record<string, Text> = {
     'We take out small slips, like an um or a repeat, and mark each one. Tap a mark to see it and put it back. We can mishear a name, so please read it before you save.',
   'en.review.firstNote.dismissButton': 'Got it',
   'en.settings.help.mistakesTitle': 'How transcription works',
-  'en.settings.help.mistakes': 'Your words are kept as you said them. We can mishear, so read each letter and fix anything we got wrong.',
+  // QE-03 (8 Nov 2026): corrected to say words are fixed before Keep; the meaning row in in-app-disclosures.md is unchanged.
+  'en.settings.help.mistakes': 'Your words are kept as you said them. We can mishear, so read each letter back and fix anything we got wrong before you keep it.',
   // Section 3: above Apple's plans
   'features.billing.store.features': ['Keep adding letters to every book, as many as you like.'],
   'features.billing.store.promise': 'Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus.',
