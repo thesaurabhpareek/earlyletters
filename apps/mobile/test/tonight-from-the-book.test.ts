@@ -6,7 +6,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
 
@@ -151,6 +151,48 @@ describe('[NX-36-S13] cuts never end mid-sequence', () => {
         expect(/[\u094D\u200D]$/.test(out)).toBe(false);
       }
     }
+  });
+});
+
+describe('[NX-36-S13] cuts never end mid-sequence when Intl.Segmenter is missing', () => {
+  // Hermes on some devices has no Intl.Segmenter; the fallback splits a joiner from what follows, so the trim must hold.
+  const original = Object.getOwnPropertyDescriptor(Intl, 'Segmenter');
+  afterEach(() => {
+    if (original) Object.defineProperty(Intl, 'Segmenter', original);
+  });
+  const withoutSegmenter = () => Object.defineProperty(Intl, 'Segmenter', { value: undefined, configurable: true, writable: true });
+  const DANGLING = /[\u200D\u094D]$/;
+
+  it('[NX-36-S13] the stub is in force', () => {
+    withoutSegmenter();
+    expect((Intl as { Segmenter?: unknown }).Segmenter).toBeUndefined();
+  });
+  it('[NX-36-S13] a ZWJ family never ends on a ZWJ at any cut length', () => {
+    withoutSegmenter();
+    const text = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'.repeat(3);
+    for (let max = 1; max <= 12; max++) {
+      for (const out of [excerptOf(text, max), cappedWords(text, 25, max)]) {
+        expect(text.startsWith(out)).toBe(true);
+        expect(DANGLING.test(out)).toBe(false);
+      }
+    }
+  });
+  it('[NX-36-S13] unspaced Devanagari never ends on a virama at any cut length', () => {
+    withoutSegmenter();
+    const text = '\u0915\u094D\u0937\u0924\u094D\u0930'.repeat(60) + '\u0915\u094D'.repeat(40);
+    for (let max = 1; max <= 40; max++) {
+      for (const out of [excerptOf(text, max), cappedWords(text, 25, max)]) {
+        expect(text.startsWith(out)).toBe(true);
+        expect(DANGLING.test(out)).toBe(false);
+      }
+    }
+  });
+  it('[NX-36-S13] a long unspaced Devanagari letter is cut at the default length without a dangling virama', () => {
+    withoutSegmenter();
+    const text = '\u0915\u094D\u0937\u0924\u094D\u0930'.repeat(300);
+    const out = excerptOf(text);
+    expect(text.startsWith(out)).toBe(true);
+    expect(DANGLING.test(out)).toBe(false);
   });
 });
 
