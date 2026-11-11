@@ -2,9 +2,9 @@
  * Where every co-parent entry point leads. One switch decides (lib/capabilities.ts,
  * `capabilities.coParent`, which follows EXPO_PUBLIC_SERVER_FEATURES):
  *  - on (D-100, drafted as D-089: server features ship in v1.0; the TestFlight alpha of D-106):
- *    each entry opens its real flow: invite and join (leave waits for D-113, below), in an alpha build, and in a
+ *    each entry opens its real flow: invite and join (leave waits for D-113, below), in an alpha build only,
  *    never in a store build (BL-882; one rule: servers on AND an alpha build);
- *  - off (the kill path, a store build before that flip, and every build made before the switch flips): there is
+ *  - off (the kill path, a store build, and every build made before the switch flips): there is
  *    NOTHING to show (founder, 11 Nov 2026: no tab, no tappable row, no coming-soon screen). The entry is absent where it
  *    is a button or row (`familySurfacesShown`, `visibleCoParentDoors`); a route that is still reached (an invite
  *    link, an old bookmark) sends the person to Tonight, and an invite link keeps no token.
