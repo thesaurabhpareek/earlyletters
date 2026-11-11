@@ -13,8 +13,6 @@ export const findCopy = {
   placeholder: "Find in {child}'s book",
   // The field's VoiceOver label.
   fieldLabel: 'Find a letter',
-  // Before three letters have been typed.
-  hint: 'Type three letters to start.',
   // Under the existing no-match title (book.empty.searchTitle).
   noMatchHelp: 'Try another word.',
   // While the words are being gathered on this phone. True only while it is true.

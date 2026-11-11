@@ -7,6 +7,7 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
+import { findCopy } from '@scribe/content';
 import { announcementFor, findView, rowLabel, segments } from '../src/components/find/find.logic';
 import { findPaused, findSurface, parseBookSearchFlag } from '../src/lib/find/flag';
 import { findPausedNow } from '../src/lib/find/pause';
@@ -213,6 +214,15 @@ describe('[NS-02-R11] no count on screen or in the VoiceOver string', () => {
     expect(code).not.toMatch(/\b(rows|hits|result|results)\b[\w.?]*\.length|plural\(|Intl\.NumberFormat|toLocaleString/);
     expect(code).not.toMatch(/\{[^}]*\b(count|total)\b[^}]*\}/);
     expect(strip(read('components/find/find.logic.ts'))).not.toMatch(/Letters found|\bcount\b|\btotal\b|plural\(/);
+  });
+});
+
+describe('[NS-02-R3] no message under the minimum', () => {
+  it('[NS-02-R3] below the minimum the screen draws nothing: no hint string exists and the idle view renders no element', () => {
+    expect(Object.keys(findCopy)).not.toContain('hint');
+    const mode = strip(read('components/find/find-mode.tsx'));
+    expect(mode).not.toMatch(/findCopy\.hint/);
+    expect(mode).toMatch(/view === 'idle' \? null/);
   });
 });
 

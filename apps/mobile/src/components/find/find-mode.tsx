@@ -6,7 +6,7 @@
  * - One field, autofocused. Autocorrect and spell check are off: a word is never "corrected" into another (R14). The
  *   query lives only in this component's state: it is never written to storage, a log, analytics or a URL, there are
  *   no recent searches, and it is cleared when the parent leaves the Book for another tab (R14, R15).
- * - Before three characters (a word with no spaces in CJK needs one) the screen shows its idle line and nothing else
+ * - Before three characters (a word with no spaces in CJK needs one) the screen shows nothing at all (no line, no message)
  *   (R3). Results are the letters' own words, newest first, with no count and no score (R10, R11). No match shows the
  *   existing "No letters with that word yet." and one quiet line, and no button that starts a letter (R13).
  * - Works with no network and no account: it reads this phone and imports no network code (R22).
@@ -159,11 +159,7 @@ export function FindMode({ child, entries, onClose, onOpen }: FindModeProps) {
         </View>
       ) : null}
 
-      {view === 'idle' ? (
-        <View className="px-5 pt-2">
-          <Text variant="callout">{findCopy.hint}</Text>
-        </View>
-      ) : view === 'failed' ? (
+      {view === 'idle' ? null : view === 'failed' ? (
         <View className="items-start gap-3 px-5 pt-2">
           <Text variant="callout">{findCopy.error}</Text>
           <Button variant="secondary" size="md" label={findCopy.retry} onPress={() => setAttempt((n) => n + 1)} testID="find.retry" />
