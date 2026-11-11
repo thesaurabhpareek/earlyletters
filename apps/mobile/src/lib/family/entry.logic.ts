@@ -90,6 +90,16 @@ export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }
 }
 
 /**
+ * The invite screens and the `/j` join route are blocked only where a flow would otherwise open: servers on, and a build with
+ * no co-parent flow (a store build before CO_PARENT_IN_STORE_BUILD flips). With servers off they already answer "coming soon"
+ * and an invite link keeps no token, so that build is unchanged (NX-38-R5). `surfacesShown` is the join-door rule
+ * (`visibleCoParentDoors(...).joinButton`), the one rule, not a second `familySurfacesShown`.
+ */
+export function inviteScreensBlocked(input: { serverFeatures: boolean; surfacesShown: boolean }): boolean {
+  return input.serverFeatures && !input.surfacesShown;
+}
+
+/**
  * The only paths an outside link may open (D-087, LEGAL-REQ-011). Anything else, including a screen that
  * starts something (listen, review, read-together), a destructive one (delete account, leave a book), a
  * screen that creates something (invite someone) or one that does not exist, opens Tonight. Auth and
