@@ -197,7 +197,10 @@ describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot 
       expect(onPress.getText().replace(/\s+/g, '')).toBe("onPress={()=>router.navigate('/')}");
     });
     expect(found).toBe(true);
-    expect(importsOf(sf).filter((m) => /start-intent|capture|photos/.test(m))).toEqual([]);
+    // The Book now hosts the read-only Photos lens, so its flag, hook and lens component are allowed; nothing that can
+    // start a letter or open the picker is (start-intent, capture, the photo start, the picker, the pending picture).
+    expect(importsOf(sf).filter((m) => /start-intent|capture|photos\/(use-photo-start|use-photo-pick|photo-start|session|registry|pending|device|picker|attach)/.test(m))).toEqual([]);
+    expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/flag', '@/lib/photos/hooks']);
     expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
   });
   it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {

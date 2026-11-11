@@ -125,7 +125,7 @@ import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
 import { ReviewPhoto } from '@/components/photos/review-photo';
-import { commitPendingPhoto, discardPendingPhoto } from '@/lib/photos/hooks';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
 import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
@@ -915,7 +915,6 @@ export default function Review() {
       <ModalHeader
         onClose={() => {
           writer.flush();
-          discardPendingPhoto(); // a picture is kept only with Keep (NS-01-R4)
           router.back();
         }}
         // The person's own changes (Change words, a fix put back, the other view) are written to the draft as they

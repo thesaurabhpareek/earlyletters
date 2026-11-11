@@ -64,7 +64,6 @@ import { armKeep } from '@/lib/capture/keep-intent';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
-import { discardPendingPhoto } from '@/lib/photos/hooks';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
 import { useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
@@ -196,10 +195,7 @@ export default function Write() {
   // Words that cannot be written to this phone keep the sheet open, with "Not saved yet" on screen and said aloud:
   // closing would lose them (S19).
   const close = () => {
-    if (session.close()) {
-      discardPendingPhoto(); // a picture is kept only with Keep (NS-01-R4)
-      router.back();
-    }
+    if (session.close()) router.back();
   };
 
   // Android's back is Close (S19): it writes the words now, and stays on Write when they cannot be written to the
