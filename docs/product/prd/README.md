@@ -2,9 +2,9 @@
 
 Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
 
-Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head at time of writing `038c2dda`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
+Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head at time of writing `0a8499ab`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
-Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in stack-rank order.
+Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order: photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (earliest Build 15).
 
 ## The ground rules every file obeys
 
@@ -30,7 +30,7 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 | 3 | `03-family-hears-it-pilot.md` | Concierge pilot with 8 to 10 parents | none | none | Research, no build |
 | 4 | `04-hands-free-capture-spike.md` | Time-boxed spike on hands-free start | none | none | Spike |
 | 5 | `05-share-one-letter.md` | One-letter share; the Share tab question | 14 earliest (Level 1) | `EXPO_PUBLIC_SHARE_LETTER` | Build, gated |
-| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after rank 5 and a five-parent study, earliest Build 15 for Firsts, the sealed letter and quick capture (flag `EXPO_PUBLIC_QUICK_CAPTURE` for Part C); sealed is author-only (nothing reaches another phone before the day, ADR 0028 D3) and `data-architect` reconciles the UTC instant with the calendar date by Fri 20 Nov 2026 | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
+| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after Share one letter (Level 1) ships and the five-parent study has run, earliest Build 15 for Firsts, the sealed letter and quick capture (flag `EXPO_PUBLIC_QUICK_CAPTURE` for Part C); sealed is author-only (nothing reaches another phone before the day, ADR 0028 D3) and `data-architect` reconciles the UTC instant with the calendar date by Fri 20 Nov 2026 | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
 | 7 | `07-remaining-capability-rows.md` | Every other NX-42 row: cited, specified or parked | mixed | `EXPO_PUBLIC_PRINT_READY` | Mixed |
 
 Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced (earliest Build 15). Flag names and build numbers are proposals. The release train and `capabilities.ts` set the final names. Dates for Build 13 and Build 14 are not in the repo; this folder does not invent them.
@@ -46,7 +46,7 @@ Every open question in every file has a default. The ones that need the founder:
 | Accept the pilot principle and the proposed success lines | 03 OQ-1, section 8 | Yes, as written | Fri 20 Nov 2026 |
 | Spike engineer and week | 04 OQ-1 | The Monday after Build 13 is cut | Fri 20 Nov 2026 |
 | Share one letter in Build 14, and no Share tab | 05 OQ-1, OQ-5 | Build 14; no tab | Fri 20 Nov 2026 |
-| Firsts and sealed letters: both in scope; when the five-parent study runs | 06 OQ-A1, OQ-B1 | Study after Build 13; both built earliest Build 15, after rank 5 and the study | Fri 20 Nov 2026 |
+| Firsts and sealed letters: both in scope; when the five-parent study runs | 06 OQ-A1, OQ-B1 | Study after Build 13; both built earliest Build 15, after Share one letter (Level 1) ships and the five-parent study has run | Fri 20 Nov 2026 |
 | Proof books spend (the amount in the exec record, Q2) | 07 OQ-1 | No spend | Fri 20 Nov 2026 |
 
 ## Reads that gate anything
@@ -83,7 +83,7 @@ Parent-facing words quoted in acceptance rows (for example "Photo with this lett
 
 Trace ids: each acceptance row carries an id of the form `NS-01-R7` or `NS-06-A3`, and its test title starts with that id in square brackets, so a test can cite the requirement it proves.
 
-## What changed against the design head (re-read 11 Nov; PR #794 head at time of writing 038c2dda)
+## What changed against the design head (re-read 11 Nov; PR #794 head at time of writing 0a8499ab)
 
 The tab job sentences are the design's (spec 06), and the navigation test N1 to N10 (spec 06 section 10) proves the one-entry rule: Home "I go to Home to say something to {child}."; Book "I go to the Book to read what we kept."; Me "I go to Me to look after my account and books." N3 needs one `startCapture({source})` function that `mobile` consolidates first (spec 06 section 12, step 0). The doorway names are `widget`, `controlCenterControl`, `actionButton`, `siri`.
 
@@ -98,6 +98,7 @@ The tab job sentences are the design's (spec 06), and the navigation test N1 to 
 | A typed place on a photo is searched; a derived place is not (spec 02) | NS-02-R5, NS-01-R21 |
 | Design spec 01 now follows this PRD: system picker only, no pre-prompt, no date chip from the file in Build 13, fixed VoiceOver label (NS-01-R9, R11, R21, R22) | no change needed; confirmed |
 | Author-only export exception (FS-R10 and FS-R11): the ZIP data export carries a sealed letter whole for the author; the PDF book and any other person's export never carry its words until the seal is removed | NS-06-B2, B5, NS-07-C28-4 |
+| Design spec 02 FD-R13: a VoiceOver-only hint under 3 characters, drawn nowhere | NS-02-R23 |
 | Design spec 03 now makes the words row static text, not a switch (SH-R15) | NS-05-R4, R13 |
 | Design spec 07: the co-parent caption is tappable and opens one on-device sheet (founder amendment of N1, 11 Nov) | README ground rules, NX-41 R12 row, NS-05 section 10 |
 | Share verb and the 22-character label limit are a `content` and `legal` decision | NS-05 OQ-6 (flag only; the PRD wording is unchanged) |

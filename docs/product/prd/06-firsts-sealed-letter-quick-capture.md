@@ -1,7 +1,7 @@
 # NS-06: Firsts, the sealed letter and quick capture
 
 Status: Draft v1.1, 11 Nov 2026 (UTC). Docs only. Author: `product`. Rank 6 of 7 (closed scope list). Index: `README.md`.
-Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head at time of writing `038c2dda`, re-read after the updates of 11 Nov; the sealed-letter surface rule FS-R10 is in it). Scope and sequencing (Karma, 11 Nov; the founder said on 10 Nov to include all new scope): Firsts and the sealed letter are IN scope, specified in full here, and not cancelled. The build is sequenced after rank 5 and behind a five-parent study, earliest Build 15. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
+Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head at time of writing `0a8499ab`, re-read after the updates of 11 Nov; the sealed-letter surface rule FS-R10 is in it). Scope and sequencing (Karma, 11 Nov; the founder said on 10 Nov to include all new scope): Firsts and the sealed letter are IN scope, specified in full here, and not cancelled. The build is sequenced after Share one letter (Level 1) ships and the five-parent study has run, earliest Build 15. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
 Three rows of the capability map in one file. Each part has its own job, criteria, free/Plus line and rollout. Part A restates the proposal `NX-44-firsts.md` (PR #790, head `d80db1f2`) as testable rows; NX-44's requirement ids are cited, not copied. Part B is new. Part C depends on the spike in NS-04. Parent-facing strings named in acceptance rows ("This was a first", "hidden until" and the like) are PROPOSED; `content` owns the final words. Hands-free rules (unlock first, no auto-stop on silence, "Still here" after 8 seconds, headphone controls out of scope and UNVERIFIED) are in NS-04.
 
 Terms: "lens", "Firsts lens", "Photos lens" and "Home memory" are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25). A parent never reads "lens".
@@ -70,7 +70,7 @@ None in the app. A five-parent concept study decides whether to build. Build tri
 
 ### A10. Dependencies, risks, rollout
 
-Dependencies: Book lens frame (rule P3), a local migration for two fields, export schema bump, NS-02 for the label. Risk: a "first" mark becomes a milestone tracker; mitigations are A3, A4, A5. Rollout: flag `EXPO_PUBLIC_FIRSTS` (proposed). Target: sequenced after rank 5 and the five-parent study, earliest Build 15; Build 13 and Build 14 carry no Firsts. Firsts is in scope: if the study has not run, the build waits for it. It is not cancelled, and the old NX-44 FD-1 line "default: not built" is superseded by the founder's include-all-scope ruling.
+Dependencies: Book lens frame (rule P3), a local migration for two fields, export schema bump, NS-02 for the label. Risk: a "first" mark becomes a milestone tracker; mitigations are A3, A4, A5. Rollout: flag `EXPO_PUBLIC_FIRSTS` (proposed). Target: sequenced after Share one letter (Level 1) ships and the five-parent study has run, earliest Build 15; Build 13 and Build 14 carry no Firsts. Firsts is in scope: if the study has not run, the build waits for it. It is not cancelled, and the old NX-44 FD-1 line "default: not built" is superseded by the founder's include-all-scope ruling.
 
 ---
 
@@ -126,7 +126,7 @@ None. Study: a five-parent study (rule from Karma, 11 Nov; replaces the 8-parent
 
 ### B9. Dependencies, risks, rollout
 
-Dependencies: backup and new-phone sync right and shipped (C29, C30), counsel on minors, the one visibility path (F41 note), a sync change so that the letter is published to other phones only at the opening instant (NS-06-B8), local and server migrations. Risk: a seal that hides a letter from the author would break "stays theirs" (B3 prevents it). Rollout: flag `EXPO_PUBLIC_SEALED_LETTERS` (proposed); no build until ranks 1 to 5 are done, the five-parent study passes and `data-architect` has answered. Target: earliest Build 15; not otherwise scheduled. Default if no one decides: the build waits; the spec stands.
+Dependencies: backup and new-phone sync right and shipped (C29, C30), counsel on minors, the one visibility path (F41 note), a sync change so that the letter is published to other phones only at the opening instant (NS-06-B8), local and server migrations. Risk: a seal that hides a letter from the author would break "stays theirs" (B3 prevents it). Rollout: flag `EXPO_PUBLIC_SEALED_LETTERS` (proposed); no build until Share one letter (Level 1) has shipped, the five-parent study has run and passed, and `data-architect` has answered. Target: earliest Build 15; not otherwise scheduled. Default if no one decides: the build waits; the spec stands.
 
 ---
 
@@ -172,7 +172,7 @@ Metrics: none in the app; `capture_started` with a `source` value only if analyt
 |---|---|---|---|---|
 | OQ-A1 | When does the five-parent Firsts study run? | Founder | After Build 13 ships; the build waits for it (earliest Build 15). | Fri 20 Nov 2026 |
 | OQ-A2 | Place of the mark control on the letter page | `design-systems` | A quiet action in the letter's action row | Design spec |
-| OQ-B1 | When is the sealed letter built? | Founder | In scope; earliest Build 15, after rank 5, the five-parent study and the `data-architect` answer | Fri 20 Nov 2026 |
+| OQ-B1 | When is the sealed letter built? | Founder | In scope; earliest Build 15, after Share one letter (Level 1) ships and the five-parent study has run and the `data-architect` has answered | Fri 20 Nov 2026 |
 | OQ-B2 | Seal mechanics for other phones (ruled: author-only, nothing reaches another phone before the day, ADR 0028 D3). What remains: how the letter is published at the instant, and how the absolute UTC instant (NS-06-B1) is reconciled with ADR 0028's calendar-date `sealed_until` (one stored field or two) | `data-architect` | The instant stays the author's device rule (NS-06-B1); the stored form follows ADR 0028 D3 unless `data-architect` rules otherwise. No build before the answer. | Fri 20 Nov 2026 |
 | OQ-C1 | Siri phrase before widget? | `mobile` after NS-04 | Yes, if it needs no new target. | NS-04 read-out |
 
