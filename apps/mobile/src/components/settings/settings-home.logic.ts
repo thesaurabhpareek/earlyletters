@@ -112,11 +112,6 @@ export function youTabView(input: { signIn: boolean; status: AuthState['status']
   return { state: claimed ? 'signedOut' : 'localStart', signedOutCard: true, localStartLine: !claimed, accountReady: false };
 }
 
-/** A book's name for a list row or a page title: a book with no name reads "Your child's book", never an empty row (GAP 6). */
-export function bookTitle(name: string | null | undefined): string {
-  return name?.trim() || copy.settingsHome.childFallback;
-}
-
 /**
  * Whether this phone may erase its letters locally: the same rule as `localDeletionAllowed()` in the store, which reads the
  * sync owner. A phone an account has claimed has the account's copy too, so local erase is hidden (A and B); a phone that

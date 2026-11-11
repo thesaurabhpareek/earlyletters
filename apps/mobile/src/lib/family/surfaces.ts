@@ -3,7 +3,7 @@ import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { inviteScreensBlocked, visibleCoParentDoors } from './entry.logic';
 
-/** The join-door rule (B12-5): servers on and an alpha build, or a store build after CO_PARENT_IN_STORE_BUILD flips. */
+/** The join-door rule (B12-5): servers on and an alpha build. */
 export function familySurfacesOn(): boolean {
   return visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA).joinButton;
 }
