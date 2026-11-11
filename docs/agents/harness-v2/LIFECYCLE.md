@@ -1,6 +1,14 @@
 # The harness across the whole product life cycle
 
-Status: draft for the founder, written on 11 Nov 2026 (UTC) by a Claude session in the product seat. Facts were first read from `origin/develop` at `18ff6374668f64d4ac89d64a49f96584ff6ccd0c` and from GitHub REST on 11 Nov. After two reviews I re-read the facts that changed against `origin/develop` at `6a11c808c26ed1a89bc77fccef2136f329bb9409` (11 Nov). Anything I could not read is marked unverified. Nothing here changes a workflow, a ruling or an existing doc. It is a proposal until the founder says otherwise.
+Status: draft for the founder, written on 11 Nov 2026 (UTC) by a Claude session in the product seat. It is a proposal. Nothing here changes a workflow, a ruling or an existing doc. Anything I could not read is marked unverified.
+
+## Summary
+
+- This file maps what the harness covers at each of 21 stages of a product's life and proposes backlog items HV2-B38 to B60 for the stages that are not code.
+- The three biggest gaps: stage 4 has one machine check for consults (the compliance fence); stage 3 has 552 of 773 P0 requirements with no test citing them; stage 7 has no device evidence committed.
+- Do first: B43 (one go/no-go page per build), then B38 (a consult table and a Consulted line).
+- Needs the founder: agree or drop the consult table (10 minutes) and B43 (5 minutes per build). B38 also needs a Karma ruling.
+- Unverified: his 10 Nov statement (relayed to me), the Project docs, the live state of alerting and of `AGENTS_ENABLED`. Section 6 has the full list.
 
 I was told the founder said on 10 Nov that the harness is not only about coding. I was not given his words, a file or a chat date, so this is relayed and unverified. If it is right, the harness covers the whole life of a product: the idea, the research, the requirement, the advice from every function, the build, the quality check, the release, the running service, the monitoring, and what we learn afterwards. `docs/agents/HARNESS.md` section 1 still describes a dispatcher that works on this repository, and the harness backlog (HV2-B01 to B37) is mostly merge, CI and release plumbing. This file maps what exists for each stage, names the gaps, and proposes the next backlog items for the stages that are not code.
 
@@ -18,43 +26,47 @@ Four limits apply to the whole audit.
 
 ## 2. The map
 
-Stage numbers are used in the rest of the file. Stages 1 to 12 are the first draft. Stages 13 to 21 were added after review for work that continues after launch or sits outside the build. "Owner" is the person or agent the repo names.
+Stage numbers are used in the rest of the file. Stages 1 to 12 are the first draft. Stages 13 to 21 were added after review for work that continues after launch or sits outside the build. "Owner" is the person or agent the repo names. Each stage has a note in section 3 with what comes in, what goes out, the gate and the evidence.
 
-| # | Stage | Owner today | In | Out | Gate | Enforced today | Gap |
-|---|---|---|---|---|---|---|---|
-| 1 | Ideation and founder asks | Karma (CTO) is the front door (`COUNCIL.md` s3); `product` alone reorders the backlog (`HARNESS.md` s4) | The founder's words in chat; journal issues; Project docs (unreadable here) | A BL row in `docs/BACKLOG.md` or `docs/backlog/FUTURE.md`; a D entry if he decides; a dated step in `docs/release/FOUNDER_QUEUE.md` if it needs his hours | The founder-only list (CTO skill s3) and the founder gate (s10a) apply to questions going to him. Nothing screens an idea coming in | Convention. `id-collisions.mjs` checks ids only | No intake form, no early screen against the constitution and privacy rules, no repo record of the ask in his words |
-| 2 | Discovery and user research | `user-research` agent and skill (roster `daily_runs` 0) | A decision the study will change | `docs/research/studies/<study>/PLAN.md`, `GUIDE.md`, `FINDINGS.md`; `docs/research/USER_RESEARCH.md` | "If no decision changes, do not run it" (skill s2); `product` reviews the plan before recruiting; incentives are the founder's | Convention. `no-real-family-data.test.ts` keeps real family details out | `USER_RESEARCH.md` says "No primary interviews yet" (1 Oct). The only study folder holds one plan, no findings |
-| 3 | Requirements and PRD | `product` writes; `qa` owns traceability; `design-systems` and `content` write the Shown line (`COORDINATION.md` s10) | An idea or decision | `docs/prd/v2/features/F*.md` with ids and work packages; `docs/TRACE.md`; BL rows with Acceptance and "Who must rule" | Requirement rules RR-1 to RR-13 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md` s1); the door lines in `COORDINATION.md` s10 | Report only for ids. `scripts/trace.mjs --no-write` runs inside `npm test` (`package.json` line 11) and never exits non-zero. Only `--check` does (`scripts/trace.mjs` lines 27 and 28), and `package.json` does not use it. On 11 Nov at `6a11c808` it reports 5 cited but undefined ids, all in `docs/prd/v2/11-requirement-rules-and-retro-changes.md`, and `npm test` still passes. Convention for the rest | No machine enforces the id rules today. Live numbers on 11 Nov at `6a11c808` (my run of `node scripts/trace.mjs --no-write`): 846 ids defined, 773 P0, 552 P0 with no test title citing them, 18 P0 with no work package, 5 undefined, 0 defined twice. `docs/TRACE.md` prints older numbers (833 defined, 768 P0, 571 with no test) because nobody has regenerated it. Nothing checks that a requirement says what evidence it rests on |
-| 4 | Cross-functional consult and sign-off | Karma routes; 12 executive roles (`COUNCIL.md` s1); working agents under them | A change or a question | A numbered entry in `docs/agents/exec/RULINGS.md` (for example `CLO-3`) or `docs/agents/cto/RULINGS.md` (`CR-n`); for fenced compliance paths, two approval comments at the head sha | Routing table (`COUNCIL.md` s4); founder gate; the compliance fence (CR-27) | Machine for one case: `compliance-fence.yml`, required on `develop` (CR-32). Convention for every other function | The PR template has no consult line. Nothing records which functions were asked about a store listing, a price, a vendor or a data flow |
-| 5 | Design | `design-systems` agent; CDesO skill; `content` for words | A requirement | `docs/design/specs/`, `packages/design-tokens`, `packages/content` | Design language docs; content rules; tokens tests | Machine for words and tokens: `packages/content/test/rules.test.ts` and `packages/design-tokens/test`. Convention for the review itself | No record that a screen was checked at the largest Dynamic Type or with VoiceOver before build. `docs/qa/DEVICE_TEST_PLAN.md` names Larger Text, VoiceOver or Reduce Motion for some scenarios (S1-27, S1-201, S1-15b) and I found no list of screens that have none (B52, B59) |
-| 6 | Build | `mobile`, `sync`, `payments`, `data-architect`, `security`, `privacy` and others; five standards stewards | A BL row | A pull request into `develop` | Three required contexts on `develop`; two counted reviews at the full head sha (D-107); Karma's tiers (CTO skill s4). Today the merge gate is the founder naming the PR and its full sha (`LESSONS-2026-11-08.md` s6 and s9; `CLAUDE.md`: agents never merge). D-107 and D-132 describe wider delegation on paper. I follow the narrower rule, and neither is a permission for a machine to merge | Machine: `ci.yml` (unit, db, functions, typecheck, seam-guard, required), `migration-guard.yml`, `compliance-fence.yml`, `merge-queue.mjs` | None that this file adds. Stage 4 is the missing input to this one |
-| 7 | Quality | `qa` agent | A build or a PR | `docs/qa/evidence/<date>-<build>-<device>.md`, run sheets, `ALPHA_GO_NO_GO.md`, `release-test-catalog.csv` | Go/no-go on the dates in D-130; device sittings by the founder | Machine for simulator work: `nightly.yml` (opens one `nightly` issue on red), `kill-harness.yml`. `scripts/qa/skip-guard.mjs` exists and no workflow calls it. Device checks are by hand | `docs/qa/evidence/` holds only `README.md` and `TEMPLATE.md` on `develop`: no device evidence file is committed |
-| 8 | Release | `ops` agent; Karma's release-manager skill; the founder holds the Apple, Expo and Vercel accounts | A tag or a dispatch | A TestFlight build; the site; `docs/release/*` records | Preflight scripts in `apps/mobile/scripts`; `scripts/release/doctor.ts`; D-107 reserves store and external-group steps to the founder; `docs/agents/WALLS.md` | Machine for build checks (`testflight.yml`, `release-ios.yml`). Convention for the decision to ship | Legal, compliance, claims, support and cost are checked in separate docs (`docs/store/readiness.md` is dated 28 Oct). No one page shows every function's status for one build |
-| 9 | Production operation | `ops`, `security`, `privacy`; `support`; the founder for accounts | Deploys, requests, incidents | `deploy-db.yml`, `deploy-functions.yml`; 13 runbooks in `docs/ops/runbooks`; `BACKUP_RUNBOOK.md` | The founder applies live migrations (`COORDINATION.md` s6) | Machine for deploy plumbing and restore scripts under `scripts/ops`. Convention for runbooks | No drill record on `develop`. `docs/support/` does not exist, so the `support` charter has produced nothing there |
-| 10 | Monitoring and observability | `principal-architect` owns chapter 10; `ops`; `analytics`; `data-architect` | Signals: CI, nightly, server health views, store crash rates | A `nightly` issue; `ops_health` views and alerts (planned) | OBS-R09 to R12 in `docs/engineering/10-logging-and-observability.md` | Machine only for the nightly issue and the kill harness. Chapter 10 marks R09, R10, R12 and R14 "not yet" (3 Oct; I did not re-check live) | Nobody is named as the reader of each signal. In-app analytics is off for the whole 1.0 line (D-124), so there is no product data |
-| 11 | Learning and feedback | `product`, `chief-of-staff`, `decision-science`, `analytics` | Feedback issues, support themes, build reviews, lessons | Lessons docs, `MEMORY.md` carry (`scripts/agents/memory.mjs`), backlog proposals | `PRINCIPLES.md` rule 20: a rule broken twice becomes a check | Convention. `INSIGHTS_LOOP.md` is marked superseded for v1.0 | Lessons are written by hand after a bad day. No step turns a build or an alpha week into backlog rows |
-| 12 | Retirement or change of a feature | No named owner | A decision to remove, pause or change | A kill switch in signed remote config; a BL row marked `superseded` with the D id | Anything users are promised goes to the founder (CTO skill s3) | Machine for the switch itself (`docs/ops/RELEASE.md` s9 lists `sync`, `invites`, `photos`, `packDownloads`, `serverContent`). Convention for the rest | No checklist for the data, store label, Terms, support article, claims and tests that a change touches |
-| 13 | Security incident response | `security` and `ops` run it; the CISO role advises; `privacy` joins when personal data is involved | An alert, a report, a red `nightly` issue | The steps in `suspected-data-leak.md` and `incident-notification.md`; a summary for counsel | Counsel approves incident notices (`incident-notification.md`). Chapter 10 says Sev 1 and Sev 2 page the founder | Convention. The runbooks are the only record | The only item so far is a drill (B46). Alerting was "not yet" on 3 Oct (OBS-R12) and I did not re-check. I did not look for who acts when the founder cannot be reached |
-| 14 | Data rights requests (access, export, delete, correct) | `ops` with `support`; `privacy` reviews `docs/ops/runbooks/data-requests-by-email.md`; the founder works the dashboard and sends the replies | An email to the support address | A ticket reference, a request log row, a reply; for refusals, the appeal line | Control of the account's email address (runbook s2). The 0.9.0 text gives 45 days to reply for some routes; counsel has not confirmed when the days start | Convention. The runbook says nothing in it has been run live. Route 1 (delete by email) cannot run because BL-551 has no migration; I found none on `develop` on 11 Nov | No rehearsal. The request log is a file on the founder's own computer. Nobody is named to check the clock |
-| 15 | App Store review and rejection | `ops` and `compliance-engineer` prepare; the founder replies in App Store Connect (D-107, `WALLS.md`) | Apple's review message | Notes for review (`docs/store/compliance/app-review-notes.md`, `docs/store/notes-for-review-1.0.txt`); a reply | Store actions are the founder's | Convention | I found no procedure for answering a rejection or a question from review. `docs/store/readiness.md` says the Apple rules it names are pointers to re-read at submission and are unverified |
-| 16 | Money after launch | The CFO role advises; `decision-science` helps; every spend is the founder's (CTO skill s3) | Bills, plan changes, free-tier limits, store payouts | A CFO ruling in `docs/agents/exec/RULINGS.md` (none exists yet) | The founder decides any spend, subscription, plan or credit | Convention. `docs/ops/runbooks/free-tier-ops.md` covers the Supabase Free plan only | No list in the repo of what each service costs each month and where a plan limit would change the bill. `docs/store/readiness.md` names a `cost-decisions` Project doc that I cannot read |
-| 17 | Languages | `content` and `speech`; a native reviewer; the founder holds the pack signing keys (D-115) | A request for a language | `packs/text-rules/<language>.json`, per-language tests in `packages/core/test/regression`, a signed pack published by the founder | The native reviewer and the founder say so (`COORDINATION.md` s6) | Machine for meaning-change tests in en, es, fr, pt, ar, hi and zh (`docs/qa/ENGINE_REGRESSION.md`). Convention for the reviewer | No single line per language that says whether the pack, the test, the reviewer and the store listing are in place. Build 12 language plans sit in Project docs I cannot read |
-| 18 | Partnerships and print fulfilment | The CBO role, with the CFO and CLO roles | A partner idea | Nothing I found in the repo | Contracts and money are the founder's | None | No repo file holds a partner process, a print decision or an owner agent. A search for "fulfil" and "printed book" matched competitor research, brand docs, the emails catalog and the agent board, which I did not read (unverified) |
-| 19 | AI model evaluation over time | The CAIO role; `speech` and `ai-eng-lead` | A new speech model, a new `ENGINE_VERSION`, a new agent engine | Golden corpus per engine version (`packages/core/test/golden*`); `experiments/` results | `verifyEdits` for every machine edit | Machine for the corpus and fuzz tests in `npm test`. `experiments/` needs a Mac and is not run in CI | I found no record of when speech models were last compared on recordings, and no rule that a model change triggers the same checks each time |
-| 20 | Vendors already in use | The CISO role, with the CLO, CPrivO and CFO roles | A vendor's changed terms or price | `docs/legal/subprocessors.md` (version 2.1.0, `draft-for-counsel`, last updated 16 Oct) lists Supabase, Cloudflare R2, Resend and Vercel | Counsel reviews the list | Convention | B51 covers a new vendor. Nothing re-reads the terms of the four listed providers on a date |
-| 21 | Retirement of the product | The founder alone (one-way door); the CLO, CPrivO, CFO and CMO roles advise | A decision to close the product | Nothing | Founder only | None | I found no wind-down plan. Export and deletion exist (`docs/legal/DELETION_AND_EXPORT_SPEC.md`, `docs/store/compliance/data-and-account-deletion.md`). A search for "wind down" and "sunset" matched 8 files I did not open (unverified) |
+| # | Stage | Owner today | Enforced today | Gap |
+|---|---|---|---|---|
+| 1 | Ideation and founder asks | Karma (CTO); `product` reorders the backlog | Convention | No intake form, no early screen, no repo record of the ask |
+| 2 | Discovery and user research | `user-research` agent (`daily_runs` 0) | Convention | No primary interviews yet; one plan, no findings |
+| 3 | Requirements and PRD | `product`; `qa` traces; `design-systems`, `content` | Report only (`trace.mjs`) | Id rules not enforced; 552 of 773 P0 uncited on 11 Nov |
+| 4 | Consult and sign-off | Karma routes; 12 executive roles | Machine for one case: `compliance-fence.yml` | No consult line in the PR template; no record of who was asked |
+| 5 | Design | `design-systems`; CDesO; `content` | Machine for words and tokens | No record of a largest Dynamic Type or VoiceOver check |
+| 6 | Build | `mobile`, `sync`, `payments`, `data-architect`, `security`, `privacy` | Machine: `ci.yml`, `migration-guard.yml`, `compliance-fence.yml`, `merge-queue.mjs` | None this file adds; stage 4 is its missing input |
+| 7 | Quality | `qa` | Machine for simulator work; device checks by hand | No device evidence file committed |
+| 8 | Release | `ops`; release-manager skill; founder holds the accounts | Machine for build checks; convention for the ship call | No one page of each function's status per build |
+| 9 | Production operation | `ops`, `security`, `privacy`; `support` | Machine for deploy and restore scripts | No drill record; `docs/support/` does not exist |
+| 10 | Monitoring and observability | `principal-architect`; `ops`; `analytics`; `data-architect` | Nightly issue and kill harness only | No named reader per signal; analytics off (D-124) |
+| 11 | Learning and feedback | `product`, `chief-of-staff`, `decision-science`, `analytics` | Convention | Lessons by hand; no step from a build to backlog rows |
+| 12 | Retiring or changing a feature | No named owner | Machine for the switch; convention for the rest | No checklist of what a change touches |
+| 13 | Security incident response | `security`, `ops`; CISO role advises | Convention | No drill yet (B46); alerting not re-checked |
+| 14 | Data rights requests | `ops`, `support`; `privacy` reviews; founder replies | Convention | Never run live; Route 1 blocked; no rehearsal |
+| 15 | App Store review and rejection | `ops`, `compliance-engineer`; founder replies | Convention | No procedure for answering a rejection |
+| 16 | Money after launch | CFO role advises; founder decides | Convention | No list of costs and plan limits |
+| 17 | Languages | `content`, `speech`; native reviewer; founder | Machine for meaning-change tests in 7 languages | No readiness line per language |
+| 18 | Partnerships and print fulfilment | CBO role, with CFO and CLO | None | No process, decision or owner agent in the repo |
+| 19 | AI model evaluation over time | CAIO role; `speech`, `ai-eng-lead` | Machine for corpus and fuzz tests | No record of the last model comparison |
+| 20 | Vendors already in use | CISO role, with CLO, CPrivO, CFO | Convention | Nothing re-reads four providers' terms on a date |
+| 21 | Retirement of the product | The founder alone; CLO, CPrivO, CFO, CMO advise | None | No wind-down plan |
 
-## 3. Stages with a real gap
+## 3. Stage notes
+
+Each note carries what the map leaves out. Gaps with a number or an item id are the ones the backlog in section 5 answers.
 
 ### Stages 1 to 3: ideas, research and requirements
 
-An idea reaches the repo only after the founder or a session has already decided it deserves a BL row. Nothing in the repo screens it first. The cheapest wrong decision is an idea that breaks the constitution or a privacy rule and gets two weeks of PRD work before anyone says so. `CLAUDE.md` already has the screen (no writing or shaping of a person's words, no fear or guilt language, no gap counting, no content in analytics), so the check is a short form at the top of the idea, answered before any requirement exists.
+Stage 1. Karma (CTO) is the front door (`COUNCIL.md` s3) and `product` alone reorders the backlog (`HARNESS.md` s4). In: the founder's words in chat, journal issues, Project docs (unreadable here). Out: a BL row in `docs/BACKLOG.md` or `docs/backlog/FUTURE.md`, a D entry if he decides, a dated step in `docs/release/FOUNDER_QUEUE.md` if it needs his hours. Gate: the founder-only list (CTO skill s3) and the founder gate (s10a) apply to questions going to him, and nothing screens an idea coming in. Enforced: convention; `id-collisions.mjs` checks ids only. Gap: no intake form, no early screen against the constitution and privacy rules, no repo record of the ask in his words. An idea reaches the repo only after the founder or a session has already decided it deserves a BL row. The cheapest wrong decision is an idea that breaks the constitution or a privacy rule and gets two weeks of PRD work before anyone says so. `CLAUDE.md` already has the screen (no writing or shaping of a person's words, no fear or guilt language, no gap counting, no content in analytics), so the check is a short form at the top of the idea, answered before any requirement exists.
 
-Research has the right rules and little output. The `user-research` skill is careful about consent and about sizes. `USER_RESEARCH.md` is desk research from 1 Oct. The Memory Library study plan (10 Nov) says that nothing in it is backed by a parent study. The risk is that a requirement reads as if parents asked for it when only we did. A one-word evidence tag on each requirement (evidenced with a study id, assumed, contradicted) would make that visible, and the skill already asks the researcher to keep that tag in `USER_RESEARCH.md`.
+Stage 2. Owner: the `user-research` agent and skill (roster `daily_runs` 0). In: a decision the study will change. Out: `docs/research/studies/<study>/PLAN.md`, `GUIDE.md`, `FINDINGS.md` and `docs/research/USER_RESEARCH.md`, as the skill describes them. Gate: "If no decision changes, do not run it" (skill s2); `product` reviews the plan before recruiting; incentives are the founder's. Enforced: convention; `no-real-family-data.test.ts` keeps real family details out. Gap: `USER_RESEARCH.md` says "No primary interviews yet" (1 Oct). `docs/research/studies/` holds one file, `MEMORY-LIBRARY-STUDY-PLAN-10nov.md`, a plan with no findings. Research has the right rules and little output. The `user-research` skill is careful about consent and about sizes. The Memory Library plan (10 Nov) says that nothing in it is backed by a parent study. The risk is that a requirement reads as if parents asked for it when only we did. A one-word evidence tag on each requirement (evidenced with a study id, assumed, contradicted) would make that visible, and the skill already asks the researcher to keep that tag in `USER_RESEARCH.md`.
 
-Requirements are in better shape than the other early stages, with one correction to my first draft. The id checks run in `npm test` but only report. They have never failed a build, and they pass today with 5 undefined ids. B31 in #551 proposes `trace --check` in `package.json:11`. What no machine reads is whether a requirement carries a Given/When/Then, the device it is checked on, and who rules.
+Stage 3. Owner: `product` writes; `qa` owns traceability; `design-systems` and `content` write the Shown line (`COORDINATION.md` s10). In: an idea or decision. Out: `docs/prd/v2/features/F*.md` with ids and work packages, `docs/TRACE.md`, BL rows with Acceptance and "Who must rule". Gate: requirement rules RR-1 to RR-13 (`docs/prd/v2/11-requirement-rules-and-retro-changes.md` s1) and the door lines in `COORDINATION.md` s10. Enforced: report only for ids, convention for the rest. `scripts/trace.mjs --no-write` runs inside `npm test` (`package.json` line 11) and never exits non-zero. Only `--check` does (`scripts/trace.mjs` lines 27 and 28), and `package.json` does not use it. On 11 Nov at `6a11c808` it reports 5 cited but undefined ids, all in `docs/prd/v2/11-requirement-rules-and-retro-changes.md`, and `npm test` still passes. Live numbers from my run of `node scripts/trace.mjs --no-write` that day: 846 ids defined, 773 P0, 552 P0 with no test title citing them, 18 P0 with no work package, 5 undefined, 0 defined twice. `docs/TRACE.md` prints older numbers (833 defined, 768 P0, 571 with no test) because nobody has regenerated it. Gap: no machine enforces the id rules, and nothing checks that a requirement says what evidence it rests on. Requirements are in better shape than the other early stages, with one correction to my first draft. The id checks have never failed a build. B31 in #551 proposes `trace --check` in `package.json:11`. What no machine reads is whether a requirement carries a Given/When/Then, the device it is checked on, and who rules.
 
 ### Stage 4: consult and sign-off
+
+Owner: Karma routes; 12 executive roles (`COUNCIL.md` s1); working agents under them. In: a change or a question. Out: a numbered entry in `docs/agents/exec/RULINGS.md` (for example `CLO-3`) or `docs/agents/cto/RULINGS.md` (`CR-n`); for fenced compliance paths, two approval comments at the head sha. Gate: the routing table (`COUNCIL.md` s4), the founder gate, the compliance fence (CR-27). Enforced: machine for one case, `compliance-fence.yml`, required on `develop` (CR-32); convention for every other function. Gap: the PR template has no consult line, and nothing records which functions were asked about a store listing, a price, a vendor or a data flow.
 
 This is the largest gap I found. The routing table in `COUNCIL.md` section 4 says who must be consulted for a kind of change. The only place a machine checks that anyone was consulted is the compliance fence. For everything else a session has to remember.
 
@@ -70,7 +82,7 @@ When two functions disagree, `COUNCIL.md` s3 step 4 says both positions are writ
 
 Legal, compliance, privacy and security advice stays advice for four reasons that are already written down. Each executive signs as a Claude role and is not a lawyer (`COUNCIL.md` s5). A legal conclusion that matters goes to counsel through `docs/legal/COUNSEL_PACKET.md`. Every fact about a law needs a source read in the session or is marked unverified. The founder-only list in the CTO skill s3 keeps promises to users, retention promises and anything about children's data with the founder. What is missing is a check on the wording. A ruling can be filed as "approved" with no sign that it was advice.
 
-The table below has two parts. The first eight rows are my reading of `COUNCIL.md` section 4, extended with the sign-off types the repo already uses. The next four rows are the `COUNCIL.md` section 4 rows that my first draft left out. The last four rows are my additions for stages 14, 15, 20 and 21 and are not in `COUNCIL.md`. It is the draft input to HV2-B38 and the founder has not agreed it.
+The table below is the draft input to HV2-B38 and the founder has not agreed it. Rows marked (mine) are not in `COUNCIL.md` section 4: the new language row, the release row, and the four rows for stages 14, 15, 20 and 21. The other rows follow `COUNCIL.md` section 4, with the record column extended by the sign-off types the repo already uses. Four of them (spend, threats, speech models, terms and IP) are rows my first draft left out.
 
 | Kind of change | Must be consulted | The record that counts |
 |---|---|---|
@@ -78,60 +90,60 @@ The table below has two parts. The first eight rows are my reading of `COUNCIL.m
 | Pricing, Plus, a partner, print | CBO; CFO; CLO for contracts | Exec ruling ids; founder decision |
 | Any new personal data, SDK, vendor or data flow | CPrivO, CDO, CISO; CFO for cost; CCO for rules | Data classification row, `docs/legal/subprocessors.md`, exec ruling ids |
 | Sign-up, age, consent, countries, Terms acceptance | CCO, CPrivO, CLO | Fence approvals at the head sha; counsel packet entry |
-| A new language or pack (stage 17) | `content`, `speech`, a native reviewer | The native reviewer and the founder say so (`COORDINATION.md` s6) |
+| A new language or pack (stage 17; mine) | `content`, `speech`, a native reviewer | The native reviewer and the founder say so (`COORDINATION.md` s6) |
 | A new AI feature or model | CAIO; CPrivO for any data the model sees | Exec ruling ids; the constitution check |
 | A screen or flow | CDesO; CPO | Design spec in `docs/design/specs`; evidence at the largest Dynamic Type, and VoiceOver, on a device |
-| A release | CTO; CCO; CLO; CMO; CPrivO; support | Today: separate docs. Proposed: one page (HV2-B43) |
+| A release (mine) | CTO; CCO; CLO; CMO; CPrivO; support | Today: separate docs. Proposed: one page (HV2-B43) |
 | Spend, subscriptions, runway, tax, entity (`COUNCIL.md` s4; stage 16) | CFO owns; CBO; CLO for entity and contracts | A CFO ruling entry; the founder decides any spend; tax and entity questions go to the accountant |
 | Threats, keys, accounts, incidents, dependencies (`COUNCIL.md` s4; stage 13) | CISO owns; CTO; CPrivO if personal data is involved | Exec ruling ids; the incident runbook steps; counsel approves any notice |
 | Speech models, AI features, agents, evals (`COUNCIL.md` s4; stage 19) | CAIO owns; CTO; CPrivO for any data a model sees | Exec ruling ids; a dated run of the checks in B56 |
 | Terms, contracts, IP, names, trademarks, disputes (`COUNCIL.md` s4) | CLO owns; CCO; CPrivO for data terms | Exec ruling ids; a counsel packet entry |
-| A data rights request (stage 14; my addition) | CPrivO owns; `ops` and `support` do the work; counsel for a refusal and for when the days start | The request log row (runbook s1); the reply date |
-| An App Store review message or rejection (stage 15; my addition) | CCO for the rule; CMO for listing text; CPrivO for the privacy label; CTO for the build | A note in the build record; the reply is the founder's |
-| A vendor already in use (stage 20; my addition) | CISO owns; CLO; CPrivO; CFO | A dated review on the B51 sheet |
-| Closing the product (stage 21; my addition) | The founder decides; CLO; CPrivO; CFO; CMO | A D entry in `docs/DECISIONS.md` |
+| A data rights request (stage 14; mine) | CPrivO owns; `ops` and `support` do the work; counsel for a refusal and for when the days start | The request log row (runbook s1); the reply date |
+| An App Store review message or rejection (stage 15; mine) | CCO for the rule; CMO for listing text; CPrivO for the privacy label; CTO for the build | A note in the build record; the reply is the founder's |
+| A vendor already in use (stage 20; mine) | CISO owns; CLO; CPrivO; CFO | A dated review on the B51 sheet |
+| Closing the product (stage 21; mine) | The founder decides; CLO; CPrivO; CFO; CMO | A D entry in `docs/DECISIONS.md` |
 
-### Stages 5, 7 and 8: design, quality and release
+### Stages 5 to 8: design, build, quality and release
 
-Design has machine checks for words and tokens and none for accessibility on a device. Quality has the best written plans in the repo (`DEVICE_TEST_PLAN.md`, run sheets, the evidence template) and no committed evidence file. I cannot tell from the repo whether sittings happened and the evidence lives elsewhere, or whether they have not happened (unverified). `HV2-B02` in #551 builds the evidence kit, so I add no item for it.
+Stage 5. Owner: `design-systems`; CDesO skill; `content` for words. In: a requirement. Out: `docs/design/specs/`, `packages/design-tokens`, `packages/content`. Gate: design language docs, content rules, tokens tests. Enforced: machine for words and tokens (`packages/content/test/rules.test.ts` and `packages/design-tokens/test`), convention for the review itself. Gap: no record that a screen was checked at the largest Dynamic Type or with VoiceOver before build. `docs/qa/DEVICE_TEST_PLAN.md` names Larger Text, VoiceOver or Reduce Motion for some scenarios (S1-27, S1-201, S1-15b) and I found no list of screens that have none (B52, B59).
 
-A release build has many checks. The decision to ship has none that a machine runs. A release needs the CCO, CLO, CMO, CPrivO, support and the CFO to have no open objection. Today the founder gets that by asking, one function at a time, or by reading separate docs.
+Stage 6. Owner: `mobile`, `sync`, `payments`, `data-architect`, `security`, `privacy` and others; five standards stewards. In: a BL row. Out: a pull request into `develop`. Gate: three required contexts on `develop`; two counted reviews at the full head sha (D-107); Karma's tiers (CTO skill s4). Today the merge gate is the founder naming the PR and its full sha (`LESSONS-2026-11-08.md` s6 and s9; `CLAUDE.md`: agents never merge). D-107 and D-132 describe wider delegation on paper. I follow the narrower rule, and neither is a permission for a machine to merge. Enforced: machine, through `ci.yml` (unit, db, functions, typecheck, seam-guard, required), `migration-guard.yml`, `compliance-fence.yml` and `merge-queue.mjs`. Gap: none that this file adds. Stage 4 is the missing input to this one.
 
-### Stages 9 and 10: production and monitoring
+Stage 7. Owner: `qa`. In: a build or a PR. Out: `docs/qa/evidence/<date>-<build>-<device>.md`, run sheets, `ALPHA_GO_NO_GO.md`, `release-test-catalog.csv`. Gate: go/no-go on the dates in D-130; device sittings by the founder. Enforced: machine for simulator work through `nightly.yml` (opens one `nightly` issue on red) and `kill-harness.yml`. `scripts/qa/skip-guard.mjs` exists and no workflow calls it. Device checks are by hand. Gap: `docs/qa/evidence/` holds only `README.md` and `TEMPLATE.md` on `develop`, so no device evidence file is committed. Quality has the best written plans in the repo (`DEVICE_TEST_PLAN.md`, run sheets, the evidence template). I cannot tell from the repo whether sittings happened and the evidence lives elsewhere, or whether they have not happened (unverified). `HV2-B02` in #551 builds the evidence kit, so I add no item for it.
 
-The runbooks are specific and privacy-aware: restore drill, stuck deletion, purge failing, suspected data leak, incident notification, sign everyone out. What is missing is the habit around them. Chapter 10 says Sev 1 and Sev 2 page the founder and Sev 3 goes to a digest. It also says "no alerting exists" as of 3 Oct (OBS-R12). I did not check whether that is still true, so the first step of HV2-B45 is to read the live state. In-app analytics is off for 1.0, so the signals that exist are CI, the nightly issue, the server health views, App Store Connect and Xcode crash rates, Resend delivery and the support inbox. Nobody is named as the reader of each, with a cadence.
+Stage 8. Owner: `ops` agent; Karma's release-manager skill; the founder holds the Apple, Expo and Vercel accounts. In: a tag or a dispatch. Out: a TestFlight build, the site, `docs/release/*` records. Gate: preflight scripts in `apps/mobile/scripts`, `scripts/release/doctor.ts`, D-107 (reserves store and external-group steps to the founder), `docs/agents/WALLS.md`. Enforced: machine for build checks (`testflight.yml`, `release-ios.yml`), convention for the decision to ship. Gap: legal, compliance, claims, support and cost are checked in separate docs (`docs/store/readiness.md` is dated 28 Oct), and no one page shows every function's status for one build. A release needs the CCO, CLO, CMO, CPrivO, support and the CFO to have no open objection. Today the founder gets that by asking, one function at a time, or by reading separate docs.
 
-The `support` charter says it owns `docs/support/**`. That folder is not on `develop`. Whether the agent ever ran is unverified (26 journal-labelled issues exist; I did not read them).
+### Stages 9 to 12: production, monitoring, learning and feature change
 
-### Stage 11: learning
+Stage 9. Owner: `ops`, `security`, `privacy`; `support`; the founder for accounts. In: deploys, requests, incidents. Out: `deploy-db.yml`, `deploy-functions.yml`, 13 runbooks in `docs/ops/runbooks`, `BACKUP_RUNBOOK.md`. Gate: the founder applies live migrations (`COORDINATION.md` s6). Enforced: machine for deploy plumbing and restore scripts under `scripts/ops`, convention for runbooks. Gap: no drill record on `develop`. `docs/support/` does not exist, so the `support` charter has produced nothing there. Whether the agent ever ran is unverified (26 journal-labelled issues exist; I did not read them). The `support` charter says it owns `docs/support/**`. The runbooks are specific and privacy-aware: restore drill, stuck deletion, purge failing, suspected data leak, incident notification, sign everyone out. What is missing is the habit around them.
 
-The learning loop was designed around analytics (`INSIGHTS_LOOP.md`) and analytics is off. The loop that can run in the alpha uses TestFlight feedback, crash rates, device checks and support themes, none of which has a template that ends in backlog rows. The 8 Nov lessons file is a good example done once by hand.
+Stage 10. Owner: `principal-architect` owns chapter 10; `ops`; `analytics`; `data-architect`. In: signals (CI, nightly, server health views, store crash rates). Out: a `nightly` issue; `ops_health` views and alerts (planned). Gate: OBS-R09 to R12 in `docs/engineering/10-logging-and-observability.md`. Enforced: machine only for the nightly issue and the kill harness. Chapter 10 marks R09, R10, R12 and R14 "not yet" (3 Oct; I did not re-check live). Gap: nobody is named as the reader of each signal, and in-app analytics is off for the whole 1.0 line (D-124), so there is no product data. Chapter 10 says Sev 1 and Sev 2 page the founder and Sev 3 goes to a digest. It also says "no alerting exists" as of 3 Oct (OBS-R12). I did not check whether that is still true, so the first step of HV2-B45 is to read the live state. The signals that exist are CI, the nightly issue, the server health views, App Store Connect and Xcode crash rates, Resend delivery and the support inbox. Nobody is named as the reader of each, with a cadence.
 
-### Stage 12: retirement and change of a feature
+Stage 11. Owner: `product`, `chief-of-staff`, `decision-science`, `analytics`. In: feedback issues, support themes, build reviews, lessons. Out: lessons docs, `MEMORY.md` carry (`scripts/agents/memory.mjs`), backlog proposals. Gate: `PRINCIPLES.md` rule 20, a rule broken twice becomes a check. Enforced: convention; `INSIGHTS_LOOP.md` is marked superseded for v1.0. Gap: lessons are written by hand after a bad day, and no step turns a build or an alpha week into backlog rows. The learning loop was designed around analytics and analytics is off. The loop that can run in the alpha uses TestFlight feedback, crash rates, device checks and support themes, none of which has a template that ends in backlog rows. The 8 Nov lessons file is a good example done once by hand.
 
-Kill switches work and are signed. What a person or agent must also touch when a feature goes away or changes is spread over the data map, the privacy label, the Terms, the support articles, the claims and the tests. A search of `docs` for a retirement or sunset procedure finds only unrelated hits. The next candidates are the photo and Find switches in open PRs #796 and #798, which is where a checklist would first be used.
+Stage 12. Owner: none named. In: a decision to remove, pause or change. Out: a kill switch in signed remote config; a BL row marked `superseded` with the D id. Gate: anything users are promised goes to the founder (CTO skill s3). Enforced: machine for the switch itself (`docs/ops/RELEASE.md` s9 lists `sync`, `invites`, `photos`, `packDownloads`, `serverContent`), convention for the rest. Gap: no checklist for the data, store label, Terms, support article, claims and tests that a change touches. Kill switches work and are signed. What a person or agent must also touch when a feature goes away or changes is spread over the data map, the privacy label, the Terms, the support articles, the claims and the tests. A search of `docs` for a retirement or sunset procedure finds only unrelated hits. The next candidates are the photo and Find switches in open PRs #796 and #798, which is where a checklist would first be used.
 
 ### Stages 13 to 21: after launch and outside the build
 
 These stages mostly need an owner and a record. For each I looked in the repo for a procedure and for a file that shows it was used.
 
-Stage 13, incident response. The runbooks exist and counsel approves any notice. A drill (B46) tests them once. The habit around them is B45: who reads which signal. I add no separate item.
+Stage 13, incident response. Owner: `security` and `ops` run it; the CISO role advises; `privacy` joins when personal data is involved. In: an alert, a report, a red `nightly` issue. Out: the steps in `suspected-data-leak.md` and `incident-notification.md`; a summary for counsel. Gate: counsel approves incident notices (`incident-notification.md`); chapter 10 says Sev 1 and Sev 2 page the founder. Enforced: convention, and the runbooks are the only record. Gap: alerting was "not yet" on 3 Oct (OBS-R12) and I did not re-check. I did not look for who acts when the founder cannot be reached. A drill (B46) tests the runbooks once. The habit around them is B45: who reads which signal. I add no separate item.
 
-Stage 14, data rights requests. The runbook is detailed and has not been run. Parents can ask to see, export, correct or delete what we hold. The 0.9.0 text gives 45 days for some routes and counsel has not confirmed when they start. B53 rehearses it.
+Stage 14, data rights requests (access, export, delete, correct). Owner: `ops` with `support`; `privacy` reviews `docs/ops/runbooks/data-requests-by-email.md`; the founder works the dashboard and sends the replies. In: an email to the support address. Out: a ticket reference, a request log row, a reply; for refusals, the appeal line. Gate: control of the account's email address (runbook s2). The 0.9.0 text gives 45 days to reply for some routes; counsel has not confirmed when the days start. Enforced: convention. The runbook says nothing in it has been run live. Route 1 (delete by email) cannot run because BL-551 has no migration; I found none on `develop` on 11 Nov. Gap: no rehearsal, the request log is a file on the founder's own computer, and nobody is named to check the clock. B53 rehearses it.
 
-Stage 15, store review. Everything a rejection will ask about is already written somewhere (age rating, privacy label, review notes, subscription metadata, account deletion). No file says who answers what. B54 builds that one page.
+Stage 15, store review. Owner: `ops` and `compliance-engineer` prepare; the founder replies in App Store Connect (D-107, `WALLS.md`). In: Apple's review message. Out: notes for review (`docs/store/compliance/app-review-notes.md`, `docs/store/notes-for-review-1.0.txt`) and a reply. Gate: store actions are the founder's. Enforced: convention. Gap: I found no procedure for answering a rejection or a question from review. `docs/store/readiness.md` says the Apple rules it names are pointers to re-read at submission and are unverified. Everything a rejection will ask about is already written somewhere (age rating, privacy label, review notes, subscription metadata, account deletion), and no file says who answers what. B54 builds that one page.
 
-Stage 16, money after launch. The founder decides every spend, and nobody has put the recurring costs and the plan limits on one list. B55 does that as a CFO ruling entry, which is an existing home.
+Stage 16, money after launch. Owner: the CFO role advises; `decision-science` helps; every spend is the founder's (CTO skill s3). In: bills, plan changes, free-tier limits, store payouts. Out: a CFO ruling in `docs/agents/exec/RULINGS.md` (none exists yet). Gate: the founder decides any spend, subscription, plan or credit. Enforced: convention; `docs/ops/runbooks/free-tier-ops.md` covers the Supabase Free plan only. Gap: no list in the repo of what each service costs each month and where a plan limit would change the bill. `docs/store/readiness.md` names a `cost-decisions` Project doc that I cannot read. B55 puts the list in a CFO ruling entry, which is an existing home.
 
-Stage 17, languages. Seven rule packs and seven per-language test files exist. What is not in the repo is whether a native reviewer has said yes for each. B57 puts the four facts per language on one line.
+Stage 17, languages. Owner: `content` and `speech`; a native reviewer; the founder holds the pack signing keys (D-115). In: a request for a language. Out: `packs/text-rules/<language>.json`, per-language tests in `packages/core/test/regression`, a signed pack published by the founder. Gate: the native reviewer and the founder say so (`COORDINATION.md` s6). Enforced: machine for meaning-change tests in en, es, fr, pt, ar, hi and zh (`docs/qa/ENGINE_REGRESSION.md`), convention for the reviewer. Gap: no single line per language says whether the pack, the test, the reviewer and the store listing are in place. Build 12 language plans sit in Project docs I cannot read. Seven rule packs and seven per-language test files exist. What is not in the repo is whether a native reviewer has said yes for each. B57 puts the four facts per language on one line.
 
-Stage 18, partnerships and print. I found nothing in the repo to start from, and the first move is a founder decision about what he wants. I add no item because I cannot name a first step that is not that decision.
+Stage 18, partnerships and print. Owner: the CBO role, with the CFO and CLO roles. In: a partner idea. Out: nothing I found in the repo. Gate: contracts and money are the founder's. Enforced: none. Gap: no repo file holds a partner process, a print decision or an owner agent. A search for "fulfil" and "printed book" matched competitor research, brand docs, the emails catalog and the agent board, which I did not read (unverified). I found nothing in the repo to start from, and the first move is a founder decision about what he wants. I add no item because I cannot name a first step that is not that decision.
 
-Stage 19, model evaluation over time. The corpus protects the engine. It does not say what to re-run when a speech model changes, or when it last ran on recordings. B56 writes that down.
+Stage 19, model evaluation over time. Owner: the CAIO role; `speech` and `ai-eng-lead`. In: a new speech model, a new `ENGINE_VERSION`, a new agent engine. Out: golden corpus per engine version (`packages/core/test/golden*`); `experiments/` results. Gate: `verifyEdits` for every machine edit. Enforced: machine for the corpus and fuzz tests in `npm test`; `experiments/` needs a Mac and is not run in CI. Gap: I found no record of when speech models were last compared on recordings, and no rule that a model change triggers the same checks each time. The corpus protects the engine. It does not say what to re-run when a speech model changes, or when it last ran on recordings. B56 writes that down.
 
-Stage 20, vendors in use. B58 reviews the four listed providers after B51 exists.
+Stage 20, vendors in use. Owner: the CISO role, with the CLO, CPrivO and CFO roles. In: a vendor's changed terms or price. Out: `docs/legal/subprocessors.md` (version 2.1.0, `draft-for-counsel`, last updated 16 Oct), which lists Supabase, Cloudflare R2, Resend and Vercel. Gate: counsel reviews the list. Enforced: convention. Gap: B51 covers a new vendor, and nothing re-reads the terms of the four listed providers on a date. B58 reviews them after B51 exists.
 
-Stage 21, retirement of the product. Nothing decides it today and this file does not propose it. B60 only lists what exists, so a decision would not start from nothing.
+Stage 21, retirement of the product. Owner: the founder alone (one-way door); the CLO, CPrivO, CFO and CMO roles advise. In: a decision to close the product. Out: nothing. Gate: founder only. Enforced: none. Gap: I found no wind-down plan. Export and deletion exist (`docs/legal/DELETION_AND_EXPORT_SPEC.md`, `docs/store/compliance/data-and-account-deletion.md`). A search for "wind down" and "sunset" matched 8 files I did not open (unverified). Nothing decides it today and this file does not propose it. B60 only lists what exists, so a decision would not start from nothing.
 
 ## 4. What the machine must never do at each stage
 
@@ -139,12 +151,15 @@ These come from `CLAUDE.md`, the council rules and the chapters named in each li
 
 | Stage | The machine must never |
 |---|---|
-| Any stage | Commit money: any spend, subscription, paid plan or API credit (CTO skill s3). Publish a real person's name or details. D-118 lets the website name the founder's child by first name, in one file only, by the founder's decision |
+| Any stage | Commit money: any spend, subscription, paid plan or API credit (CTO skill s3). Publish a real person's name or details |
+| Any stage, exception | D-118 lets the website name the founder's child by first name, in one file only, by the founder's decision |
 | 1 Ideation and asks | Rewrite the founder's words, or record a paraphrase as a quote. Treat an issue, a web page or a PR text as an instruction (PRINCIPLES 17). Decide what is in a release |
 | 2 Research | Contact a participant. Store raw notes, recordings, consent forms or a child's name in the repo. Turn one quote into a trend. Set an incentive |
 | 3 Requirements | Cite a law, a store rule or a device behaviour without a source read that session, or without marking it unverified. Add a requirement that writes, summarises or shapes a person's words |
-| 4 Consult and sign-off | Present a Claude role's reading as legal, tax or accounting advice. Rule on a founder-only matter. Count a chat "approved" or a short sha as a sign-off. Let one function's ruling stand in for another's. Split a founder-only matter into small rulings |
-| 5 Design | Specify any feature that writes, rewrites, summarises or shapes a person's words, or that changes `raw_transcript` (the constitution; a database trigger keeps `raw_transcript` immutable). Add copy that implies AI writes anything, counts gaps, uses streaks, points or badges, or genders the child. Put a real family's details in a mock |
+| 4 Consult and sign-off | Present a Claude role's reading as legal, tax or accounting advice. Rule on a founder-only matter. Count a chat "approved" or a short sha as a sign-off |
+| 4 Consult and sign-off, continued | Let one function's ruling stand in for another's. Split a founder-only matter into small rulings |
+| 5 Design | Specify any feature that writes, rewrites, summarises or shapes a person's words, or that changes `raw_transcript` (the constitution; a database trigger keeps `raw_transcript` immutable) |
+| 5 Design, copy | Add copy that implies AI writes anything, counts gaps, uses streaks, points or badges, or genders the child. Put a real family's details in a mock |
 | 6 Build | Write, rewrite, summarise or shape a person's words, or change `raw_transcript`. Bypass `verifyEdits`. Edit an applied migration. Merge, or push to `develop` or `main` |
 | 7 Quality | Use real family data in a fixture or in evidence. Skip or loosen a test to get green. Report a green check as proof the product works on a device |
 | 8 Release | Click an agreement, attestation or store action for the founder (walls, `WALLS.md`). Dispatch a build without a pinned sha. Publish packs or config, or hold a signing key |
@@ -172,196 +187,96 @@ Order. Group A comes first: items that save the founder asks or stop a wrong dec
 
 ### Group A: saves founder asks or stops a wrong decision
 
-- **HV2-B43 One go/no-go page for a build.**
-  Goal: the founder reads one page and sees each function's status for the build he is about to ship.
-  First step: a template that extends `ALPHA_GO_NO_GO.md` with one row per function (QA, security, privacy, compliance, legal, marketing claims, support, finance, design), each with the source link, the date read, the status and the ruling id. Fill it by hand for the next TestFlight build.
-  How it differs from the nearest items: B01 in #551 is the checklist an operator follows to run a build. B07 in #551 is a short page of dates. B34 in the 8 Nov lessons file logs who dispatched which build. B43 is the page the founder reads once per build, with one status and one ruling id per function. It reads none of them and feeds none. (Descriptions of B01 and B07 are from #551 at `611f1ec9`.)
-  Owner: `ops`, with `chief-of-staff`.
-  Measure: separate asks the founder makes before a build (today several; target 1); rows with a ruling id and a date.
-  Founder minutes: 5 per build. It replaces asks, so I expect it to net below zero after two builds. That is an estimate until measured.
-
-- **HV2-B38 Consult matrix and a Consulted line.**
-  Goal: every non-routine PR and backlog row says which functions were consulted and cites the ruling ids.
-  First step: take the table in section 3, once Karma and the founder agree it, and add it to `docs/agents/exec/COUNCIL.md` section 4 as extra columns or rows. No JSON file. Then write a read-only script that reads that table, lists open PRs touching a trigger path (public copy, pricing, vendors, consent, store files) with no `Consulted:` line, and checks that each cited ruling id exists on `develop`. Report only; no workflow change.
-  Needs a Karma ruling: that extending the `COUNCIL.md` section 4 table is not a new register (`COUNCIL.md` s5). Until Karma rules, this item is a proposal.
-  Owner: `chief-of-staff`, with `product`. Karma rules on the table.
-  Measure: share of non-routine PRs with a valid Consulted line, read from the script each week; founder questions that return as "you did not ask legal, privacy or security first" (target 0).
-  Founder minutes: 10 to read and agree the table.
-
-- **HV2-B40 Idea brief with an early screen.**
-  Goal: an idea is a half page before it is a PRD, and the cheap objections come first.
-  First step: a template with eight lines: the problem in the parent's words, who it is for, the decision it changes, the evidence (tagged evidenced, assumed or contradicted), the constitution and privacy screen (the five checks in `CLAUDE.md`), who must be consulted (from B38), a monthly cost with source, and the cheapest test. Use it on the next two ideas from the founder and see whether it saves reading. Needs a Karma ruling that a template in `docs/backlog/` is not a new register.
-  Owner: `product`.
-  Measure: ideas stopped or reshaped at the screen before any PRD work; minutes the founder spends reading an idea (his count over the two trials).
-  Founder minutes: 10 for the trial.
-
-- **HV2-B51 Vendor and SDK intake sheet.**
-  Goal: nothing that touches data or money is added without finance, privacy, security and legal seeing it first.
-  First step: one page filled before any new vendor, SDK or paid plan: what data it sees, classification row, `subprocessors.md` row, contract and terms read (with date), monthly cost, exit plan, privacy label effect. The `infosec` skill and CFO skill supply the questions.
-  Owner: `security-architect`, with the CFO and CPrivO roles.
-  Measure: new vendors with a complete sheet; sheets filled after the vendor was already in use (target 0).
-  Founder minutes: 5 per vendor, and it is a money decision for him in any case.
-
-- **HV2-B44 Store and site text against the evidence list.**
-  Goal: every public statement in store and site text has a row in the evidence list.
-  First step: list the strings in `packages/content/src/store.en.ts`, `site.en.ts` and `pages.en.ts` against `docs/reviews/2026-10-claims-inventory.md`, and report strings with no row. It extends `claims-capabilities.test.ts`, which already scans surfaces for false claims. Related work, which this item does not repeat: BL-781 in `docs/BACKLOG.md`, BL-637 in open #599 (registry rows for the new privacy and recovery lines; I found it there on 11 Nov), and PR #37, which proposes `docs/legal/CLAIMS.md`. HV2-B04 in #551 names a different file: the agents' board.
-  Owner: `marketing`, with `content`. The CMO keeps the list.
-  Measure: strings with no row (target 0 before a store submission).
-  Founder minutes: 0 to start.
-
-- **HV2-B54 App Store review response sheet.**
-  Goal: a rejection or a question from review gets an answer on the day, from known facts.
-  First step: one page built from `docs/store/compliance/app-review-notes.md`, `docs/store/notes-for-review-1.0.txt` and `docs/store/readiness.md`. For each likely question (sign-in for the reviewer, privacy label, subscription metadata, age rating, account deletion) it names the file that holds the answer, the role that checks it, and the step only the founder does in App Store Connect. Apple's guideline numbers are copied from files that already cite them and marked unverified until re-read on the day. Test it on a made-up rejection.
-  Owner: `ops`, with `compliance-engineer`. The CCO and CMO are consulted.
-  Measure: hours from a review message to a reply (from the build record); rejection reasons with no file named on the sheet (target 0 after the first real one).
-  Founder minutes: 10.
-
-- **HV2-B53 Data request rehearsal and reply clock.**
-  Goal: the first real request gets a right reply inside the time the Privacy text gives.
-  First step: the founder walks Route 3 (see, export, correct) of `docs/ops/runbooks/data-requests-by-email.md` on staging with the fictional Asha family, against a timer, and writes what failed into the runbook's status paragraph. Ask counsel through `COUNSEL_PACKET.md` when the 45 days start; the runbook says this is unconfirmed. Route 1 (delete by email) cannot be rehearsed until BL-551 has a migration. Agent sessions do not run these steps (runbook s0).
-  Owner: `ops`, with `support`. `privacy` reviews. The CPrivO role is consulted.
-  Measure: routes rehearsed out of the 5 written; days from arrival to first reply on the first real request, against the 45 in the 0.9.0 text (counsel to confirm).
-  Founder minutes: 40.
-
-- **HV2-B55 Spend list and plan limits.**
-  Goal: the founder sees every recurring cost and the limit that would change it.
-  First step: the CFO role lists each service the repo names (the Supabase Free plan in `free-tier-ops.md`, Cloudflare R2, Resend, Vercel, EAS, the Apple developer programme, Claude plans and API credit) with plan, monthly cost, the limit where the plan changes, and the date the vendor page was read. Costs the repo does not hold stay empty and are marked for the founder to fill. File the list as the first CFO entry in `docs/agents/exec/RULINGS.md`, which is an existing home. It does not draw on the `cost-decisions` Project doc, which I cannot read. Signed as a Claude role. It is not accounting advice.
-  Owner: `ops`, with the CFO role and `decision-science`.
-  Measure: services with plan, cost, limit and date read, over services listed (target all); days since the list was last read.
-  Founder minutes: 15 (he holds the bills).
-
-- **HV2-B41 Evidence tags on requirements.**
-  Goal: no requirement reads as demand when only we have asked.
-  First step: add an `Evidence:` tag to the P0 rows of the three features with open study plans (Memory Library, Find, Photo with a letter), by hand, then a counter that prints evidenced, assumed and contradicted per feature next to the trace report.
-  Owner: `user-research`, with `product`.
-  Measure: P0 rows tagged assumed per feature, printed each week; studies run against the riskiest assumptions named in `user-research` standing duty 2.
-  Founder minutes: 5 to approve the pass bars in the Memory Library plan. Running the sessions is a separate founder call and the plan estimates 8 to 10 adults at about 50 minutes each.
-
-- **HV2-B42 Regulatory watch on a schedule.**
-  Goal: a changed law or store rule reaches the register on a date, with a source.
-  First step: the `regulatory-affairs` charter tells it to run `compliance/scripts/regulatory-watch.mjs` weekly. That folder is not on `develop`; the script is in open PR #424. Decide with the CCO whether #424 lands as is, and until then record the watch as off in `checked-facts.md`. Then do one manual pass of the state trackers and write one dated line per finding.
-  Owner: `regulatory-affairs`, for the CCO.
-  Measure: dated entries in `references/checked-facts.md` per month; days since the last watch run.
-  Founder minutes: 5 (the call on #424).
-
-- **HV2-B50 Feature change and retirement checklist.**
-  Goal: removing or pausing a feature touches everything it should, once.
-  First step: a one-page checklist from files that exist: the kill switch (`RELEASE.md` s9), the data map and retention (`DATA_CLASSIFICATION.md`), deletion and export, the privacy label (`app-store-privacy-labels.md`), Terms and Privacy (founder merges), claims, support article, analytics events, tests, and the notice to users. Trial it on the photo switch (#796) and the Find switch (#798).
-  Owner: `product`, with `privacy`.
-  Measure: items found after the fact on the first two uses (target 0).
-  Founder minutes: 5.
+- **HV2-B43 One go/no-go page for a build.** Goal: the founder reads one page and sees each function's status for the build he is about to ship.
+  - First step: a template that extends `ALPHA_GO_NO_GO.md` with one row per function (QA, security, privacy, compliance, legal, marketing claims, support, finance, design), each with the source link, the date read, the status and the ruling id. Fill it by hand for the next TestFlight build.
+  - How it differs from the nearest items: B01 in #551 is the checklist an operator follows to run a build. B07 in #551 is a short page of dates. B34 in the 8 Nov lessons file logs who dispatched which build. B43 is the page the founder reads once per build, with one status and one ruling id per function. It reads none of them and feeds none. (Descriptions of B01 and B07 are from #551 at `611f1ec9`.)
+  - Owner: `ops`, with `chief-of-staff`. Measure: separate asks the founder makes before a build (today several; target 1); rows with a ruling id and a date. Founder minutes: 5 per build. It replaces asks, so I expect it to net below zero after two builds. That is an estimate until measured.
+- **HV2-B38 Consult matrix and a Consulted line.** Goal: every non-routine PR and backlog row says which functions were consulted and cites the ruling ids.
+  - First step: take the consult table in section 3 (stage 4), once Karma and the founder agree it, and add it to `docs/agents/exec/COUNCIL.md` section 4 as extra columns or rows. No JSON file. Then write a read-only script that reads that table, lists open PRs touching a trigger path (public copy, pricing, vendors, consent, store files) with no `Consulted:` line, and checks that each cited ruling id exists on `develop`. Report only; no workflow change.
+  - Needs a Karma ruling: that extending the `COUNCIL.md` section 4 table is not a new register (`COUNCIL.md` s5). Until Karma rules, this item is a proposal.
+  - Owner: `chief-of-staff`, with `product`. Karma rules on the table. Measure: share of non-routine PRs with a valid Consulted line, read from the script each week; founder questions that return as "you did not ask legal, privacy or security first" (target 0). Founder minutes: 10 to read and agree the table.
+- **HV2-B40 Idea brief with an early screen.** Goal: an idea is a half page before it is a PRD, and the cheap objections come first.
+  - First step: a template with eight lines: the problem in the parent's words, who it is for, the decision it changes, the evidence (tagged evidenced, assumed or contradicted), the constitution and privacy screen (the five checks in `CLAUDE.md`), who must be consulted (from B38), a monthly cost with source, and the cheapest test. Use it on the next two ideas from the founder and see whether it saves reading. Needs a Karma ruling that a template in `docs/backlog/` is not a new register.
+  - Owner: `product`. Measure: ideas stopped or reshaped at the screen before any PRD work; minutes the founder spends reading an idea (his count over the two trials). Founder minutes: 10 for the trial.
+- **HV2-B51 Vendor and SDK intake sheet.** Goal: nothing that touches data or money is added without finance, privacy, security and legal seeing it first.
+  - First step: one page filled before any new vendor, SDK or paid plan: what data it sees, classification row, `subprocessors.md` row, contract and terms read (with date), monthly cost, exit plan, privacy label effect. The `infosec` skill and CFO skill supply the questions.
+  - Owner: `security-architect`, with the CFO and CPrivO roles. Measure: new vendors with a complete sheet; sheets filled after the vendor was already in use (target 0). Founder minutes: 5 per vendor, and it is a money decision for him in any case.
+- **HV2-B44 Store and site text against the evidence list.** Goal: every public statement in store and site text has a row in the evidence list.
+  - First step: list the strings in `packages/content/src/store.en.ts`, `site.en.ts` and `pages.en.ts` against `docs/reviews/2026-10-claims-inventory.md`, and report strings with no row. It extends `claims-capabilities.test.ts`, which already scans surfaces for false claims. Related work, which this item does not repeat: BL-781 in `docs/BACKLOG.md`, BL-637 in open #599 (registry rows for the new privacy and recovery lines; I found it there on 11 Nov), and PR #37, which proposes `docs/legal/CLAIMS.md`. HV2-B04 in #551 names a different file: the agents' board.
+  - Owner: `marketing`, with `content`. The CMO keeps the list. Measure: strings with no row (target 0 before a store submission). Founder minutes: 0 to start.
+- **HV2-B54 App Store review response sheet.** Goal: a rejection or a question from review gets an answer on the day, from known facts.
+  - First step: one page built from `docs/store/compliance/app-review-notes.md`, `docs/store/notes-for-review-1.0.txt` and `docs/store/readiness.md`. For each likely question (sign-in for the reviewer, privacy label, subscription metadata, age rating, account deletion) it names the file that holds the answer, the role that checks it, and the step only the founder does in App Store Connect. Apple's guideline numbers are copied from files that already cite them and marked unverified until re-read on the day. Test it on a made-up rejection.
+  - Owner: `ops`, with `compliance-engineer`. The CCO and CMO are consulted. Measure: hours from a review message to a reply (from the build record); rejection reasons with no file named on the sheet (target 0 after the first real one). Founder minutes: 10.
+- **HV2-B53 Data request rehearsal and reply clock.** Goal: the first real request gets a right reply inside the time the Privacy text gives.
+  - First step: the founder walks Route 3 (see, export, correct) of `docs/ops/runbooks/data-requests-by-email.md` on staging with the fictional Asha family, against a timer, and writes what failed into the runbook's status paragraph. Ask counsel through `COUNSEL_PACKET.md` when the 45 days start; the runbook says this is unconfirmed. Route 1 (delete by email) cannot be rehearsed until BL-551 has a migration. Agent sessions do not run these steps (runbook s0).
+  - Owner: `ops`, with `support`. `privacy` reviews. The CPrivO role is consulted. Measure: routes rehearsed out of the 5 written; days from arrival to first reply on the first real request, against the 45 in the 0.9.0 text (counsel to confirm). Founder minutes: 40.
+- **HV2-B55 Spend list and plan limits.** Goal: the founder sees every recurring cost and the limit that would change it.
+  - First step: the CFO role lists each service the repo names (the Supabase Free plan in `free-tier-ops.md`, Cloudflare R2, Resend, Vercel, EAS, the Apple developer programme, Claude plans and API credit) with plan, monthly cost, the limit where the plan changes, and the date the vendor page was read. Costs the repo does not hold stay empty and are marked for the founder to fill. File the list as the first CFO entry in `docs/agents/exec/RULINGS.md`, which is an existing home. It does not draw on the `cost-decisions` Project doc, which I cannot read. Signed as a Claude role. It is not accounting advice.
+  - Owner: `ops`, with the CFO role and `decision-science`. Measure: services with plan, cost, limit and date read, over services listed (target all); days since the list was last read. Founder minutes: 15 (he holds the bills).
+- **HV2-B41 Evidence tags on requirements.** Goal: no requirement reads as demand when only we have asked.
+  - First step: add an `Evidence:` tag to the requirement rows of the features that have a plan or a PRD, by hand, then a counter that prints evidenced, assumed and contradicted per feature next to the trace report. Only Memory Library has a study plan, `docs/research/studies/MEMORY-LIBRARY-STUDY-PLAN-10nov.md`. Photo with a letter and Find have PRDs, `docs/product/prd/01-photo-with-a-letter.md` and `docs/product/prd/02-find.md`, whose requirements carry `NS-nn-R` ids, and neither has a study plan. Those ids are not the P0 rows in `docs/prd/v2` that `trace.mjs` counts, so the counter has to read the PRD files too. I did not find where the Memory Library requirement rows are defined (unverified).
+  - Owner: `user-research`, with `product`. Measure: requirement rows tagged assumed per feature, printed each week; studies run against the riskiest assumptions named in `user-research` standing duty 2. Founder minutes: 5 to approve the pass bars in the Memory Library plan. Running the sessions is a separate founder call and the plan estimates 8 to 10 adults at about 50 minutes each.
+- **HV2-B42 Regulatory watch on a schedule.** Goal: a changed law or store rule reaches the register on a date, with a source.
+  - First step: the `regulatory-affairs` charter tells it to run `compliance/scripts/regulatory-watch.mjs` weekly. That folder is not on `develop`; the script is in open PR #424. Decide with the CCO whether #424 lands as is, and until then record the watch as off in `checked-facts.md`. Then do one manual pass of the state trackers and write one dated line per finding.
+  - Owner: `regulatory-affairs`, for the CCO. Measure: dated entries in `references/checked-facts.md` per month; days since the last watch run. Founder minutes: 5 (the call on #424).
+- **HV2-B50 Feature change and retirement checklist.** Goal: removing or pausing a feature touches everything it should, once.
+  - First step: a one-page checklist from files that exist: the kill switch (`RELEASE.md` s9), the data map and retention (`DATA_CLASSIFICATION.md`), deletion and export, the privacy label (`app-store-privacy-labels.md`), Terms and Privacy (founder merges), claims, support article, analytics events, tests, and the notice to users. Trial it on the photo switch (#796) and the Find switch (#798).
+  - Owner: `product`, with `privacy`. Measure: items found after the fact on the first two uses (target 0). Founder minutes: 5.
 
 ### Group B: checks and habits, fewest founder minutes first
 
-- **HV2-B39 Label check for exec rulings.**
-  Goal: every ruling from the CLO, CCO, CPrivO, CFO or CISO role carries the label that says it is a Claude role and is not counsel.
-  First step: `scripts/agents/rulings-lint.mjs` reads `docs/agents/exec/RULINGS.md` and fails an entry whose heading lacks the role code, the date, and one of "not counsel", "not legal advice", "not a lawyer" or "Claude role" for the roles that need it. This check sees a label only. It cannot tell whether an entry reads as advice, and a person still has to read for that. I have not run the script. By reading the headings on `develop` at `6a11c808`, I expect the first run to flag two entries, CPrivO-1 and CCO-4, whose headings carry none of those phrases. CCO-4 ends "via session_01JQRV3b". The body of an entry may carry the phrase; the script would need a decision to read the body as well.
-  Owner: `chief-of-staff`.
-  Measure: entries failing the check (target 0 after the two are fixed or the rule is widened); entries that cite a source read with its date for each legal fact, counted by a person.
-  Founder minutes: 0.
-
-- **HV2-B49 Lessons to checks tracker.**
-  Goal: `PRINCIPLES.md` rule 20 is followed: a rule broken twice becomes a check.
-  First step: list the lessons in `LESSONS-2026-11-08.md` and the setup retro with one status each (check exists, check proposed, convention only), and count how many moved to a check in two weeks. Put the list inside the lessons file's successor.
-  Owner: `chief-of-staff`, with `ai-eng-lead`.
-  Measure: lessons with a check over lessons total; repeats of a lesson already listed.
-  Founder minutes: 0.
-
-- **HV2-B52 Design acceptance record.**
-  Goal: a screen is checked at the largest Dynamic Type and with VoiceOver before it is built, and the check is written down.
-  First step: add one line to each design spec in `docs/design/specs`: checked at largest Dynamic Type on which device, date, and the VoiceOver reading order. Start with the specs for Find and the other new scope (`02-FIND-11nov.md` and its neighbours), which are on `develop` since #794 merged on 11 Nov.
-  Owner: `design-systems`.
-  Measure: specs with the line; accessibility defects found after build.
-  Founder minutes: 0.
-
-- **HV2-B59 Accessibility device coverage list.**
-  Goal: for every shipped screen, a record shows whether it was checked with VoiceOver, the largest Dynamic Type and Reduce Motion on a device.
-  First step: from `docs/qa/DEVICE_TEST_PLAN.md`, list the scenarios that already name Larger Text, VoiceOver or Reduce Motion (for example S1-27, S1-201 and S1-15b), then list the screens in `apps/mobile` that no scenario names. Put the table in the B43 page. This follows B52, which covers the design spec before build.
-  Owner: `qa`, with `design-systems`. The CDesO role is consulted.
-  Measure: screens with a device check recorded over screens shipped; accessibility defects a tester reports after a build (target 0).
-  Founder minutes: 0 for the list. The device sittings are his and are already in the test plan.
-
-- **HV2-B47 Content-free support themes.**
-  Goal: what parents ask us turns into backlog rows without anyone reading their words.
-  First step: use the request kinds already in `data-requests-by-email.md` (`delete_account`, `withdraw_sync`, `see_export` and the rest) as the only categories, and have `support` write a weekly count and three themes from tickets the founder forwards with content removed. Create `docs/support/` with the first article only when the count shows a need.
-  Owner: `support`.
-  Measure: backlog rows traced to a support theme; tickets that contained letter text (target 0).
-  Founder minutes: 5 a week once users exist.
-
-- **HV2-B57 Language readiness line.**
-  Goal: for each language, one line says whether it can ship.
-  First step: for the seven languages that have a rule pack and a regression test (en, es, fr, pt, ar, hi, zh), one row each in the B43 page: pack present and regression test present (both read from the repo), native reviewer named (`COORDINATION.md` s6), store listing localised. The repo cannot show the last two. Mark them unverified for the founder to fill. The Build 12 language plan is a Project doc I cannot read.
-  Owner: `content`, with `speech`.
-  Measure: languages with all four facts filled over languages listed; languages published with a blank field (target 0).
-  Founder minutes: 5.
-
-- **HV2-B48 Alpha learning review after each build.**
-  Goal: each TestFlight build ends with a one-page review that feeds the backlog.
-  First step: a template for the review: feedback issues (label `beta`), Xcode Organizer crash rate, device-check failures, decisions that need a ruling, and up to five proposed BL rows. Run it for build 12.
-  Owner: `product`, with `qa`.
-  Measure: days from build available to review filed (target 3); BL rows traced to a review.
-  Founder minutes: 10 per build.
-
-- **HV2-B56 Model change re-check.**
-  Goal: a change of speech model or engine version triggers the same checks each time, and the result is written down.
-  First step: add a short section to `docs/qa/ENGINE_REGRESSION.md` that names the checks to run on a model or `ENGINE_VERSION` change (golden corpus, verifier fuzz, per-language tests, the `experiments/` gate on recordings) and a dated table of runs. The `experiments/` run needs a Mac and is not in CI, so the table records when it last ran. I do not know that date.
-  Owner: `speech`, with `ai-eng-lead`. The CAIO role is consulted.
-  Measure: model or engine changes with a dated run of every check (target all); days since the last `experiments/` run.
-  Founder minutes: 10 per model change.
-
-- **HV2-B58 Review of the four listed providers.**
-  Goal: the providers named in `docs/legal/subprocessors.md` have a dated review after they went live.
-  First step: once the B51 sheet exists, fill it for Supabase, Cloudflare R2, Resend and Vercel from each vendor's own terms page, read and dated that day. Check the statements in the list (acts only on our instructions, no training on letters) against what those pages say. Legal conclusions go to counsel. Depends on B51.
-  Owner: `security-architect`, with the CPrivO, CLO and CFO roles.
-  Measure: providers with a review dated inside the interval the CISO role sets; findings that changed `subprocessors.md`.
-  Founder minutes: 10.
-
-- **HV2-B45 Who reads which signal.**
-  Goal: every production signal has a named reader and a cadence.
-  First step: read the live state first (is any alert wired, what does the `nightly` issue reach), then fill a table: signal, reader, how often, where the result lands, what privacy rule covers it. Signals: CI and the `nightly` issue, kill harness, `keepalive.ts`, `ops_health` views, App Store Connect and Xcode Organizer crash rates, Resend bounces, Vercel errors, the support inbox. Put the table in chapter 10's owner's hands as a proposal; do not edit chapter 10 here.
-  Owner: `ops`, with `principal-architect`.
-  Measure: signals with a reader and a cadence over signals total (target all); the hours between a nightly red and a human reading it, from issue timestamps.
-  Founder minutes: 15 to confirm which signals he wants to be paged on.
-
-- **HV2-B60 Product wind-down outline.**
-  Goal: if the founder ever decides to close the product, families get their books back before anything is switched off.
-  First step: a half page that lists, for each piece, what exists and what is missing: export (`DELETION_AND_EXPORT_SPEC.md`), account deletion (`docs/store/compliance/data-and-account-deletion.md`), the notice clause in the Terms (read and dated), subscriptions and refunds (CFO role), the domain and email, backups, and removal from the store (founder only). End with the questions for counsel. No decision to close exists, and this item does not propose one.
-  Owner: `product`, with `privacy`. The CLO, CPrivO, CFO and CMO roles are consulted.
-  Measure: outline lines that name a source file or a named gap (target all); counsel questions added to `COUNSEL_PACKET.md`.
-  Founder minutes: 15 to read.
-
-- **HV2-B46 A tabletop incident drill.**
-  Goal: find out whether the suspected-leak and notification runbooks work before they are needed.
-  First step: one 45 minute tabletop on `suspected-data-leak.md` and `incident-notification.md` with a made-up leak affecting the fictional Asha family only. Time the first hour, list every step that needed something the runbook does not say, and open fixes as BL rows.
-  Owner: `security`, with the CISO and `privacy`.
-  Measure: steps that could not be done from the runbook alone (target 0 after the second drill); minutes to a contained and counsel-ready summary.
-  Founder minutes: 45.
+- **HV2-B39 Label check for exec rulings.** Goal: every ruling from the CLO, CCO, CPrivO, CFO or CISO role carries the label that says it is a Claude role and is not counsel.
+  - First step: `scripts/agents/rulings-lint.mjs` reads `docs/agents/exec/RULINGS.md` and fails an entry whose heading lacks the role code, the date, and one of "not counsel", "not legal advice", "not a lawyer" or "Claude role" for the roles that need it. This check sees a label only. It cannot tell whether an entry reads as advice, and a person still has to read for that. I have not run the script. By reading the headings on `develop` at `6a11c808`, I expect the first run to flag two entries, CPrivO-1 and CCO-4, whose headings carry none of those phrases. CCO-4 ends "via session_01JQRV3b". The body of an entry may carry the phrase; the script would need a decision to read the body as well.
+  - Owner: `chief-of-staff`. Measure: entries failing the check (target 0 after the two are fixed or the rule is widened); entries that cite a source read with its date for each legal fact, counted by a person. Founder minutes: 0.
+- **HV2-B49 Lessons to checks tracker.** Goal: `PRINCIPLES.md` rule 20 is followed: a rule broken twice becomes a check.
+  - First step: list the lessons in `LESSONS-2026-11-08.md` and the setup retro with one status each (check exists, check proposed, convention only), and count how many moved to a check in two weeks. Put the list inside the lessons file's successor.
+  - Owner: `chief-of-staff`, with `ai-eng-lead`. Measure: lessons with a check over lessons total; repeats of a lesson already listed. Founder minutes: 0.
+- **HV2-B52 Design acceptance record.** Goal: a screen is checked at the largest Dynamic Type and with VoiceOver before it is built, and the check is written down.
+  - First step: add one line to each design spec in `docs/design/specs`: checked at largest Dynamic Type on which device, date, and the VoiceOver reading order. Start with the specs for Find and the other new scope (`02-FIND-11nov.md` and its neighbours), which are on `develop` since #794 merged on 11 Nov.
+  - Owner: `design-systems`. Measure: specs with the line; accessibility defects found after build. Founder minutes: 0.
+- **HV2-B59 Accessibility device coverage list.** Goal: for every shipped screen, a record shows whether it was checked with VoiceOver, the largest Dynamic Type and Reduce Motion on a device.
+  - First step: from `docs/qa/DEVICE_TEST_PLAN.md`, list the scenarios that already name Larger Text, VoiceOver or Reduce Motion (for example S1-27, S1-201 and S1-15b), then list the screens in `apps/mobile` that no scenario names. Put the table in the B43 page. This follows B52, which covers the design spec before build.
+  - Owner: `qa`, with `design-systems`. The CDesO role is consulted. Measure: screens with a device check recorded over screens shipped; accessibility defects a tester reports after a build (target 0). Founder minutes: 0 for the list. The device sittings are his and are already in the test plan.
+- **HV2-B47 Content-free support themes.** Goal: what parents ask us turns into backlog rows without anyone reading their words.
+  - First step: use the request kinds already in `data-requests-by-email.md` (`delete_account`, `withdraw_sync`, `see_export` and the rest) as the only categories, and have `support` write a weekly count and three themes from tickets the founder forwards with content removed. Create `docs/support/` with the first article only when the count shows a need.
+  - Owner: `support`. Measure: backlog rows traced to a support theme; tickets that contained letter text (target 0). Founder minutes: 5 a week once users exist.
+- **HV2-B57 Language readiness line.** Goal: for each language, one line says whether it can ship.
+  - First step: for the seven languages that have a rule pack and a regression test (en, es, fr, pt, ar, hi, zh), one row each in the B43 page: pack present and regression test present (both read from the repo), native reviewer named (`COORDINATION.md` s6), store listing localised. The repo cannot show the last two. Mark them unverified for the founder to fill. The Build 12 language plan is a Project doc I cannot read.
+  - Owner: `content`, with `speech`. Measure: languages with all four facts filled over languages listed; languages published with a blank field (target 0). Founder minutes: 5.
+- **HV2-B48 Alpha learning review after each build.** Goal: each TestFlight build ends with a one-page review that feeds the backlog.
+  - First step: a template for the review: feedback issues (label `beta`), Xcode Organizer crash rate, device-check failures, decisions that need a ruling, and up to five proposed BL rows. Run it for build 12.
+  - Owner: `product`, with `qa`. Measure: days from build available to review filed (target 3); BL rows traced to a review. Founder minutes: 10 per build.
+- **HV2-B56 Model change re-check.** Goal: a change of speech model or engine version triggers the same checks each time, and the result is written down.
+  - First step: add a short section to `docs/qa/ENGINE_REGRESSION.md` that names the checks to run on a model or `ENGINE_VERSION` change (golden corpus, verifier fuzz, per-language tests, the `experiments/` gate on recordings) and a dated table of runs. The `experiments/` run needs a Mac and is not in CI, so the table records when it last ran. I do not know that date.
+  - Owner: `speech`, with `ai-eng-lead`. The CAIO role is consulted. Measure: model or engine changes with a dated run of every check (target all); days since the last `experiments/` run. Founder minutes: 10 per model change.
+- **HV2-B58 Review of the four listed providers.** Goal: the providers named in `docs/legal/subprocessors.md` have a dated review after they went live.
+  - First step: once the B51 sheet exists, fill it for Supabase, Cloudflare R2, Resend and Vercel from each vendor's own terms page, read and dated that day. Check the statements in the list (acts only on our instructions, no training on letters) against what those pages say. Legal conclusions go to counsel. Depends on B51.
+  - Owner: `security-architect`, with the CPrivO, CLO and CFO roles. Measure: providers with a review dated inside the interval the CISO role sets; findings that changed `subprocessors.md`. Founder minutes: 10.
+- **HV2-B45 Who reads which signal.** Goal: every production signal has a named reader and a cadence.
+  - First step: read the live state first (is any alert wired, what does the `nightly` issue reach), then fill a table: signal, reader, how often, where the result lands, what privacy rule covers it. Signals: CI and the `nightly` issue, kill harness, `keepalive.ts`, `ops_health` views, App Store Connect and Xcode Organizer crash rates, Resend bounces, Vercel errors, the support inbox. Put the table in chapter 10's owner's hands as a proposal; do not edit chapter 10 here.
+  - Owner: `ops`, with `principal-architect`. Measure: signals with a reader and a cadence over signals total (target all); the hours between a nightly red and a human reading it, from issue timestamps. Founder minutes: 15 to confirm which signals he wants to be paged on.
+- **HV2-B60 Product wind-down outline.** Goal: if the founder ever decides to close the product, families get their books back before anything is switched off.
+  - First step: a half page that lists, for each piece, what exists and what is missing: export (`DELETION_AND_EXPORT_SPEC.md`), account deletion (`docs/store/compliance/data-and-account-deletion.md`), the notice clause in the Terms (read and dated), subscriptions and refunds (CFO role), the domain and email, backups, and removal from the store (founder only). End with the questions for counsel. No decision to close exists, and this item does not propose one.
+  - Owner: `product`, with `privacy`. The CLO, CPrivO, CFO and CMO roles are consulted. Measure: outline lines that name a source file or a named gap (target all); counsel questions added to `COUNSEL_PACKET.md`. Founder minutes: 15 to read.
+- **HV2-B46 A tabletop incident drill.** Goal: find out whether the suspected-leak and notification runbooks work before they are needed.
+  - First step: one 45 minute tabletop on `suspected-data-leak.md` and `incident-notification.md` with a made-up leak affecting the fictional Asha family only. Time the first hour, list every step that needed something the runbook does not say, and open fixes as BL rows.
+  - Owner: `security`, with the CISO and `privacy`. Measure: steps that could not be done from the runbook alone (target 0 after the second drill); minutes to a contained and counsel-ready summary. Founder minutes: 45.
 
 HV2-B04 in #551 (the agents' board file) and HV2-B05 (pointer pass) reduce founder reading for code work. These items do the same for the other stages. I would start with B43 and B38, because each replaces several separate asks with one.
 
-## 6. Conflicts of interest and what I could not verify
+## 6. Sources, conflicts of interest and what I could not verify
+
+Sources. I first read facts from `origin/develop` at `18ff6374668f64d4ac89d64a49f96584ff6ccd0c` and from GitHub REST on 11 Nov 2026. After two reviews I re-read the facts that changed against `origin/develop` at `6a11c808c26ed1a89bc77fccef2136f329bb9409` (11 Nov). Review A also checked a later `develop` commit, `222ed688`, which changed docs/design/specs only and nothing this file cites.
 
 I am a Claude session in the product seat. I gain scope from B40, B48, B50 and B60 (owner `product`) and from B41, where `product` is the second owner. B38 and B39 put more work on `chief-of-staff`, and B54 to B58 put more on `ops`, `speech` and `security-architect`. I propose those and own none. I could not read Project docs, so every claim about them rests on repo files that cite them.
 
 Unverified, by stage:
 - The founder's statement of 10 Nov that the harness is not only about coding. It was relayed to me and I have no source.
-- Stage 1: that the Project doc `claude/Karma-founder-asks-routine-2026-11-10.md` holds the founder's asks. I know only its name from the project list.
-- Stage 2: whether any primary interview has happened since 1 Oct. `USER_RESEARCH.md` says none; no findings file exists on `develop`.
-- Stage 3: the date `TRACE.md` was last generated. It prints older numbers than the live run. The live numbers in the stage 3 row are from my run on 11 Nov at `6a11c808`.
-- Stage 4: that no other record of consults exists in the Project docs. The count of 12 exec entries is of headed entries in `RULINGS.md`; I did not check for duplicates.
-- Stage 6: branch protection contexts. I rely on `LESSONS-2026-11-08.md` s8, read on 9 Nov, and did not re-read them.
-- Stage 7: whether device sittings took place without a committed evidence file. Whether any workflow runs `skip-guard.mjs`: I grepped `.github/workflows` and found no call.
-- Stage 8: how many builds were dispatched after 8 Nov. `BUILD_GATE_2026-11-08.md` says none had been; later build records are Project docs I did not read.
-- Stage 9: whether a restore drill was run (`docs/qa/BACKUP_RESTORE_DRILL.md` exists; I did not read whether it records a run) and whether the production deploy environments require a reviewer.
-- Stage 10 and 13: the live state of alerting. Chapter 10 is dated 3 Oct.
-- Stage 11: what the 26 journal-labelled issues contain.
-- Stage 14: whether the 45 days in the 0.9.0 text are the right limit in law, and when they start. Counsel has not confirmed.
-- Stage 15: Apple's current review rules. I read none.
-- Stage 16: every price and plan limit. I read none of the vendors' pages for this file.
-- Stage 18: whether any partner or print work exists in Project docs.
-- Stage 19: when speech models were last compared on recordings.
-- Stage 21: the 8 files that match "wind down" or "sunset".
-- Roster: the live value of the `AGENTS_ENABLED` variable.
-- Ids: the open-PR search covers 173 PRs read on 11 Nov and can go stale.
-- The claim that B39 would flag CPrivO-1 and CCO-4 comes from reading headings. I did not run a script.
-- Whether BL-637 is still in #599 when you read this. I found it there on 11 Nov.
+- Stage 1: that the Project doc `claude/Karma-founder-asks-routine-2026-11-10.md` holds the founder's asks. I know only its name from the project list. Stage 2: whether any primary interview has happened since 1 Oct. `USER_RESEARCH.md` says none; no findings file exists on `develop`. Also whether Find or Photo with a letter has a study plan elsewhere; I found none on `develop`.
+- Stage 3: the date `TRACE.md` was last generated. It prints older numbers than the live run. The live numbers in the stage 3 note are from my run on 11 Nov at `6a11c808`. Stage 4: that no other record of consults exists in the Project docs. The count of 12 exec entries is of headed entries in `RULINGS.md`; I did not check for duplicates.
+- Stage 6: branch protection contexts. I rely on `LESSONS-2026-11-08.md` s8, read on 9 Nov, and did not re-read them. Stage 7: whether device sittings took place without a committed evidence file. Whether any workflow runs `skip-guard.mjs`: I grepped `.github/workflows` and found no call.
+- Stage 8: how many builds were dispatched after 8 Nov. `BUILD_GATE_2026-11-08.md` says none had been; later build records are Project docs I did not read. Stage 9: whether a restore drill was run (`docs/qa/BACKUP_RESTORE_DRILL.md` exists; I did not read whether it records a run) and whether the production deploy environments require a reviewer.
+- Stage 10 and 13: the live state of alerting. Chapter 10 is dated 3 Oct. Stage 11: what the 26 journal-labelled issues contain.
+- Stage 14: whether the 45 days in the 0.9.0 text are the right limit in law, and when they start. Counsel has not confirmed. Stage 15: Apple's current review rules. I read none. Stage 16: every price and plan limit. I read none of the vendors' pages for this file.
+- Stage 18: whether any partner or print work exists in Project docs. Stage 19: when speech models were last compared on recordings. Stage 21: the 8 files that match "wind down" or "sunset".
+- Roster: the live value of the `AGENTS_ENABLED` variable. Ids: the open-PR search covers 173 PRs read on 11 Nov and can go stale. The claim that B39 would flag CPrivO-1 and CCO-4 comes from reading headings; I did not run a script. Whether BL-637 is still in #599 when you read this; I found it there on 11 Nov.
