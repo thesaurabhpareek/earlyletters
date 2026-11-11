@@ -7,6 +7,7 @@
  * both, so screens see one object as before.
  */
 import type { RepoContext } from './context';
+import { reconcileSearch } from '../../find/lifecycle';
 import type { Child, NewChild } from './types';
 import { BOOK_NOT_DELETED_SQL } from './wipe';
 
@@ -132,10 +133,12 @@ function setPrefTime(ctx: RepoContext, id: string, column: 'hidden_at' | 'quiet_
 /** "Hide this book" for this person (F12-REQ-005 Rev): stops prompts for this child; restorable. */
 export function hide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', true);
+  reconcileSearch(ctx.db); // a hidden book's letters are not found (NS-02 section 6; Find index lifecycle)
 }
 
 export function unhide(ctx: RepoContext, id: string): void {
   setPrefTime(ctx, id, 'hidden_at', false);
+  reconcileSearch(ctx.db);
 }
 
 /** "Quiet this book" for this person (F12-REQ-011): letters untouched; no reason asked; reversible. */

@@ -11,6 +11,7 @@
  * one follow-up cycle.
  */
 import type { SqlDb } from '../db/sql';
+import { reconcileSearch } from '../find/lifecycle';
 import { backoffMs, classifyCallError, type CallFailure } from './errors';
 import {
   applyPullPage,
@@ -117,6 +118,10 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let out!: T;
     db.transaction(() => {
       out = fn();
+      // Every sync write commits here. A pulled letter, a delete or restore from the other parent, a conflict choice
+      // or a held letter coming back moves the Find index in the same transaction (find/lifecycle.ts); with no index
+      // this is one cheap check.
+      reconcileSearch(db);
     });
     return out;
   };
