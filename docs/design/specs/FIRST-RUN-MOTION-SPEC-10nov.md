@@ -46,7 +46,7 @@ story: { dwellMs: 6000, holdMs: 200, edgeZone: 0.3, linearBar: true }
 ## 3. Storyboard, one per card (proposal: 4 cards; journey doc wins)
 Card order follows the website's own arc (S01 to S07 in `site.ts`) so the app and site feel like one product. Copy is placeholder; privacy and promise lines are excluded here because the website's "Kept on your iPhone" line is untrue for Build 12 (PRs #768, #769) and counsel has not read any replacement. Do not carry that line into a card.
 
-Common frame (all cards): paper background and lamp from the first frame; progress segments at top (section 4); Skip top right, 44 pt minimum target, opaque; the card's words in the lower half; no child name (use the `{child}` slot only if the journey doc says the name is known, which at first run it is not).
+Common frame (all cards): paper background and lamp from the first frame; progress segments at top (section 4); Skip top right, 48 pt minimum target (CTO ruling 11 Nov), opaque; the card's words in the lower half; no child name (use the `{child}` slot only if the journey doc says the name is known, which at first run it is not).
 
 | t (ms) | Card 1 "A quiet evening" (site S01) | Card 2 "A minute is plenty" (S02, S03) | Card 3 "It stays in your words" (S04) | Card 4 "Month by month" (S06, S07) |
 |---|---|---|---|---|
@@ -60,7 +60,7 @@ Common frame (all cards): paper background and lamp from the first frame; progre
 Card 3 shows an edit as the product really does it (a removal that is reversible); it must not show words added or rewritten. Whether card 3 shows "put it back" is the journey lead's and content's call; the motion is the same fade either way.
 
 ## 4. Progress bar
-- N segments (one per card), 2 pt tall equivalent, 4 pt gaps, at the top inside the safe area. Visual only: `accessibilityElementsHidden`; VoiceOver instead hears "Card 2 of 4" on the card (words by content).
+- N segments (one per card), 2 pt tall equivalent, 4 pt gaps, at the top inside the safe area. Visual only: `accessibilityElementsHidden`; VoiceOver instead hears "Card 2 of 3" on the card (words by content).
 - Completed segments are full, the current one fills left to right over `dwellMs` with `transform: scaleX` (origin left, compositor only), upcoming are empty. Colours from the semantic tokens (rule `accentSoft` track, `accent` fill); contrast of the fill against the track must be checked in both themes (non-text 3:1, WCAG 1.4.11).
 - Pause: during a hold, while the app is inactive or backgrounded, and while Skip or any button is being pressed, the fill freezes (no reset). Resume continues from the same point.
 - Going back refills the previous segment from empty (it is a fresh dwell) with no animation of the gap; going forward by tap completes the current segment instantly (no 160 ms ease: instant, the receipt is the card change).
@@ -82,7 +82,7 @@ Haptics: none in the tour. Policy (MOTION 6, `haptics.shared.ts`): a haptic mark
 ## 6. Transitions in and out of the tour
 - Cold launch to card 1: the splash hands to the lit room; lamp `arrive` once, words enter. First launch only; relaunch before sign-up shows the tour again from card 1 only if the journey doc says so.
 - Between cards: leave then enter (440 ms), no slide of the whole screen, lamp unchanged.
-- Card 4 or Skip to auth entry: the route is the root stack's own (`routeTransitions`), `route.dissolveMs` 280, Reduce Motion `fadeMs`. The auth screen shares the lit room, so only words change. This collides with PR #764 (edits `onboarding.tsx`, `gate.logic.ts`, `use-first-run-route.ts`): whichever of the two lands second must add its route rows to `lib/transitions.logic.ts`, not to the screen files.
+- The last card or Skip to auth entry: the route is the root stack's own (`routeTransitions`), `route.dissolveMs` 280, Reduce Motion `fadeMs`. The auth screen shares the lit room, so only words change. This collides with PR #764 (edits `onboarding.tsx`, `gate.logic.ts`, `use-first-run-route.ts`): whichever of the two lands second must add its route rows to `lib/transitions.logic.ts`, not to the screen files.
 - Auth entry, A-tier: the two primary choices (Create account, Sign in) and any provider buttons are present from frame 1 and never stagger (principle 3). Only the headline and support line `enter`. Pressing a button uses `press.scale` 0.97 on `snappy`. A pending sign-in swaps the button label in place with `swapMs` 150 and shows a quiet in-button spinner that is replaced by a static "Working" word under Reduce Motion; never a full-screen blocker with motion. An error appears with `enter` and is announced, no shake (shake reads as scolding).
 - Provider buttons: which providers exist is the journey lead's list; the repo has `expo-apple-authentication` and `@react-native-google-signin` configured (`app.config.ts`). Apple guideline 4.8 about offering Apple alongside others is UNVERIFIED (not read). Buttons are equal size and weight; motion treats them identically.
 - Success: the auth screen leaves with `route.dissolveMs` into the next gate. No celebration confetti, no haptic (the outcome that earns `success` in this app is a saved letter).
@@ -131,10 +131,10 @@ All of these go through `useMotion()` / `useReducedMotion()` (listens to `reduce
 6. Tap during a transition lands on the end state, no half-visible words, no two cards of text at once.
 7. Last card: bar stops full, no auto-leave, no pulsing, the auth choices stay put.
 8. Swipe past a quarter width turns; short swipe settles on `snappy`; first-card left tap does nothing.
-9. Skip from card 1 and from card 4 arrives at the same auth entry in the same time.
+9. Skip from card 1 and from the last card arrives at the same auth entry in the same time.
 10. Auth: buttons present from frame 1; pending state announces once; error has no shake.
 11. Lock: cover at once on background; unlock fades `fadeMs` with no flash and no content re-enter; cancel leaves the lock with no red.
-12. Frame budget on the oldest physical iPhone available: record a trace through card 1 to 4, no frame over 16.7 ms; note device and iOS version in the QA sheet.
+12. Frame budget on the oldest physical iPhone available: record a trace through card 1 to 3, no frame over 16.7 ms; note device and iOS version in the QA sheet.
 13. Low Power Mode and Reduce Transparency: nothing relies on blur or haptics.
 14. Words check against the constitution: nothing typed out, nothing counted, no gap or loss language, no emoji, no real family data.
 
@@ -143,5 +143,5 @@ UNVERIFIED: oldest iPhone that runs iOS 17; WCAG 2.2.2 wording; Apple 4.8 for Bu
 Questions for Karma, each with a recommendation:
 1. Ship the tour in Build 12 (B) or only A? Recommend A only, given "word due Wed 11 Nov" is unmeasured.
 2. Auto-advance at all? Recommend yes at default settings with every pause mechanism in section 4; if counsel or QA object, switch to tap-only with no change to the storyboard.
-3. Four cards or three? Recommend three (drop card 4) if the journey lead needs room for the lock offer; the motion per card is identical.
+3. Four cards or three? RULED 11 Nov (CTO): three. The deck is `story.talk.v1`, `story.exact.v3`, `story.voice.v1`. The storyboard columns above were drawn for four; the "Card 4" column is withdrawn and the last card is card 3 (motion per card is identical). Rework of the table is for the motion owner.
 Conflicts: none found, the journey branch was not on origin when written; re-check on its arrival (card count, state names, whether the lock offer lives in the tour). Collision named: PR #764 and the You tab/gate stack (#738, #724) in section 6.

@@ -171,7 +171,7 @@ What the tests check and what will surprise:
 | `rules.test.ts` fear | Bans too late, don't miss, you haven't, you forgot, streak, regret, die, dead, ... | None used |
 | `rules.test.ts` exclamations | 2 in all in-app copy, 3 in all copy | Zero here, so nothing is taken from the budget |
 | `rules.test.ts` placeholders | Fixed list; story cards only `child`, `app`, `signsAs` | `{n}`, `{count}` in `firstRun.story.position` only |
-| `rules.test.ts` story schema | headline 80, line 200, id `story.[a-z-]+.v\d+`, `order` equals position, visual in `STORY_VISUALS` | Four existing visuals only; new ids; `order` 1 to 4 in the deck |
+| `rules.test.ts` story schema | headline 80, line 200, id `story.[a-z-]+.v\d+`, `order` equals position, visual in `STORY_VISUALS` | Existing visuals only; new ids; `order` 1 to 3 in the deck (three cards, CTO ruling 11 Nov) |
 | `rules.test.ts` store listing | No "sign in" or "co-parent" in `storeListing` | Do not copy section 3 or 6 lines into the store listing |
 | `rules.test.ts` CR-25 | No "entry", "draft" (noun), "take" as a recording, "language pack" | None used |
 | `rules.test.ts` brand name | The public name only through `{app}` | `{app}` used in two lines, never typed |

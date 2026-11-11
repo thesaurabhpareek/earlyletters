@@ -211,7 +211,7 @@ Common to all cards: the paper and the lamp (scene `welcome`, `persistKey "first
 | 2 It stays in your words. | Same entrance. The drawing is two still lines of a sample sentence (fictional Asha only) with one small underline on a removed filler word that fades in once over `fadeMs`. Words appear whole, never typed | Underline present at once | "Story 2 of 3. It stays in your words. We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words." |
 | 3 Read together, in your voice. | Same entrance. The moon drawing is still. The lamp is the only thing that breathes, and only if the animation engineer measures that it fits next to the bar (MOTION 7 allows one loop) | Still | "Story 3 of 3. Read together, in your voice. Years from now, your child can hear how you sounded tonight." |
 
-The position phrase comes from `contentBlocksCopy.storyPositionA11y` (A-REQ-007 wording: "Story 2 of 4. Headline. Line."). `renderBlock` passes `total={block.order}` for a story (`blocks.tsx` line 154), which is wrong for a deck; the intro must call `StoryCard` with the real total, as that file's own comment says.
+The position phrase comes from `contentBlocksCopy.storyPositionA11y` (A-REQ-007 wording: "Story 2 of 3. Headline. Line."). `renderBlock` passes `total={block.order}` for a story (`blocks.tsx` line 154), which is wrong for a deck; the intro must call `StoryCard` with the real total, as that file's own comment says.
 
 Behaviour (from PRD A F2 and #770, with my changes):
 - Auto-advance: cards 1 and 2 move on after 6 seconds untouched; card 3 never moves on by itself. PRD A-REQ-006 said stories 1 to 3 advance and story 4 stops; with three cards the last one stops, so the rule is the same.
