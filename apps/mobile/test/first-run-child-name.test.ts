@@ -18,7 +18,7 @@ import { fixture, type Fixture } from './helpers/store-fixture';
 import { ashaSnapshot } from './helpers/asha-export';
 import { bookHtml, planExport } from '../src/lib/export/build.logic';
 import { bookImpacts, impactLines } from '../src/lib/account-deletion/logic';
-import { book as bookWords } from '@scribe/content';
+import { book as bookWords, en as words, reminderCopy } from '@scribe/content';
 import { DEFAULT_PREFS, planReminders, type PlannerChild } from '../src/lib/reminders/planner';
 import { zonedToEpoch } from '../src/lib/reminders/tz';
 
@@ -32,8 +32,28 @@ describe('[NX-31-R3] first run, name optional, date required', () => {
     expect(firstRunBookNames(['  '])).toEqual(['']);
     // every place that shows the name shows "your child"; the stored name stays empty
     expect(fill(copy.onboarding.welcome.body, { child: '' })).toContain('your child');
-    expect(fill(copy.book.title, { child: '' })).toBe("your child's book");
+    // NX-36 S14 and S16 (and the name-absent audit): the Book title of a nameless book is "Your child's book" with a
+    // capital, through fill(). Develop pinned the lowercase form while fill() did not capitalise; the capital is back.
+    expect(fill(copy.book.title, { child: '' })).toBe("Your child's book");
     expect(fill(copy.onboarding.welcome.body, { child: '' })).not.toContain('{child}');
+  });
+
+  it('[NX-31-R3] the fallback starts with a capital when it opens a string, and a typed name is left as typed', () => {
+    expect(fill("{child}'s book stays with your co-parent.", { child: ' ' })).toBe("Your child's book stays with your co-parent.");
+    expect(fill('Anything to tell {child} today?', { child: '' })).toBe('Anything to tell your child today?');
+    expect(fill("{child}'s book is back.", { child: 'asha' })).toBe("asha's book is back.");
+    expect(fill('A letter for {child}', { child: '' })).toBe('A letter for your child');
+    expect(fill(copy.notifications.birthday.title, { child: '' })).toBe('Happy birthday to your child');
+  });
+
+  it('[NX-31-R3] a template that opens with the words your child is not capitalised', () => {
+    expect(fill('your child is welcome here, {child}.', { child: '' })).toBe('your child is welcome here, your child.');
+    expect(fill('your child, {child}', { child: 'Asha' })).toBe('your child, Asha');
+  });
+
+  it('[NX-31-R3] a typed name that is literally "your child" is left exactly as typed', () => {
+    expect(fill("{child}'s book", { child: 'your child' })).toBe("your child's book");
+    expect(fill('A letter for {child}', { child: 'your child' })).toBe('A letter for your child');
   });
 
   it('[NX-31-R3] a name and no date: Continue waits and the reason line shows', () => {
@@ -117,16 +137,55 @@ describe('[NX-31-R3] the two places that used to print the raw empty name', () =
     const twins = run([blank, { ...dev, birthday: '2026-03-08' }]);
     for (const n of twins) expect(`${n.title} ${n.body}`).toContain('your child and Dev');
   });
+
+  // Why packages/content/test/nameless-child.test.ts does not render the evening lines that carry {child}: with no name
+  // they cannot be drawn. planner.ts eveningCopy uses the neutral lines for a blank name, with Names on or off.
+  it('[NX-31-R3] evening notes with names on draw only the neutral lines for a book with no name, never "your child"', () => {
+    const LA = 'America/Los_Angeles';
+    const blank: PlannerChild = { id: 'child-none', name: '', birthday: '2026-03-08', included: true };
+    const dev: PlannerChild = { id: 'child-dev', name: 'Dev', birthday: '2024-05-31', included: true };
+    const evenings = (children: PlannerChild[], namesOnLockScreen: boolean) =>
+      planReminders({
+        now: zonedToEpoch({ y: 2026, m: 10, d: 5, hh: 12, mm: 0 }, LA),
+        timeZone: LA,
+        children,
+        lastSaveAt: null,
+        lastForegroundAt: null,
+        horizonDays: 21,
+        prefs: { ...DEFAULT_PREFS, enabled: true, cadence: 'everyEvening', monthNotes: false, namesOnLockScreen },
+      }).filter((n) => n.kind === 'evening');
+    // Every neutral line, on every weekday ("A page for {weekday}" carries the day).
+    const neutral = reminderCopy.neutral.evening.map((v) => reminderCopy.weekdays.map((weekday) => `${fill(v.title, { weekday })}|${fill(v.body, { weekday })}`));
+    const variantOf = (n: { title: string; body: string }) => neutral.findIndex((day) => day.includes(`${n.title}|${n.body}`));
+
+    // (A name is always saved trimmed, by checkChildName and checkFirstRunChildName, so a stored name is empty or has a letter.)
+    for (const namesOn of [true, false]) {
+      const only = evenings([blank], namesOn);
+      expect(only.length).toBeGreaterThanOrEqual(words.notifications.evening.length);
+      for (const n of only) expect(variantOf(n), `${n.title} | ${n.body}`).toBeGreaterThanOrEqual(0);
+      expect(new Set(only.map(variantOf)).size).toBe(reminderCopy.neutral.evening.length); // all eight neutral lines came up
+      for (const n of only) expect(`${n.title} ${n.body}`).not.toContain('your child');
+    }
+    // Beside a named book: the named lines are Dev's, the nameless book's turns are neutral, and "your child" never shows.
+    const both = evenings([blank, dev], true);
+    for (const n of both) expect(`${n.title} ${n.body}`).not.toContain('your child');
+    expect(both.some((n) => `${n.title} ${n.body}`.includes('Dev'))).toBe(true);
+    expect(both.some((n) => variantOf(n) >= 0)).toBe(true);
+  });
 });
 
-describe('[NX-31-R3] every visible line with a blank name reads "your child", never a stray separator or a blank', () => {
-  it('[NX-31-R3] the Tonight and write datelines lead with "your child", not a bare separator', () => {
-    expect(tonightDateline('', '3 months', 'Sunday')).toEqual({ text: 'your child · 3 months', a11y: 'your child, 3 months' });
+describe('[NX-31-R3] every visible line with a blank name reads "your child" (the dateline: the stage alone), never a stray separator or a blank', () => {
+  // Changed from #701's pin, which wanted "your child · 3 months" here and childLabel in write.tsx. NX-36 S13 says the
+  // opposite for the dateline: "Nameless: the stage alone, 7 MONTHS ... omit the name and the dot" (name-audit table:
+  // "7 MONTHS (no name, no dot)"). So a blank name gives the stage alone, on Tonight and on Write, from one function.
+  it('[NX-31-R3] the Tonight and write datelines, for a blank name, are the stage alone: no dot, no "your child"', () => {
+    expect(tonightDateline('', '3 months', 'Sunday')).toEqual({ text: '3 months', a11y: '3 months' });
     expect(tonightDateline('Asha', '3 months', 'Sunday').text).toBe('Asha · 3 months');
     expect(tonightDateline('  ', null, 'Sunday').text).toBe('Sunday');
     const src = readFileSync(join(__dirname, '../src/app/write.tsx'), 'utf8');
     expect(src).not.toMatch(/\$\{child\.name\} · /);
-    expect(src).toContain('childLabel(child.name)');
+    expect(src).not.toContain('childLabel(');
+    expect(src).toContain('writeDateline(child.name, age)');
   });
 
   it('[NX-31-R3] the letter dateline says "Your child is ...", not " is ..."', () => {
@@ -135,13 +194,17 @@ describe('[NX-31-R3] every visible line with a blank name reads "your child", ne
     expect(letterDateline({ name: 'Asha', birthday: '2026-03-01' }, '2026-06-05')).toMatch(/\. Asha is /);
   });
 
-  it('[NX-31-R3] the hidden-books list and the settings rows show "your child" for a book with no name', () => {
+  // Changed from #701's pin, which wanted childLabel( in settings/index.tsx. NX-36 S14 wants the Children row title of
+  // a nameless book capitalised (its words are "Your child's book"; the row keeps the shorter "Your child", to sit
+  // beside rows that read "Asha"), and a lowercase "your child" starts a row badly. The Settings home now uses
+  // childRowTitle, which calls childLabel and capitalises it; the child's own page keeps childLabel for the value on
+  // its Name row.
+  it('[NX-31-R3] the hidden-books list shows "your child" for a book with no name, and the settings rows use the helper', () => {
     const page = hiddenBooksPage([{ id: 'b1', name: '' } as never]);
     expect(page.books[0].name).toBe('your child');
     expect(page.books[0].buttonLabel).toBe(`${copy.children.settings.showButton}, your child`);
-    for (const f of ['../src/app/settings/index.tsx', '../src/app/settings/children/[id].tsx']) {
-      expect(readFileSync(join(__dirname, f), 'utf8')).toContain('childLabel(');
-    }
+    expect(readFileSync(join(__dirname, '../src/app/settings/index.tsx'), 'utf8')).toContain('childRowTitle(');
+    expect(readFileSync(join(__dirname, '../src/app/settings/children/[id].tsx'), 'utf8')).toContain('childLabel(');
   });
 });
 
@@ -183,8 +246,10 @@ describe('[NX-31-R3] round two: deletion lines, the exported book, the invite wi
     const impacts = bookImpacts(rows, () => 2);
     expect(impacts.map((i) => i.child)).toEqual(['', '', '  ']);
     const lines = impactLines(impacts).join('\n');
-    expect(lines).toContain("your child's book stays with Papa");
-    expect(lines).toContain("your child's book will be deleted");
+    // NX-36 S16: these lines open with {child}, so with no name they begin "Your child's book" with a capital, via
+    // fill(). Develop pinned them lowercase while fill() did not capitalise; the capital is back.
+    expect(lines).toContain("Your child's book stays with Papa");
+    expect(lines).toContain("Your child's book will be deleted");
     expect(lines).toContain('Your letters to your child will be removed');
     expect(lines).not.toMatch(/(^|\s)'s |\{|\}/);
   });

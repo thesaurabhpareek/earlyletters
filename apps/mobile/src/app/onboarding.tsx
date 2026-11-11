@@ -64,7 +64,12 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
+import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities } from '@/lib/capabilities';
+import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
+import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
+import { OutageScreen } from '@/components/onboarding/outage-screen';
+import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
@@ -110,7 +115,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRun() {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome }: { localStartChosen?: boolean; onPastWelcome?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -166,7 +171,20 @@ function FirstRun() {
   // welcome ends the wait.
   const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
   const joinLine = joining.line;
-  const showContinue = joining.begin;
+  // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
+  // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
+  // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
+  const { state: authState } = useAuth();
+  // The local start was chosen on the outage screen (route) or by tapping "Begin the book" here: either keeps the button.
+  const [chosenHere, setLocalStartChosen] = useState(false);
+  const localStartChosen = chosenOnOutage || chosenHere;
+  const showContinue = continueMayShow({
+    begin: joining.begin,
+    onWelcome: step === 'welcome',
+    authState,
+    localStartChosen,
+    hasLocalBook: () => listChildren().length > 0,
+  });
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
@@ -195,6 +213,10 @@ function FirstRun() {
   };
 
   useFocusOnMount(heading, step !== 'welcome', step);
+  // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  useEffect(() => {
+    if (step !== 'welcome') onPastWelcome?.();
+  }, [step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
@@ -206,7 +228,11 @@ function FirstRun() {
     return () => clearTimeout(id);
   }, [step, shown]);
 
-  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const next = () => {
+    // "Begin the book" with no session is the local start (R18): remembered here, in memory, so the way back is not closed.
+    if (continueTapIsLocalStart({ onWelcome: step === 'welcome', authState })) setLocalStartChosen(true);
+    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  };
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));
@@ -586,4 +612,20 @@ export default function Onboarding() {
   if (gate.screen === 'deletion' && gate.request) return <OpenDeletionScreen request={gate.request} />;
   if (gate.screen === 'checking') return <CheckingScreen />;
   return <FirstRun />;
+}
+
+/**
+ * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
+ * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. Everything else, and every build with the switch
+ * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step of the
+ * steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
+ */
+function FirstRun() {
+  const route = useFirstRunRoute();
+  if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
+  if (route.screen === 'welcome') return <WelcomeSignIn />;
+  if (route.screen === 'outage' && route.outage) {
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
+  }
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} />;
 }

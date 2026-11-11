@@ -700,7 +700,7 @@ export const en = {
       body: "A new month in {child}'s book is open.",
     },
     birthday: {
-      title: "Happy birthday, {child}",
+      title: "Happy birthday to {child}",
       body: "A year of letters. Want to read them together today?",
     },
   },
@@ -852,7 +852,7 @@ export const en = {
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
       eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",
-      bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
+      bookBody: "Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",
@@ -967,7 +967,7 @@ export const en = {
       analyticsLabel: "Share usage and crash reports",
       analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
-      sensitiveLabel: "Sync and family sharing",
+      sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.
       // CPrivO-5 (1 Nov 2026): "yet" dropped, it leaned toward a promise (privacy-settings.md 4, flag).
@@ -992,7 +992,7 @@ export const en = {
       // servers). The backup clause moved to its own line, worded as on Where your letters live (CCO-8).
       keptOnPhone: "Your letters and recordings are kept on this phone. They are not sent to us.",
       // P2b, sync on (build 2, D-128): text syncs, recordings do not while owner backup is off.
-      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings are kept on this phone.",
+      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices. Your recordings are kept on this phone.",
       // The iPhone backup, one wording on both pages (CTO ruling, 8 Nov 2026): CCO-8's recordings-only variant
       // (content.md 1 item 14) until the device restore drill passes. Same words as whereLive.iphoneBackup.
       iphoneBackupTitle: "iPhone backup",
