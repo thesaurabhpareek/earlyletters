@@ -694,7 +694,7 @@ export const en = {
       body: "A new month in {child}'s book is open.",
     },
     birthday: {
-      title: "Happy birthday, {child}",
+      title: "Happy birthday to {child}",
       body: "A year of letters. Want to read them together today?",
     },
   },
