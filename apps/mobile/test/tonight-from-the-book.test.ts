@@ -14,6 +14,7 @@ import {
   cappedWords,
   dayZeroCard,
   daysSinceEpoch,
+  eligibleForTheBook,
   EXCERPT_MAX_CHARS,
   excerptOf,
   fromTheBookCard,
@@ -112,6 +113,44 @@ describe('[NX-36-S13] the pick', () => {
   it('[NX-36-S13] the day count does not move with the time zone: it is a calendar date', () => {
     expect(daysSinceEpoch('1970-01-02') - daysSinceEpoch('1970-01-01')).toBe(1);
     expect(daysSinceEpoch('2026-11-02') - daysSinceEpoch('2026-10-31')).toBe(2); // clocks go back on 1 November 2026
+  });
+});
+
+describe('[NX-36-S13] a hard-day letter does not resurface', () => {
+  it('[NX-36-S13] a letter started from a hard.* prompt is never picked, month ago or not', () => {
+    expect(eligibleForTheBook(letter('h', '2026-10-01', { promptKey: 'hard.tired' }), TODAY)).toBe(false);
+    expect(eligibleForTheBook(letter('o', '2026-10-01', { promptKey: 'daily.first_smile' }), TODAY)).toBe(true);
+    expect(eligibleForTheBook(letter('n', '2026-10-01', { promptKey: null }), TODAY)).toBe(true);
+    expect(pickFromTheBook([letter('h', days(30), { promptKey: 'hard.tired' })], TODAY)).toBeNull();
+    expect(pickFromTheBook([letter('h', days(30), { promptKey: 'hard.tired' }), letter('o', '2026-05-02')], TODAY)?.letter.id).toBe('o');
+    for (let d = 0; d < 40; d++) {
+      const day = days(-d);
+      expect(pickFromTheBook([letter('h', '2026-09-01', { promptKey: 'hard.x' }), letter('o', '2026-08-01')], day)?.letter.id).toBe('o');
+    }
+  });
+});
+
+describe('[NX-36-S13] cuts never end mid-sequence', () => {
+  const FAMILY = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+  it('[NX-36-S13] a ZWJ family is kept whole or dropped whole, and the label never ends on a ZWJ', () => {
+    const text = `${FAMILY}${FAMILY}${FAMILY}`;
+    for (let max = 1; max <= 8; max++) {
+      const ex = excerptOf(text, max);
+      expect(text.startsWith(ex)).toBe(true);
+      expect(ex.endsWith('\u200D')).toBe(false);
+      const lab = cappedWords(text, 25, max);
+      expect(text.startsWith(lab)).toBe(true);
+      expect(lab.endsWith('\u200D')).toBe(false);
+    }
+  });
+  it('[NX-36-S13] Devanagari without spaces never ends on a dangling virama', () => {
+    const text = '\u0915\u094D\u0937\u0924\u094D\u0930'.repeat(60) + '\u0915\u094D'.repeat(40);
+    for (let max = 1; max <= 40; max++) {
+      for (const out of [excerptOf(text, max), cappedWords(text, 25, max)]) {
+        expect(text.startsWith(out)).toBe(true);
+        expect(/[\u094D\u200D]$/.test(out)).toBe(false);
+      }
+    }
   });
 });
 

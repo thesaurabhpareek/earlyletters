@@ -23,11 +23,12 @@ import { ageOn, chapterOf } from '@scribe/core';
 import { copy, fill } from '@/lib/copy';
 import { dayDate, isMonthOnly } from '@/lib/dates';
 import type { Entry } from '@/lib/store';
+import { graphemes } from '../book/book-cover.logic';
 import { daysBetween, RESURFACE_DAYS, spoken } from './draft-card.logic';
 
 /** What the picker reads from an entry. */
 export type BookLetter = Pick<Entry, 'id' | 'kind' | 'inBook' | 'occurredOn' | 'capturedAt' | 'finalText'> &
-  Partial<Pick<Entry, 'occurredPrecision' | 'authorSignsAs'>>;
+  Partial<Pick<Entry, 'occurredPrecision' | 'authorSignsAs' | 'promptKey'>>;
 
 /** The card shows 3 whole lines at default sizes and 2 at accessibility sizes (the Book's saved-moment constant). */
 export const FROM_THE_BOOK_LINES = 3;
@@ -56,8 +57,11 @@ export function daysSinceEpoch(iso: string): number {
   return Math.round(daysBetween('1970-01-01', iso));
 }
 
+/** A letter started from a hard-day prompt (`hard.*`) is never brought back unasked on Tonight. */
+export const isHardPrompt = (promptKey: string | null | undefined): boolean => !!promptKey && promptKey.startsWith('hard.');
+
 export function eligibleForTheBook(e: BookLetter, today: string): boolean {
-  return e.kind === 'letter' && e.inBook && !isMonthOnly(e) && e.finalText.trim() !== '' && e.occurredOn.slice(0, 10) !== today;
+  return e.kind === 'letter' && !isHardPrompt(e.promptKey) && e.inBook && !isMonthOnly(e) && e.finalText.trim() !== '' && e.occurredOn.slice(0, 10) !== today;
 }
 
 /**
@@ -82,29 +86,39 @@ export function pickFromTheBook(letters: readonly BookLetter[], today: string, y
   return { letter: oldestFirst[at], kind: 'fromTheBook' };
 }
 
+/** A zero-width joiner or a virama (halant) joins to what follows; a cut must not end on one. */
+const DANGLING_END = /[\u200D\u094D\u09CD\u0A4D\u0ACD\u0B4D\u0BCD\u0C4D\u0CCD\u0D4D\u0DCA]+$/;
+
+/** Cut text to `max` user-perceived characters (graphemes), never ending on a joiner or virama. Always a verbatim prefix. */
+function graphemePrefix(text: string, max: number): string {
+  return graphemes(text).slice(0, max).join('').replace(DANGLING_END, '');
+}
+
 /**
- * The letter's opening, verbatim: a prefix of the text (leading space dropped), at most `max` characters, cut back
- * to the last space when it must be cut. Never a changed or added character.
+ * The letter's opening, verbatim: a prefix of the text (leading space dropped), at most `max` characters (counted by
+ * grapheme), cut back to the last space when it must be cut. Never a changed or added character.
  */
 export function excerptOf(finalText: string, max: number = EXCERPT_MAX_CHARS): string {
   const text = finalText.trimStart();
-  if (text.length <= max) return text.trimEnd();
-  const cut = Array.from(text).slice(0, max).join(''); // by code point: never half of a surrogate pair
+  const parts = graphemes(text);
+  if (parts.length <= max) return text.trimEnd();
+  const cut = parts.slice(0, max).join(''); // by grapheme: never half of a surrogate pair, emoji sequence or cluster
   if (/\s/.test(text.charAt(cut.length))) return cut.trimEnd();
   const space = cut.search(/\s\S*$/);
-  // No space in the whole opening (Japanese, Chinese, one very long word): cut at `max` characters, still a verbatim prefix.
-  return (space > 0 ? cut.slice(0, space) : cut).trimEnd();
+  // No space in the whole opening (Japanese, Chinese, one very long word): cut at `max` graphemes, still a verbatim prefix.
+  return (space > 0 ? cut.slice(0, space) : cut.replace(DANGLING_END, '')).trimEnd();
 }
 
 /**
  * The first `max` whole words of the text, single-spaced, for a screen reader, and never more than `maxChars`
- * characters: whole words are dropped to fit, and a single run with no spaces is cut at `maxChars` characters.
+ * characters (graphemes): whole words are dropped to fit, and a single run with no spaces is cut at `maxChars`
+ * graphemes, never ending on a joiner or virama.
  */
 export function cappedWords(text: string, max: number = LABEL_MAX_WORDS, maxChars: number = LABEL_MAX_CHARS): string {
   const words = text.split(/\s+/).filter(Boolean).slice(0, max);
-  while (words.length > 1 && words.join(' ').length > maxChars) words.pop();
+  while (words.length > 1 && graphemes(words.join(' ')).length > maxChars) words.pop();
   const out = words.join(' ');
-  return Array.from(out).length > maxChars ? Array.from(out).slice(0, maxChars).join('') : out;
+  return graphemes(out).length > maxChars ? graphemePrefix(out, maxChars) : out;
 }
 
 export type FromTheBookCard = {

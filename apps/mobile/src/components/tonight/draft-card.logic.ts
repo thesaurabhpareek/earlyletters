@@ -27,7 +27,7 @@
 import { reminderCopy } from '@scribe/content';
 import { tokens, type Daypart, type TypeToken } from '@scribe/design-tokens';
 import { copy, fill, greetingKey } from '@/lib/copy';
-import { dayDate, isMonthOnly, isoOf } from '@/lib/dates';
+import { dayDate, isoOf } from '@/lib/dates';
 import type { Draft, Entry } from '@/lib/store';
 
 /* ------------------------------------------------------------------ */
@@ -178,32 +178,6 @@ export const EXCERPT: { lines: number; variant: TypeToken } = { lines: 2, varian
 
 /** A letter dated this many days ago may come back on Tonight (S09; DESIGN_LANGUAGE 12). */
 export const RESURFACE_DAYS = { from: 28, to: 35 } as const;
-
-export type ResurfacedCard = { id: string; kicker: string; words: string; a11yLabel: string };
-
-/**
- * The one letter "A month ago" shows, or null: only when no draft is waiting; the newest letter in the book dated 28
- * to 35 days ago that has words; never a private letter, never a quiet-day mark, never a count or a gap. Never a
- * letter dated to a month only (F09-REQ-003): its stored day is where its month of age starts, not a day the parent
- * gave, so "A month ago" and the date VoiceOver reads would both state a day nobody said.
- */
-export function resurfaced(
-  entries: readonly (Pick<Entry, 'id' | 'kind' | 'inBook' | 'occurredOn' | 'capturedAt' | 'finalText'> & Partial<Pick<Entry, 'occurredPrecision'>>)[],
-  today: string,
-  draftsWaiting: number,
-): ResurfacedCard | null {
-  if (draftsWaiting > 0) return null;
-  const pick = entries
-    .filter((e) => {
-      const age = daysBetween(e.occurredOn, today);
-      return e.kind === 'letter' && e.inBook && !isMonthOnly(e) && age >= RESURFACE_DAYS.from && age <= RESURFACE_DAYS.to && e.finalText.trim() !== '';
-    })
-    .sort((a, b) => (a.occurredOn === b.occurredOn ? b.capturedAt.localeCompare(a.capturedAt) : b.occurredOn.localeCompare(a.occurredOn)))[0];
-  if (!pick) return null;
-  const words = pick.finalText.replace(/\s+/g, ' ').trim();
-  const kicker = t.resurfaced.kicker;
-  return { id: pick.id, kicker, words, a11yLabel: spoken([kicker, words, fill(t.resurfaced.a11y, { date: dayDate(pick.occurredOn) })]) };
-}
 
 /* ------------------------------------------------------------------ */
 /* The top of Tonight                                                  */
