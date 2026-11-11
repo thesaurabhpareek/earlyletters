@@ -2,11 +2,11 @@
 
 This page tells every agent how to write harness documents, pull request text, rulings, journal entries and status notes. It applies to everything under `docs/agents/` and to anything the founder reads. Section 9 of `COORDINATION.md` covers status reports and still applies; this page adds the tone.
 
-The rule comes from the founder's instruction of 10 Nov 2026: write in his tone and do not sound like an AI. I have that instruction only as it was relayed to me, so the wording of the rules below is mine and unverified against anything he wrote himself. If he corrects a rule, change this page first and then the documents.
+The rule comes from the founder's instruction of 10 Nov 2026: use plain words, no em dashes, no short catchy sentences, and do not sound like an AI. I have that instruction only as it was relayed to me, and no sample of his own writing, so the rules below are my reading of it and are unverified against anything he wrote. If he corrects a rule, change this page first and then the documents.
 
-## What his writing sounds like
+## The rule as relayed: what it asks for
 
-Use plain words and say the point or the ask in the first sentence. The reason comes after it. When you did or decided something, say so in the first person: "I checked", "I recommend". Put one idea in each sentence and let the sentence run to a normal length, around 12 to 25 words.
+These are my reading of the instruction, not a description of his style. Use plain words and say the point or the ask in the first sentence. The reason comes after it. When you did or decided something, say so in the first person: "I checked", "I recommend". Put one idea in each sentence and let the sentence run to a normal length, around 12 to 25 words.
 
 Tell the reader what they do or get, with a number and a date. "Merge #612 by Fri 13 Nov, 5:00 PM PT" says more than "soon". When something is wrong, say so in the sentence that names it. When something is unverified, say that plainly, and say who can verify it and by when.
 
@@ -23,7 +23,7 @@ Tell the reader what they do or get, with a number and a date. "Merge #612 by Fr
 | Tagline headings | a heading that is a slogan | A heading that names the topic |
 | Filler openers | "It is worth noting that", "In summary" | Start with the point |
 | Closing recap | a last line that repeats the body | Stop when the point is made |
-| Banned words | the list in `CLAUDE.md` | A plain word. `leverage` becomes "use", `ensure` becomes "check" or "make sure" |
+| Banned words | the list in `COORDINATION.md` section 9 | A plain word. `leverage` becomes "use", `ensure` becomes "check" or "make sure" |
 
 Also out: curly quotes, the ellipsis character and emoji. Write times in Pacific with the day, and write amounts as numbers.
 
@@ -35,9 +35,9 @@ Each pair quotes a short stretch of the file as it is on develop and gives the r
    Before: "One answer per question: propose, debate, converge"
    After: "Deciding a question that affects other owners"
 
-2. `COORDINATION.md`, opening paragraph (a triad added for rhythm).
+2. `COORDINATION.md`, opening paragraph (a colon that sets up a chant of negatives).
    Before: "The goal is one product with one set of patterns: no duplicate work, no conflicting conclusions, no surprise publishes."
-   After: "The aim is one product built to one set of patterns. When two agents work on the same thing, the second one stops and talks to the first, and nothing is published until the founder has agreed to it."
+   After: "The aim is one product built to one set of patterns. Agents do not duplicate each other's work, reach conflicting conclusions or publish without warning."
 
 3. `WALLS.md`, first paragraph (slogan rhythm).
    Before: "Walls are permanent. Design around them; never get round them."
@@ -59,7 +59,7 @@ The sixth rewrite is shortened for this page and leaves out the review-binding s
 
 ## Checking a document
 
-Run `node scripts/agents/tone-lint.mjs docs/agents/<file>.md` before you open a PR. It prints hard findings (dashes, curly quotes, the ellipsis character, emoji, banned words) and four soft numbers: bold per 1000 words, the share of lines that are bullets, the share of sentences of five words or fewer, and the count of contrast lines. The soft numbers have no limit. Read them as a prompt to reread the page.
+Run `node scripts/agents/tone-lint.mjs docs/agents/<file>.md` before you open a PR. It prints hard findings (dashes, curly quotes, the ellipsis character, emoji, banned words) and four soft numbers: bold per 1000 words, the share of lines that are bullets, the share of sentences of five words or fewer, and the count of contrast lines. The soft numbers have no limit and are not a target. Read them as a prompt to reread the page. The contrast and short-sentence numbers are advisory and can miss or over-count: contrast only counts the comma or semicolon form, so "This is not X. It is Y.", "A rule, not X." and "It is not X but Y." score 0 while "The build does not fail, but it is slow." scores 1, and short sentences count every bullet as a sentence and treat "no." as an abbreviation, so "He said no. Then left." is one sentence.
 
 `node scripts/agents/tone-lint.mjs --check` exits 1 on a hard finding that is not in `docs/agents/tone-baseline.txt`. The baseline can only shrink. When you fix a listed finding, the entry goes stale and `--check` fails until you run `--update-baseline`, which refuses to add or grow an entry. The check is not wired into CI yet; the founder decides when it is.
 

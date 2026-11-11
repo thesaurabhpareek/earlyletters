@@ -1,7 +1,7 @@
 // Tests for tone-lint.mjs. Fixtures only, in a temp folder. No network.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from "node:fs";
+import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync, symlinkSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
@@ -221,10 +221,90 @@ test("usage errors exit 2", () => {
 });
 
 test("parseBaseline, aggregate and compare agree", () => {
-  const base = parseBaseline("# c\ndocs/a.md em-dash U+2014 2\n");
+  const base = parseBaseline("# c\ndocs/a.md\tem-dash\tU+2014\t2\n");
   const cur = aggregate([{ file: "docs/a.md", hard: [{ rule: "em-dash", token: "U+2014" }] }]);
   const v = compare(cur, base, ["docs/a.md"], []);
   assert.equal(v.fresh.length, 0);
   assert.equal(v.stale.length, 1);
-  assert.throws(() => parseBaseline("docs/a.md em-dash"));
+  assert.throws(() => parseBaseline("docs/a.md\tem-dash"));
+});
+
+// Added after review: each curly quote, word-start boundary, baseline scope, spaces, exit 2.
+test("each curly quote is detected on its own", () => {
+  for (const cp of ["\u2018", "\u2019", "\u201C", "\u201D"]) {
+    const hard = scanText(`say ${cp}hi`).hard;
+    assert.deepEqual(hard.map((h) => h.rule), ["curly-quote"], cp.codePointAt(0).toString(16));
+    assert.equal(hard[0].token, "U+" + cp.codePointAt(0).toString(16).toUpperCase());
+  }
+});
+
+// Intended: a banned word matches at the start of a word and takes any ending, so "ensured" and
+// "unlocks" are caught. A word that only contains a banned word later on ("reensure") is not.
+test("the banned-word pattern is anchored at the start of a word, not the end", () => {
+  assert.deepEqual(rules("reensure and preunlock and reunlock"), []);
+  // "delve" lists its endings, so a longer word that starts with it is not a match.
+  assert.deepEqual(rules("delves and delved and delving"), ["banned-word", "banned-word", "banned-word"]);
+  assert.deepEqual(rules("delveable"), []);
+  assert.deepEqual(rules("It was ensured and unlocks and robustness"), ["banned-word", "banned-word", "banned-word"]);
+});
+
+test("single-file --update-baseline keeps other files' entries and shrinks its own", () => {
+  const { dir, bl } = fixture({ "docs/a.md": `x ${EM} y\n`, "docs/b.md": `p ${EM} q\nr ${EN} s\n` });
+  try {
+    assert.equal(run(["docs", "--update-baseline", "--baseline", bl], dir).status, 0);
+    writeFileSync(join(dir, "docs/b.md"), `p ${EM} q\n`);
+    const r = run(["docs/b.md", "--update-baseline", "--baseline", bl], dir);
+    assert.equal(r.status, 0);
+    const rows = readFileSync(bl, "utf8").split("\n").filter((l) => l && !l.startsWith("#"));
+    assert.deepEqual(rows.map((l) => l.split("\t").join(" ").replace(dir + "/", "")), ["docs/a.md em-dash U+2014 1", "docs/b.md em-dash U+2014 1"]);
+    assert.equal(run(["docs", "--check", "--baseline", bl], dir).status, 0);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a path with a space round-trips through --update-baseline and --check", () => {
+  const { dir, bl } = fixture({ "docs/a b.md": `x ${EM} y\n` });
+  try {
+    assert.equal(run(["docs", "--update-baseline", "--baseline", bl], dir).status, 0);
+    assert.match(readFileSync(bl, "utf8"), /docs\/a b\.md\tem-dash\tU\+2014\t1/);
+    assert.equal(run(["docs", "--check", "--baseline", bl], dir).status, 0);
+    assert.equal(run(["docs", "--update-baseline", "--baseline", bl], dir).status, 0);
+    writeFileSync(join(dir, "docs/a b.md"), "clean.\n");
+    const r = run(["docs", "--check", "--baseline", bl], dir);
+    assert.equal(r.status, 1);
+    assert.match(r.stdout, /STALE .*docs\/a b\.md em-dash/);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("a malformed baseline exits 2 with a plain message and no stack trace", () => {
+  const bad = ["docs/a.md em-dash U+2014 1\n", "docs/a.md\tem-dash\tU+2014\tmany\n", "docs/a.md\tem-dash\t1\n", "docs/a.md\tem-dash\t\t1\n"];
+  for (const body of bad) {
+    const { dir, bl } = fixture({ "docs/a.md": "clean.\n" }, body);
+    try {
+      for (const flag of ["--check", "--update-baseline"]) {
+        const r = run(["docs", flag, "--baseline", bl], dir);
+        assert.equal(r.status, 2, flag + " " + JSON.stringify(body));
+        assert.match(r.stderr, /^tone-lint: bad baseline line/);
+        assert.doesNotMatch(r.stderr, /\n\s+at /);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("an unreadable markdown file exits 2 with a plain message", () => {
+  const { dir, bl } = fixture({ "docs/a.md": "clean.\n" }, "");
+  try {
+    symlinkSync(join(dir, "nowhere.md"), join(dir, "docs/dangling.md"));
+    const r = run(["docs", "--check", "--baseline", bl], dir);
+    assert.equal(r.status, 2);
+    assert.match(r.stderr, /ENOENT/);
+    assert.doesNotMatch(r.stderr, /\n\s+at /);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });

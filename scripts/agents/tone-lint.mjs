@@ -7,6 +7,9 @@
 //   --json              machine-readable output
 //   --check             exit 1 on a hard finding missing from the baseline, or a stale baseline entry
 //   --baseline <file>   default docs/agents/tone-baseline.txt
+//
+// Exit codes: 0 ok, 1 findings (check) or a refused baseline growth, 2 usage error, unreadable
+// file or malformed baseline. A baseline line is four TAB-separated fields: path, rule, token, count.
 //   --update-baseline   write the baseline; refuses to add or grow an entry once the file exists
 import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from "node:fs";
 import { join, resolve, relative, sep, isAbsolute } from "node:path";
@@ -156,12 +159,15 @@ export function scanFiles(files) {
   return files.map((abs) => ({ file: display(abs), ...scanText(readFileSync(abs, "utf8")) }));
 }
 
-// Baseline: one line per file, rule and token, with a count. Comments start with #.
+// Baseline: one line per file, rule and token, with a count. Fields are separated by a tab, so a
+// path with a space round-trips. Comments start with #.
+const SEP = "\t";
+const show = (key) => key.split(SEP).join(" ");
 export function aggregate(results) {
   const m = new Map();
   for (const r of results) {
     for (const h of r.hard) {
-      const k = `${r.file} ${h.rule} ${h.token}`;
+      const k = [r.file, h.rule, h.token].join(SEP);
       m.set(k, (m.get(k) || 0) + 1);
     }
   }
@@ -173,24 +179,29 @@ export function parseBaseline(text) {
   for (const raw of text.split(/\r?\n/)) {
     const line = raw.trim();
     if (!line || line.startsWith("#")) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length !== 4 || !/^\d+$/.test(parts[3])) throw new Error(`bad baseline line: ${line}`);
-    m.set(parts.slice(0, 3).join(" "), Number(parts[3]));
+    const parts = raw.replace(/\r$/, "").split(SEP);
+    if (parts.length !== 4 || parts.some((p) => p === "") || !/^\d+$/.test(parts[3])) {
+      throw new Error(`bad baseline line (want path, rule, token, count separated by tabs): ${line}`);
+    }
+    m.set(parts.slice(0, 3).join(SEP), Number(parts[3]));
   }
   return m;
 }
 
 export function formatBaseline(map) {
   const head = [
-    "# Hard tone findings that existed when the check was set up (path, rule, token, count).",
+    "# Hard tone findings that existed when the check was set up (path, rule, token, count, separated by tabs).",
     "# This list only shrinks. Fix a finding, then run: node scripts/agents/tone-lint.mjs --update-baseline",
   ];
-  const rows = [...map].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, n]) => `${k} ${n}`);
+  for (const [k] of map) {
+    if (/[\r\n]/.test(k) || k.split(SEP).length !== 3) throw new Error(`cannot write a path with a tab or newline: ${show(k)}`);
+  }
+  const rows = [...map].sort(([a], [b]) => (a < b ? -1 : 1)).map(([k, n]) => `${k}${SEP}${n}`);
   return head.concat(rows).join("\n") + "\n";
 }
 
 const inScope = (key, files, dirs) => {
-  const file = key.split(" ")[0];
+  const file = key.split(SEP)[0];
   return files.includes(file) || dirs.some((d) => file.startsWith(d + "/"));
 };
 
@@ -222,7 +233,18 @@ function render(results) {
   return out;
 }
 
+// Any failure to read a file, parse the baseline or write it is a plain message and exit 2.
 export function main(argv, io = {}) {
+  try {
+    return run(argv, io);
+  } catch (e) {
+    const err = io.err || ((s) => process.stderr.write(s + "\n"));
+    err(`tone-lint: ${e && e.message ? e.message : e}`);
+    return 2;
+  }
+}
+
+function run(argv, io) {
   const out = io.out || ((s) => process.stdout.write(s + "\n"));
   const err = io.err || ((s) => process.stderr.write(s + "\n"));
   const cwd = io.cwd || process.cwd();
@@ -264,7 +286,7 @@ export function main(argv, io = {}) {
     const old = existing ? parseBaseline(readFileSync(baselinePath, "utf8")) : new Map();
     const { fresh } = compare(current, old, scopeFiles, scope.dirs);
     if (existing && fresh.length) {
-      for (const f of fresh) err(`refusing to grow the baseline: ${f.key} (${f.found} found, ${f.allowed} listed)`);
+      for (const f of fresh) err(`refusing to grow the baseline: ${show(f.key)} (${f.found} found, ${f.allowed} listed)`);
       return 1;
     }
     const next = new Map([...old].filter(([k]) => !inScope(k, scopeFiles, scope.dirs)));
@@ -285,8 +307,8 @@ export function main(argv, io = {}) {
   } else {
     for (const l of render(results)) out(l);
     if (verdict) {
-      for (const f of verdict.fresh) out(`NEW ${f.key} (${f.found} found, ${f.allowed} listed)`);
-      for (const s of verdict.stale) out(`STALE ${s.key} (${s.found} found, ${s.listed} listed): run --update-baseline`);
+      for (const f of verdict.fresh) out(`NEW ${show(f.key)} (${f.found} found, ${f.allowed} listed)`);
+      for (const s of verdict.stale) out(`STALE ${show(s.key)} (${s.found} found, ${s.listed} listed): run --update-baseline`);
       out(code ? "tone check: FAIL" : "tone check: ok");
     }
   }

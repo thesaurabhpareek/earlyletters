@@ -1,16 +1,16 @@
-# Hard tone findings that existed when the check was set up (path, rule, token, count).
+# Hard tone findings that existed when the check was set up (path, rule, token, count, separated by tabs).
 # This list only shrinks. Fix a finding, then run: node scripts/agents/tone-lint.mjs --update-baseline
-docs/agents/COORDINATION.md banned-word comprehensive 1
-docs/agents/COORDINATION.md banned-word crucial 1
-docs/agents/COORDINATION.md banned-word delve 1
-docs/agents/COORDINATION.md banned-word empower 1
-docs/agents/COORDINATION.md banned-word ensure 1
-docs/agents/COORDINATION.md banned-word holistic 1
-docs/agents/COORDINATION.md banned-word leverage 1
-docs/agents/COORDINATION.md banned-word robust 1
-docs/agents/COORDINATION.md banned-word seamless 1
-docs/agents/COORDINATION.md banned-word streamline 1
-docs/agents/COORDINATION.md banned-word unlock 1
-docs/agents/COORDINATION.md banned-word utilize 1
-docs/agents/cto/RULINGS.md banned-word robustness 2
-docs/agents/harness-v2/LESSONS-2026-11-08.md banned-word unlocks 1
+docs/agents/COORDINATION.md	banned-word	comprehensive	1
+docs/agents/COORDINATION.md	banned-word	crucial	1
+docs/agents/COORDINATION.md	banned-word	delve	1
+docs/agents/COORDINATION.md	banned-word	empower	1
+docs/agents/COORDINATION.md	banned-word	ensure	1
+docs/agents/COORDINATION.md	banned-word	holistic	1
+docs/agents/COORDINATION.md	banned-word	leverage	1
+docs/agents/COORDINATION.md	banned-word	robust	1
+docs/agents/COORDINATION.md	banned-word	seamless	1
+docs/agents/COORDINATION.md	banned-word	streamline	1
+docs/agents/COORDINATION.md	banned-word	unlock	1
+docs/agents/COORDINATION.md	banned-word	utilize	1
+docs/agents/cto/RULINGS.md	banned-word	robustness	2
+docs/agents/harness-v2/LESSONS-2026-11-08.md	banned-word	unlocks	1
