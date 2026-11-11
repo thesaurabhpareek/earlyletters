@@ -16,16 +16,12 @@ const origin = brand.web.origin;
 
 export const SITE_ROUTES = {
   /** Pages on earlyletters.com today (`main`). A link to any of these works. */
-  built: ['/', '/privacy', '/terms', '/auth/callback', '/auth/confirm', '/j', '/unsubscribe'],
+  built: ['/', '/privacy', '/terms', '/auth/callback', '/auth/confirm', '/j', '/open', '/unsubscribe'],
   /**
    * Pages emails link to that the website does not have yet: path, the emails that use it, and when it is needed.
    * Build 1 (D-121) sends no email at all, so "build 2" means the first release with server features.
    */
   needed: {
-    '/open': {
-      emails: 'appUrl in 14 emails (welcome, deletion receipts, co-parent, book deletion and others)',
-      when: 'build 2. A fallback page (open the app, or get it on the App Store) plus `/open` in the AASA paths so the app opens directly',
-    },
     '/stop': {
       emails: 'backup-restore-requested (stopUrl, token after #; the page posts it, F21)',
       when: 'before owner backup ships (D-121 step c)',
@@ -58,7 +54,7 @@ export const DEFAULT_LINKS = {
   /** No /contact page exists, so Help writes to the support mailbox, the same place a reply goes. */
   helpUrl: brand.support.mailto,
   privacyUrl: brand.web.privacy,
-  /** Universal link; needs the `/open` page and AASA path (SITE_ROUTES.needed). */
+  /** Universal link; the `/open` page and its AASA path are built (BL-510). */
   appUrl: `${brand.web.universalLinkBase}/open`,
   manageUrl: EXTERNAL_LINKS.appleSubscriptions,
   subscriptionTermsUrl: `${origin}/subscription-terms`,
