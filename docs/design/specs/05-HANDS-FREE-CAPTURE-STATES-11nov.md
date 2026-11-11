@@ -1,6 +1,8 @@
 # 5. Hands-free capture states
 
-Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources (EVIDENCE only for the lines I read, which are the ones named; the rest of each file is UNVERIFIED): `F04-capture.md` (interruptions line 61; Siri, widget, Live Activity lines 51 to 72; Voice Memos note line 97; widget entry line 118; U08/U09; REQ-040/041), `SOUND.md` (no sound while recording; record start sequence), `COMPONENTS.md` 2.17 ListeningAura and 2.18 CaptureBar, `listen.tsx` (quiet = metering below -50 dB after 8 s), `strings.en.ts` (`tonight.states.*`, `listen.*`). This spec designs the states a person sees and hears when their hands are busy, and what each state does with the take. It changes no recording rule.
+Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources (EVIDENCE only for the lines I read, which are the ones named; the rest of each file is UNVERIFIED): `F04-capture.md` (interruptions line 61; Siri, widget, Live Activity lines 51 to 72; Voice Memos note line 97; widget entry line 118; U08/U09; REQ-040/041), `SOUND.md` (no sound while recording; record start sequence), `COMPONENTS.md` 2.17 ListeningAura and 2.18 CaptureBar, `listen.tsx` (quiet = metering below -50 dB after 8 s), `strings.en.ts` (`tonight.states.*`, `listen.*`). **Scope of this spec after Review B (finding 4).** PRD NS-04 (#795 head `2245c8be`, rank 4) is a five-day time-boxed spike, not a feature: it promises no build and no build number, and PRD NS-06 Part C is likewise untestable before it reports. So the doorways (widget, Control Center control, Action button, Siri) are a spike, not built. Section 3 states H1 to H13 are the in-app take, which exists today in Listen (`listen.tsx`, EVIDENCE by name); those rows stand. Every doorway row (H0 for OS entries, the doorway lines in sections 4, 5 and 9, HF-R1 and HF-R2) is CONDITIONAL on the spike's read-out: nothing in them is built, copied into a ticket or tested until the findings file says Yes for that trigger. The spike's answers (Q1 to Q10) can change them.
+
+This spec designs the states a person sees and hears when their hands are busy, and what each state does with the take. It changes no recording rule.
 
 ## 1. Job
 
@@ -26,7 +28,7 @@ States (a take's life), with the screen, what the person is told and what happen
 
 | # | State | Entered by | What the screen shows | What the person hears or feels | The take |
 |---|---|---|---|---|---|
-| H0 | Not started | Cold open, widget, Control Center control, Action button, Siri | Home as usual; for OS doorways H1 | none | none |
+| H0 | Not started | Cold open. Widget, Control Center control, Action button and Siri are doorways: CONDITIONAL on the spike | Home as usual; for OS doorways H1 | none | none |
 | H1 | Ready | Tap Speak; or an OS doorway | Listen: "To {child}", the red circle, `listen.ready.hint` "Tap the red circle and talk." For a doorway, the screen is the same; nothing records yet | nothing; no sound | none exists |
 | H2 | Starting | Tap the circle | Circle presses (`press.scale`), aura wakes | `recordStart` haptic and the soft start cue, then the microphone opens 140 ms later (SOUND.md) | file created; first bytes written |
 | H3 | Listening | Microphone open | `ListeningAura` breathing with level; timer; `listen.states.listening` "Listening."; hint "Say it however it comes." | no sound | recording |
@@ -37,7 +39,7 @@ States (a take's life), with the screen, what the person is told and what happen
 | H8 | Limit reached | 30 minutes | A gentle line (slot) and the screen moves to saving | one cue | finalised and saved |
 | H9 | Low space or power | Storage or battery low | A calm line in place of the hint (slot): the take is saved so far | none | finalised and saved |
 | H10 | Finishing | Tap Finish | "Saving your words." | `recordStop` cue, `success` haptic when saved | closed |
-| H11 | Saved | Write succeeded | "Saved, in your words." then Review; or "Writing down what you said." (existing key; `content` to review the wording, see index section 8) | | kept as a waiting letter or open in Review |
+| H11 | Saved | Write succeeded | "Saved, in your words." then Review; or "Writing down what you said." (existing key; PENDING `content` review: the line can read as a machine writing, index section 8, and CLAUDE.md says never imply AI writes. Not approved here) | | kept as a waiting letter or open in Review |
 | H12 | Cannot start | Microphone denied or restricted | `errors.micDenied` with "Type instead" (existing) and a Settings button (UNVERIFIED: the key `errors.micDenied.typeButton` is named in a comment in `strings.en.ts`; I did not read its block) | none | none |
 | H13 | Cannot hear | Mic busy on another app, or no input route | `InlineState` in place of the circle (slot) with "Type instead" | none | none |
 
@@ -79,7 +81,7 @@ Placement: Pause and Finish sit in the lower third so a thumb reaches them one-h
 2. **No auto-stop on silence.** A long pause is part of the voice ("Pauses are fine", `readyHint`, EVIDENCE). The quiet stretch only changes the line. The take ends on Finish, the 30-minute limit, or an interruption.
 3. **Never lose the take.** Every involuntary end (H6 to H9) saves the take as a waiting letter. The person is told once, calmly, on return.
 4. **Screen stays awake while recording** and dims only through the OS.
-5. **Big, few, fixed controls.** Pause and Finish do not move between states (no layout shift when the line changes). The only thing that moves is text.
+5. **Big, few, fixed controls.** Pause and Finish do not move between states (no layout shift when the line changes). At accessibility sizes they stack, and that is one fixed layout for those sizes, not a move. The only thing that moves is text.
 6. **Nothing flashes.** No flash, no loud cue, no sound while recording, so a sleeping baby is not woken (F04 persona P1).
 7. **Voice Control and Switch Control work from labels.** Every control is real text: "Speak", "Pause", "Finish", "Keep talking", "Let it go".
 8. **Doorways add no behaviour.** A widget, Control Center control or Siri phrase opens Ready. It does not start recording. Starting a take from a locked screen is a separate privacy decision for `legal` and `security` (a take starts a microphone with no unlock; UNVERIFIED how iOS treats it); default: the doorways need the phone unlocked first.
@@ -112,8 +114,9 @@ No decorative loop beyond the aura. No pulse on the buttons.
 ## 8. Dynamic Type and VoiceOver
 
 - AX5: the line and hint wrap and grow; Pause and Finish stack vertically at accessibility sizes (COMPONENTS 2.18) and each stays at least 64 pt; the aura shrinks before text does; nothing is truncated and no state's line is cut. The timer uses the `numeral` family only where a large figure is intended; otherwise `title2`.
-- VoiceOver (F04-REQ-040 and REQ-041, EVIDENCE): with VoiceOver on, Speak opens Listen as one element and nothing records until a double tap or Magic Tap. While a take is live the screen exposes exactly one element and focus does not move; no label, hint or value changes; there is no live region; the phone's own announcements are queued and spoken after the take pauses or stops. So the elapsed time (`listen.elapsedA11y`) is not available during a live take for VoiceOver, only after Pause. Magic Tap is the VoiceOver person's Pause and resume (REQ-040 device run names it). This is the hands-free path for VoiceOver users and it already exists in the requirements; this spec adds the states around it (H5, H6, H7) and asks that Finish be reachable after Magic Tap pauses (the controls come back into the tree on Pause; UNVERIFIED how Listen does this). COMPONENTS 2.18 says "announced every minute, not every second" for the recording button; that conflicts with REQ-040 (no announcement during a take). REQ-040 is the P0 requirement and wins; 2.18 needs a docs fix (section 12, Q4).
-- Switch Control (VoiceOver off): Pause and Finish are reachable in order; the scan order is Pause, Finish, Let it go.
+- VoiceOver (F04-REQ-040 and REQ-041, EVIDENCE): with VoiceOver on, Speak opens Listen as one element and nothing records until a double tap or Magic Tap. While a take is live the screen exposes exactly one element and focus does not move; no label, hint or value changes; there is no live region; the phone's own announcements are queued and spoken after the take pauses or stops. So the elapsed time (`listen.elapsedA11y`) is not available during a live take for VoiceOver, only after Pause. Magic Tap is the VoiceOver person's Pause and resume (REQ-040 device run names it). This is the hands-free path for VoiceOver users and it already exists in the requirements; this spec adds the states around it (H5, H6, H7) and requires that Finish (and Keep talking) be reachable by VoiceOver, in that order, after Magic Tap pauses (the controls come back into the tree on Pause; UNVERIFIED how Listen does this). Without that, the VoiceOver path could start a take and not end it. Proof: HF-R10. COMPONENTS 2.18 says "announced every minute, not every second" for the recording button; that conflicts with REQ-040 (no announcement during a take). REQ-040 is the P0 requirement and wins; 2.18 needs a docs fix (section 12, Q4).
+- Switch Control (VoiceOver off): the scan order follows the wireframe, top to bottom: Let it go, then Pause, then Finish (Review B finding 13c: the earlier text listed Let it go last, which did not match the layout). If the order is changed it changes in the wireframe first. Each is reachable and 64 pt.
+- Colour is never the only signal (index section 6). The existing hint "Tap the red circle and talk." names the control by colour alone. The circle's VoiceOver label should not rely on colour (`listen.ready.startA11y`; I did not read its text, UNVERIFIED), and I ask `content` for a PROPOSED wording that adds a shape or position word (for example, the large round button in the middle) to the visible hint or to the label. The decision and the words are `content`'s; the founder's brand glossary fixes "the red circle" as the record control name, so this may need a founder ruling.
 - Voice Control: "Tap Pause", "Tap Finish" work; the app does not add its own voice commands.
 - Haptics: `recordStart`, `recordStop`, `success` as COMPONENTS 0.2; none while recording.
 
@@ -138,14 +141,15 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 
 | Id | Requirement | Proof |
 |---|---|---|
-| HF-R1 | Doorways start nothing. Given a widget, Control Center control, Action button or Siri doorway, When it opens the app, Then Ready shows and the microphone is closed until the person taps | device; unit test on the route handler |
-| HF-R2 | One start function. Given any doorway or in-app Speak, Then they call the same capture function with a `source` from this list: `speak`, `type`, `notMuch`, `photoFirst`, `dayCard`, `widget`, `controlCenterControl`, `actionButton`, `siri`; no other tab calls it. Prerequisite: `mobile` consolidates the start (06 section 12, step 0) | navigation test N3 (06 section 10) |
+| HF-R1 | CONDITIONAL on the NS-04 spike read-out. Doorways start nothing. Given a widget, Control Center control, Action button or Siri doorway, When it opens the app, Then Ready shows and the microphone is closed until the person taps | device; unit test on the route handler |
+| HF-R2 | CONDITIONAL on the NS-04 spike read-out for the doorway sources (`widget`, `controlCenterControl`, `actionButton`, `siri`); the in-app sources apply now. One start function. Given any doorway or in-app Speak, Then they call the same capture function with a `source` from this list: `speak`, `type`, `notMuch`, `photoFirst`, `dayCard`, `widget`, `controlCenterControl`, `actionButton`, `siri`; no other tab calls it. Prerequisite: `mobile` consolidates the start (06 section 12, step 0) | navigation test N3 (06 section 10) |
 | HF-R3 | No loss. Given a call, Siri, alarm, route change, lock or background during a take, Then the take is saved as a waiting letter and the person sees it on return | device scripts (F04 U08, U09) |
 | HF-R4 | No auto-stop on silence. Given 5 minutes of quiet, Then the take continues and the line is still "Still here" | unit test with injected metering |
 | HF-R5 | Quiet room. Given a live take, Then the app plays no sound and the saved audio has no cue in it | recorded-file check (SOUND.md test) |
-| HF-R6 | Stable controls. Given any state H1 to H5, Then Pause and Finish do not move and stay at least 64 pt at all text sizes | device, AX5 |
+| HF-R6 | Stable controls. Given any state H1 to H5, Then Pause and Finish do not move between states and stay at least 64 pt at every text size; at accessibility sizes they stack in one fixed layout that is the same in every state | device, AX5 |
 | HF-R7 | Screen reader. Given VoiceOver on a live take, Then the screen is one element, no announcement or label change occurs, and Magic Tap pauses and resumes (F04-REQ-040, 041) | device, VoiceOver |
 | HF-R8 | Always a way to type. Given H12 or H13, Then "Type instead" is shown | device |
+| HF-R10 | Finish is reachable after Magic Tap. Given VoiceOver and a take paused by Magic Tap, Then Keep talking and Finish are in the accessibility tree and focusable in that order, and activating Finish saves the take (so a VoiceOver parent can end what they started) | device, VoiceOver (F04-REQ-040 run) |
 | HF-R9 | No count, no streak. Given any state, Then no count of takes, no total time, no streak | content rules; review |
 
 ## 11. The 12-line job-clarity review
@@ -161,7 +165,7 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 | J7 | Pass | Listen shows no list |
 | J8 | Pass | Ready is whole on day one |
 | J9 | Pass | H12, H13 say what to do |
-| J10 | Open | Seven new slots (section 9); `content` answers by Fri 20 Nov 2026 (PROPOSED) |
+| J10 | Open | Seven new slots (section 9), and `Writing down what you said` is pending content review; `content` answers by Fri 20 Nov 2026 (PROPOSED) |
 | J11 | Open | Device with VoiceOver, Switch Control, Voice Control |
 | J12 | Pass | Without it a parent must see and touch small controls with busy hands |
 

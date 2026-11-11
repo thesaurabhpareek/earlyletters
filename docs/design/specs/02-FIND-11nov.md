@@ -24,13 +24,12 @@ One sentence: I find a letter by a word I remember. (9 words.) Verb "find" belon
  SAT 14 OCT
  "We went to the park and {child} laughed at the
   [ducks] by the water."     <- match marked, words whole
- Hear {signsAs}                                      <- only if a recording exists
 
  SUN 3 SEP
  "the ducks again, another day"                     <- (no ellipsis char; fade, see 5)
 ```
 
-- Results are `LetterCard` variants (`FindResultRow`): date line, then the matching sentence of the letter exactly as kept, with the matched word marked by an underline plus medium weight (not colour alone; `accent` on `bg` 5.50 : 1 light, 8.37 dark).
+- Results are `LetterCard` variants (`FindResultRow`): one tap target for the whole row (it opens the letter). A row has no nested control: no "Hear" button inside it (Review B finding 9: a row that plays audio is not a find result, and a control inside a tap target needs its own 44 pt target and VoiceOver action). The parent hears a letter on its page. The row is: date line, then the matching sentence of the letter exactly as kept, with the matched word marked by an underline plus medium weight (not colour alone; `accent` on `bg` 5.50 : 1 light, 8.37 dark).
 - Order: newest first. No relevance score, no "best match", no count ("12 results" is not shown; a count of what the parent searched for is not a gap, but VoiceOver and the screen stay quiet about numbers; open question Q4).
 - Scope: the active book (F09-REQ-015). With two books the placeholder names the book; the book switcher is not inside Find.
 
@@ -68,9 +67,11 @@ Long letters: the row shows the sentence that holds the match, cut on whole word
 | State | Behaviour |
 |---|---|
 | Idle, before typing | Field focused, nothing else. No recent searches (Q2) |
-| Fewer than 3 characters (non-CJK) | Nothing changes on screen and no message appears (PRD NS-02-R3, PR #795 head `28284f79`, which wins over my earlier hint line). A CJK query matches from 1 character (substring path). Spaces-only counts as under 3 |
+| Fewer than 3 characters (non-CJK) | Nothing changes on screen and no message appears (PRD NS-02-R3, PR #795 head `2245c8be`, which wins over my earlier hint line). For VoiceOver and Switch Control only, the field carries an accessibility hint (`book.find.fieldHint`, PROPOSED) saying that a few letters start a search; R3 forbids a message on screen, and a hint read only by a screen reader is not one. `product` confirms that reading, or records that the silence is accepted (Review B finding 10). A CJK query matches from 1 character (substring path). Spaces-only counts as under 3 |
 | Results | Rows as above, p95 300 ms on an SE 3 with 1,000 letters (F09-REQ-015; UNVERIFIED, nothing built). Results appear without a spinner; if over 300 ms the previous list stays, no flash |
-| No match | Existing `book.empty.searchTitle` "No letters with that word yet." (EVIDENCE). One quiet line under it (slot): try another word. No "Write a letter" button (the Book starts nothing) |
+| No match | The existing `book.empty.searchTitle` "No letters with that word yet." (EVIDENCE) and nothing else: no tip, no help line, no "add a letter" button (PRD NS-02-R13, whose test is "one calm line"; Review B finding 1; Karma ruling 11 Nov: the PRD wins). The earlier `book.find.noMatchHelp` line is withdrawn. Proof: FD-R10 |
+| Back from a result | Back from a result's letter page returns to the same query and the same scroll position (PRD NS-02-R12). Proof: FD-R11 |
+| Leaving the Book | The query is cleared when the parent leaves the Book (another tab, or the app closing); it is never saved: no recent searches, no suggestions, no history. The field sets autocorrect off and spell check off (PRD NS-02-R14). Proof: FD-R12. Cancel (the keyboard's) also clears it and returns to the Book where it was |
 | Empty book | Find is not offered when there is no kept letter (the magnifier is absent, not greyed) |
 | Index not ready (after a restore or a new phone) | `InlineState`: "Find is still getting ready on this phone." (slot; "getting ready" is a wording for `content` to confirm, see index section 8), with the Book list still usable. When ready, it clears without a toast. Uses "getting ready" as Book's word for words being made; a content decision whether that clashes (NAV-TAB-ROLES R6) |
 | Offline | Identical. Find reads the phone only (Truth line) |
@@ -106,7 +107,7 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 |---|---|---|
 | `book.find.button` | VoiceOver and visible name of the magnifier | One word: Find |
 | `book.find.placeholder` | "Find in {child}'s book" | Names the book; `{child}`; with no name the fallback is "Your child" (closed question N5), and `content` words the nameless placeholder (PROPOSED slot, no string here) |
-| `book.find.noMatchHelp` | Under the existing no-match title | One short line, suggests another word; no gap language |
+| `book.find.fieldHint` | VoiceOver-only hint on the field, shown nowhere on screen (PROPOSED) | One sentence; says a few letters start a search; not read as a count of results; for CJK it does not claim three |
 | `book.find.notReady` | Index still being made | Plain; true only while it is true |
 | `book.find.error` and `book.find.retry` | Index failed and Try again | Says what to do |
 | `book.find.rowA11y` | "{date}. {sentence}. Opens the letter." | No count |
@@ -116,7 +117,7 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 | `book.find.clear` | VoiceOver name of the clear button | |
 | `book.find.cancel` | Cancel | |
 
-Note on PR #798 (head `5cb0e863`, `packages/content/src/features/find.en.ts`, read by me at that head): its slots are `button`, `buttonHint`, `placeholder`, `fieldLabel`, `hint`, `noMatchHelp`, `notReady`, `error`, `retry`, `rowA11y`, `foundA11y`, `clear`, `cancel`. All map to the slots in this section except `hint` ("Type three letters to start."), which I removed from this spec because PRD NS-02-R3 says no message appears under three characters. `hint` should leave #798.
+Note on PR #798 (head `5cb0e863`, `packages/content/src/features/find.en.ts`, read by me at that head): its slots are `button`, `buttonHint`, `placeholder`, `fieldLabel`, `hint`, `noMatchHelp`, `notReady`, `error`, `retry`, `rowA11y`, `foundA11y`, `clear`, `cancel`. All map to the slots in this section except `hint` ("Type three letters to start."), which I removed from this spec because PRD NS-02-R3 says no message appears on screen under three characters (its purpose survives only as the VoiceOver-only `fieldHint`), and `noMatchHelp`, which I removed because PRD NS-02-R13 allows the title and nothing else. Both should leave #798.
 
 Door lines. Not a consent screen, but it reads the whole book:
 - Shown: the placeholder naming the book.
@@ -135,8 +136,12 @@ Door lines. Not a consent screen, but it reads the whole book:
 | FD-R5 | Starts nothing. Given no match or an empty book, Then there is no button that starts a letter in Find | navigation test N8(b); device |
 | FD-R6 | Quiet. Given any use of Find, Then no term enters analytics, logs or crash reports | catalog review; log test |
 | FD-R7 | Accessibility. Given VoiceOver, AX5, Reduce Motion, both themes, Then section 8 holds and the match is not signalled by colour alone | device |
-| FD-R9 | Index lifecycle. The seal transitions here are PROVISIONAL (seal clock): when a letter counts as sealed or open follows 04 FS-R7, which `data-architect` reconciles with ADR 0028 D3 and D4 (D4: `searchable_letters` uses the local calendar date) by Fri 20 Nov 2026. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |
 | FD-R8 | Works with no network and no account | device, airplane mode |
+| FD-R9 | Index lifecycle. The seal transitions here are PROVISIONAL (seal clock): when a letter counts as sealed or open follows 04 FS-R7, which `data-architect` reconciles with ADR 0028 D3 and D4 (D4: `searchable_letters` uses the local calendar date) by Fri 20 Nov 2026. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |
+| FD-R10 | No match is one calm line. Given a query with no result, Then the screen shows `book.empty.searchTitle` and nothing else: no tip, no help line, no button (PRD NS-02-R13) | PRD test `[NS-02-R13]`; device |
+| FD-R11 | Back keeps the query. Given a tap on a result, When Back is pressed on the letter page, Then the same query and scroll position return (PRD NS-02-R12) | PRD test `[NS-02-R12]` |
+| FD-R12 | Queries are not remembered. Given any query, Then it is never saved, there is no recent-search list, it clears when the parent leaves the Book, and the field has autocorrect and spell check off (PRD NS-02-R14) | PRD test `[NS-02-R14]` |
+| FD-R13 | Short query is silent on screen and described to a screen reader. Given under 3 characters (non-CJK), Then nothing changes on screen and the field's accessibility hint is present | unit test on the field props; device with VoiceOver |
 
 ## 11. The 12-line job-clarity review
 
@@ -150,7 +155,7 @@ Door lines. Not a consent screen, but it reads the whole book:
 | J6 | Pass | One field; results are the only other thing |
 | J7 | Pass | Find is not on Home; Home shows no list |
 | J8 | Pass | An empty book has no Find (absent); not an empty box |
-| J9 | Pass | Section 6 |
+| J9 | Pass | Section 6 (the under-3 state has no on-screen line by PRD rule; its next step is the VoiceOver hint) |
 | J10 | Open | Slots are new |
 | J11 | Open | Device pass |
 | J12 | Pass | Without it a parent scrolls months; no other place finds by word |

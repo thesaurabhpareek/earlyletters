@@ -20,7 +20,16 @@ Rules that hold:
 - Labels: "Home" and "Me" are the founder's words. "Book" stays. Single words, from the glossary. Apple HIG tab-bar guidance (single-word labels) and the 13 pt label floor with Large Content Viewer in `_layout.tsx` are second-hand through NX-41 R14 and NX-30a: UNVERIFIED, I opened neither Apple nor the file this session.
 - Family is never a tab. Co-parent "coming soon" is at most one caption line in Me (section 5).
 - The Library is not a tab (spec 1). Share is not a tab (spec 3).
-- Each tab's first screen has one level 1 heading that says its job, and the tab label is its short name.
+- Each tab's first screen has one level 1 heading, and the heading and the first line under it together say the tab's job (relaxed after Review B finding 12: a greeting is a heading but does not say a job by itself). The tab label is its short name. Intended headings (PROPOSED; the words are `content`'s):
+
+| Tab | Level 1 heading | First line under it | VoiceOver (tab, then heading) |
+|---|---|---|---|
+| Home | The greeting (`tonight.greeting.*`, EVIDENCE for the key family) | The day's prompt, which asks the parent to say something to {child} | "Home, tab, 1 of 3" then the greeting as heading, then the prompt |
+| Book | "{child}'s book" (the cover title) | The job line `tabsJob.book` (PROPOSED slot, 12 words or fewer) | "Book, tab, 2 of 3" then the title as heading |
+| Me | "Me", the same word as the tab (changed from "Settings": two names for one screen would read "Me, tab" then "Settings, heading") | "Account and settings" as the job line (PROPOSED slot; it keeps the Terms' words "Settings, Plan" true because the line contains Settings) | "Me, tab, 3 of 3" then "Me, heading" |
+
+Q1 in section 13 changes to match; `content` and the founder decide.
+- Glossary: "Home" and "Me" are the founder's tab words and are not yet in the BRAND.md glossary. PROPOSED glossary rows (for `content`, not edited here): Home = the tab where a letter is started; Me = the tab for account and books. The navigation test N6(b) fails on day one unless the glossary rows ship in the same PR as the test (section 12, step 2).
 
 Renames this implies in code (labels only; keep routes): Tonight to Home, You to Me; the `family` screen leaves the bar. Collisions with open PRs are listed in NAV-TAB-ROLES section 10 and not repeated; the third slot now becomes Me (not Share), which removes its R-c.
 
@@ -44,7 +53,7 @@ Renames this implies in code (labels only; keep routes): Tonight to Home, You to
 
 1. Date line with the child's age in words, and the greeting by time of day (`tonight.greeting.*`). The child switcher when there is more than one book (NAV-TAB-ROLES Gaps: Tonight has none today).
 2. The prompt, with "Another thought".
-3. The capture cluster, pinned: Speak, Type (64 pt, equal), then the quiet "Start from a photo" (spec 1), then "Not much today".
+3. The capture cluster, pinned at standard text sizes: Speak, Type (64 pt, equal), then the quiet "Start from a photo" (spec 1), then "Not much today". At accessibility sizes it is not pinned (section 3.5).
 4. Waiting letters as flat rows (`tonight.draft.*`); two or more fold into one row.
 5. At most one memory slip, flat, opening the letter in the Book (NX-43 R2 to R8). Or one day card (ML-S10), never both.
 6. The Plus line, only when it applies.
@@ -85,6 +94,10 @@ Home lists no kept letters and starts nothing but a letter.
 
 `ScreenHeader` (heading level 1: the greeting), `Text` (`prompt`, `promptHero`), `CaptureBar` rest variant, `Button` (`quiet`), `Card` flat variant for waiting rows and the slip (a flat row so "raised" keeps meaning a kept letter, NAV-TAB-ROLES R1; prototype question at AX5, UNVERIFIED), `Lamp` scene `tonight` (daypart, breathes), `ListRow`. Tokens: `atmosphere.scene.tonight`, `target.capture`, `space`, `radius.md`. The tab keeps the scene key `tonight` until a tokens change renames it.
 
+### 3.5 Home at AX5 (added after Review B finding 11)
+
+Speak and Type stack at AX sizes (64 pt each) and, with the two quiet buttons, the cluster can fill most of a phone. So, at the accessibility sizes (AX1 and up; the exact switch point is for `mobile` to find on a device, UNVERIFIED) the cluster is unpinned and part of the scrolling page, as spec 3 does for its sheet. Reading and focus order: greeting (heading), prompt and "Another thought", then the cluster (Speak, Type, Start from a photo, Not much today), then waiting rows, then the memory slip. The prompt is never pushed under the cluster. The two stacked quiet buttons, "Start from a photo" and "Not much today", keep at least `space[2]` (8 pt) between their 44 pt targets, so a mis-tap between them is unlikely; `space[3]` (12 pt) is the PROPOSED default at AX sizes. At standard sizes the pinned cluster keeps its current layout. Proof: IA-R10.
+
 ## 4. Book (Read)
 
 ### 4.1 What it shows
@@ -105,7 +118,7 @@ The cover band (title, age in words, Read together, child switcher when there is
  A closed letter. Opens 12 Jun 2044.      <- flat row, the author only (if spec 4 is built)
 ```
 
-Letter page: read it, hear it, then the object actions: Add a photo, This was a first, Close until a day, Share this letter. Each opens a sheet or row and changes this letter only.
+Letter page: read it, hear it, then the object actions in section 4a: Add a photo, This was a first, Close until a day (the "Add to this letter" group), then Share this letter on its own. Each opens a sheet or row and changes this letter only.
 
 ### 4.3 States
 
@@ -124,6 +137,34 @@ Letter page: read it, hear it, then the object actions: Add a photo, This was a 
 ### 4.4 Components
 
 `BookCover` (2.24), `MonthOpener` (2.20), `LetterCard` (2.5), `AppNote` and `QuietDayRow` (2.5b), `LensRow` (NEW), `FindBar` (NEW), `SealedRow` (NEW), `AudioPlayer` (2.21), `ReadTogetherPlayer` (2.22), `PhotoFrame`/`MediaGrid`. Lamp scene `book` (still, intensity 0.6).
+
+## 4a. The letter page (this spec owns it; added after Review B finding 5)
+
+The letter page is the busiest screen in the new scope: four specs add an action to it (photo, a first, a seal, share). One object, one place. Specs 1, 3 and 4 supply the actions; this section sets the page.
+
+**Heading and job.** One level 1 heading: the letter's date line (for example "Sat 14 Oct"), with "From {signsAs}" directly under it. The page's job is Read (one letter). The reading content comes first and is whole at every text size.
+
+**Primary action.** None among the object actions. The one prominent control is the existing player ("Hear it"), when a recording exists; every object action below is a quiet row. This is stated so J6 can be tested: on a letter with no recording the page has no primary button at all.
+
+**Order, top to bottom (PROPOSED).**
+1. Heading and "From" line.
+2. The words, whole.
+3. The photo, if there is one (spec 1: one photo in Build 13).
+4. The player, if there is a recording.
+5. The signature and small-fix rows that exist today (order as the page has it; UNVERIFIED, I did not read the page code).
+6. The group "Add to this letter" (PROPOSED name; `content` owns it), as a level 2 heading, then these quiet rows in this order: "Add a photo" or, once one is attached, "Change photo" (spec 1); "This was a first" (spec 4 A2: a quiet action that opens a small sheet; resolves PRD OQ-A2); "Close this letter until a day" (spec 4 B3, PLACEHOLDER wording; absent on a letter whose seal has ended). The order is most-used first and the seal last because it hides the letter.
+7. Then, separated from the group by a hairline `line` rule and extra space (`space[6]`), one row on its own with no group name: "Share this letter" (spec 3; the verb is a `content` decision). Share is not an add, so it is not in the "Add to this letter" group, and it comes last because it is the only action that sends the letter off the phone (Review B finding 5).
+8. The existing letter menu (private, date, delete) is unchanged and stays in the page's menu, not in the group. Delete is not among the quiet rows.
+
+**Absence rules (each action is absent, not greyed).** Another parent's letter: no photo, first, seal or share row. A sealed letter (the author's closed row opens as normal only when the seal ends): no share. A quiet-day mark: none of the four. A letter with no words: no share. A letter whose seal has ended: no seal row.
+
+**Group name.** `book.letter.addGroup` = "Add to this letter" (PROPOSED). Alternatives for `content`: "Keep with this letter". The name must stay true of every row in it, so Share is not in it.
+
+**VoiceOver order.** Heading, From line, words, photo (its fixed label), player, signature rows, the group heading ("Add to this letter, heading"), the three rows in order, Share. Headings are reachable by the Headings rotor: the date heading and the group heading. Each action row reads its label, "button", and a short hint; none says it will change other letters.
+
+**AX5 layout.** One column, the page scrolls, there is no pinned bar. Rows are 56 pt minimum and grow with text; at least `space[2]` (8 pt) between rows; the player's controls stack; the words are whole and nothing is cut. The group heading and rows stay together (no row separated from its group by a page break in the scroll).
+
+**Requirement.** IA-R11 in section 9.
 
 ## 5. Me (Look after)
 
@@ -163,7 +204,16 @@ Offline: rows needing the network say so in their own words; no row shows an err
 
 ## 7. Look, motion and accessibility for the tabs
 
-Rooms differ by rule (NAV-TAB-ROLES section 8, kept): Home has the daypart lamp that breathes; Book has a still lamp and raised cards for kept letters; Me has plain paper. Three differences are visible at once (NX-41 R4's test). Switching tabs is calm: the lamp settles, no content slides (NX-41 R5; existing EXPERIENCE_PASS rule). Tab switch motion: `swapMs` 150 cross-fade; Reduce Motion: none. Tab bar: three items, 125 pt each at 375 pt (computed: 375 / 3), labels at the 13 pt floor with Large Content Viewer at AX sizes; I measured no label width (UNVERIFIED). VoiceOver: "Home, tab, 1 of 3", "Book, tab, 2 of 3", "Me, tab, 3 of 3. Account and settings." Each tab has one level 1 heading read first. Targets 44 pt or more. Reduce Transparency: the bar is solid `surfaceRaised` with a 1 pt `line` top edge (`platform/blur-surface`).
+Rooms differ by rule (NAV-TAB-ROLES section 8, kept): Home has the daypart lamp that breathes; Book has a still lamp and raised cards for kept letters; Me has plain paper. Three differences are visible at once (NX-41 R4's test). Switching tabs is calm: the lamp settles, no content slides (NX-41 R5; existing EXPERIENCE_PASS rule). Tab switch motion: `swapMs` 150 cross-fade; Reduce Motion: none. Tab bar: three items, 125 pt each at 375 pt (computed: 375 / 3), labels at the 13 pt floor with Large Content Viewer at AX sizes; I measured no label width (UNVERIFIED). VoiceOver: "Home, tab, 1 of 3", "Book, tab, 2 of 3", "Me, tab, 3 of 3. Account and settings." Each tab has one level 1 heading read first. Targets 44 pt or more.
+
+Per-tab Dynamic Type and VoiceOver (Review B finding 11; device behaviour UNVERIFIED until `qa`):
+
+| Tab | AX5 | VoiceOver reading order |
+|---|---|---|
+| Home | Cluster unpinned and scrolling (section 3.5); Speak and Type stack at 64 pt; prompt first | Greeting heading, prompt, Another thought, Speak, Type, Start from a photo, Not much today, waiting rows, memory slip |
+| Book | Cover band stacks; lens row becomes wrapping chips; cards are one column, words whole (fade only where the full text is one tap away); Find stays 44 pt | Title heading, job line, Find, Read together, lens row, then each month heading and its cards |
+| Me | One column; rows grow; the co-parent caption wraps, never truncated, 44 pt tall at least | "Me" heading, job line, Account, Plan, Children, Writing, Your letters, co-parent caption, Take the book with you, Privacy and security, Delete account, Help and legal, About |
+| Letter page | Section 4a | Section 4a | Reduce Transparency: the bar is solid `surfaceRaised` with a 1 pt `line` top edge (`platform/blur-surface`).
 
 ## 8. Copy slots (for `content`)
 
@@ -198,6 +248,9 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 | IA-R7 | Me holds no letter, lamp or badge | device |
 | IA-R8 | Co-parent coming soon is one small quiet caption line in Me, below the fold of the first screen, muted, with no badge, no row, no chevron, no number or date. It is tappable (amended by the founder 11 Nov, N1) and opens only the one sheet in spec 07; nothing else in Me opens it. Requirements CS-R1 to CS-R16 in `07-COPARENT-COMING-SOON-11nov.md` | device (NX-41 R10); 07 section 5 |
 | IA-R9 | Home lists no kept letters; at most one memory slip | device, AX5 |
+| IA-R10 | Home at AX5. Given AX1 and up, Then the capture cluster scrolls with the page, the prompt is first, no part of the prompt is hidden behind the cluster, and the two quiet buttons are 8 pt or more apart | device, AX5 |
+| IA-R11 | The letter page. Given a kept, open letter by the viewer with a photo and a recording, Then the page has one level 1 heading (the date), the order in section 4a, the "Add to this letter" group holding only add actions, Share on its own below it, no primary button other than the player, and one column at AX5; Given a quiet-day mark, another parent's letter or a sealed letter, Then the absence rules of section 4a hold | device; a render test listing the rows for each of those cases |
+| IA-R12 | Tab headings. Given each tab, Then its level 1 heading and the line under it match the table in section 1, and Me's heading equals the tab label | device with VoiceOver; string test |
 | IA-R10 | Accessibility per section 7 in both themes with Reduce Motion and Reduce Transparency | device |
 | IA-R11 | Content. New strings pass `rules.test.ts` and the tab-labels test | content tests |
 | IA-R12 | These specs add no analytics event. The one event the photo PRD proposes (`media_added`, opt-in, `source` and `kind` only, NX-39-R34) is proposed-only, belongs to the PRD, and needs the catalog first | catalog |
@@ -311,7 +364,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 |---|---|---|
 | 0 | `mobile` | Prerequisite for N3: consolidate every capture start into one function, `startCapture({ source })`, with the `source` values in 10.1; or accept the weaker snapshot mode in 10.1 until it exists |
 | 1 | `product` | Reconcile NX-42 (the Moments tab dissolves into Home mode, Book lens, letter actions) and NX-41 R12 with this bar; assign ids to IA-R1 to R12 |
-| 2 | `content` | Slots in section 8 and each spec; `legal` read of "Share" as a button word |
+| 2 | `content` | Slots in section 8 and each spec; `legal` read of "Share" as a button word. The glossary rows for "Home" and "Me" ship in the same PR as navigation test N6(b), or N6(b) fails on day one |
 | 3 | `mobile` | Labels and manifest; remove the Family tab; export rows into Me's section; flat waiting rows (needs #721); Book lens row and Find; the test in section 10 |
 | 4 | `design-systems` | Tokens in the index section 7; `COMPONENTS.md` entries for `LensRow`, `FindBar`, `SharePreview`, `SealedRow`, `FirstMark`, `MediaTile` family; fix 2.18; `IA.md` updated when the bar ships |
 | 5 | `qa` | Device passes; AX5 and VoiceOver tables |
@@ -321,7 +374,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | Is the Me heading "Settings" or "Me"? | "Settings" (keeps the Terms' "Settings, Plan" true); the tab label is Me |
+| Q1 | Is the Me heading "Settings" or "Me"? | "Me" with the first line "Account and settings" (changed after Review B finding 12: a tab called Me over a heading called Settings gives a VoiceOver user two names; the first line keeps "Settings" in the screen so the Terms' "Settings, Plan" stays true). The earlier default was "Settings". PROPOSED; `content` and the founder decide |
 | Q2 | Does export live as a section of Me, or its own page? | A section in Me with two or three rows |
 | Q3 | Home memory slip below drafts or only when nothing waits? | Below drafts, flat (NX-43 R6) |
 | Q4 | The Book gear: remove when Me ships? | Remove after one device pass shows Me is found |

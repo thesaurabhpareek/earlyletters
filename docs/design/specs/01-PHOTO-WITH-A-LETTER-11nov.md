@@ -12,7 +12,7 @@ The rule that makes it safe: every picture belongs to a letter. A picture with n
 
 Build 13 holds ONE photo per letter (coordinator, 11 Nov). Everything in this spec that handles several photos is marked post-Build 13 and is not built then: the cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo letter layouts, the strip of tiles, and the viewer's swipe between items. In Build 13 the single picker returns one photo; the Photos lens, the letter page and Share show one. Videos are not in Build 13.
 
-Aligned to PRD #795 (head `28284f79`), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
+Aligned to PRD #795 (head `2245c8be`, read through the REST API on 11 Nov; Review B re-checked the conflicts listed in section 5 below), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
 
 ## 2. Where a photo can be added (the whole map)
 
@@ -73,36 +73,49 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 
 ## 4. Review and the letter page (as ML, with the entry rule)
 
-- Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Build 13: one photo per letter, so the control reads as adding a photo and is hidden once one is attached (a Change action replaces it). The multi-photo "Add photos" row is post-Build 13. Words above never move.
+- Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Build 13: one photo per letter, so the control reads as adding a photo; once one is attached it is replaced by "Change photo". Before Keep nothing is kept, so Change swaps at once and needs no Undo. The multi-photo "Add photos" row is post-Build 13. Words above never move.
+- Replace on a kept letter (PRD NS-01-R7): on the letter page, "Change photo" asks first ("Replace this photo?" is a slot, PROPOSED below); the first photo stays until the replace is confirmed; after confirming, a `Toast` offers Undo for 10 seconds, which restores the first (the toast's 10 s is the PRD's number, longer than the usual toast; `mobile` sets it).
+- Quiet-day marks (PRD NS-01-R25): "Not much today" (D-084) is a mark, not a letter with words. No photo control is shown on it, in Review or on the letter page, and nothing can attach to it; the Home photo-first button is a different path and never creates a quiet-day mark.
 - Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
+- The action group on the letter page, its name and order are in `06-HOME-BOOK-ME-IA-11nov.md` section 4a, which owns that page; this spec supplies the "Add a photo" or "Change photo" action only.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
-- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `28284f79`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
+- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `2245c8be`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
 
 ## 5. The Photos lens in the Book (D)
 
-### 5.1 Layout
+### 5.1 Layout (changed after Review B: letter cards with a thumbnail, as PRD NS-01-R11 says)
 
 The Book header has a `LensRow` under the cover band: "Months" always; "Photos" only once a photo is attached to a kept, open letter; photos on a sealed letter do not count and do not show until it opens (04 FS-R10) (NAV-R4). With no photo there is no lens row at all, no empty tab, no hint.
+
+PRD NS-01-R11 (EVIDENCE, read at head `2245c8be`): the lens "lists letters that have a picture, newest first by the letter's date, each as a letter card with a thumbnail; it shows no number of pictures, no count in any VoiceOver string and no 'add' control." This spec follows it. The earlier three-column grid of bare tiles is withdrawn: a bare tile has no letter name, so a VoiceOver user could not tell which letter it opens (Review B finding 2).
 
 ```
  Asha's book                        [find]
  7 months          [ Read together ]
  ( Months )  Photos                 <- LensRow, text labels
  JUNE
- [photo][photo][photo]              <- 3 columns, 4 pt gap
- [photo][photo]
+ +--------------------------------------+
+ | [thumb]  14 June, From Mama          |  <- a LetterCard, thumbnail leading
+ |          The first words of the      |
+ |          letter, whole at AX5...     |
+ +--------------------------------------+
+ +--------------------------------------+
+ | [thumb]  2 June, From Papa           |
+ +--------------------------------------+
  MAY
- [photo][photo][photo]
+ ...
 ```
+(The ellipsis above is the drawing's, not the card's: the card shows the letter's words per the Book's existing card rule, ExcerptFade allowed because the whole letter is one tap away.)
 
-- Month headings reuse the Book's own month words (`MonthOpener` words, not a new label).
-- A tile opens its letter, not a viewer (ML-S9). Back returns to the lens.
+- Order: newest first by the letter's date (the PRD's rule), under the Book's own month words (`MonthOpener` words, not a new label).
+- Each row is the Book's `LetterCard` with a leading thumbnail (`PhotoFrame inline`, about 72 pt, radius `md`, 1 pt `line` edge). The card opens its letter, not a viewer (ML-S9). Back returns to the lens.
 - No add button, no count, no "N photos this month".
-- The lens still shows the letter's date under each tile at AX5.
+- The thumbnail never replaces the letter's date or the "From" line; both sit in the card as they do in Months.
+- At AX5 the thumbnail moves above the text (one column) and the card grows; the date and "From" line stay whole.
 
-### 5.2 Components
+### 5.2 Components and Build 13 scope
 
-`LensRow` (NEW, a `SegmentedControl` preset: text labels, 44 pt, becomes `Chip` filters at AX5 per COMPONENTS 2.9), `MediaGrid` (NEW, ML 5.2), `MediaTile` (NEW).
+`LensRow` (NEW, a `SegmentedControl` preset: text labels, 44 pt, becomes `Chip` filters at AX5 per COMPONENTS 2.9) and a `LetterCard` variant with a leading thumbnail. Build 13 does NOT need `MediaGrid` (a grid of tiles) or the multi-tile `MediaStrip`: one photo per letter, shown as a thumbnail in a card and as a single photo on the letter page. Whether a `MediaTile` is wanted as the thumbnail, or `PhotoFrame inline` is enough, is UNVERIFIED: I read only the directory listing of `components/ui`, not the code, and COMPONENTS 2.23 says `PhotoFrame` is not in `components/ui`. Default: `PhotoFrame inline`. `MediaGrid` moves to post-Build 13 (index section 7 updated).
 
 ## 6. States (all surfaces)
 
@@ -131,9 +144,9 @@ No parallax, Ken Burns, slideshow, autoplay or reel, ever. Haptic: `tap` on sele
 
 ## 8. Dynamic Type and VoiceOver
 
-- AX5: the Home photo-first button stays 44 pt and wraps onto two lines if needed; the thumbnail on Ready scales to the screen width and the aura moves below it; Review and the letter page use one tile per row; the lens row becomes chips that wrap; tile dates sit under tiles in `callout`. Letter text is whole in every state.
+- AX5: the Home photo-first button stays 44 pt and wraps onto two lines if needed; the thumbnail on Ready scales to the screen width and the aura moves below it; Review and the letter page use one tile per row; the lens row becomes chips that wrap; the lens cards go to one column with the thumbnail above the words. Letter text is whole in every state.
 - VoiceOver on Home: the button reads as its own words; after the pick, focus moves to the thumbnail (label: the fixed phrase "Photo with this letter", NS-01-R9, or the parent's own typed text if there is any; then "Change") then the red circle. The reading order is thumbnail, prompt, Speak, Type (NS-01-R20). The app never generates a description.
-- Lens row: the segmented control's own selected trait; no count of pictures in any VoiceOver string (NS-01-R11). Each lens card reads the letter's card name plus the fixed photo label.
+- Lens row: the segmented control's own selected trait; no count of pictures in any VoiceOver string (NS-01-R11). Each lens card is one VoiceOver element whose name is the letter's own card name (the letter's date, who it is from, then the start of its words, as the Book's cards read: UNVERIFIED until a device read) followed by the photo label, the fixed phrase "Photo with this letter" or the parent's own typed text when there is any (NS-01-R9, R21). Example, fictional: "14 June, From Mama. Photo with this letter." The hint is the card's existing one ("Opens the letter" is a slot for `content`, PROPOSED). The thumbnail itself is hidden from VoiceOver so the card is read once.
 - Typed description (ML-S7, 140 characters) is the only text alternative. Said plainly in the spec, as ML-S8 does: a video carries speech and the app makes no captions.
 
 ## 9. Copy slots (for `content`; I write no final strings)
@@ -149,6 +162,9 @@ Existing on `develop`: `tonight.states.*`, `listen.*` (in `strings.en.ts` on `da
 | `capture.photo.openFailed` | The picture could not be opened | Says what to do next |
 | `book.lens.months`, `book.lens.photos` | Lens labels | One glossary word each |
 | `book.letter.addPhoto` | Object action on the letter page | Starts with a verb; "this letter" |
+| `book.letter.changePhoto` | Letter-page action once one photo is attached (PROPOSED) | Starts with a verb; "photo" |
+| `book.letter.replacePhotoAsk` | Confirm before replacing (NS-01-R7) | One question; two plain buttons of equal weight |
+| `book.letter.replacePhotoUndo` | Undo toast after replacing | Says what happened; Undo for 10 seconds |
 | `book.photos.a11yTile` | The fixed VoiceOver label of a picture: the PRD's phrase "Photo with this letter" (NS-01-R9); the parent's typed text replaces it when present | No machine caption, no count, no date generated |
 | Reuse | ML chooser, chips, cap, cloud, missing strings | Per `MEMORY-LIBRARY-WORDS-10nov.md`; its Truth lines still apply |
 
@@ -175,7 +191,11 @@ Door lines (COORDINATION section 10; COUNSEL-READ, none cleared):
 | PW-R4 | Lens on material. Given at least one kept photo, Then the Book offers Photos; Given none, Then no lens row and no empty state | device |
 | PW-R5 | Words are whole. Given any photo count and AX5, Then letter text is not truncated and does not move when a photo is added | device, AX5 |
 | PW-R6 | No machine words. Given a photo, Then no caption, tag, description or place is generated by the app; only the parent's own typed text and typed place (NS-01-R21) are shown. Build 13 shows no date and no place read from the file (PRD OQ-1; the date chip waits for spike BL-843), so none is shown, stored or derived. Post-Build 13, a file date, if shown, is never inserted into the letter | review of strings and code |
-| PW-R7 | Accessibility. Given VoiceOver, AX5, Reduce Motion, Reduce Transparency, both themes, Then section 8 holds and the viewer text meets 15 : 1 (ML section 6) | device |
+| PW-R7a | Accessibility, Build 13. Given VoiceOver, AX5, Reduce Motion, Reduce Transparency, both themes, Then section 8 holds, each Photos lens card reads as one element whose name contains the letter's date and who it is from, and no string has a count | device |
+| PW-R7b | Viewer text, post-Build 13 only (the viewer is not in Build 13). Given the viewer, Then its text meets 15 : 1 (ML section 6) | device, in the build that ships the viewer |
+| PW-R9 | Replace is confirmed and undoable (PRD NS-01-R7). Given a letter with a picture, When the parent adds a second, Then it asks first; the first stays until confirmed; Undo restores it for 10 seconds | PRD test `[NS-01-R7]`; device |
+| PW-R10 | A quiet-day mark carries no picture (PRD NS-01-R25). Given "Not much today", Then no picture control shows and an attempt writes 0 files | PRD test `[NS-01-R25]` |
+| PW-R11 | The Photos lens is letter cards. Given the lens, Then each row is a letter card with a thumbnail, newest first by the letter's date, with no count and no add control (PRD NS-01-R11) | PRD test `[NS-01-R11]`; device |
 | PW-R8 | Truth. Given any line about where a photo is kept, Then it is shown only if true of the shipped build (ML 1.2) | `legal`, `privacy` |
 
 ## 12. The 12-line job-clarity review
