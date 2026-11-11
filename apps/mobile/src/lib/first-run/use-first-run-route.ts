@@ -50,7 +50,7 @@ export function useFirstRunRoute(): FirstRunRoute {
   const stateRef = useRef(auth.state);
   stateRef.current = auth.state;
   const wasOnline = useRef(online);
-  /** The step of the render before this one: "Sign in is back." is said only to someone who was on the outage screen. */
+  /** The step of the render before this one: "You are back online." is said only to someone who was on the outage screen. */
   const lastStep = useRef<FirstRunStep>('unchanged');
   const reading = useRef(false);
 

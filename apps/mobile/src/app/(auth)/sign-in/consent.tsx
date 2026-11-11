@@ -56,7 +56,6 @@ import { authErrorMessage } from '@/lib/auth/messages';
 import { afterConsent, claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
 import { readAccountBooks } from '@/lib/first-run/account-books';
 import { consentHandoff } from '@/lib/first-run/handoff.logic';
-import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -288,8 +287,7 @@ export default function ConsentSteps() {
   }
 
   const step = s.steps[0];
-  // A brand-new install has no letters, so its error reads without "Your letters are safe" (NX-36 2.6, S6).
-  const error = signInErrorMessage(s.error, children.length > 0);
+  const error = authErrorMessage(s.error);
   return (
     <StepFade step={step}>
       {step === 'terms' ? (

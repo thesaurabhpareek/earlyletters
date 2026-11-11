@@ -95,10 +95,7 @@ describe('[NX-36-S2] Welcome and sign in', () => {
   });
   it('[NX-36-S2] no first-run word is kept that nothing can reach: a 429 and "not available" go to the outage screen, not under the buttons', () => {
     // Only `provider` stays inline (inlineErrorKind); the gate sends the rest to S3. Words for them would be dead and still need approval.
-    // The four after `provider` are #728's lines for the email, code and consent screens (S5, S6; signInErrorMessage), not the Welcome's.
-    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider', 'network', 'codePaused', 'consentUnavailable', 'unknown']);
-    expect(authCopy.firstRun.errors).not.toHaveProperty('rateLimited');
-    expect(authCopy.firstRun.errors).not.toHaveProperty('notAvailable');
+    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider']);
     for (const kind of ['rate_limited', 'email_wait', 'not_available'] as const) {
       expect(inlineErrorKind({ status: 'signedOut', error: kind })).toBeNull();
       expect(welcomeErrorMessage(kind)).not.toBe(authCopy.firstRun.errors.provider);
@@ -183,7 +180,7 @@ describe('[NX-36-S3] Outage and offline', () => {
     expect(authCopy.offline.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
     expect(authCopy.offline.body).toMatch(/Try again/);
     expect(authCopy.outage.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
-    // The reconnect path (use-first-run-route.ts) only puts the Welcome back and says "Sign in is back."; no timer retries sign-in.
+    // The reconnect path (use-first-run-route.ts) only puts the Welcome back and says "You are back online."; no timer retries sign-in.
     expect(route).not.toMatch(/setInterval|backoff|back-off/i);
     expect(outage).not.toMatch(/by itself/);
   });
@@ -192,7 +189,7 @@ describe('[NX-36-S3] Outage and offline', () => {
     expect(outage).toMatch(/quiet=\{localStartOffered \?/);
     expect(outage).toMatch(/kind="error"/);
     expect(outage).not.toMatch(/attempt|retries/i);
-    expect(authCopy.outage.backOnline).toBe('Sign in is back.');
+    expect(authCopy.outage.backOnline).toBe('You are back online.');
     // Said by the route, on a real reconnect only (test/use-first-run-route.test.ts), not by the screen on every change of step.
     expect(route).toMatch(/announce\(authCopy\.outage\.backOnline\)/);
     expect(onboarding).not.toMatch(/outage\.backOnline/);
@@ -289,7 +286,8 @@ describe('[NX-31-R17] first run keeps the person where they are once past the we
     }
   });
   it('[NX-31-R17] the steps report that they are past their welcome step, and the route is told', () => {
-    expect(onboarding).toMatch(/if \(step !== 'welcome'\) onPastWelcome\?\.\(\);/);
+    // The Welcome start reports once it leaves the Welcome (handoff.logic reportsPastWelcome; the signed-in start waits to move off the promise step).
+    expect(onboarding).toMatch(/if \(reportsPastWelcome\(\{ start, step \}\)\) onPastWelcome\?\.\(\);/);
     expect(onboarding).toMatch(/onPastWelcome=\{route\.markPastWelcome\}/);
   });
 });

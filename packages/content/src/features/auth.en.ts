@@ -11,6 +11,12 @@ import { en } from '../strings.en';
 const lettersSafe = 'Your letters are still on this phone.';
 
 /**
+ * Registered (docs/legal/in-app-disclosures.md): the agreement line, word for word. The consent screen (`consent.terms.agreeLine`)
+ * and the Welcome (`sheet.agreeLine`, NX-36 S2) say the same sentence, so it is typed once and neither can drift from the other.
+ */
+const agreeLine = 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.';
+
+/**
  * Words for sign-in, consent and the Account screen (PRD A sections 7 and 9,
  * PRD B, BRIEF decisions 4 and 11), as EXPERIENCE_PASS_2026-10 chapter 7 sets
  * them (S52 to S56, package P8a). test/rules.test.ts runs the content rules on
@@ -46,7 +52,7 @@ export const authCopy = {
       sign_in_first: 'Sign in to begin your book.',
     },
     // NX-36 S2, above the two buttons. The two documents follow it as their own 44 pt links (labels: consent.terms.termsLink and .privacyLink).
-    agreeLine: 'By continuing you agree to the Terms of Service and Privacy Policy.',
+    agreeLine,
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
     email: 'Sign in with email',
@@ -114,29 +120,23 @@ export const authCopy = {
   firstRun: {
     errors: {
       provider: 'That sign-in did not finish. Try again, or try another way.',
-      // NX-36 2.6, S5 and S6: the existing lines begin "Your letters are safe", which a brand-new install cannot say
-      // (it has no letters). These four are the same sentences without it. Each needs founder word approval.
-      network: 'Sign in once you are back online.',
-      codePaused: 'You can try a code again in 15 minutes.',
-      consentUnavailable: 'Setting up your account did not finish. Try again.',
-      unknown: 'That did not go through. Try again.',
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
   // the button does. The body says one thing, so the shown paragraph (body, then note) repeats nothing.
   outage: {
     // Differs from NX-36 ("We can't reach sign-in right now."): the content rules allow no "we" outside registered lines.
-    title: 'Sign in cannot be reached right now.',
+    title: 'Sign-in cannot be reached right now.',
     // Differs from NX-36 (which also named the local start here, and so said it when the button was not there).
     body: 'Try again in a moment.',
     retry: 'Try again',
     startLocal: 'Start on this phone',
-    startLocalNote: 'Start the book on this phone for now. You can sign in later to bring it to your account.',
+    startLocalNote: 'Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.',
     // Announcement only, when the connection comes back under the outage screen.
-    backOnline: 'Sign in is back.',
+    backOnline: 'You are back online.',
   },
   offline: {
-    title: 'Sign in needs a connection.',
+    title: 'Sign-in needs a connection.',
     // Differs from NX-36 ("We will try again when you are back online."): no "we", and the screen does not try to sign
     // anyone in by itself. It reads the connection when Try again is tapped, and it goes back to sign in on its own when
     // the connection returns, so the line says what the person does.
@@ -210,7 +210,7 @@ export const authCopy = {
     terms: {
       title: 'Before your book syncs',
       body: 'Your letters stay private to you and the family you invite. We never sell them, use them for ads or use them to train machine learning models.',
-      agreeLine: 'By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.',
+      agreeLine,
       termsLink: 'Terms of Service',
       privacyLink: 'Privacy Policy',
       agree: 'Agree and continue',
