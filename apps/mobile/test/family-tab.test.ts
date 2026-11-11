@@ -160,11 +160,13 @@ describe('[S57] the room: the lamp, and the tab titles', () => {
     expect(lampAllowed({ highContrast: false, reduceTransparency: true })).toBe(false);
   });
 
-  it('the three tab titles come from packages/content; none is typed in the layout', () => {
-    expect(en.tabs).toEqual({ tonight: 'Tonight', book: 'Book', family: 'Family' });
+  it('the tab titles come from packages/content; none is typed in the layout', () => {
+    // You (NX-30a) is the fourth, a placeholder label; its screen options span lines, so tab-bar.test.ts pins it.
+    expect(en.tabs).toEqual({ tonight: 'Tonight', book: 'Book', family: 'Family', you: 'You' });
     const layout = code('app/(tabs)/_layout.tsx');
     expect(layout).not.toMatch(/title: '|button\('/);
     for (const k of ['tonight', 'book', 'family']) expect(layout).toMatch(new RegExp(`title: t\\.${k}, [^}]*tabBarButton: button\\(t\\.${k}\\)`));
+    expect(layout).toMatch(/title: t\.you,[^]*tabBarButton: button\(t\.you\)/);
     expect(layout).toMatch(/const t = copy\.tabs;/);
   });
 });

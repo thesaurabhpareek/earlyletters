@@ -23,6 +23,7 @@ Every tree below is the first store build unless marked.
 | Tonight | `/` | Start today's letter | A greeting, then the prompt | every build |
 | Book | `/book` | Read and hear what is kept | "{child}'s book" | every build |
 | Family | `/family` | Build 2: "Who writes to {child}" | | Today: every build (`(tabs)/_layout.tsx:71`), "coming soon" with servers off. After the D-126 change: build 2 and later |
+| You | `/you` | Settings home and Account, in 1 and 2 taps (NX-30a). The same component as `/settings`, which the Book gear and the deep link still open as a pushed page. Label is a placeholder, founder to confirm | "Settings" | every build |
 
 ## Tonight
 

@@ -206,6 +206,7 @@ export const ADDED = [
   'en.tabs.tonight',
   'en.tabs.book',
   'en.tabs.family',
+  'en.tabs.you',
   // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
   'features.billing.keepGate.heldNoteSynced',
   // P5 critics' pass (28 Oct, S6, S8, L9): the Erase now failure, another parent's provenance line, Restore without a name.
