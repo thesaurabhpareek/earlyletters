@@ -37,6 +37,46 @@ import { fileURLToPath } from 'node:url';
 export const ID_SOURCE = String.raw`[A-Z][A-Z0-9]*-(?:REQ|NFR)-\d{3}(?:[a-z](?![A-Za-z0-9]))?`;
 const ID_ONLY = new RegExp(`^${ID_SOURCE}$`);
 
+// Next-release requirement ids (docs/roadmap/next/03-requirements): NX-31-R14, NX-30a-R1,
+// NX-36-S13, NS-01-R16. Two digits, an optional lowercase letter, then R or S and a number. They
+// are read apart from the X-REQ ids: they never fail --check, they are only reported.
+export const NX_SOURCE = String.raw`N[XS]-\d{2}[a-z]?-[RS]\d{1,3}[a-z]?(?![A-Za-z0-9])`;
+
+/** Every NX or NS requirement id in `text`. */
+export function extractNxIds(text) {
+  return [...new Set(text.match(new RegExp(`(?<![A-Za-z0-9-])${NX_SOURCE}`, 'g')) || [])];
+}
+
+/**
+ * NX or NS ids a requirements file defines. `fileName` is the file's base name. A row whose
+ * first cell is a full id defines it. A row whose first cell is a bare `R6` defines
+ * `<file prefix>-R6` when the file is named `NX-nn-...` or `NS-nn-...`. Only tables headed with
+ * a first cell that is not a persona/summary label matter, so the bare form is limited to R rows.
+ */
+export function nxDefinitions(md, fileName) {
+  const prefix = (fileName.match(/^(N[XS]-\d{2}[a-z]?)(?:-|\.)/) || [])[1];
+  const out = new Map();
+  md.split(/\r?\n/).forEach((l, i) => {
+    if (!l.trim().startsWith('|')) return;
+    const first = stripMd(splitRow(l)[0] || '');
+    const full = first.match(new RegExp(`^(${NX_SOURCE})`));
+    if (full) { if (!out.has(full[1])) out.set(full[1], i + 1); return; }
+    const bare = first.match(/^(R\d{1,3}[a-z]?)$/);
+    if (bare && prefix && !out.has(`${prefix}-${bare[1]}`)) out.set(`${prefix}-${bare[1]}`, i + 1);
+  });
+  return out;
+}
+
+/** Test titles that cite an NX or NS id, each { title, line, ids }. */
+export function nxTestTitles(src) {
+  const out = [];
+  for (const m of src.matchAll(TITLE_CALL)) {
+    const ids = extractNxIds(m[2]);
+    if (ids.length) out.push({ title: m[2], line: src.slice(0, m.index + (/^[\w$]/.test(m[0]) ? 0 : 1)).split('\n').length, ids });
+  }
+  return out;
+}
+
 const pad3 = (n) => String(n).padStart(3, '0');
 const prefixOf = (id) => id.slice(0, id.lastIndexOf('-') + 1);
 const numOf = (id) => parseInt(id.slice(id.lastIndexOf('-') + 1), 10);
@@ -345,6 +385,20 @@ export function collect({ repo, docsRoot }) {
     }
   }
 
+  // NX and NS ids: defined in docs/roadmap/next/03-requirements, cited by test titles. Report only.
+  const nxDefined = new Map();
+  for (const f of walk(path.join(repo, 'docs', 'roadmap', 'next', '03-requirements'), (p) => p.endsWith('.md'))) {
+    for (const [id, line] of nxDefinitions(read(f), path.basename(f))) if (!nxDefined.has(id)) nxDefined.set(id, `${rel(f)}:${line}`);
+  }
+  const nxCited = new Map();
+  for (const f of walk(repo, isTestFile).filter((f) => f !== self)) {
+    for (const t of nxTestTitles(read(f))) for (const id of t.ids) {
+      if (!nxCited.has(id)) nxCited.set(id, new Set());
+      nxCited.get(id).add(`${rel(f)}:${t.line}`);
+    }
+  }
+  const nxMissing = [...nxCited.keys()].filter((id) => !nxDefined.has(id)).sort(cmpNx);
+
   // Maestro flows: requirement IDs in each flow's tags.
   const flows = new Map();
   for (const f of walk(path.join(repo, 'apps', 'mobile', 'e2e', 'flows'), (p) => /\.ya?ml$/.test(p))) {
@@ -377,9 +431,12 @@ export function collect({ repo, docsRoot }) {
 
   return {
     layout, docsRoot: shown(docsRoot), specs: specFiles.map(shown), reqs, wps, duplicates, repeatedInSpec,
-    citations, undefinedIds, outsideOnly, retiredCited, retired, outside, tests, taggedTitles, flows,
+    citations, nxDefined, nxCited, nxMissing, undefinedIds, outsideOnly, retiredCited, retired, outside, tests, taggedTitles, flows,
   };
 }
+
+/** NX ids in natural order: R3 before R28. */
+export const cmpNx = (a, b) => a.localeCompare(b, 'en', { numeric: true });
 
 export function cmpId(a, b) {
   return prefixOf(a).localeCompare(prefixOf(b)) || numOf(a) - numOf(b) || a.localeCompare(b);
@@ -490,6 +547,28 @@ export function renderTrace(m) {
     L.push('');
   }
 
+  if (m.nxCited && m.nxCited.size) {
+    L.push('## NX and NS ids cited by test titles');
+    L.push('');
+    L.push(`Next-release ids (\`NX-nn-Rnn\`, \`NX-nn-Snn\`, \`NS-nn-Rnn\`) read from \`docs/roadmap/next/03-requirements\`. Reported only; they never fail \`--check\`. ${m.nxCited.size} cited, ${m.nxDefined.size} defined, ${m.nxMissing.length} cited with no requirement row.`);
+    L.push('');
+    if (m.nxMissing.length) {
+      L.push('Cited with no requirement row (for the product agent to define or correct):');
+      L.push('');
+      for (const id of m.nxMissing) {
+        const at = [...m.nxCited.get(id)].sort();
+        L.push(`- ${id}: ${at.slice(0, 3).map((a) => `\`${a}\``).join(', ')}${at.length > 3 ? ` and ${at.length - 3} more` : ''}`);
+      }
+      L.push('');
+    }
+    L.push('| ID | Defined at | Tests |');
+    L.push('|---|---|---|');
+    for (const id of [...m.nxCited.keys()].filter((i) => m.nxDefined.has(i)).sort(cmpNx)) {
+      L.push(`| ${id} | \`${m.nxDefined.get(id)}\` | ${[...new Set([...m.nxCited.get(id)].map((a) => a.replace(/:\d+$/, '')))].sort().map((t) => `\`${t}\``).join(', ')} |`);
+    }
+    L.push('');
+  }
+
   const strays = [...m.tests.keys()].filter((id) => !m.reqs.some((r) => r.id === id)).sort(cmpId);
   if (strays.length) {
     L.push('## Test titles citing IDs the specs do not define');
@@ -548,6 +627,7 @@ export function main(argv = process.argv.slice(2), log = console.log) {
     `${s.p0NoTest} P0 with no test title (${s.p0NoTestOrFlow} with no test title and no e2e flow); ` +
     `${s.idsInTests} IDs in ${s.taggedTitles} test titles; ${s.idsInFlows} IDs in Maestro flow tags.`);
   for (const d of m.duplicates) log(`  defined in two specs: ${d.id} (${d.at.map((x) => `${x.spec}:${x.line}`).join(', ')})`);
+  if (m.nxCited.size) log(`  NX/NS ids: ${m.nxCited.size} cited by test titles, ${m.nxDefined.size} defined, ${m.nxMissing.length} cited with no requirement row (report only).`);
   for (const id of m.undefinedIds) log(`  undefined: ${id} (${m.citations.get(id)[0]})`);
   if (args.check && failed) return 1;
   if (failed) log('  report mode: not failing. Run with --check to fail on these.');

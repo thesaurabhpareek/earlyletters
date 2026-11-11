@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
-  legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
+  legacyDefinitions, retiredIds, testTitles, flowTags, extractNxIds, nxDefinitions, nxTestTitles, collect, summarize, renderTrace, main, cmpId,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -256,4 +256,40 @@ test('--no-write leaves the tree untouched', () => {
   const repo = fixtureRepo();
   main(['--repo', repo, '--no-write'], () => {});
   assert.ok(!fs.existsSync(path.join(repo, 'docs/TRACE.md')));
+});
+
+test('extractNxIds reads NX and NS ids, with a sub-letter, and nothing else', () => {
+  assert.deepEqual(extractNxIds('[NX-31-R14] counts a session').sort(), ['NX-31-R14']);
+  assert.deepEqual(extractNxIds('NX-30a-R1, NX-36-S13 and NS-01-R16').sort(), ['NS-01-R16', 'NX-30a-R1', 'NX-36-S13']);
+  assert.deepEqual(extractNxIds('NX-39-R5a x'), ['NX-39-R5a']);
+  assert.deepEqual(extractNxIds('NX-31-R14xy'), []);
+  assert.deepEqual(extractNxIds('XNX-31-R14 NX-3-R1 NX-31-X1 NX-31 R14 F08-REQ-001 BL-002'), []);
+});
+
+test('nxDefinitions reads full ids and bare R rows named for the file, not other tables', () => {
+  const md = ['| ID | Text |', '|---|---|', '| NX-39-R1 | one |', '| **NX-39-R2** | two |', '| R3 | bare |', '| S1 | screen row |', '| P1 New parent | persona |', '| NX-39-R1 | again |'].join('\n');
+  assert.deepEqual([...nxDefinitions(md, 'NX-39-memory-library.md').keys()].sort(), ['NX-39-R1', 'NX-39-R2', 'NX-39-R3']);
+  assert.equal(nxDefinitions(md, 'NX-39-memory-library.md').get('NX-39-R1'), 3);
+  assert.deepEqual([...nxDefinitions(md, 'notes.md').keys()].sort(), ['NX-39-R1', 'NX-39-R2']);
+});
+
+test('nxTestTitles reads titles that cite an NX id and gives the line', () => {
+  const src = ["test('[NX-30a-R1] fourth tab', () => {});", "it('no id here', () => {});", "", "describe(`[NS-01-R16] erase`, () => {});"].join('\n');
+  assert.deepEqual(nxTestTitles(src).map((t) => [t.ids[0], t.line]), [['NX-30a-R1', 1], ['NS-01-R16', 4]]);
+});
+
+test('collect reports NX ids cited by a test with no requirement row, and never fails --check for them', () => {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-nx-'));
+  const w = (p, t) => { fs.mkdirSync(path.dirname(path.join(repo, p)), { recursive: true }); fs.writeFileSync(path.join(repo, p), t); };
+  w('docs/prd/PRD.md', '# PRD\n');
+  w('docs/roadmap/next/03-requirements/NX-40-demo.md', '| ID | Text |\n|---|---|\n| R1 | one |\n');
+  w('apps/mobile/test/a.test.ts', "test('[NX-40-R1] defined', () => {});\ntest('[NX-31-R14] missing', () => {});\ntest('[NS-02-R1] missing too', () => {});\n");
+  const m = collect({ repo, docsRoot: path.join(repo, 'docs/prd') });
+  assert.deepEqual(m.nxMissing, ['NS-02-R1', 'NX-31-R14']);
+  assert.equal(m.nxDefined.get('NX-40-R1'), 'docs/roadmap/next/03-requirements/NX-40-demo.md:3');
+  assert.equal(m.undefinedIds.length, 0);
+  const md = renderTrace(m);
+  assert.match(md, /Cited with no requirement row[\s\S]*- NS-02-R1: `apps\/mobile\/test\/a\.test\.ts:3`/);
+  assert.match(md, /\| NX-40-R1 \|/);
+  assert.equal(main(['--check', '--no-write', '--repo', repo, 'docs/prd'], () => {}), 0);
 });
