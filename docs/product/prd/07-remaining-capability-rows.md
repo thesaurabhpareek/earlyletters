@@ -64,7 +64,7 @@ Entry rule: a capture mode of Home's one entry (rule P1); nothing else starts it
 | Id | Given, When, Then | Test title |
 |---|---|---|
 | NS-07-C5-1 | Given Home, When the parent taps "Not much today", Then the book stores a mark with `final_text` empty, no recording and no sentence; the Book shows "A quiet day" with the date, unsigned (D-084). | `[NS-07-C5-1] a quiet day stores no text` |
-| NS-07-C5-2 | Given a quiet day, Then it does not count toward the allowance (D-083, D-103), cannot carry a picture (NS-01), cannot be marked a first (NS-06), cannot be sealed (NS-06 B), is not found by Find (NS-02) and is not a Home memory (NX-43-R9). | `[NS-07-C5-2] a quiet day is outside every other feature` |
+| NS-07-C5-2 | Given a quiet day, Then it does not count toward the allowance (D-083, D-103), cannot carry a picture (NS-01-R25), cannot be marked a first (NS-06-A6), cannot be sealed (NS-06-B10), is not found by Find (NS-02) and is not a Home memory (NX-43-R9). | `[NS-07-C5-2] a quiet day is outside every other feature` |
 | NS-07-C5-3 | Given quiet days, Then no screen, notification or export file name shows a count of them or a run of them. | `[NS-07-C5-3] quiet days are never counted` |
 | NS-07-C5-4 | Given Read together and the printed book, Then quiet days never appear (D-084). | `[NS-07-C5-4] quiet days stay out of Read together and print` |
 | NS-07-C5-5 | Given one tap on the control, Then the mark is written and Home shows the ordinary state with no dialog. A second tap the same day is a no-op. | `[NS-07-C5-5] one tap, no dialog, no duplicate` |
@@ -82,7 +82,7 @@ Job: I go to Export to get a file my family can print, so that a paper book can 
 | NS-07-C28-1 | Given the Export screen with `EXPO_PUBLIC_PRINT_READY` on, Then it offers one extra file, a print-ready PDF, beside the existing ones, and no price, order button, seller or partner name. | `[NS-07-C28-1] Export offers a file and sells nothing` |
 | NS-07-C28-2 | Given the PDF, Then every page carries only text the parent said or typed, the parent's pictures (stored stripped copies) and the app's fixed unsigned words (month headings, a title page); no generated caption, summary or "highlights" page. | `[NS-07-C28-2] the book holds only the parent's words and pictures` |
 | NS-07-C28-3 | Given the PDF text layer, Then it equals the letters' `final_text` in book order, for 20 fixtures including Devanagari, Arabic and Chinese. | `[NS-07-C28-3] the text layer equals the words` |
-| NS-07-C28-4 | Given quiet days, Then they do not appear (D-084); Given sealed letters, Then they appear only if the parent has opened them. | `[NS-07-C28-4] quiet days and closed seals stay out` |
+| NS-07-C28-4 | Given quiet days, Then they do not appear (D-084); Given sealed letters, Then the print-ready PDF omits their words until the seal is removed (design FS-R11); the author's own data export (ZIP) is the file that carries a sealed letter whole. | `[NS-07-C28-4] quiet days and closed seals stay out` |
 | NS-07-C28-5 | Given empty months, Then no page, heading or line mentions them; no page count or "pages left" appears. | `[NS-07-C28-5] gaps are not shown or counted` |
 | NS-07-C28-6 | Given the file, Then it has embedded fonts and no external links, trackers or QR code (a QR needs hosted audio: not before NS-03 and NS-05 Level 3). | `[NS-07-C28-6] fonts embedded; no links; no QR` |
 | NS-07-C28-7 | Given Export, Then this file is free and ungated when built (what a family kept stays theirs to export); not promised as forever. | `[NS-07-C28-7] the print-ready file is never gated` |
@@ -96,7 +96,7 @@ Evidence: the research file notes that a clean privacy label is a competitive fa
 | Id | Given, When, Then | Test title |
 |---|---|---|
 | NS-07-G11-1 | Given a diff fixture that adds a network call carrying letter text, a recording, a picture or a child name, or adds a server table, bucket or function for them, When the guard `scripts/guards/label-effect.mjs` (name proposed) runs, Then it exits non-zero unless the PR body names a recorded founder decision id (D-###) for the label change; given a diff with neither, it exits zero. | `[NS-07-G11-1] the label-effect guard fails an unrecorded data-leaving diff` (Node test over diff fixtures) |
-| NS-07-G11-2 | Given each file `NS-0x` in `docs/product/prd/`, Then it contains a line starting `Label effect:` (or `Label effect (Part`). | `[NS-07-G11-2] every PRD states its label effect` (Node test over the folder) |
+| NS-07-G11-2 | Given each file whose name starts `0` and ends `.md` in `docs/product/prd/` (the NS-01 to NS-07 files; the README is excluded), Then it contains a line starting `Label effect:` (or `Label effect (Part`). | `[NS-07-G11-2] every PRD states its label effect` (Node test over the folder) |
 
 Free vs Plus: not applicable. Rollout: a new guard script (size S, a guess) for `security-architect` and `compliance-engineer`. Today's feature set in this folder changes the label in none of NS-01, NS-02, NS-05 Level 1 and NS-06 A; NS-05 Levels 2 and 3 do.
 

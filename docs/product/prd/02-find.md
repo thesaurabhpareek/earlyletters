@@ -1,6 +1,6 @@
 # NS-02: Find (search across the family's own letters, on the phone)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `3d3d7aac`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `38abc432`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
 Terms: "lens", "Find" as a header action and "index" are internal terms; `content` names the parent-facing words (BRAND.md glossary, CR-25).
 Build target: Build 13, behind `EXPO_PUBLIC_BOOK_SEARCH` (name proposed; check `capabilities.ts` for the house style).
 This PRD makes F09-REQ-015 shippable: it cites that row and the Search item in F09 section 6.2 (step 16), adds the states and the privacy rules they lack, and turns the founder question F09 Q4 into a decision: Find is in scope (closed X1; research gap G3).
@@ -60,6 +60,24 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 | NS-02-R21 | Given VoiceOver, AX5, Reduce Motion and Voice Control, Then the field and results are labelled, reachable in order, 44 pt or more, one column at AX5. | `[NS-02-R21] Find passes VoiceOver, AX5, Reduce Motion` (device) |
 | NS-02-R22 | Given airplane mode, Then Find behaves exactly as online and makes 0 network calls. | `[NS-02-R22] Find makes 0 network calls` |
 
+## 5a. Status against PR #798 (open, not merged; head 5cb0e863)
+
+Read by file list, Karma's notes and the review comment only. I did not read the code, so "in #798" means a file of that name exists (UNVERIFIED). Evidence from those notes: #798 has no migration (`ensureSearchIndex` uses `CREATE ... IF NOT EXISTS`) and expo-sqlite 57.0.3 compiles FTS5 by default, so no config change and no native build; UNVERIFIED on a phone. `packages/content/src/features/find.en.ts` line 17 still has a `hint` slot ("Type three letters to start."), which NS-02-R3 forbids; the slot leaves #798.
+
+| Id | Status | Evidence |
+|---|---|---|
+| R1 (header only) | In #798 (UNVERIFIED) | `cover-band.tsx`, `(tabs)/book.tsx` |
+| R2 (300 ms on SE 3) | Open; device run needed | none |
+| R3 (short queries) | NOT MET: the `hint` slot is still in `find.en.ts`; fix is to remove it | `find.en.ts` |
+| R4, R5, R6, R9, R10 | In #798 (UNVERIFIED) | `find/query.ts`, `sources.ts`, `snippet.ts`, `search.ts`, `find.logic.ts` |
+| R7, R8 (accents, scripts) | UNVERIFIED; fixture tests not seen | `test/find-logic.test.ts` |
+| R11 (no count) | In #798 (UNVERIFIED) | `find-copy.test.ts` |
+| R12, R13, R14, R15 | In #798 (UNVERIFIED) | `find-mode.tsx`, `find-result-row.tsx` |
+| R16, R17, R18 (index moves, erase) | In #798 (UNVERIFIED) | `find/lifecycle.ts`, `repos/wipe.ts`, `test/find-lifecycle.test.ts` |
+| R19 (fallback when index missing) | In #798 (UNVERIFIED) | `find/scan-index.ts`, `fts-index.ts`, `test/find-index.test.ts` |
+| R20, R21 | Open; device run needed | none |
+| R22 (0 network calls) | UNVERIFIED | none read |
+
 ## 6. Edge cases, empty and error states
 
 | Case | Behaviour |
@@ -97,8 +115,8 @@ Free and ungated in Build 13; not promised as forever. Find reads letters that e
 
 ## 10. Dependencies
 
-- `expo-sqlite` with `enableFTS` in the config plugin (F09 data section). This changes native config, so it needs a new EAS build, not an update over the air. UNVERIFIED that FTS5 is present on SDK 57.
-- A local migration for `entries_fts` and triggers (`apps/mobile/src/lib/db/migrations.ts`); a new migration file, never an edit of an applied one.
+- `expo-sqlite`: per #798's notes (UNVERIFIED on a phone, not run by me), version 57.0.3 compiles FTS5 by default, so Find needs no `enableFTS` config change and no new native build. F09's earlier line (config plugin plus a new EAS build) is superseded by that evidence; if the phone run shows FTS5 absent, R19's scan path ships alone.
+- No migration: #798 creates the index with `ensureSearchIndex` using `CREATE ... IF NOT EXISTS` (UNVERIFIED, not read by me). R19 covers an index that is missing or stale.
 - F09's Book header (NX-42 says shipped in #674; UNVERIFIED by me).
 - NX-44 and NS-01-R21 only for the label and photo text (later and Build 13).
 - Packs: CJK and non-Latin behaviour depends on the language gates; Build 13 ships English only (D-121; UNVERIFIED for Build 13), so R8 and R3's CJK half are proven on fixtures, not on a shipped pack.
@@ -125,7 +143,7 @@ Free and ungated in Build 13; not promised as forever. Find reads letters that e
 ## 13. Rollout
 
 - Flag: `EXPO_PUBLIC_BOOK_SEARCH`, on in `preview` and `testflight` first, on in `production` when R2, R19 and R20 pass on an SE-class device.
-- Target: Build 13, alongside NS-01. If the native FTS build is not ready, Find moves to Build 14 alone; it does not ride with a tab change.
+- Target: Build 13, alongside NS-01. There is no native build to wait for (section 10). If the phone run misses R2 or R20, the scan path ships and the FTS path waits; Find does not move to Build 14 for that reason and does not ride with a tab change.
 - Kill: the remote pause hides the header action; letters and the index are untouched.
 - Backlog row: WP-F09-11 exists; a Find task cites this file in the next `product` backlog PR.
 

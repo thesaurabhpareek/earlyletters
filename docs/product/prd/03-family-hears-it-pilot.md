@@ -28,7 +28,7 @@ I go to my own phone and my own messages to send one letter, with the voice if I
 - Parents: 8 to 10 adults aged 18 or over, each with a child under 5 and at least 3 kept letters in Early Letters (TestFlight or alpha). Recruited by the founder from his invited friends and family list. HYPOTHESIS: this group is warm toward the product, so results will lean positive; the success lines in section 8 are set with that in mind.
 - Recipients: one relative per parent whom the parent picks (a grandparent, aunt, uncle or close friend), an adult. At least 2 of the 10 live in another country, if the founder's list allows (open item from PRD Q3). At least 2 parents with a non-English letter if any exist on the list; Build 12 is English only, so this may be 0 (UNVERIFIED).
 - Not recruited: anyone under 18, anyone the founder pays, any app-store reviewer, any competitor staff.
-- When: proposed dates, Pacific time. Founder confirms the Q1 principle by Fri 20 Nov. Consent and instructions final Mon 23 Nov. Recruit Mon 23 to Fri 4 Dec. Send window Mon 30 Nov to Sun 6 Dec; one week per parent from the day they send. Read-out Fri 11 Dec. Thanksgiving is Thu 26 Nov, so no contact that day. Parents who start later run their own week and the read-out waits for the last.
+- When: proposed dates, Pacific time, in the table in section 5. Order: founder confirms the principle, counsel reads the consent and scripts, only then does recruiting start, then a capped send window, then one week per parent, then the read-out after the last day 7. Thanksgiving is Thu 26 Nov, so no contact that day.
 
 ## 3. Who runs it and what is collected
 
@@ -43,7 +43,7 @@ What the team collects, in full: a participant code (P01 to P10), consent yes or
 What the team never receives: a letter, a recording, a picture, a child's name, a screenshot of a letter, the recipient's name or contact. If a parent sends one by mistake, it is deleted unread beyond what is needed to see what it is, the mistake is logged by participant code, and that parent's remaining questions continue without it.
 
 Where the notes live: a private location the founder controls, not the repository. Follow-up contact details (the phone number or message thread used for the day 3 and day 7 check-ins) are the ones the founder already holds for each person. They are kept in that private location only, used only for the check-ins, never copied into the repository or a shared document, and deleted at the same time as the raw notes (30 days after the read-out, or within 2 working days of a withdrawal). The repo is public (D-122): no participant notes, names or quotes that identify a person go into it. The read-out file may hold the counts and anonymised, short answers.
-Retention: raw notes are deleted 30 days after the read-out (PROPOSED default). Counts stay.
+Retention: raw notes are deleted 30 days after the read-out, Wed 20 Jan 2027 (PROPOSED default). Counts stay.
 
 ## 4. How a parent sends (no build)
 
@@ -55,24 +55,33 @@ Retention: raw notes are deleted 30 days after the read-out (PROPOSED default). 
 
 ## 5. Plan in one table
 
-| Day | What | Who |
+Dates (Pacific time, all PROPOSED; none collides, and the read-out follows the last day 7):
+
+| Date | What | Who |
 |---|---|---|
-| Before | Reads on this plan (section 0); consent and instructions final | `product`, `security-architect`, counsel |
-| Day 0 | Parent consents (section 6), receives the instruction (section 7), sends the letter | Parent |
-| Day 3 | Check-in message, 3 questions (script A) | `user-research` |
-| Day 7 | Call or message, parent questions (script B) and the one recipient question relayed by the parent (script C) | `user-research`, parent |
-| Day 8 to 10 | Thank-you note; offer to delete any answers | `user-research` |
-| Read-out | Counts, 5 short answers, a go, hold or no-go (section 8) | `product` |
+| Fri 20 Nov 2026 | Founder confirms the principle (OQ-1) | Founder |
+| Mon 23 Nov | Consent texts and scripts (sections 6 and 7) go to counsel; the security read starts | `product` |
+| Fri 27 Nov | Counsel read of consent and scripts due. Default if not on record: the pilot does not start and every later date moves by the same number of weeks | counsel |
+| Mon 30 Nov to Fri 4 Dec | Recruit and consent (no recruiting before the counsel read is on record) | `user-research`, founder |
+| Wed 9 Dec | One extension of recruit and consent if fewer than 8 consented by Fri 4 Dec (stop rule 5); no further extension | founder |
+| Mon 7 Dec to Fri 11 Dec | Send window. Last send date is Fri 11 Dec (the cap) | Parents |
+| Day 3 after each send | Check-in message, script A. Latest: Mon 14 Dec | `user-research` |
+| Day 7 after each send | Script B to the parent and script C relayed. Latest: Fri 18 Dec | `user-research`, parent |
+| Mon 21 Dec | Read-out: counts, 5 short answers, an outcome from the section 8 table. The read-out never comes before the last day 7 | `product` |
+| Mon 21 to Wed 23 Dec | Thank-you note; offer to delete any answers | `user-research` |
+| Wed 20 Jan 2027 | Raw notes and contact details deleted (30 days after the read-out) | `user-research` |
+
+Each parent's own week: day 0 is the day they send; the table's cap guarantees day 7 is no later than Fri 18 Dec.
 
 ## 6. Consent (the door lines)
 
 The pilot is research, not an app act, so there is no PRIV-R21 server row. Section 10 of `COORDINATION.md` still asks for Shown, Records, Never and Decline; they are below.
 
-**Shown (the words the parent sees; `content` finalises, counsel reads):**
+**Shown (the words the parent sees; `content` finalises, counsel reads). Two versions, each with its own hash: version W (Arm W) omits the recording paragraph; version V (Arm V) includes it. The scripts write the product name as `{brand.name}` from `packages/brand`; counsel is given the rendered text, never a hard-coded name.**
 
-> We are testing one idea: a parent sends one letter from Early Letters to a relative, using your own messages, and we ask how it went.
+> We are testing one idea: a parent sends one letter from {brand.name} to a relative, using your own messages, and we ask how it went.
 > You choose the letter and the person. We do not see the letter, the recording, the picture or your child's name. We only ask you a few questions, one week apart, and write short notes.
-> If you are in the group that sends a recording: you will send a recording of your child's voice to a relative, through your own messages. You choose whether to send it and to whom. We never receive it.
+> (Version V only.) If you are in the group that sends a recording: you will send a recording of your child's voice to a relative, through your own messages. You choose whether to send it and to whom. We never receive it.
 > You can stop at any time. If you stop, we delete your notes if you ask. Your book and your letters are not affected either way.
 > Do you agree? Yes, or No thanks.
 
@@ -86,11 +95,16 @@ The pilot is research, not an app act, so there is no PRIV-R21 server row. Secti
 
 Words are plain and calm. No pressure, no counts, no "you should".
 
-**Recruit (message):**
+**Recruit (message; same for both arms; sent only after the counsel read is on record):**
 > Hi. We are trying out a small idea and would value your help. If you are willing, you would send one of your letters to a grandparent or another relative, in your own message, and tell us a week later how it went. We would not see the letter. It takes about ten minutes in all. Would you like to hear more?
 
-**Instruction (after consent):**
-> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. If you want them to hear your voice, also send the recording. Say anything you like to them. Please do not send anything to us. We will check in on day 3 and day 7.
+**Instruction W (Arm W, after consent; no recording sentence):**
+> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. Say anything you like to them. Please do not send anything to us, and please do not send a recording. We will check in on day 3 and day 7.
+
+**Instruction V (Arm V only; sent only after the security and counsel voice reads are on record; counsel reads both instruction texts):**
+> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. If you want them to hear your voice, also send the recording. You will be sending a recording of your child's voice to that person; you choose whether to. Say anything you like to them. Please do not send anything to us. We will check in on day 3 and day 7.
+
+Arm W parents are never told they may send a recording, and a parent who asks is told that this group sends the words and picture only.
 
 **Script A, day 3 (message, 3 questions):**
 1. Did you send it? Yes or not yet.
@@ -98,14 +112,15 @@ Words are plain and calm. No pressure, no counts, no "you should".
 3. Anything you would rather we did not ask? (If yes, the question is dropped.)
 
 **Script B, day 7, parent questions:**
-1. What did the person do with it? Read it, listened, replied, asked for another, nothing that you know of. (Count each.)
+1. What did the person do with it? Read it, replied, asked for another, nothing that you know of. Arm V only: also "listened". (Count each; "listened" is counted for Arm V only.)
 2. Did they manage on their own? Yes, or they needed help. What kind?
 3. Arm V only: How did you feel about your child's voice going to them this way? (Free words; any worry is noted exactly.) Arm W parents are not asked this question; they are asked instead, "How did you feel about sending it this way?"
 4. If you could do it again, how would you want to send it? (Free words. The team does not name a product feature.)
 5. Would you send another one next week? Yes, no, not sure.
+6. Both arms: Did it reach only the person you meant, and did that person pass it on to anyone else that you know of? Reached only them, reached someone else, not sure. (This is the source of SC-5. "Reached someone else" or "passed on" without the parent's wish also triggers stop rule 1.)
 
 **Script C, relayed by the parent (one question to the recipient):**
-> Could you read or listen to it without help from anyone? Yes, or what got in the way?
+> Could you read it (Arm V: read it or listen to it) without help from anyone? Yes, or what got in the way?
 The parent relays the answer. The team does not contact recipients. (Second-hand answers are noted as such. This choice keeps adults who did not agree to research out of our notes; the cost is bias, named in section 11.)
 
 **Close:**
@@ -119,24 +134,33 @@ All numbers are PROPOSED by `product`; the founder may set them before Day 0 of 
 
 | Id | Line | Counted from |
 |---|---|---|
-| SC-1 | At least 6 of the parents send a real letter by day 3 | Script A, Q1 |
-| SC-2 | At least 5 of the recipients could read or listen without help | Script C |
-| SC-3 | At least 4 recipients replied or asked for another letter | Script B, Q1 |
-| SC-4 | At least 5 parents say yes to sending another next week | Script B, Q5 |
-| SC-5 | 0 parents report that a letter or recording reached someone they did not intend | Script B, Q3 and any message |
+| SC-1 | At least 6 of the parents who consented send a real letter by day 3 | Script A Q1 (a parent who does not answer counts as not sent; the reason in Script A Q2 is coded "did not get to it" or "did not want to" by the researcher) |
+| SC-2 | At least 5 of the recipients could read (Arm V: read or listen) without help | Script C, one Yes or No per recipient; a missing answer counts as No |
+| SC-3 | At least 4 recipients replied or asked for another letter | Script B Q1, as the parent reports it |
+| SC-4 | At least 5 parents say yes to sending another next week | Script B Q5 |
+| SC-5 | 0 parents report that a letter or recording reached someone they did not intend, or was passed on against their wish | Script B Q6 (both arms), plus any message received during the week |
 
-SC-1 to SC-5 on Arm V only count if Arm V ran. If it did not, the voice-specific half of SC-2 and SC-3 reads "not tested", and the go is limited to words and picture (NS-05 Level 1).
 
-**Hold (run once more with one change, or park):** SC-1 met and any of SC-2 to SC-4 missed by 1 or 2.
+**Outcomes.** "Missed by n" means the line's threshold minus the count. Apply these rules top to bottom; the first that fits decides:
 
-**No-go (do not pursue hosted audio on this evidence):** SC-1 missed, or SC-2 and SC-3 both missed by more than 2. NS-05 Level 1 still ships on its own merits.
+| Order | Condition | Outcome |
+|---|---|---|
+| 1 | Any stop rule below has fired (SC-5 missed is stop rule 1) | STOP: the pilot ends, the founder decides, and no go is drawn |
+| 2 | All of SC-1 to SC-5 met | GO: draft a hosted-link requirement and send it to security and counsel. A go needs all five lines. It is not a build |
+| 3 | SC-1 missed and the researcher coded the main reason "did not get to it" or the cause was recruiting | HOLD: run once more with one change |
+| 4 | SC-1 missed for any other reason | NO-GO |
+| 5 | SC-1 met and two or more of SC-2, SC-3, SC-4 missed by any amount | NO-GO |
+| 6 | SC-1 met and any one of SC-2, SC-3, SC-4 missed by 3 or more | NO-GO |
+| 7 | SC-1 met and exactly one of SC-2, SC-3, SC-4 missed by 1 or 2 | HOLD: run once more with one change |
+
+A HOLD may be run once. A second HOLD is read as a NO-GO. On NO-GO, hosted audio is not pursued on this evidence; NS-05 Level 1 still ships on its own merits. Arm V not run: SC-2 and SC-3 are read for words and picture only, the outcome is limited to words and picture (NS-05 Level 1), and the voice question is "not tested".
 
 **Stop (end the pilot for everyone, same day, tell the founder):**
 1. Any report that a recording or letter reached someone the parent did not intend.
 2. Any recipient or parent reports distress caused by the test.
 3. The team receives a letter, recording, picture or child's name and cannot delete it.
 4. A participant under 18 is found.
-5. Fewer than 8 parents have consented by Fri 4 Dec (extend once to Fri 11 Dec, then stop).
+5. Fewer than 8 parents have consented by Fri 4 Dec: extend once to Wed 9 Dec (the send cap stays Fri 11 Dec so the read-out date holds), then stop and re-plan.
 
 Label effect: none. The pilot changes no app behaviour and sends nothing to our servers.
 
@@ -160,7 +184,7 @@ Nothing is sold or gated in the pilot (and nothing here is promised as forever).
 | Second-hand recipient answers | Noted as such; the decision does not rest on SC-2 alone (SC-3 and SC-4 carry weight). |
 | Parent sends to the wrong person | Parent picks one recipient and sends from their own thread; SC-5 and stop rule 1 handle a report. |
 | A one-letter PDF cannot be cut | Fallback in section 4; the pilot records which was used. |
-| Counsel not answered in time | No arm starts without the consent and scripts read; Arm W only without the voice read (section 0). |
+| Counsel not answered in time | No arm starts without the consent and scripts read; every date moves by the same number of weeks; Arm W only without the voice read (section 0). |
 | Thanksgiving and December load | Dates in section 2 avoid 26 Nov; parents may start late. |
 
 ## 12. Open questions (every one has a default)

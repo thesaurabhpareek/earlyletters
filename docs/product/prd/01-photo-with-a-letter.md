@@ -1,6 +1,6 @@
 # NS-01: Photo with a letter (photo-first capture on Home, a Photos lens in the Book)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `3d3d7aac`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `38abc432`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
 Terms: "lens", "Photos lens" and "Home memory" in this file are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens".
 Build 13 scope (design spec 01 section 1a, coordinator 11 Nov): ONE photo per letter and no video. The design cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo layouts and the swipe between items are out of Build 13.
 Build target: Build 13, behind `EXPO_PUBLIC_PHOTOS` (the P0 switch named in `NX-39-memory-library.md` section 3). Library chooser (P2a) and video (P3) are not in this PRD.
@@ -41,7 +41,7 @@ Only Home starts a letter (`NAV-TAB-ROLES-10nov.md` rules P1 and P2). Photo-firs
 
 ## 5. Acceptance criteria
 
-Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 3d3d7aac. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
+Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 38abc432. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
@@ -68,7 +68,31 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 | NS-01-R21 | Given a picked picture, When the parent types photo text or a place, Then each is optional, the text at most 140 characters and the place at most 60 (PROPOSED), stored in their own fields, never filled in or suggested by the app, and is the picture's only text alternative for VoiceOver when present (else the fixed phrase of R9). Find searches both (NS-02-R5); a place read from the file is never searched. | `[NS-01-R21] photo text and place are the parent's, optional, and capped` |
 | NS-01-R22 | Given the picture source and the Build 13 scope, Then every door opens only the iOS system picker and it returns one photo; there is no library access, no pre-prompt (ML-S1), no `MediaChooser`, no video, no multi-select and no "Add photos" row: no camera control, no camera permission string and no "Take a photo now" in the plist or the screens. | `[NS-01-R22] the system picker is the only source and returns one photo` |
 | NS-01-R23 | Given the Book with 0 letters, Then its empty-state button (`book.empty.bookCta`, today "Write a letter") reads as a pointer to Home, its action is a switch to the Home tab and calls no capture function, and the Book has 0 controls that start a letter (`content` writes the word; design spec 06, J3). Given the Photos lens, Then it has no "Add photos" button. | `[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter` |
-| NS-01-R24 | Given the strings, Then they pass `packages/content/test/rules.test.ts`: no dash, curly quote, ellipsis character or emoji; no "memory" or "moment" for a letter; no implication a machine writes; `{child}` for the child. | existing content rules test, extended |
+| NS-01-R24 | Given the strings, Then they pass `packages/content/test/rules.test.ts` and the README appendix A scan: no dash, curly quote, ellipsis character or emoji; no "memory" or "moment" for a letter; no implication a machine writes; `{child}` for the child. | `[NS-01-R24] photo strings match no forbidden pattern` (content rules test) |
+| NS-01-R25 | Given a quiet-day mark ("Not much today", D-084), Then no picture control is offered on it and an attempt to attach a picture to it is refused with 0 files written. | `[NS-01-R25] a quiet day cannot carry a picture` |
+
+## 5a. Status against PR #796 (open, not merged; head 39efe1ac)
+
+Read by file list and Karma's notes only. I did not read the code or run it, so every "in #796" below means a file of that name exists in the PR, not that the row passes (UNVERIFIED). Karma's notes: #796 stores pictures under Application Support, which supersedes ADR 0028 D1 (Documents); the export schema 1.7.0 in #796 is blocked on ADR 0028 acceptance.
+
+| Id | Status | Evidence |
+|---|---|---|
+| R1, R2, R3 | In #796 (UNVERIFIED) | `photo-start.tsx`, `modules/scribe-photo`, `(tabs)/index.tsx` |
+| R4, R5, R7, R8 | In #796 (UNVERIFIED) | `lib/photos/attach.ts`, `review-photo.tsx`, `review.tsx` |
+| R6 (0 metadata segments) | In #796 (UNVERIFIED); needs the byte-scan test | `lib/photos/baker.ts` |
+| R9, R10, R11, R12 | In #796 (UNVERIFIED) | `letter-photo.tsx`, `photos-lens.tsx`, `lib/photos/lens.ts` |
+| R13 (switcher snapshot blank) | Not seen in the file list; treat as open | none |
+| R14 (export carries the copy) | BLOCKED: export schema 1.7.0 waits on ADR 0028 acceptance, so the row is not met by the code yet even if a test is titled for it | `lib/photos/export.ts` |
+| R15 (sync carries no picture) | UNVERIFIED | none read |
+| R16 (delete, restore, purge) | In #796 (UNVERIFIED) | `lib/capture/erase.ts`, `erase-everything.ts`, `housekeeping.ts` |
+| R17 (failures, iCloud, Live Photo) | In #796 (UNVERIFIED) | `lib/photos/failures.ts`, `files.ts` |
+| R18 (never gated) | UNVERIFIED | none read |
+| R19 (switch and pause) | In #796 (UNVERIFIED) | `lib/photos/flag.ts`, `pause.ts` |
+| R20 (VoiceOver, AX5) | Open; device run needed | none |
+| R21 (typed text and place) | UNVERIFIED | none read |
+| R22 (system picker only) | In #796 (UNVERIFIED) | `modules/scribe-photo` |
+| R23 (Book empty button) | UNVERIFIED | `(tabs)/book.tsx` is in the PR; content not read |
+| R24, R25 | Not started | none |
 
 ## 6. Edge cases, empty and error states
 

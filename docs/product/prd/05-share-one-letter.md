@@ -3,9 +3,9 @@
 Founder decision, 10 Nov 2026: build Share one letter, text first (relayed by Karma on 11 Nov; I did not read the original message, UNVERIFIED; design spec 03 records it as Q0/Q1 "DECIDED by the founder, not an agent default"). The open items are only the build number and the defaults below.
 
 Status: Draft v1, 11 Nov 2026 (UTC). Docs only. Author: `product`. Rank 5 of 7. Index: `README.md`.
-Build target: Level 1 in Build 14 at the earliest (see section 12). Design spec 03 re-read at PR #794 head 3d3d7aac: the Share-tab test is its section 8 and the requirement rows are in its section 9 (SH-R#). Navigation test N9 proves there is no share control on Home. Levels 2 and 3 are not scheduled and are gated.
+Build target: Level 1 in Build 14 at the earliest (see section 12). Design spec 03 re-read at PR #794 head 38abc432: the Share-tab test is its section 8 and the requirement rows are in its section 9 (SH-R#). Navigation test N9 proves there is no share control on Home. Levels 2 and 3 are not scheduled and are gated.
 
-Tags: EVIDENCE = repo file or PR read this session. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. Rules on tabs come from `closed-questions-2026-11-11.md` (N1 to N4) and `NAV-TAB-ROLES-10nov.md` (PR #789, head `c5897792` when I read it). Aligned on 11 Nov to the design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (PR #794, head `3d3d7aac`, re-read after Karma's 11 Nov updates): text first, an action on the letter page, not a tab. The design's Level 1 has no recording row (its section 3.3); this PRD's Level 2 is the design's gated recording level. I did not open the Export code or run the share sheet.
+Tags: EVIDENCE = repo file or PR read this session. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. Rules on tabs come from `closed-questions-2026-11-11.md` (N1 to N4) and `NAV-TAB-ROLES-10nov.md` (PR #789, head `c5897792` when I read it). Aligned on 11 Nov to the design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (PR #794, head `38abc432`, re-read after Karma's 11 Nov updates): text first, an action on the letter page, not a tab. The design's Level 1 has no recording row (its section 3.3); this PRD's Level 2 is the design's gated recording level. I did not open the Export code or run the share sheet.
 
 ## 1. Job to be done
 
@@ -18,13 +18,13 @@ I go to a letter I kept to send it to one person I choose, so that they can read
 
 ## 3. The single capture entry rule
 
-Sharing is an OUTPUT, never a capture. It starts from one place: a "Share this letter" button on the letter page (rule P9, object action on the object). It makes nothing new: no new letter, no new words. It opens the Share sheet and does nothing of its own (rule P4). Home, the Photos lens and Find do not start a share.
+Sharing is an OUTPUT, never a capture. It starts from one place: a "Share this letter" button (label PROPOSED; `content` owns the final words) on the letter page (rule P9, object action on the object). It makes nothing new: no new letter, no new words. It opens the Share sheet and does nothing of its own (rule P4). Home, the Photos lens and Find do not start a share.
 
 ## 4. The three levels
 
 | Level | What leaves the phone | Through what | Gate before it can ship |
 |---|---|---|---|
-| 1 | The words as plain text (date line, body, signature line), and optionally the stored picture; no recording | The iOS share sheet (the parent's own Messages, Mail, WhatsApp). Nothing passes through our servers | None beyond the usual content and review rules. A child's name may appear only if the parent said it in the words |
+| 1 | The words as plain text (date line, body, signature line), and optionally the stored picture; no recording | The iOS share sheet (the parent's own Messages, Mail, WhatsApp). Nothing passes through our servers | None beyond the usual content and review rules, with one note for counsel: the optional photo is a picture of the child leaving the phone through the parent's own share sheet. I expect that is the same as Export (UNVERIFIED, unsourced); counsel confirms it before Level 1 ships. A child's name may appear only if the parent said it in the words |
 | 2 | Level 1 plus the recording file | Same, the parent's own app | `security-architect` read and counsel read first (closed X2). The pilot (NS-03) Arm V result |
 | 3 | A link to a page with words and sound, hosted by us | Our hosted page | `security-architect` and counsel reads; the pilot reports Go; the founder decides audio hosting spend; the privacy label moves Audio Data to collected and linked (exec Q1; Apple page read by the council on 10 Nov 2026; UNVERIFIED by me) |
 
@@ -45,7 +45,7 @@ This PRD specifies Level 1 in full. Levels 2 and 3 get only the guards above and
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-05-R1 | Given the letter page with `EXPO_PUBLIC_SHARE_LETTER` on, Then exactly 1 "Share this letter" button exists. Given Home, Book list, Photos lens, Find results and Me, Then 0 share controls exist. | `[NS-05-R1] the only share control is on the letter page` |
+| NS-05-R1 | Given the letter page with `EXPO_PUBLIC_SHARE_LETTER` on, Then, on an own, open letter (the cases NS-05-R7 allows), exactly 1 "Share this letter" button (label PROPOSED; `content` owns the final words) exists; on another parent's letter, a hidden-until letter, a quiet-day mark or a letter with no words, 0 exist. Given Home, Book list, Photos lens, Find results and Me, Then 0 share controls exist. | `[NS-05-R1] the only share control is on the letter page of an own, open letter` |
 | NS-05-R2 | Given a tap, Then a preview sheet shows what will leave: the words, the signature and date line, and the picture if toggled on (default off). The preview has no recording row (SH-R10, NS-05-R16). A Continue and a Not now control have the same size, weight and type at AX5. | `[NS-05-R2] the preview names what leaves and what does not` |
 | NS-05-R3 | Given Continue, Then the iOS share sheet opens with the words as plain text, plus the picture file only if toggled on. The app records no destination, app or recipient. | `[NS-05-R3] the share sheet gets the words and the app learns nothing back` |
 | NS-05-R4 | Given the shared text, Then it equals date line, `final_text` (the view the Book shows) and signature line, with nothing else added, for 20 fixtures including Devanagari, Arabic and Chinese. No title, caption, summary or tag is added. The words always go: their toggle is on and disabled (design spec 03). | `[NS-05-R4] the shared text is the letter's words and nothing more` |
@@ -60,8 +60,8 @@ This PRD specifies Level 1 in full. Levels 2 and 3 get only the guards above and
 | NS-05-R13 | Given VoiceOver, AX5 and Reduce Motion, Then the button, the preview and the toggle are labelled, 44 pt or more, one column at AX5. | `[NS-05-R13] the share flow passes VoiceOver and AX5` (device) |
 | NS-05-R14 | Given App lock on, Then the button is reachable only once the app is open past App lock, and the preview is blank in the app switcher snapshot. | `[NS-05-R14] the preview is blank in the switcher` |
 | NS-05-R15 | Withdrawn by Karma's ruling of 11 Nov: the shared text carries no footer, brand name or link (see NS-05-R16). R4 stays: nothing else is added. | none (id kept so later ids do not move) |
-| NS-05-R16 | Given Level 1 (design spec 03, SH-R10), Then the sheet and code have no recording row, no audio URI and no recording copy slot, even behind a flag; the share sheet is handed no audio; and the shared text holds no footer, no value of `brand.name`, no URL and no "sent from" line. Written as a payload unit test: the payload is text plus at most one image URI, its MIME types contain no `audio/`, and a scan for `brand.name`, `http` and `www.` finds none. The recording row waits for `security-architect` and counsel reads on record, and design spec 03 must remove its recording toggle (Karma told the design agent). | `[NS-05-R16][SH-R10] Level 1 has no recording path and no footer` |
-| NS-05-R17 | Given the strings, Then they pass the content rules test (pattern list: README appendix A): no dash, curly quote, ellipsis character or emoji; no "gift", no machine-writing implication; `{child}` for the child. | existing rules test, extended |
+| NS-05-R16 | Given Level 1 (design spec 03, SH-R10), Then the sheet and code have no recording row, no audio URI and no recording copy slot, even behind a flag; the share sheet is handed no audio; and the shared text holds no footer, no value of `brand.name`, no URL and no "sent from" line. Written as a payload unit test: the payload is text plus at most one image URI, its MIME types contain no `audio/`, and a scan of only what the app adds (the wrapper: date line format, signature line, joining lines) for `brand.name`, `http` and `www.` finds none. The scan excludes `final_text`, because a parent's own words may contain those strings; a fixture letter whose words contain "www.example", "http" and the brand name must pass, and R4 proves the words are passed through unchanged. The recording row waits for `security-architect` and counsel reads on record, and design spec 03 must remove its recording toggle (Karma told the design agent). | `[NS-05-R16][SH-R10] Level 1 has no recording path and no footer` |
+| NS-05-R17 | Given the strings, Then they pass the content rules test (pattern list: README appendix A): no dash, curly quote, ellipsis character or emoji; no "gift", no machine-writing implication; `{child}` for the child. | `[NS-05-R17] share strings match no forbidden pattern` (content rules test plus the README appendix A scan) |
 
 Label effect: none at Level 1 (nothing is sent to our servers). Levels 2 and 3 move Audio Data to collected and linked (exec Q1).
 
@@ -119,7 +119,7 @@ Dependencies: the letter page, the stored picture (NS-01), App lock, `packages/c
 | A parent expects the voice and is disappointed | R2 says what stays; Level 2 waits for the reads. |
 | Wrong recipient | Said in the preview; no voice at Level 1. |
 
-Rollout: flag `EXPO_PUBLIC_SHARE_LETTER` (name proposed). Target Build 14 for Level 1, after Photos and Find ship in Build 13 and the NS-03 read-out is in (Fri 11 Dec 2026). Level 1 does not wait for the pilot to finish if the founder prefers; the default is to wait, to keep Build 13 about the tabs release (exec Q4).
+Rollout: flag `EXPO_PUBLIC_SHARE_LETTER` (name proposed). Target Build 14 for Level 1, after Photos and Find ship in Build 13 and the NS-03 read-out is in (Mon 21 Dec 2026). Level 1 does not wait for the pilot to finish if the founder prefers; the default is to wait, to keep Build 13 about the tabs release (exec Q4).
 
 ## 13. Open questions (every one has a default)
 
