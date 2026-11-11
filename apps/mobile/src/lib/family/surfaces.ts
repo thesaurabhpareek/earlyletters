@@ -1,7 +1,7 @@
 /** The build's answer to "are the co-parent surfaces shown" (entry.logic.ts visibleCoParentDoors). Reads the capability list and the alpha flag. */
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { familySurfacesFrom, inviteScreensHiddenFrom } from './surfaces.logic';
+import { familySurfacesFrom, inviteScreensHiddenFrom } from './entry.logic';
 
 /** The join-door rule (B12-5): servers on and an alpha build, or a store build after CO_PARENT_IN_STORE_BUILD flips. */
 export function familySurfacesOn(): boolean {

@@ -5,9 +5,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { inviteScreensBlocked, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
+import { familySurfacesFrom, inviteScreensBlocked, inviteScreensHiddenFrom, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 import { invitedDoorShown } from '../src/lib/first-run/welcome.logic';
-import { familySurfacesFrom, inviteScreensHiddenFrom } from '../src/lib/family/surfaces.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 const INVITE = { kind: 'invite', token: 'T' } as never;
@@ -53,10 +52,10 @@ describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
     expect(inviteScreensHiddenFrom({ serverFeatures: false, coParent: false, alpha: true })).toBe(false);
   });
   it('the flag is its own: it is not the sign-in switch or the capability list', () => {
-    const t = src('lib/family/surfaces.ts') + src('lib/family/surfaces.logic.ts');
+    const t = src('lib/family/surfaces.ts') + src('lib/family/entry.logic.ts');
     expect(t).not.toMatch(/signIn\b|signInEnabled/);
     expect(src('lib/family/surfaces.ts')).toMatch(/familySurfacesFrom\(\{ coParent: capabilities\.coParent, alpha: PLUS_ALPHA \}\)/);
-    expect(src('lib/family/surfaces.logic.ts')).toMatch(/visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton/);
+    expect(src('lib/family/entry.logic.ts')).toMatch(/visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton/);
   });
   it('the invite screens, the link route and the saved-token prompt each ask the flag', () => {
     expect(src('app/invite/_layout.tsx')).toContain('inviteScreensHidden()');
