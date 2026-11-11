@@ -49,7 +49,7 @@ import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { DayZeroCard } from '@/components/tonight/day-zero-card';
-import { dayZeroCard, fromTheBookCard, pickFromTheBook, showsDayZero } from '@/components/tonight/from-the-book.logic';
+import { tonightGift } from '@/components/tonight/from-the-book.logic';
 import { HeldRow } from '@/components/tonight/held-row';
 import { PlusLine } from '@/components/tonight/plus-line';
 import {
@@ -200,11 +200,10 @@ export default function Tonight() {
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   // NX-36 S13: one kept letter from the book (picked by the date, stable all day), or on day zero the empty-book card.
-  const fromTheBook = useMemo(() => {
-    const pick = pickFromTheBook(room?.entries ?? [], today);
-    return pick && room?.family ? fromTheBookCard(pick, { birthday: room.family.childBirthday, signsAs: room.family.signsAs }) : null;
-  }, [room?.entries, room?.family, today]);
-  const dayZero = useMemo(() => (room && room.family && showsDayZero(room.entries) ? dayZeroCard(room.family.childName) : null), [room]);
+  const gift = useMemo(
+    () => tonightGift({ entries: room?.entries ?? [], today, draftsWaiting: cards.length, family: room?.family ?? null }),
+    [room?.entries, room?.family, today, cards.length],
+  );
 
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
@@ -334,15 +333,15 @@ export default function Tonight() {
         ) : null}
 
         {/* After the waiting letters: a task first, a gift after. One row at most. */}
-        {fromTheBook ? (
-          <Animated.View entering={enter(3 + rows.length)} className={cards.length > 0 ? 'mt-3' : 'mt-8'}>
-            <CardSource id={fromTheBook.id}>
-              <ResurfacedCard card={fromTheBook} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: fromTheBook.id } })} />
-            </CardSource>
-          </Animated.View>
-        ) : dayZero ? (
-          <Animated.View entering={enter(3 + rows.length)} className={cards.length > 0 ? 'mt-3' : 'mt-8'}>
-            <DayZeroCard card={dayZero} childName={book.childName} signsAs={book.signsAs} onPress={() => router.push('/book')} />
+        {gift ? (
+          <Animated.View entering={enter(3 + rows.length)} className={gift.afterDrafts ? 'mt-3' : 'mt-8'}>
+            {gift.kind === 'fromTheBook' ? (
+              <CardSource id={gift.card.id}>
+                <ResurfacedCard card={gift.card} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: gift.card.id } })} />
+              </CardSource>
+            ) : (
+              <DayZeroCard card={gift.card} childName={book.childName} signsAs={book.signsAs} onPress={() => router.push('/book')} />
+            )}
           </Animated.View>
         ) : null}
       </ScrollView>

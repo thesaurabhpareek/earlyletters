@@ -348,7 +348,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
   it('under a card\'s page Tonight hides from screen readers, and the month-old card names its place', () => {
     expect(screen).toContain('const behind = useHiddenBehindCardPage();');
     expect(screen).toContain('{...behind}');
-    expect(screen).toContain('<CardSource id={fromTheBook.id}>');
+    expect(screen).toContain('<CardSource id={gift.card.id}>');
   });
 
   it('no count, days-since or streak anywhere on Tonight', () => {

@@ -180,3 +180,32 @@ export function dayZeroCard(childName: string): DayZeroCard {
   const title = childName.trim() ? fill(f.emptyTitle, { child: childName }) : f.emptyTitleNameless;
   return { title, line: f.emptyLine, a11yLabel: spoken([title, f.emptyLine]) };
 }
+
+/* ------------------------------------------------------------------ */
+/* What Tonight puts after the waiting letters                         */
+/* ------------------------------------------------------------------ */
+
+export type TonightGift =
+  | { kind: 'fromTheBook'; card: FromTheBookCard; afterDrafts: boolean }
+  | { kind: 'dayZero'; card: DayZeroCard; afterDrafts: boolean }
+  | null;
+
+/**
+ * The one row after the waiting letters: a task first, a gift after. A waiting draft does not hide the From the book
+ * card (it used to hide "A month ago", F09-REQ-003 era); it only changes the gap above it (`afterDrafts`). One kept
+ * letter from the book, else on day zero the empty-book card, else nothing; and nothing at all without a book.
+ */
+export function tonightGift(i: {
+  entries: readonly BookLetter[];
+  today: string;
+  draftsWaiting: number;
+  family: { childName: string; childBirthday: string | null; signsAs: string } | null;
+  yesterdayPickId?: string | null;
+}): TonightGift {
+  if (!i.family) return null;
+  const afterDrafts = i.draftsWaiting > 0;
+  const pick = pickFromTheBook(i.entries, i.today, i.yesterdayPickId);
+  if (pick) return { kind: 'fromTheBook', card: fromTheBookCard(pick, { birthday: i.family.childBirthday, signsAs: i.family.signsAs }), afterDrafts };
+  if (showsDayZero(i.entries)) return { kind: 'dayZero', card: dayZeroCard(i.family.childName), afterDrafts };
+  return null;
+}

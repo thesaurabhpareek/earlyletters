@@ -22,6 +22,7 @@ import {
   LABEL_MAX_WORDS,
   pickFromTheBook,
   showsDayZero,
+  tonightGift,
   type BookLetter,
 } from '../src/components/tonight/from-the-book.logic';
 import { copy } from '../src/lib/copy';
@@ -305,9 +306,9 @@ describe('[NX-36-S13] the screen (source)', () => {
   it('[NX-36-S13] the slot follows the waiting letters, enters on the existing stagger, and opens the letter or the Book', () => {
     expect(screen.indexOf('{/* After the waiting letters')).toBeGreaterThan(screen.indexOf('rows.map('));
     expect(screen).toContain('entering={enter(3 + rows.length)}');
-    expect(screen).toContain("pathname: '/letter/[id]', params: { id: fromTheBook.id }");
+    expect(screen).toContain("pathname: '/letter/[id]', params: { id: gift.card.id }");
     expect(screen).toContain("router.push('/book')");
-    expect(screen).toContain('pickFromTheBook(room?.entries ?? [], today)');
+    expect(screen).toContain('tonightGift({ entries: room?.entries ?? [], today, draftsWaiting: cards.length');
   });
 
   it('[NX-36-S13] no new motion, no analytics event, no audio, no count, no new dependency', () => {
@@ -326,5 +327,55 @@ describe('[NX-36-S13] the screen (source)', () => {
     // The hint is spoken once: it is the prop, never inside the label.
     expect(copy.tonight.resurfaced.a11y).not.toMatch(/Opens/);
     expect(dayZeroCard('Asha').a11yLabel).not.toContain(copy.tonight.fromTheBook.emptyA11yHint);
+  });
+});
+
+describe('[NX-36-S13][F09-REQ-003] a waiting draft no longer hides the card from the book', () => {
+  const family = { childName: 'Asha', childBirthday: BIRTHDAY, signsAs: 'Mama' };
+  const monthOld = letter('m', days(30));
+
+  it('[NX-36-S13] with a draft waiting, a letter 28 to 35 days old still shows as A month ago, below the draft with a tighter gap', () => {
+    const waiting = tonightGift({ entries: [monthOld], today: TODAY, draftsWaiting: 2, family });
+    expect(waiting?.kind).toBe('fromTheBook');
+    if (waiting?.kind !== 'fromTheBook') throw new Error('expected the From the book card');
+    expect(waiting.card.id).toBe('m');
+    expect(waiting.card.kicker).toBe(copy.tonight.resurfaced.kicker);
+    expect(waiting.afterDrafts).toBe(true);
+    const none = tonightGift({ entries: [monthOld], today: TODAY, draftsWaiting: 0, family });
+    expect(none?.kind === 'fromTheBook' && none.afterDrafts).toBe(false);
+    // The same letter and words with or without a draft: a waiting draft changes only where the card sits.
+    expect(none?.kind === 'fromTheBook' && none.card).toEqual(waiting.card);
+  });
+
+  it('[NX-36-S13] with a draft waiting, a letter outside the window shows as From the book, not nothing', () => {
+    const g = tonightGift({ entries: [letter('old', days(90))], today: TODAY, draftsWaiting: 1, family });
+    expect(g?.kind === 'fromTheBook' && g.card.kicker).toBe(copy.tonight.fromTheBook.kicker);
+  });
+
+  it('[F09-REQ-003] a month-only letter is never the card, with or without a draft waiting; a day letter in the window takes the slot', () => {
+    const monthOnly = { ...letter('mo', days(30)), occurredPrecision: 'month' as const };
+    for (const draftsWaiting of [0, 1]) {
+      expect(tonightGift({ entries: [monthOnly], today: TODAY, draftsWaiting, family })).toBeNull();
+      const g = tonightGift({ entries: [monthOnly, letter('d', days(29))], today: TODAY, draftsWaiting, family });
+      expect(g?.kind === 'fromTheBook' && g.card.id).toBe('d');
+    }
+  });
+
+  it('[NX-36-S13] never a private letter or a quiet-day mark; the empty-book card shows while no letter exists, with a draft waiting too', () => {
+    const quiet = letter('q', days(30), { kind: 'not_much', finalText: '' });
+    const priv = letter('p', days(30), { inBook: false });
+    for (const draftsWaiting of [0, 1]) {
+      expect(tonightGift({ entries: [], today: TODAY, draftsWaiting, family })?.kind).toBe('dayZero');
+      expect(tonightGift({ entries: [quiet], today: TODAY, draftsWaiting, family })?.kind).toBe('dayZero'); // a mark is not a letter
+      expect(tonightGift({ entries: [priv], today: TODAY, draftsWaiting, family })).toBeNull(); // a letter exists, none may be shown
+    }
+  });
+
+  it('[NX-36-S13] nothing without a book', () => {
+    expect(tonightGift({ entries: [monthOld], today: TODAY, draftsWaiting: 0, family: null })).toBeNull();
+  });
+
+  it('[NX-36-S13] the old resurfaced() is gone: Tonight has one rule, tonightGift', () => {
+    expect(read('components/tonight/draft-card.logic.ts')).not.toMatch(/export function resurfaced|ResurfacedCard =/);
   });
 });
