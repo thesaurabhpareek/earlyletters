@@ -24,7 +24,7 @@ One sentence: I find a letter by a word I remember. (9 words.) Verb "find" belon
  SAT 14 OCT
  "We went to the park and she laughed at the
   [ducks] by the water, the way she does."     <- match marked, words whole
- Hear Mama                                      <- only if a recording exists
+ Hear {signsAs}                                      <- only if a recording exists
 
  SUN 3 SEP
  "the ducks again, another day"                     <- (no ellipsis char; fade, see 5)
@@ -72,7 +72,7 @@ Long letters: the row shows the sentence that holds the match, cut on whole word
 | Results | Rows as above, p95 300 ms on an SE 3 with 1,000 letters (F09-REQ-015; UNVERIFIED, nothing built). Results appear without a spinner; if over 300 ms the previous list stays, no flash |
 | No match | Existing `book.empty.searchTitle` "No letters with that word yet." (EVIDENCE). One quiet line under it (slot): try another word. No "Write a letter" button (the Book starts nothing) |
 | Empty book | Find is not offered when there is no kept letter (the magnifier is absent, not greyed) |
-| Index not ready (after a restore or a new phone) | `InlineState`: "Find is still getting ready on this phone." (slot), with the Book list still usable. When ready, it clears without a toast. Uses "getting ready" as Book's word for words being made; a content decision whether that clashes (NAV-TAB-ROLES R6) |
+| Index not ready (after a restore or a new phone) | `InlineState`: "Find is still getting ready on this phone." (slot; "getting ready" is a wording for `content` to confirm, see index section 8), with the Book list still usable. When ready, it clears without a toast. Uses "getting ready" as Book's word for words being made; a content decision whether that clashes (NAV-TAB-ROLES R6) |
 | Offline | Identical. Find reads the phone only (Truth line) |
 | Error | Index failed: `ErrorLine` plus "Try again" (slot). The Book list is untouched |
 | App locked | The field and results sit behind the lock cover like the Book; no result text in the app switcher |
@@ -95,7 +95,7 @@ Typing never animates the list. Rows do not reorder while typing settles within 
 - AX5: the FindBar grows with text (min 48 pt), Cancel moves under it. Each result row stacks date over words; words are whole in the row up to the fade, and the fade only occurs where the full sentence is read by VoiceOver. Dates are `letterDateline`, 14 pt base, scale cap 2.4 per `tokens.type` (EVIDENCE).
 - VoiceOver: the magnifier is "Find, button". Focus lands in the field on open. The result list is one container; each row reads "{date}. {matching sentence}. Opens the letter." Matches are not announced as a count. On no match the empty line is read once, politely. The keyboard return key is Search, 44 pt.
 - Voice Control: "Tap Find" works because the label is real text.
-- Dictation into the field is the system's; Find never records audio.
+- Dictation into the field is the system's; Find never records audio. UNVERIFIED: what the system does with dictated speech is Apple's, not read this session; handed to `privacy` for the Records and Never lines.
 - Reduce Motion, Reduce Transparency, light and dark: the bar is solid `surfaceRaised`, 1 pt `line` edge under Reduce Transparency.
 
 ## 9. Copy slots (for `content`)
@@ -131,6 +131,7 @@ Door lines. Not a consent screen, but it reads the whole book:
 | FD-R5 | Starts nothing. Given no match or an empty book, Then there is no button that starts a letter in Find | navigation test |
 | FD-R6 | Quiet. Given any use of Find, Then no term enters analytics, logs or crash reports | catalog review; log test |
 | FD-R7 | Accessibility. Given VoiceOver, AX5, Reduce Motion, both themes, Then section 8 holds and the match is not signalled by colour alone | device |
+| FD-R9 | Index lifecycle. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |
 | FD-R8 | Works with no network and no account | device, airplane mode |
 
 ## 11. The 12-line job-clarity review

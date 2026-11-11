@@ -76,7 +76,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 
 ### 5.1 Layout
 
-The Book header has a `LensRow` under the cover band: "Months" always; "Photos" only once a photo is attached to a kept letter (NAV-R4). With no photo there is no lens row at all, no empty tab, no hint.
+The Book header has a `LensRow` under the cover band: "Months" always; "Photos" only once a photo is attached to a kept, open letter; photos on a sealed letter do not count and do not show until it opens (04 FS-R10) (NAV-R4). With no photo there is no lens row at all, no empty tab, no hint.
 
 ```
  Asha's book                        [find]

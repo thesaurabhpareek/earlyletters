@@ -4,7 +4,7 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 
 ## 1. Job
 
-One sentence: I send one letter to one person I choose. (10 words.) Class OUTPUT, but placed as an object action on the letter (NAV-TAB-ROLES P4 and P9), so no tab needs the verb "send".
+One sentence: I send one letter to one person I choose. (9 words.) Class OUTPUT, but placed as an object action on the letter (NAV-TAB-ROLES P4 and P9), so no tab needs the verb "send".
 
 It is not backup, not co-parent writing together, not publishing, not a link to a page. The letter leaves the app only as a file or text the parent hands to the iPhone's own share sheet.
 
@@ -13,7 +13,7 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
 | Place | Control | Notes |
 |---|---|---|
 | Letter page (Book) | "Share this letter" in the object-action group beside "Add a photo" | The one primary home. Opens the preview sheet (section 3) |
-| Letter card menu in the Book | Existing `book.entryMenu.shareButton` = "Share" (EVIDENCE, `strings.en.ts`) | Same sheet. A doorway |
+| Letter card menu in the Book | The key `book.entryMenu.shareButton` = "Share" exists in `strings.en.ts` (EVIDENCE), but a search of `apps/mobile/src` on `da83fb1e` finds no use of it: the letter page menu uses the keys for private, date and delete only. So it does nothing today; the Share action is new (UNVERIFIED beyond that grep; listed in section 12) | Same sheet. A doorway |
 | Home | None | Home lists no kept letters and sends nothing |
 | Me | None. A parent who looks for what has left the app finds nothing to list, because the app keeps no log of shares (section 6) | |
 
@@ -23,7 +23,7 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
 
 ```
  Share this letter                          [Close]   <- title2, heading 1
- SAT 14 OCT  From Mama
+ SAT 14 OCT  From {signsAs}
 
  [x] The words                    <- Toggle row, on, cannot be turned off
  [ ] The recording  0:42          <- only if a recording is on this phone
@@ -33,9 +33,9 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
  +--------------------------------------+
  | SAT 14 OCT                           |
  | "We went to the park and she laughed"    |
- | From Mama                            |
+ | From {signsAs}                       |
  +--------------------------------------+
- This leaves the app. Only the person you send it to gets it.   <- Shown line (slot)
+ This leaves the app when you send it.   <- Shown line (slot); says nothing about the recipient's copy
 
  [ Choose who to send it to ]     <- primary lg, 56 pt, opens the iPhone's share sheet
 ```
@@ -52,7 +52,7 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
 | Chosen | What is handed over |
 |---|---|
 | The words | Plain text: date line, body, signature line |
-| The recording | One audio file on this phone (format and name UNVERIFIED; the file name carries no child name and no date beyond the day; Q4) |
+| The recording | One audio file on this phone (format and name UNVERIFIED; the file name carries no child name and no date beyond the day; see section 12) |
 | The photos | The kept copies, location stripped (ML gap 4 default) |
 
 The app never chooses a recipient and has no contacts permission. After the system sheet closes, SH-1 closes without a message. If the parent cancels the system sheet, SH-1 stays open (they may change what goes).
@@ -85,7 +85,7 @@ No new token.
 | Offline | Works; the share sheet itself needs no network from us |
 | Error: file could not be made | `ErrorLine` plus "Try again" (slot); the letter is untouched; a failed share never changes the letter |
 | App locked | The sheet sits behind the lock |
-| Long letter | Preview scrolls; the words are whole. Plain text has no length limit; an image card would (not in this scope, Q1) |
+| Long letter | Preview scrolls; the words are whole. Plain text has no length limit; an image card would (not in this scope, Q4) |
 | Photo missing on this phone | That row is absent; the letter's missing-file box stays as the page has it |
 
 ## 5. Motion
@@ -176,13 +176,13 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 | J9 | Pass | Section 4 |
 | J10 | Open | Slots; the word "Share" needs `legal` and `content` |
 | J11 | Open | Device pass |
-| J12 | Open | If removed, a parent screenshots the letter, which sends it with no preview and no control over what goes. Another place already does it badly; the spec's value is the preview and defaults. Founder to decide whether that is worth building (Q1) |
+| J12 | Open | If removed, a parent screenshots the letter, which sends it with no preview and no control over what goes. Another place already does it badly; the spec's value is the preview and defaults. The founder decided to build it (Q1), so J12 passes on the preview and defaults alone |
 
 ## 11. Open design questions, each with a default
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | Build share-one-letter at all (G-3)? | Yes, text first; the founder decides. If no, J12 stays Open and the spec is shelved |
+| Q1 | Build share-one-letter (G-3)? | DECIDED by the founder, not an agent default: on 10 Nov he said to include all new scope, so build it, text first (relayed by Karma on 11 Nov; I did not read the original message, UNVERIFIED). Open only: the Q2 to Q7 defaults below |
 | Q2 | Add a line "from Early Letters" to the shared text? | No. It would be the app speaking in the parent's letter |
 | Q3 | May a parent send the recording without the words? | No. The unit is a letter |
 | Q4 | Image card of the letter (a rendered page) as a format | Not now. A long letter cannot be a single image without cutting words, and a font-dependent image breaks for some scripts |
@@ -192,4 +192,4 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 
 ## 12. UNVERIFIED
 
-The gap file for G-3 (not re-read); `expo-sharing` multi-item behaviour in SDK 57; audio format and size on this phone; whether the share sheet shows an app-name preview line outside our control; whether a text share keeps Devanagari and emoji-free text intact in every target app; every statement about parents.
+The gap file for G-3 (not re-read); `expo-sharing` multi-item behaviour in SDK 57; that `book.entryMenu.shareButton` is unused (one grep); audio format and size on this phone; whether the share sheet shows an app-name preview line outside our control; whether a text share keeps Devanagari and emoji-free text intact in every target app; every statement about parents.

@@ -12,12 +12,12 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 | Tab | Route (kept) | Verb | "I go to X to ..." (PROPOSED) | Material only this tab holds | Never |
 |---|---|---|---|---|---|
 | Home | `/` (`index.tsx`) | Say | I go to Home to say something to {child}. | Today's prompt; the one capture cluster; what waits to be kept; at most one memory slip | A list of kept letters; settings; sending |
-| Book | `/book` | Read | I go to the Book to read, hear or find what we kept. | Every kept letter by month; recordings; the lenses (Photos, Firsts); Find; Read together; the letter page and its object actions | A control that starts a letter |
+| Book | `/book` | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading, not separate verbs.) | Every kept letter by month; recordings; the lenses (Photos, Firsts); Find; Read together; the letter page and its object actions | A control that starts a letter |
 | Me | `/you` | Look after | I go to Me to look after my account, my books and my rules. | Account, Plan, Children, Writing, Your letters, Privacy and security, Take the book with you, Help, About | A letter; a lamp; a count |
 
 Rules that hold:
 - Three tabs, in this order, always. The bar never gains a fourth tab for a feature. A tab needs the test in `03` section 8 (Share) or an equivalent written for it.
-- Labels: "Home" and "Me" are the founder's words. "Book" stays. Single words, from the glossary (HIG tab bars: single-word labels; the 13 pt label floor and Large Content Viewer in `_layout.tsx`, as NX-41 R14 says, EVIDENCE as quoted there).
+- Labels: "Home" and "Me" are the founder's words. "Book" stays. Single words, from the glossary. Apple HIG tab-bar guidance (single-word labels) and the 13 pt label floor with Large Content Viewer in `_layout.tsx` are second-hand through NX-41 R14 and NX-30a: UNVERIFIED, I opened neither Apple nor the file this session.
 - Family is never a tab. Co-parent "coming soon" is at most one caption line in Me (section 5).
 - The Library is not a tab (spec 1). Share is not a tab (spec 3).
 - Each tab's first screen has one level 1 heading that says its job, and the tab label is its short name.
@@ -54,7 +54,7 @@ Home lists no kept letters and starts nothing but a take.
 ### 3.2 Wireframe (a week in; fictional Asha)
 
 ```
- ASHA, 7 MONTHS                    Good morning, Mama.
+ ASHA, 7 MONTHS                    Good morning, {name}.
  What is one small thing she did today?
                                 [ Another thought ]
  [ Speak ]                 [ Type ]
@@ -62,7 +62,7 @@ Home lists no kept letters and starts nothing but a take.
           Not much today
  Waiting to be kept                     (flat row)
  SAT 14 OCT  1 min   "We went to the park"     Keep >
- A month ago                            (the one slip, flat)
+ {kicker}                                (the one slip, flat; the kicker is a content decision: "A month ago" exists today, or the letter's own date)
  "She slept through for the first time"      Read it >
 ```
 
@@ -113,7 +113,7 @@ Letter page: read it, hear it, then the object actions: Add a photo, This was a 
 |---|---|
 | First day, no letters | The closed cover and the existing title "The first page is waiting." (`book.empty.bookTitle`) and one quiet button that moves to Home. The existing label is "Write a letter" (`bookCta`); that wording reads as starting a letter on the Book. Slot: the button should read as a pointer to Home (J3). Behaviour is a tab switch, not a capture call. Only the Months lens exists, so no lens row, no Find |
 | Letters, no photo or first | Months only; no lens row; Find present |
-| Waiting for words | Existing waiting card (`book.waitingForWords`); Book's word is "getting ready" (R6 in NAV-TAB-ROLES); a draft is not a Book card |
+| Waiting for words | Existing waiting card (`book.waitingForWords`); Book's word is "getting ready" in NAV-TAB-ROLES R6 (wording for `content`, index section 8); a draft is not a Book card |
 | Offline | Identical; all local. Read together and hearing a letter work offline (recordings are on the phone) |
 | Error | A letter file missing: the letter reads; the media box says so (ML-S8). Index not ready: Find says so (02). Book cannot load: the existing recovery |
 | Two books | Switcher on the cover; the lens row and Find follow the active book |
@@ -143,7 +143,7 @@ Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-T
 8. Help and legal: Help, If you are struggling (always present, D-034), Terms, Privacy Policy, Licenses.
 9. About.
 
-Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, below the Children rows (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, EVIDENCE as quoted; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is not above the fold on Me's first screen (NX-41 R10). Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
+Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, placed under the "Take the book with you" section, which is below the first-screen fold, not under Children (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, EVIDENCE as quoted; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
 
 ### 5.2 States
 
@@ -281,7 +281,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 | Q3 | Home memory slip below drafts or only when nothing waits? | Below drafts, flat (NX-43 R6) |
 | Q4 | The Book gear: remove when Me ships? | Remove after one device pass shows Me is found |
 | Q5 | Does the empty Book keep a button at all? | Yes, one quiet pointer to Home; the default is to keep it so the Book is never a dead end |
-| Q6 | Co-parent caption above or below Children? | Below, muted, not on the first screen |
+| Q6 | Where does the co-parent caption sit? | Under "Take the book with you", muted, below the first-screen fold |
 | Q7 | Do we measure "Me" label width and Large Content Viewer before shipping? | Yes, in the device pass |
 
 ## 14. UNVERIFIED

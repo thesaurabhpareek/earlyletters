@@ -4,7 +4,7 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 
 ## 1. Job
 
-One sentence: I start, hold and finish a take without needing my hands. (13 words; verb "Say", the same as Home.) Two kinds of person: the parent whose hands are full (holding a baby, one hand free in the dark, F04 persona P1) and the person who uses Voice Control, Switch Control or VoiceOver. The states are the same for both; the doorways differ.
+One sentence: I start a letter by talking, hands full. (9 words, one verb, "start"; on Home it is a way to Say, so it adds no tab verb.) The states below still hold, pause and finish it. Two kinds of person: the parent whose hands are full (holding a baby, one hand free in the dark, F04 persona P1) and the person who uses Voice Control, Switch Control or VoiceOver. The states are the same for both; the doorways differ.
 
 Hands-free does not mean voice-activated. The app never listens before a person starts a take (PRIV: it "listens only while you record", `listen.primer.body`, EVIDENCE). No wake word. No always-on microphone. Siri or a hardware control may start a take only where the OS invokes the app on a person's own command, and F04 treats those as v1.1 candidates (UNVERIFIED).
 
@@ -37,7 +37,7 @@ States (a take's life), with the screen, what the person is told and what happen
 | H8 | Limit reached | 30 minutes | A gentle line (slot) and the screen moves to saving | one cue | finalised and saved |
 | H9 | Low space or power | Storage or battery low | A calm line in place of the hint (slot): the take is saved so far | none | finalised and saved |
 | H10 | Finishing | Tap Finish | "Saving your words." | `recordStop` cue, `success` haptic when saved | closed |
-| H11 | Saved | Write succeeded | "Saved, in your words." then Review; or "Writing down what you said." while the words are made | | kept as a waiting letter or open in Review |
+| H11 | Saved | Write succeeded | "Saved, in your words." then Review; or "Writing down what you said." (existing key; `content` to review the wording, see index section 8) | | kept as a waiting letter or open in Review |
 | H12 | Cannot start | Microphone denied or restricted | `errors.micDenied` with "Type instead" (existing) and a Settings button (EVIDENCE: `errors.micDenied.typeButton`) | none | none |
 | H13 | Cannot hear | Mic busy on another app, or no input route | `InlineState` in place of the circle (slot) with "Type instead" | none | none |
 
@@ -152,7 +152,7 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 
 | # | Result | Reason |
 |---|---|---|
-| J1 | Pass | "I start, hold and finish a take without needing my hands." (13 words; the parent's word is "talk", `content` may shorten) |
+| J1 | Pass | "I start a letter by talking, hands full." (9 words, one verb) |
 | J2 | Pass | Say is Home's verb and no other tab's |
 | J3 | Pass | Doorways are allow-listed and reach one function |
 | J4 | Pass | A take |

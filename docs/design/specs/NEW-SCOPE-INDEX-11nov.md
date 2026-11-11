@@ -117,7 +117,9 @@ Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what e
 | `content` | New copy slots (about 120 across the six) with limits and rules; none written | each spec, section "Copy slots" |
 | `mobile` | Screens and logic; the navigation test | 06 sections 9 and 10; each spec's sequence |
 | `product` | Requirement ids; reconcile NX-42 (Moments tab dissolves) and NX-41 R12 | 06 section 12 |
-| `legal`, `privacy` | The Shown, Records, Never, Decline lines for photo permission, sharing a letter, a seal and the hands-free doorways (COORDINATION section 10, PRIV-R21) | 01, 03, 04, 05 |
+| `legal`, `privacy` | The Shown, Records, Never, Decline lines for photo permission, sharing a letter and a seal; whether system dictation needs a privacy line (02, 04) (COORDINATION section 10, PRIV-R21) | 01, 02, 03, 04 |
+| `legal`, `security`, `privacy` | Hands-free doorways: no new consent or permission (05 door lines); one decision, starting a take from a locked phone (default: unlock first, 05 decision 8) | 05 |
+| `content` | Wording that could read as a machine writing: "Writing down what you said", "words being made", "getting ready", "made". CLAUDE.md: never imply AI writes anything. Review these existing and proposed lines | 02, 05, 06 |
 | `qa` | Device passes for every UNVERIFIED, AX5 and VoiceOver tables | each spec's checklist |
 | `user-research` | Five-parent reads for the job sentences, Find, Share and seals | 06 section 11 |
 | `data-architect` | Fields: first mark and label, seal date, photo description, share log (none) | 04, 01, 03 |
@@ -128,6 +130,7 @@ Listed per spec in its last section. The ones the founder should see first:
 
 | # | Question | Default if no answer | Spec |
 |---|---|---|---|
+| Q0 | Build share one letter? | DECIDED by the founder (10 Nov, relayed by Karma; original not read): yes, text first. Not an agent default | 03 |
 | Q1 | Is there ever a Share tab? | No. Sharing one letter is a letter-page action; export stays in Me. The tab test (03 section 8) is the only way to reopen it | 03 |
 | Q2 | Does photo-first need the camera, or only the library? | Library through the system picker only; no camera in this scope | 01 |
 | Q3 | Do we build Firsts at all? (NX-44 FD-1) | Not before a five-parent study; the spec is ready if he says yes | 04 |

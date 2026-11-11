@@ -32,7 +32,7 @@ Review and letter page (inside the existing scroll, after the words and photos, 
 
 - No placeholder text like "first word" or "first steps" (NX-44 R3: nothing suggested). The label above the field is plain: it asks for the parent's words and says they may leave it empty.
 - Empty label is allowed. At 40 characters the field stops; it says nothing about a limit beyond the stop (NX-44 U2).
-- Typing and dictation are the parent's. No autocomplete, no autocorrect (`autoCorrect` off), no predictive row suggestions (UNVERIFIED that iOS lets an app turn off the QuickType bar; `autoCorrect={false}` and `spellCheck={false}` are the known props).
+- Typing and dictation are the parent's (that iOS dictation sends no text to us beyond the field, and any dictation-to-server path Apple uses, are UNVERIFIED; handed to `privacy`). No autocomplete, no autocorrect (`autoCorrect` off), no predictive row suggestions (UNVERIFIED that iOS lets an app turn off the QuickType bar; `autoCorrect={false}` and `spellCheck={false}` are the known props).
 - Turning it off removes the mark and the label with a `Toast` "Undo" (NX-44 R2).
 
 ### A4. The Firsts lens
@@ -60,7 +60,7 @@ Toggle: system. Label field: `enter` 8 pt, 280 ms; Reduce Motion `fadeMs`. Marke
 
 ### B1. Job
 
-One sentence: I keep a letter closed until a day I choose. (11 words, verb "keep closed".) The founder has not asked for this by name in the documents I read; it is a competitor feature and a research request (EVIDENCE as cited above). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is shelved by default (Q2).
+One sentence: I keep a letter closed until a day I choose. (10 words, verb "keep closed".) The founder has not asked for this by name in the documents I read; it is a competitor feature and a research request (EVIDENCE as cited above). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is shelved by default (Q2).
 
 ### B2. The rules that shape it
 
@@ -94,7 +94,7 @@ Review row:
 In the Book:
 
 ```
- SAT 14 OCT                         From Mama
+ SAT 14 OCT                         From {signsAs}
  A closed letter. Opens 12 Jun 2044.        <- one line, no words, no glyph that implies danger
  [ Open it now ]                            <- quiet, 44 pt
 ```
@@ -115,7 +115,7 @@ In the Book:
 | Date in the past or today | The seal is not offered (the picker minimum is tomorrow); the letter opens now |
 | Opening day arrives | The letter becomes a normal letter at local midnight of the chosen date; no push, no badge (a reminder is a Q4 opt-in); if the app is open, it updates on the next read |
 | Clock set back or time zone change | The date uses the local date at read time (`roomClock`, as NX-43 U6); a letter never opens early because of a time zone shift (UNVERIFIED how `roomClock` behaves) |
-| Find | A sealed letter is not matched by content (02 section 4) |
+| Find, lenses, recordings list, Share | A sealed letter contributes nothing to any of them until it opens (FS-R10); its photos are not in the Photos lens, its first label is not in the Firsts lens, its photo descriptions and label are not searched |
 | Share | Not offered (03 section 4) |
 | Read together | Skipped until open |
 | Export | Included as data with its seal date (the person's own data, PRIV; the PDF book omits the words of a sealed letter until open: Q5) |
@@ -131,7 +131,7 @@ Row appears with `enter`; Reduce Motion `fadeMs`. Opening early or on the day: a
 
 ### C1. Decision
 
-"Quick capture" means the shortest path from a cold open, the Lock Screen, a widget or a hardware control to a take in progress. All of these open Home's capture in its Ready state (spec 5). None creates a letter itself, none has its own behaviour, and none appears as a control on Book or Me.
+"Quick capture" means the shortest path from a cold open, the Lock Screen, a widget or a hardware control to a letter in progress. All of these open Home's capture in its Ready state (spec 5). None creates a letter itself, none has its own behaviour, and none appears as a control on Book or Me.
 
 | Surface | Status | Source |
 |---|---|---|
@@ -175,7 +175,8 @@ Door lines.
 |---|---|---|
 | FS-R1 | Firsts follow NX-44 R1 to R12 unchanged, with the control placed in Review and on the letter page only | per NX-44 |
 | FS-R2 | No count. Given any number of firsts or seals, Then no screen, VoiceOver string, export file name or notification contains a count of them | grep test on strings; device |
-| FS-R3 | Nothing offered. Given Home, Then no firsts or seal prompt appears | navigation test |
+| FS-R3 | Nothing offered. Given Home, Then no firsts prompt and no seal prompt appears. The one exception is `seal.homeOpened`: on the day a seal ends, the memory slot may show that letter once (Q4) | navigation test; device |
+| FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, or the PDF book; its row shows the date only. When it opens, it appears in each at once. Closing a letter removes it from each at once | unit tests per surface; device |
 | FS-R4 | Enrich only. Given Review or a letter page, When a parent marks a first or seals, Then that letter changes and no letter is created | unit test |
 | FS-R5 | Seal is display only and truthful. Given a sealed letter, Then its words and recording are unchanged and the UI says "hidden" or an approved word, never a stronger one than the build supports | `security`, `privacy`, `legal` |
 | FS-R6 | No countdown. Given a sealed row, Then it shows a date and nothing that counts down | device; content rules |
@@ -187,10 +188,10 @@ Door lines.
 
 | # | Firsts | Seal | Quick capture |
 |---|---|---|---|
-| J1 | Pass: "I mark a letter as a first, in my own words." | Pass: "I keep a letter closed until a day I choose." | Pass: "I start a take with one touch." |
+| J1 | Pass: "I mark a letter as a first, in my own words." | Pass: "I keep a letter closed until a day I choose." | Pass: "I start a letter by talking with one touch." |
 | J2 | Pass: enricher, not a tab verb | Pass | Pass: it is Home's Say |
 | J3 | Pass: no starter | Pass: no starter | Pass: doorways only, allow-listed |
-| J4 | Pass: a letter | Pass: a letter | Pass: a take |
+| J4 | Pass: a letter | Pass: a letter | Pass: a letter |
 | J5 | Pass: toggle names it | Pass: the row names the act | Open: widget wording is content's |
 | J6 | Pass | Pass | Pass: one action |
 | J7 | Pass: lens is the Book's | Pass: Home slot only on the day | Pass |
