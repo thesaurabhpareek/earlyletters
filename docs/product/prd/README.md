@@ -30,7 +30,7 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 | 3 | `03-family-hears-it-pilot.md` | Concierge pilot with 8 to 10 parents | none | none | Research, no build |
 | 4 | `04-hands-free-capture-spike.md` | Time-boxed spike on hands-free start | none | none | Spike |
 | 5 | `05-share-one-letter.md` | One-letter share; the Share tab question | 14 earliest (Level 1) | `EXPO_PUBLIC_SHARE_LETTER` | Build, gated |
-| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after rank 5 and a five-parent study, earliest Build 15; sealed also needs `data-architect` on seal sync and on the instant versus calendar date (ADR 0028 D3) | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
+| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after rank 5 and a five-parent study, earliest Build 15; sealed is author-only (nothing reaches another phone before the day, ADR 0028 D3) and `data-architect` reconciles the UTC instant with the calendar date by Fri 20 Nov 2026 | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
 | 7 | `07-remaining-capability-rows.md` | Every other NX-42 row: cited, specified or parked | mixed | `EXPO_PUBLIC_PRINT_READY` | Mixed |
 
 Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced (earliest Build 15). Flag names and build numbers are proposals. The release train and `capabilities.ts` set the final names. Dates for Build 13 and Build 14 are not in the repo; this folder does not invent them.
