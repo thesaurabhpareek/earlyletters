@@ -330,6 +330,22 @@ export const site = {
   },
 
   /**
+   * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
+   * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. PROPOSED
+   * words: they need the founder's approval before this page is merged.
+   */
+  openApp: {
+    title: `Open ${NAME}`,
+    line: `Open ${NAME} on your iPhone.`,
+    body: `If ${NAME} is on this phone, tap below. If it is not, you can get it from the App Store.`,
+    bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
+    open: `Open ${NAME}`,
+    get: `Get ${NAME} on the App Store`,
+    onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
+    home: `Back to ${NAME}`,
+  },
+
+  /**
    * The page behind a co-parent invite link, https://earlyletters.com/j#t=<token> (app/j/page.tsx; PRD V2 F11 6.3
    * step 1). It shows only when the app did not open the link: no app on this phone, a laptop, or a mail or chat
    * app's own browser. It joins nothing; the person copies the link and pastes it into the app's "I was invited".

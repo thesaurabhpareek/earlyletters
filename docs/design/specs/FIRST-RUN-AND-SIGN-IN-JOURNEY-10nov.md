@@ -57,7 +57,7 @@ Why age first, then stories (EVIDENCE for the constraint): the root layout rende
 |---|---|---|---|
 | First launch, session being read | `restoring` (route field) | Blank paper, no spinner, at most 10 s | Session read (a few ms in practice, UNVERIFIED on device) or cap |
 | Age not answered | `ageGate` | S1 Before you begin | Yes, or No (`stop`) |
-| Stories (new) | `stories` | Card 1 to 3, Skip top right | Skip, Get started on card 3, or a session appears |
+| Stories (new) | `stories` | Card 1 to 3, Skip top right (48 pt) | Skip, Get started on card 3, or a session appears |
 | Auth entry | `signIn` | Welcome and sign in (#724) | Apple or email success, outage, offline |
 | Sign-in cannot be reached | `outage` | S3, with "Start on this phone" only when `LOCAL_START_FALLBACK` is true (it is, in #764) | Try again, back online, local start |
 | Account has a book, phone has none | `openingBook`, `slowBook`, `offlineBook`, `noBookHere` | S17 screens | Book arrives (then `openTonight`) |
@@ -203,7 +203,7 @@ Why three and not #770's four: see section 4.5.
 
 ### 4.3 Each card, in full
 
-Common to all cards: the paper and the lamp (scene `welcome`, `persistKey "firstRun"`, one lamp slot) are there from the first frame; bars at the top; Skip top right, 44 pt minimum, opaque and hittable on frame 1 of every card; the drawing above the words; no child name; no sound; no haptic.
+Common to all cards: the paper and the lamp (scene `welcome`, `persistKey "firstRun"`, one lamp slot) are there from the first frame; bars at the top; Skip top right, 48 pt minimum (CTO ruling 11 Nov; was 44 pt, to match NX-40-R2), opaque and hittable on frame 1 of every card; the drawing above the words; no child name; no sound; no haptic.
 
 | Card | Motion idea (tier B) | Reduce Motion form | Screen-reader text |
 |---|---|---|---|
@@ -211,7 +211,7 @@ Common to all cards: the paper and the lamp (scene `welcome`, `persistKey "first
 | 2 It stays in your words. | Same entrance. The drawing is two still lines of a sample sentence (fictional Asha only) with one small underline on a removed filler word that fades in once over `fadeMs`. Words appear whole, never typed | Underline present at once | "Story 2 of 3. It stays in your words. We only fix small slips, like an um, a repeat or a misheard word. We never rewrite your words." |
 | 3 Read together, in your voice. | Same entrance. The moon drawing is still. The lamp is the only thing that breathes, and only if the animation engineer measures that it fits next to the bar (MOTION 7 allows one loop) | Still | "Story 3 of 3. Read together, in your voice. Years from now, your child can hear how you sounded tonight." |
 
-The position phrase comes from `contentBlocksCopy.storyPositionA11y` (A-REQ-007 wording: "Story 2 of 4. Headline. Line."). `renderBlock` passes `total={block.order}` for a story (`blocks.tsx` line 154), which is wrong for a deck; the intro must call `StoryCard` with the real total, as that file's own comment says.
+The position phrase comes from `contentBlocksCopy.storyPositionA11y` (A-REQ-007 wording: "Story 2 of 3. Headline. Line."). `renderBlock` passes `total={block.order}` for a story (`blocks.tsx` line 154), which is wrong for a deck; the intro must call `StoryCard` with the real total, as that file's own comment says.
 
 Behaviour (from PRD A F2 and #770, with my changes):
 - Auto-advance: cards 1 and 2 move on after 6 seconds untouched; card 3 never moves on by itself. PRD A-REQ-006 said stories 1 to 3 advance and story 4 stops; with three cards the last one stops, so the rule is the same.
@@ -219,7 +219,7 @@ Behaviour (from PRD A F2 and #770, with my changes):
 - Skip, from any card, goes straight to the auth entry: one tap, no confirmation. "Skipped" and "finished" both set `onboarding.storiesSeen` and the stories never show again on this install (A-REQ-010). Quitting mid-story shows them again from card 1.
 - Card 3 carries one button at the bottom, "Get started", which goes to the auth entry. It is not an account choice: the founder's "skip, then login or sign up" is the auth entry.
 - Backgrounding pauses the bar; returning continues where it was.
-- With Reduce Motion, VoiceOver, Switch Control or AX1 and larger text: no auto-advance and no fill; visible Back and Next buttons at the bottom, 44 pt; the leaving card is hidden from the screen reader; focus goes to the new headline. (Rationale: WCAG 2.2.2 pause, stop, hide for moving content that starts by itself. I remember the rule; I did not re-read the W3C page this session, so UNVERIFIED.)
+- With Reduce Motion, VoiceOver, Switch Control or AX1 and larger text: no auto-advance and no fill; visible Back and Next buttons at the bottom, 44 pt (not changed by the 11 Nov Skip ruling; `design-systems` may raise them to 48 pt to match); the leaving card is hidden from the screen reader; focus goes to the new headline. (Rationale: WCAG 2.2.2 pause, stop, hide for moving content that starts by itself. I remember the rule; I did not re-read the W3C page this session, so UNVERIFIED.)
 
 ### 4.4 The door line on the stories (COORDINATION section 10)
 The stories ask nothing and record nothing, so most of the four lines are "none". **Shown:** the three cards above and the word "Skip". **Records:** one local boolean, `onboarding.storiesSeen`, a device setting; it needs a row in the data map (PRINCIPLES 10), which I ask `data-architect` to add. **Never:** no analytics event before consent, no card text in any event, no network call. **Decline:** Skip is the decline; nothing is lost; sign-in is still reachable in one tap.
@@ -304,19 +304,23 @@ Recommendation: ship A in Build 12, with A4 only if it fits; ship B as code behi
 ## 9. Backlog items, tests, dependencies, file overlap
 
 ### 9.1 Items
-Ids: the `product` agent took `BL-891` to `BL-897` in #775 (NX-40: requirements and trace, intro scaffolding behind a flag, intro screen and a11y, test seams, analytics, Apple name scope, session length). I re-ran `node scripts/agents/next-id.mjs` after fetching that branch: next free is `BL-898`. My rows take `BL-898` to `BL-906`. Where an NX-40 row covers the same work, build once and close the duplicate (BL-895 and BL-896 in NX-40 overlap my intro and analytics rows; `product` decides). This PR adds no rows to `docs/BACKLOG.md`; `product` files them. Re-run the script before merge.
+Ids: the `product` agent took `BL-891` to `BL-897` in #775 (NX-40: requirements and trace, intro scaffolding behind a flag, intro screen and a11y, test seams, analytics, Apple name scope, session length). I re-ran `node scripts/agents/next-id.mjs` after fetching that branch: next free is `BL-898`. My rows take `BL-898` to `BL-906`. Where an NX-40 row covers the same work, build once and close the duplicate (BL-895 and BL-896 in NX-40 overlap my intro and analytics rows; `product` decides).
 
-| Id | Item | Owner | Tier |
-|---|---|---|---|
-| BL-898 | Auth entry words: heading names create and sign in; Option A or B | content, mobile | A |
-| BL-899 | Returning-user path tests: session valid, expired, signed out, with and without a book | mobile, qa | A |
-| BL-900 | Remove the lock offer from "The book is open." | mobile | A |
-| BL-901 | Session-3 lock card from the #702 counter (NX-31-R14, R29) | mobile | A stretch |
-| BL-902 | Story intro shell and `stories` gate step, flagged off | mobile | B |
-| BL-903 | `tokens.motion.story` block and test | design-systems | B |
-| BL-904 | Story words: ids `story.exact.v3`, deck list for Build 12, counsel read | content, legal | B |
-| BL-905 | Analytics proposals in section 6, and the `onboarding.storiesSeen` data-map row | analytics, data-architect | B |
-| BL-906 | Bug: `renderBlock` in `components/content-blocks/blocks.tsx` (line 154) passes `total={block.order}` for a story, so a deck shows the wrong "Story n of N" to a screen reader. Pass the deck length | mobile | B (found while writing this spec) |
+Ruling 11 Nov (Karma): NX-40 keeps BL-892, BL-893 and BL-895. Rows BL-898 to BL-906 below are CLOSED AS SUPERSEDED and are not filed under those ids: open PR #790 already defines BL-898 to BL-915 in `docs/BACKLOG.md` for NX-41 to NX-44, and `id-collisions.mjs` would flag any reuse. Where each row's work now lives is in the last column. Rows with no home in NX-40 keep their scope and need new ids; proposed renumber below the table. This PR adds no rows to `docs/BACKLOG.md`; `product` files them. Re-run the script before merge.
+
+| Id | Item | Owner | Tier | 11 Nov: closed as superseded; work lives in |
+|---|---|---|---|---|
+| BL-898 | Auth entry words: heading names create and sign in; Option A or B | content, mobile | A | No row. Blocked on the words conflict in `FIRST-RUN-WORDS-10nov.md` section 3 (content, founder for Option A or B). Proposed new id BL-916 |
+| BL-899 | Returning-user path tests: session valid, expired, signed out, with and without a book | mobile, qa | A | BL-894 (test seams and rows for H6, H9) |
+| BL-900 | Remove the lock offer from "The book is open." | mobile | A | No row. Proposed new id BL-917 |
+| BL-901 | Session-3 lock card from the #702 counter (NX-31-R14, R29) | mobile | A stretch | No row. Proposed new id BL-918 |
+| BL-902 | Story intro shell and `stories` gate step, flagged off | mobile | B | BL-892 |
+| BL-903 | `tokens.motion.story` block and test | design-systems | B | No row; BL-893 takes timings from the motion spec. Proposed new id BL-919 only if the motion owner wants the token block |
+| BL-904 | Story words: ids `story.exact.v3`, deck list for Build 12, counsel read | content, legal | B | BL-893 (the three ids) and `content`'s port of the words file; counsel read stays open. No new id |
+| BL-905 | Analytics proposals in section 6, and the `onboarding.storiesSeen` data-map row | analytics, data-architect | B | BL-895 (the `stories_outcome` part). The `onboarding.storiesSeen` data-map row has no home; proposed new id BL-920 |
+| BL-906 | Bug: `renderBlock` in `components/content-blocks/blocks.tsx` (line 154) passes `total={block.order}` for a story, so a deck shows the wrong "Story n of N" to a screen reader. Pass the deck length | mobile | B (found while writing this spec) | No row. Proposed new id BL-921 |
+
+Proposed renumber (not filed; `product` files after #790's ids settle, rerun `node scripts/agents/next-id.mjs` and `id-collisions.mjs` first): #790 keeps BL-898 to BL-915 because it already holds them in the backlog. The surviving journey scope moves to the next free ids, BL-916 onward (next-id printed BL-916 on 11 Nov, UNVERIFIED after other PRs move): BL-916 auth entry words, BL-917 remove the lock offer from "The book is open.", BL-918 session-3 lock card, BL-919 story motion token block (optional), BL-920 `storiesSeen` data-map row, BL-921 the `renderBlock` total bug. Journey spec text elsewhere that cites BL-898 to BL-906 reads as these new ids.
 
 ### 9.2 Red-first tests (write each failing before the code)
 

@@ -117,6 +117,16 @@ export function childNameFieldWords(input: { accountFirst: boolean; index: numbe
   return { label: words.nameOptionalLabel, help: input.nearLimit ? null : words.nameOptionalHelp };
 }
 
+/**
+ * Whether the child step draws the birthday or due-date block (NX-31-R3). Servers-off builds keep the old rule: it arrives
+ * with the first letter of the name (`dateShown`). Account first the name is optional and an empty name with a date makes
+ * the book, so the block is there from the first paint: with it hidden, Continue would wait for a birthday that has no
+ * control (a dead end for anyone who leaves the name empty).
+ */
+export function dateBlockShown(input: { dateShown: boolean; accountFirst: boolean }): boolean {
+  return input.dateShown || input.accountFirst;
+}
+
 export type ConsentNext = 'askClaim' | 'keepOnPhone' | 'continue';
 
 /**

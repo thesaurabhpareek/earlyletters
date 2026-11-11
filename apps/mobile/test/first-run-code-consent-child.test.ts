@@ -13,7 +13,7 @@ import { firstRunBookNames, firstRunChildBlock } from '../src/components/onboard
 import { coverName } from '../src/components/book/book-cover.logic';
 import { fill } from '../src/lib/copy';
 import { authReducer, type AuthEvent, type AuthState } from '../src/lib/auth/machine.logic';
-import { backShown, childNameFieldWords, consentHandoff, finishMayMakeBook, firstRunStartStep, hasSessionState, recoverySet, reportsPastWelcome, shouldAnnounceRecovery, welcomeHandoffStep } from '../src/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, consentHandoff, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, recoverySet, reportsPastWelcome, shouldAnnounceRecovery, welcomeHandoffStep } from '../src/lib/first-run/handoff.logic';
 
 const src = (...p: string[]) => readFileSync(join(__dirname, '..', 'src', ...p), 'utf8');
 const code = src('app', '(auth)', 'sign-in', 'code.tsx');
@@ -235,6 +235,36 @@ describe('[NX-36-S7] the child step', () => {
   it('[NX-36-S7] the date stays required and twins still need each name', () => {
     expect(firstRunChildBlock({ names: ['Asha'], expecting: false, birthday: null, dueDate: null, today })).toContain('Asha');
     expect(firstRunChildBlock({ names: ['Asha', ''], ...born })).toBe(en.onboarding.child.needNameMany);
+  });
+  it('[NX-31-R3] the birthday control is drawn whenever the name is optional: all four combinations of dateShown and accountFirst', () => {
+    const table: { dateShown: boolean; accountFirst: boolean; shown: boolean }[] = [
+      { dateShown: false, accountFirst: false, shown: false }, // servers off, nothing typed yet: the old flow, the block waits for the first letter
+      { dateShown: true, accountFirst: false, shown: true }, // servers off, a letter is in: as before
+      { dateShown: false, accountFirst: true, shown: true }, // account first, name left empty: the block is there from the start
+      { dateShown: true, accountFirst: true, shown: true },
+    ];
+    for (const row of table) expect(dateBlockShown(row), JSON.stringify(row)).toBe(row.shown);
+  });
+  it('[NX-31-R3] an empty name with no date waits on a birthday, so the control for it must be on screen; with a date nothing waits', () => {
+    // The situation the table above answers: one empty name (the person left it alone), no date chosen yet.
+    const waiting = firstRunChildBlock({ names: [''], expecting: false, birthday: null, dueDate: null, today });
+    expect(waiting).toBe(fill(en.onboarding.child.needBirthday, { child: en.onboarding.childFallback }));
+    // Continue waits on the birthday, and account first nothing else could have been typed: dateShown is still false.
+    expect(dateBlockShown({ dateShown: false, accountFirst: true })).toBe(true);
+    // Expecting is the other branch of the same wait.
+    expect(firstRunChildBlock({ names: [''], expecting: true, birthday: null, dueDate: null, today })).toBe(en.onboarding.child.needDueDate);
+    // With the date chosen from that control, the whole path completes with no name typed.
+    expect(firstRunChildBlock({ names: [''], ...born })).toBeNull();
+    expect(firstRunChildBlock({ names: [''], expecting: true, birthday: null, dueDate: '2027-01-15', today })).toBeNull();
+  });
+  it('[NX-31-R3] the child step draws the date block through dateBlockShown, and an account-first block does not animate in a second time inside the step that already does', () => {
+    const o = uncomment(onboarding);
+    expect(o).toMatch(/\{dateBlockShown\(\{ dateShown, accountFirst \}\) \? \(\s*<Animated\.View entering=\{accountFirst \? undefined : motion\.enter\(\)\} className="gap-4">\s*<ChoiceGroup/);
+    expect(o).not.toMatch(/\{dateShown \? \(/);
+    // the old reveal stays for the old flow: the effect that sets dateShown on the first letter is unchanged
+    expect(o).toMatch(/useEffect\(\(\) => \{\s*if \(names\[0\]\?\.trim\(\)\) setDateShown\(true\);\s*\}, \[names\]\);/);
+    // the name fields come first in the step, then the block: the reading order is the name, then the date
+    expect(o.indexOf('{names.map((n, i) => (')).toBeLessThan(o.indexOf('dateBlockShown({ dateShown, accountFirst })'));
   });
 });
 

@@ -1,3 +1,7 @@
+SUPERSEDED FOR BUILD 12. DO NOT PASTE THIS INTO NOTES FOR REVIEW.
+This text is for the servers-off build only. It says there is no account, no sign-in and no demo account. That is not true when servers are on (Build 12 asks the parent to sign in).
+TODO (owner: store/review lane): write the Build 12 notes once counsel has settled the wording. The founder must supply an App Review demo sign-in (see proposals/app-review-demo-signin.md). Until then there are no approved Build 12 notes.
+
 Early Letters is a baby memory book that parents fill by talking. A parent speaks or types a short letter to their child. The app writes the speech down on the phone, marks each small fix it makes (a stray "um", a repeated word, a missing full stop) and lets the parent put any fix back. Letters are filed by the child's month of age. This is not a health, medical or development-tracking app.
 
 NO ACCOUNT

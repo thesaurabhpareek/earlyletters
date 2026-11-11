@@ -699,6 +699,14 @@ export function listEntriesForChild(childId: string): Entry[] {
   return entries.listForChild(ctx(), childId);
 }
 
+/** Export while an account-deletion request is open: books the server closed, and letters in Recently deleted (BL-446). */
+export function listClosedBooks(): Child[] {
+  return children.listClosedByServer(ctx());
+}
+export function listDeletedEntriesForChild(childId: string): Entry[] {
+  return entries.listDeletedForChild(ctx(), childId);
+}
+
 export function getEntry(id: string): Entry | null {
   return entries.get(ctx(), id);
 }

@@ -54,7 +54,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession, leavesForeground, writePageFull } from '@/components/capture/write-session.logic';
 import { writeDateline } from '@/components/tonight/draft-card.logic';
 import { anotherThought, anotherThoughtShown } from '@/components/tonight/prompt.logic';
 import { PlusLine } from '@/components/tonight/plus-line';
@@ -174,9 +174,13 @@ export default function Write() {
       { initial: initialText },
     ),
   );
+  const [pageFull, setPageFull] = useState(() => writePageFull(initialText.length));
   const onChange = (value: string) => {
     if (pageEmptinessChanged(session.latest(), value)) setText(value);
     session.change(value);
+    // Renders only when the page becomes full or stops being full (BL-378), never per keystroke.
+    const full = writePageFull(value.length);
+    if (full !== pageFull) setPageFull(full);
   };
 
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
@@ -348,8 +352,14 @@ export default function Write() {
       <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
     </View>
   );
-  const status =
-    saveState === 'saved' ? (
+  const status = pageFull && saveState !== 'failed' ? (
+    <View key="full" className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.pageFull">
+      <WarningCircleIcon size={14} color={c.textMuted} weight="bold" />
+      <Text variant="footnote" className="shrink">
+        {copy.write.tooLong}
+      </Text>
+    </View>
+  ) : saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
         <CheckIcon size={14} color={c.textMuted} weight="bold" />
         <Text variant="footnote" className="shrink">
