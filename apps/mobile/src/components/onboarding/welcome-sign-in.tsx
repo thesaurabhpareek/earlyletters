@@ -11,11 +11,13 @@
  * The as-built lamp (scene "welcome", persistKey "firstRun") and lockup. A connection or service failure goes to the
  * outage screen through the gate (lib/first-run/gate.logic.ts), not here.
  * Accessibility: heading takes focus on mount; order is lockup, heading, body, benefit, agreement and its links, Apple,
- * email, "I was invited"; errors are a live region. Cannot be checked on a device from here.
+ * email, "I was invited"; errors are a live region. The two documents are their own 44 pt link targets under the agreement
+ * line (a link inside a sentence is not one), as the age gate does. They open the floating pages, as the consent sheet
+ * does; the versioned addresses wait for the CR-60 hold (BL-575). Cannot be checked on a device from here.
  */
 import { router, type Href } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ScrollView, View, type Text as RNText } from 'react-native';
 import { brand } from '@scribe/brand';
 import { tokens } from '@scribe/design-tokens';
@@ -25,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
-import { useFocusOnMount, useIsAccessibilitySize } from '@/lib/a11y';
+import { useFocusOnMount, useIsAccessibilitySize, useIsLargeText } from '@/lib/a11y';
 import { appleSignInAvailable } from '@/lib/auth/apple';
 import { authCopy } from '@/lib/auth/copy';
 import type { AuthMethod } from '@/lib/auth/machine.logic';
@@ -34,31 +36,32 @@ import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { AppleButton, Busy, ErrorLine, SHEET } from '@/lib/auth/ui';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
-import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
+import { inviteHref } from '@/lib/family/entry.logic';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { inlineErrorKind, invitedDoorShown, welcomeErrorMessage } from '@/lib/first-run/welcome.logic';
 
-const open = (url: string) => void WebBrowser.openBrowserAsync(url);
+/** Terms and Privacy open in the in-app browser; a page that will not open changes nothing on this screen. */
+const open = (url: string) => void WebBrowser.openBrowserAsync(url).catch(() => {});
 
-/** "By continuing you agree to the Terms of Service and Privacy Policy." with the two document names as links. */
+/**
+ * "By continuing you agree to the Terms of Service and Privacy Policy." The sentence is plain text; each document is its
+ * own link target of 44 pt under it (Button quiet sm), side by side and stacked at large text. VoiceOver reads the line,
+ * then "Terms of Service, link", then "Privacy Policy, link".
+ */
 function AgreeLine() {
-  const line = authCopy.sheet.agreeLine;
+  const largeText = useIsLargeText();
   const { termsLink, privacyLink } = authCopy.consent.terms;
-  const t = line.indexOf(termsLink);
-  const p = line.indexOf(privacyLink);
-  const link = (label: string, url: string) => (
-    <Text key={label} onPress={() => open(url)} accessibilityRole="link" variant="footnote" tone="accent" className="underline">
-      {label}
-    </Text>
-  );
-  const parts: ReactNode[] =
-    t >= 0 && p > t
-      ? [line.slice(0, t), link(termsLink, brand.web.terms), line.slice(t + termsLink.length, p), link(privacyLink, brand.web.privacy), line.slice(p + privacyLink.length)]
-      : [line];
+  const hint = copy.beforeBegin.linkA11yHint;
   return (
-    <Text variant="footnote" tone="muted" className="text-center" testID="welcome.agreement">
-      {parts}
-    </Text>
+    <View testID="welcome.agreement">
+      <Text variant="footnote" tone="muted" className="text-center">
+        {authCopy.sheet.agreeLine}
+      </Text>
+      <View style={{ flexDirection: largeText ? 'column' : 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center' }}>
+        <Button variant="quiet" size="sm" label={termsLink} role="link" accessibilityRole="link" accessibilityHint={hint} onPress={() => open(brand.web.terms)} testID="welcome.terms" />
+        <Button variant="quiet" size="sm" label={privacyLink} role="link" accessibilityRole="link" accessibilityHint={hint} onPress={() => open(brand.web.privacy)} testID="welcome.privacy" />
+      </View>
+    </View>
   );
 }
 
@@ -71,7 +74,8 @@ export function WelcomeSignIn() {
   const [busy, setBusy] = useState<AuthMethod | null>(null);
   // Set before the first await: a second tap in the same frame starts no second sign-in.
   const inFlight = useRef(false);
-  const invited = invitedDoorShown({ alpha: PLUS_ALPHA, coParent: visibleCoParentDoors(capabilities.coParent, PLUS_ALPHA).joinButton });
+  // The raw switch in: invitedDoorShown applies the build rule (B12-5) itself, once.
+  const invited = invitedDoorShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent });
 
   // The existing consent sheet reads this to know how sign-in began.
   useEffect(() => setSignInTrigger('sign_in'), []);

@@ -168,7 +168,7 @@ describe('[NX-31-R4] the hand-off from the Welcome', () => {
     expect(backShown({ accountFirst: true, step: 'welcome' })).toBe(false);
   });
   it('[NX-31-R4] the route opens FirstRunSteps with the start step and keeps the JSX the servers-off test pins', () => {
-    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} \/>;/);
+    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} \/>;/);
     expect(onboarding).toMatch(/useState<Step>\(\(\) =>\s*firstRunStartStep\(/);
     expect(onboarding).toMatch(/const ORDER: Step\[\] = \['welcome', 'promise', 'child', 'signsAs', 'finish'\];/);
   });

@@ -5,7 +5,8 @@
 import { authCopy } from '@scribe/content';
 import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
 import { authErrorMessage } from '@/lib/auth/messages';
-import { familySurfacesShown } from '@/lib/family/surfaces.logic';
+import { visibleCoParentDoors } from '@/lib/family/entry.logic';
+import type { FirstRunStep } from './gate.logic';
 
 /** The connection facts expo-network gives (`NetworkState`), as far as this app reads them. */
 export interface ConnectionFacts {
@@ -44,24 +45,28 @@ export function failureStillCounts(state: AuthState, setAside: AuthState | null)
 }
 
 /**
- * Hide "I was invited" on the first-run Welcome in a servers-on STORE build. There is ONE flag for this decision:
- * `familySurfacesShown` (family/surfaces.logic.ts, `CO_PARENT_IN_STORE_BUILD`). Alpha builds (TestFlight, preview) keep
- * the door. With server features off the door was already hidden (`visibleCoParentDoors`), so a servers-off build is unchanged.
+ * "I was invited" on the first-run Welcome. ONE rule decides it, the one the old Welcome and S1-178 already use:
+ * `visibleCoParentDoors(...).joinButton` (family/entry.logic.ts, CTO ruling B12-5, 9 Nov 2026). It needs the server switch
+ * AND an alpha build: shown in a servers-on alpha (TestFlight, preview), hidden in a servers-on store build, hidden with
+ * servers off. The caller passes the raw switch (`capabilities.coParent`), never an answer this rule already gave: passing
+ * `joinButton` back in as `coParent` applied the rule twice and made any flag behind it inert.
+ *
+ * There is no second flag here and no second `familySurfacesShown`: that name exists once, in entry.logic.ts, and means the
+ * Family tab and the Settings row (D-126), which a servers-on store build shows. The join door is not that decision.
  */
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return familySurfacesShown(input);
+  return visibleCoParentDoors(input.coParent, input.alpha).joinButton;
 }
 
 /**
- * The words under the buttons on the Welcome. A brand-new install has no letters, so the three failures NX-36 S2 names
- * use the first-run variants without "Your letters are safe"; every other kind keeps its existing words.
+ * The words under the buttons on the Welcome. A brand-new install has no letters, so the one failure NX-36 S2 names that
+ * stays on this screen ("That sign-in did not finish") uses the first-run variant without "Your letters are safe"; every
+ * other kind keeps its existing words. A 429, "not available" and a lost connection never get here: the gate sends them to
+ * the outage screen (gate.logic.ts OUTAGE_ERRORS), so this file holds no first-run words for them.
  */
 export function welcomeErrorMessage(kind: AuthErrorKind | null): string | null {
   if (!kind || kind === 'cancelled') return null;
-  const e = authCopy.firstRun.errors;
-  if (kind === 'provider') return e.provider;
-  if (kind === 'rate_limited' || kind === 'email_wait') return e.rateLimited;
-  if (kind === 'not_available') return e.notAvailable;
+  if (kind === 'provider') return authCopy.firstRun.errors.provider;
   return authErrorMessage(kind);
 }
 
@@ -81,4 +86,23 @@ export function signInErrorMessage(kind: AuthErrorKind | null | undefined, phone
     case 'unknown': return e.unknown;
     default: return welcomeErrorMessage(kind);
   }
+}
+
+export type FirstRunScreen = 'blank' | 'welcome' | 'outage' | 'steps';
+
+/**
+ * Which screen the first-run route draws. The gate answers where a person with no session starts (`signIn`, `outage`);
+ * this keeps a person who is already INSIDE first run where they are. Once past the welcome step of the steps (a name or a
+ * date may be typed), a lost session, a failed attempt or a dropped connection must not swap the steps for the Welcome or
+ * the outage screen, which would throw away what they typed (route.logic.ts: "must keep Continue when the auth state moves
+ * under them"). The book stays on the phone either way; signing in again is in Settings. And neither screen shows while the
+ * session is still being read: a returning person who is offline at launch is not told sign-in needs a connection.
+ */
+export function firstRunScreen(input: { step: FirstRunStep; outage: 'offline' | 'outage' | null; restoring: boolean; pastWelcome: boolean }): FirstRunScreen {
+  if (input.pastWelcome) return 'steps';
+  const outage = input.step === 'outage' && input.outage !== null;
+  if (input.step !== 'signIn' && !outage) return 'steps';
+  // While the session is still being read (a signed-in person offline at launch) neither screen is right yet: show nothing.
+  if (input.restoring) return 'blank';
+  return outage ? 'outage' : 'welcome';
 }
