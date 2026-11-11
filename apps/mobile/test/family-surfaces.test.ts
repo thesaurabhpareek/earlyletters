@@ -7,12 +7,13 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { inviteScreensBlocked, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 import { invitedDoorShown } from '../src/lib/first-run/welcome.logic';
+import { familySurfacesFrom, inviteScreensHiddenFrom } from '../src/lib/family/surfaces.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 const INVITE = { kind: 'invite', token: 'T' } as never;
 
 describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
-  it('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
+  it('a servers-on store build has no join door, no invite screen and sends an invite link to Tonight', () => {
     // develop's join-door rule (B12-5): servers on AND an alpha build. #720 adds the one constant that can open it in a store build.
     // Store build: servers on, not alpha.
     expect(visibleCoParentDoors(true, false).joinButton).toBe(false);
@@ -35,10 +36,27 @@ describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
   it('leaving familySurfaces out keeps every earlier caller as it was', () => {
     expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
   });
+  it('familySurfacesFrom is true only with servers on and an alpha build', () => {
+    expect(familySurfacesFrom({ coParent: true, alpha: true })).toBe(true);
+    expect(familySurfacesFrom({ coParent: true, alpha: false })).toBe(false);
+    expect(familySurfacesFrom({ coParent: false, alpha: true })).toBe(false);
+    expect(familySurfacesFrom({ coParent: false, alpha: false })).toBe(false);
+  });
+  it('inviteScreensHiddenFrom hides only in a servers-on store build, and every other build keeps the screens', () => {
+    const cases: Array<[boolean, boolean, boolean]> = [
+      // serverFeatures, coParent, alpha -> hidden
+      [true, true, false],
+    ];
+    for (const [serverFeatures, coParent, alpha] of cases) expect(inviteScreensHiddenFrom({ serverFeatures, coParent, alpha })).toBe(true);
+    expect(inviteScreensHiddenFrom({ serverFeatures: true, coParent: true, alpha: true })).toBe(false);
+    expect(inviteScreensHiddenFrom({ serverFeatures: false, coParent: false, alpha: false })).toBe(false);
+    expect(inviteScreensHiddenFrom({ serverFeatures: false, coParent: false, alpha: true })).toBe(false);
+  });
   it('the flag is its own: it is not the sign-in switch or the capability list', () => {
-    const t = src('lib/family/surfaces.ts');
+    const t = src('lib/family/surfaces.ts') + src('lib/family/surfaces.logic.ts');
     expect(t).not.toMatch(/signIn\b|signInEnabled/);
-    expect(t).toMatch(/visibleCoParentDoors\(capabilities\.coParent, PLUS_ALPHA\)\.joinButton/);
+    expect(src('lib/family/surfaces.ts')).toMatch(/familySurfacesFrom\(\{ coParent: capabilities\.coParent, alpha: PLUS_ALPHA \}\)/);
+    expect(src('lib/family/surfaces.logic.ts')).toMatch(/visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton/);
   });
   it('the invite screens, the link route and the saved-token prompt each ask the flag', () => {
     expect(src('app/invite/_layout.tsx')).toContain('inviteScreensHidden()');

@@ -22,6 +22,7 @@ import {
   type AccountKind,
   type Scheduler,
 } from '../src/lib/first-run/account-books.logic';
+import { readAccountBooks } from '../src/lib/first-run/account-books';
 import { mergeBack } from '../src/lib/first-run/merge-back.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
@@ -125,6 +126,63 @@ describe('[NX-31-R12] the call is bounded and never blocks the first screen', ()
     const t = src('lib/first-run/account-books.ts');
     expect(t).toContain("rpc('sync_books')");
     expect(t).not.toMatch(/\.from\(|\.insert|\.update|record_policy_act/);
+  });
+});
+
+/** A fake Supabase client: only `rpc` exists, and it records the names it was asked for. */
+function fakeClient(answer: () => unknown) {
+  const calls: string[] = [];
+  const sb = { rpc: (name: string) => (calls.push(name), answer()) };
+  return { sb: sb as never, calls };
+}
+
+describe('[NX-31-R12] readAccountBooks against a fake client (fail-safe: only a clear new answer skips No book here yet)', () => {
+  it('a new account (no books, first_run_open true) is new, and the one call is sync_books', async () => {
+    const { sb, calls } = fakeClient(() => Promise.resolve({ data: { epoch: 1, first_run_open: true, books: [] }, error: null }));
+    const kind = await readAccountBooks(sb, 1000);
+    expect(kind).toBe('new');
+    expect(calls).toEqual(['sync_books']);
+    expect(afterConsent(kind)).toBe('close');
+  });
+  it('an account with a book is hasBook', async () => {
+    const { sb } = fakeClient(() => Promise.resolve({ data: { epoch: 1, first_run_open: false, books: [BOOK] }, error: null }));
+    expect(await readAccountBooks(sb, 1000)).toBe('hasBook');
+  });
+  it('a returning account with no book is returningNoBook and still sees No book here yet', async () => {
+    const { sb } = fakeClient(() => Promise.resolve({ data: { first_run_open: false, books: [] }, error: null }));
+    const kind = await readAccountBooks(sb, 1000);
+    expect(kind).toBe('returningNoBook');
+    expect(afterConsent(kind)).toBe('noBook');
+  });
+  it('an rpc error is unknown and shows No book here yet, even when the data looks new', async () => {
+    const { sb } = fakeClient(() => Promise.resolve({ data: { first_run_open: true, books: [] }, error: { message: 'rate limited' } }));
+    const kind = await readAccountBooks(sb, 1000);
+    expect(kind).toBe('unknown');
+    expect(afterConsent(kind)).toBe('noBook');
+  });
+  it('a rejected promise is unknown and does not throw', async () => {
+    const { sb } = fakeClient(() => Promise.reject(new Error('network')));
+    const kind = await readAccountBooks(sb, 1000);
+    expect(kind).toBe('unknown');
+    expect(afterConsent(kind)).toBe('noBook');
+  });
+  it('a call that throws synchronously is unknown and does not throw', async () => {
+    const { sb } = fakeClient(() => {
+      throw new Error('boom');
+    });
+    expect(await readAccountBooks(sb, 1000)).toBe('unknown');
+  });
+  it('no answer within the wait is unknown (timeout) and shows No book here yet', async () => {
+    const { sb } = fakeClient(() => new Promise(() => {}));
+    const kind = await readAccountBooks(sb, 20);
+    expect(kind).toBe('unknown');
+    expect(afterConsent(kind)).toBe('noBook');
+  });
+  it('an unreadable or empty answer is unknown, never new', async () => {
+    for (const answer of [null, undefined, { data: null, error: null }, { data: { books: [] }, error: null }, { data: 'x', error: null }]) {
+      const { sb } = fakeClient(() => Promise.resolve(answer));
+      expect(afterConsent(await readAccountBooks(sb, 1000))).toBe('noBook');
+    }
   });
 });
 
