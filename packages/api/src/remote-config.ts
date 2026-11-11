@@ -62,6 +62,7 @@ const KILL_SWITCHES_OFF: Record<KillSwitchKey, boolean> = {
   backupUploads: false,
   escrow: false,
   statusReport: false,
+  bookSearch: false,
 };
 
 const KillSwitchesSchema = v.fallback(
@@ -74,6 +75,7 @@ const KillSwitchesSchema = v.fallback(
     backupUploads: bool(false),
     escrow: bool(false),
     statusReport: bool(false),
+    bookSearch: bool(false),
   }),
   { ...KILL_SWITCHES_OFF },
 );

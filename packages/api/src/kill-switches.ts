@@ -32,6 +32,11 @@ export const KILL_SWITCH_KEYS = [
   'escrow',
   /** The subscription status report (D-080). Phone reminders keep working (F14 6.6). */
   'statusReport',
+  /**
+   * Find in the Book (NS-02). Hides the Find action; the on-device index and the letters are untouched. It only
+   * ever hides: the build flag `EXPO_PUBLIC_BOOK_SEARCH` is the only thing that turns Find on. Phone only, no server part.
+   */
+  'bookSearch',
 ] as const;
 export type KillSwitchKey = (typeof KILL_SWITCH_KEYS)[number];
 

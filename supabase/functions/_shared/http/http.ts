@@ -81,7 +81,7 @@ export function unknownKillSwitches(env: EnvGetter): number {
   return raw.length - parseKillSwitchList(normaliseKillList(env('KILL_SWITCHES'))).size;
 }
 
-const KILL_NAMES = ['sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport'];
+const KILL_NAMES = ['sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport', 'bookSearch'];
 function normaliseKillList(raw: string | undefined): string {
   return (raw ?? '').split(',').map((x) => {
     const t = x.trim().toLowerCase();

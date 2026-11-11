@@ -83,7 +83,7 @@ export interface EndpointSpec {
    * apps/mobile/src/lib/family/invites-switch.ts); on the server only invite-redeem honours it (code redemption),
    * and create_child_invite, peek_invite and accept_child_invite have no stop until S02 adds SCKIL (request 4).
    */
-  killSwitch?: 'sync' | 'invites' | 'photos' | 'packDownloads' | 'serverContent' | 'backupUploads' | 'escrow' | 'statusReport';
+  killSwitch?: 'sync' | 'invites' | 'photos' | 'packDownloads' | 'serverContent' | 'backupUploads' | 'escrow' | 'statusReport' | 'bookSearch';
   /** Which build flag must be on for the app to call it (capabilities.ts). Public documents need none. */
   capability?: 'signIn' | 'sync' | 'coParent' | 'backup' | 'statusReport';
 }

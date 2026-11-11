@@ -112,7 +112,7 @@ describe('[WP-F19-16] kill switches for the M14 features', () => {
   });
 
   it('[F19-REQ-009] the kill-switch vocabulary is closed and matches the F19 6.5 registry', () => {
-    expect([...KILL_SWITCH_KEYS].sort()).toEqual(['backupUploads', 'escrow', 'invites', 'packDownloads', 'photos', 'serverContent', 'statusReport', 'sync']);
+    expect([...KILL_SWITCH_KEYS].sort()).toEqual(['backupUploads', 'bookSearch', 'escrow', 'invites', 'packDownloads', 'photos', 'serverContent', 'statusReport', 'sync']);
     expect(Object.keys(DEFAULT_REMOTE_CONFIG.killSwitches).sort()).toEqual([...KILL_SWITCH_KEYS].sort());
   });
 
@@ -147,5 +147,15 @@ describe('[F19-REQ-008] a stale config cannot clear a kill switch', () => {
     const used = withFreshKillSwitches(killed, DEFAULT_REMOTE_CONFIG, 'Fri, 16 Oct 2026 00:00:00 GMT');
     expect(used.killSwitches.statusReport).toBe(true);
     expect(used.killSwitches.invites).toBe(false);
+  });
+});
+
+describe('[NS-02] the Find pause', () => {
+  it('[NS-02] bookSearch parses, defaults to off, and an older signed config without it parses as off', () => {
+    expect(DEFAULT_REMOTE_CONFIG.killSwitches.bookSearch).toBe(false);
+    const older = parseRemoteConfig({ ...base, killSwitches: { sync: false, invites: true } });
+    expect(older.ok && older.value.killSwitches.bookSearch).toBe(false);
+    const on = parseRemoteConfig({ ...base, killSwitches: { bookSearch: true } });
+    expect(on.ok && isKilled(on.value, 'bookSearch')).toBe(true);
   });
 });
