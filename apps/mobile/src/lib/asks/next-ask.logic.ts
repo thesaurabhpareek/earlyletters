@@ -8,13 +8,15 @@
  *      (C-REQ-001 Rev); the second one (after the first month chapter, F13 6.2 B row 4c) is not built.
  *   2. `keep_book`: the account sheet, on the first save in session 2 or the second saved letter,
  *      whichever comes first; offered once here (the "after the third letter if Later" re-offer is not built).
+ *   0. `lock_offer` (NX-31-R29): the app lock card, in the third session that ended in a kept letter (lib/app-lock/offer.logic,
+ *      which decides `lockOfferDue`). First when due, and the only ask in that session.
  *   3. Analytics consent stays with its own sequencer (lib/analytics/ask.ts) and is off in the 1.0 line (D-124 item 3).
  *
  * At most one ask per session and one per calendar day (F02 6.1), so a second letter in the same session as the
  * prime waits for the next session's first save. If the founder picks A after the C1 cohorts, only this table changes.
  */
 
-export type NextAsk = 'reminder_prime' | 'keep_book' | null;
+export type NextAsk = 'lock_offer' | 'reminder_prime' | 'keep_book' | null;
 
 /** C-REQ-001 Rev: "Given No reminders twice, Then the card never shows a third time". */
 export const MAX_REMINDER_PRIMES = 2;
@@ -43,6 +45,8 @@ export interface AskFacts {
   askShownThisSession: boolean;
   /** An ask (any) already appeared on this local calendar day. */
   askShownToday: boolean;
+  /** The lock offer is due (lib/app-lock/offer.logic `lockOfferDue`). Absent means not due. */
+  lockOfferDue?: boolean;
 }
 
 /** Whether another prime may ever show (the cap alone; the slot rule is in `nextAsk`). */
@@ -54,6 +58,8 @@ export function primeAllowed(primesShown: number): boolean {
 export function nextAsk(f: AskFacts): NextAsk {
   if (f.lettersSaved < 1) return null;
   if (f.askShownThisSession || f.askShownToday) return null;
+  // 0. The lock card in session 3 (NX-31-R29): the one ask that session, ahead of everything else.
+  if (f.lockOfferDue) return 'lock_offer';
   // 1. The first ask slot after the first letter goes to the reminder prime.
   if (f.firstLetter && f.primesShown === 0 && primeAllowed(f.primesShown) && !f.remindersOn) return 'reminder_prime';
   // 2. Keep the book: never on the first letter's save; on the second letter, or the first save of a later session.

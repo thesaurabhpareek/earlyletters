@@ -163,9 +163,9 @@ describe('names in notifications are forced off while the lock is on (F17-REQ-01
   });
 });
 
-describe('the offer at the end of first run (CPO-2)', () => {
-  it('is on "The book is open." step', () => {
-    expect(code('src/app/onboarding.tsx')).toMatch(/<LockOffer child=\{child\} \/>/);
+describe('the offer (CPO-2; moved off first run by NX-31-R14, founder 9 Nov)', () => {
+  it('is not on "The book is open."; it is offered in session 3 (test/lock-offer-timing.test.ts)', () => {
+    expect(code('src/app/onboarding.tsx')).not.toMatch(/LockOffer/);
   });
 
   it('has two equal secondary buttons, is hidden without a passcode, and authenticates to turn on', () => {
