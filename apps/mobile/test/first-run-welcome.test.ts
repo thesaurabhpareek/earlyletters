@@ -180,7 +180,7 @@ describe('[NX-36-S3] Outage and offline', () => {
     expect(authCopy.offline.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
     expect(authCopy.offline.body).toMatch(/Try again/);
     expect(authCopy.outage.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
-    // The reconnect path (use-first-run-route.ts) only puts the Welcome back and says "Sign in is back."; no timer retries sign-in.
+    // The reconnect path (use-first-run-route.ts) only puts the Welcome back and says "You are back online."; no timer retries sign-in.
     expect(route).not.toMatch(/setInterval|backoff|back-off/i);
     expect(outage).not.toMatch(/by itself/);
   });
@@ -189,7 +189,7 @@ describe('[NX-36-S3] Outage and offline', () => {
     expect(outage).toMatch(/quiet=\{localStartOffered \?/);
     expect(outage).toMatch(/kind="error"/);
     expect(outage).not.toMatch(/attempt|retries/i);
-    expect(authCopy.outage.backOnline).toBe('Sign in is back.');
+    expect(authCopy.outage.backOnline).toBe('You are back online.');
     // Said by the route, on a real reconnect only (test/use-first-run-route.test.ts), not by the screen on every change of step.
     expect(route).toMatch(/announce\(authCopy\.outage\.backOnline\)/);
     expect(onboarding).not.toMatch(/outage\.backOnline/);

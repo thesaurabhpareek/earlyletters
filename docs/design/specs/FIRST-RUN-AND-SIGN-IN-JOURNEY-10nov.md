@@ -117,7 +117,7 @@ Two options for the door:
 Both options keep: the agreement line with Terms and Privacy links directly above the buttons; no password, name or phone field; "I was invited" hidden in a servers-on store build (#720); Terms and Privacy accepted in the consent sheet, which is where the act is recorded (PRIV-R21).
 
 The door requirement (COORDINATION section 10):
-- **Shown:** `authCopy.sheet.agreeLine` ("By continuing you agree to the Terms of Service and Privacy Policy.", #724, needs founder approval), the two versioned links, and the heading below. Largest Dynamic Type: the footer moves inline into the scroll and the buttons grow; no text is cut.
+- **Shown:** `authCopy.sheet.agreeLine` ("By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy.", the registered consent line reused word for word, founder-approved 10 Nov), the two versioned links, and the heading below. Largest Dynamic Type: the footer moves inline into the scroll and the buttons grow; no text is cut.
 - **Records:** unchanged by this spec. The acceptance is recorded by the existing consent sheet and `my_sync_gate()` path; PRIV-R21 fields are `mobile`'s and `data-architect`'s to confirm (UNVERIFIED that the existing row carries every PRIV-R21 field).
 - **Never:** no name, email, birthday or child detail is collected before the account exists; nothing is sent to analytics before consent.
 - **Decline and withdraw:** declining the sensitive-data consent keeps the person signed in with letters on the phone (`sync: 'off'`, `machine.logic.ts`); export and deletion still work (PRIV-R09). Skipping the stories asks nothing and records nothing.

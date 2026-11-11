@@ -44,7 +44,7 @@ import { inlineErrorKind, invitedDoorShown, welcomeErrorMessage } from '@/lib/fi
 const open = (url: string) => void WebBrowser.openBrowserAsync(url).catch(() => {});
 
 /**
- * "By continuing you agree to the Terms of Service and Privacy Policy." The sentence is plain text; each document is its
+ * "By continuing, you confirm you are 18 or older and agree to the Terms of Service and Privacy Policy." (registered, the same line as the consent screen) The sentence is plain text; each document is its
  * own link target of 44 pt under it (Button quiet sm), side by side and stacked at large text. VoiceOver reads the line,
  * then "Terms of Service, link", then "Privacy Policy, link".
  */
