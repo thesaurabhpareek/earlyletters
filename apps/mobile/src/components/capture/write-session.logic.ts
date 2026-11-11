@@ -194,3 +194,14 @@ export function createFirstFocus(focus: () => void, opts: { fallbackMs?: number;
     },
   };
 }
+
+/**
+ * BL-378: the length (about 40 pages) at which Write says, calmly, that the letter is very long. The field is never
+ * capped (D-057: no maxLength; a cap would trim a paste or a composing keyboard), so nothing is ever cut.
+ */
+export const WRITE_MAX_CHARS = 100_000;
+
+/** True when the letter is long enough for the calm "very long letter" line. */
+export function writePageFull(length: number): boolean {
+  return length >= WRITE_MAX_CHARS;
+}

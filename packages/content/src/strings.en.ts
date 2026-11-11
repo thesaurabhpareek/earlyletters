@@ -309,6 +309,9 @@ export const en = {
     autosaved: "Saved on this phone",
     // Autosave failed; shown in the same place, retried on the next pause.
     notSaved: "Not saved yet",
+    // BL-378: past about 100,000 characters. Nothing is cut and the field is never capped (a cap would trim a paste or
+    // a composing keyboard); every word is kept and this line only suggests a second letter.
+    tooLong: "This is a very long letter. Every word is kept. You can start another letter to say more.",
   },
 
   // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
@@ -346,6 +349,11 @@ export const en = {
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
+    },
+    // BL-379: under about a second, with no words from it. Let it go comes first; nothing is removed without a confirm.
+    shortTake: {
+      title: "That was very short",
+      body: "Keep it, or let it go?",
     },
     emptyTake: {
       title: "Nothing was recorded",
