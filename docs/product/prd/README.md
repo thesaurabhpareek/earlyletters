@@ -2,9 +2,9 @@
 
 Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
 
-Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head at time of writing `0a8499ab`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
+Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 07, head at time of writing `0a8499ab`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
-Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order: photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (earliest Build 15).
+Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order (it follows X1 of the closed list; X1 does not order Share one letter, so the build order for Share is set by the build targets in the table below, not by the file order): photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (earliest Build 15).
 
 ## The ground rules every file obeys
 
@@ -18,7 +18,7 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 | Memory Library is after Build 13 as a whole. NS-01 is only NX-39 P0 (one picture per letter), which the exec record already puts in Build 13. | `exec-rulings-2026-11-10-expansion.md`; NX-39 |
 | Metrics are content-free. Opt-in analytics is off through 1.0 (D-124). | F18, NX-39-R34 |
 | Lens, Photos lens, Firsts lens, Home memory, index and Find (as a header action) are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens". | BRAND.md |
-| Level 1 share has no recording row and no recording path until `security-architect` and counsel reads are on record; design spec 03 must remove its recording toggle. The shared text has no footer, brand name or link (NS-05-R16, SH-R10). | Karma, 11 Nov |
+| Level 1 share has no recording row and no recording path until `security-architect` and counsel reads are on record; design spec 03 has removed its recording toggle (SH-R2, SH-R10). The shared text has no footer, brand name or link (NS-05-R16, SH-R10). | Karma, 11 Nov |
 | Build 13 is one photo per letter and no video. The design cap of 8 photos and 2 videos is out of Build 13. | design spec 01 section 1a |
 
 ## The files
@@ -116,4 +116,18 @@ A test scans the named `packages/content` keys, case-insensitive, whole words un
 | Seal wording | locked; unlock; secure vault; sealed forever; wax |
 | Machine-writes (CLAUDE.md) | tidy; cleaned up; polished; improved; corrected; edited (for what the machine does); written for you; we wrote; AI; summary |
 | Forbidden characters | em dash; en dash; curly quotes; ellipsis character; emoji |
+| Exemptions | A key may be exempt only by an entry in the scan's allow-list with a written reason. First entry (PROPOSED): the iCloud download progress label of NS-01-R17, which uses the system progress trait; the word "progress" in that one string is allowed, and nowhere else |
 | Code deny-list for the Firsts folder | imports from any speech, NLP, classifier or text-analysis module; names matching `classif`, `sentiment`, `mood`, `suggest` |
+
+## Studies and the spike: owner, trigger, default
+
+Each pass line in the PRDs can be run once its trigger is met. Dates for Build 13 and later are not in the repo, so triggers are events. All owners and defaults are PROPOSED.
+
+| What | File | Owner | Trigger | Default if nobody sets it |
+|---|---|---|---|---|
+| Five-parent photo study | NS-01 section 9 | `user-research` | Build 13 with photos on is in TestFlight | Within one week of that build |
+| Five-parent Find study (parents with 40 or more letters) | NS-02 section 9 | `user-research` | Build 13 with Find on is in TestFlight and five testers have 40 or more letters | Within one week; if no tester has 40 letters, use a fixture book and mark the result as a stand-in (RR-8) |
+| Five-parent share study | NS-05 section 11 | `user-research` | Share Level 1 is in TestFlight (Build 14) | Within one week of that build |
+| Five-parent Firsts study and sealed-letter study | NS-06 section A9 (Metrics) and section B8 (Metrics) | `user-research` | Share Level 1 has shipped (the sequencing rule of NS-06) | One combined session, after Share Level 1 ships |
+| Hands-free spike | NS-04 | `mobile` with `security-architect` | The Monday after Build 13 is cut | Five working days from that Monday; hard stop on day 5 |
+| Family-hears-it pilot | NS-03 | `user-research` with the founder | Dated plan in NS-03 section 5 | As dated there |

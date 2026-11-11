@@ -13,8 +13,8 @@ Counsel read before ANY arm (Karma, red team 11 Nov): counsel reads the consent 
 
 How this pilot respects it:
 
-- Arm W (words and picture): the parent sends the PDF of one letter. No recording. Carries no voice. Starts on the dates in section 5 once the counsel read of the consent and scripts is on record (the security read is not needed for Arm W, because the file is the Export output the app already makes and carries no voice). UNVERIFIED that a one-letter PDF can be cut from the current export; section 4 gives the fallback (send the whole-book PDF, or a screenshot).
-- Arm V (words plus the recording): the parent also sends the audio file. Arm V starts only after both reads are on record in the pilot file: `security-architect` on sections 3, 4 and 6, and counsel on the voice-specific lines of sections 6 and 7. Arm V parents are told in the consent, in plain words, that they will send a recording of their child's voice to a relative (section 6). If either read is missing on the start date, every parent runs Arm W and the voice questions are marked "not tested".
+- Arm W (words and picture): the parent sends the PDF of one letter. No recording. Carries no voice. Starts on the dates in section 5 once the counsel read of the consent and scripts is on record (the security read is not needed for Arm W, because the file is the Export output the app already makes and carries no voice). UNVERIFIED that a one-letter PDF can be cut from the current export; section 4 gives the fallback (a screenshot of the one letter page; the whole-book PDF is not allowed, see section 4).
+- Arm V (words plus the recording): the parent also sends the audio file. Arm V starts only after both reads are on record in the pilot file: `security-architect` on sections 3, 4 and 6, and counsel on the voice-specific lines of sections 6 and 7. Arm V parents are told in the consent, in plain words, that they will send a recording of their child's voice to a relative (section 6). PROPOSED for the founder and counsel (not decided): a parent who consents on or after the day both voice reads are on record is assigned by alternation, starting with V; every parent who consents before that day is assigned W; no later parent is moved to W because of an earlier gap. Both voice reads must be on record by Fri 4 Dec for any parent to be assigned V (section 2); if they are not, all parents are W and the voice questions are marked "not tested".
 - The reads are asked for this plan now: one page each, not a build review. Default if counsel has not answered by Fri 27 Nov 2026: the pilot does not start (no arm). If counsel has read the consent and scripts but not the voice lines: Arm W only.
 
 ## 1. Job to be done
@@ -25,7 +25,8 @@ I go to my own phone and my own messages to send one letter, with the voice if I
 
 ## 2. Who and when
 
-- Parents: 8 to 10 adults aged 18 or over, each with a child under 5 and at least 3 kept letters in Early Letters (TestFlight or alpha). Recruited by the founder from his invited friends and family list. HYPOTHESIS: this group is warm toward the product, so results will lean positive; the success lines in section 8 are set with that in mind.
+- Arms and sizes: the researcher assigns each parent at the moment of consent, not the parent. PROPOSED for the founder and counsel (not decided): a parent who consents on or after the day both voice reads are on record is assigned by alternation, starting with V; every parent who consents before that day is assigned W; no later parent is moved to W because of an earlier gap. Both voice reads must be on record by Fri 4 Dec for any parent to be assigned V. Among the parents who consent on or after that day, the order of consent alternates V, W, V, W, so those arms differ by at most one parent; across the whole group they can differ by more, and Arm V may end with fewer than 4 parents (outcome rule 2b then applies; the researcher does not reassign anyone). Arm V earliest start: Mon 7 Dec 2026 (the first send day); if the reads are not on record by Fri 4 Dec there is no Arm V and the voice question is "not tested". The security read of sections 3, 4 and 6 is due Fri 27 Nov 2026, owner `security-architect`, the same day as counsel's read.
+- Parents: 8 to 10 adults aged 18 or over, each with a child under 5 and at least 3 kept letters in {brand.name} (TestFlight or alpha). Recruited by the founder from his invited friends and family list. HYPOTHESIS: this group is warm toward the product, so results will lean positive; the success lines in section 8 are set with that in mind.
 - Recipients: one relative per parent whom the parent picks (a grandparent, aunt, uncle or close friend), an adult. At least 2 of the 10 live in another country, if the founder's list allows (open item from PRD Q3). At least 2 parents with a non-English letter if any exist on the list; Build 12 is English only, so this may be 0 (UNVERIFIED).
 - Not recruited: anyone under 18, anyone the founder pays, any app-store reviewer, any competitor staff.
 - When: proposed dates, Pacific time, in the table in section 5. Order: founder confirms the principle, counsel reads the consent and scripts, only then does recruiting start, then a capped send window, then one week per parent, then the read-out after the last day 7. Thanksgiving is Thu 26 Nov, so no contact that day.
@@ -48,10 +49,10 @@ Retention: raw notes are deleted 30 days after the read-out, Wed 20 Jan 2027 (PR
 ## 4. How a parent sends (no build)
 
 1. The parent picks one kept letter they would be happy for the recipient to have.
-2. Arm W: Export from Settings, take the page for that letter (PDF), send it by the message app the parent already uses with that person. Fallback if a one-letter file cannot be cut: the parent sends the whole-book PDF, or a screenshot of the letter page they choose. The team does not decide this; it records which was used.
+2. Arm W: Export from Settings, take the page for that letter (PDF), send it by the message app the parent already uses with that person. Fallback if a one-letter file cannot be cut: a screenshot of the one letter page the parent chooses. The whole-book PDF is not a fallback, because it would send more than the one letter the consent names; if neither a one-letter file nor a screenshot works for a parent, that parent does not take part. The team records which form was used.
 3. Arm V: also send the recording file for that letter (from the export's `audio` folder). Only when section 0 allows.
 4. The parent tells the recipient it is a letter to {child}. The words are the parent's own; the team gives no script for that message.
-5. Nothing goes through Early Letters servers or the team's phones.
+5. Nothing goes through {brand.name} servers or the team's phones.
 
 ## 5. Plan in one table
 
@@ -61,10 +62,12 @@ Dates (Pacific time, all PROPOSED; none collides, and the read-out follows the l
 |---|---|---|
 | Fri 20 Nov 2026 | Founder confirms the principle (OQ-1) | Founder |
 | Mon 23 Nov | Consent texts and scripts (sections 6 and 7) go to counsel; the security read starts | `product` |
+| Fri 27 Nov | Security read due (sections 3, 4 and 6), owner `security-architect`; Arm V cannot start without it | `security-architect` |
 | Fri 27 Nov | Counsel read of consent and scripts due. Default if not on record: the pilot does not start and every later date moves by the same number of weeks | counsel |
 | Mon 30 Nov to Fri 4 Dec | Recruit and consent (no recruiting before the counsel read is on record) | `user-research`, founder |
-| Wed 9 Dec | One extension of recruit and consent if fewer than 8 consented by Fri 4 Dec (stop rule 5); no further extension | founder |
+| Mon 7 Dec | Earliest Arm V start. PROPOSED rule (section 2): V is assigned only to parents who consent on or after the day both voice reads are on record, and both must be on record by Fri 4 Dec; otherwise no Arm V | `user-research` |
 | Mon 7 Dec to Fri 11 Dec | Send window. Last send date is Fri 11 Dec (the cap) | Parents |
+| Wed 9 Dec | One extension of recruit and consent if fewer than 8 consented by Fri 4 Dec (stop rule 5); no further extension. A parent who consents that day has only Thu and Fri to send | founder |
 | Day 3 after each send | Check-in message, script A. Latest: Mon 14 Dec | `user-research` |
 | Day 7 after each send | Script B to the parent and script C relayed. Latest: Fri 18 Dec | `user-research`, parent |
 | Mon 21 Dec | Read-out: counts, 5 short answers, an outcome from the section 8 table. The read-out never comes before the last day 7 | `product` |
@@ -98,11 +101,13 @@ Words are plain and calm. No pressure, no counts, no "you should".
 **Recruit (message; same for both arms; sent only after the counsel read is on record):**
 > Hi. We are trying out a small idea and would value your help. If you are willing, you would send one of your letters to a grandparent or another relative, in your own message, and tell us a week later how it went. We would not see the letter. It takes about ten minutes in all. Would you like to hear more?
 
-**Instruction W (Arm W, after consent; no recording sentence):**
-> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. Say anything you like to them. Please do not send anything to us, and please do not send a recording. We will check in on day 3 and day 7.
+**Instruction W (Arm W, after consent; never says a recording may be sent, only asks that none be):**
+> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as the PDF of that one letter (or, if the app cannot make that, a screenshot of that one page). Say anything you like to them. Please do not send anything to us, and please do not send a recording. We will check in on day 3 and day 7.
 
 **Instruction V (Arm V only; sent only after the security and counsel voice reads are on record; counsel reads both instruction texts):**
-> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. If you want them to hear your voice, also send the recording. You will be sending a recording of your child's voice to that person; you choose whether to. Say anything you like to them. Please do not send anything to us. We will check in on day 3 and day 7.
+> Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as the PDF of that one letter (or, if the app cannot make that, a screenshot of that one page). If you want them to hear your voice, also send the recording. You will be sending a recording of your child's voice to that person; you choose whether to. Say anything you like to them. Please do not send anything to us. We will check in on day 3 and day 7.
+
+Note on Instruction W: the words "please do not send a recording" name the recording to Arm W, to keep it unsent, and that puts the idea in the parent's head. Counsel should rule on naming the recording in Arm W. Fallback wording slot, PROPOSED, used if counsel objects: "Please send only the letter." (replacing "and please do not send a recording"). Counsel reads both versions.
 
 Arm W parents are never told they may send a recording, and a parent who asks is told that this group sends the words and picture only.
 
@@ -128,16 +133,16 @@ The parent relays the answer. The team does not contact recipients. (Second-hand
 
 ## 8. Success, hold and stop (set before the pilot; not changed after it starts)
 
-All numbers are PROPOSED by `product`; the founder may set them before Day 0 of the first parent.
+All numbers are PROPOSED by `product`; the founder may set them before Day 0 of the first parent. The thresholds are shares of the actual group, rounded up, so they hold whatever the size (8 to 10 consented): with 8 consented, SC-1 needs 6; with 9, 7; with 10, 8. For S parents who sent: SC-2 needs ceil(0.6 x S), SC-3 ceil(0.5 x S), SC-4 ceil(0.6 x S). "Missed by n" means that count minus the actual count. The read-out states N and S first, so the lines cannot be argued afterwards.
 
-**Success (go to draft a hosted-link requirement and send it to security and counsel):**
+**Success (rows 2 and 2b: a full GO drafts a hosted-link requirement for security and counsel; a LIMITED GO drafts none):**
 
 | Id | Line | Counted from |
 |---|---|---|
-| SC-1 | At least 6 of the parents who consented send a real letter by day 3 | Script A Q1 (a parent who does not answer counts as not sent; the reason in Script A Q2 is coded "did not get to it" or "did not want to" by the researcher) |
-| SC-2 | At least 5 of the recipients could read (Arm V: read or listen) without help | Script C, one Yes or No per recipient; a missing answer counts as No |
-| SC-3 | At least 4 recipients replied or asked for another letter | Script B Q1, as the parent reports it |
-| SC-4 | At least 5 parents say yes to sending another next week | Script B Q5 |
+| SC-1 | At least 75% (rounded up) of the parents who consented send a real letter by day 3 | Script A Q1 (a parent who does not answer counts as not sent; the reason in Script A Q2 is coded "did not get to it" or "did not want to" by the researcher) |
+| SC-2 | At least 60% (rounded up) of the recipients whose parents sent could read (Arm V: read or listen) without help | Script C, one Yes or No per recipient; a missing answer counts as No |
+| SC-3 | At least 50% (rounded up) of those recipients replied or asked for another letter | Script B Q1, as the parent reports it |
+| SC-4 | At least 60% (rounded up) of the parents who sent say yes to sending another next week | Script B Q5 |
 | SC-5 | 0 parents report that a letter or recording reached someone they did not intend, or was passed on against their wish | Script B Q6 (both arms), plus any message received during the week |
 
 
@@ -146,14 +151,15 @@ All numbers are PROPOSED by `product`; the founder may set them before Day 0 of 
 | Order | Condition | Outcome |
 |---|---|---|
 | 1 | Any stop rule below has fired (SC-5 missed is stop rule 1) | STOP: the pilot ends, the founder decides, and no go is drawn |
-| 2 | All of SC-1 to SC-5 met | GO: draft a hosted-link requirement and send it to security and counsel. A go needs all five lines. It is not a build |
+| 2 | All of SC-1 to SC-5 met, and Arm V ran with at least 4 parents | GO: draft a hosted-link requirement and send it to security and counsel. A go needs all five lines. It is not a build |
+| 2b | All of SC-1 to SC-5 met, and Arm V did not run or had fewer than 4 parents (including exactly 3 after the section 2 rule; no one is reassigned) | LIMITED GO: words and picture only (NS-05 Level 1); no hosted-voice requirement is drafted and the voice question is "not tested" |
 | 3 | SC-1 missed and the researcher coded the main reason "did not get to it" or the cause was recruiting | HOLD: run once more with one change |
 | 4 | SC-1 missed for any other reason | NO-GO |
 | 5 | SC-1 met and two or more of SC-2, SC-3, SC-4 missed by any amount | NO-GO |
 | 6 | SC-1 met and any one of SC-2, SC-3, SC-4 missed by 3 or more | NO-GO |
 | 7 | SC-1 met and exactly one of SC-2, SC-3, SC-4 missed by 1 or 2 | HOLD: run once more with one change |
 
-A HOLD may be run once. A second HOLD is read as a NO-GO. On NO-GO, hosted audio is not pursued on this evidence; NS-05 Level 1 still ships on its own merits. Arm V not run: SC-2 and SC-3 are read for words and picture only, the outcome is limited to words and picture (NS-05 Level 1), and the voice question is "not tested".
+A HOLD may be run once. A second HOLD is read as a NO-GO. On NO-GO, hosted audio is not pursued on this evidence; NS-05 Level 1 still ships on its own merits. Arm V not run (or under 4 parents): SC-2 and SC-3 are read for words and picture only (rule 2b).
 
 **Stop (end the pilot for everyone, same day, tell the founder):**
 1. Any report that a recording or letter reached someone the parent did not intend.
@@ -185,7 +191,7 @@ Nothing is sold or gated in the pilot (and nothing here is promised as forever).
 | Parent sends to the wrong person | Parent picks one recipient and sends from their own thread; SC-5 and stop rule 1 handle a report. |
 | A one-letter PDF cannot be cut | Fallback in section 4; the pilot records which was used. |
 | Counsel not answered in time | No arm starts without the consent and scripts read; every date moves by the same number of weeks; Arm W only without the voice read (section 0). |
-| Thanksgiving and December load | Dates in section 2 avoid 26 Nov; parents may start late. |
+| Thanksgiving and December load | Dates in section 5 avoid 26 Nov; parents may start late. |
 
 ## 12. Open questions (every one has a default)
 
@@ -206,4 +212,4 @@ Nothing is sold or gated in the pilot (and nothing here is promised as forever).
 
 - SC-2 depends on a relayed answer. It is a hand count, not an observation.
 - The success numbers are proposals; the stop rules and dates are proposals; the HYPOTHESIS that this group predicts the wider market is untested.
-- UNVERIFIED: the one-letter PDF, the reads' outcomes, the number of non-English letters available.
+- UNVERIFIED, each with a PROPOSED owner and date: whether a one-letter PDF can be cut from the current export (`mobile`, by Mon 23 Nov 2026); the reads' outcomes (`security-architect` and counsel, Fri 27 Nov 2026, OQ-2); the number of non-English letters available (`user-research`, at recruit, Mon 30 Nov 2026).
