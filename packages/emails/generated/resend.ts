@@ -11,7 +11,7 @@ export const meta = {
     "privacyUrl": "https://earlyletters.com/privacy",
     "appUrl": "https://earlyletters.com/open",
     "manageUrl": "https://apps.apple.com/account/subscriptions",
-    "subscriptionTermsUrl": "https://earlyletters.com/subscription-terms"
+    "subscriptionTermsUrl": "https://earlyletters.com/terms"
   }
 } as const;
 

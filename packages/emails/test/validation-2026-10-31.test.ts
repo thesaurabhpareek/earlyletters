@@ -79,6 +79,18 @@ describe('TPL-06: every link points at a page that exists, or at one listed as s
     expect([...used].sort()).toEqual(Object.keys(SITE_ROUTES.needed).sort());
   });
 
+  it('BL-512: subscriptionTermsUrl resolves to the existing /terms page, and the two billing emails render it', async () => {
+    expect(DEFAULT_LINKS.subscriptionTermsUrl).toBe('https://earlyletters.com/terms');
+    expect(previewValues.subscriptionTermsUrl).toBe(DEFAULT_LINKS.subscriptionTermsUrl);
+    expect(linkStatus(DEFAULT_LINKS.subscriptionTermsUrl)).toBe('built');
+    expect(Object.keys(SITE_ROUTES.needed)).not.toContain('/subscription-terms');
+    for (const id of ['trial-started', 'plus-started']) {
+      const html = (await render(id)).replace(/&amp;/g, '&');
+      expect(html).toContain('The full Subscription terms are at https://earlyletters.com/terms.');
+      expect(html).not.toContain('/subscription-terms');
+    }
+  });
+
   it('the footer Help link writes to the support mailbox (no /contact page exists)', async () => {
     const html = await render('welcome');
     expect(DEFAULT_LINKS.helpUrl).toMatch(/^mailto:/);

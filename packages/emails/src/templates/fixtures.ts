@@ -38,7 +38,7 @@ export const previewValues: EmailValues = {
   exportUrl: `${SITE}/open/export/preview-not-a-real-link`,
   confirmDeleteUrl: `${SITE}/delete-account/confirm#token=preview-not-a-real-token`, // deletion-confirm (web route to build)
   documentUrl: `${SITE}/privacy`, // its page lists what changed (TPL-06: no separate changes page)
-  subscriptionTermsUrl: DEFAULT_LINKS.subscriptionTermsUrl, // page still to build (src/links.ts)
+  subscriptionTermsUrl: DEFAULT_LINKS.subscriptionTermsUrl, // /terms (BL-512)
   manageUrl: DEFAULT_LINKS.manageUrl,
 
   // billing (fictional dates; prices are the list prices, D-082)

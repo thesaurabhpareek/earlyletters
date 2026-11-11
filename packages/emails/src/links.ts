@@ -30,10 +30,6 @@ export const SITE_ROUTES = {
       emails: 'backup-restore-requested (stopUrl, token after #; the page posts it, F21)',
       when: 'before owner backup ships (D-121 step c)',
     },
-    '/subscription-terms': {
-      emails: 'trial-started, plus-started (subscriptionTermsUrl)',
-      when: 'before the reminder emails ship (D-121 step b); or point subscriptionTermsUrl at /terms if the legal lane folds them in (SUB-10)',
-    },
     '/delete-account/confirm': {
       emails: 'deletion-confirm (Ops only; not sent until the page exists, CATALOG section 8)',
       when: 'before the D-042 email route takes requests from people who cannot open the app',
@@ -61,7 +57,8 @@ export const DEFAULT_LINKS = {
   /** Universal link; needs the `/open` page and AASA path (SITE_ROUTES.needed). */
   appUrl: `${brand.web.universalLinkBase}/open`,
   manageUrl: EXTERNAL_LINKS.appleSubscriptions,
-  subscriptionTermsUrl: `${origin}/subscription-terms`,
+  /** BL-512 (SUB-10): the existing /terms page, until the Subscription terms are published on their own page. */
+  subscriptionTermsUrl: brand.web.terms,
 } as const;
 
 export type LinkStatus = 'built' | 'needed' | 'external' | 'mailto' | 'unknown';

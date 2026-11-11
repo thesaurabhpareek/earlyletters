@@ -2405,6 +2405,7 @@ Recorded from the comms validation reviews of 31 Oct 2026 (`docs/reviews/2026-10
 - Problem and evidence: `trial-started` and `plus-started` link `/subscription-terms`; the StoreKit test file now names it too (SUB-11). The website does not serve it.
 - Scope: publish `docs/legal/subscription-terms.md` at `/subscription-terms` once the founder merges the legal text (D-125 item 5).
 - Done when: the page serves the current version and the emails route test lists it as built.
+- Interim (founder accepted, 11 Nov 2026): `{subscriptionTermsUrl}` points at `/terms` (`packages/emails/src/links.ts`), pinned by a test. The `/subscription-terms` page still waits for counsel and D-125 item 5; when it ships, repoint the one line and add the route back.
 
 #### BL-513 Website `/delete-account/confirm` page (TPL-06)
 - Status: blocked (before the D-042 email route takes requests). Mode: agent. Owner: web lane, privacy engineer. Size: S.
