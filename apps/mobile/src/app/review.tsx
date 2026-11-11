@@ -48,7 +48,8 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -91,6 +92,7 @@ import {
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
 import {
+  isShortTake,
   lengthA11y,
   progressClock,
   recordingKept,
@@ -138,6 +140,7 @@ import {
   getDraftReview,
   getEntry,
   getSetting,
+  deleteDraft,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -393,6 +396,33 @@ export default function Review() {
   const recordAgain = () => {
     haptic('tap');
     router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
+
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          if (uri) {
+            try {
+              new File(uri).delete();
+            } catch {
+              // A file already gone is the same as removed.
+            }
+          }
+          deleteDraft(id);
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
   };
 
   // Mini player for the recording ("Hear it").
@@ -742,6 +772,7 @@ export default function Review() {
       ? wordsCard({
           emptyFile: file === 'empty',
           unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -768,6 +799,7 @@ export default function Review() {
     // The person writes the words for this recording; the app never fills them in (S16).
     write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
     recordAgain,
+    letGo,
     download: () => void startSpeechDownload(language),
     // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
     cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
@@ -1210,6 +1242,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
   type: 'review.type',
   write: 'review.write',
   recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
   download: 'review.getReady',
   cellular: 'review.mobileData',
   later: 'review.later',

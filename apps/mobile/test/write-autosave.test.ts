@@ -520,10 +520,10 @@ describe('[BL-378] a very long letter is held calmly, never cut', () => {
     expect(writePageFull(WRITE_MAX_CHARS)).toBe(true);
   });
 
-  it('[BL-378] Write caps the field, says so from packages/content, and keeps "Not saved yet" first', async () => {
+  it('[BL-378] Write never caps the field (D-057), says so from packages/content, and keeps "Not saved yet" first', async () => {
     const { readFileSync } = await import('node:fs');
     const src = readFileSync(new URL('../src/app/write.tsx', import.meta.url), 'utf8');
-    expect(src).toContain('maxLength={WRITE_MAX_CHARS}');
+    expect(src).not.toMatch(/maxLength=/);
     expect(src).toContain('copy.write.tooLong');
     expect(src).toMatch(/pageFull && saveState !== 'failed'/);
     const { copy } = await import('../src/lib/copy');

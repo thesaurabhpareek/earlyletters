@@ -54,7 +54,7 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createFirstFocus, createWriteSession, leavesForeground, WRITE_MAX_CHARS, writePageFull } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession, leavesForeground, writePageFull } from '@/components/capture/write-session.logic';
 import { writeDateline } from '@/components/tonight/draft-card.logic';
 import { anotherThought, anotherThoughtShown } from '@/components/tonight/prompt.logic';
 import { PlusLine } from '@/components/tonight/plus-line';
@@ -422,7 +422,6 @@ export default function Write() {
             className="mt-3 flex-none"
             inputClassName="flex-none"
             defaultValue={initialText}
-            maxLength={WRITE_MAX_CHARS}
             onChangeText={onChange}
             onSelectionChange={(e) => {
               selectionEnd.current = e.nativeEvent.selection.end;
