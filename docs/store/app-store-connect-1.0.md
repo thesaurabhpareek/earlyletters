@@ -5,8 +5,6 @@ Condensed from the review lane's work of Sun 1 Nov 2026 (ASC fields, risk regist
 `packages/content/src/store.en.ts`; this file holds everything else App Store Connect asks for. Notes for Review are in
 `notes-for-review-1.0.txt`.
 
-> **SUPERSEDED FOR BUILD 12 (privacy label and the "no account" description line).** This file was written for the servers-off build. Build 12 is the first store build (`production` profile, server features on, sign-in required, recording backup and status report off; D-157, D-160). For Build 12 the "Data Not Collected" answer in section 4 and the "There is no account to make ... Data Not Collected" sentence in the draft description below are **not true and must not be entered or published**. The label for Build 12 is in `docs/legal/app-store-privacy-labels.md` (2.2.0, sections 3.2 and 3.4, Build 12 row) and `docs/store/compliance/privacy-labels-apple.md` (Profile B), both subject to counsel. TODO for counsel and founder: the Build 12 description wording about accounts and privacy needs their call before submission; nothing in this file supplies it.
-
 Status: **at risk** for a Tue 1 Dec submission. Three blockers sit outside App Store Connect: the live Privacy Policy
 and Terms pages cover only the website, the Support URL has no page behind it, and (fixed by this change) the old
 description promised a delete control build 1 does not have.
@@ -64,7 +62,7 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 |---|---|---|
 | Privacy Policy URL | `https://earlyletters.com/privacy` | **BLOCKED**: the live page covers only the website. Publish the app policy (`docs/legal/privacy-policy.md` 3.0.0) first |
 | User Privacy Choices URL | Empty | READY |
-| Data collection | **SUPERSEDED for Build 12, do not use.** Build 12 label: see `docs/legal/app-store-privacy-labels.md` 3.2 and 3.4 and `docs/store/compliance/privacy-labels-apple.md` Profile B (servers on, sign-in required; subject to counsel). Old answer, Build 1 only: Data Not Collected (D-088, D-095, D-124 item 3) | Build 1 only, was READY on three conditions: a proxy capture shows only packs, Hugging Face and Apple; counsel Q12 on IP addresses; no analytics or crash SDK in the build |
+| Data collection | Build 12 (`production`: servers on, sign-in required, recording backup and status report off), as `docs/legal/app-store-privacy-labels.md` section 3.2 and its Build 12 row: **Yes**, linked, no tracking, purpose App Functionality, for Name, Email Address, Sensitive Info, Other User Content and User ID. **No** for Audio Data, Device ID, Purchase History, Usage Data and Diagnostics. Do not choose Data Not Collected (D-157, D-160; that answer was D-088 for the servers-off Build 1 only) | **Subject to counsel.** Open: Other Data Types (push tokens, Q54; default No) and IP addresses at the hosts (Q12). Re-run the label against the binary and a proxy capture before Publish |
 | Tracking | No (no IDFA, no ATT prompt) | READY |
 | Publish | Click Publish after saving | FOUNDER |
 
@@ -144,8 +142,8 @@ Quotes and detail are in the review lane's register; fix-by dates are Pacific ti
 | R5 | 3.1.1 restore, 2.1(b) purchases reachable | Low | Low | Sandbox buy, restore, cancel on the release build; multiseat No |
 | R6 | 3.1.2(a) ongoing value | Low to medium | Low to medium | Notes say exactly what Plus adds; promise no future features |
 | R7 | 4.2, 4.2.3(ii) the 575 MB download | Medium | Low | Notes explain it; attach a recording of speech working |
-| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app; SUPERSEDED for Build 12 ("no account, nothing leaves the device" is untrue with servers on; wording is for the store/review lane and counsel); keep "due date" out of the listing |
-| R9 | 5.1.1(i), 2.3 privacy label | Medium | Low | Policy live, proxy capture, counsel Q12 |
+| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app; sign-in is required, so give App Review a demo sign-in; say what the label says (section 4), not that nothing leaves the device; keep "due date" out of the listing |
+| R9 | 5.1.1(i), 2.3 privacy label | Medium | Low | Policy live, proxy capture, counsel Q12 and Q54, label matches the Build 12 row |
 | R10 | 2.2 betas: "Early version" note in Settings | Medium | Low | Hide or reword the About note in production (founder call, D-030) |
 | R11 | 2.3.8, 5.1.4 "For Kids" wording | Low | Low | Keep "For parents" first; never "for children" or "kids" |
 | R12 | 1.3 Kids Category | Low | Low | Made for Kids: No |
@@ -171,13 +169,11 @@ Draft description:
 Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows positioning A (D-139).
 
 ```text
-SUPERSEDED FOR BUILD 12: the third paragraph below ("There is no account to make ...") is untrue for Build 12. TODO for counsel and founder: correct wording; see the banner at the top of this file. Do not paste this draft as is.
-
 Early Letters keeps letters to your child, in your own words and voice. At the end of the day a parent tells their child one thing about it, in a sentence or a few minutes. The app writes the words down on the iPhone, keeps the recording beside them, and files the letter by the child's month of age. Years later the child can read it, and hear how their parent sounded when they said it.
 
 What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a name spelled the family's way, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
 
-It is private by default. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models.
+It is private by default. Signing in is required, and recordings stay on the phone. Nothing is sold, used for ads or used to train models.
 
 It asks little of a tired parent. A sentence is plenty, a "Not much today" button counts as enough, and there are no streaks, scores or reminders unless the parent turns reminders on. Read together goes through the book one letter at a time, oldest first, as a bedtime moment, in the parent's own voice.
 
