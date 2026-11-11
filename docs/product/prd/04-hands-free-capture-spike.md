@@ -7,7 +7,7 @@ Tags: EVIDENCE = repo file read this session. HYPOTHESIS = about parents. UNVERI
 
 ## 1. Job to be done
 
-I go to Early Letters with my hands full, holding {child}, to start telling a letter without touching the screen, so that I do not lose the thing I wanted to say.
+I go to {brand.name} with my hands full, holding {child}, to start telling a letter without touching the screen, so that I do not lose the thing I wanted to say.
 
 ## 2. Who and when
 
@@ -42,7 +42,7 @@ Each question has an owner and a form of answer: Yes, No, or Yes with a stated c
 | Q9 | How is use while driving kept out of scope in code, copy and the store listing? | Statement and checklist item |
 | Q10 | What does each trigger add to the privacy label, the plist purpose strings and the App Review notes? | A table: trigger, plist/entitlement delta, label delta |
 
-Rejected without a spike: auto-stop on silence (a long pause is part of the voice); a take that starts from a locked screen (unlock first); and a custom wake word ("Hey Early Letters"), which needs the microphone listening all the time and contradicts the privacy promise. Apple's own Siri phrase for an App Shortcut is in scope (Q1) because Siri, not our app, listens.
+Rejected without a spike: auto-stop on silence (a long pause is part of the voice); a take that starts from a locked screen (unlock first); and a custom wake word ("Hey {brand.name}"), which needs the microphone listening all the time and contradicts the privacy promise. Apple's own Siri phrase for an App Shortcut is in scope (Q1) because Siri, not our app, listens.
 
 ## 6. Time box and shape
 

@@ -112,7 +112,7 @@ Seal date in the past is refused (the control offers only later days). A time zo
 
 ### B6. Privacy and constitution
 
-No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records the seal (the instant of NS-06-B1) on the author's phone only; it does not sync to any other phone before the day (NS-06-B8); Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
+No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records the seal (the instant of NS-06-B1) for the author only: "author-only" means the author's own devices and the author's own backup and new-phone restore are covered, so "what a family kept stays theirs" holds; no other person's phone receives it before the day (NS-06-B8, where "second phone" means another person's phone). How the author's own seal reaches the author's new phone is `data-architect`'s (OQ-B2). UNVERIFIED: I did not read ADR 0028 D3 or the backup and restore code; Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
 
 Label effect (Part B): none while the seal stays on the phone and in ordinary sync; `data-architect` confirms.
 
