@@ -144,7 +144,7 @@ Quotes and detail are in the review lane's register; fix-by dates are Pacific ti
 | R5 | 3.1.1 restore, 2.1(b) purchases reachable | Low | Low | Sandbox buy, restore, cancel on the release build; multiseat No |
 | R6 | 3.1.2(a) ongoing value | Low to medium | Low to medium | Notes say exactly what Plus adds; promise no future features |
 | R7 | 4.2, 4.2.3(ii) the 575 MB download | Medium | Low | Notes explain it; attach a recording of speech working |
-| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app, no account, nothing leaves the device; keep "due date" out of the listing |
+| R8 | 5.1.1(ix) individual seller, sensitive info | Medium | Low to medium | Notes: not a health app; SUPERSEDED for Build 12 ("no account, nothing leaves the device" is untrue with servers on; wording is for the store/review lane and counsel); keep "due date" out of the listing |
 | R9 | 5.1.1(i), 2.3 privacy label | Medium | Low | Policy live, proxy capture, counsel Q12 |
 | R10 | 2.2 betas: "Early version" note in Settings | Medium | Low | Hide or reword the About note in production (founder call, D-030) |
 | R11 | 2.3.8, 5.1.4 "For Kids" wording | Low | Low | Keep "For parents" first; never "for children" or "kids" |
