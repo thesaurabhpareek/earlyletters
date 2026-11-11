@@ -59,6 +59,9 @@ export function eraseDeviceFiles(): void {
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
+  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says.
+  const pictures = new Directory(Paths.document, 'photos');
+  if (pictures.exists) pictures.delete();
   for (const name of CACHE_COPIES) {
     try {
       const dir = new Directory(Paths.cache, name);

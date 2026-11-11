@@ -11,6 +11,7 @@ export { familyCopy } from './family.en';
 export { languageCopy } from './language.en';
 export { licences } from './licences.en';
 export { packsCopy } from './packs.en';
+export { photosCopy } from './photos.en';
 export { playerCopy } from './player.en';
 export { reminderCopy } from './reminders.en';
 export { speechConsentCopy, speechSettingsCopy } from './speech.en';
@@ -26,6 +27,7 @@ import { familyCopy } from './family.en';
 import { languageCopy } from './language.en';
 import { licences } from './licences.en';
 import { packsCopy } from './packs.en';
+import { photosCopy } from './photos.en';
 import { playerCopy } from './player.en';
 import { reminderCopy } from './reminders.en';
 import { speechConsentCopy, speechSettingsCopy } from './speech.en';
@@ -43,6 +45,7 @@ export const features = {
   language: languageCopy,
   licences,
   packs: packsCopy,
+  photos: photosCopy,
   player: playerCopy,
   reminders: reminderCopy,
   speech: speechSettingsCopy,
