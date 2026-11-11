@@ -361,8 +361,9 @@ describe('[BL-379] a take that was very short says so and can be let go', () => 
 
   it('[BL-379] Review asks before it removes the row and the audio, and nothing else there deletes audio', () => {
     const review = code(src('app/review.tsx'));
-    expect(review).toMatch(/Alert\.alert\(copy\.listen\.discardTitle[\s\S]*?onPress: \(\) => \{[\s\S]*?new File\(uri\)\.delete\(\)[\s\S]*?deleteDraft\(id\)/);
-    expect((review.match(/\.delete\(\)/g) ?? []).length).toBe(1);
+    expect(review).toMatch(/Alert\.alert\(copy\.listen\.discardTitle[\s\S]*?onPress: \(\) => \{[\s\S]*?letItGo\(id, uri/);
+    expect(review).not.toContain('deleteDraft');
+    expect((review.match(/\.delete\(\)/g) ?? []).length).toBe(1); // behaviour is run in test/let-it-go.test.ts
     expect(review).toContain('shortTake: isShortTake(draft.audioDurationMs)');
   });
 });

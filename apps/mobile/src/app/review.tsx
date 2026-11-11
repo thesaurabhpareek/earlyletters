@@ -64,6 +64,7 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { letItGo } from '@/lib/capture/let-it-go.logic';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
@@ -140,7 +141,8 @@ import {
   getDraftReview,
   getEntry,
   getSetting,
-  deleteDraft,
+  beginDiscard,
+  finishDiscard,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -410,14 +412,7 @@ export default function Review() {
         style: 'destructive',
         onPress: () => {
           haptic('warning');
-          if (uri) {
-            try {
-              new File(uri).delete();
-            } catch {
-              // A file already gone is the same as removed.
-            }
-          }
-          deleteDraft(id);
+          letItGo(id, uri, { beginDiscard, deleteFile: (u) => new File(u).delete(), finishDiscard });
           if (router.canGoBack()) router.back();
           else router.replace('/');
         },
