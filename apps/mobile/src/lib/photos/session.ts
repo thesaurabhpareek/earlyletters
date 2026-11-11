@@ -78,8 +78,18 @@ export async function commitPhoto(
   input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null },
 ): Promise<CommitResult> {
   if (!canKeepWithPhoto(input.finalText)) return { status: 'needs_words' };
-  const stripped = stripJpeg(input.bytes);
-  if (!stripped.ok) return { status: 'unreadable', reason: stripped.reason };
+  let stripped = stripJpeg(input.bytes);
+  if (!stripped.ok && stripped.reason === 'corrupt') return { status: 'unreadable', reason: 'corrupt' };
+  if (!stripped.ok || stripped.orientation !== 1) {
+    // Not a JPEG (HEIC, PNG), or a JPEG whose Exif turn would be lost when Exif goes: the native step makes an upright
+    // JPEG first. Without it (no device adapter yet) nothing is stored and the letter is kept as it is.
+    const why = stripped.ok ? 'needs_rotation' : stripped.reason;
+    const baked = await deps.orientation?.bake(input.bytes).catch(() => null);
+    if (!baked) return { status: 'unreadable', reason: why };
+    stripped = stripJpeg(baked);
+    if (!stripped.ok) return { status: 'unreadable', reason: stripped.reason };
+    if (stripped.orientation !== 1) return { status: 'unreadable', reason: 'needs_rotation' };
+  }
   if (carriesMetadata(stripped.bytes)) return { status: 'failed' }; // belt and braces: never store a copy that still carries any
   try {
     if ((await deps.files.freeBytes()) < stripped.bytes.length * 2) return { status: 'no_space' };
@@ -93,7 +103,7 @@ export async function commitPhoto(
     text: normalizePhotoText(input.text),
     place: normalizePhotoPlace(input.place),
     addedAt: deps.now().toISOString(),
-    deletedAt: null,
+    deletedAt: null, // derived from the letter by the store; never written
   };
   const path = photoPath(photo);
   const prior = deps.store.get(input.entryId);

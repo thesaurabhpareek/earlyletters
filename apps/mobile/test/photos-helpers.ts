@@ -13,6 +13,10 @@ export interface JpegOptions {
   jfifThumb?: boolean;
   icc?: boolean;
   mpf?: boolean;
+  /** Bytes after the end-of-image marker: a motion-photo video, a trailer, a planted payload (finding F1). */
+  trailing?: number[];
+  /** A second scan after the first (progressive pictures), with a restart marker and an escaped FF00 in the data. */
+  progressive?: boolean;
   /** Distinct image bytes so two fixtures differ. */
   seed?: number;
 }
@@ -35,7 +39,12 @@ export function makeJpeg(o: JpegOptions = {}): Uint8Array {
   if (o.comment) out.push(...seg(0xfe, text('taken at the park')));
   out.push(...seg(0xdb, [0, ...new Array(64).fill(8)]));
   out.push(...seg(0xc0, [8, 0, 4, 0, 4, 1, 1, 0x11, 0]));
-  out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x10 + ((o.seed ?? 0) & 0x0f), 0x20, 0x30, 0x40, 0xff, 0xd9);
+  if (o.progressive) {
+    out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x10 + ((o.seed ?? 0) & 0x0f), 0xff, 0x00, 0xff, 0xd0, 0x22);
+    out.push(...seg(0xc4, [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7])); // a table between the scans
+    out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x31, 0x41, 0xff, 0xd9);
+  } else out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x10 + ((o.seed ?? 0) & 0x0f), 0x20, 0x30, 0x40, 0xff, 0xd9);
+  out.push(...(o.trailing ?? []));
   return Uint8Array.from(out);
 }
 
@@ -55,22 +64,33 @@ export function tenFixtures(): Uint8Array[] {
   ];
 }
 
-export function memoryStore(): PhotoStore & { rows: Map<string, StoredPhoto>; puts: number; removes: number } {
+/** The in-memory twin of the entry_media adapter: `deletedAt` is derived from the letter, never stored (ADR 0028 D1). */
+export function memoryStore(): PhotoStore & {
+  rows: Map<string, StoredPhoto>;
+  puts: number;
+  removes: number;
+  deleteLetter(id: string): void;
+  restoreLetter(id: string): void;
+} {
   const rows = new Map<string, StoredPhoto>();
+  const deleted = new Map<string, string>();
+  const view = (p: StoredPhoto): StoredPhoto => ({ ...p, deletedAt: deleted.get(p.entryId) ?? null });
   const s = {
     rows,
     puts: 0,
     removes: 0,
-    get: (id: string) => rows.get(id) ?? null,
+    deleteLetter: (id: string) => void deleted.set(id, '2026-11-11T00:00:00Z'),
+    restoreLetter: (id: string) => void deleted.delete(id),
+    get: (id: string) => (rows.has(id) ? view(rows.get(id)!) : null),
     put(p: StoredPhoto) {
       s.puts++;
-      rows.set(p.entryId, { ...p });
+      rows.set(p.entryId, { ...p, deletedAt: null });
     },
     remove(id: string) {
       s.removes++;
       rows.delete(id);
     },
-    all: () => [...rows.values()],
+    all: () => [...rows.values()].map(view),
   };
   return s;
 }

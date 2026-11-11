@@ -7,7 +7,10 @@ export const UNDO_WINDOW_MS = 10_000;
 /** One picture per letter at P0. */
 export const STORED_EXT = 'jpg' as const;
 
-/** A kept picture, phone-only. `deletedAt` is set while its letter waits in Recently deleted. */
+/**
+ * A kept picture, phone-only (ADR 0028 D1, the `entry_media` row). `deletedAt` is DERIVED by the store from its letter
+ * (`entries.deleted_at`): it is never written, so a restored letter needs no picture write and the two cannot drift.
+ */
 export interface StoredPhoto {
   entryId: string;
   mediaId: string;
@@ -20,7 +23,7 @@ export interface StoredPhoto {
   deletedAt: string | null;
 }
 
-/** Where picture records live. The device adapter is blocked on the entry_media schema decision (see PR). */
+/** Where picture records live: the local `entry_media` table (migration 10). `put` never writes `deletedAt`. */
 export interface PhotoStore {
   get(entryId: string): StoredPhoto | null;
   put(photo: StoredPhoto): void;
@@ -28,7 +31,7 @@ export interface PhotoStore {
   all(): StoredPhoto[];
 }
 
-/** Files on the phone. Paths are relative to the photos folder: `<entryId>/<mediaId>.jpg`. */
+/** Files on the phone. Paths are relative to the photos folder: `<mediaId>.jpg` (ADR 0028 D1). No entry id in the name. */
 export interface PhotoFiles {
   write(path: string, bytes: Uint8Array): Promise<void>;
   remove(path: string): Promise<void>;
@@ -37,7 +40,21 @@ export interface PhotoFiles {
   freeBytes(): Promise<number>;
 }
 
-export const photoPath = (p: Pick<StoredPhoto, 'entryId' | 'mediaId' | 'ext'>): string => `${p.entryId}/${p.mediaId}.${p.ext}`;
+export const photoPath = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => `${p.mediaId}.${p.ext}`;
+
+/** Where a picture sits inside an export (derived, ADR 0028 D2; NX-39-R32): `photos/<entry_id>/<media_id>.jpg`. */
+export const exportPhotoPath = (p: Pick<StoredPhoto, 'entryId' | 'mediaId' | 'ext'>): string => `photos/${p.entryId}/${p.mediaId}.${p.ext}`;
+
+/**
+ * The native re-encode that turns a picture's pixels upright (ImageIO). Exif is dropped from the stored copy, so a
+ * picture whose orientation tag is not 1 is only kept if the pixels are turned first. Returns a JPEG whose pixels are
+ * upright and that carries no orientation tag, or null when it cannot. No JavaScript implementation exists, and the
+ * device adapter is not written yet (it needs a device run): until one is registered, such a picture is reported as
+ * `needs_rotation` and nothing is stored.
+ */
+export interface OrientationBaker {
+  bake(original: Uint8Array): Promise<Uint8Array | null>;
+}
 
 /** What the system picker hands back. Only the still of a Live Photo is ever read. */
 export interface PickedAsset {
@@ -61,4 +78,6 @@ export interface PhotoDeps {
   files: PhotoFiles;
   newId: () => string;
   now: () => Date;
+  /** The native re-encode step. Absent until the device adapter exists. */
+  orientation?: OrientationBaker;
 }

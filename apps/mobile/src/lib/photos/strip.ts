@@ -4,13 +4,17 @@
  *
  * JPEG: keeps the image data, the JFIF header (without its thumbnail), the ICC colour profile and Adobe's colour
  * flag, and drops every other APPn segment (Exif and XMP in APP1, Photoshop and IPTC in APP13, maker notes, MPF in
- * APP2 that is not a colour profile) and every comment. The orientation tag lives in Exif, so a picture that needs a
- * turn cannot be kept by dropping Exif alone: it is reported as `needs_rotation` for the native re-encode step.
- * Other formats (HEIC, PNG) are `not_jpeg`: the picker must hand back a JPEG, or the re-encode step must run.
+ * APP2 that is not a colour profile) and every comment. It stops at the first unescaped end-of-image marker and
+ * drops everything after it (a motion-photo video, a trailer, a planted payload), PRD finding F1.
+ *
+ * Orientation: the tag lives in Exif, which is dropped, so a picture whose tag is not 1 would show sideways. The result
+ * reports the tag it read (`orientation`) and does NOT reject the picture; turning the pixels is a native re-encode
+ * (see `OrientationBaker` in types.ts) and `commitPhoto` runs it before it accepts the bytes. Other formats (HEIC,
+ * PNG) are `not_jpeg`: the re-encode step must hand back a JPEG.
  */
 export type StripResult =
   | { ok: true; bytes: Uint8Array; orientation: number }
-  | { ok: false; reason: 'not_jpeg' | 'corrupt' | 'needs_rotation' };
+  | { ok: false; reason: 'not_jpeg' | 'corrupt' };
 
 const ascii = (b: Uint8Array, at: number, s: string): boolean => {
   if (at + s.length > b.length) return false;
@@ -47,6 +51,7 @@ export function stripJpeg(input: Uint8Array): StripResult {
   const out: Uint8Array[] = [Uint8Array.of(0xff, 0xd8)];
   let orientation = 1;
   let i = 2;
+  let ended = false;
   while (i < b.length) {
     if (b[i] !== 0xff) return { ok: false, reason: 'corrupt' };
     while (b[i] === 0xff && i < b.length) i++; // fill bytes
@@ -54,7 +59,7 @@ export function stripJpeg(input: Uint8Array): StripResult {
     i++;
     if (marker === 0xd9) {
       out.push(Uint8Array.of(0xff, 0xd9));
-      i = b.length;
+      ended = true; // whatever follows the end marker is not the picture and is not copied
       break;
     }
     if (marker === 0x01 || (marker >= 0xd0 && marker <= 0xd7)) {
@@ -67,10 +72,18 @@ export function stripJpeg(input: Uint8Array): StripResult {
     if (len < 2 || segEnd > b.length) return { ok: false, reason: 'corrupt' };
     const body = i + 2;
     if (marker === 0xda) {
-      // Start of scan: the rest is image data, copied whole.
-      out.push(Uint8Array.of(0xff, marker), b.subarray(i, b.length));
-      i = b.length;
-      break;
+      // Start of scan: the header, then the entropy-coded data up to the next real marker. A `FF 00` pair is an
+      // escaped data byte and `FF D0` to `FF D7` are restart markers; any other `FF xx` ends the data. A progressive
+      // picture has several scans, so the segment loop carries on from that marker (and stops at FF D9).
+      let j = segEnd;
+      while (j + 1 < b.length) {
+        if (b[j] === 0xff && b[j + 1] !== 0x00 && !(b[j + 1] >= 0xd0 && b[j + 1] <= 0xd7) && b[j + 1] !== 0xff) break;
+        j += b[j] === 0xff && b[j + 1] === 0x00 ? 2 : 1;
+      }
+      if (j + 1 >= b.length) return { ok: false, reason: 'corrupt' }; // no end marker: cut short
+      out.push(Uint8Array.of(0xff, marker), b.subarray(i, j));
+      i = j;
+      continue;
     }
     let keep = true;
     if (marker === 0xe1 && ascii(b, body, 'Exif\0\0')) orientation = exifOrientation(b, body, segEnd);
@@ -96,7 +109,7 @@ export function stripJpeg(input: Uint8Array): StripResult {
     if (keep) out.push(Uint8Array.of(0xff, marker), b.subarray(i, segEnd));
     i = segEnd;
   }
-  if (orientation !== 1) return { ok: false, reason: 'needs_rotation' };
+  if (!ended) return { ok: false, reason: 'corrupt' };
   const total = out.reduce((n, c) => n + c.length, 0);
   const bytes = new Uint8Array(total);
   let at = 0;

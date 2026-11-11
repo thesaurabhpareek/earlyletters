@@ -3,11 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
 import { addPhotoToLetter, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
 import { exportPhotos } from '../src/lib/photos/export';
-import { holdPhotoWithLetter, purgePhotoWithLetter, restorePhotoWithLetter, wipeAllPhotos } from '../src/lib/photos/lifecycle';
+import { purgePhotoWithLetter, wipeAllPhotos } from '../src/lib/photos/lifecycle';
 import { photosLens } from '../src/lib/photos/lens';
 import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel, photoTextLength } from '../src/lib/photos/text';
-import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
+import { exportPhotoPath, photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
 
 const ONE = { entryId: 'e1', finalText: 'She laughed at the dog today.', text: null as string | null };
@@ -38,10 +38,31 @@ describe('[NS-01-R6][NX-39-R8] the stored copy carries no metadata', () => {
     expect(r.bytes[0]).toBe(0xff);
     expect(r.bytes[1]).toBe(0xd8);
   });
-  it('[NS-01-R6] reports what it cannot strip instead of keeping metadata: not a JPEG, damaged, or needs a turn', () => {
+  it('[NS-01-R6] reports what it cannot strip instead of keeping metadata: not a JPEG, or damaged', () => {
     expect(stripJpeg(Uint8Array.of(0x89, 0x50, 0x4e, 0x47))).toEqual({ ok: false, reason: 'not_jpeg' });
     expect(stripJpeg(makeJpeg().slice(0, 12))).toEqual({ ok: false, reason: 'corrupt' });
-    expect(stripJpeg(makeJpeg({ exif: true, orientation: 6 }))).toEqual({ ok: false, reason: 'needs_rotation' });
+    expect(stripJpeg(makeJpeg().slice(0, -2))).toEqual({ ok: false, reason: 'corrupt' }); // no end marker: cut short
+  });
+  it('[NS-01-R6] a turned picture is not rejected by the strip: it reports its orientation for the native step', () => {
+    const r = stripJpeg(makeJpeg({ exif: true, orientation: 6 }));
+    expect(r.ok).toBe(true);
+    expect(r.ok && r.orientation).toBe(6);
+    expect(r.ok && carriesMetadata(r.bytes)).toBe(false);
+  });
+  it('[NS-01-R6][C8] stops at the first unescaped end marker and drops what follows (F1)', () => {
+    const planted = Array.from(Buffer.from('....ftypmp42 mdta location +37.7749-122.4194 Exif\0\0 GPSLatitude', 'latin1'));
+    for (const progressive of [false, true]) {
+      const plain = stripJpeg(makeJpeg({ seed: 3, progressive }));
+      const withTail = stripJpeg(makeJpeg({ seed: 3, progressive, trailing: planted }));
+      expect(plain.ok && withTail.ok).toBe(true);
+      if (!plain.ok || !withTail.ok) return;
+      expect(Buffer.from(withTail.bytes).equals(Buffer.from(plain.bytes))).toBe(true); // byte for byte the same picture
+      expect(Buffer.from(withTail.bytes).toString('latin1')).not.toMatch(/ftyp|mdta|location|GPSLatitude/);
+      expect(carriesMetadata(withTail.bytes)).toBe(false);
+    }
+    // the escaped FF00 and the restart marker inside the data do not end it, and the second scan is kept
+    const prog = stripJpeg(makeJpeg({ progressive: true, seed: 3 }));
+    expect(prog.ok && Buffer.from(prog.bytes).toString('latin1')).toContain('\x31\x41\xff\xd9');
   });
 });
 
@@ -247,15 +268,17 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
   it('[NS-01-R16] delete hides the picture, restore brings both back, purge removes the file', async () => {
     const { d, files, store } = deps();
     await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
-    holdPhotoWithLetter(d, 'e1');
+    store.deleteLetter('e1'); // the letter's own deleted_at; the picture row is untouched
+    expect(store.puts).toBe(1);
     expect(store.get('e1')!.deletedAt).not.toBeNull();
     const letters = [{ id: 'e1', occurredOn: '2026-06-12', capturedAt: '2026-06-12T09:00:00Z', inBook: true }];
     const opts = { fullDate: (iso: string) => iso };
     expect(photosLens(letters, store.all(), opts).visible).toBe(false);
-    restorePhotoWithLetter(d, 'e1');
+    store.restoreLetter('e1');
+    expect(store.puts).toBe(1); // restore needed no picture write
     expect(store.get('e1')!.deletedAt).toBeNull();
     expect(photosLens(letters, store.all(), opts).visible).toBe(true);
-    holdPhotoWithLetter(d, 'e1');
+    store.deleteLetter('e1');
     await purgePhotoWithLetter(d, 'e1');
     expect(files.disk.size + store.all().length).toBe(0);
   });
@@ -310,16 +333,16 @@ describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
 });
 
 describe('[NS-01-R14][NX-39-R32] export carries the stripped copy only', () => {
-  it('[NS-01-R14][NX-39-R32] files are at <entry_id>/<media_id>.jpg and the count equals the pictures; deleted letters are out', async () => {
+  it('[NS-01-R14][NX-39-R32] files are at photos/<entry_id>/<media_id>.jpg and the count equals the pictures; deleted letters are out', async () => {
     const { d, store } = deps();
     await commitPhoto(d, { ...ONE, entryId: 'e1', bytes: makeJpeg({ seed: 1 }) });
     await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg({ seed: 2 }) });
     await commitPhoto(d, { ...ONE, entryId: 'e3', bytes: makeJpeg({ seed: 3 }) });
-    holdPhotoWithLetter(d, 'e3');
+    store.deleteLetter('e3');
     const out = exportPhotos(store.all(), new Set(['e1', 'e2', 'e3']));
     expect(out.count).toBe(2);
-    expect(out.files.map((f) => f.path).sort()).toEqual([photoPath(store.get('e1')!), photoPath(store.get('e2')!)].sort());
-    expect(out.files.every((f) => /^[^/]+\/[^/]+\.jpg$/.test(f.path))).toBe(true);
+    expect(out.files.map((f) => f.path).sort()).toEqual([exportPhotoPath(store.get('e1')!), exportPhotoPath(store.get('e2')!)].sort());
+    expect(out.files.every((f) => /^photos\/[^/]+\/[^/]+\.jpg$/.test(f.path))).toBe(true);
     expect(Object.keys(out).sort()).toEqual(['count', 'files']); // no "originals" option
   });
 });
