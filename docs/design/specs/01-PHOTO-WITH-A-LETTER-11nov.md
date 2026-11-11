@@ -12,7 +12,7 @@ The rule that makes it safe: every picture belongs to a letter. A picture with n
 
 Build 13 holds ONE photo per letter (coordinator, 11 Nov). Everything in this spec that handles several photos is marked post-Build 13 and is not built then: the cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo letter layouts, the strip of tiles, and the viewer's swipe between items. In Build 13 the single picker returns one photo; the Photos lens, the letter page and Share show one. Videos are not in Build 13.
 
-Aligned to PRD #795 (head `2245c8be`, read through the REST API on 11 Nov; Review B re-checked the conflicts listed in section 5 below), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
+Aligned to PRD #795 (PR #795, merged as `6a11c808`, read through the REST API on 11 Nov; Review B re-checked the conflicts listed in section 5 below), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
 
 ## 2. Where a photo can be added (the whole map)
 
@@ -38,7 +38,7 @@ D loses ML-S9's "Add photos or videos" button, because that button started a let
         Not much today                  <- quiet button, 44 pt
 ```
 
-- "Start from a photo" is a `Button quiet md` with a leading Phosphor `Image` glyph (decorative, hidden from VoiceOver). It is the third and quietest item inside the capture cluster, under Speak and Type and above "Not much today", in the same container, never larger than either. Karma asked for placement inside the cluster per PRD NS-01-R1 (the PRD file was read at head `2245c8be`; this placement follows that route-and-scan row as I understand it). I prefer it to a separate row for one reason: a parent finds all the ways to start a letter in one place, which is the founder's one-entry rule. It stays a quiet button so Speak and Type remain the two equal primary actions. It appears only when the build switch for photos is on; absent, not greyed, when off (ML header).
+- "Start from a photo" is a `Button quiet md` with a leading Phosphor `Image` glyph (decorative, hidden from VoiceOver). It is the third and quietest item inside the capture cluster, under Speak and Type and above "Not much today", in the same container, never larger than either. Karma asked for placement inside the cluster per PRD NS-01-R1 (the PRD file was read at PR #795, merged as `6a11c808`; this placement follows that route-and-scan row as I understand it). I prefer it to a separate row for one reason: a parent finds all the ways to start a letter in one place, which is the founder's one-entry rule. It stays a quiet button so Speak and Type remain the two equal primary actions. It appears only when the build switch for photos is on; absent, not greyed, when off (ML header).
 - It does not appear on Book or Me. This is the single place on any tab where a photo can start something (J3).
 - Tap: the system picker opens (one photo in Build 13; several is post-Build 13; videos are out of this spec, see section 10). Cancel returns to Home untouched.
 
@@ -79,7 +79,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 - Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
 - The action group on the letter page, its name and order are in `06-HOME-BOOK-ME-IA-11nov.md` section 4a, which owns that page; this spec supplies the "Add a photo" or "Change photo" action only.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
-- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `2245c8be`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
+- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795, merged as `6a11c808`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
 
 ## 5. The Photos lens in the Book (D)
 
@@ -87,7 +87,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 
 The Book header has a `LensRow` under the cover band: "Months" always; "Photos" only once a photo is attached to a kept, open letter; photos on a sealed letter do not count and do not show until it opens (04 FS-R10) (NAV-R4). With no photo there is no lens row at all, no empty tab, no hint.
 
-PRD NS-01-R11 (EVIDENCE, read at head `2245c8be`): the lens "lists letters that have a picture, newest first by the letter's date, each as a letter card with a thumbnail; it shows no number of pictures, no count in any VoiceOver string and no 'add' control." This spec follows it. The earlier three-column grid of bare tiles is withdrawn: a bare tile has no letter name, so a VoiceOver user could not tell which letter it opens (Review B finding 2).
+PRD NS-01-R11 (EVIDENCE, read at PR #795, merged as `6a11c808`): the lens "lists letters that have a picture, newest first by the letter's date, each as a letter card with a thumbnail; it shows no number of pictures, no count in any VoiceOver string and no 'add' control." This spec follows it. The earlier three-column grid of bare tiles is withdrawn: a bare tile has no letter name, so a VoiceOver user could not tell which letter it opens (Review B finding 2).
 
 ```
  Asha's book                        [find]

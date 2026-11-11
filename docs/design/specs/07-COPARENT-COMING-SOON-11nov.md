@@ -146,6 +146,8 @@ Reading order is: heading, explanation, the one action, Close. No decorative ele
 | CS-R14 | Both themes and contrast. Given light, dark and Increase Contrast, Then text is `text` or `textMuted` on `surfaceRaised` or `accentSoft`; the ratios in `tokens.ts` comments apply (`textMuted` 5.51:1 light and 8.01:1 dark on `bg`; `accentSoft` text 12.07:1 light, 11.20:1 dark). I computed no new ratio. `textMuted` on `surfaceRaised` and on `accentSoft` is not stated in the comments I read and must be measured before the build ships | Measurement by `design-systems` or `qa`. Fail below 4.5:1 for text |
 | CS-R15 | Erase everything clears it. Given the flag is set, When Erase everything completes, Then `getSetting('family.coParentNotify')` is null and the caption shows S1 on the next open | Unit test on the erase path (settings rows are removed, step 2) plus one device run. Fail if the value survives |
 | CS-R16 | Close and focus. Given the sheet, Then Close is visible at the top right in the sheet header, the two-finger scrub closes it, and focus returns to the caption | Device with VoiceOver. Fail if focus is lost |
+| CS-R17 | The stored value is the smaller one (CS-Q4), and either value passes the privacy rows. (a) Given a tap on the button (the request function), Then `getSetting('family.coParentNotify')` holds the bare marker, not a date string (default). (b) Given an existing phone whose stored value is a `YYYY-MM-DD` day string, Then the read function returns "set", so S2 shows. (c) If `mobile` specifies a migration function (PROPOSED name `migrateCoParentNotify`; whether to write one is `mobile`'s call and UNVERIFIED), Then a test maps a day string to the bare marker and leaves the bare marker and null unchanged. (d) Given the fallback in which `mobile` keeps the day string, Then (a) and (c) are replaced by a test that the stored string is a day and no finer (no time of day). In every case CS-R5 and CS-R15 hold | Unit tests on `coming-soon.logic.ts` with a Map store; fail if a time of day is ever stored |
+| CS-R18 | The underlined caption wraps at AX5. Given Dynamic Type AX5 and both themes, When the caption wraps to several lines, Then the underline runs under every line, no word is cut, the pressable stays 44 pt or more tall, and a tap on any line opens the sheet | Device at AX5, light and dark |
 
 ## 6. Data flow: what is stored, where, and what leaves the phone
 
@@ -163,7 +165,7 @@ Caveats, stated honestly (UNVERIFIED unless marked):
 ## 7. Door lines (PRIV-R21; `legal` and `privacy` review)
 
 Shown: "Saves a note on this phone. Nothing is sent." (existing words, under the button), and in S2 "Noted on this phone."
-Records: one setting on this phone, a bare marker (today, the day the parent asked). Nothing is counted; no event is sent.
+Records: one setting on this phone saying the parent asked (PROPOSED final wording; it is true of the shipped build only once `mobile` decides between the bare marker and the day string, CS-Q4, and the line is then re-checked against what is stored). Nothing is counted; no event is sent.
 Never: a date for the feature; a promise that a notification, email or message will arrive; asking for notification permission, an email or a phone number; any server write.
 Decline: Close in one tap, or do nothing. Declining records nothing. Turning the reminder off removes the setting.
 

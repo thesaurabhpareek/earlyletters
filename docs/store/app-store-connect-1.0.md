@@ -84,9 +84,9 @@ passes. Publish only after the app is live.
 | Marketing URL | `https://earlyletters.com` | READY |
 | Copyright | `2026 <founder's legal name>`, typed only in App Store Connect | FOUNDER |
 | What's New | Not shown for a first version | n/a |
-| Build | EAS `production` 1.0.0: servers, backup, status report, analytics off; English only; with D-126 (or its fallback in the notes) and the TestFlight fixes | BLOCKED until built (after 9 Nov) |
+| Build | EAS `production` 1.0.0, Build 12: servers on (D-157), sign-in required (D-160); recording backup, status report and analytics off; English only (D-121); with the TestFlight fixes | BLOCKED until built |
 | Subscriptions | Add group Plus (`plus.monthly`, `plus.annual`) to the same submission | READY |
-| Release | Manually release this version (phased release is for updates only) | READY |
+| Release | Release automatically when App Review approves it (D-158); phased release is for updates only | READY |
 
 Subscription disclosure: with the standard EULA, the only Terms link on the product page is the one in the
 description, so the description ends with the renewal lines and the Terms of Use and Privacy Policy links. If the
@@ -98,7 +98,7 @@ founder keeps the standard EULA, the review lane also suggests the line
 
 | Field | Value | Status |
 |---|---|---|
-| Sign-in required | No | READY |
+| Sign-in required | Yes (D-160). App Review needs a demo sign-in: see `notes-for-review-1.0.txt` (NX-05) and `proposals/app-review-demo-signin.md`. Turn the switch on and enter the demo user name and password | FOUNDER, supplies the demo account; never in the repo |
 | Contact | Founder's name, email, phone in "+1 ..." form | FOUNDER, never in the repo |
 | Notes | `notes-for-review-1.0.txt` (under 4000 bytes); resolve the three brackets | FOUNDER |
 | Attachment | 60 to 90 s screen recording on a real iPhone with demo child "Asha": age question, setup, typed letter, Speak, the download prompt with its size, the Plus sheet | FOUNDER |
