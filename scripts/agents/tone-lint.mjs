@@ -17,10 +17,10 @@ export const DEFAULT_PATH = "docs/agents";
 export const DEFAULT_BASELINE = "docs/agents/tone-baseline.txt";
 
 const CHAR_RULES = [
-  ["em-dash", /—/gu],
-  ["en-dash", /–/gu],
-  ["curly-quote", /[‘’“”]/gu],
-  ["ellipsis", /…/gu],
+  ["em-dash", /\u2014/gu],
+  ["en-dash", /\u2013/gu],
+  ["curly-quote", /[\u2018\u2019\u201C\u201D]/gu],
+  ["ellipsis", /\u2026/gu],
   ["emoji", /\p{Extended_Pictographic}/gu],
 ];
 const BANNED =
