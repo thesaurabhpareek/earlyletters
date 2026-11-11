@@ -3,11 +3,11 @@
  * the network is not watched in a servers-off build, one flag decides the co-parent door, and the Keychain wait is bounded.
  */
 import { authCopy } from '@scribe/content';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { RESTORE_WAIT_MS, SIGN_IN_OUTAGE_MS, restoreBlocksScreen } from '../src/lib/first-run/gate.logic';
-import { CO_PARENT_IN_STORE_BUILD, familySurfacesShown } from '../src/lib/family/surfaces.logic';
+import { visibleCoParentDoors } from '../src/lib/family/entry.logic';
 import { invitedDoorShown } from '../src/lib/first-run/welcome.logic';
 
 const src = (...p: string[]) => readFileSync(join(__dirname, '..', 'src', ...p), 'utf8');
@@ -26,16 +26,22 @@ describe('[NX-31-R19] the connection is read only where it is used', () => {
     expect(online).toMatch(/useOnline\(enabled: boolean\)/);
     expect(online).toMatch(/if \(!enabled\) return/);
     const route = src('lib', 'first-run', 'use-first-run-route.ts');
-    expect(route).toMatch(/useOnline\(serverFeaturesEnabled\(\) && auth\.configured\)/);
+    expect(route).toMatch(/const active = serverFeaturesEnabled\(\) && auth\.configured;\n\s+const \{ online, recheck \} = useOnline\(active\);/);
   });
 });
 
-describe('[NX-38-R5] one flag decides the co-parent door', () => {
-  it('[NX-38-R5] the Welcome door follows familySurfacesShown, with no flag of its own', () => {
-    expect(src('lib', 'first-run', 'welcome.logic.ts')).not.toMatch(/INVITED_DOOR_IN_STORE_BUILD/);
-    expect(CO_PARENT_IN_STORE_BUILD).toBe(false);
+describe('[NX-38-R5] one function, in one place, decides each co-parent surface', () => {
+  const walk = (dir: string): string[] =>
+    readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : /\.(ts|tsx)$/.test(e.name) ? [join(dir, e.name)] : []));
+  it('[NX-38-R5] `familySurfacesShown` is defined once in the app (entry.logic.ts: the Family tab and the Settings row), and the Welcome door is not it', () => {
+    const defs = walk(join(__dirname, '..', 'src')).filter((f) => /export function familySurfacesShown\b|export const familySurfacesShown\b/.test(readFileSync(f, 'utf8')));
+    expect(defs.map((f) => f.slice(f.indexOf('src/')))).toEqual(['src/lib/family/entry.logic.ts']);
+    expect(existsSync(join(__dirname, '..', 'src', 'lib', 'family', 'surfaces.logic.ts'))).toBe(false);
+    expect(src('lib', 'first-run', 'welcome.logic.ts')).not.toMatch(/INVITED_DOOR_IN_STORE_BUILD|CO_PARENT_IN_STORE_BUILD|familySurfacesShown\(/);
+  });
+  it('[NX-38-R5] the Welcome door is the join button\'s rule (B12-5) for every combination', () => {
     for (const alpha of [true, false]) for (const coParent of [true, false]) {
-      expect(invitedDoorShown({ alpha, coParent })).toBe(familySurfacesShown({ alpha, coParent }));
+      expect(invitedDoorShown({ alpha, coParent })).toBe(visibleCoParentDoors(coParent, alpha).joinButton);
     }
   });
 });
