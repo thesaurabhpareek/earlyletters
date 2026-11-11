@@ -511,3 +511,31 @@ function mulberry32(seed: number): () => number {
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
+
+describe('[BL-378] a very long letter is held calmly, never cut', () => {
+  it('[BL-378] the page is full at 100,000 characters and not before', async () => {
+    const { WRITE_MAX_CHARS, writePageFull } = await import('../src/components/capture/write-session.logic');
+    expect(WRITE_MAX_CHARS).toBe(100_000);
+    expect(writePageFull(WRITE_MAX_CHARS - 1)).toBe(false);
+    expect(writePageFull(WRITE_MAX_CHARS)).toBe(true);
+  });
+
+  it('[BL-378] Write caps the field, says so from packages/content, and keeps "Not saved yet" first', async () => {
+    const { readFileSync } = await import('node:fs');
+    const src = readFileSync(new URL('../src/app/write.tsx', import.meta.url), 'utf8');
+    expect(src).toContain('maxLength={WRITE_MAX_CHARS}');
+    expect(src).toContain('copy.write.tooLong');
+    expect(src).toMatch(/pageFull && saveState !== 'failed'/);
+    const { copy } = await import('../src/lib/copy');
+    expect(copy.write.tooLong).not.toMatch(/[–—…“”]/);
+  });
+
+  it('[BL-378] a 100k-character burst is written as the newest words, once per window', () => {
+    const w = openWrite();
+    const big = 'a'.repeat(100_000);
+    w.key(big);
+    vi.advanceTimersByTime(WRITE_AUTOSAVE_MS);
+    expect(w.onPhone()).toBe(big);
+    expect(w.persists.filter((p) => p.ok).length).toBe(1);
+  });
+});

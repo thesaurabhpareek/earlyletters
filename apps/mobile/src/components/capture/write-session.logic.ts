@@ -194,3 +194,14 @@ export function createFirstFocus(focus: () => void, opts: { fallbackMs?: number;
     },
   };
 }
+
+/**
+ * BL-378: how long one typed letter may be. Generous (about 40 pages), so no real letter meets it; a paste of
+ * 100k characters or more is held at this size by the field itself and never cut after the fact.
+ */
+export const WRITE_MAX_CHARS = 100_000;
+
+/** True when the page is as full as it can be, so the calm "This page is full" line shows. */
+export function writePageFull(length: number): boolean {
+  return length >= WRITE_MAX_CHARS;
+}

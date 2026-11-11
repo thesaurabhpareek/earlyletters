@@ -306,6 +306,8 @@ export const en = {
     autosaved: "Saved on this phone",
     // Autosave failed; shown in the same place, retried on the next pause.
     notSaved: "Not saved yet",
+    // BL-378: the page holds about 100,000 characters; the words already there are kept and nothing is cut.
+    tooLong: "This page is full. Your words are kept. Start another letter to say more.",
   },
 
   // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
