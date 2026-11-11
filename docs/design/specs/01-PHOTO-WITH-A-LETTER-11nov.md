@@ -79,7 +79,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 - Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
 - The action group on the letter page, its name and order are in `06-HOME-BOOK-ME-IA-11nov.md` section 4a, which owns that page; this spec supplies the "Add a photo" or "Change photo" action only.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
-- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 PR #795, merged as `6a11c808`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
+- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795, merged as `6a11c808`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
 
 ## 5. The Photos lens in the Book (D)
 
