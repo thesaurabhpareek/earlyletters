@@ -65,6 +65,7 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
+import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
@@ -130,6 +131,16 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
   const { state: authState, configured, account, signOut } = useAuth();
+  const [leaving, setLeaving] = useState(false);
+  // signOut() answers 'done' or 'waiting' (queued letters still uploading) and can reject. Either way the auth state decides
+  // what shows next; this only keeps a second tap from starting another sign-out while one is in flight.
+  const startAgain = () => {
+    if (useAnotherBusy({ pressing: leaving, authStatus: authState.status })) return;
+    setLeaving(true);
+    signOut()
+      .catch(() => undefined)
+      .finally(() => setLeaving(false));
+  };
   const [start] = useState<Step>(() =>
     firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
   );
@@ -474,7 +485,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                   ) : null}
                   {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
                   {accountFirst && hasSessionState(authState) ? (
-                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={() => void signOut()} />
+                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={startAgain} busy={useAnotherBusy({ pressing: leaving, authStatus: authState.status })} />
                   ) : null}
                 </>
               )}

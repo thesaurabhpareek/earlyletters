@@ -69,7 +69,7 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
  * "Family can read" is the family-contributor switch, and contributors are absent from v1.0
  * whatever the switch (B1, F11 D4): hidden in both.
  * The Family tab and the Settings row stay in every alpha build and in a store build with the switch on; a store build
- * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build.
+ * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build with servers off; a servers-on store build sends an invite link to Tonight (inviteScreensBlocked).
  */
 export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
   return { joinButton: coParent && alpha, familyCanReadSwitch: false };
@@ -86,7 +86,8 @@ export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinB
  * link allowlist below sends nothing else there.
  */
 export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.alpha || input.coParent;
+  // Every alpha build keeps them. A store build shows them only when the join-door rule opens them (never today, servers on or off).
+  return input.alpha || visibleCoParentDoors(input.coParent, input.alpha).joinButton;
 }
 
 /**

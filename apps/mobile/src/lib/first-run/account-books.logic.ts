@@ -163,3 +163,12 @@ export function signedInLine(
   if (input.provider === 'apple') return { text: words.apple, label: words.apple };
   return null;
 }
+
+/**
+ * "Use another account" (child step). `signOut()` answers `done` or `waiting` (it holds while queued letters upload), and can
+ * reject. The button is busy while a press is in flight and while the sign-out is waiting, so a second tap does nothing; a
+ * rejection or a finished sign-out frees it. Nothing here is said to the person.
+ */
+export function useAnotherBusy(input: { pressing: boolean; authStatus: string }): boolean {
+  return input.pressing || input.authStatus === 'signingOut';
+}

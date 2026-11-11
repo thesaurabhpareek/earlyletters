@@ -13,7 +13,7 @@ import { signedInLine } from '@/lib/first-run/account-books.logic';
 import { authCopy } from '@/lib/auth/copy';
 import { copy } from '@/lib/copy';
 
-export function SignedInNote({ maskedEmail, provider, onUseAnother }: { maskedEmail: string | null; provider: string | null; onUseAnother: () => void }) {
+export function SignedInNote({ maskedEmail, provider, onUseAnother, busy = false }: { maskedEmail: string | null; provider: string | null; onUseAnother: () => void; busy?: boolean }) {
   const c = copy.onboarding.child;
   const line = signedInLine({ maskedEmail, provider }, { signedInAs: c.signedInAs, signedInAsLabel: c.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
   return (
@@ -23,7 +23,7 @@ export function SignedInNote({ maskedEmail, provider, onUseAnother }: { maskedEm
           {line.text}
         </Text>
       ) : null}
-      <Button variant="quiet" size="sm" label={c.useAnother} accessibilityHint={c.useAnotherHint} className="-ml-4 self-start" onPress={onUseAnother} testID="onboarding.useAnother" />
+      <Button variant="quiet" size="sm" label={c.useAnother} accessibilityHint={c.useAnotherHint} className="-ml-4 self-start" loading={busy} onPress={onUseAnother} testID="onboarding.useAnother" />
     </View>
   );
 }

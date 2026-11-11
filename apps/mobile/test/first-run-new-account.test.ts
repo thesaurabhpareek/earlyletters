@@ -231,7 +231,7 @@ describe('the child step identity line and Use another account', () => {
   it('shows only on the account-first route with a session, and signs out', () => {
     const ob = src('app/onboarding.tsx');
     expect(ob).toContain('accountFirst && hasSessionState(authState) ? (');
-    expect(ob).toContain('onUseAnother={() => void signOut()}');
+    expect(ob).toContain('onUseAnother={startAgain}');
   });
   it('lets the text wrap at the largest sizes (no truncation, no fixed height)', () => {
     expect(note).not.toMatch(/numberOfLines|ellipsizeMode|adjustsFontSizeToFit/);
