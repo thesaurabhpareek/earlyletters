@@ -21,11 +21,11 @@ const SHEET = 'app/invite/leave.tsx';
 const PAPA = { id: 'papa', signsAs: 'Papa', role: 'parent' as const };
 
 describe('[S60] build 2: Leave is held back (D-113)', () => {
-  it('/invite/leave shows coming soon with sharing on and off, and no screen links to it', () => {
+  it('/invite/leave shows a plain line with sharing on in an alpha build, sends everyone else to Tonight, and no screen links to it', () => {
     expect(LEAVE_BOOK_OFFERED).toBe(false);
     for (const on of [true, false]) expect(inviteDestination('invite_leave', on, true)).toBe('coming_soon');
-    expect(code(SHEET)).toMatch(/serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <InviteComingSoon \/>/);
-    for (const screen of ['app/(tabs)/family.tsx', 'app/invite/index.tsx', 'app/invite/new.tsx']) expect(code(screen), screen).not.toMatch(/\/invite\/leave/);
+    expect(code(SHEET)).toMatch(/serverFeaturesEnabled\(\) && PLUS_ALPHA \? <LeaveLater \/> : <Redirect href="\/" \/>/);
+    for (const screen of ['app/family.tsx', 'app/invite/index.tsx', 'app/invite/new.tsx']) expect(code(screen), screen).not.toMatch(/\/invite\/leave/);
   });
 });
 

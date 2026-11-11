@@ -674,7 +674,7 @@ describe('the routes use the gate', () => {
   });
 
   it('every tab that has no book still sends the person to that one route', () => {
-    for (const f of [['(tabs)', 'index.tsx'], ['(tabs)', 'book.tsx'], ['(tabs)', 'family.tsx']]) expect(read('app', ...f), f.join('/')).toMatch(/<Redirect href="\/onboarding" \/>/);
+    for (const f of [['(tabs)', 'index.tsx'], ['(tabs)', 'book.tsx'], ['family.tsx']]) expect(read('app', ...f), f.join('/')).toMatch(/<Redirect href="\/onboarding" \/>/);
   });
 
   it('the deletion screen offers only Cancel deletion, a confirmed sign out, Sign in and Try again: no book, no Settings', () => {

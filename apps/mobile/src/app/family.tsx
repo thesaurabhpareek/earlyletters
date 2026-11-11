@@ -28,8 +28,9 @@
  * collapses its row and says "Invite cancelled." as the tab's toast. A sheet's closing line (the invite's
  * "The invite waits on the Family tab until they join.") shows as that toast too (components/family/family-notice.ts).
  *
- * With server features off (the kill path) the tab keeps its place and shows the co-parent "coming soon"
- * presentation instead, unchanged (components/family/coparent-soon.tsx).
+ * Not a tab in any build (founder, 11 Nov 2026: Home, Book, Me). This is a pushed route, /family, reached from a book's
+ * settings row when the book has a co-parent (child-settings.logic.ts FAMILY_TAB_HREF). Where co-parent sharing is not
+ * in the build it sends the person to Tonight: there is no coming-soon screen (the old presentation is deleted).
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -40,7 +41,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { useChildren } from '@/components/child/use-children';
-import { CoParentSoon } from '@/components/family/coparent-soon';
 import { arrivedSince, inviteCardNote, peopleRows, pendingSignature } from '@/components/family/family-tab.logic';
 import { familyNotice } from '@/components/family/family-notice';
 import { InviteCard } from '@/components/family/invite-card';
@@ -90,13 +90,7 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
 
 /** Fixed per build (lib/capabilities.ts), so the choice never changes the hook order. */
 export default function FamilyTab() {
-  return inviteDestination('family_tab', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <FamilyShared /> : <FamilySoon />;
-}
-
-function FamilySoon() {
-  const { active } = useChildren();
-  if (!active) return <Redirect href="/onboarding" />;
-  return <CoParentSoon presentation="screen" childName={active.name} />;
+  return inviteDestination('family_tab', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <FamilyShared /> : <Redirect href="/" />;
 }
 
 /** The book's members from the last pull, live (sync rewrites them). */

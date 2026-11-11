@@ -24,9 +24,9 @@ const SCREENS = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) =>
 
 describe('the You tab', () => {
   it('[NX-30a-R1] the last tab is You and it opens Settings home', () => {
-    expect(SCREENS).toEqual(['index', 'book', 'family', 'you']);
+    expect(SCREENS).toEqual(['index', 'book', 'you']);
     expect(layout).toMatch(/<Tabs\.Screen\s+name="you"[\s\S]*?title: t\.you,/);
-    expect(en.tabs.you).toBe('You');
+    expect(en.tabs.you).toBe('Me');
     // The route is Settings home itself, re-exported: one component, not a copy.
     expect(you.trim()).toBe("export { default } from '../settings/index';");
     expect(home).toMatch(/export default function Settings\(\)/);
@@ -47,12 +47,9 @@ describe('the You tab', () => {
     expect(layout).not.toMatch(/options=\{\{[^}]*\bhref:/);
   });
 
-  it('[NX-30a-R6] the Family tab sits behind one guard and the You tab sits outside every guard', () => {
-    // This checks wiring only. In a servers-on store build the Family tab is shown and says coming soon (BL-882); the guard hides it only when familySurfacesShown is false.
-    expect(layout).toMatch(/<Tabs\.Protected guard=\{FAMILY_TAB\}>\s*<Tabs\.Screen name="family"/);
-    // You is never inside a guard: it is in every build.
-    expect(layout).not.toMatch(/Tabs\.Protected[^>]*>\s*<Tabs\.Screen name="you"/);
-    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('</Tabs.Protected>'));
+  it('[NX-30a-R6] no tab is guarded and Family is not a tab: the bar is the same in every build', () => {
+    expect(layout).not.toMatch(/Tabs\.Protected|FAMILY_TAB|name="family"/);
+    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('name="book"'));
   });
 
   it('[NX-30a-R7] the You tab draws no lamp and has one level 1 heading', () => {

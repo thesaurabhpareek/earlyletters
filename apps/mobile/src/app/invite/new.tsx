@@ -26,14 +26,13 @@
  * While `killSwitches.invites` is on (lib/family/invites-switch.ts), Share says invites are paused and sends
  * nothing; the draft is kept, so the next tap after the switch lifts is the same invite.
  */
-import { router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
 import { authCopy } from '@scribe/content';
 import { BookCover } from '@/components/book/book-cover';
 import { familyNotice } from '@/components/family/family-notice';
 import { afterShare, inviteSheetView } from '@/components/family/invite-sheet.logic';
-import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { Button } from '@/components/ui/button';
 import { Chip, ChipGroup } from '@/components/ui/choice-group';
 import { Text } from '@/components/ui/text';
@@ -69,9 +68,9 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-/** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon. */
+/** Fixed per build (lib/capabilities.ts). Off: nothing is shown; the route sends the person to Tonight. */
 export default function InviteCoParentRoute() {
-  return inviteDestination('invite_new', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <InviteCoParent /> : <InviteComingSoon />;
+  return inviteDestination('invite_new', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <InviteCoParent /> : <Redirect href="/" />;
 }
 
 function InviteCoParent() {

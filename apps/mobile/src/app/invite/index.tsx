@@ -31,12 +31,11 @@
  * Keychain and Try again goes on once the switch lifts.
  */
 import { brand } from '@scribe/brand';
-import { router, useNavigation } from 'expo-router';
+import { Redirect, router, useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { View, type Text as RNText } from 'react-native';
 import { joinedArrival } from '@/components/family/family-notice';
 import { firstRunWelcome } from '@/components/family/welcome-handoff.logic';
-import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { JoinAsk, JoinedCover, JoinStep, WaitingBar } from '@/components/family/join-ask';
 import { joinWait, joinWaitLine } from '@/components/family/join-wait.logic';
 import { JOINED_LANDING, joinedBody, joinFailure, joinTitle, openLanding, readPasted, retryKeepsPreview, SPEAK_AFTER_FOCUS_MS } from '@/components/family/join-sheet.logic';
@@ -65,9 +64,9 @@ import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store'
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
 const SIGNS_AS_MAX = 30;
 
-/** Fixed per build (lib/capabilities.ts). Off: co-parent sharing is coming soon, and no token is kept. */
+/** Fixed per build (lib/capabilities.ts). Off: nothing is shown (the route sends the person to Tonight), and no token is kept. */
 export default function JoinBookRoute() {
-  return inviteDestination('invite_join', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <JoinBook /> : <InviteComingSoon />;
+  return inviteDestination('invite_join', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <JoinBook /> : <Redirect href="/" />;
 }
 
 /** Where this sheet closes onto: first run's welcome step, or anywhere else (join-sheet.logic.ts openLanding), now. */

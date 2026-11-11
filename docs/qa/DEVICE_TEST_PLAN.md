@@ -382,6 +382,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
 
 ### S1-28 The Family tab, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
+- **Note (11 Nov 2026):** "the Family tab" in this row now means the family page (`/family`), a pushed page opened from the book's "Write this book together" row once a co-parent has joined. It is not a tab and the bar has three items, Home, Book and Me. Read each "Family tab" step below that way; the steps that tap a Family tab item are to be reworded when this row is next run.
 - **Needs:** a switch-on build on two phones and two Apple Accounts (Mama on A with Asha's book; Papa on B), as S1-22, plus an iPhone SE for (i), VoiceOver for (h), and airplane mode (Control Center) for (g). An invite link works once, so every run of (b), (d), (e), (g), (h) and (k) needs a new invite from A and a fresh install on B (delete the app, then install it again).
 - **Steps:**
   - (a) On A, open the Family tab at the default size and at AX5, in light and dark, and with Increase Contrast. Then Invite a co-parent, type "Papa" and Share invite link through Messages to B.
@@ -701,15 +702,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (l) Lock off: Who can see it reads "Anyone who can unlock this iPhone can open the book." and the App lock row says Off. Lock on: it reads "You, after Face ID or your passcode." (Touch ID on the SE 3) and the row says On; the row opens Settings > App lock.
 - **Record:** S1-131 rows (a) to (l) with the build number, phone and iOS version; screenshots of the snapshot (b) with Asha only; cold start times for (k).
 
-### S1-190 Two tabs in the store build, three in the alpha (D-126, BL-604; branch feat/mobile-bl604-store-family-tab)
-- **Needs:** (a) to (c) a build of the `production` profile (servers off) on a fresh install, with Asha's book set up; (d) a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book.
-- **Steps:** (a) Production: look at the tab bar on Tonight and on the Book, in light and dark. (b) Production: Settings, Asha's book; scroll the whole page. (c) Production: Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Testflight: repeat (a) and (b), then tap Family and the "Write this book together" row.
+### S1-190 Three tabs in every build, and no co-parent coming soon anywhere (founder, 11 Nov 2026; supersedes D-126's two-or-three tabs; branch feat/mobile-family-tab-servers-on)
+- **Needs:** (a) to (c) a build of the `production` profile on a fresh install, with Asha's book set up, once with servers off and once with servers on (Build 12); (d) a TestFlight build of the `testflight` profile (alpha, servers off); (e) a `preview` build (alpha, servers on) with a second phone.
+- **Steps:** (a) Look at the tab bar on Home and on the Book, in light and dark. (b) Settings (the Me tab), Asha's book; scroll the whole page. (c) Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Repeat (a) and (b). (e) Repeat (a) and (b), then open the "Write this book together" row. (f) On a phone with a production build, open a copy of an invite link (made on a preview build) from Messages.
 - **Expected:**
-  - (a) Two tab items, Tonight and Book, sharing the bar width; no Family item and no gap where it was.
-  - (b) No "Write this book together" row and no empty section where it sat; every other row as before.
-  - (c) VoiceOver reads two tabs ("Tonight, tab, 1 of 2", "Book, tab, 2 of 2"); the Large Content Viewer shows each title.
-  - (d) Alpha unchanged: three tabs; Family shows the coming-soon page; the row opens the coming-soon sheet.
-- **Record:** S1-190 rows (a) to (d): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+  - (a) Three tab items, Home, Book and Me, sharing the bar width, identical with servers off and on. No Family item.
+  - (b) No "Write this book together" row, no "Coming soon", no caption, no empty section where it sat; every other row as before.
+  - (c) VoiceOver reads three tabs ("Home, tab, 1 of 3", "Book, tab, 2 of 3", "Me, tab, 3 of 3"); the Large Content Viewer shows each title.
+  - (d) The same as (a) and (b): three tabs, no row, no coming-soon page anywhere.
+  - (e) The same three tabs. The row is there and opens the invite; with a co-parent joined, its value is their signature and it opens the family page (a pushed page, no tab).
+  - (f) The app opens on Home. Nothing is kept: no join step appears after signing out and in.
+- **Record:** S1-190 rows (a) to (f): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+- **UNVERIFIED:** the family page (/family) opens with the system swipe-back only: the root stack gives it no header, and the root layout is not edited by this change.
 
 ### S1-191 A book made without a name reads well on every screen a person sees (NX-31-R3, NX-36 S13 and S14; branch feat/mobile-nameless-surfaces)
 - **Needs:** a build of this branch on an iPhone SE 3 (or the smallest phone to hand), fresh install, servers off is enough. Larger Text at AX5, VoiceOver and dark mode for the rows named below. Fictional family only: Asha, typed in step (g) and nowhere before it.
@@ -726,17 +730,6 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (i) Every line that opens with the words for the missing name begins with a capital: "Your child's book" as the Book tab title, as the title of the book's own settings page and as the Recently deleted card, "Your child's book is in Recently deleted." after the delete and "Your child's book is back." after the restore (NX-36 S14 and S16). A line that has those words in the middle of a sentence keeps them in lower case. With a name (Asha) the same lines read "Asha's book" and so on.
 - **Record:** S1-191 rows (a) to (i): phone, iOS version, build number and profile; screenshots of Tonight, Write, the Children row at AX5 and the cover in light and dark (rows (a) to (e) show no name; row (g) shows Asha only); the prompt texts seen in (e) (they never carry a child's name).
 - **Update:** the name-absent audit table (NX-36 section 5) for any surface that reads differently on the phone, and the pins in `apps/mobile/test/nameless-surfaces.test.ts` if a rule changes.
-
-### S1-200 One coming soon for every co-parent surface in the store build with servers on (BL-882; branch feat/mobile-family-tab-servers-on)
-- **Needs:** a `production` profile build with server features on (Build 12) on a fresh install, signed in, with Asha's book set up; iPhone SE 3 for (c).
-- **Steps:** (a) Tap Family. (b) Settings, Asha's book, the "Write this book together" row. (c) Repeat (a) with VoiceOver on, then at Larger Text AX5. (d) With Mail or Notes, open an invite link (a copy of one made on a TestFlight build). (e) Welcome on a second fresh install: look for "I was invited".
-- **Expected:**
-  - (a) Tabs Tonight, Book, Family, You. Family shows the drawing, "Writing together is coming." and one line; no button, no member list, no invite sheet.
-  - (b) The row says "Coming soon", with the footer "Writing this book with a co-parent is coming in a later update."; it opens the same page as a sheet with Close.
-  - (c) VoiceOver reads the heading first; at AX5 neither line is clipped.
-  - (d) The app opens the same calm page. Nothing is kept: sign out and in again, and no join step appears.
-  - (e) There is no "I was invited" button.
-- **Record:** S1-200 rows (a) to (e): phone, iOS version, build number; screenshots of (a), (b) and (c) at AX5, with Asha only.
 
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
@@ -1026,16 +1019,9 @@ PENDING: not merged and not decided. D-121 item 1 would be reversed; no D-### en
   - (e) The two lists are identical.
 - **UNVERIFIED:** everything on a device; that the purge worker works on production; that the EAS `production` environment holds the URL and key; that `scribe-prod` and the legal pages are live; that the privacy label is answered; and the decision itself.
 
-### S1-176 PENDING (#665, open): the Family tab in the store build
-PENDING: not merged. The pull request carries its own device row, S1-190 (two tabs in the store build with servers off). This row is the pointer and the servers-on case S1-190 does not cover. This pull request proposed S1-140 together with #699 and #720, so it uses S1-190, which no branch or develop claims.
-- **Unit tests the pull request adds:** `apps/mobile/test/store-family-tab.test.ts` (`familySurfacesShown({ alpha, coParent })`).
-- **Needs:** a `production` build, servers off for (a); servers on for (b); an alpha `testflight` build for (c).
-- **Steps:** (a) Servers off: count the tabs; Settings > Asha for "Write this book together". (b) Servers on: the same. Tap Family. (c) Alpha: the same as today.
-- **Expected:**
-  - (a) Tonight and Book only; no row.
-  - (b) Three tabs; Family opens the real flow, not "coming soon"; the row is there.
-  - (c) Three tabs; Family shows the coming-soon page.
-- **UNVERIFIED:** (b), which depends on #698; whether D-126 wants the alpha builds to hide Family too (the pull request asks Karma); the invite-link door, which the pull request says is not hidden.
+### S1-176 SUPERSEDED (#665; founder, 11 Nov 2026: Family is never a tab)
+Superseded by S1-190, which now covers every build: three tabs (Home, Book, Me) with servers off or on, no Family tab, no "Coming soon" page and no "Write this book together" row where the build has no co-parent flow. Nothing is left to run here.
+- **Unit tests:** `apps/mobile/test/store-family-tab.test.ts` (the bar, the no-op between servers off and servers on, and the alpha flow).
 
 ### S1-177 PENDING (#644, open): words are fixed in Review, before Keep
 PENDING: not merged. Wording from the pull request: "Your words are kept as you said them. We can mishear, so read each letter back and fix anything we got wrong before you keep it."

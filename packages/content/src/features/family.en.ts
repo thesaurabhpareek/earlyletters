@@ -183,20 +183,6 @@ export const familyCopy = {
       title: 'For now, this book is yours.',
       body: "{child}'s book and every letter in it stay on this phone.",
     },
-    /**
-     * A store build with server features on, before co-parent sharing is in it (BL-882, founder, 10 Nov 2026): one calm
-     * "coming soon" on every co-parent surface, chosen by CO_PARENT_IN_STORE_BUILD (apps/mobile/src/lib/family/entry.logic.ts).
-     * Its own words because the `quiet` pair above says every letter stays on this phone, which is not true once sign-in and
-     * sync are in the build. No date, no button (SET-08), nothing about grandparents or other family (D-055). Not in any
-     * build until counsel has read the two lines that mention the other parent (COUNSEL-READ: lead, settingsRowHelp).
-     */
-    storeBuild: {
-      title: 'Writing together is coming.',
-      /** COUNSEL-READ: mentions the other parent being able to write. */
-      lead: "{child}'s other parent will be able to add letters from their own phone. For now, this book is yours.",
-      /** COUNSEL-READ: mentions writing the book with a co-parent. The footer under the Settings row. */
-      settingsRowHelp: 'Writing this book with a co-parent is coming in a later update.',
-    },
     childFallback: 'your child',
     close: 'Close',
     settingsRow: 'Write this book together',

@@ -138,17 +138,17 @@ describe('[S46] Hide this book is not destructive, and says it is only for you w
 });
 
 describe('[S46] Write this book together', () => {
-  it('server features off: the coming-soon row as today; on, one parent: the invite; two parents: the Family tab', () => {
+  it('no flow in the build: no row at all (11 Nov); with the flow, one parent: the invite; two parents: the Family tab', () => {
     const off = bookRow({ serverFeatures: false, alpha: true, coParent: null, invite: inviteHref('settings_child', false, true, 'child-asha') });
-    expect(off).toEqual({ value: familyCopy.soon.status, footer: familyCopy.soon.settingsRowHelp, href: inviteHref('settings_child', false, true, 'child-asha') });
+    expect(off).toBeNull();
+    expect(bookRow({ serverFeatures: true, alpha: false, coParent: null, invite: '/invite' })).toBeNull();
     const one = bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(one).toEqual({ href: '/invite/new?childId=child-asha' });
     const two = bookRow({ serverFeatures: true, alpha: true, coParent: 'Papa', invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(two).toEqual({ value: 'Papa', href: FAMILY_TAB_HREF });
-    // The label: P8's bookRow.label with server features on, the kill path's settingsRow with them off (the same words).
-    expect(familyCopy.soon.settingsRow).toBe('Write this book together');
+    // The label is P8's bookRow.label; the row is drawn only when bookRow returns one.
     expect(familyCopy.bookRow.label).toBe('Write this book together');
-    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{serverFeaturesEnabled\(\) \? familyCopy\.bookRow\.label : familyCopy\.soon\.settingsRow\} value=\{row\.value\}/);
+    expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{familyCopy\.bookRow\.label\} value=\{row\.value\}/);
   });
 });
 

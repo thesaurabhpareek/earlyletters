@@ -10,10 +10,8 @@
  * Hiding the book. "Hide this book" is not destructive (nothing is deleted), and in a book with two parents its footer
  * says hiding is only for you (`children.settings.hideShared`, with the other parent's own signature).
  *
- * "Write this book together". With server features off, the coming-soon row as today. With them on, one parent: the
- * row opens the invite sheet; two parents: its value is the other parent's signature ("Papa") and it opens the Family
- * tab. The screen labels it `familyCopy.bookRow.label` with server features on and `familyCopy.soon.settingsRow` with
- * them off (the same words, S46).
+ * "Write this book together". Only where this build has the flow: one parent, the row opens the invite sheet; two
+ * parents, its value is the other parent's signature ("Papa") and it opens the family page. Anywhere else there is no row.
  */
 import { checkChildName, dueDatePassed } from '@scribe/core';
 import { familyCopy } from '@scribe/content';
@@ -82,21 +80,19 @@ export function hideFooter(childName: string, coParent: string | null): string {
   return coParent ? `${body} ${fill(s.hideShared, { coParent, child: childName })}` : body;
 }
 
-export type BookRow = { value?: string; footer?: string; href: string };
+/** Null: there is no row (no flow in this build). A row is only ever the real thing. */
+export type BookRow = { value?: string; href: string };
 
-/** The Family tab, where a book's two parents are shown (S57). */
+/** The book's two parents are shown on /family, a pushed route and not a tab (founder, 11 Nov 2026). */
 export const FAMILY_TAB_HREF = '/family';
 
 /**
- * "Write this book together": coming soon (server features off, or a store build before CO_PARENT_IN_STORE_BUILD,
- * BL-882), the invite (one parent) or the Family tab (two).
+ * "Write this book together": the invite (one parent) or the family page (two), only where this build has the flow
+ * (inviteDestination). Where it does not, there is NO row: no "Coming soon" value, no footer, no chevron, no screen.
  * `invite` is where the invite entry leads in this build (lib/family/entry.logic.ts inviteHref).
  */
-export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string }): BookRow {
-  const soon = familyCopy.soon;
-  if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') {
-    return { value: soon.status, footer: input.serverFeatures ? soon.storeBuild.settingsRowHelp : soon.settingsRowHelp, href: input.invite };
-  }
+export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string }): BookRow | null {
+  if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') return null;
   if (input.coParent) return { value: input.coParent, href: FAMILY_TAB_HREF };
   return { href: input.invite };
 }

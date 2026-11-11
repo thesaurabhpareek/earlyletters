@@ -205,7 +205,6 @@ export const ADDED = [
   'en.children.settings.hideShared',
   'en.tabs.tonight',
   'en.tabs.book',
-  'en.tabs.family',
   'en.tabs.you',
   // P3 (section 6): the signed-in held-letter line P6's Keep sheet shows; counsel C10.
   'features.billing.keepGate.heldNoteSynced',
