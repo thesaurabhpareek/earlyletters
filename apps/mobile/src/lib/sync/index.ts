@@ -185,7 +185,7 @@ function claim(userId: string): void {
 /**
  * A session just ended, and the phone holds nothing (no book, no letter, no held draft, nothing queued): it has no owner, so
  * the next account to sign in on it claims it afresh instead of meeting `account_mismatch` with no word said
- * (ownership.ts releaseEmptyOwner; "Use another account" and "Try another account"). A phone that holds anything keeps its owner.
+ * (ownership.ts releaseEmptyOwner; "Use another account" and "Try another way"). A phone that holds anything keeps its owner.
  */
 function releaseEmptyPhone(): void {
   try {

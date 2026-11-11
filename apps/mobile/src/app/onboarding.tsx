@@ -68,7 +68,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
 import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -275,6 +275,8 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   };
 
   const finish = () => {
+    // Opened signed in, and the session is gone (one frame before the route puts the Welcome back): no book with no account (D-160).
+    if (!finishMayMakeBook({ start, hasSession: hasSessionState(authState) })) return;
     // Every book made in first run is free (twins or more share the date).
     if (childBlock) return;
     const created = firstRunBookNames(names).map((n) =>

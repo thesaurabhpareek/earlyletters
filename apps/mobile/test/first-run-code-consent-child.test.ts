@@ -13,7 +13,7 @@ import { firstRunBookNames, firstRunChildBlock } from '../src/components/onboard
 import { coverName } from '../src/components/book/book-cover.logic';
 import { fill } from '../src/lib/copy';
 import { authReducer, type AuthEvent, type AuthState } from '../src/lib/auth/machine.logic';
-import { backShown, childNameFieldWords, consentHandoff, firstRunStartStep, hasSessionState, recoverySet, reportsPastWelcome, shouldAnnounceRecovery, welcomeHandoffStep } from '../src/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, consentHandoff, finishMayMakeBook, firstRunStartStep, hasSessionState, recoverySet, reportsPastWelcome, shouldAnnounceRecovery, welcomeHandoffStep } from '../src/lib/first-run/handoff.logic';
 
 const src = (...p: string[]) => readFileSync(join(__dirname, '..', 'src', ...p), 'utf8');
 const code = src('app', '(auth)', 'sign-in', 'code.tsx');
@@ -303,6 +303,26 @@ describe('[NX-31-R4] a signed-in start hands a returning account\'s book over, a
     // The Welcome start, and every servers-off build, is the old rule: past once it leaves the Welcome.
     expect(reportsPastWelcome({ start: 'welcome', step: 'welcome' })).toBe(false);
     for (const step of ['promise', 'child', 'signsAs', 'finish'] as const) expect(reportsPastWelcome({ start: 'welcome', step })).toBe(true);
+  });
+  it('[NX-31-R4] [D-160] Finish makes a book for a signed-in start only while the session is there; every other start is as before', () => {
+    const starts = ['welcome', 'promise', 'child', 'signsAs', 'finish'] as const;
+    for (const start of starts) {
+      for (const hasSession of [true, false]) {
+        // Only the signed-in start (the promise step) needs the session; the local start and the Welcome start never did.
+        const want = start !== 'promise' || hasSession;
+        expect(finishMayMakeBook({ start, hasSession }), `${start}/${hasSession ? 'session' : 'no session'}`).toBe(want);
+      }
+    }
+    expect(finishMayMakeBook({ start: 'promise', hasSession: false })).toBe(false);
+    expect(finishMayMakeBook({ start: 'promise', hasSession: true })).toBe(true);
+    expect(finishMayMakeBook({ start: 'child', hasSession: false })).toBe(true); // the local start
+    expect(finishMayMakeBook({ start: 'welcome', hasSession: false })).toBe(true); // the Welcome start, and every build with servers off
+  });
+  it('[NX-31-R4] [D-160] finish asks it first, from the real session state, before it reads the block or makes a book', () => {
+    const o = uncomment(onboarding);
+    const finish = o.slice(o.indexOf('const finish = () => {'));
+    expect(finish).toMatch(/^const finish = \(\) => \{\s*if \(!finishMayMakeBook\(\{ start, hasSession: hasSessionState\(authState\) \}\)\) return;\s*if \(childBlock\) return;\s*const created = firstRunBookNames\(names\)\.map\(\(n\) =>\s*addChild\(/);
+    expect(o.match(/finishMayMakeBook\(/g)).toHaveLength(1);
   });
   it('[NX-31-R4] the steps ask reportsPastWelcome in the one effect that tells the route', () => {
     const o = uncomment(onboarding);

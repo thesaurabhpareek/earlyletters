@@ -2,7 +2,7 @@
 /**
  * An empty phone has no owner (review of PR #737, lens A, finding 2). `takeOwnership` wrote `sync.ownerId` on the first
  * sign-in even when the phone held no book, and nothing cleared it at sign-out, so "Use another account" (the child step)
- * and "Try another account" (No book here yet) left the second account to meet `AccountMismatchError`: its sync stopped
+ * and "Try another way" (No book here yet) left the second account to meet `AccountMismatchError`: its sync stopped
  * without a word and its book was authored under the first account. `releaseEmptyOwner` clears the owner when, and only
  * when, the phone holds nothing; sync/index.ts calls it when a signed-in session ends.
  *
@@ -11,7 +11,9 @@
  *  M2 the `phoneHoldsAnyRow` check left out;                             M4 sync/index.ts never calling it at sign-out;
  *  M5 sync/index.ts releasing at the start of the sign-out, not when it has finished;   M7 sync/index.ts passing a predicate that is always "empty";
  *  M6 sync/index.ts releasing before the engine is stopped;   M8 the held-draft cursor left behind on a release;
- *  M9 the recorded mismatch left standing after a release.
+ *  M9 the recorded mismatch left standing after a release;
+ *  M10 the engine writing a pull page that was out when the session ended (engine.ts, the guard after `sync_pull`; also
+ *      test/sync-stopped-engine.test.ts).
  * Real modules over node:sqlite; only natives and the network are stubbed. Fictional family "Asha" only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -21,6 +23,7 @@ import { SYNC_SETTING, readSetting, writeSetting } from '../src/lib/sync/outbox'
 import { phoneHoldsAnyRow } from '../src/lib/auth/account-claim.logic';
 import { AccountMismatchError, releaseEmptyOwner as release, takeOwnership } from '../src/lib/sync/ownership';
 import { nodeDb } from './helpers/node-db';
+import { pulledPage } from './helpers/pulled-page';
 import { insertBook } from './helpers/store-fixture';
 
 const A = '0192f0aa-0000-7000-8000-0000000000a1';
@@ -309,6 +312,67 @@ describe('[NX-31-R12] sync/index.ts releases an empty phone when a session ends'
     expect(owner(raw)).toBe(B);
     expect(sync.getSyncStatus().phase).not.toBe('account_mismatch');
     expect(enginesFor().at(-1)).toBe(B);
+  });
+
+  describe('a pull that was out when the session ended (review B on #737, round 3: account isolation)', () => {
+    /** The first pull of the first account is held until the test answers it; every later request is answered at once. */
+    function holdFirstPull(): { answer: (page: unknown) => void; held: () => boolean } {
+      let answer: (r: unknown) => void = () => {};
+      let held = false;
+      spies.rpc.mockImplementation((fn: string, args: Record<string, unknown> = {}) => {
+        if (fn !== 'sync_pull' || held) return okRpc(fn, args);
+        held = true;
+        return new Promise((resolve) => {
+          answer = resolve;
+        });
+      });
+      return { answer: (page) => answer({ data: page, error: null, status: 200 }), held: () => held };
+    }
+    const tables = () => ({ children: count(raw, 'children'), entries: count(raw, 'entries'), syncBooks: count(raw, 'sync_books') });
+
+    it('control: with the session still on, the page is applied (so the test below is not vacuous)', async () => {
+      const pull = holdFirstPull();
+      ready(A);
+      await vi.waitFor(() => expect(pull.held()).toBe(true));
+      pull.answer(pulledPage(A, ['0199a000-0000-7000-8000-0000000000e1']));
+      await vi.waitFor(() => expect(count(raw, 'children')).toBe(1));
+      expect(tables()).toEqual({ children: 1, entries: 1, syncBooks: 1 });
+      expect(owner(raw)).toBe(A);
+    });
+
+    it('the session ends while the first pull is out: the page lands nowhere, the owner stays forgotten, and the next account claims an empty phone [M10]', async () => {
+      const pull = holdFirstPull();
+      ready(A);
+      await vi.waitFor(() => expect(pull.held()).toBe(true));
+      expect(owner(raw)).toBe(A);
+      auth.publishAuth({ status: 'signedOut', error: 'session_expired' }); // signed in to signed out: the engine stops, the empty phone is released
+      expect(owner(raw)).toBeNull();
+
+      pull.answer(pulledPage(A, ['0199a000-0000-7000-8000-0000000000e1'])); // the page arrives after the session ended
+      await settle();
+      expect(tables()).toEqual({ children: 0, entries: 0, syncBooks: 0 });
+      expect(owner(raw)).toBeNull(); // not claimed by anything
+
+      expect(takeOwnership(raw, B, ctx)).toMatchObject({ outcome: 'claimed', books: 0, letters: 0 }); // the second account claims an empty phone
+      expect(owner(raw)).toBe(B);
+      expect(tables()).toEqual({ children: 0, entries: 0, syncBooks: 0 }); // and sees nothing of the first account
+    });
+
+    it('the second account signs in through the real wiring after that: it syncs on an empty phone, with no mismatch and none of the first account\'s book', async () => {
+      const pull = holdFirstPull();
+      ready(A);
+      await vi.waitFor(() => expect(pull.held()).toBe(true));
+      auth.publishAuth({ status: 'signedOut', error: 'session_expired' });
+      pull.answer(pulledPage(A, ['0199a000-0000-7000-8000-0000000000e1']));
+      await settle();
+
+      ready(B);
+      await settle();
+      expect(owner(raw)).toBe(B);
+      expect(sync.getSyncStatus().phase).not.toBe('account_mismatch');
+      expect(enginesFor()).toEqual([A, B]);
+      expect(tables()).toEqual({ children: 0, entries: 0, syncBooks: 0 });
+    });
   });
 
   it('a session that was never signed in ending (the launch read) releases nothing and reads nothing', () => {

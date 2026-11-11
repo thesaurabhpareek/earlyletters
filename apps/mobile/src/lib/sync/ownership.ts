@@ -92,7 +92,7 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
 /**
  * A phone with nothing on it has no owner to protect. `takeOwnership` writes `sync.ownerId` even when the phone holds no
  * book (the first sign-in on an empty phone), and nothing cleared it at sign-out, so a second account that signed in on the
- * same empty phone ("Use another account", "Try another account") met `AccountMismatchError`, and its sync stopped without
+ * same empty phone ("Use another account", "Try another way") met `AccountMismatchError`, and its sync stopped without
  * a word. This clears the owner when, and only when, nothing on the phone could belong to that account:
  *  - `holdsAnyRow(db)` is false: pass `phoneHoldsAnyRow` (lib/auth/account-claim.logic.ts, re-exported by auth-store.ts), the
  *    claim screen's own question. It counts any row in `children` or `entries`, in any state (hidden, refused and deleted ones
