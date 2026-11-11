@@ -105,6 +105,9 @@ export function releaseOwnerIfEmpty(db: SqlDb): boolean {
     if (db.get('SELECT 1 AS x FROM sync_outbox LIMIT 1')) return;
     writeSetting(db, SYNC_SETTING.owner, null);
     writeSetting(db, SYNC_SETTING.heldCursor, null);
+    // A consent pause belongs to the account that met it; the next account must not inherit it.
+    // epoch, epochStartedAt and heldServer describe the server (rewritten by the next pull) and stay.
+    writeSetting(db, SYNC_SETTING.pausedFor, null);
     released = true;
   });
   return released;

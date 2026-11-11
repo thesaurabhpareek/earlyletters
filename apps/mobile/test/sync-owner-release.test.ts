@@ -180,6 +180,25 @@ async function runScenario(): Promise<{ bookId: string; fromA: number }> {
   }
 }
 
+describe('a consent pause does not follow the phone to the next account', () => {
+  it('A paused for consent, signs out of an empty phone; B signs in and B\'s engine is not paused_consent', async () => {
+    const stop = sync.startSync();
+    try {
+      signIn(A);
+      writeSetting(raw, SYNC_SETTING.pausedFor, 'terms'); // the server told A's engine to wait for consent
+      expect(sync.getSyncStatus().phase).toBe('paused_consent');
+      signOut();
+      expect(owner()).toBeNull();
+      signIn(B);
+      await until(() => calls.some((c) => c.user === B));
+      expect(readSetting(raw, SYNC_SETTING.pausedFor)).toBeNull();
+      expect(sync.getSyncStatus().phase).not.toBe('paused_consent');
+    } finally {
+      stop();
+    }
+  });
+});
+
 describe('the full scenario: A claims an empty phone, "Use another account", B claims, A comes back', () => {
   it('with the release: B owns the phone, B\'s book is B\'s and goes up under B, A is refused and sends nothing', async () => {
     const { bookId, fromA } = await runScenario();
@@ -226,6 +245,7 @@ describe('releaseOwnerIfEmpty: only a phone with nothing on it forgets its owner
   beforeEach(() => {
     writeSetting(raw, OWNER, A);
     writeSetting(raw, CURSOR, '42');
+    writeSetting(raw, SYNC_SETTING.pausedFor, 'terms');
   });
 
   it('no owner: false, nothing written', () => {
@@ -238,6 +258,7 @@ describe('releaseOwnerIfEmpty: only a phone with nothing on it forgets its owner
     expect(releaseOwnerIfEmpty(raw)).toBe(true);
     expect(owner()).toBeNull();
     expect(readSetting(raw, CURSOR)).toBeNull();
+    expect(readSetting(raw, SYNC_SETTING.pausedFor)).toBeNull(); // A's consent pause does not follow to B
     expect(releaseOwnerIfEmpty(raw)).toBe(false); // nothing left to release
   });
 
@@ -268,6 +289,7 @@ describe('releaseOwnerIfEmpty: only a phone with nothing on it forgets its owner
       expect(releaseOwnerIfEmpty(raw)).toBe(false);
       expect(owner()).toBe(A);
       expect(readSetting(raw, CURSOR)).toBe('42');
+      expect(readSetting(raw, SYNC_SETTING.pausedFor)).toBe('terms');
     });
   }
 
@@ -427,7 +449,7 @@ describe('a sign-out that waits for uploads', () => {
     expect(state).toMatchObject({ status: 'signingOut', waitingForUploads: true });
   }
 
-  it('keeps the owner while it waits, and releases once when the uploads drain and the session ends', () => {
+  it('ready -> signingOut (waiting) -> signedOut: keeps the owner while it waits, and releases once when the uploads drain and the session ends', () => {
     waiting();
     expect(owner()).toBe(A);
     expect(h.releases).toEqual([]);
