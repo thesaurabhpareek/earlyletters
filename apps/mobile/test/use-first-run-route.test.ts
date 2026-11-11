@@ -119,6 +119,9 @@ describe('[NX-31-R17] servers off: the route is a no-op (route.logic.ts: the swi
       await flush();
       run.result.current.tryAgain(); // even a stray tap reads nothing
       await flush();
+      const rendered = run.renders;
+      run.result.current.markPastWelcome(); // and the steps leaving their welcome step render nothing again
+      expect(run.renders, `renders ${String(state.status)}`).toBe(rendered);
       expect(h.listChildrenCalls, `listChildren ${String(state.status)}`).toBe(0);
       expect(h.storeListeners.size, `store listeners ${String(state.status)}`).toBe(0);
       expect(h.netCalls, `network reads ${String(state.status)}`).toBe(0);
