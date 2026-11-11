@@ -1,6 +1,8 @@
 import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import { useAuth } from '@/lib/auth/session-provider';
+import { listPendingInvites } from '@/lib/family/invites';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { childLabel, copy, fill } from '@/lib/copy';
@@ -59,7 +61,24 @@ export default function ChildSettings() {
   const born = bornCard(name);
   const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
   const coParent = coParentOf(members);
-  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id) });
+  // Pending invites stay reachable: while the server lists one for this book, the row opens the family page (Share again, Cancel invite).
+  const auth = useAuth();
+  const [pendingInvites, setPendingInvites] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (!serverFeaturesEnabled() || !auth.client || !auth.canSync || coParent) {
+      setPendingInvites(false);
+      return;
+    }
+    listPendingInvites(auth.client, child.id).then(
+      (rows) => live && setPendingInvites(rows.length > 0),
+      () => live && setPendingInvites(false),
+    );
+    return () => {
+      live = false;
+    };
+  }, [auth.client, auth.canSync, child.id, coParent]);
+  const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id), pendingInvites });
 
   /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */
   const hideBornCard = () => {

@@ -16,8 +16,8 @@
  * signature, so a retry or a second tap is one invite (F11-U15, G-07). Typed codes are not made: build 2 invites
  * are links only (the coordinator's ruling on F11-REQ-001 and -002, 28 Oct 2026).
  *
- * When the share sheet closes after the link was sent, this sheet closes too, and the Family tab says "The invite
- * waits on the Family tab until they join." as its toast (components/family/family-notice.ts), with the pending row
+ * When the share sheet closes after the link was sent, this sheet closes too, and the family page says "The invite
+ * waits until they join." as its toast (components/family/family-notice.ts), with the pending row
  * entering there. When it was dismissed without sending, this sheet stays at Share with the same draft (afterShare).
  *
  * A book that already has two parents (D-069) shows "{child}'s book has two parents." instead of Share, from the
