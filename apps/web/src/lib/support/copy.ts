@@ -24,6 +24,7 @@ export const supportCopy = {
   metaTitle: `Support | ${brand.name}`,
   metaDescription: `Help with ${brand.name}. Write to ${email}. A person reads every message.`,
   title: 'Support',
+  // Required by LegalPageCopy. Not shown and not in the sitemap: /support is not linked from any page yet (e2e links test).
   lastUpdated: '2026-11-11',
   intro: [
     `Write to us at ${email}. A person reads every message. You never need to send a letter or a recording to get help.`,

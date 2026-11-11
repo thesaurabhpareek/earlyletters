@@ -36,12 +36,6 @@ describe('/support', () => {
     expect(src).toContain('supportMetadata');
   });
 
-  it('is in the sitemap with its own date', () => {
-    const src = readFileSync(join(WEB, 'src/app/sitemap.ts'), 'utf8');
-    expect(src).toContain('${siteOrigin}/support');
-    expect(src).toContain('supportCopy.lastUpdated');
-  });
-
   it('is the store listing support page', async () => {
     const { storeListing } = await import('../../../packages/content/src/store.en');
     expect(storeListing.supportUrl).toBe(`${brand.web.origin}/support`);
