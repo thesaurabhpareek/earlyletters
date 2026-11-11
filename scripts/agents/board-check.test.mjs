@@ -122,8 +122,8 @@ test('the live CLAIMS.md parses with no malformed rows and stays within the limi
   assert.ok(rows.length <= MAX_ROWS);
 });
 
-test('T9: the archive is byte-identical to the old BOARD.md (git blob hash of BOARD.md on origin/develop at d6d250ee)', () => {
-  const OLD_BLOB = 'cbbf0c0ad877ea43e808d6556612323861fe8704';
+test('T9: the archive is byte-identical to the old BOARD.md (git blob hash of BOARD.md on origin/develop at 6c753dc9, the last sync)', () => {
+  const OLD_BLOB = '29f43a75cb54ca9dbd376aafcb223b45eb25026d';
   const file = new URL('../../docs/agents/BOARD-ARCHIVE.md', import.meta.url).pathname;
   assert.equal(execFileSync('git', ['hash-object', file], { encoding: 'utf8' }).trim(), OLD_BLOB);
 });

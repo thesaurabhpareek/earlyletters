@@ -54,7 +54,7 @@ export default function SignInSheet() {
   // Set before the first await: a second tap in the same frame starts no second sign-in.
   const inFlight = useRef(false);
   const s = authCopy.sheet;
-  const child = active?.name ?? authCopy.consent.childFallback;
+  const child = active?.name || authCopy.consent.childFallback;
   const cover = active && ABOUT_THIS_BOOK.includes(trigger) && !ax ? active.name : null;
 
   useEffect(() => setSignInTrigger(trigger), [trigger]);

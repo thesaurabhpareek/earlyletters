@@ -120,7 +120,7 @@ import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSav
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
 import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
-import { ensureAudioHash, finishingTake } from '@/lib/capture/recorder';
+import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -299,7 +299,8 @@ export default function Review() {
   }, [raw, typed, dictionary, language, letterLanguage]);
 
   // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
-  // after 300 ms of quiet (F04-REQ-011), and at once when the app leaves the foreground, at Done and at Close.
+  // at most 300 ms after the first change, however long the editing goes on (F04-REQ-011, F06-REQ-036), and at once
+  // when the app leaves the foreground, at Done and at Close.
   // Sample words (development builds) are never saved, so nothing is stored for them either.
   const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
   persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
@@ -317,7 +318,7 @@ export default function Review() {
       writer.flush();
     };
   }, [writer]);
-  // Every change of the person's words goes to the draft (debounced); the words restored on mount are already there.
+  // Every change of the person's words goes to the draft within 300 ms; the words restored on mount are already there.
   const lastWords = useRef(userText);
   useEffect(() => {
     if (userText === lastWords.current) return;
@@ -629,6 +630,9 @@ export default function Review() {
       const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
       if (!settled) {
         saving.current = false;
+        // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
+        // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
+        if (isFinishing(draft.id)) toast.show({ message: copy.review.keepStillSaving });
         return;
       }
       const audio = await ensureAudioHash(settled);

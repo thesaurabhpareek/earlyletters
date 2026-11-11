@@ -30,7 +30,6 @@ import { WarningCircleIcon } from 'phosphor-react-native/src/icons/WarningCircle
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Alert, AppState, Linking, Platform, Pressable, ScrollView, View, type Text as RNText } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
-import { renderTemplate } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
@@ -542,7 +541,7 @@ export default function Listen() {
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
             <Text variant="prompt" tone="muted" numberOfLines={large ? undefined : 3} className="mt-3 text-center" testID="listen.prompt">
-              {renderTemplate(prompt, { child: child.name })}
+              {fill(prompt, { child: child.name })}
             </Text>
           )}
         </Animated.View>

@@ -38,7 +38,7 @@ import type { Icon as PhosphorIcon } from 'phosphor-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View, type Text as RNText, type TextInput } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
-import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkBirthday, checkChildName, checkDueDate, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
+import { CHILD_NAME_MAX, SIGNS_AS_MAX, checkSignsAs, clampText, languageInfo, nearLimit, textLength, type LanguageCode } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
 import { LockOffer } from '@/components/app-lock/lock-offer';
 import { BookCover } from '@/components/book/book-cover';
@@ -47,6 +47,7 @@ import { DateField, type DateFieldHandle } from '@/components/child/date-field';
 import { dateRange } from '@/components/child/date-field.logic';
 import { languageCopy } from '@/components/language/copy';
 import { LanguagePicker } from '@/components/language/language-picker';
+import { firstRunBookNames, firstRunChildBlock } from '@/components/onboarding/child-step.logic';
 import { showOnboardingLanguageRow } from '@/components/onboarding/language-row.logic';
 import { PromiseSample } from '@/components/onboarding/promise-sample';
 import { WelcomeLockup } from '@/components/onboarding/welcome-lockup';
@@ -63,7 +64,12 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
+import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities } from '@/lib/capabilities';
+import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
+import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
+import { OutageScreen } from '@/components/onboarding/outage-screen';
+import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
 import { copy, fill, pendingCopy } from '@/lib/copy';
 import { inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
@@ -109,7 +115,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRun() {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome }: { localStartChosen?: boolean; onPastWelcome?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -165,7 +171,20 @@ function FirstRun() {
   // welcome ends the wait.
   const joining = useWelcomeJoinWait({ onWelcome: step === 'welcome', inFront: pathname === '/onboarding' });
   const joinLine = joining.line;
-  const showContinue = joining.begin;
+  // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
+  // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
+  // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
+  const { state: authState } = useAuth();
+  // The local start was chosen on the outage screen (route) or by tapping "Begin the book" here: either keeps the button.
+  const [chosenHere, setLocalStartChosen] = useState(false);
+  const localStartChosen = chosenOnOutage || chosenHere;
+  const showContinue = continueMayShow({
+    begin: joining.begin,
+    onWelcome: step === 'welcome',
+    authState,
+    localStartChosen,
+    hasLocalBook: () => listChildren().length > 0,
+  });
   // The join sheet's "Open the book" asks whether the welcome step is the one under it (S59, P8b).
   useEffect(() => {
     firstRunWelcome.set(step === 'welcome');
@@ -194,6 +213,10 @@ function FirstRun() {
   };
 
   useFocusOnMount(heading, step !== 'welcome', step);
+  // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  useEffect(() => {
+    if (step !== 'welcome') onPastWelcome?.();
+  }, [step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
@@ -205,7 +228,11 @@ function FirstRun() {
     return () => clearTimeout(id);
   }, [step, shown]);
 
-  const next = () => setStep(ORDER[ORDER.indexOf(step) + 1]);
+  const next = () => {
+    // "Begin the book" with no session is the local start (R18): remembered here, in memory, so the way back is not closed.
+    if (continueTapIsLocalStart({ onWelcome: step === 'welcome', authState })) setLocalStartChosen(true);
+    setStep(ORDER[ORDER.indexOf(step) + 1]);
+  };
   const back = () => setStep(ORDER[Math.max(0, ORDER.indexOf(step) - 1)]);
 
   const setNameAt = (i: number, v: string) => setNames((all) => all.map((x, j) => (j === i ? clampText(v, CHILD_NAME_MAX) : x)));
@@ -219,17 +246,14 @@ function FirstRun() {
   const finish = () => {
     // Every book made in first run is free (twins or more share the date).
     if (childBlock) return;
-    const created = names
-      .map((n) => checkChildName(n))
-      .flatMap((n) => (n.ok ? [n.value] : []))
-      .map((n) =>
-        addChild({
-          name: n,
-          birthday: expecting ? null : birthday,
-          dueDate: expecting ? dueDate : null,
-          signsAs: signsAs.trim(),
-        }),
-      );
+    const created = firstRunBookNames(names).map((n) =>
+      addChild({
+        name: n,
+        birthday: expecting ? null : birthday,
+        dueDate: expecting ? dueDate : null,
+        signsAs: signsAs.trim(),
+      }),
+    );
     if (created[0] && getActiveChildId() !== created[0].id) setActiveChildId(created[0].id);
     // Dropped unless analytics is already a yes (it never is in first run; K-01). Kept for a reinstall that kept consent.
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
@@ -238,15 +262,7 @@ function FirstRun() {
 
   // Why Continue is waiting, in words (never only a greyed button).
   const today = todayISO();
-  const childBlock = ((): string | null => {
-    if (names.some((n) => !checkChildName(n).ok)) return names.length > 1 ? o.child.needNameMany : copy.childrenExtra.nameRequired;
-    if (expecting) {
-      if (!dueDate) return o.child.needDueDate;
-      return checkDueDate(dueDate, today).ok ? null : copy.childrenExtra.edit.dueDateRange;
-    }
-    if (!birthday) return fill(o.child.needBirthday, { child: namedCount ? child : o.childFallback });
-    return checkBirthday(birthday, today).ok ? null : copy.childrenExtra.edit.birthdayFuture;
-  })();
+  const childBlock = firstRunChildBlock({ names, expecting, birthday, dueDate, today });
   // Twins or more: the reason agrees in number with the title (S06).
   const signsAsBlock = checkSignsAs(signsAs).ok ? null : fill(namedCount > 1 ? o.signsAs.needSignsAsMany : o.signsAs.needSignsAs, { child });
   const block = step === 'child' ? childBlock : step === 'signsAs' ? signsAsBlock : null;
@@ -266,7 +282,7 @@ function FirstRun() {
       signsAsField.current?.focus();
       return;
     }
-    const missing = names.findIndex((n) => !checkChildName(n).ok);
+    const missing = names.length > 1 ? names.findIndex((n) => !n.trim()) : -1;
     if (missing >= 0) nameFields.current[missing]?.focus();
     else dateField.current?.focus();
   };
@@ -596,4 +612,20 @@ export default function Onboarding() {
   if (gate.screen === 'deletion' && gate.request) return <OpenDeletionScreen request={gate.request} />;
   if (gate.screen === 'checking') return <CheckingScreen />;
   return <FirstRun />;
+}
+
+/**
+ * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
+ * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. Everything else, and every build with the switch
+ * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step of the
+ * steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
+ */
+function FirstRun() {
+  const route = useFirstRunRoute();
+  if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
+  if (route.screen === 'welcome') return <WelcomeSignIn />;
+  if (route.screen === 'outage' && route.outage) {
+    return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
+  }
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} />;
 }
