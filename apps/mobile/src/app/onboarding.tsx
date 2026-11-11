@@ -65,7 +65,8 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
-import { capabilities } from '@/lib/capabilities';
+import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
+import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -124,7 +125,15 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const nameFields = useRef<(TextInput | null)[]>([]);
   const signsAsField = useRef<TextInput>(null);
   const dateField = useRef<DateFieldHandle>(null);
-  const [step, setStep] = useState<Step>('welcome');
+  // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
+  // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
+  // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
+  const { state: authState, configured } = useAuth();
+  const [start] = useState<Step>(() =>
+    firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
+  );
+  const accountFirst = start !== 'welcome';
+  const [step, setStep] = useState<Step>(start);
   const [names, setNames] = useState<string[]>(['']);
   const [expecting, setExpecting] = useState(false);
   // No date is chosen for the person: an untouched default would file a seven-month-old under "0 days".
@@ -157,15 +166,19 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // are, never on Tonight (EXPERIENCE_PASS 5.8 rows 12 and 13).
   // Only while the welcome, or the sign-in sheet over it, is in front (components/family/welcome-handoff.logic.ts): the
   // join sheet waits for Open or Close (S59, P8b), and no other screen is ever pulled back to the Book.
+  // Account first: a person who opened signed in is on the promise step, not the welcome, and has not moved on. If their
+  // account's book arrives it must hand over to the Book, never leave them to make a second book, so that one step is
+  // asked as the welcome (handoff.logic.ts welcomeHandoffStep; S17 in #764 is the fuller answer).
+  const handoffStep = welcomeHandoffStep({ start, step });
   const pathname = usePathname();
   useEffect(() => {
-    if (!welcomeMayLeave(step, pathname)) return;
+    if (!welcomeMayLeave(handoffStep, pathname)) return;
     const done = () => {
       if (listChildren().length > 0) router.replace('/book');
     };
     done();
     return subscribe(done);
-  }, [step, pathname]);
+  }, [handoffStep, pathname]);
   // Closed the join sheet before the joined book arrived (S59, P8b, critics' pass S2): while it is on its way the welcome
   // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back. Leaving the
   // welcome ends the wait.
@@ -174,7 +187,6 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // Sign-in first (NX-31 R17, behind the server switch): on the welcome only, with no session and no book, "Begin the book"
   // waits, except where the local start is offered (R18). On later steps, and with server features off, the gate adds
   // nothing to the join wait (lib/first-run/route.logic.ts, tested in test/first-run-route.test.ts).
-  const { state: authState } = useAuth();
   // The local start was chosen on the outage screen (route) or by tapping "Begin the book" here: either keeps the button.
   const [chosenHere, setLocalStartChosen] = useState(false);
   const localStartChosen = chosenOnOutage || chosenHere;
@@ -214,9 +226,11 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
 
   useFocusOnMount(heading, step !== 'welcome', step);
   // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  // A person who opened signed in is on the promise step and has typed nothing: they are past it only once they move on, so
+  // signing out under it (consent's "Try another way") lands on the Welcome (handoff.logic.ts reportsPastWelcome).
   useEffect(() => {
-    if (step !== 'welcome') onPastWelcome?.();
-  }, [step, onPastWelcome]);
+    if (reportsPastWelcome({ start, step })) onPastWelcome?.();
+  }, [start, step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
@@ -259,6 +273,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     for (const c of created) track('child_added', { has_date: true, child_ordinal: ordinalOf(c.id), in_first_run: true, added_together: created.length > 1 });
     router.replace('/');
   };
+
+  // The account-first name field says the name is optional (NX-36 S7); other builds keep "Name" and no help line.
+  const nameWords = (index: number, value: string) =>
+    childNameFieldWords({ accountFirst, index, nearLimit: nearLimit(textLength(value), CHILD_NAME_MAX), multiple: names.length > 1 }, o.child);
 
   // Why Continue is waiting, in words (never only a greyed button).
   const today = todayISO();
@@ -328,7 +346,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <ScrollView contentContainerClassName="flex-grow px-6 pb-6" keyboardShouldPersistTaps="handled">
           <View className="min-h-12 justify-center">
-            {step !== 'welcome' && <BackButton onPress={back} />}
+            {backShown({ accountFirst, step }) && <BackButton onPress={back} />}
           </View>
 
           {shown === step ? (
@@ -389,7 +407,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                         ref={(r) => {
                           nameFields.current[i] = r;
                         }}
-                        label={i === 0 ? o.child.nameLabel : o.child.nameLabelMore}
+                        label={i === 0 ? nameWords(i, n).label : o.child.nameLabelMore}
                         face="serif"
                         value={n}
                         onChangeText={(v) => setNameAt(i, v)}
@@ -405,7 +423,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                             ? fill(o.child.nameLimit, { n: CHILD_NAME_MAX })
                             : i === names.length - 1 && names.length > 1
                               ? o.child.addAnotherHelp
-                              : undefined
+                              : (nameWords(i, n).help ?? undefined)
                         }
                         trailing={
                           i > 0 ? (

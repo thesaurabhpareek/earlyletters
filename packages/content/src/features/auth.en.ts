@@ -104,6 +104,9 @@ export const authCopy = {
      */
     // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
+    // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
+    noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
+    announceResend: 'You can send another email.',
   },
 
   /**

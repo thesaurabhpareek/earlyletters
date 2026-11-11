@@ -286,7 +286,8 @@ describe('[NX-31-R17] first run keeps the person where they are once past the we
     }
   });
   it('[NX-31-R17] the steps report that they are past their welcome step, and the route is told', () => {
-    expect(onboarding).toMatch(/if \(step !== 'welcome'\) onPastWelcome\?\.\(\);/);
+    // The Welcome start reports once it leaves the Welcome (handoff.logic reportsPastWelcome; the signed-in start waits to move off the promise step).
+    expect(onboarding).toMatch(/if \(reportsPastWelcome\(\{ start, step \}\)\) onPastWelcome\?\.\(\);/);
     expect(onboarding).toMatch(/onPastWelcome=\{route\.markPastWelcome\}/);
   });
 });

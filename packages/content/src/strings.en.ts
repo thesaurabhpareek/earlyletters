@@ -99,6 +99,9 @@ export const en = {
       nameLabelMore: "Another child's name",
       // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
       namePlaceholder: "First name, or a nickname",
+      // NX-36 S7 (account-first first run): the name is optional, the date is not. Each needs founder word approval.
+      nameOptionalLabel: "Name, if you like",
+      nameOptionalHelp: "You can add a name later.",
       // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
       // date field. No {child}: with twins the step has more than one name.
       bornQuestion: "Here yet, or on the way?",
