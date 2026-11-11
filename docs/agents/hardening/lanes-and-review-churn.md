@@ -1,17 +1,17 @@
 # Lanes and review churn (owner: ops)
 
-Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`); any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
+Ownership (28 Oct 2026): `scripts/agents/**` is owned by the founder (`.github/CODEOWNERS:31`). Any role named in this note is the role it was written as, which has not run on its own (`docs/agents/HARNESS.md`, "What actually runs").
 
-Two hardening modules, both called by `scripts/agents/dispatch.mjs` through `hctx()`.
+This note covers two hardening modules, both called by `scripts/agents/dispatch.mjs` through `hctx()`.
 Tests: `scripts/agents/lane.test.mjs`, `scripts/agents/reviewfp.test.mjs` (fixtures, no network).
 
 ## Lanes (`scripts/agents/lane.mjs`)
 
 Problem: from 15 Oct, the 4-hourly scheduled lane ran several times. Each run ended after about
-a minute with no board update, claim, journal or receipt, and nobody noticed.
+a minute with no board update, claim, journal or receipt, and nobody noticed it.
 
 - Every dispatcher run calls `recordTick`, which stores `state.lanes[<lane>] = { at, run }`.
-- The lane is `actions` in Actions mode. With `--local` it is `AGENTS_LANE` (only the 4-hourly scheduled task sets it so far; other schedules are other threads and
+- The lane is `actions` in Actions mode. With `--local` it is `AGENTS_LANE` (only the 4-hourly scheduled task sets it so far, and other schedules are other threads and
   unverified), or `local` when unset. Names are cleaned to `[A-Za-z0-9._-]`, 40 characters at most.
 - Dry runs tick too, but a dry run never writes the board (dispatch.mjs writes only when
   `!DRY && board`), so their ticks are never saved.
@@ -20,13 +20,13 @@ a minute with no board update, claim, journal or receipt, and nobody noticed.
 - A lane silent for more than 14 days is dropped from the state, so a retired lane leaves the board
   after two weeks of warnings.
 - A tick only lands if the run reaches the dispatcher and writes the board. A lane that dies
-  earlier stops ticking, which is exactly what the 8-hour warning catches.
+  earlier stops ticking, and the 8-hour warning catches that.
 - Limit: two lanes that write the board at the same moment can lose one tick (read, modify,
   write). With a 4-hour lane, one lost tick still stays at or under the 8-hour threshold.
 
 ## Review fingerprints (`scripts/agents/reviewfp.mjs`)
 
-Problem: when develop is merged into a PR its head SHA changes, and the red team is queued to
+Problem: when develop is merged into a PR, its head SHA changes, and the red team is queued to
 review content it has already reviewed.
 
 - `recordAssigned` (red-team review assigned) stores `state.reviewfp[<pr>] = { sha, fp }`.
@@ -49,8 +49,8 @@ review content it has already reviewed.
   is not repeated. `pause.mjs` leaves a carried head out of "Awaiting re-review".
 - A match saves the red team's run only. Nothing is posted on the new head, and the merge rule
   reads two independent passing reviews on the current head and green CI (D-117,
-  COORDINATION.md section 6, which is also the practice under D-107), so the board line is a
-  fingerprint match, not a review.
+  COORDINATION.md section 6, which is also the practice under D-107), so the board line records a
+  fingerprint match and is not a review.
 - A carry counts only while the trusted red-team review of the recorded head still exists. If it
   is removed or stops being trusted, `equivalentReviewed` is false, the head leaves "Same changes
   as a reviewed head", and `pause.mjs` lists it under "Awaiting re-review" again (no extra
@@ -62,7 +62,7 @@ review content it has already reviewed.
 What the fingerprint cannot see (a skipped head can still have changed behaviour):
 - Anything outside the PR's own diff against its merge base. A rebase or develop merge that changes
   code the PR's lines depend on keeps the fingerprint unless the change falls inside a hunk's
-  context lines. This is by design: the fingerprint is the PR's own changes.
+  context lines. This is by design, because the fingerprint covers the PR's own changes.
 - Where a hunk sits, when its context lines and section heading are identical, because the line
   numbers are stripped: the same added line in the second of two identical blocks gives the same
   fingerprint as in the first. A changed context line, added line, heading or extra file each
@@ -76,11 +76,11 @@ Checked against the live repo on 18 Oct 2026 (PR #38, one file, docs/marketing/L
 - Develop merges keep it: 03c6316 (reviewed) and 5c21d00 (merge) both give 9463370; 4d33713 and
   081fa60 (merge) both give c325be2.
 - #38 needs its new review: 02d1a5b, 4d33713 and fde5be3 changed the plan after the 03c6316
-  review. That is real new content, not churn.
+  review. That is real new content and not churn.
 - PR #2: binary files have no patch and 0 changes, a 4,258-line JSON file has no patch, and
   the first page holds 100 files. All three cases are covered by the rules above.
 
 Not covered (dispatch.mjs, orchestrator):
 - The D-041 path (`firstD041Target`) checks `red-team:<current sha>` only, so it still churns.
 - The board's red-team verdict and "fix first" read only the current head.
-- No backfill: a PR is protected from its next assigned review onward.
+- There is no backfill: a PR is protected from its next assigned review onward.
