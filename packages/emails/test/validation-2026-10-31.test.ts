@@ -86,7 +86,7 @@ describe('TPL-06: every link points at a page that exists, or at one listed as s
     expect(Object.keys(SITE_ROUTES.needed)).not.toContain('/subscription-terms');
     for (const id of ['trial-started', 'plus-started']) {
       const html = (await render(id)).replace(/&amp;/g, '&');
-      expect(html).toContain('The full Subscription terms are at https://earlyletters.com/terms.');
+      expect(html).toContain('The full terms, including Plus, are at https://earlyletters.com/terms.');
       expect(html).not.toContain('/subscription-terms');
     }
   });
