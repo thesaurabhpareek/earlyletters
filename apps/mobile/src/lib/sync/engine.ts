@@ -67,6 +67,12 @@ export interface SyncEngineDeps {
    * already running stops at the next boundary. A reader that throws counts as on.
    */
   paused?: () => boolean;
+  /**
+   * The account signed in right now (null when none). A page that comes back after the person signed out, or
+   * as someone else, is dropped instead of applied: its rows are the engine's account's, and the phone may
+   * already have been released to the next one. Optional so a bare engine (tests, tools) checks only `stop()`.
+   */
+  currentUserId?: () => string | null;
 }
 
 export interface SyncEngine {
@@ -122,6 +128,16 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
   };
 
   let stopped = false;
+  /** True once this engine must write nothing more: stopped, or the signed-in account is no longer its own. */
+  const stale = (): boolean => {
+    if (stopped) return true;
+    if (!deps.currentUserId) return false;
+    try {
+      return deps.currentUserId() !== userId;
+    } catch {
+      return true;
+    }
+  };
   let mismatch = false;
   let lastFailure: CallFailure | null = null;
   let running = false;
@@ -232,9 +248,11 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     let resetDone = false;
     let idsRounds = 0;
     for (let page = 0; page < MAX_PULL_PAGES; page++) {
-      if (killed()) return;
+      if (killed() || stale()) return;
       const since = buildPullRequest(db, { verify });
       const res = await call<PullResponse>('sync_pull', { p_since: since, p_limit: pageSize });
+      // The answer may land after sign-out. Those rows are the old account's: apply nothing, write nothing.
+      if (stale()) return;
       if ('failure' in res) {
         lastFailure = res.failure;
         return;
@@ -247,7 +265,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
         report.reset = true;
         tx(() => enterRestoreMode(db, data, ctx()));
         changed();
-        if ((await pushAll(report)) === 'stop') return;
+        if ((await pushAll(report)) === 'stop' || stale()) return;
         continue;
       }
       const out = tx(() => applyPullPage(db, data, iso()));
@@ -284,7 +302,7 @@ export function createSyncEngine(deps: SyncEngineDeps): SyncEngine {
     try {
       const lastVerify = readSetting(db, SYNC_SETTING.lastVerifyAt);
       const verify = verifyAsked || !lastVerify || now() - Date.parse(lastVerify) > VERIFY_EVERY_MS;
-      if ((await pushAll(report)) === 'ok') await pullAll(report, verify);
+      if ((await pushAll(report)) === 'ok' && !stale()) await pullAll(report, verify);
     } catch {
       // A local SQLite failure: nothing is lost (every step is one transaction); try again on the next trigger.
       lastFailure = 'server';

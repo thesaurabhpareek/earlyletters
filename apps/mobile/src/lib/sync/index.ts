@@ -200,6 +200,7 @@ function ensureEngine(): void {
     afterPull: finishErasedLetters,
     isActive: () => AppState.currentState === 'active',
     paused: syncKilled,
+    currentUserId: currentAuthUserId,
   });
   engine = e;
   engineUnsubs.push(e.subscribe((s) => statusListeners.forEach((l) => l(s))));

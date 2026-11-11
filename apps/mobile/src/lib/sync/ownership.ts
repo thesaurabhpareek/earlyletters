@@ -108,6 +108,8 @@ export function releaseOwnerIfEmpty(db: SqlDb): boolean {
     // A consent pause belongs to the account that met it; the next account must not inherit it.
     // epoch, epochStartedAt and heldServer describe the server (rewritten by the next pull) and stay.
     writeSetting(db, SYNC_SETTING.pausedFor, null);
+    // A restore marker likewise belongs to the account that met it (it times out that account's held letters).
+    writeSetting(db, SYNC_SETTING.restoreAt, null);
     released = true;
   });
   return released;

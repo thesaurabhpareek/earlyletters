@@ -248,6 +248,19 @@ describe('releaseOwnerIfEmpty: only a phone with nothing on it forgets its owner
     writeSetting(raw, SYNC_SETTING.pausedFor, 'terms');
   });
 
+  it('an empty phone also forgets the restore marker of the account that left', () => {
+    writeSetting(raw, SYNC_SETTING.restoreAt, AT);
+    expect(releaseOwnerIfEmpty(raw)).toBe(true);
+    expect(readSetting(raw, SYNC_SETTING.restoreAt)).toBeNull();
+  });
+
+  it('a phone that keeps its owner keeps the restore marker too', () => {
+    writeSetting(raw, SYNC_SETTING.restoreAt, AT);
+    letter();
+    expect(releaseOwnerIfEmpty(raw)).toBe(false);
+    expect(readSetting(raw, SYNC_SETTING.restoreAt)).toBe(AT);
+  });
+
   it('no owner: false, nothing written', () => {
     writeSetting(raw, OWNER, null);
     expect(releaseOwnerIfEmpty(raw)).toBe(false);
@@ -468,5 +481,76 @@ describe('a sign-out that waits for uploads', () => {
     expect(state.status).toBe('ready');
     expect(owner()).toBe(A);
     expect(h.releases).toEqual([]);
+  });
+});
+
+// ── A page still on its way when the person signs out ─────────────────────
+describe('a pull that lands after sign-out writes nothing', () => {
+  const BOOK = '0199a5b0-3333-7000-8000-000000000001';
+  const page = (id = BOOK) => ({
+    data: {
+      reset: false, epoch: 1, epoch_started_at: AT, more: false, gone: [],
+      books: [{
+        id, access: 'parent', repull: false, meta_hash: 'h1', cursor: 'c1', more: false, rows: [],
+        meta: {
+          role: 'parent', name: 'Asha', nickname: null, date_of_birth: '2025-04-12', birthday_md: '04-12', due_date: null,
+          family_can_read: false, created_by_me: true, my_signs_as: 'Mama', include_in_reminders: false, members: [],
+        },
+      }],
+    },
+    error: null, status: 200,
+  });
+  /** sync_pull waits until the test lets it answer; everything else answers at once. */
+  function holdPull(): { release: () => void; started: () => boolean } {
+    let go: () => void = () => {};
+    let started = false;
+    const gate = new Promise<void>((r) => { go = r; });
+    const base = h.rpc.getMockImplementation()!;
+    h.rpc.mockImplementation((fn: string, args: Record<string, unknown> = {}) => {
+      if (fn !== 'sync_pull' || started) return base(fn, args); // only A's first pull is held
+      started = true;
+      return gate.then(() => page());
+    });
+    return { release: go, started: () => started };
+  }
+  const books = () => raw.get<{ n: number }>('SELECT COUNT(*) AS n FROM children')!.n;
+
+  it('A signs out of an empty phone with a pull in flight: the page is dropped, the phone stays empty and B claims it', async () => {
+    const pull = holdPull();
+    const stop = sync.startSync();
+    try {
+      signIn(A);
+      await until(pull.started);
+      expect(pull.started()).toBe(true);
+      signOut();
+      expect(owner()).toBeNull(); // the empty phone was released
+      pull.release(); // A's answer lands now
+      await new Promise((r) => setTimeout(r, 50));
+      expect(books()).toBe(0); // A's book never reached the phone
+      expect(phoneHoldsAnyRow(raw)).toBe(false);
+      expect(owner()).toBeNull();
+      signIn(B);
+      await until(() => owner() === B);
+      expect(owner()).toBe(B);
+      expect(books()).toBe(0); // B sees nothing of A's
+    } finally {
+      stop();
+    }
+  });
+
+  it('the page is dropped when another account is signed in by the time it lands (engine not yet stopped)', async () => {
+    const pull = holdPull();
+    const stop = sync.startSync();
+    try {
+      signIn(A);
+      await until(pull.started);
+      signOut();
+      signIn(B);
+      pull.release();
+      await new Promise((r) => setTimeout(r, 50));
+      expect(books()).toBe(0);
+    } finally {
+      stop();
+    }
   });
 });
