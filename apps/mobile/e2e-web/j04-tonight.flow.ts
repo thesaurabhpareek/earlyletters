@@ -98,10 +98,10 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   // A typed letter keeps from Write with one tap and lands on the Book (P4b), so each one comes back to Tonight.
   await typeLetter(app, 'You held the spoon by yourself today.');
   await noRemindersAfterFirstLetter(app); // the first letter's one ask (DR-12 B)
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await btn(app, /^Type/).click();
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
@@ -179,10 +179,10 @@ test('[J04h] a test build past the free letters: no Plus line on Tonight and no 
   await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   await typeLetter(app, 'You held the spoon by yourself today.');
   await noRemindersAfterFirstLetter(app);
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await typeLetter(app, 'You laughed at the rain.');
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
   await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   await expect(app.getByText(line, { exact: true })).toHaveCount(0);
@@ -193,7 +193,7 @@ test('[J04h] a test build past the free letters: no Plus line on Tonight and no 
     await typeLetter(app, words);
     await expect(app.getByText(/Added to/)).toBeVisible();
     await expect(app.getByText("Keep adding to Asha's book")).toHaveCount(0);
-    await tab(app, 'Tonight').click();
+    await tab(app, 'Home').click();
     await expect(btn(app, 'Speak')).toBeVisible({ timeout: 8000 });
     await expect(app.getByTestId('tonight.plusLine')).toHaveCount(0);
   }

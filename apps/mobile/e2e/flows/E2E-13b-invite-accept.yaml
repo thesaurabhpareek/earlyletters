@@ -74,15 +74,18 @@ env:
     timeout: 60000
 - tapOn:
     id: "invite.open"
-# Papa sees Asha's book (fixture name) and is a member on the Family tab.
+# Papa sees Asha's book (fixture name) and is a member on the family page (Settings > Asha > the co-parent row; no tab).
 - tapOn:
     id: "tab.book"
 - extendedWaitUntil:
     visible:
       text: ".*Asha.*"
     timeout: 30000
+- runFlow:
+    file: ../subflows/open-settings.yaml
+- tapOn: "Asha"
 - tapOn:
-    id: "tab.family"
+    id: "child.bookRow"
 - assertVisible:
     id: "family.member"
     index: 1

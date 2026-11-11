@@ -1,6 +1,6 @@
 // Moved from apps/mobile/src/lib/family/copy.ts on 3 Oct 2026; that file now re-exports this one.
 /**
- * Words for the Family tab and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
+ * Words for the family page (a pushed page, not a tab) and co-parent sharing (PRD V2 F11; PRD B F5). Co-parent only at
  * launch (B1), so Family roles stay hidden. With server features on (D-100, drafted as D-089)
  * these drive invite, join and leave; with them off, `soon` is the one presentation (the kill
  * path). The content rules test scans this file. Placeholders: {child}, {signsAs}, {inviter},
@@ -35,7 +35,7 @@ export const familyCopy = {
   /**
    * A child's book settings with server features on (S46, P6 builds the row in settings/children/[id].tsx): in
    * place of `soon.settingsRow`. One parent: it opens the invite sheet. Two parents: its value is the co-parent's
-   * signature and it opens the Family tab.
+   * signature and it opens the family page.
    */
   bookRow: {
     label: 'Write this book together',
@@ -159,8 +159,8 @@ export const familyCopy = {
 
   /**
    * Co-parent sharing is coming in a later update (founder, 3 Oct 2026): v1.0 keeps every
-   * letter on this phone. One presentation for the Family tab and every invite entry point
-   * (apps/mobile/src/components/family/coparent-soon.tsx). Never a date; never "beta".
+   * letter on this phone. Kept for a later family release; nothing draws it now (founder, 11 Nov 2026: no coming-soon screen, row or tab)
+   * Never a date; never "beta".
    * {child} is the open book's name, or `childFallback` before there is a book.
    */
   soon: {

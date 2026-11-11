@@ -62,11 +62,11 @@ describe('the You tab', () => {
     expect(block).not.toMatch(/headerLeft/);
   });
 
-  it('[NX-30a-R8] four tabs at 320 pt and 375 pt keep 44 pt targets and whole labels', () => {
+  it('[NX-30a-R8] three tabs at 320 pt and 375 pt keep 44 pt targets and whole labels', () => {
     const BAR = Number(/const BAR = (\d+);/.exec(layout)?.[1]);
     for (const width of [320, 375]) {
       expect(width / SCREENS.length).toBeGreaterThanOrEqual(tokens.target.min);
-      // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Tonight".
+      // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Home".
       const widest = Math.max(...Object.values(en.tabs).map((l) => l.length)) * tokens.minFontSize * 0.62;
       expect(widest).toBeLessThan(width / SCREENS.length);
     }

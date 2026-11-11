@@ -22,22 +22,19 @@ env:
     file: ../subflows/launch-fresh.yaml
     env:
       E2E_SEED: "asha"
-# Family tab: the invite card starts sign-in when signed out (PRD A F3.3a).
+# Family is not a tab (founder, 11 Nov 2026). The invite starts from Settings > Asha > "Write this book together". UNVERIFIED on a device.
+- runFlow:
+    file: ../subflows/open-settings.yaml
+- tapOn: "Asha"
 - tapOn:
-    id: "tab.family"
+    id: "child.bookRow"
 - assertVisible:
-    id: "family.screen"
-- tapOn:
-    id: "family.invite"
+    id: "inviteNew.screen"
 - runFlow:
     file: ../subflows/sign-in-email.yaml
     env:
       E2E_EMAIL: ${E2E_EMAIL}
-# Back on Family, signed in and consented: invite again; the book syncs first.
-- tapOn:
-    id: "tab.family"
-- tapOn:
-    id: "family.invite"
+# Signed in and consented: the invite sheet again; the book syncs first.
 - extendedWaitUntil:
     visible:
       id: "inviteNew.share"
@@ -51,7 +48,7 @@ env:
     timeout: 10000
 - tapOn: "Copy"
 - extendedWaitUntil:
-    visible:
-      id: "family.pending"
+    notVisible:
+      id: "inviteNew.share"
     timeout: 15000
 - stopApp
