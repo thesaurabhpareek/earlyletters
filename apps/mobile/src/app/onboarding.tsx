@@ -66,7 +66,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -166,15 +166,19 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // are, never on Tonight (EXPERIENCE_PASS 5.8 rows 12 and 13).
   // Only while the welcome, or the sign-in sheet over it, is in front (components/family/welcome-handoff.logic.ts): the
   // join sheet waits for Open or Close (S59, P8b), and no other screen is ever pulled back to the Book.
+  // Account first: a person who opened signed in is on the promise step, not the welcome, and has not moved on. If their
+  // account's book arrives it must hand over to the Book, never leave them to make a second book, so that one step is
+  // asked as the welcome (handoff.logic.ts welcomeHandoffStep; S17 in #764 is the fuller answer).
+  const handoffStep = welcomeHandoffStep({ start, step });
   const pathname = usePathname();
   useEffect(() => {
-    if (!welcomeMayLeave(step, pathname)) return;
+    if (!welcomeMayLeave(handoffStep, pathname)) return;
     const done = () => {
       if (listChildren().length > 0) router.replace('/book');
     };
     done();
     return subscribe(done);
-  }, [step, pathname]);
+  }, [handoffStep, pathname]);
   // Closed the join sheet before the joined book arrived (S59, P8b, critics' pass S2): while it is on its way the welcome
   // says so and hides "Begin the book"; if it does not come, Try again, and "Begin the book" is back. Leaving the
   // welcome ends the wait.
@@ -222,9 +226,11 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
 
   useFocusOnMount(heading, step !== 'welcome', step);
   // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  // A person who opened signed in is on the promise step and has typed nothing: they are past it only once they move on, so
+  // signing out under it (consent's "Try another way") lands on the Welcome (handoff.logic.ts reportsPastWelcome).
   useEffect(() => {
-    if (step !== 'welcome') onPastWelcome?.();
-  }, [step, onPastWelcome]);
+    if (reportsPastWelcome({ start, step })) onPastWelcome?.();
+  }, [start, step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls

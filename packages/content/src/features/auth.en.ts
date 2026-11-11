@@ -120,12 +120,6 @@ export const authCopy = {
   firstRun: {
     errors: {
       provider: 'That sign-in did not finish. Try again, or try another way.',
-      // NX-36 2.6, S5 and S6: the existing lines begin "Your letters are safe", which a brand-new install cannot say
-      // (it has no letters). These four are the same sentences without it. Each needs founder word approval.
-      network: 'Sign in once you are back online.',
-      codePaused: 'You can try a code again in 15 minutes.',
-      consentUnavailable: 'Setting up your account did not finish. Try again.',
-      unknown: 'That did not go through. Try again.',
     },
   },
   // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where

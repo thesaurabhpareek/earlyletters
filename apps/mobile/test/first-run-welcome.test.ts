@@ -95,10 +95,7 @@ describe('[NX-36-S2] Welcome and sign in', () => {
   });
   it('[NX-36-S2] no first-run word is kept that nothing can reach: a 429 and "not available" go to the outage screen, not under the buttons', () => {
     // Only `provider` stays inline (inlineErrorKind); the gate sends the rest to S3. Words for them would be dead and still need approval.
-    // The four after `provider` are #728's lines for the email, code and consent screens (S5, S6; signInErrorMessage), not the Welcome's.
-    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider', 'network', 'codePaused', 'consentUnavailable', 'unknown']);
-    expect(authCopy.firstRun.errors).not.toHaveProperty('rateLimited');
-    expect(authCopy.firstRun.errors).not.toHaveProperty('notAvailable');
+    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider']);
     for (const kind of ['rate_limited', 'email_wait', 'not_available'] as const) {
       expect(inlineErrorKind({ status: 'signedOut', error: kind })).toBeNull();
       expect(welcomeErrorMessage(kind)).not.toBe(authCopy.firstRun.errors.provider);
@@ -289,7 +286,8 @@ describe('[NX-31-R17] first run keeps the person where they are once past the we
     }
   });
   it('[NX-31-R17] the steps report that they are past their welcome step, and the route is told', () => {
-    expect(onboarding).toMatch(/if \(step !== 'welcome'\) onPastWelcome\?\.\(\);/);
+    // The Welcome start reports once it leaves the Welcome (handoff.logic reportsPastWelcome; the signed-in start waits to move off the promise step).
+    expect(onboarding).toMatch(/if \(reportsPastWelcome\(\{ start, step \}\)\) onPastWelcome\?\.\(\);/);
     expect(onboarding).toMatch(/onPastWelcome=\{route\.markPastWelcome\}/);
   });
 });

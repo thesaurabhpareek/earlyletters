@@ -6,6 +6,8 @@
  *   offer but the plain wait line. After it, "Send a new email", "Use a different email" and "Sign in with Apple" show
  *   together, so the screen is never a dead end. No ticking number.
  * - `firstRunStartStep`: which first-run step opens once a person is in (signed in, or on the local start).
+ * - `welcomeHandoffStep`, `reportsPastWelcome`: how the signed-in start (the promise step) behaves like the Welcome where
+ *   it should: a returning account's book hands over to the Book, and it is not "past the welcome" until it moves on.
  * - `consentHandoff`: what the consent sheet does next (NX-36 4.2): two lines of its own, written out below.
  */
 import type { AuthState } from '@/lib/auth/machine.logic';
@@ -21,7 +23,14 @@ export interface RecoverySet {
   waitLineShown: boolean;
 }
 
-export function recoverySet(input: { sentAt: number | null; now: number; waitMs: number; appleAvailable: boolean }): RecoverySet {
+/**
+ * `signedIn`: a session now exists (the code, the Mail link or Apple has just worked). The screen is still mounted for a
+ * few frames while the sheet moves on, and `sentAt` is unknown then too, so without this the set would flip from closed
+ * to open at the moment of success and say "You can send another email." to someone who just got in. Signed in, nothing
+ * is offered and nothing is announced. An unknown `sentAt` with no session is the restart case: the set is open.
+ */
+export function recoverySet(input: { sentAt: number | null; now: number; waitMs: number; appleAvailable: boolean; signedIn: boolean }): RecoverySet {
+  if (input.signedIn) return { open: false, options: [], waitLineShown: false };
   const open = input.sentAt === null || input.now >= input.sentAt + input.waitMs;
   if (!open) return { open: false, options: [], waitLineShown: true };
   const options: RecoveryOption[] = ['resend', 'differentEmail'];
@@ -35,6 +44,8 @@ export function shouldAnnounceRecovery(was: boolean, now: boolean): boolean {
 }
 
 export type StartStep = 'welcome' | 'promise' | 'child';
+/** Every step of first run, in order (app/onboarding.tsx ORDER). */
+export type FirstRunStepId = 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish';
 
 /**
  * Account first (NX-31 R17), behind the server switch. With the switch off, or on a phone that is neither signed in nor
@@ -55,16 +66,42 @@ export function hasSessionState(s: AuthState): boolean {
 }
 
 /** Back on the first step of the account-first run would land on the signed-out Welcome: it is not offered (R4). */
-export function backShown(input: { accountFirst: boolean; step: 'welcome' | 'promise' | 'child' | 'signsAs' | 'finish' }): boolean {
+export function backShown(input: { accountFirst: boolean; step: FirstRunStepId }): boolean {
   if (input.step === 'welcome') return false;
   return !(input.accountFirst && input.step === 'promise');
 }
 
-/** The account-first child step's name field says the name is optional (NX-31-R3); other builds keep "Name". */
+/**
+ * The step the hand-over to the Book is asked about (components/family/welcome-handoff.logic.ts welcomeMayLeave, which
+ * allows the welcome step only). A person who opened first run already signed in is on the promise step and has not moved
+ * on: if their account's book arrives, it must open on the Book, never offer a second book. So that one step, the start
+ * step before the person has moved off it, is asked as the welcome. Every later step (the child step, the signature, the
+ * last) is asked as itself and never hands over, and so is every build that opens on the Welcome (the mapping would
+ * change nothing there). The fuller answer is S17 in #764.
+ */
+export function welcomeHandoffStep(input: { start: FirstRunStepId; step: FirstRunStepId }): FirstRunStepId {
+  return input.start === 'promise' && input.step === 'promise' ? 'welcome' : input.step;
+}
+
+/**
+ * Whether the steps tell the route that the person is past the welcome (so a lost session never swaps what they typed for
+ * a sign-in screen). From the Welcome start: once it leaves the Welcome, as before. From the local start (no session, on
+ * the child step): at once. From the signed-in start: only once they move off the promise step, so a person signed out
+ * under it (consent's "Try another way") is back on the Welcome, not left on a promise step with no account.
+ */
+export function reportsPastWelcome(input: { start: FirstRunStepId; step: FirstRunStepId }): boolean {
+  return input.step !== (input.start === 'promise' ? 'promise' : 'welcome');
+}
+
+/**
+ * The account-first child step's name field says the name is optional (NX-31-R3); other builds keep "Name". Only for
+ * one child: with more than one name on the step every name is needed (firstRunChildBlock), so the first row goes back
+ * to "Name" the moment "Add another child" is tapped, never "Name, if you like" beside a Continue that waits for it.
+ */
 export function childNameFieldWords(input: { accountFirst: boolean; index: number; nearLimit: boolean; multiple: boolean }, words: { nameLabel: string; nameOptionalLabel: string; nameOptionalHelp: string }): { label: string; help: string | null } {
-  const first = input.index === 0;
-  if (!input.accountFirst || !first) return { label: words.nameLabel, help: null };
-  return { label: words.nameOptionalLabel, help: input.nearLimit || input.multiple ? null : words.nameOptionalHelp };
+  const optional = input.accountFirst && input.index === 0 && !input.multiple;
+  if (!optional) return { label: words.nameLabel, help: null };
+  return { label: words.nameOptionalLabel, help: input.nearLimit ? null : words.nameOptionalHelp };
 }
 
 export type ConsentNext = 'askClaim' | 'keepOnPhone' | 'continue';
