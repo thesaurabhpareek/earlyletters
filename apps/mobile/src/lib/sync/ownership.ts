@@ -7,6 +7,7 @@
  * leaves nothing changed. Server-side the ids are the device's own UUIDv7s, so
  * nothing is renamed and every retry is idempotent.
  */
+import { phoneHoldsAnyRow } from '../auth/account-claim.logic';
 import type { SqlDb } from '../db/sql';
 import {
   SYNC_SETTING,
@@ -87,6 +88,26 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
     result = { outcome: 'claimed', books: ok.length, letters: queued, localOnlyBooks: bad.length };
   });
   return result;
+}
+
+/**
+ * After the final sign-out: if this phone holds nothing at all (no book, letter or held
+ * draft in any state, and no queued upload), the owner is forgotten, so the next account
+ * to sign in claims the empty phone instead of meeting a stale owner. Any row or queued op
+ * keeps the sticky owner (their letters are still that account's). One transaction; false
+ * when nothing was released. Takes no part in claiming (takeOwnership is unchanged).
+ */
+export function releaseOwnerIfEmpty(db: SqlDb): boolean {
+  let released = false;
+  db.transaction(() => {
+    if (!readSetting(db, SYNC_SETTING.owner)) return;
+    if (phoneHoldsAnyRow(db)) return;
+    if (db.get('SELECT 1 AS x FROM sync_outbox LIMIT 1')) return;
+    writeSetting(db, SYNC_SETTING.owner, null);
+    writeSetting(db, SYNC_SETTING.heldCursor, null);
+    released = true;
+  });
+  return released;
 }
 
 /** Plus bought later (or a fixed book): send a book the server refused again, with its letters. */

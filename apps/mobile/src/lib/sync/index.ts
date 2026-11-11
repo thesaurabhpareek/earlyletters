@@ -24,6 +24,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { AppState } from 'react-native';
 import {
   currentAuthUserId,
+  getAuthSnapshot,
   onInviteAccepted,
   onSignedIn,
   registerUploadQueue,
@@ -35,7 +36,8 @@ import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase/client';
 import { createSyncEngine, type SyncEngine } from './engine';
 import { SYNC_SETTING, conflictCount, pendingCount, readSetting, rejectedUnseenCount } from './outbox';
-import { AccountMismatchError, takeOwnership } from './ownership';
+import { isSignedIn } from '../auth/machine.logic';
+import { AccountMismatchError, releaseOwnerIfEmpty, takeOwnership } from './ownership';
 import { onOutboxChange } from './signal';
 import type { RpcResult, SupabaseLike, SyncReport, SyncStatus } from './types';
 
@@ -228,7 +230,23 @@ export function startSync(): () => void {
     claim(userId);
     ensureEngine();
   }));
-  unsubs.push(subscribeAuth(() => ensureEngine()));
+  // The final signedOut after a session (not restoring, not a cold start): an empty phone forgets its owner,
+  // so the next account claims it. Fails closed: on any error the owner stays.
+  let wasSignedIn = isSignedIn(getAuthSnapshot());
+  unsubs.push(subscribeAuth((s) => {
+    const signedOutNow = s.status === 'signedOut' && wasSignedIn;
+    wasSignedIn = isSignedIn(s);
+    ensureEngine();
+    if (!signedOutNow) return;
+    try {
+      if (releaseOwnerIfEmpty(localSqlDb())) {
+        mismatchUser = null;
+        notifyStoreChanged();
+      }
+    } catch {
+      // keep the owner
+    }
+  }));
   unsubs.push(onInviteAccepted(() => engine?.requestSync('invite')));
   unsubs.push(onOutboxChange(() => engine?.requestSync('save')));
   const app = AppState.addEventListener('change', (s) => {

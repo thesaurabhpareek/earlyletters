@@ -537,6 +537,7 @@ vi.mock('../src/lib/supabase/secure-storage', () => ({ secureStorage: { getItem:
 
 vi.mock('../src/lib/auth/auth-store', () => ({
   currentAuthUserId: () => null,
+  getAuthSnapshot: () => ({ status: 'restoring' }),
   onInviteAccepted: vi.fn(() => () => {}),
   onSignedIn,
   registerUploadQueue,
@@ -546,7 +547,7 @@ vi.mock('../src/lib/auth/auth-store', () => ({
 vi.mock('../src/lib/store', () => ({ uuidv7: () => '0190-test', localSqlDb: vi.fn(), notifyStoreChanged: vi.fn() }));
 vi.mock('../src/lib/sync/engine', () => ({ createSyncEngine: vi.fn() }));
 vi.mock('../src/lib/sync/outbox', () => ({ SYNC_SETTING: {}, pendingCount: () => 0, readSetting: () => null, rejectedUnseenCount: () => 0 }));
-vi.mock('../src/lib/sync/ownership', () => ({ AccountMismatchError: class extends Error {}, takeOwnership: vi.fn(), retryRefusedBook: vi.fn() }));
+vi.mock('../src/lib/sync/ownership', () => ({ AccountMismatchError: class extends Error {}, takeOwnership: vi.fn(), releaseOwnerIfEmpty: vi.fn(), retryRefusedBook: vi.fn() }));
 vi.mock('../src/lib/sync/signal', () => ({ onOutboxChange: vi.fn(() => () => {}) }));
 
 describe('boot with server features off', () => {
