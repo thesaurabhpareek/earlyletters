@@ -38,7 +38,7 @@ The password opens the mailbox for that address, where the code arrives. It is n
 1. On the first screen, tap Sign in with email.
 2. Type the email address above in Email, then tap Send link.
 3. Open the new email in that mailbox. Type its 6-digit code in Code, then tap Continue. Tapping the link on this iPhone also works.
-4. Agree to the Terms, then answer "Are you 18 or older?" with Yes.
+4. Tap Agree and continue, then answer "Are you 18 or older?" with Yes.
 5. Set up a book for a made-up child, for example Asha, and try a short letter by speaking or typing.
 Sharing a book with a second parent is not needed to review the app.
 
