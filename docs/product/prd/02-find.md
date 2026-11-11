@@ -1,6 +1,6 @@
 # NS-02: Find (search across the family's own letters, on the phone)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `56a0df68`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `3d3d7aac`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
 Terms: "lens", "Find" as a header action and "index" are internal terms; `content` names the parent-facing words (BRAND.md glossary, CR-25).
 Build target: Build 13, behind `EXPO_PUBLIC_BOOK_SEARCH` (name proposed; check `capabilities.ts` for the house style).
 This PRD makes F09-REQ-015 shippable: it cites that row and the Search item in F09 section 6.2 (step 16), adds the states and the privacy rules they lack, and turns the founder question F09 Q4 into a decision: Find is in scope (closed X1; research gap G3).
@@ -9,7 +9,7 @@ Tags: EVIDENCE = repo file read this session. HYPOTHESIS = about parents. UNVERI
 
 ## 1. Job to be done
 
-I go to the Book to find the one letter I remember, by a word I said, so that I can read it or play it again without scrolling through months.
+I go to the Book to read the one letter I remember, found by a word I said, so that I can read it or play it again without scrolling through months. (Find is a mode of reading, not a second verb: design spec 06.)
 
 ## 2. Who and when
 
@@ -39,7 +39,7 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 |---|---|---|
 | NS-02-R1 | Given the Book with `EXPO_PUBLIC_BOOK_SEARCH` on, Then the header has one action labelled for VoiceOver "Find a letter"; Home and Me have 0 search controls. | `[NS-02-R1] Find lives on the Book header only` |
 | NS-02-R2 | Given 1,000 fixture letters, When the parent types 3 or more characters, Then the first result row is painted within 300 ms at p95 of the last keystroke, over 20 runs of 20 queries, on an iPhone SE 3 (F09-REQ-015). | `[F09-REQ-015][NS-02-R2] 1,000 letters, 300 ms p95 on SE 3` (device) |
-| NS-02-R3 | Given a query of fewer than 3 characters in a non-CJK script, Then nothing changes on screen and no message appears. Given a CJK query, Then 1 character is enough and the substring path runs (F09-U24). PROPOSED: the 3-character floor is revisited per language when a pack passes its gate. | `[NS-02-R3] short queries do nothing; CJK queries use substring` |
+| NS-02-R3 | Given a query of fewer than 3 characters in a non-CJK script (a spaces-only query counts as under 3), Then nothing changes on screen and no message appears: no hint line, no "type three letters" text. PR #798's `find.en.ts` still carries a `hint` slot ("Type three letters to start.") that contradicts this row; the slot leaves #798 (Karma told `mobile`; design spec 02 no longer has it). Given a CJK query, Then 1 character is enough and the substring path runs (F09-U24). PROPOSED: the 3-character floor is revisited per language when a pack passes its gate. | `[NS-02-R3] short queries do nothing and show no hint; CJK queries use substring`; plus a content test that `find.en.ts` has no `hint` key |
 | NS-02-R4 | Given a query, Then the search covers the active child's book only; own letters, own private letters and other visible letters are included, another person's private letters never (F09-REQ-015). | `[NS-02-R4] scope is the active book and visible letters only` |
 | NS-02-R5 | Given the index, Then it holds each letter's `final_text` (the words as kept), the parent-typed Firsts label when it exists (NS-06 Part A), and the parent-typed photo text and typed place when they exist (NS-01-R21). Decision (12): a typed place on a photo is IN, because the parent typed it (design spec 02). A place read from the file is OUT: it was never the parent's word. It holds no `raw_transcript`, no audio-derived text, no date or place from a picture (`NX-39-R10`), no child name field, no machine tag. | `[NS-02-R5] the index holds only final_text and the typed label` (schema test) |
 | NS-02-R6 | Given a query of 2 or more words, Then a letter matches when all words appear, in any order; the last word matches as a prefix while typing. Case is ignored. | `[NS-02-R6] all words match, last word as prefix, case ignored` |

@@ -2,7 +2,7 @@
 
 Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
 
-Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head `56a0df68`, re-checked on 11 Nov after the updates; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
+Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head `3d3d7aac`, re-checked on 11 Nov after the updates; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
 Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in stack-rank order.
 
@@ -30,10 +30,10 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 | 3 | `03-family-hears-it-pilot.md` | Concierge pilot with 8 to 10 parents | none | none | Research, no build |
 | 4 | `04-hands-free-capture-spike.md` | Time-boxed spike on hands-free start | none | none | Spike |
 | 5 | `05-share-one-letter.md` | One-letter share; the Share tab question | 14 earliest (Level 1) | `EXPO_PUBLIC_SHARE_LETTER` | Build, gated |
-| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | After ranks 1 to 5, behind a five-parent study; sealed also needs `data-architect` on seal sync; sealed not scheduled | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
+| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after rank 5 and a five-parent study, earliest Build 15; sealed also needs `data-architect` on seal sync and on the instant versus calendar date (ADR 0028 D3) | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
 | 7 | `07-remaining-capability-rows.md` | Every other NX-42 row: cited, specified or parked | mixed | `EXPO_PUBLIC_PRINT_READY` | Mixed |
 
-Flag names and build numbers are proposals. The release train and `capabilities.ts` set the final names. Dates for Build 13 and Build 14 are not in the repo; this folder does not invent them.
+Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced (earliest Build 15). Flag names and build numbers are proposals. The release train and `capabilities.ts` set the final names. Dates for Build 13 and Build 14 are not in the repo; this folder does not invent them.
 
 ## What the founder is asked, with defaults
 
@@ -46,7 +46,7 @@ Every open question in every file has a default. The ones that need the founder:
 | Accept the pilot principle and the proposed success lines | 03 OQ-1, section 8 | Yes, as written | Fri 20 Nov 2026 |
 | Spike engineer and week | 04 OQ-1 | The Monday after Build 13 is cut | Fri 20 Nov 2026 |
 | Share one letter in Build 14, and no Share tab | 05 OQ-1, OQ-5 | Build 14; no tab | Fri 20 Nov 2026 |
-| Firsts concept study; sealed letters timing | 06 OQ-A1, OQ-B1 | Study after Build 13; sealed not before Build 15 | Fri 20 Nov 2026 |
+| Firsts and sealed letters: both in scope; when the five-parent study runs | 06 OQ-A1, OQ-B1 | Study after Build 13; both built earliest Build 15, after rank 5 and the study | Fri 20 Nov 2026 |
 | Proof books spend (the amount in the exec record, Q2) | 07 OQ-1 | No spend | Fri 20 Nov 2026 |
 
 ## Reads that gate anything
@@ -80,7 +80,9 @@ NX-41 and NX-42 live on PR #790's branch (`docs/nav-tabs-requirements-10nov`, he
 
 Trace ids: each acceptance row carries an id of the form `NS-01-R7` or `NS-06-A3`, and its test title starts with that id in square brackets, so a test can cite the requirement it proves.
 
-## What changed against the design head (re-checked 11 Nov at 56a0df68)
+## What changed against the design head (re-checked 11 Nov at 3d3d7aac)
+
+The tab job sentences are the design's (spec 06), and the navigation test N1 to N10 (spec 06 section 10) proves the one-entry rule: Home "I go to Home to say something to {child}."; Book "I go to the Book to read what we kept."; Me "I go to Me to look after my account and books." N3 needs one `startCapture({source})` function that `mobile` consolidates first (spec 06 section 12, step 0). The doorway names are `widget`, `controlCenterControl`, `actionButton`, `siri`.
 
 | Design change | Where I applied it |
 |---|---|
@@ -91,6 +93,9 @@ Trace ids: each acceptance row carries an id of the form `NS-01-R7` or `NS-06-A3
 | Share Level 1 has no recording row; no footer, brand name or link (spec 03 3.3, SH-R10) | NS-05-R16 |
 | Share one letter is a founder decision, text first (spec 03 Q0/Q1) | NS-05 head |
 | A typed place on a photo is searched; a derived place is not (spec 02) | NS-02-R5, NS-01-R21 |
+| Design spec 01 now follows this PRD: system picker only, no pre-prompt, no date chip from the file in Build 13, fixed VoiceOver label (NS-01-R9, R11, R21, R22) | no change needed; confirmed |
+| Seal opens at an absolute UTC instant (spec 04 FS-R7); differs from ADR 0028 D3 calendar date | NS-06-B1; `data-architect` reconciles |
+| Spec 02 dropped the "Type three letters" hint; PR #798's `find.en.ts` still has it | NS-02-R3: the `hint` slot leaves #798 |
 
 ## Appendix A. String-scan pattern lists (used by NS-05-R17, NS-06-A5, A12, B9 and NS-01-R24)
 

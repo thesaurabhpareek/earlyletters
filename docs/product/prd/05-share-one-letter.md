@@ -3,9 +3,9 @@
 Founder decision, 10 Nov 2026: build Share one letter, text first (relayed by Karma on 11 Nov; I did not read the original message, UNVERIFIED; design spec 03 records it as Q0/Q1 "DECIDED by the founder, not an agent default"). The open items are only the build number and the defaults below.
 
 Status: Draft v1, 11 Nov 2026 (UTC). Docs only. Author: `product`. Rank 5 of 7. Index: `README.md`.
-Build target: Level 1 in Build 14 at the earliest (see section 12). Levels 2 and 3 are not scheduled and are gated.
+Build target: Level 1 in Build 14 at the earliest (see section 12). Design spec 03 re-read at PR #794 head 3d3d7aac: the Share-tab test is its section 8 and the requirement rows are in its section 9 (SH-R#). Navigation test N9 proves there is no share control on Home. Levels 2 and 3 are not scheduled and are gated.
 
-Tags: EVIDENCE = repo file or PR read this session. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. Rules on tabs come from `closed-questions-2026-11-11.md` (N1 to N4) and `NAV-TAB-ROLES-10nov.md` (PR #789, head `c5897792` when I read it). Aligned on 11 Nov to the design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (PR #794, head `56a0df68`, re-read after Karma's 11 Nov updates): text first, an action on the letter page, not a tab. The design's Level 1 has no recording row (its section 3.3); this PRD's Level 2 is the design's gated recording level. I did not open the Export code or run the share sheet.
+Tags: EVIDENCE = repo file or PR read this session. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. Rules on tabs come from `closed-questions-2026-11-11.md` (N1 to N4) and `NAV-TAB-ROLES-10nov.md` (PR #789, head `c5897792` when I read it). Aligned on 11 Nov to the design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md` (PR #794, head `3d3d7aac`, re-read after Karma's 11 Nov updates): text first, an action on the letter page, not a tab. The design's Level 1 has no recording row (its section 3.3); this PRD's Level 2 is the design's gated recording level. I did not open the Export code or run the share sheet.
 
 ## 1. Job to be done
 
@@ -102,7 +102,7 @@ Recommendation: no, not at Level 1.
 
 - The closed decision is Home | Book | Me, and a fourth tab ships only when share-one-letter exists and passes the job-clarity checklist (N2).
 - NAV-TAB-ROLES gives the test for a new tab: a verb no other tab has, material no other tab holds, and a day-one state that is not empty or mostly a promise. Level 1 gives a verb (Give) but no material that only a Share tab holds: Export already sits in Me, and sharing starts from a letter page. A Share tab at Level 1 would hold one quiet row on day one.
-- Revisit the tab only when all three hold: Level 2 or 3 is live; Export, "share one letter" and people with access are three outputs a parent actually uses (measured in a study, not in telemetry); the job-clarity checklist passes with five parents. Until then Level 1 is a button on the letter page and Export stays in Me. This agrees with design spec 03 section 9 (the Share tab test).
+- Revisit the tab only when all three hold: Level 2 or 3 is live; Export, "share one letter" and people with access are three outputs a parent actually uses (measured in a study, not in telemetry); the job-clarity checklist passes with five parents. Until then Level 1 is a button on the letter page and Export stays in Me. This agrees with design spec 03 section 8 (the Share tab test).
 - Co-parent "coming soon" stays at most one caption line in Me (N1).
 
 ## 11. Metrics (content-free)

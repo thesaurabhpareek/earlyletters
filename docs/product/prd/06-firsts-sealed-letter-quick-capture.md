@@ -1,7 +1,7 @@
 # NS-06: Firsts, the sealed letter and quick capture
 
 Status: Draft v1.1, 11 Nov 2026 (UTC). Docs only. Author: `product`. Rank 6 of 7 (closed scope list). Index: `README.md`.
-Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head `56a0df68`, re-read after the updates of 11 Nov; the sealed-letter surface rule FS-R10 is in it). Sequencing ruling (Karma, 11 Nov): both Firsts and the sealed letter are specified in full here but built only after ranks 1 to 5 and only behind a five-parent study. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
+Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head `3d3d7aac`, re-read after the updates of 11 Nov; the sealed-letter surface rule FS-R10 is in it). Scope and sequencing (Karma, 11 Nov; the founder said on 10 Nov to include all new scope): Firsts and the sealed letter are IN scope, specified in full here, and not cancelled. The build is sequenced after rank 5 and behind a five-parent study, earliest Build 15. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
 Three rows of the capability map in one file. Each part has its own job, criteria, free/Plus line and rollout. Part A restates the proposal `NX-44-firsts.md` (PR #790, head `d80db1f2`) as testable rows; NX-44's requirement ids are cited, not copied. Part B is new. Part C depends on the spike in NS-04. Hands-free rules (unlock first, no auto-stop on silence, "Still here" after 8 seconds, headphone controls out of scope and UNVERIFIED) are in NS-04.
 
 Terms: "lens", "Firsts lens", "Photos lens" and "Home memory" are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25). A parent never reads "lens".
@@ -70,7 +70,7 @@ None in the app. A five-parent concept study decides whether to build. Build tri
 
 ### A10. Dependencies, risks, rollout
 
-Dependencies: Book lens frame (rule P3), a local migration for two fields, export schema bump, NS-02 for the label. Risk: a "first" mark becomes a milestone tracker; mitigations are A3, A4, A5. Rollout: flag `EXPO_PUBLIC_FIRSTS` (proposed). Target after ranks 1 to 5 (Build 14 at the earliest), only if the A9 trigger is met; Build 13 carries no Firsts. Default if the study is not run: not built (NX-44 FD-1).
+Dependencies: Book lens frame (rule P3), a local migration for two fields, export schema bump, NS-02 for the label. Risk: a "first" mark becomes a milestone tracker; mitigations are A3, A4, A5. Rollout: flag `EXPO_PUBLIC_FIRSTS` (proposed). Target: sequenced after rank 5 and the five-parent study, earliest Build 15; Build 13 and Build 14 carry no Firsts. Firsts is in scope: if the study has not run, the build waits for it. It is not cancelled, and the old NX-44 FD-1 line "default: not built" is superseded by the founder's include-all-scope ruling.
 
 ---
 
@@ -94,19 +94,19 @@ Sealing is an enricher chosen in Review or on the letter page for a letter that 
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-06-B1 | Given a letter in Review, When the parent picks a day later than today, Then the letter stores `sealed_until` as a calendar date (no time zone, like `occurred_on`) and nothing else about its words changes. | `[NS-06-B1] sealing stores one date and nothing else` |
+| NS-06-B1 | Given a letter in Review, When the parent picks a day later than today, Then at the moment of sealing the app stores one absolute UTC instant, the author's local midnight at the start of that day in the device's time zone at that moment, and nothing else about the words changes. The letter opens when now is at or after that instant (design spec 04, FS-R7). Reconciliation: ADR 0028 D3 stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers; this differs, and `data-architect` reconciles the two (one stored field or two) before any build. | `[NS-06-B1] sealing stores one instant and nothing else about the words` |
 | NS-06-B2 | Given a sealed letter before its day, Then the Book shows one row with the date and "hidden until" wording (words by `content`; never "locked"), and no words. The letter contributes nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together or the PDF book until it opens, and adds nothing to a Home memory before its opening day (design spec 04, FS-R10). | `[NS-06-B2][FS-R10] a sealed letter contributes nothing to any surface until it opens` |
 | NS-06-B3 | Given the author, When they choose Open now on the sealed letter, Then, after one confirmation whose default button is Cancel, the seal is removed permanently and the letter reads normally. It cannot be sealed again (design spec 04, B4); to hide it again the parent would write a new letter. The letter is never lost, and what a family kept stays theirs to read. | `[NS-06-B3] the author can open early; opening removes the seal for good` |
-| NS-06-B4 | Given the day arrives, Then the letter becomes a normal letter at local midnight of the chosen date with no notification, no badge, no count and no celebration. On that day only, Home's one memory slot may show it once through `seal.homeOpened` (design spec 04, Q4 and FS-R3): one line, the letter's words appear only when the parent taps. That slot is allowed; it is not a notification, a count or a celebration. | `[NS-06-B4] opening day is quiet; the Home slot shows it at most once` |
+| NS-06-B4 | Given the stored instant passes, Then the letter becomes a normal letter with no notification, no badge, no count and no celebration. On that day only, Home's one memory slot may show it once through `seal.homeOpened` (design spec 04, Q4 and FS-R3): one line, the letter's words appear only when the parent taps. That slot is allowed; it is not a notification, a count or a celebration. | `[NS-06-B4] opening day is quiet; the Home slot shows it at most once` |
 | NS-06-B5 | Given the export, Then a sealed letter is included with its words and a `sealed_until` field. Copy never says "locked", "secure" or "sealed forever": the words are on the phone, and a seal is a display rule the app keeps in its screens, not encryption. | `[NS-06-B5] export keeps sealed letters whole` |
 | NS-06-B6 | Given one visibility function, Then every surface (Book, Home memory, Read together, Find, Firsts, lens, share, export view for others) calls it; a test lists the call sites and fails on a surface that does not. | `[NS-06-B6] one visibility path` |
 | NS-06-B7 | Given the allowance, Then a sealed letter counts when it is kept like any letter (D-103); sealing never makes a letter free or hidden from the count. | `[NS-06-B7] sealing does not change counting` |
-| NS-06-B8 | Given sync (decided by `data-architect` before any build), Then the seal date travels with the letter, so the other parent's phone hides it too; if `data-architect` finds it cannot, the feature is not built. Test written once the answer is on record. | `[NS-06-B8] the seal syncs with the letter, or the feature is not built` |
+| NS-06-B8 | Given sync (decided by `data-architect` before any build), Then the seal date travels with the letter, so the other parent's phone hides it too; if `data-architect` finds it cannot, the build waits and the question returns to the founder; the spec stands. Test written once the answer is on record. | `[NS-06-B8] the seal syncs with the letter, or the build waits for the founder` |
 | NS-06-B9 | Given every seal string in `packages/content`, Then the content rules test passes and none matches the README appendix A patterns, including the loss words list and the word "locked". | `[NS-06-B9] seal strings match no forbidden pattern` |
 
 ### B5. Edge cases
 
-Seal date in the past is refused (the control offers only later days). Time zone change never shifts the day (calendar date). Co-parent live: a sealed letter hides from the other parent until the day; whether the author can seal against the other parent is OQ-B2. A child's 18th birthday as a date is allowed as an ordinary date; "open at 18" wording and any duty to deliver to a minor are counsel's (BK-18 and FAM-13 per the exec record; not read by me).
+Seal date in the past is refused (the control offers only later days). A time zone change never moves the stored instant, so it never opens a seal early; a clock set forward by hand can, and the app does not claim to prevent that (display rule only). Test `[NS-06-B1b] a seal made in UTC-8 stays closed at UTC+14 until the instant` with clock and zone injection (design FS-R7). Co-parent live: a sealed letter hides from the other parent until the day; whether the author can seal against the other parent is OQ-B2. A child's 18th birthday as a date is allowed as an ordinary date; "open at 18" wording and any duty to deliver to a minor are counsel's (BK-18 and FAM-13 per the exec record; not read by me).
 
 ### B6. Privacy and constitution
 
@@ -116,7 +116,7 @@ Label effect (Part B): none while the seal stays on the phone and in ordinary sy
 
 ### B7. Free vs Plus
 
-Free and ungated beyond the allowance rule in Build 14 or later; not promised as forever. A sealed letter is a kept letter. No separate Plus feature (one gate, closed X3).
+Free and ungated beyond the allowance rule when built (earliest Build 15); not promised as forever. A sealed letter is a kept letter. No separate Plus feature (one gate, closed X3).
 
 ### B8. Metrics
 
@@ -124,19 +124,19 @@ None. Study: a five-parent study (rule from Karma, 11 Nov; replaces the 8-parent
 
 ### B9. Dependencies, risks, rollout
 
-Dependencies: backup and new-phone sync right and shipped (C29, C30), counsel on minors, the one visibility path (F41 note), a sync change (`sealed_until`), local and server migrations. Risk: a seal that hides a letter from the author would break "stays theirs" (B3 prevents it). Rollout: flag `EXPO_PUBLIC_SEALED_LETTERS` (proposed); no build until ranks 1 to 5 are done, the five-parent study passes and `data-architect` has answered. Target: after Build 14; not scheduled. Default if no one decides: not built.
+Dependencies: backup and new-phone sync right and shipped (C29, C30), counsel on minors, the one visibility path (F41 note), a sync change (`sealed_until`), local and server migrations. Risk: a seal that hides a letter from the author would break "stays theirs" (B3 prevents it). Rollout: flag `EXPO_PUBLIC_SEALED_LETTERS` (proposed); no build until ranks 1 to 5 are done, the five-parent study passes and `data-architect` has answered. Target: earliest Build 15; not otherwise scheduled. Default if no one decides: the build waits; the spec stands.
 
 ---
 
-## Part C. Quick capture (lock screen, Action Button, Siri phrase, widget)
+## Part C. Quick capture (the four doorways: `widget`, `controlCenterControl`, `actionButton`, `siri`)
 
 ### C1. Job to be done
 
-I go to my lock screen or Action Button to start a letter in one touch, so that a thought is not lost while my hands are busy.
+I go to a doorway (widget, Control Center control, Action Button or Siri phrase) to open Home's capture in one touch, so that a thought is not lost while my hands are busy.
 
 ### C2. The single capture entry rule
 
-Every quick-capture trigger opens Home's one Listen screen in the Ready state (F04 widget row). None records on its own unless NS-04 EX-2 allows it. None keeps a letter. A trigger is a door to Home's capture, not a second capture.
+Every quick-capture trigger (one of the four doorway names above, passed as `source` to the single `startCapture({source})` function; design navigation test N3 and the step 0 consolidation are prerequisites) opens Home's one Listen screen in the Ready state (F04 widget row). None records on its own unless NS-04 EX-2 allows it. None keeps a letter. A trigger is a door to Home's capture, not a second capture.
 
 ### C3. Acceptance criteria (conditional on NS-04)
 
@@ -168,9 +168,9 @@ Metrics: none in the app; `capture_started` with a `source` value only if analyt
 
 | Id | Question | Owner | Default if no answer | By |
 |---|---|---|---|---|
-| OQ-A1 | Run the five-parent Firsts concept study? | Founder | Yes, after Build 13 ships; if not run, Firsts is not built. | Fri 20 Nov 2026 |
+| OQ-A1 | When does the five-parent Firsts study run? | Founder | After Build 13 ships; the build waits for it (earliest Build 15). | Fri 20 Nov 2026 |
 | OQ-A2 | Place of the mark control on the letter page | `design-systems` | A quiet action in the letter's action row | Design spec |
-| OQ-B1 | Build sealed letters at all? | Founder | Not before Build 15; five-parent study first | Fri 20 Nov 2026 |
+| OQ-B1 | When is the sealed letter built? | Founder | In scope; earliest Build 15, after rank 5, the five-parent study and the `data-architect` answer | Fri 20 Nov 2026 |
 | OQ-B2 | Does the seal sync to the other parent's phone, and may an author hide a letter from the other parent? | `data-architect`, founder with counsel | The seal date syncs and hides the words on every phone in the book, with the author able to open it at any time; if it cannot sync, no build. | Before any sealed-letter build |
 | OQ-C1 | Siri phrase before widget? | `mobile` after NS-04 | Yes, if it needs no new target. | NS-04 read-out |
 

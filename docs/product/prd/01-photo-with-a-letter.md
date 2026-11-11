@@ -1,6 +1,6 @@
 # NS-01: Photo with a letter (photo-first capture on Home, a Photos lens in the Book)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `56a0df68`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `3d3d7aac`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
 Terms: "lens", "Photos lens" and "Home memory" in this file are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens".
 Build 13 scope (design spec 01 section 1a, coordinator 11 Nov): ONE photo per letter and no video. The design cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo layouts and the swipe between items are out of Build 13.
 Build target: Build 13, behind `EXPO_PUBLIC_PHOTOS` (the P0 switch named in `NX-39-memory-library.md` section 3). Library chooser (P2a) and video (P3) are not in this PRD.
@@ -9,7 +9,7 @@ Tags: EVIDENCE = a repo file or PR read this session. HYPOTHESIS = what a parent
 
 ## 1. Job to be done
 
-I go to Home to tell {child} about a picture I just took or found, so that the picture and what I said about it are kept as one letter.
+I go to Home to say something to {child} about a picture I just took or found, so that the picture and what I said about it are kept as one letter.
 
 The Book's Photos lens answers the second job: I go to the Book to look at the pictures that have a letter with them.
 
@@ -41,11 +41,11 @@ Only Home starts a letter (`NAV-TAB-ROLES-10nov.md` rules P1 and P2). Photo-firs
 
 ## 5. Acceptance criteria
 
-Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 56a0df68. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
+Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 3d3d7aac. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-01-R1 | Given the Home route with `EXPO_PUBLIC_PHOTOS` on, When it renders, Then exactly 1 photo start exists, inside the capture cluster. Given the Book and Me routes, Then 0 controls start a letter from a picture. | `[NS-01-R1] only Home registers a photo start` (route and AST scan) |
+| NS-01-R1 | Given the Home route with `EXPO_PUBLIC_PHOTOS` on, When it renders, Then exactly 1 photo start exists, inside the capture cluster. Given the Book and Me routes, Then 0 controls start a letter from a picture. This is also design navigation test N3(f) and (g), which needs the single `startCapture({source})` function that `mobile` consolidates first (design spec 06 section 12, step 0; prerequisite). | `[NS-01-R1] only Home registers a photo start` (route and AST scan) |
 | NS-01-R2 | Given the photo start, When the parent taps it, Then the system picker opens, 0 permission questions are asked and no full-library authorization call is made (`NX-39-R2`). | `[NS-01-R2][NX-39-R2] the photo start asks no library question` |
 | NS-01-R3 | Given a picked picture, When Home's capture opens, Then the picture shows as a thumbnail at least 64 pt on its longest side above the capture buttons, and the prompt line is chosen by the same function as today, from age and history only. With 3 different fixture pictures and one fixed state, the chosen prompt is identical. | `[NS-01-R3] the prompt does not depend on the picture` |
 | NS-01-R4 | Given a picked picture and no speech or typing started, When the parent goes back, Then 0 rows and 0 files are written and Home looks as before (`NX-39-R14`). | `[NS-01-R4][NX-39-R14] backing out writes nothing` |
@@ -66,7 +66,7 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 | NS-01-R19 | Given the switch `EXPO_PUBLIC_PHOTOS` off or the remote pause on, Then the photo start, the lens and the add-a-photo actions do not render, and Export and Erase everything still work (`NX-39-R37`). | `[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights` |
 | NS-01-R20 | Given VoiceOver, AX5 and Reduce Motion, Then every new control is at least 44 pt, announces its state, reads in order (thumbnail, prompt, Speak, Type), and at AX5 stacks to one column (`NX-39-R35`). | `[NS-01-R20] new controls pass VoiceOver, AX5 and Reduce Motion` |
 | NS-01-R21 | Given a picked picture, When the parent types photo text or a place, Then each is optional, the text at most 140 characters and the place at most 60 (PROPOSED), stored in their own fields, never filled in or suggested by the app, and is the picture's only text alternative for VoiceOver when present (else the fixed phrase of R9). Find searches both (NS-02-R5); a place read from the file is never searched. | `[NS-01-R21] photo text and place are the parent's, optional, and capped` |
-| NS-01-R22 | Given the picture source and the Build 13 scope, Then only the system picker exists and it returns one photo; there is no video, no multi-select and no "Add photos" row: no camera control, no camera permission string and no "Take a photo now" in the plist or the screens. | `[NS-01-R22] the system picker is the only source and returns one photo` |
+| NS-01-R22 | Given the picture source and the Build 13 scope, Then every door opens only the iOS system picker and it returns one photo; there is no library access, no pre-prompt (ML-S1), no `MediaChooser`, no video, no multi-select and no "Add photos" row: no camera control, no camera permission string and no "Take a photo now" in the plist or the screens. | `[NS-01-R22] the system picker is the only source and returns one photo` |
 | NS-01-R23 | Given the Book with 0 letters, Then its empty-state button (`book.empty.bookCta`, today "Write a letter") reads as a pointer to Home, its action is a switch to the Home tab and calls no capture function, and the Book has 0 controls that start a letter (`content` writes the word; design spec 06, J3). Given the Photos lens, Then it has no "Add photos" button. | `[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter` |
 | NS-01-R24 | Given the strings, Then they pass `packages/content/test/rules.test.ts`: no dash, curly quote, ellipsis character or emoji; no "memory" or "moment" for a letter; no implication a machine writes; `{child}` for the child. | existing content rules test, extended |
 
