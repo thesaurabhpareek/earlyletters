@@ -146,6 +146,15 @@ describe('[S46] Write this book together', () => {
     expect(one).toEqual({ href: '/invite/new?childId=child-asha' });
     const two = bookRow({ serverFeatures: true, alpha: true, coParent: 'Papa', invite: inviteHref('settings_child', true, true, 'child-asha') });
     expect(two).toEqual({ value: 'Papa', href: FAMILY_TAB_HREF });
+    // Karma ruling, 11 Nov 2026: one parent with an invite still pending opens the family page (Share again, Cancel invite stay reachable); no new words.
+    const waiting = bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: inviteHref('settings_child', true, true, 'child-asha'), pendingInvites: true });
+    expect(waiting).toEqual({ href: FAMILY_TAB_HREF });
+    expect(bookRow({ serverFeatures: true, alpha: true, coParent: null, invite: '/invite/new?childId=c', pendingInvites: false })).toEqual({ href: '/invite/new?childId=c' });
+    // A pending invite opens nothing where the build has no flow.
+    expect(bookRow({ serverFeatures: true, alpha: false, coParent: null, invite: '/invite', pendingInvites: true })).toBeNull();
+    expect(bookRow({ serverFeatures: false, alpha: true, coParent: null, invite: '/invite', pendingInvites: true })).toBeNull();
+    expect(code('app/settings/children/[id].tsx')).toMatch(/listPendingInvites\(auth\.client, child\.id\)/);
+    expect(code('app/settings/children/[id].tsx')).toMatch(/pendingInvites \}\);/);
     // The label is P8's bookRow.label; the row is drawn only when bookRow returns one.
     expect(familyCopy.bookRow.label).toBe('Write this book together');
     expect(code('app/settings/children/[id].tsx')).toMatch(/<ListRow title=\{familyCopy\.bookRow\.label\} value=\{row\.value\}/);

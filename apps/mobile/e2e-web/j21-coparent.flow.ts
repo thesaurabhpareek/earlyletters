@@ -345,7 +345,7 @@ test('[J21c] inviter: the family page is live, and an invite goes out with only 
 
   await btn(app, 'Share invite link').click();
   // The share sheet has closed: the invite sheet closes with it, and the family page says where the invite waits.
-  await expect(app.getByText('The invite waits on the Family tab until they join.')).toBeVisible();
+  await expect(app.getByText('The invite waits until they join.')).toBeVisible();
   await expect(app.getByText(`Invite ${CHILD}'s co-parent`)).toHaveCount(0);
   const shared = (await app.evaluate(() => (window as unknown as { __shared: { text?: string; url?: string }[] }).__shared)) ?? [];
   const message = JSON.stringify(shared);
