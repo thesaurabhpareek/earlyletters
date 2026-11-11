@@ -45,7 +45,7 @@ export const authCopy = {
       // before the person has agreed. TODO(founder, counsel): approve this line or replace it (placeholder, needs word approval).
       sign_in_first: 'Sign in to begin your book.',
     },
-    // NX-36 S2, above the two buttons, with Terms of Service and Privacy Policy as links (the labels are consent.terms.*).
+    // NX-36 S2, above the two buttons. The two documents follow it as their own 44 pt links (labels: consent.terms.termsLink and .privacyLink).
     agreeLine: 'By continuing you agree to the Terms of Service and Privacy Policy.',
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
@@ -104,16 +104,16 @@ export const authCopy = {
   },
 
   /**
-   * Account-first first run (NX-36 S2 and S3), behind the server-features switch. The key names and placeholder words
-   * are NX-36's own (sections 4 S2, 4.1, S3); each needs founder word approval. The Apple button is Apple's
-   * (ASAuthorizationAppleIDButton, "Sign in with Apple"). No line here says a recording is kept safe or backed up.
-   * Without "Your letters are safe": a brand-new install has no letters (NX-36 2.6).
+   * Account-first first run (NX-36 S2 and S3), behind the server-features switch. The key names are NX-36's own and the
+   * words are placeholders: each needs founder word approval (the PR body lists them). The Apple button is Apple's
+   * (ASAuthorizationAppleIDButton, "Sign in with Apple"). No line here says a recording is kept safe or backed up, or
+   * says where the book opens. Without "Your letters are safe": a brand-new install has no letters (NX-36 2.6).
+   * Only the one failure that stays on the Welcome has a first-run line. A 429, "not available" and a lost connection
+   * go to the outage screen through the gate, so they have none here (they used to; nothing could reach them).
    */
   firstRun: {
     errors: {
       provider: 'That sign-in did not finish. Try again, or try another way.',
-      rateLimited: 'Too many tries for now. Wait a few minutes, then try again.',
-      notAvailable: 'This way of signing in is not available right now. Try another way.',
       // NX-36 2.6, S5 and S6: the existing lines begin "Your letters are safe", which a brand-new install cannot say
       // (it has no letters). These four are the same sentences without it. Each needs founder word approval.
       network: 'Sign in once you are back online.',
@@ -122,21 +122,25 @@ export const authCopy = {
       unknown: 'That did not go through. Try again.',
     },
   },
-  // S3, sign-in cannot be reached. The button is the 22-character form; the long sentence is its note.
+  // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
+  // the button does. The body says one thing, so the shown paragraph (body, then note) repeats nothing.
   outage: {
     // Differs from NX-36 ("We can't reach sign-in right now."): the content rules allow no "we" outside registered lines.
     title: 'Sign in cannot be reached right now.',
-    body: 'Try again in a moment, or start the book on this phone and sign in later.',
+    // Differs from NX-36 (which also named the local start here, and so said it when the button was not there).
+    body: 'Try again in a moment.',
     retry: 'Try again',
     startLocal: 'Start on this phone',
     startLocalNote: 'Start the book on this phone for now. You can sign in later to bring it to your account.',
-    // Announcement only, when the connection or sign-in comes back.
+    // Announcement only, when the connection comes back under the outage screen.
     backOnline: 'Sign in is back.',
   },
   offline: {
     title: 'Sign in needs a connection.',
-    // Differs from NX-36 ("We will try again when you are back online."): no "we".
-    body: 'It tries again by itself when you are back online.',
+    // Differs from NX-36 ("We will try again when you are back online."): no "we", and the screen does not try to sign
+    // anyone in by itself. It reads the connection when Try again is tapped, and it goes back to sign in on its own when
+    // the connection returns, so the line says what the person does.
+    body: 'Connect to the internet, then tap Try again.',
   },
 
   verify: {
