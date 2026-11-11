@@ -1,6 +1,6 @@
 # NS-01: Photo with a letter (photo-first capture on Home, a Photos lens in the Book)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `38abc432`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794; head at time of writing `038c2dda`, which will move: read the PR for the current head). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
 Terms: "lens", "Photos lens" and "Home memory" in this file are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens".
 Build 13 scope (design spec 01 section 1a, coordinator 11 Nov): ONE photo per letter and no video. The design cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo layouts and the swipe between items are out of Build 13.
 Build target: Build 13, behind `EXPO_PUBLIC_PHOTOS` (the P0 switch named in `NX-39-memory-library.md` section 3). Library chooser (P2a) and video (P3) are not in this PRD.
@@ -41,7 +41,7 @@ Only Home starts a letter (`NAV-TAB-ROLES-10nov.md` rules P1 and P2). Photo-firs
 
 ## 5. Acceptance criteria
 
-Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 38abc432. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
+Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 (head at time of writing 038c2dda; it will move). Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
 
 | Id | Given, When, Then | Test title |
 |---|---|---|

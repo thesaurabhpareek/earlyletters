@@ -1,6 +1,6 @@
 # NS-02: Find (search across the family's own letters, on the phone)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `38abc432`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794; head at time of writing `038c2dda`, which will move: read the PR for the current head). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
 Terms: "lens", "Find" as a header action and "index" are internal terms; `content` names the parent-facing words (BRAND.md glossary, CR-25).
 Build target: Build 13, behind `EXPO_PUBLIC_BOOK_SEARCH` (name proposed; check `capabilities.ts` for the house style).
 This PRD makes F09-REQ-015 shippable: it cites that row and the Search item in F09 section 6.2 (step 16), adds the states and the privacy rules they lack, and turns the founder question F09 Q4 into a decision: Find is in scope (closed X1; research gap G3).

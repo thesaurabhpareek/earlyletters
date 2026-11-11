@@ -2,7 +2,7 @@
 
 Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
 
-Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head `38abc432`, re-read on 11 Nov after the updates; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
+Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head at time of writing `038c2dda`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
 Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in stack-rank order.
 
@@ -10,7 +10,7 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 
 | Rule | Source |
 |---|---|
-| Tabs are Home, Book and Me. Family is never a tab. Co-parent "coming soon" is at most one caption line in Me. The Library is not a tab. | closed N1 to N3 |
+| Tabs are Home, Book and Me. Family is never a tab. Co-parent "coming soon" is one small caption line in Me; since the founder's 11 Nov amendment of N1 the line is tappable and opens one on-device sheet, with no row, badge or chevron (design spec 07; relayed by Karma, original not read). The Library is not a tab. | closed N1 to N3, design spec 07 |
 | Only Home starts a letter. Everything else adds to a letter that exists or reads kept letters. | `NAV-TAB-ROLES-10nov.md` P1, P2, P9 |
 | The machine may remove and repair, and may never add meaning. No streaks, points or counts of gaps. `{child}` only. | CLAUDE.md, BRAND.md, VOICE.md |
 | One gate: Keep after the allowance of 2, planned raise 2, 5, 10 (D-082). Capture is never blocked. What a family kept stays theirs to read, hear and export. No "free forever". | D-082, closed X3 and X4 |
@@ -68,7 +68,7 @@ NX-41 and NX-42 live on PR #790's branch (`docs/nav-tabs-requirements-10nov`, he
 
 | File and line | Says now | Must say |
 |---|---|---|
-| NX-41 R12 | "Alpha stays whole. ... the Family tab with the real co-parent screens stays" in a `preview` build | Family is never a tab, in any build. The real co-parent screens are reached from Me. "Coming soon" is at most one caption line in Me, with no row, screen or chevron (closed N1). |
+| NX-41 R12 | "Alpha stays whole. ... the Family tab with the real co-parent screens stays" in a `preview` build | Family is never a tab, in any build. The real co-parent screens are reached from Me. "Coming soon" is one small caption line in Me, tappable, opening one on-device sheet, with no row, badge or chevron (closed N1 as amended by the founder on 11 Nov; design spec 07). |
 | NX-41 section 4 and H6 | Four tabs; a Moments tab; an alpha Family tab | Three tabs: Home (Say), Book (Read), Me (Look after). No Moments tab, no Family tab. |
 | NX-42 section 1, "Tab model" | Home, Book, Moments (proposed), Me | Home, Book, Me (three tabs). |
 | NX-42 rows C17 to C21 and section 2.3 "Remember (Moments, proposed)" | Tab "Moments" | C17 and C18 attach to a letter (Review, letter page); the picture shelf is the Book's Photos lens (NS-01); C19 is a doorway into the same chooser; C20 shares Home's one memory slot. No Moments tab. |
@@ -83,7 +83,7 @@ Parent-facing words quoted in acceptance rows (for example "Photo with this lett
 
 Trace ids: each acceptance row carries an id of the form `NS-01-R7` or `NS-06-A3`, and its test title starts with that id in square brackets, so a test can cite the requirement it proves.
 
-## What changed against the design head (re-read 11 Nov at 38abc432)
+## What changed against the design head (re-read 11 Nov; PR #794 head at time of writing 038c2dda)
 
 The tab job sentences are the design's (spec 06), and the navigation test N1 to N10 (spec 06 section 10) proves the one-entry rule: Home "I go to Home to say something to {child}."; Book "I go to the Book to read what we kept."; Me "I go to Me to look after my account and books." N3 needs one `startCapture({source})` function that `mobile` consolidates first (spec 06 section 12, step 0). The doorway names are `widget`, `controlCenterControl`, `actionButton`, `siri`.
 
@@ -98,6 +98,9 @@ The tab job sentences are the design's (spec 06), and the navigation test N1 to 
 | A typed place on a photo is searched; a derived place is not (spec 02) | NS-02-R5, NS-01-R21 |
 | Design spec 01 now follows this PRD: system picker only, no pre-prompt, no date chip from the file in Build 13, fixed VoiceOver label (NS-01-R9, R11, R21, R22) | no change needed; confirmed |
 | Author-only export exception (FS-R10 and FS-R11): the ZIP data export carries a sealed letter whole for the author; the PDF book and any other person's export never carry its words until the seal is removed | NS-06-B2, B5, NS-07-C28-4 |
+| Design spec 03 now makes the words row static text, not a switch (SH-R15) | NS-05-R4, R13 |
+| Design spec 07: the co-parent caption is tappable and opens one on-device sheet (founder amendment of N1, 11 Nov) | README ground rules, NX-41 R12 row, NS-05 section 10 |
+| Share verb and the 22-character label limit are a `content` and `legal` decision | NS-05 OQ-6 (flag only; the PRD wording is unchanged) |
 | Seal opens at an absolute UTC instant (spec 04 FS-R7); differs from ADR 0028 D3 calendar date | NS-06-B1; `data-architect` reconciles |
 | Spec 02 dropped the "Type three letters" hint; PR #798's `find.en.ts` still has it | NS-02-R3: the `hint` slot leaves #798 |
 
