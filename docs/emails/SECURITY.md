@@ -119,7 +119,7 @@ Arithmetic for one targeted address, attacker using N distinct IPs, each at the 
 
 **Rec for v1.0:** length **6** (D-044, brief), expiry **900 s**, so copy `{expiresIn}` is "15 minutes" (C1 placeholder; D2 export). This is a 4x reduction at zero UX cost for the normal path (auth email p90 30 s, A-NFR-004). The expired path is "Send a new email" in the app, which sends a fresh `sign-in-link`; `sign-in-trouble` is deferred and sends nothing (SIGN-05). It amends PRD A F4's "expire in 1 hour" and A-REQ-018: **founder OK needed (Q2)**. Open question carried from TDD 04 OQ-S1: 8 digits is a config switch plus copy; it costs typing effort for grandparents. Rec: stay at 6 unless detection (below) ever fires.
 
-Layered controls (from TDD 04 3.1.4, kept): app-side lockout copy after 5 wrong codes (`auth.code.pause`, honest users only); a scheduled job that reads Auth logs for verify failures grouped by a hash of the email and pages the founder above 20 per address per hour, then `auth.admin.signOut(user, 'global')`; CAPTCHA on code **requests** if the public link launches (Q3).
+Layered controls (from TDD 04 3.1.4, kept): app-side lockout copy after 5 wrong codes (`errors.code_paused` and `code.pausedOtherWays` in `packages/content/src/features/auth.en.ts`, honest users only; the key was `auth.code.pause` in earlier drafts); a scheduled job that reads Auth logs for verify failures grouped by a hash of the email and pages the founder above 20 per address per hour, then `auth.admin.signOut(user, 'global')`; CAPTCHA on code **requests** if the public link launches (Q3).
 
 ### 3.5 Replay and single use
 

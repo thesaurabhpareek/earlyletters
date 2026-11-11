@@ -2,6 +2,8 @@
 
 Wednesday 28 October 2026. The experience critics' pass over package P6b of `docs/design/EXPERIENCE_PASS_2026-10.md` (v1.3): section 6 "P6 Settings, Plus and errors", spec ids S34 (Reminders), S41 (Plan), S42 (Recordings), S43 (Export), S44 (Privacy) and S45 (Appearance), journeys J12 to J16, and the rules P6b leans on (P1's disabled-button and caution rules, MOTION 6's haptics, the BRAND glossary, the held billing text). Read against `develop` at **817879d**, where P6b (#313) and P6a (#312) are merged, and re-checked against **a6519a4** (develop moved by #358, the Delete account page, and #362, a test fix; no file P6b owns changed). Every file:line below is at 817879d unless it says otherwise. This pass critiques; it changes no app code, tests or copy. P6c (errors, #355) and P6d (hidden books, #361) are not merged and are left out. P6a has its own document, `P6A_CRITICS_PASS_2026-10-28.md`.
 
+Dated record, 11 Nov 2026: `en.plus.promise` named in the rows below was retired in #383 (the promise line is `billingCopy.store.promise`); the rows are left as written on 28 Oct.
+
 Scope note from #313: only **S43 Export** is on B2-10's line (J8, "Settings: Back up my recordings, Delete account, Export"); S34, S41, S42, S44 and S45 are not on it. I ranked all six the same way.
 
 ## 0. Verdict for B2-10 (P6b's share)
