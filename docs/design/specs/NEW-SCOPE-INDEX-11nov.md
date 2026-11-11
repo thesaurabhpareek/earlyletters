@@ -11,7 +11,7 @@ Job clarity first. Design is utility-driven: every tab and every screen says its
 | Tab | Verb | One-sentence job (PROPOSED) |
 |---|---|---|
 | Home | Say | I go to Home to say something to {child}. |
-| Book | Read | I go to the Book to read, hear or find what we kept. |
+| Book | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading.) |
 | Me | Look after | I go to Me to look after my account, my books and my rules. |
 
 Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me. The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 9.
@@ -40,6 +40,7 @@ Read 6 first if you only read one: it holds the tab jobs, the states and the tes
 - EVIDENCE, at PR heads: `NAV-TAB-ROLES-10nov.md` at #789 head `c189206b` ("Home | Book | Share | Me", v3); `NX-41` to `NX-44` at #790 head `d80db1f2` (unique tabs, capability map, Home actions and memories, Firsts). Both PRs are drafts or open; their heads move (UNVERIFIED after 10 Nov).
 - EVIDENCE on `origin/develop` `da83fb1e`: `docs/design/*`, `MEMORY-LIBRARY-FLOWS-10nov.md` (ML-S1 to S15), `docs/prd/v2/features/F04-capture.md` and `F09-book.md`, `packages/design-tokens/src/tokens.ts`, `packages/content/src/strings.en.ts`, `apps/mobile/src/components/ui/*`.
 - Not on `develop`: `tab-bar.test.ts` (it lives in the open stack #699 to #764), the `photos.*` strings (NX-33 branch), the `memoryLibrary.*` strings (drafts in a spec only).
+- Tag rule after review: EVIDENCE means I read that line in that file this session. A grep hit or a line range is named as such. Anything quoted from another document is second-hand and UNVERIFIED. PRD #795 (head `41ed5166`) and ADR 0028 (draft, head `8206c220`) were read in part for the points cited; where they differ from these specs they win.
 - Not read, so not relied on: Apple documentation (every Apple behaviour below is UNVERIFIED), the code of the open PRs beyond file lists.
 
 ## 4. Words: how every spec handles copy
@@ -73,7 +74,7 @@ J3 and J2 are machine-checked by the navigation test in `06-HOME-BOOK-ME-IA-11no
 
 ## 6. Shared accessibility and motion baseline (not repeated in each spec)
 
-These hold for all six; a spec lists only what it adds. Sources: `COMPONENTS.md` section 0, `MOTION.md`, `DESIGN_LANGUAGE.md`, TDD 09 (EVIDENCE for the documents; device behaviour UNVERIFIED until `qa` runs it).
+These hold for all six; a spec lists only what it adds. Sources: `COMPONENTS.md` section 0, `MOTION.md`, `DESIGN_LANGUAGE.md`, TDD 09 (read in part, by headings and the lines cited; TDD 09 itself I did not open, so anything attributed to it is UNVERIFIED; device behaviour UNVERIFIED until `qa` runs it).
 
 - Targets: 44 pt minimum (`target.min`), 56 pt primary (`target.primary`), 64 pt for Speak and Type (`target.capture`).
 - Letter text is never truncated at any Dynamic Type size (D-027). Where space is short the layout stacks and scrolls; it does not cut. A fade at a card's foot (ExcerptFade) is allowed only where the full text is one tap away and the screen reader reads the whole text.

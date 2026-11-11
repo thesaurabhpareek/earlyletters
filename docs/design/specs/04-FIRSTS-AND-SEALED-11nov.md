@@ -1,6 +1,6 @@
 # 4. Firsts, sealed letters and quick capture
 
-Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources: NX-44 Firsts (PR #790 head `d80db1f2`, a PROPOSAL; its FD-1 says "Default if no answer: not built"); DEBATES.md lines 82, 104 and 105 on sealed letters and quick-capture surfaces (EVIDENCE: pm-3 owns sealed letters; pm-1 owns quick-capture surfaces); `USER_RESEARCH.md` R21 and `COMPETITIVE_RESEARCH.md` line 179 (a competitor offers sealed letters; I did not open the sources behind them).
+Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources: NX-44 Firsts (PR #790 head `d80db1f2`, a PROPOSAL; its FD-1 says "Default if no answer: not built"); DEBATES.md lines 82, 104 and 105 on sealed letters and quick-capture surfaces (read as grep hits only: pm-3 owns sealed letters; pm-1 owns quick-capture surfaces); `USER_RESEARCH.md` R21 and `COMPETITIVE_RESEARCH.md` line 179 (a competitor offers sealed letters; I did not open the sources behind them).
 
 Three parts, one pattern. Parts A and B are enrichers: they add to a letter that exists, in Review or on the letter page. Part C says quick capture is not a second entry. Nothing here may add a control that starts a letter outside Home (J3).
 
@@ -60,7 +60,7 @@ Toggle: system. Label field: `enter` 8 pt, 280 ms; Reduce Motion `fadeMs`. Marke
 
 ### B1. Job
 
-One sentence: I keep a letter closed until a day I choose. (10 words, verb "keep closed".) The founder has not asked for this by name in the documents I read; it is a competitor feature and a research request (EVIDENCE as cited above). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is shelved by default (Q2).
+One sentence: I keep a letter closed until a day I choose. (10 words, verb "keep closed".) The founder has not asked for this by name in the documents I read; it is a competitor feature and a research request (second-hand: I read only the grep hits in those research files, so UNVERIFIED). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is shelved by default (Q2).
 
 ### B2. The rules that shape it
 
@@ -100,7 +100,7 @@ In the Book:
 ```
 
 - The letter card for a sealed letter is flat (a row, not a raised card), because a raised card means a letter you can read here (NAV-TAB-ROLES R1).
-- "Open it now" asks once ("Open this letter early?") with a `Dialog` whose default button is Cancel; opening removes the seal permanently for that letter and the letter reads normally.
+- "Open it now" asks once ("Open this letter early?") with a `Dialog` whose default button is Cancel; opening removes the seal permanently, the letter reads normally, and it cannot be sealed again (the seal row is absent on a letter whose seal has ended).
 - Voice: the sealed row never names what the letter is about.
 
 ### B5. Components
@@ -119,9 +119,22 @@ In the Book:
 | Share | Not offered (03 section 4) |
 | Read together | Skipped until open |
 | Export | Included as data with its seal date (the person's own data, PRIV; the PDF book omits the words of a sealed letter until open: Q5) |
-| Co-parent, handover at 18 | Sealed letters open at handover (DEBATES line 82); the flow is pm-2 and pm-3's, not designed here |
+| Co-parent, handover at 18 | See B6a. Handover at 18 (DEBATES line 82) is pm-2 and pm-3's and needs counsel on minors; not designed here |
 | Offline, signed out | Works on the phone |
-| Backup/sync | A sealed letter's words sync like any letter; hidden is a display rule (UNVERIFIED how it interacts with the other parent's phone: they would see the words unless the seal syncs too; must be answered by `data-architect` before any build) |
+| Backup/sync | See B6a: author-only; no row for others until the day; not built by default |
+
+### B6a. The seal gaps, and the default (ADR 0028 D3)
+
+Source: ADR 0028 "On-device data for Photo with a letter, the sealed letter and Find", draft on branch `docs/adr-photo-seal-find-data-11nov` at `8206c220`, section D3 (PROPOSED, marked [P] there; I read D3 and the lines that mention seals only). PRD NS-06 OQ-B2 is the open founder question. Where this spec and the ADR differ, the ADR default governs until the founder rules.
+
+| Gap | Default (ADR 0028 D3) | What the design does |
+|---|---|---|
+| Does the seal sync to the co-parent's phone? | The seal date syncs; the seal is a display rule on the author's own phones; no other person's phone receives a sealed letter's words, or a row, until the day | No row on the co-parent's phone, so nothing to hide there: no closed row, no "a letter is sealed" line. Their Book shows nothing until the day |
+| Who may press "Open it now"? | The author only (author-only write; the author may clear the seal; once cleared it cannot be set again) | The control is on the author's own phones only. It is absent for any other reader |
+| Does export include the words? | A sealed letter is exported whole with `sealed_until`, for its author only; another person's export never contains words they cannot read | Export includes the words for the author. The PDF book default in Q5 (omit until open) is a separate design default and is not in the ADR; marked UNVERIFIED |
+| Is it built? | Default if nobody decides: do not build the seal (ADR; PRD sequence: after ranks 1 to 5, behind a five-parent study) | Spec only. Q2 stands |
+
+The earlier B6 row for the co-parent ("sealed letters open at handover" and the question of whether the other phone sees the words) is replaced by this table.
 
 ### B7. Motion
 
@@ -176,7 +189,7 @@ Door lines.
 | FS-R1 | Firsts follow NX-44 R1 to R12 unchanged, with the control placed in Review and on the letter page only | per NX-44 |
 | FS-R2 | No count. Given any number of firsts or seals, Then no screen, VoiceOver string, export file name or notification contains a count of them | grep test on strings; device |
 | FS-R3 | Nothing offered. Given Home, Then no firsts prompt and no seal prompt appears. The one exception is `seal.homeOpened`: on the day a seal ends, the memory slot may show that letter once (Q4) | navigation test; device |
-| FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, or the PDF book; its row shows the date only. When it opens, it appears in each at once. Closing a letter removes it from each at once | unit tests per surface; device |
+| FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, or the PDF book; its row shows the date only. When it opens, it appears in each at once. Closing a letter removes it from each at once. A letter cannot be re-sealed: once a seal ends, by "Open it now" or by the day, it cannot be sealed again (PRD NS-06-B3, PR #795 head `41ed5166`; ADR 0028 D3 "re-seal refused"). To hide something again the parent writes a new letter | unit tests per surface; device |
 | FS-R4 | Enrich only. Given Review or a letter page, When a parent marks a first or seals, Then that letter changes and no letter is created | unit test |
 | FS-R5 | Seal is display only and truthful. Given a sealed letter, Then its words and recording are unchanged and the UI says "hidden" or an approved word, never a stronger one than the build supports | `security`, `privacy`, `legal` |
 | FS-R6 | No countdown. Given a sealed row, Then it shows a date and nothing that counts down | device; content rules |

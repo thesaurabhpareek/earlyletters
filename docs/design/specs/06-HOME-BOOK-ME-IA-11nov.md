@@ -55,7 +55,7 @@ Home lists no kept letters and starts nothing but a take.
 
 ```
  ASHA, 7 MONTHS                    Good morning, {name}.
- What is one small thing she did today?
+ (the day's prompt, from content)
                                 [ Another thought ]
  [ Speak ]                 [ Type ]
         Start from a photo
@@ -63,7 +63,7 @@ Home lists no kept letters and starts nothing but a take.
  Waiting to be kept                     (flat row)
  SAT 14 OCT  1 min   "We went to the park"     Keep >
  {kicker}                                (the one slip, flat; the kicker is a content decision: "A month ago" exists today, or the letter's own date)
- "She slept through for the first time"      Read it >
+ (opening words of the letter, as kept)      Read it >
 ```
 
 ### 3.3 States
@@ -143,7 +143,7 @@ Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-T
 8. Help and legal: Help, If you are struggling (always present, D-034), Terms, Privacy Policy, Licenses.
 9. About.
 
-Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, placed under the "Take the book with you" section, which is below the first-screen fold, not under Children (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, EVIDENCE as quoted; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
+Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, placed under the "Take the book with you" section, which is below the first-screen fold, not under Children (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, second-hand through NX-41, UNVERIFIED; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
 
 ### 5.2 States
 
@@ -180,7 +180,7 @@ Existing (EVIDENCE): `tabs.tonight`, `tabs.book`, `tabs.family` (strings.en.ts l
 | `me.exportEmpty` | Export on an empty book | One line |
 | `book.lens.*`, `book.find.*`, `book.letter.*` | See specs 1, 2, 3, 4 | |
 
-Paths in copy that name old places must change in the same PR: "Tonight" in `billing.en.ts` (lines 51, 52, 59) and `strings.en.ts` (1159, 1165) must read Home; "Settings, Your letters" in `release/testflight.en.ts` (line 147) and any Family-tab mention (lines 104 and `family.en.ts` line 75) (all from NAV-TAB-ROLES section 10, EVIDENCE as stated there at a different head; UNVERIFIED on `da83fb1e`).
+Paths in copy that name old places must change in the same PR: "Tonight" in `billing.en.ts` (lines 51, 52, 59) and `strings.en.ts` (1159, 1165) must read Home; "Settings, Your letters" in `release/testflight.en.ts` (line 147) and any Family-tab mention (lines 104 and `family.en.ts` line 75) (all from NAV-TAB-ROLES section 10, second-hand through NAV-TAB-ROLES at a different head; UNVERIFIED on `da83fb1e`).
 
 Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the existing `familyCopy.soon` words; Records, nothing beyond the opt-in content-free count; Never, a date, a notify promise, a number; Decline, Close in one tap.
 
@@ -199,7 +199,7 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 | IA-R9 | Home lists no kept letters; at most one memory slip | device, AX5 |
 | IA-R10 | Accessibility per section 7 in both themes with Reduce Motion and Reduce Transparency | device |
 | IA-R11 | Content. New strings pass `rules.test.ts` and the tab-labels test | content tests |
-| IA-R12 | No new analytics event (NAV-R12) | catalog |
+| IA-R12 | These specs add no analytics event. The one event the photo PRD proposes (`media_added`, opt-in, `source` and `kind` only, NX-39-R34) is proposed-only, belongs to the PRD, and needs the catalog first | catalog |
 
 ## 10. The navigation test: fails if two tabs share a verb or a capture entry
 

@@ -1,6 +1,6 @@
 # 5. Hands-free capture states
 
-Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources (EVIDENCE): `F04-capture.md` (interruptions line 61; Siri, widget, Live Activity lines 51 to 72; Voice Memos note line 97; widget entry line 118; U08/U09; REQ-040/041), `SOUND.md` (no sound while recording; record start sequence), `COMPONENTS.md` 2.17 ListeningAura and 2.18 CaptureBar, `listen.tsx` (quiet = metering below -50 dB after 8 s), `strings.en.ts` (`tonight.states.*`, `listen.*`). This spec designs the states a person sees and hears when their hands are busy, and what each state does with the take. It changes no recording rule.
+Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Sources (EVIDENCE only for the lines I read, which are the ones named; the rest of each file is UNVERIFIED): `F04-capture.md` (interruptions line 61; Siri, widget, Live Activity lines 51 to 72; Voice Memos note line 97; widget entry line 118; U08/U09; REQ-040/041), `SOUND.md` (no sound while recording; record start sequence), `COMPONENTS.md` 2.17 ListeningAura and 2.18 CaptureBar, `listen.tsx` (quiet = metering below -50 dB after 8 s), `strings.en.ts` (`tonight.states.*`, `listen.*`). This spec designs the states a person sees and hears when their hands are busy, and what each state does with the take. It changes no recording rule.
 
 ## 1. Job
 

@@ -18,12 +18,12 @@ One sentence: I find a letter by a word I remember. (9 words.) Verb "find" belon
  [ Find in Asha's book ........ ] Cancel      <- FindBar, 48 pt, autofocus
  ( Months )  Photos                            <- LensRow hidden while finding
 
- Type three letters to start.                  <- before 3 characters (slot)
+ (nothing changes under 3 characters; no message)
 
  -- after 3 characters --
  SAT 14 OCT
- "We went to the park and she laughed at the
-  [ducks] by the water, the way she does."     <- match marked, words whole
+ "We went to the park and {child} laughed at the
+  [ducks] by the water."     <- match marked, words whole
  Hear {signsAs}                                      <- only if a recording exists
 
  SUN 3 SEP
@@ -67,8 +67,8 @@ Long letters: the row shows the sentence that holds the match, cut on whole word
 
 | State | Behaviour |
 |---|---|
-| Idle, before typing | Field focused, the line "Type three letters to start." (slot). No recent searches (Q2) |
-| Fewer than 3 characters | Same line. No results. (CJK may match on fewer; F09 sets 3 for the rest) |
+| Idle, before typing | Field focused, nothing else. No recent searches (Q2) |
+| Fewer than 3 characters (non-CJK) | Nothing changes on screen and no message appears (PRD NS-02-R3, PR #795 head `41ed5166`, which wins over my earlier hint line). A CJK query matches from 1 character (substring path). Spaces-only counts as under 3 |
 | Results | Rows as above, p95 300 ms on an SE 3 with 1,000 letters (F09-REQ-015; UNVERIFIED, nothing built). Results appear without a spinner; if over 300 ms the previous list stays, no flash |
 | No match | Existing `book.empty.searchTitle` "No letters with that word yet." (EVIDENCE). One quiet line under it (slot): try another word. No "Write a letter" button (the Book starts nothing) |
 | Empty book | Find is not offered when there is no kept letter (the magnifier is absent, not greyed) |
@@ -106,7 +106,6 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 |---|---|---|
 | `book.find.button` | VoiceOver and visible name of the magnifier | One word: Find |
 | `book.find.placeholder` | "Find in {child}'s book" | Names the book; `{child}` with the nameless fallback |
-| `book.find.hint` | Before three characters | One sentence; no number words other than "three" if kept |
 | `book.find.noMatchHelp` | Under the existing no-match title | One short line, suggests another word; no gap language |
 | `book.find.notReady` | Index still being made | Plain; true only while it is true |
 | `book.find.error` and `book.find.retry` | Index failed and Try again | Says what to do |

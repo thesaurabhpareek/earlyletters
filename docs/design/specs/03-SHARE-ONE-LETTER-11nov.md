@@ -1,6 +1,6 @@
 # 3. Share one letter, and the test for whether a Share tab is ever justified
 
-Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Gap G-3 in NAV-TAB-ROLES (share one letter with one person; "S to M, no server, uses the share sheet `expo-sharing` already in the build per the gap file", UNVERIFIED: I did not re-read the gap file). The founder has not decided G-3 (NX-42 section 3, as quoted there). This spec is ready if he says yes.
+Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, tags and the 12-line review: `NEW-SCOPE-INDEX-11nov.md`. Gap G-3 in NAV-TAB-ROLES (share one letter with one person; "S to M, no server, uses the share sheet `expo-sharing` already in the build per the gap file", UNVERIFIED: I did not re-read the gap file). NX-42 section 3 recorded G-3 as undecided; that is superseded. The founder decided on 10 Nov to include all new scope, so share one letter is built, text first (relayed by Karma; original not read, UNVERIFIED). The recording is gated off Level 1 (section 3.3).
 
 ## 1. Job
 
@@ -27,12 +27,12 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
 
  [x] The words                    <- Toggle row, on, cannot be turned off
  (no recording row at Level 1; see section 3.3)
- [ ] The photos  (2)              <- only if photos; (2) is the parent's own item count
+ [ ] The photo                    <- only if the letter has a photo; Build 13 holds one per letter
 
  (preview, scrollable, words whole)
  +--------------------------------------+
  | SAT 14 OCT                           |
- | "We went to the park and she laughed"    |
+ | "We went to the park and {child} laughed" |
  | From {signsAs}                       |
  +--------------------------------------+
  This leaves the app when you send it.   <- Shown line (slot); says nothing about the recipient's copy
@@ -129,7 +129,7 @@ Existing (EVIDENCE): `book.entryMenu.shareButton` = "Share".
 | `share.letter.noWords` | Letter has no words yet | One sentence |
 | `share.letter.failed` and `.retry` | Error | Says what to do |
 
-Words: the glossary bans "sharing" as the word for backup and VOICE.md lists "Per-book sharing" as a phrasing to avoid (EVIDENCE as quoted in NAV-TAB-ROLES 6.3; not re-read). Sharing one letter is a different act from per-book sharing; whether "Share" is allowed as a button word is for `content` and `legal` (COUNSEL-READ). Not "send to family" (grandparent words are v1.1).
+Words: the glossary bans "sharing" as the word for backup and VOICE.md lists "Per-book sharing" as a phrasing to avoid (second-hand through NAV-TAB-ROLES 6.3; UNVERIFIED, BRAND.md and VOICE.md not re-read). Sharing one letter is a different act from per-book sharing; whether "Share" is allowed as a button word is for `content` and `legal` (COUNSEL-READ). Not "send to family" (grandparent words are v1.1).
 
 Door lines (this is a thing a person agrees to; COORDINATION section 10, PRIV-R21):
 - Shown: `share.letter.shown` and the preview, on the sheet, before the iPhone sheet opens.

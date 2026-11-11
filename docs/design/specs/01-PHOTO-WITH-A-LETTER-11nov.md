@@ -12,6 +12,8 @@ The rule that makes it safe: every picture belongs to a letter. A picture with n
 
 Build 13 holds ONE photo per letter (coordinator, 11 Nov). Everything in this spec that handles several photos is marked post-Build 13 and is not built then: the cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo letter layouts, the strip of tiles, and the viewer's swipe between items. In Build 13 the single picker returns one photo; the Photos lens, the letter page and Share show one. Videos are not in Build 13.
 
+Aligned to PRD #795 (head `41ed5166`), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
+
 ## 2. Where a photo can be added (the whole map)
 
 | # | Where | What it does | Creates a letter? | Tab |
@@ -57,7 +59,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 
 - The prompt is replaced by a photo-aware line (slot `capture.photo.ready`). Never a machine description of the photo (the machine may not add meaning). The line may not name what is in the picture.
 - Recording, pause, finish: unchanged (spec 5). The thumbnail stays; it never covers the aura or the timer.
-- Finish goes to Review, where the photo is in the strip (ML-S5), above Keep, and the chips (date and place) show per ML-S6.
+- Finish goes to Review, where the photo is in the strip (ML-S5), above Keep, and, in Build 13, no date or place chip is derived from the file (below, section 1a). A parent may type optional photo text (140 characters) and a place (60), per PRD NS-01-R21.
 - If the parent leaves Ready or Review without keeping words: the photo is dropped and the existing "Let it go" confirm names it (slot `capture.photo.dropNote`). The picture was never copied into the book before Keep, so nothing remains (HYPOTHESIS about the implementation; `mobile` confirms; UNVERIFIED).
 
 ### 3.3 Components
@@ -74,7 +76,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 - Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Build 13: one photo per letter, so the control reads as adding a photo and is hidden once one is attached (a Change action replaces it). The multi-photo "Add photos" row is post-Build 13. Words above never move.
 - Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
-- Chips, the viewer and take-off behave as ML-S6, S7 and S8. No change.
+- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `41ed5166`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
 
 ## 5. The Photos lens in the Book (D)
 
@@ -130,8 +132,8 @@ No parallax, Ken Burns, slideshow, autoplay or reel, ever. Haptic: `tap` on sele
 ## 8. Dynamic Type and VoiceOver
 
 - AX5: the Home photo-first button stays 44 pt and wraps onto two lines if needed; the thumbnail on Ready scales to the screen width and the aura moves below it; Review and the letter page use one tile per row; the lens row becomes chips that wrap; tile dates sit under tiles in `callout`. Letter text is whole in every state.
-- VoiceOver on Home: the button reads as its own words; after the pick, focus moves to the thumbnail ("Photo, {date}. Change.") then the red circle. The thumbnail has the parent's typed description if any, else its date only; the app never generates a description.
-- Lens row: "Photos, 2 of 2, selected" style (the segmented control's own trait). Grid and tile names follow ML-S9.
+- VoiceOver on Home: the button reads as its own words; after the pick, focus moves to the thumbnail (label: the fixed phrase "Photo with this letter", NS-01-R9, or the parent's own typed text if there is any; then "Change") then the red circle. The reading order is thumbnail, prompt, Speak, Type (NS-01-R20). The app never generates a description.
+- Lens row: the segmented control's own selected trait; no count of pictures in any VoiceOver string (NS-01-R11). Each lens card reads the letter's card name plus the fixed photo label.
 - Typed description (ML-S7, 140 characters) is the only text alternative. Said plainly in the spec, as ML-S8 does: a video carries speech and the app makes no captions.
 
 ## 9. Copy slots (for `content`; I write no final strings)
@@ -147,12 +149,12 @@ Existing on `develop`: `tonight.states.*`, `listen.*` (EVIDENCE). Drafts exist i
 | `capture.photo.openFailed` | The picture could not be opened | Says what to do next |
 | `book.lens.months`, `book.lens.photos` | Lens labels | One glossary word each |
 | `book.letter.addPhoto` | Object action on the letter page | Starts with a verb; "this letter" |
-| `book.photos.a11yTile` | "Photo, from the letter of {date}" | Date full, not abbreviated |
+| `book.photos.a11yTile` | The fixed VoiceOver label of a picture: the PRD's phrase "Photo with this letter" (NS-01-R9); the parent's typed text replaces it when present | No machine caption, no count, no date generated |
 | Reuse | ML chooser, chips, cap, cloud, missing strings | Per `MEMORY-LIBRARY-WORDS-10nov.md`; its Truth lines still apply |
 
 Door lines (COORDINATION section 10; COUNSEL-READ, none cleared):
 - Shown: the picker is the system's; Home shows the button and nothing about access. The pre-prompt, if the app asks for library access later, is ML-S1.
-- Records: the kept copy of a chosen picture, its date and typed place, in a phone-only table (ML gap 2). No analytics beyond the ML catalog event `media_added` with `kind` and `source` and no counts.
+- Records: the kept copy of a chosen picture, its date and typed place, in a phone-only table (ML gap 2). This spec adds no analytics event. The PRD proposes one opt-in event, `media_added` with `source` and `kind` only (NX-39-R34); that is the PRD's and proposed-only, not part of this spec, and it needs the catalog first.
 - Never: the picture, its description, date or place in analytics, logs, crash reports, push, URLs or sync payloads beyond the letter's own rules; no face, object or scene analysis; no auto-attach.
 - Decline: Cancel in the picker costs nothing; denying access still leaves the system picker.
 
