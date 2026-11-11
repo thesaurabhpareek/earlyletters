@@ -51,7 +51,7 @@ export type AuthErrorKind =
   | 'already_signed_in'
   | 'unknown';
 
-export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account';
+export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth';
 
 /** 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': not checked yet (offline at launch). */
 export type SyncMode = 'on' | 'off' | 'unknown';
