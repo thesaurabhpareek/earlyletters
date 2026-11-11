@@ -167,7 +167,6 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 |---|---|---|
 | SH-R1 | One letter, chosen by the parent. Given a letter page, When the parent chooses Share, Then only that letter is offered and nothing leaves until they tap Continue and pick a recipient in the iPhone sheet | device |
 | SH-R2 | Least by default. Given the sheet, Then the words go (a static row) and the photo is off, and no recording row or recording path exists at Level 1 | unit test on defaults |
-| SH-R10 | Recording gate. Given Level 1, Then no recording row, audio URI or recording copy slot exists in the sheet or the code, and the shared text has no footer, brand name or link | code review by `security-architect`; unit test on the share payload |
 | SH-R3 | Faithful. Given the preview, Then its words equal the words the Book shows for that letter, with no added line, title, name or link | unit test comparing strings |
 | SH-R4 | No log. Given any share, Then no row, event or count is written | code review; analytics catalog |
 | SH-R5 | Own letters only; open letters only. Given another parent's letter, a sealed letter, a quiet-day mark or a letter with no words, Then Share is absent | unit tests |
@@ -175,9 +174,9 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 | SH-R7 | Accessibility. Section 6 holds in both themes with Reduce Motion and Reduce Transparency; the preview is read whole | device |
 | SH-R8 | Truth. Given the Shown line, Then no word says safe, secure or private about the recipient's copy | `legal`, content rules test |
 | SH-R9 | Locale and script. Given a Devanagari letter, Then the text reaches the share sheet unchanged (no font-dependent image in this scope) | device |
+| SH-R10 | Recording gate. Given Level 1, Then no recording row, audio URI or recording copy slot exists in the sheet or the code, and the shared text has no footer, brand name or link | code review by `security-architect`; unit test on the share payload |
 | SH-R11 | File names hold no personal data (PRD NS-05-R6, head `2245c8be`). Given any file handed to the share sheet, Then neither its name nor its metadata holds the child's name, an email, a device name or an app account id; a picture's file name is the letter's date and nothing else | unit test on the payload builder |
 | SH-R12 | No temporary file survives (PRD NS-05-R10). Given the share sheet is dismissed, a send fails, or the app is killed, Then any temporary file the app made is deleted at the next launch at the latest | unit test; device |
-
 | SH-R13 | Blank in the switcher (PRD NS-05-R14). Given App lock on, When the app goes to the app switcher with the sheet open, Then the snapshot shows no preview text or photo; and the Share button is reachable only once the app is open past App lock | PRD test `[NS-05-R14]`; device |
 | SH-R14 | Equal choice (PRD NS-05-R2). Given the sheet at every Dynamic Type size including AX5, Then Continue and Not now have the same size, weight and type, and neither is the filled primary | PRD test `[NS-05-R2]`; layout test reading both buttons' props; device at AX5 |
 | SH-R15 | The words row is not a control. Given VoiceOver and Switch Control, Then "The words always go" is static text with no switch role and is not announced as dimmed | device |

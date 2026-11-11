@@ -10,7 +10,7 @@ Closed-question note. N1 in `infra/closed-questions-2026-11-11.md` (Project doc;
 
 ## 1. Job
 
-One sentence: I learn what co-parent sharing will be, and ask to be told when it is ready. (16 words; the verbs are "learn" and "ask". It adds no tab verb: it lives inside Me's job, Look after, as a note about my account and books.)
+One sentence: I ask to hear when co-parent sharing is ready. (10 words, one verb, "ask". The sheet also explains what it will be, in support of that one act. It adds no tab verb: it lives inside Me's job, Look after, as a note about my account and books.)
 
 The sheet has two jobs only, as ruled: explain, and let the parent say "tell me when it is ready". It is not a sign-up, not a waitlist, not a survey and not a sales page. Plus is not mentioned on it.
 
@@ -93,7 +93,7 @@ Layout rules (PROPOSED): horizontal padding and vertical rhythm from the `space`
 ### 4.5 The note when co-parent sharing ships (S3)
 
 Rule (PROPOSED, ruling (b)): when a build that really has co-parent sharing runs and `family.coParentNotify` is set, Me shows ONE quiet note, once, and the flag clears.
-- Where: the first element under the Me heading (it is news, so it is above the fold, unlike the caption). It is an `AppNote` (COMPONENTS 2.5b), not a banner, not a toast, no badge on the Me tab, no sound, no haptic, no notification, no color other than the note's own surface.
+- Where: the first element under the Me heading and its job line ("Account and settings") (it is news, so it is above the fold, unlike the caption). It is an `AppNote` (COMPONENTS 2.5b), not a banner, not a toast, no badge on the Me tab, no sound, no haptic, no notification, no color other than the note's own surface.
 - What it says: that co-parent sharing is ready, and how to start (one `Button` quiet `sm` that goes to the real invite entry), plus `Close` text button. No date, no "finally", no number.
 - When the flag clears: when the person dismisses the note or taps through to the invite entry. It does not clear on mere display, because Me can be opened with the note off screen. It never appears a second time (the flag is gone).
 - A person who never set the flag sees no note; they see the real rows.
@@ -103,13 +103,13 @@ Rule (PROPOSED, ruling (b)): when a build that really has co-parent sharing runs
 ### 4.6 Motion and Reduce Motion
 
 - Motion is the `Sheet`'s only: it rises on the `standard` spring (EVIDENCE, MOTION 5i). Sheet content adds no entrance (MOTION 5i). Nothing breathes; the old `Breathe` and draw-on are removed.
-- Tapping the button to move from S1 to S2: the button and hint cross-fade to the confirmation block over `fadeMs` (200 ms). No scale, no confetti, no haptic celebration (no streaks, points or badges, ever). The one haptic allowed is the single `success` outcome haptic from COMPONENTS 0.2 for a saved setting (PROPOSED; check that table lists it).
+- Tapping the button to move from S1 to S2: the button and hint cross-fade to the confirmation block over `fadeMs` (200 ms). No scale, no confetti, no haptic celebration (no streaks, points or badges, ever). No haptic anywhere in this sheet, including on the button and on S1 to S2 (decided: it is a quiet note, not an outcome that needs one; this removes the earlier unverified `success` haptic).
 - Reduce Motion: the sheet and its scrim fade over `fadeMs` and nothing slides (EVIDENCE, MOTION 5i); the S1 to S2 change is an instant swap with no fade. Reduce Transparency: the sheet is solid `surfaceRaised`; no blur anywhere. Increase Contrast: `tokens.highContrast` and the underline stays.
 
 ### 4.7 VoiceOver script (UNVERIFIED until `qa` runs it on a device)
 
 Entry, on Me:
-1. "Writing this book together is coming in a later update. Button. Opens a short note." (the caption's text, role button, hint). Not read as a heading.
+1. "Sharing a book with a co-parent is coming in a later update. Button. Opens a short note." (exactly the caption string in section 8, role button, hint). Not read as a heading.
 
 On open, focus moves to the heading and the sheet is modal:
 2. "For now, this book is yours. Heading."
@@ -151,19 +151,19 @@ Reading order is: heading, explanation, the one action, Close. No decorative ele
 
 | What | Where | Leaves the phone? | Cleared by |
 |---|---|---|---|
-| `family.coParentNotify` = the day the person asked (`YYYY-MM-DD`, existing format) | The on-device settings store (the `settings` table of the local SQLite store). No other place | No. Nothing. No network call, no analytics event, no push token, no email, no contact, no server row | "Turn this off" (new `clearCoParentNotify`); the shipped note being dismissed or acted on; Erase everything (settings rows go, step 2 of `erase-everything.ts`) |
+| `family.coParentNotify` = a bare marker (default; today it holds the day, `YYYY-MM-DD`) | The on-device settings store (the `settings` table of the local SQLite store). No other place | No. Nothing. No network call, no analytics event, no push token, no email, no contact, no server row | "Turn this off" (new `clearCoParentNotify`); the shipped note being dismissed or acted on; Erase everything (settings rows go, step 2 of `erase-everything.ts`) |
 | Whether the sheet was opened | Not stored. The count event is removed (#720) and stays removed | No | n/a |
 | Whether the note was shown | Not stored. The flag itself is the memory; once it clears, the note cannot return | No | n/a |
 
 Caveats, stated honestly (UNVERIFIED unless marked):
 - The iPhone's own device backup (iCloud or a computer) may include the app's local database, as it already includes recordings (`family.en.ts` comment at lines 170 to 172, EVIDENCE for the recordings remark). So the true line is "Nothing is sent from the app", not "stays on this phone only for ever". The hint "Saves a note on this phone. Nothing is sent." (existing, EVIDENCE) is true under that reading; `privacy` confirms.
 - Whether the settings row can be swept into encrypted backup (BL backup, off in every build profile per `lib/README.md` line 80, EVIDENCE) or into any sync set: the outbox grep in section 2 found no path. Until traced, `mobile` adds a test that `family.coParentNotify` is in no sync or backup key list.
-- The stored value is a day. The note does not need it. Keeping the existing format avoids a change to `coming-soon.logic.ts`; a bare `1` would store less (CS-Q4).
+- The stored value today is a day string. The note does not need it, so the default (CS-Q4) is a bare marker, with `mobile` migrating any existing day string to it (UNVERIFIED).
 
 ## 7. Door lines (PRIV-R21; `legal` and `privacy` review)
 
 Shown: "Saves a note on this phone. Nothing is sent." (existing words, under the button), and in S2 "Noted on this phone."
-Records: one setting on this phone, the day the parent asked. Nothing is counted; no event is sent.
+Records: one setting on this phone, a bare marker (today, the day the parent asked). Nothing is counted; no event is sent.
 Never: a date for the feature; a promise that a notification, email or message will arrive; asking for notification permission, an email or a phone number; any server write.
 Decline: Close in one tap, or do nothing. Declining records nothing. Turning the reminder off removes the setting.
 
@@ -204,7 +204,7 @@ No new token. No new component. Uses `Sheet`, `Text`, `Button`, `AppNote`, and t
 
 | # | Result | Reason |
 |---|---|---|
-| J1 | Pass | One sentence in section 1, one verb pair, within 16 words; the cap of 12 is exceeded by 4. Shortened form: "I ask to hear when co-parent sharing is ready." (10 words, one verb). Use that as the working sentence |
+| J1 | Pass | One sentence in section 1, one verb pair, section 1's sentence is 10 words with one verb |
 | J2 | Pass | It adds no tab verb |
 | J3 | Pass | Starts no letter |
 | J4 | Pass | One object: a note about a coming feature |
@@ -236,7 +236,7 @@ No new token. No new component. Uses `Sheet`, `Text`, `Button`, `AppNote`, and t
 | CS-Q1 | A button (as drawn) or a switch? | A button that becomes a confirmation with "Turn this off". A switch would show state on first view, but a switch on a feature that does not exist reads as a setting already in effect, and the brief wants a 56 pt primary button |
 | CS-Q2 | Where does the shipped note sit? | The top of Me, once, because it is news. The alternative, in the caption's place below the fold, risks being missed, and then the flag would never clear in a way the parent saw |
 | CS-Q3 | Does "when it is ready" promise the feature will ship? | It is the founder's phrasing and carries a mild promise. `legal` reads it. A softer wording would be "Let me know if it is ready", which is awkward; I recommend keeping the founder's words and the hint "Nothing is sent", and not adding "we will" anywhere |
-| CS-Q4 | Store the day, or a bare marker? | Keep the day for now (no change to existing, tested logic). A bare marker stores less; `privacy` may prefer it |
+| CS-Q4 | Store the day, or a bare marker? | A bare marker (for example the value `1`), which stores less than a day string. The code currently stores a day (`YYYY-MM-DD`), so `mobile` changes `coming-soon.logic.ts` and treats an existing day string as set (a migration of the flag; whether the code allows it cleanly is UNVERIFIED, I did not read the tests beyond the import line). If that proves costly, the day string stays, and `privacy` is told |
 | CS-Q5 | Should the old drawing return to the sheet? | No, until `creative` shows it contains no child. The sheet works without it |
 | CS-Q6 | Does a signed-out phone see the S3 note? | Yes: the note shows if the build has co-parent sharing, and the invite action leads to whatever the real flow needs first (sign in). Product confirms |
 

@@ -136,7 +136,7 @@ Letter page: read it, hear it, then the object actions in section 4a: Add a phot
 
 ### 4.4 Components
 
-`BookCover` (2.24), `MonthOpener` (2.20), `LetterCard` (2.5), `AppNote` and `QuietDayRow` (2.5b), `LensRow` (NEW), `FindBar` (NEW), `SealedRow` (NEW), `AudioPlayer` (2.21), `ReadTogetherPlayer` (2.22), `PhotoFrame`/`MediaGrid`. Lamp scene `book` (still, intensity 0.6).
+`BookCover` (2.24), `MonthOpener` (2.20), `LetterCard` (2.5), `AppNote` and `QuietDayRow` (2.5b), `LensRow` (NEW), `FindBar` (NEW), `SealedRow` (NEW), `AudioPlayer` (2.21), `ReadTogetherPlayer` (2.22), `PhotoFrame` (`MediaGrid` is post-Build 13; the Photos lens is letter cards). Lamp scene `book` (still, intensity 0.6).
 
 ## 4a. The letter page (this spec owns it; added after Review B finding 5)
 
@@ -170,7 +170,7 @@ The letter page is the busiest screen in the new scope: four specs add an action
 
 ### 5.1 What it shows
 
-Plain paper, no lamp, one level 1 heading ("Settings" per NAV-TAB-ROLES 9.7; the tab label is Me; the heading word is a content decision, default: the existing Settings word so the Terms' "Settings, Plan" stays true, CCO-9 as quoted).
+Plain paper, no lamp, one level 1 heading, "Me" (the same word as the tab label), and under it the job line "Account and settings" (PROPOSED; section 1 table and Q1 decide this; it replaces the earlier default of "Settings" from NAV-TAB-ROLES 9.7, and the line keeps the Terms' "Settings, Plan" true). The heading word and line are `content`'s decision.
 
 Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-TAB-ROLES 5.4; EVIDENCE for IA.md, second-hand for the PRs):
 
@@ -184,7 +184,7 @@ Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-T
 8. Help and legal: Help, If you are struggling (always present, D-034), Terms, Privacy Policy, Licenses.
 9. About.
 
-Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, standing alone between "Your letters" and "Take the book with you" (so it is not under the export section, which would put it under an unrelated job), below the first-screen fold (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `settingsRowHelp`, EVIDENCE in `packages/content/src/features/family.en.ts` lines 188 and 189). **Amended 11 Nov (founder, later instruction, replacing the "static text, not tappable, no sheet" wording I set earlier the same day):** the line is still one small quiet caption (no row, no chevron, no badge, no number, no date) but it is tappable and opens one sheet that explains what co-parent sharing will be and lets the parent say "tell me when it is ready", kept on this phone only. Closed question N1 is amended by the founder on 11 Nov to allow a tappable caption opening one sheet (the earlier ruling that even a prominent coming-soon is overkill still holds: the line itself stays small and below the fold). The full design, states, data flow and requirements are in `07-COPARENT-COMING-SOON-11nov.md`. It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
+Co-parent: while it is not live, one caption line, no button styling (no fill, no outline; VoiceOver still announces it as a button, which is spec 07 CS-R2), no badge, no colour, no date, muted text, standing alone between "Your letters" and "Take the book with you" (so it is not under the export section, which would put it under an unrelated job), below the first-screen fold (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `settingsRowHelp`, EVIDENCE in `packages/content/src/features/family.en.ts` lines 188 and 189). **Amended 11 Nov (founder, later instruction, replacing the "static text, not tappable, no sheet" wording I set earlier the same day):** the line is still one small quiet caption (no row, no chevron, no badge, no number, no date) but it is tappable and opens one sheet that explains what co-parent sharing will be and lets the parent say "tell me when it is ready", kept on this phone only. Closed question N1 is amended by the founder on 11 Nov to allow a tappable caption opening one sheet (the earlier ruling that even a prominent coming-soon is overkill still holds: the line itself stays small and below the fold). The full design, states, data flow and requirements are in `07-COPARENT-COMING-SOON-11nov.md`. It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
 
 ### 5.2 States
 
@@ -212,8 +212,10 @@ Per-tab Dynamic Type and VoiceOver (Review B finding 11; device behaviour UNVERI
 |---|---|---|
 | Home | Cluster unpinned and scrolling (section 3.5); Speak and Type stack at 64 pt; prompt first | Greeting heading, prompt, Another thought, Speak, Type, Start from a photo, Not much today, waiting rows, memory slip |
 | Book | Cover band stacks; lens row becomes wrapping chips; cards are one column, words whole (fade only where the full text is one tap away); Find stays 44 pt | Title heading, job line, Find, Read together, lens row, then each month heading and its cards |
-| Me | One column; rows grow; the co-parent caption wraps, never truncated, 44 pt tall at least | "Me" heading, job line, Account, Plan, Children, Writing, Your letters, co-parent caption, Take the book with you, Privacy and security, Delete account, Help and legal, About |
-| Letter page | Section 4a | Section 4a | Reduce Transparency: the bar is solid `surfaceRaised` with a 1 pt `line` top edge (`platform/blur-surface`).
+| Me | One column; rows grow; the co-parent caption wraps, never truncated, 44 pt tall at least | "Me" heading, job line, the one-time co-parent-ready note when present (spec 07 4.5), Account, Plan, Children, Writing, Your letters, co-parent caption, Take the book with you, Privacy and security, Delete account, Help and legal, About |
+| Letter page | Section 4a | Section 4a |
+
+Reduce Transparency: the tab bar is solid `surfaceRaised` with a 1 pt `line` top edge (`platform/blur-surface`).
 
 ## 8. Copy slots (for `content`)
 
@@ -251,9 +253,9 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 | IA-R10 | Home at AX5. Given AX1 and up, Then the capture cluster scrolls with the page, the prompt is first, no part of the prompt is hidden behind the cluster, and the two quiet buttons are 8 pt or more apart | device, AX5 |
 | IA-R11 | The letter page. Given a kept, open letter by the viewer with a photo and a recording, Then the page has one level 1 heading (the date), the order in section 4a, the "Add to this letter" group holding only add actions, Share on its own below it, no primary button other than the player, and one column at AX5; Given a quiet-day mark, another parent's letter or a sealed letter, Then the absence rules of section 4a hold | device; a render test listing the rows for each of those cases |
 | IA-R12 | Tab headings. Given each tab, Then its level 1 heading and the line under it match the table in section 1, and Me's heading equals the tab label | device with VoiceOver; string test |
-| IA-R10 | Accessibility per section 7 in both themes with Reduce Motion and Reduce Transparency | device |
-| IA-R11 | Content. New strings pass `rules.test.ts` and the tab-labels test | content tests |
-| IA-R12 | These specs add no analytics event. The one event the photo PRD proposes (`media_added`, opt-in, `source` and `kind` only, NX-39-R34) is proposed-only, belongs to the PRD, and needs the catalog first | catalog |
+| IA-R13 | Accessibility per section 7 in both themes with Reduce Motion and Reduce Transparency | device |
+| IA-R14 | Content. New strings pass `rules.test.ts` and the tab-labels test | content tests |
+| IA-R15 | These specs add no analytics event. The one event the photo PRD proposes (`media_added`, opt-in, `source` and `kind` only, NX-39-R34) is proposed-only, belongs to the PRD, and needs the catalog first | catalog |
 
 ## 10. The navigation test: fails if two tabs share a verb or a capture entry
 
@@ -363,10 +365,10 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 | Step | Owner | Change |
 |---|---|---|
 | 0 | `mobile` | Prerequisite for N3: consolidate every capture start into one function, `startCapture({ source })`, with the `source` values in 10.1; or accept the weaker snapshot mode in 10.1 until it exists |
-| 1 | `product` | Reconcile NX-42 (the Moments tab dissolves into Home mode, Book lens, letter actions) and NX-41 R12 with this bar; assign ids to IA-R1 to R12 |
+| 1 | `product` | Reconcile NX-42 (the Moments tab dissolves into Home mode, Book lens, letter actions) and NX-41 R12 with this bar; assign ids to IA-R1 to R15 |
 | 2 | `content` | Slots in section 8 and each spec; `legal` read of "Share" as a button word. The glossary rows for "Home" and "Me" ship in the same PR as navigation test N6(b), or N6(b) fails on day one |
 | 3 | `mobile` | Labels and manifest; remove the Family tab; export rows into Me's section; flat waiting rows (needs #721); Book lens row and Find; the test in section 10 |
-| 4 | `design-systems` | Tokens in the index section 7; `COMPONENTS.md` entries for `LensRow`, `FindBar`, `SharePreview`, `SealedRow`, `FirstMark`, `MediaTile` family; fix 2.18; `IA.md` updated when the bar ships |
+| 4 | `design-systems` | Tokens in the index section 7; `COMPONENTS.md` entries for `LensRow`, `FindBar`, `SharePreview`, `SealedRow`, `FirstMark`, and the post-Build 13 `MediaTile` family; fix 2.18; `IA.md` updated when the bar ships |
 | 5 | `qa` | Device passes; AX5 and VoiceOver tables |
 | 6 | `user-research` | Five-parent read of the three job sentences and the headings, then Find and the letter-page actions |
 
