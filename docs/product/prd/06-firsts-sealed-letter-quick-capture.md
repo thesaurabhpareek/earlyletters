@@ -112,7 +112,7 @@ Seal date in the past is refused (the control offers only later days). A time zo
 
 ### B6. Privacy and constitution
 
-No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records the seal (the instant of NS-06-B1) for the author only: "author-only" means the author's own devices and the author's own backup and new-phone restore are covered, so "what a family kept stays theirs" holds; no other person's phone receives it before the day (NS-06-B8, where "second phone" means another person's phone). How the author's own seal reaches the author's new phone is `data-architect`'s (OQ-B2). UNVERIFIED: I did not read ADR 0028 D3 or the backup and restore code; Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
+No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records the seal (the instant of NS-06-B1) for the author only: the seal must reach only the author's own devices, backup and new-phone restore, and no other person's phone before the day (NS-06-B8, where "second phone" means another person's phone); whether the build does this is UNVERIFIED (I did not read ADR 0028 D3 or the backup and restore code) and `data-architect` decides it in OQ-B2. Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
 
 Label effect (Part B): none while the seal stays on the phone and in ordinary sync; `data-architect` confirms.
 
@@ -173,7 +173,7 @@ Metrics: none in the app; `capture_started` with a `source` value only if analyt
 | OQ-A1 | When does the five-parent Firsts study run? | Founder | After Build 13 ships; the build waits for it (earliest Build 15). | Fri 20 Nov 2026 |
 | OQ-A2 | Place of the mark control on the letter page | `design-systems` | A quiet action in the letter's action row | Design spec |
 | OQ-B1 | When is the sealed letter built? | Founder | In scope; earliest Build 15, after Share one letter (Level 1) ships and the five-parent study has run and the `data-architect` has answered | Fri 20 Nov 2026 |
-| OQ-B2 | Seal mechanics for other phones (ruled: author-only, nothing reaches another phone before the day, ADR 0028 D3). What remains: how the letter is published at the instant, and how the absolute UTC instant (NS-06-B1) is reconciled with ADR 0028's calendar-date `sealed_until` (one stored field or two) | `data-architect` | The instant stays the author's device rule (NS-06-B1); the stored form follows ADR 0028 D3 unless `data-architect` rules otherwise. No build before the answer. | Fri 20 Nov 2026 |
+| OQ-B2 | Seal mechanics for other phones (author-only, nothing reaches another phone before the day, as quoted to me from ADR 0028 D3; UNVERIFIED, I have not read ADR 0028). What remains: how the letter is published at the instant, and how the absolute UTC instant (NS-06-B1) is reconciled with ADR 0028's calendar-date `sealed_until` (one stored field or two) | `data-architect` | The instant stays the author's device rule (NS-06-B1); the stored form is for `data-architect` to rule, after reading ADR 0028 D3 (cited, unread by me). No build before the answer. | Fri 20 Nov 2026 |
 | OQ-C1 | Siri phrase before widget? | `mobile` after NS-04 | Yes, if it needs no new target. | NS-04 read-out |
 
 ## Not fully testable

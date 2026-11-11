@@ -13,8 +13,8 @@ Counsel read before ANY arm (Karma, red team 11 Nov): counsel reads the consent 
 
 How this pilot respects it:
 
-- Arm W (words and picture): the parent sends the PDF of one letter. No recording. Carries no voice. Starts on the dates in section 5 once the counsel read of the consent and scripts is on record (the security read is not needed for Arm W, because the file is the Export output the app already makes and carries no voice). UNVERIFIED that a one-letter PDF can be cut from the current export; section 4 gives the fallback (send the whole-book PDF, or a screenshot).
-- Arm V (words plus the recording): the parent also sends the audio file. Arm V starts only after both reads are on record in the pilot file: `security-architect` on sections 3, 4 and 6, and counsel on the voice-specific lines of sections 6 and 7. Arm V parents are told in the consent, in plain words, that they will send a recording of their child's voice to a relative (section 6). If either read is missing on the start date, every parent runs Arm W and the voice questions are marked "not tested".
+- Arm W (words and picture): the parent sends the PDF of one letter. No recording. Carries no voice. Starts on the dates in section 5 once the counsel read of the consent and scripts is on record (the security read is not needed for Arm W, because the file is the Export output the app already makes and carries no voice). UNVERIFIED that a one-letter PDF can be cut from the current export; section 4 gives the fallback (a screenshot of the one letter page; the whole-book PDF is not allowed, see section 4).
+- Arm V (words plus the recording): the parent also sends the audio file. Arm V starts only after both reads are on record in the pilot file: `security-architect` on sections 3, 4 and 6, and counsel on the voice-specific lines of sections 6 and 7. Arm V parents are told in the consent, in plain words, that they will send a recording of their child's voice to a relative (section 6). Arm V runs only if both reads are on record by Fri 4 Dec; otherwise all parents are assigned Arm W at consent (section 2) and the voice questions are marked "not tested".
 - The reads are asked for this plan now: one page each, not a build review. Default if counsel has not answered by Fri 27 Nov 2026: the pilot does not start (no arm). If counsel has read the consent and scripts but not the voice lines: Arm W only.
 
 ## 1. Job to be done
@@ -65,8 +65,8 @@ Dates (Pacific time, all PROPOSED; none collides, and the read-out follows the l
 | Fri 27 Nov | Security read due (sections 3, 4 and 6), owner `security-architect`; Arm V cannot start without it | `security-architect` |
 | Fri 27 Nov | Counsel read of consent and scripts due. Default if not on record: the pilot does not start and every later date moves by the same number of weeks | counsel |
 | Mon 30 Nov to Fri 4 Dec | Recruit and consent (no recruiting before the counsel read is on record) | `user-research`, founder |
-| Wed 9 Dec | One extension of recruit and consent if fewer than 8 consented by Fri 4 Dec (stop rule 5); no further extension | founder |
 | Mon 7 Dec | Earliest Arm V start (only with both voice reads on record by Fri 4 Dec; otherwise no Arm V) | `user-research` |
+| Wed 9 Dec | One extension of recruit and consent if fewer than 8 consented by Fri 4 Dec (stop rule 5); no further extension | founder |
 | Mon 7 Dec to Fri 11 Dec | Send window. Last send date is Fri 11 Dec (the cap) | Parents |
 | Day 3 after each send | Check-in message, script A. Latest: Mon 14 Dec | `user-research` |
 | Day 7 after each send | Script B to the parent and script C relayed. Latest: Fri 18 Dec | `user-research`, parent |
@@ -101,11 +101,13 @@ Words are plain and calm. No pressure, no counts, no "you should".
 **Recruit (message; same for both arms; sent only after the counsel read is on record):**
 > Hi. We are trying out a small idea and would value your help. If you are willing, you would send one of your letters to a grandparent or another relative, in your own message, and tell us a week later how it went. We would not see the letter. It takes about ten minutes in all. Would you like to hear more?
 
-**Instruction W (Arm W, after consent; no recording sentence). The words "please do not send a recording" name the recording to Arm W on purpose, to keep it unsent; counsel is asked to read that line specifically (Review A, 11 Nov):**
+**Instruction W (Arm W, after consent; no recording sentence):**
 > Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. Say anything you like to them. Please do not send anything to us, and please do not send a recording. We will check in on day 3 and day 7.
 
 **Instruction V (Arm V only; sent only after the security and counsel voice reads are on record; counsel reads both instruction texts):**
 > Pick one letter you are happy to share. Send it to one person you choose, by the message app you already use, as a PDF. If you want them to hear your voice, also send the recording. You will be sending a recording of your child's voice to that person; you choose whether to. Say anything you like to them. Please do not send anything to us. We will check in on day 3 and day 7.
+
+Note on Instruction W: the words "please do not send a recording" name the recording to Arm W, to keep it unsent, and that puts the idea in the parent's head. Counsel should rule on naming the recording in Arm W. Fallback wording slot, PROPOSED, used if counsel objects: "Please send only the letter." (replacing "and please do not send a recording"). Counsel reads both versions.
 
 Arm W parents are never told they may send a recording, and a parent who asks is told that this group sends the words and picture only.
 
