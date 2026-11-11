@@ -3,7 +3,9 @@ import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 
 import { AppState, type AppStateStatus } from 'react-native';
 import { subscribe as subscribeStore, listEntriesForChild } from '../store';
 
-import { photoDeps } from './device';
+import { erasePictureOf, photoDeps } from './device';
+import { adoptPending } from './adopt';
+import { photoNotSaved, subscribePhotoNotSaved } from './failures';
 import { photosLens, type LensLetter, type PhotosLens } from './lens';
 import type { PendingPhoto } from './pending';
 import { getPending } from './registry';
@@ -77,13 +79,23 @@ export function discardPendingPhoto(): void {
   void getPending()?.discard();
 }
 
-/** At Keep, for the letter that now exists: stores the picture if one is pending. Never throws; the letter stays kept. */
-export async function commitPendingPhoto(entryId: string, finalText: string): Promise<void> {
-  const p = getPending();
-  if (!p?.source) return;
+/** Stores the pending picture for an owner (adopt.ts), with this phone's stores. */
+export const adoptPendingPhoto = (ownerId: string, finalText: string, requireWords: boolean): Promise<void> =>
+  adoptPending(getPending(), photoDeps, ownerId, finalText, requireWords);
+
+/** At Keep, for the letter that now exists: a picture still pending is stored with it. */
+export const commitPendingPhoto = (entryId: string, finalText: string): Promise<void> => adoptPendingPhoto(entryId, finalText, true);
+
+/** True while the letter page should say its photo did not come along. */
+export function usePhotoNotSaved(ownerId: string): boolean {
+  return useSyncExternalStore(subscribePhotoNotSaved, () => photoNotSaved(ownerId));
+}
+
+/** A draft is let go: its picture goes with it, file first then row (NS-01-R16). Never throws; the sweep finishes it. */
+export function dropDraftPicture(draftId: string): void {
   try {
-    await p.commit(photoDeps(), { entryId, finalText });
+    erasePictureOf(draftId);
   } catch {
-    // the letter is kept either way (NS-01-R17)
+    // the launch sweep removes a picture whose draft is gone
   }
 }

@@ -942,7 +942,7 @@ export default function Review() {
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
           {/* The picture chosen with this letter, before Keep (NS-01-R7): add, change, take off, with Undo. Absent when off. */}
-          {!later && !isSample ? <ReviewPhoto /> : null}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
 
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">

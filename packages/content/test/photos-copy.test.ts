@@ -41,6 +41,13 @@ describe('[NS-01-R24] the photo strings obey the content rules', () => {
   it('[NS-01-R22] no string offers the camera', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/take a photo now|camera/i);
   });
+  it('[NS-01-R17] the line for a photo that was not stored is calm: says the words are kept, offers a retry, no cause or blame', () => {
+    const t = photosCopy.book.letter.notSaved;
+    expect(t).toMatch(/words are kept/i);
+    expect(t).toMatch(/add it again/i);
+    expect(t).not.toMatch(/\b(fail\w*|error|lost|lose|wrong|sorry|unfortunately|problem|corrupt\w*|please)\b/i);
+    expect(t.length).toBeLessThanOrEqual(120);
+  });
   it('[NS-01-R23] the lens has no "add" string; adding lives on the letter page only', () => {
     for (const l of leaves(photosCopy.book.lens, 'lens')) expect(l.text, l.path).not.toMatch(/\badd\b/i);
     expect(photosCopy.book.letter.addPhoto).toMatch(/this letter/);

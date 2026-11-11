@@ -43,6 +43,9 @@ export const photosCopy = {
       removePhoto: 'Take the photo off',
       removed: 'Photo taken off.',
       undo: 'Undo',
+      // Shown on the letter page when a photo chosen for this letter could not be stored. The letter and its words are
+      // kept; the line names no cause and asks for nothing. Never describes the picture.
+      notSaved: 'The photo did not come along with this letter. Your words are kept, and you can add it again.',
       missing: 'Not on this phone any more',
       missingRemove: 'Remove',
     },

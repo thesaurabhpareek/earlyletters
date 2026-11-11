@@ -4,6 +4,7 @@
  * never create a letter.
  */
 import { commitPhoto, type CommitResult } from './session';
+import { normalizePhotoPlace, normalizePhotoText } from './text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoDeps, type StoredPhoto } from './types';
 
 /** What Undo needs for 10 seconds after a replace or a remove. The earlier picture's file stays until the ticket settles. */
@@ -22,7 +23,7 @@ export type AttachResult =
 /** "Add a photo" on Review or the letter page. A letter that already has one asks before anything changes. */
 export async function addPhotoToLetter(
   deps: PhotoDeps,
-  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null },
+  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null; sourceUri?: string; requireWords?: boolean },
   confirmedReplace = false,
 ): Promise<AttachResult | { status: 'replaced'; result: CommitResult; ticket: UndoTicket | null }> {
   const existing = deps.store.get(input.entryId);
@@ -60,4 +61,19 @@ export async function undoPhotoChange(deps: PhotoDeps, ticket: UndoTicket): Prom
 /** The window has passed (or the parent moved on): the earlier file goes. */
 export async function settlePhotoChange(deps: PhotoDeps, ticket: UndoTicket): Promise<void> {
   await deps.files.remove(photoPath(ticket.previous)).catch(() => {});
+}
+
+/**
+ * The parent edits the words or the place of a kept picture (NS-01-R21). Only what they typed is stored, trimmed and cut
+ * to 140 and 60 characters; nothing is filled in. Returns false when the owner has no picture.
+ */
+export function editPhotoWords(deps: PhotoDeps, entryId: string, typed: { text?: string; place?: string }): boolean {
+  const p = deps.store.get(entryId);
+  if (!p) return false;
+  deps.store.put({
+    ...p,
+    text: typed.text === undefined ? p.text : normalizePhotoText(typed.text),
+    place: typed.place === undefined ? p.place : normalizePhotoPlace(typed.place),
+  });
+  return true;
 }

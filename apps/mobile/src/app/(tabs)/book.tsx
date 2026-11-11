@@ -66,6 +66,7 @@ import { CoverBand } from '@/components/book/cover-band';
 import { LensRow, PhotosGrid, type LensMode } from '@/components/photos/photos-lens';
 import { longDate } from '@/lib/dates';
 import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
 import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
@@ -322,7 +323,7 @@ export default function Book() {
   // The Photos lens (NS-01-R10 to R12): offered only once a kept, open letter has a picture; absent when the switch is off.
   const [lensMode, setLensMode] = useState<LensMode>('months');
   const lens = usePhotosLens(active?.id ?? null, (iso) => longDate(iso));
-  const lensOn = photoSurfaces({ build: photosBuildEnabled(), paused: false }).lens && lens.visible;
+  const lensOn = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).lens && lens.visible;
   const showPhotos = lensOn && lensMode === 'photos';
 
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;

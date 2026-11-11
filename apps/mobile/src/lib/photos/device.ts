@@ -4,10 +4,11 @@
  * rights (the sweep, Erase now, Erase everything) work with the switch off (NS-01-R19).
  */
 import * as Crypto from 'expo-crypto';
-import { Directory, File, Paths } from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
+import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
-import { expoPhotoFiles, expoPickedFiles, PHOTOS_FOLDER } from './files';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory } from './files';
 import { photosBuildEnabled } from './flag';
 import { sweepPhotos } from './housekeeping';
 import { PendingPhoto } from './pending';
@@ -21,6 +22,16 @@ let picked: PickedFiles | null = null;
 
 export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles());
 
+/** The native ImageIO step, when this build has it. Loaded on first use so a build or test without it is unaffected. */
+function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
+  } catch {
+    return null;
+  }
+}
+
 /** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. No native re-encode is registered yet. */
 export function photoDeps(): PhotoDeps {
   cached ??= {
@@ -28,13 +39,14 @@ export function photoDeps(): PhotoDeps {
     files: expoPhotoFiles(),
     newId: () => uuidv7(),
     now: () => new Date(),
+    orientation: createOrientationBaker(nativeBaker(), expoBakedFiles()),
     sha256: async (bytes) => hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as Uint8Array<ArrayBuffer>)),
   };
   return cached;
 }
 
 /** Where a stored picture can be drawn from. */
-export const photoUri = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => new File(new Directory(Paths.document, PHOTOS_FOLDER), photoPath(p)).uri;
+export const photoUri = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => new File(photosDirectory(), photoPath(p)).uri;
 
 /**
  * Registers Apple's system picker, only when the photos switch is on in this build. The picker module is required here
@@ -69,9 +81,9 @@ export function sweepPhotosAtLaunch(): Promise<void> {
  */
 export function erasePictureOf(entryId: string): void {
   const db = localSqlDb();
-  const rows = db.all<{ id: string }>('SELECT id FROM entry_media WHERE entry_id = ?', entryId);
+  const rows = db.all<{ id: string }>('SELECT id FROM entry_media WHERE COALESCE(entry_id, draft_id) = ?', entryId);
   for (const r of rows) {
-    const f = new File(new Directory(Paths.document, PHOTOS_FOLDER), photoPath({ mediaId: r.id, ext: 'jpg' }));
+    const f = new File(photosDirectory(), photoPath({ mediaId: r.id, ext: 'jpg' }));
     if (f.exists) f.delete();
     db.run('DELETE FROM entry_media WHERE id = ?', r.id);
   }

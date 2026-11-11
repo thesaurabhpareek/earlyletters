@@ -108,13 +108,13 @@ export class PendingPhoto {
    * At Keep, for a letter that now exists. Reads the picked original once, strips it, stores the copy, then removes the
    * original whatever happened (a successful strip, a failed one). The letter is already kept and stays kept.
    */
-  async commit(deps: PhotoDeps, input: { entryId: string; finalText: string }): Promise<CommitResult | null> {
+  async commit(deps: PhotoDeps, input: { entryId: string; finalText: string; requireWords?: boolean }): Promise<CommitResult | null> {
     const cur = this.session.source;
     if (!cur) return null;
     let result: CommitResult;
     try {
       const bytes = await this.files.read(cur.uri);
-      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text: this.session.text, place: this.session.place });
+      result = await commitPhoto(deps, { entryId: input.entryId, finalText: input.finalText, bytes, text: this.session.text, place: this.session.place, sourceUri: cur.uri, requireWords: input.requireWords });
     } catch {
       result = { status: 'failed' };
     }

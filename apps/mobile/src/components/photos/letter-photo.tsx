@@ -9,23 +9,31 @@ import { useState } from 'react';
 import { Alert, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
+import { TextField } from '@/components/ui/text-field';
+import { copy } from '@/lib/copy';
 import { useToast } from '@/components/ui/toast';
-import { addPhotoToLetter, removePhotoFromLetter, settlePhotoChange, undoPhotoChange, type UndoTicket } from '@/lib/photos/attach';
+import { clearPhotoNotSaved } from '@/lib/photos/failures';
+import { usePhotoNotSaved } from '@/lib/photos/hooks';
+import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from '@/lib/photos/types';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange, type UndoTicket } from '@/lib/photos/attach';
 import { photos } from '@/lib/photos/copy';
 import { photoDeps, photoUri, pickedFilesPort } from '@/lib/photos/device';
 import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
 import { useLetterPhoto } from '@/lib/photos/hooks';
 import { photoA11yLabel } from '@/lib/photos/text';
 import type { PickedAsset } from '@/lib/photos/types';
 import { usePhotoPick } from '@/lib/photos/use-photo-pick';
 import { PhotoFrame } from './photo-frame';
 
-export function LetterPhoto({ entryId, finalText, own }: { entryId: string; finalText: string; own: boolean }) {
+export function LetterPhoto({ entryId, finalText, own, draft = false }: { entryId: string; finalText: string; own: boolean; draft?: boolean }) {
   const photo = useLetterPhoto(entryId);
   const toast = useToast();
   const [missing, setMissing] = useState(false);
   const [failed, setFailed] = useState(false);
-  const on = photoSurfaces({ build: photosBuildEnabled(), paused: false }).addActions;
+  const [editing, setEditing] = useState(false);
+  const notSaved = usePhotoNotSaved(entryId);
+  const on = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).addActions;
 
   const offerUndo = (message: string, ticket: UndoTicket | null) => {
     if (!ticket) return;
@@ -42,7 +50,7 @@ export function LetterPhoto({ entryId, finalText, own }: { entryId: string; fina
     let keepOriginal = false;
     try {
       const bytes = await files.read(asset.uri);
-      const r = await addPhotoToLetter(photoDeps(), { entryId, finalText, bytes, text: null }, confirmed);
+      const r = await addPhotoToLetter(photoDeps(), { entryId, finalText, bytes, text: null, sourceUri: asset.uri, requireWords: !draft }, confirmed);
       if (r.status === 'needs_confirm') {
         keepOriginal = true; // the choice below decides; the original is removed after it
         Alert.alert(photos.book.letter.replaceTitle, photos.book.letter.replaceBody, [
@@ -53,7 +61,10 @@ export function LetterPhoto({ entryId, finalText, own }: { entryId: string; fina
       }
       const result = r.result;
       if (result.status !== 'stored') setFailed(true);
-      else if (r.status === 'replaced') offerUndo(photos.book.letter.replaced, r.ticket);
+      else {
+        clearPhotoNotSaved(entryId);
+        if (r.status === 'replaced') offerUndo(photos.book.letter.replaced, r.ticket);
+      }
     } catch {
       setFailed(true);
     } finally {
@@ -67,10 +78,11 @@ export function LetterPhoto({ entryId, finalText, own }: { entryId: string; fina
   });
 
   if (!on || !pick.ready) return null;
-  const words = finalText.trim().length > 0;
+  const words = draft || finalText.trim().length > 0;
   if (!photo) {
     return own && words ? (
       <View className="items-start" testID="letter.photo.add">
+        {notSaved ? <Text variant="callout" tone="muted" testID="letter.photo.notSaved">{photos.book.letter.notSaved}</Text> : null}
         <Button variant="quiet" size="md" label={photos.book.letter.addPhoto} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.addButton" />
         {failed || pick.failed ? <Text variant="footnote" tone="muted">{photos.capture.openFailed}</Text> : null}
       </View>
@@ -89,10 +101,21 @@ export function LetterPhoto({ entryId, finalText, own }: { entryId: string; fina
       ) : (
         <PhotoFrame uri={photoUri(photo)} label={label} aspectRatio={photo.width && photo.height ? photo.width / photo.height : 4 / 3} onMissing={() => setMissing(true)} testID="letter.photo.frame" />
       )}
-      {photo.text ? <Text variant="callout">{photo.text}</Text> : null}
-      {photo.place ? <Text variant="footnote" tone="muted">{photo.place}</Text> : null}
+      {editing && own ? (
+        <View className="gap-3" testID="letter.photo.edit">
+          <TextField label={photos.text.label} helper={`${photos.text.optional}. ${photos.text.hint}`} defaultValue={photo.text ?? ''} maxLength={PHOTO_TEXT_MAX} multiline onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { text: t })} testID="letter.photo.text" />
+          <TextField label={photos.text.placeLabel} helper={photos.text.placeHint} defaultValue={photo.place ?? ''} maxLength={PHOTO_PLACE_MAX} onChangeText={(t) => editPhotoWords(photoDeps(), entryId, { place: t })} testID="letter.photo.place" />
+          <Button variant="quiet" size="md" label={copy.common.doneButton} onPress={() => setEditing(false)} testID="letter.photo.editDone" />
+        </View>
+      ) : (
+        <>
+          {photo.text ? <Text variant="callout">{photo.text}</Text> : null}
+          {photo.place ? <Text variant="footnote" tone="muted">{photo.place}</Text> : null}
+        </>
+      )}
       {own ? (
         <View className="items-start">
+          {!editing ? <Button variant="quiet" size="md" label={photos.text.label} onPress={() => setEditing(true)} testID="letter.photo.editWords" /> : null}
           <Button variant="quiet" size="md" label={photos.capture.change} onPress={pick.pick} disabled={pick.busy} testID="letter.photo.change" />
           <Button
             variant="quiet"

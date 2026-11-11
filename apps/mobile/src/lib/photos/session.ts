@@ -82,16 +82,17 @@ export type CommitResult =
  */
 export async function commitPhoto(
   deps: PhotoDeps,
-  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null },
+  input: { entryId: string; finalText: string; bytes: Uint8Array; text: string | null; place?: string | null; sourceUri?: string; requireWords?: boolean },
 ): Promise<CommitResult> {
-  if (!canKeepWithPhoto(input.finalText)) return { status: 'needs_words' };
+  // A kept letter needs words. A draft's picture (requireWords false) is not a kept letter and waits for Keep.
+  if ((input.requireWords ?? true) && !canKeepWithPhoto(input.finalText)) return { status: 'needs_words' };
   let stripped = stripJpeg(input.bytes);
   if (!stripped.ok && stripped.reason === 'corrupt') return { status: 'unreadable', reason: 'corrupt' };
   if (!stripped.ok || stripped.orientation !== 1) {
     // Not a JPEG (HEIC, PNG), or a JPEG whose Exif turn would be lost when Exif goes: the native step makes an upright
     // JPEG first. Without it (no device adapter yet) nothing is stored and the letter is kept as it is.
     const why = stripped.ok ? 'needs_rotation' : stripped.reason;
-    const baked = await deps.orientation?.bake(input.bytes).catch(() => null);
+    const baked = await deps.orientation?.bake(input.bytes, { uri: input.sourceUri }).catch(() => null);
     if (!baked) return { status: 'unreadable', reason: why };
     stripped = stripJpeg(baked);
     if (!stripped.ok) return { status: 'unreadable', reason: stripped.reason };

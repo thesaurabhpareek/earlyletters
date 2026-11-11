@@ -12,6 +12,7 @@ export const STORED_EXT = 'jpg' as const;
  * (`entries.deleted_at`): it is never written, so a restored letter needs no picture write and the two cannot drift.
  */
 export interface StoredPhoto {
+  /** The owner: the kept letter's id, or the draft's id until Keep. They are the same id, so the picture never moves. */
   entryId: string;
   mediaId: string;
   ext: typeof STORED_EXT;
@@ -28,7 +29,10 @@ export interface StoredPhoto {
   deletedAt: string | null;
 }
 
-/** Where picture records live: the local `entry_media` table (migration 10). `put` never writes `deletedAt`. */
+/**
+ * Where picture records live: the local `entry_media` table (migration 11). `put` never writes `deletedAt`. The owner is
+ * a letter, or a draft until Keep; `all()` lists kept letters' pictures only.
+ */
 export interface PhotoStore {
   get(entryId: string): StoredPhoto | null;
   put(photo: StoredPhoto): void;
@@ -58,7 +62,7 @@ export const exportPhotoPath = (p: Pick<StoredPhoto, 'entryId' | 'mediaId' | 'ex
  * `needs_rotation` and nothing is stored.
  */
 export interface OrientationBaker {
-  bake(original: Uint8Array): Promise<Uint8Array | null>;
+  bake(original: Uint8Array, source?: { uri?: string }): Promise<Uint8Array | null>;
 }
 
 /** What the system picker hands back. Only the still of a Live Photo is ever read. */

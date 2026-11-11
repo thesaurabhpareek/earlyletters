@@ -1,5 +1,6 @@
 /**
  * Keeps the picture files and the entry_media rows in step (ADR 0028 D1, D5). Safe to repeat after any kill:
+ * - a draft's picture whose draft became a letter (a kill between the letter and the move) is handed to the letter;
  * - the picker's temporary originals are removed (review C7, NX-39-R53);
  * - a file with no row is removed (a kill between the write and the row);
  * - a row whose letter is gone (purged) loses its file first, then the row;
@@ -18,6 +19,7 @@ export interface SweepCounts {
 export async function sweepPhotos(db: SqlDb, files: PhotoFiles, picked: PickedFiles): Promise<SweepCounts> {
   const counts: SweepCounts = { orphanFiles: 0, orphanRows: 0, missingFileRows: 0 };
   await picked.sweep();
+  db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id IS NOT NULL AND EXISTS (SELECT 1 FROM entries e WHERE e.id = entry_media.draft_id)');
   let onDisk: string[];
   try {
     onDisk = await files.list();

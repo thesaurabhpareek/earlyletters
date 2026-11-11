@@ -3,10 +3,11 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { photoSurfaces, photosBuildEnabled } from './flag';
 import { registerPhotoDevice } from './device';
+import { photosPausedNow } from './pause';
 import { getPending, getPhotoPicker } from './registry';
 import { runPick } from './session';
 
-export function photoStartShows(paused = false): boolean {
+export function photoStartShows(paused = photosPausedNow()): boolean {
   return photoSurfaces({ build: photosBuildEnabled(), paused }).start && getPhotoPicker() !== null;
 }
 

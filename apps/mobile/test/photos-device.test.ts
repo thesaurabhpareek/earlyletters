@@ -6,15 +6,21 @@ import { join, relative } from 'node:path';
 import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
+import { adoptPending } from '../src/lib/photos/adopt';
+import { editPhotoWords } from '../src/lib/photos/attach';
+import { createOrientationBaker } from '../src/lib/photos/baker';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
-import { expoPickedFiles, expoPhotoFiles, withinFolder } from '../src/lib/photos/files';
+import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
+import { photosPausedNow } from '../src/lib/photos/pause';
+import { photos } from '../src/lib/photos/copy';
+import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
 import { PendingPhoto } from '../src/lib/photos/pending';
 import { createPhotoPicker } from '../src/lib/photos/picker';
-import { PhotoSession } from '../src/lib/photos/session';
+import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { pictureCovered, PHOTO_BLANK_WITHOUT_APP_LOCK } from '../src/lib/photos/surface';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
-import { createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
+import { androidContainer, createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
 import { deps, makeJpeg, memoryFiles } from './photos-helpers';
 
@@ -276,10 +282,12 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
     expect(withinFolder(`${cache}ImagePicker/sub/a.jpg`, `${cache}ImagePicker/`)).toBe(false);
     expect(withinFolder(`${cache}ImagePicker/..%2Fx`, `${cache}ImagePicker/`)).toBe(false);
   });
-  it('[C9] the stored copy is <media_id>.jpg in Documents/photos: opaque name, refuses any path with a separator', async () => {
+  it('[C9] the stored copy is <media_id>.jpg in Application Support/photos (not Documents): opaque name, refuses any path with a separator', async () => {
     const files = expoPhotoFiles();
     await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
-    expect([...h.disk.files.keys()]).toEqual([`${h.disk.documents}photos/0194-abc.jpg`]);
+    const support = h.disk.documents.replace(/Documents\/$/, 'Library/Application%20Support/');
+    expect([...h.disk.files.keys()]).toEqual([`${support}photos/0194-abc.jpg`]);
+    expect([...h.disk.files.keys()].some((u) => u.startsWith(h.disk.documents))).toBe(false);
     expect(await files.list()).toEqual(['0194-abc.jpg']);
     await expect(files.write('../x.jpg', Uint8Array.of(1))).rejects.toThrow();
     await expect(files.write('e1/m1.jpg', Uint8Array.of(1))).rejects.toThrow();
@@ -390,13 +398,14 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     const store = entryMediaStore(db);
     store.put(row('gone', 'mGone'));
     const broken = { ...memoryFiles(), list: async () => { throw new Error('read'); } };
+    const rows = () => db.get<{ n: number }>('SELECT COUNT(*) AS n FROM entry_media')!.n;
     expect(await sweepPhotos(db, broken, pickedMemory({}))).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 });
-    expect(store.all().length).toBe(1);
+    expect(rows()).toBe(1);
     const stubborn = memoryFiles();
     await stubborn.write('mGone.jpg', Uint8Array.of(1));
     stubborn.remove = async () => { throw new Error('busy'); };
     await sweepPhotos(db, stubborn, pickedMemory({}));
-    expect(store.all().length).toBe(1);
+    expect(rows()).toBe(1);
   });
 });
 
@@ -415,5 +424,220 @@ describe('[NS-01-R13][NX-39-R36][C10] the switcher snapshot is blank (Karma ruli
     const drawsImage = walk(dir).filter((f) => /<Image\b/.test(readFileSync(f, 'utf8'))).map((f) => relative(dir, f));
     expect(drawsImage).toEqual(['photo-frame.tsx']);
     expect(readFileSync(join(dir, 'photo-frame.tsx'), 'utf8')).toMatch(/usePictureCovered\(\)[\s\S]*if \(covered \|\| failed\)/);
+  });
+});
+
+// ---- Application Support folder, the native step's temporary files ------------------------------------------------
+
+describe('[SEC-R15][C9] where the stored copy lives', () => {
+  it('[C9] iOS: <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000009'));
+    expect(photosDirectory().uri).toBe(`${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/photos/`);
+    h.disk = createDisk(androidContainer());
+    expect(photosDirectory().uri).toBe(`${h.disk.documents}photos/`);
+  });
+  it('[C9] the erase-everything code removes that same folder and the picker and re-encode caches', () => {
+    const src = readFileSync(join(SRC, 'lib', 'erase-everything.ts'), 'utf8');
+    expect(src).toMatch(/photosDirectory\(\)/);
+    expect(src).not.toMatch(/Paths\.document, 'photos'/);
+    expect(src).toMatch(/'ImagePicker', 'ScribePhoto'/);
+  });
+});
+
+describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and removed', () => {
+  beforeEach(() => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000002'));
+  });
+  it('[C7] the baker reads the output, removes it, drops native error text, and refuses a missing uri or module', async () => {
+    const out = put(h.disk, `${h.disk.caches}ScribePhoto/x.jpg`, makeJpeg());
+    const baker = createOrientationBaker({ reencodeUpright: async () => out }, expoBakedFiles())!;
+    const bytes = await baker.bake(Uint8Array.of(1), { uri: 'file:///c/ImagePicker/a.jpg' });
+    expect(bytes && bytes.length).toBeGreaterThan(10);
+    expect(h.disk.files.has(out)).toBe(false);
+    expect(await baker.bake(Uint8Array.of(1))).toBeNull(); // no uri: nothing to re-encode
+    expect(createOrientationBaker(null, expoBakedFiles())).toBeUndefined();
+    const log: string[] = [];
+    const bad = createOrientationBaker({ reencodeUpright: async () => { throw new Error('CANARY /private/var/IMG_1.HEIC'); } }, expoBakedFiles())!;
+    expect(await bad.bake(Uint8Array.of(1), { uri: 'u' })).toBeNull();
+    expect(log.join('')).not.toContain('CANARY');
+    // an output outside Caches/ScribePhoto is never read or deleted
+    const other = put(h.disk, `${h.disk.documents}ExpoAudio/take.m4a`, 10);
+    const sneaky = createOrientationBaker({ reencodeUpright: async () => other }, expoBakedFiles())!;
+    expect(await sneaky.bake(Uint8Array.of(1), { uri: 'u' })).toBeNull();
+    expect(h.disk.files.has(other)).toBe(true);
+  });
+  it('[C7] the launch sweep empties Caches/ScribePhoto too', async () => {
+    put(h.disk, `${h.disk.caches}ScribePhoto/left.jpg`, 10);
+    put(h.disk, `${h.disk.caches}ImagePicker/left.jpg`, 10);
+    await expoPickedFiles().sweep();
+    expect([...h.disk.files.keys()].filter((u) => /ScribePhoto|ImagePicker/.test(u))).toEqual([]);
+  });
+  it('[C8] a baker wired into commit turns a rotated picture upright using the picked file\'s uri', async () => {
+    const seen: (string | undefined)[] = [];
+    const files = pickedMemory({ 'file:///c/ImagePicker/r.jpg': makeJpeg({ exif: true, orientation: 6 }) });
+    const p = new PendingPhoto(files);
+    await p.set({ uri: 'file:///c/ImagePicker/r.jpg' });
+    const { d, files: stored } = deps();
+    d.orientation = { bake: async (_o, s) => (seen.push(s?.uri), makeJpeg({ seed: 4 })) };
+    expect((await p.commit(d, { entryId: 'e1', finalText: 'Words.' }))?.status).toBe('stored');
+    expect(seen).toEqual(['file:///c/ImagePicker/r.jpg']);
+    expect(stored.disk.size).toBe(1);
+  });
+});
+
+describe('[NS-01-R6][C8] the Swift module is ImageIO only', () => {
+  const dir = join(__dirname, '..', 'modules', 'scribe-photo');
+  const swift = readFileSync(join(dir, 'ios', 'ScribePhotoModule.swift'), 'utf8');
+  const strip = swift.replace(/\/\/.*$/gm, ''); // code only; the comments name what is absent
+  it('[C8] no network, library, camera, location or permission API appears; only ImageIO', () => {
+    expect(strip).not.toMatch(/URLSession|URLRequest|NWConnection|CFNetwork|Photos|PHPhoto|PHPicker|UIImagePicker|AVCapture|AVFoundation|CoreLocation|CLLocation|requestAuthorization|UsageDescription|NSURLConnection|WebKit|UIKit/);
+    expect([...strip.matchAll(/^import (\w+)/gm)].map((m) => m[1]).sort()).toEqual(['ExpoModulesCore', 'Foundation', 'ImageIO', 'UniformTypeIdentifiers']);
+  });
+  it('[C8] it asks ImageIO for the transformed, from-image-always thumbnail, copies no source properties, and never writes an orientation', () => {
+    expect(strip).toMatch(/kCGImageSourceCreateThumbnailWithTransform: true/);
+    expect(strip).toMatch(/kCGImageSourceCreateThumbnailFromImageAlways: true/);
+    expect(strip).toMatch(/kCGImageMetadataShouldExcludeGPS: true/);
+    expect(strip).toMatch(/kCGImageMetadataShouldExcludeXMP: true/);
+    expect(strip).not.toMatch(/kCGImagePropertyOrientation|kCGImageDestinationMetadata|CGImageDestinationAddImageFromSource|CGImageDestinationCopyImageSource|kCGImagePropertyExif|kCGImagePropertyGPS/);
+    expect(strip.match(/CGImageDestinationAddImage\(/g)?.length).toBe(1);
+  });
+  it('[C8] errors are one closed code and the pod depends on ExpoModulesCore only', () => {
+    expect(strip).toMatch(/"photo_reencode_failed"/);
+    expect(strip).not.toMatch(/localizedDescription|\\\(error|description:/);
+    const pod = readFileSync(join(dir, 'ios', 'ScribePhoto.podspec'), 'utf8');
+    expect([...pod.matchAll(/s\.dependency '([^']+)'/g)].map((m) => m[1])).toEqual(['ExpoModulesCore']);
+    expect(JSON.parse(readFileSync(join(dir, 'expo-module.config.json'), 'utf8')).apple.modules).toEqual(['ScribePhotoModule']);
+  });
+});
+
+// ---- draft-owned pictures, words editing, the not-saved line, the pause ---------------------------------------------
+
+describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
+  it('[D1] the row is draft-owned while only a draft exists, hidden from the lens, and moves to the letter with Keep', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    const store = entryMediaStore(db);
+    store.put(row('d1', 'mD1')); // no entries row: owned by the draft
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: null, draft_id: 'd1' });
+    expect(store.get('d1')?.mediaId).toBe('mD1');
+    expect(store.all()).toEqual([]); // not a kept letter yet
+    letter(db, 'd1'); // Keep: the letter takes the draft's id
+    db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', 'd1'); // store.saveLetterFromDraft
+    expect(db.get('SELECT entry_id, draft_id FROM entry_media WHERE id = ?', 'mD1')).toEqual({ entry_id: 'd1', draft_id: null });
+    expect(store.all().map((p) => p.mediaId)).toEqual(['mD1']);
+  });
+  it('[D1] store.saveLetterFromDraft makes that move inside the letter\'s own transaction', () => {
+    const src = readFileSync(join(SRC, 'lib', 'store.ts'), 'utf8');
+    expect(src).toMatch(/UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = \?', draftId\);/);
+    expect(src.indexOf('UPDATE entry_media SET entry_id = draft_id')).toBeGreaterThan(src.indexOf('letters.saveFromDraft(c, draftId'));
+  });
+  it('[D1] the sweep hands a draft picture to its letter after a kill, removes it when the draft is let go, and keeps a live draft\'s', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'kept'); // the letter exists, the move did not run
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('live', 'c', 'typed', 't')");
+    const store = entryMediaStore(db);
+    store.put(row('kept', 'mKept'));
+    db.run("UPDATE entry_media SET entry_id = NULL, draft_id = 'kept' WHERE id = 'mKept'");
+    store.put(row('live', 'mLive'));
+    store.put(row('letgo', 'mGone'));
+    const files = memoryFiles();
+    for (const n of ['mKept.jpg', 'mLive.jpg', 'mGone.jpg']) await files.write(n, Uint8Array.of(1));
+    await sweepPhotos(db, files, pickedMemory({}));
+    expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mKept', 'mLive']);
+    expect(db.get('SELECT entry_id FROM entry_media WHERE id = ?', 'mKept')).toEqual({ entry_id: 'kept' });
+    expect([...files.disk.keys()].sort()).toEqual(['mKept.jpg', 'mLive.jpg']);
+  });
+  it('[D1] a draft\'s picture needs no words, a kept letter\'s does', async () => {
+    const { d, files } = deps();
+    expect((await commitPhoto(d, { entryId: 'd1', finalText: '', bytes: makeJpeg(), text: null, requireWords: false })).status).toBe('stored');
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: '', bytes: makeJpeg(), text: null })).status).toBe('needs_words');
+    expect(files.disk.size).toBe(1);
+  });
+});
+
+describe('[NS-01-R21] the parent edits the words and the place of a kept picture', () => {
+  it('[R21] only what is typed is stored, trimmed and cut to 140 and 60; empty clears; the other field is left alone', async () => {
+    const { d, store } = deps();
+    await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'first', place: 'the park' });
+    expect(editPhotoWords(d, 'e1', { text: `  ${'x'.repeat(200)}  ` })).toBe(true);
+    expect(store.get('e1')!.text!.length).toBe(140);
+    expect(store.get('e1')!.place).toBe('the park');
+    editPhotoWords(d, 'e1', { place: 'y'.repeat(90) });
+    expect(store.get('e1')!.place!.length).toBe(60);
+    editPhotoWords(d, 'e1', { text: '   ', place: '' });
+    expect(store.get('e1')).toMatchObject({ text: null, place: null });
+    expect(editPhotoWords(d, 'nobody', { text: 'x' })).toBe(false);
+  });
+  it('[R21] the sqlite store keeps an edit across put (same media id, same file)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const { d } = deps({ store: entryMediaStore(db) as never });
+    d.store.put(row('e1', 'm1'));
+    editPhotoWords(d, 'e1', { text: 'Rain boots', place: 'the back step' });
+    expect(d.store.get('e1')).toMatchObject({ mediaId: 'm1', text: 'Rain boots', place: 'the back step' });
+  });
+});
+
+describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
+  const WORDS = 'Asha and the rain boots.';
+  beforeEach(() => {
+    clearPhotoNotSaved('e1');
+  });
+  it('[R17] a failing disk marks the letter; a later success clears it; a picture with no words marks nothing', async () => {
+    const URI = 'file:///c/ImagePicker/a.jpg';
+    const run = async (opts: { failWrite?: boolean; text?: string }) => {
+      const picked = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+      const p = new PendingPhoto(picked);
+      await p.set({ uri: URI });
+      const { d } = deps({ files: memoryFiles({ failWrite: opts.failWrite }) });
+      await adoptPending(p, () => d, 'e1', opts.text ?? WORDS, true);
+      return picked.left();
+    };
+    expect(await run({ failWrite: true })).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(true);
+    expect(await run({})).toEqual([]);
+    expect(photoNotSaved('e1')).toBe(false);
+    clearPhotoNotSaved('e1');
+    expect(await run({ text: '' })).toEqual([URI]); // needs words: still pending, nothing marked
+    expect(photoNotSaved('e1')).toBe(false);
+  });
+  it('[R17] a throwing store is caught and marked, never rethrown', async () => {
+    const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': makeJpeg() });
+    const p = new PendingPhoto(picked);
+    await p.set({ uri: 'file:///c/ImagePicker/a.jpg' });
+    await expect(adoptPending(p, () => { throw new Error('db'); }, 'e1', WORDS, true)).resolves.toBeUndefined();
+    expect(photoNotSaved('e1')).toBe(true);
+  });
+  it('[R17] the letter page draws the line from the content slot, above Add again, for the author only', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
+    expect(src).toMatch(/\{notSaved \? <Text[^>]*>\{photos\.book\.letter\.notSaved\}<\/Text> : null\}/);
+    expect(src.indexOf('photos.book.letter.notSaved')).toBeLessThan(src.indexOf('photos.book.letter.addPhoto'));
+    expect(src).toMatch(/return own && words \?/);
+    expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);
+    expect(photos.book.letter.notSaved).toMatch(/words are kept/);
+  });
+  it('[R17] Review stores a Home pick with the draft and the letter page and Review share the same controls', () => {
+    const rv = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
+    expect(rv).toMatch(/adoptPendingPhoto\(draftId, finalText, false\)/);
+    expect(rv).toMatch(/<LetterPhoto entryId=\{draftId\} finalText=\{finalText\} own draft \/>/);
+    expect(readFileSync(join(SRC, 'app', 'review.tsx'), 'utf8')).toMatch(/<ReviewPhoto draftId=\{draft\.id\} finalText=\{finalText\} \/>/);
+  });
+});
+
+describe('[NS-01-R19] the remote pause hides the new surfaces and never turns them on', () => {
+  it('[R19] killSwitches.photos true pauses; absent, false, a missing config or an unreadable one do not', () => {
+    const at = (cfg: unknown) => photosPausedNow(() => ({ getRemoteConfig: () => cfg as never }));
+    expect(at({ killSwitches: { photos: true } })).toBe(true);
+    expect(at({ killSwitches: { photos: false } })).toBe(false);
+    expect(at({ killSwitches: { sync: true } })).toBe(false);
+    expect(at(null)).toBe(false);
+    expect(photosPausedNow(() => { throw new Error('no remote'); })).toBe(false);
+  });
+  it('[R19] every surface asks for it, and the data rights never do', () => {
+    for (const f of ['components/photos/letter-photo.tsx', 'app/(tabs)/book.tsx', 'lib/photos/use-photo-start.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).toMatch(/photosPausedNow\(\)/);
+    for (const f of ['lib/photos/lifecycle.ts', 'lib/photos/export.ts', 'lib/photos/housekeeping.ts', 'lib/erase-everything.ts', 'lib/capture/erase.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).not.toMatch(/photosPausedNow|photosBuildEnabled/);
   });
 });
