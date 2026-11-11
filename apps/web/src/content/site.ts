@@ -324,7 +324,7 @@ export const site = {
     body: `Open ${NAME} on your iPhone and type the code from this email. It signs you in, or confirms your email if you are new.`,
     onPhone: 'Already on your iPhone? Tap below, then type the code.',
     open: `Open ${NAME}`,
-    expired: 'If the app says the code has expired, tap "Send a new email".',
+    expired: 'If the code does not work, tap Send a new email in the app.',
     notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
     home: `Back to ${NAME}`,
   },
