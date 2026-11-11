@@ -64,7 +64,6 @@ import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
-import { authCopy } from '@/lib/auth/copy';
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState } from '@/lib/first-run/handoff.logic';
@@ -117,7 +116,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRunSteps({ localStartChosen: chosenOnOutage = false }: { localStartChosen?: boolean }) {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome }: { localStartChosen?: boolean; onPastWelcome?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -222,6 +221,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false }: { localStar
   };
 
   useFocusOnMount(heading, step !== 'welcome', step);
+  // Past the welcome step a name or a date may be typed: tell the route, so a lost session never swaps this for a sign-in screen.
+  useEffect(() => {
+    if (step !== 'welcome') onPastWelcome?.();
+  }, [step, onPastWelcome]);
 
   // Hand-off, not pile-up (MOTION 5l): the leaving step's words go up and out first (exitMs, also under Reduce
   // Motion), and only then does the next step arrive, so two steps' words are never on screen together. Controls
@@ -626,19 +629,15 @@ export default function Onboarding() {
 /**
  * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
  * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. Everything else, and every build with the switch
- * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`).
+ * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step of the
+ * steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
  */
 function FirstRun() {
   const route = useFirstRunRoute();
-  // "Sign in is back." when the outage screen gives way to the Welcome (NX-36 S3), said once, politely.
-  const lastStep = useRef(route.step);
-  useEffect(() => {
-    if (lastStep.current === 'outage' && route.step === 'signIn') announce(authCopy.outage.backOnline);
-    lastStep.current = route.step;
-  }, [route.step]);
-  if (route.step === 'signIn') return route.restoring ? <SafeAreaView className="flex-1 bg-background" /> : <WelcomeSignIn />;
-  if (route.step === 'outage' && route.outage) {
+  if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
+  if (route.screen === 'welcome') return <WelcomeSignIn />;
+  if (route.screen === 'outage' && route.outage) {
     return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
   }
-  return <FirstRunSteps localStartChosen={route.localStartChosen} />;
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} />;
 }
