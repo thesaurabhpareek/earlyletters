@@ -51,7 +51,7 @@ const CANCEL_STEPS =
 const STAYS_FREE =
   "Whatever you decide, every letter and recording you made stays yours to read, play and export, free.";
 const REFUNDS_AND_TERMS =
-  "Refunds are handled by Apple at reportaproblem.apple.com. The full Subscription terms are at {subscriptionTermsUrl}.";
+  "Refunds are handled by Apple at reportaproblem.apple.com. The full terms, including Plus, are at {subscriptionTermsUrl}.";
 const PLUS_INCLUDES =
   "Plus lets you keep adding letters to every book.";
 /** Cancellation policy for the acknowledgments (COMPLIANCE 5.2 A9, legal review LGL-12). */
