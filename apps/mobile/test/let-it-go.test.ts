@@ -5,7 +5,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { nodeDb } from './helpers/node-db';
-import { letItGo } from '../src/lib/capture/let-it-go.logic';
+import { deleteIfPresent, letItGo } from '../src/lib/capture/let-it-go.logic';
 
 vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
 vi.mock('../src/lib/db/repos/open-native', () => ({
@@ -63,15 +63,30 @@ describe('[BL-379][F04-REQ-009] Review "Let it go" runs the marked steps in orde
 
   it('a file that is already gone is the same as removed: the row still goes', () => {
     const { d } = spokenDraft();
+    const del = vi.fn();
     const ok = letItGo(d.id, d.audioUri, {
       beginDiscard: store.beginDiscard,
-      deleteFile: () => {
-        throw new Error('file not found');
-      },
+      deleteFile: () => deleteIfPresent({ exists: false, delete: del }),
       finishDiscard: store.finishDiscard,
     });
     expect(ok).toBe(true);
+    expect(del).not.toHaveBeenCalled();
     expect(store.getDraft(d.id)).toBeNull();
+  });
+
+  it('a real delete failure keeps the row marked discarding, never calls finishDiscard, and reports not gone', () => {
+    const { childId, d } = spokenDraft();
+    const finishDiscard = vi.fn(store.finishDiscard);
+    const ok = letItGo(d.id, d.audioUri, {
+      beginDiscard: store.beginDiscard,
+      deleteFile: () => deleteIfPresent({ exists: true, delete: () => { throw new Error('permission denied'); } }),
+      finishDiscard,
+    });
+    expect(ok).toBe(false);
+    expect(finishDiscard).not.toHaveBeenCalled();
+    expect(store.getDraft(d.id)?.state).toBe('discarding'); // audio is not orphaned behind a vanished row
+    expect(store.listDrafts(childId)).toEqual([]); // still hidden from every list
+    expect(store.finishDiscard(d.id)).toBe(true); // a later pass can still finish it
   });
 
   it('a typed draft (no audio file) is let go without any file call', () => {

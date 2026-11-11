@@ -363,7 +363,8 @@ describe('[BL-379] a take that was very short says so and can be let go', () => 
     const review = code(src('app/review.tsx'));
     expect(review).toMatch(/Alert\.alert\(copy\.listen\.discardTitle[\s\S]*?onPress: \(\) => \{[\s\S]*?letItGo\(id, uri/);
     expect(review).not.toContain('deleteDraft');
-    expect((review.match(/\.delete\(\)/g) ?? []).length).toBe(1); // behaviour is run in test/let-it-go.test.ts
+    expect((review.match(/\.delete\(\)/g) ?? []).length).toBe(0); // the only file delete is deleteIfPresent below
+    expect((review.match(/deleteIfPresent\(new File\(/g) ?? []).length).toBe(1); // behaviour is run in test/let-it-go.test.ts
     expect(review).toContain('shortTake: isShortTake(draft.audioDurationMs)');
   });
 });
