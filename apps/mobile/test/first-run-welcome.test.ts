@@ -95,7 +95,10 @@ describe('[NX-36-S2] Welcome and sign in', () => {
   });
   it('[NX-36-S2] no first-run word is kept that nothing can reach: a 429 and "not available" go to the outage screen, not under the buttons', () => {
     // Only `provider` stays inline (inlineErrorKind); the gate sends the rest to S3. Words for them would be dead and still need approval.
-    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider']);
+    // The four after `provider` are #728's lines for the email, code and consent screens (S5, S6; signInErrorMessage), not the Welcome's.
+    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider', 'network', 'codePaused', 'consentUnavailable', 'unknown']);
+    expect(authCopy.firstRun.errors).not.toHaveProperty('rateLimited');
+    expect(authCopy.firstRun.errors).not.toHaveProperty('notAvailable');
     for (const kind of ['rate_limited', 'email_wait', 'not_available'] as const) {
       expect(inlineErrorKind({ status: 'signedOut', error: kind })).toBeNull();
       expect(welcomeErrorMessage(kind)).not.toBe(authCopy.firstRun.errors.provider);
