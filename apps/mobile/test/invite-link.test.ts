@@ -461,7 +461,7 @@ describe('review fixes (PR #184)', () => {
   });
 
   it('[F11-U10] the inviter sees "{child}\'s book has two parents.", never the invitee\'s line', () => {
-    expect(screen('(tabs)/family.tsx')).toMatch(/error === 'book_full' \? f\.create\.full : f\.errors\[error\]/);
+    expect(screen('family.tsx')).toMatch(/error === 'book_full' \? f\.create\.full : f\.errors\[error\]/);
     expect(screen('invite/new.tsx')).toMatch(/error === 'book_full' \|\|/);
   });
 
@@ -476,7 +476,7 @@ describe('review fixes (PR #184)', () => {
   });
 
   it('[F11-REQ-023] a co-parent with no sign-off is "Your co-parent", in the note and in the member list', () => {
-    const tab = screen('(tabs)/family.tsx');
+    const tab = screen('family.tsx');
     expect(tab).toMatch(/m\.signsAs\.trim\(\) \? fill\(f\.left\.note, \{ signsAs: m\.signsAs\.trim\(\), child \}\) : fill\(f\.left\.noteUnsigned, \{ child \}\)/);
     expect(familyCopy.left.noteUnsigned).toBe("Your co-parent has left {child}'s book.");
     // The member list writes each person as a signature (EXPERIENCE_PASS S57, components/family/family-tab.logic.ts).
@@ -485,7 +485,7 @@ describe('review fixes (PR #184)', () => {
   });
 
   it('Cancel invite is announced to VoiceOver, and the row actions wrap at the largest text sizes', () => {
-    const tab = screen('(tabs)/family.tsx');
+    const tab = screen('family.tsx');
     // "Invite cancelled." is the tab's toast (EXPERIENCE_PASS S57), and every toast is announced (components/ui/toast.tsx).
     expect(tab).toMatch(/await revokeInvite\(client, row\.id\);\s*\/\/[^\n]*\n\s*setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);\s*haptic\('soft'\);\s*toast\.show\(\{ message: f\.pending\.cancelled \}\);/);
     expect(readFileSync(join(__dirname, '..', 'src', 'components', 'ui', 'toast.tsx'), 'utf8')).toMatch(/announce\(action \? `\$\{message\} \$\{action\.label\}\.` : message\)/);

@@ -24,6 +24,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | S1-06, S1-07, S1-08 sign-in | Switch on; staging with P-04 and P-05 done | W2 (T11) |
 | S1-27 sign-in and Account screens (P8a) | Switch on; staging; a drill account; Larger Text and VoiceOver | Build 2 (B2-10) |
 | S1-28 the Family tab, invite and joining a book (P8b) | Switch on; staging; two iPhones on two Apple Accounts (a fresh install for the joiner) | Build 2 (B2-10) |
+| S1-201 the account-first Welcome and the offline and outage screens | Switch on; staging; airplane mode; Larger Text, VoiceOver and Reduce Motion | Build 12 (PR #724) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
 | S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
@@ -382,6 +383,7 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
 - **Update:** PR #310's phone list and `docs/design/EXPERIENCE_PASS_2026-10.md` S52 to S56 where a result differs.
 
 ### S1-28 The Family tab, the invite and joining a book (P8b; EXPERIENCE_PASS_2026-10 S57 to S59, 5.8 rows 10 and 12)
+- **Note (11 Nov 2026):** "the Family tab" in this row now means the family page (`/family`), a pushed page opened from the book's "Write this book together" row once a co-parent has joined. It is not a tab and the bar has three items, Home, Book and Me. Read each "Family tab" step below that way; the steps that tap a Family tab item are to be reworded when this row is next run.
 - **Needs:** a switch-on build on two phones and two Apple Accounts (Mama on A with Asha's book; Papa on B), as S1-22, plus an iPhone SE for (i), VoiceOver for (h), and airplane mode (Control Center) for (g). An invite link works once, so every run of (b), (d), (e), (g), (h) and (k) needs a new invite from A and a fresh install on B (delete the app, then install it again).
 - **Steps:**
   - (a) On A, open the Family tab at the default size and at AX5, in light and dark, and with Increase Contrast. Then Invite a co-parent, type "Papa" and Share invite link through Messages to B.
@@ -701,15 +703,18 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (l) Lock off: Who can see it reads "Anyone who can unlock this iPhone can open the book." and the App lock row says Off. Lock on: it reads "You, after Face ID or your passcode." (Touch ID on the SE 3) and the row says On; the row opens Settings > App lock.
 - **Record:** S1-131 rows (a) to (l) with the build number, phone and iOS version; screenshots of the snapshot (b) with Asha only; cold start times for (k).
 
-### S1-190 Two tabs in the store build, three in the alpha (D-126, BL-604; branch feat/mobile-bl604-store-family-tab)
-- **Needs:** (a) to (c) a build of the `production` profile (servers off) on a fresh install, with Asha's book set up; (d) a TestFlight build of the `testflight` profile (alpha, servers off) with Asha's book.
-- **Steps:** (a) Production: look at the tab bar on Tonight and on the Book, in light and dark. (b) Production: Settings, Asha's book; scroll the whole page. (c) Production: Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Testflight: repeat (a) and (b), then tap Family and the "Write this book together" row.
+### S1-190 Three tabs in every build, and no co-parent coming soon anywhere (founder, 11 Nov 2026; supersedes D-126's two-or-three tabs; branch feat/mobile-family-tab-servers-on)
+- **Needs:** (a) to (c) a build of the `production` profile on a fresh install, with Asha's book set up, once with servers off and once with servers on (Build 12); (d) a TestFlight build of the `testflight` profile (alpha, servers off); (e) a `preview` build (alpha, servers on) with a second phone.
+- **Steps:** (a) Look at the tab bar on Home and on the Book, in light and dark. (b) Settings (the Me tab), Asha's book; scroll the whole page. (c) Larger Text at AX5, long press each tab item (Large Content Viewer); VoiceOver on, swipe through the tab bar. (d) Repeat (a) and (b). (e) Repeat (a) and (b), then open the "Write this book together" row. (f) On a phone with a production build, open a copy of an invite link (made on a preview build) from Messages.
 - **Expected:**
-  - (a) Two tab items, Tonight and Book, sharing the bar width; no Family item and no gap where it was.
-  - (b) No "Write this book together" row and no empty section where it sat; every other row as before.
-  - (c) VoiceOver reads two tabs ("Tonight, tab, 1 of 2", "Book, tab, 2 of 2"); the Large Content Viewer shows each title.
-  - (d) Alpha unchanged: three tabs; Family shows the coming-soon page; the row opens the coming-soon sheet.
-- **Record:** S1-190 rows (a) to (d): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+  - (a) Three tab items, Home, Book and Me, sharing the bar width, identical with servers off and on. No Family item.
+  - (b) No "Write this book together" row, no "Coming soon", no caption, no empty section where it sat; every other row as before.
+  - (c) VoiceOver reads three tabs ("Home, tab, 1 of 3", "Book, tab, 2 of 3", "Me, tab, 3 of 3"); the Large Content Viewer shows each title.
+  - (d) The same as (a) and (b): three tabs, no row, no coming-soon page anywhere.
+  - (e) The same three tabs. The row is there and opens the invite; with a co-parent joined, its value is their signature and it opens the family page (a pushed page, no tab).
+  - (f) The app opens on Home. Nothing is kept: no join step appears after signing out and in.
+- **Record:** S1-190 rows (a) to (f): phone, iOS version, build number and profile; screenshots of the tab bar and Asha's book settings in each build, with Asha only.
+- **UNVERIFIED:** the family page (/family) opens with the system swipe-back only: the root stack gives it no header, and the root layout is not edited by this change.
 
 ### S1-191 A book made without a name reads well on every screen a person sees (NX-31-R3, NX-36 S13 and S14; branch feat/mobile-nameless-surfaces)
 - **Needs:** a build of this branch on an iPhone SE 3 (or the smallest phone to hand), fresh install, servers off is enough. Larger Text at AX5, VoiceOver and dark mode for the rows named below. Fictional family only: Asha, typed in step (g) and nowhere before it.
@@ -726,6 +731,29 @@ VoiceOver on, Reduce Motion on, text size AX5 (Settings > Accessibility > Displa
   - (i) Every line that opens with the words for the missing name begins with a capital: "Your child's book" as the Book tab title, as the title of the book's own settings page and as the Recently deleted card, "Your child's book is in Recently deleted." after the delete and "Your child's book is back." after the restore (NX-36 S14 and S16). A line that has those words in the middle of a sentence keeps them in lower case. With a name (Asha) the same lines read "Asha's book" and so on.
 - **Record:** S1-191 rows (a) to (i): phone, iOS version, build number and profile; screenshots of Tonight, Write, the Children row at AX5 and the cover in light and dark (rows (a) to (e) show no name; row (g) shows Asha only); the prompt texts seen in (e) (they never carry a child's name).
 - **Update:** the name-absent audit table (NX-36 section 5) for any surface that reads differently on the phone, and the pins in `apps/mobile/test/nameless-surfaces.test.ts` if a rule changes.
+
+### S1-201 The account-first Welcome, and the offline and outage screens (NX-36 S2 and S3; NX-31 R17, R18, R19; branch feat/mobile-first-run-welcome, PR #724)
+- **Needs:** a build of this branch made with server features ON and the staging sign-in (the `preview` alpha), on an iPhone SE 3 (`se3`) and, for (n) and (o), a second build of the `production` profile with servers on (once #698 lands). A fresh install each time the steps say so. Fictional family only: Asha, typed in (i) and nowhere before it. VoiceOver, Larger Text at AX5, Reduce Motion and dark mode for the rows named below. For (h), a way to make the staging sign-in unreachable while the internet works (ask the engineer for the staging sign-in host to block on a Mac proxy or DNS); if there is none, mark (h) not run and say why. For (i), a staging operator who can revoke the drill account's sessions (and a new drill account); if there is none, mark (i) not run.
+- **Steps:** (a) Fresh install, VoiceOver on, answer the age question Yes and accept Before you begin; stop on the Welcome. Swipe right through every element, then open the rotor and choose Links. (b) Double-tap Terms of Service, then Done; double-tap Privacy Policy, then Done. (c) Airplane mode on, force-quit, relaunch. (d) With the offline screen showing, turn airplane mode off. (e) Airplane mode on again, then tap Try again twice quickly; then turn airplane mode off and tap Try again before the screen changes. (f) On the Welcome with the internet on, turn airplane mode on, then double-tap Sign in with Apple. (g) Internet on, Welcome showing: Sign in with Apple, finish Face ID, and turn Wi-Fi off the moment the sheet closes; then repeat and cancel on Apple's sheet; then repeat and leave Wi-Fi off until the buttons come back, timing it. (h) With the staging sign-in unreachable but the internet up, tap Sign in with Apple, then on the outage screen tap Try again, then tap Sign in with Apple again. (i) Sign in with the drill account (a new one), accept Terms and the sensitive-data step, tap Begin the book and Continue to the child step, type Asha and choose a date; then have the staging operator revoke that account's sessions, and background and reopen the app. (j) From an outage or offline screen tap Start on this phone and go through the first-run steps to the end. (k) Larger Text at AX5, look at the Welcome and the outage screen. (l) Reduce Motion on, cold start to the Welcome, then reach the outage screen. (m) On the SE 3, cold start to the Welcome with a stopwatch, five times. (n) `preview` alpha: look for "I was invited" and double-tap it. (o) `production` build with servers on: look for "I was invited". (p) Dark mode: look at the Welcome and the outage screen.
+- **Expected:**
+  - (a) Focus lands on the heading (heading level 1). Swiping from the top reads, in order: the lockup (the brand name), the heading, the body, the benefit line "Sign in to begin your book.", the agreement line, "Terms of Service, link", "Privacy Policy, link", "Sign in with Apple", "Sign in with email", and in the alpha "I was invited". The rotor lists exactly the two links. Nothing says a recording or the book is kept safe, backed up or comes with you.
+  - (b) Each page opens in the in-app browser; Done returns to the same Welcome with nothing changed. The addresses are the floating pages, not the versioned ones (this is expected: the versioned links wait for the CR-60 hold, BL-575). Each link target is at least 44 pt tall (Accessibility Inspector, or a screenshot against the 44 pt Apple button spacing).
+  - (c) The Welcome may show for a moment, then the screen changes to "Sign in needs a connection." with the quiet "Start on this phone" button and its note; no error code and no OS alert. VoiceOver says the title when it arrives and focus is on the heading. The body reads "Connect to the internet, then tap Try again." Record how long the Welcome shows before the offline screen.
+  - (d) The Welcome comes back by itself within a few seconds; VoiceOver says "Sign in is back." once and focus is on the Welcome heading. Nothing was tried and nothing is signed in.
+  - (e) While offline, Try again leaves the offline screen as it is, VoiceOver says "Sign in needs a connection.", and the second quick tap does nothing extra. With the connection back, Try again goes to the Welcome. "Sign in is back." is spoken only when the connection really changed; record whether it was said after the last tap.
+  - (f) The offline screen replaces the Welcome with no OS error. VoiceOver says its title.
+  - (g) While Apple's answer is on its way the two buttons are dimmed and "Signing you in" shows under them. A failed exchange ends on the outage or offline screen or an inline "That sign-in did not finish. Try again, or try another way."; a cancel shows nothing and the buttons come back. There is NO 10 second timer on an in-flight sign-in (NX-40 U2 is not built): record how long the buttons stay dimmed with Wi-Fi off; this is an observation, not a pass or fail.
+  - (h) The outage screen reads "Sign in cannot be reached right now." and "Try again in a moment." with the note under it. Try again returns to the Welcome and VoiceOver does NOT say "Sign in is back."; the next Apple tap fails again and shows the outage screen again.
+  - (i) The child step stays: Asha and the date are still there, Continue still works, and neither the Welcome nor the outage screen appears.
+  - (j) The existing first run, with no sign-in sheet on the way; the book is made and opens Tonight.
+  - (k) At AX5 the Welcome footer sits in the scroll after the benefit line; the buttons grow and nothing is cut off; Terms of Service and Privacy Policy stack and each is at least 44 pt. The native Apple button stays 56 pt while the email button grows: record both heights (equal height cannot hold at AX5). The outage block scrolls and Try again stays reachable.
+  - (l) The lockup uses its reduced fade, the lamp holds still, the outage block arrives with one 200 ms fade, and nothing else moves.
+  - (m) The Welcome is interactive within 300 ms of the first frame (B-NFR-008) and the cold start stays within A-NFR-001 (p50 1.2 s, p90 2.0 s on the SE 3). The pinned footer leaves the lockup, heading and body in view on the SE 3, or the body scrolls behind it: record which.
+  - (n) The quiet "I was invited" button shows under the two sign-in buttons and opens the join sheet.
+  - (o) No "I was invited" button (CTO ruling B12-5, S1-178 b).
+  - (p) The Apple button is white in dark mode; the lockup is reversed; the outage screen has no red.
+- **Record:** S1-201 rows (a) to (p): phone, iOS version, build number and profile; screenshots of the Welcome (default size and AX5, light and dark) and of the offline and outage screens, Asha only; the stopwatch times for (m); the seconds in (c) and (g); which rows were not run and why.
+- **Update:** `docs/design/specs/FIRST-RUN-WORDS-10nov.md` and NX-36 S2 and S3 if the words on the phone differ from them; the tests in `apps/mobile/test/first-run-welcome.test.ts` and `apps/mobile/test/use-first-run-route.test.ts` if a rule changes.
 
 ### S1-96 Settings > Privacy, as ruled: the promise first, facts, then controls (CPrivO-5; privacy-settings.md; branch feat/mobile-privacy-page)
 - **Needs:** a TestFlight build of the `testflight` profile (alpha, servers and analytics off) with Asha's book; then Larger Text at AX5 and VoiceOver; dark mode.
@@ -1015,16 +1043,9 @@ PENDING: not merged and not decided. D-121 item 1 would be reversed; no D-### en
   - (e) The two lists are identical.
 - **UNVERIFIED:** everything on a device; that the purge worker works on production; that the EAS `production` environment holds the URL and key; that `scribe-prod` and the legal pages are live; that the privacy label is answered; and the decision itself.
 
-### S1-176 PENDING (#665, open): the Family tab in the store build
-PENDING: not merged. The pull request carries its own device row, S1-190 (two tabs in the store build with servers off). This row is the pointer and the servers-on case S1-190 does not cover. This pull request proposed S1-140 together with #699 and #720, so it uses S1-190, which no branch or develop claims.
-- **Unit tests the pull request adds:** `apps/mobile/test/store-family-tab.test.ts` (`familySurfacesShown({ alpha, coParent })`).
-- **Needs:** a `production` build, servers off for (a); servers on for (b); an alpha `testflight` build for (c).
-- **Steps:** (a) Servers off: count the tabs; Settings > Asha for "Write this book together". (b) Servers on: the same. Tap Family. (c) Alpha: the same as today.
-- **Expected:**
-  - (a) Tonight and Book only; no row.
-  - (b) Three tabs; Family opens the real flow, not "coming soon"; the row is there.
-  - (c) Three tabs; Family shows the coming-soon page.
-- **UNVERIFIED:** (b), which depends on #698; whether D-126 wants the alpha builds to hide Family too (the pull request asks Karma); the invite-link door, which the pull request says is not hidden.
+### S1-176 SUPERSEDED (#665; founder, 11 Nov 2026: Family is never a tab)
+Superseded by S1-190, which now covers every build: three tabs (Home, Book, Me) with servers off or on, no Family tab, no "Coming soon" page and no "Write this book together" row where the build has no co-parent flow. Nothing is left to run here.
+- **Unit tests:** `apps/mobile/test/store-family-tab.test.ts` (the bar, the no-op between servers off and servers on, and the alpha flow).
 
 ### S1-177 PENDING (#644, open): words are fixed in Review, before Keep
 PENDING: not merged. Wording from the pull request: "Your words are kept as you said them. We can mishear, so read each letter back and fix anything we got wrong before you keep it."

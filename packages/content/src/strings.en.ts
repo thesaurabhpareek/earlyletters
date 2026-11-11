@@ -56,9 +56,11 @@ export const en = {
 
   // Tab titles (experience pass S57): they move here from apps/mobile/src/app/(tabs)/_layout.tsx.
   tabs: {
-    tonight: "Tonight",
+    // Founder, 11 Nov 2026: Home, Book, Me, in every build. Label-only renames: the route files stay index.tsx and you.tsx,
+    // and the keys stay `tonight` and `you`. Family is never a tab, so there is no `family` key.
+    tonight: "Home",
     book: "Book",
-    family: "Family",
+    you: "Me",
   },
 
   onboarding: {
@@ -99,6 +101,9 @@ export const en = {
       nameLabelMore: "Another child's name",
       // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
       namePlaceholder: "First name, or a nickname",
+      // NX-36 S7 (account-first first run): the name is optional, the date is not. Each needs founder word approval.
+      nameOptionalLabel: "Name, if you like",
+      nameOptionalHelp: "You can add a name later.",
       // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
       // date field. No {child}: with twins the step has more than one name.
       bornQuestion: "Here yet, or on the way?",
@@ -120,6 +125,13 @@ export const en = {
       bornToday: "Born today",
       // A long name: said gently, once the field is close to its limit.
       nameLimit: "A name can have up to {n} characters.",
+      // Account-first slice 4a (exec council 9 Nov 2026, A; RW-01, RW-03 to RW-05 of docs/content/RETURNING-AND-NEW-PHONE-WORDS-9nov.md).
+      // Under the date field, for a signed-in person: so one who picked the wrong sign-in method can notice. {email} is the
+      // masked address (a***@example.com); {email} reads it aloud ("a, hidden, at example.com"). Each needs founder word approval.
+      signedInAs: "Signed in as {email}.",
+      signedInAsLabel: "Signed in as {email}.",
+      useAnother: "Use another account",
+      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
       cta: "Continue",
     },
 
@@ -1293,6 +1305,19 @@ export const en = {
     cardHint: {
       account: "Opens Account.",
     },
+    // You tab, signed out (YOU-TAB-STATES-9nov, section 4; BL-801). Each says where the letters are and names no
+    // co-parent, family or sharing. Founder word approval and counsel read pending; see the PR body.
+    signedOut: {
+      // Red-team 10 Nov: no "any phone" claim (recordings stay on the phone; with consent declined not even the words move).
+      // TODO(founder, counsel): placeholder, needs word approval.
+      body: "Your letters are on this phone.",
+    },
+    localStart: {
+      // Red-team 10 Nov: it is added, not moved (the phone keeps it). TODO(founder, counsel): placeholder, needs word approval.
+      body: "This book is on this phone. Signing in adds it to your account after you agree.",
+    },
+    // Spoken hint of the You tab button (spec key tabs.youA11yHint; kept here so tabs stays single words, NX-30a-R9).
+    youTabHint: "Settings and account",
     legalLabel: "Legal",
     accountLabel: "Account",
     accountHelp: "Sign in, and the ways you sign in.",

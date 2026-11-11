@@ -40,7 +40,13 @@ export const authCopy = {
       // Kept: it prevents a second account (PRD A F4).
       sign_in: 'Sign in the same way as last time to see every letter.',
       settings: 'The words of your letters come with you to a new phone. Recordings are kept on the phone that made them.',
+      // NX-36 S2: the Welcome line under the subtitle.
+      // Build 12 (red-team): claims nothing about phones, recordings or where letters go; a sign-in does not move anything
+      // before the person has agreed. TODO(founder, counsel): approve this line or replace it (placeholder, needs word approval).
+      sign_in_first: 'Sign in to begin your book.',
     },
+    // NX-36 S2, above the two buttons. The two documents follow it as their own 44 pt links (labels: consent.terms.termsLink and .privacyLink).
+    agreeLine: 'By continuing you agree to the Terms of Service and Privacy Policy.',
     // BRAND.md glossary, Sign-in buttons: the same words the emails tell people to tap (LNG-13).
     google: 'Sign in with Google',
     email: 'Sign in with email',
@@ -92,6 +98,49 @@ export const authCopy = {
      */
     // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
+    // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
+    noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
+    announceResend: 'You can send another email.',
+  },
+
+  /**
+   * Account-first first run (NX-36 S2 and S3), behind the server-features switch. The key names are NX-36's own and the
+   * words are placeholders: each needs founder word approval (the PR body lists them). The Apple button is Apple's
+   * (ASAuthorizationAppleIDButton, "Sign in with Apple"). No line here says a recording is kept safe or backed up, or
+   * says where the book opens. Without "Your letters are safe": a brand-new install has no letters (NX-36 2.6).
+   * Only the one failure that stays on the Welcome has a first-run line. A 429, "not available" and a lost connection
+   * go to the outage screen through the gate, so they have none here (they used to; nothing could reach them).
+   */
+  firstRun: {
+    errors: {
+      provider: 'That sign-in did not finish. Try again, or try another way.',
+      // NX-36 2.6, S5 and S6: the existing lines begin "Your letters are safe", which a brand-new install cannot say
+      // (it has no letters). These four are the same sentences without it. Each needs founder word approval.
+      network: 'Sign in once you are back online.',
+      codePaused: 'You can try a code again in 15 minutes.',
+      consentUnavailable: 'Setting up your account did not finish. Try again.',
+      unknown: 'That did not go through. Try again.',
+    },
+  },
+  // S3, sign-in cannot be reached. The button is the 22-character form; its sentence is the note, and it shows only where
+  // the button does. The body says one thing, so the shown paragraph (body, then note) repeats nothing.
+  outage: {
+    // Differs from NX-36 ("We can't reach sign-in right now."): the content rules allow no "we" outside registered lines.
+    title: 'Sign in cannot be reached right now.',
+    // Differs from NX-36 (which also named the local start here, and so said it when the button was not there).
+    body: 'Try again in a moment.',
+    retry: 'Try again',
+    startLocal: 'Start on this phone',
+    startLocalNote: 'Start the book on this phone for now. You can sign in later to bring it to your account.',
+    // Announcement only, when the connection comes back under the outage screen.
+    backOnline: 'Sign in is back.',
+  },
+  offline: {
+    title: 'Sign in needs a connection.',
+    // Differs from NX-36 ("We will try again when you are back online."): no "we", and the screen does not try to sign
+    // anyone in by itself. It reads the connection when Try again is tapped, and it goes back to sign in on its own when
+    // the connection returns, so the line says what the person does.
+    body: 'Connect to the internet, then tap Try again.',
   },
 
   verify: {
@@ -116,6 +165,13 @@ export const authCopy = {
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
+    // Account-first slice 4a (exec council 9 Nov 2026, D; RW-21, RW-23, RW-27). Shown when the account already has a book
+    // and this phone holds a book or letters: "Keep in this account" adds the phone's book as a second book. Nothing is
+    // merged or deleted, and the recordings stay on the phone. Each says where letters go, so counsel reads it, and each
+    // needs founder word approval.
+    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
+    recordingsNote: 'The recordings are kept on this phone.',
+    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 
   errors: {
@@ -223,6 +279,17 @@ export const authCopy = {
     signOutWaiting: 'Your newest letters are still on their way. This phone signs out once they are sent.',
     // BL-451: while that wait runs, for a sign-out the person asked for: back to signed in, nothing deleted or sent.
     staySignedIn: 'Stay signed in',
+    // Account sections (YOU-TAB-STATES-9nov 5; NX-36 S15; slice 4c). Placeholders: founder word approval pending, see the PR body.
+    // Signs letters as: the value is the name from the book's own sign-as editor; Account holds no copy (NX-32-R3).
+    signsAsTitle: 'Signs letters as',
+    // Ways to sign in: read only, no Add or Remove (Build 12). Names of the methods, then the date each was added.
+    methodsTitle: 'Ways to sign in',
+    methodNames: { apple: 'Apple', google: 'Google', email: 'Email', other: 'Another way' },
+    methodThisOne: 'This is how you signed in',
+    // The date follows it as written by the phone's own date format (rules.test.ts allows no {date} placeholder in this file).
+    methodAdded: 'Added',
+    // Account's grouping of Plan, Sync and Export (item 6). Not on the Settings home, where settingsHome.sections.data stays retired.
+    dataTitle: 'Your data',
     // BL-451: on the signed-out page when the wait ended before they were sent (sync turned off, or the session lost).
     signOutEarly: 'Your newest letters are kept on this phone. They are sent the next time you sign in to this account.',
     cancel: 'Cancel',

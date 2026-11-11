@@ -12,8 +12,12 @@ tags:
 ---
 - launchApp:
     stopApp: true
+# With a co-parent joined the row's value is their signature and it opens the family page (a pushed page, no tab).
+- runFlow:
+    file: ../subflows/open-settings.yaml
+- tapOn: "Asha"
 - tapOn:
-    id: "tab.family"
+    id: "child.bookRow"
 - extendedWaitUntil:
     visible:
       id: "family.member"

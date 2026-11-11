@@ -23,23 +23,32 @@
  * (MOTION principle 2); the one fade is signing out while the page is open.
  */
 import { Redirect, Stack, router } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
+import { brand } from '@scribe/brand';
 import { tokens } from '@scribe/design-tokens';
 import { accountView, nextEndedEarly } from '@/components/auth/account-view.logic';
 import { BookCover } from '@/components/book/book-cover';
 import { useChildren } from '@/components/child/use-children';
+import { useHelpLink } from '@/components/settings/help-fallback';
+import { mailTarget } from '@/components/settings/help-links.logic';
+import { planRowFor } from '@/components/settings/settings-home.logic';
 import { Button } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
 import { announce, useTheme } from '@/lib/a11y';
+import { appLockCopy } from '@/lib/app-lock/copy';
+import { useAppLock } from '@/lib/app-lock/controller';
 import { authCopy } from '@/lib/auth/copy';
 import { authErrorKind } from '@/lib/auth/errors.logic';
 import { authErrorMessage } from '@/lib/auth/messages';
+import { methodSubtitle, signInMethods, signedInWithKind, type IdentityLike } from '@/lib/auth/methods.logic';
 import { deletePasskey, listPasskeys, passkeysAvailable, registerPasskey, type PasskeyInfo } from '@/lib/auth/passkey';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, ProviderMark } from '@/lib/auth/ui';
+import { getPlan, subscribePlan } from '@/lib/billing';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities } from '@/lib/capabilities';
 import { copy, fill } from '@/lib/copy';
 import { longDate } from '@/lib/dates';
@@ -59,6 +68,12 @@ function AccountSettings() {
   const { c } = useTheme();
   const { active } = useChildren();
   const a = authCopy.account;
+  const h = copy.settingsHome;
+  const lockOn = useAppLock().enabled;
+  const help = useHelpLink();
+  const plan = useSyncExternalStore(subscribePlan, getPlan, getPlan);
+  const planRowView = planRowFor(plan, new Date().toISOString(), PLUS_ALPHA);
+  const [identities, setIdentities] = useState<IdentityLike[] | null>(null);
   const [passkeys, setPasskeys] = useState<PasskeyInfo[]>([]);
   const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +113,21 @@ function AccountSettings() {
   useEffect(() => {
     void loadPasskeys();
   }, [loadPasskeys]);
+
+  // Ways to sign in: the identities the stored session already carries (getSession reads the phone, not the network).
+  useEffect(() => {
+    if (!auth.signedIn || !client) return;
+    let live = true;
+    void client.auth
+      .getSession()
+      .then(({ data }) => live && setIdentities((data.session?.user.identities as IdentityLike[] | undefined) ?? null))
+      .catch(() => {
+        // No identities: the one known method still gets its row, without a date.
+      });
+    return () => {
+      live = false;
+    };
+  }, [auth.signedIn, client]);
 
   // The wait is said once when it starts, for VoiceOver; the row keeps saying it on screen.
   useEffect(() => {
@@ -141,6 +171,7 @@ function AccountSettings() {
   }
 
   const provider = auth.account.provider ?? 'other';
+  const methods = signInMethods(identities, signedInWithKind(auth.lastMethod, auth.account.provider));
 
   const addPasskey = async () => {
     if (!client) return;
@@ -220,14 +251,31 @@ function AccountSettings() {
           </View>
         </View>
 
-        <ListSection title={a.syncTitle}>
-          <ListRow title={a.syncLabel} trailing={a.sync[view.sync]} />
-          {view.finishSetup && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
-          {view.offerSync && (
-            // The sensitive-data step with its words, then the answer (LEGAL-REQ-006): never a one-tap consent here.
-            <ListRow title={copy.sensitiveConsent.agreeButton} trailing="chevron" onPress={() => router.push({ pathname: '/sign-in/consent', params: { step: 'sensitive' } })} />
-          )}
-        </ListSection>
+        {/* Signs letters as: the book's own sign-as editor lives on its page; Account keeps no copy of the value (NX-32-R3). */}
+        {active ? (
+          <ListSection>
+            <ListRow
+              title={a.signsAsTitle}
+              value={active.signsAs?.trim() || copy.childrenExtra.notSet}
+              trailing="chevron"
+              onPress={() => router.push({ pathname: '/settings/children/[id]', params: { id: active.id } })}
+              testID="account.signsAs"
+            />
+          </ListSection>
+        ) : null}
+
+        {/* Ways to sign in: read only in Build 12 (no Add, no Remove). Passkeys are not listed; their rows stay hidden below. */}
+        {methods.length > 0 ? (
+          <ListSection title={a.methodsTitle}>
+            {methods.map((m) => (
+              <ListRow
+                key={m.kind}
+                title={a.methodNames[m.kind]}
+                subtitle={methodSubtitle(m, { thisOne: a.methodThisOne, addedOn: (day) => `${a.methodAdded} ${longDate(day)}` })}
+              />
+            ))}
+          </ListSection>
+        ) : null}
 
         {showPasskeys && (
           <ListSection title={a.passkeysTitle} footer={a.passkeysHelp}>
@@ -247,6 +295,35 @@ function AccountSettings() {
 
         <ListSection title={a.devicesTitle} footer={a.signOutOthersHelp}>
           <ListRow title={a.signOutOthers} onPress={() => void signOutOthers()} disabled={busy || view.signOut !== 'ready'} />
+        </ListSection>
+
+        {/* Lock: the existing App lock page, its value On or Off. It says nothing about protecting the account. */}
+        <ListSection>
+          <ListRow
+            title={appLockCopy.settingsHome.appLock}
+            value={lockOn ? appLockCopy.settingsHome.appLockOn : appLockCopy.settingsHome.appLockOff}
+            trailing="chevron"
+            onPress={() => router.push('/settings/app-lock')}
+            testID="account.appLock"
+          />
+        </ListSection>
+
+        {/* Your data: Plan (same words as Settings), Sync, Export. Sync keeps no heading of its own: it would read "Sync" twice
+            over its one row (YOU-TAB-STATES-9nov 5, open question 4), and the section heading is "Your data". */}
+        <ListSection title={a.dataTitle}>
+          <ListRow title={h.planLabel} subtitle={planRowView.subtitle} value={planRowView.value} trailing="chevron" onPress={() => router.push('/settings/plus')} testID="account.plan" />
+          <ListRow title={a.syncTitle} trailing={a.sync[view.sync]} />
+          {view.finishSetup && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
+          {view.offerSync && (
+            // The sensitive-data step with its words, then the answer (LEGAL-REQ-006): never a one-tap consent here.
+            <ListRow title={copy.sensitiveConsent.agreeButton} trailing="chevron" onPress={() => router.push({ pathname: '/sign-in/consent', params: { step: 'sensitive' } })} />
+          )}
+          <ListRow title={h.exportLabel} trailing="chevron" onPress={() => router.push('/settings/export')} testID="account.export" />
+        </ListSection>
+
+        {/* Help: one row, the support mailbox with the fixed subject and nothing else (LEGAL-REQ-014); with no Mail account the address shows to copy. */}
+        <ListSection>
+          <ListRow title={h.helpLabel} trailing={h.helpValue} accessibilityHint={brand.support.email} onPress={() => help.open(mailTarget(h.helpSubject))} testID="account.help" />
         </ListSection>
 
         <View style={{ gap: tokens.space[3] }}>
@@ -269,6 +346,7 @@ function AccountSettings() {
           </ListSection>
         </View>
       </View>
+      {help.sheet}
     </ScrollView>
   );
 }

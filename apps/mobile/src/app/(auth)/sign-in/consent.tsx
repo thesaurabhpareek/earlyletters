@@ -49,11 +49,14 @@ import { AgeAnswers } from '@/components/gate/age-gate-screen';
 import { Button } from '@/components/ui/button';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { Text } from '@/components/ui/text';
-import { accountHasBooks } from '@/lib/auth/consent';
 import { authCopy } from '@/lib/auth/copy';
 import type { ConsentStep } from '@/lib/auth/machine.logic';
 import { getSignInTrigger } from '@/lib/auth/pending';
 import { authErrorMessage } from '@/lib/auth/messages';
+import { afterConsent, claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
+import { readAccountBooks } from '@/lib/first-run/account-books';
+import { consentHandoff } from '@/lib/first-run/handoff.logic';
+import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -93,11 +96,16 @@ export default function ConsentSteps() {
   // Set before the first await, so a second tap in the same frame (Agree, then Keep) records nothing more.
   const inFlight = useRef(false);
   const [noBook, setNoBook] = useState(false);
+  // What `sync_books` says about the account while the claim screen is up; null until it answers or times out.
+  const [claimKind, setClaimKind] = useState<AccountKind | null>(null);
   const switching = useRef(false);
   const s = auth.state;
   const k = authCopy.consent;
   const child = active?.name || k.childFallback;
-  const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
+  // What comes after the answer is consentHandoff's (lib/first-run/handoff.logic.ts, NX-36 4.2): agreed with
+  // letters on this phone, the claim screen first and nothing uploaded before it; declined, the book still opens.
+  const handoff = consentHandoff({ status: s.status, sync: s.status === 'ready' ? s.sync : null, claimPending: auth.claimPending });
+  const claiming = handoff === 'askClaim';
   // "Agree and sync" after an earlier "Keep on this phone": the sensitive-data step, whatever the gate's step list says.
   const turningOn = params.step === 'sensitive' && s.status === 'ready' && s.sync === 'off';
   const fromAgreeAndSync = params.step === 'sensitive';
@@ -121,20 +129,33 @@ export default function ConsentSteps() {
       close();
       return;
     }
+    // New account (first_run_open, no book): on to the promise step and the child step. Returning with no book, or any
+    // failure or a wait past ACCOUNT_BOOKS_WAIT_MS: "No book here yet" (account-books.logic.ts; the fail-safe direction).
     let alive = true;
-    void accountHasBooks(auth.client, s.userId)
-      .then((has) => {
-        if (!alive) return;
-        if (has) close();
-        else setNoBook(true);
-      })
-      .catch(() => alive && close());
+    void readAccountBooks(auth.client).then((kind) => {
+      if (!alive) return;
+      if (afterConsent(kind) === 'close') close();
+      else setNoBook(true);
+    });
     return () => {
       alive = false;
     };
     // Runs when the state settles; close and children are stable enough for this one-shot decision.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [s.status, claiming, syncMode]);
+
+  // The claim screen says so when the account already has a book. Bounded; an unreadable answer keeps today's words.
+  useEffect(() => {
+    if (!claiming || !auth.client) return;
+    let alive = true;
+    setClaimKind(null);
+    void readAccountBooks(auth.client).then((kind) => alive && setClaimKind(kind));
+    return () => {
+      alive = false;
+    };
+    // One look per time the claim screen appears.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [claiming]);
 
   const answer: Answer = async (step, accepted) => {
     if (inFlight.current) return;
@@ -200,6 +221,8 @@ export default function ConsentSteps() {
   if (claiming) {
     const c = authCopy.claim;
     const masked = auth.account.maskedEmail;
+    const hasBook = claimWords(claimKind) === 'accountHasBook';
+    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
     return (
       <StepFade step="claim">
         <SheetFrame
@@ -209,6 +232,8 @@ export default function ConsentSteps() {
                 size="lg"
                 fullWidth
                 label={c.keep}
+                loading={!keepEnabled(claimKind) && !!auth.client}
+                accessibilityHint={claimWords(claimKind) === 'accountHasBook' ? c.keepHint : undefined}
                 onPress={() => {
                   haptic('tap');
                   auth.keepLettersHere();
@@ -224,7 +249,19 @@ export default function ConsentSteps() {
             </>
           }>
           <SheetTitle>{c.title}</SheetTitle>
-          <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
+          {hasBook ? (
+            <>
+              <SheetBody>{c.bodyHasBook}</SheetBody>
+              {signedIn ? (
+                <Text variant="footnote" tone="muted" accessibilityLabel={signedIn.label}>
+                  {signedIn.text}
+                </Text>
+              ) : null}
+              <SheetBody muted>{c.recordingsNote}</SheetBody>
+            </>
+          ) : (
+            <SheetBody>{masked ? fill(c.body, { email: masked }) : c.noEmail}</SheetBody>
+          )}
           <SheetBody muted>{c.help}</SheetBody>
         </SheetFrame>
       </StepFade>
@@ -251,7 +288,8 @@ export default function ConsentSteps() {
   }
 
   const step = s.steps[0];
-  const error = authErrorMessage(s.error);
+  // A brand-new install has no letters, so its error reads without "Your letters are safe" (NX-36 2.6, S6).
+  const error = signInErrorMessage(s.error, children.length > 0);
   return (
     <StepFade step={step}>
       {step === 'terms' ? (

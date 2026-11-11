@@ -9,7 +9,7 @@
  * "From Mama" with "You" or "Co-parent" under it (components/family/member-row.tsx), never an avatar, initials
  * or an email address, and never more than two parents (D-069). Nothing is counted.
  *
- * With server features on (D-100, drafted as D-089: "the Family tab is live"), the tab shows who writes to the
+ * With server features on (D-100, drafted as D-089: "the Family tab is live", now the family page), the page shows who writes to the
  * open book: you, the co-parent who joined (from the last pull, signed with what the child calls them), and
  * pending invites as the server lists them (sync_books, lib/family/invite-list.logic.ts): open ones as
  * "Invited, open until {date}" with Share again and Cancel invite, and, for 14 days, expired ones as the server
@@ -26,10 +26,11 @@
  * Motion: the first time this phone shows the co-parent's row it enters and carries the 1.6 s wash, once. A
  * pending row that appears after the list was first shown (an invite just shared) enters; Cancel invite
  * collapses its row and says "Invite cancelled." as the tab's toast. A sheet's closing line (the invite's
- * "The invite waits on the Family tab until they join.") shows as that toast too (components/family/family-notice.ts).
+ * "The invite waits until they join.") shows as that toast too (components/family/family-notice.ts).
  *
- * With server features off (the kill path) the tab keeps its place and shows the co-parent "coming soon"
- * presentation instead, unchanged (components/family/coparent-soon.tsx).
+ * Not a tab in any build (founder, 11 Nov 2026: Home, Book, Me). This is a pushed route, /family, reached from a book's
+ * settings row when the book has a co-parent (child-settings.logic.ts FAMILY_TAB_HREF). Where co-parent sharing is not
+ * in the build it sends the person Home: there is no coming-soon screen (the old presentation is deleted).
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -40,7 +41,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, ReduceMotion } from 'react-native-reanimated';
 import { useChildren } from '@/components/child/use-children';
-import { CoParentSoon } from '@/components/family/coparent-soon';
 import { arrivedSince, inviteCardNote, peopleRows, pendingSignature } from '@/components/family/family-tab.logic';
 import { familyNotice } from '@/components/family/family-notice';
 import { InviteCard } from '@/components/family/invite-card';
@@ -51,7 +51,9 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
-import { capabilities } from '@/lib/capabilities';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
+import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { inviteDestination } from '@/lib/family/entry.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { ErrorLine, useColors } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -88,13 +90,7 @@ function RowAction({ label, icon, onPress, disabled, testID }: { label: string; 
 
 /** Fixed per build (lib/capabilities.ts), so the choice never changes the hook order. */
 export default function FamilyTab() {
-  return capabilities.coParent ? <FamilyShared /> : <FamilySoon />;
-}
-
-function FamilySoon() {
-  const { active } = useChildren();
-  if (!active) return <Redirect href="/onboarding" />;
-  return <CoParentSoon presentation="screen" childName={active.name} />;
+  return inviteDestination('family_tab', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <FamilyShared /> : <Redirect href="/" />;
 }
 
 /** The book's members from the last pull, live (sync rewrites them). */
@@ -158,7 +154,7 @@ function FamilyShared() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      // A sheet that just closed over this tab left its line here (the invite's "waits on the Family tab").
+      // A sheet that just closed over this page left its line here (the invite's "waits until they join").
       const note = familyNotice.take();
       if (note) toast.show({ message: note });
     }, [load, toast]),

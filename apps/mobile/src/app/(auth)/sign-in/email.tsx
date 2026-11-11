@@ -17,12 +17,14 @@ import { authCopy } from '@/lib/auth/copy';
 import { looksLikeEmail } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail } from '@/lib/auth/pending';
-import { authErrorMessage } from '@/lib/auth/messages';
+import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
+import { useChildren } from '@/components/child/use-children';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { ErrorLine, SheetFrame, SheetTitle } from '@/lib/auth/ui';
 
 export default function EmailStep() {
   const auth = useAuth();
+  const { active } = useChildren();
   const e = authCopy.email;
   const [email, setEmail] = useState(getPendingEmail() ?? '');
   const [busy, setBusy] = useState(false);
@@ -57,8 +59,8 @@ export default function EmailStep() {
   };
 
   // The field's own error is the address; anything else (offline, paused) is the sheet's line.
-  const fieldError = error === 'invalid_email' ? authErrorMessage(error) : null;
-  const sheetError = error && error !== 'invalid_email' ? authErrorMessage(error) : null;
+  const fieldError = error === 'invalid_email' ? signInErrorMessage(error, !!active) : null;
+  const sheetError = error && error !== 'invalid_email' ? signInErrorMessage(error, !!active) : null;
 
   return (
     <SheetFrame
