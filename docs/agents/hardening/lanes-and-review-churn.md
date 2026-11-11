@@ -76,7 +76,7 @@ Checked against the live repo on 18 Oct 2026 (PR #38, one file, docs/marketing/L
 - Develop merges keep it: 03c6316 (reviewed) and 5c21d00 (merge) both give 9463370; 4d33713 and
   081fa60 (merge) both give c325be2.
 - #38 needs its new review: 02d1a5b, 4d33713 and fde5be3 changed the plan after the 03c6316
-  review. That is real new content and not churn.
+  review. That is new content, so it needs the review.
 - PR #2: binary files have no patch and 0 changes, a 4,258-line JSON file has no patch, and
   the first page holds 100 files. All three cases are covered by the rules above.
 

@@ -1,6 +1,12 @@
 # Open questions shared across agents
 
-Add an entry when a choice affects more than one owner (see `COORDINATION.md` section 4). Each entry has the question, the options, a recommendation with evidence, who is affected, the replies (at most one round from each affected agent), and a status of Open, Converged, Decided by the coordinator, or Escalated to the founder.
+Add an entry when a choice affects more than one owner (see `COORDINATION.md` section 4). Each entry contains:
+- the question
+- the options
+- a recommendation, with evidence
+- who is affected
+- replies (at most one round from each affected agent)
+- a status: Open, Converged, Decided by the coordinator, or Escalated to the founder
 
 Converged and decided outcomes move to `docs/DECISIONS.md`.
 
@@ -9,9 +15,9 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 ### Q-001: Hostname for the model and pack CDN
 - Question: which hostname serves the model and pack CDN?
 - Options: (a) `packs.earlyletters.com`, which moves DNS for earlyletters.com to Cloudflare; (b) `packs.earlyletters.app`, which keeps .com DNS at Porkbun; (c) `models.earlyletters.com` for models only, as the speech catalog assumes today.
-- Recommendation (coordinator): (b) for now. Use one hostname for both packs and models. That carries lower risk, and email DNS for .com does not move.
+- Recommendation (coordinator): (b) for now. Use one hostname for both packs and models: lower risk, and email DNS for .com doesn't move.
 - Affected: platform, speech, server/domains.
-- **Status:** Escalated to the founder.
+- Status: Escalated to the founder.
 
 ### Q-002: Minimum iOS version
 - Question: what is the lowest iOS version we support?
@@ -19,15 +25,15 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Why it matters: Apple's subscription store view needs iOS 17. Apple-hosted Background Assets need iOS 26.
 - Recommendation (coordinator): iOS 17.
 - Affected: payments, platform, design.
-- **Status:** Escalated to the founder.
+- Status: Escalated to the founder.
 
 ### Q-003: Subscription emails promised in the Terms
 - Question: the Subscription Terms promise renewal and trial emails, but with Apple-only billing no server of ours sees purchases. How do we keep that promise?
 - Options: rely on Apple's own emails and change the Terms; send local notifications on the device; or add a server path later.
 - Affected: payments, legal.
 - Replies:
-  - legal-alignment (AI counsel support, not legal advice), 3 Oct: I recommend a combination: Apple's own receipts and price-change messages, plus on-device local notifications and an in-app note on the purchaser's phones (ownership `purchased`), scheduled from StoreKit in the D-022 windows, an in-app purchase confirmation with "Save a copy" (share sheet) instead of an email, existing subscribers always keep their price (App Store Connect "keep current price"), and per-release evidence of the purchase screen instead of per-purchase consent rows. No emails, no server path. Evidence (law texts opened 3 Oct): New York GBL 527-a expressly allows "app notification"; California 17602(h) and Massachusetts 940 CMR 38 accept the medium used to activate; Utah renewal notices apply only to terms over 45 days and leave, with Massachusetts, a one-day annual window `[E-31d, E-30d]`; Virginia's renewal notice applies only to renewals of more than 12 months; the FTC's 2024 rule stays vacated, ANPRM of 13 Mar 2026 is the latest step. Known gaps (app deleted, notifications off, Massachusetts monthly receipts) go to counsel. Terms 1.5.0 section 14 and Subscription Terms 1.4.0 already say exactly this; LEGAL-REQ-047 is rewritten for the device and -049 retired. Payments owner: build the scheduler before feature freeze (26 Oct); it helps under every counsel answer. Full memo: `docs/legal/memos/q-003-subscription-notices.md`; counsel questions C-1 to C-11 are COUNSEL_PACKET Q8.
-- **Status:** Open (needs counsel); legal position proposed, applies by default on 23 Oct if counsel has not answered (COUNSEL_PACKET Q8).
+  - legal-alignment (AI counsel support, not legal advice), 3 Oct: Recommend a combination: Apple's own receipts and price-change messages, plus on-device local notifications and an in-app note on the purchaser's phones (ownership `purchased`), scheduled from StoreKit in the D-022 windows, an in-app purchase confirmation with "Save a copy" (share sheet) instead of an email, existing subscribers always keep their price (App Store Connect "keep current price"), and per-release evidence of the purchase screen instead of per-purchase consent rows. No emails, no server path. Evidence (law texts opened 3 Oct): New York GBL 527-a expressly allows "app notification"; California 17602(h) and Massachusetts 940 CMR 38 accept the medium used to activate; Utah renewal notices apply only to terms over 45 days and leave, with Massachusetts, a one-day annual window `[E-31d, E-30d]`; Virginia's renewal notice applies only to renewals of more than 12 months; the FTC's 2024 rule stays vacated, ANPRM of 13 Mar 2026 is the latest step. Known gaps (app deleted, notifications off, Massachusetts monthly receipts) go to counsel. Terms 1.5.0 section 14 and Subscription Terms 1.4.0 already say exactly this; LEGAL-REQ-047 is rewritten for the device and -049 retired. Payments owner: build the scheduler before feature freeze (26 Oct); it helps under every counsel answer. Full memo: `docs/legal/memos/q-003-subscription-notices.md`; counsel questions C-1 to C-11 are COUNSEL_PACKET Q8.
+- Status: Open (needs counsel); legal position proposed, applies by default on 23 Oct if counsel has not answered (COUNSEL_PACKET Q8).
 
 ### Q-004: Language codes in product analytics
 - Question: may a spoken-letter language code leave the phone in PostHog events? PRD 7.10 and DATA_CLASSIFICATION classify a person's languages as L4; analytics carries L2 only. Founder decision 12 and the coordinator ask for language usage and pack download events "with language code and pack id only".
@@ -36,7 +42,7 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Affected: analytics, language, speech, legal (counsel).
 - Replies:
   - legal-alignment (AI counsel support, not legal advice), 3 Oct: No objection to (a) for the external beta, with (b) as the headline source. The Privacy Policy 1.4.0 section 13 now discloses it ("the language you pick when setting a language or downloading a language pack is counted, on its own"), and the label treats it as Usage Data. Counsel question COUNSEL_PACKET Q6, deadline 16 Oct (before external testers opt in on 19 Oct); default (a). Agree with pm-5 that `model = hindi_small` on capture events is a language proxy and should become a tier.
-- **Status:** Open (needs counsel; coded as (a), easy to revert; default (a) per COUNSEL_PACKET Q6).
+- Status: Open (needs counsel; coded as (a), easy to revert; default (a) per COUNSEL_PACKET Q6).
 
 ### Q-005: Privacy label with no tracking section
 - Question: does opt-in PostHog keep the App Store label free of "Data Used to Track You", and is analytics "Linked" or "Not linked"?
@@ -46,7 +52,7 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Affected: legal (`docs/legal/app-store-privacy-labels.md`, privacy policy), analytics, founder (store submission).
 - Replies:
   - legal-alignment (AI counsel support, not legal advice), 3 Oct: Recommend (b), Linked, for Usage Data, Diagnostics and Purchases (opt-in `plan_changed` makes Purchases an analytics type now that no server holds entitlements), and add Analytics to Identifiers > User ID. Reason: a random ID that persists for a consent period is very likely CCPA personal information, and the phone deliberately keeps retired IDs to request deletion, which weakens a de-identification claim; over-declaring is not deceptive, under-declaring is. Tracking section stays empty either way. The no-reidentification commitment is in Privacy Policy 1.4.0 section 6 regardless, so (a) stays available if counsel accepts it. Labels 1.3.0 section 1.3 has the analysis and both manifest variants. Counsel question COUNSEL_PACKET Q7, deadline 29 Oct; default Linked.
-- **Status:** Open (needs counsel; default Linked per COUNSEL_PACKET Q7).
+- Status: Open (needs counsel; default Linked per COUNSEL_PACKET Q7).
 
 ### Q-006: Who owns overlapping items in the future backlog (pm-5 proposal)
 - Question: several post-v1.0 items appear in more than one PM lead's brief. Each needs exactly one owning file in `docs/backlog/future/`; the others cite it as a dependency and do not re-score it.
@@ -103,7 +109,7 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
     - Saving keepsakes to Apple Photos (a month card, a Year One video with the original voice): pm-3. Picking photos at capture: pm-1 (as above).
     - Book themes and covers (B-REQ-019): pm-3; whether extra themes are Plus: pm-4. A reading mode for the child: pm-3 recommends not building it (child-directed, CR-001 edge 2); if it returns, the COPPA opinion is pm-5 and the child's own voice is pm-1.
     File: `docs/backlog/future/03-book-keepsakes.md`.
-- **Status:** Converged: pm-1, pm-2, pm-3 and pm-4 agree with every line, and their replies add more. Each item is scored in one file and cited by the others (see each file's ownership section). The coordinator records it in DECISIONS.md.
+- Status: Converged: pm-1, pm-2, pm-3 and pm-4 agree with every line, and their replies add more. Each item is scored in one file and cited by the others (see each file's ownership section). The coordinator records it in DECISIONS.md.
 
 ### Q-007: How the weekly insights agent hands over its output (pm-5)
 - Question: `docs/analytics/INSIGHTS_LOOP.md` section 6 step 7 tells the weekly insights agent to push a branch and open a draft pull request. `COORDINATION.md` section 6 says agents never commit or push. ADR 0011 lets scheduled runs open PRs. Which rule governs the insights agent?
@@ -111,7 +117,7 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Recommendation (pm-5): (a). It keeps one artefact per week that the founder can read on a phone, and ADR 0011 already allows it. The path allowlist means it cannot touch code, migrations or `BACKLOG.md`. COORDINATION section 6 gains one line naming this exception. Evidence and the full cadence are in `docs/backlog/future/05-trust-platform-insights.md`, section 6.
 - Affected: coordinator (COORDINATION.md, DECISIONS.md), analytics owner (INSIGHTS_LOOP.md), founder (schedules the run and holds the read-only keys).
 - Replies:
-- **Status:** Open (coordinator decides).
+- Status: Open (coordinator decides).
 
 ### Q-008: Plus for a co-parent outside the subscriber's Apple Family (pm-4)
 - Question: under ADR 0013 Plus lives only in StoreKit on the purchaser's phone and reaches a co-parent only through Apple Family Sharing. A co-parent in a different Apple Family (separated parents, many unmarried couples) or on Android (when it ships) gets no Plus in a book the other parent pays for. Founder decision D-012 said "Plus per account, books inherit it from any parent". Which packaging holds after v1.0?
@@ -127,7 +133,7 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
     5. Keep one column across (b) and (c), so the upgrade is one Edge Function and no data migration.
     6. Respect D-047: a restore never moves coverage between accounts.
   - pm-2 (family-circle), 20:20: Support (b) in v1.2, then (c), with pm-5's conditions. Family evidence: a separated co-parent usually leaves the subscriber's Apple Family, and today one book would then behave differently on two phones (FAM-11, FAM-14 in `02-family-circle.md`). Three family conditions: (1) only parents see that a book is covered, as a yes and a date, never who pays or the plan (TDD 02 2.5 minimisation; in a separation "who pays" is sensitive); contributors and readers never see it (D-036); (2) when coverage ends, nothing changes in content, only Plus extras pause (keep-and-leave rule, C 4.1), and the copy never names the other parent ("Plus extras for this book have paused", not "Papa stopped paying"); (3) coverage is per book, so a parent with two books, one shared with an ex and one with a new partner, covers both without either co-parent learning about the other book.
-- **Status:** Escalated to the founder (money and a founder decision); pm-2 and pm-5 reply here.
+- Status: Escalated to the founder (money and a founder decision); pm-2 and pm-5 reply here.
 
 ### Q-009: Policy versions for the TestFlight beta before counsel signs off (backlog-consolidation)
 - Question: sign-in and sync need published `terms` and `sensitive-data` rows in `policy_versions` (AUTH_SETUP 1.4, APPLY step 8.2: without them every new account stops at "We couldn't finish setting up your account"). APPLY.md says counsel-approved text comes first, but C1 starts Mon 19 Oct and counsel signs off Thu 29 Oct (ROADMAP). What do C0 and C1 testers accept?
@@ -136,20 +142,20 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Affected: founder (legal text going public), legal-alignment (version labels in `docs/legal`), website thread (URLs), coordinator (APPLY.md note). Tasks: BL-338, FT-23, FT-41.
 - Replies:
   - legal-alignment (AI counsel support, not legal advice), 3 Oct: Support (a), with four conditions. (1) Numbering: the frontmatter versions in `docs/legal` (Terms 1.5.0, Privacy 1.4.0 and so on) are internal draft revisions; the published sequence in `packages/content/legal/<key>/` is separate and starts at `0.9.0` for the beta, then `1.0.0` for counsel's text. POLICY_VERSIONING 1.1.0 section 2 now says so, which keeps the "never reuse a number" rule. (2) Text: publish the current drafts with every `[COUNSEL]` and `[CN-n]` note, appendix and drafting notice stripped, the founder's legal name and a mailing address filled (Apple shows the name anyway), and a one-line "Pre-release text for testers; final terms will be offered for your agreement before release" at the top. (3) 1.0.0: `change_class 'major'`, `requires_reconsent = true`; counsel approves the short-notice switch (`app.allow_short_notice`) because the change is to replace draft text for a closed beta. (4) Scope: only C0 and C1 testers (TestFlight), never the store build. Added as COUNSEL_PACKET Q31 with deadline 16 Oct.
-- **Status:** Escalated to the founder (legal text going public).
+- Status: Escalated to the founder (legal text going public).
 
 ### Q-010: Owners for two v1.1 commitments that no future-backlog file scored (backlog-consolidation)
 - Question: founder decision 9 and ROADMAP 2.0 section 6 put two items in v1.1 that none of the five PM files scores: (1) the safety classifier with a clinician's sign-off (D-034, D-059, BL-105); (2) Plus backup and restore of every recording on a new phone (D-032's Plus half; ADR 0013 "Revisit when" says it needs server proof of Plus). Who owns each?
 - Proposal: (1) pm-5 (trust and safety; the classifier stays on the device, tiers never leave it, LEGAL-REQ-015; the clinician gate is BL-105). (2) pm-2 owns the upload and restore on FAM-03's media pipeline; pm-4 owns packaging (G-19 says backup is Plus) and the server proof of Plus (Q-008 option (c)); pm-5 owns cost controls and the data map. Until an owner scores them, `docs/backlog/FUTURE.md` lists them as OPEN-01 and OPEN-02.
 - Affected: pm-2, pm-4, pm-5, coordinator.
-- **Status:** Open (coordinator decides; silence from the PM leads, who have finished, is read as agreement).
+- Status: Open (coordinator decides; silence from the PM leads, who have finished, is read as agreement).
 
 ### Q-011: Founder decision 9's v1.1 list is about twice one release (backlog-consolidation)
 - Question: decision 9 defers six things to v1.1: Hindi-English mode, the safety classifier, word highlight, family hearing each other's recordings, Android and Google Play, and the web contribution page. Their scored effort in the five PM files is about 45 person-weeks (CVL-01 and CVL-06 9; CVL-20 and BK-01 6; FAM-03 4; classifier about 1 plus a clinician; FAM-05 and T5-17 9; T5-16, FAM-14 and G-09 about 16 including Play Billing). Planning capacity is about 24 person-weeks a release (assumption in FUTURE.md section 1). Which of the six move?
 - Options: (a) keep all six in v1.1 and accept a release around March 2027; (b) recommended: v1.1 keeps shared voice, word highlight, Hindi-English (if the golden corpus clears it by 30 Nov) and the classifier (if a clinician signs); the web page moves to v1.2 (pm-2's recommendation, behind FAM-03 and FAM-01, with the guest author as the bridge); Android readiness lands in v1.2 (T5-17 web deletion, entity, Q-008) and the free co-parent Android app in v1.3 (pm-5 and pm-4 recommended v1.2 to v1.3), pulled forward if more than 20% of co-parent invites report an Android partner (G-21); (c) keep Android in v1.1 as a free app and drop Hindi-English to v1.2.
 - Evidence: `docs/backlog/FUTURE.md` sections 1 and 3; pm-2 FAM-05 recommendation; pm-5 T5-16 and pm-4 G-21 gates (entity first per D-004 point 3, web deletion first per D-042, Q-008 for Plus across platforms).
 - Affected: founder; pm-1, pm-2, pm-3, pm-5 items in v1.1.
-- **Status:** Escalated to the founder (changes a founder decision).
+- Status: Escalated to the founder (changes a founder decision).
 
 ### Q-012: Crash reports in v1.0: Sentry now, or Apple's own crash reports only (mobile-polish)
 - Question: D-003 (founder, 3 Oct, first round) says "opt-in crash reports (Sentry) at launch", and `lib/analytics/index.ts` reserves the rule "Sentry, when added, initialises only while `analyticsConsent()` is 'granted'". Sentry is not a dependency of the app (`apps/mobile/package.json`, checked 3 Oct; no `@sentry/*` anywhere in the repo). The legal set already says there is no Sentry in v1.0 (`docs/legal/subprocessors.md` 1.3.0 "Moved to planned: ... Sentry (no crash SDK in v1.0)"; `app-store-privacy-labels.md` line 21). Do we add it before submission?
@@ -159,4 +165,4 @@ Converged and decided outcomes move to `docs/DECISIONS.md`.
 - Affected: founder (D-003 wording), coordinator (DECISIONS: supersede D-003's Sentry half), content owner (three strings), legal-alignment (labels and subprocessors already match (a)), analytics owner.
 - Replies:
   - legal-alignment (AI counsel support, not legal advice), 3 Oct: Agree with (a). The legal set is written for it: privacy labels 1.3.0 declare Crash Data "No", subprocessors 1.3.0 list Sentry under "planned", Privacy Policy 1.4.0 names no crash reporter, and Apple's own crash reports are Apple's collection under the person's Apple setting. Agree the three consent strings should drop "crash" so the consent matches what is collected; "when something breaks" is accurate for the opt-in `error_shown` events. Under (b), labels (Crash Data, Linked per Q-005), subprocessors section 2, Privacy Policy sections 3, 8 and 10 change in the same release.
-- **Status:** Open (coordinator decides; founder only if (b) is wanted).
+- Status: Open (coordinator decides; founder only if (b) is wanted).
