@@ -48,7 +48,18 @@ describe('shelf strings', () => {
     for (const k of [...src('app/letter/[id].tsx').matchAll(/copy\.settings\.delete\.(\w+)/g)].map((m) => m[1])) expect(d[k], `letter delete.${k}`).toBeTruthy();
   });
 
-  it('[D-085] the book export reads no deleted letters', () => {
-    expect(src('lib/export/device.ts')).not.toMatch(/listDeleted/);
+  // D-085: deleting moves a letter to Recently deleted for 30 days, and the ordinary book export does not read it.
+  // BL-446 / DATA-REQ-053: while an account-deletion request is open (and only then) the export also holds the
+  // Recently deleted letters. So device.ts may name the deleted-letter reader in exactly two places: its import and the
+  // `deleted:` slot of the exportScope(...) call, and scope.logic.ts must read it only when requestOpen is true. An
+  // unconditional read anywhere else in device.ts (or an ungated read in scope.logic.ts) still fails here.
+  it('[D-085] the book export reads no deleted letters unless a deletion request is open', () => {
+    const device = src('lib/export/device.ts');
+    const rest = device
+      .replace(/^import[^\n]*\n/gm, '')
+      .replace(/exportScope\(\s*\{[^}]*\},\s*requestOpen,?\s*\)/, '');
+    expect(rest, 'device.ts reads deleted letters outside exportScope(..., requestOpen)').not.toMatch(/listDeleted/);
+    expect(device).toMatch(/exportScope\(\s*\{[^}]*deleted: listDeletedEntriesForChild[^}]*\},\s*requestOpen/);
+    expect(src('lib/export/scope.logic.ts')).toMatch(/requestOpen \? \[\.\.\.r\.live\(b\.book\.id\), \.\.\.r\.deleted\(b\.book\.id\)\] : r\.live\(b\.book\.id\)/);
   });
 });
