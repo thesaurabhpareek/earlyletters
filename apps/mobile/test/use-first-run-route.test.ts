@@ -252,7 +252,7 @@ describe('[NX-31-R18] sign-in cannot be reached: Try again, the local start and 
     expect(run.result.current.step).toBe('outage');
   });
 
-  it('[NX-36-S3] "Sign in is back." is never said because the person tapped Try again on a service outage', async () => {
+  it('[NX-36-S3] "You are back online." is never said because the person tapped Try again on a service outage', async () => {
     h.auth.state = failed();
     const run = renderHook(() => useFirstRunRoute());
     await flush();
