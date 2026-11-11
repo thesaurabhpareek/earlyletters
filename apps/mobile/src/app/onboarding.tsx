@@ -566,7 +566,7 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                 </Button>
               ) : null}
               {doors.joinButton ? (
-                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent) as Href)}>
+                <Button variant="quiet" size="sm" accessibilityLabel={o.welcome.joinButton} onPress={() => router.push(inviteHref('onboarding_join', capabilities.coParent, PLUS_ALPHA) as Href)}>
                   <Text variant="callout">{o.welcome.joinButton}</Text>
                 </Button>
               ) : null}

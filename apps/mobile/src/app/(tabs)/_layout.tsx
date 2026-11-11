@@ -2,7 +2,6 @@ import { Tabs } from 'expo-router/js-tabs';
 import { BookOpenIcon } from 'phosphor-react-native/src/icons/BookOpen';
 import { MoonStarsIcon } from 'phosphor-react-native/src/icons/MoonStars';
 import { UserIcon } from 'phosphor-react-native/src/icons/User';
-import { UsersThreeIcon } from 'phosphor-react-native/src/icons/UsersThree';
 import type { Icon } from 'phosphor-react-native';
 import { Platform, Pressable, type ColorValue, type PressableProps } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,14 +12,12 @@ import { UIProvider } from '@/components/ui/provider';
 import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
-import { PLUS_ALPHA } from '@/lib/billing/alpha';
-import { capabilities } from '@/lib/capabilities';
 import { copy } from '@/lib/copy';
-import { familySurfacesShown } from '@/lib/family/entry.logic';
 
 /**
- * Tabs: Tonight, Book, Family, You (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not
- * actions; always visible; single-word labels). JS tabs + Phosphor so iOS, Android and
+ * Tabs: Home, Book, Me (founder, 11 Nov 2026), in every build: servers on or off, alpha or store. Family is never a tab
+ * (DESIGN_LANGUAGE 12, HIG tab bars: navigation, not actions; always visible; single-word labels). The labels are
+ * label-only renames: the files stay `index.tsx` (Home) and `you.tsx` (Me). JS tabs + Phosphor so iOS, Android and
  * the web preview match; NativeTabs (Liquid Glass) is the recorded next step after a
  * device spike (docs/design/COMPONENT_LIBRARY.md section 0.1).
  *
@@ -28,18 +25,15 @@ import { familySurfacesShown } from '@/lib/family/entry.logic';
  * - 25 pt icons; labels 13 pt Mukta Medium (the type floor), not scaled with Dynamic Type (HIG); on
  *   iOS a long press at accessibility sizes shows the Large Content Viewer instead.
  * - No haptics and no custom transition on tab change (MOTION 5i, 6).
- * - The three titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
+ * - The titles come from packages/content (`en.tabs`, EXPERIENCE_PASS_2026-10 S57); none is typed here.
  * - UIProvider here is a no-op once the root layout mounts it; the ToastHost lifts toasts
  *   above the bar on tab screens.
- * - D-126 (BL-604): the store build with server features off has two tabs, Tonight and Book. Family sits inside
- *   `Tabs.Protected`, so with its guard false the screen is left out of the navigator (expo-router useSortedScreens drops
- *   protected routes): no bar item and no route, rather than a hidden one. Not `href: null`: expo-router throws "Cannot use `href` and `tabBarButton` together", and every
- *   tab here has an iOS tabBarButton. The guard is decided at bundle time (familySurfacesShown, lib/family/entry.logic).
+ * - No guard, no build rule: the bar is the same three items whatever the build (test/tab-bar.test.ts). Co-parent
+ *   sharing has no tab and no coming-soon screen; the real flow, where a build has it, is a pushed route (/family,
+ *   /invite) reached from a book's settings.
  */
 const BAR = 58;
 const t = copy.tabs;
-/** Bundle-time only: APP_ENV and the server switch. Every alpha build keeps the Family tab (D-126, BL-604). */
-const FAMILY_TAB = familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent });
 
 export default function TabsLayout() {
   const { c } = useTheme();
@@ -81,12 +75,9 @@ export default function TabsLayout() {
           }}>
           <Tabs.Screen name="index" options={{ title: t.tonight, tabBarIcon: icon(MoonStarsIcon), tabBarButton: button(t.tonight) }} />
           <Tabs.Screen name="book" options={{ title: t.book, tabBarIcon: icon(BookOpenIcon), tabBarButton: button(t.book) }} />
-          <Tabs.Protected guard={FAMILY_TAB}>
-            <Tabs.Screen name="family" options={{ title: t.family, tabBarIcon: icon(UsersThreeIcon), tabBarButton: button(t.family) }} />
-          </Tabs.Protected>
-          {/* You (NX-30a, founder 9 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
+          {/* Me (NX-30a, founder 9 Nov; named Me on 11 Nov): Settings home as a tab root. The same component as /settings (app/settings/index.tsx),
               last in the bar. It has no lamp and no Back; the header carries the one title. Its rows push the Settings pages
-              onto the root stack, which goes back to this tab ("You"). Label is a placeholder (copy.tabs.you). */}
+              onto the root stack, which goes back to this tab ("Me"). */}
           <Tabs.Screen
             name="you"
             options={{

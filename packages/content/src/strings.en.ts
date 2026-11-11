@@ -56,11 +56,11 @@ export const en = {
 
   // Tab titles (experience pass S57): they move here from apps/mobile/src/app/(tabs)/_layout.tsx.
   tabs: {
-    tonight: "Tonight",
+    // Founder, 11 Nov 2026: Home, Book, Me, in every build. Label-only renames: the route files stay index.tsx and you.tsx,
+    // and the keys stay `tonight` and `you`. Family is never a tab, so there is no `family` key.
+    tonight: "Home",
     book: "Book",
-    family: "Family",
-    // PLACEHOLDER (founder to confirm "You", "Yours" or "Settings", NX-30a): the tab that holds Settings and Account.
-    you: "You",
+    you: "Me",
   },
 
   onboarding: {

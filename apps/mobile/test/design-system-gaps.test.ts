@@ -45,7 +45,7 @@ describe('(3) one back/close idiom per context', () => {
   });
 
   it('every modal screen draws Close with ModalHeader (top right) and none draws it top-left or at the bottom', () => {
-    const modals = ['app/write.tsx', 'app/review.tsx', 'app/read-together.tsx', 'components/family/coparent-soon.tsx', 'lib/auth/ui.tsx'];
+    const modals = ['app/write.tsx', 'app/review.tsx', 'app/read-together.tsx', 'lib/auth/ui.tsx'];
     for (const f of modals) expect(read(f), f).toMatch(/ModalHeader/);
     // listen's only own header is the denied state's, which goes through StateScreen's header slot
     expect(read('app/listen.tsx')).toMatch(/header=\{<ModalHeader/);
