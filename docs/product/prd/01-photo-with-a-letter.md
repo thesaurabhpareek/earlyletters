@@ -170,6 +170,6 @@ Label effect: none. Pictures stay on the phone; `photo_path` stays null in sync 
 
 ## 14. Not fully testable
 
-- NS-01-R3's thumbnail has a design maximum of 160 pt and no minimum; whether a minimum is wanted is `design-systems`' call (default: none).
-- NS-01-R20 needs a device run with VoiceOver; there is no stand-in.
-- OQ-2 behaviour is untested until a second-phone run exists.
+- NS-01-R3's thumbnail has a design maximum of 160 pt and no minimum; whether a minimum is wanted is `design-systems`' call, PROPOSED by Fri 20 Nov 2026 (default: none).
+- NS-01-R20 needs a device run with VoiceOver; there is no stand-in. PROPOSED owner `qa`, in the Build 13 device run.
+- OQ-2 behaviour is untested until a second-phone run exists. PROPOSED owner `qa`, in the Build 13 device run.

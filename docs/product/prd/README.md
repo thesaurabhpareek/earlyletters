@@ -128,6 +128,6 @@ Each pass line in the PRDs can be run once its trigger is met. Dates for Build 1
 | Five-parent photo study | NS-01 section 9 | `user-research` | Build 13 with photos on is in TestFlight | Within one week of that build |
 | Five-parent Find study (parents with 40 or more letters) | NS-02 section 9 | `user-research` | Build 13 with Find on is in TestFlight and five testers have 40 or more letters | Within one week; if no tester has 40 letters, use a fixture book and mark the result as a stand-in (RR-8) |
 | Five-parent share study | NS-05 section 11 | `user-research` | Share Level 1 is in TestFlight (Build 14) | Within one week of that build |
-| Five-parent Firsts study and sealed-letter study | NS-06 A9 and B8 | `user-research` | Share Level 1 has shipped (the sequencing rule of NS-06) | One combined session, after Share Level 1 ships |
+| Five-parent Firsts study and sealed-letter study | NS-06 section A9 (Metrics) and section B8 (Metrics) | `user-research` | Share Level 1 has shipped (the sequencing rule of NS-06) | One combined session, after Share Level 1 ships |
 | Hands-free spike | NS-04 | `mobile` with `security-architect` | The Monday after Build 13 is cut | Five working days from that Monday; hard stop on day 5 |
 | Family-hears-it pilot | NS-03 | `user-research` with the founder | Dated plan in NS-03 section 5 | As dated there |
