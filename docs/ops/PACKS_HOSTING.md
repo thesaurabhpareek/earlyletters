@@ -15,7 +15,7 @@ You need two things, both done below:
 
 - The repo on `develop`, where these commands are (`develop` is the default branch since 1 Nov 2026; `main` is the live website and tagged releases and does not have them): `git clone https://github.com/thesaurabhpareek/earlyletters.git && cd earlyletters && git switch develop && git pull`, then `npm ci` at the repo root, with Node 22.5 or later (`node --version`).
 - A password manager.
-- A Cloudflare account with two-factor, with **`earlyletters.app` already an active zone in it** (D-097, `docs/ops/DOMAINS.md` section 6). If it is not active yet, start that first (see "If earlyletters.app is not on Cloudflare yet"): it is the only slow part.
+- A Cloudflare account with two-factor, with **`earlyletters.app` already an active zone in it** (D-097, `docs/ops/DOMAINS.md` section 6). Since 1 Nov 2026 it is: public DNS shows Cloudflare nameservers for `earlyletters.app` and Cloudflare's DS record at the registry (Verified, DNS lookups, 1 Nov 2026). Check it is active in your account; if it ever is not, start that first (see "If earlyletters.app is not on Cloudflare yet"): it is the only slow part.
 
 ## The 15 minutes (Cloudflare R2, recommended)
 
@@ -131,7 +131,7 @@ Measured here, `--models upstream --languages en,hi,es,zh,fr,ar,pt` (an English-
 
 The manifest also lists the three hosted speech models at their pinned Hugging Face URLs, with the sizes and SHA-256 from `apps/mobile/src/lib/models/catalog.ts`: Silero VAD 885,098 bytes, Whisper large-v3-turbo q5_0 574,041,195 bytes, Whisper small q5_1 190,085,487 bytes. The phone downloads them from Hugging Face and checks every byte against the signed hash.
 
-**Models on our own host instead** (`--models download`, the default): the script downloads the three files from their pinned upstream URLs (resuming with Range requests), refuses any file whose size or SHA-256 differs from the catalog, and lists our host first with Hugging Face as a mirror. The upload is about 765 MB (Assumption: 5 minutes at 20 Mbit/s up). The first internal TestFlight works either way; do it before external testers (C1), because Hugging Face is best effort and rate-limits per IP (ADR 0016 section 3.1). Moving later needs no app release: the phone downloads from the manifest's URL, not from a URL in the app.
+**Models on our own host instead** (`--models download`, the default): the script downloads the three files from their pinned upstream URLs (resuming with Range requests), refuses any file whose size or SHA-256 differs from the catalog, and lists our host first with Hugging Face as a mirror. The upload is about 765 MB (Assumption: 5 minutes at 20 Mbit/s up). The first internal TestFlight works either way; do it before external testers (C1), because Hugging Face is best effort and rate-limits per IP (ADR 0016 section 3.1). Moving later needs no app release: the phone downloads from the manifest's URL, not from a URL in the app. The full founder steps for that move, with `--strict-models`, are in `runbooks/speech-models-on-r2.md`.
 
 Other options: `--base-url`, `--min-app 1.0.0`, `--out`, `--models-dir <folder>` (use model files you already have; each is hash-checked), `--include-model <id>` (a model we built, such as `speech-model.whisper-hindi-small-q5_1`, only after counsel clears its training data: ADR 0015 section 9), `--strict-models` (fail instead of falling back to upstream).
 
@@ -190,6 +190,8 @@ npm run preflight:testflight -w @scribe/mobile -- --skip-prebuild               
 
 ## If earlyletters.app is not on Cloudflare yet
 
+Status, 1 Nov 2026: done. `earlyletters.app` is on Cloudflare nameservers with DNSSEC on (Verified, DNS lookups for NS and DS, 1 Nov 2026). The steps stay here as the record of how it was done, and for a rebuild.
+
 An R2 custom domain must be a zone in the same Cloudflare account (Read). D-097 moves only **`earlyletters.app`** (today a redirect). `earlyletters.com`, the website's records and all email stay at Porkbun, untouched. (`docs/ops/DOMAINS.md` section 6, row A, still describes moving `.com` and `packs.earlyletters.com`; for D-097 follow the steps here instead.)
 
 Do them in this order. The order matters for DNSSEC: a DS record at the registry that does not match the new nameservers makes the domain stop resolving for validating resolvers (Read, Cloudflare DNSSEC).
@@ -223,7 +225,7 @@ Does it fit? The documents and text packs are 110,324 bytes in 9 files (Measured
 
 1. `npx tsx scripts/packs/publish.ts release --key-file ~/.config/early-letters/signing.env --models upstream`
 2. `npx vercel@latest deploy dist/release --prod`: create a **new** project (for example `early-letters-packs`), not the website project; framework Other, no build command.
-3. Project > Settings > Domains > add `packs.earlyletters.app`, and add the DNS record Vercel shows at whoever hosts `earlyletters.app` DNS (Porkbun today).
+3. Project > Settings > Domains > add `packs.earlyletters.app`, and add the DNS record Vercel shows at whoever hosts `earlyletters.app` DNS (Cloudflare since 1 Nov 2026).
 4. `npx tsx scripts/packs/publish.ts verify`, then step 8 above.
 
 Unverified on Vercel: that a header rule can set Content-Type on an extensionless static file (the app does not depend on it; `verify` warns if it is wrong) and that static files answer Range requests (`verify` reports it; text packs and documents are small enough to need none).

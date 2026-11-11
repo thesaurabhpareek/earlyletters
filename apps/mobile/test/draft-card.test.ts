@@ -301,6 +301,13 @@ describe('[S09] A month ago', () => {
     expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0)).toBeNull();
     expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0)).toBeNull(); // 27 and 36 days
   });
+
+  it('[F09-REQ-003] never a letter dated to a month only: "A month ago" and its date would state a day nobody gave', () => {
+    const month = { ...letter('m', '2026-09-19'), occurredPrecision: 'month' as const };
+    expect(resurfaced([month], TODAY, 0)).toBeNull();
+    // A day letter in the window still comes back, and the month-only one never takes its place.
+    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0)?.id).toBe('d');
+  });
 });
 
 describe('[S33] not much today, and the light', () => {
@@ -354,7 +361,10 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
     expect(screen).toContain('listDrafts(childId)');
     expect(screen).not.toMatch(/listDrafts\([^)]*\)\s*\[\s*0\s*\]/);
     expect(screen).toContain('draftCards(room?.drafts ?? [], room?.at)');
-    expect(screen).toMatch(/cards\.map\(\(card, i\) =>/);
+    // F14-REQ-041 (SR-C-08): every draft is still drawn, through tonightRows, which folds two or more held letters into
+    // one row that opens their list (test/tonight-plus.test.ts); every other draft keeps its own card.
+    expect(screen).toContain('tonightRows(cards)');
+    expect(screen).toMatch(/rows\.map\(\(row, i\) =>/);
   });
 
   it('one question on screen: the prompt, no subtitle, and its old caps label only as the prompt\'s hint', () => {
@@ -438,7 +448,8 @@ describe('[P3] whole-line excerpts at every Dynamic Type size, xSmall, Small and
     const src = code('components/motion/excerpt-fade.tsx');
     // The clip and the drawn text share one line height, from lineHeightFor with the same variant, fontScale and scale.
     expect(src).toContain('const lh = lineHeightFor(variant, fontScale, scale ?? 1);');
-    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]}>");
+    // (The container also measures its width, for the word ending's fade, BL-659.)
+    expect(src).toContain("<View style={[{ maxHeight: lines * lh, overflow: 'hidden' }, containerStyle]} onLayout=");
     expect(src).toMatch(/<Text variant=\{variant\} scale=\{scale\}/);
     // Callers cannot pass numberOfLines (it is left out of the props), and the component sets no ellipsis itself.
     expect(src).toContain("Omit<TextProps, 'children' | 'variant' | 'numberOfLines'>");

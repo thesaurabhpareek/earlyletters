@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # Plus subscription metadata (App Store Connect and Play Console)
 
 Figures come only from `apps/web/src/content/pricing.ts` (`plusPricing`): **Plus Monthly $4.99, 1-month free trial; Plus Yearly $49.99, 2-month free trial**, US dollars, sold through the App Store in the US (ADR 0013, D-013). The membership model is D-051: the first two letters are free; adding new letters then needs Plus; letters already made always stay readable, playable and exportable.

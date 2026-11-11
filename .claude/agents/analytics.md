@@ -17,6 +17,7 @@ The team learns how families use the app without ever seeing a word they wrote, 
 - `docs/analytics/**`, except `docs/analytics/decision-science/**` (`decision-science`).
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/analytics/TRACKING_PLAN.md`, `docs/adr/0008-analytics-and-crash-reporting.md`.
 - The latest `docs/agents/BRIEF-*.md`, decision 12: opt-in PostHog plus server aggregates, feeding a self-learning loop.
 

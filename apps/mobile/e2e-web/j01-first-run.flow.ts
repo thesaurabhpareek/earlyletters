@@ -1,4 +1,4 @@
-import { btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, toChildStep } from './support/app';
+import { agreeBox, btn, dateInput, dayOffset, firstRun, journey, nameField, passAgeGate, startOnboarding, toChildStep } from './support/app';
 import { expect, test } from './support/journey';
 
 test('[J01] first run: the age question, the promise, the child, the signature, the first letter', async ({ app, record }) => {
@@ -8,20 +8,29 @@ test('[J01] first run: the age question, the promise, the child, the signature, 
   await expect(app.getByText('We ask everyone the same question.')).toHaveCount(0);
   await expect(app.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
   await expect(app.getByRole('radio', { name: 'No' })).not.toBeChecked();
-  await step('happy', 'The age question', 'The first screen is the launch screen\'s room: the lamp, the opening quotation pair and one neutral question, with nothing preselected. Continue waits, drawn as an outline, until the person picks Yes or No.');
-  await expect(btn(app, 'Continue')).toBeDisabled();
+  await expect(agreeBox(app)).not.toBeChecked();
+  await step('happy', 'Before you begin', 'The first screen is the launch screen\'s room: the lamp, the opening quotation pair, one neutral question with nothing preselected, and an unticked box to agree to the Terms of Service and Privacy Policy, with each document as its own link.');
 
+  // Continue is never disabled: tapped early, it says what is missing and stores nothing.
+  await btn(app, 'Continue').click();
+  await expect(app.getByText('Choose Yes or No.')).toBeVisible();
   await app.getByRole('radio', { name: 'Yes' }).click();
   await expect(app.getByRole('radio', { name: 'Yes' })).toBeChecked();
-  await step('happy', 'Yes is chosen', 'The person taps Yes. It fills softly with a check, and Continue turns on. Only a yes/no flag is stored on the phone, never an age.');
+  await btn(app, 'Continue').click();
+  await expect(app.getByText('Check the box to continue.')).toBeVisible();
+  // Yes without the box: one line above Continue says to check it, and nothing is stored (no extra step, so J01 ids hold).
+
+  await agreeBox(app).click();
+  await expect(agreeBox(app)).toBeChecked();
+  await step('happy', 'Yes and the box', 'Yes fills softly with a check, and so does the box. Only a yes/no flag and the agreement (document versions, time, app version, a fingerprint of the sentence) are stored on the phone, never an age.');
   await btn(app, 'Continue').click();
 
   await expect(btn(app, 'Begin the book')).toBeVisible();
-  await expect(app.getByText('The baby memory book you fill by talking.')).toBeVisible();
+  await expect(app.getByText('Letters to your child, in your own words and voice.')).toBeVisible();
   await expect(app.getByText('Your first two letters are free.')).toBeVisible();
   // S03: the stacked lockup is the one logo (an image named for VoiceOver); the name is never typed on the screen.
   await expect(app.getByRole('img').first()).toBeVisible();
-  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about the voice, and "Your first two letters are free." (D-082). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
+  await step('happy', 'Welcome', 'The light rises from the gate: the stacked lockup, one serif line of what the book is, one line about how it fills, and "Your first two letters are free." (D-082). One button: Begin the book. ("I already have a book" and "I was invited" sit under it in builds with sign-in; this build has server features off, so both are hidden.)');
   await expect(btn(app, 'I was invited')).toHaveCount(0);
   await expect(btn(app, 'I already have a book')).toHaveCount(0);
   await startOnboarding(app);
