@@ -26,6 +26,7 @@ import {
   rebaseAudioUri,
   reportOrphanAudio,
 } from '../store';
+import { sweepPhotosAtLaunch } from '../photos/device';
 import { removeWholeFrameCopies } from './adts-file';
 import { purgeShelfAtLaunch } from './erase';
 import { probePlayable } from './probe';
@@ -60,6 +61,7 @@ async function sweep(): Promise<SweepReport> {
     return await reconcile();
   } finally {
     purgeShelf();
+    void sweepPhotosAtLaunch(); // picker originals in Caches, stray picture files, purged letters' pictures (NX-39-R53)
     try {
       removeWholeFrameCopies(); // copies a transcription run left when the app was killed (an hour old or more)
     } catch {

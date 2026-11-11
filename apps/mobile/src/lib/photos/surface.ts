@@ -17,3 +17,15 @@ export function pictureHidden(input: { lockOn: boolean; unlocked: boolean; phase
   if (!input.lockOn) return false;
   return !input.unlocked || input.phase !== 'active';
 }
+
+/**
+ * Karma's ruling (11 Nov 2026, reversible default): a screen that shows a picture is blank in the app switcher
+ * snapshot whether or not App lock is on. NX-39-R36 asked for it only with App lock on; flip this constant to follow
+ * R36 as written. The App lock cover itself (PrivacyCover) still covers a locked app as before.
+ */
+export const PHOTO_BLANK_WITHOUT_APP_LOCK = true;
+
+/** True when a picture must not be drawn right now: the app is not in front (inactive covers the snapshot moment). */
+export function pictureCovered(phase: 'active' | 'inactive' | 'background', lockOn = false, unlocked = true): boolean {
+  return pictureHidden({ lockOn: lockOn || PHOTO_BLANK_WITHOUT_APP_LOCK, unlocked, phase });
+}

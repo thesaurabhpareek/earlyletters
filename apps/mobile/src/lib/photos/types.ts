@@ -15,6 +15,11 @@ export interface StoredPhoto {
   entryId: string;
   mediaId: string;
   ext: typeof STORED_EXT;
+  /** Size of the stripped copy, its SHA-256 (a hash of a picture is L4) and its pixel size (entry_media columns). */
+  bytes: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
   /** The parent's own words about the picture; null when they typed none. Never filled in by the app. */
   text: string | null;
   /** A place the parent typed, or null. Never filled in, suggested or read from the picture's own data. */
@@ -73,11 +78,25 @@ export interface PhotoPicker {
   open(handlers: { onProgress?: (fraction: number) => void }): { done: Promise<PickOutcome>; cancel(): void };
 }
 
+/**
+ * The picker's temporary files (Caches/ImagePicker). The package keeps a copy of the ORIGINAL there, with its location,
+ * and never deletes it (review C7). The app reads it once, then removes it; a sweep at launch empties the folder.
+ */
+export interface PickedFiles {
+  read(uri: string): Promise<Uint8Array>;
+  /** Never throws: a file already gone is fine. */
+  remove(uri: string): Promise<void>;
+  /** Empties the picker's folder. Never throws. */
+  sweep(): Promise<void>;
+}
+
 export interface PhotoDeps {
   store: PhotoStore;
   files: PhotoFiles;
   newId: () => string;
   now: () => Date;
+  /** SHA-256 of the stripped bytes, lower-case hex. */
+  sha256: (bytes: Uint8Array) => Promise<string>;
   /** The native re-encode step. Absent until the device adapter exists. */
   orientation?: OrientationBaker;
 }

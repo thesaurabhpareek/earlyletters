@@ -9,7 +9,7 @@ import { photoPath, STORED_EXT, type PhotoDeps, type PhotoPicker, type PickedAss
 export class PhotoSession {
   private asset: PickedAsset | null = null;
   private typed = '';
-  private typedPlace = '';
+  private placeTyped = '';
 
   /** The picked source, or null. Only the still of a Live Photo is ever kept: `pairedVideoUri` is dropped here. */
   pick(asset: PickedAsset): void {
@@ -22,10 +22,17 @@ export class PhotoSession {
     this.typed = typed;
   }
   setPlace(typed: string): void {
-    this.typedPlace = typed;
+    this.placeTyped = typed;
+  }
+  /** The text as typed, for Undo. */
+  get typedText(): string {
+    return this.typed;
+  }
+  get typedPlace(): string {
+    return this.placeTyped;
   }
   get place(): string | null {
-    return normalizePhotoPlace(this.typedPlace);
+    return normalizePhotoPlace(this.placeTyped);
   }
   get source(): PickedAsset | null {
     return this.asset;
@@ -37,7 +44,7 @@ export class PhotoSession {
   discard(): void {
     this.asset = null;
     this.typed = '';
-    this.typedPlace = '';
+    this.placeTyped = '';
   }
 }
 
@@ -96,10 +103,20 @@ export async function commitPhoto(
   } catch {
     return { status: 'failed' };
   }
+  let sha256: string;
+  try {
+    sha256 = await deps.sha256(stripped.bytes);
+  } catch {
+    return { status: 'failed' };
+  }
   const photo: StoredPhoto = {
     entryId: input.entryId,
     mediaId: deps.newId(),
     ext: STORED_EXT,
+    bytes: stripped.bytes.length,
+    sha256,
+    width: stripped.width,
+    height: stripped.height,
     text: normalizePhotoText(input.text),
     place: normalizePhotoPlace(input.place),
     addedAt: deps.now().toISOString(),

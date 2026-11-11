@@ -1,4 +1,5 @@
 // Fixtures and in-memory ports for the photo tests. The fictional family is Asha; no real picture is used.
+import { createHash } from 'node:crypto';
 import type { PhotoDeps, PhotoFiles, PhotoStore, StoredPhoto } from '../src/lib/photos/types';
 
 const seg = (marker: number, payload: number[]): number[] => [0xff, marker, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
@@ -123,6 +124,6 @@ export function deps(over: { files?: ReturnType<typeof memoryFiles>; store?: Ret
   const store = over.store ?? memoryStore();
   const clock = over.at ?? { t: Date.UTC(2026, 10, 11) };
   let n = 0;
-  const d: PhotoDeps = { store, files, newId: () => `m${++n}`, now: () => new Date(clock.t) };
+  const d: PhotoDeps = { store, files, newId: () => `m${++n}`, now: () => new Date(clock.t), sha256: async (b) => createHash('sha256').update(b).digest('hex') };
   return { d, files, store, clock };
 }

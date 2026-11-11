@@ -263,7 +263,7 @@ export default function Tonight() {
         <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
       </ButtonRow>
-      {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} /> : null}
+      {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} failed={photoStart.failed} /> : null}
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
       ) : (

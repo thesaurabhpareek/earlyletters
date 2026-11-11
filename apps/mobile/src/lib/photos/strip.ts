@@ -13,7 +13,7 @@
  * PNG) are `not_jpeg`: the re-encode step must hand back a JPEG.
  */
 export type StripResult =
-  | { ok: true; bytes: Uint8Array; orientation: number }
+  | { ok: true; bytes: Uint8Array; orientation: number; width: number | null; height: number | null }
   | { ok: false; reason: 'not_jpeg' | 'corrupt' };
 
 const ascii = (b: Uint8Array, at: number, s: string): boolean => {
@@ -50,6 +50,8 @@ export function stripJpeg(input: Uint8Array): StripResult {
   if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return { ok: false, reason: 'not_jpeg' };
   const out: Uint8Array[] = [Uint8Array.of(0xff, 0xd8)];
   let orientation = 1;
+  let width: number | null = null;
+  let height: number | null = null;
   let i = 2;
   let ended = false;
   while (i < b.length) {
@@ -86,6 +88,10 @@ export function stripJpeg(input: Uint8Array): StripResult {
       continue;
     }
     let keep = true;
+    if (marker >= 0xc0 && marker <= 0xcf && marker !== 0xc4 && marker !== 0xc8 && marker !== 0xcc && segEnd - body >= 5) {
+      height = (b[body + 1] << 8) | b[body + 2]; // start of frame: precision, height, width
+      width = (b[body + 3] << 8) | b[body + 4];
+    }
     if (marker === 0xe1 && ascii(b, body, 'Exif\0\0')) orientation = exifOrientation(b, body, segEnd);
     if (marker === 0xfe) keep = false; // comment
     else if (marker >= 0xe1 && marker <= 0xef) {
@@ -117,7 +123,7 @@ export function stripJpeg(input: Uint8Array): StripResult {
     bytes.set(c, at);
     at += c.length;
   }
-  return { ok: true, bytes, orientation };
+  return { ok: true, bytes, orientation, width, height };
 }
 
 /**

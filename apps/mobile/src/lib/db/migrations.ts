@@ -425,6 +425,48 @@ export const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 11,
+    name: 'entry_media: the one picture kept with a letter, on this phone only (NS-01, ADR 0028 D1)',
+    up(db) {
+      // ADR 0028 D1. Number: the ADR proposed 10; agreements took 10 first, so this is 11 (append-only, no gaps).
+      // A table and indexes only: no existing row changes, and nothing is queued to the sync outbox. Pull and push
+      // never read or write this table; the push mapper sends photo_path null (NS-01-R15). The picture file is
+      // `Documents/photos/<id>.jpg` (the media id, no entry id in the name); the row decides who owns it.
+      //   id          L2  media id (UUIDv7 made on the phone)
+      //   entry_id    L2  the kept letter; null while only a draft owns it
+      //   draft_id    L2  the draft; null once kept
+      //   kind, ext   L1  'photo' and 'jpg' only (no video in Build 13)
+      //   bytes       L1  size of the stripped copy
+      //   sha256      L4  of the stripped copy (a hash of a picture is L4, DATA_CLASSIFICATION 1.1.2)
+      //   width, height L2
+      //   photo_text  L4  the parent's own words about the picture, at most 140
+      //   place       L4  typed by the parent, at most 60. Never read from the picture.
+      //   added_at    L2
+      // No deleted_at: the row is hidden while its letter's entries.deleted_at is set, by join (ADR 0028 D1).
+      // One picture per letter is the unique index, not the table shape (a later build drops that one index).
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS entry_media (
+          id TEXT PRIMARY KEY NOT NULL,
+          entry_id TEXT,
+          draft_id TEXT,
+          kind TEXT NOT NULL CHECK (kind = 'photo'),
+          ext TEXT NOT NULL CHECK (ext = 'jpg'),
+          bytes INTEGER NOT NULL,
+          sha256 TEXT NOT NULL,
+          width INTEGER,
+          height INTEGER,
+          photo_text TEXT CHECK (photo_text IS NULL OR length(photo_text) <= 140),
+          place TEXT CHECK (place IS NULL OR length(place) <= 60),
+          added_at TEXT NOT NULL,
+          CHECK ((entry_id IS NULL) <> (draft_id IS NULL))
+        );
+        CREATE INDEX IF NOT EXISTS entry_media_entry_idx ON entry_media (entry_id) WHERE entry_id IS NOT NULL;
+        CREATE INDEX IF NOT EXISTS entry_media_draft_idx ON entry_media (draft_id) WHERE draft_id IS NOT NULL;
+        CREATE UNIQUE INDEX IF NOT EXISTS entry_media_one_photo_idx ON entry_media (COALESCE(entry_id, draft_id));
+      `);
+    },
+  },
 ];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;

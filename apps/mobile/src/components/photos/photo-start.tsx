@@ -5,11 +5,13 @@
  */
 import { ImageIcon } from 'phosphor-react-native/src/icons/Image';
 import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
 import { fill } from '@/lib/copy';
 import { photos } from '@/lib/photos/copy';
 
-export function PhotoStartButton({ child, onPress }: { child: string; onPress: () => void }) {
+export function PhotoStartButton({ child, onPress, failed = false }: { child: string; onPress: () => void; failed?: boolean }) {
   return (
+    <>
     <Button
       variant="quiet"
       size="md"
@@ -19,5 +21,7 @@ export function PhotoStartButton({ child, onPress }: { child: string; onPress: (
       onPress={onPress}
       className="self-center"
     />
+    {failed ? <Text variant="footnote" tone="muted" className="text-center">{photos.capture.openFailed}</Text> : null}
+    </>
   );
 }

@@ -301,7 +301,7 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
 describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
   const L = (id: string, occurredOn: string, over: object = {}) => ({ id, occurredOn, capturedAt: `${occurredOn}T08:00:00Z`, inBook: true, ...over });
   const opts = { fullDate: (iso: string) => `date ${iso}` };
-  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
+  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, bytes: 1, sha256: 'x', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
 
   it('[NS-01-R10] offered only when a kept letter has a picture; no empty state otherwise', () => {
     expect(photosLens([L('a', '2026-06-01')], [], opts)).toEqual({ visible: false, months: [] });

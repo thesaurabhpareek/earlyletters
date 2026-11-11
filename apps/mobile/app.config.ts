@@ -308,6 +308,12 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         enableBackgroundRecording: false,
       },
     ],
+    // Photo with a letter (NS-01, NX-39-R52; review 11 Nov 2026, conditions C2 and C3). The picker is Apple's system
+    // photo picker, which needs no library or camera permission, so neither string is written. `false` here DELETES the
+    // key. The microphone value is NOT false: it is the same string expo-audio writes, so the result is identical
+    // whichever plugin runs last. Prebuild applies this plugin whether it is listed or not (legacyExpoPlugins), which is
+    // why it is listed: unlisted it would write three default strings (library, camera, microphone).
+    ['expo-image-picker', { photosPermission: false, cameraPermission: false, microphonePermission: microphone }],
     // Writes the Sign in with Apple entitlement. Prebuild applies it whenever the package is installed, listed or
     // not, so a build without sign-in removes the key afterwards (withoutSignInEntitlements).
     'expo-apple-authentication',
