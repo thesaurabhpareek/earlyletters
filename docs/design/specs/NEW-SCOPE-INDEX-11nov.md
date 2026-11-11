@@ -14,7 +14,7 @@ Job clarity first. Design is utility-driven: every tab and every screen says its
 | Book | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading.) |
 | Me | Look after | I go to Me to look after my account and books. |
 
-Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me. The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 9.
+Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me. The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 8.
 
 Consequences I applied (PROPOSED, each is in the spec that owns it):
 1. A control that starts a letter exists in one place: Home's capture cluster (Speak, Type, Not much today, and the photo-first mode). OS surfaces (widget, Control Center control, Action button, Siri) open that same cluster's Ready state. They are doorways, not entries.
@@ -78,7 +78,7 @@ These hold for all six; a spec lists only what it adds. Sources: `COMPONENTS.md`
 
 - Targets: 44 pt minimum (`target.min`), 56 pt primary (`target.primary`), 64 pt for Speak and Type (`target.capture`).
 - Letter text is never truncated at any Dynamic Type size (D-027). Where space is short the layout stacks and scrolls; it does not cut. A fade at a card's foot (ExcerptFade) is allowed only where the full text is one tap away and the screen reader reads the whole text.
-- Colour is never the only signal: state is also a word, a shape or a position. Pairs used are from `tokens.ts`; contrast figures in its comments are the proof (EVIDENCE: `text` on `bg` 14.00 : 1 light, 15.66 dark; `textMuted` 5.51 and 8.01; `accent` on `accentSoft` 4.74 light and 5.99 dark per `MEMORY-LIBRARY-FLOWS` section 6). I computed no new ratio in these specs.
+- Colour is never the only signal: state is also a word, a shape or a position. Pairs used are from `tokens.ts`; contrast figures in its comments are the proof (read in `tokens.ts` comments, not recomputed by me: `text` on `bg` 14.00 : 1 light, 15.66 dark; `textMuted` 5.51 and 8.01; `accent` on `accentSoft` 4.74 light and 5.99 dark per `MEMORY-LIBRARY-FLOWS` section 6). I computed no new ratio in these specs.
 - Motion: only tokens from `tokens.motion` (`fadeMs` 200, `exitMs` 160, `enter` 280 ms and 8 pt, `staggerMs` 30 with a maximum of 6, `press`, springs `snappy`, `standard`, `gentle`). Reduce Motion replaces every movement with a `fadeMs` fade or nothing. No new motion token is proposed in any spec.
 - Reduce Transparency: no blur; surfaces are solid `surfaceRaised` with a 1 pt `line` edge (`platform/blur-surface`, COMPONENTS 2.18).
 - Increase Contrast: `tokens.highContrast`.
@@ -98,7 +98,7 @@ Tokens are added in `packages/design-tokens/src/tokens.ts` with their tests, by 
 | `media.cap` 8, `capVideo` 2, `videoMaxSec` 60 | 1, post-Build 13 (Build 13 is one photo per letter, no video) | Product limits; may belong in `packages/core` (Q3 of the ML spec) |
 | No token | 2, 3, 4, 5, 6 | Existing colour, space, radius, type and motion tokens are enough |
 
-Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what exists: `button`, `card`, `choice-group`, `empty-state`, `list-row`, `screen-header`, `sheet`, `state-screen`, `text-field`, `toast`, `lamp`, `separator`):
+Components, library first (`apps/mobile/src/components/ui/`, read as a directory listing at `da83fb1e`, so the names exist but I did not read their code and behaviour is UNVERIFIED: `button`, `card`, `choice-group`, `empty-state`, `list-row`, `screen-header`, `sheet`, `state-screen`, `text-field`, `toast`, `lamp`, `separator`):
 
 | Component | Status | Used by |
 |---|---|---|
