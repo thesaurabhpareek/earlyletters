@@ -19,6 +19,7 @@
  */
 import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
+import { MagnifyingGlassIcon } from 'phosphor-react-native/src/icons/MagnifyingGlass';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { SectionList, View } from 'react-native';
 import Animated, {
@@ -35,7 +36,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { billingCopy } from '@scribe/content';
+import { billingCopy, findCopy } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { BookCover } from '@/components/book/book-cover';
 import { BlurSurface } from '@/components/platform/blur-surface';
@@ -67,6 +68,9 @@ import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
 import { isQuietMark, readableInBook } from '@/components/book/quiet-day.logic';
+import { FindMode } from '@/components/find/find-mode';
+import { findBuildEnabled, findSurface } from '@/lib/find/flag';
+import { findPausedNow } from '@/lib/find/pause';
 import { isOwnEntry } from '@/components/child/child-store';
 import { joinedArrival } from '@/components/family/family-notice';
 import { startJoinedArrival } from '@/components/family/joined-arrival.logic';
@@ -102,6 +106,9 @@ export default function Book() {
   // The Months sheet, the chapter at the top of the list (the bar's compact month), whether the bar is up (its
   // buttons take touches and VoiceOver only then), and the list's cross-fade for a jump to a month.
   const [monthsOpen, setMonthsOpen] = useState(false);
+  // Find (NS-02): a mode of this screen, drawn over the list, which stays mounted underneath.
+  const [finding, setFinding] = useState(false);
+  const closeFind = useCallback(() => setFinding(false), []);
   const [topKey, setTopKey] = useState<string | null>(null);
   const [barUp, setBarUp] = useState(false);
   const listFade = useSharedValue(1);
@@ -333,6 +340,9 @@ export default function Book() {
   const entering = (id: string) => (stagger ? enter(indexOf.get(id) ?? 99) : undefined);
 
   const canRead = readableInBook(entries).length > 0;
+  // Find (NS-02-R1): the build switch on, the remote pause off, and a kept letter with words to find. Absent otherwise.
+  const findOn = findSurface({ build: findBuildEnabled(), paused: findPausedNow(), hasLetters: entries.some((e) => !isQuietMark(e) && letterWords(e) === 'words') });
+  const find = findOn ? { label: findCopy.button, hint: findCopy.buttonHint, onPress: () => setFinding(true) } : null;
   const months = showsMonthsButton(rows) ? { label: bookCopy.monthsButton, hint: bookCopy.monthsHint, onPress: () => setMonthsOpen(true) } : null;
   const openSettings = () => router.push('/settings');
   const header = (
@@ -346,6 +356,7 @@ export default function Book() {
           switcher={children.length > 1 ? <ChildSwitcher /> : null}
           readTogether={canRead ? { label: copy.readTogether.title, hint: fill(copy.readTogether.subtitle, { child }), onPress: () => router.push({ pathname: '/read-together', params: { childId: active.id } }) } : null}
           months={chapters.length > 0 ? months : null}
+          find={find}
           settings={{ label: copy.settings.title, onPress: openSettings }}
         />
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
@@ -373,6 +384,7 @@ export default function Book() {
             {title}
           </Text>
           {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.bar.months" /> : null}
+          {find ? <IconButton icon={MagnifyingGlassIcon} label={find.label} accessibilityHint={find.hint} onPress={find.onPress} testID="book.bar.find" /> : null}
           <IconButton icon={GearSixIcon} label={copy.settings.title} onPress={openSettings} className="-mr-2" testID="book.bar.settings" />
         </View>
         {compact ? (
@@ -453,6 +465,7 @@ export default function Book() {
           </>
         )}
       </Animated.View>
+      {finding && findOn ? <FindMode child={active} entries={entries} onClose={closeFind} onOpen={open} /> : null}
     </View>
   );
 }
