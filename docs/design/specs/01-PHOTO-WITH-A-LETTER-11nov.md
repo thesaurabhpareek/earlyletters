@@ -8,6 +8,10 @@ One sentence: I put a picture beside the words I say about it. (11 words, verb "
 
 The rule that makes it safe: every picture belongs to a letter. A picture with no words is dropped, never kept (PRD forbids photo-only entries; NX-33 rule, quoted in ML-S9; EVIDENCE as cited there, not re-read).
 
+## 1a. Build 13 scope: one photo per letter
+
+Build 13 holds ONE photo per letter (coordinator, 11 Nov). Everything in this spec that handles several photos is marked post-Build 13 and is not built then: the cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo letter layouts, the strip of tiles, and the viewer's swipe between items. In Build 13 the single picker returns one photo; the Photos lens, the letter page and Share show one. Videos are not in Build 13.
+
 ## 2. Where a photo can be added (the whole map)
 
 | # | Where | What it does | Creates a letter? | Tab |
@@ -24,7 +28,7 @@ All of A, B, C and E open one `MediaChooser` (ML-S4) or, without photo access, t
 
 ## 3. Home: the photo-first mode (new)
 
-### 3.1 Layout (Home, below the capture cluster)
+### 3.1 Layout (Home, inside the capture cluster)
 
 ```
  [ Speak ]            [ Type ]          <- 64 pt, the two equal buttons
@@ -32,9 +36,9 @@ All of A, B, C and E open one `MediaChooser` (ML-S4) or, without photo access, t
         Not much today                  <- quiet button, 44 pt
 ```
 
-- "Start from a photo" is a `Button quiet md` with a leading Phosphor `Image` glyph (decorative, hidden from VoiceOver). It sits between the cluster and "Not much today" and is never larger than either. It appears only when the build switch for photos is on; absent, not greyed, when off (ML header).
+- "Start from a photo" is a `Button quiet md` with a leading Phosphor `Image` glyph (decorative, hidden from VoiceOver). It is the third and quietest item inside the capture cluster, under Speak and Type and above "Not much today", in the same container, never larger than either. Karma asked for placement inside the cluster per PRD R1; I did not read that PRD requirement (UNVERIFIED), and this placement is my reading of it. I prefer it to a separate row for one reason: a parent finds all the ways to start a letter in one place, which is the founder's one-entry rule. It stays a quiet button so Speak and Type remain the two equal primary actions. It appears only when the build switch for photos is on; absent, not greyed, when off (ML header).
 - It does not appear on Book or Me. This is the single place on any tab where a photo can start something (J3).
-- Tap: the system picker opens (single or several photos; videos are out of this spec, see section 10). Cancel returns to Home untouched.
+- Tap: the system picker opens (one photo in Build 13; several is post-Build 13; videos are out of this spec, see section 10). Cancel returns to Home untouched.
 
 ### 3.2 After the picture is chosen: Ready with a photo
 
@@ -67,8 +71,8 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 
 ## 4. Review and the letter page (as ML, with the entry rule)
 
-- Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Button "Add photos" is `Button outline md`. Words above never move.
-- Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Counts of 1, 3, 8 follow the ML-S8 table.
+- Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Build 13: one photo per letter, so the control reads as adding a photo and is hidden once one is attached (a Change action replaces it). The multi-photo "Add photos" row is post-Build 13. Words above never move.
+- Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
 - Chips, the viewer and take-off behave as ML-S6, S7 and S8. No change.
 
@@ -195,7 +199,7 @@ Door lines (COORDINATION section 10; COUNSEL-READ, none cleared):
 |---|---|---|
 | Q1 | A parent on the Photos lens wants to add a photo. Do we offer a "which letter" step? | No. They open a letter and add there. One fewer door |
 | Q2 | Does "Start from a photo" show before any photo exists? | Yes, one quiet line, so the mode can be found |
-| Q3 | Cap of 8 items and 2 videos (ML Q3) | 8 and 2, unchanged, product decides |
+| Q3 | Cap of 8 items and 2 videos (ML Q3) | Post-Build 13. Build 13 is one photo per letter, no video |
 | Q4 | New token names `mediaScrim`, `onScrim`, `viewer` instead of changing `scrim` | New names; `scrim` stays the sheet dimmer |
 
 ## 14. UNVERIFIED

@@ -26,7 +26,7 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
  SAT 14 OCT  From {signsAs}
 
  [x] The words                    <- Toggle row, on, cannot be turned off
- [ ] The recording  0:42          <- only if a recording is on this phone
+ (no recording row at Level 1; see section 3.3)
  [ ] The photos  (2)              <- only if photos; (2) is the parent's own item count
 
  (preview, scrollable, words whole)
@@ -40,10 +40,10 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
  [ Choose who to send it to ]     <- primary lg, 56 pt, opens the iPhone's share sheet
 ```
 
-- Defaults: the words on; the recording off; photos off. A parent turns on only what they mean to send. The reason: audio and pictures can carry more than the person thought (other voices, a child's face), and the default must be the least that leaves.
+- Level 1 (the build to design for): the words, and the letter's photo (Build 13 has one photo per letter, see spec 1). Defaults: the words on; the photo off. A parent turns on only what they mean to send. The reason: a picture can carry more than the person thought (a child's face), and the default must be the least that leaves. There is no recording row and no recording path at Level 1 (section 3.3).
 - The preview shows exactly what will be sent for the words: the date line, the letter as kept (the version the parent kept, "With small fixes" or "Exactly as said", whichever the book shows), the signature line. Never the other view, never `raw_transcript` unless that is what the Book shows.
 - The preview is a rendering of the same text, not a rewrite. No intro line, no title, no app name or link, no "sent from", no watermark, no tagline (Q2). The machine adds nothing (constitution).
-- The words toggle is on and disabled with the reason in words ("The words always go.", slot) so a parent who wants only the recording is told why not: the letter is its words. Open question Q3; default as drawn.
+- The words toggle is on and disabled with the reason in words ("The words always go.", slot) so a parent who wants only the picture is told why not: the letter is its words.
 
 ### 3.2 Step SH-2: the iPhone share sheet
 
@@ -52,14 +52,23 @@ It is not backup, not co-parent writing together, not publishing, not a link to 
 | Chosen | What is handed over |
 |---|---|
 | The words | Plain text: date line, body, signature line |
-| The recording | One audio file on this phone (format and name UNVERIFIED; the file name carries no child name and no date beyond the day; see section 12) |
+| The recording | Not at Level 1. Gated (section 3.3) |
 | The photos | The kept copies, location stripped (ML gap 4 default) |
 
 The app never chooses a recipient and has no contacts permission. After the system sheet closes, SH-1 closes without a message. If the parent cancels the system sheet, SH-1 stays open (they may change what goes).
 
-`expo-sharing` hands over a single file URI; sharing text plus audio plus photos together, as one share, may need a different API (`Share` from React Native for text, or the expo-sharing multi-file option, if any). UNVERIFIED; `mobile` spikes it. Fallback in the design: send the words as text and offer "Send the recording" and "Send the photos" as separate rows that each open the share sheet, so the sheet never promises a single bundle it cannot make.
+`expo-sharing` hands over a single file URI; sharing text plus a photo together, as one share, may need a different API (`Share` from React Native for text, or the expo-sharing multi-file option, if any). UNVERIFIED; `mobile` spikes it. Fallback in the design: send the words as text and offer "Send the photo" as a separate row that each open the share sheet, so the sheet never promises a single bundle it cannot make.
 
-### 3.3 Components and tokens
+### 3.3 Levels: what is gated
+
+| Level | What can leave | Status |
+|---|---|---|
+| 1 | The words as kept, plus the letter's one photo (off by default) | The design target now |
+| 2, GATED | The recording (the parent's voice as an audio file) | Not designed to ship. Blocked until a `security-architect` read and a counsel read are on record. No row, no button, no code path, no copy slot is built at Level 1. Kept here only so the later work has a place to start |
+
+The gate is a rule for `mobile` as well as for design: no recording row exists in the Level 1 sheet, even hidden behind a flag, and the share sheet is handed no audio URI. Nothing is added to the shared text: no footer, no app or brand name, no link, no "sent from", no watermark (Q2). The public name lives only in `packages/brand`; the shared text does not read it.
+
+### 3.4 Components and tokens
 
 | Part | Component | Tokens |
 |---|---|---|
@@ -76,8 +85,8 @@ No new token.
 | State | Behaviour |
 |---|---|
 | Default | As drawn |
-| Letter has no recording or no photos | Those rows are absent, not greyed |
-| Recording waiting for its words | The words row is absent; the sheet says in one line the letter has no words yet (slot) and offers only the recording if the parent wants; default: Share is not offered on a letter with no words (J: the unit is a letter, not a file) |
+| Letter has no photo | That row is absent, not greyed |
+| Recording waiting for its words | The words row is absent; the sheet says in one line the letter has no words yet (slot) ; Share is not offered on a letter with no words (the unit is a letter, not a file) |
 | A letter that is Private | Allowed for the parent's own letter; the sheet states Private in the Shown line: the letter was private to the parent; sending it is their choice (Q5) |
 | Another parent's letter | Not offered: you send your own words only (Q6) |
 | Sealed letter (spec 4) | Not offered until it is open |
@@ -101,7 +110,7 @@ Haptic: `tap` on the primary button only. No sound.
 ## 6. Dynamic Type and VoiceOver
 
 - AX5: the sheet goes to full height; rows stack label over switch; the preview shows the whole text in one column; the primary button is inline after it, not pinned.
-- VoiceOver: focus lands on the title. Order: title, words row ("The words, always sent, on"), recording row, photos row, preview ("Preview of what will be sent. {date}. {words}"), Shown line, primary button. Toggle state is spoken by the system. "Choose who to send it to" is the button's label so the next step is not a surprise. Voice Control works by label.
+- VoiceOver: focus lands on the title. Order: title, words row ("The words, always sent, on"), photo row, preview ("Preview of what will be sent. {date}. {words}"), Shown line, primary button. Toggle state is spoken by the system. "Choose who to send it to" is the button's label so the next step is not a surprise. Voice Control works by label.
 - The preview is one element that reads the whole text, so a long letter is not skipped.
 
 ## 7. Copy slots (for `content`)
@@ -112,7 +121,7 @@ Existing (EVIDENCE): `book.entryMenu.shareButton` = "Share".
 |---|---|---|
 | `share.letter.action` | Object action on the letter page | Starts with a verb; "this letter" |
 | `share.letter.title` | Sheet title | Heading 1 |
-| `share.letter.words`, `.recording`, `.photos` | Row labels | Item count only for the parent's own selection |
+| `share.letter.words`, `.photo` | Row labels | Item count only for the parent's own selection |
 | `share.letter.wordsAlways` | Why the words row is on | One sentence |
 | `share.letter.previewA11y` | Preview label | |
 | `share.letter.shown` | The truth line: this leaves the app | Must say it leaves; must not say "safe", "private" or "secure" about where it goes; counsel read |
@@ -152,7 +161,8 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 | Id | Requirement | Proof |
 |---|---|---|
 | SH-R1 | One letter, chosen by the parent. Given a letter page, When the parent chooses Share, Then only that letter is offered and nothing leaves until they tap the primary button and pick a recipient in the iPhone sheet | device |
-| SH-R2 | Least by default. Given the sheet, Then the words are on and the recording and photos are off | unit test on defaults |
+| SH-R2 | Least by default. Given the sheet, Then the words are on and the photo is off, and no recording row or recording path exists at Level 1 | unit test on defaults |
+| SH-R10 | Recording gate. Given Level 1, Then no recording row, audio URI or recording copy slot exists in the sheet or the code, and the shared text has no footer, brand name or link | code review by `security-architect`; unit test on the share payload |
 | SH-R3 | Faithful. Given the preview, Then its words equal the words the Book shows for that letter, with no added line, title, name or link | unit test comparing strings |
 | SH-R4 | No log. Given any share, Then no row, event or count is written | code review; analytics catalog |
 | SH-R5 | Own letters only; open letters only. Given another parent's letter, a sealed letter, a quiet-day mark or a letter with no words, Then Share is absent | unit tests |
@@ -184,7 +194,7 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 |---|---|---|
 | Q1 | Build share-one-letter (G-3)? | DECIDED by the founder, not an agent default: on 10 Nov he said to include all new scope, so build it, text first (relayed by Karma on 11 Nov; I did not read the original message, UNVERIFIED). Open only: the Q2 to Q7 defaults below |
 | Q2 | Add a line "from Early Letters" to the shared text? | No. It would be the app speaking in the parent's letter |
-| Q3 | May a parent send the recording without the words? | No. The unit is a letter |
+| Q3 | May a parent send the recording, with or without the words? | Not at Level 1. A later, gated level, only after `security-architect` and counsel reads are on record (section 3.3). Never without the words: the unit is a letter |
 | Q4 | Image card of the letter (a rendered page) as a format | Not now. A long letter cannot be a single image without cutting words, and a font-dependent image breaks for some scripts |
 | Q5 | May a Private letter be shared? | Yes, the parent's own, with the Shown line saying so |
 | Q6 | May a co-parent's letter be shared by the other parent? | No, own words only; `legal` to confirm |
