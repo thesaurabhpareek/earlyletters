@@ -66,7 +66,7 @@ import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, dateBlockShown, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -140,7 +140,8 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   const [birthday, setBirthday] = useState<string | null>(null);
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [signsAs, setSignsAs] = useState('');
-  // The date block arrives once the first letter of the name is in (S05), and stays.
+  // The date block arrives once the first letter of the name is in (S05), and stays. Account first the name is optional,
+  // so the block is there from the start (handoff.logic.ts dateBlockShown) and this only matters to the old flow.
   const [dateShown, setDateShown] = useState(false);
   // The person tapped a Continue that is waiting: the reason line shows its warning mark (S05).
   const [nudged, setNudged] = useState(false);
@@ -436,8 +437,8 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                       <Button variant="quiet" size="sm" icon={PlusIcon} label={o.child.addAnotherButton} className="-ml-4 self-start" onPress={addName} accessibilityHint={o.child.addAnotherHelp} />
                     )}
                   </View>
-                  {dateShown ? (
-                    <Animated.View entering={motion.enter()} className="gap-4">
+                  {dateBlockShown({ dateShown, accountFirst }) ? (
+                    <Animated.View entering={accountFirst ? undefined : motion.enter()} className="gap-4">
                       <ChoiceGroup
                         label={o.child.bornQuestion}
                         value={expecting ? 'expecting' : 'born'}
