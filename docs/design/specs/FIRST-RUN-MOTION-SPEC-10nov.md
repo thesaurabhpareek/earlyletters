@@ -5,7 +5,7 @@ Structure and states belong to the journey lead (`docs/first-run-journey-10nov`,
 
 ## 0. Scope tiers (proposal for Karma)
 - A, must-have for Build 12: sign-in entry motion, returning-user entry, lock cover and unlock (all exist or are small), Reduce Motion for each.
-- B, stretch behind a flag: the 4-card story intro in section 3 with a Skip from frame 1.
+- B, stretch behind a flag: the 3-card story intro in section 3 with a Skip from frame 1.
 - C, later: richer drawn line animation per card, per-card ambient sound (SOUND.md says none today).
 Nothing in A needs a new token. B needs the `story` token block in section 2.
 
@@ -44,6 +44,8 @@ story: { dwellMs: 6000, holdMs: 200, edgeZone: 0.3, linearBar: true }
 - Bar fill uses a linear timing of `dwellMs`; this is the only linear animation in the app and is a clock, not a transition.
 
 ## 3. Storyboard, one per card (proposal: 4 cards; journey doc wins)
+
+Card 4 column withdrawn 11 Nov (CTO ruling, three cards); table rework is for the motion owner.
 Card order follows the website's own arc (S01 to S07 in `site.ts`) so the app and site feel like one product. Copy is placeholder; privacy and promise lines are excluded here because the website's "Kept on your iPhone" line is untrue for Build 12 (PRs #768, #769) and counsel has not read any replacement. Do not carry that line into a card.
 
 Common frame (all cards): paper background and lamp from the first frame; progress segments at top (section 4); Skip top right, 48 pt minimum target (CTO ruling 11 Nov), opaque; the card's words in the lower half; no child name (use the `{child}` slot only if the journey doc says the name is known, which at first run it is not).
@@ -105,7 +107,7 @@ Haptics: none in the tour. Policy (MOTION 6, `haptics.shared.ts`): a haptic mark
 | Swipe follow | Finger follow, spring settle | No follow; one cross-fade |
 | Progress fill | Linear `dwellMs` | Static segments, no auto-advance |
 | Line drawing | Draw `drawMs` | Fully drawn, no animation |
-| Card 3 underline, card 4 wash | `fadeMs` in / `newMarkMs` wash | Present at once, no fade |
+| Card 3 underline, card 4 wash (card 4 withdrawn 11 Nov) | `fadeMs` in / `newMarkMs` wash | Present at once, no fade |
 | Press scale | 0.97 on `snappy` | Opacity 0.9 only (`press.opacity`) |
 | Auth route | `route.dissolveMs` | `fadeMs` |
 | Button pending swap | `swapMs` + spinner | `swapMs` fade, static word |
