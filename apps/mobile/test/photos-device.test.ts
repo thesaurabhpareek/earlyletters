@@ -62,7 +62,7 @@ export function scanPickerUse(source: string, file = 'x.ts'): { importsPicker: b
         const a = n.arguments[0];
         out.calls.push({
           name: callee,
-          options: a && ts.isObjectLiteralExpression(a) && a.properties.every(ts.isPropertyAssignment) ? Object.fromEntries(a.properties.map((p) => [(p.name as ts.Identifier).text, p.initializer.getText(sf)])) : null,
+          options: a && ts.isObjectLiteralExpression(a) && a.properties.every(ts.isPropertyAssignment) ? Object.fromEntries(a.properties.map((p) => [(p.name as ts.Identifier).text, (p as ts.PropertyAssignment).initializer.getText(sf)])) : null,
         });
       }
     }
@@ -121,7 +121,7 @@ describe('[NX-39-R50][C6] the picker adapter keeps only the uri', () => {
 
   it('[C6] a result with 40 fields yields the uri and nothing else; the session and its fields hold only the uri', async () => {
     const seen: unknown[] = [];
-    const picker = createPhotoPicker({ launchImageLibraryAsync: async (o) => (seen.push(o), { canceled: false, assets: [asset] }) } as never);
+    const picker = createPhotoPicker({ launchImageLibraryAsync: async (o: unknown) => (seen.push(o), { canceled: false, assets: [asset] }) } as never);
     const r = await picker.open({}).done;
     expect(r).toEqual({ status: 'picked', asset: { uri: asset.uri } });
     expect(JSON.stringify(r)).not.toMatch(/assetId|IMG_4521|GPS|field\d|livePhoto|live\.mov|base64|AAAA/);
@@ -290,7 +290,7 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
 
 // ---- entry_media (ADR 0028 D1) and the sweep ------------------------------------------------------------------------
 
-const ctx = { now: () => '2026-11-11T00:00:00.000Z', newId: () => 'id' };
+const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
 const row = (entryId: string, mediaId: string, over: Partial<StoredPhoto> = {}): StoredPhoto => ({
   entryId, mediaId, ext: 'jpg', bytes: 10, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over,
 });
