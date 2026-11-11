@@ -12,12 +12,12 @@ Job clarity first. Design is utility-driven: every tab and every screen says its
 |---|---|---|
 | Home | Say | I go to Home to say something to {child}. |
 | Book | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading.) |
-| Me | Look after | I go to Me to look after my account, my books and my rules. |
+| Me | Look after | I go to Me to look after my account and books. |
 
 Fixed by the founder (verbatim intent, 11 Nov): Only Home captures. Elsewhere you can only add to an existing letter. Family is never a tab; co-parent "coming soon" is at most one caption line in Me. The Library is not a tab: photo-first is a capture mode on Home, and Photos is a lens in the Book. Share is not a tab unless it passes the test in `03-SHARE-ONE-LETTER-11nov.md` section 9.
 
 Consequences I applied (PROPOSED, each is in the spec that owns it):
-1. A control that starts a letter exists in one place: Home's capture cluster (Speak, Type, Not much today, and the photo-first mode). OS surfaces (widget, Lock Screen control, Action button, Siri) open that same cluster's Ready state. They are doorways, not entries.
+1. A control that starts a letter exists in one place: Home's capture cluster (Speak, Type, Not much today, and the photo-first mode). OS surfaces (widget, Control Center control, Action button, Siri) open that same cluster's Ready state. They are doorways, not entries.
 2. Everything else that touches a letter says "add to this letter": a photo, a first, a seal, a date. None creates a letter.
 3. Outputs split by what they are: export and where letters live are care (Me); sharing one letter is an action on the letter (Book). Neither is a tab.
 4. Find and Photos and Firsts are ways to read (Book). Find is a header action, Photos and Firsts are lenses that appear only when they have material.
@@ -92,9 +92,10 @@ Tokens are added in `packages/design-tokens/src/tokens.ts` with their tests, by 
 
 | Item | Needed by | Note |
 |---|---|---|
-| `colors.onScrim`, `colors.viewer`, `colors.mediaScrim` | 1 | `MEMORY-LIBRARY-FLOWS` section 5.1 proposed `scrim` at 60 percent. `scrim` already exists (`#2B272252`, ink at 32 percent, the sheet dimmer), so a 60 percent value must be a new name, `mediaScrim`, or it changes every sheet. Found in this pass. |
-| `media.tileMin` 96, `media.gap` = `space[1]`, `media.stripTile` 72 | 1 | As ML section 5.1 |
-| `media.cap` 8, `capVideo` 2, `videoMaxSec` 60 | 1 | Product limits; may belong in `packages/core` (Q3 of the ML spec) |
+| `colors.onScrim`, `colors.viewer`, `colors.mediaScrim` | 1, post-Build 13 (viewer and video badge) | `MEMORY-LIBRARY-FLOWS` section 5.1 proposed `scrim` at 60 percent. `scrim` already exists (`#2B272252`, ink at 32 percent, the sheet dimmer), so a 60 percent value must be a new name, `mediaScrim`, or it changes every sheet. Found in this pass. |
+| `media.tileMin` 96, `media.gap` = `space[1]` | 1, Build 13 (the Photos lens grid) | As ML section 5.1 |
+| `media.stripTile` 72 | 1, post-Build 13 (the multi-photo strip) | As ML section 5.1 |
+| `media.cap` 8, `capVideo` 2, `videoMaxSec` 60 | 1, post-Build 13 (Build 13 is one photo per letter, no video) | Product limits; may belong in `packages/core` (Q3 of the ML spec) |
 | No token | 2, 3, 4, 5, 6 | Existing colour, space, radius, type and motion tokens are enough |
 
 Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what exists: `button`, `card`, `choice-group`, `empty-state`, `list-row`, `screen-header`, `sheet`, `state-screen`, `text-field`, `toast`, `lamp`, `separator`):
@@ -102,7 +103,8 @@ Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what e
 | Component | Status | Used by |
 |---|---|---|
 | Button, Card, Chip, ListRow, Sheet, Toast, TextField, Toggle, StateScreen, EmptyState, AppNote, ErrorLine, SegmentedControl, DateField | exist or spec'd in COMPONENTS | all |
-| MediaTile, MediaGrid, MediaStrip, MediaViewer, MediaChooser | NEW, specified in ML section 5.2 | 1 |
+| MediaTile, MediaGrid | NEW, specified in ML section 5.2; Build 13 (the Photos lens and one photo on the letter page) | 1 |
+| MediaStrip, MediaViewer, MediaChooser | NEW, specified in ML section 5.2; post-Build 13. Build 13 has the system picker only (PRD NS-01-R22): no in-app chooser, no pre-prompt, no strip, no viewer swipe | 1 |
 | LensRow | NEW (a `SegmentedControl` preset, text first) | 1, 4, 6 |
 | FindBar, FindResultRow | NEW (a `TextField` preset and a `LetterCard` variant) | 2 |
 | SharePreview | NEW (a `Sheet` preset) | 3 |
@@ -115,7 +117,7 @@ Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what e
 
 | To | What | Where |
 |---|---|---|
-| `content` | New copy slots (about 120 across the six) with limits and rules; none written | each spec, section "Copy slots" |
+| `content` | New copy slots (listed in each spec's copy-slot section) with limits and rules; none written | each spec, section "Copy slots" |
 | `mobile` | Screens and logic; the navigation test | 06 sections 9 and 10; each spec's sequence |
 | `product` | Requirement ids; reconcile NX-42 (Moments tab dissolves) and NX-41 R12 | 06 section 12 |
 | `legal`, `privacy` | The Shown, Records, Never, Decline lines for photo permission, sharing a letter and a seal; whether system dictation needs a privacy line (02, 04) (COORDINATION section 10, PRIV-R21) | 01, 02, 03, 04 |
@@ -127,14 +129,15 @@ Components, library first (`apps/mobile/src/components/ui/`, EVIDENCE for what e
 
 ## 9. Open design questions, all six, each with a default
 
-Listed per spec in its last section. The ones the founder should see first:
+Listed per spec in its last section (question numbers are per spec; this table points to the section, not a number). The ones the founder should see first:
 
 | # | Question | Default if no answer | Spec |
 |---|---|---|---|
 | Q0 | Build share one letter? | DECIDED by the founder (10 Nov, relayed by Karma; original not read): yes, text first. Not an agent default | 03 |
 | Q1 | Is there ever a Share tab? | No. Sharing one letter is a letter-page action; export stays in Me. The tab test (03 section 8) is the only way to reopen it | 03 |
-| Q2 | Does photo-first need the camera, or only the library? | Library through the system picker only; no camera in this scope | 01 |
-| Q3 | Do we build Firsts at all? (NX-44 FD-1) | Not before a five-parent study; the spec is ready if he says yes | 04 |
-| Q4 | Do we build sealed letters at all? | Not in Build 13; spec only. The words "sealed" and "locked" are not used unless the seal is real cryptography | 04 |
-| Q5 | Does Find search only a letter's words, or also firsts and photo descriptions? | Words, first labels and typed photo descriptions; never a derived place or date | 02 |
+| Q2 | Does photo-first need the camera, or the library? | Build 13: the system picker only, returning one photo; no camera, no library access, no in-app chooser, no pre-prompt (PRD NS-01-R22). Spec 01 section 1a | 01 |
+| Q3 | Firsts: when are they built? (NX-44 FD-1) | Included in scope (founder: include all new scope; relayed). Specified in full; build sequenced after rank 5 and the five-parent study, earliest Build 15. Nothing is cancelled | 04 section A |
+| Q4 | Sealed letters: when are they built? | Included in scope. Specified in full; build sequenced after rank 5 and the five-parent study, earliest Build 15 (ADR 0028 D3 and PRD NS-06 agree on the sequence). "Sealed" and "locked" are not used unless the seal is real cryptography | 04 section B |
+| Q4a | Needs the founder: does "all new scope" include Firsts and sealed letters as built features, or as specified features? | Default: specified now, built in the sequence above. This is the reading that keeps both in scope without moving ranks 1 to 5 | 04, `needs:founder` |
+| Q5 | What does Find search? | Letters' words, first labels, the parent's typed photo text and typed place; never a place or date derived from the file (PRD NS-02-R5) | 02 section 4 |
 | Q6 | Where does "Take the book with you" (export, where letters live) live? | Me, as one section, titled by `content` | 06 |

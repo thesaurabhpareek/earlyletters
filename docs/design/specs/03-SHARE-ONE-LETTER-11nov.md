@@ -86,7 +86,7 @@ No new token.
 |---|---|
 | Default | As drawn |
 | Letter has no photo | That row is absent, not greyed |
-| Recording waiting for its words | The words row is absent; the sheet says in one line the letter has no words yet (slot) ; Share is not offered on a letter with no words (the unit is a letter, not a file) |
+| Recording waiting for its words (no words yet) | Share is not offered: the control is absent and the sheet cannot be reached. The unit is a letter, not a file |
 | A letter that is Private | Allowed for the parent's own letter; the sheet states Private in the Shown line: the letter was private to the parent; sending it is their choice (Q5) |
 | Another parent's letter | Not offered: you send your own words only (Q6) |
 | Sealed letter (spec 4) | Not offered until it is open |
@@ -126,7 +126,6 @@ Existing (EVIDENCE): `book.entryMenu.shareButton` = "Share".
 | `share.letter.previewA11y` | Preview label | |
 | `share.letter.shown` | The truth line: this leaves the app | Must say it leaves; must not say "safe", "private" or "secure" about where it goes; counsel read |
 | `share.letter.choose` | Primary button | 22 characters or fewer |
-| `share.letter.noWords` | Letter has no words yet | One sentence |
 | `share.letter.failed` and `.retry` | Error | Says what to do |
 
 Words: the glossary bans "sharing" as the word for backup and VOICE.md lists "Per-book sharing" as a phrasing to avoid (second-hand through NAV-TAB-ROLES 6.3; UNVERIFIED, BRAND.md and VOICE.md not re-read). Sharing one letter is a different act from per-book sharing; whether "Share" is allowed as a button word is for `content` and `legal` (COUNSEL-READ). Not "send to family" (grandparent words are v1.1).
@@ -166,7 +165,7 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 | SH-R3 | Faithful. Given the preview, Then its words equal the words the Book shows for that letter, with no added line, title, name or link | unit test comparing strings |
 | SH-R4 | No log. Given any share, Then no row, event or count is written | code review; analytics catalog |
 | SH-R5 | Own letters only; open letters only. Given another parent's letter, a sealed letter, a quiet-day mark or a letter with no words, Then Share is absent | unit tests |
-| SH-R6 | Not on Home. Given Home, Then there is no share control | navigation test |
+| SH-R6 | Not on Home. Given Home, Then there is no share control | navigation test N9; device |
 | SH-R7 | Accessibility. Section 6 holds in both themes with Reduce Motion and Reduce Transparency; the preview is read whole | device |
 | SH-R8 | Truth. Given the Shown line, Then no word says safe, secure or private about the recipient's copy | `legal`, content rules test |
 | SH-R9 | Locale and script. Given a Devanagari letter, Then the text reaches the share sheet unchanged (no font-dependent image in this scope) | device |

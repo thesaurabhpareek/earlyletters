@@ -13,7 +13,7 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 |---|---|---|---|---|---|
 | Home | `/` (`index.tsx`) | Say | I go to Home to say something to {child}. | Today's prompt; the one capture cluster; what waits to be kept; at most one memory slip | A list of kept letters; settings; sending |
 | Book | `/book` | Read | I go to the Book to read what we kept. (Hearing a letter, Read together and Find are modes of reading, not separate verbs.) | Every kept letter by month; recordings; the lenses (Photos, Firsts); Find; Read together; the letter page and its object actions | A control that starts a letter |
-| Me | `/you` | Look after | I go to Me to look after my account, my books and my rules. | Account, Plan, Children, Writing, Your letters, Privacy and security, Take the book with you, Help, About | A letter; a lamp; a count |
+| Me | `/you` | Look after | I go to Me to look after my account and books. | Account, Plan, Children, Writing, Your letters, Privacy and security, Take the book with you, Help, About | A letter; a lamp; a count |
 
 Rules that hold:
 - Three tabs, in this order, always. The bar never gains a fourth tab for a feature. A tab needs the test in `03` section 8 (Share) or an equivalent written for it.
@@ -143,7 +143,7 @@ Sections, in order (existing rows from IA.md and #738/#740 as described in NAV-T
 8. Help and legal: Help, If you are struggling (always present, D-034), Terms, Privacy Policy, Licenses.
 9. About.
 
-Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, placed under the "Take the book with you" section, which is below the first-screen fold, not under Children (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, second-hand through NX-41, UNVERIFIED; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
+Co-parent: while it is not live, one caption line, no button, no badge, no colour, no date, muted text, standing alone between "Your letters" and "Take the book with you" (so it is not under the export section, which would put it under an unrelated job), below the first-screen fold (P8; NX-41 R9 to R11 are the constraints: the strings exist as `familyCopy.soon.settingsRow` and `status`, second-hand through NX-41, UNVERIFIED; the sheet from `coparent-soon.tsx` stays and opens from the line; default is the line opens the existing sheet with Close). It is below the fold of Me's first screen (NX-41 R10), consistently in sections 5, 9 and 13. Where co-parent is live (alpha, servers on), the real people rows replace it in the same place.
 
 ### 5.2 States
 
@@ -171,7 +171,8 @@ Existing (EVIDENCE): `tabs.tonight`, `tabs.book`, `tabs.family` (strings.en.ts l
 
 | Slot | Intent | Rules |
 |---|---|---|
-| `tabs.home`, `tabs.me` (and `tabs.book` kept) | Labels | One glossary word each; `tab-labels` test updated; "Me" and "Home" are the founder's |
+| `tabs.home`, `tabs.me` (and `tabs.book` kept) | Labels (strings only) | One glossary word each; `tab-labels` test updated; "Me" and "Home" are the founder's |
+| `tabsJob.home`, `tabsJob.book`, `tabsJob.me` | The job sentences of section 1, as strings; separate from `tabs.*` so no key is both a string and an object (N6) | 12 words or fewer; one declared verb; pattern in 10.2 |
 | `tabs.homeA11y`, `.bookA11y`, `.meA11y` | VoiceOver hints of the tab | Say the job in a few words; no verb repeated across tabs |
 | `home.title` | The level 1 heading, if the greeting is not it | |
 | `book.empty.pointer` | The button on the empty Book that moves to Home | Must read as a pointer, not as starting a letter in the Book |
@@ -188,12 +189,12 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 
 | Id | Requirement | Proof |
 |---|---|---|
-| IA-R1 | Three tabs. Given any build, Then the bar has exactly Home, Book, Me, in that order, and no screen for Family, Library, Photos or Share | navigation test N1, N4 |
+| IA-R1 | Three tabs. Given any build, Then the bar has exactly Home, Book, Me, in that order, and no screen for Family, Library, Photos or Share | navigation test N1, N4 (each with its fixtures) |
 | IA-R2 | One verb each. Given the job table, Then each tab declares one verb and no two are equal | navigation test N2 |
-| IA-R3 | One capture entry. Given the source, Then only Home's module and the allow-listed doorways call the capture start function | navigation test N3 |
-| IA-R4 | Book starts nothing. Given the Book's empty state, Then its button switches to Home and calls no capture function | N5 |
-| IA-R5 | Job in the first line. Given each tab, Then its level 1 heading and first element say the job | device, `user-research` read-through |
-| IA-R6 | Rooms differ. Given Home, Book, Me, Then at least three of lamp, card shape, type scale of the main line, main action, entry motion differ, judged by a person who has not seen the specs | device |
+| IA-R3 | One capture entry. Given the source, Then only Home's module and the allow-listed doorways call the capture start function, with a `source` from the list in 10.1 | navigation test N3 (needs the step 0 consolidation) |
+| IA-R4 | Book starts nothing. Given the Book's empty state, Then its button switches to Home and calls no capture function | navigation test N5 |
+| IA-R5 | Job in the first line. Given each tab's first screen, shown with the tab label covered, When five parents are asked what it is for, Then at least four name the job in their own words with the same verb or a plain synonym (HYPOTHESIS: no parent evidence exists; the number is PROPOSED). Answers: `user-research`; by: before the Build 13 release candidate is cut (date from the release plan, UNVERIFIED) | device, five-parent read-through |
+| IA-R6 | Rooms differ. Given Home, Book, Me, Then at least three of lamp, card shape, type scale of the main line, main action, entry motion differ, judged by three people who have not seen the specs, of whom at least two name the same three differences (PROPOSED). Answers: `qa`; by: the Build 13 device pass | device |
 | IA-R7 | Me holds no letter, lamp or badge | device |
 | IA-R8 | Co-parent coming soon is one caption line in Me, below the fold of the first screen, muted, with no badge | device (NX-41 R10) |
 | IA-R9 | Home lists no kept letters; at most one memory slip | device, AX5 |
@@ -205,42 +206,85 @@ Door lines: none new. The co-parent caption keeps NAV-R13's lines: Shown, the ex
 
 Owner of the code: `mobile` (it edits `apps/mobile/**`); `qa` reviews; `design-systems` owns the manifest's wording. I write no code here. Names are PROPOSED and UNVERIFIED against the repo: `apps/mobile/test/tab-bar.test.ts` exists only in the open stack (#699 to #764), not on `develop`, so this is a new file.
 
-### 10.1 The manifest (one source of truth, also read by the tab layout)
+### 10.1 Prerequisite, then the manifest
+
+**Prerequisite (a task for `mobile`, step 0 in section 12).** N3 can only be exact if there is one capture start function. Today `listen.tsx` and the write sheet may each start a capture from several places (UNVERIFIED; I read `listen.tsx` only by grep). `mobile` first consolidates every start into one function, `startCapture({ source })`, where `source` is one of: `speak`, `type`, `notMuch`, `photoFirst`, `dayCard`, `widget`, `controlCenterControl`, `actionButton`, `siri`. The name `startCapture` is mine; `mobile` may rename it and update the test constant.
+
+**Fallback if the function does not exist yet.** N3 runs in snapshot mode: it scans `apps/mobile/src/**` for the capture shapes (pushes to `/listen` or `/write`, imports of the recorder, renders of the capture cluster) and compares the list of files that contain them with a committed snapshot (`tab-capture-baseline.json`). The test fails when a file outside Home's module is added to the snapshot, or when the snapshot grows without a `design-systems` approval line in the PR. Snapshot mode is weaker (it freezes today's sprawl instead of removing it) and is removed once the function exists.
+
+**The manifest** (one source of truth, also read by the tab layout). The verb is declared explicitly; the test never infers it from prose. The label and the job sentence are separate keys in `copy`, so no key is both a string and an object.
 
 ```ts
 // apps/mobile/src/lib/nav/tab-jobs.ts  (PROPOSED path)
 export const TAB_JOBS = [
-  { id: 'index', label: 'home', verb: 'say',        job: 'tabs.home.job', captureEntries: ['speak', 'type', 'notMuch', 'photoFirst', 'dayCard'] },
-  { id: 'book',  label: 'book', verb: 'read',       job: 'tabs.book.job', captureEntries: [] },
-  { id: 'you',   label: 'me',   verb: 'look after', job: 'tabs.me.job',   captureEntries: [] },
+  { id: 'index', tabsKey: 'home', jobKey: 'home', verb: 'say',        captureEntries: ['speak', 'type', 'notMuch', 'photoFirst', 'dayCard'] },
+  { id: 'book',  tabsKey: 'book', jobKey: 'book', verb: 'read',       captureEntries: [] },
+  { id: 'you',   tabsKey: 'me',   jobKey: 'me',   verb: 'look after', captureEntries: [] },
 ] as const;
-export const CAPTURE_DOORWAYS = ['widget', 'lockScreenControl', 'actionButton', 'siri', 'nativeIntent'] as const;
+// copy.tabs      = { home: 'Home', book: 'Book', me: 'Me', homeA11y, bookA11y, meA11y }   (strings only)
+// copy.tabsJob   = { home: 'I go to Home to say something to {child}.', book: '...', me: '...' }   (strings only)
+export const CAPTURE_DOORWAYS = ['widget', 'controlCenterControl', 'actionButton', 'siri'] as const;
+// The router handler file (+native-intent.tsx) is on the file allow-list; it is not a doorway.
 ```
 
 ### 10.2 The checks
 
+`verb` is a lowercase string of one or two words. Its **head** is its first word. Job sentences must match `^I go to (Home|the Book|Me) to <verb>\b` where `<verb>` is the declared verb, case-insensitive (so "look after" is matched as two words; no first-word guess).
+
 | # | Check | Fails when |
 |---|---|---|
-| N1 | Bar | The layout's screens are not exactly `index`, `book`, `you` in that order, or the labels are not `copy.tabs.home`, `.book`, `.me` |
-| N2 | Verbs | Any two tabs have the same `verb`; or a verb is empty; or the first verb in a tab's job sentence is not its declared `verb` (checked on the English string by the first word after "to" in the pattern "I go to X to <verb>"); or two tabs' job sentences share a verb after stemming |
-| N3 | Capture entries | A `captureEntries` id appears under two tabs; or any tab other than `index` has a non-empty list; or a source file outside Home's module and the doorway handlers imports or calls `startCapture` (the one capture function), pushes the capture routes (`/listen`, `/write`) , or renders the capture cluster component. The scan is a plain read of `apps/mobile/src/**` (the way `tab-bar.test.ts` is described as reading sources in NAV-R2); allow-list is `CAPTURE_DOORWAYS` plus the Home route and `components/tonight/**` |
-| N4 | No extra tabs | The layout defines `family`, `library`, `photos`, `share` or a fourth screen; or a tab guard (`Tabs.Protected`) hides one |
-| N5 | Book starts nothing | The empty-state button in the Book handler references `startCapture`, `/listen` or `/write` rather than the Home tab |
-| N6 | Words | The tab labels are single words and each appears in the BRAND.md glossary; `copy.tabs` has no key other than `home`, `book`, `me` and their `A11y` pairs |
-| N7 | Counts | No string reachable from the tab modules matches a count pattern (a number followed by "letters", "photos", "firsts", "days") in the lens, Find and Firsts keys. Count of the parent's own selection in the chooser is allow-listed by key |
+| N1 | Bar | The layout screens are not exactly `index`, `book`, `you` in that order; or a screen's title is not `copy.tabs[tabsKey]`; or the rendered label of a tab (read from the layout, not the manifest) differs from the string in `copy.tabs` |
+| N2 | Verbs | (a) any two tabs have the same `verb`; (b) any two verbs have the same head (so "look after" and "look up" collide); (c) a `verb` is empty or has more than two words; (d) a job sentence does not match the pattern above for its own `verb`; (e) a job sentence matches the pattern for another tab's verb; (f) a job sentence is longer than 12 words (counted by whitespace after replacing `{child}` with one word) |
+| N3 | One capture entry | (a) a `captureEntries` id appears under two tabs; (b) any tab other than `index` has a non-empty list; (c) a file outside Home's module (`(tabs)/index.tsx`, `components/tonight/**`) and the router handler calls `startCapture`; (d) such a file pushes `/listen` or `/write` to start a capture; (e) such a file renders the capture cluster component; (f) `startCapture` is called with a `source` outside the list in 10.1; (g) a `source` of `widget`, `controlCenterControl`, `actionButton` or `siri` is called from a file that is not a doorway handler |
+| N4 | No extra tabs | The layout defines `family`, `library`, `photos`, `share` or a fourth screen; or `Tabs.Protected` hides one |
+| N5 | Book starts nothing | The Book's empty-state handler references `startCapture`, `/listen` or `/write`, or does not switch to the Home tab |
+| N6 | Words | (a) a tab label is more than one word; (b) a label is not in the BRAND.md glossary; (c) `copy.tabs` has a key outside `home`, `book`, `me`, `homeA11y`, `bookA11y`, `meA11y`; (d) `copy.tabsJob` has a key outside `home`, `book`, `me`; (e) any value under `copy.tabs` or `copy.tabsJob` is not a string |
+| N7 | Counts | A string under `book.lens.*`, `book.find.*`, `firsts.*` or `seal.*` contains a number next to "letters", "photos", "firsts", "closed" or "days", other than a date. (Share's selection count is not in these keys.) |
+| N8 | Find lives in the Book | (a) `FindBar` or `book.find.*` is used by a file outside `components/find/**` and the Book route; (b) any file under `components/find/**` references `startCapture`, `/listen`, `/write` or a key that starts a letter (this is the proof for FD-R1 and FD-R5) |
+| N9 | Share lives on the letter | `SharePreview` or `share.letter.*` is used by a file outside the letter page, the Book card menu and `components/share/**`; Home's module uses neither (the proof for SH-R6) |
+| N10 | Home offers no firsts or seal | Home's module imports `FirstMark`, `SealedRow` or a `firsts.*` or `seal.*` key, except the one component for `seal.homeOpened` named in an allow-list entry (the proof for FS-R3) |
+
+N3(f) and (g) are also the proof for PW-R1 (photo start) and HF-R2 (doorways): `photoFirst` may only be passed from Home's module, and the doorway sources only from doorway handlers. PRD NS-01-R1's own route and AST scan covers the photo button count on Home, Book and Me; this test does not duplicate it.
 
 ### 10.3 The test must prove it can fail
 
-The test file also runs the same checker over three fixtures and expects each to fail, so a loosened checker is caught:
+The test file runs the same checker over fixtures and expects each one to fail with the named check. One fixture per check and per sub-check; a checker that cannot fail is not a test.
 
-| Fixture | Expected failure |
+| Fixture | Expected |
 |---|---|
-| Two tabs with `verb: 'read'` | N2 |
-| `book` with `captureEntries: ['speak']` | N3 |
-| A temp source file under `book/` calling `startCapture()` | N3 |
-| A layout with a `share` screen | N4 |
+| N1a: screens ordered `book`, `index`, `you` | N1 |
+| N1b: tab title string differs from `copy.tabs.home` ("Tonight") | N1 |
+| N2a: two tabs with `verb: 'read'` | N2(a) |
+| N2b: verbs `look after` and `look up` | N2(b) |
+| N2c: `verb: ''` | N2(c) |
+| N2d: Book sentence "I go to the Book to hear what we kept." with `verb: 'read'` | N2(d) |
+| N2e: Me sentence "I go to Me to read my account and books." | N2(e) |
+| N2f: a 13-word sentence | N2(f) |
+| N3a: `speak` listed under two tabs | N3(a) |
+| N3b: `book` with `captureEntries: ['speak']` | N3(b) |
+| N3c: temp file under `book/` calling `startCapture()` | N3(c) |
+| N3d: temp file under `you/` doing `router.push('/listen')` | N3(d) |
+| N3e: temp file under `book/` rendering the capture cluster | N3(e) |
+| N3f: `startCapture({ source: 'sparkle' })` | N3(f) |
+| N3g: a Book file calling `startCapture({ source: 'siri' })` | N3(g) |
+| N4a: layout with a `share` screen | N4 |
+| N4b: layout with `family` behind `Tabs.Protected` | N4 |
+| N5a: Book empty button calls `startCapture` | N5 |
+| N5b: Book empty button pushes `/write` | N5 |
+| N6a: label "Our Book" | N6(a) |
+| N6b: label "Tonight" (not in the glossary list used by the fixture) | N6(b) |
+| N6c: `copy.tabs.share` | N6(c) |
+| N6d: `copy.tabsJob.family` | N6(d) |
+| N6e: `copy.tabs.home` is an object | N6(e) |
+| N7a: `book.lens.photos` = "3 photos" | N7 |
+| N7b: `firsts.lens` = "Firsts (4)" | N7 |
+| N8a: `FindBar` used in a Me file | N8(a) |
+| N8b: a file under `components/find/` calling `startCapture` | N8(b) |
+| N9a: `SharePreview` used in Home's module | N9 |
+| N10a: Home's module importing `FirstMark` | N10 |
+| N10b: Home's module importing `SealedRow` | N10 |
 
-A real change that needs a new doorway adds its name to `CAPTURE_DOORWAYS` in a PR that `design-systems` approves; a new tab fails N1 and needs the Share-style test in `03` section 8 first.
+A real change that needs a new doorway adds its name to `CAPTURE_DOORWAYS` and the `source` list in a PR that `design-systems` approves; a new tab fails N1 and N4 and needs the Share-style test in `03` section 8 first.
 
 Limits (said plainly): a static scan cannot see a capture started by a string-built route or a library call it does not know; N3 catches the common shapes and the manifest, not every possible bypass. It does not judge whether a tab's first screen communicates its job (IA-R5 is a person on a device).
 
@@ -248,7 +292,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 
 | # | Result | Reason |
 |---|---|---|
-| J1 | Pass | Three sentences, each under 13 words, one verb |
+| J1 | Pass | Three sentences of 9, 9 and 11 words, one declared verb each (Home "say", Book "read", Me "look after") |
 | J2 | Pass | Say, Read, Look after are distinct; N2 enforces it |
 | J3 | Pass | One entry function; N3 enforces it; Book's empty button is a pointer |
 | J4 | Pass | Home: today's take; Book: kept letters; Me: settings |
@@ -265,6 +309,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 
 | Step | Owner | Change |
 |---|---|---|
+| 0 | `mobile` | Prerequisite for N3: consolidate every capture start into one function, `startCapture({ source })`, with the `source` values in 10.1; or accept the weaker snapshot mode in 10.1 until it exists |
 | 1 | `product` | Reconcile NX-42 (the Moments tab dissolves into Home mode, Book lens, letter actions) and NX-41 R12 with this bar; assign ids to IA-R1 to R12 |
 | 2 | `content` | Slots in section 8 and each spec; `legal` read of "Share" as a button word |
 | 3 | `mobile` | Labels and manifest; remove the Family tab; export rows into Me's section; flat waiting rows (needs #721); Book lens row and Find; the test in section 10 |
@@ -281,9 +326,9 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 | Q3 | Home memory slip below drafts or only when nothing waits? | Below drafts, flat (NX-43 R6) |
 | Q4 | The Book gear: remove when Me ships? | Remove after one device pass shows Me is found |
 | Q5 | Does the empty Book keep a button at all? | Yes, one quiet pointer to Home; the default is to keep it so the Book is never a dead end |
-| Q6 | Where does the co-parent caption sit? | Under "Take the book with you", muted, below the first-screen fold |
+| Q6 | Where does the co-parent caption sit? | Default: a one-line caption standing alone between "Your letters" and "Take the book with you", muted, below the first-screen fold, with no section title. Alternative: under Children, which matches its job (people) but is probably above the fold, and NX-41 R10 asks for below. The fold argument decides the default |
 | Q7 | Do we measure "Me" label width and Large Content Viewer before shipping? | Yes, in the device pass |
 
 ## 14. UNVERIFIED
 
-The rendered Home, Book and Me on a device; tab label widths; whether the open stack can be rebased onto a three-tab bar without conflicts; the e2e flows that tap a tab by label; that `startCapture` is one function (the name is mine; `listen.tsx` and `write` may start captures in several places today); the exact copy lines I cite at other heads; #721's slip style; anything about #738/#740 beyond what NAV-TAB-ROLES says of them.
+The rendered Home, Book and Me on a device; tab label widths; whether the open stack can be rebased onto a three-tab bar without conflicts; the e2e flows that tap a tab by label; that one capture start function can be made (the name `startCapture` is mine; `listen.tsx` and `write` may start captures in several places today, which is why step 0 exists); the exact copy lines I cite at other heads; #721's slip style; anything about #738/#740 beyond what NAV-TAB-ROLES says of them.

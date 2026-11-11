@@ -26,7 +26,7 @@ Aligned to PRD #795 (head `41ed5166`), which wins where it differs: no date chip
 
 D loses ML-S9's "Add photos or videos" button, because that button started a letter on a second tab (finding O7 in NAV-TAB-ROLES section 1). A parent who looks at the Photos lens and wants to add a photo opens a letter first (open question Q1, default: no "which letter" picker; they open the letter, section 7).
 
-All of A, B, C and E open one `MediaChooser` (ML-S4) or, without photo access, the system picker (ML section 1.4). One component, four doors.
+**Build 13 rule (PRD NS-01-R22, which wins):** every door opens the iOS system picker and nothing else; it returns one photo. There is no `MediaChooser`, no library access, no pre-prompt (ML-S1), no camera, no video and no multi-select. **Post-Build 13:** all of A, B, C and E open one `MediaChooser` (ML-S4) when library access is on, with the system picker as the fallback (ML section 1.4); the cap, strip and viewer below belong there. One door-set, four doors.
 
 ## 3. Home: the photo-first mode (new)
 
@@ -69,7 +69,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 | Entry | `Button quiet md` | exists |
 | Thumbnail | `PhotoFrame inline` | spec'd (COMPONENTS 2.23), not in `components/ui`; build it, use `expo-image` |
 | Change | `Button quiet md` | exists |
-| Picker | system picker (needs no permission, UNVERIFIED) or `MediaChooser` | NEW (ML-S4) |
+| Picker | system picker (needs no permission, UNVERIFIED) in Build 13; `MediaChooser` post-Build 13 | NEW (ML-S4), post-Build 13 |
 
 ## 4. Review and the letter page (as ML, with the entry rule)
 
@@ -112,7 +112,7 @@ The Book header has a `LensRow` under the cover band: "Months" always; "Photos" 
 | Loading | Picker is the system's; thumbnail appears with a flat `surface` box, no blur animation | "Adding" label under the strip (ML-S5) | Flat `surface` until ready | Tiles fill in, no skeleton |
 | Offline | Local photos work. iCloud-only items say so in the chooser (ML-S4) | Same | Same | Fully local |
 | Error | `ErrorLine` under the thumbnail: "That photo could not be opened. Choose another." (slot); Speak and Type still work | ML-S5 failed line | ML-S8 missing-file box | Missing-file box on the tile |
-| Photo access denied or limited | Unchanged button; system picker or chooser per ML 1.4; no mention of access | Same | Same | Lens never reads the camera roll |
+| Photo access | Build 13: not applicable, the system picker needs none; the app never asks. Post-Build 13: unchanged button; system picker or chooser per ML 1.4; no mention of access | Same | Same | Lens never reads the camera roll |
 | Missing file | n/a | n/a | "Not on this phone any more" box with a quiet Remove | Same box |
 | Long letter | Words whole; thumbnail never covers text | Words never move | Words whole; media after | Tiles only |
 
@@ -153,10 +153,10 @@ Existing on `develop`: `tonight.states.*`, `listen.*` (EVIDENCE). Drafts exist i
 | Reuse | ML chooser, chips, cap, cloud, missing strings | Per `MEMORY-LIBRARY-WORDS-10nov.md`; its Truth lines still apply |
 
 Door lines (COORDINATION section 10; COUNSEL-READ, none cleared):
-- Shown: the picker is the system's; Home shows the button and nothing about access. The pre-prompt, if the app asks for library access later, is ML-S1.
+- Shown: the picker is the system's; Home shows the button and nothing about access. There is no pre-prompt in Build 13. If the app asks for library access later (post-Build 13), that is ML-S1.
 - Records: the kept copy of a chosen picture, its date and typed place, in a phone-only table (ML gap 2). This spec adds no analytics event. The PRD proposes one opt-in event, `media_added` with `source` and `kind` only (NX-39-R34); that is the PRD's and proposed-only, not part of this spec, and it needs the catalog first.
 - Never: the picture, its description, date or place in analytics, logs, crash reports, push, URLs or sync payloads beyond the letter's own rules; no face, object or scene analysis; no auto-attach.
-- Decline: Cancel in the picker costs nothing; denying access still leaves the system picker.
+- Decline: Cancel in the picker costs nothing. (Post-Build 13: denying library access still leaves the system picker.)
 
 ## 10. Out of scope here (each with a default)
 
@@ -169,7 +169,7 @@ Door lines (COORDINATION section 10; COUNSEL-READ, none cleared):
 
 | Id | Requirement | Proof |
 |---|---|---|
-| PW-R1 | One photo-led entry. Given any build, Then the only control outside a letter that starts something with a photo is Home's photo-first button (and the day card). Book and Me have none | navigation test (06 section 10); device |
+| PW-R1 | One photo-led entry. Given any build, Then the only control outside a letter that starts something with a photo is Home's photo-first button (and the day card). Book and Me have none | navigation test N3(f) and (g) (06 section 10: `photoFirst` only from Home's module), plus PRD NS-01-R1's route and AST scan; device |
 | PW-R2 | Never a photo alone. Given a picture chosen on Home, When the parent leaves without keeping words, Then the picture is not kept and the confirm said so | device; unit test on the capture function |
 | PW-R3 | Enrich only. Given the letter page, When the parent adds a photo, Then that letter changes and no letter is created | unit test (NX-39 style) |
 | PW-R4 | Lens on material. Given at least one kept photo, Then the Book offers Photos; Given none, Then no lens row and no empty state | device |

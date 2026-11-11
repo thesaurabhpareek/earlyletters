@@ -93,7 +93,7 @@ Typing never animates the list. Rows do not reorder while typing settles within 
 ## 8. Dynamic Type and VoiceOver
 
 - AX5: the FindBar grows with text (min 48 pt), Cancel moves under it. Each result row stacks date over words; words are whole in the row up to the fade, and the fade only occurs where the full sentence is read by VoiceOver. Dates are `letterDateline`, 14 pt base, scale cap 2.4 per `tokens.type` (EVIDENCE).
-- VoiceOver: the magnifier is "Find, button". Focus lands in the field on open. The result list is one container; each row reads "{date}. {matching sentence}. Opens the letter." Matches are not announced as a count. On no match the empty line is read once, politely. The keyboard return key is Search, 44 pt.
+- VoiceOver: the magnifier is "Find, button". Focus lands in the field on open. The result list is one container; each row reads "{date}. {matching sentence}. Opens the letter." Results are announced once, politely, as "Letters found" (the #798 slot `foundA11y`) with no number, when they first appear; matches are never announced as a count. On no match the empty line is read once, politely. The keyboard return key is Search, 44 pt.
 - Voice Control: "Tap Find" works because the label is real text.
 - Dictation into the field is the system's; Find never records audio. UNVERIFIED: what the system does with dictated speech is Apple's, not read this session; handed to `privacy` for the Records and Never lines.
 - Reduce Motion, Reduce Transparency, light and dark: the bar is solid `surfaceRaised`, 1 pt `line` edge under Reduce Transparency.
@@ -110,6 +110,11 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 | `book.find.notReady` | Index still being made | Plain; true only while it is true |
 | `book.find.error` and `book.find.retry` | Index failed and Try again | Says what to do |
 | `book.find.rowA11y` | "{date}. {sentence}. Opens the letter." | No count |
+| `book.find.buttonHint` | VoiceOver hint of the magnifier | One sentence; says it looks through this book's letters |
+| `book.find.fieldLabel` | VoiceOver label of the field | Plain; names the act |
+| `book.find.foundA11y` | Announced once when results appear | No number, no count (PRD NS-02 rule against saying a number of results) |
+
+Note on PR #798 (head `5cb0e863`, `packages/content/src/features/find.en.ts`, read by me at that head): its slots are `button`, `buttonHint`, `placeholder`, `fieldLabel`, `hint`, `noMatchHelp`, `notReady`, `error`, `retry`, `rowA11y`, `foundA11y`, `clear`, `cancel`. All map to the slots in this section except `hint` ("Type three letters to start."), which I removed from this spec because PRD NS-02-R3 says no message appears under three characters. `hint` should leave #798.
 | `book.find.clear` | VoiceOver name of the clear button | |
 | `book.find.cancel` | Cancel | |
 
@@ -123,11 +128,11 @@ Door lines. Not a consent screen, but it reads the whole book:
 
 | Id | Requirement | Proof |
 |---|---|---|
-| FD-R1 | Where. Given the Book with at least one kept letter, Then a Find control is in its header; Given Home or Me, Then none | navigation test; device |
+| FD-R1 | Where. Given the Book with at least one kept letter, Then a Find control is in its header; Given Home or Me, Then none | navigation test N8(a); device |
 | FD-R2 | Scope. Given a search, Then only the active child's letters the viewer may see appear, never another parent's private letter, a deleted letter or a hidden book (F09-REQ-015) | unit tests on the query; `supabase/tests` access matrix if any part is server-side (it is not designed to be) |
 | FD-R3 | Speed. Given 1,000 letters on an SE 3, When 3 or more characters are typed, Then results show within 300 ms p95 | perf test on device (F09) |
 | FD-R4 | Faithful. Given a result, Then the words shown are the letter's words as kept, cut on a whole word, with no rewriting, summary or highlight text written by the app | unit test on the excerpt function |
-| FD-R5 | Starts nothing. Given no match or an empty book, Then there is no button that starts a letter in Find | navigation test |
+| FD-R5 | Starts nothing. Given no match or an empty book, Then there is no button that starts a letter in Find | navigation test N8(b); device |
 | FD-R6 | Quiet. Given any use of Find, Then no term enters analytics, logs or crash reports | catalog review; log test |
 | FD-R7 | Accessibility. Given VoiceOver, AX5, Reduce Motion, both themes, Then section 8 holds and the match is not signalled by colour alone | device |
 | FD-R9 | Index lifecycle. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |

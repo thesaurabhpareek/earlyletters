@@ -8,7 +8,7 @@ Three parts, one pattern. Parts A and B are enrichers: they add to a letter that
 
 ### A1. Job
 
-One sentence: I mark a letter as a first, in my own words. (11 words, verb "mark".) A first is a mark on a letter, never a letter. The founder has not asked for Firsts by name (NX-44); the brand rules make milestone features risky (NX-44 section 1). Everything below follows NX-44's non-goals: no suggested list, no typical age, no count, no badge, no machine detection, no machine label, no notification, no analytics.
+One sentence: I mark a letter as a first, in my own words. (11 words, verb "mark".) A first is a mark on a letter, never a letter. The founder did not ask for Firsts by name (NX-44), but he said on 10 Nov to include all new scope (relayed by Karma; original not read), so Firsts are in scope: specified in full here, build sequenced after rank 5 and the five-parent study, earliest Build 15. The brand rules make milestone features risky (NX-44 section 1), which is why the design is the opposite of a milestone tracker. Everything below follows NX-44's non-goals: no suggested list, no typical age, no count, no badge, no machine detection, no machine label, no notification, no analytics.
 
 ### A2. Where
 
@@ -60,7 +60,7 @@ Toggle: system. Label field: `enter` 8 pt, 280 ms; Reduce Motion `fadeMs`. Marke
 
 ### B1. Job
 
-One sentence: I keep a letter closed until a day I choose. (10 words, verb "keep closed".) The founder has not asked for this by name in the documents I read; it is a competitor feature and a research request (second-hand: I read only the grep hits in those research files, so UNVERIFIED). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is shelved by default (Q2).
+One sentence: I close a letter until a day I choose. (9 words, verb "close"; "keep" is kept for the Review Keep step and means only that.) The founder did not name this in the documents I read; it is a competitor feature and a research request (second-hand: I read only the grep hits in those research files, so UNVERIFIED). It is the highest-risk item in this spec because of the brand rules and the truth rule, so it is sequenced last: in scope (founder: include all new scope), specified in full here, build after rank 5 and the five-parent study, earliest Build 15 (Q2).
 
 ### B2. The rules that shape it
 
@@ -75,7 +75,7 @@ One sentence: I keep a letter closed until a day I choose. (10 words, verb "keep
 | Place | Control |
 |---|---|
 | Review | A row "Close this letter until a day" with a `DateField`, or a choice "until {child} is {age}" computed from the birthday (age math in `packages/core`) |
-| Letter page | Same row in "Add to this letter" |
+| Letter page | Same row in "Add to this letter" for a kept, open letter that has never been sealed. The row is absent on a letter whose seal has ended, whether by "Open it now" or by the day: a letter cannot be sealed again (PRD NS-06-B3; ADR 0028 D3 "re-seal refused") |
 | Book | A `SealedRow` in the month it belongs to, showing the date line and the opening day only; no words, no photo, no recording control |
 | Home | On the opening day, the one memory slot may show it (Q4); never before |
 
@@ -113,8 +113,8 @@ In the Book:
 |---|---|
 | No sealed letters | The row is only in Review and the letter page; the Book shows nothing about seals |
 | Date in the past or today | The seal is not offered (the picker minimum is tomorrow); the letter opens now |
-| Opening day arrives | The letter becomes a normal letter at local midnight of the chosen date; no push, no badge (a reminder is a Q4 opt-in); if the app is open, it updates on the next read |
-| Clock set back or time zone change | The date uses the local date at read time (`roomClock`, as NX-43 U6); a letter never opens early because of a time zone shift (UNVERIFIED how `roomClock` behaves) |
+| Opening day arrives | At the moment of sealing the app stores one absolute instant, UTC: the author's local midnight at the start of the chosen day, in the device's time zone at that moment. The letter opens when `now >= that instant`. No push, no badge (a reminder is a Q4 opt-in); if the app is open, it updates on the next read |
+| Clock set back or time zone change | Nothing is recomputed from the local date at read time. The stored instant does not move, so a flight east or a changed time zone never opens a seal early. A clock set forward by hand can open it early; the app does not claim to prevent that (display rule only). ADR 0028 D3 stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers; the instant above is the author's device rule; `data-architect` reconciles the two (one stored field or two) before any build |
 | Find, lenses, recordings list, Share | A sealed letter contributes nothing to any of them until it opens (FS-R10); its photos are not in the Photos lens, its first label is not in the Firsts lens, its photo descriptions and label are not searched |
 | Share | Not offered (03 section 4) |
 | Read together | Skipped until open |
@@ -132,7 +132,7 @@ Source: ADR 0028 "On-device data for Photo with a letter, the sealed letter and 
 | Does the seal sync to the co-parent's phone? | The seal date syncs; the seal is a display rule on the author's own phones; no other person's phone receives a sealed letter's words, or a row, until the day | No row on the co-parent's phone, so nothing to hide there: no closed row, no "a letter is sealed" line. Their Book shows nothing until the day |
 | Who may press "Open it now"? | The author only (author-only write; the author may clear the seal; once cleared it cannot be set again) | The control is on the author's own phones only. It is absent for any other reader |
 | Does export include the words? | A sealed letter is exported whole with `sealed_until`, for its author only; another person's export never contains words they cannot read | Export includes the words for the author. The PDF book default in Q5 (omit until open) is a separate design default and is not in the ADR; marked UNVERIFIED |
-| Is it built? | Default if nobody decides: do not build the seal (ADR; PRD sequence: after ranks 1 to 5, behind a five-parent study) | Spec only. Q2 stands |
+| Is it built? | ADR 0028 default if nobody decides: do not build the seal. The founder's include-all-scope ruling puts it in scope; the PRD sequence puts the build after ranks 1 to 5 and behind a five-parent study (earliest Build 15) | Specified now, built in that sequence. Q2 |
 
 The earlier B6 row for the co-parent ("sealed letters open at handover" and the question of whether the other phone sees the words) is replaced by this table.
 
@@ -154,6 +154,8 @@ Row appears with `enter`; Reduce Motion `fadeMs`. Opening early or on the day: a
 | Apple Watch | Not designed; pm-1's (DEBATES line 93) | |
 
 ### C2. What the navigation test treats as an entry
+
+The doorway names used in the test, in 05 and in 06 are the same four: `widget` (Home Screen and Lock Screen), `controlCenterControl`, `actionButton`, `siri`. A single capture start function is a prerequisite for the test (06 section 10.1, step 0).
 
 Define an **entry** as a UI control inside the app's tab screens that calls the capture start function (`startCapture`). OS surfaces and deep links reach the same function through one routed doorway to Home and are listed in the test's allow-list with their name; a new one fails the test until `design-systems` adds it (06 section 10).
 
@@ -188,12 +190,12 @@ Door lines.
 |---|---|---|
 | FS-R1 | Firsts follow NX-44 R1 to R12 unchanged, with the control placed in Review and on the letter page only | per NX-44 |
 | FS-R2 | No count. Given any number of firsts or seals, Then no screen, VoiceOver string, export file name or notification contains a count of them | grep test on strings; device |
-| FS-R3 | Nothing offered. Given Home, Then no firsts prompt and no seal prompt appears. The one exception is `seal.homeOpened`: on the day a seal ends, the memory slot may show that letter once (Q4) | navigation test; device |
+| FS-R3 | Nothing offered. Given Home, Then no firsts prompt and no seal prompt appears. The one exception is `seal.homeOpened`: on the day a seal ends, the memory slot may show that letter once (Q4) | navigation test N10 (with the one allow-listed component); device |
 | FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, or the PDF book; its row shows the date only. When it opens, it appears in each at once. Closing a letter removes it from each at once. A letter cannot be re-sealed: once a seal ends, by "Open it now" or by the day, it cannot be sealed again (PRD NS-06-B3, PR #795 head `41ed5166`; ADR 0028 D3 "re-seal refused"). To hide something again the parent writes a new letter | unit tests per surface; device |
 | FS-R4 | Enrich only. Given Review or a letter page, When a parent marks a first or seals, Then that letter changes and no letter is created | unit test |
 | FS-R5 | Seal is display only and truthful. Given a sealed letter, Then its words and recording are unchanged and the UI says "hidden" or an approved word, never a stronger one than the build supports | `security`, `privacy`, `legal` |
 | FS-R6 | No countdown. Given a sealed row, Then it shows a date and nothing that counts down | device; content rules |
-| FS-R7 | Opens by itself, never early by accident. Given the chosen day, Then the letter opens at local midnight of that date, not before, whatever the time zone | unit test with clock injection |
+| FS-R7 | Opens by itself, never early by a time zone. Given a seal made on 1 Jan in UTC-8 for 10 Jan, Then the stored instant is 2027-01-10T08:00:00Z (the year is illustrative). When the device zone is set to UTC+14 and the clock reads 2027-01-10T07:59:00Z, Then the letter is still closed; at 2027-01-10T08:00:00Z it is open. A change of zone never moves the instant | unit test with clock and zone injection |
 | FS-R8 | Quick capture surfaces reach one function. Given any doorway, Then it opens Home's Ready state and the navigation test lists it | navigation test |
 | FS-R9 | Accessibility. Toggle announces its state; the seal sheet is readable at AX5 with the date field not truncated; the closed row reads "A closed letter, opens {date}" and does not mention content | device |
 
@@ -212,14 +214,14 @@ Door lines.
 | J9 | Pass: A5 | Pass: B6 | Open: spec 5 |
 | J10 | Open: words are content's, no count, no suggestion | Open: "sealed" and "closed" need counsel | Open |
 | J11 | Open: device | Open: device | Open |
-| J12 | Open: without it Find and months carry the job (NX-44 FD-1) | Open: without it a parent writes a letter and just does not open it | Pass: without it a take needs the app opened by hand |
+| J12 | Pass: in scope by the founder's ruling; without it a parent cannot pick out a first except by Find. The study decides the build order, not the scope | Pass: in scope by the founder's ruling; without it a parent has no way to close a letter for a day | Pass: without it a take needs the app opened by hand |
 
 ## G. Open design questions, each with a default
 
 | # | Question | Default |
 |---|---|---|
-| Q1 | Build Firsts? (NX-44 FD-1) | No before a five-parent study; this spec is the design if yes |
-| Q2 | Build sealed letters? | No in Build 13. Needs a decision from the founder, the truth rule, and `data-architect` on whether the seal syncs |
+| Q1 | When are Firsts built? (NX-44 FD-1) | In scope (founder: include all new scope). Specified now; build sequenced after rank 5 and the five-parent study, earliest Build 15. Not cancelled. Needs the founder to confirm that reading (index Q4a) |
+| Q2 | When are sealed letters built? | In scope. Specified now; build sequenced after rank 5 and the five-parent study, earliest Build 15. Needs the truth rule, counsel on minors, and `data-architect` on the seal field (B6a) before any build |
 | Q3 | If built, "Firsts" as the lens name? | The word is `content`'s; it is already the founder's/NX-44's working word |
 | Q4 | A reminder on the opening day | None. The Home slot on that day is the only surface |
 | Q5 | Does the PDF book show a sealed letter before it opens? | No; it shows the closed line only |

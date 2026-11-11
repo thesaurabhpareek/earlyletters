@@ -4,7 +4,7 @@ Status: DRAFT, 11 Nov 2026 (UTC). Docs only. Author: `design-systems`. Index, ta
 
 ## 1. Job
 
-One sentence: I start a letter by talking, hands full. (9 words, one verb, "start"; on Home it is a way to Say, so it adds no tab verb.) The states below still hold, pause and finish it. Two kinds of person: the parent whose hands are full (holding a baby, one hand free in the dark, F04 persona P1) and the person who uses Voice Control, Switch Control or VoiceOver. The states are the same for both; the doorways differ.
+One sentence: I start a letter by talking, hands full. (8 words, one verb, "start"; on Home it is a way to Say, so it adds no tab verb.) The states below still hold, pause and finish it. Two kinds of person: the parent whose hands are full (holding a baby, one hand free in the dark, F04 persona P1) and the person who uses Voice Control, Switch Control or VoiceOver. The states are the same for both; the doorways differ.
 
 Hands-free does not mean voice-activated. The app never listens before a person starts a take (PRIV: it "listens only while you record", `listen.primer.body`, EVIDENCE). No wake word. No always-on microphone. Siri or a hardware control may start a take only where the OS invokes the app on a person's own command, and F04 treats those as v1.1 candidates (UNVERIFIED).
 
@@ -26,7 +26,7 @@ States (a take's life), with the screen, what the person is told and what happen
 
 | # | State | Entered by | What the screen shows | What the person hears or feels | The take |
 |---|---|---|---|---|---|
-| H0 | Not started | Cold open, widget, Lock Screen control, Action button, Siri | Home as usual; for OS doorways H1 | none | none |
+| H0 | Not started | Cold open, widget, Control Center control, Action button, Siri | Home as usual; for OS doorways H1 | none | none |
 | H1 | Ready | Tap Speak; or an OS doorway | Listen: "To {child}", the red circle, `listen.ready.hint` "Tap the red circle and talk." For a doorway, the screen is the same; nothing records yet | nothing; no sound | none exists |
 | H2 | Starting | Tap the circle | Circle presses (`press.scale`), aura wakes | `recordStart` haptic and the soft start cue, then the microphone opens 140 ms later (SOUND.md) | file created; first bytes written |
 | H3 | Listening | Microphone open | `ListeningAura` breathing with level; timer; `listen.states.listening` "Listening."; hint "Say it however it comes." | no sound | recording |
@@ -82,7 +82,7 @@ Placement: Pause and Finish sit in the lower third so a thumb reaches them one-h
 5. **Big, few, fixed controls.** Pause and Finish do not move between states (no layout shift when the line changes). The only thing that moves is text.
 6. **Nothing flashes.** No flash, no loud cue, no sound while recording, so a sleeping baby is not woken (F04 persona P1).
 7. **Voice Control and Switch Control work from labels.** Every control is real text: "Speak", "Pause", "Finish", "Keep talking", "Let it go".
-8. **Doorways add no behaviour.** A widget, Lock Screen control or Siri phrase opens Ready. It does not start recording. Starting a take from a locked screen is a separate privacy decision for `legal` and `security` (a take starts a microphone with no unlock; UNVERIFIED how iOS treats it); default: the doorways need the phone unlocked first.
+8. **Doorways add no behaviour.** A widget, Control Center control or Siri phrase opens Ready. It does not start recording. Starting a take from a locked screen is a separate privacy decision for `legal` and `security` (a take starts a microphone with no unlock; UNVERIFIED how iOS treats it); default: the doorways need the phone unlocked first.
 9. **App lock.** If app lock is on, a doorway shows the lock cover first (NX-40 R13 as quoted in NX-43 R10); Ready follows Face ID.
 
 ## 6. Components
@@ -138,8 +138,8 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 
 | Id | Requirement | Proof |
 |---|---|---|
-| HF-R1 | Doorways start nothing. Given a widget, Lock Screen control, Action button or Siri doorway, When it opens the app, Then Ready shows and the microphone is closed until the person taps | device; unit test on the route handler |
-| HF-R2 | One start function. Given any doorway or in-app Speak, Then they call the same capture function with a `source` value; no other tab calls it | navigation test (06 section 10) |
+| HF-R1 | Doorways start nothing. Given a widget, Control Center control, Action button or Siri doorway, When it opens the app, Then Ready shows and the microphone is closed until the person taps | device; unit test on the route handler |
+| HF-R2 | One start function. Given any doorway or in-app Speak, Then they call the same capture function with a `source` from this list: `speak`, `type`, `notMuch`, `photoFirst`, `dayCard`, `widget`, `controlCenterControl`, `actionButton`, `siri`; no other tab calls it. Prerequisite: `mobile` consolidates the start (06 section 12, step 0) | navigation test N3 (06 section 10) |
 | HF-R3 | No loss. Given a call, Siri, alarm, route change, lock or background during a take, Then the take is saved as a waiting letter and the person sees it on return | device scripts (F04 U08, U09) |
 | HF-R4 | No auto-stop on silence. Given 5 minutes of quiet, Then the take continues and the line is still "Still here" | unit test with injected metering |
 | HF-R5 | Quiet room. Given a live take, Then the app plays no sound and the saved audio has no cue in it | recorded-file check (SOUND.md test) |
@@ -152,7 +152,7 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 
 | # | Result | Reason |
 |---|---|---|
-| J1 | Pass | "I start a letter by talking, hands full." (9 words, one verb) |
+| J1 | Pass | "I start a letter by talking, hands full." (8 words, one verb) |
 | J2 | Pass | Say is Home's verb and no other tab's |
 | J3 | Pass | Doorways are allow-listed and reach one function |
 | J4 | Pass | A take |
@@ -161,7 +161,7 @@ Door lines. A microphone is a thing a person agrees to (existing primer, `permis
 | J7 | Pass | Listen shows no list |
 | J8 | Pass | Ready is whole on day one |
 | J9 | Pass | H12, H13 say what to do |
-| J10 | Open | Four new slots |
+| J10 | Open | Seven new slots (section 9); `content` answers by Fri 20 Nov 2026 (PROPOSED) |
 | J11 | Open | Device with VoiceOver, Switch Control, Voice Control |
 | J12 | Pass | Without it a parent must see and touch small controls with busy hands |
 
