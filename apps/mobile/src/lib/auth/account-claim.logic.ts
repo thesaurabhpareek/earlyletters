@@ -27,7 +27,7 @@
  * the answer can only err towards asking (review 2 of PR #139: a hidden-only
  * book must still ask; a held draft must too).
  */
-import type { SqlDb } from '../db/sql';
+import { phoneHoldsAnyRow } from '../db/phone-rows';
 
 export interface ClaimInput {
   /** The signed-in user, or null. */
@@ -40,13 +40,8 @@ export interface ClaimInput {
   confirmed: ReadonlySet<string>;
 }
 
-/** Any book or letter row on this phone, in any state, or any held draft. */
-export function phoneHoldsAnyRow(db: Pick<SqlDb, 'get'>): boolean {
-  const r = db.get<{ any_rows: number }>(
-    'SELECT (EXISTS (SELECT 1 FROM children) OR EXISTS (SELECT 1 FROM entries) OR EXISTS (SELECT 1 FROM drafts WHERE held_kind IS NOT NULL)) AS any_rows',
-  );
-  return !!r && Number(r.any_rows) === 1;
-}
+// Lives in db/phone-rows.ts so sync code can ask the same question without importing auth code.
+export { phoneHoldsAnyRow };
 
 export function needsAccountClaim(input: ClaimInput): boolean {
   if (!input.userId) return false;

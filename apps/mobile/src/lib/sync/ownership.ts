@@ -7,7 +7,7 @@
  * leaves nothing changed. Server-side the ids are the device's own UUIDv7s, so
  * nothing is renamed and every retry is idempotent.
  */
-import { phoneHoldsAnyRow } from '../auth/account-claim.logic';
+import { phoneHoldsAnyRow } from '../db/phone-rows';
 import type { SqlDb } from '../db/sql';
 import {
   SYNC_SETTING,
