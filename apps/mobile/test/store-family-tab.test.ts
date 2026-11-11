@@ -15,7 +15,7 @@ import { isAlphaBuild } from '../src/lib/billing/alpha';
 import { resolveAppEnv } from '../src/lib/build-env';
 import { parseServerFeatures } from '../src/lib/capabilities';
 import { bookRow } from '../src/components/child/child-settings.logic';
-import { CO_PARENT_IN_STORE_BUILD, familySurfacesShown, INVITE_ENTRIES, inviteDestination, inviteHref, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
+import { familySurfacesShown, INVITE_ENTRIES, inviteDestination, inviteHref, planIncomingLink, visibleCoParentDoors } from '../src/lib/family/entry.logic';
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -71,8 +71,8 @@ describe('[11 Nov] three tabs in every build, Family is never one', () => {
 
 describe('[11 Nov] servers off changes nothing a person can see, against servers on without the flow (the no-op test)', () => {
   const STORE = false;
-  it('a store build: servers off and servers on (constant false) have the same surfaces, which are none', () => {
-    expect(CO_PARENT_IN_STORE_BUILD).toBe(false);
+  it('a store build: servers off and servers on have the same surfaces, which are none', () => {
+    expect(read('src/lib/family/entry.logic.ts')).not.toMatch(/CO_PARENT_IN_STORE_BUILD/);
     for (const serverFeatures of [false, true]) {
       for (const e of INVITE_ENTRIES) expect(inviteDestination(e, serverFeatures, STORE), `${e} ${serverFeatures}`).toBe('coming_soon');
       expect(bookRow({ serverFeatures, alpha: STORE, coParent: null, invite: inviteHref('settings_child', serverFeatures, STORE, 'c') }), `row ${serverFeatures}`).toBeNull();
@@ -136,10 +136,13 @@ describe('alpha builds keep the real flow, on routes and rows and not on a tab',
     expect(profile('production', { EXPO_PUBLIC_SERVER_FEATURES: 'on' })).toEqual({ alpha: false, coParent: true, shown: false });
   });
 
-  it('flipping the one constant is the only switch: no second flag exists, and it reads nothing a person can set', () => {
+  it('one rule, no second flag: the store build has no co-parent flow, and every door reads servers on AND alpha (founder, 11 Nov 2026)', () => {
     const logic = read('src/lib/family/entry.logic.ts');
-    expect(logic.match(/export const CO_PARENT\w* =/g)).toEqual(['export const CO_PARENT_IN_STORE_BUILD =']);
-    expect(logic).toMatch(/export const CO_PARENT_IN_STORE_BUILD = false;/);
-    expect(logic).toMatch(/export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n\s*return input\.coParent && \(input\.alpha \|\| CO_PARENT_IN_STORE_BUILD\);\n\}/);
+    expect(logic).not.toMatch(/export const CO_PARENT\w* =/);
+    expect(logic).toMatch(/export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n\s*return input\.coParent && input\.alpha;\n\}/);
+    for (const coParent of [true, false]) for (const alpha of [true, false]) {
+      expect(visibleCoParentDoors(coParent, alpha).joinButton).toBe(coParent && alpha);
+      expect(familySurfacesShown({ alpha, coParent })).toBe(coParent && alpha);
+    }
   });
 });
