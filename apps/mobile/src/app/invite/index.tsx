@@ -64,7 +64,7 @@ import { getChild, setActiveChildId, subscribe, updateChild } from '@/lib/store'
 /** A sign-off is at most 30 characters (lib/family/invites.ts). */
 const SIGNS_AS_MAX = 30;
 
-/** Fixed per build (lib/capabilities.ts). Off: nothing is shown (the route sends the person to Tonight), and no token is kept. */
+/** Fixed per build (lib/capabilities.ts). Off: nothing is shown (the route sends the person Home), and no token is kept. */
 export default function JoinBookRoute() {
   return inviteDestination('invite_join', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <JoinBook /> : <Redirect href="/" />;
 }
