@@ -125,7 +125,7 @@ In the Book:
 
 ### B6a. The seal gaps, and the default (ADR 0028 D3)
 
-Source: ADR 0028 "On-device data for Photo with a letter, the sealed letter and Find", draft on branch `docs/adr-photo-seal-find-data-11nov` at `8206c220`, section D3 (PROPOSED, marked [P] there; I read D3 and the lines that mention seals only). PRD NS-06 OQ-B2 is the open founder question. Where this spec and the ADR differ, the ADR default governs until the founder rules.
+Source: ADR 0028 "On-device data for Photo with a letter, the sealed letter and Find", draft on branch `docs/adr-photo-seal-find-data-11nov` at `8206c220`, section D3 (PROPOSED, marked [P] there; I read D3 and the lines that mention seals only). PRD NS-06 OQ-B2 is the open founder question. Where this spec and the ADR differ: on the seal clock, the PRD wins (NS-06-B1 and this spec's FS-R7: one absolute UTC instant, the author's local midnight at sealing); on sync, visibility, who may open and export, the ADR D3 default governs (the stronger rule, no row for other readers) until the founder rules. The one open reconciliation is in the index hand-offs.
 
 | Gap | Default (ADR 0028 D3) | What the design does |
 |---|---|---|
@@ -149,7 +149,7 @@ Row appears with `enter`; Reduce Motion `fadeMs`. Opening early or on the day: a
 | Surface | Status | Source |
 |---|---|---|
 | Home screen (Speak, Type, Not much today, Start from a photo) | The entry | spec 1, 5 |
-| Home Screen and Lock Screen widget | P1 in F04, "first to cut"; opens `/listen?entry=widget` in Ready; static, no child name, no data (F04-REQ-020) | F04 lines 51 and 118 (EVIDENCE) |
+| Home Screen and Lock Screen widget | P1 in F04, "first to cut"; opens Home's Ready state with `source: 'widget'` (the route is an implementation detail of the doorway handler); static, no child name, no data (F04-REQ-020) | F04 lines 51 and 118 (EVIDENCE) |
 | Siri and App Shortcuts, Action button, Control Center control | v1.1 candidate; no Expo path found; native module and spike needed (F04 line 69, UNVERIFIED) | F04 |
 | Apple Watch | Not designed; pm-1's (DEBATES line 93) | |
 
@@ -191,7 +191,7 @@ Door lines.
 | FS-R1 | Firsts follow NX-44 R1 to R12 unchanged, with the control placed in Review and on the letter page only | per NX-44 |
 | FS-R2 | No count. Given any number of firsts or seals, Then no screen, VoiceOver string, export file name or notification contains a count of them | grep test on strings; device |
 | FS-R3 | Nothing offered. Given Home, Then no firsts prompt and no seal prompt appears. The one exception is `seal.homeOpened`: on the day a seal ends, the memory slot may show that letter once (Q4) | navigation test N10 (with the one allow-listed component); device |
-| FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, the PDF book, or the author's export of the book (the one stated exception: the author's export carries the whole letter with its seal date, per ADR 0028 D3, because it is the author's own data; another person's export never does); its row shows the date only. When its seal is removed, by "Open it now" or by the day, it appears in each at once. A letter whose seal has been removed is never hidden again: once a seal ends, by "Open it now" or by the day, it cannot be sealed again (PRD NS-06-B3, PR #795 head `41ed5166`; ADR 0028 D3 "re-seal refused"). To hide something again the parent writes a new letter | unit tests per surface; device |
+| FS-R10 | A sealed letter contributes nothing. Given a sealed letter, Then until it opens it adds nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together, the PDF book, or the author's export of the book (the one stated exception: the author's export carries the whole letter with its seal date, per ADR 0028 D3, because it is the author's own data; another person's export never does); its row shows the date only. When its seal is removed, by "Open it now" or by the day, it appears in each at once. A letter whose seal has been removed is never hidden again: once a seal ends, by "Open it now" or by the day, it cannot be sealed again (PRD NS-06-B3, PR #795 head `28284f79`; ADR 0028 D3 "re-seal refused"). To hide something again the parent writes a new letter | unit tests per surface; device |
 | FS-R4 | Enrich only. Given Review or a letter page, When a parent marks a first or seals, Then that letter changes and no letter is created | unit test |
 | FS-R5 | Seal is display only and truthful. Given a sealed letter, Then its words and recording are unchanged and the UI says "hidden" or an approved word, never a stronger one than the build supports | `security`, `privacy`, `legal` |
 | FS-R6 | No countdown. Given a sealed row, Then it shows a date and nothing that counts down | device; content rules |
@@ -203,7 +203,7 @@ Door lines.
 
 | # | Firsts | Seal | Quick capture |
 |---|---|---|---|
-| J1 | Pass: "I mark a letter as a first, in my own words." | Pass: "I keep a letter closed until a day I choose." | Pass: "I start a letter by talking with one touch." |
+| J1 | Pass: "I mark a letter as a first, in my own words." | Pass: "I close a letter until a day I choose." | Pass: "I start a letter by talking with one touch." |
 | J2 | Pass: enricher, not a tab verb | Pass | Pass: it is Home's Say |
 | J3 | Pass: no starter | Pass: no starter | Pass: doorways only, allow-listed |
 | J4 | Pass: a letter | Pass: a letter | Pass: a letter |

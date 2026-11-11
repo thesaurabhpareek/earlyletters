@@ -12,7 +12,7 @@ The rule that makes it safe: every picture belongs to a letter. A picture with n
 
 Build 13 holds ONE photo per letter (coordinator, 11 Nov). Everything in this spec that handles several photos is marked post-Build 13 and is not built then: the cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo letter layouts, the strip of tiles, and the viewer's swipe between items. In Build 13 the single picker returns one photo; the Photos lens, the letter page and Share show one. Videos are not in Build 13.
 
-Aligned to PRD #795 (head `41ed5166`), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
+Aligned to PRD #795 (head `28284f79`), which wins where it differs: no date chip from the file in Build 13; the picture's VoiceOver label is the fixed phrase "Photo with this letter" (NS-01-R9), or the parent's own typed text when present (NS-01-R21); the Photos lens shows no count and no add control (NS-01-R11).
 
 ## 2. Where a photo can be added (the whole map)
 
@@ -76,7 +76,7 @@ The existing Listen "Ready" state (F04: nothing records until the person taps) w
 - Review (B): the "Photos" section from ML-S5, after the words and small-fix marks, before the chips and Keep. Build 13: one photo per letter, so the control reads as adding a photo and is hidden once one is attached (a Change action replaces it). The multi-photo "Add photos" row is post-Build 13. Words above never move.
 - Letter page (C): after the words, before the signature rows (ML-S8). An "Add a photo" `quiet` object action sits with the other object actions ("Add to this letter" group: photo, a first, a seal; specs 4). It opens the same chooser and changes this letter only. Build 13 shows one photo (the 1-photo layout). The 3 and 8 layouts in ML-S8 are post-Build 13.
 - Own letters only. A co-parent's letter does not get an "Add a photo" action on this phone (HYPOTHESIS, aligned with "nobody changes another author's letter", PRINCIPLES 15; UNVERIFIED against F11).
-- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `41ed5166`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
+- Build 13: no date chip and no place chip from the file. PRD OQ-1 says Build 13 takes NX-39 P0 only; the date chip waits for spike BL-843 (PRD NS-01, PR #795 head `28284f79`, which wins over ML-S6 here). ML-S6 chips are post-Build 13. The parent's typed text and place (ML-S7 fields) stay optional. Take-off behaves as ML-S8.
 
 ## 5. The Photos lens in the Book (D)
 

@@ -68,7 +68,7 @@ Long letters: the row shows the sentence that holds the match, cut on whole word
 | State | Behaviour |
 |---|---|
 | Idle, before typing | Field focused, nothing else. No recent searches (Q2) |
-| Fewer than 3 characters (non-CJK) | Nothing changes on screen and no message appears (PRD NS-02-R3, PR #795 head `41ed5166`, which wins over my earlier hint line). A CJK query matches from 1 character (substring path). Spaces-only counts as under 3 |
+| Fewer than 3 characters (non-CJK) | Nothing changes on screen and no message appears (PRD NS-02-R3, PR #795 head `28284f79`, which wins over my earlier hint line). A CJK query matches from 1 character (substring path). Spaces-only counts as under 3 |
 | Results | Rows as above, p95 300 ms on an SE 3 with 1,000 letters (F09-REQ-015; UNVERIFIED, nothing built). Results appear without a spinner; if over 300 ms the previous list stays, no flash |
 | No match | Existing `book.empty.searchTitle` "No letters with that word yet." (EVIDENCE). One quiet line under it (slot): try another word. No "Write a letter" button (the Book starts nothing) |
 | Empty book | Find is not offered when there is no kept letter (the magnifier is absent, not greyed) |

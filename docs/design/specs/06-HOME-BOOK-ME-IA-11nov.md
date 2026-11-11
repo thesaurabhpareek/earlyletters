@@ -292,7 +292,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 
 | # | Result | Reason |
 |---|---|---|
-| J1 | Pass | Three sentences of 9, 9 and 11 words, one declared verb each (Home "say", Book "read", Me "look after") |
+| J1 | Pass | Three sentences of 9, 10 and 11 words, one declared verb each (Home "say", Book "read", Me "look after") |
 | J2 | Pass | Say, Read, Look after are distinct; N2 enforces it |
 | J3 | Pass | One entry function; N3 enforces it; Book's empty button is a pointer |
 | J4 | Pass | Home: today's take; Book: kept letters; Me: settings |

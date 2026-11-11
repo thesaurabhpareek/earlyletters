@@ -40,7 +40,7 @@ Read 6 first if you only read one: it holds the tab jobs, the states and the tes
 - EVIDENCE, at PR heads: `NAV-TAB-ROLES-10nov.md` at #789 head `c189206b` ("Home | Book | Share | Me", v3); `NX-41` to `NX-44` at #790 head `d80db1f2` (unique tabs, capability map, Home actions and memories, Firsts). Both PRs are drafts or open; their heads move (UNVERIFIED after 10 Nov).
 - EVIDENCE on `origin/develop` `da83fb1e`: `docs/design/*`, `MEMORY-LIBRARY-FLOWS-10nov.md` (ML-S1 to S15), `docs/prd/v2/features/F04-capture.md` and `F09-book.md`, `packages/design-tokens/src/tokens.ts`, `packages/content/src/strings.en.ts`, `apps/mobile/src/components/ui/*`.
 - Not on `develop`: `tab-bar.test.ts` (it lives in the open stack #699 to #764), the `photos.*` strings (NX-33 branch), the `memoryLibrary.*` strings (drafts in a spec only).
-- Tag rule after review: EVIDENCE means I read that line in that file this session. A grep hit or a line range is named as such. Anything quoted from another document is second-hand and UNVERIFIED. PRD #795 (head `41ed5166`) and ADR 0028 (draft, head `8206c220`) were read in part for the points cited; where they differ from these specs they win.
+- Tag rule after review: EVIDENCE means I read that line in that file this session. A grep hit or a line range is named as such. Anything quoted from another document is second-hand and UNVERIFIED. PRD #795 (head `28284f79`) and ADR 0028 (draft, head `8206c220`) were read in part for the points cited; where they differ from these specs they win.
 - Not read, so not relied on: Apple documentation (every Apple behaviour below is UNVERIFIED), the code of the open PRs beyond file lists.
 
 ## 4. Words: how every spec handles copy
@@ -125,7 +125,7 @@ Components, library first (`apps/mobile/src/components/ui/`, read as a directory
 | `content` | Wording that could read as a machine writing: "Writing down what you said", "words being made", "getting ready", "made". CLAUDE.md: never imply AI writes anything. Review these existing and proposed lines | 02, 05, 06 |
 | `qa` | Device passes for every UNVERIFIED, AX5 and VoiceOver tables | each spec's checklist |
 | `user-research` | Five-parent reads for the job sentences, Find, Share and seals | 06 section 11 |
-| `data-architect` | Fields: first mark and label, seal date, photo description, share log (none) | 04, 01, 03 |
+| `data-architect` | Fields: first mark and label, photo description, share log (none). Exact question on the seal clock: reconcile ADR 0028 D3, which stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers, with PRD NS-06-B1, which stores one absolute UTC instant (the author's local midnight at the start of the chosen day, in the device's zone at sealing). Is it one stored field or two? The PRD wins where they differ (FS-R7). Owner: `data-architect`. Answer by Fri 20 Nov 2026 | 04, 01, 03 |
 
 ## 9. Open design questions, all six, each with a default
 
