@@ -169,6 +169,8 @@ What would flip it (informational): a printed book (BRAND.md says "Not promised 
 | SH-R7 | Accessibility. Section 6 holds in both themes with Reduce Motion and Reduce Transparency; the preview is read whole | device |
 | SH-R8 | Truth. Given the Shown line, Then no word says safe, secure or private about the recipient's copy | `legal`, content rules test |
 | SH-R9 | Locale and script. Given a Devanagari letter, Then the text reaches the share sheet unchanged (no font-dependent image in this scope) | device |
+| SH-R11 | File names hold no personal data (PRD NS-05-R6, head `28284f79`). Given any file handed to the share sheet, Then neither its name nor its metadata holds the child's name, an email, a device name or an app account id; a picture's file name is the letter's date and nothing else | unit test on the payload builder |
+| SH-R12 | No temporary file survives (PRD NS-05-R10). Given the share sheet is dismissed, a send fails, or the app is killed, Then any temporary file the app made is deleted at the next launch at the latest | unit test; device |
 
 ## 10. The 12-line job-clarity review
 

@@ -49,7 +49,7 @@ Renames this implies in code (labels only; keep routes): Tonight to Home, You to
 5. At most one memory slip, flat, opening the letter in the Book (NX-43 R2 to R8). Or one day card (ML-S10), never both.
 6. The Plus line, only when it applies.
 
-Home lists no kept letters and starts nothing but a take.
+Home lists no kept letters and starts nothing but a letter.
 
 ### 3.2 Wireframe (a week in; fictional Asha)
 
@@ -89,7 +89,7 @@ Home lists no kept letters and starts nothing but a take.
 
 ### 4.1 What it shows
 
-The cover band (title, age in words, Read together, child switcher when there is more than one book); the Find magnifier (spec 2); one `LensRow` only when a second lens has material (specs 1 and 4); the months, newest first, as raised letter cards; a quiet-day row where a mark exists; flat closed rows for sealed letters (spec 4). The gear leaves the Book once Me is found (device pass), so there is one door to settings.
+The cover band (title, age in words, Read together, child switcher when there is more than one book); the Find magnifier (spec 2); one `LensRow` only when a second lens has material (specs 1 and 4); the months, newest first, as raised letter cards; a quiet-day row where a mark exists; flat closed rows for the author's own sealed letters, on the author's phones only; another reader sees no row (spec 4, B6a). The gear leaves the Book once Me is found (device pass), so there is one door to settings.
 
 ### 4.2 Wireframe
 
@@ -102,7 +102,7 @@ The cover band (title, age in words, Read together, child switcher when there is
  | SAT 14 OCT   "We went to the park"   |
  +--------------------------------------+
  A quiet day                              <- flat row
- A closed letter. Opens 12 Jun 2044.      <- flat row (if spec 4 is built)
+ A closed letter. Opens 12 Jun 2044.      <- flat row, the author only (if spec 4 is built)
 ```
 
 Letter page: read it, hear it, then the object actions: Add a photo, This was a first, Close until a day, Share this letter. Each opens a sheet or row and changes this letter only.
@@ -272,7 +272,7 @@ The test file runs the same checker over fixtures and expects each one to fail w
 | N5a: Book empty button calls `startCapture` | N5 |
 | N5b: Book empty button pushes `/write` | N5 |
 | N6a: label "Our Book" | N6(a) |
-| N6b: label "Tonight" (not in the glossary list used by the fixture) | N6(b) |
+| N6b: label "Gallery" (not in the glossary list used by the fixture) | N6(b) |
 | N6c: `copy.tabs.share` | N6(c) |
 | N6d: `copy.tabsJob.family` | N6(d) |
 | N6e: `copy.tabs.home` is an object | N6(e) |
@@ -295,7 +295,7 @@ Limits (said plainly): a static scan cannot see a capture started by a string-bu
 | J1 | Pass | Three sentences of 9, 10 and 11 words, one declared verb each (Home "say", Book "read", Me "look after") |
 | J2 | Pass | Say, Read, Look after are distinct; N2 enforces it |
 | J3 | Pass | One entry function; N3 enforces it; Book's empty button is a pointer |
-| J4 | Pass | Home: today's take; Book: kept letters; Me: settings |
+| J4 | Pass | Home: today's letter; Book: kept letters; Me: settings |
 | J5 | Open | Needs a five-parent read of the headings |
 | J6 | Pass | Home: Speak and Type equal (the one deliberate pair); Book: reading; Me: the account card |
 | J7 | Pass | One memory slip is the only cross-tab doorway |
