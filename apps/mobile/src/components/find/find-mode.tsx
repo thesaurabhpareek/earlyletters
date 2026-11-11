@@ -121,10 +121,10 @@ export function FindMode({ child, entries, onClose, onOpen }: FindModeProps) {
     <Animated.View
       entering={FadeIn.duration(tokens.motion.swapMs).reduceMotion(ReduceMotion.System)}
       className="bg-background"
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingTop: insets.top + 4 }}
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, paddingTop: insets.top + tokens.space[1] }}
       testID="find.mode">
       <View className="flex-row flex-wrap items-center gap-2 px-5 pb-3">
-        <View className="flex-1" style={{ minWidth: 220 }}>
+        <View className="flex-1" style={{ minWidth: tokens.target.min * 5 }}>
           <TextField
             ref={input}
             label={findCopy.fieldLabel}
@@ -180,7 +180,7 @@ export function FindMode({ child, entries, onClose, onOpen }: FindModeProps) {
           keyExtractor={(h: FindHit) => h.id}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
-          contentContainerStyle={{ paddingBottom: insets.bottom + 40 }}
+          contentContainerStyle={{ paddingBottom: insets.bottom + tokens.space[9] }}
           renderItem={({ item }: { item: FindHit }) => {
             const entry = byId.get(item.id) as Entry;
             return <FindResultRow hit={item} dateline={entryDateline(child, entry)} datelineA11y={entryDatelineA11y(child, entry)} onPress={open} />;
