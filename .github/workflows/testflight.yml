@@ -120,13 +120,6 @@ jobs:
           # the same name (GitHub's secrets documentation, not re-read here), so delete the interim repository
           # EXPO_TOKEN after the first green run with this one (AF-07, AF-22): then nothing can fall back to it.
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-          # Builds 10 and 11 logged "Failed to authenticate with the App Store Connect API key from EAS credentials
-          # service ... Failed to display prompt: Apple Team ID" and then "No complete App Store Connect credentials,
-          # skipping TestFlight setup". The key stored in EAS shows Team: None, so a non-interactive run has no team
-          # to use. The Team ID is an identifier, not a secret: it is on the distribution certificate and the
-          # provisioning profile in the same EAS project, and in every signed build. UNVERIFIED: that eas-cli 24.10.0
-          # reads EXPO_APPLE_TEAM_ID for this. The next run's log is the test: the warning should be gone.
-          EXPO_APPLE_TEAM_ID: VX2Z7FGV23
         run: |
           # Fail without printing the token, a command line that contains it, or the environment.
           if [ -z "$EXPO_TOKEN" ]; then echo "EXPO_TOKEN is not set on the testflight environment"; exit 1; fi
