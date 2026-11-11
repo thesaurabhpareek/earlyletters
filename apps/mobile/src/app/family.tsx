@@ -26,7 +26,7 @@
  * Motion: the first time this phone shows the co-parent's row it enters and carries the 1.6 s wash, once. A
  * pending row that appears after the list was first shown (an invite just shared) enters; Cancel invite
  * collapses its row and says "Invite cancelled." as the tab's toast. A sheet's closing line (the invite's
- * "The invite waits on the Family tab until they join.") shows as that toast too (components/family/family-notice.ts).
+ * "The invite waits until they join.") shows as that toast too (components/family/family-notice.ts).
  *
  * Not a tab in any build (founder, 11 Nov 2026: Home, Book, Me). This is a pushed route, /family, reached from a book's
  * settings row when the book has a co-parent (child-settings.logic.ts FAMILY_TAB_HREF). Where co-parent sharing is not
@@ -154,7 +154,7 @@ function FamilyShared() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      // A sheet that just closed over this page left its line here (the invite's "waits on the Family tab").
+      // A sheet that just closed over this page left its line here (the invite's "waits until they join").
       const note = familyNotice.take();
       if (note) toast.show({ message: note });
     }, [load, toast]),

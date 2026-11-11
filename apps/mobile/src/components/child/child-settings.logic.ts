@@ -87,12 +87,14 @@ export type BookRow = { value?: string; href: string };
 export const FAMILY_TAB_HREF = '/family';
 
 /**
- * "Write this book together": the invite (one parent) or the family page (two), only where this build has the flow
+ * "Write this book together": the invite (one parent, no invite pending) or the family page (two parents, or one parent
+ * while an invite is pending, so Share again and Cancel invite stay reachable; Karma ruling, 11 Nov 2026), only where this build has the flow
  * (inviteDestination). Where it does not, there is NO row: no "Coming soon" value, no footer, no chevron, no screen.
  * `invite` is where the invite entry leads in this build (lib/family/entry.logic.ts inviteHref).
  */
-export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string }): BookRow | null {
+export function bookRow(input: { serverFeatures: boolean; alpha: boolean; coParent: string | null; invite: string; /** An invite the server still lists for this book (open or expired). Absent: none. */ pendingInvites?: boolean }): BookRow | null {
   if (inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'coming_soon') return null;
   if (input.coParent) return { value: input.coParent, href: FAMILY_TAB_HREF };
+  if (input.pendingInvites) return { href: FAMILY_TAB_HREF };
   return { href: input.invite };
 }
