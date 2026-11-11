@@ -49,4 +49,15 @@ cd apps/mobile && npx eas-cli@24.10.0 env:list --environment production   # name
 
 ## 5. Must be true before this profile is built (not checked by code)
 
-`scribe-prod` exists and holds the full schema (#602, #634, #636, #637 merged and applied); session security (#657, #632, #633) and #617 merged; the purge worker runs on production; the legal pages are live; the privacy label is answered as the worksheet says; and the D-### entry and the D-124 go/no-go are recorded. The runbook is `proposals/prod-bringup-runbook.md`.
+`scribe-prod` exists and holds the full schema (#602, #634, #636, #637 and #700 merged and applied; see the table below); session security (#657, #632, #633) and #617 merged; the purge worker runs on production; the legal pages are live; the privacy label is answered as the worksheet says; and the D-### entry and the D-124 go/no-go are recorded. The runbook is `proposals/prod-bringup-runbook.md`.
+
+Schema prerequisites, merge state checked with the GitHub API on 11 Nov 2026 (all merged to `develop`; whether each migration is applied on the hosted database is not checked by code and the founder must confirm it):
+
+| PR | Merged to `develop` | Apply requirement |
+|---|---|---|
+| #602 | Yes, 10 Nov 2026 | Apply to `scribe-prod` and confirm |
+| #634 | Yes, 10 Nov 2026 | Apply to `scribe-prod` and confirm |
+| #636 | Yes, 10 Nov 2026 | Apply to `scribe-prod` and confirm |
+| #637 | Yes, 10 Nov 2026 | Apply to `scribe-prod` and confirm |
+| #700 | Yes, 10 Nov 2026 | `supabase/migrations/20261109000000_child_name_optional.sql` is **not applied** on the hosted database. Apply it before the servers-on build (supabase/APPLY.md; CI on a tag only, D-041; needs red-team review and the `approve-migration` label). Without it the server still requires a non-empty child name, which the app now treats as optional |
+| #657, #632, #633, #617 (session security) | Yes, 11 Nov 2026 | Code only, no migration step here |

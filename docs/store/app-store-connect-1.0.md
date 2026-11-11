@@ -5,6 +5,8 @@ Condensed from the review lane's work of Sun 1 Nov 2026 (ASC fields, risk regist
 `packages/content/src/store.en.ts`; this file holds everything else App Store Connect asks for. Notes for Review are in
 `notes-for-review-1.0.txt`.
 
+> **SUPERSEDED FOR BUILD 12 (privacy label and the "no account" description line).** This file was written for the servers-off build. Build 12 is the first store build (`production` profile, server features on, sign-in required, recording backup and status report off; D-157, D-160). For Build 12 the "Data Not Collected" answer in section 4 and the "There is no account to make ... Data Not Collected" sentence in the draft description below are **not true and must not be entered or published**. The label for Build 12 is in `docs/legal/app-store-privacy-labels.md` (2.2.0, sections 3.2 and 3.4, Build 12 row) and `docs/store/compliance/privacy-labels-apple.md` (Profile B), both subject to counsel. TODO for counsel and founder: the Build 12 description wording about accounts and privacy needs their call before submission; nothing in this file supplies it.
+
 Status: **at risk** for a Tue 1 Dec submission. Three blockers sit outside App Store Connect: the live Privacy Policy
 and Terms pages cover only the website, the Support URL has no page behind it, and (fixed by this change) the old
 description promised a delete control build 1 does not have.
@@ -62,7 +64,7 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 |---|---|---|
 | Privacy Policy URL | `https://earlyletters.com/privacy` | **BLOCKED**: the live page covers only the website. Publish the app policy (`docs/legal/privacy-policy.md` 3.0.0) first |
 | User Privacy Choices URL | Empty | READY |
-| Data collection | Data Not Collected (D-088, D-095, D-124 item 3) | READY on three conditions: a proxy capture shows only packs, Hugging Face and Apple; counsel Q12 on IP addresses; no analytics or crash SDK in the build |
+| Data collection | **SUPERSEDED for Build 12, do not use.** Build 12 label: see `docs/legal/app-store-privacy-labels.md` 3.2 and 3.4 and `docs/store/compliance/privacy-labels-apple.md` Profile B (servers on, sign-in required; subject to counsel). Old answer, Build 1 only: Data Not Collected (D-088, D-095, D-124 item 3) | Build 1 only, was READY on three conditions: a proxy capture shows only packs, Hugging Face and Apple; counsel Q12 on IP addresses; no analytics or crash SDK in the build |
 | Tracking | No (no IDFA, no ATT prompt) | READY |
 | Publish | Click Publish after saving | FOUNDER |
 
@@ -169,6 +171,8 @@ Draft description:
 Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows positioning A (D-139).
 
 ```text
+SUPERSEDED FOR BUILD 12: the third paragraph below ("There is no account to make ...") is untrue for Build 12. TODO for counsel and founder: correct wording; see the banner at the top of this file. Do not paste this draft as is.
+
 Early Letters keeps letters to your child, in your own words and voice. At the end of the day a parent tells their child one thing about it, in a sentence or a few minutes. The app writes the words down on the iPhone, keeps the recording beside them, and files the letter by the child's month of age. Years later the child can read it, and hear how their parent sounded when they said it.
 
 What is different: the app never rewrites a parent's words. Speech-to-text runs on the device. The app only fixes small slips, like an um, a repeat or a name spelled the family's way, and marks every fix so the parent can tap it and put it back. Typed letters stay exactly as typed. The original recording is always kept unchanged.
