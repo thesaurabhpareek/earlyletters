@@ -248,14 +248,16 @@ export default function ConsentSteps() {
             </>
           }>
           <SheetTitle>{c.title}</SheetTitle>
+          {/* The account line is one element straight under the title, so "This account" below it is already named, and the
+              body and the recordings line read together (VoiceOver). What the words promise is account-books.logic.ts claimKeepOutcome's. */}
           {hasBook ? (
             <>
-              <SheetBody>{c.bodyHasBook}</SheetBody>
               {signedIn ? (
                 <Text variant="footnote" tone="muted" accessibilityLabel={signedIn.label}>
                   {signedIn.text}
                 </Text>
               ) : null}
+              <SheetBody>{c.bodyHasBook}</SheetBody>
               <SheetBody muted>{c.recordingsNote}</SheetBody>
             </>
           ) : (

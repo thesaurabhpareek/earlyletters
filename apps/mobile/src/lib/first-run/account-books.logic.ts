@@ -106,6 +106,15 @@ export function keepEnabled(kind: AccountKind | null): boolean {
  * and has no destination parameter: it claims every local book as its own book. So an account that already has a book gets
  * the phone's book as a second book. `mergeBack()` (merge-back.logic.ts) still describes the earlier proposal for these
  * cases ("In the existing book", an empty book removed); Build 12 does not use those phases, and this function says so.
+ *
+ * When the claim screen's lines are true (test/first-run-new-account.test.ts runs `takeOwnership` on a real phone database):
+ *  - "Nothing is deleted": `takeOwnership` deletes no book, letter, draft or recording and never changes a letter's words;
+ *    it sets owner and state columns and queues uploads.
+ *  - "added to it as a second book": each local book the server accepts (a device UUIDv7 id, and a birthday or due date) goes up
+ *    under its own id as `pending`. A phone with several books adds each one. A book the server would refuse stays on the
+ *    phone as `refused`, is not added and is not deleted; the screen cannot know that before the tap.
+ *  - "Recordings are kept on the phone that made them": the wire carries only that a recording is kept on the device.
+ *  - "This account already has a book" shows only when `sync_books` answered with a book (`claimWords`).
  */
 export interface ClaimKeepOutcome {
   addsAsSecondBook: boolean;

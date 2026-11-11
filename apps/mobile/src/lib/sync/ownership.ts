@@ -89,6 +89,34 @@ export function takeOwnership(db: SqlDb, userId: string, ctx: EnqueueContext): O
   return result;
 }
 
+/**
+ * A phone with nothing on it has no owner to protect. `takeOwnership` writes `sync.ownerId` even when the phone holds no
+ * book (the first sign-in on an empty phone), and nothing cleared it at sign-out, so a second account that signed in on the
+ * same empty phone ("Use another account", "Try another account") met `AccountMismatchError`, and its sync stopped without
+ * a word. This clears the owner when, and only when, nothing on the phone could belong to that account:
+ *  - `holdsAnyRow(db)` is false: pass `phoneHoldsAnyRow` (lib/auth/account-claim.logic.ts, re-exported by auth-store.ts), the
+ *    claim screen's own question. It counts any row in `children` or `entries`, in any state (hidden, refused and deleted ones
+ *    too), and any draft held at the Keep gate, and errs towards "not empty". It is passed in, not imported, because that
+ *    module is read only by auth code (test/auth-kill-path.test.ts);
+ *  - nothing waits in `sync_outbox` (a queued erase can outlive its row, and must not go up under another account).
+ * In one transaction. The held-draft cursor goes with the owner: it is the first account's place in its own held drafts, and the
+ * next account's pull must not start there. A phone that holds anything keeps its owner (and the cursor), so another account
+ * still meets the mismatch and nothing moves between accounts. Deletes nothing else. Returns whether it released.
+ */
+export function releaseEmptyOwner(db: SqlDb, holdsAnyRow: (db: SqlDb) => boolean): boolean {
+  let released = false;
+  db.transaction(() => {
+    if (readSetting(db, SYNC_SETTING.owner) === null) return;
+    if (holdsAnyRow(db)) return;
+    const waiting = db.get<{ n: number }>('SELECT EXISTS (SELECT 1 FROM sync_outbox) AS n');
+    if (!waiting || Number(waiting.n) !== 0) return; // an unreadable answer is "not empty"
+    writeSetting(db, SYNC_SETTING.owner, null);
+    writeSetting(db, SYNC_SETTING.heldCursor, null);
+    released = true;
+  });
+  return released;
+}
+
 /** Plus bought later (or a fixed book): send a book the server refused again, with its letters. */
 export function retryRefusedBook(db: SqlDb, childId: string, ctx: EnqueueContext): void {
   db.transaction(() => {

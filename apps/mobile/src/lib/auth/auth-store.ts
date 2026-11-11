@@ -23,6 +23,9 @@
 import { needsAccountClaim } from './account-claim.logic';
 import { authUserId, canSync, initialAuthState, type AuthState } from './machine.logic';
 
+/** For lib/sync (releaseEmptyOwner): the claim screen's own "does this phone hold anything" question, so sync reads it from here. */
+export { phoneHoldsAnyRow } from './account-claim.logic';
+
 let snapshot: AuthState = initialAuthState;
 const listeners = new Set<(s: AuthState) => void>();
 const signedInListeners = new Set<(userId: string) => void>();

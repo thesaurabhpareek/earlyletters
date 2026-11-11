@@ -63,8 +63,10 @@ describe('inviteScreensHidden() reads the server switch (surfaces.ts wiring)', (
     expect((await load({ servers: true, alpha: true })).inviteScreensHidden()).toBe(false);
     expect((await load({ servers: false, alpha: true })).inviteScreensHidden()).toBe(false);
   });
-  it('familySurfacesOn is the join-door rule', async () => {
-    expect((await load({ servers: true, alpha: true })).familySurfacesOn()).toBe(true);
-    expect((await load({ servers: true, alpha: false })).familySurfacesOn()).toBe(false);
+  it('there is ONE reader of the switch: surfaces.ts exports inviteScreensHidden only, and passes the build flag as it is (review A mutant)', async () => {
+    expect(Object.keys(await load({ servers: true, alpha: false })).sort()).toEqual(['inviteScreensHidden']);
+    const t = src('lib/family/surfaces.ts');
+    expect(t).toContain('coParent: capabilities.coParent, alpha: PLUS_ALPHA }');
+    expect(t).not.toMatch(/alpha: (true|false)|familySurfacesOn/);
   });
 });

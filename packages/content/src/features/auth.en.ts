@@ -165,12 +165,17 @@ export const authCopy = {
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
-    // Account-first slice 4a (exec council 9 Nov 2026, D; RW-21, RW-23, RW-27). Shown when the account already has a book
-    // and this phone holds a book or letters: "Keep in this account" adds the phone's book as a second book. Nothing is
-    // merged or deleted, and the recordings stay on the phone. Each says where letters go, so counsel reads it, and each
-    // needs founder word approval.
+    // Account-first slice 4a (exec council decision, 9 Nov 2026, D). Shown when the account already has a book and this phone
+    // holds a book or letters: "Keep in this account" adds the phone's book to it as a second book, and nothing is merged or
+    // deleted (the recordings stay on the phone that made them). Each says where letters go, so counsel reads it, and each
+    // needs founder word approval. What is true: every book the server accepts is added as its own book; one it would refuse
+    // (no birthday or due date, or an id the phone did not make) stays on the phone and is not added. The screen cannot know
+    // that before the tap. Nothing is deleted either way (apps/mobile/test/first-run-new-account.test.ts runs the claim on a
+    // real phone database).
     bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
-    recordingsNote: 'The recordings are kept on this phone.',
+    // Not new words: the registered sentence of `sheet.bodies.settings` (and `first_letter`, `account.signedOutBody`), word for
+    // word. A test pins that it is the second sentence of `sheet.bodies.settings`.
+    recordingsNote: 'Recordings are kept on the phone that made them.',
     keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 

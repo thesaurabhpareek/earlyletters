@@ -26,16 +26,18 @@ import {
   currentAuthUserId,
   onInviteAccepted,
   onSignedIn,
+  phoneHoldsAnyRow,
   registerUploadQueue,
   subscribeAuth,
   syncAllowed,
 } from '../auth/auth-store';
+import { isSignedIn } from '../auth/machine.logic';
 import { serverFeaturesEnabled } from '../capabilities';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { getSupabaseOrNull } from '../supabase/client';
 import { createSyncEngine, type SyncEngine } from './engine';
 import { SYNC_SETTING, conflictCount, pendingCount, readSetting, rejectedUnseenCount } from './outbox';
-import { AccountMismatchError, takeOwnership } from './ownership';
+import { AccountMismatchError, releaseEmptyOwner, takeOwnership } from './ownership';
 import { onOutboxChange } from './signal';
 import type { RpcResult, SupabaseLike, SyncReport, SyncStatus } from './types';
 
@@ -180,6 +182,22 @@ function claim(userId: string): void {
   }
 }
 
+/**
+ * A session just ended, and the phone holds nothing (no book, no letter, no held draft, nothing queued): it has no owner, so
+ * the next account to sign in on it claims it afresh instead of meeting `account_mismatch` with no word said
+ * (ownership.ts releaseEmptyOwner; "Use another account" and "Try another account"). A phone that holds anything keeps its owner.
+ */
+function releaseEmptyPhone(): void {
+  try {
+    if (releaseEmptyOwner(localSqlDb(), phoneHoldsAnyRow)) {
+      mismatchUser = null; // the status stops saying account_mismatch for an owner that is forgotten
+      notifyStoreChanged();
+    }
+  } catch {
+    // An unreadable store keeps its owner: the safe direction.
+  }
+}
+
 function ensureEngine(): void {
   const userId = currentAuthUserId();
   const client = getSupabaseOrNull();
@@ -228,7 +246,16 @@ export function startSync(): () => void {
     claim(userId);
     ensureEngine();
   }));
-  unsubs.push(subscribeAuth(() => ensureEngine()));
+  // The sign-out has finished when a signed-in state becomes signed out (`signOut()` answers when it is requested, not when it
+  // is done). The engine is stopped first, so nothing can claim the phone again before its owner is released.
+  // At boot a released session counts as signed in; any later state tells (a sign-out always passes through `signingOut`).
+  let wasSignedIn = currentAuthUserId() !== null;
+  unsubs.push(subscribeAuth((s) => {
+    const ended = wasSignedIn && s.status === 'signedOut';
+    wasSignedIn = isSignedIn(s);
+    ensureEngine();
+    if (ended) releaseEmptyPhone();
+  }));
   unsubs.push(onInviteAccepted(() => engine?.requestSync('invite')));
   unsubs.push(onOutboxChange(() => engine?.requestSync('save')));
   const app = AppState.addEventListener('change', (s) => {
