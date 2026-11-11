@@ -4,7 +4,7 @@
  * Tonight's dateline, the Settings Children row, the cover, and the prompts that ask about the name. Fixtures: the
  * fictional family Asha only (CLAUDE.md).
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PROMPTS } from '@scribe/content';
 import { isNameThemed, selectPrompt } from '@scribe/core';
@@ -159,6 +159,46 @@ describe('[NX-31-R3] prompts that ask about the name are skipped for a nameless 
   it('[NX-31-R3] the screens pass the stored name to the prompt input', () => {
     expect(code('app/(tabs)/index.tsx')).toContain('childName }), PROMPTS)');
     expect(code('app/write.tsx')).toContain('childName: child.name');
+  });
+});
+
+// packages/content/test/nameless-child.test.ts renders only the prompts a screen can draw, and leaves out the kinds below
+// (hard, together, family). This is what keeps them out: every selection a screen makes asks for the same three things.
+describe('[NX-31-R3] no screen asks for a hard, together or family prompt', () => {
+  const births = ['2026-10-20', '2026-06-01', '2026-02-01', '2025-09-01', '2022-01-01', null, '2027-01-15'];
+  const gaps = [null, 0, 1, 4, 5, 6, 40];
+  it('[NX-31-R3] no screen asks for a hard, together or family prompt: the input is always hardStretch false, role parent, together false', () => {
+    for (const birthday of births) {
+      for (const daysSinceLastEntry of gaps) {
+        for (const childName of [undefined, '', 'Asha']) {
+          for (let shuffle = 0; shuffle < 6; shuffle++) {
+            const input = tonightPromptInput({ birthday, today: TODAY, daysSinceLastEntry, recentKeys: [], shuffle, leftKey: 'opening.any.x', shownKeys: ['gap.any.y'], seedTag: 'write', childName });
+            // If these change, change SCREEN_ASKS in packages/content/test/nameless-child.test.ts with them.
+            expect({ hardStretch: input.hardStretch, role: input.role, together: input.together }).toEqual({ hardStretch: false, role: 'parent', together: false });
+            expect(['opening', 'gap']).toContain(selectPrompt(input, PROMPTS).kind);
+          }
+        }
+      }
+    }
+  });
+  it('[NX-31-R3] Another thought on Write draws only opening and gap prompts, press after press', () => {
+    for (const birthday of births) {
+      for (const daysSinceLastEntry of gaps) {
+        let shown: string[] = [];
+        for (let press = 1; press <= 30; press++) {
+          const r = anotherThought({ birthday, today: TODAY, daysSinceLastEntry, recentKeys: [], shown, press, childName: 'Asha' }, PROMPTS);
+          expect(['opening', 'gap']).toContain(r.prompt.kind);
+          shown = r.shown;
+        }
+      }
+    }
+  });
+  it('[NX-31-R3] every selectPrompt call in the app goes through tonightPromptInput, so nothing else sets those flags', () => {
+    const files = readdirSync(SRC, { recursive: true, encoding: 'utf8' }).filter((f) => /\.tsx?$/.test(f));
+    const calls = files.map((f) => ({ f: f.split('\\').join('/'), text: code(f) })).map(({ f, text }) => ({ f, all: text.match(/\bselectPrompt\(/g)?.length ?? 0, viaInput: text.match(/\bselectPrompt\(tonightPromptInput\(/g)?.length ?? 0 }));
+    const callers = calls.filter((c) => c.all > 0);
+    expect(callers.map((c) => c.f).sort()).toEqual(['app/(tabs)/index.tsx', 'components/tonight/prompt.logic.ts']);
+    for (const c of callers) expect(c.viaInput, c.f).toBe(c.all);
   });
 });
 
