@@ -177,6 +177,89 @@ describe('auth state machine: consent after sign-in (LEGAL-REQ-001, -002, -006)'
   });
 });
 
+describe('[BL-503] a declined sensitive-data consent is not undone by answering Terms or the age line again (LEGAL-REQ-006)', () => {
+  const DECLINED_GATE: SyncGate = { termsCurrent: true, ageAttested: true, sensitiveData: false, contentAllowed: false };
+  const declinedAndReady = () =>
+    run([{ type: 'RESTORED', userId: U }, { type: 'GATE_LOADED', gate: DECLINED_GATE, sensitiveDeclined: true }]);
+
+  it('the starting point: Terms current, age attested, decline recorded gives ready with sync off', () => {
+    expect(declinedAndReady()).toEqual({ status: 'ready', userId: U, sync: 'off' });
+  });
+
+  it('Terms are no longer current on a later read; accepting them again leaves sync off', () => {
+    const s = run(
+      [
+        { type: 'GATE_LOADED', gate: { ...DECLINED_GATE, termsCurrent: false }, sensitiveDeclined: true },
+        { type: 'CONSENT_RECORDED', step: 'terms', accepted: true },
+      ],
+      declinedAndReady(),
+    );
+    expect(s).toEqual({ status: 'ready', userId: U, sync: 'off' });
+    expect(canSync(s)).toBe(false);
+  });
+
+  it('the age line asked again: accepting it leaves sync off', () => {
+    const s = run(
+      [
+        { type: 'GATE_LOADED', gate: { ...DECLINED_GATE, ageAttested: false }, sensitiveDeclined: true },
+        { type: 'CONSENT_RECORDED', step: 'age', accepted: true },
+      ],
+      declinedAndReady(),
+    );
+    expect(s).toEqual({ status: 'ready', userId: U, sync: 'off' });
+    expect(canSync(s)).toBe(false);
+  });
+
+  it('Terms and the age line both asked: still off, whichever order they are answered', () => {
+    const s = run(
+      [
+        { type: 'GATE_LOADED', gate: { ...DECLINED_GATE, termsCurrent: false, ageAttested: false }, sensitiveDeclined: true },
+        { type: 'CONSENT_RECORDED', step: 'terms', accepted: true },
+      ],
+      declinedAndReady(),
+    );
+    expect(s).toEqual({ status: 'ready', userId: U, sync: 'off' });
+  });
+
+  it('the same from a launch (checkingConsent) rather than a foreground read', () => {
+    const s = run([
+      { type: 'RESTORED', userId: U },
+      { type: 'GATE_LOADED', gate: { ...DECLINED_GATE, termsCurrent: false }, sensitiveDeclined: true },
+      { type: 'CONSENT_RECORDED', step: 'terms', accepted: true },
+    ]);
+    expect(s).toEqual({ status: 'ready', userId: U, sync: 'off' });
+  });
+
+  it('unchanged: a decline answered in the same pass gives off; every step accepted gives on; a new account that accepts Terms then sensitive gives on', () => {
+    expect(
+      run([
+        { type: 'RESTORED', userId: U },
+        { type: 'GATE_LOADED', gate: NEW_ACCOUNT, sensitiveDeclined: false },
+        { type: 'CONSENT_RECORDED', step: 'terms', accepted: true },
+        { type: 'CONSENT_RECORDED', step: 'sensitive', accepted: false },
+      ]),
+    ).toEqual({ status: 'ready', userId: U, sync: 'off' });
+    expect(
+      run([
+        { type: 'RESTORED', userId: U },
+        { type: 'GATE_LOADED', gate: { ...FULL, termsCurrent: false, contentAllowed: false }, sensitiveDeclined: false },
+        { type: 'CONSENT_RECORDED', step: 'terms', accepted: true },
+      ]),
+    ).toEqual({ status: 'ready', userId: U, sync: 'on' });
+  });
+
+  it('turning it on again is a gate read that finds the consent granted: sync on, and the memory of the decline is gone', () => {
+    const s = run(
+      [
+        { type: 'GATE_LOADED', gate: { ...DECLINED_GATE, termsCurrent: false }, sensitiveDeclined: true },
+        { type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false },
+      ],
+      declinedAndReady(),
+    );
+    expect(s).toEqual({ status: 'ready', userId: U, sync: 'on' });
+  });
+});
+
 describe('auth state machine: signing out never loses a letter (PRD A F6.4, A-REQ-033)', () => {
   const ready = run([{ type: 'RESTORED', userId: U }, { type: 'GATE_LOADED', gate: FULL, sensitiveDeclined: false }]);
 
