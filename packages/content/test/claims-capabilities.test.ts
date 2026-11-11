@@ -26,9 +26,21 @@
  */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { readdirSync } from 'node:fs';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import * as contentExports from '../src';
 import { en, features, onboardingStories, permissions, storeListing } from '../src';
 import { site as webSite } from '../../../apps/web/src/content/site';
+import {
+  CLAIMS_LEDGER,
+  DENIAL_CLAIMS,
+  FREQUENCY_CLAIMS,
+  MEDIA_CAPABILITIES,
+  MEMORY_LIBRARY_PATHS_WHEN_PRESENT,
+  STAYS_ON_PHONE_CLAIMS,
+  SURFACING_VERBS,
+  type MediaCapability,
+} from './support/claims-ledger';
 import { get, leaves, type Leaf } from './support/copy-surfaces';
 import { staleWebExclusions, stringsIn, webSourceLeaves } from './support/web-strings';
 
@@ -46,6 +58,16 @@ type Profile = {
   sync: boolean;
   coParent: boolean;
   backup: boolean;
+  /**
+   * The Memory Library phase switches (NX-39 v2 section 3, R55), read from capabilities.ts. All six are off in every
+   * profile today; turning one on is a decision of its own, and the ledger rows that need it then pass.
+   */
+  photos: boolean;
+  mediaMetadata: boolean;
+  mediaLibrary: boolean;
+  moments: boolean;
+  mediaBackground: boolean;
+  occasions: boolean;
   /**
    * Not a build switch, a fact of the edit engine: the default Word for word view removes ums and repeats, and the
    * speech model can mishear, so "every word exactly as you said it" is not true of the words (D-086; D-133 item 2,
@@ -76,6 +98,12 @@ beforeAll(async () => {
     sync: capabilities.sync,
     coParent: capabilities.coParent,
     backup: capabilities.backup,
+    photos: capabilities.photos,
+    mediaMetadata: capabilities.mediaMetadata,
+    mediaLibrary: capabilities.mediaLibrary,
+    moments: capabilities.moments,
+    mediaBackground: capabilities.mediaBackground,
+    occasions: capabilities.occasions,
     wordsExactlyAsSaid: false,
   };
   // Read every surface once (the web source is parsed with the TypeScript compiler); the tests below share it.
@@ -91,7 +119,21 @@ afterAll(() => {
 // The rules: claim patterns and the capability that has to be on for the claim to be true.
 // ---------------------------------------------------------------------------
 
-type RuleId = 'languages' | 'coParent' | 'sync' | 'backup' | 'exactWords';
+type RuleId =
+  | 'languages'
+  | 'coParent'
+  | 'sync'
+  | 'backup'
+  | 'exactWords'
+  // Memory Library (NX-39 R1, R44, R55): one rule per ledger row, then the denials, the frequency ban and the rest.
+  | `ledger${number}`
+  | 'denyMetadata'
+  | 'denyLibrary'
+  | 'denyBackground'
+  | 'inBackground'
+  | 'readFrequency'
+  | 'staysOnPhone'
+  | 'surfacing';
 
 type Rule = {
   id: RuleId;
@@ -203,7 +245,47 @@ const RULES: readonly Rule[] = [
     trueWhen: (p) => p.wordsExactlyAsSaid,
     needs: 'words kept exactly as said, which the default Word for word view does not do (D-133)',
   },
+  ...mediaRules(),
 ];
+
+/**
+ * The Memory Library rules (BL-863). Every rule is made from data in support/claims-ledger.ts:
+ *  - one `ledgerN` rule per ledger row that has a pattern, true only when a capability the row needs is on;
+ *  - three denial rules, true only while the capability that would falsify them is OFF ("never read a photo's
+ *    location" is a claim that stops being true the day the build reads one);
+ *  - `inBackground`, true only when mediaBackground is on (the denial lines are taken out first);
+ *  - `readFrequency`, `staysOnPhone` and `surfacing`, true in no profile (`staysOnPhone` can be registered, below).
+ */
+function mediaRules(): Rule[] {
+  const ledger: Rule[] = CLAIMS_LEDGER.flatMap((row) =>
+    row.pattern === null || row.needs === null
+      ? []
+      : [
+          {
+            id: `ledger${row.n}` as const,
+            claims: [row.pattern],
+            trueWhen: (p: Profile) => row.needs!.some((c) => p[c]),
+            needs: `${row.needs.join(' or ')} (${row.phase}; ledger row ${row.n}, proof ${row.proof})`,
+          },
+        ],
+  );
+  return [
+    ...ledger,
+    { id: 'denyMetadata', claims: DENIAL_CLAIMS.metadata, trueWhen: (p) => !p.mediaMetadata && !p.mediaLibrary, needs: 'the build to read no date or place from a photo (mediaMetadata and mediaLibrary off)' },
+    { id: 'denyLibrary', claims: DENIAL_CLAIMS.library, trueWhen: (p) => !p.mediaLibrary && !p.moments, needs: 'the build to read no photo library (mediaLibrary and moments off)' },
+    { id: 'denyBackground', claims: DENIAL_CLAIMS.background, trueWhen: (p) => !p.mediaBackground, needs: 'the build to have no background read (mediaBackground off)' },
+    {
+      id: 'inBackground',
+      claims: [/\bin the background\b/i, /\bwhen (?:the app is |it is |it's )?closed\b/i, /\bwhile [^.]{0,30}\bis closed\b/i],
+      truths: DENIAL_CLAIMS.background,
+      trueWhen: (p) => p.mediaBackground,
+      needs: 'the background top-up (EXPO_PUBLIC_MOMENTS_BACKGROUND on, founder ruling on UIBackgroundModes)',
+    },
+    { id: 'readFrequency', claims: FREQUENCY_CLAIMS, trueWhen: () => false, needs: 'nothing: no string states how often the app looks, iOS decides (R44, CPO-9)' },
+    { id: 'staysOnPhone', claims: STAYS_ON_PHONE_CLAIMS, trueWhen: () => false, needs: 'a line in PROMISE_REGISTRY with a counsel version (R1)' },
+    { id: 'surfacing', claims: SURFACING_VERBS, trueWhen: () => false, needs: 'nothing: the app never says it found, noticed or knows (R17, R55)' },
+  ];
+}
 
 const global = (re: RegExp) => new RegExp(re.source, re.flags.includes('g') ? re.flags : `${re.flags}g`);
 
@@ -262,7 +344,9 @@ function surfaces(p: Profile): Leaf[] {
   const store = leaves(storeListing, 'store');
   const webContent = leaves(webSite, 'web.site');
   const webSource = webSourceLeaves();
-  const inApp = IN_APP_PROMISES.flatMap((path) => leaves(get(IN_APP_ROOT, path), path)).filter(
+  // Content paths a Memory Library change will add. Read as soon as they resolve, so a new surface is never invisible.
+  const memoryLibrary = MEMORY_LIBRARY_PATHS_WHEN_PRESENT.flatMap((path) => leaves(get(IN_APP_ROOT, path), path));
+  const inApp = [...IN_APP_PROMISES.flatMap((path) => leaves(get(IN_APP_ROOT, path), path)), ...memoryLibrary].filter(
     (leaf) => !(leaf.path in SWITCHED_LINES) || SWITCHED_LINES[leaf.path].shownWhen(p),
   );
   // The packaged deck is the fallback the app shows with no signed server bundle; keyed by card id, which never moves.
@@ -279,9 +363,21 @@ const cachedSurfaces = (p: Profile) => surfaceCache.get(p) ?? surfaceCache.set(p
 
 function claims(p: Profile): Claim[] {
   return cachedSurfaces(p).flatMap(({ path, text }) =>
-    RULES.flatMap((r) => claimsOf(r, text).filter((claim) => !claimTrue(r, p, claim)).map((claim) => ({ key: path, rule: r.id, claim }))),
+    RULES.flatMap((r) =>
+      claimsOf(r, text)
+        .filter((claim) => !claimTrue(r, p, claim) && !registered(path, r.id))
+        .map((claim) => ({ key: path, rule: r.id, claim })),
+    ),
   );
 }
+
+/**
+ * The claims registry (PRIV-R17, NX-39 R1): lines the "stays on this phone" rule lets through, each with the version
+ * counsel read. Empty: no such line is registered, so any surface that says it fails. A row is added only in the pull
+ * request that carries counsel's written version, never to quiet this test.
+ */
+const PROMISE_REGISTRY: readonly { key: string; rule: 'staysOnPhone'; counselVersion: string }[] = [];
+const registered = (key: string, rule: RuleId) => PROMISE_REGISTRY.some((r) => r.key === key && r.rule === rule && r.counselVersion.trim() !== '');
 
 // ---------------------------------------------------------------------------
 // Today's false claims in the production profile. Remove a row in the pull request that makes it true.
@@ -322,6 +418,39 @@ const KNOWN_VIOLATIONS: readonly KnownViolation[] = [
 
 /** Today's count. Lower it when rows go; never raise it: a new false claim is fixed in the copy, not listed. */
 const KNOWN_VIOLATIONS_CAP = 17;
+
+/**
+ * The lines that say "stays on your phone" today (found by the staysOnPhone rule, NX-39 R1, BL-863). The ledger lists
+ * that sentence as one that must never be said, because the iPhone backup, an iCloud download and an export all move
+ * the words off the phone. They live in the store listing, the website and the microphone purpose string, which this
+ * task does not change (no content is edited here, and the founder and counsel own those words), so they are held in
+ * their own list with their own cap rather than in KNOWN_VIOLATIONS, whose cap stays at 17. Same rules: every row names
+ * the change that removes it, a row whose line is gone fails until it is deleted, and the cap only goes down. A row is
+ * never added: a new "stays on your phone" fails, and is removed from the copy or registered with a counsel version
+ * in PROMISE_REGISTRY. #747 carries BL-867 (the claims registry and the register rows) that decides these.
+ */
+const STAYS_ON_PHONE_HELD: readonly KnownViolation[] = [
+  'store.description',
+  'store.screenshots[5].caption',
+  'store.screenshotCaptions[5]',
+  'permissions.microphone',
+  'web.site.comingSoon.trust',
+  'web.site.scenes.s09.points[0]',
+  'web.site.welcomeEmail.promises[2]',
+].map((key) => ({
+  key,
+  rule: 'staysOnPhone' as const,
+  claim: key.startsWith('web.') ? 'stay on your iphone' : key === 'permissions.microphone' ? 'stay on this phone' : 'stays on your phone',
+  removedBy: '#747',
+  reason: 'Says the words stay on the phone; backup, iCloud download and export move them (ledger: never to be said). Held for BL-867.',
+}));
+
+/** Today's count of held "stays on your phone" lines. Lower it when rows go; never raise it. */
+const STAYS_ON_PHONE_HELD_CAP = 7;
+
+const ALL_KNOWN: readonly KnownViolation[] = [...KNOWN_VIOLATIONS, ...STAYS_ON_PHONE_HELD];
+
+const ALL_MEDIA_OFF = { photos: false, mediaMetadata: false, mediaLibrary: false, moments: false, mediaBackground: false, occasions: false } as const;
 
 const id = (c: Claim) => `${c.key} [${c.rule}] "${c.claim}"`;
 
@@ -372,7 +501,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   it('reads the production profile from eas.json through capabilities.ts', () => {
     // The profile the claims are judged against. If a switch here changes on purpose, update this line and remove the
     // KNOWN_VIOLATIONS rows the change makes true.
-    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false });
+    expect(profile).toEqual({ englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, ...ALL_MEDIA_OFF, wordsExactlyAsSaid: false });
   });
 
   it('reads every in-app promise path, every switched line and every web exclusion', () => {
@@ -393,26 +522,28 @@ describe('public claims match the production profile (RT-REL-03)', () => {
   });
 
   it('makes no new claim the production build cannot keep', () => {
-    const fresh = beyond(claims(profile), KNOWN_VIOLATIONS).map((c) => `${c}: needs ${RULES.find((r) => c.includes(`[${r.id}]`))!.needs}`);
+    const fresh = beyond(claims(profile), ALL_KNOWN).map((c) => `${c}: needs ${RULES.find((r) => c.includes(`[${r.id}]`))!.needs}`);
     expect(fresh, 'new claims that contradict the production profile: fix the copy, do not add a row').toEqual([]);
   });
 
   it('lists only claims that still exist, so the list shrinks', () => {
-    const fixed = beyond(KNOWN_VIOLATIONS, claims(profile));
+    const fixed = beyond(ALL_KNOWN, claims(profile));
     expect(fixed, 'these are fixed (or the key moved): remove them from KNOWN_VIOLATIONS').toEqual([]);
   });
 
   it('caps the list at today\'s count', () => {
     expect(KNOWN_VIOLATIONS.length).toBeLessThanOrEqual(KNOWN_VIOLATIONS_CAP);
+    expect(STAYS_ON_PHONE_HELD.length).toBeLessThanOrEqual(STAYS_ON_PHONE_HELD_CAP);
+    expect(PROMISE_REGISTRY.length, 'a registry row needs counsel text; none exists yet').toBe(0);
   });
 
   it('names, for every known violation, the change that removes it and why', () => {
-    const bad = KNOWN_VIOLATIONS.flatMap((v) => {
+    const bad = ALL_KNOWN.flatMap((v) => {
       const why = unresolved(v.removedBy);
       return why ? [`${id(v)}: removedBy ${v.removedBy ?? '(none)'} ${why}`] : [];
     });
     expect(bad, 'each row needs removedBy: an open #n, a live BL-n or a D-n').toEqual([]);
-    for (const v of KNOWN_VIOLATIONS) {
+    for (const v of ALL_KNOWN) {
       expect(v.reason.trim(), id(v)).not.toBe('');
       expect(v.reason, id(v)).not.toMatch(/\n/);
     }
@@ -420,7 +551,7 @@ describe('public claims match the production profile (RT-REL-03)', () => {
 });
 
 describe('the claim rules', () => {
-  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, wordsExactlyAsSaid: false };
+  const offEverything: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, ...ALL_MEDIA_OFF, wordsExactlyAsSaid: false };
   const falseIn = (r: Rule, p: Profile, text: string) => claimsOf(r, text).filter((c) => !claimTrue(r, p, c));
   const hits = (text: string) => RULES.filter((r) => falseIn(r, offEverything, text).length > 0).map((r) => r.id);
   const claimed = (rule: RuleId, text: string) => claimsOf(RULES.find((r) => r.id === rule)!, text);
@@ -499,7 +630,7 @@ describe('the claim rules', () => {
   });
 
   it('drops a rule once its capability is on', () => {
-    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, wordsExactlyAsSaid: false };
+    const on: Profile = { englishOnly: false, heard: ['en', 'hi', 'es', 'zh', 'fr', 'ar', 'pt'], signIn: true, sync: true, coParent: true, backup: true, ...ALL_MEDIA_OFF, wordsExactlyAsSaid: false };
     const text = 'Hindi; invite your co-parent; sign in to sync; backed up to iCloud; exactly as you said it';
     expect(RULES.filter((r) => falseIn(r, on, text).length > 0).map((r) => r.id)).toEqual(['exactWords']);
   });
@@ -527,3 +658,171 @@ describe('the claim rules', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Memory Library (NX-39 v2 R1, R44, R55; BL-863). Nothing here adds content: it fixes, before any library code or
+// copy exists, which sentences may be said and when.
+// ---------------------------------------------------------------------------
+
+describe('[NX-39-R55] a claim ships only with its capability and its proof, and no frequency claim ships at all', () => {
+  const off: Profile = { englishOnly: true, heard: ['en'], signIn: false, sync: false, coParent: false, backup: false, ...ALL_MEDIA_OFF, wordsExactlyAsSaid: false };
+  const ruleOf = (id: RuleId) => RULES.find((r) => r.id === id)!;
+  const falseIn = (p: Profile, text: string) => RULES.filter((r) => claimsOf(r, text).some((c) => !claimTrue(r, p, c))).map((r) => r.id);
+  /** The ledger sentence as a person would see it, with the placeholder filled. */
+  const said = (sentence: string) => sentence.replace(/\{app\}/g, 'The app');
+
+  it('reads every phase switch from capabilities.ts, all off in the production profile', () => {
+    for (const cap of MEDIA_CAPABILITIES) expect(profile[cap], cap).toBe(false);
+    expect(Object.keys(profile).filter((k) => k in ALL_MEDIA_OFF).sort()).toEqual([...MEDIA_CAPABILITIES].sort());
+  });
+
+  it('has one ledger row per trust sentence, numbered 1 to 24, each with a phase, a proof and the capability it needs', () => {
+    expect(CLAIMS_LEDGER.map((r) => r.n)).toEqual(Array.from({ length: 24 }, (_, i) => i + 1));
+    for (const row of CLAIMS_LEDGER) {
+      expect(row.sentence.trim(), `row ${row.n}`).not.toBe('');
+      expect(row.proof.trim(), `row ${row.n}`).not.toBe('');
+      expect(['P0', 'P1', 'P2a', 'P2b', 'P2c', 'P3', 'P4a']).toContain(row.phase);
+      if (row.needs !== null) for (const c of row.needs) expect(MEDIA_CAPABILITIES, `row ${row.n}`).toContain(c);
+      // A row with no capability is a rule of the product and makes no pattern; every other row has one.
+      expect(row.pattern === null, `row ${row.n}`).toBe(row.needs === null || row.n === 24);
+    }
+  });
+
+  it('fails each ledger sentence while its capability is off, and passes it once a capability it needs is on', () => {
+    for (const row of CLAIMS_LEDGER) {
+      if (row.pattern === null || row.needs === null) continue;
+      const rule = `ledger${row.n}` as RuleId;
+      const text = said(row.inContext ?? row.sentence);
+      expect(falseIn(off, text), `row ${row.n} off`).toContain(rule);
+      for (const cap of row.needs) {
+        expect(falseIn({ ...off, [cap]: true }, text), `row ${row.n} with ${cap}`).not.toContain(rule);
+      }
+      // A capability the row does not need does not make it true.
+      for (const cap of MEDIA_CAPABILITIES.filter((c) => !row.needs!.includes(c))) {
+        expect(falseIn({ ...off, [cap]: true }, text), `row ${row.n} with only ${cap}`).toContain(rule);
+      }
+    }
+  });
+
+  it('fails a claim in the first sentence of a store listing, the website and a notification alike (the text, not the surface, is judged)', () => {
+    expect(falseIn(off, 'Add a photo from Apple\'s own sheet.')).toEqual(['ledger1']);
+    expect(falseIn(off, 'Photos in your export have no location.')).toEqual(['ledger23']);
+    expect(falseIn({ ...off, photos: true }, 'Photos in your export have no location.')).toEqual([]);
+  });
+
+  it('fails the denial claims while the capability that falsifies them is on, and passes them while it is off', () => {
+    const denials: [RuleId, string, MediaCapability[]][] = [
+      ['denyMetadata', "We never read a photo's location.", ['mediaMetadata', 'mediaLibrary']],
+      ['denyMetadata', 'It does not use a photo\'s date.', ['mediaMetadata', 'mediaLibrary']],
+      ['denyLibrary', 'We do not look at your library.', ['mediaLibrary', 'moments']],
+      ['denyLibrary', 'The rest of your library is not read.', ['mediaLibrary', 'moments']],
+      ['denyBackground', 'It is never read in the background.', ['mediaBackground']],
+      ['denyBackground', 'Nothing runs in the background.', ['mediaBackground']],
+    ];
+    for (const [rule, text, caps] of denials) {
+      expect(falseIn(off, text), `${text} (off)`).toEqual([]);
+      for (const cap of caps) expect(falseIn({ ...off, [cap]: true }, text), `${text} with ${cap}`).toEqual([rule]);
+    }
+  });
+
+  it('judges "in the background" and "when closed" as a claim of the background top-up, not as a denial', () => {
+    expect(falseIn(off, 'It also checks in the background.')).toEqual(['inBackground']);
+    expect(falseIn(off, 'It may check when the app is closed.')).toEqual(['inBackground']);
+    expect(falseIn({ ...off, mediaBackground: true }, 'It also checks in the background.')).toEqual([]);
+    // The denial line must not be read twice: it is not also an "in the background" claim.
+    expect(falseIn({ ...off, mediaBackground: true }, 'It is never read in the background.')).toEqual(['denyBackground']);
+  });
+
+  it('fails every frequency and freshness line in every profile, even with every switch on', () => {
+    const allOn: Profile = { ...off, photos: true, mediaMetadata: true, mediaLibrary: true, moments: true, mediaBackground: true, occasions: true, englishOnly: false, signIn: true, sync: true, coParent: true, backup: true };
+    for (const text of [
+      'It looks two or three times a day.',
+      'Checks 2 to 3 times a day.',
+      'We look a few times a day.',
+      'Looks three times a day.',
+      'It checks every day.',
+      'Your days are always up to date.',
+      'Looks twice a day.',
+    ]) {
+      for (const p of [off, { ...off, mediaBackground: true }, allOn]) expect(falseIn(p, text), text).toContain('readFrequency');
+    }
+    // The parent's own yearly date is not a read frequency.
+    expect(falseIn(off, 'Every year')).toEqual([]);
+  });
+
+  it('fails "stays on your phone" and "nothing is sent to us" unless the registry has the line', () => {
+    for (const text of ['Your photos stay on your phone.', 'The book stays on this phone.', 'Nothing is sent to us.', 'Nothing leaves your iPhone.']) {
+      expect(falseIn(off, text), text).toEqual(['staysOnPhone']);
+      expect(falseIn({ ...off, photos: true, mediaMetadata: true, mediaLibrary: true, moments: true }, text), text).toEqual(['staysOnPhone']);
+    }
+    expect(registered('store.description', 'staysOnPhone')).toBe(false);
+    // A registry row counts only with its counsel version.
+    const registry = [{ key: 'k', rule: 'staysOnPhone' as const, counselVersion: 'v1' }, { key: 'blank', rule: 'staysOnPhone' as const, counselVersion: ' ' }];
+    const via = (key: string) => registry.some((r) => r.key === key && r.rule === 'staysOnPhone' && r.counselVersion.trim() !== '');
+    expect(via('k')).toBe(true);
+    expect(via('blank')).toBe(false);
+  });
+
+  it('fails "found", "noticed" and "knows" about photos and trips', () => {
+    for (const text of ['We found 12 photos from your trip.', 'The app noticed a few moments.', 'It knows where you went.', 'It knows your photos.']) {
+      expect(falseIn({ ...off, mediaLibrary: true, moments: true }, text), text).toEqual(['surfacing']);
+    }
+    expect(falseIn(off, 'We found the page you were looking for.')).toEqual([]);
+  });
+
+  it('leaves today\'s true lines alone', () => {
+    for (const text of [
+      "The original recording stays with each letter, on your phone and in your iPhone's own backup if you use one.",
+      'Choose the days you want a reminder for.',
+      'Reminders stay quiet from 9:30 PM to 7 AM.',
+      'It never writes anything for you.',
+      'Every year',
+      'Keep the app on your phone up to date with the App Store.'.replace('up to date with', 'current via'),
+    ]) {
+      expect(falseIn(off, text), text).toEqual([]);
+    }
+  });
+
+  it('matches no ledger pattern, denial, frequency or surfacing rule anywhere in today\'s surfaces', () => {
+    // The production test above already fails on any of them; this names the rule ids so a loosened pattern is visible.
+    const ids = new Set(claims(profile).map((c) => c.rule));
+    const media = [...ids].filter((r) => /^ledger|^deny|^inBackground$|^readFrequency$|^surfacing$/.test(r));
+    expect(media).toEqual([]);
+  });
+
+  it('lists every content path of the read set that exists, and reads the memory library paths as soon as they appear', () => {
+    const present = MEMORY_LIBRARY_PATHS_WHEN_PRESENT.filter((path) => leaves(get(IN_APP_ROOT, path), path).length > 0);
+    // Today none exists. When one does, surfaces() has already read it; this line is the reminder to move it into IN_APP_PROMISES.
+    expect(present, 'move these into IN_APP_PROMISES in the pull request that adds them').toEqual([]);
+    const withFake = { ...IN_APP_ROOT, en: { ...en, memoryLibrary: { ask: { reads: 'It checks 3 times a day.' } } } };
+    const read = MEMORY_LIBRARY_PATHS_WHEN_PRESENT.flatMap((path) => leaves(get(withFake, path), path));
+    expect(read).toEqual([{ path: 'en.memoryLibrary', text: 'It checks 3 times a day.' }].map((l) => ({ path: `${l.path}.ask.reads`, text: l.text })));
+  });
+
+  it('fails if a memoryLibrary subtree or file exists in packages/content and is not in the read set', () => {
+    const listed = [...IN_APP_PROMISES, ...MEMORY_LIBRARY_PATHS_WHEN_PRESENT] as readonly string[];
+    const covered = (path: string) => listed.some((l) => path === l || path.startsWith(`${l}.`) || l.startsWith(`${path}.`));
+    expect(unlistedSubtrees(contentExports, /^memoryLibrary$/i, listed)).toEqual([]);
+    // Positive controls: an unlisted subtree is found at any depth, a listed one is not.
+    const fake = { en: { deep: { memoryLibrary: { a: 'x' } } }, features: { memoryLibrary: { a: 'y' } } };
+    expect(unlistedSubtrees(fake, /^memoryLibrary$/i, ['features.memoryLibrary'])).toEqual(['en.deep.memoryLibrary']);
+    expect(covered('features.memoryLibrary.ask')).toBe(true);
+    expect(covered('en.memoryLibrary')).toBe(true);
+    expect(covered('en.library')).toBe(false);
+    const files = readdirSync(fileURLToPath(new URL('../src', import.meta.url)), { recursive: true, encoding: 'utf8' }).filter((f) => /memory-?library/i.test(f));
+    expect(files, 'a memoryLibrary copy file must be read by this test: add its export path to MEMORY_LIBRARY_PATHS_WHEN_PRESENT').toEqual([]);
+    expect(ruleOf('readFrequency').trueWhen(off)).toBe(false);
+  });
+});
+
+/** Dotted paths of every object key matching `name`, at any depth, that no entry of `listed` covers. */
+function unlistedSubtrees(root: unknown, name: RegExp, listed: readonly string[], path = '', seen = new Set<unknown>()): string[] {
+  if (!root || typeof root !== 'object' || seen.has(root)) return [];
+  seen.add(root);
+  return Object.entries(root as Record<string, unknown>).flatMap(([k, v]) => {
+    const here = path ? `${path}.${k}` : k;
+    const hit = name.test(k) && !listed.some((l) => here === l || here.startsWith(`${l}.`));
+    return [...(hit ? [here] : []), ...unlistedSubtrees(v, name, listed, here, seen)];
+  });
+}
+
