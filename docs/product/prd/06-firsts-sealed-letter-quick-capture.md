@@ -1,8 +1,10 @@
 # NS-06: Firsts, the sealed letter and quick capture
 
 Status: Draft v1.1, 11 Nov 2026 (UTC). Docs only. Author: `product`. Rank 6 of 7 (closed scope list). Index: `README.md`.
-Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head `e872793d`). Sequencing ruling (Karma, 11 Nov): both Firsts and the sealed letter are specified in full here but built only after ranks 1 to 5 and only behind a five-parent study. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
+Aligned to `docs/design/specs/04-FIRSTS-AND-SEALED-11nov.md` and `05-HANDS-FREE-CAPTURE-STATES-11nov.md` (PR #794, head `56a0df68`, re-read after the updates of 11 Nov; the sealed-letter surface rule FS-R10 is in it). Sequencing ruling (Karma, 11 Nov): both Firsts and the sealed letter are specified in full here but built only after ranks 1 to 5 and only behind a five-parent study. The sealed letter also needs `data-architect` to answer whether a seal syncs before any build.
 Three rows of the capability map in one file. Each part has its own job, criteria, free/Plus line and rollout. Part A restates the proposal `NX-44-firsts.md` (PR #790, head `d80db1f2`) as testable rows; NX-44's requirement ids are cited, not copied. Part B is new. Part C depends on the spike in NS-04. Hands-free rules (unlock first, no auto-stop on silence, "Still here" after 8 seconds, headphone controls out of scope and UNVERIFIED) are in NS-04.
+
+Terms: "lens", "Firsts lens", "Photos lens" and "Home memory" are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25). A parent never reads "lens".
 
 Tags: EVIDENCE = repo file or PR read this session. HYPOTHESIS = about parents. UNVERIFIED = not read or not run. Competitor facts come from `FEATURE-GAP-AND-WEDGE-10nov.md` and are marked UNVERIFIED there: they are pages read, not products run.
 
@@ -39,14 +41,14 @@ A first is a mark on a letter (an enricher, rule P9). It never creates a letter 
 | NS-06-A2 | Given a marked letter, When the parent unmarks it, Then mark and label clear in 1 tap, Undo restores them for 10 seconds, and `final_text`, `raw_transcript` and the recording are byte-identical. | NX-44-R2, R7 | `[NS-06-A2] unmark is one tap, words untouched` |
 | NS-06-A3 | Given at least 1 first, Then the Book offers a Firsts lens, newest first, each a normal letter card with the label as its first line. Given 0 firsts, Then no Firsts control, empty state or hint appears anywhere. | NX-44-R4 | `[NS-06-A3] the lens exists only when a first does` |
 | NS-06-A4 | Given any number of firsts, Then no count appears on any screen, VoiceOver string, export file name or notification. | NX-44-R5 | `[NS-06-A4] firsts are never counted` |
-| NS-06-A5 | Given the code, Then no suggested first, typical age, norm, "most babies", progress element, or machine detection of a first exists. A scan of strings and logic finds none. | NX-44 goals and non-goals | `[NS-06-A5] no suggestions and no detection` |
+| NS-06-A5 | Given the code, Then no suggested first, typical age, norm, "most babies", progress element, or machine detection of a first exists. Test: a scan of `packages/content` strings for the Firsts keys against the README appendix A pattern list finds 0 matches, and a scan of the code under the Firsts folder finds no import of a classifier, speech or text-analysis module (the module deny-list is in appendix A). | NX-44 goals and non-goals | `[NS-06-A5] no suggestions and no detection` |
 | NS-06-A6 | Given a quiet day, Then it cannot be marked. | NX-44-R6, D-084 | `[NS-06-A6] quiet days cannot be marked` |
 | NS-06-A7 | Given an export, Then mark and label are plain fields and the PDF book shows the label above the letter, only when present; the export schema version moves (ADR 0027). | NX-44-R8 | `[NS-06-A7] export carries the mark and label` |
 | NS-06-A8 | Given sync, Then the mark and label sync with the letter, later write wins for them only, and the words follow existing sync rules. Given delete and restore, Then they go and return with the letter. | NX-44-R7, U3, U4 | `[NS-06-A8] mark and label travel with the letter` |
 | NS-06-A9 | Given Find (NS-02), Then the label is searchable and nothing else about the mark is. | NS-02-R5 | `[NS-06-A9] Find sees the typed label only` |
 | NS-06-A10 | Given the analytics catalog, Then it holds no event about marks. | NX-44-R12 | `[NS-06-A10] no analytics event for firsts` |
 | NS-06-A11 | Given VoiceOver, AX5, Reduce Motion, Then the mark is a labelled toggle that announces its state; the lens reads in order. No celebration animation exists. | NX-44-R10 | `[NS-06-A11] the mark toggle passes VoiceOver and AX5` |
-| NS-06-A12 | Given the strings, Then they pass the content rules: no gap language ("not yet", "still waiting for"), no emoji, no dash. | NX-44-R11 | existing rules test |
+| NS-06-A12 | Given every Firsts string in `packages/content`, Then the content rules test passes and none matches the pattern list in README appendix A (gap, norm and counting words). | NX-44-R11 | `[NS-06-A12] Firsts strings match no forbidden pattern` |
 
 ### A6. Edge cases
 
@@ -56,9 +58,11 @@ Label empty is allowed (card shows the letter's own first line). Label at 40 sto
 
 Machine adds nothing: the label is the parent's or absent. No count, no streak, no badge. Door lines: Shown "This was a first" and the optional field (`content`); Records one boolean and up to 40 characters on the letter; Never a list, a count, a notification or an event; Decline do not mark, or unmark in one tap.
 
+Label effect (Part A): none. Marks sync with the letter as any letter field does.
+
 ### A8. Free vs Plus
 
-Free and ungated. Marking and reading firsts work after the allowance is used (D-082: allowance 2, planned raise 2, 5, 10; capture never blocked; what a family kept stays theirs to read, hear and export).
+Free and ungated when built; not promised as forever. Marking and reading firsts work after the allowance is used (D-082: allowance 2, planned raise 2, 5, 10; capture never blocked; what a family kept stays theirs to read, hear and export).
 
 ### A9. Metrics (content-free)
 
@@ -91,14 +95,14 @@ Sealing is an enricher chosen in Review or on the letter page for a letter that 
 | Id | Given, When, Then | Test title |
 |---|---|---|
 | NS-06-B1 | Given a letter in Review, When the parent picks a day later than today, Then the letter stores `sealed_until` as a calendar date (no time zone, like `occurred_on`) and nothing else about its words changes. | `[NS-06-B1] sealing stores one date and nothing else` |
-| NS-06-B2 | Given a sealed letter before its day, Then the Book labels it "hidden until" its date (words by `content`; never "locked"), and its words are not shown in Home memories, Read together, Find, Firsts, the Photos lens, a share, or the co-parent's book; the Book shows a closed row with the date and the signature, unsigned app note, no words. | `[NS-06-B2] a sealed letter shows no words on any surface` |
-| NS-06-B3 | Given the author, When they choose Open now on the sealed letter and confirm, Then it opens at once, can be sealed again to a new day, and is never lost. What a family kept stays theirs to read. | `[NS-06-B3] the author can always open early` |
-| NS-06-B4 | Given the day arrives, Then the letter opens in place with no notification, no count and no celebration. | `[NS-06-B4] opening on the day is quiet` |
+| NS-06-B2 | Given a sealed letter before its day, Then the Book shows one row with the date and "hidden until" wording (words by `content`; never "locked"), and no words. The letter contributes nothing to the Photos lens, the Firsts lens, the recordings list, a first label, a photo description, Find, Share, Read together or the PDF book until it opens, and adds nothing to a Home memory before its opening day (design spec 04, FS-R10). | `[NS-06-B2][FS-R10] a sealed letter contributes nothing to any surface until it opens` |
+| NS-06-B3 | Given the author, When they choose Open now on the sealed letter, Then, after one confirmation whose default button is Cancel, the seal is removed permanently and the letter reads normally. It cannot be sealed again (design spec 04, B4); to hide it again the parent would write a new letter. The letter is never lost, and what a family kept stays theirs to read. | `[NS-06-B3] the author can open early; opening removes the seal for good` |
+| NS-06-B4 | Given the day arrives, Then the letter becomes a normal letter at local midnight of the chosen date with no notification, no badge, no count and no celebration. On that day only, Home's one memory slot may show it once through `seal.homeOpened` (design spec 04, Q4 and FS-R3): one line, the letter's words appear only when the parent taps. That slot is allowed; it is not a notification, a count or a celebration. | `[NS-06-B4] opening day is quiet; the Home slot shows it at most once` |
 | NS-06-B5 | Given the export, Then a sealed letter is included with its words and a `sealed_until` field. Copy never says "locked", "secure" or "sealed forever": the words are on the phone, and a seal is a display rule the app keeps in its screens, not encryption. | `[NS-06-B5] export keeps sealed letters whole` |
 | NS-06-B6 | Given one visibility function, Then every surface (Book, Home memory, Read together, Find, Firsts, lens, share, export view for others) calls it; a test lists the call sites and fails on a surface that does not. | `[NS-06-B6] one visibility path` |
 | NS-06-B7 | Given the allowance, Then a sealed letter counts when it is kept like any letter (D-103); sealing never makes a letter free or hidden from the count. | `[NS-06-B7] sealing does not change counting` |
 | NS-06-B8 | Given sync (decided by `data-architect` before any build), Then the seal date travels with the letter, so the other parent's phone hides it too; if `data-architect` finds it cannot, the feature is not built. Test written once the answer is on record. | `[NS-06-B8] the seal syncs with the letter, or the feature is not built` |
-| NS-06-B9 | Given copy, Then no word says "if I am not here", ending, absence or loss, and no wax-seal imagery (VOICE.md, BRAND.md). | existing rules test |
+| NS-06-B9 | Given every seal string in `packages/content`, Then the content rules test passes and none matches the README appendix A patterns, including the loss words list and the word "locked". | `[NS-06-B9] seal strings match no forbidden pattern` |
 
 ### B5. Edge cases
 
@@ -106,11 +110,13 @@ Seal date in the past is refused (the control offers only later days). Time zone
 
 ### B6. Privacy and constitution
 
-No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records `sealed_until` on the letter; Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
+No machine adds meaning. The seal changes visibility only. Door lines: Shown the date control and one plain sentence of what a seal does (by `content`); Records `sealed_until` on the letter (where it is stored and whether it syncs is for `data-architect`; see NS-06-B8); Never a notification, a count, "sealed N letters", or reading a sealed letter into search; Decline do not seal, or Open now.
+
+Label effect (Part B): none while the seal stays on the phone and in ordinary sync; `data-architect` confirms.
 
 ### B7. Free vs Plus
 
-Free and ungated beyond the allowance rule: a sealed letter is a kept letter. No separate Plus feature (one gate, closed X3).
+Free and ungated beyond the allowance rule in Build 14 or later; not promised as forever. A sealed letter is a kept letter. No separate Plus feature (one gate, closed X3).
 
 ### B8. Metrics
 
@@ -146,9 +152,11 @@ Every quick-capture trigger opens Home's one Listen screen in the Ready state (F
 
 No always-on microphone. No wake word. Machine adds nothing. Door lines (written per trigger in NS-04b): Shown the plist purpose string and one line in Settings; Records the act only if a new permission is granted; Never audio before the parent's action; Decline remove the trigger in iOS and nothing else changes.
 
+Label effect (Part C): none from a Siri phrase or Shortcut if it needs no new permission; a widget or control is a delta NS-04 lists.
+
 ### C5. Free vs Plus
 
-Capture is never blocked. A trigger-started draft waits as any draft does. Keep after the allowance (D-082) is the one gate. No Plus line mentions triggers.
+Free and ungated when built; not promised as forever. Capture is never blocked. A trigger-started draft waits as any draft does. Keep after the allowance (D-082) is the one gate. No Plus line mentions triggers.
 
 ### C6. Metrics, dependencies, risks, rollout
 

@@ -11,7 +11,7 @@ I go to Early Letters with my hands full, holding {child}, to start telling a le
 
 ## 2. Who and when
 
-- A parent holding a baby or carrying a toddler, often at night, who has a sentence they want to keep. HYPOTHESIS. No parent evidence exists; one competitor sells one-handed use (research file, Chatbooks [P11]), and one ships quick-capture widgets (Lumelo [P16]). Neither is verified beyond their own pages.
+- A parent holding a baby or carrying a toddler, often at night, who has a sentence they want to keep. HYPOTHESIS. No parent evidence exists; the research file (`FEATURE-GAP-AND-WEDGE-10nov.md`, 10 Nov 2026) says one competitor sells one-handed use (Chatbooks [P11]) and one ships quick-capture widgets (Lumelo [P16]). UNVERIFIED: store and web pages read by another agent, no product run.
 - A parent who cannot easily use a touch screen. Voice Control and Switch Control are an accessibility question the spike also answers (Q7).
 - Not a driver. No driving use is designed for, tested or promoted (Q9).
 
@@ -33,9 +33,9 @@ Each question has an owner and a form of answer: Yes, No, or Yes with a stated c
 |---|---|---|
 | Q1 | Can an App Shortcut or App Intent "Start a letter" ship from Expo SDK 57 with a config plugin and no ejection? Does it open the Listen Ready state? | Yes/No, plus the package or native target needed |
 | Q2 | What does the intent do on a locked phone? Design default (design spec 05, Q1): unlock first, then Ready; no take starts from a locked screen. The spike confirms what iOS allows and what the parent must do (Face ID, tap). | Behaviour table |
-| Q3 | Can the Action Button on supported iPhones run the intent? Which models? Headphone play/pause as Pause or Finish is out of scope (design Q2; UNVERIFIED that iOS delivers it to a recording app). | Yes/No, model list from Apple's page read at the time |
-| Q4 | Can an iOS 18 Control Center or Lock Screen control start the Ready state? Does it need a WidgetKit extension target and, if so, an app group? | Yes/No, entitlements list |
-| Q5 | Can recording continue with the screen off, or must the screen stay on? What does iOS require for that (a background audio mode)? | Yes/No, required plist and entitlement keys |
+| Q3 | Can the Action Button on supported iPhones run the intent (UNVERIFIED: Apple behaviour not read)? Which models? Headphone play/pause as Pause or Finish is out of scope (design Q2; UNVERIFIED that iOS delivers it to a recording app). | Yes/No, model list from Apple's page read at the time |
+| Q4 | Can an iOS 18 Control Center or Lock Screen control start the Ready state (UNVERIFIED: Apple behaviour not read)? Does it need a WidgetKit extension target and, if so, an app group? | Yes/No, entitlements list |
+| Q5 | Can recording continue with the screen off, or must the screen stay on? What does iOS require for that (a background audio mode; UNVERIFIED, Apple rules not read)? | Yes/No, required plist and entitlement keys |
 | Q6 | How does a parent know recording started or stopped when they cannot look? Tone, haptic, spoken word? Which are allowed under VOICE.md and the content rules? | Options with a recommendation |
 | Q7 | Do iOS Voice Control and Switch Control already operate Speak, Stop and Keep? | Pass/fail per control on the shipped build |
 | Q8 | Closed, not a spike question: a take never stops on silence (design spec 05, HF-R4). The quiet-stretch line "Still here" appears after 8 seconds below -50 dB, as `listen.tsx` does today (design Q5 keeps 8 s; HYPOTHESIS). The spike only checks the line still shows with the screen locked after unlock. | Pass/fail |
@@ -74,11 +74,11 @@ Outcomes:
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-04-R1 | Given the findings file, Then it answers Q1 to Q10 each in the required form, names the device and iOS versions, and marks every untested answer UNVERIFIED. | review checklist |
-| NS-04-R2 | Given the branch, Then it contains 0 real family data (the real-family-data hash test passes) and 0 analytics or logs of audio, words or names. | `packages/content/test/no-real-family-data.test.ts` plus review |
-| NS-04-R3 | Given the day-5 hard stop, Then the findings exist on day 5 even if some questions are open. | calendar check |
-| NS-04-R4 | Given any trigger the spike proposes, Then the findings state its plist and entitlement delta and its label delta (Q10). | review checklist |
-| NS-04-R5 | Given each trigger, Then the findings state where it lands (the Ready state of the one Listen screen) and show a second start refused. | branch test |
+| NS-04-R1 | Given `docs/research/spikes/hands-free-findings.md`, Then it has one section per question Q1 to Q10, each with an `Answer:` line starting with Yes, No, Closed or Open, a `Device:` line naming model and iOS version, and an `Evidence:` line; an `Answer:` line that starts with Open must contain the word UNVERIFIED. | `[NS-04-R1] findings file has Q1 to Q10 in the required form` (Node test parsing the file) |
+| NS-04-R2 | Given the branch, Then it contains 0 real family data (the real-family-data hash test passes) and 0 analytics or logs of audio, words or names. | `[NS-04-R2] spike branch holds no real family data` (`packages/content/test/no-real-family-data.test.ts` run on the branch) |
+| NS-04-R3 | Given the findings file, Then it has `Started:` and `Findings dated:` lines in YYYY-MM-DD and the second is no more than 5 working days after the first. | `[NS-04-R3] findings land within 5 working days` (Node test on the two dates) |
+| NS-04-R4 | Given every trigger section in the findings, Then it has a `Plist delta:` line, an `Entitlement delta:` line and a `Label delta:` line, each either `none` or a list. | `[NS-04-R4] every trigger states its plist, entitlement and label delta` (Node test on the file) |
+| NS-04-R5 | Given each trigger on the branch, When it fires twice in a row, Then the Listen Ready state opens once and the second start is refused. | `[NS-04-R5] a second trigger start is refused` (branch unit test) |
 
 ## 9. Edge cases the future requirement must cover (listed now so the spike tests for them)
 
@@ -92,6 +92,8 @@ Outcomes:
 | Speech model not ready | Recording is kept as a draft with no words; the letter counts only once words exist and it is kept (D-103). |
 | Siri phrase mishears | Opens the app and the Ready state, never starts a recording by itself. |
 
+Label effect: none from the spike. Each trigger's label effect is a required line in the findings (NS-04-R4).
+
 ## 10. Privacy and constitution check
 
 - The machine may remove and repair, never add meaning: hands-free changes how a take starts and stops, never what it says. No automatic title, summary or caption of a hands-free recording.
@@ -102,7 +104,7 @@ Outcomes:
 
 ## 11. Free vs Plus
 
-Hands-free is capture. Capture is never blocked (D-082: allowance 2, planned raise 2, 5, 10; the one gate is Keep after the allowance). A hands-free draft waits as any draft does. What a family kept stays theirs to read, hear and export. No hands-free feature is a Plus feature; Plus copy never mentions it (one gate, closed X3).
+Hands-free is capture. Free and ungated in any later build; not promised as forever. Capture is never blocked (D-082: allowance 2, planned raise 2, 5, 10; the one gate is Keep after the allowance). A hands-free draft waits as any draft does. What a family kept stays theirs to read, hear and export. No hands-free feature is a Plus feature; Plus copy never mentions it (one gate, closed X3).
 
 ## 12. Metrics (content-free)
 

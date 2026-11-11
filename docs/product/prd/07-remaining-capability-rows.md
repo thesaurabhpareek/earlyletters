@@ -69,7 +69,7 @@ Entry rule: a capture mode of Home's one entry (rule P1); nothing else starts it
 | NS-07-C5-4 | Given Read together and the printed book, Then quiet days never appear (D-084). | `[NS-07-C5-4] quiet days stay out of Read together and print` |
 | NS-07-C5-5 | Given one tap on the control, Then the mark is written and Home shows the ordinary state with no dialog. A second tap the same day is a no-op. | `[NS-07-C5-5] one tap, no dialog, no duplicate` |
 
-Free vs Plus: free; capture never blocked; not counted. Privacy: stores no words. Rollout: already shipped; this is a test-and-trace row. Backlog: trace rows to existing tests; no build.
+Label effect: none. Free vs Plus: free; capture never blocked; not counted. Privacy: stores no words. Rollout: the behaviour is in the code (EVIDENCE: `apps/mobile/src/lib/db/migrations.ts` blanks the old `not_much` sentences; `strings.en.ts` holds `notMuchButton` "Not much today" and the "A quiet day" label; the export golden fixtures carry `kind: not_much`; read at `da83fb1ee`). I did not run the app or find a test titled for each row, so each NS-07-C5 test below is new until a trace shows an existing one (UNVERIFIED). Backlog: trace rows to existing tests; no build.
 
 ### 3.2 C28. Print-ready file (structure only; numbers wait for proof books)
 
@@ -85,7 +85,7 @@ Job: I go to Export to get a file my family can print, so that a paper book can 
 | NS-07-C28-4 | Given quiet days, Then they do not appear (D-084); Given sealed letters, Then they appear only if the parent has opened them. | `[NS-07-C28-4] quiet days and closed seals stay out` |
 | NS-07-C28-5 | Given empty months, Then no page, heading or line mentions them; no page count or "pages left" appears. | `[NS-07-C28-5] gaps are not shown or counted` |
 | NS-07-C28-6 | Given the file, Then it has embedded fonts and no external links, trackers or QR code (a QR needs hosted audio: not before NS-03 and NS-05 Level 3). | `[NS-07-C28-6] fonts embedded; no links; no QR` |
-| NS-07-C28-7 | Given Export, Then this file is free and ungated (what a family kept stays theirs to export). | `[NS-07-C28-7] the print-ready file is never gated` |
+| NS-07-C28-7 | Given Export, Then this file is free and ungated when built (what a family kept stays theirs to export); not promised as forever. | `[NS-07-C28-7] the print-ready file is never gated` |
 
 Not specified, because the numbers come from proof books: trim size, margins, bleed, resolution, page count limit, cover. Default: the two proof books set them, `product` adds them to this section with the proof's date. Until then C28-1 to C28-7 are testable and the layout is not.
 
@@ -95,10 +95,10 @@ Evidence: the research file notes that a clean privacy label is a competitive fa
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-07-G11-1 | Given a PR that adds a network call carrying letter text, a recording, a picture or a child name, or adds a server table, bucket or function for them, Then CI fails unless the PR links a recorded founder decision that names the label change. | `[NS-07-G11-1] data leaving the phone needs a recorded decision` |
-| NS-07-G11-2 | Given each feature PRD in this folder, Then it states its label effect in one line. | review checklist |
+| NS-07-G11-1 | Given a diff fixture that adds a network call carrying letter text, a recording, a picture or a child name, or adds a server table, bucket or function for them, When the guard `scripts/guards/label-effect.mjs` (name proposed) runs, Then it exits non-zero unless the PR body names a recorded founder decision id (D-###) for the label change; given a diff with neither, it exits zero. | `[NS-07-G11-1] the label-effect guard fails an unrecorded data-leaving diff` (Node test over diff fixtures) |
+| NS-07-G11-2 | Given each file `NS-0x` in `docs/product/prd/`, Then it contains a line starting `Label effect:` (or `Label effect (Part`). | `[NS-07-G11-2] every PRD states its label effect` (Node test over the folder) |
 
-Free vs Plus: not applicable. Rollout: a guard script extension for `security-architect` and `compliance-engineer` (size S, UNVERIFIED that an existing guard can be extended). Today's feature set in this folder changes the label in none of NS-01, NS-02, NS-05 Level 1 and NS-06 A; NS-05 Levels 2 and 3 do.
+Free vs Plus: not applicable. Rollout: a new guard script (size S, a guess) for `security-architect` and `compliance-engineer`. Today's feature set in this folder changes the label in none of NS-01, NS-02, NS-05 Level 1 and NS-06 A; NS-05 Levels 2 and 3 do.
 
 ## 4. Parked with a default
 
@@ -115,20 +115,20 @@ Each row says why it cannot be written as testable text today, who can reopen it
 
 ## 5. Free vs Plus, privacy, metrics (applies to the specified rows)
 
-Free vs Plus: none of the rows in section 3 is a gate. The one gate stays Keep after the allowance (D-082: 2, planned raise 2, 5, 10; capture never blocked; what a family kept stays theirs to read, hear and export). Metrics: none in the app for any row here; opt-in analytics is off through 1.0. Privacy: the machine adds no meaning in any row; no streak, point or gap counting; `{child}` only.
+Label effect: none for C5 and C28; G11 is the rule for the others. Free vs Plus: none of the rows in section 3 is a gate (free and ungated when built; not promised as forever). The one gate stays Keep after the allowance (D-082: 2, planned raise 2, 5, 10; capture never blocked; what a family kept stays theirs to read, hear and export). Metrics: none in the app for any row here; opt-in analytics is off through 1.0. Privacy: the machine adds no meaning in any row; no streak, point or gap counting; `{child}` only.
 
 ## 6. Dependencies, risks, rollout
 
 - Dependencies: the files named in section 2; NS-01 to NS-06; the founder's release choices in section 7.
 - Risk: citing branch-only requirement files (NX-27, NX-33, NX-34, NX-16, NX-17) means the cite can drift. Mitigation: the next backlog PR re-checks each against `develop` and replaces "branch" with the merged path.
-- Rollout: C5 is already in the build; C28 behind `EXPO_PUBLIC_PRINT_READY` (name proposed), target after Build 14 and after the proof books; G11 is a CI guard, no build.
+- Rollout: C5 is in the code at `da83fb1ee` (EVIDENCE above; not run); C28 behind `EXPO_PUBLIC_PRINT_READY` (name proposed), target after Build 14 and after the proof books; G11 is a CI guard, no build.
 
 ## 7. Open questions (every one has a default)
 
 | Id | Question | Owner | Default if no answer | By |
 |---|---|---|---|---|
-| OQ-1 | Spend about $45 on two proof books (exec Q2)? | Founder | No spend; C28 layout numbers stay open | Fri 20 Nov 2026 |
-| OQ-2 | Does G11-1 run in CI or as a review rule first? | `security-architect` | Review rule, then CI when a guard exists | Before Build 14 freeze |
+| OQ-1 | Spend the proof-book amount in the exec record (Q2) on two proof books? | Founder | No spend; C28 layout numbers stay open | Fri 20 Nov 2026 |
+| OQ-2 | Who writes the label-effect guard and by when? | `security-architect`, `compliance-engineer` | The guard is built (size S) and runs in CI before Build 14 freezes. Until it merges, G11-1 is a PR-checklist line and the row is "partly built" (RR-8). This agrees with G11-1, which is the guard's test. | Before Build 14 freeze |
 | OQ-3 | Re-check of branch-only cites | `product` | Next backlog PR | Fri 20 Nov 2026 |
 
 ## 8. Not fully testable

@@ -1,6 +1,8 @@
 # NS-01: Photo with a letter (photo-first capture on Home, a Photos lens in the Book)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `e872793d`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/01-PHOTO-WITH-A-LETTER-11nov.md` (PR #794, head `56a0df68`). Docs only. Author: `product`. Rank 1 of 7 in the new-scope stack rank (`closed-questions-2026-11-11.md`, X1). Index: `README.md`.
+Terms: "lens", "Photos lens" and "Home memory" in this file are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens".
+Build 13 scope (design spec 01 section 1a, coordinator 11 Nov): ONE photo per letter and no video. The design cap of 8 photos and 2 videos, the multi-select chooser, the "Add photos" row in Review, the 3-photo and 8-photo layouts and the swipe between items are out of Build 13.
 Build target: Build 13, behind `EXPO_PUBLIC_PHOTOS` (the P0 switch named in `NX-39-memory-library.md` section 3). Library chooser (P2a) and video (P3) are not in this PRD.
 
 Tags: EVIDENCE = a repo file or PR read this session. HYPOTHESIS = what a parent will do or feel. UNVERIFIED = not read or not run. I did not run the app and I did not open the photo code (the repo has `photo_path` in the core schema and a `photo: null` export field, and no picker code on `develop` at `da83fb1ee`).
@@ -21,7 +23,7 @@ The Book's Photos lens answers the second job: I go to the Book to look at the p
 
 Only Home starts a letter (`NAV-TAB-ROLES-10nov.md` rules P1 and P2). Photo-first is a mode of Home's one capture entry, not a button on another tab.
 
-- Home carries one extra start in the capture cluster, next to Speak, Type and Not much today. It opens the same capture screens with a picture already attached.
+- Home carries one extra start in the capture cluster, next to Speak, Type and Not much today. It opens the same capture screens with a picture already attached. Position (design spec 01 section 3.1): "Start from a photo" is the third and quietest item inside the capture cluster, under Speak and Type and above "Not much today", never larger than either, and absent (not greyed) when the switch is off.
 - The Book's Photos lens only reads. It has no "add" button and no "start a letter" button.
 - The letter page and Review may "add a photo to this letter". That is an enricher (P9): it needs a letter that exists or a draft, and it never creates one.
 - Camera capture is out (system picker only). A picture alone is never a letter. The PRD forbids photo-only entries, and a letter counts only when its words exist and are kept from Review (D-103).
@@ -35,11 +37,11 @@ Only Home starts a letter (`NAV-TAB-ROLES-10nov.md` rules P1 and P2). Photo-firs
 | S3 | As a parent in the Book, I open Photos and see the letters that have a picture, newest first, and tap one to read it. |
 | S4 | As a parent who picked the wrong picture, I change or remove it in one tap and can undo. |
 | S5 | As a parent who has never added a picture, I see no empty Photos page, no hint and no count. |
-| S6 | As a parent, I may type a few words about a picture (up to 140 characters). They are mine; the app writes none. |
+| S6 | As a parent, I may type a few words and a place for a picture. They are mine; the app writes none. |
 
 ## 5. Acceptance criteria
 
-Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
+Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission question). Source: design spec 01 at PR #794 head 56a0df68. Rows that restate an `NX-39-R#` cite it; the test title carries both ids so one test proves both. Device checks use an iPhone 17 Pro and an SE-class phone.
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
@@ -52,7 +54,7 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 | NS-01-R7 | Given a letter that has a picture, When the parent adds a second one, Then it asks to replace, the first stays until the replace is confirmed, and Undo restores it for 10 seconds (one picture per letter at P0). | `[NS-01-R7] a second picture replaces only after confirm, with Undo` |
 | NS-01-R8 | Given any add, replace or remove of a picture, Then the letter's `final_text`, `raw_transcript`, machine edits and recording hash are byte-identical before and after (`NX-39-R10` extended to P0). | `[NS-01-R8] picture changes never touch words or recording` |
 | NS-01-R9 | Given a kept letter with a picture, When the letter page opens, Then the picture shows with the letter and its VoiceOver label is the fixed phrase "Photo with this letter". No machine caption, title, tag or description exists anywhere (`NX-39-R9`). | `[NS-01-R9] the picture has a fixed label and no machine text` |
-| NS-01-R10 | Given at least 1 kept letter with a picture, When the Book opens, Then a Photos lens is offered. Given 0 such letters, Then no Photos control, empty state or hint appears. | `[NS-01-R10] the Photos lens exists only when a picture does` |
+| NS-01-R10 | Given at least 1 kept, open letter with a picture, When the Book opens, Then a Photos lens is offered; a picture on a sealed letter does not count and does not show until it opens (design spec 01, FS-R10). Given 0 such letters, Then no Photos control, empty state or hint appears. | `[NS-01-R10] the Photos lens exists only when a picture does` |
 | NS-01-R11 | Given the Photos lens, Then it lists letters that have a picture, newest first by the letter's date, each as a letter card with a thumbnail; it shows no number of pictures, no count in any VoiceOver string and no "add" control. | `[NS-01-R11] the lens shows no count and no add control` |
 | NS-01-R12 | Given the last picture is removed or its letter is deleted, When the Book opens, Then the Photos lens is gone and no message says so. | `[NS-01-R12] the lens disappears quietly` |
 | NS-01-R13 | Given App lock on, When the app goes to the switcher or opens cold, Then screens that show a picture render blank in the snapshot (`NX-39-R36`). | `[NS-01-R13][NX-39-R36] the switcher snapshot is blank` |
@@ -63,10 +65,10 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 | NS-01-R18 | Given the plan engine, Then attaching, replacing, viewing and exporting a picture never call the Keep gate; the only gate on the path is Keep after the allowance (`NX-39-R58`). | `[NS-01-R18][NX-39-R58] pictures are never gated` |
 | NS-01-R19 | Given the switch `EXPO_PUBLIC_PHOTOS` off or the remote pause on, Then the photo start, the lens and the add-a-photo actions do not render, and Export and Erase everything still work (`NX-39-R37`). | `[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights` |
 | NS-01-R20 | Given VoiceOver, AX5 and Reduce Motion, Then every new control is at least 44 pt, announces its state, reads in order (thumbnail, prompt, Speak, Type), and at AX5 stacks to one column (`NX-39-R35`). | `[NS-01-R20] new controls pass VoiceOver, AX5 and Reduce Motion` |
-| NS-01-R22 | Given a picked picture, When the parent types photo text, Then it is optional, at most 140 characters, stored in its own field, never filled in or suggested by the app, and is the picture's only text alternative for VoiceOver when present (else the fixed phrase of R9). Find searches it (NS-02-R5). | `[NS-01-R22] photo text is the parent's, optional and 140 characters` |
-| NS-01-R23 | Given the picture source, Then only the system picker exists: no camera control, no camera permission string and no "Take a photo now" in the plist or the screens. | `[NS-01-R23] the system picker is the only source` |
-| NS-01-R24 | Given the Book with 0 letters, Then its empty-state button (`book.empty.bookCta`, today "Write a letter") reads as a pointer to Home, its action is a switch to the Home tab and calls no capture function, and the Book has 0 controls that start a letter (`content` writes the word; design spec 06, J3). Given the Photos lens, Then it has no "Add photos" button. | `[NS-01-R24] the Book empty button only moves to Home; the lens cannot start a letter` |
-| NS-01-R25 | Given the strings, Then they pass `packages/content/test/rules.test.ts`: no dash, curly quote, ellipsis character or emoji; no "memory" or "moment" for a letter; no implication a machine writes; `{child}` for the child. | existing content rules test, extended |
+| NS-01-R21 | Given a picked picture, When the parent types photo text or a place, Then each is optional, the text at most 140 characters and the place at most 60 (PROPOSED), stored in their own fields, never filled in or suggested by the app, and is the picture's only text alternative for VoiceOver when present (else the fixed phrase of R9). Find searches both (NS-02-R5); a place read from the file is never searched. | `[NS-01-R21] photo text and place are the parent's, optional, and capped` |
+| NS-01-R22 | Given the picture source and the Build 13 scope, Then only the system picker exists and it returns one photo; there is no video, no multi-select and no "Add photos" row: no camera control, no camera permission string and no "Take a photo now" in the plist or the screens. | `[NS-01-R22] the system picker is the only source and returns one photo` |
+| NS-01-R23 | Given the Book with 0 letters, Then its empty-state button (`book.empty.bookCta`, today "Write a letter") reads as a pointer to Home, its action is a switch to the Home tab and calls no capture function, and the Book has 0 controls that start a letter (`content` writes the word; design spec 06, J3). Given the Photos lens, Then it has no "Add photos" button. | `[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter` |
+| NS-01-R24 | Given the strings, Then they pass `packages/content/test/rules.test.ts`: no dash, curly quote, ellipsis character or emoji; no "memory" or "moment" for a letter; no implication a machine writes; `{child}` for the child. | existing content rules test, extended |
 
 ## 6. Edge cases, empty and error states
 
@@ -94,9 +96,11 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 - No streaks, points, badges or gap counting. The lens shows no count and no "letters without a picture".
 - Language: "photo" and "picture" are fine. "Memory", "moment" and "album" are banned for what a person makes (BRAND.md glossary).
 
+Label effect: none. Pictures stay on the phone; `photo_path` stays null in sync (NS-01-R15). The picker needs no permission (NX-39-R2).
+
 ## 8. Free vs Plus
 
-- Free: the photo start, adding, replacing, removing, the lens, export. None of these is a gate (`NX-39-R58`).
+- Free and ungated in Build 13: the photo start, adding, replacing, removing, the lens, export (`NX-39-R58`). Not promised as forever.
 - The one gate is Keep after the allowance (D-082: 2 letters, planned raise 2, 5, 10). Capture is never blocked: a draft with a picture waits, nothing is lost, and the picture stays on the phone.
 - What a family kept stays theirs to read, hear and export, pictures included.
 - No Plus line mentions pictures. Counsel confirms the wording of the allowance copy (closed X4).
@@ -130,7 +134,7 @@ Phase: P0 of NX-39 (one picture per letter, the stripped copy, no permission que
 |---|---|---|---|---|
 | OQ-1 | Does Build 13 take NX-39 P1 (date from the file)? | Founder | No. P0 only; the date chip waits for spike BL-843. | Fri 20 Nov 2026 |
 | OQ-2 | What does a second phone show where a picture was? | `design-systems`, `content` | Nothing. The letter reads whole without it. | Before the design freeze for Build 13 |
-| OQ-3 | Placement of the photo start in the capture cluster | `design-systems` | Fourth item, same size as Type, after Speak and Type, before Not much today. | Design spec |
+| OQ-3 | Does "Start from a photo" show before any photo exists? | `design-systems` | Yes, one quiet line, so the mode can be found (design spec 01, Q2). | Design spec |
 | OQ-4 | Does the Photos lens sit in the Months sheet area or above the chapters? | `design-systems` | A switch above the chapters (Months, Photos), Photos shown only when a picture exists. | Design spec |
 
 ## 13. Rollout

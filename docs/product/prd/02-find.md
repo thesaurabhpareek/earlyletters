@@ -1,6 +1,7 @@
 # NS-02: Find (search across the family's own letters, on the phone)
 
-Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `e872793d`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
+Status: Draft v1.1, 11 Nov 2026 (UTC), aligned to design spec `docs/design/specs/02-FIND-11nov.md` (PR #794, head `56a0df68`). Docs only. Author: `product`. Rank 2 of 7 (closed X1). Index: `README.md`.
+Terms: "lens", "Find" as a header action and "index" are internal terms; `content` names the parent-facing words (BRAND.md glossary, CR-25).
 Build target: Build 13, behind `EXPO_PUBLIC_BOOK_SEARCH` (name proposed; check `capabilities.ts` for the house style).
 This PRD makes F09-REQ-015 shippable: it cites that row and the Search item in F09 section 6.2 (step 16), adds the states and the privacy rules they lack, and turns the founder question F09 Q4 into a decision: Find is in scope (closed X1; research gap G3).
 
@@ -12,7 +13,7 @@ I go to the Book to find the one letter I remember, by a word I said, so that I 
 
 ## 2. Who and when
 
-- A parent with a book of 40 or more letters who remembers a word ("the blue boat", a nickname, a place) and not the month. HYPOTHESIS: the need starts around the second quarter of use. No parent evidence exists; the research file sees search in 3 of 12 products read (`FEATURE-GAP-AND-WEDGE-10nov.md`, table stakes).
+- A parent with a book of 40 or more letters who remembers a word ("the blue boat", a nickname, a place) and not the month. HYPOTHESIS: the need starts around the second quarter of use. No parent evidence exists; the research file lists search in 3 of the 12 products it read (`FEATURE-GAP-AND-WEDGE-10nov.md`, 10 Nov 2026, table stakes; UNVERIFIED: store pages read by another agent, no product run).
 - A parent who wants a letter to read aloud to {child} tonight.
 - Not a way to count, filter by feeling, or audit what was written.
 
@@ -37,10 +38,10 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 | Id | Given, When, Then | Test title |
 |---|---|---|
 | NS-02-R1 | Given the Book with `EXPO_PUBLIC_BOOK_SEARCH` on, Then the header has one action labelled for VoiceOver "Find a letter"; Home and Me have 0 search controls. | `[NS-02-R1] Find lives on the Book header only` |
-| NS-02-R2 | Given 1,000 fixture letters, When the parent types 3 or more characters, Then results show within 300 ms at p95 on an iPhone SE 3 (F09-REQ-015). | `[F09-REQ-015][NS-02-R2] 1,000 letters, 300 ms p95 on SE 3` (device) |
+| NS-02-R2 | Given 1,000 fixture letters, When the parent types 3 or more characters, Then the first result row is painted within 300 ms at p95 of the last keystroke, over 20 runs of 20 queries, on an iPhone SE 3 (F09-REQ-015). | `[F09-REQ-015][NS-02-R2] 1,000 letters, 300 ms p95 on SE 3` (device) |
 | NS-02-R3 | Given a query of fewer than 3 characters in a non-CJK script, Then nothing changes on screen and no message appears. Given a CJK query, Then 1 character is enough and the substring path runs (F09-U24). PROPOSED: the 3-character floor is revisited per language when a pack passes its gate. | `[NS-02-R3] short queries do nothing; CJK queries use substring` |
 | NS-02-R4 | Given a query, Then the search covers the active child's book only; own letters, own private letters and other visible letters are included, another person's private letters never (F09-REQ-015). | `[NS-02-R4] scope is the active book and visible letters only` |
-| NS-02-R5 | Given the index, Then it holds each letter's `final_text` (the words as kept), the parent-typed Firsts label when it exists (NS-06 Part A) and the parent-typed photo text when it exists (NS-01-R22). It holds no `raw_transcript`, no audio-derived text, no date or place from a picture (`NX-39-R10`), no child name field, no machine tag. | `[NS-02-R5] the index holds only final_text and the typed label` (schema test) |
+| NS-02-R5 | Given the index, Then it holds each letter's `final_text` (the words as kept), the parent-typed Firsts label when it exists (NS-06 Part A), and the parent-typed photo text and typed place when they exist (NS-01-R21). Decision (12): a typed place on a photo is IN, because the parent typed it (design spec 02). A place read from the file is OUT: it was never the parent's word. It holds no `raw_transcript`, no audio-derived text, no date or place from a picture (`NX-39-R10`), no child name field, no machine tag. | `[NS-02-R5] the index holds only final_text and the typed label` (schema test) |
 | NS-02-R6 | Given a query of 2 or more words, Then a letter matches when all words appear, in any order; the last word matches as a prefix while typing. Case is ignored. | `[NS-02-R6] all words match, last word as prefix, case ignored` |
 | NS-02-R7 | Given the fixtures "cafe" and "cafe with an accent" in French, Spanish and Portuguese text, Then the unaccented query finds the accented word. UNVERIFIED that the default tokenizer does this; if it does not, a folded copy of the text is indexed instead. | `[NS-02-R7] accents do not hide a word` |
 | NS-02-R8 | Given fixtures in Devanagari and Arabic script, Then a whole-word query in the same script finds the letter. Right-to-left results render with the match marked and are readable in VoiceOver. | `[NS-02-R8] Devanagari and Arabic words are found` |
@@ -51,11 +52,11 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 | NS-02-R13 | Given no result, Then the screen shows `book.empty.searchTitle` ("No letters with that word yet.") and nothing else: no tip, no "add a letter" button. | `[NS-02-R13] one calm line, no prompt to write` |
 | NS-02-R14 | Given the query, Then it is never saved: no recent searches, no suggestions, no history; it is cleared when the parent leaves the Book. The text field sets autocorrect off and spell check off. | `[NS-02-R14] queries are not remembered: no recent searches` |
 | NS-02-R15 | Given a canary query typed through search, a result tap and a forced error, Then 0 hits in logs, breadcrumbs, crash payloads, analytics and URLs. | `[NS-02-R15] the query never leaves the screen` (log canary) |
-| NS-02-R16 | Given Keep, Review edit, Undo of a small fix, delete, restore, hide, and a synced letter from the other parent, Then the index changes in the same transaction as the letter. A deleted letter is not found at once; a restored letter is found again. | `[NS-02-R16] the index moves with the letter` |
+| NS-02-R16 | Given Keep, Review edit, Undo of a small fix, delete, restore, hide, and a synced letter from the other parent, Then the index changes in the same transaction as the letter. A deleted, hidden or sealed letter is not found at once (a sealed letter contributes nothing until it opens, design 04 FS-R10); a restored, unhidden or opened letter is found again; a purged id never returns. | `[NS-02-R16] the index moves with the letter` |
 | NS-02-R17 | Given a kept letter whose words are still being made, and a quiet day, Then neither is found (no words yet; a quiet day has none, D-084). | `[NS-02-R17] letters without words are not found` |
 | NS-02-R18 | Given Erase everything or Delete account, Then the index and its sidecar files are deleted with the data. | `[NS-02-R18] erase removes the index` |
 | NS-02-R19 | Given the index is missing or older than the migration, Then search falls back to a substring scan of `final_text` with the same results, and the index rebuilds off the first frame and without blocking Keep. Results from both paths are identical on the fixtures. | `[NS-02-R19] fallback and index agree` |
-| NS-02-R20 | Given 1,200 letters, Then search adds no more than the memory budget F09 sets (A3, BL-044 device run). | `[NS-02-R20] 1,200 letters stay inside the memory budget` (device) |
+| NS-02-R20 | Given 1,200 letters, Then, over the Book screen's own baseline, one search adds no more than 50 MB of peak memory and the index file is no larger than 10 MB (both PROPOSED defaults; F09 A3 and the BL-044 device run set the final numbers, and a miss blocks the flag, not the build). | `[NS-02-R20] 1,200 letters stay inside the memory budget` (device) |
 | NS-02-R21 | Given VoiceOver, AX5, Reduce Motion and Voice Control, Then the field and results are labelled, reachable in order, 44 pt or more, one column at AX5. | `[NS-02-R21] Find passes VoiceOver, AX5, Reduce Motion` (device) |
 | NS-02-R22 | Given airplane mode, Then Find behaves exactly as online and makes 0 network calls. | `[NS-02-R22] Find makes 0 network calls` |
 
@@ -72,7 +73,7 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 | App lock | The Book is not reachable while locked, so neither is Find. |
 | Index corrupt | Fallback scan (R19). No error to the parent. |
 | Very common word | Results list as normal; no cap message; paging is by the list's own scroll. |
-| Photo text or Firsts label | Found once they exist; the picture's date and place are not (R5). A result that matched photo text shows that text, not the letter's words, as its snippet. |
+| Photo text, typed place or Firsts label | Found once they exist; a date or place read from the file is not (R5). A result that matched photo text shows that text, not the letter's words, as its snippet. |
 
 ## 7. Privacy and constitution check
 
@@ -81,11 +82,13 @@ Numbers come from F09-REQ-015 where it states them (300 ms p95, 1,000 letters, S
 - No child name, transcript, audio or entry text in analytics, logs or crash reports (CLAUDE.md privacy rules; R15).
 - Door lines: Find is not a consent. No Shown/Records line is needed. Never: store the query, send it, or index audio. Decline: not using it changes nothing.
 - No gap counting: no "you have not written about X", no counts, no suggestions to fill.
-- Content strings pass the rules test. The existing empty-state key is reused.
+- Content strings pass the rules test. The empty-state key `book.empty.searchTitle` exists (EVIDENCE: `packages/content/src/strings.en.ts`, line 543 at `da83fb1ee`) and is reused.
+
+Label effect: none. The index is on the phone only and never syncs or exports.
 
 ## 8. Free vs Plus
 
-Free, ungated, always. Find reads letters that exist; what a family kept stays theirs to read, hear and export, so Find works after the allowance is used and after Plus lapses. It adds no gate (D-082 stays the one gate; planned raise 2, 5, 10). Capture is never blocked and Find does not touch capture.
+Free and ungated in Build 13; not promised as forever. Find reads letters that exist; what a family kept stays theirs to read, hear and export, so Find works after the allowance is used and after Plus lapses. It adds no gate (D-082 stays the one gate; planned raise 2, 5, 10). Capture is never blocked and Find does not touch capture.
 
 ## 9. Metrics (content-free)
 
@@ -96,9 +99,9 @@ Free, ungated, always. Find reads letters that exist; what a family kept stays t
 
 - `expo-sqlite` with `enableFTS` in the config plugin (F09 data section). This changes native config, so it needs a new EAS build, not an update over the air. UNVERIFIED that FTS5 is present on SDK 57.
 - A local migration for `entries_fts` and triggers (`apps/mobile/src/lib/db/migrations.ts`); a new migration file, never an edit of an applied one.
-- F09's Book header (shipped in #674).
-- NX-44 and NS-01-R22 only for the label and photo text (later and Build 13).
-- Packs: CJK and non-Latin behaviour depends on the language gates; Build 13 ships English only (D-121), so R8 and R3's CJK half are proven on fixtures, not on a shipped pack.
+- F09's Book header (NX-42 says shipped in #674; UNVERIFIED by me).
+- NX-44 and NS-01-R21 only for the label and photo text (later and Build 13).
+- Packs: CJK and non-Latin behaviour depends on the language gates; Build 13 ships English only (D-121; UNVERIFIED for Build 13), so R8 and R3's CJK half are proven on fixtures, not on a shipped pack.
 
 ## 11. Risks
 

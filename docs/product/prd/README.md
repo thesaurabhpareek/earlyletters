@@ -2,7 +2,7 @@
 
 Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
 
-Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head `e872793d`). Where a design default and an earlier line of mine differed, the design default won and the file says so.
+Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 06, head `56a0df68`, re-checked on 11 Nov after the updates; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
 Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in stack-rank order.
 
@@ -17,6 +17,9 @@ Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `close
 | A copy of a child's voice leaving the phone needs a `security-architect` read and a counsel read first. | closed X2 |
 | Memory Library is after Build 13 as a whole. NS-01 is only NX-39 P0 (one picture per letter), which the exec record already puts in Build 13. | `exec-rulings-2026-11-10-expansion.md`; NX-39 |
 | Metrics are content-free. Opt-in analytics is off through 1.0 (D-124). | F18, NX-39-R34 |
+| Lens, Photos lens, Firsts lens, Home memory, index and Find (as a header action) are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens". | BRAND.md |
+| Level 1 share has no recording row and no recording path until `security-architect` and counsel reads are on record; design spec 03 must remove its recording toggle. The shared text has no footer, brand name or link (NS-05-R16, SH-R10). | Karma, 11 Nov |
+| Build 13 is one photo per letter and no video. The design cap of 8 photos and 2 videos is out of Build 13. | design spec 01 section 1a |
 
 ## The files
 
@@ -44,7 +47,7 @@ Every open question in every file has a default. The ones that need the founder:
 | Spike engineer and week | 04 OQ-1 | The Monday after Build 13 is cut | Fri 20 Nov 2026 |
 | Share one letter in Build 14, and no Share tab | 05 OQ-1, OQ-5 | Build 14; no tab | Fri 20 Nov 2026 |
 | Firsts concept study; sealed letters timing | 06 OQ-A1, OQ-B1 | Study after Build 13; sealed not before Build 15 | Fri 20 Nov 2026 |
-| Proof books spend (about $45) | 07 OQ-1 | No spend | Fri 20 Nov 2026 |
+| Proof books spend (the amount in the exec record, Q2) | 07 OQ-1 | No spend | Fri 20 Nov 2026 |
 
 ## Reads that gate anything
 
@@ -72,7 +75,32 @@ NX-41 and NX-42 live on PR #790's branch (`docs/nav-tabs-requirements-10nov`, he
 | NX-42 row C25 | "Pay once for more letters" | Plus is a subscription (D-082): a membership that lets you keep letters beyond the free allowance. Prices only from the App Store and `packages/content`. |
 | NX-42 rows C13 and C14, section 3 | Find "no new file"; Firsts MISSING | C13 is specified in `02-find.md`; C14 in `06-firsts-sealed-letter-quick-capture.md` Part A. |
 | NX-42 section 4 | Counts Moments 6 | Re-count after the re-homing above. |
-| `book.empty.bookCta` ("Write a letter") | A button on the Book's empty state that reads as starting a letter | A pointer to Home. Behaviour: a tab switch only. NS-01-R24 holds the test; `content` writes the word (design spec 06, J3). |
-| Photos lens in the Book | (NS-01) | No "Add photos" button that starts a letter (NS-01-R24). |
+| `book.empty.bookCta` ("Write a letter") | A button on the Book's empty state that reads as starting a letter | A pointer to Home. Behaviour: a tab switch only. NS-01-R23 holds the test; `content` writes the word (design spec 06, J3). |
+| Photos lens in the Book | (NS-01) | No "Add photos" button that starts a letter (NS-01-R23). |
 
 Trace ids: each acceptance row carries an id of the form `NS-01-R7` or `NS-06-A3`, and its test title starts with that id in square brackets, so a test can cite the requirement it proves.
+
+## What changed against the design head (re-checked 11 Nov at 56a0df68)
+
+| Design change | Where I applied it |
+|---|---|
+| Build 13 is one photo per letter, no video (spec 01 1a) | NS-01 head and R22 |
+| "Start from a photo" is the third and quietest item inside the capture cluster (spec 01 3.1) | NS-01 section 3 and OQ-3 |
+| Photos on a sealed letter do not count until it opens; a sealed letter contributes nothing to any surface (spec 04 FS-R10) | NS-01-R10, NS-02-R16, NS-06-B2 |
+| Opening removes the seal permanently; the opening-day Home slot `seal.homeOpened` is allowed (spec 04 B4, Q4, FS-R3) | NS-06-B3, B4 |
+| Share Level 1 has no recording row; no footer, brand name or link (spec 03 3.3, SH-R10) | NS-05-R16 |
+| Share one letter is a founder decision, text first (spec 03 Q0/Q1) | NS-05 head |
+| A typed place on a photo is searched; a derived place is not (spec 02) | NS-02-R5, NS-01-R21 |
+
+## Appendix A. String-scan pattern lists (used by NS-05-R17, NS-06-A5, A12, B9 and NS-01-R24)
+
+A test scans the named `packages/content` keys, case-insensitive, whole words unless marked. A match fails the test. These lists are PROPOSED by `product`; `content` owns the final list in `packages/content/test/rules.test.ts`.
+
+| List | Patterns |
+|---|---|
+| Gap, norm and counting | not yet; still waiting; so far; only \d+; \d+ left; missing; behind; on track; typical; normal for; most babies; milestone; streak; in a row; days since; progress; points; badge |
+| Loss and ending (VOICE.md legacy rule) | if I am not here; when I am gone; farewell; last letter; passing; legacy contact; in memory of |
+| Seal wording | locked; unlock; secure vault; sealed forever; wax |
+| Machine-writes (CLAUDE.md) | tidy; cleaned up; polished; improved; corrected; edited (for what the machine does); written for you; we wrote; AI; summary |
+| Forbidden characters | em dash; en dash; curly quotes; ellipsis character; emoji |
+| Code deny-list for the Firsts folder | imports from any speech, NLP, classifier or text-analysis module; names matching `classif`, `sentiment`, `mood`, `suggest` |
