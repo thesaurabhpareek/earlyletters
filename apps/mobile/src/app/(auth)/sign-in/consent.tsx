@@ -96,7 +96,7 @@ export default function ConsentSteps() {
   const switching = useRef(false);
   const s = auth.state;
   const k = authCopy.consent;
-  const child = active?.name ?? k.childFallback;
+  const child = active?.name || k.childFallback;
   const claiming = s.status === 'ready' && s.sync === 'on' && auth.claimPending;
   // "Agree and sync" after an earlier "Keep on this phone": the sensitive-data step, whatever the gate's step list says.
   const turningOn = params.step === 'sensitive' && s.status === 'ready' && s.sync === 'off';

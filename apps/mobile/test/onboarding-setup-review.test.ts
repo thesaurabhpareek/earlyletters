@@ -20,7 +20,10 @@ describe('[SET-04] "Birthday" is said once, above the date', () => {
 describe('[SET-05] no English typed in the screen', () => {
   it('"your child" comes from onboarding.childFallback', () => {
     expect(onboarding).not.toMatch(/'your child'/);
-    expect(onboarding.match(/o\.childFallback/g)?.length).toBeGreaterThanOrEqual(4);
+    // The reason line for the date moved into child-step.logic.ts with NX-31-R3; the screen keeps the rest.
+    const stepLogic = readFileSync(join(__dirname, '..', 'src', 'components', 'onboarding', 'child-step.logic.ts'), 'utf8');
+    expect(stepLogic).not.toMatch(/'your child'/);
+    expect(((onboarding + stepLogic).match(/o\.childFallback/g) ?? []).length).toBeGreaterThanOrEqual(4);
     expect(en.onboarding.childFallback).toBe('your child');
   });
 });

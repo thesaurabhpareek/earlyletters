@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { copy, fill } from '@/lib/copy';
+import { childLabel, copy, fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
 import { familySurfacesShown, inviteHref, visibleCoParentDoors } from '@/lib/family/entry.logic';
 import { longDate as formatDate } from '@/lib/dates';
@@ -113,7 +113,7 @@ export default function ChildSettings() {
       {editing === 'born' ? <BornEditor child={child} onSave={save('date')} onCancel={() => setEditing(null)} /> : null}
 
       <ListSection title={s.detailsLabel}>
-        <ListRow title={x.edit.nameLabel} trailing={name} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
+        <ListRow title={x.edit.nameLabel} trailing={childLabel(name)} onPress={() => setEditing('name')} accessibilityHint={x.edit.rowHint} />
         <ListRow title={dateRow.title} trailing={dateRow.value} onPress={openDate} accessibilityHint={x.edit.rowHint} />
         <ListRow title={fill(s.signsAsLabel, { child: name })} trailing={child.signsAs} onPress={() => setEditing('signsAs')} accessibilityHint={x.edit.rowHint} />
       </ListSection>

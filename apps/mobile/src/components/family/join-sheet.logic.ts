@@ -16,6 +16,7 @@
  */
 import { familyCopy } from '@scribe/content';
 import { renderTemplate } from '@scribe/core';
+import { fill } from '@/lib/copy';
 import { FINAL_INVITE_ERRORS, type InviteErrorKind } from '@/lib/family/invite-errors.logic';
 import { parseInviteInput } from '@/lib/family/invite-link.logic';
 import { joinErrorLine, type JoinView } from '@/lib/family/join-flow.logic';
@@ -28,7 +29,7 @@ export function joinTitle(view: JoinView, child: string | null): string {
   const a = familyCopy.accept;
   if (view === 'signIn') return a.invitedTitle;
   if (view === 'ask') return a.askTitle;
-  if (view === 'joined' && child) return renderTemplate(a.joinedTitle, { child });
+  if (view === 'joined' && child) return fill(a.joinedTitle, { child });
   return a.title;
 }
 
