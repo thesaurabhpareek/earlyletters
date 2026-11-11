@@ -3,7 +3,7 @@
  * `capabilities.coParent`, which follows EXPO_PUBLIC_SERVER_FEATURES):
  *  - on (D-100, drafted as D-089: server features ship in v1.0; the TestFlight alpha of D-106):
  *    each entry opens its real flow: invite and join (leave waits for D-113, below), in an alpha build, and in a
- *    store build only once a family release flips CO_PARENT_IN_STORE_BUILD (BL-882);
+ *    never in a store build (BL-882; one rule: servers on AND an alpha build);
  *  - off (the kill path, a store build before that flip, and every build made before the switch flips): there is
  *    NOTHING to show (founder, 11 Nov 2026: no tab, no tappable row, no coming-soon screen). The entry is absent where it
  *    is a button or row (`familySurfacesShown`, `visibleCoParentDoors`); a route that is still reached (an invite
@@ -48,20 +48,12 @@ export type InviteDestination = 'coming_soon' | 'flow';
 export const LEAVE_BOOK_OFFERED = false;
 
 /**
- * Whether a store build (`production` profile, `alpha` false) offers co-parent sharing. Build 12 turns server features on
- * for sign-in, sync and the account, but not co-parent sharing: every co-parent surface shows one "coming soon" (BL-882,
- * founder, 10 Nov 2026). A family release flips this one constant, and nothing else. Alpha builds do not read it.
- */
-export const CO_PARENT_IN_STORE_BUILD = false;
-
-/**
- * One rule for all of them: no server features, no flow; a store build (`alpha` false) has no flow until
- * CO_PARENT_IN_STORE_BUILD is flipped. Leave also waits for D-113 to lift. `alpha` is PLUS_ALPHA (billing/alpha.ts),
+ * One rule for all of them: no server features, no flow; a store build (`alpha` false) has no flow (founder ruling, 11 Nov 2026: co-parent is coming soon there, so one rule, servers on AND an alpha build). Leave also waits for D-113 to lift. `alpha` is PLUS_ALPHA (billing/alpha.ts),
  * decided at bundle time; there is deliberately no default, so a caller cannot forget it.
  */
 export function inviteDestination(entry: InviteEntry, serverFeatures: boolean, alpha: boolean): InviteDestination {
   if (entry === 'invite_leave' && !LEAVE_BOOK_OFFERED) return 'coming_soon';
-  return serverFeatures && (alpha || CO_PARENT_IN_STORE_BUILD) ? 'flow' : 'coming_soon';
+  return serverFeatures && alpha ? 'flow' : 'coming_soon';
 }
 
 /** The route a button or row pushes for an entry. Where there is no flow the route sends the person to Tonight. */
@@ -76,24 +68,24 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
  * build still lacks). "I was invited" needs an invite only a server can make: shown with the
  * switch on (D-100 amends D-087), hidden with it off. "Family can read" is the family-contributor
  * switch, and contributors are absent from v1.0 whatever the switch (B1, F11 D4): hidden in both.
- * In a store build "I was invited" stays hidden until CO_PARENT_IN_STORE_BUILD is flipped (BL-882, B12-5): a person cannot
+ * In a store build "I was invited" stays hidden (BL-882, B12-5): a person cannot
  * join in Build 12, and an invite link already lands on the calm page. The invite-link landing stays in every build.
  */
 export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
-  return { joinButton: coParent && (alpha || CO_PARENT_IN_STORE_BUILD), familyCanReadSwitch: false };
+  return { joinButton: coParent && alpha, familyCanReadSwitch: false };
 }
 
 /**
  * The child Settings row "Write this book together" (D-126, BL-604, BL-890, BL-882). Family is never a tab, so this no
  * longer decides a tab: it decides the one row, which is there only where the real flow is (an alpha build with server
- * features on, or a store build after a family release flips CO_PARENT_IN_STORE_BUILD). Everywhere else there is no row,
+ * features on, never a store build). Everywhere else there is no row,
  * no chevron and no coming-soon screen. Nothing a person can set reaches either input.
  *
  * Not hidden: the invite-link landing (/invite). A link opened from outside still goes somewhere calm (Tonight, D-087),
  * and the link allowlist below sends nothing else there.
  */
 export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.coParent && (input.alpha || CO_PARENT_IN_STORE_BUILD);
+  return input.coParent && input.alpha;
 }
 
 /**
@@ -122,7 +114,7 @@ export interface IncomingLinkPlan {
 
 /**
  * Deep links (+native-intent). Unclassified links open an allowlisted route or Tonight (allowedLinkRoute).
- * With server features on in an alpha build (or a store build once CO_PARENT_IN_STORE_BUILD is true), an invite link keeps
+ * With server features on in an alpha build (never a store build), an invite link keeps
  * its token in the Keychain (A-REQ-028) and opens /invite; a store build before that opens Tonight and keeps nothing.
  * With them off there is no sign-in and no join: auth links open the app at home and keep nothing; an
  * invite link opens Tonight and its token is dropped (it could never be redeemed
