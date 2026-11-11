@@ -417,7 +417,7 @@ export const en = {
       },
       grammarSlip: {
         label: "One word fixed",
-        explain: "A slip of the tongue, like \"a apple\". Only that word changed.",
+        explain: "A small slip, like \"a apple\". Only that word changed.",
       },
       paragraph: {
         label: "New paragraph",
