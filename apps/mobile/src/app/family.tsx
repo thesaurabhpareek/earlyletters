@@ -9,7 +9,7 @@
  * "From Mama" with "You" or "Co-parent" under it (components/family/member-row.tsx), never an avatar, initials
  * or an email address, and never more than two parents (D-069). Nothing is counted.
  *
- * With server features on (D-100, drafted as D-089: "the Family tab is live"), the tab shows who writes to the
+ * With server features on (D-100, drafted as D-089: "the Family tab is live", now the family page), the page shows who writes to the
  * open book: you, the co-parent who joined (from the last pull, signed with what the child calls them), and
  * pending invites as the server lists them (sync_books, lib/family/invite-list.logic.ts): open ones as
  * "Invited, open until {date}" with Share again and Cancel invite, and, for 14 days, expired ones as the server
@@ -30,7 +30,7 @@
  *
  * Not a tab in any build (founder, 11 Nov 2026: Home, Book, Me). This is a pushed route, /family, reached from a book's
  * settings row when the book has a co-parent (child-settings.logic.ts FAMILY_TAB_HREF). Where co-parent sharing is not
- * in the build it sends the person to Tonight: there is no coming-soon screen (the old presentation is deleted).
+ * in the build it sends the person Home: there is no coming-soon screen (the old presentation is deleted).
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -154,7 +154,7 @@ function FamilyShared() {
   useFocusEffect(
     useCallback(() => {
       void load();
-      // A sheet that just closed over this tab left its line here (the invite's "waits on the Family tab").
+      // A sheet that just closed over this page left its line here (the invite's "waits on the Family tab").
       const note = familyNotice.take();
       if (note) toast.show({ message: note });
     }, [load, toast]),

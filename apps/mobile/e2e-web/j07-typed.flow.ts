@@ -63,7 +63,7 @@ test('[J07d] the free letters: two are kept, the third is held', async ({ app, r
   const step = journey(record, 'J07', 'typed-letter', 8, 'J07-04');
   await firstRun(app);
   const write = async (text: string) => {
-    await tab(app, 'Tonight').click();
+    await tab(app, 'Home').click();
     await btn(app, /^Type/).click();
     await app.getByRole('textbox').first().fill(text);
     await expect(btn(app, /^Add to .*book/)).toBeEnabled();
