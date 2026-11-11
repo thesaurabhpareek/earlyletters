@@ -27,7 +27,7 @@ PRD V2 puts sign-in, sync, co-parent sharing and the owner's backup in v1.0 (M14
 | S1-201 the account-first Welcome and the offline and outage screens | Switch on; staging; airplane mode; Larger Text, VoiceOver and Reduce Motion | Build 12 (PR #724) |
 | S1-202 the code screen's 60 second recovery set, Apple on it, the hand-over into first run and the optional name | Switch on; staging; two drill accounts (one with a book); VoiceOver, Larger Text and Reduce Motion | Build 12 (PR #728) |
 | WP-F08-B1 backup spike | S05's spike build; two iPhones on one Apple Account | W2 (T11) |
-| S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | Build 2 (B2-10) |
+| S1-35 Delete account as a sole parent: the deletion screen and Cancel deletion (M1) | Switch on; staging; a drill account with one book and no co-parent | The sole-parent drill, by Mon 2 Nov noon PT, on a development client with the variables in the shell or a build with the switch on (D-129; `docs/release/TESTFLIGHT.md` step 9) |
 | S2-13 deletion request and cancel | Switch on; staging | W2 (T11); completion and `verify-deletion` in staging in W5, W6 |
 | S1-22 co-parent sync | Switch on; two iPhones on two Apple Accounts | W5, W6 |
 | S1-29 a child's book with two parents | Switch on; S1-22's two phones, joined to one book | W5, W6, after S1-22 |
