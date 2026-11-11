@@ -105,7 +105,7 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 | Slot | Intent | Limits and rules |
 |---|---|---|
 | `book.find.button` | VoiceOver and visible name of the magnifier | One word: Find |
-| `book.find.placeholder` | "Find in {child}'s book" | Names the book; `{child}` with the nameless fallback |
+| `book.find.placeholder` | "Find in {child}'s book" | Names the book; `{child}`; with no name the fallback is "Your child" (closed question N5), and `content` words the nameless placeholder (PROPOSED slot, no string here) |
 | `book.find.noMatchHelp` | Under the existing no-match title | One short line, suggests another word; no gap language |
 | `book.find.notReady` | Index still being made | Plain; true only while it is true |
 | `book.find.error` and `book.find.retry` | Index failed and Try again | Says what to do |
@@ -113,10 +113,10 @@ Existing (EVIDENCE): `book.empty.searchTitle` = "No letters with that word yet."
 | `book.find.buttonHint` | VoiceOver hint of the magnifier | One sentence; says it looks through this book's letters |
 | `book.find.fieldLabel` | VoiceOver label of the field | Plain; names the act |
 | `book.find.foundA11y` | Announced once when results appear | No number, no count (PRD NS-02 rule against saying a number of results) |
-
-Note on PR #798 (head `5cb0e863`, `packages/content/src/features/find.en.ts`, read by me at that head): its slots are `button`, `buttonHint`, `placeholder`, `fieldLabel`, `hint`, `noMatchHelp`, `notReady`, `error`, `retry`, `rowA11y`, `foundA11y`, `clear`, `cancel`. All map to the slots in this section except `hint` ("Type three letters to start."), which I removed from this spec because PRD NS-02-R3 says no message appears under three characters. `hint` should leave #798.
 | `book.find.clear` | VoiceOver name of the clear button | |
 | `book.find.cancel` | Cancel | |
+
+Note on PR #798 (head `5cb0e863`, `packages/content/src/features/find.en.ts`, read by me at that head): its slots are `button`, `buttonHint`, `placeholder`, `fieldLabel`, `hint`, `noMatchHelp`, `notReady`, `error`, `retry`, `rowA11y`, `foundA11y`, `clear`, `cancel`. All map to the slots in this section except `hint` ("Type three letters to start."), which I removed from this spec because PRD NS-02-R3 says no message appears under three characters. `hint` should leave #798.
 
 Door lines. Not a consent screen, but it reads the whole book:
 - Shown: the placeholder naming the book.
@@ -135,7 +135,7 @@ Door lines. Not a consent screen, but it reads the whole book:
 | FD-R5 | Starts nothing. Given no match or an empty book, Then there is no button that starts a letter in Find | navigation test N8(b); device |
 | FD-R6 | Quiet. Given any use of Find, Then no term enters analytics, logs or crash reports | catalog review; log test |
 | FD-R7 | Accessibility. Given VoiceOver, AX5, Reduce Motion, both themes, Then section 8 holds and the match is not signalled by colour alone | device |
-| FD-R9 | Index lifecycle. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |
+| FD-R9 | Index lifecycle. The seal transitions here are PROVISIONAL (seal clock): when a letter counts as sealed or open follows 04 FS-R7, which `data-architect` reconciles with ADR 0028 D3 and D4 (D4: `searchable_letters` uses the local calendar date) by Fri 20 Nov 2026. Given the Find index, When a letter is deleted, hidden (its book hidden), sealed or made private to another viewer, Then its terms are removed from the index in the same write, and a search for its words returns nothing at once. When it is restored, unhidden or opened, Then its terms are added again. A purged id never returns (PRINCIPLES 9) | unit tests per transition; `data-architect` review of the index file |
 | FD-R8 | Works with no network and no account | device, airplane mode |
 
 ## 11. The 12-line job-clarity review

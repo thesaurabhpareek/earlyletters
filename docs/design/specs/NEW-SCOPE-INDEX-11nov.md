@@ -22,16 +22,19 @@ Consequences I applied (PROPOSED, each is in the spec that owns it):
 3. Outputs split by what they are: export and where letters live are care (Me); sharing one letter is an action on the letter (Book). Neither is a tab.
 4. Find and Photos and Firsts are ways to read (Book). Find is a header action, Photos and Firsts are lenses that appear only when they have material.
 
-## 2. The six specs, in stack-rank order
+## 2. The six specs, in build order (closed question X1)
 
-| # | File | Job it serves | Class (NAV-TAB-ROLES section 2) | Home tab |
+The file numbers are names, not rank. The build order is the order of this table, per closed question X1 in `infra/closed-questions-2026-11-11.md` (Project doc): photo, Find, the family-hears-it pilot (not a design spec here), the hands-free spike, share one letter, then Firsts and sealed letters. Spec 6 is the frame for all of them.
+
+| Order | File | Job it serves | Class (NAV-TAB-ROLES section 2) | Home tab |
 |---|---|---|---|---|
 | 1 | `01-PHOTO-WITH-A-LETTER-11nov.md` | Put a picture beside the words | CAPTURE (enricher and one Home mode) plus LENS | Home (start), Book (read) |
 | 2 | `02-FIND-11nov.md` | Find a letter by a word | LENS | Book |
-| 3 | `03-SHARE-ONE-LETTER-11nov.md` | Send one letter to one person, and the test for a Share tab | OUTPUT, as an object action | Book (the letter page) |
-| 4 | `04-FIRSTS-AND-SEALED-11nov.md` | Mark a first; seal a letter for a day; quick capture is not a second entry | CAPTURE (enrichers) and LENS | Home (Review), Book |
-| 5 | `05-HANDS-FREE-CAPTURE-STATES-11nov.md` | Start, hold and finish a take with hands busy | CAPTURE | Home |
-| 6 | `06-HOME-BOOK-ME-IA-11nov.md` | Three tabs, one job each, every state, and the navigation test | all | all |
+| 3 | (pilot) | Family hears it: not a design spec in this set | n/a | n/a |
+| 4 (spike) | `05-HANDS-FREE-CAPTURE-STATES-11nov.md` | Start, hold and finish a take with hands busy | CAPTURE | Home |
+| 5 | `03-SHARE-ONE-LETTER-11nov.md` | Send one letter to one person, and the test for a Share tab | OUTPUT, as an object action | Book (the letter page) |
+| 6 | `04-FIRSTS-AND-SEALED-11nov.md` | Mark a first; seal a letter for a day; quick capture is not a second entry | CAPTURE (enrichers) and LENS | Home (Review), Book |
+| frame | `06-HOME-BOOK-ME-IA-11nov.md` | Three tabs, one job each, every state, and the navigation test | all | all |
 
 Read 6 first if you only read one: it holds the tab jobs, the states and the test that keeps the other five honest. Read 1 before 4: Firsts and seals reuse its "add to this letter" pattern.
 
@@ -49,11 +52,11 @@ Read 6 first if you only read one: it holds the tab jobs, the states and the tes
 - Parent vocabulary only (BRAND.md glossary): book, letter, photo, kept, this phone. Not: take, entry, draft, pack, memory (as a thing the app makes), library (Apple's word), moment, share-as-backup.
 - No streak, point, badge, count of gaps, "days since", countdown, fear, guilt or loss word. A number appears only where it names a date, a time length the parent just recorded, or a selection the parent just made.
 - Nothing implies a machine writes. Photos and Firsts and seals never get a machine caption, tag, title, summary or alt text.
-- `{child}` is the child; never gendered; fallback "your child".
+- `{child}` is the child; never gendered; fallback "Your child" (closed question N5).
 
-## 5. The 12-line job-clarity review (PROPOSED; used in every spec)
+## 5. The 12-line job-clarity review (working copy of the X5 charter; used in every spec)
 
-No such checklist exists in the repo today (I searched `docs/` for "job clarity" and "12-line" on `develop`; the only hit is unrelated). This is the one definition; each spec applies it as a table with a Pass, Fail or Open and a reason. A spec with a Fail does not go to `mobile`.
+The job-clarity charter (ten rules, twelve-line checklist) is adopted as a draft under `docs/design/` by closed question X5 in `infra/closed-questions-2026-11-11.md` (Project doc). It is not on this branch yet, so I did not read it. The charter is the one definition and wins over the table below wherever they differ; this table is the working copy I applied in each spec (PROPOSED) until the charter lands, and each spec records Pass, Fail or Open with a reason. A spec with a Fail does not go to `mobile`.
 
 | # | Line | The question |
 |---|---|---|
@@ -125,7 +128,7 @@ Components, library first (`apps/mobile/src/components/ui/`, read as a directory
 | `content` | Wording that could read as a machine writing: "Writing down what you said", "words being made", "getting ready", "made". CLAUDE.md: never imply AI writes anything. Review these existing and proposed lines | 02, 05, 06 |
 | `qa` | Device passes for every UNVERIFIED, AX5 and VoiceOver tables | each spec's checklist |
 | `user-research` | Five-parent reads for the job sentences, Find, Share and seals | 06 section 11 |
-| `data-architect` | Fields: first mark and label, photo description, share log (none). Exact question on the seal clock: reconcile ADR 0028 D3, which stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers, with PRD NS-06-B1, which stores one absolute UTC instant (the author's local midnight at the start of the chosen day, in the device's zone at sealing). Is it one stored field or two? The PRD wins where they differ (FS-R7). Owner: `data-architect`. Answer by Fri 20 Nov 2026 | 04, 01, 03 |
+| `data-architect` | Fields: first mark and label, photo description, share log (none). Exact question on the seal clock: reconcile ADR 0028 D3, which stores `sealed_until` as a calendar date with a UTC-plus-grace rule for other readers, with PRD NS-06-B1, which stores one absolute UTC instant (the author's local midnight at the start of the chosen day, in the device's zone at sealing). Is it one stored field or two? Until then FS-R7, the 04 B6 clock rows and 02 FD-R9 seal transitions are PROVISIONAL (Karma ruling: the instant stays for now); ADR 0028 D4 (`searchable_letters` reads the local calendar date) is part of the same reconciliation. Owner: `data-architect`. Answer by Fri 20 Nov 2026 | 04, 01, 03 |
 
 ## 9. Open design questions, all six, each with a default
 
@@ -138,6 +141,6 @@ Listed per spec in its last section (question numbers are per spec; this table p
 | Q2 | Does photo-first need the camera, or the library? | Build 13: the system picker only, returning one photo; no camera, no library access, no in-app chooser, no pre-prompt (PRD NS-01-R22). Spec 01 section 1a | 01 |
 | Q3 | Firsts: when are they built? (NX-44 FD-1) | Included in scope (founder: include all new scope; relayed). Specified in full; build sequenced after rank 5 and the five-parent study, earliest Build 15. Nothing is cancelled | 04 section A |
 | Q4 | Sealed letters: when are they built? | Included in scope. Specified in full; build sequenced after rank 5 and the five-parent study, earliest Build 15 (ADR 0028 D3 and PRD NS-06 agree on the sequence). "Sealed" and "locked" are not used unless the seal is real cryptography | 04 section B |
-| Q4a | Needs the founder: does "all new scope" include Firsts and sealed letters as built features, or as specified features? | Default: specified now, built in the sequence above. This is the reading that keeps both in scope without moving ranks 1 to 5 | 04, `needs:founder` |
+| Q4a | Needs the founder: does "all new scope" include Firsts and sealed letters as built features, or as specified features? | Default: specified now, built in the sequence above. This is the reading that keeps both in scope without moving ranks 1 to 5 | 04, `needs:founder`. ADR 0028 Q6 (may an author hide a letter from the other parent) also stays open, founder with counsel; 04 B6a is the stronger-privacy default meanwhile, per the coordinator ruling in `infra/closed-questions-2026-11-11.md` |
 | Q5 | What does Find search? | Letters' words, first labels, the parent's typed photo text and typed place; never a place or date derived from the file (PRD NS-02-R5) | 02 section 4 |
 | Q6 | Where does "Take the book with you" (export, where letters live) live? | Me, as one section, titled by `content` | 06 |
