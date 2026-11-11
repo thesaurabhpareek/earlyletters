@@ -8,7 +8,7 @@
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { announce } from '@/lib/a11y';
-import type { AuthState } from '@/lib/auth/machine.logic';
+import { isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { subscribe, listChildren } from '@/lib/store';
@@ -29,10 +29,11 @@ export interface FirstRunRoute extends FirstRunGateResult {
   /** The steps report that the person is past their welcome step: nothing typed there is ever swapped out for a sign-in screen. */
   markPastWelcome: () => void;
   /**
-   * "Use another account" signed the person out: first run goes back to its start. The latch above is cleared, so with no
-   * session the route answers the Welcome again, never the child step with Continue live (D-160: sign-in is required in a
-   * build with server features on; a local-only book is made only through the local start the outage screen offers).
-   * A lost session that the person did not choose still keeps the steps. Nothing with the switch off.
+   * "Use another account" signed the person out: first run goes back to its start. The route now does this itself when the
+   * session ends (a signed-in to signedOut change of the auth status), which also covers a sign-out that waited for queued
+   * uploads; this call is kept as belt and braces for the immediate case. The latch is cleared, so with no session the route
+   * answers the Welcome, never the child step with Continue live (D-160). A person who chose the local start keeps the steps.
+   * Nothing with the switch off.
    */
   restartFromWelcome: () => void;
 }
@@ -93,6 +94,19 @@ export function useFirstRunRoute(): FirstRunRoute {
   const markPastWelcome = useCallback(() => {
     if (active) setPastWelcome(true);
   }, [active]);
+
+  // The session really ended (signed in, then signedOut): first run goes back to its start whatever ended it: "Use another
+  // account" (also after a wait for queued uploads, which resolves later than the tap), a revoked or expired session, a
+  // forced sign-in. Otherwise the steps would stay up with no account and Continue would make a local-only book in a build
+  // with server features on (D-160). Not on restoring or a cold start (there was no session to lose), not while a wait for
+  // uploads is cancelled (that goes back to ready), and not for a person who chose the local start (the gate keeps the steps).
+  const wasSignedIn = useRef(isSignedIn(auth.state));
+  const status = auth.state.status;
+  useEffect(() => {
+    const signedIn = isSignedIn(stateRef.current);
+    if (active && wasSignedIn.current && status === 'signedOut') setPastWelcome(false);
+    wasSignedIn.current = signedIn;
+  }, [active, status]);
 
   const restartFromWelcome = useCallback(() => {
     if (active) setPastWelcome(false);
