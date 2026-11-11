@@ -13,6 +13,8 @@ Status words: READY (final), FOUNDER (only the founder can supply it), BLOCKED (
 ASO / VIDEO (another lane owns it). Personal details (legal name, phone, address) are typed only in App Store Connect,
 never in this repo.
 
+> **Build 12 note (11 Nov 2026).** Build 12 is the first store build: `production` profile, server features on, sign-in required, recording backup and status report off (D-157, D-160). Where this page says servers off, "no account", "nothing leaves the device" or "Data Not Collected", that was the Build 1 answer (D-088) and does not apply to Build 12. For the App Privacy answers use `docs/store/compliance/privacy-labels-apple.md` Profile B, subject to counsel. Lines changed for Build 12 are marked PROPOSED where they carry new wording; the founder supplies the final listing words.
+
 ## 0. Which source wins
 
 App Store Connect follows `packages/content/src/store.en.ts` (with `packages/brand` for name and subtitle), mirrored
@@ -62,7 +64,7 @@ Calculated rating 4+, **override to 18+** (Terms require 18 or older, D-006). Ma
 |---|---|---|
 | Privacy Policy URL | `https://earlyletters.com/privacy` | **BLOCKED**: the live page covers only the website. Publish the app policy (`docs/legal/privacy-policy.md` 3.0.0) first |
 | User Privacy Choices URL | Empty | READY |
-| Data collection | Build 12 (`production`: servers on, sign-in required, recording backup and status report off), as `docs/legal/app-store-privacy-labels.md` section 3.2 and its Build 12 row: **Yes**, linked, no tracking, purpose App Functionality, for Name, Email Address, Sensitive Info, Other User Content and User ID. **No** for Audio Data, Device ID, Purchase History, Usage Data and Diagnostics. Do not choose Data Not Collected (D-157, D-160; that answer was D-088 for the servers-off Build 1 only) | **Subject to counsel.** Open: Other Data Types (push tokens, Q54; default No) and IP addresses at the hosts (Q12). Re-run the label against the binary and a proxy capture before Publish |
+| Data collection | Build 12 (`production`: servers on, sign-in required, recording backup and status report off), as `docs/store/compliance/privacy-labels-apple.md` Profile B (and `docs/legal/app-store-privacy-labels.md` section 3.2 and the Build 12 row in section 3.4): **Yes**, linked, no tracking, purpose App Functionality, for Name, Email Address, Sensitive Info, Other User Content and User ID. **No** for Audio Data, Device ID, Purchase History, Usage Data and Diagnostics. Do not choose Data Not Collected (D-157, D-160; that answer was D-088 for the servers-off Build 1 only) | **Subject to counsel.** Open: Other Data Types (push tokens, Q54; default No) and IP addresses at the hosts (Q12). Re-run the label against the binary and a proxy capture before Publish |
 | Tracking | No (no IDFA, no ATT prompt) | READY |
 | Publish | Click Publish after saving | FOUNDER |
 
@@ -98,7 +100,7 @@ founder keeps the standard EULA, the review lane also suggests the line
 
 | Field | Value | Status |
 |---|---|---|
-| Sign-in required | No | READY |
+| Sign-in required | PROPOSED for Build 12: Yes, with a demo sign-in for App Review (history: No, Build 1, servers off) | Details FOUNDER, never in the repo |
 | Contact | Founder's name, email, phone in "+1 ..." form | FOUNDER, never in the repo |
 | Notes | `notes-for-review-1.0.txt` (under 4000 bytes); resolve the three brackets | FOUNDER |
 | Attachment | 60 to 90 s screen recording on a real iPhone with demo child "Asha": age question, setup, typed letter, Speak, the download prompt with its size, the Plus sheet | FOUNDER |
@@ -164,7 +166,7 @@ category; Apple's 2026 holiday schedule; anything that needs the release build.
   one exists. No public TestFlight link (D-004).
 - **Roles:** Account Holder, Admin, App Manager or Marketing.
 
-Draft description:
+Draft description (Build 12 note: the sentence on privacy in the third paragraph is PROPOSED below and needs the founder's words; the Build 1 text is kept as history under the block):
 
 Before submitting, confirm on the release build: "Not much today", reminders off by default, and the PDF export. The first line follows positioning A (D-139).
 
@@ -181,6 +183,11 @@ The first two letters are free. Plus, at $4.99 a month or $49.99 a year with a f
 
 Launching in the United States on iPhone, iOS 17 or later.
 ```
+
+PROPOSED (Build 12, founder to supply final words): the third paragraph above is a placeholder that states only what Profile B supports: sign-in is required and recordings are not backed up. It is not final listing copy.
+
+History (Build 1, servers off, superseded for Build 12): "It is private by default. There is no account to make, letters and recordings stay on the phone, and the App Store privacy label is Data Not Collected. Nothing is sold, used for ads or used to train models."
+
 
 
 Draft Helpful Details:
