@@ -202,7 +202,7 @@ describe('the consent sheet decides with the pure rules', () => {
 });
 
 describe('the child step identity line and Use another account', () => {
-  const words = { signedInAs: en.onboarding.child.signedInAs, signedInAsLabel: en.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple };
+  const words = { signedInAs: en.onboarding.child.signedInAs, signedInAsLabel: en.onboarding.child.signedInAsLabel, spokenAddress: en.onboarding.child.spokenAddress, spokenAddressNoFirst: en.onboarding.child.spokenAddressNoFirst, apple: authCopy.account.signedInWith.apple };
   it('reads "Signed in as {email}." with the masked address', () => {
     expect(signedInLine({ maskedEmail: 'a***@example.com', provider: 'email' }, words)?.text).toBe('Signed in as a***@example.com.');
   });
@@ -210,9 +210,10 @@ describe('the child step identity line and Use another account', () => {
     const l = signedInLine({ maskedEmail: 'a***@example.com', provider: 'email' }, words);
     expect(l?.label).toBe('Signed in as a, hidden, at example.com.');
     expect(l?.label).not.toContain('*');
-    expect(spokenMaskedEmail('a***@example.com')).toBe('a, hidden, at example.com');
-    expect(spokenMaskedEmail(null)).toBeNull();
-    expect(spokenMaskedEmail('nonsense')).toBeNull();
+    expect(spokenMaskedEmail('a***@example.com', words)).toBe('a, hidden, at example.com');
+    expect(spokenMaskedEmail('***@example.com', words)).toBe('hidden, at example.com');
+    expect(spokenMaskedEmail(null, words)).toBeNull();
+    expect(spokenMaskedEmail('nonsense', words)).toBeNull();
   });
   it('Apple with no address reuses "Signed in with Apple"; any other sign-in with no address shows no line', () => {
     expect(signedInLine({ maskedEmail: null, provider: 'apple' }, words)).toEqual({ text: 'Signed in with Apple', label: 'Signed in with Apple' });
@@ -296,7 +297,7 @@ describe('[NX-38-R6] claiming into an account that already has a book', () => {
 describe('the words', () => {
   const k = authCopy.claim;
   const c = en.onboarding.child;
-  const all = [k.bodyHasBook, k.recordingsNote, k.keepHint, c.signedInAs, c.signedInAsLabel, c.useAnother, c.useAnotherHint];
+  const all = [k.bodyHasBook, k.recordingsNote, k.keepHint, c.signedInAs, c.signedInAsLabel, c.spokenAddress, c.spokenAddressNoFirst, c.useAnother, c.useAnotherHint];
   it('say the three true things and no more: second book, nothing deleted, recordings stay on this phone', () => {
     expect(k.bodyHasBook).toBe('This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.');
     expect(k.recordingsNote).toBe('The recordings are kept on this phone.');

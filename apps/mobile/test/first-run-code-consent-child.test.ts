@@ -266,7 +266,7 @@ describe('[NX-31-R4] the hand-off from the Welcome', () => {
     expect(uncomment(onboarding)).toMatch(/firstRunStartStep\(\{ serverFeatures: serverFeaturesEnabled\(\) && configured, hasSession: hasSessionState\(authState\), localStartChosen: chosenOnOutage \}\)/);
   });
   it('[NX-31-R4] the route opens FirstRunSteps with the start step and keeps the JSX the servers-off test pins', () => {
-    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} \/>;/);
+    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} onSignedOut=\{route\.restartFromWelcome\} \/>;/);
     expect(onboarding).toMatch(/useState<Step>\(\(\) =>\s*firstRunStartStep\(/);
     expect(onboarding).toMatch(/const ORDER: Step\[\] = \['welcome', 'promise', 'child', 'signsAs', 'finish'\];/);
   });

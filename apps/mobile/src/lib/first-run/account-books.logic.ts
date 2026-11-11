@@ -133,13 +133,13 @@ export function claimKeepOutcome(kind: AccountKind | null): ClaimKeepOutcome {
  * The masked address the way a person says it, because a screen reader reads "a***" as punctuation:
  * "a***@example.com" becomes "a, hidden, at example.com". Null when there is no masked address to read.
  */
-export function spokenMaskedEmail(masked: string | null | undefined): string | null {
+export function spokenMaskedEmail(masked: string | null | undefined, words: { spokenAddress: string; spokenAddressNoFirst: string }): string | null {
   if (!masked) return null;
   const at = masked.lastIndexOf('@');
   if (at <= 0 || at === masked.length - 1) return null;
   const local = masked.slice(0, at).replace(/\*+/g, '').trim();
   const domain = masked.slice(at + 1);
-  return local ? `${local}, hidden, at ${domain}` : `hidden, at ${domain}`;
+  return local ? words.spokenAddress.replace('{first}', local).replace('{domain}', domain) : words.spokenAddressNoFirst.replace('{domain}', domain);
 }
 
 export interface SignedInLine {
@@ -154,10 +154,10 @@ export interface SignedInLine {
  */
 export function signedInLine(
   input: { maskedEmail: string | null; provider: string | null },
-  words: { signedInAs: string; signedInAsLabel: string; apple: string },
+  words: { signedInAs: string; signedInAsLabel: string; spokenAddress: string; spokenAddressNoFirst: string; apple: string },
 ): SignedInLine | null {
   if (input.maskedEmail) {
-    const spoken = spokenMaskedEmail(input.maskedEmail) ?? input.maskedEmail;
+    const spoken = spokenMaskedEmail(input.maskedEmail, words) ?? input.maskedEmail;
     return { text: words.signedInAs.replace('{email}', input.maskedEmail), label: words.signedInAsLabel.replace('{email}', spoken) };
   }
   if (input.provider === 'apple') return { text: words.apple, label: words.apple };

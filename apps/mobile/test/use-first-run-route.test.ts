@@ -408,3 +408,60 @@ describe('[NX-31-R17] a session lost during first run does not take the person b
     expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'steps' });
   });
 });
+
+describe('[D-160] "Use another account" on the child step goes back to the start', () => {
+  it('[D-160] after the sign-out the route draws the Welcome, not the steps, so no book can be finished with no account', async () => {
+    h.auth.state = { status: 'ready', userId: 'u1', sync: 'on' };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    // The signed-in start moves on to the child step: the steps report they are past the welcome.
+    run.result.current.markPastWelcome();
+    expect(run.result.current.screen).toBe('steps');
+
+    // The button signs out, and the steps tell the route (onboarding.tsx startAgain, when signOut answers 'done').
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current.screen, 'before the restart the latch still holds the steps (a lost session keeps what was typed)').toBe('steps');
+    run.result.current.restartFromWelcome();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', localStartChosen: false });
+
+    // Signing in again as someone else opens the steps fresh, and a later lost session still keeps them.
+    h.auth.state = { status: 'ready', userId: 'u2', sync: 'on' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+    run.result.current.markPastWelcome();
+    h.auth.state = { status: 'signedOut', error: 'session_expired' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[D-160] a person who chose the local start on the outage screen keeps the steps', async () => {
+    h.auth.state = { status: 'signedOut' };
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    run.result.current.markPastWelcome();
+    run.result.current.restartFromWelcome();
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[NX-31-R17] servers off: restarting changes nothing and renders nothing', async () => {
+    setServerFeaturesForTests(false);
+    h.auth.state = { status: 'signedOut' };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    const rendered = run.renders;
+    run.result.current.restartFromWelcome();
+    expect(run.renders).toBe(rendered);
+    expect(run.result.current).toMatchObject({ step: 'unchanged', screen: 'steps' });
+  });
+});
+
+describe('[D-160] the button hands the sign-out to the route (wiring is a source pattern; the behaviour is above)', () => {
+  it('startAgain tells the route only when signOut answers done', async () => {
+    const { readFileSync } = await import('node:fs');
+    const t = readFileSync(new URL('../src/app/onboarding.tsx', import.meta.url), 'utf8');
+    expect(t).toMatch(/\.then\(\(outcome\) => \{\s*if \(outcome === 'done'\) onSignedOut\?\.\(\);\s*\}\)/);
+  });
+});

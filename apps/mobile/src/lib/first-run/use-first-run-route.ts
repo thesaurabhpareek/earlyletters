@@ -28,6 +28,13 @@ export interface FirstRunRoute extends FirstRunGateResult {
   tryAgain: () => void;
   /** The steps report that the person is past their welcome step: nothing typed there is ever swapped out for a sign-in screen. */
   markPastWelcome: () => void;
+  /**
+   * "Use another account" signed the person out: first run goes back to its start. The latch above is cleared, so with no
+   * session the route answers the Welcome again, never the child step with Continue live (D-160: sign-in is required in a
+   * build with server features on; a local-only book is made only through the local start the outage screen offers).
+   * A lost session that the person did not choose still keeps the steps. Nothing with the switch off.
+   */
+  restartFromWelcome: () => void;
 }
 
 export function useFirstRunRoute(): FirstRunRoute {
@@ -87,6 +94,10 @@ export function useFirstRunRoute(): FirstRunRoute {
     if (active) setPastWelcome(true);
   }, [active]);
 
+  const restartFromWelcome = useCallback(() => {
+    if (active) setPastWelcome(false);
+  }, [active]);
+
   const inputs = gateInputsFromAuth({
     serverFeatures: active,
     authState: auth.state,
@@ -109,5 +120,6 @@ export function useFirstRunRoute(): FirstRunRoute {
     chooseLocalStart,
     tryAgain,
     markPastWelcome,
+    restartFromWelcome,
   };
 }

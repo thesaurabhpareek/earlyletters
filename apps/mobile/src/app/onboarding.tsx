@@ -118,7 +118,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome }: { localStartChosen?: boolean; onPastWelcome?: () => void }) {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome, onSignedOut }: { localStartChosen?: boolean; onPastWelcome?: () => void; onSignedOut?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -138,6 +138,11 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
     if (useAnotherBusy({ pressing: leaving, authStatus: authState.status })) return;
     setLeaving(true);
     signOut()
+      // Signed out: the route forgets that the steps were past the welcome, so the person lands on the Welcome (D-160).
+      // A sign-out that is still waiting on uploads, or that failed, leaves the session and the steps as they are.
+      .then((outcome) => {
+        if (outcome === 'done') onSignedOut?.();
+      })
       .catch(() => undefined)
       .finally(() => setLeaving(false));
   };
@@ -661,5 +666,5 @@ function FirstRun() {
   if (route.screen === 'outage' && route.outage) {
     return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
   }
-  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} />;
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }

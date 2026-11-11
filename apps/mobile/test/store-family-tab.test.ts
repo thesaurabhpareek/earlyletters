@@ -40,8 +40,10 @@ describe('familySurfacesShown', () => {
 });
 
 describe('both builds, from eas.json', () => {
-  // Founder ruling, 10 Nov 2026: Family shows in the servers-on store build. The production profile's switch is read from
-  // eas.json (draft #698 flips it on), so this holds before and after that flip: shown exactly when co-parent is on.
+  // Build 12: co-parent invites are alpha-only (#720, #737); the founder decision allows coming-soon surfaces, not a dead
+  // Family tab. This replaces the 10 Nov 2026 ruling "Family shows in the servers-on store build" (the CTO's recorded
+  // decision for that reversal is still needed). The production profile's switch is read from eas.json (draft #698 flips
+  // it on), and the answer is the same before and after that flip: a store build shows neither.
   it('the store build (production) shows neither the Family tab nor the Settings row, whatever its server switch', () => {
     const p = profile('production');
     expect(p.alpha).toBe(false);

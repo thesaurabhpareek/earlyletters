@@ -128,6 +128,10 @@ export const en = {
       // masked address (a***@example.com); {email} reads it aloud ("a, hidden, at example.com"). Each needs founder word approval.
       signedInAs: "Signed in as {email}.",
       signedInAsLabel: "Signed in as {email}.",
+      // How VoiceOver says the masked address inside signedInAsLabel (a screen reader reads "a***" as punctuation):
+      // "a, hidden, at example.com". {first} is the one visible character. Needs founder word approval.
+      spokenAddress: "{first}, hidden, at {domain}",
+      spokenAddressNoFirst: "hidden, at {domain}",
       useAnother: "Use another account",
       useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
       cta: "Continue",

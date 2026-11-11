@@ -51,6 +51,23 @@ describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
     expect(inviteScreensHiddenFrom({ serverFeatures: false, coParent: false, alpha: false })).toBe(false);
     expect(inviteScreensHiddenFrom({ serverFeatures: false, coParent: false, alpha: true })).toBe(false);
   });
+  it('inviteScreensHiddenFrom over all 8 rows of servers x coParent x alpha is serverFeatures && !(coParent && alpha)', () => {
+    const rows: Array<[boolean, boolean, boolean, boolean]> = [
+      // serverFeatures, coParent, alpha -> hidden
+      [false, false, false, false],
+      [false, false, true, false],
+      [false, true, false, false],
+      [false, true, true, false],
+      [true, false, false, true],
+      [true, false, true, true],
+      [true, true, false, true],
+      [true, true, true, false],
+    ];
+    for (const [serverFeatures, coParent, alpha, hidden] of rows) {
+      expect(inviteScreensHiddenFrom({ serverFeatures, coParent, alpha }), `servers ${serverFeatures} coParent ${coParent} alpha ${alpha}`).toBe(hidden);
+      expect(hidden).toBe(serverFeatures && !(coParent && alpha));
+    }
+  });
   it('the flag is its own: it is not the sign-in switch or the capability list', () => {
     const t = src('lib/family/surfaces.ts') + src('lib/family/entry.logic.ts');
     expect(t).not.toMatch(/signIn\b|signInEnabled/);

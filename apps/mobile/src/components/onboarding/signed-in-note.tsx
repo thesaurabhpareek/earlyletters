@@ -15,7 +15,7 @@ import { copy } from '@/lib/copy';
 
 export function SignedInNote({ maskedEmail, provider, onUseAnother, busy = false }: { maskedEmail: string | null; provider: string | null; onUseAnother: () => void; busy?: boolean }) {
   const c = copy.onboarding.child;
-  const line = signedInLine({ maskedEmail, provider }, { signedInAs: c.signedInAs, signedInAsLabel: c.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
+  const line = signedInLine({ maskedEmail, provider }, { signedInAs: c.signedInAs, signedInAsLabel: c.signedInAsLabel, spokenAddress: c.spokenAddress, spokenAddressNoFirst: c.spokenAddressNoFirst, apple: authCopy.account.signedInWith.apple });
   return (
     <View className="gap-1" testID="onboarding.signedIn">
       {line ? (

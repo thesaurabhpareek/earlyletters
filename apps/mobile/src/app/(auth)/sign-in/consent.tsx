@@ -221,7 +221,7 @@ export default function ConsentSteps() {
     const c = authCopy.claim;
     const masked = auth.account.maskedEmail;
     const hasBook = claimWords(claimKind) === 'accountHasBook';
-    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
+    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, spokenAddress: copy.onboarding.child.spokenAddress, spokenAddressNoFirst: copy.onboarding.child.spokenAddressNoFirst, apple: authCopy.account.signedInWith.apple });
     return (
       <StepFade step="claim">
         <SheetFrame
