@@ -153,7 +153,7 @@ export function FindMode({ child, entries, onClose, onOpen }: FindModeProps) {
         <Button variant="quiet" size="sm" label={findCopy.cancel} onPress={cancel} testID="find.cancel" />
       </View>
 
-      {!ready && view !== 'idle' ? (
+      {!ready && view === 'failed' ? (
         <View className="px-5 pb-2" accessibilityLiveRegion="polite">
           <Text variant="footnote">{findCopy.notReady}</Text>
         </View>
