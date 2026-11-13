@@ -279,8 +279,10 @@ describe('server features on: the shared flows are live (D-100; option B for the
     }
   });
 
-  it('the pending-invite watcher opens the join sheet only with the switch on', () => {
+  it('the pending-invite watcher opens the join sheet only where the build has the flow (the one rule), and drops a leftover token otherwise', () => {
+    // Behaviour is in test/pending-invite-watcher.test.ts; this pins that the watcher asks the one rule, not the switch alone.
     const watcher = src('lib/family/pending-invite-watcher.tsx');
-    expect(watcher).toMatch(/if \(!serverFeaturesEnabled\(\)\) return;/);
+    expect(watcher).toMatch(/if \(inviteDestination\('invite_link', serverFeaturesEnabled\(\), PLUS_ALPHA\) !== 'flow'\) \{\s*void clearPendingInvite\(\);\s*return;\s*\}/);
+    expect(watcher).not.toMatch(/if \(!serverFeaturesEnabled\(\)\) return;/);
   });
 });

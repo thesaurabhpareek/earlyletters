@@ -52,7 +52,8 @@ export function failureStillCounts(state: AuthState, setAside: AuthState | null)
  * `joinButton` back in as `coParent` applied the rule twice and made any flag behind it inert.
  *
  * There is no second flag here and no second `familySurfacesShown`: that name exists once, in entry.logic.ts, and means the
- * Family tab and the Settings row (D-126), which a servers-on store build shows. The join door is not that decision.
+ * Settings row "Write this book together" (D-126; Family is never a tab), which only a servers-on alpha build shows, never a
+ * store build. The join door is not that decision.
  */
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
   return visibleCoParentDoors(input.coParent, input.alpha).joinButton;

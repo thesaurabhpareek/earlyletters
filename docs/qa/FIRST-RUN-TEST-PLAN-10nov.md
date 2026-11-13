@@ -134,9 +134,9 @@ Columns: Id; Precondition; Steps; Expected; Layer; Tier; RF = red-first (write t
 | CS-02 | Same, signed in, lock off | 10 cold starts | Time to book visible: p50 at most 1.5 s [E, proposed, not a PRD number] | D | A | no |
 | CS-03 | Same, lock on | 10 cold starts | Cover at first frame, Face ID sheet at most 0.6 s after [E, proposed] | D | B | no |
 | CS-04 | Story on, SE 3 | Run through | 60 fps on 90% of frames, no frame over 50 ms [E, proposed; motion spec to confirm] | D | C | no |
-| CP-01 | Signed in, servers on | Open every co-parent entry (Family tab, invite, "I was invited", You tab row) | Each shows the coming-soon state; no invite can be created, accepted or confirmed; no network call to invite endpoints | W, E | A | yes |
-| CP-02 | Deep link to `/invite/...` | Cold and warm | Lands on coming soon or a neutral screen, not the join sheet | W | A | yes |
-| CP-03 | Coming soon state | Tap its action | No dead end; Back works; copy has no date promise | W | A | no |
+| CP-01 | Signed in, servers on, store build | Look for every co-parent entry: a Family tab, a "Write this book together" row under Asha's book in Me, "I was invited" on Welcome, an invite link | None exists (founder, 11 Nov 2026): three tabs (Home, Book, Me) and no Family tab, no row, no "I was invited", no coming-soon screen anywhere; an invite link opens Home and keeps nothing; no invite can be created, accepted or confirmed; no network call to invite endpoints | W, E | A | yes |
+| CP-02 | Deep link to `/invite/...` | Cold and warm | Lands on Home with nothing said (the first-run Welcome on a phone with no book yet), not the join sheet and not a blank or not-found page | W | A | yes |
+| CP-03 | Me, Asha's book, store build | Scroll the whole page | No "Write this book together" row, no caption and no empty section where it sat; nothing to tap and no dead end (the coming-soon state this row once checked is gone, 11 Nov 2026) | W | A | no |
 
 ## 4. Accessibility checks (also the A11 rows)
 
@@ -225,7 +225,7 @@ Pass rule: every tier A row passes. Tier B and C rows fail soft: they are record
 |---|---|---|
 | #764 S17 (gate.logic.ts, use-first-run-route.ts, onboarding.tsx, book.tsx) | 18+ gate first with nothing chosen and a No stops (E2E-01a/b, `age-gate*.test.ts`); welcome hand-off (`welcome-handoff.test.ts`); no OS prompt before first Speak; first run asks only name and date (AL-01); join sheet "Open the book" still asks whether the welcome step is under it | existing tests plus RS-03; collision named in section 5 |
 | #724 gate | Plus and keep gate: two free letters then the Keep sheet (`plus-gate.test.ts`, `billing-keep-gate-*.test.ts`); Read together and add child never gated (E2E-06, E2E-07); account deletion gate (`account-deletion-gate*.test.ts`) | those files, run unchanged |
-| #738 You tab | The tab shows Account, lock and co-parent rows; sign-out, delete account and App lock rows still reachable; CP-01 covers the You tab co-parent row | `settings-home` logic tests, E2E-09, `app-lock-wiring.test.ts` |
+| #738 You tab (Me since 11 Nov 2026) | The tab shows the Account and lock rows and, in a store build, no co-parent row; sign-out, delete account and App lock rows still reachable; CP-01 covers the absent co-parent row | `settings-home` logic tests, E2E-09, `app-lock-wiring.test.ts` |
 | Auth | `auth-machine`, `auth-kill-path`, `auth-links`, `auth-h1` stay unchanged and green | `npm test` |
 | Lock | `app-lock-machine`, `app-lock-behaviour`, `app-lock-wiring` unchanged | `npm test` |
 | Privacy | No analytics before opt-in (`analytics-off-v1.test.ts`, E2E-11); content rules (`packages/content` rules test) on every new word | `npm test` |

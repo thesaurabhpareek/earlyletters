@@ -87,6 +87,16 @@ export type BookRow = { value?: string; href: string };
 export const FAMILY_TAB_HREF = '/family';
 
 /**
+ * Whether the page asks the server which invites this book still has pending (lib/family/invites.ts listPendingInvites,
+ * an RPC to sync_books). Only where the row can exist: the same join-door rule the row itself follows (inviteDestination
+ * 'settings_child'), so a servers-on store build, where `bookRow` is always null, never makes the call. Also only while
+ * signed in with sync available, and only for one parent: with a co-parent the row already opens the family page.
+ */
+export function asksPendingInvites(input: { serverFeatures: boolean; alpha: boolean; signedIn: boolean; coParent: string | null }): boolean {
+  return inviteDestination('settings_child', input.serverFeatures, input.alpha) === 'flow' && input.signedIn && !input.coParent;
+}
+
+/**
  * "Write this book together": the invite (one parent, no invite pending) or the family page (two parents, or one parent
  * while an invite is pending, so Share again and Cancel invite stay reachable; Karma ruling, 11 Nov 2026), only where this build has the flow
  * (inviteDestination). Where it does not, there is NO row: no "Coming soon" value, no footer, no chevron, no screen.

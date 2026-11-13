@@ -1,5 +1,5 @@
-import { router, Stack, useLocalSearchParams, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams, type Href } from 'expo-router';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useAuth } from '@/lib/auth/session-provider';
 import { listPendingInvites } from '@/lib/family/invites';
@@ -12,10 +12,12 @@ import { longDate as formatDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { deleteSetting, getChild, getSetting, hideChild, listChildren, listMembers, localDeletionAllowed, setSetting, subscribe, todayISO, updateChild } from '@/lib/store';
 import { BornEditor, DateEditor, NameEditor, SignsAsEditor, type ChildPatch } from '@/components/child/child-editors';
-import { bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
+import { familyNotice } from '@/components/family/family-notice';
+import { asksPendingInvites, bookRow, bornCard, bornCardHiddenKey, bornCardShown, coParentOf, hideFooter } from '@/components/child/child-settings.logic';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
 import { ListRow, ListSection, ToggleRow } from '@/components/ui/list-row';
 import { ordinalOf, track } from '@/lib/analytics/track';
 
@@ -40,6 +42,38 @@ export default function ChildSettings() {
       }),
     [id],
   );
+  // Pending invites stay reachable: while the server lists one for this book, the row opens the family page (Share again, Cancel invite).
+  // Asked only where the row can exist (child-settings.logic.ts asksPendingInvites), never in a servers-on store build.
+  // Every hook sits above the early return below, so the order of hooks never changes if the book goes (delete-book.tsx).
+  const auth = useAuth();
+  const coParent = coParentOf(members);
+  const childId = child?.id;
+  const asksInvites = asksPendingInvites({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, signedIn: auth.canSync, coParent });
+  const [pendingInvites, setPendingInvites] = useState(false);
+  useEffect(() => {
+    let live = true;
+    if (!asksInvites || !auth.client || !childId) {
+      setPendingInvites(false);
+      return;
+    }
+    listPendingInvites(auth.client, childId).then(
+      (rows) => live && setPendingInvites(rows.length > 0),
+      () => live && setPendingInvites(false),
+    );
+    return () => {
+      live = false;
+    };
+  }, [asksInvites, auth.client, childId]);
+  // The invite sheet opened from the row closes back onto this page: its one closing line ("The invite waits until
+  // they join.", invite/new.tsx) shows here as the toast, once, the way the family page shows it when the sheet was
+  // opened from there (components/family/family-notice.ts). The same word; nothing new is said.
+  const toast = useToast();
+  useFocusEffect(
+    useCallback(() => {
+      const note = familyNotice.take();
+      if (note) toast.show({ message: note });
+    }, [toast]),
+  );
 
   if (!child) return null;
   const s = copy.children.settings;
@@ -60,24 +94,6 @@ export default function ChildSettings() {
   };
   const born = bornCard(name);
   const showBorn = bornCardShown({ birthday: child.birthday, dueDate: child.dueDate, today: todayISO(), hiddenFor });
-  const coParent = coParentOf(members);
-  // Pending invites stay reachable: while the server lists one for this book, the row opens the family page (Share again, Cancel invite).
-  const auth = useAuth();
-  const [pendingInvites, setPendingInvites] = useState(false);
-  useEffect(() => {
-    let live = true;
-    if (!serverFeaturesEnabled() || !auth.client || !auth.canSync || coParent) {
-      setPendingInvites(false);
-      return;
-    }
-    listPendingInvites(auth.client, child.id).then(
-      (rows) => live && setPendingInvites(rows.length > 0),
-      () => live && setPendingInvites(false),
-    );
-    return () => {
-      live = false;
-    };
-  }, [auth.client, auth.canSync, child.id, coParent]);
   const row = bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA, coParent, invite: inviteHref('settings_child', serverFeaturesEnabled(), PLUS_ALPHA, child.id), pendingInvites });
 
   /** "Hide": the card goes away on this phone until the Due date row is opened again (S46). Nothing is sent. */

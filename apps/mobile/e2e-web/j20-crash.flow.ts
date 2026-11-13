@@ -42,12 +42,12 @@ test('[J20] a screen throws while rendering (fault injected)', async ({ app, rec
   await expect(app.getByRole('heading', { name: 'This page did not open' })).toBeVisible();
   await expect(app.getByText('Your letters and recordings are safe on this phone.')).toBeVisible();
   await expect(app.getByRole('button', { name: 'Try again' })).toBeVisible();
-  await expect(app.getByRole('button', { name: 'Go to Tonight' })).toBeVisible();
+  await expect(app.getByRole('button', { name: 'Go to Home' })).toBeVisible();
   await expect(app.getByText(/injected fault|stack|at Object|Error:/i)).toHaveCount(0);
   const bg = await app.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(bg).toBe('rgb(251, 248, 243)'); // the page colour (token bg), never white
   await expectBrandFaces(app, 'This page did not open', 'Your letters and recordings are safe on this phone.', 'Try again');
-  await step('unhappy', 'A screen crashes (fault injected)', 'The root error boundary shows a calm screen instead of a blank page: a still page drawing, "This page did not open" in Literata and "Your letters and recordings are safe on this phone." in Mukta, with Try again and Go to Tonight as pill buttons. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here.');
+  await step('unhappy', 'A screen crashes (fault injected)', 'The root error boundary shows a calm screen instead of a blank page: a still page drawing, "This page did not open" in Literata and "Your letters and recordings are safe on this phone." in Mukta, with Try again and Go to Home as pill buttons. No error text, code or stack is shown or logged. Reached only by injecting a fault (Intl.PluralRules made to throw before opening Review); no normal action gets here.');
 
   // 20 pt gutters on both sides, the buttons full width at the bottom, as the 404 (S49) and every state.
   const tryBox = await app.getByRole('button', { name: 'Try again' }).boundingBox();
@@ -55,8 +55,8 @@ test('[J20] a screen throws while rendering (fault injected)', async ({ app, rec
   expect(Math.round(tryBox!.x)).toBe(20);
   expect(Math.round(width - (tryBox!.x + tryBox!.width))).toBe(20);
 
-  // Go to Tonight works even though the screen that threw is still broken.
-  await app.getByRole('button', { name: 'Go to Tonight' }).click();
+  // Go to Home works even though the screen that threw is still broken.
+  await app.getByRole('button', { name: 'Go to Home' }).click();
   await expect(app.getByRole('button', { name: 'Speak' })).toBeVisible();
 
   // Try again does something: with the fault gone, the app draws again instead of the crash screen, so a Try again
