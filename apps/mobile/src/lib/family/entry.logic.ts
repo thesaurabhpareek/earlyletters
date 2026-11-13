@@ -89,6 +89,29 @@ export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }
 }
 
 /**
+ * The invite screens and the `/j` join route are blocked only where a flow would otherwise open: servers on, and a build with
+ * no co-parent flow (a store build: the one rule above gives it none). With servers off the routes already send the person
+ * Home and an invite link keeps no token, so that build is unchanged (NX-38-R5). `surfacesShown` is the join-door rule
+ * (`visibleCoParentDoors(...).joinButton`), the one rule, not a second `familySurfacesShown`.
+ */
+export function inviteScreensBlocked(input: { serverFeatures: boolean; surfacesShown: boolean }): boolean {
+  return input.serverFeatures && !input.surfacesShown;
+}
+
+/**
+ * The join-door rule (B12-5) with the build's answers passed in, so Node tests can drive every combination. Not a second
+ * `familySurfacesShown`: it is `visibleCoParentDoors(...).joinButton` and nothing else (lib/family/surfaces.ts reads the build).
+ */
+export function familySurfacesFrom(input: { coParent: boolean; alpha: boolean }): boolean {
+  return visibleCoParentDoors(input.coParent, input.alpha).joinButton;
+}
+
+/** True only when servers are on and the co-parent surfaces are not shown (a servers-on store build). */
+export function inviteScreensHiddenFrom(input: { serverFeatures: boolean; coParent: boolean; alpha: boolean }): boolean {
+  return inviteScreensBlocked({ serverFeatures: input.serverFeatures, surfacesShown: familySurfacesFrom(input) });
+}
+
+/**
  * The only paths an outside link may open (D-087, LEGAL-REQ-011). Anything else, including a screen that
  * starts something (listen, review, read-together), a destructive one (delete account, leave a book), a
  * screen that creates something (invite someone) or one that does not exist, opens Tonight. Auth and

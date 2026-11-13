@@ -28,6 +28,7 @@ import {
 } from '../src/components/family/family-tab.logic';
 import { familyNotice } from '../src/components/family/family-notice';
 import { lampAllowed, resolveLamp } from '../src/components/ui/lamp.logic';
+import { HEADER_TARGET } from '../src/lib/navigation.logic';
 import { LEAVE_BOOK_OFFERED } from '../src/lib/family/entry.logic';
 import { decodeSeen, encodeSeen, familyTabState } from '../src/lib/family/members.logic';
 
@@ -203,5 +204,26 @@ describe('[S57 Motion] the co-parent\'s row arrives once', () => {
     expect(code(TAB)).toMatch(/const note = familyNotice\.take\(\);\s*if \(note\) toast\.show\(\{ message: note \}\);/);
     expect(code(TAB)).toMatch(/toast\.show\(\{ message: f\.pending\.cancelled \}\)/);
     expect(src('components/ui/toast.tsx')).toMatch(/announce\(action \?/);
+  });
+});
+
+describe('[11 Nov, lens B on #720] the family page has a way out of its own (no header, no tab bar under it)', () => {
+  it('draws Close, top right, with the existing word, and it goes back or Home: never a dead end', () => {
+    // Pushed over the tabs, with the root stack's header hidden: without this, only a swipe leaves the page, and
+    // VoiceOver, Voice Control and Switch Control users have no control to leave by.
+    expect(code(TAB)).toMatch(/import \{ ModalHeader \} from '@\/components\/ui\/screen-header';/);
+    expect(code(TAB)).toMatch(/const leave = \(\) => \(router\.canGoBack\(\) \? router\.back\(\) : router\.replace\('\/'\)\);/);
+    expect(code(TAB)).toMatch(/<ModalHeader onClose=\{leave\} \/>/);
+    // The header's label is the existing Close (no new word), and it is a 44 pt quiet button.
+    expect(src('components/ui/screen-header.tsx')).toMatch(/closeLabel = copy\.common\.closeButton/);
+    expect(en.common.closeButton).toBe('Close');
+    expect(code('components/ui/screen-header.tsx')).toMatch(/<Button variant="quiet" size="sm"/);
+    expect(HEADER_TARGET).toBeGreaterThanOrEqual(44);
+  });
+
+  it('sits above the scrolling page, inside the safe area, so it is reached first and never scrolls away', () => {
+    const page = code(TAB);
+    expect(page.indexOf('<ModalHeader')).toBeGreaterThan(page.indexOf('<SafeAreaView'));
+    expect(page.indexOf('<ModalHeader')).toBeLessThan(page.indexOf('<ScrollView testID="family.screen"'));
   });
 });

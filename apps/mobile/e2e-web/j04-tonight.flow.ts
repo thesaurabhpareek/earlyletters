@@ -89,7 +89,7 @@ test('[J04e] a letter typed and closed mid-sentence: its first words and "Pick i
   await step('happy', 'Picking it up', 'The page reopens with the words exactly as left.');
 });
 
-test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, record }) => {
+test('[J04f] a letter held at the Keep step waits on Home', async ({ app, record }) => {
   test.setTimeout(120_000);
   const step = journey(record, 'J04', 'tonight-and-prompts', 8, 'J04-01');
   // A free phone: two letters are kept, the third is held at the Keep step (D-082). Typed, so no recording has to
@@ -107,14 +107,14 @@ test('[J04f] a letter held at the Keep step waits on Tonight', async ({ app, rec
   await app.getByRole('textbox').first().fill('You waved at the dog on the corner.');
   await btn(app, /^Add to .*book/).click();
   await expect(app.getByText("Keep adding to Asha's book")).toBeVisible();
-  await expect(app.getByText('This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
+  await expect(app.getByText('This letter waits on Home, on this phone, exactly as it is. Keep it whenever you like.')).toBeVisible();
   await btn(app, 'Keep it here for now').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await expect(app.getByText('You waved at the dog on the corner.')).toBeVisible();
   // "Keep it here for now" marks the draft held (store.holdDraft, P6a), so its one card says "Waiting to be kept." and
   // "Keep it" (S09), with the words as typed; j06 asserts those words.
   await expect(app.getByRole('button', { name: /You waved at the dog on the corner\./ })).toHaveCount(1);
-  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Tonight, and it does: its own card, with the words as typed, says "Waiting to be kept." and "Keep it".');
+  await step('happy', 'The held letter on Tonight', 'The Keep sheet said the letter waits on Home, and it does: its own card, with the words as typed, says "Waiting to be kept." and "Keep it".');
 });
 
 test('[J04g] a book that is not born yet: the dateline names the child and the prompts are for the weeks of waiting', async ({ app, record }) => {

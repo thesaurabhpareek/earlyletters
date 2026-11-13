@@ -83,14 +83,14 @@ Promotional text carries the short form. No locks, shields or "bank-level" langu
 - [ ] App Privacy answers in App Store Connect match \`docs/legal/app-store-privacy-labels.md\` and the shipped build.
 - [ ] Subscriptions attached to the version with display names, and Family Sharing turned on for both products (D-053).
 - [ ] Age rating questionnaire answered; category Lifestyle.
-- [ ] App Review notes, servers-on build (build 12, founder 8 Nov 2026): the release workflow sends the notes below, with the invite link and its date filled from the \`ASC_REVIEW_CONTACT_JSON\` secret. "Sign-in required" stays off and the demo user name and password stay empty (\`proposals/app-review-demo-signin.md\` option 3). Before each submission the founder makes a fresh single-use invite link to the Asha sample book and checks that invites are not paused.
+- [ ] App Review notes, servers-on build (build 12, sign-in required, D-160): the release workflow sends the notes below, with the demo email and password filled from the \`ASC_REVIEW_CONTACT_JSON\` secret (\`demoUsername\`, \`demoPassword\`), and sends the same two as the App Store Connect sign-in fields with "Sign-in required" on. PROPOSED, founder decides: the demo account and the mailbox that receives its sign-in code (the app has no password sign-in). Never commit either value.
 - [ ] App Review notes, servers-off build only: paste \`notes-for-review-1.0.txt\` once the founder resolves its brackets; it replaces the Notes for Review in \`app-store-staged-1.0-proposal.md\` section 6 (a baby memory book parents fill by talking; a due date is optional; no health service, D-004 5.1.1(ix) positioning; no account, so no demo account; the switched-off server features listed by flag). Co-parent sharing is not in this build: per D-126 the Family tab, the Settings row and the invite entry points are hidden; if that change has not landed when this checklist closes, the notes describe the on-screen co-parent notice instead (D-126 fallback). The speech model is a one-time download the person chooses at the end of first run (data, not code; D-065, D-087).
 - [ ] The build is English only (\`EXPO_PUBLIC_ENGLISH_ONLY=on\` in \`production\`, D-121) and the description names no other language. A language is added here only in the release that ships it (D-125 item 2).
 - [ ] Screenshots regenerated from the release build's web preview and checked frame by frame.
 
 ## Notes for Review (servers-on build)
 
-From \`packages/content/src/release/app-review.en.ts\`. \`${appReviewCopy.placeholders.inviteLink}\` and \`${appReviewCopy.placeholders.inviteExpiry}\` are filled at push time and never committed. ${Buffer.byteLength(appReviewCopy.notesServersOn, 'utf8')} of 4,000 bytes before they are filled.
+From \`packages/content/src/release/app-review.en.ts\`. \`${appReviewCopy.placeholders.demoEmail}\` and \`${appReviewCopy.placeholders.demoPassword}\` are filled at push time and never committed. ${Buffer.byteLength(appReviewCopy.notesServersOn, 'utf8')} of 4,000 bytes before they are filled.
 
 \`\`\`text
 ${appReviewCopy.notesServersOn}

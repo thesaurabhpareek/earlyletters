@@ -101,6 +101,9 @@ export const en = {
       nameLabelMore: "Another child's name",
       // Short enough for the serif 22 pt name field on a 375 pt phone: 272 of 302 pt, where "First name, or the name you use at home" (421 pt) was clipped.
       namePlaceholder: "First name, or a nickname",
+      // NX-36 S7 (account-first first run): the name is optional, the date is not. Each needs founder word approval.
+      nameOptionalLabel: "Name, if you like",
+      nameOptionalHelp: "You can add a name later.",
       // SET-04: the born or expecting choice has its own question and option, so "Birthday" is said once, above the
       // date field. No {child}: with twins the step has more than one name.
       bornQuestion: "Here yet, or on the way?",
@@ -122,6 +125,17 @@ export const en = {
       bornToday: "Born today",
       // A long name: said gently, once the field is close to its limit.
       nameLimit: "A name can have up to {n} characters.",
+      // Account-first slice 4a (exec council decision, 9 Nov 2026, A).
+      // Under the date field, for a signed-in person: so one who picked the wrong sign-in method can notice. {email} is the
+      // masked address (a***@example.com); a screen reader says it with spokenAddress (below). Each needs founder word approval.
+      signedInAs: "Signed in as {email}.",
+      signedInAsLabel: "Signed in as {email}.",
+      // How VoiceOver says the masked address inside signedInAsLabel (a screen reader reads "a***" as punctuation):
+      // "a, hidden, at example.com". {first} is the one visible character. Needs founder word approval.
+      spokenAddress: "{first}, hidden, at {domain}",
+      spokenAddressNoFirst: "hidden, at {domain}",
+      useAnother: "Use another account",
+      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
       cta: "Continue",
     },
 
@@ -308,6 +322,9 @@ export const en = {
     autosaved: "Saved on this phone",
     // Autosave failed; shown in the same place, retried on the next pause.
     notSaved: "Not saved yet",
+    // BL-378: past about 100,000 characters. Nothing is cut and the field is never capped (a cap would trim a paste or
+    // a composing keyboard); every word is kept and this line only suggests a second letter.
+    tooLong: "This is a very long letter. Every word is kept. You can start another letter to say more.",
   },
 
   // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
@@ -345,6 +362,11 @@ export const en = {
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
+    },
+    // BL-379: under about a second, with no words from it. Let it go comes first; nothing is removed without a confirm.
+    shortTake: {
+      title: "That was very short",
+      body: "Keep it, or let it go?",
     },
     emptyTake: {
       title: "Nothing was recorded",
@@ -1158,13 +1180,13 @@ export const en = {
       title: "This page did not open",
       body: "Your letters and recordings are safe on this phone.",
       tryAgainButton: "Try again",
-      tonightButton: "Go to Tonight",
+      tonightButton: "Go to Home",
     },
     // A link or route the app does not have (replaces the router's developer page).
     notFoundPage: {
       title: "Nothing at this link",
       body: "Your book is right where you left it.",
-      button: "Back to Tonight",
+      button: "Back to Home",
     },
     // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
     // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,

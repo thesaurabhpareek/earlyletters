@@ -10,7 +10,7 @@ test('[J19] a route that does not exist', async ({ app, record }) => {
   // The router's developer page is gone: no sitemap, no address, no route names.
   await expect(app.getByText(/Unmatched Route|Sitemap|this-page-does-not-exist/i)).toHaveCount(0);
   // 20 pt gutters on both sides; the button is full width at the bottom.
-  const back = app.getByRole('button', { name: 'Back to Tonight' });
+  const back = app.getByRole('button', { name: 'Back to Home' });
   const box = await back.boundingBox();
   const width = app.viewportSize()!.width;
   expect(box).not.toBeNull();
@@ -18,9 +18,9 @@ test('[J19] a route that does not exist', async ({ app, record }) => {
   expect(Math.round(width - (box!.x + box!.width))).toBe(20);
   const title = await app.getByRole('heading', { name: 'Nothing at this link' }).boundingBox();
   expect(box!.y).toBeGreaterThan(title!.y + title!.height);
-  await step('unhappy', 'Unknown route (404)', 'A designed not-found screen replaces Expo Router\'s "Unmatched Route" page: the shared state screen with the window drawing, "Nothing at this link" and "Your book is right where you left it.", inside 20 pt gutters, with Back to Tonight full width at the bottom. It never shows or logs the address. Reached by a malformed or old link.');
+  await step('unhappy', 'Unknown route (404)', 'A designed not-found screen replaces Expo Router\'s "Unmatched Route" page: the shared state screen with the window drawing, "Nothing at this link" and "Your book is right where you left it.", inside 20 pt gutters, with Back to Home full width at the bottom. It never shows or logs the address. Reached by a malformed or old link.');
 
-  await app.getByRole('button', { name: 'Back to Tonight' }).click();
+  await app.getByRole('button', { name: 'Back to Home' }).click();
   await expect(app.getByRole('button', { name: 'Speak' })).toBeVisible();
 });
 

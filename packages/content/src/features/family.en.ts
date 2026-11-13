@@ -159,7 +159,7 @@ export const familyCopy = {
 
   /**
    * Co-parent sharing is coming in a later update (founder, 3 Oct 2026): v1.0 keeps every
-   * letter on this phone. Kept for a later family release; nothing draws it now (founder, 11 Nov 2026: no coming-soon screen, row or tab)
+   * letter on this phone. Kept for a later family release; nothing draws it now (founder, 11 Nov 2026: no coming-soon screen, row or tab).
    * Never a date; never "beta".
    * {child} is the open book's name, or `childFallback` before there is a book.
    */

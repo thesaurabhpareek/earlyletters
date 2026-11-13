@@ -1,7 +1,7 @@
 // android: same
 /**
  * Invite a co-parent (EXPERIENCE_PASS_2026-10 S58; PRD V2 F11 6.2 A; B-REQ-007, F11-REQ-001, F11-REQ-004; co-parent
- * only at v1.0, B1). `/invite/new?childId=<id>` from the Family tab or a child's settings.
+ * only at v1.0, B1). `/invite/new?childId=<id>` from the family page or a child's settings.
  *
  * The sheet is about this book: its cover (132 x 176, closed, the child's name) centred at the top, the title, the
  * body, then what the child calls the other parent in the letter face with S06's chips under it, so the cover's foot
@@ -130,7 +130,8 @@ function InviteCoParent() {
       if (!after.close) return;
       haptic('success');
       draft.current = null; // the next invite from this sheet is a new one
-      // The link went out: this sheet closes, and the Family tab says where the invite waits.
+      // The link went out: this sheet closes, and the page under it (the family page, or the book's settings page whose
+      // row opened this sheet) says the invite waits (components/family/family-notice.ts).
       familyNotice.leave(k.done);
       close();
     } catch (e) {

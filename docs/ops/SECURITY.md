@@ -90,7 +90,7 @@ Create a new key (section 5), set `APPLE_SIGNIN_KEY_ID` and `APPLE_SIGNIN_PRIVAT
 
 ### 2.5 Supabase service role key and JWT signing keys
 - New projects use API keys `sb_secret_...` and asymmetric JWT signing keys; rotate the secret key from Project Settings > API Keys by creating a new one, updating the scripts' environment, then revoking the old. Edge Functions receive the injected value automatically (Assumption: on redeploy).
-- Revoking the JWT signing key signs everyone out (it is the "revoke all sessions" kill switch, TDD 04 3.2.3). Local letters, recording and export keep working.
+- Revoking the JWT signing key is not proven to sign everyone out: Supabase says rotation signs no one out and does not say revoking ends refresh tokens (supabase.com/docs/guides/auth/signing-keys, read 8 Nov 2026). The "sign everyone out" levers, what each is known to do, and the drills that settle it are in runbooks/sign-everyone-out.md (not yet run). Local letters, recording and export keep working either way.
 
 ### 2.6 Calendar
 | When | What |

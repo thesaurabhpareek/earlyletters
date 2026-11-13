@@ -152,7 +152,7 @@ describe('[S58] states', () => {
     expect(sheet).toMatch(/<Button testID="inviteNew\.share" size="lg" loading=\{busy\} label=\{busy \? k\.working : k\.share\}/);
   });
 
-  it('when the share sheet closes, this sheet closes and the Family tab says the invite waits there', () => {
+  it('when the share sheet closes, this sheet closes and the page under it (the family page or the book\'s settings) says the invite waits', () => {
     const sheet = code(SHEET);
     expect(sheet).toMatch(/familyNotice\.leave\(k\.done\);\s*close\(\);/);
     expect(familyCopy.create.done).toBe('The invite waits until they join.');

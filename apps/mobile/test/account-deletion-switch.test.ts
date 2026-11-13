@@ -175,7 +175,8 @@ describe('the profiles: hidden in the alpha builds unless the EAS environment sa
     for (const name of ['development', 'e2e', 'production']) {
       const withServers = { ...buildEnv(name), EXPO_PUBLIC_SERVER_FEATURES: 'on' };
       expect((await readCapability(withServers)).row, name).toBe(true);
-      expect((await readCapability(buildEnv(name))).row, `${name} as written, servers off`).toBe(false);
+      // As written: production has servers on since build 12 (founder, 8 Nov 2026), so its row shows; development and e2e are servers off, so theirs does not.
+      expect((await readCapability(buildEnv(name))).row, `${name} as written`).toBe(name === 'production');
     }
   });
 

@@ -748,7 +748,7 @@ const LAMP = /<Lamp(View)?[\s/>]/;
 
 describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
   /** The rooms with a scene: first run (gate, welcome, promise, naming, signing, the book opens), Tonight, Write, the Book, Read together at night. */
-  const ALLOWED = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const ALLOWED = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx', 'components/onboarding/welcome-sign-in.tsx'];
 
   it('is mounted only in rooms that have a scene', () => {
     const used = mounts(LAMP);

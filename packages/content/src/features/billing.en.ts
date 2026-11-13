@@ -44,19 +44,20 @@ export const billingCopy = {
   keepGate: {
     title: "Keep adding to {child}'s book",
     body: 'Your first two letters are kept for good. Plus lets you keep adding letters.',
-    // heldNote, heldNoteSynced and offline promise the letter "waits on Tonight": P3 shows a card on Tonight for every
-    // draft (spec S09, S22). Written to the register row "Keep step and held letter" (#163, 3.1.0); counsel reads them
-    // (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing shows it until counsel has read it
-    // (apps/mobile plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED).
-    heldNote: 'This letter waits on Tonight, on this phone, exactly as it is. Keep it whenever you like.',
-    heldNoteSynced: 'This one waits on Tonight, exactly as it is, for as long as you like. It syncs privately with your account.',
+    // heldNote, heldNoteSynced and offline promise the letter "waits on Home": P3 shows a card on Home (the first tab,
+    // once called Tonight) for every draft (spec S09, S22). Written to the register row "Keep step and held letter"
+    // (#163, 3.1.0); counsel reads them (C10). heldNoteSynced is the signed-in line: held for counsel (C10); nothing
+    // shows it until counsel has read it (apps/mobile plus-gate.logic.ts SYNCED_HELD_NOTE_CLEARED).
+    // These three lines were reworded Tonight to Home on 11 Nov 2026 with the tab rename (founder); counsel reads them in the packet.
+    heldNote: 'This letter waits on Home, on this phone, exactly as it is. Keep it whenever you like.',
+    heldNoteSynced: 'This one waits on Home, exactly as it is, for as long as you like. It syncs privately with your account.',
     // The chip on the held letter's own card at the top of the sheet.
     heldChip: 'Waiting',
     seePlus: 'See Plus',
     holdButton: 'Keep it here for now',
     redeemLink: 'Redeem a code',
     lapsedBody: 'Plus has ended. Every letter you kept is still yours to read, play and export.',
-    offline: 'Plus needs a connection to start. This letter waits on Tonight, on this phone, exactly as it is.',
+    offline: 'Plus needs a connection to start. This letter waits on Home, on this phone, exactly as it is.',
     // A letter whose words arrived later reaches the sheet from its own page, through Review (task #53): it is already
     // in the book or private, and only its words wait, on the letter itself, so neither line names Tonight or the
     // phone. New for the content owner and counsel (C10), beside the "Keep step and held letter" register row.

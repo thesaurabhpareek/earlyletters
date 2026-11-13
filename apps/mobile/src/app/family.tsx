@@ -31,6 +31,10 @@
  * Not a tab in any build (founder, 11 Nov 2026: Home, Book, Me). This is a pushed route, /family, reached from a book's
  * settings row when the book has a co-parent (child-settings.logic.ts FAMILY_TAB_HREF). Where co-parent sharing is not
  * in the build it sends the person Home: there is no coming-soon screen (the old presentation is deleted).
+ *
+ * Way out: the root stack draws no header, so this page draws its own Close, top right (ModalHeader, 44 pt, the
+ * existing word `copy.common.closeButton`). It goes back, or Home when there is nothing to go back to (a cold open
+ * on /family), so VoiceOver, Voice Control and Switch Control always have a control to leave by, not only the swipe.
  */
 import { Redirect, router, useFocusEffect } from 'expo-router';
 import { ShareNetworkIcon } from 'phosphor-react-native/src/icons/ShareNetwork';
@@ -49,6 +53,7 @@ import { tonightDateline } from '@/components/tonight/draft-card.logic';
 import { IconButton } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { useToast } from '@/components/ui/toast';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
@@ -189,6 +194,8 @@ function FamilyShared() {
   const notes = leftNotes?.childId === active.id ? leftNotes.list : [];
   const washOf = (key: string) => (washes?.childId === active.id ? washes.at[key] : undefined);
 
+  const leave = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
   const invite = () => {
     // Signed in or not: the invite sheet's first step signs in (S52, invite_create) and comes back to the sheet.
     router.push({ pathname: '/invite/new', params: { childId: active.id } });
@@ -251,6 +258,7 @@ function FamilyShared() {
   return (
     <SafeAreaView edges={['top']} className="flex-1 bg-background">
       <Lamp scene="family" persistKey="tabs" />
+      <ModalHeader onClose={leave} />
       <ScrollView testID="family.screen" className="flex-1" contentContainerClassName="gap-6 px-5 pb-10 pt-5">
         <View className="gap-3">
           <Text variant="letterDateline" caps accessibilityLabel={dateline.a11y}>
