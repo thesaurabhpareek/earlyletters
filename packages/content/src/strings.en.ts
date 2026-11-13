@@ -125,6 +125,17 @@ export const en = {
       bornToday: "Born today",
       // A long name: said gently, once the field is close to its limit.
       nameLimit: "A name can have up to {n} characters.",
+      // Account-first slice 4a (exec council decision, 9 Nov 2026, A).
+      // Under the date field, for a signed-in person: so one who picked the wrong sign-in method can notice. {email} is the
+      // masked address (a***@example.com); a screen reader says it with spokenAddress (below). Each needs founder word approval.
+      signedInAs: "Signed in as {email}.",
+      signedInAsLabel: "Signed in as {email}.",
+      // How VoiceOver says the masked address inside signedInAsLabel (a screen reader reads "a***" as punctuation):
+      // "a, hidden, at example.com". {first} is the one visible character. Needs founder word approval.
+      spokenAddress: "{first}, hidden, at {domain}",
+      spokenAddressNoFirst: "hidden, at {domain}",
+      useAnother: "Use another account",
+      useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
       cta: "Continue",
     },
 

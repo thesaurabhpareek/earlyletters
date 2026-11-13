@@ -8,6 +8,7 @@
  * - `firstRunStartStep`: which first-run step opens once a person is in (signed in, or on the local start).
  * - `welcomeHandoffStep`, `reportsPastWelcome`: how the signed-in start (the promise step) behaves like the Welcome where
  *   it should: a returning account's book hands over to the Book, and it is not "past the welcome" until it moves on.
+ * - `finishMayMakeBook`: the last step's button does nothing for a person who opened signed in once the session is gone.
  * - `consentHandoff`: what the consent sheet does next (NX-36 4.2): two lines of its own, written out below.
  */
 import type { AuthState } from '@/lib/auth/machine.logic';
@@ -94,6 +95,18 @@ export function reportsPastWelcome(input: { start: FirstRunStepId; step: FirstRu
 }
 
 /**
+ * Whether the last step's button may make the book. A person who opened signed in (the promise start) is making a book for
+ * their account: if the session ends under them, the route puts the Welcome back on the next render (use-first-run-route.ts
+ * clears the latch in an effect), and for that one committed frame the steps are still up. A tap on Finish in that frame
+ * must not make a book with no account in a build that asks for sign-in first (D-160). The local start (no session by
+ * choice) and the Welcome start are unchanged, and so is every build with the server switch off (the start is always the
+ * Welcome there).
+ */
+export function finishMayMakeBook(input: { start: FirstRunStepId; hasSession: boolean }): boolean {
+  return input.start !== 'promise' || input.hasSession;
+}
+
+/**
  * The account-first child step's name field says the name is optional (NX-31-R3); other builds keep "Name". Only for
  * one child: with more than one name on the step every name is needed (firstRunChildBlock), so the first row goes back
  * to "Name" the moment "Add another child" is tapped, never "Name, if you like" beside a Continue that waits for it.
@@ -102,6 +115,16 @@ export function childNameFieldWords(input: { accountFirst: boolean; index: numbe
   const optional = input.accountFirst && input.index === 0 && !input.multiple;
   if (!optional) return { label: words.nameLabel, help: null };
   return { label: words.nameOptionalLabel, help: input.nearLimit ? null : words.nameOptionalHelp };
+}
+
+/**
+ * Whether the child step draws the birthday or due-date block (NX-31-R3). Servers-off builds keep the old rule: it arrives
+ * with the first letter of the name (`dateShown`). Account first the name is optional and an empty name with a date makes
+ * the book, so the block is there from the first paint: with it hidden, Continue would wait for a birthday that has no
+ * control (a dead end for anyone who leaves the name empty).
+ */
+export function dateBlockShown(input: { dateShown: boolean; accountFirst: boolean }): boolean {
+  return input.dateShown || input.accountFirst;
 }
 
 export type ConsentNext = 'askClaim' | 'keepOnPhone' | 'continue';
