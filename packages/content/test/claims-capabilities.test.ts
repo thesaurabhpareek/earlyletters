@@ -61,8 +61,9 @@ let capabilityCoParent = false;
 
 /** Does the store build (servers on, alpha off) let a person both invite and join? The join door is `joinButton`. */
 function storeCoParentFlow(entry: typeof import('../../../apps/mobile/src/lib/family/entry.logic')): boolean {
-  const keeps = entry.planIncomingLink({ kind: 'invite', token: 't' }, { serverFeatures: true, gateStopped: false, path: '/' }).keepInviteToken;
-  return coParentFlowInStoreBuild((e) => entry.inviteDestination(e as never, true), keeps, entry.visibleCoParentDoors(true, false).joinButton);
+  // Build 12 (founder ruling, 11 Nov 2026): one rule, servers on AND an alpha build. The store build is alpha false, so it has no flow.
+  const keeps = entry.planIncomingLink({ kind: 'invite', token: 't' }, { serverFeatures: true, gateStopped: false, alpha: false, path: '/' }).keepInviteToken;
+  return coParentFlowInStoreBuild((e) => entry.inviteDestination(e as never, true, false), keeps, entry.visibleCoParentDoors(true, false).joinButton);
 }
 
 beforeAll(async () => {
@@ -454,7 +455,7 @@ const STORE_BUILD_CLAIMS: Readonly<Record<RuleId, { allowed: boolean | 'with the
 };
 
 /**
- * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true)` (servers on);
+ * Does the store build have the co-parent flow? `destination` is `inviteDestination(entry, true, false)` (servers on, store build);
  * `keepsInviteToken` is `planIncomingLink(invite, { serverFeatures: true, ... }).keepInviteToken`; `joinDoorShown` is
  * `visibleCoParentDoors(true, false).joinButton` (alpha off). Sending, receiving and joining must all work for
  * "invite your co-parent" to be true.
@@ -486,11 +487,15 @@ describe('what the store build may claim (RT-REL-03; PR #698)', () => {
     expect(profile.coParent).toBe(flow && capabilityCoParent);
   });
 
-  it('shows the store build hides the join door and still sends and receives', async () => {
+  it('shows the store build hides the join door and has no co-parent flow, while an alpha build with servers on keeps it', async () => {
     const entry = await import('../../../apps/mobile/src/lib/family/entry.logic');
     expect(entry.visibleCoParentDoors(true, false).joinButton).toBe(false);
     expect(entry.visibleCoParentDoors(true, true).joinButton).toBe(true);
-    expect(entry.inviteDestination('settings_child', true)).toBe('flow');
+    // One rule (founder, 11 Nov 2026): the flow is servers on AND alpha. A store build (alpha false) has none, so no co-parent claim is true of it.
+    expect(entry.inviteDestination('settings_child', true, true)).toBe('flow');
+    expect(entry.inviteDestination('settings_child', true, false)).toBe('coming_soon');
+    expect(entry.inviteDestination('invite_link', true, false)).toBe('coming_soon');
+    expect(entry.inviteDestination('settings_child', false, true)).toBe('coming_soon');
   });
 
   it('fails when the capability and the flow disagree, either way', () => {

@@ -13,27 +13,32 @@ const INVITE = { kind: 'invite', token: 'T' } as never;
 
 describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
   it('a servers-on store build has no join door, no invite screen and sends an invite link to Tonight', () => {
-    // develop's join-door rule (B12-5): servers on AND an alpha build. #720 adds the one constant that can open it in a store build.
+    // The one join-door rule (B12-5, founder 11 Nov 2026): servers on AND an alpha build. Nothing can open it in a store build.
     // Store build: servers on, not alpha.
     expect(visibleCoParentDoors(true, false).joinButton).toBe(false);
     expect(inviteScreensBlocked({ serverFeatures: true, surfacesShown: false })).toBe(true);
     expect(invitedDoorShown({ alpha: false, coParent: true })).toBe(false);
-    const plan = planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j', familySurfaces: false });
+    const plan = planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, alpha: false, path: '/j' });
     expect(plan).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
   });
   it('an alpha build keeps every surface', () => {
     expect(visibleCoParentDoors(true, true).joinButton).toBe(true);
     expect(inviteScreensBlocked({ serverFeatures: true, surfacesShown: true })).toBe(false);
     expect(invitedDoorShown({ alpha: true, coParent: true })).toBe(true);
-    expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j', familySurfaces: true })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
+    expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, alpha: true, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
   });
-  it('a servers-off build is unchanged: nothing is blocked, and an invite link still opens coming soon without a token', () => {
+  it('a servers-off build: the layout blocks nothing, and an invite link opens Home with no token (no coming-soon screen since 11 Nov 2026)', () => {
     expect(visibleCoParentDoors(false, false).joinButton).toBe(false);
     expect(inviteScreensBlocked({ serverFeatures: false, surfacesShown: false })).toBe(false);
-    expect(planIncomingLink(INVITE, { serverFeatures: false, gateStopped: false, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: false, keepAuthLink: false });
+    for (const alpha of [true, false]) {
+      expect(planIncomingLink(INVITE, { serverFeatures: false, gateStopped: false, alpha, path: '/j' }), `alpha ${alpha}`).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
+    }
   });
-  it('leaving familySurfaces out keeps every earlier caller as it was', () => {
-    expect(planIncomingLink(INVITE, { serverFeatures: true, gateStopped: false, path: '/j' })).toEqual({ route: '/invite', keepInviteToken: true, keepAuthLink: false });
+  it('the one rule: only servers on AND an alpha build keeps an invite token; every other build sends the link Home', () => {
+    for (const serverFeatures of [true, false]) for (const alpha of [true, false]) {
+      const plan = planIncomingLink(INVITE, { serverFeatures, gateStopped: false, alpha, path: '/j' });
+      expect(plan, `servers ${serverFeatures} alpha ${alpha}`).toEqual(serverFeatures && alpha ? { route: '/invite', keepInviteToken: true, keepAuthLink: false } : { route: '/', keepInviteToken: false, keepAuthLink: false });
+    }
   });
   it('familySurfacesFrom is true only with servers on and an alpha build', () => {
     expect(familySurfacesFrom({ coParent: true, alpha: true })).toBe(true);
@@ -76,7 +81,7 @@ describe('[NX-38-R5] the Build 12 profile has no co-parent entry point', () => {
   });
   it('the invite screens, the link route and the saved-token prompt each ask the flag', () => {
     expect(src('app/invite/_layout.tsx')).toContain('inviteScreensHidden()');
-    expect(src('app/+native-intent.tsx')).toContain('familySurfaces: !inviteScreensHidden()');
-    expect(src('lib/family/pending-invite-watcher.tsx')).toContain('inviteScreensHidden()');
+    expect(src('app/+native-intent.tsx')).toContain('alpha: PLUS_ALPHA');
+    expect(src('lib/family/pending-invite-watcher.tsx')).toContain("inviteDestination('invite_link', serverFeaturesEnabled(), PLUS_ALPHA)");
   });
 });

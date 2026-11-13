@@ -1,9 +1,11 @@
 /// <reference types="node" />
 /**
- * Review B on #737: the Family tab and the child Settings row "Write this book together" are co-parent doors. They follow the
- * one join-door rule (entry.logic.ts visibleCoParentDoors), so a store build shows neither, servers on or off. Alpha builds keep both.
- * Review A on #737: inviteScreensHidden() must read the real server switch (surfaces.ts), run here with the capability list and
- * the alpha flag mocked.
+ * Review B on #737, redone for the three-tab model (founder, 11 Nov 2026: Home | Book | Me, Family is never a tab). The one
+ * co-parent door left in Settings is the child row "Write this book together"; `familySurfacesShown` decides that row and
+ * nothing else, and it is exactly the join-door rule (entry.logic.ts visibleCoParentDoors): servers on AND an alpha build.
+ * A store build shows no row, servers on or off; an alpha build with servers off shows none either (there is no coming-soon
+ * screen to open). Review A on #737: inviteScreensHidden() must read the real server switch (surfaces.ts), run here with
+ * the capability list and the alpha flag mocked.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -13,22 +15,25 @@ import { useAnotherBusy } from '../src/lib/first-run/account-books.logic';
 
 const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8');
 
-describe('the Family tab and the Settings row follow the join-door rule', () => {
-  it('a store build shows neither, with servers on or off', () => {
+describe('the Settings row "Write this book together" follows the join-door rule; Family is never a tab', () => {
+  it('a store build shows no row, with servers on or off', () => {
     expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(false);
     expect(familySurfacesShown({ alpha: false, coParent: false })).toBe(false);
   });
-  it('every alpha build keeps both, servers on or off', () => {
+  it('an alpha build shows the row only with servers on (the flow); servers off has no row and no coming-soon screen', () => {
     expect(familySurfacesShown({ alpha: true, coParent: true })).toBe(true);
-    expect(familySurfacesShown({ alpha: true, coParent: false })).toBe(true);
+    expect(familySurfacesShown({ alpha: true, coParent: false })).toBe(false);
   });
-  it('a store build would show them only if the join door opened', () => {
-    for (const coParent of [true, false]) expect(familySurfacesShown({ alpha: false, coParent })).toBe(visibleCoParentDoors(coParent, false).joinButton);
+  it('the row is exactly the join door, in every build', () => {
+    for (const alpha of [true, false]) for (const coParent of [true, false]) {
+      expect(familySurfacesShown({ alpha, coParent }), `alpha ${alpha} coParent ${coParent}`).toBe(visibleCoParentDoors(coParent, alpha).joinButton);
+    }
   });
-  it('the tab and the row both ask familySurfacesShown, and there is no second rule', () => {
-    expect(src('app/(tabs)/_layout.tsx')).toContain('familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent })');
-    expect(src('app/settings/children/[id].tsx')).toContain('familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent })');
+  it('there is no Family tab, the row asks the one rule, and there is no second rule', () => {
+    expect(src('app/(tabs)/_layout.tsx')).not.toMatch(/name="family"|Tabs\.Protected|FAMILY_TAB|familySurfacesShown/);
+    expect(src('app/settings/children/[id].tsx')).toContain('bookRow({ serverFeatures: serverFeaturesEnabled(), alpha: PLUS_ALPHA,');
     expect(src('lib/family/entry.logic.ts')).toMatch(/visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton/);
+    expect(src('lib/family/entry.logic.ts')).toMatch(/return input\.coParent && input\.alpha;/);
   });
 });
 

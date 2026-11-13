@@ -24,9 +24,9 @@ const SCREENS = [...layout.matchAll(/<Tabs\.Screen\s+name="(\w+)"/g)].map((m) =>
 
 describe('the You tab', () => {
   it('[NX-30a-R1] the last tab is You and it opens Settings home', () => {
-    expect(SCREENS).toEqual(['index', 'book', 'family', 'you']);
+    expect(SCREENS).toEqual(['index', 'book', 'you']);
     expect(layout).toMatch(/<Tabs\.Screen\s+name="you"[\s\S]*?title: t\.you,/);
-    expect(en.tabs.you).toBe('You');
+    expect(en.tabs.you).toBe('Me');
     // The route is Settings home itself, re-exported: one component, not a copy.
     expect(you.trim()).toBe("export { default } from '../settings/index';");
     expect(home).toMatch(/export default function Settings\(\)/);
@@ -47,12 +47,9 @@ describe('the You tab', () => {
     expect(layout).not.toMatch(/options=\{\{[^}]*\bhref:/);
   });
 
-  it('[NX-30a-R6] no visible tab leads to a coming-soon page', () => {
-    // Family is the only tab that can be a coming-soon page; it is out of the navigator where it would be (D-126).
-    expect(layout).toMatch(/<Tabs\.Protected guard=\{FAMILY_TAB\}>\s*<Tabs\.Screen name="family"/);
-    // You is never inside a guard: it is in every build.
-    expect(layout).not.toMatch(/Tabs\.Protected[^>]*>\s*<Tabs\.Screen name="you"/);
-    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('</Tabs.Protected>'));
+  it('[NX-30a-R6] no tab is guarded and Family is not a tab: the bar is the same in every build', () => {
+    expect(layout).not.toMatch(/Tabs\.Protected|FAMILY_TAB|name="family"/);
+    expect(layout.indexOf('name="you"')).toBeGreaterThan(layout.indexOf('name="book"'));
   });
 
   it('[NX-30a-R7] the You tab draws no lamp and has one level 1 heading', () => {
@@ -65,11 +62,11 @@ describe('the You tab', () => {
     expect(block).not.toMatch(/headerLeft/);
   });
 
-  it('[NX-30a-R8] four tabs at 320 pt and 375 pt keep 44 pt targets and whole labels', () => {
+  it('[NX-30a-R8] three tabs at 320 pt and 375 pt keep 44 pt targets and whole labels', () => {
     const BAR = Number(/const BAR = (\d+);/.exec(layout)?.[1]);
     for (const width of [320, 375]) {
       expect(width / SCREENS.length).toBeGreaterThanOrEqual(tokens.target.min);
-      // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Tonight".
+      // A generous bound for 13 pt Mukta Medium: 0.62 em per letter. The widest title is "Home".
       const widest = Math.max(...Object.values(en.tabs).map((l) => l.length)) * tokens.minFontSize * 0.62;
       expect(widest).toBeLessThan(width / SCREENS.length);
     }

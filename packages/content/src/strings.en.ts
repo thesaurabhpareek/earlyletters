@@ -56,11 +56,11 @@ export const en = {
 
   // Tab titles (experience pass S57): they move here from apps/mobile/src/app/(tabs)/_layout.tsx.
   tabs: {
-    tonight: "Tonight",
+    // Founder, 11 Nov 2026: Home, Book, Me, in every build. Label-only renames: the route files stay index.tsx and you.tsx,
+    // and the keys stay `tonight` and `you`. Family is never a tab, so there is no `family` key.
+    tonight: "Home",
     book: "Book",
-    family: "Family",
-    // PLACEHOLDER (founder to confirm "You", "Yours" or "Settings", NX-30a): the tab that holds Settings and Account.
-    you: "You",
+    you: "Me",
   },
 
   onboarding: {
@@ -1180,13 +1180,13 @@ export const en = {
       title: "This page did not open",
       body: "Your letters and recordings are safe on this phone.",
       tryAgainButton: "Try again",
-      tonightButton: "Go to Tonight",
+      tonightButton: "Go to Home",
     },
     // A link or route the app does not have (replaces the router's developer page).
     notFoundPage: {
       title: "Nothing at this link",
       body: "Your book is right where you left it.",
-      button: "Back to Tonight",
+      button: "Back to Home",
     },
     // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
     // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,

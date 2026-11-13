@@ -30,7 +30,7 @@
  *
  * Typed letters skip Review (S20). A destination tap saves the words, then hands the letter to Review's one Keep step
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
- * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
+ * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Home as a draft.
  *
  * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
  * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.

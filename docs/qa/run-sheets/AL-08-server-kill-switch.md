@@ -20,7 +20,7 @@ Remote kill switches (`killSwitches.sync`, `invites`) have no consumers in the a
 |---|---|---|---|
 | AL-08.0 | The drill-phone check on Phone A and Phone B. | Both pass. If not, **stop** | pass or stop |
 | AL-08.1 | Build 1, first run done (AL-01). Welcome, the moment after a save where build 2 offers Keep the book, and Settings. | No sign-in anywhere; Settings has no Account and no Delete account row | yes or no |
-| AL-08.2 | Family tab; then open an invite link (one made on R1, or the website's example) from Notes. | The Family tab and the link both show the coming-soon presentation; nothing joins | yes or no |
+| AL-08.2 | The tab bar, then Me > Asha's book; then open an invite link (one made on R1, or the website's example) from Notes. | Three tabs (Home, Book, Me) and no Family tab; no "Write this book together" row and no coming-soon screen; the link opens Home with nothing said; nothing joins | yes or no |
 | AL-08.3 | Use the app for 10 minutes (record, type, Book, export), keeping no more than 2 letters, then read the App Privacy Report. | No Supabase host at all; only the pack host and the speech model host | The list of domains |
 
 ## Part B: stop the server side (TESTFLIGHT.md kill path step 1, the part that is safe to rehearse)
@@ -37,7 +37,7 @@ Remote kill switches (`killSwitches.sync`, `invites`) have no consumers in the a
 
 | # | Do | Expected | Capture |
 |---|---|---|---|
-| AL-08.9 | Phone A (drill phone): install the switch-off build from the same commit over R1 (TestFlight, or the EAS install link). Open it. | Every letter is still there and opens, plays and exports; no sign-in, no sync, no Account row; the Family tab shows coming soon. Nothing deleted | Letter count before and after (must match); yes or no per part |
+| AL-08.9 | Phone A (drill phone): install the switch-off build from the same commit over R1 (TestFlight, or the EAS install link). Open it. | Every letter is still there and opens, plays and exports; no sign-in, no sync, no Account row; three tabs (Home, Book, Me) with no Family tab, no "Write this book together" row and no coming-soon screen. Nothing deleted | Letter count before and after (must match); yes or no per part |
 | AL-08.10 | Phone A: install R1 again over it. Open it. | Signed in as Drill Mama again (the session in the Keychain), or asked to sign in; letters made in AL-08.9 sync once; nothing doubled | yes or no; count on staging |
 | AL-08.11 | Founder, App Store Connect: after every R1 drill row is done, expire the R1 build (TestFlight > the build > Expire build; R1 went only to the "Founder" group). Open the app on Phone B. | No new installs of R1; record whether the installed copy still opens (TESTFLIGHT.md marks this unverified) | What happened, in words |
 
