@@ -118,7 +118,7 @@ describe('the Sign in card (B and C)', () => {
     expect(en.settingsHome.youTabHint).toBe('Settings and account');
     const words = [en.settingsHome.signedOut.body, en.settingsHome.localStart.body, authCopy.account.signedOutTitle, authCopy.account.signIn].join(' ');
     expect(words).not.toMatch(/co-parent|other parent|family|share|sharing|backup|back up|safe\b|\bAI\b/i);
-    expect(words).not.toMatch(/[–—‘’“”…]/);
+    expect(words).not.toMatch(/[\u2013\u2014\u2018\u2019\u201c\u201d\u2026]/);
     // No flag at all in the card: it has no co-parent wording to key off familySurfacesShown, and it never reads the sign-in switch for wording.
     expect(card).not.toMatch(/coParent|familySurfacesShown|capabilities/);
     expect(card).toMatch(/h\.signedOut\.body/);
