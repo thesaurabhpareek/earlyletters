@@ -28,6 +28,7 @@ import {
 } from '../src/components/family/family-tab.logic';
 import { familyNotice } from '../src/components/family/family-notice';
 import { lampAllowed, resolveLamp } from '../src/components/ui/lamp.logic';
+import { HEADER_TARGET } from '../src/lib/navigation.logic';
 import { LEAVE_BOOK_OFFERED } from '../src/lib/family/entry.logic';
 import { decodeSeen, encodeSeen, familyTabState } from '../src/lib/family/members.logic';
 
@@ -35,7 +36,7 @@ const src = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8')
 /** Source without comments, so a rule is checked against code, not against the words that explain it. */
 const code = (p: string) => src(p).replace(/\/\*[\s\S]*?\*\/|\{\/\*[\s\S]*?\*\/\}|\/\/.*$/gm, '');
 
-const TAB = 'app/(tabs)/family.tsx';
+const TAB = 'app/family.tsx';
 const PAPA = { id: 'papa', signsAs: 'Papa', role: 'parent' as const };
 const MAMA = { signsAs: 'Mama' };
 
@@ -161,11 +162,11 @@ describe('[S57] the room: the lamp, and the tab titles', () => {
   });
 
   it('the tab titles come from packages/content; none is typed in the layout', () => {
-    // You (NX-30a) is the fourth, a placeholder label; its screen options span lines, so tab-bar.test.ts pins it.
-    expect(en.tabs).toEqual({ tonight: 'Tonight', book: 'Book', family: 'Family', you: 'You' });
+    // Home, Book, Me (founder, 11 Nov 2026), in every build; Family is not a tab. Me's screen options span lines, so tab-bar.test.ts pins it.
+    expect(en.tabs).toEqual({ tonight: 'Home', book: 'Book', you: 'Me' });
     const layout = code('app/(tabs)/_layout.tsx');
     expect(layout).not.toMatch(/title: '|button\('/);
-    for (const k of ['tonight', 'book', 'family']) expect(layout).toMatch(new RegExp(`title: t\\.${k}, [^}]*tabBarButton: button\\(t\\.${k}\\)`));
+    for (const k of ['tonight', 'book']) expect(layout).toMatch(new RegExp(`title: t\\.${k}, [^}]*tabBarButton: button\\(t\\.${k}\\)`));
     expect(layout).toMatch(/title: t\.you,[^]*tabBarButton: button\(t\.you\)/);
     expect(layout).toMatch(/const t = copy\.tabs;/);
   });
@@ -203,5 +204,26 @@ describe('[S57 Motion] the co-parent\'s row arrives once', () => {
     expect(code(TAB)).toMatch(/const note = familyNotice\.take\(\);\s*if \(note\) toast\.show\(\{ message: note \}\);/);
     expect(code(TAB)).toMatch(/toast\.show\(\{ message: f\.pending\.cancelled \}\)/);
     expect(src('components/ui/toast.tsx')).toMatch(/announce\(action \?/);
+  });
+});
+
+describe('[11 Nov, lens B on #720] the family page has a way out of its own (no header, no tab bar under it)', () => {
+  it('draws Close, top right, with the existing word, and it goes back or Home: never a dead end', () => {
+    // Pushed over the tabs, with the root stack's header hidden: without this, only a swipe leaves the page, and
+    // VoiceOver, Voice Control and Switch Control users have no control to leave by.
+    expect(code(TAB)).toMatch(/import \{ ModalHeader \} from '@\/components\/ui\/screen-header';/);
+    expect(code(TAB)).toMatch(/const leave = \(\) => \(router\.canGoBack\(\) \? router\.back\(\) : router\.replace\('\/'\)\);/);
+    expect(code(TAB)).toMatch(/<ModalHeader onClose=\{leave\} \/>/);
+    // The header's label is the existing Close (no new word), and it is a 44 pt quiet button.
+    expect(src('components/ui/screen-header.tsx')).toMatch(/closeLabel = copy\.common\.closeButton/);
+    expect(en.common.closeButton).toBe('Close');
+    expect(code('components/ui/screen-header.tsx')).toMatch(/<Button variant="quiet" size="sm"/);
+    expect(HEADER_TARGET).toBeGreaterThanOrEqual(44);
+  });
+
+  it('sits above the scrolling page, inside the safe area, so it is reached first and never scrolls away', () => {
+    const page = code(TAB);
+    expect(page.indexOf('<ModalHeader')).toBeGreaterThan(page.indexOf('<SafeAreaView'));
+    expect(page.indexOf('<ModalHeader')).toBeLessThan(page.indexOf('<ScrollView testID="family.screen"'));
   });
 });

@@ -30,7 +30,7 @@
  *
  * Typed letters skip Review (S20). A destination tap saves the words, then hands the letter to Review's one Keep step
  * (lib/capture/keep-intent.ts): the Keep gate decides there exactly as for a spoken letter (D-082, D-083), and the
- * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Tonight as a draft.
+ * saved moment plays and lands on the Book, or the Plus sheet opens and the letter waits on Home as a draft.
  *
  * The standing Plus line (F14-REQ-040, F04-REQ-045, BL-560): the Write half of Tonight's line, the same `PlusLine` under
  * the same rule (tonight-plus.logic plusLineShows, the Keep step's own decideKeepLetter), above the two destinations.
@@ -46,7 +46,7 @@ import { AppState, BackHandler, KeyboardAvoidingView, Platform, ScrollView, View
 import Animated, { FadeIn, FadeOut, LinearTransition, ReduceMotion, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, pageEndOffset, sheetKeyboardOffset, spokenSeparator, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
+import { addButtonLabel, followCaretToEnd, pageEmptinessChanged, pageEndOffset, sheetKeyboardOffset, writeSwipeAllowed, writeWords } from '@/components/capture/review-view.logic';
 import { Button } from '@/components/ui/button';
 import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
@@ -54,13 +54,14 @@ import { ModalHeader } from '@/components/ui/screen-header';
 import { Text } from '@/components/ui/text';
 import { TextField } from '@/components/ui/text-field';
 import { announce, useIsAccessibilitySize, useTheme } from '@/lib/a11y';
-import { createFirstFocus, createWriteSession, leavesForeground } from '@/components/capture/write-session.logic';
+import { createFirstFocus, createWriteSession, leavesForeground, writePageFull } from '@/components/capture/write-session.logic';
+import { writeDateline } from '@/components/tonight/draft-card.logic';
 import { anotherThought, anotherThoughtShown } from '@/components/tonight/prompt.logic';
 import { PlusLine } from '@/components/tonight/plus-line';
 import { plusLineShows } from '@/components/tonight/tonight-plus.logic';
 import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
 import { armKeep } from '@/lib/capture/keep-intent';
-import { childLabel, copy, fill, pendingCopy } from '@/lib/copy';
+import { copy, fill, pendingCopy } from '@/lib/copy';
 import { ageText } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
@@ -173,9 +174,13 @@ export default function Write() {
       { initial: initialText },
     ),
   );
+  const [pageFull, setPageFull] = useState(() => writePageFull(initialText.length));
   const onChange = (value: string) => {
     if (pageEmptinessChanged(session.latest(), value)) setText(value);
     session.change(value);
+    // Renders only when the page becomes full or stops being full (BL-378), never per keystroke.
+    const full = writePageFull(value.length);
+    if (full !== pageFull) setPageFull(full);
   };
 
   // Leaving any other way (a swipe down within the pause, a relaunch of the stack): a pending autosave is written now,
@@ -253,7 +258,7 @@ export default function Write() {
       };
     }
     presses.current += 1;
-    const next = anotherThought({ birthday: child.birthday, today, ...history.current, shown: shownKeys.current, press: presses.current }, PROMPTS);
+    const next = anotherThought({ birthday: child.birthday, today, ...history.current, shown: shownKeys.current, press: presses.current, childName: child.name }, PROMPTS);
     shownKeys.current = next.shown;
     haptic('tap');
     setPromptKey(next.prompt.key);
@@ -323,7 +328,9 @@ export default function Write() {
 
   if (!child) return null;
   const age = ageText(child, todayISO());
-  const dateline = age ? `${childLabel(child.name)} · ${age}` : childLabel(child.name);
+  // Tonight's dateline, from the same function (NX-36 S13): "Asha · 7 months", and for a book with no name the stage
+  // alone, "7 months", with no name and no dot. With no age the line is the name, or nothing at all.
+  const dateline = writeDateline(child.name, age);
   const empty = !text.trim();
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   // The standing Plus line, then "Add to Asha's book" full width and "Keep private" quiet beneath, so the main action
@@ -345,8 +352,14 @@ export default function Write() {
       <Button variant="quiet" fullWidth label={copy.review.destination.privateButton} onPress={() => keep(false)} disabled={empty} testID="write.keep.private" />
     </View>
   );
-  const status =
-    saveState === 'saved' ? (
+  const status = pageFull && saveState !== 'failed' ? (
+    <View key="full" className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite" testID="write.pageFull">
+      <WarningCircleIcon size={14} color={c.textMuted} weight="bold" />
+      <Text variant="footnote" className="shrink">
+        {copy.write.tooLong}
+      </Text>
+    </View>
+  ) : saveState === 'saved' ? (
       <Animated.View key="saved" entering={FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never)} className="flex-row items-center gap-1.5" accessibilityLiveRegion="polite">
         <CheckIcon size={14} color={c.textMuted} weight="bold" />
         <Text variant="footnote" className="shrink">
@@ -379,9 +392,11 @@ export default function Write() {
             viewportHeight.current = e.nativeEvent.layout.height;
             followPageEnd();
           }}>
-          <Text variant="letterDateline" caps accessibilityLabel={spokenSeparator(dateline)}>
-            {dateline}
-          </Text>
+          {dateline.text ? (
+            <Text variant="letterDateline" caps accessibilityLabel={dateline.a11y}>
+              {dateline.text}
+            </Text>
+          ) : null}
           {prompt && (
             // The prompt is the one literary line above the page (S19), carried over from Tonight or Listen (5.8 row 3).
             <Animated.View key={prompt.key} entering={presses.current === 0 ? undefined : promptIn} exiting={promptOut} layout={promptLayout}>

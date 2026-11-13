@@ -10,8 +10,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import type { AuthState } from '../src/lib/auth/machine.logic';
 import { firstRunGate, gateInputsFromAuth } from '../src/lib/first-run/gate.logic';
-import { CO_PARENT_IN_STORE_BUILD } from '../src/lib/family/surfaces.logic';
-import { failureStillCounts, inlineErrorKind, invitedDoorShown, isOnline, welcomeErrorMessage } from '../src/lib/first-run/welcome.logic';
+import { isAlphaBuild } from '../src/lib/billing/alpha';
+import { visibleCoParentDoors } from '../src/lib/family/entry.logic';
+import { failureStillCounts, firstRunScreen, inlineErrorKind, invitedDoorShown, isOnline, welcomeErrorMessage } from '../src/lib/first-run/welcome.logic';
 
 const src = (...p: string[]) => readFileSync(join(__dirname, '..', 'src', ...p), 'utf8');
 const welcome = src('components', 'onboarding', 'welcome-sign-in.tsx');
@@ -63,6 +64,19 @@ describe('[NX-36-S2] Welcome and sign in', () => {
     expect(iAgree).toBeLessThan(iApple);
     expect(iApple).toBeLessThan(iEmail);
   });
+  it('[NX-36-S2] the two documents are 44 pt link targets of their own, not links inside a sentence', () => {
+    // Button size="sm" is the 44 pt minimum (button.tsx: sm min-h-11), the same targets the age gate uses.
+    expect(src('components', 'ui', 'button.tsx')).toMatch(/sm: 'min-h-11/);
+    expect(welcome).toMatch(/<Button variant="quiet" size="sm" label=\{termsLink\} role="link" accessibilityRole="link"[^\n]*brand\.web\.terms/);
+    expect(welcome).toMatch(/<Button variant="quiet" size="sm" label=\{privacyLink\} role="link" accessibilityRole="link"[^\n]*brand\.web\.privacy/);
+    expect(welcome).not.toMatch(/accessibilityRole="link" variant="footnote"|className="underline"/);
+    // A page that will not open changes nothing here (the age gate does the same).
+    expect(welcome).toMatch(/openBrowserAsync\(url\)\.catch\(\(\) => \{\}\)/);
+    // Their names are the existing consent labels, and both are in the sentence the line says.
+    const { termsLink, privacyLink } = authCopy.consent.terms;
+    expect(authCopy.sheet.agreeLine).toContain(termsLink);
+    expect(authCopy.sheet.agreeLine).toContain(privacyLink);
+  });
   it('[NX-36-S2] no password, name or phone field, and "I already have a book" is folded into the same two buttons', () => {
     expect(welcome).not.toMatch(/TextField|TextInput|secureTextEntry|textContentType/);
     expect(welcome).not.toMatch(/signInButton|I already have a book/);
@@ -73,13 +87,20 @@ describe('[NX-36-S2] Welcome and sign in', () => {
     expect(welcome).toMatch(/router\.push\('\/sign-in\/consent'\)/);
     expect(welcome).not.toMatch(/console\.|track\(|logError|Sentry/);
   });
-  it('[NX-36-S2] the failures use the first-run words without "Your letters are safe"; a cancel shows nothing', () => {
+  it('[NX-36-S2] the failure that stays on the screen uses the first-run words without "Your letters are safe"; a cancel shows nothing', () => {
     expect(welcomeErrorMessage('provider')).toBe(authCopy.firstRun.errors.provider);
-    expect(welcomeErrorMessage('rate_limited')).toBe(authCopy.firstRun.errors.rateLimited);
-    expect(welcomeErrorMessage('not_available')).toBe(authCopy.firstRun.errors.notAvailable);
     expect(welcomeErrorMessage('cancelled')).toBeNull();
     expect(welcomeErrorMessage(null)).toBeNull();
     for (const text of Object.values(authCopy.firstRun.errors)) expect(text).not.toMatch(/letters are safe/i);
+  });
+  it('[NX-36-S2] no first-run word is kept that nothing can reach: a 429 and "not available" go to the outage screen, not under the buttons', () => {
+    // Only `provider` stays inline (inlineErrorKind); the gate sends the rest to S3. Words for them would be dead and still need approval.
+    expect(Object.keys(authCopy.firstRun.errors)).toEqual(['provider']);
+    for (const kind of ['rate_limited', 'email_wait', 'not_available'] as const) {
+      expect(inlineErrorKind({ status: 'signedOut', error: kind })).toBeNull();
+      expect(welcomeErrorMessage(kind)).not.toBe(authCopy.firstRun.errors.provider);
+    }
+    expect(src('lib', 'first-run', 'welcome.logic.ts')).not.toMatch(/rateLimited|notAvailable/);
   });
   it('[NX-36-S2] inline errors: wrong_code, invalid_email and provider stay on the screen; a cancel shows nothing', () => {
     for (const error of ['wrong_code', 'invalid_email', 'provider'] as const) expect(inlineErrorKind({ status: 'signedOut', error })).toBe(error);
@@ -107,7 +128,8 @@ describe('[NX-36-S2] Welcome and sign in', () => {
     expect(src('lib', 'auth', 'ui.tsx')).toMatch(/accessibilityLiveRegion="polite"/);
   });
   it('[NX-36-S2] the Welcome waits (renders nothing) while the session is read, so a signed-in parent never sees it flash', () => {
-    expect(onboarding).toMatch(/route\.restoring \? <SafeAreaView className="flex-1 bg-background" \/> : <WelcomeSignIn \/>/);
+    expect(onboarding).toMatch(/if \(route\.screen === 'blank'\) return <SafeAreaView className="flex-1 bg-background" \/>;/);
+    expect(onboarding).toMatch(/if \(route\.screen === 'welcome'\) return <WelcomeSignIn \/>;/);
   });
 });
 
@@ -134,15 +156,49 @@ describe('[NX-36-S3] Outage and offline', () => {
   it('[NX-36-S3] the local-start button is 22 characters or fewer and the long sentence is a note', () => {
     expect(authCopy.outage.startLocal.length).toBeLessThanOrEqual(22);
     expect(authCopy.outage.startLocalNote.length).toBeGreaterThan(authCopy.outage.startLocal.length);
-    expect(outage).toMatch(/\$\{body\} \$\{t\.startLocalNote\}/);
+    expect(outage).toMatch(/localStartOffered \? `\$\{body\} \$\{t\.startLocalNote\}` : body/);
+  });
+  it('[NX-36-S3] the sentence a person reads says each thing once: no phrase of four words or more repeats, in either variant, with or without the local start', () => {
+    const t = authCopy.outage;
+    const shown = [`${t.body} ${t.startLocalNote}`, t.body, `${authCopy.offline.body} ${t.startLocalNote}`, authCopy.offline.body];
+    for (const text of shown) {
+      const words = text.toLowerCase().replace(/[^a-z ]/g, '').split(/\s+/);
+      const seen = new Set<string>();
+      for (let i = 0; i + 4 <= words.length; i++) {
+        const gram = words.slice(i, i + 4).join(' ');
+        expect(seen.has(gram), `"${gram}" repeats in: ${text}`).toBe(false);
+        seen.add(gram);
+      }
+      // "sign in later" and "start the book on this phone" are each said once, by the note.
+      expect((text.toLowerCase().match(/sign in later/g) ?? []).length).toBeLessThanOrEqual(1);
+      expect((text.toLowerCase().match(/start the book on this phone/g) ?? []).length).toBeLessThanOrEqual(1);
+    }
+    // Without the button the body does not mention it (the old body offered the local start even when it was off).
+    expect(t.body).not.toMatch(/start|phone|sign in later/i);
+  });
+  it('[NX-36-S3] the offline words say only what the screen does: it does not retry by itself, so the line does not say it', () => {
+    expect(authCopy.offline.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
+    expect(authCopy.offline.body).toMatch(/Try again/);
+    expect(authCopy.outage.body).not.toMatch(/by itself|on its own|automatically|\bwe\b/i);
+    // The reconnect path (use-first-run-route.ts) only puts the Welcome back and says "You are back online."; no timer retries sign-in.
+    expect(route).not.toMatch(/setInterval|backoff|back-off/i);
+    expect(outage).not.toMatch(/by itself/);
   });
   it('[NX-36-S3] Try again is the primary, the local start is quiet and only where offered; no error code or count', () => {
     expect(outage).toMatch(/primary=\{\{ label: t\.retry/);
     expect(outage).toMatch(/quiet=\{localStartOffered \?/);
     expect(outage).toMatch(/kind="error"/);
     expect(outage).not.toMatch(/attempt|retries/i);
-    expect(authCopy.outage.backOnline).toBe('Sign in is back.');
-    expect(onboarding).toMatch(/announce\(authCopy\.outage\.backOnline\)/);
+    expect(authCopy.outage.backOnline).toBe('You are back online.');
+    // Said by the route, on a real reconnect only (test/use-first-run-route.test.ts), not by the screen on every change of step.
+    expect(route).toMatch(/announce\(authCopy\.outage\.backOnline\)/);
+    expect(onboarding).not.toMatch(/outage\.backOnline/);
+  });
+  it('[NX-36-S3] on arrival the heading takes focus and the title is announced, for VoiceOver (StateScreen\'s live region is Android-only)', () => {
+    expect(outage).toMatch(/useArrival\(block, title, variant\)/);
+    expect(outage).toMatch(/<View ref=\{block\} collapsable=\{false\}/);
+    expect(src('lib', 'first-run', 'use-arrival.ts')).toMatch(/useFocusOnMount\(focusTarget, true, key\)/);
+    expect(src('lib', 'a11y.ts')).toMatch(/Android: no-op/);
   });
   it('[NX-31-R19] the connection returning, or Try again, sets the failure aside; a new failure counts again', () => {
     const a: AuthState = { status: 'signedOut', error: 'network' };
@@ -150,12 +206,12 @@ describe('[NX-36-S3] Outage and offline', () => {
     expect(failureStillCounts(a, null)).toBe(true);
     expect(failureStillCounts(a, a)).toBe(false);
     expect(failureStillCounts(b, a)).toBe(true);
-    expect(route).toMatch(/if \(online && !wasOnline\.current\) setSetAside\(stateRef\.current\)/);
+    expect(route).toMatch(/if \(online && !wasOnline\.current\) \{\n\s+setSetAside\(stateRef\.current\);/);
   });
   it('[NX-31-R18] the local start, once chosen, leaves the outage screen for the existing first run', () => {
     const inputs = { ...gateInputsFromAuth({ serverFeatures: true, authState: failed, hasLocalBook: false, localStartChosen: true }), localStartFallback: true };
     expect(firstRunGate(inputs).step).toBe('childStep');
-    expect(onboarding).toMatch(/<FirstRunSteps localStartChosen=\{route\.localStartChosen\} \/>/);
+    expect(onboarding).toMatch(/<FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} onSignedOut=\{route\.restartFromWelcome\} \/>/);
   });
   it('[NX-31-R19] the outage screen is a StateScreen from the standard components, not hand-drawn', () => {
     expect(outage).toMatch(/import \{ StateScreen \} from '@\/components\/ui\/state-screen'/);
@@ -184,12 +240,55 @@ describe('[NX-31-R19] the connectivity source', () => {
 });
 
 describe('[NX-31-R17] "I was invited" in the first-run Welcome', () => {
-  it('[NX-31-R17] hidden in a servers-on store build, kept in an alpha build, hidden with servers off', () => {
-    expect(CO_PARENT_IN_STORE_BUILD).toBe(false);
-    expect(invitedDoorShown({ alpha: false, coParent: true })).toBe(false);
+  // The build rule is develop's (CTO ruling B12-5, S1-178): servers on AND an alpha build. The Welcome passes the raw switch.
+  it('[NX-31-R17] shown in a servers-on alpha build, hidden in a servers-on store build, hidden with servers off', () => {
     expect(invitedDoorShown({ alpha: true, coParent: true })).toBe(true);
+    expect(invitedDoorShown({ alpha: false, coParent: true })).toBe(false);
     expect(invitedDoorShown({ alpha: true, coParent: false })).toBe(false);
     expect(invitedDoorShown({ alpha: false, coParent: false })).toBe(false);
+  });
+  it('[NX-31-R17] for every build profile it agrees with the old Welcome\'s rule, visibleCoParentDoors', () => {
+    for (const env of ['production', 'preview', 'development'] as const) {
+      for (const coParent of [true, false]) {
+        const alpha = isAlphaBuild(env);
+        expect(invitedDoorShown({ alpha, coParent }), `${env} servers:${coParent}`).toBe(visibleCoParentDoors(coParent, alpha).joinButton);
+      }
+    }
+    expect(isAlphaBuild('production')).toBe(false);
+    expect(invitedDoorShown({ alpha: isAlphaBuild('production'), coParent: true })).toBe(false);
+    expect(invitedDoorShown({ alpha: isAlphaBuild('preview'), coParent: true })).toBe(true);
+  });
+  it('[NX-31-R17] the screen passes the raw switch, not an answer the rule already gave (that applied it twice and made the door follow nothing)', () => {
+    expect(welcome).toMatch(/invitedDoorShown\(\{ alpha: PLUS_ALPHA, coParent: capabilities\.coParent \}\)/);
+    expect(welcome).not.toMatch(/visibleCoParentDoors/);
+    expect(src('lib', 'first-run', 'welcome.logic.ts')).toMatch(/return visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton;/);
+  });
+});
+
+describe('[NX-31-R17] first run keeps the person where they are once past the welcome step', () => {
+  it('[NX-31-R17] firstRunScreen: the Welcome and the outage screen are for a person who has not got past their welcome step', () => {
+    const base = { outage: null, restoring: false, pastWelcome: false } as const;
+    expect(firstRunScreen({ ...base, step: 'signIn' })).toBe('welcome');
+    expect(firstRunScreen({ ...base, step: 'signIn', restoring: true })).toBe('blank');
+    // A signed-in person offline at launch: the session is still being read, so no screen that says sign in is needed.
+    expect(firstRunScreen({ ...base, step: 'outage', outage: 'offline', restoring: true })).toBe('blank');
+    expect(firstRunScreen({ ...base, step: 'outage', outage: 'outage' })).toBe('outage');
+    expect(firstRunScreen({ ...base, step: 'outage', outage: 'offline' })).toBe('outage');
+    for (const step of ['unchanged', 'childStep', 'openTonight', 'ageGate', 'stop'] as const) expect(firstRunScreen({ ...base, step })).toBe('steps');
+  });
+  it('[NX-31-R17] firstRunScreen: past the welcome step it is always the steps, whatever the session, the failure or the connection does', () => {
+    for (const step of ['signIn', 'outage', 'childStep', 'openTonight', 'unchanged'] as const) {
+      for (const restoring of [true, false]) {
+        for (const outage of [null, 'outage', 'offline'] as const) {
+          expect(firstRunScreen({ step, outage, restoring, pastWelcome: true }), `${step} ${restoring} ${outage}`).toBe('steps');
+        }
+      }
+    }
+  });
+  it('[NX-31-R17] the steps report that they are past their welcome step, and the route is told', () => {
+    // The Welcome start reports once it leaves the Welcome (handoff.logic reportsPastWelcome; the signed-in start waits to move off the promise step).
+    expect(onboarding).toMatch(/if \(reportsPastWelcome\(\{ start, step \}\)\) onPastWelcome\?\.\(\);/);
+    expect(onboarding).toMatch(/onPastWelcome=\{route\.markPastWelcome\}/);
   });
 });
 
@@ -201,7 +300,7 @@ describe('[NX-36-S2] the servers-off store build is unchanged', () => {
         expect(firstRunGate(gateInputsFromAuth({ serverFeatures: false, authState, hasLocalBook, online: false })).step).toBe('unchanged');
       }
     }
-    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} \/>;/);
+    expect(onboarding).toMatch(/return <FirstRunSteps localStartChosen=\{route\.localStartChosen\} onPastWelcome=\{route\.markPastWelcome\} onSignedOut=\{route\.restartFromWelcome\} \/>;/);
   });
   it('[NX-31-R17] the screens that ship unchanged are still wired as they were', () => {
     for (const k of ['startButton', 'signInButton'] as const) expect(onboarding).toContain(`o.welcome.${k}`);
@@ -210,6 +309,7 @@ describe('[NX-36-S2] the servers-off store build is unchanged', () => {
     expect(onboarding).toMatch(/const ORDER: Step\[\] = \['welcome', 'promise', 'child', 'signsAs', 'finish'\];/);
   });
   it('[NX-31-R17] the gate only applies when the build has sign-in settings; a build with none stays fully local', () => {
-    expect(route).toMatch(/serverFeaturesEnabled\(\) && auth\.configured/);
+    expect(route).toMatch(/const active = serverFeaturesEnabled\(\) && auth\.configured;/);
+    expect(route).toMatch(/serverFeatures: active,/); // behaviour: test/use-first-run-route.test.ts
   });
 });

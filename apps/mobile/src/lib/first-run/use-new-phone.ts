@@ -7,13 +7,17 @@
  *
  * Latch: a phone that mounts this with no book keeps holding after the first page lands, until the first pull cycle is
  * done or 10 s have passed. A phone that mounts with a book (every ordinary launch) never asks.
+ *
+ * With `enabled` false (the server switch off, no sign-in settings, no ready sync-on session) nothing here runs: no
+ * question, no sync read or subscription, no timer. The route is then exactly what it was before S17.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getSyncStatus, subscribeSyncStatus, syncNow } from '@/lib/sync';
+import type { SyncStatus } from '@/lib/sync/types';
 import type { AccountKind } from './account-books.logic';
 import { readAccountBooks } from './account-books';
-import { OPENING_WAIT_MS, openingView, type OpeningView } from './new-phone.logic';
+import { OPENING_WAIT_MS, openingView, retriesOnReconnect, type OpeningView } from './new-phone.logic';
 
 export interface NewPhone {
   /** null: not applicable (no account question to ask), the route behaves as before. */
@@ -24,23 +28,32 @@ export interface NewPhone {
   startBook: () => void;
 }
 
+/** When this wait began and what `lastSyncedAt` was then; null until the question has been asked. */
+interface Wait {
+  began: number;
+  baseline: string | null;
+}
+
 export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null; hasLocalBook: boolean; online: boolean }): NewPhone {
   // Latched at the first render: only a phone that began with no book is waiting for one.
   const waiting = useRef(!o.hasLocalBook);
   const active = o.enabled && waiting.current && !!o.client;
   const [kind, setKind] = useState<AccountKind | null>(null);
   const [attempt, setAttempt] = useState(0);
-  const [sync, setSync] = useState(() => getSyncStatus());
+  const [wait, setWait] = useState<Wait | null>(null);
+  // The engine's status, read and followed only while active.
+  const [sync, setSync] = useState<SyncStatus | null>(null);
   const [, tick] = useState(0);
-  const began = useRef(Date.now());
-  const baseline = useRef<string | null>(getSyncStatus().lastSyncedAt);
 
-  useEffect(() => subscribeSyncStatus(setSync), []);
+  useEffect(() => {
+    if (!active) return;
+    setSync(getSyncStatus());
+    return subscribeSyncStatus(setSync);
+  }, [active]);
 
   useEffect(() => {
     if (!active || !o.client) return;
-    began.current = Date.now();
-    baseline.current = getSyncStatus().lastSyncedAt;
+    setWait({ began: Date.now(), baseline: getSyncStatus().lastSyncedAt });
     setKind(null);
     let alive = true;
     void readAccountBooks(o.client).then((k) => alive && setKind(k));
@@ -54,25 +67,28 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, attempt]);
 
-  // The connection returns: ask again by itself (the S3 rule).
+  // The connection returns: ask again by itself (the S3 rule), while the answer may still change.
   const wasOnline = useRef(o.online);
   useEffect(() => {
-    if (o.online && !wasOnline.current && active) setAttempt((n) => n + 1);
+    if (o.online && !wasOnline.current && active && retriesOnReconnect(kind)) setAttempt((n) => n + 1);
     wasOnline.current = o.online;
-  }, [o.online, active]);
+  }, [o.online, active, kind]);
 
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const startBook = useCallback(() => setKind('new'), []);
 
   if (!active) return { view: null, retry, startBook };
+  // The first active render: the question goes out in the effect that follows, so this frame is the loading screen.
+  if (!wait) return { view: 'opening', retry, startBook };
+  const s = sync ?? getSyncStatus();
   const view = openingView({
     kind,
     hasLocalBook: o.hasLocalBook,
     online: o.online,
-    syncPhase: sync.phase,
-    lastSyncedAt: sync.lastSyncedAt,
-    lastSyncedAtAtStart: baseline.current,
-    elapsedMs: Date.now() - began.current,
+    syncPhase: s.phase,
+    lastSyncedAt: s.lastSyncedAt,
+    lastSyncedAtAtStart: wait.baseline,
+    elapsedMs: Date.now() - wait.began,
   });
   return { view, retry, startBook };
 }

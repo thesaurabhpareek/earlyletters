@@ -8,7 +8,9 @@ import { en } from '../src';
 
 describe('tab titles', () => {
   it('[NX-30a-R9] tab titles are single words from copy.tabs', () => {
-    expect(Object.keys(en.tabs)).toEqual(['tonight', 'book', 'family', 'you']);
+    // Founder, 11 Nov 2026: Home, Book, Me. The keys keep the route names (tonight is index.tsx, you is you.tsx); Family is never a tab.
+    expect(Object.keys(en.tabs)).toEqual(['tonight', 'book', 'you']);
+    expect(Object.values(en.tabs)).toEqual(['Home', 'Book', 'Me']);
     for (const label of Object.values(en.tabs)) expect(label).toMatch(/^[A-Z][a-z]+$/);
     const layout = readFileSync(join(__dirname, '../../../apps/mobile/src/app/(tabs)/_layout.tsx'), 'utf8');
     for (const label of Object.values(en.tabs)) expect(layout).not.toMatch(new RegExp(`title: ['"\`]${label}['"\`]`));

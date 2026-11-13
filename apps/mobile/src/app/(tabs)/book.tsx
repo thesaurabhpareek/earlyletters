@@ -364,6 +364,8 @@ export default function Book() {
           months={chapters.length > 0 ? months : null}
           settings={{ label: copy.settings.title, onPress: openSettings }}
         />
+        {/* The arrival line (NX-36-S17 2.3): plain text above the first chapter, callout, muted, 12 pt below; not a card,
+            no icon, no button, no dismiss, no line limit. VoiceOver reads it first on the Book, then the list. */}
         {arrivalLine ? (
           <Text variant="callout" tone="muted" style={{ marginBottom: tokens.space[3] }} testID="book.arrivalLine">
             {authCopy.newPhone.arrivedPlain}

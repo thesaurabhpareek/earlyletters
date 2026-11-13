@@ -13,7 +13,8 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { authCopy, en } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { bookTitle, headerCard, localDeletionAllowedFor, youTabView } from '../src/components/settings/settings-home.logic';
+import { childRowTitle } from '../src/components/child/child-settings.logic';
+import { headerCard, localDeletionAllowedFor, youTabView } from '../src/components/settings/settings-home.logic';
 
 
 const SRC = join(__dirname, '..', 'src');
@@ -113,11 +114,11 @@ describe('the Sign in card (B and C)', () => {
     expect(en.settingsHome.signedOut.body).not.toMatch(/any phone|new phone|opens?\b/i);
     expect(en.settingsHome.localStart.body).toBe('This book is on this phone. Signing in adds it to your account after you agree.');
     expect(en.settingsHome.localStart.body).not.toMatch(/\bmoves?\b/i);
-    expect(en.settingsHome.childFallback).toBe("Your child's book");
+    expect(en.settingsHome).not.toHaveProperty('childFallback'); // the nameless row and title use develop's childRowTitle, "Your child"
     expect(en.settingsHome.youTabHint).toBe('Settings and account');
     const words = [en.settingsHome.signedOut.body, en.settingsHome.localStart.body, authCopy.account.signedOutTitle, authCopy.account.signIn].join(' ');
     expect(words).not.toMatch(/co-parent|other parent|family|share|sharing|backup|back up|safe\b|\bAI\b/i);
-    expect(words).not.toMatch(/[–—‘’“”…]/);
+    expect(words).not.toMatch(/[\u2013\u2014\u2018\u2019\u201c\u201d\u2026]/);
     // No flag at all in the card: it has no co-parent wording to key off familySurfacesShown, and it never reads the sign-in switch for wording.
     expect(card).not.toMatch(/coParent|familySurfacesShown|capabilities/);
     expect(card).toMatch(/h\.signedOut\.body/);
@@ -183,15 +184,14 @@ describe('12. Acceptance checks', () => {
     expect(account).toMatch(/a\.removePasskey/);
   });
 
-  it('Nameless child row has a title.', () => {
-    expect(bookTitle('')).toBe("Your child's book");
-    expect(bookTitle('   ')).toBe("Your child's book");
-    expect(bookTitle(null)).toBe("Your child's book");
-    expect(bookTitle('Asha')).toBe('Asha');
-    // #701 (develop) owns the settings row: it reads childLabel, "your child" for a book with no name.
-    expect(home).toMatch(/title=\{childLabel\(ch\.name\)\}/);
+  it('Nameless child row has a title: develop\'s childRowTitle, "Your child", on the row and the page.', () => {
+    expect(childRowTitle('')).toBe('Your child');
+    expect(childRowTitle('   ')).toBe('Your child');
+    expect(childRowTitle(null)).toBe('Your child');
+    expect(childRowTitle('Asha')).toBe('Asha');
+    expect(home).toMatch(/title=\{childRowTitle\(ch\.name\)\}/);
     expect(home).not.toMatch(/title=\{ch\.name\}/);
-    expect(child).toMatch(/title: name\.trim\(\) \? fill\(s\.title, \{ child: name \}\) : copy\.settingsHome\.childFallback/);
+    expect(child).toMatch(/title: name\.trim\(\) \? fill\(s\.title, \{ child: name \}\) : childRowTitle\(name\)/);
   });
 
   it('Header "Settings" is heading 1 and VoiceOver does not start on "Back".', () => {

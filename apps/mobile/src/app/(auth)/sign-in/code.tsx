@@ -15,8 +15,8 @@
  * Motion: a wrong code clears and refocuses the field, and its line fades in (swapMs, ErrorLine);
  * no shake, no red, no haptic.
  *
- * While the email is on its way, and only when this phone holds a book, "Your letters are safe on
- * this phone." sits under the field (a fresh install has no letters here). "Not now" sits top right, in
+ * While the email is on its way, and only when this phone holds a book, "Your letters are still
+ * on this phone." sits under the field (a fresh install has no letters here). "Not now" sits top right, in
  * the header, so it stays in reach with the number pad up at every text size; it closes the sheet and
  * changes nothing on this phone, as on the first step (P8a critics S2, lens A3).
  * After five wrong codes the pause (S01's rule, errors.logic codeEntryPause; the server's own limit still
@@ -42,10 +42,10 @@ import { EMAIL_CODE_LENGTH, RESEND_WAIT_MS } from '@/lib/auth/email';
 import { codeEntryPause, looksLikeEmail, normaliseCode } from '@/lib/auth/errors.logic';
 import type { AuthErrorKind } from '@/lib/auth/machine.logic';
 import { getPendingEmail, setPendingEmail, wrongCodeTimes } from '@/lib/auth/pending';
+import { authErrorMessage } from '@/lib/auth/messages';
 import { useAuth, type Outcome } from '@/lib/auth/session-provider';
 import { AppleButton, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useColors } from '@/lib/auth/ui';
-import { recoverySet, shouldAnnounceRecovery } from '@/lib/first-run/handoff.logic';
-import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
+import { hasSessionState, recoverySet, shouldAnnounceRecovery } from '@/lib/first-run/handoff.logic';
 import { copy } from '@/lib/copy';
 import { cn } from '@/lib/utils';
 
@@ -71,7 +71,7 @@ export default function CodeStep() {
   // memoised render would read once. (The compiler also skips it today for its try/finally; this says it on purpose.)
   'use no memo';
   const auth = useAuth();
-  // The has-a-book signal the sign-in sheet uses for its cover: "safe on this phone" is true only with a book here.
+  // The has-a-book signal the sign-in sheet uses for its cover: "still on this phone" is true only with a book here.
   const { active } = useChildren();
   const c = useColors();
   const ready = useFontsReady();
@@ -106,7 +106,9 @@ export default function CodeStep() {
   useEffect(() => {
     void appleSignInAvailable().then(setAppleReady);
   }, []);
-  const recovery = recoverySet({ sentAt, now, waitMs: RESEND_WAIT_MS, appleAvailable: appleReady });
+  // Signed in (the code, the Mail link or Apple just worked) the set is closed, not "unknown send time" and so open: the
+  // sheet is still mounted for a few frames, and the set must not draw or be announced at the moment of success.
+  const recovery = recoverySet({ sentAt, now, waitMs: RESEND_WAIT_MS, appleAvailable: appleReady, signedIn: hasSessionState(auth.state) });
   // Said once, when the minute passes (a change), never on arrival at a screen that is already open.
   const wasOpen = useRef(recovery.open);
   useEffect(() => {
@@ -189,9 +191,7 @@ export default function CodeStep() {
   };
 
   // While paused, one line in one live region: the pause, and the ways in that still work (VoiceOver hears both).
-  // A brand-new install has no letters, so its errors read without "Your letters are safe" (NX-36 2.6).
-  const holdsBook = !!active;
-  const message = paused ? `${signInErrorMessage('code_paused', holdsBook)} ${k.pausedOtherWays}` : signInErrorMessage(error, holdsBook);
+  const message = paused ? `${authErrorMessage('code_paused')} ${k.pausedOtherWays}` : authErrorMessage(error);
 
   const signInWithApple = async () => {
     if (inFlight.current) return;

@@ -1,4 +1,4 @@
-/** NX-36-S17 G3 (spec F8): the Book card says a recording is kept on this phone only when this phone holds a recording reference. */
+/** NX-36-S17 G3 (spec F8): the Book card and the letter page say a recording is kept on this phone only when this phone holds a recording reference. */
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -24,6 +24,7 @@ describe('[NX-36-S17] a card label says Recording kept on this phone only when t
     const card = readFileSync(join(__dirname, '..', 'src', 'components', 'book', 'letter-card.tsx'), 'utf8');
     expect(card).toMatch(/audioUri: entry\.audioUri,/);
     expect(card).not.toMatch(/spoken,\s*\n\s*own:/);
+    expect(card).not.toMatch(/isOwnEntry/);
   });
 });
 
@@ -41,7 +42,7 @@ describe('[NX-36-S17] the letter page line says Recording kept on this phone onl
       expect(line(none)).not.toMatch(/Recording kept|phone/);
     }
   });
-  it('[NX-36-S17] the other parent\'s letter never names a place, whatever audioUri holds', () => {
+  it("[NX-36-S17] the other parent's letter never names a place, whatever audioUri holds", () => {
     expect(line('file:///rec/1.m4a', false)).toBe('Spoken');
   });
   it('[NX-36-S17] the page passes entry.audioUri to the line and nothing about speaking or owning decides the place', () => {

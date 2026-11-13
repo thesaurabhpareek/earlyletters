@@ -195,7 +195,21 @@ if (prof) {
 }
 {
   const onProfiles = Object.entries(eas.build ?? {}).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
-  check(!onProfiles.includes('production'), `server features are on only in: ${onProfiles.join(', ') || 'none'} (never production before the store submission is re-planned)`, 'The production profile has EXPO_PUBLIC_SERVER_FEATURES=on. Turning the switch on in the store profile is the founder\'s call after the R-17 gate and the legal pages (D-100); put it back to "off".');
+  // Build 12 (founder, 8 Nov 2026): the production profile is servers on, against scribe-prod, so "never production" is gone. What this
+  // script still holds is the pairing the store build's honesty rests on: servers on in production only with the store environment
+  // (EXPO_PUBLIC_APP_ENV=production, so the alpha-only co-parent flow stays hidden: lib/family/entry.logic.ts, lib/billing/alpha.ts) and
+  // backup, status report and analytics off. The full production list is `npm run preflight:production`. Servers off in production is
+  // the kill path and passes. The switch itself is also guarded by test/config.test.ts and packages/content/test/claims-capabilities.test.ts.
+  const productionEnv = eas.build?.production?.env ?? {};
+  const productionOn = onProfiles.includes('production');
+  const stillOff = ['EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_STATUS_REPORT', 'EXPO_PUBLIC_ANALYTICS'].filter((k) => String(productionEnv[k] ?? '').trim().toLowerCase() === 'on');
+  check(
+    !productionOn || (productionEnv.EXPO_PUBLIC_APP_ENV === 'production' && stillOff.length === 0),
+    productionOn
+      ? `production profile has server features on with EXPO_PUBLIC_APP_ENV=production and backup, status report and analytics off (server features on in: ${onProfiles.join(', ')})`
+      : `production profile has server features off (the kill path; server features on in: ${onProfiles.join(', ') || 'none'})`,
+    `The production profile has server features on but ${productionEnv.EXPO_PUBLIC_APP_ENV === 'production' ? '' : `EXPO_PUBLIC_APP_ENV is ${JSON.stringify(productionEnv.EXPO_PUBLIC_APP_ENV)} (it must be "production", or the store build would show alpha-only co-parent surfaces); `}${stillOff.length ? `${stillOff.join(', ')} ${stillOff.length > 1 ? 'are' : 'is'} on (they stay off in the store build)` : ''}. Run \`npm run preflight:production\` for the full list.`,
+  );
   const unwritten = Object.entries(eas.build ?? {}).filter(([, p]) => !['on', 'off'].includes(p.env?.EXPO_PUBLIC_SERVER_FEATURES)).map(([n]) => n);
   check(unwritten.length === 0, 'every eas.json profile writes EXPO_PUBLIC_SERVER_FEATURES as on or off', `eas.json profile(s) without an explicit on or off: ${unwritten.join(', ')}.`);
 }

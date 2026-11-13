@@ -1,0 +1,741 @@
+/// <reference types="node" />
+/**
+ * useFirstRunRoute and useOnline themselves, run in Node (review of PR #724, lens A). The pure decisions are in
+ * first-run-gate.test.ts and first-run-welcome.test.ts; this file is the thin layer around them that source patterns
+ * could not see: the build switch, the connection source, the store subscription, the restore wait, the reconnect, Try
+ * again and the one spoken line. The hooks run on the small stand-in for React's hooks (test/helpers/mini-react.ts) with
+ * the session, the book list, expo-network and the announcer replaced by a few lines each. Fictional family "Asha" only.
+ *
+ * Mutations these tests were written to catch (each one failed a test here when it was made):
+ *  M1 `serverFeatures` passed to the gate as `true`;       M4 the restore wait never expiring;
+ *  M2 `useOnline` ignoring `enabled`;                      M5 `hasLocalBook` forced false;
+ *  M3 `wasOnline` never updated;                           M6 `listChildren()` called with the switch off;
+ *  M7 the gate's NX-36-S17 branch removed (a signed-in phone with no book goes straight to the child step).
+ *
+ * NX-36-S17 (the last group): the account question (`readAccountBooks`) and the sync engine's status are replaced too, and
+ * the session carries a client, so the route asks. The earlier groups give the session no client, so they run as before.
+ */
+import { authCopy } from '@scribe/content';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const h = vi.hoisted(() => ({
+  auth: { state: { status: 'signedOut' }, configured: true } as { state: Record<string, unknown>; configured: boolean; client?: unknown },
+  books: [] as unknown[],
+  listChildrenCalls: 0,
+  storeListeners: new Set<() => void>(),
+  net: { isConnected: true, isInternetReachable: true } as Record<string, unknown>,
+  netCalls: 0,
+  netThrows: false,
+  /** When set, getNetworkStateAsync waits for this to be called before answering (an in-flight read). */
+  netGate: null as null | { release: () => void },
+  netListeners: new Set<(s: Record<string, unknown>) => void>(),
+  spoken: [] as string[],
+  /** NX-36-S17: the pending account questions (resolve one to answer it), the engine's status and who follows it. */
+  asked: [] as Array<(k: 'new' | 'hasBook' | 'returningNoBook' | 'unknown') => void>,
+  sync: { phase: 'idle', lastSyncedAt: null as string | null },
+  syncListeners: new Set<(s: unknown) => void>(),
+  syncNowCalls: 0,
+}));
+
+vi.mock('react', async () => {
+  const m = (await import('./helpers/mini-react')).reactStandIn;
+  // A faithful useCallback: the same function while the dependencies hold.
+  return { ...m, useCallback: <T,>(fn: T, deps: readonly unknown[]) => m.useMemo(() => fn, deps) };
+});
+vi.mock('@/lib/auth/session-provider', () => ({ useAuth: () => h.auth }));
+vi.mock('@/lib/a11y', () => ({ announce: (m: string) => void h.spoken.push(m) }));
+vi.mock('@/lib/store', () => ({
+  subscribe: (l: () => void) => {
+    h.storeListeners.add(l);
+    return () => void h.storeListeners.delete(l);
+  },
+  listChildren: () => {
+    h.listChildrenCalls += 1;
+    return h.books;
+  },
+}));
+vi.mock('../src/lib/first-run/account-books', () => ({
+  readAccountBooks: () =>
+    new Promise((resolve) => {
+      h.asked.push(resolve as never);
+    }),
+}));
+vi.mock('@/lib/sync', () => ({
+  getSyncStatus: () => h.sync,
+  subscribeSyncStatus: (l: (s: unknown) => void) => {
+    h.syncListeners.add(l);
+    return () => void h.syncListeners.delete(l);
+  },
+  syncNow: () => {
+    h.syncNowCalls += 1;
+    return Promise.resolve(null);
+  },
+}));
+vi.mock('expo-network', () => ({
+  getNetworkStateAsync: async () => {
+    h.netCalls += 1;
+    const answer = { ...h.net }; // what the OS says when asked, even if the answer arrives late
+    if (h.netGate) await new Promise<void>((r) => (h.netGate = { release: r }));
+    if (h.netThrows) throw new Error('no state');
+    return answer;
+  },
+  addNetworkStateListener: (l: (s: Record<string, unknown>) => void) => {
+    h.netListeners.add(l);
+    return { remove: () => void h.netListeners.delete(l) };
+  },
+}));
+
+import { setServerFeaturesForTests } from '../src/lib/capabilities';
+import { RESTORE_WAIT_MS } from '../src/lib/first-run/gate.logic';
+import { OPENING_WAIT_MS } from '../src/lib/first-run/new-phone.logic';
+import { useFirstRunRoute } from '../src/lib/first-run/use-first-run-route';
+import { renderHook } from './helpers/mini-react';
+
+const flush = () => new Promise<void>((r) => setTimeout(r, 0));
+const OFFLINE = { isConnected: false, isInternetReachable: false };
+const ONLINE = { isConnected: true, isInternetReachable: true };
+const networkEvent = (s: Record<string, unknown>) => {
+  h.net = s;
+  for (const l of [...h.netListeners]) l(s);
+};
+/** A fresh state object each time, as the session provider makes one for every failed attempt. */
+const failed = (): { status: string; error: string } => ({ status: 'signedOut', error: 'network' });
+
+beforeEach(() => {
+  h.auth = { state: { status: 'signedOut' }, configured: true };
+  h.books = [];
+  h.listChildrenCalls = 0;
+  h.net = { ...ONLINE };
+  h.netCalls = 0;
+  h.netThrows = false;
+  h.netGate = null;
+  h.spoken.length = 0;
+  h.storeListeners.clear();
+  h.netListeners.clear();
+  h.asked.length = 0;
+  h.sync = { phase: 'idle', lastSyncedAt: null };
+  h.syncListeners.clear();
+  h.syncNowCalls = 0;
+  setServerFeaturesForTests(true);
+});
+afterEach(() => {
+  setServerFeaturesForTests(null);
+  vi.useRealTimers();
+});
+
+describe('[NX-31-R17] servers off: the route is a no-op (route.logic.ts: the switch is read, the book list never)', () => {
+  const states = [{ status: 'restoring' }, { status: 'signedOut' }, failed(), { status: 'ready', userId: 'u', sync: 'on' }];
+
+  it('[NX-31-R17] the step is "unchanged" in every auth state, offline or not, configured or not [M1]', async () => {
+    setServerFeaturesForTests(false);
+    for (const configured of [true, false]) {
+      for (const state of states) {
+        h.auth = { state, configured };
+        h.net = { ...OFFLINE };
+        const run = renderHook(() => useFirstRunRoute());
+        await flush();
+        expect(run.result.current.step, `${String(state.status)} configured:${configured}`).toBe('unchanged');
+        expect(run.result.current.localStartOffered).toBe(false);
+        run.unmount();
+      }
+    }
+  });
+
+  it('[NX-31-R17] it never lists the books, never subscribes to the store, never reads or watches the network [M2, M6]', async () => {
+    setServerFeaturesForTests(false);
+    h.books = [{ id: 'asha' }];
+    for (const state of states) {
+      h.auth = { state, configured: true };
+      const run = renderHook(() => useFirstRunRoute());
+      await flush();
+      run.result.current.tryAgain(); // even a stray tap reads nothing
+      await flush();
+      const rendered = run.renders;
+      run.result.current.markPastWelcome(); // and the steps leaving their welcome step render nothing again
+      expect(run.renders, `renders ${String(state.status)}`).toBe(rendered);
+      expect(h.listChildrenCalls, `listChildren ${String(state.status)}`).toBe(0);
+      expect(h.storeListeners.size, `store listeners ${String(state.status)}`).toBe(0);
+      expect(h.netCalls, `network reads ${String(state.status)}`).toBe(0);
+      expect(h.netListeners.size, `network listeners ${String(state.status)}`).toBe(0);
+      run.unmount();
+    }
+  });
+
+  it('[NX-31-R17] it starts no restore timer either, so nothing renders the route again 10 seconds later', () => {
+    vi.useFakeTimers();
+    setServerFeaturesForTests(false);
+    h.auth = { state: { status: 'restoring' }, configured: true };
+    const run = renderHook(() => useFirstRunRoute());
+    expect(vi.getTimerCount()).toBe(0);
+    run.unmount();
+  });
+
+  it('[NX-31-R17] servers on but no sign-in settings in the build: the same no-op', async () => {
+    h.auth = { state: { status: 'signedOut' }, configured: false };
+    h.books = [{ id: 'asha' }];
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.step).toBe('unchanged');
+    expect(h.listChildrenCalls + h.storeListeners.size + h.netCalls + h.netListeners.size).toBe(0);
+  });
+});
+
+describe('[NX-31-R17] servers on: where first run starts', () => {
+  it('[NX-31-R17] a fresh install with no session and no book is the Welcome', async () => {
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', restoring: false, online: true });
+    expect(h.listChildrenCalls).toBeGreaterThan(0);
+    expect(h.storeListeners.size).toBe(1);
+    expect(h.netListeners.size).toBe(1);
+  });
+
+  it('[NX-31-R22] a phone that holds a book is not the Welcome, whatever the session [M5]', async () => {
+    h.books = [{ id: 'asha' }];
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.step).toBe('openTonight');
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[NX-31-R22] a book that arrives with sign-in (a store change) moves the route on [M5, M6]', async () => {
+    h.auth = { state: { status: 'ready', userId: 'u1', sync: 'on' }, configured: true };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.step).toBe('childStep');
+    h.books = [{ id: 'asha' }];
+    for (const l of h.storeListeners) l();
+    expect(run.result.current.step).toBe('openTonight');
+  });
+
+  it('[NX-31-R17] unmounting stops listening to the store and to the network', async () => {
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.unmount();
+    expect(h.storeListeners.size).toBe(0);
+    expect(h.netListeners.size).toBe(0);
+  });
+
+  it('[NX-31-R19] a network read that throws counts as online, so nobody is trapped on the outage screen', async () => {
+    h.netThrows = true;
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'signIn', online: true });
+  });
+});
+
+describe('[NX-31-R18] the restore wait is bounded', () => {
+  it('[NX-31-R17] blank for the wait, then the Welcome; a session that arrives late replaces it [M4]', () => {
+    vi.useFakeTimers();
+    h.auth = { state: { status: 'restoring' }, configured: true };
+    const run = renderHook(() => useFirstRunRoute());
+    expect(run.result.current).toMatchObject({ restoring: true, screen: 'blank' });
+    vi.advanceTimersByTime(RESTORE_WAIT_MS - 1);
+    expect(run.result.current.restoring).toBe(true);
+    vi.advanceTimersByTime(1);
+    expect(run.result.current).toMatchObject({ restoring: false, step: 'signIn', screen: 'welcome' });
+    h.auth.state = { status: 'checkingConsent', userId: 'u1', method: null };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+
+  it('[NX-31-R19] offline at launch while the session is still being read: nothing yet, then the session (a returning person) is not told sign-in needs a connection', async () => {
+    h.auth = { state: { status: 'restoring' }, configured: true };
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'outage', outage: 'offline', restoring: true, screen: 'blank' });
+    h.auth.state = { status: 'ready', userId: 'u1', sync: 'on' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+
+  it('[NX-31-R17] a restore that finishes in time cancels the timer', () => {
+    vi.useFakeTimers();
+    h.auth = { state: { status: 'restoring' }, configured: true };
+    const run = renderHook(() => useFirstRunRoute());
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(run.result.current.restoring).toBe(false);
+  });
+});
+
+describe('[NX-31-R18] sign-in cannot be reached: Try again, the local start and a reconnect', () => {
+  it('[NX-31-R18] a network failure is the outage screen with the local start offered', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'outage', outage: 'outage', screen: 'outage', localStartOffered: true });
+  });
+
+  it('[NX-31-R18] Try again on a service outage reads the connection once and returns to the Welcome; a NEW failure counts again', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    const reads = h.netCalls;
+    run.result.current.tryAgain();
+    await flush();
+    expect(h.netCalls).toBe(reads + 1);
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome' });
+    h.auth.state = failed();
+    run.rerender();
+    expect(run.result.current.step).toBe('outage');
+  });
+
+  it('[NX-36-S3] "You are back online." is never said because the person tapped Try again on a service outage', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.tryAgain();
+    await flush();
+    expect(run.result.current.step).toBe('signIn');
+    expect(h.spoken).not.toContain(authCopy.outage.backOnline);
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-31-R19] offline at launch: the Welcome for a first frame, then the offline screen; the connection returning is the Welcome, said once [M3]', async () => {
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    expect(run.result.current.step).toBe('signIn');
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'outage', outage: 'offline', localStartOffered: true });
+    expect(h.spoken).toEqual([]);
+    networkEvent({ ...ONLINE });
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome' });
+    expect(h.spoken).toEqual([authCopy.outage.backOnline]);
+  });
+
+  it('[NX-31-R19] a failed sign-in and no connection: the connection returning is the Welcome without a tap, said once [M3]', async () => {
+    h.auth.state = failed();
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'outage', outage: 'offline' });
+    networkEvent({ ...ONLINE });
+    expect(run.result.current.step).toBe('signIn');
+    expect(h.spoken).toEqual([authCopy.outage.backOnline]);
+  });
+
+  it('[NX-31-R19] the connection dropping and returning twice is the Welcome twice, and "back" is said each time [M3]', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.step).toBe('outage');
+    networkEvent({ ...OFFLINE });
+    networkEvent({ ...ONLINE });
+    expect(run.result.current.step).toBe('signIn');
+    h.auth.state = failed();
+    run.rerender();
+    expect(run.result.current.step).toBe('outage');
+    networkEvent({ ...OFFLINE });
+    networkEvent({ ...ONLINE });
+    expect(run.result.current.step).toBe('signIn');
+    expect(h.spoken).toEqual([authCopy.outage.backOnline, authCopy.outage.backOnline]);
+  });
+
+  it('[NX-36-S3] "back" is not said when the connection returns under someone who is not on the outage screen', async () => {
+    h.auth.state = { status: 'ready', userId: 'u1', sync: 'on' };
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.step).toBe('childStep');
+    networkEvent({ ...ONLINE });
+    expect(run.result.current.step).toBe('childStep');
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-36-S3] Try again while still offline stays on the offline screen, says so once, and ignores a second tap while it reads', async () => {
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current.outage).toBe('offline');
+    const reads = h.netCalls;
+    h.netGate = { release: () => undefined };
+    run.result.current.tryAgain();
+    run.result.current.tryAgain();
+    expect(h.netCalls).toBe(reads + 1);
+    h.netGate.release();
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'outage', outage: 'offline' });
+    expect(h.spoken).toEqual([authCopy.offline.title]);
+    // The read is over, so a later tap reads again.
+    h.netGate = null;
+    run.result.current.tryAgain();
+    await flush();
+    expect(h.netCalls).toBe(reads + 2);
+  });
+
+  it('[NX-36-S3] Try again when the phone is in fact back online is a real reconnect: the Welcome, said once', async () => {
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    h.net = { ...ONLINE }; // the OS has the connection back; its event has not reached the app yet
+    run.result.current.tryAgain();
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'signIn', online: true });
+    expect(h.spoken).toEqual([authCopy.outage.backOnline]);
+  });
+
+  it('[NX-31-R18] the local start, once chosen, stays through a later failure, an offline moment and a reconnect', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps', localStartChosen: true });
+    networkEvent({ ...OFFLINE });
+    expect(run.result.current.step).toBe('childStep');
+    networkEvent({ ...ONLINE });
+    expect(run.result.current.step).toBe('childStep');
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-31-R19] a late read does not overwrite a newer connection event', async () => {
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    h.netGate = { release: () => undefined };
+    h.net = { ...OFFLINE };
+    run.result.current.tryAgain(); // a read of "offline" is now in flight
+    networkEvent({ ...ONLINE }); // the OS says online while it is
+    h.netGate.release();
+    await flush();
+    expect(run.result.current.online).toBe(true);
+  });
+});
+
+describe('[NX-31-R17] a session lost during first run', () => {
+  it('[NX-31-R17] before the child step the Welcome is right; while the session is still being read nothing changes', async () => {
+    h.auth.state = { status: 'ready', userId: 'u1', sync: 'on' };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+    h.auth.state = { status: 'signedOut', error: 'session_expired' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome' });
+  });
+
+  it('[NX-31-R17] a person with a local start who is past the welcome keeps the steps through a failure, offline and a reconnect', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    run.result.current.markPastWelcome();
+    for (const lost of [{ status: 'signedOut', error: 'session_expired' }, { status: 'signedOut' }, failed()]) {
+      h.auth.state = lost;
+      run.rerender();
+      expect(run.result.current.screen, JSON.stringify(lost)).toBe('steps');
+    }
+    networkEvent({ ...OFFLINE });
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[NX-31-R17] the step the gate answers is the same as before; only the screen holds the place', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    run.result.current.markPastWelcome();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+});
+
+describe('[D-160] "Use another account" on the child step goes back to the start', () => {
+  it('[D-160] after the sign-out the route draws the Welcome, not the steps, so no book can be finished with no account', async () => {
+    h.auth.state = { status: 'ready', userId: 'u1', sync: 'on' };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    // The signed-in start moves on to the child step: the steps report they are past the welcome.
+    run.result.current.markPastWelcome();
+    expect(run.result.current.screen).toBe('steps');
+
+    // The button signs out, and the steps tell the route (onboarding.tsx startAgain, when signOut answers 'done').
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    run.result.current.restartFromWelcome(); // belt and braces: already on the Welcome through the auth change, and harmless again
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', localStartChosen: false });
+
+    // Signing in again as someone else opens the steps fresh, and a later lost session still keeps them.
+    h.auth.state = { status: 'ready', userId: 'u2', sync: 'on' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+    run.result.current.markPastWelcome();
+    h.auth.state = { status: 'signedOut', error: 'session_expired' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('welcome');
+  });
+
+  it('[D-160] a person who chose the local start on the outage screen keeps the steps', async () => {
+    h.auth.state = { status: 'signedOut' };
+    h.net = { ...OFFLINE };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    run.result.current.markPastWelcome();
+    run.result.current.restartFromWelcome();
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[NX-31-R17] servers off: restarting changes nothing and renders nothing', async () => {
+    setServerFeaturesForTests(false);
+    h.auth.state = { status: 'signedOut' };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    const rendered = run.renders;
+    run.result.current.restartFromWelcome();
+    expect(run.renders).toBe(rendered);
+    expect(run.result.current).toMatchObject({ step: 'unchanged', screen: 'steps' });
+  });
+});
+
+describe('[D-160] the session ending takes first run back to the Welcome, driven by the auth status alone', () => {
+  const ready = { status: 'ready', userId: 'u1', sync: 'on' };
+  const signingOut = (waitingForUploads: boolean) => ({ status: 'signingOut', userId: 'u1', reason: 'user', waitingForUploads, sync: 'on' });
+  const start = async () => {
+    h.auth.state = { ...ready };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.markPastWelcome();
+    expect(run.result.current.screen).toBe('steps');
+    return run;
+  };
+
+  it('[D-160] a sign-out that waits for queued uploads, then drains, then ends: the Welcome, with no hand call', async () => {
+    const run = await start();
+    h.auth.state = signingOut(true);
+    run.rerender();
+    expect(run.result.current.screen, 'still signed in while it waits').toBe('steps');
+    h.auth.state = signingOut(false); // UPLOADS_DRAINED
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+    h.auth.state = { status: 'signedOut' }; // SIGNED_OUT
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', localStartChosen: false });
+  });
+
+  it('[D-160] a cancelled wait goes back to ready and the steps stay', async () => {
+    const run = await start();
+    h.auth.state = signingOut(true);
+    run.rerender();
+    h.auth.state = { ...ready };
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+    // and a later, real sign-out still ends at the Welcome
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('welcome');
+  });
+
+  it('[D-160] a revoked session or a forced sign-in again (signedOut with an error) is the Welcome', async () => {
+    for (const error of ['session_expired', 'revoked', 'under_18']) {
+      const run = await start();
+      h.auth.state = { status: 'signedOut', error };
+      run.rerender();
+      expect(run.result.current, error).toMatchObject({ step: 'signIn', screen: 'welcome' });
+      run.unmount();
+    }
+  });
+
+  it('[D-160] a consent screen that is declined (checkingConsent to signedOut) is the Welcome too', async () => {
+    h.auth.state = { status: 'checkingConsent', userId: 'u1', method: null };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.markPastWelcome();
+    h.auth.state = { status: 'signedOut', error: 'under_18' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('welcome');
+  });
+
+  it('[D-160] restoring is not a lost session: a cold start with nothing signed in, and a restore that finds none, never touch the latch', async () => {
+    vi.useFakeTimers();
+    h.auth.state = { status: 'restoring' };
+    const run = renderHook(() => useFirstRunRoute());
+    run.result.current.markPastWelcome();
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current.screen, 'restoring to signedOut is not signed-in to signedOut').toBe('steps');
+    // and a session found by the restore, then a read that is still going, is not a loss either
+    h.auth.state = { status: 'restoring' };
+    run.rerender();
+    expect(run.result.current.screen).toBe('steps');
+  });
+
+  it('[D-160] the outage-screen local start keeps the steps through any auth change', async () => {
+    h.auth.state = failed();
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.chooseLocalStart();
+    run.result.current.markPastWelcome();
+    for (const s of [{ ...ready }, signingOut(true), signingOut(false), { status: 'signedOut' }]) {
+      h.auth.state = s;
+      run.rerender();
+    }
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps', localStartChosen: true });
+  });
+
+  it('[NX-31-R17] servers off: the steps stay and nothing renders again on a sign-out', async () => {
+    setServerFeaturesForTests(false);
+    h.auth.state = { ...ready };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    const rendered = run.renders;
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.renders).toBe(rendered + 1); // only the rerender this test asked for
+    expect(run.result.current).toMatchObject({ step: 'unchanged', screen: 'steps' });
+  });
+
+  it('[D-160] a build with no sign-in settings: the same no-op', async () => {
+    h.auth = { state: { ...ready }, configured: false };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    run.result.current.markPastWelcome();
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'unchanged', screen: 'steps' });
+  });
+});
+
+describe('[D-160] the button hands the sign-out to the route (wiring is a source pattern; the behaviour is above)', () => {
+  it('startAgain tells the route only when signOut answers done', async () => {
+    const { readFileSync } = await import('node:fs');
+    const t = readFileSync(new URL('../src/app/onboarding.tsx', import.meta.url), 'utf8');
+    expect(t).toMatch(/\.then\(\(outcome\) => \{\s*if \(outcome === 'done'\) onSignedOut\?\.\(\);\s*\}\)/);
+  });
+});
+
+describe('[NX-36-S17] a returning account on a new phone: the child step is unreachable while its book is on its way', () => {
+  const ready = { status: 'ready', userId: 'u1', sync: 'on' };
+  const client = {};
+  const signedIn = async (state: Record<string, unknown> = ready) => {
+    h.auth = { state: { ...state }, configured: true, client };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    return run;
+  };
+  const syncEvent = (s: { phase: string; lastSyncedAt: string | null }) => {
+    h.sync = s;
+    for (const l of [...h.syncListeners]) l(s);
+  };
+  const bookLands = () => {
+    h.books = [{ id: 'asha' }];
+    for (const l of h.storeListeners) l();
+  };
+
+  it('[NX-36-S17] signed in with no book: the opening screen, one account question, one pull nudged; not the child step before the answer [M7]', async () => {
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', mayBeginBook: false, arrivedFromAccount: false });
+    expect(h.asked).toHaveLength(1);
+    expect(h.syncNowCalls).toBe(1);
+    expect(h.syncListeners.size).toBe(1);
+  });
+
+  it('[NX-36-S17] the account has a book: opening while it comes, still opening when the first page lands and the cycle runs, Tonight once the cycle is done; the child step at no point (the #737 gap) [M7]', async () => {
+    const run = await signedIn();
+    const seen: string[] = [run.result.current.step];
+    syncEvent({ phase: 'syncing', lastSyncedAt: null });
+    h.asked[0]('hasBook');
+    await flush();
+    seen.push(run.result.current.step);
+    bookLands();
+    seen.push(run.result.current.step);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+    syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T10:00:05.000Z' });
+    seen.push(run.result.current.step);
+    expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: true, mayBeginBook: true });
+    expect(seen).toEqual(['openingBook', 'openingBook', 'openingBook', 'openTonight']);
+    expect(seen).not.toContain('childStep');
+  });
+
+  it('[NX-36-S17] the account is new: the child step, as before S17; a reconnect under it asks nothing', async () => {
+    const run = await signedIn();
+    h.asked[0]('new');
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps', mayBeginBook: true });
+    run.result.current.markPastWelcome();
+    networkEvent({ ...OFFLINE });
+    networkEvent({ ...ONLINE });
+    expect(h.asked).toHaveLength(1);
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+
+  it('[NX-36-S17] a returning account with no book, or an answer that could not be read: No book here yet; Start a book is the child step', async () => {
+    for (const kind of ['returningNoBook', 'unknown'] as const) {
+      const run = await signedIn();
+      h.asked[h.asked.length - 1](kind);
+      await flush();
+      expect(run.result.current, kind).toMatchObject({ step: 'noBookHere', screen: 'noBookHere', mayBeginBook: false });
+      run.result.current.startBook();
+      expect(run.result.current, kind).toMatchObject({ step: 'childStep', screen: 'steps' });
+      run.unmount();
+    }
+  });
+
+  it('[NX-36-S17] no book at 10 seconds: the slow screen; Try again asks the account again and nudges the pull', async () => {
+    vi.useFakeTimers();
+    h.auth = { state: { ...ready }, configured: true, client };
+    const run = renderHook(() => useFirstRunRoute());
+    await vi.advanceTimersByTimeAsync(0);
+    h.asked[0]('hasBook');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.result.current.screen).toBe('opening');
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS + 100);
+    expect(run.result.current).toMatchObject({ step: 'slowBook', screen: 'slow', mayBeginBook: false });
+    run.result.current.retryOpening();
+    expect(h.asked).toHaveLength(2);
+    expect(h.syncNowCalls).toBe(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+  });
+
+  it('[NX-36-S17] no connection before the book exists: the connection screen, asked again by itself when the connection returns, and "back online" is not said (that line is the outage screen\'s)', async () => {
+    h.net = { ...OFFLINE };
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'offlineBook', screen: 'offlineBook', retryOnReconnect: true, online: false });
+    expect(h.asked).toHaveLength(1);
+    networkEvent({ ...ONLINE });
+    expect(h.asked).toHaveLength(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', online: true });
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-36-S17] Try another way: the session ending is the Welcome, and nothing is asked again', async () => {
+    const run = await signedIn();
+    h.asked[0]('hasBook');
+    await flush();
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', localStartChosen: false });
+    expect(h.asked).toHaveLength(1);
+  });
+
+  it('[NX-36-S17] a session that has not agreed to sync asks nothing and keeps the earlier route', async () => {
+    for (const state of [{ status: 'ready', userId: 'u1', sync: 'off' }, { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] }, { status: 'checkingConsent', userId: 'u1', method: null }]) {
+      const run = await signedIn(state);
+      expect(run.result.current, String(state.status)).toMatchObject({ step: 'childStep', screen: 'steps' });
+      expect(h.asked, String(state.status)).toHaveLength(0);
+      expect(h.syncListeners.size, String(state.status)).toBe(0);
+      run.unmount();
+    }
+  });
+
+  it('[NX-36-S17] a phone that already holds a book never asks (every ordinary launch), and the line is not owed', async () => {
+    h.books = [{ id: 'asha' }];
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: false });
+    expect(h.asked).toHaveLength(0);
+    expect(h.syncNowCalls).toBe(0);
+  });
+
+  it('[NX-31-R17] servers off, or no sign-in settings: the account is never asked and the engine never followed, with a client and a ready sync-on session', async () => {
+    for (const [serverFeatures, configured] of [[false, true], [true, false]] as const) {
+      setServerFeaturesForTests(serverFeatures);
+      h.auth = { state: { ...ready }, configured, client };
+      const run = renderHook(() => useFirstRunRoute());
+      await flush();
+      expect(run.result.current.step).toBe('unchanged');
+      expect(h.asked).toHaveLength(0);
+      expect(h.syncNowCalls).toBe(0);
+      expect(h.syncListeners.size).toBe(0);
+      run.unmount();
+    }
+  });
+});

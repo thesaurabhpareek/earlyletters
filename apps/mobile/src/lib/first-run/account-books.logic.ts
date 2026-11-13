@@ -106,6 +106,15 @@ export function keepEnabled(kind: AccountKind | null): boolean {
  * and has no destination parameter: it claims every local book as its own book. So an account that already has a book gets
  * the phone's book as a second book. `mergeBack()` (merge-back.logic.ts) still describes the earlier proposal for these
  * cases ("In the existing book", an empty book removed); Build 12 does not use those phases, and this function says so.
+ *
+ * When the claim screen's lines are true (test/first-run-new-account.test.ts runs `takeOwnership` on a real phone database):
+ *  - "Nothing is deleted": `takeOwnership` deletes no book, letter, draft or recording and never changes a letter's words;
+ *    it sets owner and state columns and queues uploads.
+ *  - "added to it as a second book": each local book the server accepts (a device UUIDv7 id, and a birthday or due date) goes up
+ *    under its own id as `pending`. A phone with several books adds each one. A book the server would refuse stays on the
+ *    phone as `refused`, is not added and is not deleted; the screen cannot know that before the tap.
+ *  - "Recordings are kept on the phone that made them": the wire carries only that a recording is kept on the device.
+ *  - "This account already has a book" shows only when `sync_books` answered with a book (`claimWords`).
  */
 export interface ClaimKeepOutcome {
   addsAsSecondBook: boolean;
@@ -133,13 +142,13 @@ export function claimKeepOutcome(kind: AccountKind | null): ClaimKeepOutcome {
  * The masked address the way a person says it, because a screen reader reads "a***" as punctuation:
  * "a***@example.com" becomes "a, hidden, at example.com". Null when there is no masked address to read.
  */
-export function spokenMaskedEmail(masked: string | null | undefined): string | null {
+export function spokenMaskedEmail(masked: string | null | undefined, words: { spokenAddress: string; spokenAddressNoFirst: string }): string | null {
   if (!masked) return null;
   const at = masked.lastIndexOf('@');
   if (at <= 0 || at === masked.length - 1) return null;
   const local = masked.slice(0, at).replace(/\*+/g, '').trim();
   const domain = masked.slice(at + 1);
-  return local ? `${local}, hidden, at ${domain}` : `hidden, at ${domain}`;
+  return local ? words.spokenAddress.replace('{first}', local).replace('{domain}', domain) : words.spokenAddressNoFirst.replace('{domain}', domain);
 }
 
 export interface SignedInLine {
@@ -154,12 +163,21 @@ export interface SignedInLine {
  */
 export function signedInLine(
   input: { maskedEmail: string | null; provider: string | null },
-  words: { signedInAs: string; signedInAsLabel: string; apple: string },
+  words: { signedInAs: string; signedInAsLabel: string; spokenAddress: string; spokenAddressNoFirst: string; apple: string },
 ): SignedInLine | null {
   if (input.maskedEmail) {
-    const spoken = spokenMaskedEmail(input.maskedEmail) ?? input.maskedEmail;
+    const spoken = spokenMaskedEmail(input.maskedEmail, words) ?? input.maskedEmail;
     return { text: words.signedInAs.replace('{email}', input.maskedEmail), label: words.signedInAsLabel.replace('{email}', spoken) };
   }
   if (input.provider === 'apple') return { text: words.apple, label: words.apple };
   return null;
+}
+
+/**
+ * "Use another account" (child step). `signOut()` answers `done` or `waiting` (it holds while queued letters upload), and can
+ * reject. The button is busy while a press is in flight and while the sign-out is waiting, so a second tap does nothing; a
+ * rejection or a finished sign-out frees it. Nothing here is said to the person.
+ */
+export function useAnotherBusy(input: { pressing: boolean; authStatus: string }): boolean {
+  return input.pressing || input.authStatus === 'signingOut';
 }

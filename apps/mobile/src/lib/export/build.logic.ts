@@ -9,7 +9,9 @@
  *   hidden ones. Recently deleted letters are left out for now: whether they
  *   belong in an export, always or only when ticked (spec 4.1), is BL-388's
  *   to settle (CR-35). D-085 sets up the 30-day shelf; it does not decide
- *   this. (`listDeleted` exists; export does not read it.)
+ *   this. (`listDeleted` exists; export does not read it.) One exception: while an account-deletion
+ *   request is open, the snapshot also holds the books the server closed and the Recently deleted letters
+ *   (DATA-REQ-053, BL-446; scope.logic.ts). This planner does not care: it plans what it is given.
  * - Own letters carry raw transcript, its SHA-256, machine edits and engine
  *   version. Other people's letters carry only what the book shows (4.1).
  * - Original recordings, byte for byte, each named and labelled by its own

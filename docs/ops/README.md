@@ -20,6 +20,7 @@ Labels: **Verified** means checked on an opened vendor page or in installed libr
 | [runbooks/suspected-data-leak.md](runbooks/suspected-data-leak.md) | First hour of a suspected exposure |
 | [runbooks/speech-models-on-r2.md](runbooks/speech-models-on-r2.md) | Founder steps to serve the speech models from `packs.earlyletters.app` with Hugging Face as the mirror, before external testers and public users |
 | AUTH_SETUP.md, APP_STORE_CONNECT_SUBSCRIPTIONS.md, APP_SIZE.md | Other owners (sign-in, subscriptions, app size) |
+| [PRODUCTION_VARIABLES.md](PRODUCTION_VARIABLES.md) | The `production` build profile and EAS environment variables for build 12, names only: written, set by the founder, and forbidden |
 | [RELEASE.md](RELEASE.md) | The release train: lanes, branches, tags, builds, TestFlight, submission checklist, rollback (qa-e2e for the coordinator; D-089) |
 
 ## The deletion pipeline in one picture

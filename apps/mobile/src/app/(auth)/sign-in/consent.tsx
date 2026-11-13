@@ -56,7 +56,6 @@ import { authErrorMessage } from '@/lib/auth/messages';
 import { afterConsent, claimWords, keepEnabled, signedInLine, type AccountKind } from '@/lib/first-run/account-books.logic';
 import { readAccountBooks } from '@/lib/first-run/account-books';
 import { consentHandoff } from '@/lib/first-run/handoff.logic';
-import { signInErrorMessage } from '@/lib/first-run/welcome.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { Busy, ErrorLine, QuietButton, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
 import { copy, fill } from '@/lib/copy';
@@ -222,7 +221,7 @@ export default function ConsentSteps() {
     const c = authCopy.claim;
     const masked = auth.account.maskedEmail;
     const hasBook = claimWords(claimKind) === 'accountHasBook';
-    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, apple: authCopy.account.signedInWith.apple });
+    const signedIn = signedInLine({ maskedEmail: masked, provider: auth.account.provider }, { signedInAs: copy.onboarding.child.signedInAs, signedInAsLabel: copy.onboarding.child.signedInAsLabel, spokenAddress: copy.onboarding.child.spokenAddress, spokenAddressNoFirst: copy.onboarding.child.spokenAddressNoFirst, apple: authCopy.account.signedInWith.apple });
     return (
       <StepFade step="claim">
         <SheetFrame
@@ -249,14 +248,16 @@ export default function ConsentSteps() {
             </>
           }>
           <SheetTitle>{c.title}</SheetTitle>
+          {/* The account line is one element straight under the title, so "This account" below it is already named, and the
+              body and the recordings line read together (VoiceOver). What the words promise is account-books.logic.ts claimKeepOutcome's. */}
           {hasBook ? (
             <>
-              <SheetBody>{c.bodyHasBook}</SheetBody>
               {signedIn ? (
                 <Text variant="footnote" tone="muted" accessibilityLabel={signedIn.label}>
                   {signedIn.text}
                 </Text>
               ) : null}
+              <SheetBody>{c.bodyHasBook}</SheetBody>
               <SheetBody muted>{c.recordingsNote}</SheetBody>
             </>
           ) : (
@@ -288,8 +289,7 @@ export default function ConsentSteps() {
   }
 
   const step = s.steps[0];
-  // A brand-new install has no letters, so its error reads without "Your letters are safe" (NX-36 2.6, S6).
-  const error = signInErrorMessage(s.error, children.length > 0);
+  const error = authErrorMessage(s.error);
   return (
     <StepFade step={step}>
       {step === 'terms' ? (

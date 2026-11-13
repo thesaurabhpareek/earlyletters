@@ -1,13 +1,13 @@
-/** The build's answer to "are the co-parent surfaces shown" (surfaces.logic.ts). Reads the capability list and the alpha flag. */
+/**
+ * The build's answer to "are the invite and join screens hidden" (entry.logic.ts inviteScreensHiddenFrom: the server switch
+ * and the join-door rule `visibleCoParentDoors(...).joinButton`). Reads the capability list and the alpha flag. This is the
+ * one reader of that switch: the invite layout, the link route and the saved-token prompt all ask it and nothing else.
+ */
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { familySurfacesShown, inviteScreensBlocked } from './surfaces.logic';
-
-export function familySurfacesOn(): boolean {
-  return familySurfacesShown({ alpha: PLUS_ALPHA, coParent: capabilities.coParent });
-}
+import { inviteScreensHiddenFrom } from './entry.logic';
 
 /** True only in a servers-on store build. A servers-off build keeps its "coming soon" invite screens exactly as before. */
 export function inviteScreensHidden(): boolean {
-  return inviteScreensBlocked({ serverFeatures: serverFeaturesEnabled(), surfacesShown: familySurfacesOn() });
+  return inviteScreensHiddenFrom({ serverFeatures: serverFeaturesEnabled(), coParent: capabilities.coParent, alpha: PLUS_ALPHA });
 }

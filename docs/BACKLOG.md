@@ -2023,7 +2023,7 @@ Found in the merged PR bodies of #372 (the sign-in code step), #387 (the spec as
 - Done when: each of the six groups has either a flow that records named step ids, or a line in its S entry (`docs/design/EXPERIENCE_PASS_2026-10.md`) and a device-plan row saying it is checked on a phone; the next journey-record PR's count changes to match.
 
 #### BL-482 Spec and doc fixes after the sign-in and journey work: SECURITY.md, "Before" images, P8 package plans, storyboard row 11
-- Status: ready. Mode: agent. Owner: design systems (points 2 to 4), security engineer (point 1). Milestone: M11. Size: S. Depends on: none.
+- Status: in-review (PR #800; point 4 recorded as unverified until BL-480 point 4). Mode: agent. Owner: design systems (points 2 to 4), security engineer (point 1). Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -3088,7 +3088,7 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 
 ### First run and sign-in, end to end (NX-40, 10 Nov 2026)
 
-Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
+Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Amended 11 Nov for the CTO rulings (intro after the age gate, 3 cards, Skip 48 pt, no intro events). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
 
 #### BL-891 Reconcile the first-run requirements with the journey lead state map and the words file
 - Status: ready. Mode: agent. Owner: design systems. Milestone: M14. Size: S.
@@ -3096,16 +3096,16 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Scope: when `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` merges, replace the section names in NX-40 with its state ids; no state map is copied.
 - Done when: NX-40 cites the journey ids and the merged heads of the sibling files.
 
-#### BL-892 Intro scaffolding behind a build switch, mounted before the age gate in its own gate step
+#### BL-892 Intro scaffolding behind a build switch, mounted after the age gate in its own gate step
 - Status: blocked (#764 merged; FD-1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: #764.
 - Satisfies: NX-40-R1, NX-40-R3, NX-40-R8, NX-40-R19.
-- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step that precedes the age gate; no edit to `gate.logic.ts` before #764 merges.
+- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step (`stories`) that follows the age gate and precedes Welcome and sign in (Karma ruling 11 Nov; NX-40 FD-2); no edit to `gate.logic.ts` before #764 merges.
 - Done when: with the switch off the first screen is unchanged; with it on the step shows once per install.
 
-#### BL-893 The story intro screen: 3 to 4 frames, Skip, Reduce Motion, VoiceOver
+#### BL-893 The story intro screen: 3 frames, Skip, Reduce Motion, VoiceOver
 - Status: blocked (BL-892; words and motion spec). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-892.
 - Satisfies: NX-40-R2, R4, R5, R9, R10, R17, R20.
-- Scope: frames from `packages/content` (final words by `content`), timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip of at least 48 pt from the first frame.
+- Scope: 3 frames with the journey spec ids `story.talk.v1`, `story.exact.v3`, `story.voice.v1` (the Private card is withheld until counsel reads it; final words by `content`), from `packages/content`, timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip top right, at least 48 pt, from the first frame.
 - Done when: the QA rows for H2, U11, U12 pass on a device and the content rules test passes.
 
 #### BL-894 Test seams and Maestro rows for the happy paths H1 to H9 and edge cases U1 to U15
@@ -3114,10 +3114,10 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Scope: rows against the stack; a test that Google and passkey buttons are absent in the Build 12 profile; no bypass flag in a store build.
 - Done when: the rows are merged with an owner for each device-only row.
 
-#### BL-895 Intro events in the analytics allowlist, content-free
+#### BL-895 Stories outcome on the opt-in event, content-free
 - Status: blocked (BL-893; FD-1). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-893.
 - Satisfies: NX-40-R18. Also cited: D-124 item 3.
-- Scope: `intro_shown`, `intro_skipped`, `intro_finished` (names proposed) with one enum prop; off unless the parent opted in.
+- Scope: add `stories_outcome` (`finished`, `skipped`, `none`) and `stories_last_card` (0 to 3) to `analytics_opted_in`, read from local settings at consent time (journey spec section 6). No `intro_*` events and no pre-consent buffer: nothing is sendable before consent (D-124 item 3). Names are proposals.
 - Done when: the catalog test passes and no free-text prop exists.
 
 #### BL-896 Sign in with Apple asks for the email only

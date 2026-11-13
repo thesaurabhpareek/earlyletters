@@ -207,8 +207,9 @@ export const GLOBAL_PROPS = {
  * 5: two content-free events for the co-parent teaser (`coparent_soon_opened`, `coparent_soon_notify`, D-087).
  * 6: verifier reason `changes_invisible` (WP-F06-02, R-01 D4).
  * 7: `reminder_prime_shown.source` gains `first_letter` (the reminder card after the first letter, SET-02).
+ * 8: `coparent_soon_opened` and `coparent_soon_notify` removed: there is no co-parent coming-soon screen any more (founder, 11 Nov 2026).
  */
-export const SCHEMA_VERSION = 7;
+export const SCHEMA_VERSION = 8;
 
 /**
  * SHA-256 of `JSON.stringify(catalogShape())` per schema version. Versions 1
@@ -220,6 +221,7 @@ export const SCHEMA_FINGERPRINTS: Readonly<Record<number, string>> = Object.free
   5: '807e09376410c4f2f955535a6655dacca9de2fd2fc35e4ac7750bd03debb4860',
   6: '71c854663d0ac45e4014e9b99ea799eef7224f66102b4abe4eadae84698f9853',
   7: 'e9a036799e00d28ef83c1b5468c7348fbbaa6e0b2dc5e10559570ee8fc2ff5e0',
+  8: '281051b8507447394cd362e4198ccc667e35a3912cf9d7915e8cac7051b8c27d',
 });
 
 // ---------------------------------------------------------------------------
@@ -351,22 +353,6 @@ export const EVENTS = {
     reqs: ['B-REQ-007'],
     level: 'L2',
     props: { via: oneOf('link', 'code', 'paste'), signed_in: bool() },
-  },
-  // The co-parent teaser (D-087): measures interest without any content. `surface` is only the Family tab or the
-  // invite sheet (every door except the tab opens the sheet). Nothing about the book or the child.
-  coparent_soon_opened: {
-    area: 'entry',
-    when: 'The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: { surface: oneOf('tab', 'sheet') },
-  },
-  coparent_soon_notify: {
-    area: 'entry',
-    when: 'Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us)',
-    reqs: ['PRD-REQ-016'],
-    level: 'L2',
-    props: {},
   },
   local_merge_choice: {
     area: 'entry',

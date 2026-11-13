@@ -56,11 +56,11 @@ export const en = {
 
   // Tab titles (experience pass S57): they move here from apps/mobile/src/app/(tabs)/_layout.tsx.
   tabs: {
-    tonight: "Tonight",
+    // Founder, 11 Nov 2026: Home, Book, Me, in every build. Label-only renames: the route files stay index.tsx and you.tsx,
+    // and the keys stay `tonight` and `you`. Family is never a tab, so there is no `family` key.
+    tonight: "Home",
     book: "Book",
-    family: "Family",
-    // PLACEHOLDER (founder to confirm "You", "Yours" or "Settings", NX-30a): the tab that holds Settings and Account.
-    you: "You",
+    you: "Me",
   },
 
   onboarding: {
@@ -125,11 +125,15 @@ export const en = {
       bornToday: "Born today",
       // A long name: said gently, once the field is close to its limit.
       nameLimit: "A name can have up to {n} characters.",
-      // Account-first slice 4a (exec council 9 Nov 2026, A; RW-01, RW-03 to RW-05 of docs/content/RETURNING-AND-NEW-PHONE-WORDS-9nov.md).
+      // Account-first slice 4a (exec council decision, 9 Nov 2026, A).
       // Under the date field, for a signed-in person: so one who picked the wrong sign-in method can notice. {email} is the
-      // masked address (a***@example.com); {email} reads it aloud ("a, hidden, at example.com"). Each needs founder word approval.
+      // masked address (a***@example.com); a screen reader says it with spokenAddress (below). Each needs founder word approval.
       signedInAs: "Signed in as {email}.",
       signedInAsLabel: "Signed in as {email}.",
+      // How VoiceOver says the masked address inside signedInAsLabel (a screen reader reads "a***" as punctuation):
+      // "a, hidden, at example.com". {first} is the one visible character. Needs founder word approval.
+      spokenAddress: "{first}, hidden, at {domain}",
+      spokenAddressNoFirst: "hidden, at {domain}",
       useAnother: "Use another account",
       useAnotherHint: "Signs out and goes back to the start. Your book is not made yet.",
       cta: "Continue",
@@ -318,6 +322,9 @@ export const en = {
     autosaved: "Saved on this phone",
     // Autosave failed; shown in the same place, retried on the next pause.
     notSaved: "Not saved yet",
+    // BL-378: past about 100,000 characters. Nothing is cut and the field is never capped (a cap would trim a paste or
+    // a composing keyboard); every word is kept and this line only suggests a second letter.
+    tooLong: "This is a very long letter. Every word is kept. You can start another letter to say more.",
   },
 
   // D-084: "Not much today" stores a mark with no text. The app never writes a sentence for the person.
@@ -355,6 +362,11 @@ export const en = {
     // The take's file is missing, or the take ended before any sound (S16). Never claims a recording is kept.
     missingFile: {
       title: "The recording did not save",
+    },
+    // BL-379: under about a second, with no words from it. Let it go comes first; nothing is removed without a confirm.
+    shortTake: {
+      title: "That was very short",
+      body: "Keep it, or let it go?",
     },
     emptyTake: {
       title: "Nothing was recorded",
@@ -703,7 +715,7 @@ export const en = {
       body: "A new month in {child}'s book is open.",
     },
     birthday: {
-      title: "Happy birthday, {child}",
+      title: "Happy birthday to {child}",
       body: "A year of letters. Want to read them together today?",
     },
   },
@@ -855,7 +867,7 @@ export const en = {
       // (D-085, file first). What did not happen, then what is true; it makes no claim about the recording's file.
       eraseFailedToast: "The letter was not erased. It is still in Recently deleted.",
       bookTitle: "Delete the whole book?",
-      bookBody: "Every letter and recording in {child}'s book will be removed from this phone and from our servers. Family members can save a copy of their own letters first.",
+      bookBody: "Every letter in {child}'s book will be removed from this phone and from our servers. Every recording will be removed from this phone.",
       bookBodyCoParent: "{child}'s book stays with your co-parent. Your own letters and recordings in it will be removed.",
       bookUndo: "You have 30 days to change your mind. After that, it cannot be restored.",
       bookExportFirst: "You can export everything first, free.",
@@ -970,7 +982,7 @@ export const en = {
       analyticsLabel: "Share usage and crash reports",
       analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
-      sensitiveLabel: "Sync and family sharing",
+      sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
       // D-128: build 2 has no withdrawal control yet, so the footer promises none. It returns before anyone outside the family signs in.
       // CPrivO-5 (1 Nov 2026): "yet" dropped, it leaned toward a promise (privacy-settings.md 4, flag).
@@ -995,7 +1007,7 @@ export const en = {
       // servers). The backup clause moved to its own line, worded as on Where your letters live (CCO-8).
       keptOnPhone: "Your letters and recordings are kept on this phone. They are not sent to us.",
       // P2b, sync on (build 2, D-128): text syncs, recordings do not while owner backup is off.
-      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices and your co-parent. Your recordings are kept on this phone.",
+      keptSynced: "Your letters are kept on this phone and on our servers, so they reach your other devices. Your recordings are kept on this phone.",
       // The iPhone backup, one wording on both pages (CTO ruling, 8 Nov 2026): CCO-8's recordings-only variant
       // (content.md 1 item 14) until the device restore drill passes. Same words as whereLive.iphoneBackup.
       iphoneBackupTitle: "iPhone backup",
@@ -1168,13 +1180,13 @@ export const en = {
       title: "This page did not open",
       body: "Your letters and recordings are safe on this phone.",
       tryAgainButton: "Try again",
-      tonightButton: "Go to Tonight",
+      tonightButton: "Go to Home",
     },
     // A link or route the app does not have (replaces the router's developer page).
     notFoundPage: {
       title: "Nothing at this link",
       body: "Your book is right where you left it.",
-      button: "Back to Tonight",
+      button: "Back to Home",
     },
     // The book could not be opened at launch (database open or update step failed). No button here deletes the book's data: Export reads the originals and writes only its own ZIP in the cache, and Try again opens the book again, which runs the update steps (claims row E8).
     // Every line here except `readme` is a statement the code can back (docs/reviews/2026-10-claims-inventory.md, section 3f,
@@ -1316,8 +1328,6 @@ export const en = {
       // Red-team 10 Nov: it is added, not moved (the phone keeps it). TODO(founder, counsel): placeholder, needs word approval.
       body: "This book is on this phone. Signing in adds it to your account after you agree.",
     },
-    // A book with no name yet: its row on Settings home and its page title (GAP 6).
-    childFallback: "Your child's book",
     // Spoken hint of the You tab button (spec key tabs.youA11yHint; kept here so tabs stays single words, NX-30a-R9).
     youTabHint: "Settings and account",
     legalLabel: "Legal",

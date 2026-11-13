@@ -28,9 +28,9 @@ import { decideGate } from '@/lib/age-gate.logic';
 import { classifyIncomingUrl } from '@/lib/auth/links.logic';
 import { setPendingAuthLink } from '@/lib/auth/pending';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { planIncomingLink } from '@/lib/family/entry.logic';
 import { savePendingInvite } from '@/lib/family/pending-invite';
-import { inviteScreensHidden } from '@/lib/family/surfaces';
 import { isCaptureRoute, TONIGHT_HREF } from '@/lib/resilience/not-found.logic';
 import { getSetting } from '@/lib/store';
 
@@ -48,7 +48,7 @@ export async function redirectSystemPath({ path }: { path: string; initial: bool
   try {
     if (isCaptureRoute(path)) return TONIGHT_HREF;
     const link = classifyIncomingUrl(path, { origin: brand.web.origin, scheme: brand.scheme });
-    const plan = planIncomingLink(link, { serverFeatures: serverFeaturesEnabled(), gateStopped: link.kind === 'invite' && gateStopped(), path, familySurfaces: !inviteScreensHidden() });
+    const plan = planIncomingLink(link, { serverFeatures: serverFeaturesEnabled(), gateStopped: link.kind === 'invite' && gateStopped(), alpha: PLUS_ALPHA, path });
     if (plan.keepAuthLink && link.kind === 'auth-link') setPendingAuthLink({ tokenHash: link.tokenHash, type: link.type });
     if (plan.keepInviteToken && link.kind === 'invite') await savePendingInvite(link.token);
     return plan.route;

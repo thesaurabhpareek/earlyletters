@@ -7,8 +7,10 @@
  *   (turbo, Belle Mandarin) need about 1 GB while a letter is transcribed
  *   (TDD 03 5.2, E; measured in BL-043).
  * - compact: phones under 4 GB, an unknown RAM size, or a phone where a
- *   large model failed twice for memory (the app was killed during a
- *   transcription, or the model would not load). Small models, about 400 MB
+ *   large model failed twice for memory (the app ended while active with
+ *   the large model running, or the model would not load; a swipe-away or
+ *   an end in the background never counts, BL-572,
+ *   transcription-queue/kill-marker.ts). Small models, about 400 MB
  *   resident (E). The parent can also choose it to save space (not offered
  *   in v1.0 Settings).
  *
