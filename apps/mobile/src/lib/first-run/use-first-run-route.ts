@@ -4,6 +4,9 @@
  * the route renders exactly what Build 11 did: nothing here lists the books, listens to the store, reads or watches the
  * network, or starts a timer (route.logic.ts; tested as behaviour in test/use-first-run-route.test.ts). Records and sends
  * nothing.
+ *
+ * NX-36-S17: a ready, sync-on session with no book asks its account first (use-new-phone.ts) and is held on "Opening your
+ * book" until the account has said it has no book, so the child step is never shown while the book may be on its way.
  */
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -13,6 +16,7 @@ import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { subscribe, listChildren } from '@/lib/store';
 import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
+import { useNewPhone } from './use-new-phone';
 import { useOnline } from './use-online';
 import { failureStillCounts, firstRunScreen, type FirstRunScreen } from './welcome.logic';
 
@@ -36,6 +40,10 @@ export interface FirstRunRoute extends FirstRunGateResult {
    * Nothing with the switch off.
    */
   restartFromWelcome: () => void;
+  /** NX-36-S17: Try again on the slow and offline screens (asks the account again and nudges the pull). */
+  retryOpening: () => void;
+  /** NX-36-S17: "Start a book" on No book here yet (the person chose to begin one: the child step). */
+  startBook: () => void;
 }
 
 export function useFirstRunRoute(): FirstRunRoute {
@@ -112,12 +120,18 @@ export function useFirstRunRoute(): FirstRunRoute {
     if (active) setPastWelcome(false);
   }, [active]);
 
+  const hasLocalBook = active && listChildren().length > 0;
+  // A ready session with sync on and no book asks its account first (NX-36-S17). A session that has not agreed to sync
+  // cannot be sent a book, so it keeps the earlier route (`new`); so does every build with the switch off.
+  const asks = active && auth.state.status === 'ready' && auth.state.sync === 'on';
+  const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });
   const inputs = gateInputsFromAuth({
     serverFeatures: active,
     authState: auth.state,
-    hasLocalBook: active && listChildren().length > 0,
+    hasLocalBook,
     localStartChosen,
     online,
+    newPhone: np.view ?? 'new',
   });
   const result = firstRunGate({ ...inputs, signInFailed: inputs.signInFailed && failureStillCounts(auth.state, setAside) });
   const restoring = restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0);
@@ -135,5 +149,7 @@ export function useFirstRunRoute(): FirstRunRoute {
     tryAgain,
     markPastWelcome,
     restartFromWelcome,
+    retryOpening: np.retry,
+    startBook: np.startBook,
   };
 }

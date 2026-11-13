@@ -170,7 +170,7 @@ describe('BL-660: the letter card (signature, voice marker, every word to VoiceO
 
   it('the card is one element: who and when, the recording in words, then every word of the letter (D-027)', () => {
     const words = 'You found the spoon today and would not let it go, even in the bath, laughing at the bubbles the whole time.';
-    const label = cardLabel({ signature: 'From Papa', dateline: 'Sunday, November 1, 2026, 17 months', voice: voiceMarker(66_000)!.a11y, text: words, inBook: true, privateLabel: 'Private', spoken: true, own: false, recordingOnPhone: en.book.recordingOnPhone });
+    const label = cardLabel({ signature: 'From Papa', dateline: 'Sunday, November 1, 2026, 17 months', voice: voiceMarker(66_000)!.a11y, text: words, inBook: true, privateLabel: 'Private', audioUri: null, recordingOnPhone: en.book.recordingOnPhone });
     expect(label).toBe(`From Papa. Sunday, November 1, 2026, 17 months. Voice recording, 1 minute 6 seconds. ${words}`);
   });
 

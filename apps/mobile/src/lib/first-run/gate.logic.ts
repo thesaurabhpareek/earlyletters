@@ -12,7 +12,11 @@
  *     recording or export; sign-in is offered, not required). Only the under-18 stop beats it, and that stop is the
  *     root age gate's, which sits above every route and is not changed here.
  *  3. age not answered / answered No     -> `ageGate` / `stop` (NX-03; the root gate owns the screens)
- *  4. a session exists                   -> `childStep` (a signed-in parent is never sent back to sign-in, R4)
+ *  4. a session exists                   -> the account is asked first (NX-36-S17, `newPhone`): `openingBook`, `slowBook`,
+ *     `offlineBook` or `noBookHere` until the account says it has no book; `childStep` only for `new`. A signed-in
+ *     parent is never sent back to sign-in (R4), and never shown "Who is this book for?" while the book may be on its
+ *     way. Step 2 still wins once the book is on the phone, except that `newPhone` holds the loading screen until the
+ *     first pull cycle is done or 10 seconds have passed.
  *  5. the local start was chosen         -> `childStep`, only if it was allowed (age Yes + constant on)
  *  6. offline, or sign-in failed or timed out -> `outage` (variant `offline` or `outage`); the local start is offered
  *     only if the constant is on (R18, R19)
@@ -24,6 +28,7 @@
  * never on, signed through ADR 0016.
  */
 import type { AuthErrorKind, AuthState } from '@/lib/auth/machine.logic';
+import type { OpeningView } from './new-phone.logic';
 
 /**
  * "Start the book on this phone for now" (NX-31 R18). ON in the Build 12 store build: the founder chose option B on
@@ -65,9 +70,14 @@ export interface FirstRunGateInput {
   localStartFallback?: boolean;
   /** The person tapped the local start. Honoured only if it was allowed. */
   localStartChosen?: boolean;
+  /**
+   * What the account said while this phone has a session and no book (new-phone.logic.ts). Absent means the account
+   * has not answered: the safe reading is "still opening", never the child step.
+   */
+  newPhone?: OpeningView;
 }
 
-export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight';
+export type FirstRunStep = 'unchanged' | 'ageGate' | 'stop' | 'signIn' | 'outage' | 'childStep' | 'openTonight' | 'openingBook' | 'slowBook' | 'offlineBook' | 'noBookHere';
 
 export interface FirstRunGateResult {
   step: FirstRunStep;
@@ -81,12 +91,14 @@ export interface FirstRunGateResult {
   mayBeginBook: boolean;
   /** A phone with a book and no session: offer sign-in, never block (R22, R26). */
   offerSignIn: boolean;
+  /** The book reached this phone from the account (NX-36-S17 state B): leave for Tonight, and owe the arrival line once. */
+  arrivedFromAccount: boolean;
 }
 
-const NOTHING: FirstRunGateResult = { step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false };
+const NOTHING: FirstRunGateResult = { step: 'unchanged', outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: true, offerSignIn: false, arrivedFromAccount: false };
 
 const result = (step: FirstRunStep, over: Partial<FirstRunGateResult> = {}): FirstRunGateResult => ({
-  step, outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: false, offerSignIn: false, ...over,
+  step, outage: null, localStartOffered: false, retryOnReconnect: false, mayBeginBook: false, offerSignIn: false, arrivedFromAccount: false, ...over,
 });
 
 /** The local start may show: answer Yes, a failure state, the constant on (R18). All three, never fewer. */
@@ -97,6 +109,16 @@ function localStartAllowed(ageAnswered: AgeAnswer, constant: boolean): boolean {
 export function firstRunGate(input: FirstRunGateInput): FirstRunGateResult {
   if (!input.serverFeatures) return NOTHING;
   const constant = input.localStartFallback ?? LOCAL_START_FALLBACK;
+
+  // A signed-in phone is being asked about its account (NX-36-S17). Only the under-18 stop beats it.
+  if (input.hasSession && input.ageAnswered === 'yes') {
+    const view = input.hasLocalBook && input.newPhone === undefined ? 'new' : input.newPhone ?? 'opening';
+    if (view === 'opening') return result('openingBook');
+    if (view === 'slow') return result('slowBook');
+    if (view === 'offline') return result('offlineBook', { retryOnReconnect: true });
+    if (view === 'noBook' && !input.hasLocalBook) return result('noBookHere');
+    if (view === 'arrived') return result('openTonight', { mayBeginBook: true, arrivedFromAccount: true });
+  }
 
   if (input.hasLocalBook) {
     if (input.ageAnswered === 'no') return result('stop');
@@ -154,6 +176,7 @@ export function gateInputsFromAuth(args: {
   authState: AuthState;
   hasLocalBook: boolean;
   localStartChosen?: boolean;
+  newPhone?: OpeningView;
   /** From the connectivity source (use-online.ts). Omitted means unknown, which counts as online. */
   online?: boolean;
 }): FirstRunGateInput {
@@ -169,6 +192,7 @@ export function gateInputsFromAuth(args: {
     signInFailed: s.status === 'signedOut' && s.error !== undefined && OUTAGE_ERRORS.has(s.error),
     localStartFallback: LOCAL_START_FALLBACK,
     localStartChosen: args.localStartChosen,
+    newPhone: args.newPhone,
   };
 }
 

@@ -1,7 +1,7 @@
 /**
  * A small stand-in for React's hooks, so a hook that holds effects and timers can be run in Node without a renderer
  * (the repo has no react-test-renderer and tests run with `environment: 'node'`). It is not React: it covers the
- * hooks the first-run gate uses, with React's rules for them, and nothing else.
+ * hooks the first-run gate and the new-phone clock use, with React's rules for them, and nothing else.
  *  - state, reducer, ref and memo keep their slot between renders; a setter that changes the value renders again;
  *  - an effect runs after the render in which its dependencies changed (always, with no list), every cleanup of the
  *    effects that re-run first, then the effects, in order; the cleanups run again on unmount;
@@ -82,6 +82,9 @@ export const reactStandIn = {
       slot.deps = deps;
     }
     return slot.v as T;
+  },
+  useCallback<T>(fn: T, deps: readonly unknown[]): T {
+    return reactStandIn.useMemo(() => fn, deps);
   },
   useEffect(fn: () => Cleanup, deps?: readonly unknown[]): void {
     const { r, slot } = take();

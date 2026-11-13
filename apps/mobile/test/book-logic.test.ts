@@ -219,7 +219,7 @@ describe('the letter page (S27, S28, source)', () => {
 
   it('one provenance line, no lamp, no "Record again" on a letter with no words', () => {
     // The line is composed in lib/provenance.ts (provenanceLine, tested in p5-critics.test.ts) so the other parent's phone claims no fixes.
-    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
+    expect(page).toMatch(/provenanceLineOf\(entry, \{ own, audioUri: entry\.audioUri, words: copy\.book\.provenance, recordingOnPhone: copy\.book\.recordingOnPhone \}\)/);
     expect(src('lib/provenance.ts')).toMatch(/`\$\{how\}\. \$\{o\.recordingOnPhone\}\.`/);
     expect(page).toMatch(/useUnlitRoom\(\)/);
     expect(page).not.toMatch(/<Lamp/);
