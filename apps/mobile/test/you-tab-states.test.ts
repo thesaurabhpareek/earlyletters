@@ -8,6 +8,7 @@
  * Not checkable here, and never checked by this file: VoiceOver reading order on a device, AX5 wrapping on a 320 pt
  * phone, Reduce Motion and Reduce Transparency walks, contrast. They are device checks.
  */
+import { youTabHintFor } from '../src/components/settings/you-tab-hint';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -200,6 +201,11 @@ describe('12. Acceptance checks', () => {
     expect(block).toMatch(/headerTitle: copy\.settings\.title/);
     expect(block).not.toMatch(/headerLeft/);
     // The tab button says what the tab holds, from content.
-    expect(layout).toMatch(/title === t\.you \? \{ \.\.\.base, accessibilityHint: copy\.settingsHome\.youTabHint \} : base/);
+    // Only where the build has sign-in (Review B on #738): the layout asks you-tab-hint.ts, which reads the switch once.
+    expect(layout).toMatch(/const hint = title === t\.you \? youTabHint\(\) : undefined;\s*const rest = hint \? \{ \.\.\.base, accessibilityHint: hint \} : base;/);
+    expect(layout).not.toMatch(/copy\.settingsHome\.youTabHint/);
+    expect(youTabHintFor(true)).toBe(en.settingsHome.youTabHint);
+    expect(youTabHintFor(false)).toBeUndefined();
+    expect(read('components/settings/you-tab-hint.ts')).toMatch(/return youTabHintFor\(capabilities\.signIn\);/);
   });
 });
