@@ -65,8 +65,10 @@ import { TextField } from '@/components/ui/text-field';
 import { ListRow, ListSection } from '@/components/ui/list-row';
 import { announce, useFocusOnMount, useIsLargeText, useTheme } from '@/lib/a11y';
 import { useAuth } from '@/lib/auth/session-provider';
+import { useAnotherBusy } from '@/lib/first-run/account-books.logic';
+import { SignedInNote } from '@/components/onboarding/signed-in-note';
 import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
-import { backShown, childNameFieldWords, dateBlockShown, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
+import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
@@ -116,7 +118,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled;
 }
 
-function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome }: { localStartChosen?: boolean; onPastWelcome?: () => void }) {
+function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome, onSignedOut }: { localStartChosen?: boolean; onPastWelcome?: () => void; onSignedOut?: () => void }) {
   const o = copy.onboarding;
   const pc = pendingCopy.onboarding;
   const motion = useMotion();
@@ -128,7 +130,22 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // Account first (NX-31 R17, behind the server switch): a person who is signed in, or on the local start, is past the
   // Welcome. They open on the promise step (signed in) or the child step (local start); everyone else, and every build
   // with the switch off, opens on the Welcome as before (lib/first-run/handoff.logic.ts).
-  const { state: authState, configured } = useAuth();
+  const { state: authState, configured, account, signOut } = useAuth();
+  const [leaving, setLeaving] = useState(false);
+  // signOut() answers 'done' or 'waiting' (queued letters still uploading) and can reject. Either way the auth state decides
+  // what shows next; this only keeps a second tap from starting another sign-out while one is in flight.
+  const startAgain = () => {
+    if (useAnotherBusy({ pressing: leaving, authStatus: authState.status })) return;
+    setLeaving(true);
+    signOut()
+      // Signed out: the route forgets that the steps were past the welcome, so the person lands on the Welcome (D-160).
+      // A sign-out that is still waiting on uploads, or that failed, leaves the session and the steps as they are.
+      .then((outcome) => {
+        if (outcome === 'done') onSignedOut?.();
+      })
+      .catch(() => undefined)
+      .finally(() => setLeaving(false));
+  };
   const [start] = useState<Step>(() =>
     firstRunStartStep({ serverFeatures: serverFeaturesEnabled() && configured, hasSession: hasSessionState(authState), localStartChosen: chosenOnOutage }),
   );
@@ -259,6 +276,8 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   };
 
   const finish = () => {
+    // Opened signed in, and the session is gone (one frame before the route puts the Welcome back): no book with no account (D-160).
+    if (!finishMayMakeBook({ start, hasSession: hasSessionState(authState) })) return;
     // Every book made in first run is free (twins or more share the date).
     if (childBlock) return;
     const created = firstRunBookNames(names).map((n) =>
@@ -472,6 +491,10 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
                       </View>
                     </Animated.View>
                   ) : null}
+                  {/* A signed-in person sees whose account this is, and can start again (slice 4a). Local start: no session, no line. */}
+                  {accountFirst && hasSessionState(authState) ? (
+                    <SignedInNote maskedEmail={account.maskedEmail} provider={account.provider} onUseAnother={startAgain} busy={useAnotherBusy({ pressing: leaving, authStatus: authState.status })} />
+                  ) : null}
                 </>
               )}
 
@@ -646,5 +669,5 @@ function FirstRun() {
   if (route.screen === 'outage' && route.outage) {
     return <OutageScreen variant={route.outage} localStartOffered={route.localStartOffered} onTryAgain={route.tryAgain} onLocalStart={route.chooseLocalStart} />;
   }
-  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} />;
+  return <FirstRunSteps localStartChosen={route.localStartChosen} onPastWelcome={route.markPastWelcome} onSignedOut={route.restartFromWelcome} />;
 }

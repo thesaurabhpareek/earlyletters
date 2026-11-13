@@ -8,6 +8,7 @@
  * - `firstRunStartStep`: which first-run step opens once a person is in (signed in, or on the local start).
  * - `welcomeHandoffStep`, `reportsPastWelcome`: how the signed-in start (the promise step) behaves like the Welcome where
  *   it should: a returning account's book hands over to the Book, and it is not "past the welcome" until it moves on.
+ * - `finishMayMakeBook`: the last step's button does nothing for a person who opened signed in once the session is gone.
  * - `consentHandoff`: what the consent sheet does next (NX-36 4.2): two lines of its own, written out below.
  */
 import type { AuthState } from '@/lib/auth/machine.logic';
@@ -91,6 +92,18 @@ export function welcomeHandoffStep(input: { start: FirstRunStepId; step: FirstRu
  */
 export function reportsPastWelcome(input: { start: FirstRunStepId; step: FirstRunStepId }): boolean {
   return input.step !== (input.start === 'promise' ? 'promise' : 'welcome');
+}
+
+/**
+ * Whether the last step's button may make the book. A person who opened signed in (the promise start) is making a book for
+ * their account: if the session ends under them, the route puts the Welcome back on the next render (use-first-run-route.ts
+ * clears the latch in an effect), and for that one committed frame the steps are still up. A tap on Finish in that frame
+ * must not make a book with no account in a build that asks for sign-in first (D-160). The local start (no session by
+ * choice) and the Welcome start are unchanged, and so is every build with the server switch off (the start is always the
+ * Welcome there).
+ */
+export function finishMayMakeBook(input: { start: FirstRunStepId; hasSession: boolean }): boolean {
+  return input.start !== 'promise' || input.hasSession;
 }
 
 /**

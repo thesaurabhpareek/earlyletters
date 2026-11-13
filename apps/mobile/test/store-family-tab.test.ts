@@ -31,27 +31,29 @@ function profile(name: string): { alpha: boolean; coParent: boolean; shown: bool
 }
 
 describe('familySurfacesShown', () => {
-  it('hides only in a store build with server features off', () => {
+  it('hides in every store build (servers on or off; #737 Review B)', () => {
     expect(familySurfacesShown({ alpha: false, coParent: false })).toBe(false);
-    expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(true);
+    expect(familySurfacesShown({ alpha: false, coParent: true })).toBe(false);
     expect(familySurfacesShown({ alpha: true, coParent: false })).toBe(true);
     expect(familySurfacesShown({ alpha: true, coParent: true })).toBe(true);
   });
 });
 
 describe('both builds, from eas.json', () => {
-  // Founder ruling, 10 Nov 2026: Family shows in the servers-on store build. The production profile's switch is read from
-  // eas.json (draft #698 flips it on), so this holds before and after that flip: shown exactly when co-parent is on.
-  it('the store build (production) shows the Family tab and the Settings row exactly when its server switch is on', () => {
+  // Build 12: co-parent invites are alpha-only (#720, #737); the founder decision allows coming-soon surfaces, not a dead
+  // Family tab. This replaces the 10 Nov 2026 ruling "Family shows in the servers-on store build" (the CTO's recorded
+  // decision for that reversal is still needed). The production profile's switch is read from eas.json (draft #698 flips
+  // it on), and the answer is the same before and after that flip: a store build shows neither.
+  it('the store build (production) shows neither the Family tab nor the Settings row, whatever its server switch', () => {
     const p = profile('production');
     expect(p.alpha).toBe(false);
-    expect(p.shown).toBe(p.coParent);
+    expect(p.shown).toBe(false);
   });
 
-  it('the store build with servers off (the first-shipped case) hides both; with servers on shows both', () => {
+  it('the store build with servers off (the first-shipped case) hides both; with servers on hides both too (the join door is closed)', () => {
     expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures('off') })).toBe(false);
     expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures(undefined) })).toBe(false);
-    expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures('on') })).toBe(true);
+    expect(familySurfacesShown({ alpha: false, coParent: parseServerFeatures('on') })).toBe(false);
   });
 
   it('the alpha builds keep them: testflight (servers off) shows coming soon, preview (servers on) the real flow', () => {
@@ -90,6 +92,6 @@ describe('the screens use the switch', () => {
 
   it('the switch reads nothing a person can set: only the bundle-time APP_ENV and server switch', () => {
     const logic = read('src/lib/family/entry.logic.ts');
-    expect(logic).toMatch(/export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n\s*return input\.alpha \|\| input\.coParent;\n\}/);
+    expect(logic).toMatch(/export function familySurfacesShown\(input: \{ alpha: boolean; coParent: boolean \}\): boolean \{\n[^\n]*\n\s*return input\.alpha \|\| visibleCoParentDoors\(input\.coParent, input\.alpha\)\.joinButton;\n\}/);
   });
 });

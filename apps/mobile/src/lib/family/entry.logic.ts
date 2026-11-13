@@ -68,8 +68,11 @@ export function inviteHref(entry: 'settings_child' | 'onboarding_join' | 'family
  * isAlphaBuild(APP_ENV) (lib/billing/alpha.ts PLUS_ALPHA), decided at bundle time.
  * "Family can read" is the family-contributor switch, and contributors are absent from v1.0
  * whatever the switch (B1, F11 D4): hidden in both.
- * The Family tab and the Settings row stay in every alpha build and in a store build with the switch on; a store build
- * with it off hides both (familySurfacesShown, D-126). The invite-link landing stays in every build.
+ * The Family tab and the Settings row stay in every alpha build and are hidden in every store build, servers on or off
+ * (familySurfacesShown, D-126). Build 12: co-parent invites are alpha-only (#720, #737); the founder decision allows
+ * coming-soon surfaces, not a dead Family tab. This supersedes the 10 Nov 2026 ruling "Family shows in the servers-on
+ * store build"; that reversal still needs the CTO's recorded decision. The invite-link landing stays in every build with
+ * servers off; a servers-on store build sends an invite link to Tonight (inviteScreensBlocked).
  */
 export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinButton: boolean; familyCanReadSwitch: boolean } {
   return { joinButton: coParent && alpha, familyCanReadSwitch: false };
@@ -79,14 +82,42 @@ export function visibleCoParentDoors(coParent: boolean, alpha: boolean): { joinB
  * The Family tab and the child Settings row "Write this book together" in this build (D-126, BL-604; store-listing
  * BL-621). The store build (`production` profile, `alpha` false: billing/alpha.ts isAlphaBuild, the same bundle-time
  * APP_ENV switch as PLUS_ALPHA) with server features off has no co-parent sharing, so it shows no "coming soon" door
- * to it: both are hidden. Every alpha build (`testflight`, `preview`, development) keeps them exactly as before, and a
- * store build with server features on shows them as the real flow. Nothing a person can set reaches either input.
+ * to it: both are hidden. Every alpha build (`testflight`, `preview`, development) keeps them exactly as before. A store
+ * build with server features on hides them too, because the Family tab's button would open an invite flow that build
+ * closes (Build 12: co-parent invites are alpha-only, #720/#737; the founder decision allows coming-soon surfaces, not a
+ * dead Family tab). That reverses the 10 Nov 2026 ruling "Family shows in the servers-on store build"; the CTO's recorded
+ * decision is still needed. So the result is exactly `alpha`; `coParent` is kept as an input for the join-door rule.
+ * Nothing a person can set reaches either input.
  *
  * Not hidden: the invite-link landing (/invite). A link opened from outside still needs a calm page (D-087), and the
  * link allowlist below sends nothing else there.
  */
 export function familySurfacesShown(input: { alpha: boolean; coParent: boolean }): boolean {
-  return input.alpha || input.coParent;
+  // Every alpha build keeps them. A store build shows them only when the join-door rule opens them (never today, servers on or off).
+  return input.alpha || visibleCoParentDoors(input.coParent, input.alpha).joinButton;
+}
+
+/**
+ * The invite screens and the `/j` join route are blocked only where a flow would otherwise open: servers on, and a build with
+ * no co-parent flow (a store build before CO_PARENT_IN_STORE_BUILD flips). With servers off they already answer "coming soon"
+ * and an invite link keeps no token, so that build is unchanged (NX-38-R5). `surfacesShown` is the join-door rule
+ * (`visibleCoParentDoors(...).joinButton`), the one rule, not a second `familySurfacesShown`.
+ */
+export function inviteScreensBlocked(input: { serverFeatures: boolean; surfacesShown: boolean }): boolean {
+  return input.serverFeatures && !input.surfacesShown;
+}
+
+/**
+ * The join-door rule (B12-5) with the build's answers passed in, so Node tests can drive every combination. Not a second
+ * `familySurfacesShown`: it is `visibleCoParentDoors(...).joinButton` and nothing else (lib/family/surfaces.ts reads the build).
+ */
+export function familySurfacesFrom(input: { coParent: boolean; alpha: boolean }): boolean {
+  return visibleCoParentDoors(input.coParent, input.alpha).joinButton;
+}
+
+/** True only when servers are on and the co-parent surfaces are not shown (a servers-on store build). */
+export function inviteScreensHiddenFrom(input: { serverFeatures: boolean; coParent: boolean; alpha: boolean }): boolean {
+  return inviteScreensBlocked({ serverFeatures: input.serverFeatures, surfacesShown: familySurfacesFrom(input) });
 }
 
 /**
@@ -120,7 +151,10 @@ export interface IncomingLinkPlan {
  * invite link opens the coming-soon presentation and its token is dropped (it could never be redeemed
  * by this build, and it expires on its own).
  */
-export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boolean; gateStopped: boolean; path: string }): IncomingLinkPlan {
+export function planIncomingLink(
+  link: IncomingLink,
+  opts: { serverFeatures: boolean; gateStopped: boolean; path: string; /** False in a servers-on store build (surfaces.ts): an invite link opens Tonight and keeps no token. Default true. */ familySurfaces?: boolean },
+): IncomingLinkPlan {
   const none = { keepInviteToken: false, keepAuthLink: false };
   switch (link.kind) {
     case 'auth-link':
@@ -128,7 +162,7 @@ export function planIncomingLink(link: IncomingLink, opts: { serverFeatures: boo
     case 'auth-code':
       return { route: opts.serverFeatures ? '/sign-in/code' : '/', ...none };
     case 'invite':
-      if (opts.gateStopped) return { route: '/', ...none };
+      if (opts.gateStopped || opts.familySurfaces === false) return { route: '/', ...none };
       return { route: '/invite', keepInviteToken: inviteDestination('invite_link', opts.serverFeatures) === 'flow', keepAuthLink: false };
     case 'provider-redirect':
       return { route: null, ...none };
