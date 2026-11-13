@@ -220,8 +220,10 @@ function AccountSettings() {
           </View>
         </View>
 
-        <ListSection title={a.syncTitle}>
-          <ListRow title={a.syncLabel} trailing={a.sync[view.sync]} />
+        {/* No section heading: it would read "Sync" twice over its one row (YOU-TAB-STATES-9nov 5, open question 4). The row says
+            "Sync", not "Sync and sharing": sharing is not in this build. */}
+        <ListSection>
+          <ListRow title={a.syncTitle} trailing={a.sync[view.sync]} />
           {view.finishSetup && <ListRow title={a.finishSetup} trailing="chevron" onPress={() => router.push('/sign-in/consent')} />}
           {view.offerSync && (
             // The sensitive-data step with its words, then the answer (LEGAL-REQ-006): never a one-tap consent here.
