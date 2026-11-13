@@ -9,13 +9,17 @@
  * Mutations these tests were written to catch (each one failed a test here when it was made):
  *  M1 `serverFeatures` passed to the gate as `true`;       M4 the restore wait never expiring;
  *  M2 `useOnline` ignoring `enabled`;                      M5 `hasLocalBook` forced false;
- *  M3 `wasOnline` never updated;                           M6 `listChildren()` called with the switch off.
+ *  M3 `wasOnline` never updated;                           M6 `listChildren()` called with the switch off;
+ *  M7 the gate's NX-36-S17 branch removed (a signed-in phone with no book goes straight to the child step).
+ *
+ * NX-36-S17 (the last group): the account question (`readAccountBooks`) and the sync engine's status are replaced too, and
+ * the session carries a client, so the route asks. The earlier groups give the session no client, so they run as before.
  */
 import { authCopy } from '@scribe/content';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
-  auth: { state: { status: 'signedOut' }, configured: true } as { state: Record<string, unknown>; configured: boolean },
+  auth: { state: { status: 'signedOut' }, configured: true } as { state: Record<string, unknown>; configured: boolean; client?: unknown },
   books: [] as unknown[],
   listChildrenCalls: 0,
   storeListeners: new Set<() => void>(),
@@ -26,6 +30,11 @@ const h = vi.hoisted(() => ({
   netGate: null as null | { release: () => void },
   netListeners: new Set<(s: Record<string, unknown>) => void>(),
   spoken: [] as string[],
+  /** NX-36-S17: the pending account questions (resolve one to answer it), the engine's status and who follows it. */
+  asked: [] as Array<(k: 'new' | 'hasBook' | 'returningNoBook' | 'unknown') => void>,
+  sync: { phase: 'idle', lastSyncedAt: null as string | null },
+  syncListeners: new Set<(s: unknown) => void>(),
+  syncNowCalls: 0,
 }));
 
 vi.mock('react', async () => {
@@ -45,6 +54,23 @@ vi.mock('@/lib/store', () => ({
     return h.books;
   },
 }));
+vi.mock('../src/lib/first-run/account-books', () => ({
+  readAccountBooks: () =>
+    new Promise((resolve) => {
+      h.asked.push(resolve as never);
+    }),
+}));
+vi.mock('@/lib/sync', () => ({
+  getSyncStatus: () => h.sync,
+  subscribeSyncStatus: (l: (s: unknown) => void) => {
+    h.syncListeners.add(l);
+    return () => void h.syncListeners.delete(l);
+  },
+  syncNow: () => {
+    h.syncNowCalls += 1;
+    return Promise.resolve(null);
+  },
+}));
 vi.mock('expo-network', () => ({
   getNetworkStateAsync: async () => {
     h.netCalls += 1;
@@ -61,6 +87,7 @@ vi.mock('expo-network', () => ({
 
 import { setServerFeaturesForTests } from '../src/lib/capabilities';
 import { RESTORE_WAIT_MS } from '../src/lib/first-run/gate.logic';
+import { OPENING_WAIT_MS } from '../src/lib/first-run/new-phone.logic';
 import { useFirstRunRoute } from '../src/lib/first-run/use-first-run-route';
 import { renderHook } from './helpers/mini-react';
 
@@ -85,6 +112,10 @@ beforeEach(() => {
   h.spoken.length = 0;
   h.storeListeners.clear();
   h.netListeners.clear();
+  h.asked.length = 0;
+  h.sync = { phase: 'idle', lastSyncedAt: null };
+  h.syncListeners.clear();
+  h.syncNowCalls = 0;
   setServerFeaturesForTests(true);
 });
 afterEach(() => {
@@ -569,5 +600,142 @@ describe('[D-160] the button hands the sign-out to the route (wiring is a source
     const { readFileSync } = await import('node:fs');
     const t = readFileSync(new URL('../src/app/onboarding.tsx', import.meta.url), 'utf8');
     expect(t).toMatch(/\.then\(\(outcome\) => \{\s*if \(outcome === 'done'\) onSignedOut\?\.\(\);\s*\}\)/);
+  });
+});
+
+describe('[NX-36-S17] a returning account on a new phone: the child step is unreachable while its book is on its way', () => {
+  const ready = { status: 'ready', userId: 'u1', sync: 'on' };
+  const client = {};
+  const signedIn = async (state: Record<string, unknown> = ready) => {
+    h.auth = { state: { ...state }, configured: true, client };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    return run;
+  };
+  const syncEvent = (s: { phase: string; lastSyncedAt: string | null }) => {
+    h.sync = s;
+    for (const l of [...h.syncListeners]) l(s);
+  };
+  const bookLands = () => {
+    h.books = [{ id: 'asha' }];
+    for (const l of h.storeListeners) l();
+  };
+
+  it('[NX-36-S17] signed in with no book: the opening screen, one account question, one pull nudged; not the child step before the answer [M7]', async () => {
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', mayBeginBook: false, arrivedFromAccount: false });
+    expect(h.asked).toHaveLength(1);
+    expect(h.syncNowCalls).toBe(1);
+    expect(h.syncListeners.size).toBe(1);
+  });
+
+  it('[NX-36-S17] the account has a book: opening while it comes, still opening when the first page lands and the cycle runs, Tonight once the cycle is done; the child step at no point (the #737 gap) [M7]', async () => {
+    const run = await signedIn();
+    const seen: string[] = [run.result.current.step];
+    syncEvent({ phase: 'syncing', lastSyncedAt: null });
+    h.asked[0]('hasBook');
+    await flush();
+    seen.push(run.result.current.step);
+    bookLands();
+    seen.push(run.result.current.step);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+    syncEvent({ phase: 'idle', lastSyncedAt: '2026-11-10T10:00:05.000Z' });
+    seen.push(run.result.current.step);
+    expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: true, mayBeginBook: true });
+    expect(seen).toEqual(['openingBook', 'openingBook', 'openingBook', 'openTonight']);
+    expect(seen).not.toContain('childStep');
+  });
+
+  it('[NX-36-S17] the account is new: the child step, as before S17; a reconnect under it asks nothing', async () => {
+    const run = await signedIn();
+    h.asked[0]('new');
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps', mayBeginBook: true });
+    run.result.current.markPastWelcome();
+    networkEvent({ ...OFFLINE });
+    networkEvent({ ...ONLINE });
+    expect(h.asked).toHaveLength(1);
+    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+  });
+
+  it('[NX-36-S17] a returning account with no book, or an answer that could not be read: No book here yet; Start a book is the child step', async () => {
+    for (const kind of ['returningNoBook', 'unknown'] as const) {
+      const run = await signedIn();
+      h.asked[h.asked.length - 1](kind);
+      await flush();
+      expect(run.result.current, kind).toMatchObject({ step: 'noBookHere', screen: 'noBookHere', mayBeginBook: false });
+      run.result.current.startBook();
+      expect(run.result.current, kind).toMatchObject({ step: 'childStep', screen: 'steps' });
+      run.unmount();
+    }
+  });
+
+  it('[NX-36-S17] no book at 10 seconds: the slow screen; Try again asks the account again and nudges the pull', async () => {
+    vi.useFakeTimers();
+    h.auth = { state: { ...ready }, configured: true, client };
+    const run = renderHook(() => useFirstRunRoute());
+    await vi.advanceTimersByTimeAsync(0);
+    h.asked[0]('hasBook');
+    await vi.advanceTimersByTimeAsync(0);
+    expect(run.result.current.screen).toBe('opening');
+    await vi.advanceTimersByTimeAsync(OPENING_WAIT_MS + 100);
+    expect(run.result.current).toMatchObject({ step: 'slowBook', screen: 'slow', mayBeginBook: false });
+    run.result.current.retryOpening();
+    expect(h.asked).toHaveLength(2);
+    expect(h.syncNowCalls).toBe(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+  });
+
+  it('[NX-36-S17] no connection before the book exists: the connection screen, asked again by itself when the connection returns, and "back online" is not said (that line is the outage screen\'s)', async () => {
+    h.net = { ...OFFLINE };
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'offlineBook', screen: 'offlineBook', retryOnReconnect: true, online: false });
+    expect(h.asked).toHaveLength(1);
+    networkEvent({ ...ONLINE });
+    expect(h.asked).toHaveLength(2);
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', online: true });
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-36-S17] Try another way: the session ending is the Welcome, and nothing is asked again', async () => {
+    const run = await signedIn();
+    h.asked[0]('hasBook');
+    await flush();
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome', localStartChosen: false });
+    expect(h.asked).toHaveLength(1);
+  });
+
+  it('[NX-36-S17] a session that has not agreed to sync asks nothing and keeps the earlier route', async () => {
+    for (const state of [{ status: 'ready', userId: 'u1', sync: 'off' }, { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] }, { status: 'checkingConsent', userId: 'u1', method: null }]) {
+      const run = await signedIn(state);
+      expect(run.result.current, String(state.status)).toMatchObject({ step: 'childStep', screen: 'steps' });
+      expect(h.asked, String(state.status)).toHaveLength(0);
+      expect(h.syncListeners.size, String(state.status)).toBe(0);
+      run.unmount();
+    }
+  });
+
+  it('[NX-36-S17] a phone that already holds a book never asks (every ordinary launch), and the line is not owed', async () => {
+    h.books = [{ id: 'asha' }];
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ step: 'openTonight', arrivedFromAccount: false });
+    expect(h.asked).toHaveLength(0);
+    expect(h.syncNowCalls).toBe(0);
+  });
+
+  it('[NX-31-R17] servers off, or no sign-in settings: the account is never asked and the engine never followed, with a client and a ready sync-on session', async () => {
+    for (const [serverFeatures, configured] of [[false, true], [true, false]] as const) {
+      setServerFeaturesForTests(serverFeatures);
+      h.auth = { state: { ...ready }, configured, client };
+      const run = renderHook(() => useFirstRunRoute());
+      await flush();
+      expect(run.result.current.step).toBe('unchanged');
+      expect(h.asked).toHaveLength(0);
+      expect(h.syncNowCalls).toBe(0);
+      expect(h.syncListeners.size).toBe(0);
+      run.unmount();
+    }
   });
 });

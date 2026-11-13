@@ -71,6 +71,8 @@ import { capabilities, serverFeaturesEnabled } from '@/lib/capabilities';
 import { backShown, childNameFieldWords, dateBlockShown, finishMayMakeBook, firstRunStartStep, hasSessionState, reportsPastWelcome, welcomeHandoffStep } from '@/lib/first-run/handoff.logic';
 import { continueMayShow, continueTapIsLocalStart } from '@/lib/first-run/route.logic';
 import { useFirstRunRoute } from '@/lib/first-run/use-first-run-route';
+import { ARRIVAL_SETTING, arrivalToWrite } from '@/lib/first-run/new-phone.logic';
+import { NoBookHereScreen, OfflineBookScreen, OpeningBookScreen, SlowBookScreen } from '@/components/onboarding/new-phone-screens';
 import { OutageScreen } from '@/components/onboarding/outage-screen';
 import { WelcomeSignIn } from '@/components/onboarding/welcome-sign-in';
 import { heardLanguagesForBuild, hearsOnlyEnglish } from '@/lib/language/heard-languages';
@@ -81,7 +83,7 @@ import { haptic } from '@/lib/haptics';
 import { useMotion } from '@/lib/motion';
 import { ensureTextRules } from '@/lib/language/packs';
 import { useSpokenLanguage } from '@/lib/language/spoken-language';
-import { addChild, getActiveChildId, listChildren, setActiveChildId, subscribe, todayISO } from '@/lib/store';
+import { addChild, getActiveChildId, getSetting, listChildren, setActiveChildId, setSetting, subscribe, todayISO } from '@/lib/store';
 import { firstRunWelcome, welcomeMayLeave } from '@/components/family/welcome-handoff.logic';
 import { CheckingScreen, OpenDeletionScreen } from '@/components/settings/open-deletion';
 import { useFirstRunGate } from '@/lib/account-deletion';
@@ -186,7 +188,9 @@ function FirstRunSteps({ localStartChosen: chosenOnOutage = false, onPastWelcome
   // join sheet waits for Open or Close (S59, P8b), and no other screen is ever pulled back to the Book.
   // Account first: a person who opened signed in is on the promise step, not the welcome, and has not moved on. If their
   // account's book arrives it must hand over to the Book, never leave them to make a second book, so that one step is
-  // asked as the welcome (handoff.logic.ts welcomeHandoffStep; S17 in #764 is the fuller answer).
+  // asked as the welcome (handoff.logic.ts welcomeHandoffStep). The route now holds a signed-in phone with no book on
+  // "Opening your book" until the account has said it has no book (NX-36-S17, lib/first-run/new-phone.logic.ts), so
+  // this is the second guard, for a book that lands under the promise step anyway.
   const handoffStep = welcomeHandoffStep({ start, step });
   const pathname = usePathname();
   useEffect(() => {
@@ -658,12 +662,32 @@ export default function Onboarding() {
 
 /**
  * Account first (NX-31 R17, behind the server switch): with no session and no book, the route is the Welcome with the two
- * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. Everything else, and every build with the switch
- * off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step of the
- * steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
+ * ways in (S2), or the outage screen (S3) when sign-in cannot be reached. A signed-in phone with no book is "Opening your
+ * book" (NX-36-S17: the loading, slow, offline and No book here yet screens, components/onboarding/new-phone-screens.tsx)
+ * until its account has said it has no book; when the book arrives, Tonight. Everything else, and every build with the
+ * switch off, is `FirstRunSteps` exactly as before (the gate answers `unchanged`). A person already past the welcome step
+ * of the steps stays in them whatever happens to the session (lib/first-run/welcome.logic.ts firstRunScreen).
  */
 function FirstRun() {
   const route = useFirstRunRoute();
+  const { signOut } = useAuth();
+  // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
+  // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and Erase everything clears it.
+  useEffect(() => {
+    if (!route.arrivedFromAccount) return;
+    const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));
+    if (next) setSetting(ARRIVAL_SETTING, next);
+    router.replace('/');
+  }, [route.arrivedFromAccount]);
+  // "Try another way" signs out; the session ending puts the route back on the Welcome (use-first-run-route.ts). A sign-out
+  // that fails leaves the screen as it is (the person can try again), and is never an unhandled rejection.
+  const tryAnother = () => {
+    signOut().catch(() => undefined);
+  };
+  if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen />;
+  if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
+  if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;
   if (route.screen === 'blank') return <SafeAreaView className="flex-1 bg-background" />;
   if (route.screen === 'welcome') return <WelcomeSignIn />;
   if (route.screen === 'outage' && route.outage) {

@@ -34,13 +34,16 @@ export function pageProvenanceKey(e: { captureMode: string; finalText: string; r
  * The letter page's provenance line: how the words came to be and, for the reader's own spoken letter, where the
  * recording is ("Spoken, with small fixes. Recording kept on this phone."). The other parent's recording is on their
  * phone, which the player says, so their line carries no place. Strings come in, so this stays pure.
+ *
+ * The place is named only when this phone holds a recording reference (audioUri). A letter pulled onto a new phone has
+ * none, and "kept on this phone" would be false there (NX-36-S17, the same truth as the Book card label).
  */
 export function provenanceLine(
   e: { captureMode: string; finalText: string; rawTranscript: string },
-  o: { own: boolean; words: Record<PageProvenance, string>; recordingOnPhone: string },
+  o: { own: boolean; audioUri?: string | null; words: Record<PageProvenance, string>; recordingOnPhone: string },
 ): string {
   const how = o.words[pageProvenanceKey(e, o)];
-  return e.captureMode !== 'typed' && o.own ? `${how}. ${o.recordingOnPhone}.` : how;
+  return e.captureMode !== 'typed' && o.own && o.audioUri ? `${how}. ${o.recordingOnPhone}.` : how;
 }
 
 /**
