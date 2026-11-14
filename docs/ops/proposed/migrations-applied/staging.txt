@@ -1,0 +1,30 @@
+# Migrations applied to scribe-staging. One file name per line. Read back from staging's
+# supabase_migrations.schema_migrations before this file is committed (UNVERIFIED here: written from the
+# 27 files on develop at 8 Nov, which the notes say staging received on 2 Nov).
+20260930000000_scribe_core.sql
+20261001000000_scribe_hardening.sql
+20261002010000_entries_select_policy.sql
+20261002020000_data_governance.sql
+20261003000000_security_and_family.sql
+20261003010000_children_and_entitlements.sql
+20261003020000_purge_batching.sql
+20261004000000_plus_on_device_only.sql
+20261004100000_sync_engine.sql
+20261004200000_ops_deletion_worker.sql
+20261004300000_insights_aggregates.sql
+20261005000000_family_cap_language_idempotency.sql
+20261015000000_v1_gate_membership_sync_hardening.sql
+20261015010000_v1_gate_peek_invite_consent_pepper.sql
+20261015020000_v1_gate_coparent_invites_undo.sql
+20261015030000_v1_wire_contract_columns.sql
+20261016000000_sync_v1_server.sql
+20261016001000_subscription_status.sql
+20261023000000_backup_server.sql
+20261023010000_s02_purge_and_consent_guards.sql
+20261023020000_purge_legal_holds.sql
+20261023030000_held_drafts_write_checks.sql
+20261023040000_entries_machine_edits_check.sql
+20261023050000_consent_grants_tightening.sql
+20261023060000_explicit_grants.sql
+20261028000000_pg_temp_last_and_purged_photos.sql
+20261028010000_invite_redeem_by_code.sql
