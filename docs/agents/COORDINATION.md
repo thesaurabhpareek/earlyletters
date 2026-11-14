@@ -1,5 +1,7 @@
 # How agents and threads work together (read before any work)
 
+Harness v2 working rules (ids, review sha, live counts, what is waiting on which PR): `docs/agents/harness-v2/USE-NOW.md`. Read it with this file.
+
 This applies to every agent in every thread (this build thread, the App Store setup thread, the website thread, research threads) and to humans.
 The goal is one product with one set of patterns: no duplicate work, no conflicting conclusions, no surprise publishes.
 
