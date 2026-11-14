@@ -15,11 +15,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 // The Book's chapters read the native store through child-store; only the Book's own before-birth rule is used here.
 vi.mock('@/components/child/child-store', () => ({ authorOf: (e: { authorSignsAs?: string }, c: { signsAs: string }) => e.authorSignsAs ?? c.signsAs }));
 
+import { FROM_THE_BOOK_LINES } from '../src/components/tonight/from-the-book.logic';
 import { fadeBox, lineHeightFor } from '../src/components/motion/excerpt-fade.logic';
 import {
   EVENING_DAYPARTS,
   EXCERPT,
-  RESURFACE_DAYS,
   clockOf,
   daysBetween,
   draftCard,
@@ -29,7 +29,6 @@ import {
   draftWords,
   greetingParts,
   resumed,
-  resurfaced,
   roomClock,
   spoken,
   tonightArrival,
@@ -273,43 +272,6 @@ describe('[S09] the greeting in two tones', () => {
   });
 });
 
-describe('[S09] A month ago', () => {
-  const letter = (id: string, occurredOn: string, over: Record<string, unknown> = {}) => ({
-    id,
-    kind: 'letter' as const,
-    inBook: true,
-    occurredOn,
-    capturedAt: `${occurredOn}T19:00:00.000Z`,
-    finalText: 'Bath time. You splash with your whole body, both hands, both feet, and then you check that I saw.',
-    ...over,
-  });
-  const TODAY = '2026-10-17';
-
-  it('the newest letter in the book dated 28 to 35 days ago, one card, with its words and how VoiceOver reads it', () => {
-    const pick = resurfaced([letter('a', '2026-09-12'), letter('b', '2026-09-19'), letter('c', '2026-09-14')], TODAY, 0);
-    expect(pick?.id).toBe('b'); // 28 days ago, the newest in the window
-    expect(pick?.kicker).toBe('A month ago');
-    expect(pick?.a11yLabel).toBe(`A month ago. ${letter('b', '2026-09-19').finalText} A letter from ${dayDate('2026-09-19')}. Opens the letter.`);
-    expect(RESURFACE_DAYS).toEqual({ from: 28, to: 35 });
-    expect(resurfaced([letter('edge', '2026-09-12')], TODAY, 0)?.id).toBe('edge'); // 35 days
-  });
-
-  it('never when a draft is waiting, never a private letter, a quiet-day mark, a letter with no words, or outside the window', () => {
-    expect(resurfaced([letter('b', '2026-09-19')], TODAY, 1)).toBeNull();
-    expect(resurfaced([letter('p', '2026-09-19', { inBook: false })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('q', '2026-09-19', { kind: 'not_much', finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0)).toBeNull(); // 27 and 36 days
-  });
-
-  it('[F09-REQ-003] never a letter dated to a month only: "A month ago" and its date would state a day nobody gave', () => {
-    const month = { ...letter('m', '2026-09-19'), occurredPrecision: 'month' as const };
-    expect(resurfaced([month], TODAY, 0)).toBeNull();
-    // A day letter in the window still comes back, and the month-only one never takes its place.
-    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0)?.id).toBe('d');
-  });
-});
-
 describe('[S33] not much today, and the light', () => {
   it('in the evening dayparts the kept quiet day lowers the lamp to 70 percent; Undo (no mark) brings it back', () => {
     expect([...EVENING_DAYPARTS]).toEqual(['evening', 'night', 'lateNight']);
@@ -386,7 +348,7 @@ describe('[S09] Tonight renders every draft, one question and the daypart light 
   it('under a card\'s page Tonight hides from screen readers, and the month-old card names its place', () => {
     expect(screen).toContain('const behind = useHiddenBehindCardPage();');
     expect(screen).toContain('{...behind}');
-    expect(screen).toContain('<CardSource id={monthAgo.id}>');
+    expect(screen).toContain('<CardSource id={gift.card.id}>');
   });
 
   it('no count, days-since or streak anywhere on Tonight', () => {
@@ -432,6 +394,8 @@ describe('[P3] whole-line excerpts at every Dynamic Type size, xSmall, Small and
       const v = (m[1] ?? m[2]).trim();
       if (v === 'EXCERPT.lines') return EXCERPT.lines;
       if (v === 'EXCERPT.variant') return EXCERPT.variant;
+      // The From the book card: 3 lines at default sizes, 2 at accessibility sizes (both whole lines, checked below).
+      if (v === 'large ? FROM_THE_BOOK_LINES_LARGE : FROM_THE_BOOK_LINES') return FROM_THE_BOOK_LINES;
       if (/^\d+(\.\d+)?$/.test(v)) return Number(v);
       if (m[2]) return v;
       throw new Error(`${rel}: ExcerptFade ${name}={${v}} is not resolved by this test; teach it the value`);

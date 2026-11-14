@@ -276,7 +276,16 @@ export const en = {
     // never a private letter (S09, DESIGN_LANGUAGE 12).
     resurfaced: {
       kicker: "A month ago",
-      a11y: "A letter from {date}. Opens the letter.",
+      a11y: "A letter from {date}.",
+    },
+    // NX-36 S13 (BL-790): the family's own kept letter on Tonight, and the empty book on the first day. The five
+    // tonight.fromTheBook strings and tonight.resurfaced.a11y need founder word approval before release (NX-36 section 6).
+    fromTheBook: {
+      kicker: "From the book",
+      emptyTitle: "{child}'s book",
+      emptyTitleNameless: "Your child's book",
+      emptyLine: "Ready for its first letter.",
+      emptyA11yHint: "Opens the book.",
     },
     afterSave: {
       title: "Kept.",

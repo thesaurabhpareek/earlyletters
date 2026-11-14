@@ -10,8 +10,8 @@
  * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
  * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
  * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals, except that two or more
- * letters held at the Keep step fold into one row that opens their list (F14-REQ-041) (or, when none is waiting,
- * "A month ago"); once the free letters are used and Plus is off, one standing line above Speak and Type says new
+ * letters held at the Keep step fold into one row that opens their list (F14-REQ-041); after them, one kept letter
+ * "From the book" (or "A month ago"), or on day zero the empty-book card (NX-36 S13); once the free letters are used and Plus is off, one standing line above Speak and Type says new
  * letters need Plus, with no button (SR-C-08, F14-REQ-040); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
  * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
  * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
@@ -48,13 +48,14 @@ import { tokens } from '@scribe/design-tokens';
 import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
+import { DayZeroCard } from '@/components/tonight/day-zero-card';
+import { tonightGift } from '@/components/tonight/from-the-book.logic';
 import { HeldRow } from '@/components/tonight/held-row';
 import { PlusLine } from '@/components/tonight/plus-line';
 import {
   draftCards,
   greetingParts,
   resumed,
-  resurfaced,
   roomClock,
   tonightArrival,
   tonightDateline,
@@ -198,7 +199,11 @@ export default function Tonight() {
   // The held list also closes when the person leaves Tonight (blur).
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
-  const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
+  // NX-36 S13: one kept letter from the book (picked by the date, stable all day), or on day zero the empty-book card.
+  const gift = useMemo(
+    () => tonightGift({ entries: room?.entries ?? [], today, draftsWaiting: cards.length, family: room?.family ?? null }),
+    [room?.entries, room?.family, today, cards.length],
+  );
 
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
@@ -325,11 +330,18 @@ export default function Tonight() {
               ),
             )}
           </View>
-        ) : monthAgo ? (
-          <Animated.View entering={enter(3)} className="mt-8">
-            <CardSource id={monthAgo.id}>
-              <ResurfacedCard card={monthAgo} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: monthAgo.id } })} />
-            </CardSource>
+        ) : null}
+
+        {/* After the waiting letters: a task first, a gift after. One row at most. */}
+        {gift ? (
+          <Animated.View entering={enter(3 + rows.length)} className={gift.afterDrafts ? 'mt-3' : 'mt-8'}>
+            {gift.kind === 'fromTheBook' ? (
+              <CardSource id={gift.card.id}>
+                <ResurfacedCard card={gift.card} onPress={() => router.push({ pathname: '/letter/[id]', params: { id: gift.card.id } })} />
+              </CardSource>
+            ) : (
+              <DayZeroCard card={gift.card} childName={book.childName} signsAs={book.signsAs} onPress={() => router.push('/book')} />
+            )}
           </Animated.View>
         ) : null}
       </ScrollView>
