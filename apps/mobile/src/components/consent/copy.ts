@@ -6,7 +6,7 @@
  */
 export const consentCopy = {
   // settings.privacy.analyticsSection
-  analyticsSection: 'Usage and crash reports',
+  analyticsSection: 'Usage',
   // settings.privacy.sensitiveSection
   sensitiveSection: 'Your letters',
   // The "What we never do" list (neverTitle, never[]) retired 8 Nov 2026 (CPrivO-5): Settings, Privacy opens with

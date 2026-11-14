@@ -979,8 +979,8 @@ export const en = {
     // Settings > Privacy (PRD.md K-01, K-17). Each consent is visible and changeable here.
     privacy: {
       title: "Privacy",
-      analyticsLabel: "Share usage and crash reports",
-      analyticsHelp: "Which screens you open and when something breaks. Never your letters, recordings, photos or anyone's names.",
+      analyticsLabel: "Share usage",
+      analyticsHelp: "Which screens you open and when. Never your letters, recordings, photos or anyone's names.",
       analyticsOffNote: "Turning this off stops sharing right away. Nothing else changes.",
       sensitiveLabel: "Sync across your phones",
       // Names the health category, as Washington and Connecticut consent requires (lawyer-2 H4, CHD policy HN-4).
@@ -1053,7 +1053,7 @@ export const en = {
   // Product analytics consent. Third ask after the first letter, on a later session (PRD.md K-01, PRD-REQ-001).
   analyticsConsent: {
     title: "Help us make it better?",
-    body: "Share how you use the app, like which screens you open and when something crashes. Never your letters, recordings, photos or anyone's names.",
+    body: "Share how you use the app, like which screens you open and when. Never your letters, recordings, photos or anyone's names.",
     detail: "Nothing is shared unless you say yes. Saying no changes nothing else.",
     changeLater: "You can change this any time in Settings, Privacy.",
     yesButton: "Share usage",
