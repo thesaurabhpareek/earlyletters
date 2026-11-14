@@ -1,0 +1,10 @@
+// fixture: catch-leak-rethrow. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: catch-leak
+export async function pick() {
+  try {
+    await launch();
+  } catch (e) {
+    throw e;
+  }
+}

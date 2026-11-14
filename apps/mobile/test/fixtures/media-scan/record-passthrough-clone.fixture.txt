@@ -1,0 +1,8 @@
+// fixture: record-passthrough-clone. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/asset-record.ts
+// expect: record-passthrough
+type AssetRecord = { opaqueId: string };
+export function toAssetRecord(raw: Record<string, unknown>): AssetRecord {
+  const copy = structuredClone(raw);
+  return copy;
+}

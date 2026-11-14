@@ -1,0 +1,7 @@
+// fixture: field-read-destructured. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: field-read
+export function where(asset: any) {
+  const { latitude, longitude } = asset.location;
+  return [latitude, longitude];
+}
