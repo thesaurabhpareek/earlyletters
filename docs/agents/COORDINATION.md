@@ -12,18 +12,19 @@ The goal is one product with one set of patterns: no duplicate work, no conflict
 | **Other threads** | Other chats (App Store setup, website, naming) | Work in their own area (see section 6); never push to `develop` or `main` |
 
 ## 2. Before you start: claim your area
-1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/BOARD.md`.
-2. Add a **claim** line to the "Active claims" table in `BOARD.md`: agent name or id, area, file globs, start time (UTC).
+Claims live in `docs/agents/CLAIMS.md` (live rows only, 72 h expiry). `BOARD.md` is a pointer to it and to `BOARD-ARCHIVE.md`, the old board kept as history; do not claim there.
+1. Read `docs/agents/BRIEF-2026-10-03.md`, this file, `docs/DECISIONS.md` and `docs/agents/CLAIMS.md`.
+2. Add a **claim** row to the table in `CLAIMS.md`: agent name or id, area, file globs, start and expiry time (UTC).
 3. If your globs overlap someone else's live claim, do not edit those files. Message the owner (`ListAgents`, then `SendMessage`) or note it on the board for the coordinator. Pick another slice of work meanwhile.
-4. `BOARD.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
+4. `CLAIMS.md` is the single place to claim files: a claim that exists only in a chat, a PR or a scheduled run does not count. Every PR description lists the globs it touched, so the coordinator can check them against the live claims before merging.
 
 ## 3. While you work: check in, small and often
 - Every ~20 tool calls or ~30 minutes, append **at most 3 lines** to your own check-in file, `docs/agents/checkins/<agent>.md`, named after the agent in your claim line (for example `S10.md` or `experience-p1-visual-system.md`; create it on your first check-in). Time is UTC, from `date -u`:
   `HH:MM (DD Mon) <agent> | done: ... | next: ... | blocked/needs: ...`
-- Never append check-ins to `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section in `BOARD.md` stays as history.
+- Never append check-ins to `CLAIMS.md` or `BOARD.md`. Every open PR adding a line at the end of one shared file made every pair of PRs conflict (three merge cycles lost on 17 Oct). The old "Check-ins" section, now in `BOARD-ARCHIVE.md`, stays as history.
 - Before each check-in, read the newest check-ins on every branch: `git fetch -q origin '+refs/heads/*:refs/remotes/origin/*' && git log --remotes -n 20 -p --format='%h %ci %s' -- docs/agents/checkins/`. File times in a fresh clone are checkout times, so don't sort by them. If someone else is already doing what you're about to do, stop and message them. Reuse their work rather than repeating it.
 - When you finish, change your claim to `done` and put a pointer to your report in the claim line.
-- In `BOARD.md`, add your claim line when you start (section 2); after that, change only your own claim line. Re-read the file right before writing.
+- In `CLAIMS.md`, add your claim row when you start (section 2); after that, change only your own row. Re-read the file right before writing.
 
 ## 4. One answer per question: propose, debate, converge
 Some choices shape other people's work: a library, a data shape, an API contract, a naming scheme, a UX pattern, a copy convention, a folder layout. For those:
@@ -58,8 +59,8 @@ Never copy a constant, type, colour or string into a second place. Import it.
 - **Merging into `develop` (D-107, D-117):** the coordinator may merge a pull request that changes app code (`apps/mobile`, `packages/*`, `apps/web` content and components), docs or tests once two independent review agents pass it and CI is green on its head (D-107). D-117 records the founder's blanket approval of 23 Oct 2026 in the founder's words, and under it the coordinator's operating rule (the coordinator's, not the founder's words; the founder may reverse any of it): the coordinator also merges the founder-only path classes of D-107, which are `supabase/**` (database, migrations, access rules), auth, payments (billing, StoreKit, `packages/core/src/plan.ts`), `.github/**`, `apps/mobile/eas.json` and `apps/mobile/app.config.ts`, the engine files (`EditType`, `verify.ts`, `meaning.ts`, `types.ts`, `pipeline.ts`), and production deploys of the alpha queue. A merge needs two independent passing reviews on the current head and green CI (`npm run test:db` green for database pull requests). Steps that only the founder can perform stay the founder's, as a matter of fact: applying migrations to the hosted projects; the Apple, Expo, Supabase and Vercel accounts and their secrets; the signing and escrow keys. Legal text is counsel's to sign. Production deploys outside the alpha queue (the website on `main`, the App Store, TestFlight external groups) stay the founder's approval (D-107).
 
 ## 7. Cross-thread coordination
-- Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `BOARD.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
-- Before acting on anything shared, other threads read that doc: domains, DNS, Apple account, store listing, website, legal URLs, brand assets. They post their updates there, and the coordinator copies them into `BOARD.md`.
+- Other threads can't see this repo's working tree. The coordinator mirrors a short summary of `CLAIMS.md` and `DECISIONS.md` into the claude.ai Project doc `claude/Early-Letters-Coordination.md` after every wave.
+- Before acting on anything shared, other threads read that doc: domains, DNS, Apple account, store listing, website, legal URLs, brand assets. They post their updates there, and the coordinator copies them into `CLAIMS.md`.
 - If two threads need the same thing (for example store screenshots, or DNS records), the first one to claim it on the board owns it. The other one reviews it.
 
 ## 8. Repo layout rules

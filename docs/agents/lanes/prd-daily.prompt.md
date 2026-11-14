@@ -26,7 +26,7 @@ STEP 5. Update the PRD. Follow the PRD of record's own authoring guide (its `_AU
 STEP 6. Correct errors. Each run also checks one slice, rotating by day of month mod 4: 0 citations and ids (every D-, BL-, ADR, research and requirement id cited exists; use `scripts/trace.mjs` if it is on `develop`); 1 code claims (sample 15 "built in <file>" claims against `develop`); 2 cross-file consistency (prices, plan contents, what ships in which release, dates against the dates file of record); 3 facts against the PRD's research sources (sample 15). Fix each error with its source; if you cannot verify a claim, mark it Unverified rather than deleting it.
 
 STEP 7. Rules for every edit.
-- Edit only the PRD of record's folder. Never edit `docs/DECISIONS.md`, ADRs, legal documents, code, workflows, `docs/agents/**` or files claimed in `docs/agents/BOARD.md` by another stream.
+- Edit only the PRD of record's folder. Never edit `docs/DECISIONS.md`, ADRs, legal documents, code, workflows, `docs/agents/**` or files claimed in `docs/agents/CLAIMS.md` by another stream.
 - Evidence labels per the authoring guide; never state a price, API, law, library capability or competitor fact from memory.
 - Plain, direct, short sentences; no em dashes, en dashes, curly quotes, ellipsis characters or emoji. Never gender the child. Real family details never appear; the fictional family is "Asha".
 - Never make, reopen or soften a decision. Record and describe.
