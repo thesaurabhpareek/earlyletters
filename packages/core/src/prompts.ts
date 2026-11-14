@@ -156,8 +156,15 @@ export function selectPrompt(input: SelectInput, library: readonly Prompt[]): Pr
     if (banded.length && hash(input.seed) % 3 !== 0) pool = banded;
   }
   const fresh = pool.filter((p) => !recent.has(p.key));
-  const choices = fresh.length ? fresh : pool;
-  return choices[hash(`${input.seed}:${kind}`) % choices.length];
+  if (fresh.length) return fresh[hash(`${input.seed}:${kind}`) % fresh.length];
+  // Every prompt in the pool was used lately (a small kind such as gap or hard, smaller than the window): serve the one
+  // used longest ago, so last night's words never come back the next night and all of them are used before any repeats.
+  // No ties: each key's latest use is at its own position in recentKeys (newest first).
+  const age = (p: Prompt) => {
+    const at = input.recentKeys.indexOf(p.key);
+    return at === -1 ? Number.POSITIVE_INFINITY : at;
+  };
+  return pool.reduce((best, p) => (age(p) > age(best) ? p : best));
 }
 
 /** Fill placeholders. Unknown placeholders are left visible so they get noticed in review. */
