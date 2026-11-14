@@ -22,7 +22,10 @@ Seeded on 3 Oct 2026 from `docs/BACKLOG.md` and my charter. Nothing below comes 
 - Requirement documents are never edited; propose changes.
 
 ## Open threads
-- None yet.
+- Memory Library (10 Nov): analysis in `docs/privacy/MEMORY-LIBRARY-PRIVACY-ANALYSIS-10nov.md`; draft PR waits on counsel, `legal` and the founder (promise words, label answers, publishing are founder-only).
 
 ## Lessons
-- None yet.
+- Apple: on-device-only data is not "collected", but anything derived and sent off device is judged separately (App Privacy Details, read 10 Nov). The rule for media code is no derived value leaves the phone.
+- The export spec says photos are "original bytes" while LEGAL-REQ-013 says stripped: conflict to resolve before any photo ships.
+- The claims test has no rule for photos, location or occasions; add rules so a claim is false until its capability is on.
+- WebFetch needs a URL to appear in a prior search result or fetch; search first, then fetch (Markdown versions of Apple doc pages work, JavaScript pages do not).
