@@ -1,0 +1,29 @@
+{
+  "pr": 494,
+  "source": "gh api repos/thesaurabhpareek/earlyletters/issues/494/comments, header line kept, body replaced by a stub",
+  "headSha": "975960c2aaf8d7f7480cc3edf7ad877143ecb7f6",
+  "headCommittedAt": "2026-11-01T05:41:20Z",
+  "mergedAt": "2026-11-01T06:45:55Z",
+  "comments": [
+    {
+      "id": 6554583059,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T06:45:22Z",
+      "updated_at": "2026-11-01T06:45:22Z",
+      "body": "## Review B at 975960c: PASS\n\nFixture stub. The original review text is not stored in this repo."
+    },
+    {
+      "id": 6554584875,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T06:45:34Z",
+      "updated_at": "2026-11-01T06:45:34Z",
+      "body": "## Review A at 975960c: PASS\n\nFixture stub. The original text has wording that countedPass rejects near the verdict: blocked pending a follow-up."
+    }
+  ]
+}

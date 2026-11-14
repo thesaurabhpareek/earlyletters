@@ -1,0 +1,49 @@
+{
+  "pr": 512,
+  "source": "gh api repos/thesaurabhpareek/earlyletters/issues/512/comments, header line kept, body replaced by a stub",
+  "headSha": "145147516b5ff9caf351890aad06601705354687",
+  "headCommittedAt": "2026-11-01T06:43:59Z",
+  "mergedAt": "2026-11-01T07:29:32Z",
+  "comments": [
+    {
+      "id": 6554662011,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T06:54:49Z",
+      "updated_at": "2026-11-01T06:54:54Z",
+      "body": "## Review B at 145147516b5ff9caf351890aad06601705354687: PASS WITH NOTES\n\nFixture stub. The original review text is not stored in this repo."
+    },
+    {
+      "id": 6554668194,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T06:55:30Z",
+      "updated_at": "2026-11-01T06:55:30Z",
+      "body": "## Review A at 145147516b5ff9caf351890aad06601705354687: PASS\n\nFixture stub. The original review text is not stored in this repo."
+    },
+    {
+      "id": 6554987550,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T07:30:36Z",
+      "updated_at": "2026-11-01T07:30:36Z",
+      "body": "## Review A at 145147516b5ff9caf351890aad06601705354687: PASS\n\nFixture stub. The original review text is not stored in this repo."
+    },
+    {
+      "id": 6554992362,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T07:31:07Z",
+      "updated_at": "2026-11-01T07:31:07Z",
+      "body": "## Review B at 145147516b5ff9caf351890aad06601705354687: CHANGES\n\nFixture stub. The original review text is not stored in this repo."
+    }
+  ]
+}

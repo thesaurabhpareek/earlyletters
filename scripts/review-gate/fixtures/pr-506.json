@@ -1,0 +1,19 @@
+{
+  "pr": 506,
+  "source": "gh api repos/thesaurabhpareek/earlyletters/issues/506/comments, header line kept, body replaced by a stub",
+  "headSha": "e66a782ee432b666151894be2a7bbba117cb43aa",
+  "headCommittedAt": "2026-11-01T06:13:55Z",
+  "mergedAt": "2026-11-01T06:34:11Z",
+  "comments": [
+    {
+      "id": 6554313199,
+      "user": {
+        "login": "thesaurabhpareek",
+        "type": "User"
+      },
+      "created_at": "2026-11-01T06:14:04Z",
+      "updated_at": "2026-11-01T06:14:04Z",
+      "body": "## Review A at 5dd70d92: PASS WITH NOTES\n\nFixture stub. The original review text is not stored in this repo."
+    }
+  ]
+}
