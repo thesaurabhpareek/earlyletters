@@ -1,0 +1,68 @@
+# PROPOSED .github/dependabot.yml (HV2-B17). Not active here: the Claude GitHub App cannot edit .github/.
+# Founder: copy to .github/dependabot.yml on or after 10 Nov 2026 (D-124, CR-22). Rationale and checks:
+# docs/ops/proposed/npm-audit.md and the PR description.
+#
+# Design:
+# - No target-branch: develop is the default branch (CR-9). The options page says some settings
+#   (assignees, commit-message) do not reach security updates when target-branch names a non-default
+#   branch, so leaving it out keeps one behaviour for both kinds of update.
+# - open-pull-requests-limit 2 per ecosystem entry, weekly, grouped: at most a handful of PRs, so the
+#   PR backlog does not grow. (Whether the limit counts per directory or per entry is not stated in the
+#   docs page checked; treat as unverified and watch the first week.) 0 pauses version updates.
+# - Security update PRs have a separate fixed limit of 10 and ignore this setting.
+# - Updates touch package-lock.json at the root: there is one lockfile for all workspaces.
+#
+# Options verified at https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference
+version: 2
+updates:
+  - package-ecosystem: npm
+    # `directories` (not `directory`) supports globs. One entry per tracked package.json: root, apps/mobile,
+    # apps/web, packages/*, experiments. apps/mobile/e2e/kill/package.json is a stub with no dependencies
+    # and is left out.
+    directories:
+      - /
+      - /apps/*
+      - /packages/*
+      - /experiments
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    labels: [dependencies]
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      # Expo SDK packages move together; a partial bump breaks the native build.
+      expo:
+        patterns: ['expo', 'expo-*', '@expo/*']
+      react-native:
+        patterns: ['react-native', 'react-native-*', '@react-native/*', '@react-native-community/*']
+      # Everything else non-major in one PR.
+      minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # Expo pins React and React Native to the SDK; move them with an Expo upgrade only.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-native
+        update-types: [version-update:semver-major, version-update:semver-minor]
+
+  - package-ecosystem: github-actions
+    # "/" scans .github/workflows (and a root action.yml). The glob is for the local composite action
+    # .github/actions/setup; the docs page does not confirm that composite actions are scanned (unverified),
+    # and says locally referenced actions (./...) are ignored, but the actions that composite action itself
+    # uses (checkout/cache/setup-node by SHA) are external.
+    directories:
+      - /
+      - /.github/actions/*
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 2
+    labels: [dependencies, ci]
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
