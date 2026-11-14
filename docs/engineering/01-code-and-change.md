@@ -10,6 +10,8 @@ applies_to: packages/**, apps/mobile/src/**, supabase/functions/**, scripts/**
 
 # 01. Code and change
 
+> **Proposed changes, pending founder (28 Oct 2026, retro package R2-05).** Status: proposal only; nothing here is in force until the founder accepts it at review. Changed: CODE-R02 (size limit on product code, with a label and a stated reason). New: CODE-R21 (stacked PRs), CODE-R22 (`Done when` and device evidence), CODE-R23 (one release gate file), CODE-R24 (`verified_at` on as-built docs), CODE-R25 (CI time budget per required PR job). Each rule below carries its evidence. Evidence ids (IMP-xx, panel 05 sections B1 to B5) are from the 28 Oct retrospective synthesis, which lives outside this repo; every number is also cited to a PR, file or run here. `PRINCIPLES.md` item 1 and AIE-R13 (chapter 09) still say 400 lines and 20 files; they change in a follow-up once PR #112, which edits `PRINCIPLES.md`, settles.
+
 ## Purpose
 
 Early Letters is built mostly by agents, many on open-weight models with small context windows, and reviewed by one founder. Code that is small, boring and clearly bounded is code those agents can change without breaking the constitution or a family's letters. This chapter sets the shape of code and the discipline of change: how big a change may be, where code may live, what it may import, and what proves it works.
@@ -28,13 +30,28 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R01 (MUST)** A PR has one concern: one backlog item, one finding fix or one refactor, never a refactor mixed with a behaviour change. *Why:* mixed PRs cannot be reverted cleanly and reviewers miss the behaviour change. *Enforced by:* review (principal-architect); `CLAUDE.md` "Branches and commits"; PR template.
 
-**CODE-R02 (MUST)** A PR changes at most 400 lines and 20 files, not counting the lockfile, generated files and test data files (golden corpora, fixtures). Above that, split it, or write `Size exception: <reason>` in the PR body for the founder to accept. *Why:* review quality collapses with size; Google's guidance puts about 100 lines as reasonable and 1000 as usually too large. *Enforced by:* not yet: gap CODE-G1 (a CI size check reading `gh api .../pulls/<n>/files`). For reference, PR #29 has 1,668 insertions and 445 deletions across 17 files.
+**CODE-R02 (MUST) (Proposed, pending founder; replaces the 3 Oct text "at most 400 lines and 20 files")** A PR changes at most **800 lines or 30 files of product code**. Product code is every changed file except tests and test data (golden corpora, fixtures, snapshots), docs, generated files and lockfiles, classified as `scripts/qa/pr-size.mjs` does (PR #345). Above that, split it, or add the label `size:large` and one line in the PR body, `Size: <one sentence on why it cannot be split>`. One concern (CODE-R01) applies at every size. *Why:* review quality falls with size (Google: about 100 lines reasonable, 1,000 usually too large). The 3 Oct rule counted tests and docs, so half of all work broke it and nobody recorded an exception, which taught that the rule is optional. *Evidence (IMP-82; panel 05 B1; PR #345 live run over the 141 PRs merged 16 to 28 Oct):*
+
+| Measure (lines or files) | PRs over it | Share |
+|---|---|---|
+| 400 / 20, raw (the 3 Oct rule as measured) | 72 of 141 | 51% |
+| 800 / 30, raw (panel 05's proposal) | 52 of 141 | 37% |
+| 400 / 20, product code only | 39 of 141 | 28% |
+| 600 / 25, product code only | 29 of 141 | 21% |
+| **800 / 30, product code only (proposed)** | **23 of 141** | **16%** |
+| 1,200 / 40, product code only | 14 of 141 | 10% |
+
+Tests are 39% of all changed lines in those PRs and docs 16% (#345). Merged PR bodies held zero `Exception: CODE-R02` lines and the repo has no `size:large` label (panel 05 B1; label list checked 28 Oct). At 800/30 the label would fall on about one PR in six, which keeps it a signal; at 400/20 product-only it would fall on more than one in four. The 23 include #150 (4,681 product lines), #151 (3,800) and #138 (3,284). *Enforced by:* not yet: gap CODE-G1. `scripts/qa/pr-size.mjs` (PR #345, open) reports the split, warn only; until a CI job runs it, the reviewer checks the label and the `Size:` line. The label must be created before the rule applies.
 
 **CODE-R03 (MUST NOT)** A PR does not weaken, skip or delete a test to make it pass; a test that is wrong is fixed in its own commit with the reason in the PR body. *Why:* tests are the specification (principle 5). *Enforced by:* review; `docs/agents/OPERATING_MODEL.md` section 4.
 
 **CODE-R04 (MUST)** Every behaviour change ships with a test that fails without it; every bug fix starts with a failing test that reproduces the bug. *Why:* proves the fix and stops regressions. *Enforced by:* review; CI `required` job runs `npm test`, `npm run test:db` and typecheck (`.github/workflows/ci.yml`, enforced on develop).
 
 **CODE-R05 (MUST)** Any change to cleaning behaviour bumps `ENGINE_VERSION` in `packages/core/src/pipeline.ts` with a dated comment and updates the golden corpus. *Why:* every stored letter must be re-derivable by the engine that produced it (CORE-08). *Enforced by:* PR template checkbox (develop); golden test `packages/core/test/golden.test.ts` merged in #28.
+
+**CODE-R21 (MUST) (Proposed, pending founder)** A PR may target another PR's branch (a stack) only when that base PR is expected to merge within 48 hours, and the first line of its body says `Stacked on #N`. If the base has not merged after 48 hours, retarget the PR to `develop` or close it. Never merge `develop` into a stacked head. *Why:* GitHub diffs a stacked head against its base branch, so a stale base makes a small PR look huge and unreviewable. *Evidence (IMP-85; panel 05 A2, A3, F4):* #167 and #168 target `docs/knowledge-leads` (the head of #164, open since 15 Oct). GitHub shows #167 as +143,071 / -4,633 over 1,094 files and 139 commits, and #168 as +143,806 / -4,627 over 1,093 files and 137 commits (`gh api .../pulls/<n>`, 28 Oct). Their real content against `develop` is 24 files, +2,360 and 23 files, +3,101 (`git diff --shortstat origin/develop...<head>`, 28 Oct). Daily runs merged `develop` into the heads (for example ccb4e1ba, 27 Oct). *Enforced by:* not yet; reviewer checks the base branch and its age.
+
+**CODE-R22 (MUST) (Proposed, pending founder)** Every PR body has a `Done when:` line that names the observable result and the evidence that shows it (a test name, a CI run id, or a device run). For a change to mobile behaviour, "done" names a device run: build number, device, iOS version, date and result. Simulator evidence is labelled "simulator"; it may support a release gate but never closes one. *Why:* green CI and a simulator are not proof that the app works on a phone. *Evidence (IMP-88; panel 05 B3 row 2, F10; synthesis spot-check 10):* of the 141 PR bodies merged 16 to 28 Oct, none has a `Done when` line of its own; the phrase appears only in #222 (a test table row) and #262 (a quote from another doc) (`prs.json` search, 28 Oct; this corrects IMP-88's "1 of 141"). ADR 0027 line 3 reads "Accepted; flipped on the simulator evidence; V1 speech half, V3 Mac half and V4 due before the build 2 freeze" (#293). The app could not launch in a Release build from #96 (5 Oct) until the fix in #276 (24 Oct), and no CI check launched a Release build until #284 the same day (`ios-compile.yml` lines 24 to 26). *Enforced by:* not yet: neither the PR template on `develop` nor the one proposed in open PR #315 has a `Done when` line; adding it is a follow-up there.
 
 ### Code shape
 
@@ -78,10 +95,20 @@ Early Letters is built mostly by agents, many on open-weight models with small c
 
 **CODE-R20 (MUST)** Every workspace typechecks with `strict: true`, and lint and format pass once WS-12 lands; `console.*` is banned in `apps/mobile/src` and `packages/*/src`. *Why:* the compiler and linter are the cheapest reviewers. *Enforced by:* typecheck in CI on develop (strict verified in every `tsconfig.json`); lint not yet: no ESLint config exists (MONO-01); PR #30 adds a lint job that runs only once a root `lint` script exists.
 
+### Release gates, as-built docs and CI time
+
+**CODE-R23 (MUST) (Proposed, pending founder)** Each release gate (feature freeze, alpha build, TestFlight build, store submission) has one file, written before the gate date, that lists every check, its owner and its evidence (CI run id, device run per CODE-R22, or decision id). The release record `docs/release/<version>.md` names that file. A gate passes only when every row has evidence; other docs link to the file and never restate its dates or rows. When chapter 11 lands (open PR #112), this rule moves there under a REL id. *Why:* a gate spread over several files cannot be checked in one place. *Evidence (IMP-85; panel 05 B5):* the 1.0.0 gates and dates sit in `docs/release/1.0.0.md` (line 17 cites the other sources), `docs/qa/ALPHA_GO_NO_GO.md`, `docs/release/AUTOMATION.md` section 6 and 0.2 item 17, D-089's proposed freeze, and the V1 to V4 rows of ADR 0027 (line 133 onward). *Enforced by:* not yet.
+
+**CODE-R24 (SHOULD) (Proposed, pending founder)** A doc that describes as-built behaviour (`docs/ARCHITECTURE.md`, as-built reference pages) carries `verified_at: <commit sha>` and a `covers:` list of the code paths it describes. A PR that changes a covered path updates the page, or says in its body which page is now stale. *Why:* as-built docs drift silently when the code moves. *Evidence (IMP-85; panel 05 B5, F12):* `docs/ARCHITECTURE.md` lines 56, 105 and 114 still describe M4A capture after ADR 0027 flipped iOS builds to ADTS on 27 Oct (#293). The convention already exists, unmerged, in open PR #167 (`docs/reference/README.md` lines 20 to 25 and `scripts/docs/reference.mjs --check`). *Enforced by:* not yet; `reference.mjs --check` once #167 merges.
+
+**CODE-R25 (SHOULD) (Proposed, pending founder; replaces "CI under 10 minutes end to end")** Each job in the `required` set of `.github/workflows/ci.yml` finishes in under 10 minutes on a normal run; the budget is per required PR job, not for every workflow. Device-class checks outside `required` (the iOS Release launch in `ios-compile.yml`, the kill harness) state their own timeout in the workflow and are not bound by this budget. *Why:* the old wording (TDD 07 section 10; `ci.yml` line 1; `.github/README.md` "Keeping CI under 10 minutes") read as a limit on all CI, which the macOS checks cannot meet. *Evidence (IMP-87; panel 02 qa Q9):* the last 10 successful `ci.yml` pull request runs on 28 Oct took 1.7 to 4.6 minutes wall time (runs 40644258804 to 40644879641). The iOS launch job took 16 to 30 minutes in its last 8 successful runs (for example 40637162592 at 16 and 40634821778 at 30). The kill harness gate size has a 340-minute timeout (`kill-harness.yml` lines 113 to 116). The source wording in TDD 07, `ci.yml` and `.github/README.md` is outside this PR and changes in a follow-up. *Enforced by:* each job's `timeout-minutes`; review.
+
 ## How to apply it
 
 Before opening a PR:
-- [ ] One concern? Under 400 lines and 20 files (CODE-R02)? If not, split by layer: types, then logic plus tests, then wiring.
+- [ ] One concern? Under 800 lines and 30 files of product code (CODE-R02, proposed)? If not, split by layer: types, then logic plus tests, then wiring; or label `size:large` with a `Size:` line.
+- [ ] Stacked? Only on a PR due to merge within 48 hours, with `Stacked on #N` first (CODE-R21, proposed).
+- [ ] A `Done when:` line naming its evidence; a device run for mobile behaviour (CODE-R22, proposed).
 - [ ] New logic that is not UI lives in `packages/core` (or a `*.logic.ts` beside the screen) with unit tests.
 - [ ] No new enum or domain type outside `packages/core/src/domain.ts`.
 - [ ] Errors you throw have a `code`; messages hold no user data.
@@ -109,9 +136,9 @@ Only the founder grants an exception. A one-off (an oversized PR, a temporary du
 
 ## Open questions
 
-1. Is 400 lines and 20 files the right ceiling, or should agent PRs have a lower one (for example 250) than founder PRs?
+1. Founder: accept 800 lines or 30 files of product code for CODE-R02, or pick another row of its table. Should docs-only PRs also have a ceiling? #124 changed 16,366 lines with 0 product lines and passes the proposed rule (#345 fixture).
 2. MONO-04: compile packages to JS with an `exports` map, or keep raw TS and add explicit `.ts` extensions for Deno? Needs an ADR before the first Edge Function.
-3. Should the CI size check (CODE-G1) block, or only label `size:large` and require the exception line?
+3. Should the CI size check (CODE-G1) block, or only label? Proposed: warn and label only, using `scripts/qa/pr-size.mjs` (#345), until the founder decides (`README.md` line 83, decision 9, recommended "label not block").
 
 ## References
 
