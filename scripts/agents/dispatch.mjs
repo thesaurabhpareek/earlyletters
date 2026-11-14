@@ -28,6 +28,7 @@ import * as lane from "./lane.mjs";
 import * as reviewfp from "./reviewfp.mjs";
 import * as verdicts from "./verdicts.mjs";
 import * as pause from "./pause.mjs";
+import * as freeze from "./freeze.mjs";
 import { ensureLabels, ensureJournals, ensureBoard, findBoard } from "./bootstrap.mjs";
 
 const argv = process.argv.slice(2);
@@ -71,6 +72,14 @@ state.standing ??= {};
 
 const tasks = parseBacklog(readText(join(ROOT, "docs", "BACKLOG.md")));
 const byId = new Map(tasks.map((t) => [t.id, t]));
+// Path freezes (H2): read from the integration branch; the checkout's copy only if that read fails.
+const freezes = freeze.loadFreezes({
+  fromBase: () => {
+    const f = gh(`/repos/${repo}/contents/${freeze.FREEZE_FILE}?ref=${roster.base_branch}`, { allowFail: true });
+    return f?.content ? Buffer.from(f.content, "base64").toString("utf8") : null;
+  },
+  fromLocal: () => freeze.readLocalFreeze(ROOT),
+});
 const owners = ownerMap(roster);
 
 const openPRs = ghAll(`/repos/${repo}/pulls?state=open`);
@@ -93,20 +102,22 @@ const developSha = gh(`/repos/${repo}/branches/${roster.base_branch}`, { allowFa
 // Drop claims that have ended: their job is no longer running (Actions mode)
 // or they are older than the agent's timeout plus grace (both modes).
 const grace = (roster.limits.claim_grace_minutes ?? 20) * 60_000;
+const endedClaims = []; // claims that end this tick; recordTraces checks each for a journal entry and receipt
 for (const [handle, c] of Object.entries(state.claims)) {
   const agent = roster.agents.find((a) => a.handle === handle);
   const ageMs = now - new Date(c.at);
   const expired = !agent || ageMs > (agent.timeout_minutes * 60_000 + grace);
   const finished = !LOCAL && c.source === "actions" && !running.has(handle) && ageMs > 10 * 60_000;
-  if (expired || finished) delete state.claims[handle];
+  if (expired || finished) endClaim(handle, expired ? "timed out" : "job finished");
 }
 // Local runs have no job to watch: the session that ran them releases their
 // claims when they finish (`--release product,ops`).
 for (const h of (opt("--release") ?? "").split(",").map((x) => x.trim()).filter(Boolean)) {
-  delete state.claims[h];
+  if (state.claims[h]) endClaim(h, "released");
 }
+recordTraces();
 // Hardening hooks (docs/agents/hardening/). Each module is optional and removable.
-const hctx = () => ({ state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames });
+const hctx = () => ({ state, now, runId, LOCAL, env, roster, repo, gh, ghAll, openPRs, prFacts, agentOfPR, labelNames, freezes, byId, prFiles });
 lane.recordTick(hctx());
 const claimedTasks = new Set(Object.values(state.claims).map((c) => c.task).filter(Boolean));
 
@@ -196,11 +207,15 @@ const engineNeeds = {
   opencode: [!yes(env.HAS_OPENROUTER_KEY) && "the OPENROUTER_API_KEY secret", !yes(env.HAS_AGENTS_APP) && "the agents GitHub App"].filter(Boolean),
   "claude-code": [!yes(env.HAS_ANTHROPIC_KEY) && "the ANTHROPIC_API_KEY secret"].filter(Boolean),
 };
-const needsFor = (agent) => (LOCAL && !BOARD_ONLY ? [] : engineNeeds[agent.engine] ?? [`engine ${agent.engine}`]);
+const needsFor = (agent) => (LOCAL ? [] : engineNeeds[agent.engine] ?? [`engine ${agent.engine}`]);
 const noKey = roster.agents.every((a) => needsFor(a).length);
-const status = paused ? "paused (repository variable AGENTS_PAUSED is true)"
-  : noKey ? `waiting for ${[...new Set(roster.agents.flatMap(needsFor))].join(" and ")}`
-  : "running";
+// The status names the lane and what this run did (H2, retro R2-02): engine keys
+// only matter to the Actions lane, so a local run never reports waiting for them.
+const laneLabel = LOCAL ? `local lane \`${lane.laneName(hctx())}\`` : "GitHub Actions lane";
+const status = paused ? `paused (repository variable AGENTS_PAUSED is true); ${laneLabel}`
+  : BOARD_ONLY ? `board refresh only, no work assigned; ${laneLabel}`
+  : noKey ? `${laneLabel} cannot run agents: waiting for ${[...new Set(roster.agents.flatMap(needsFor))].join(" and ")}`
+  : `assigning work; ${laneLabel}`;
 
 const rows = [];
 const assignments = [];
@@ -267,6 +282,8 @@ for (const agent of roster.agents) {
   if (!work) { row.now = `idle: ${idleReason(agent, mine)}`; continue; }
   const pauseWhy = pause.blockedReason(hctx(), agent, work);
   if (pauseWhy) { row.now = `idle: ${pauseWhy}`; continue; }
+  const freezeWhy = freeze.blockedReason(hctx(), agent, work);
+  if (freezeWhy) { row.now = `idle: ${freezeWhy}`; continue; }
   if ((work.mode === "task" || work.mode === "standing") && teamOpen >= teamCap) {
     row.now = `idle: team limit, ${teamOpen} agent PRs open (cap ${teamCap}), so reviews and fixes only`;
     continue;
@@ -361,14 +378,66 @@ function spendToday() {
   let n = 0;
   let unknown = 0;
   for (const c of comments) {
-    const m = (c.body ?? "").match(/<!-- receipt run:\S+ agent:\S+ cost:([0-9.]+|unknown) -->/);
-    if (!m) continue;
+    // Only trusted receipts count, so an outside comment cannot change the total.
+    if (!isTrusted(c, trust) || !startsWithMarker(c.body, "<!-- receipt ")) continue;
+    const m = c.body.trimStart().match(/^<!-- receipt run:\S+ agent:\S+(?: cost:(\S+))? -->/);
     // Receipts that report no cost (and older ones that wrote 0.0000 with
     // "cost not reported") are counted apart, never as $0.
-    if (m[1] === "unknown" || /cost not reported/.test(c.body)) unknown++;
+    if (!m || !/^[0-9]+(\.[0-9]+)?$/.test(m[1] ?? "") || /cost not reported/.test(c.body)) unknown++;
     else { cost += Number(m[1]); n++; }
   }
   return { cost, n, unknown };
+}
+
+/** The spend sentence. Any receipt without a cost, or runs with no receipt, make the total "unknown". */
+function spendLine(spend, runs) {
+  const total = spend.n + spend.unknown;
+  if (spend.unknown) return `Spend today: **unknown** (${spend.unknown} of ${total} run receipt${total === 1 ? "" : "s"} report no cost; the other ${spend.n} add up to $${spend.cost.toFixed(2)}).`;
+  if (!total && runs) return `Spend today: **unknown** (${runs} run${runs === 1 ? "" : "s"} assigned, no run receipts yet).`;
+  return `Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipt${spend.n === 1 ? "" : "s"}.`;
+}
+
+// ---------- run traces (H2, IMP-03) ----------
+// A run counts as done only when its agent left a journal entry and a receipt on
+// its journal (trusted authors, posted at or after the claim). Otherwise the
+// board says "no trace". Results stay in state.traces for 48 hours; a "no trace"
+// result is checked again on later ticks for 24 hours, so a late receipt counts.
+
+function endClaim(handle, how) {
+  endedClaims.push({ agent: handle, ...state.claims[handle], how, ended: now.toISOString() });
+  delete state.claims[handle];
+}
+
+function traceOf(t) {
+  const j = journals.get(t.agent);
+  if (!j?.number || !t.at) return "no trace (no journal issue or claim time)";
+  const posts = ghAll(`/repos/${repo}/issues/${j.number}/comments?since=${t.at}`, { allowFail: true })
+    .filter((c) => isTrusted(c, trust) && new Date(c.created_at) >= new Date(t.at));
+  const has = (kind) => posts.some((c) => new RegExp(`^<!-- ${kind} run:\\S+ agent:${t.agent} `).test((c.body ?? "").trimStart()));
+  const missing = [!has("journal") && "journal entry", !has("receipt") && "receipt"].filter(Boolean);
+  return missing.length ? `no trace (no ${missing.join(", no ")})` : "done";
+}
+
+function recordTraces() {
+  state.traces = (state.traces ?? []).filter((t) => now - new Date(t.ended) < 48 * 3_600_000);
+  let rechecks = 5;
+  for (const t of state.traces) {
+    if (t.result !== "done" && now - new Date(t.ended) < 24 * 3_600_000 && rechecks-- > 0) t.result = traceOf(t);
+  }
+  for (const c of endedClaims) {
+    state.traces.push({ agent: c.agent, mode: c.mode, task: c.task, pr: c.pr, at: c.at, ended: c.ended, how: c.how, result: traceOf(c) });
+  }
+  state.traces = state.traces.slice(-20);
+}
+
+function traceLines() {
+  if (!state.traces?.length) return [];
+  const lines = ["## Finished runs (48 hours)", ""];
+  for (const t of [...state.traces].reverse()) {
+    const what = [t.mode, t.task, t.pr ? `#${t.pr}` : ""].filter(Boolean).join(" ") || "run";
+    lines.push(`- \`${t.agent}\` ${what}, claimed ${String(t.at).slice(0, 16).replace("T", " ")} UTC, ${t.how}: ${t.result === "done" ? "done" : `**${t.result}**`}`);
+  }
+  return lines;
 }
 
 // ---------- running jobs (Actions API) ----------
@@ -392,7 +461,7 @@ function runningAgents() {
 // ---------- board ----------
 
 function renderBoard() {
-  const spend = DRY ? { cost: 0, n: 0, unknown: 0 } : spendToday();
+  const spend = spendToday();
   const runUrl = env.GITHUB_RUN_ID
     ? `https://github.com/${repo}/actions/runs/${env.GITHUB_RUN_ID}`
     : "a local dispatcher run";
@@ -400,7 +469,7 @@ function renderBoard() {
     "# Agent board",
     "",
     `Updated ${now.toISOString().slice(0, 16).replace("T", " ")} UTC by ${env.GITHUB_RUN_ID ? `[the dispatcher](${runUrl})` : runUrl}. Status: **${status}**.`,
-    `Runs today: **${usedToday()} of ${totalCap}**. Estimated spend today: **$${spend.cost.toFixed(2)}** from ${spend.n} run receipts${spend.unknown ? `, plus ${spend.unknown} run${spend.unknown === 1 ? "" : "s"} with no cost reported (interactive or failed)` : ""}.`,
+    `Runs today: **${usedToday()} of ${totalCap}**. ${spendLine(spend, usedToday())}`,
     "",
     "| Agent | Engine and model | Now | Runs today | Open PRs | Ready tasks | Handoffs waiting |",
     "|---|---|---|---|---|---|---|",
@@ -430,7 +499,7 @@ function renderBoard() {
   if (closedHandoffs.length) lines.push(`- Closed this tick (every recipient replied): ${closedHandoffs.map((n) => `#${n}`).join(", ")}`);
   if (!String(env.AGENTS_BOT_LOGINS ?? "").trim()) lines.push("- Note: the repository variable `AGENTS_BOT_LOGINS` is empty. PR reviews carry no app id, so red-team and steward reviews posted by the agents GitHub App are not recognised until it is set (HARNESS section 12).");
   // reviewfp before pause: pause leaves out heads that reviewfp has recorded as carried.
-  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx())]) if (extra.length) lines.push("", ...extra);
+  for (const extra of [lane.boardLines(hctx()), verdicts.boardLines(hctx()), reviewfp.boardLines(hctx()), pause.boardLines(hctx()), freeze.boardLines(hctx()), traceLines()]) if (extra.length) lines.push("", ...extra);
   lines.push("", "Pause everything: set the repository variable `AGENTS_PAUSED` to `true`. Change caps and models in `agents/roster.json`.");
   lines.push("", writeState(state));
   return lines.join("\n");

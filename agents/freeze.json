@@ -1,0 +1,4 @@
+{
+  "$comment": "Path freezes, enforced by scripts/agents/freeze.mjs (the dispatcher refuses task and maintain work on frozen paths; `node scripts/agents/freeze.mjs` refuses a push or PR). Read from the integration branch, so a branch cannot lift its own freeze. Each entry: {\"id\": \"F-1\", \"globs\": [\"supabase/migrations/**\"], \"until\": \"YYYY-MM-DD\" (exclusive: lifts at 00:00 UTC that day) or an ISO time, \"reason\": \"plain words\", \"decided_by\": \"D-nnn\"}. Every field is required. An invalid file fails closed. Expired entries are ignored and may be deleted.",
+  "freezes": []
+}
