@@ -77,6 +77,26 @@
       "wip_limit": 2
     },
     {
+      "handle": "decision-records",
+      "title": "Decision Records Lead",
+      "department": "operations",
+      "backlog_owner_names": [],
+      "kind": "worker",
+      "daily_runs": 1,
+      "wip_limit": 2,
+      "$comment": "Daily standing run keeps docs/decisions current. Early in the roster so the team-wide daily cap never starves it; wip_limit 2 so the dispatcher still assigns the run while its one rolling PR waits for review."
+    },
+    {
+      "handle": "reference-docs",
+      "title": "Reference Docs Lead",
+      "department": "operations",
+      "backlog_owner_names": [],
+      "kind": "worker",
+      "daily_runs": 1,
+      "wip_limit": 2,
+      "$comment": "Daily standing run keeps docs/reference and docs/README.md current. Early in the roster so the team-wide daily cap never starves it; wip_limit 2 so the dispatcher still assigns the run while its one rolling PR waits for review."
+    },
+    {
       "handle": "qa",
       "title": "Quality Engineer",
       "department": "quality",
