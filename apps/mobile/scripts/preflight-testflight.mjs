@@ -27,7 +27,7 @@ import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo as expoIn, extraPermissions, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
+import { askedConfigText, createReport, expo as expoIn, extraPermissions, packManifestPublished, parseJsonOut, plistUsageProblems, privacyManifestDeclared, purposeStringProblem, REQUIRED_PLIST_USAGE, secretKind, signingKeys } from './preflight-lib.mjs';
 
 const MOBILE = join(dirname(fileURLToPath(import.meta.url)), '..');
 const REPO = join(MOBILE, '..', '..');
@@ -279,7 +279,7 @@ if (cfg) {
   // App lock (F1): without this option the plugin writes its own default ("Allow $(PRODUCT_NAME) to use Face ID").
   const faceId = String(pluginOptions('expo-local-authentication').faceIDPermission ?? '');
   check(purposeStringProblem(faceId) === null, `Face ID purpose string (app lock): "${faceId}"`, `Face ID purpose string is missing, the library default or holds a placeholder (got "${faceId}"). It comes from src/lib/permission-copy.ts faceId (LEGAL-REQ-007, F17 Q3).`);
-  const asked = JSON.stringify([cfg.ios?.infoPlist ?? {}, cfg.plugins ?? []]);
+  const asked = askedConfigText([cfg.ios?.infoPlist ?? {}, cfg.plugins ?? []]);
   const extraPerms = extraPermissions(asked);
   check(extraPerms.length === 0, 'config asks for no permission besides the microphone, notifications and Face ID (app lock)', `Config names other permissions: ${extraPerms.join(', ')}. Every unused permission is a question App Review will ask.`);
 

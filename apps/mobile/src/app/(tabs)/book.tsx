@@ -20,7 +20,7 @@
 import { Redirect, router, useFocusEffect, useLocalSearchParams, useNavigation } from 'expo-router';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
-import { SectionList, View } from 'react-native';
+import { ScrollView, SectionList, View } from 'react-native';
 import Animated, {
   Extrapolation,
   FadeIn,
@@ -63,6 +63,11 @@ import { MonthOpener } from '@/components/book/month-opener';
 import { compactMonth, coverAge, jumpTarget, monthRows, runJump, showsMonthsButton, topChapterKey, type MonthRow } from '@/components/book/book-page.logic';
 import { bookCopy } from '@/components/book/copy';
 import { CoverBand } from '@/components/book/cover-band';
+import { LensRow, PhotosGrid, type LensMode } from '@/components/photos/photos-lens';
+import { longDate } from '@/lib/dates';
+import { photoSurfaces, photosBuildEnabled } from '@/lib/photos/flag';
+import { photosPausedNow } from '@/lib/photos/pause';
+import { usePhotosLens } from '@/lib/photos/hooks';
 import { EndOfBook } from '@/components/book/end-of-book';
 import { MonthsSheet } from '@/components/book/months-sheet';
 import { QuietDayRow } from '@/components/book/quiet-day-row';
@@ -315,6 +320,12 @@ export default function Book() {
     [insets.top, listFade, runPendingJump],
   );
 
+  // The Photos lens (NS-01-R10 to R12): offered only once a kept, open letter has a picture; absent when the switch is off.
+  const [lensMode, setLensMode] = useState<LensMode>('months');
+  const lens = usePhotosLens(active?.id ?? null, (iso) => longDate(iso));
+  const lensOn = photoSurfaces({ build: photosBuildEnabled(), paused: photosPausedNow() }).lens && lens.visible;
+  const showPhotos = lensOn && lensMode === 'photos';
+
   if (children.length === 0 || !active) return <Redirect href="/onboarding" />;
 
   const child = active.name;
@@ -348,6 +359,11 @@ export default function Book() {
           months={chapters.length > 0 ? months : null}
           settings={{ label: copy.settings.title, onPress: openSettings }}
         />
+        {lensOn ? (
+          <View className="pt-2">
+            <LensRow mode={lensMode} onChange={setLensMode} />
+          </View>
+        ) : null}
         {/* P8c (S62): <RestoreLine /> from components/backup/restore-line.tsx sits here, above the first opener, while
             recordings come back to a new phone. It lands with P8c's file. */}
       </View>
@@ -389,7 +405,12 @@ export default function Book() {
     <View className="flex-1 bg-background" {...behind}>
       {joinedAt ? <Lamp key={joinedAt} scene="book" persistKey="tabs" arrive /> : <Lamp scene="book" persistKey="tabs" />}
       <Animated.View key={active.id} className="flex-1" entering={switched ? FadeIn.duration(tokens.motion.fadeMs).reduceMotion(ReduceMotion.Never) : undefined}>
-        {chapters.length === 0 ? (
+        {showPhotos ? (
+          <ScrollView className="flex-1" testID="book.photosPage">
+            {header}
+            <PhotosGrid lens={lens} onOpen={open} />
+          </ScrollView>
+        ) : chapters.length === 0 ? (
           <View className="flex-1">
             {header}
             {/* S24: the closed cover the person named and signed in first run, 160 x 214, centred and still (the lamp is

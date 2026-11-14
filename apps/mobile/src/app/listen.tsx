@@ -33,6 +33,8 @@ import Animated, { useSharedValue } from 'react-native-reanimated';
 import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
+import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
+import { discardPendingPhoto, dropDraftPicture } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -435,7 +437,11 @@ export default function Listen() {
               new File(uri).delete();
             } catch {}
           }
-          if (id) deleteDraft(id);
+          if (id) {
+            deleteDraft(id);
+            dropDraftPicture(id);
+          }
+          discardPendingPhoto(); // "The photo goes too": nothing of it was stored
           router.back();
         },
       },
@@ -444,7 +450,11 @@ export default function Listen() {
 
   // "Type instead" carries the prompt over as Write's line (5.8 row 3).
   const typeInstead = () => router.replace({ pathname: '/write', params: promptKey ? { promptKey } : {} });
-  const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+  const close = () => {
+    discardPendingPhoto(); // closing at rest leaves nothing behind, the picker's copy included
+    if (router.canGoBack()) router.back();
+    else router.replace('/');
+  };
 
   if (!child) return null;
 
@@ -538,6 +548,8 @@ export default function Listen() {
               {p.audience}
             </Text>
           </View>
+          {/* Ready with a picture chosen on Home (NS-01-R3): the thumbnail, then the prompt. Absent otherwise. */}
+          {phase === 'ready' ? <PendingPhotoThumb /> : null}
           {/* The prompt, only when the take started from one (S11): the one literary line, quiet. */}
           {prompt && (
             <Text variant="prompt" tone="muted" numberOfLines={large ? undefined : 3} className="mt-3 text-center" testID="listen.prompt">
