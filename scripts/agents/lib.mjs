@@ -247,11 +247,20 @@ export function todayUTC(now = new Date()) {
   return now.toISOString().slice(0, 10);
 }
 
+/**
+ * A founder instruction (retro R2-03, IMP-06). Sessions and agents still post
+ * from the founder's account, so the account alone proves nothing. A comment
+ * is an instruction only when all of these hold:
+ * - it comes from the founder's account (a person, not a bot);
+ * - its first non-blank line is exactly `<!-- founder -->`, which the founder types;
+ * - no third-party app posted it on the founder's behalf.
+ * Unmarked founder-account posts and marker-only posts are "unverified author"
+ * (see trustLabel), never instructions.
+ */
 export function isFounderComment(c, roster) {
-  // Machine posts (receipts, journal entries, reviews, board state) made from
-  // the founder's account in interactive sessions are not instructions.
-  if (/^\s*<!-- (receipt|journal|red-team|steward|agents-state|handoff|handoff-reply|agent)[\s:]/.test(c?.body ?? "")) return false;
-  return c?.user?.login === roster.founder || c?.author_association === "OWNER";
+  if (!isFounderAccount(c, roster?.founder)) return false;
+  if (c.performed_via_github_app) return false;
+  return hasFounderMarker(c.body);
 }
 
 /**
@@ -274,17 +283,77 @@ export function standingChanged(prev, developSha, founderNoteCount) {
 export function trustContext(roster, env = process.env) {
   const bots = new Set(roster.trusted_bots ?? ["claude[bot]"]);
   for (const b of String(env.AGENTS_BOT_LOGINS ?? "").split(",")) if (b.trim()) bots.add(b.trim());
-  return { founder: roster.founder, appClientId: String(env.AGENTS_APP_CLIENT_ID ?? ""), bots };
+  return {
+    founder: roster.founder,
+    appClientId: String(env.AGENTS_APP_CLIENT_ID ?? ""),
+    appId: String(env.AGENTS_APP_ID ?? ""),
+    bots,
+  };
 }
 
 export function isTrusted(c, trust) {
   const login = c?.user?.login ?? "";
   if (!login) return false;
-  if (login === trust.founder || c.author_association === "OWNER") return true;
-  if (c.user.type !== "Bot") return false;
+  if (isFounderAccount(c, trust.founder)) return true;
+  return isAgentIdentity(c, trust);
+}
+
+// ---------- agent identity (H1, IMP-06, IMP-21) ----------
+//
+// Three kinds of author, decided by GitHub's own fields, never by the text:
+// - "agent": a Bot account that is the agents GitHub App (by client id or app
+//   id on performed_via_github_app, or a login in AGENTS_BOT_LOGINS) or a bot
+//   in roster.trusted_bots;
+// - "founder-account": the founder's login, or the repository OWNER, as a
+//   person. Sessions post from this account too, so it is not proof of the founder;
+// - "outsider": everyone else, including fork PR authors and other bots.
+
+export const FOUNDER_MARKER = "<!-- founder -->";
+const FOUNDER_LINE_RE = /^<!--\s*founder\s*-->$/;
+
+/** True when the first non-blank line is the founder marker and nothing else. */
+export function hasFounderMarker(body) {
+  const first = String(body ?? "").split("\n").map((l) => l.trim()).find((l) => l !== "");
+  return first !== undefined && FOUNDER_LINE_RE.test(first);
+}
+
+function isFounderAccount(c, founder) {
+  const login = c?.user?.login ?? "";
+  if (!login || c.user.type === "Bot") return false;
+  return (!!founder && login === founder) || c.author_association === "OWNER";
+}
+
+function isAgentIdentity(c, trust) {
+  if (c?.user?.type !== "Bot" || !c.user.login) return false;
   const app = c.performed_via_github_app;
   if (trust.appClientId && app?.client_id && String(app.client_id) === trust.appClientId) return true;
-  return trust.bots.has(login);
+  if (trust.appId && app?.id !== undefined && String(app.id) === trust.appId) return true;
+  return trust.bots.has(c.user.login);
+}
+
+/** "agent", "founder-account" or "outsider". */
+export function authorKind(c, trust) {
+  if (isAgentIdentity(c, trust)) return "agent";
+  if (isFounderAccount(c, trust.founder)) return "founder-account";
+  return "outsider";
+}
+
+/**
+ * How much a comment, review, issue or PR body can be believed about who wrote it:
+ * - "agent": the agents App or a trusted bot. A verdict or handoff from it counts as an agent's;
+ * - "founder": a founder instruction (isFounderComment);
+ * - "unverified author": from the founder's account but without the founder
+ *   marker, or with only a harness marker. It may be the founder or any
+ *   session holding the founder's token. Show it with this label; never treat
+ *   it as an instruction. Verdicts keep counting (isTrusted) so the harness
+ *   works while agents still post as the founder, but they carry the label;
+ * - "untrusted": anyone else. Information at most.
+ */
+export function trustLabel(c, trust) {
+  const kind = authorKind(c, trust);
+  if (kind === "agent") return "agent";
+  if (kind === "outsider") return "untrusted";
+  return isFounderComment(c, { founder: trust.founder }) ? "founder" : "unverified author";
 }
 
 // ---------- handoffs: how agents talk to each other ----------

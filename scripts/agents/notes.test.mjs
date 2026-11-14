@@ -6,7 +6,9 @@ import { isFounderComment } from "./lib.mjs";
 test("machine posts from the founder's account are not founder instructions", () => {
   const roster = { founder: "founder" };
   const by = (body) => ({ user: { login: "founder" }, body });
-  assert.equal(isFounderComment(by("Please split this PR."), roster), true);
+  // H1 (IMP-06): the founder account alone is not proof; the founder types the marker.
+  assert.equal(isFounderComment(by("<!-- founder -->\nPlease split this PR."), roster), true);
+  assert.equal(isFounderComment(by("Please split this PR."), roster), false);
   assert.equal(isFounderComment(by("<!-- receipt run:1 agent:qa cost:unknown --> Run receipt"), roster), false);
   assert.equal(isFounderComment(by("<!-- journal run:1 agent:qa -->\n**Mode:** task"), roster), false);
   assert.equal(isFounderComment(by("<!-- red-team:abc -->\nVerdict: ship"), roster), false);
