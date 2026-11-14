@@ -249,3 +249,4 @@ Every thread syncs to this order. PR state, heads and review counts are from the
 10 Nov product first-run requirements (docs/first-run-requirements-10nov) | claim: docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md, BL-891 to BL-897 | status: done (docs only)
 07:55 (10 Nov) content first-run words | claimed docs/design/specs/FIRST-RUN-WORDS-10nov.md on docs/first-run-words-10nov | done: draft PR
 10 Nov qa first-run test plan (docs/first-run-test-plan-10nov) | claim: docs/qa/FIRST-RUN-TEST-PLAN-10nov.md | status: done (docs only)
+10 Nov research-wedge (docs/feature-gap-wedge-10nov) | claim: docs/research/FEATURE-GAP-AND-WEDGE-10nov.md | status: done (docs only, draft PR)
