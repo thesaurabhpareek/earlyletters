@@ -1,0 +1,10 @@
+name: bad tag pin
+on: [push]
+jobs:
+  a:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: short sha
+        uses: actions/setup-node@0123456
+      - uses: actions/cache@0123456789abcdef0123456789abcdef01234567
