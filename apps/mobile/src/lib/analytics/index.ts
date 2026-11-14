@@ -25,6 +25,7 @@ import * as Crypto from 'expo-crypto';
 import { AppState } from 'react-native';
 import {
   createAnalytics,
+  createFirstPartyProvider,
   createLazyPostHogAdapter,
   createLifecycle,
   createTrackers,
@@ -35,7 +36,7 @@ import {
   type Violation,
 } from '@scribe/analytics';
 import { currentAuthUserId } from '@/lib/auth/auth-store';
-import { analyticsEnabled, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
+import { analyticsEnabled, analyticsEndpointForBuild, capabilities, postHogKeyForBuild } from '@/lib/capabilities';
 import { deleteSetting, getSetting, listChildren, listEntriesForChild, setSetting, subscribe } from '@/lib/store';
 
 // v1.0 (EXPO_PUBLIC_ANALYTICS off, lib/capabilities.ts): no key, so the provider is the no-op and PostHog is never loaded.
@@ -70,7 +71,19 @@ function onViolation(v: Violation): void {
 type PostHogClientFactory = (distinctId: string) => Promise<PostHogLike>;
 const createClient: PostHogClientFactory | null = null;
 
-const provider = KEY && createClient ? createLazyPostHogAdapter({ create: createClient }) : noopProvider;
+// First-party sink (our own Supabase function; no SDK, no native module). Needs the switch on AND an https endpoint.
+const ENDPOINT = analyticsEndpointForBuild(analyticsEnabled(), process.env.EXPO_PUBLIC_ANALYTICS_ENDPOINT);
+
+const provider = ENDPOINT
+  ? createFirstPartyProvider({
+      endpoint: ENDPOINT,
+      apiKey: process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+      fetch: (url, init) => fetch(url, init),
+      storage: undefined, // v1: memory outbox. A durable outbox needs a device-settings key (DATA_CLASSIFICATION 4.5): see the plan.
+    })
+  : KEY && createClient
+    ? createLazyPostHogAdapter({ create: createClient })
+    : noopProvider;
 
 export const analytics = createAnalytics({
   provider,
