@@ -27,6 +27,7 @@ import {
   HELPLINES,
   lifecycleEmails,
   onboardingStories,
+  firstRunStories,
   pages,
   permissions,
   PROMPTS,
@@ -104,7 +105,7 @@ const STORE = leaves(storeListing, 'store');
 const SITE = leaves(site, 'site');
 const BOOK = leaves(book, 'book');
 const PAGES = leaves(pages, 'pages');
-const STORIES: Leaf[] = onboardingStories.flatMap((c) => [
+const STORIES: Leaf[] = [...onboardingStories, ...firstRunStories.filter((c) => !onboardingStories.some((o) => o.id === c.id))].flatMap((c) => [
   { path: `story.${c.id}.headline`, text: c.headline },
   { path: `story.${c.id}.line`, text: c.line },
 ]);
