@@ -25,6 +25,7 @@
  */
 import type { Edit, EditLevel } from '@scribe/core';
 import { changes, type RepoContext } from './context';
+import { reindexLetter } from '../../find/lifecycle';
 import type { EntrySyncState } from '../../sync/types';
 import type { BaseDirection, CaptureMode, Entry, EntryKind, OccurredPrecision } from './types';
 
@@ -152,6 +153,17 @@ export function upsert(ctx: RepoContext, e: Entry, defaults: InsertDefaults): vo
     childForUpdate, childForUpdate,
   );
   if (changes(ctx.db) === 0) throw new EntryTombstonedError();
+  reindexLetter(ctx.db, e.id);
+}
+
+/**
+ * Whether the last statement changed this letter's row; when it did, the Find index follows in the same transaction
+ * (find/lifecycle.ts reindexLetter: a no-op until the index exists).
+ */
+function moved(ctx: RepoContext, id: string): boolean {
+  const done = changes(ctx.db) === 1;
+  if (done) reindexLetter(ctx.db, id);
+  return done;
 }
 
 /** A live entry, or null (missing or tombstoned). */
@@ -198,7 +210,7 @@ export function listWaiting({ db }: RepoContext, childId: string): Entry[] {
 export function setInBook(ctx: RepoContext, id: string, inBook: boolean): boolean {
   // A quiet-day mark is never in the book (D-084), whatever a screen asks for.
   ctx.db.run("UPDATE entries SET in_book = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL AND kind <> 'not_much'", inBook ? 1 : 0, ctx.now(), id);
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -236,7 +248,7 @@ export function setWordsOnce(
      WHERE id = ? AND transcript_status = 'waiting' AND raw_transcript = '' AND deleted_at IS NULL`,
     w.rawTranscript, JSON.stringify(w.machineEdits), w.finalText, w.editLevel, w.engineVersion, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -277,7 +289,7 @@ export function replaceWords(
     'UPDATE entries SET final_text = ?, machine_edits = ?, edit_level = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL',
     w.final_text, JSON.stringify(w.machine_edits ?? []), w.edit_level, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /** A quiet-day mark already exists for this book on this day (F04 11.3; D-084 keeps one per day). */
@@ -313,7 +325,7 @@ export function setTypedWordsOnce(ctx: RepoContext, id: string, text: string): b
      WHERE id = ? AND ${TYPED_WORDS_ALLOWED}`,
     words, words, ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -329,7 +341,7 @@ export function canTypeWords({ db }: RepoContext, id: string): boolean {
 export function tombstone(ctx: RepoContext, id: string): boolean {
   const now = ctx.now();
   ctx.db.run('UPDATE entries SET deleted_at = ?, updated_at = ? WHERE id = ? AND deleted_at IS NULL', now, now, id);
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /**
@@ -338,7 +350,7 @@ export function tombstone(ctx: RepoContext, id: string): boolean {
  */
 export function undelete(ctx: RepoContext, id: string): boolean {
   ctx.db.run('UPDATE entries SET deleted_at = NULL, updated_at = ? WHERE id = ? AND deleted_at IS NOT NULL', ctx.now(), id);
-  return changes(ctx.db) === 1;
+  return moved(ctx, id);
 }
 
 /** A letter on the Recently deleted shelf: the letter plus when it was deleted (ISO). */
@@ -391,6 +403,7 @@ export function eraseRow({ db }: RepoContext, id: string): boolean {
   db.run('DELETE FROM entries WHERE id = ? AND deleted_at IS NOT NULL', id);
   const done = changes(db) === 1;
   if (done) {
+    reindexLetter(db, id); // the row is gone, so its words leave the index with it
     // Erase means every copy of its words on this phone: refused uploads and conflict copies go too.
     db.run('DELETE FROM sync_outbox WHERE entity_id = ?', id);
     db.run('DELETE FROM rejected_writes WHERE entity_id = ?', id);

@@ -448,6 +448,7 @@ export const SURFACE_OPT_OUT: Partial<Record<keyof typeof features, string>> = {
   billing: 'registered text, pinned word for word in experience-pass.test.ts; its claims rules (D-082, D-083, D-085) are in rules.test.ts',
   contentBlocks: 'labels for server-delivered content blocks, not screen sentences; no per-file rule set written yet',
   export: 'P6b; its screen is pinned in apps/mobile/test/settings-p6b.test.ts; no per-file rule set written yet',
+  find: 'Find (NS-02); its rules are pinned in test/find-copy.test.ts',
   language: 'the language picker; no per-file rule set written yet',
   licences: 'attribution lines and library names; the licences rules in rules.test.ts read it',
   packs: 'speech pack downloads; no per-file rule set written yet',

@@ -107,7 +107,7 @@ export const ERROR_DETAILS = [
   // Stop link), SCSTP step_up_required (needs a sign-in in the last 10 minutes in a live session).
   'pending', 'restore_open', 'rotation', 'session_ended',
   // Kill switches (remote-config.ts KILL_SWITCH_KEYS), for `paused`
-  'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport',
+  'sync', 'invites', 'photos', 'packDownloads', 'serverContent', 'backupUploads', 'escrow', 'statusReport', 'bookSearch',
   // invite-redeem's global brake (F11-REQ-007)
   'codes_paused',
 ] as const;
