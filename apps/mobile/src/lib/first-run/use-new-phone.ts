@@ -26,6 +26,8 @@ export interface NewPhone {
   retry: () => void;
   /** "Start a book" on the No book here yet screen: the person chose to begin one. */
   startBook: () => void;
+  /** The account has said it holds a book: only then may the loading screen say the letters are coming across. */
+  hasBook: boolean;
 }
 
 /** When this wait began and what `lastSyncedAt` was then; null until the question has been asked. */
@@ -77,9 +79,10 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
   const startBook = useCallback(() => setKind('new'), []);
 
-  if (!active) return { view: null, retry, startBook };
+  const hasBook = active && kind === 'hasBook';
+  if (!active) return { view: null, retry, startBook, hasBook };
   // The first active render: the question goes out in the effect that follows, so this frame is the loading screen.
-  if (!wait) return { view: 'opening', retry, startBook };
+  if (!wait) return { view: 'opening', retry, startBook, hasBook };
   const s = sync ?? getSyncStatus();
   const view = openingView({
     kind,
@@ -90,5 +93,5 @@ export function useNewPhone(o: { enabled: boolean; client: SupabaseClient | null
     lastSyncedAtAtStart: wait.baseline,
     elapsedMs: Date.now() - wait.began,
   });
-  return { view, retry, startBook };
+  return { view, retry, startBook, hasBook };
 }

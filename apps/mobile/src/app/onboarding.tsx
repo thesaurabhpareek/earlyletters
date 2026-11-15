@@ -672,7 +672,9 @@ function FirstRun() {
   const route = useFirstRunRoute();
   const { signOut } = useAuth();
   // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
-  // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and Erase everything clears it.
+  // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
+  // settings table when the store is erased (lib/store.ts eraseEverythingLocal; the Settings row behind it is not offered
+  // on a phone that has signed in, so on such a phone only Delete account or a fresh install reaches that).
   useEffect(() => {
     if (!route.arrivedFromAccount) return;
     const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));
@@ -684,7 +686,7 @@ function FirstRun() {
   const tryAnother = () => {
     signOut().catch(() => undefined);
   };
-  if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen />;
+  if (route.arrivedFromAccount || route.screen === 'opening') return <OpeningBookScreen lettersComing={route.accountHasBook} />;
   if (route.screen === 'slow') return <SlowBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'offlineBook') return <OfflineBookScreen onTryAgain={route.retryOpening} onTryAnother={tryAnother} />;
   if (route.screen === 'noBookHere') return <NoBookHereScreen onStartBook={route.startBook} onTryAnother={tryAnother} />;

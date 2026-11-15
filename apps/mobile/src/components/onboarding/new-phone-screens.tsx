@@ -24,11 +24,16 @@ function Arrives({ title, screen, children }: { title: string; screen: string; c
   );
 }
 
-export function OpeningBookScreen() {
+/**
+ * State A. `lettersComing` is true only once the account has said it holds a book (use-first-run-route.ts accountHasBook):
+ * before that answer, and for a session whose consent gate is still being read, the heading stands alone, so "Your letters
+ * are coming across." is never read by an account with no letters.
+ */
+export function OpeningBookScreen({ lettersComing }: { lettersComing: boolean }) {
   const t = authCopy.newPhone;
   return (
     <Arrives title={t.loading} screen="opening">
-      <StateScreen kind="loading" title={t.loading} body={t.loadingBody} />
+      <StateScreen kind="loading" title={t.loading} body={lettersComing ? t.loadingBody : undefined} />
     </Arrives>
   );
 }

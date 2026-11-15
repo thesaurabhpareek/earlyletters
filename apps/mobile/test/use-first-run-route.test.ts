@@ -10,7 +10,9 @@
  *  M1 `serverFeatures` passed to the gate as `true`;       M4 the restore wait never expiring;
  *  M2 `useOnline` ignoring `enabled`;                      M5 `hasLocalBook` forced false;
  *  M3 `wasOnline` never updated;                           M6 `listChildren()` called with the switch off;
- *  M7 the gate's NX-36-S17 branch removed (a signed-in phone with no book goes straight to the child step).
+ *  M7 the gate's NX-36-S17 branch removed (a signed-in phone with no book goes straight to the child step);
+ *  M8 the hold for a session that cannot ask yet removed (checkingConsent, ready with sync unknown and a finishing sign-out
+ *     fall to the child step with Continue live, review of #764 finding 1).
  *
  * NX-36-S17 (the last group): the account question (`readAccountBooks`) and the sync engine's status are replaced too, and
  * the session carries a client, so the route asks. The earlier groups give the session no client, so they run as before.
@@ -19,7 +21,9 @@ import { authCopy } from '@scribe/content';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
-  auth: { state: { status: 'signedOut' }, configured: true } as { state: Record<string, unknown>; configured: boolean; client?: unknown },
+  auth: { state: { status: 'signedOut' }, configured: true } as { state: Record<string, unknown>; configured: boolean; client?: unknown; refreshGate?: () => Promise<void> },
+  /** NX-36-S17: consent-gate re-reads asked of the provider (Try again while the gate could not be read). */
+  gateReads: 0,
   books: [] as unknown[],
   listChildrenCalls: 0,
   storeListeners: new Set<() => void>(),
@@ -116,6 +120,7 @@ beforeEach(() => {
   h.sync = { phase: 'idle', lastSyncedAt: null };
   h.syncListeners.clear();
   h.syncNowCalls = 0;
+  h.gateReads = 0;
   setServerFeaturesForTests(true);
 });
 afterEach(() => {
@@ -236,7 +241,8 @@ describe('[NX-31-R18] the restore wait is bounded', () => {
     expect(run.result.current).toMatchObject({ restoring: false, step: 'signIn', screen: 'welcome' });
     h.auth.state = { status: 'checkingConsent', userId: 'u1', method: null };
     run.rerender();
-    expect(run.result.current).toMatchObject({ step: 'childStep', screen: 'steps' });
+    // NX-36-S17: held while the consent gate is read (the account may hold a book), never the child step.
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
   });
 
   it('[NX-31-R19] offline at launch while the session is still being read: nothing yet, then the session (a returning person) is not told sign-in needs a connection', async () => {
@@ -707,14 +713,94 @@ describe('[NX-36-S17] a returning account on a new phone: the child step is unre
     expect(h.asked).toHaveLength(1);
   });
 
-  it('[NX-36-S17] a session that has not agreed to sync asks nothing and keeps the earlier route', async () => {
-    for (const state of [{ status: 'ready', userId: 'u1', sync: 'off' }, { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] }, { status: 'checkingConsent', userId: 'u1', method: null }]) {
+  it('[NX-36-S17] a session that has said no to sync asks nothing and keeps the earlier route: nothing can pull a book to it', async () => {
+    const declined = [
+      { status: 'ready', userId: 'u1', sync: 'off' },
+      { status: 'needsConsent', userId: 'u1', method: null, steps: ['sensitive'] },
+      { status: 'signingOut', userId: 'u1', reason: 'user', waitingForUploads: false, sync: 'off' },
+    ];
+    for (const state of declined) {
       const run = await signedIn(state);
       expect(run.result.current, String(state.status)).toMatchObject({ step: 'childStep', screen: 'steps' });
       expect(h.asked, String(state.status)).toHaveLength(0);
       expect(h.syncListeners.size, String(state.status)).toBe(0);
       run.unmount();
     }
+  });
+
+  it('[NX-36-S17] relaunch while the consent gate is read (checkingConsent): held on the opening screen with no body, nothing asked yet, never the child step; sync on then asks [M8]', async () => {
+    const run = await signedIn({ status: 'checkingConsent', userId: 'u1', method: null });
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', mayBeginBook: false, accountHasBook: false });
+    expect(h.asked).toHaveLength(0);
+    expect(h.syncNowCalls).toBe(0);
+    expect(h.syncListeners.size).toBe(0);
+    // The gate read lands with sync on: only now is the account asked, and the screen has not moved.
+    h.auth.state = { ...ready };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening', accountHasBook: false });
+    expect(h.asked).toHaveLength(1);
+    expect(h.syncNowCalls).toBe(1);
+  });
+
+  it('[NX-36-S17] the consent gate could not be read (ready, sync unknown) with a connection: the slow screen, not the child step; Try again re-reads the gate, not the account [M8]', async () => {
+    h.auth = { state: { status: 'ready', userId: 'u1', sync: 'unknown' }, configured: true, client, refreshGate: () => Promise.resolve(void (h.gateReads += 1)) };
+    const run = renderHook(() => useFirstRunRoute());
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'slowBook', screen: 'slow', mayBeginBook: false, accountHasBook: false });
+    expect(h.asked).toHaveLength(0);
+    expect(h.syncNowCalls).toBe(0);
+    run.result.current.retryOpening();
+    expect(h.gateReads).toBe(1);
+    expect(h.asked).toHaveLength(0);
+    // The re-read answers sync on: the account is asked, and the opening screen shows while it is.
+    h.auth.state = { ...ready };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'openingBook', screen: 'opening' });
+    expect(h.asked).toHaveLength(1);
+    // Try again is now the account question again, not the gate.
+    run.result.current.retryOpening();
+    expect(h.gateReads).toBe(1);
+    expect(h.asked).toHaveLength(2);
+  });
+
+  it('[NX-36-S17] the consent gate could not be read and there is no connection: the connection screen, never the child step; the connection returning is the slow screen with Try again [M8]', async () => {
+    h.net = { ...OFFLINE };
+    const run = await signedIn({ status: 'ready', userId: 'u1', sync: 'unknown' });
+    expect(run.result.current).toMatchObject({ step: 'offlineBook', screen: 'offlineBook', online: false, mayBeginBook: false });
+    expect(h.asked).toHaveLength(0);
+    networkEvent({ ...ONLINE });
+    expect(run.result.current).toMatchObject({ step: 'slowBook', screen: 'slow', online: true });
+    expect(h.asked).toHaveLength(0);
+    expect(h.spoken).toEqual([]);
+  });
+
+  it('[NX-36-S17] Try another way: while the sign-out finishes the screen is still the opening screen (never the promise step with Continue live), then the Welcome [M8]', async () => {
+    const run = await signedIn();
+    h.asked[0]('hasBook');
+    await flush();
+    for (const sync of ['on', 'unknown']) {
+      h.auth.state = { status: 'signingOut', userId: 'u1', reason: 'user', waitingForUploads: false, sync };
+      run.rerender();
+      expect(run.result.current, sync).toMatchObject({ step: 'openingBook', screen: 'opening', mayBeginBook: false });
+    }
+    expect(h.syncListeners.size, 'the hook stopped').toBe(0);
+    h.auth.state = { status: 'signedOut' };
+    run.rerender();
+    expect(run.result.current).toMatchObject({ step: 'signIn', screen: 'welcome' });
+    expect(h.asked).toHaveLength(1);
+  });
+
+  it('[NX-36-S17] "Your letters are coming across." is owed only once the account has said it has a book: not while asking, not after Try again, never for a new account', async () => {
+    const run = await signedIn();
+    expect(run.result.current).toMatchObject({ screen: 'opening', accountHasBook: false });
+    h.asked[0]('hasBook');
+    await flush();
+    expect(run.result.current).toMatchObject({ screen: 'opening', accountHasBook: true });
+    run.result.current.retryOpening();
+    expect(run.result.current).toMatchObject({ screen: 'opening', accountHasBook: false });
+    h.asked[1]('new');
+    await flush();
+    expect(run.result.current).toMatchObject({ step: 'childStep', accountHasBook: false });
   });
 
   it('[NX-36-S17] a phone that already holds a book never asks (every ordinary launch), and the line is not owed', async () => {

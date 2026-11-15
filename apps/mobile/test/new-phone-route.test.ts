@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { authCopy } from '@scribe/content';
-import { firstRunGate, gateInputsFromAuth, type FirstRunGateInput, type FirstRunStep } from '../src/lib/first-run/gate.logic';
+import type { AuthState } from '../src/lib/auth/machine.logic';
+import { firstRunGate, gateInputsFromAuth, heldNewPhoneView, type FirstRunGateInput, type FirstRunStep } from '../src/lib/first-run/gate.logic';
 import {
   ARRIVAL_SHOWN,
   OPENING_WAIT_MS,
@@ -74,6 +75,36 @@ describe('[NX-36-S17] the gate never shows the child step to a signed-in phone u
     expect(firstRunGate(i).step).toBe('childStep');
     const j = gateInputsFromAuth({ serverFeatures: true, authState: { status: 'ready', userId: 'u', sync: 'on' }, hasLocalBook: false });
     expect(firstRunGate(j).step).toBe('openingBook');
+  });
+  it('[NX-36-S17] a session that cannot ask yet is held (review of #764 finding 1): the gate being read or unreadable, or a sign-out finishing, is never the child step', () => {
+    const u = { userId: 'u' };
+    const held: Array<[AuthState, OpeningView, OpeningView]> = [
+      // state, with a connection, without one
+      [{ status: 'checkingConsent', ...u, method: null }, 'opening', 'opening'],
+      [{ status: 'ready', ...u, sync: 'unknown' }, 'slow', 'offline'],
+      [{ status: 'signingOut', ...u, reason: 'user', waitingForUploads: false, sync: 'on' }, 'opening', 'opening'],
+      [{ status: 'signingOut', ...u, reason: 'user', waitingForUploads: true, sync: 'unknown' }, 'opening', 'opening'],
+    ];
+    for (const [state, online, offline] of held) {
+      expect(heldNewPhoneView(state, true), `${state.status} online`).toBe(online);
+      expect(heldNewPhoneView(state, false), `${state.status} offline`).toBe(offline);
+      for (const view of [online, offline]) expect(gate({ newPhone: view, online: view !== 'offline' }).step, `${state.status} ${view}`).not.toBe('childStep');
+    }
+    // Said no to sync (nothing can pull a book), or no session: not held; the route then passes `new` as before.
+    const notHeld: AuthState[] = [
+      { status: 'needsConsent', ...u, method: null, steps: ['sensitive'] },
+      { status: 'ready', ...u, sync: 'off' },
+      { status: 'signingOut', ...u, reason: 'user', waitingForUploads: false, sync: 'off' },
+      { status: 'ready', ...u, sync: 'on' }, // the hook asks here; the hold is not its stand-in
+      { status: 'restoring' },
+      { status: 'signedOut' },
+      { status: 'signingIn', method: 'email' },
+      { status: 'awaitingCode', sentAt: 1 },
+    ];
+    for (const state of notHeld) for (const online of [true, false]) expect(heldNewPhoneView(state, online), `${state.status} ${online}`).toBeUndefined();
+    // The gate side: `slow` and `offline` from the hold are the same screens the hook's answers draw.
+    expect(gate({ newPhone: 'slow' }).step).toBe('slowBook');
+    expect(gate({ newPhone: 'offline', online: false })).toMatchObject({ step: 'offlineBook', retryOnReconnect: true });
   });
 });
 
@@ -187,7 +218,9 @@ describe('[NX-36-S17] the screens', () => {
   const screens = read('components', 'onboarding', 'new-phone-screens.tsx');
   it('[NX-36-S17] they are the existing StateScreen: loading has no button, the slow and offline states are the warm error form with Try again and Try another way', () => {
     expect(screens).toMatch(/import \{ StateScreen \} from '@\/components\/ui\/state-screen'/);
-    expect(screens).toMatch(/kind="loading" title=\{t\.loading\} body=\{t\.loadingBody\} \/>/);
+    // The body only once the account has said it has a book (review of #764, lens B M1): the heading alone while asking.
+    expect(screens).toMatch(/kind="loading" title=\{t\.loading\} body=\{lettersComing \? t\.loadingBody : undefined\} \/>/);
+    expect(screens).not.toMatch(/body=\{t\.loadingBody\}/);
     expect(screens.match(/kind="error"/g)).toHaveLength(2);
     expect(screens).toMatch(/label: authCopy\.outage\.retry/);
     expect(screens).toMatch(/label: authCopy\.consent\.noBook\.tryAnother/);
@@ -206,8 +239,12 @@ describe('[NX-36-S17] the screens', () => {
   it('[NX-36-S17] the route draws the four screens by name, the gate steps map to them, and the hook feeds the gate', () => {
     const o = read('app', 'onboarding.tsx');
     for (const s of ['opening', 'slow', 'offlineBook', 'noBookHere']) expect(o).toContain(`route.screen === '${s}'`);
-    expect(o).toMatch(/if \(route\.arrivedFromAccount \|\| route\.screen === 'opening'\) return <OpeningBookScreen \/>;/);
-    expect(read('lib', 'first-run', 'use-first-run-route.ts')).toMatch(/newPhone: np\.view \?\? 'new'/);
+    expect(o).toMatch(/if \(route\.arrivedFromAccount \|\| route\.screen === 'opening'\) return <OpeningBookScreen lettersComing=\{route\.accountHasBook\} \/>;/);
+    const route = read('lib', 'first-run', 'use-first-run-route.ts');
+    // The hook's answer first, then the hold for a session that cannot ask yet, then the earlier `new`; the hold never applies over a book on the phone.
+    expect(route).toMatch(/const held = active && !hasLocalBook \? heldNewPhoneView\(auth\.state, online\) : undefined;/);
+    expect(route).toMatch(/newPhone: np\.view \?\? held \?\? 'new'/);
+    expect(route).toMatch(/accountHasBook: np\.hasBook/);
     const base = { outage: null, restoring: false, pastWelcome: false } as const;
     const map: Array<[FirstRunStep, string]> = [['openingBook', 'opening'], ['slowBook', 'slow'], ['offlineBook', 'offlineBook'], ['noBookHere', 'noBookHere']];
     for (const [step, screen] of map) expect(firstRunScreen({ ...base, step })).toBe(screen);
@@ -227,6 +264,12 @@ describe('[NX-36-S17] the arrival line: once, on the first Book, nowhere else', 
     expect(arrivalLineOwed('pending')).toBe(true);
     expect(arrivalLineOwed(null)).toBe(false);
     expect(arrivalLineOwed(ARRIVAL_SHOWN)).toBe(false);
+  });
+  it('[NX-36-S17] the route owes the line when the gate answers arrived, before it leaves for Tonight (review of #764, finding 4)', () => {
+    const o = read('app', 'onboarding.tsx');
+    expect(o).toMatch(/if \(!route\.arrivedFromAccount\) return;\n\s+const next = arrivalToWrite\(getSetting\(ARRIVAL_SETTING\)\);\n\s+if \(next\) setSetting\(ARRIVAL_SETTING, next\);\n\s+router\.replace\('\/'\);/);
+    // One write site, in the route; the Book writes only `shown`.
+    expect(o.match(/setSetting\(ARRIVAL_SETTING/g)).toHaveLength(1);
   });
   it('[NX-36-S17] the Book shows it with the plain words and writes shown when it is left; Tonight does not carry it', () => {
     const book = read('app', '(tabs)', 'book.tsx');

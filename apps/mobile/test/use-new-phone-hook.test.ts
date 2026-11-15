@@ -4,7 +4,8 @@
  * this file runs the thin layer around them that source-text checks cannot see: the one question asked on every mount
  * and retry, the 10 second clock, and the retry when the connection returns. Runs on the small hook stand-in
  * (test/helpers/mini-react.ts); the sync engine and the server question are replaced by a few lines each.
- * The last test runs "Erase everything" on the real store and checks `newPhone.arrival` goes with it.
+ * The last test runs the store's erase (`eraseEverythingLocal`, the function behind Erase everything) on the real store and
+ * checks `newPhone.arrival` goes with it; the Settings row itself is not offered on a phone that has signed in.
  * Fictional family "Asha" only.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -213,6 +214,23 @@ describe('[NX-36-S17] useNewPhone, run', () => {
     }
   });
 
+  it('hasBook says the account has answered with a book: false while asking, true after, false again after Try again, false when inactive', async () => {
+    const run = renderHook(() => useNewPhone(base));
+    expect(run.result.current.hasBook).toBe(false);
+    h.asked[0]('hasBook');
+    await flush();
+    expect(run.result.current.hasBook).toBe(true);
+    run.result.current.retry();
+    expect(run.result.current.hasBook).toBe(false);
+    h.asked[1]('new');
+    await flush();
+    expect(run.result.current.hasBook).toBe(false);
+    run.unmount();
+    const off = renderHook(() => useNewPhone({ ...base, enabled: false }));
+    expect(off.result.current.hasBook).toBe(false);
+    off.unmount();
+  });
+
   it('"Start a book" on No book here yet moves on to the child step', async () => {
     const run = renderHook(() => useNewPhone(base));
     h.asked[0]('unknown');
@@ -224,7 +242,7 @@ describe('[NX-36-S17] useNewPhone, run', () => {
   });
 });
 
-describe('[NX-36-S17] Erase everything clears newPhone.arrival', () => {
+describe('[NX-36-S17] the store erase (eraseEverythingLocal) clears newPhone.arrival with every other setting', () => {
   it('the setting is on the phone before, gone after, and the next arrival is owed again', async () => {
     vi.useRealTimers();
     const { nodeDb } = await import('./helpers/node-db');

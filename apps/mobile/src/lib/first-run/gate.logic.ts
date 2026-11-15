@@ -171,6 +171,26 @@ export function hasSessionIn(s: AuthState): boolean {
   return s.status === 'checkingConsent' || s.status === 'needsConsent' || s.status === 'ready' || s.status === 'signingOut';
 }
 
+/**
+ * NX-36-S17: what the route tells the gate about the account while a signed-in phone with no book is NOT asking it. The
+ * account is asked only at `ready` with sync on (use-new-phone.ts). Before that the consent gate is still being read
+ * (`checkingConsent`), or could not be read (`ready` with sync `unknown`: offline at relaunch, a server that did not
+ * answer), or a sign-out from such a session has not finished (`signingOut`). Each of these can still become sync on, and
+ * the first pull would then bring the account's book, so the child step stays unreachable (review of #764, finding 1):
+ *  - `checkingConsent`, and `signingOut` with sync `on` or `unknown`: the loading screen;
+ *  - `ready` with sync `unknown`: the slow screen, or the connection screen with no connection; Try again there re-reads
+ *    the consent gate (the route calls the provider's `refreshGate`), and sync on then asks the account.
+ * A session that has said no to sync (`needsConsent`, and `ready` or `signingOut` with sync `off`) is `undefined`: nothing
+ * can pull a book to it, so the route keeps the earlier answer (`new`, the child step) and the consent sheet or the local
+ * start stays the designed path. No session is `undefined` too. Pure; the route calls it only with the switch on.
+ */
+export function heldNewPhoneView(s: AuthState, online: boolean): OpeningView | undefined {
+  if (s.status === 'checkingConsent') return 'opening';
+  if (s.status === 'ready' && s.sync === 'unknown') return online ? 'slow' : 'offline';
+  if (s.status === 'signingOut' && s.sync !== 'off') return 'opening';
+  return undefined;
+}
+
 export function gateInputsFromAuth(args: {
   serverFeatures: boolean;
   authState: AuthState;
