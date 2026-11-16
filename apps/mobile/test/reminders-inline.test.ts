@@ -10,6 +10,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { en, reminderCopy } from '@scribe/content';
+import { renderTemplate } from '@scribe/core';
 import { nodeDb } from './helpers/node-db';
 
 const os = vi.hoisted(() => ({
@@ -80,6 +81,13 @@ const code = (rel: string) =>
     .replace(/(^|[^:])\/\/.*$/gm, '$1');
 const s = reminderCopy.settings;
 const fmt = (t: { hour: number; minute: number }) => reminders.formatReminderTime(t, 'en-US');
+/**
+ * The one clock for the store and the planner: Sunday 18 Oct 2026, 12:05 UTC; the next Tuesday is the 20th. The planner
+ * reads the clock itself (lib/reminders nextReminder(now = Date.now())), so the tests hand it this instant: on the real
+ * clock the first planned nudge, and with it the preview's words, changed with the day the test ran.
+ */
+const NOW_ISO = '2026-10-18T12:05:00.000Z';
+const NOW = Date.parse(NOW_ISO);
 
 describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the iOS alert, explained first', () => {
   let close: () => void = () => {};
@@ -92,8 +100,7 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
     store.closeStore();
     const h = nodeDb();
     close = h.close;
-    // Sunday 18 Oct 2026, 12:05 in UTC: the next Tuesday is the 20th.
-    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => '2026-10-18T12:05:00.000Z', newId }).ok).toBe(true);
+    expect(store.openStore({ open: () => ({ db: h.db, close: () => {} }), now: () => NOW_ISO, newId }).ok).toBe(true);
     store.addChild({ name: 'Asha', birthday: '2026-03-01', dueDate: null, signsAs: 'Mama' });
   });
   afterEach(async () => {
@@ -165,19 +172,26 @@ describe('[CDesO-3, CCO-10] Settings, Reminders: the switch goes straight to the
 
   it('the Next line and the preview come from the planner: real neutral words, recomputed on every change', async () => {
     await reminders.turnOnReminders();
-    const next = reminders.nextReminder()!;
+    const next = reminders.nextReminder(NOW)!;
     expect(next).not.toBeNull();
+    // Tuesday 20 Oct 2026 lands on the evening variant that names the weekday (planner.ts slotOrdinal, C-REQ-006), so
+    // a placeholder is filled on every run of this test.
+    expect(next.date).toBe('2026-10-20');
     const line = logic.nextLine({ on: true, permission: 'granted', next, formatTime: fmt })!;
     expect(line).toMatch(/^Next: (Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday) at \d{1,2}:\d{2} (AM|PM)\.$/);
     expect(reminderCopy.weekdays[logic.weekdayOfIso(next.date)]).toBe(line.slice(6, line.indexOf(' at ')));
-    // Neutral by default (D-025): no name in the preview.
+    // Neutral by default (D-025): no name in the preview. The words are one variant with its placeholders filled the
+    // way the planner fills them ("A page for {weekday}" reads "A page for Tuesday"), never the template itself.
     const preview = logic.previewOf(next)!;
     expect(`${preview.title} ${preview.body}`).not.toContain('Asha');
-    expect([...reminderCopy.neutral.evening.map((v) => v.title), reminderCopy.neutral.monthOpen.title.replace('{month}', String(next.month ?? ''))]).toContain(preview.title);
+    expect(`${preview.title} ${preview.body}`).not.toMatch(/\{\w+\}/);
+    const values = { weekday: reminderCopy.weekdays[logic.weekdayOfIso(next.date)]!, month: String(next.month ?? '') };
+    const titles = [...reminderCopy.neutral.evening.map((v) => renderTemplate(v.title, values)), renderTemplate(reminderCopy.neutral.monthOpen.title, values)];
+    expect(titles).toContain(preview.title);
     // A change moves the line: every evening at 7:00 PM.
     reminders.writePrefs({ cadence: 'everyEvening', time: { hour: 19, minute: 0 } });
-    const moved = reminders.nextReminder()!;
-    expect(moved.hour).toBe(next.kind === 'birthday' ? 9 : 19);
+    const moved = reminders.nextReminder(NOW)!;
+    expect(moved.hour).toBe(19);
     expect(logic.savedAnnouncement(logic.nextLine({ on: true, permission: 'granted', next: moved, formatTime: fmt }))).toMatch(/^Saved\. Next: \w+ at 7:00 PM\.$/);
     expect(logic.SAVED_ANNOUNCE_MS).toBe(600);
     // Off: no line at all.
