@@ -180,9 +180,14 @@ export function hasSessionIn(s: AuthState): boolean {
  *  - `checkingConsent`, and `signingOut` with sync `on` or `unknown`: the loading screen;
  *  - `ready` with sync `unknown`: the slow screen, or the connection screen with no connection; Try again there re-reads
  *    the consent gate (the route calls the provider's `refreshGate`), and sync on then asks the account.
- * A session that has said no to sync (`needsConsent`, and `ready` or `signingOut` with sync `off`) is `undefined`: nothing
- * can pull a book to it, so the route keeps the earlier answer (`new`, the child step) and the consent sheet or the local
- * start stays the designed path. No session is `undefined` too. Pure; the route calls it only with the switch on.
+ * A session that cannot be sent a book is `undefined`, so the route keeps the earlier answer (`new`, the child step): `ready`
+ * or `signingOut` with sync `off` (sync declined), and `needsConsent`, where consent is not yet answered (the Terms or the
+ * sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version bumped since the last acceptance;
+ * `my_sync_gate()` is per account). No pull can reach any of them (canSync is false and the engine is stopped), so no book
+ * lands while consent is outstanding. Known gap, accepted by CR-61 (17 Nov 2026) and held in BL-922: nothing pushes the
+ * consent sheet again at relaunch, so a `needsConsent` session with no local book keeps the child step, and a book made
+ * there joins the account as a second book once setup is finished (Settings > Account > Finish setup); recoverable with
+ * Delete this book, no letter lost. No session is `undefined` too. Pure; the route calls it only with the switch on.
  */
 export function heldNewPhoneView(s: AuthState, online: boolean): OpeningView | undefined {
   if (s.status === 'checkingConsent') return 'opening';

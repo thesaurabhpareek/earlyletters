@@ -674,7 +674,8 @@ function FirstRun() {
   // NX-36-S17 state B: the book reached this phone from the account. Owe the arrival line once (the first Book shows it,
   // app/(tabs)/book.tsx), then Tonight. Phone-local; it holds no name, date or text, and it goes with the rest of the
   // settings table when the store is erased (lib/store.ts eraseEverythingLocal; the Settings row behind it is not offered
-  // on a phone that has signed in, so on such a phone only Delete account or a fresh install reaches that).
+  // on a phone that has signed in, so on such a phone only a fresh install reaches that: nothing in account deletion calls
+  // eraseEverythingLocal or releases the owner).
   useEffect(() => {
     if (!route.arrivedFromAccount) return;
     const next = arrivalToWrite(getSetting(ARRIVAL_SETTING));

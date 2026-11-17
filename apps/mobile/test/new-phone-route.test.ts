@@ -90,7 +90,8 @@ describe('[NX-36-S17] the gate never shows the child step to a signed-in phone u
       expect(heldNewPhoneView(state, false), `${state.status} offline`).toBe(offline);
       for (const view of [online, offline]) expect(gate({ newPhone: view, online: view !== 'offline' }).step, `${state.status} ${view}`).not.toBe('childStep');
     }
-    // Said no to sync (nothing can pull a book), or no session: not held; the route then passes `new` as before.
+    // Cannot be sent a book (sync declined, or consent not yet answered: no pull can reach it while consent is outstanding),
+    // or no session: not held; the route then passes `new` as before.
     const notHeld: AuthState[] = [
       { status: 'needsConsent', ...u, method: null, steps: ['sensitive'] },
       { status: 'ready', ...u, sync: 'off' },

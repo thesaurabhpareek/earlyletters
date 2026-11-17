@@ -8,7 +8,8 @@
  * NX-36-S17: a ready, sync-on session with no book asks its account first (use-new-phone.ts) and is held on "Opening your
  * book" until the account has said it has no book, so the child step is never shown while the book may be on its way. A
  * signed-in session that cannot ask yet (the consent gate still being read, or unreadable, or a sign-out finishing) is held
- * too (gate.logic.ts heldNewPhoneView); only a session that has said no to sync keeps the earlier route.
+ * too (gate.logic.ts heldNewPhoneView); only a session that cannot be sent a book keeps the earlier route: sync declined, or
+ * consent not yet answered (`needsConsent`; the accepted gap and its follow-up are named at heldNewPhoneView).
  */
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -130,8 +131,9 @@ export function useFirstRunRoute(): FirstRunRoute {
   const hasLocalBook = active && listChildren().length > 0;
   // A ready session with sync on and no book asks its account first (NX-36-S17). A session whose consent gate is still being
   // read, could not be read, or whose sign-out has not finished is held meanwhile (heldNewPhoneView): it may yet become sync
-  // on, and the first pull would bring the account's book. A session that has said no to sync cannot be sent a book, so it
-  // keeps the earlier route (`new`); so does every build with the switch off (nothing here is read then).
+  // on, and the first pull would bring the account's book. A session that cannot be sent a book (sync declined, or consent not
+  // yet answered: `needsConsent`, the accepted gap named at heldNewPhoneView) keeps the earlier route (`new`); so does every
+  // build with the switch off (nothing here is read then).
   const asks = active && auth.state.status === 'ready' && auth.state.sync === 'on';
   const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });
   const held = active && !hasLocalBook ? heldNewPhoneView(auth.state, online) : undefined;
