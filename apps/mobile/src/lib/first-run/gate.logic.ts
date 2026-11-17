@@ -184,10 +184,12 @@ export function hasSessionIn(s: AuthState): boolean {
  * or `signingOut` with sync `off` (sync declined), and `needsConsent`, where consent is not yet answered (the Terms or the
  * sensitive-data step outstanding: a kill on the sheet and a relaunch, or a Terms version bumped since the last acceptance;
  * `my_sync_gate()` is per account). No pull can reach any of them (canSync is false and the engine is stopped), so no book
- * lands while consent is outstanding. Known gap, accepted by CR-61 (17 Nov 2026) and held in BL-922: nothing pushes the
- * consent sheet again at relaunch, so a `needsConsent` session with no local book keeps the child step, and a book made
- * there joins the account as a second book once setup is finished (Settings > Account > Finish setup); recoverable with
- * Delete this book, no letter lost. No session is `undefined` too. Pure; the route calls it only with the switch on.
+ * lands while consent is outstanding. Known gap, accepted by CR-61 (17 Nov 2026, amended) and held in BL-922: nothing pushes
+ * the consent sheet again at relaunch, so a `needsConsent` session with no local book keeps the child step. A book made
+ * there has no owner (takeOwnership runs only from onSignedIn), so when setup is finished (Settings > Account > Finish
+ * setup) the claim screen shows first (consentHandoff: askClaim); it joins the account as a second book only after Keep in
+ * this account, and in build 13 the extra book can be hidden (Hide this book), not deleted, until F17-REQ-026 ships; no
+ * letter lost. No session is `undefined` too. Pure; the route calls it only with the switch on.
  */
 export function heldNewPhoneView(s: AuthState, online: boolean): OpeningView | undefined {
   if (s.status === 'checkingConsent') return 'opening';
