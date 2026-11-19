@@ -123,6 +123,9 @@ export const PACKAGES = {
   // App lock: Face ID, Touch ID or the iPhone passcode before the book opens (security.md section 2).
   'expo-local-authentication': 'storage',
   'expo-file-system': 'storage',
+  // Photo with a letter (NS-01; security review NX-39-R52, 11 Nov 2026): Apple's system photo picker, pinned exactly.
+  'expo-image-picker': 'storage',
+  'expo-image-loader': 'storage',
   'expo-print': 'storage',
   'expo-secure-store': 'storage',
   'expo-sharing': 'storage',

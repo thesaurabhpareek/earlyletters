@@ -51,6 +51,7 @@ import { markOn } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { HeldRow } from '@/components/tonight/held-row';
+import { PhotoStartButton } from '@/components/photos/photo-start';
 import { PlusLine } from '@/components/tonight/plus-line';
 import {
   draftCards,
@@ -76,6 +77,7 @@ import { startCapture } from '@/lib/capture/start-capture';
 import { copy, fill } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
+import { usePhotoStart } from '@/lib/photos/use-photo-start';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import {
@@ -199,6 +201,9 @@ export default function Tonight() {
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
   const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
 
+  // Photo-first (NS-01, behind EXPO_PUBLIC_PHOTOS): the one place a photo can start a letter. Absent when off.
+  const photoStart = usePhotoStart(() => router.push({ pathname: '/listen', params: { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) } }));
+
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
   const book = room.family;
@@ -249,6 +254,7 @@ export default function Tonight() {
         <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => startCapture({ source: 'speak', prompt: promptParam })} />
         <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
+      {photoStart.show ? <PhotoStartButton child={child} onPress={photoStart.start} failed={photoStart.failed} /> : null}
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
       ) : (

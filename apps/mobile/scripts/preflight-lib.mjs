@@ -139,6 +139,15 @@ export function permissionNames(configText) {
   return [...new Set(String(configText).match(re) ?? [])];
 }
 
+/**
+ * The config as text for the permission scan. A plugin option set to `false` (for example the photo picker's
+ * `photosPermission: false`) asks for nothing, it removes a library default, so it is left out; any other value, a
+ * string or true, still counts. Photo with a letter uses Apple's system picker and names no photo or camera string.
+ */
+export function askedConfigText(parts) {
+  return JSON.stringify(parts, (key, value) => (/Permission$/.test(key) && value === false ? undefined : value));
+}
+
 /** Names in the config that are not on the allowed list (empty when the build asks only for the three). */
 export function extraPermissions(configText) {
   return permissionNames(configText).filter((n) => !ALLOWED_PERMISSION_NAMES.includes(n));

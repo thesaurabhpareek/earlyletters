@@ -127,6 +127,8 @@ import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recor
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
+import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
 import { askAfterSave, requestReminderPrime, type NextAsk } from '@/lib/asks';
@@ -632,6 +634,9 @@ export default function Review() {
         fromNotificationWithin2h: fromReminderWithin2h(),
       });
       if (!typed && rejected.current.length > 0) trackMachineEditsRejected(rejected.current);
+      // The picture chosen with this letter (NS-01), stored now that the letter exists. A picture that cannot be stored
+      // never un-keeps the letter (NS-01-R17); with the photos switch off nothing is pending.
+      await commitPendingPhoto(draft.id, finalText);
       // The count goes to the Keychain; marks only ("...") never count (M17), so only words can note the allowance.
       if (await countAfterSave(finalText)) setSecondFree(true);
       finishSave(inBook, firstLetter);
@@ -963,6 +968,8 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
+          {/* The picture chosen with this letter, before Keep (NS-01-R7): add, change, take off, with Undo. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
 
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">
