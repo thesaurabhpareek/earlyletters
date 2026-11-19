@@ -1297,8 +1297,9 @@ export function finishDiscard(id: string): boolean {
 
 /**
  * Removes the row only. Audio files are deleted by a confirmed Let it go
- * (Review, and Discard in Listen) and by the launch sweep finishing one, never
- * here. A held draft's server row goes with it (held.discard).
+ * (Review, and Discard in Listen), by the launch sweep finishing one, and by
+ * erasing a deleted book (eraseBook) or everything (eraseEverythingLocal),
+ * never here. A held draft's server row goes with it (held.discard).
  */
 export function deleteDraft(id: string): void {
   const c = ctx();

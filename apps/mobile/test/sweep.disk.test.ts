@@ -18,6 +18,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { deleteIfPresent, letItGo } from '../src/lib/capture/let-it-go.logic';
 import { RECORDING_FILES, recordingContainerFor } from '../src/lib/capture/recording-file';
 import type { SqlDb } from '../src/lib/db/sql';
+import type { PullResponse } from '../src/lib/sync/types';
 import {
   androidContainer,
   createDisk,
@@ -347,6 +348,56 @@ describe('[BL-923] the launch sweep finishes a draft left discarding (F04-REQ-00
     app = await launch();
     expect(await app.sweep.runLaunchSweep()).toEqual({});
     expect(app.store.listDrafts(asha)).toEqual([]);
+  });
+
+  it('[BL-923] a recording another draft also names stays when one of them is let go; only the let-go row goes', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C7.m4a`, 20_000);
+    const other = app.store.createDraft({ childId: asha, captureMode: 'spoken', promptKey: null, audioUri: uri, audioDurationMs: 4000, state: 'ready' });
+    const id = letGoPartWay(app, asha, uri);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({ 'finish-discard': 1 });
+    expect(app.store.getDraft(id)).toBeNull();
+    expect(app.store.getDraft(other.id)).toMatchObject({ state: 'ready', audioUri: uri });
+    expect(h.disk.files.has(uri)).toBe(true);
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(app.store.listDrafts(asha).map((d) => d.id)).toEqual([other.id]);
+  });
+
+  it('[BL-923] a pull that returns a let-go draft to ready while the sweep is working keeps the draft and its recording', async () => {
+    let app = await launch();
+    const asha = addAsha(app);
+    const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C8.m4a`, 20_000);
+    const id = letGoPartWay(app, asha, uri);
+    // A take a kill cut off: the sweep probes it, so it waits after reading the rows and before finishing the let-go.
+    const take = await app.recorder.beginTake(recorderFor(h.disk) as never, { childId: asha, promptKey: null });
+    app = await launch();
+    const { applyPullPage } = await import('../src/lib/sync/merge');
+    const sweeping = app.sweep.runLaunchSweep();
+    // Meanwhile a pull: the server kept the draft (its words changed on another phone), so it is ready here again
+    // (sync/merge.ts applyHeldRows).
+    const now = new Date().toISOString();
+    const held = {
+      id, child_id: asha, kind: 'held_letter', capture_mode: 'spoken', created_at: now, occurred_on: '2026-10-03', occurred_precision: 'day',
+      language: null, base_direction: 'ltr', prompt_key: null, in_book_choice: true, raw_transcript: null, final_text: null, machine_edits: null,
+      edit_level: null, author_edits: null, locked_spans: null, typed_text: 'Asha, you clapped along today.', engine_version: null, pack_ref: null,
+      audio_kept_on_device: true, updated_at: now, v: '850',
+    };
+    applyPullPage(db, {
+      reset: false, epoch: 1, epoch_started_at: now, books: [], gone: [], more: false,
+      held: { rows: [held] as NonNullable<PullResponse['held']>['rows'], cursor: '900:00000000-0000-0000-0000-000000000000', more: false },
+    }, now);
+    expect(app.store.getDraft(id)?.state).toBe('ready');
+    expect(await sweeping).toEqual({ 'finalize-recording': 1, 'finish-discard': 1 }); // planned from the rows read before the pull
+    expect(app.store.getDraft(id)).toMatchObject({ state: 'ready', audioUri: uri, typedText: 'Asha, you clapped along today.' });
+    expect(h.disk.files.has(uri)).toBe(true);
+    expect(app.store.listDrafts(asha).map((d) => d.id).sort()).toEqual([id, take.id].sort());
+    app = await launch();
+    expect(await app.sweep.runLaunchSweep()).toEqual({});
+    expect(h.disk.files.has(uri)).toBe(true);
+    expect(app.store.getDraft(id)).toMatchObject({ state: 'ready', audioUri: uri });
   });
 });
 
