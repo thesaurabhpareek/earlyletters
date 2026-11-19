@@ -324,8 +324,11 @@ describe('[S33] not much today, and the light', () => {
 
   it('the mark stores no words, and the kept line is the line in text with the Moon, never a count or a success colour (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toContain('newQuietMark(');
-    expect(screen).toContain('markOn(listEntries(), day)');
+    // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
+    expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
+    const oneEntry = code('lib/capture/start-capture.ts');
+    expect(oneEntry).toContain('newQuietMark(');
+    expect(oneEntry).toContain('markOn(listEntries(), day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
