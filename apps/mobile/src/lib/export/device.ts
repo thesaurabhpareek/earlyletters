@@ -27,12 +27,14 @@ import { currentAuthUserId } from '../auth/auth-store';
 import { dateLocale } from '../dates';
 import { hasPlus } from '../billing';
 import { getSupabaseOrNull } from '../supabase/client';
-import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, type Entry } from '../store';
+import { currentUserId, dictionaryFor, getSetting, listChildren, listConflicts, listEntriesForChild, listHiddenChildren, listWaitingForExport, getDraftReview, myRoleIn, listClosedBooks, listDeletedEntriesForChild, type Entry } from '../store';
 import { paperFor, phoneConsent, waitingChangedWords, type ExportSnapshot, type SnapshotChild, type SnapshotEntry } from './build.logic';
 import { noConsentHistory, noProfile, postgrestReader, readServerRecords, type PostgrestLike, type ServerRecordsReader } from './server-records.logic';
 import type { ExportDictionaryTerm } from './schema';
 import { estimateExportBytes, ExportCancelledError, ExportTooLargeError, MAX_EXPORT_BYTES, packExport, type ByteSink, type ExportPhase } from './pack';
 import { EXPORT_FORMAT } from './schema';
+import { readOpenRequest } from '../account-deletion/open-request';
+import { deletionRequestOpen, exportScope } from './scope.logic';
 import { verifyExport, type RandomAccess } from './verify';
 
 export { ExportCancelledError, ExportTooLargeError } from './pack';
@@ -104,18 +106,22 @@ function consentOnThisPhone(): ExportSnapshot['consent'] {
   return phoneConsent(getSetting(AGE_GATE_PASSED) === '1', getSetting(ANALYTICS_KEYS.consent));
 }
 
-/** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted. */
+/** Everything on this phone that goes into an export: every book (hidden ones too), every letter not deleted; more while a deletion request is open. */
 export function exportSnapshot(now = new Date()): ExportSnapshot {
   const me = currentUserId();
   const own = (e: Entry) => !e.authorId || !me || e.authorId === me;
-  const children: SnapshotChild[] = [
-    ...listChildren().map((c) => ({ ...c, hidden: false })),
-    ...listHiddenChildren().map((c) => ({ ...c, hidden: true })),
-  ].map((c) => ({ ...c, role: myRoleIn(c.id) }));
-  const entries: SnapshotEntry[] = children.flatMap((c) =>
-    listEntriesForChild(c.id).map((e) => {
+  // While an account-deletion request is open the export also holds what the request moved: the books the server
+  // closed and the Recently deleted letters (DATA-REQ-053, BL-446; scope.logic.ts).
+  const requestOpen = deletionRequestOpen(readOpenRequest({ get: getSetting }), currentAuthUserId(), now.getTime());
+  const scope = exportScope(
+    { listed: listChildren, hidden: listHiddenChildren, closedByServer: listClosedBooks, live: listEntriesForChild, deleted: listDeletedEntriesForChild },
+    requestOpen,
+  );
+  const children: SnapshotChild[] = scope.map((b) => ({ ...b.book, hidden: b.hidden, role: myRoleIn(b.book.id) }));
+  const entries: SnapshotEntry[] = scope.flatMap((b) =>
+    b.letters.map((e) => {
       const state = e.captureMode !== 'typed' ? fileState(e.audioUri) : { exists: false, size: null };
-      return { ...e, childId: e.childId ?? c.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
+      return { ...e, childId: e.childId ?? b.book.id, own: own(e), audioOnPhone: state.exists, audioSizeOnPhone: state.size };
     }),
   );
   // Letters that are waiting (PL-2, 1.6.0): held at Keep, not read back, typed and not kept. Every plan state.

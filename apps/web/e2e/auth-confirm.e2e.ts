@@ -126,6 +126,8 @@ test.describe('apple-app-site-association', () => {
       '/auth/callback/',
       '/j',
       '/j/',
+      '/open',
+      '/open/',
     ]);
   });
 });

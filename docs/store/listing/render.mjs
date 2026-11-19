@@ -33,7 +33,7 @@ ${block("What's new in 1.0.0", a.whatsNew, 4000)}
 
 | Field | Value | Status |
 | --- | --- | --- |
-| Support URL | ${a.supportUrl} | Page does not exist yet (no /support route in apps/web). Build it or point to another live page. |
+| Support URL | ${a.supportUrl} | Live once the site with the /support route (apps/web) is deployed. |
 | Marketing URL | ${a.marketingUrl} | Live. |
 | Privacy Policy URL | ${a.privacyPolicyUrl} | Route exists. |
 | Copyright | ${a.copyright} | Legal name lives only in the legal documents and App Store Connect (D-004). |

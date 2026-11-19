@@ -10,6 +10,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { firstRunWelcome, welcomeMayLeave } from '../src/components/family/welcome-handoff.logic';
+import { welcomeHandoffStep } from '../src/lib/first-run/handoff.logic';
 
 const code = (p: string) => readFileSync(join(__dirname, '..', 'src', p), 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
@@ -17,7 +18,7 @@ describe('[5.8 rows 12 and 13] the welcome hands over only while it, or the sign
   it('the welcome in front (the joiner closed the sheet, or Open closed it onto the welcome): the hand-off runs', () => {
     expect(welcomeMayLeave('welcome', '/onboarding')).toBe(true);
     const effect = code('app/onboarding.tsx');
-    expect(effect).toMatch(/const pathname = usePathname\(\);\s*useEffect\(\(\) => \{\s*if \(!welcomeMayLeave\(step, pathname\)\) return;\s*const done = \(\) => \{\s*if \(listChildren\(\)\.length > 0\) router\.replace\('\/book'\);\s*\};\s*done\(\);\s*return subscribe\(done\);\s*\}, \[step, pathname\]\);/);
+    expect(effect).toMatch(/const handoffStep = welcomeHandoffStep\(\{ start, step \}\);\s*const pathname = usePathname\(\);\s*useEffect\(\(\) => \{\s*if \(!welcomeMayLeave\(handoffStep, pathname\)\) return;\s*const done = \(\) => \{\s*if \(listChildren\(\)\.length > 0\) router\.replace\('\/book'\);\s*\};\s*done\(\);\s*return subscribe\(done\);\s*\}, \[handoffStep, pathname\]\);/);
   });
 
   it('"I already have a book": the sign-in sheet and its steps in front, so a returning parent lands on the Book (row 13)', () => {
@@ -38,6 +39,25 @@ describe('[5.8 rows 12 and 13] the welcome hands over only while it, or the sign
     for (const step of ['promise', 'child', 'signsAs', 'finish']) {
       for (const path of ['/onboarding', '/sign-in', '/invite']) expect(welcomeMayLeave(step, path), `${step} ${path}`).toBe(false);
     }
+  });
+});
+
+describe('[NX-31-R17] a returning account\'s book hands over from the promise step (never a second book)', () => {
+  it('signed in on the promise step (not yet moved on), a book arriving hands over, with the sign-in sheet or first run in front', () => {
+    const asked = welcomeHandoffStep({ start: 'promise', step: 'promise' });
+    expect(asked).toBe('welcome');
+    for (const path of ['/onboarding', '/sign-in', '/sign-in/consent']) expect(welcomeMayLeave(asked, path), path).toBe(true);
+  });
+  it('the mapped step is the signed-in start step only: the child step, the signature and the last step never hand over', () => {
+    for (const step of ['child', 'signsAs', 'finish'] as const) {
+      for (const path of ['/onboarding', '/sign-in', '/invite']) expect(welcomeMayLeave(welcomeHandoffStep({ start: 'promise', step }), path), `${step} ${path}`).toBe(false);
+    }
+    // Opened on the Welcome or the local start, the promise step is a step after the welcome as before: none.
+    for (const start of ['welcome', 'child'] as const) expect(welcomeMayLeave(welcomeHandoffStep({ start, step: 'promise' }), '/onboarding'), start).toBe(false);
+  });
+  it('the join sheet and every other screen still wait, even for the signed-in start', () => {
+    const asked = welcomeHandoffStep({ start: 'promise', step: 'promise' });
+    for (const path of ['/invite', '/invite/new', '/invite/leave', '/', '/book', '/family', '/settings', '/write']) expect(welcomeMayLeave(asked, path), path).toBe(false);
   });
 });
 

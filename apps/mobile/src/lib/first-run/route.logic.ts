@@ -3,7 +3,8 @@
  * (test/first-run-route.test.ts) and not pinned by a pattern in a screen file. The route passes what it has: the auth
  * state, a way to ask whether the phone lists a book, the local-start latch, and the step. It draws what comes back.
  *
- * The one build switch is read here, `serverFeaturesEnabled()`, and nowhere else on this path. With it off every answer
+ * The one build switch is read here, `serverFeaturesEnabled()`, and in the route hook that wraps it (use-first-run-route.ts,
+ * which also reads nothing else with the switch off: test/use-first-run-route.test.ts). With it off every answer
  * is the answer Build 11 gave (Continue shows whenever the join wait lets it), the book list is never read, and nothing
  * else on the route changes. Nothing here stores, sends or logs anything.
  *
@@ -36,6 +37,9 @@ export function welcomeBeginAllowed(args: WelcomeGateArgs): boolean {
       authState: args.authState,
       hasLocalBook: serverFeatures && args.hasLocalBook(),
       localStartChosen: args.localStartChosen,
+      // The steps only render once the route has decided (the account said "new", or the earlier local start), so the
+      // Welcome's own question is not the account question (NX-36-S17 holds that on the route, use-first-run-route.ts).
+      newPhone: 'new',
     }),
   );
 }

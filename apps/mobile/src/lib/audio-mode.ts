@@ -3,6 +3,7 @@
  * always restores idle, so nonessential sound respects the silent switch.
  */
 import { setAudioModeAsync } from 'expo-audio';
+import { noteRecordingSession } from './capture/busy';
 
 export type AudioModeName = 'idle' | 'recording' | 'playback';
 
@@ -14,6 +15,7 @@ export function getAudioMode(): AudioModeName {
 
 export async function setAudioMode(mode: AudioModeName): Promise<void> {
   current = mode;
+  noteRecordingSession(mode === 'recording'); // a take is open: the transcription queue waits (BL-572)
   const base = { shouldPlayInBackground: false, interruptionMode: 'mixWithOthers' as const };
   if (mode === 'recording') {
     // doNotMix: other apps pause while a parent records (their voice is the take).

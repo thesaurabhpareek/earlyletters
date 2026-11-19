@@ -388,7 +388,7 @@ describe('Lamp gradient', () => {
     // First run's reason line once the waiting Continue is tapped (S05, P2): its warning mark on its own chip, beside the words.
     'app/onboarding.tsx': [{ use: 'c.caution', surface: 'bg-secondary' }],
   };
-  const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const LIT_ROOMS = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
   const NO_STATUS_ROOMS = ['components/gate/age-gate-screen.tsx', 'app/read-together.tsx'];
   const PRIMITIVES = /^components\/(ui|motion|platform)\//;
 
@@ -530,7 +530,7 @@ describe('Lamp gradient', () => {
     expect(resolveImport('components/book/quiet-day-row.tsx', './chapters')).toBe('components/book/chapters.ts');
     expect(resolveImport('components/book/shelf.logic.ts', '../../lib/dates')).toBe('lib/dates.ts');
     // The scan follows a room into everything it renders, @/lib and relative imports included.
-    expect(renderedBy('app/(tabs)/family.tsx')).toEqual(expect.arrayContaining(['components/family/coparent-soon.tsx', 'lib/auth/ui.tsx']));
+    expect(renderedBy('app/family.tsx')).toEqual(expect.arrayContaining(['lib/auth/ui.tsx']));
     expect(renderedBy('app/(tabs)/book.tsx')).toEqual(expect.arrayContaining(['components/book/quiet-day-row.tsx', 'components/book/chapters.ts']));
   });
 
@@ -748,7 +748,7 @@ const LAMP = /<Lamp(View)?[\s/>]/;
 
 describe('where the lamp may shine (EXPERIENCE_PASS 5.2)', () => {
   /** The rooms with a scene: first run (gate, welcome, promise, naming, signing, the book opens), Tonight, Write, the Book, Read together at night. */
-  const ALLOWED = ['app/(tabs)/book.tsx', 'app/(tabs)/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx'];
+  const ALLOWED = ['app/(tabs)/book.tsx', 'app/family.tsx', 'app/(tabs)/index.tsx', 'app/onboarding.tsx', 'app/read-together.tsx', 'app/write.tsx', 'components/gate/age-gate-screen.tsx', 'components/onboarding/welcome-sign-in.tsx'];
 
   it('is mounted only in rooms that have a scene', () => {
     const used = mounts(LAMP);

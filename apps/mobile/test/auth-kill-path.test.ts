@@ -141,7 +141,7 @@ describe('kill path: server features off (the development, e2e, testflight and p
 
   it('auth links still open home and keep nothing (+native-intent plan)', () => {
     const link = classifyIncomingUrl(`https://earlyletters.com/auth/callback#token_hash=${HASH}&type=email`, { origin: 'https://earlyletters.com', scheme: 'scribe' });
-    expect(planIncomingLink(link, { serverFeatures: false, gateStopped: false, path: 'x' })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
+    expect(planIncomingLink(link, { serverFeatures: false, gateStopped: false, alpha: true, path: 'x' })).toEqual({ route: '/', keepInviteToken: false, keepAuthLink: false });
   });
 
   it('the screens stay behind the switch, and the provider registers claim readers only with a client', () => {

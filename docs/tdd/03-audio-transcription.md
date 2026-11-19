@@ -406,7 +406,7 @@ Assumptions (A): 15% of a parent's recording is pauses that VAD removes; decode,
 | PCM per chunk | 0.9 MB | 28 s x 32 KB/s |
 | App total peak during a T1 job | **1.4 GB or less** | Leaves headroom under iOS per-app limits on 4 GB phones (limits are not published, U; whisper.rn recommends the Extended Virtual Addressing entitlement for medium/large models, V-prior) |
 | After job + 45 s idle | context released; back to the app's normal footprint | 3.5.4 |
-Entitlements: `com.apple.developer.kernel.extended-virtual-addressing` (V-prior via whisper.rn README) and evaluate `com.apple.developer.kernel.increased-memory-limit` (**U** for our case). A jetsam during transcription must never lose audio: the job restarts from `stt_partial` on next launch, and after two memory failures the device is moved to T2 automatically (copy explains "using the smaller model on this phone").
+Entitlements: `com.apple.developer.kernel.extended-virtual-addressing` (V-prior via whisper.rn README) and evaluate `com.apple.developer.kernel.increased-memory-limit` (**U** for our case). A jetsam during transcription must never lose audio: the job restarts from `stt_partial` on next launch, and after two memory failures the device is moved to T2 automatically (a memory failure is an end of the app while it was active with the large model running, or a model that will not load; a swipe-away never counts, BL-572) (copy explains "using the smaller model on this phone").
 
 ### 5.3 Battery and thermal
 | Item | Budget |

@@ -249,7 +249,7 @@ Every feature spec, F01 to F21, now has a section 7. The lines below were checke
 - [ ] [auto] At most one of Keep the book, reminder prime or analytics consent per session, with "session" and the order defined once in F02 (PRD-REQ-001 Rev; R5 EQ-19).
 
 ### F03 First run
-- [ ] [auto] Only a name and a birthday or due date are required; nothing asks for surname, gender, photo or contacts (B-REQ-001).
+- [ ] [auto] Only a birthday or due date is required (the child name is optional); nothing asks for surname, gender, photo or contacts (B-REQ-001).
 - [ ] [auto] Children, signatures, languages and dictionary terms commit in one transaction at the final tap; a kill before it leaves no child row (F03-REQ-002, F03-REQ-010).
 - [ ] [auto] Three children in first run make three books, no Plus sheet, one `create_first_run_children` call accepted (F03-REQ-011, M2).
 - [ ] [auto] A language that has not passed its gate shows Record and type; the label changes from the signed manifest on next launch without a release; offline uses the last good copy (F03-REQ-003, F03-REQ-004).

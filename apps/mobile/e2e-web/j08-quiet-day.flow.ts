@@ -58,13 +58,13 @@ test('[J08b] Undo restores the link and the lamp; a second tap the same day adds
   await step('unhappy', 'Undo on the kept line', 'Undo takes the mark back at once: the quiet link returns, the lamp comes back up, and nothing is left behind.');
   await tab(app, 'Book').click();
   await expect(app.getByText('A quiet day')).toHaveCount(0);
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await btn(app, 'Not much today').click();
   await expect(app.getByText('A quiet day, kept.')).toBeVisible();
   await tab(app, 'Book').click();
   await expect(app.getByText('A quiet day')).toHaveCount(1);
   // Leaving Tonight takes the line away; the mark stays, and a second tap adds nothing.
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Not much today')).toBeVisible();
   await btn(app, 'Not much today').click();
   await tab(app, 'Book').click();

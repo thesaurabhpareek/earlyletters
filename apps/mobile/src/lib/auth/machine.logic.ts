@@ -51,7 +51,7 @@ export type AuthErrorKind =
   | 'already_signed_in'
   | 'unknown';
 
-export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account';
+export type SignOutReason = 'user' | 'apple_revoked' | 'switch_account' | 'force_reauth';
 
 /** 'on': sync may run. 'off': signed in, letters stay on this phone. 'unknown': not checked yet (offline at launch). */
 export type SyncMode = 'on' | 'off' | 'unknown';
@@ -62,7 +62,11 @@ export type AuthState =
   | { status: 'signingIn'; method: AuthMethod }
   | { status: 'awaitingCode'; sentAt: number; error?: AuthErrorKind }
   | { status: 'checkingConsent'; userId: string; method: AuthMethod | null }
-  | { status: 'needsConsent'; userId: string; method: AuthMethod | null; steps: ConsentStep[]; error?: AuthErrorKind }
+  | {
+      status: 'needsConsent'; userId: string; method: AuthMethod | null; steps: ConsentStep[]; error?: AuthErrorKind;
+      /** Set (true) when the person's recorded answer to the sensitive-data step is a decline: answering Terms or the age line must not undo it (BL-503). */
+      sensitiveDeclined?: true;
+    }
   | { status: 'ready'; userId: string; sync: SyncMode }
   | { status: 'signingOut'; userId: string; reason: SignOutReason; waitingForUploads: boolean; sync: SyncMode };
 
@@ -106,7 +110,7 @@ export function consentSteps(gate: SyncGate, sensitiveDeclined: boolean): Consen
 
 function afterGate(s: { userId: string; method: AuthMethod | null }, gate: SyncGate, declined: boolean): AuthState {
   const steps = consentSteps(gate, declined);
-  if (steps.length > 0) return { status: 'needsConsent', userId: s.userId, method: s.method, steps };
+  if (steps.length > 0) return { status: 'needsConsent', userId: s.userId, method: s.method, steps, ...(declined && !gate.sensitiveData ? { sensitiveDeclined: true as const } : {}) };
   return { status: 'ready', userId: s.userId, sync: gate.contentAllowed ? 'on' : 'off' };
 }
 
@@ -173,7 +177,10 @@ export function authReducer(state: AuthState, event: AuthEvent): AuthState {
       if (event.step === 'terms' && !event.accepted) return state;
       const steps = state.steps.filter((s) => s !== event.step);
       if (steps.length > 0) return { ...state, steps, error: undefined };
-      const sync: SyncMode = event.step === 'sensitive' && !event.accepted ? 'off' : 'on';
+      // A decline stands until the person turns it on from Settings: one answered in this pass (`event`), or one the
+      // gate read before this pass remembers (`state.sensitiveDeclined`). Answering Terms or the age line again is not a yes (BL-503).
+      const declined = (event.step === 'sensitive' && !event.accepted) || state.sensitiveDeclined === true;
+      const sync: SyncMode = declined ? 'off' : 'on';
       return { status: 'ready', userId: state.userId, sync };
     }
 

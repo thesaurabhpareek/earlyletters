@@ -39,7 +39,7 @@ test('[J03] more than one child: twins in first run, the switcher, settings, and
   await expect(app.getByText(/Birthday|Due date/).first()).toBeVisible();
   await expect(btn(app, 'Hide this book')).toBeVisible();
   await expect(app.getByText("Hiding Asha's book quiets every reminder and message about Asha. Nothing is deleted.")).toBeVisible();
-  await step('happy', 'One child\'s settings', 'Name, date, signature, a reminders switch, and the co-parent row ("Coming soon"). The "Family can read" switch is hidden in v1.0 because it cannot be turned on. "Hide this book" is offered because there is more than one, in the plain text colour: nothing is deleted (its confirm dialog is native and does not appear on web).');
+  await step('happy', 'One child\'s settings', 'Name, date, signature, a reminders switch, and, only in a build with the co-parent flow, the "Write this book together" row (this build has none). The "Family can read" switch is hidden in v1.0 because it cannot be turned on. "Hide this book" is offered because there is more than one, in the plain text colour: nothing is deleted (its confirm dialog is native and does not appear on web).');
   await app.goBack();
   await app.getByText('Add a child', { exact: true }).last().click();
   await expect(app.getByText('Who is this book for?')).toBeVisible();

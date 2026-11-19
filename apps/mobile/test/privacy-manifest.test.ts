@@ -228,11 +228,25 @@ describe('LEGAL-REQ-043 collected data types: exactly true for each build', () =
     expect(manifestFor(profileEnv('testflight')).NSPrivacyCollectedDataTypes).toEqual([]);
   });
 
-  it('development and production (servers off) declare nothing collected', () => {
-    for (const name of ['development', 'production']) {
-      expect(eas.build[name]?.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-      expect(manifestFor(profileEnv(name)).NSPrivacyCollectedDataTypes, name).toEqual([]);
+  it('development (servers off) declares nothing collected', () => {
+    expect(eas.build.development?.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(manifestFor(profileEnv('development')).NSPrivacyCollectedDataTypes).toEqual([]);
+  });
+
+  it('production (build 12: servers on, backup and status report off) declares the server-on set, linked, App Functionality only', () => {
+    const env = profileEnv('production');
+    expect(env.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env.EXPO_PUBLIC_BACKUP).toBe('off');
+    expect(env.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
+    const collected = manifestFor(env).NSPrivacyCollectedDataTypes ?? [];
+    expect(typesOf(collected)).toEqual([...SERVER_ON].sort());
+    for (const c of collected) {
+      expect(c.NSPrivacyCollectedDataTypeLinked, c.NSPrivacyCollectedDataType).toBe(true);
+      expect(c.NSPrivacyCollectedDataTypeTracking, c.NSPrivacyCollectedDataType).toBe(false);
+      expect(c.NSPrivacyCollectedDataTypePurposes, c.NSPrivacyCollectedDataType).toEqual(['NSPrivacyCollectedDataTypePurposeAppFunctionality']);
     }
+    expect(manifestFor(env).NSPrivacyTracking).toBe(false);
+    expect(manifestFor(env).NSPrivacyTrackingDomains).toEqual([]);
   });
 
   it('a servers-off build declares nothing even with every build flag set in the shell', () => {

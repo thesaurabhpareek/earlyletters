@@ -31,6 +31,7 @@ import { ENGINE_VERSION, toNFC } from '@scribe/core';
 import { ScribeAudio } from '../../../modules/scribe-audio';
 import { devShortcutsAllowed } from '../build-env';
 import { removeWholeFrameCopies } from '../capture/adts-file';
+import { captureBusy, onCaptureBusy } from '../capture/busy';
 import {
   deleteSetting,
   dictionaryFor,
@@ -74,6 +75,7 @@ import { getSpokenLanguages } from '../language';
 import { flagReadItBack } from '../read-it-back';
 import { lateArrivingWords } from './clean';
 import { DownloadRetries } from './download-retry';
+import { RUNNING_MARKER, countsAsMemoryKill, runningMarker } from './kill-marker';
 import { heardLanguagesForBuild } from '../language/heard-languages';
 import { languagesOnHold } from './language-hold';
 import {
@@ -104,6 +106,10 @@ const sampleWords = new Map<string, TranscribeResult>();
 /** Recordings whose clearer listening copy is due (made only while idle, one at a time). */
 const copiesDue = new Set<string>();
 let copying: Promise<void> | null = null;
+/** The app is active (on screen, not in the app switcher): where a running job's marker says the app is (kill-marker.ts). */
+let appActive = true;
+/** The large model is running a job now (its marker is written). */
+let markerOn = false;
 
 const whisper = createWhisperTranscriber();
 const sample = createSampleTranscriber();
@@ -170,6 +176,10 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   }
 
   const onApp = (s: AppStateStatus) => {
+    appActive = s === 'active';
+    // First, before anything async: the app switcher (where a swipe-away happens) makes the app inactive, and a
+    // marker that says `away` is never counted as a memory kill at the next launch (BL-572, kill-marker.ts).
+    if (markerOn) setSetting(RUNNING_MARKER, runningMarker(appActive));
     if (s === 'active') {
       askedDownload.clear();
       dispatch({ type: 'foreground', value: true });
@@ -178,12 +188,18 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
       retries.foreground(); // a download retry that came due while the app was away runs now
     } else if (s === 'background') {
       dispatch({ type: 'foreground', value: false });
-      controller?.abort(); // the job goes back to the queue and starts again on return
-      void (runningJob ?? Promise.resolve()).then(() => releaseContexts());
+      stopJobAndFreeModel(); // the job goes back to the queue and starts again on return
     }
   };
   const app = AppState.addEventListener('change', onApp);
   stopFns.push(() => app.remove());
+  // A take being recorded (BL-572): the job stops, the model leaves memory, and the queue starts again when the
+  // take is kept or discarded. The capture layer says so itself (capture/busy.ts); no screen reports it.
+  const onCapture = (busy: boolean) => {
+    dispatch({ type: 'recording', value: busy });
+    if (busy) stopJobAndFreeModel();
+  };
+  stopFns.push(onCaptureBusy(onCapture));
   stopFns.push(subscribeStore(() => queueMicrotask(syncLetters)));
   stopFns.push(onSpeechPacksBound(() => watchPacks()));
   // A language picked after a yes downloads at once; before a yes, picking only stores it (D-087).
@@ -193,10 +209,18 @@ export function startTranscriptionQueue(deps: { packs?: SpeechPackHost } = {}): 
   watchPacks();
 
   noteInterruptedLaunch();
+  appActive = AppState.currentState === 'active' || AppState.currentState === 'unknown';
   state = reduce(state, { type: 'foreground', value: AppState.currentState !== 'background' });
+  state = reduce(state, { type: 'recording', value: captureBusy() });
   syncLetters();
   refreshReady();
   return stopTranscriptionQueue;
+}
+
+/** Stops the running job (it goes back to the queue, never counted as a failure) and frees the model once it has. */
+function stopJobAndFreeModel(): void {
+  controller?.abort();
+  void (runningJob ?? Promise.resolve()).then(() => releaseContexts());
 }
 
 function stopTranscriptionQueue(): void {
@@ -416,7 +440,7 @@ function pump(): void {
 
 /** Listening copies wait for an idle queue in the foreground: words always come first. */
 function makeNextListeningCopy(): void {
-  if (copying || !state.foreground) return;
+  if (copying || !state.foreground || state.recording) return;
   const id = copiesDue.values().next().value as string | undefined;
   if (!id) return;
   copiesDue.delete(id);
@@ -461,16 +485,15 @@ async function transcriberFor(language: SpeechLanguage): Promise<Transcriber | n
 /**
  * A large model killed by the system (jetsam) ends the app with no error to
  * catch. A marker written while a job runs and found at the next launch
- * counts as one memory failure; two move the phone to the compact tier
- * (tiers.ts, TDD 03 5.2).
+ * counts as one memory failure only when it says the app was active
+ * (kill-marker.ts, BL-572): a swipe-away, an update or a background end
+ * never counts. Two move the phone to the compact tier (tiers.ts, TDD 03 5.2).
  */
-const RUNNING_MARKER = 'speech.jobRunning';
-
 function noteInterruptedLaunch(): void {
-  if (getSetting(RUNNING_MARKER)) {
-    recordMemoryFailure();
-    deleteSetting(RUNNING_MARKER);
-  }
+  const found = getSetting(RUNNING_MARKER);
+  if (found === null) return;
+  if (countsAsMemoryKill(found)) recordMemoryFailure();
+  deleteSetting(RUNNING_MARKER);
 }
 
 async function runJob(id: string): Promise<void> {
@@ -499,7 +522,10 @@ async function runJob(id: string): Promise<void> {
   };
   const ctrl = new AbortController();
   controller = ctrl;
-  if (transcriber === whisper) setSetting(RUNNING_MARKER, '1');
+  if (transcriber === whisper) {
+    markerOn = true;
+    setSetting(RUNNING_MARKER, runningMarker(appActive));
+  }
   try {
     const child = source.childId ? getChild(source.childId) : null;
     const dictionary = child ? dictionaryFor({ childName: child.name, childBirthday: child.birthday, signsAs: child.signsAs }) : [];
@@ -526,6 +552,7 @@ async function runJob(id: string): Promise<void> {
     }
   } finally {
     if (controller === ctrl) controller = null;
+    markerOn = false;
     deleteSetting(RUNNING_MARKER);
   }
 }

@@ -2023,7 +2023,7 @@ Found in the merged PR bodies of #372 (the sign-in code step), #387 (the spec as
 - Done when: each of the six groups has either a flow that records named step ids, or a line in its S entry (`docs/design/EXPERIENCE_PASS_2026-10.md`) and a device-plan row saying it is checked on a phone; the next journey-record PR's count changes to match.
 
 #### BL-482 Spec and doc fixes after the sign-in and journey work: SECURITY.md, "Before" images, P8 package plans, storyboard row 11
-- Status: ready. Mode: agent. Owner: design systems (points 2 to 4), security engineer (point 1). Milestone: M11. Size: S. Depends on: none.
+- Status: in-review (PR #800; point 4 recorded as unverified until BL-480 point 4). Mode: agent. Owner: design systems (points 2 to 4), security engineer (point 1). Milestone: M11. Size: S. Depends on: none.
 - Priority: Low.
 - Gate: none.
 - Satisfies: none given.
@@ -3088,7 +3088,7 @@ Source: CCO-6 in `docs/agents/exec/RULINGS.md` (merged with PR #520), CR-60 in `
 
 ### First run and sign-in, end to end (NX-40, 10 Nov 2026)
 
-Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
+Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-40-first-run-and-sign-in.md` (R1 to R20, stories H1 to H9, edge cases U1 to U18, founder decisions FD-1 to FD-6). Amended 11 Nov for the CTO rulings (intro after the age gate, 3 cards, Skip 48 pt, no intro events). Ids BL-891 to BL-897 come from `next-id.mjs` on 10 Nov; run `node scripts/agents/id-collisions.mjs` before merge. Milestone M14 (Build 12 line) for tier A, M15 for tier B. The story intro rows are tier B and stay off in `production` until the founder rules (FD-1).
 
 #### BL-891 Reconcile the first-run requirements with the journey lead state map and the words file
 - Status: ready. Mode: agent. Owner: design systems. Milestone: M14. Size: S.
@@ -3096,16 +3096,16 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Scope: when `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` merges, replace the section names in NX-40 with its state ids; no state map is copied.
 - Done when: NX-40 cites the journey ids and the merged heads of the sibling files.
 
-#### BL-892 Intro scaffolding behind a build switch, mounted before the age gate in its own gate step
+#### BL-892 Intro scaffolding behind a build switch, mounted after the age gate in its own gate step
 - Status: blocked (#764 merged; FD-1). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: #764.
 - Satisfies: NX-40-R1, NX-40-R3, NX-40-R8, NX-40-R19.
-- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step that precedes the age gate; no edit to `gate.logic.ts` before #764 merges.
+- Scope: switch `EXPO_PUBLIC_FIRST_RUN_INTRO` (name proposed) off in `production`; a seen flag in local settings, erased by Erase everything; a gate step (`stories`) that follows the age gate and precedes Welcome and sign in (Karma ruling 11 Nov; NX-40 FD-2); no edit to `gate.logic.ts` before #764 merges.
 - Done when: with the switch off the first screen is unchanged; with it on the step shows once per install.
 
-#### BL-893 The story intro screen: 3 to 4 frames, Skip, Reduce Motion, VoiceOver
+#### BL-893 The story intro screen: 3 frames, Skip, Reduce Motion, VoiceOver
 - Status: blocked (BL-892; words and motion spec). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-892.
 - Satisfies: NX-40-R2, R4, R5, R9, R10, R17, R20.
-- Scope: frames from `packages/content` (final words by `content`), timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip of at least 48 pt from the first frame.
+- Scope: 3 frames with the journey spec ids `story.talk.v1`, `story.exact.v3`, `story.voice.v1` (the Private card is withheld until counsel reads it; final words by `content`), from `packages/content`, timings from the motion spec only; still frames under Reduce Motion; one VoiceOver element per frame; Skip top right, at least 48 pt, from the first frame.
 - Done when: the QA rows for H2, U11, U12 pass on a device and the content rules test passes.
 
 #### BL-894 Test seams and Maestro rows for the happy paths H1 to H9 and edge cases U1 to U15
@@ -3114,10 +3114,10 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Scope: rows against the stack; a test that Google and passkey buttons are absent in the Build 12 profile; no bypass flag in a store build.
 - Done when: the rows are merged with an owner for each device-only row.
 
-#### BL-895 Intro events in the analytics allowlist, content-free
+#### BL-895 Stories outcome on the opt-in event, content-free
 - Status: blocked (BL-893; FD-1). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-893.
 - Satisfies: NX-40-R18. Also cited: D-124 item 3.
-- Scope: `intro_shown`, `intro_skipped`, `intro_finished` (names proposed) with one enum prop; off unless the parent opted in.
+- Scope: add `stories_outcome` (`finished`, `skipped`, `none`) and `stories_last_card` (0 to 3) to `analytics_opted_in`, read from local settings at consent time (journey spec section 6). No `intro_*` events and no pre-consent buffer: nothing is sendable before consent (D-124 item 3). Names are proposals.
 - Done when: the catalog test passes and no free-text prop exists.
 
 #### BL-896 Sign in with Apple asks for the email only
@@ -3131,6 +3131,17 @@ Written by `product`, docs only. Source: `docs/roadmap/next/03-requirements/NX-4
 - Satisfies: NX-40-R14, R15.
 - Scope: read the auth settings of the project (refresh token life, reuse interval) and write the numbers in `docs/ops/AUTH_SETUP.md`; no setting is changed.
 - Done when: the doc states the numbers and the date read.
+
+### Follow-up from the S17 new-phone reviews (PR #764, 17 Nov 2026)
+
+Written 17 Nov 2026 by the #764 builder, from the review rounds on #764 (lens A and lens B at 5e896fed and 6c5e5f31, posted on the PR, and at d38e8b69) and CR-61 in `docs/agents/cto/RULINGS.md` (amended 17 Nov). The id is the next after the highest in `docs/` (BL-921, proposed in `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md`); `node scripts/agents/next-id.mjs` answers BL-916 because it does not count those proposals, so run `node scripts/agents/id-collisions.mjs` before merge.
+
+#### BL-922 Hold a needsConsent session with no local book out of the child step; one account read on the consent sheet
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15 (after build 13; Karma places it). Size: M. Depends on: #764.
+- Satisfies: NX-36-S17 (Tier 0: the child step is never shown while the account's book may be on its way). Also cited: NX-31-R12 (the claim screen, #737), CR-61.
+- Problem: read in code at 6c5e5f31 (#764), not run on a phone. `heldNewPhoneView` (`apps/mobile/src/lib/first-run/gate.logic.ts`) holds `checkingConsent`, `ready` with sync `unknown` and `signingOut` with sync on or unknown, and leaves `needsConsent` to the earlier route, so a returning account with no local book whose consent is outstanding (a kill on the Terms sheet and a relaunch, or a Terms version bumped since its last acceptance; `my_sync_gate()` is per account) sees the promise step with Continue and no consent sheet: the sheet is pushed only from the sign-in screens and Settings > Account > Finish setup (`app/settings/account.tsx:227`), and nothing pushes it at relaunch. No pull can reach that session (canSync is false, the engine is stopped), so nothing lands. A book made there has no owner (`takeOwnership` in `lib/sync/ownership.ts` runs only from `onSignedIn`), so when Finish setup completes consent the claim screen shows before anything moves (`accountClaimPending()` in `lib/auth/auth-store.ts`, `consentHandoff` answering `askClaim` in `lib/first-run/handoff.logic.ts`, the claim step of `app/(auth)/sign-in/consent.tsx`; #737): "Keep your letters in this account?" with the second-book body, Keep in this account and Not my account. The second book follows Keep; Not my account ends the session with the phone as it was. Recovery in build 13 is Hide this book on the extra book until F17-REQ-026 (server-side book deletion) ships: Delete this book is refused once the owner is written (`lib/store.ts` `localDeletionAllowed`; the row is hidden in `app/settings/children/[id].tsx`), and the staging operator removes the extra book on request. No letter is lost. Lens B M3 and lens A note 2 at 6c5e5f31, corrected by lens A item 3 and lens B M4 at d38e8b69; accepted for build 13 by CR-61 (amended 17 Nov), which names this row as the way back.
+- Scope: (1) hold a `needsConsent` session with no local book out of the child step: push the consent sheet again at relaunch, or show a held screen with its own words and a way forward within 10 seconds (Finish setup and Try another way; never a dead end for App Review); (2) lens A should-fix 3 at 5e896fed: the consent sheet's own `readAccountBooks` (`app/(auth)/sign-in/consent.tsx:134`, the `noBook` branch at :193) duplicates the route's ask (`lib/first-run/use-new-phone.ts`), so a returning account with no book can meet No book here yet twice and tap Start a book twice; keep one reader and one screen, and rewrite the #737 pins in `apps/mobile/test/first-run-new-account.test.ts` (:152-156, two `readAccountBooks(` calls) with it. Not in scope: the claim screen at Finish setup, which #737 built and which shows today (read at d38e8b69). Any new words are the founder's (NX-36 S5, S7) and land through `packages/content` with the content rules test; none ships without them.
+- Done when: a `needsConsent` session with no local book never answers `childStep` (pinned beside the hold cases in `apps/mobile/test/new-phone-route.test.ts` and `apps/mobile/test/use-first-run-route.test.ts`, red on the old code); `sync_books` is read once per launch for a returning account with no book; `docs/qa/DEVICE_TEST_PLAN.md` S1-204 (k) is rewritten to expect the sheet or the held screen, not the promise step; the "Known gap" clause at `gate.logic.ts` heldNewPhoneView and the pointers to it in `use-first-run-route.ts` are removed in the same PR.
 
 ## Memory Library (NX-39 v2, 10 Nov 2026)
 

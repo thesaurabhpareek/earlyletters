@@ -87,7 +87,7 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 ### 3.1 Events by area
 
 <!-- catalogue:begin (generated from packages/analytics/src/catalog.ts by `npm run plan -w @scribe/analytics`; do not edit by hand) -->
-70 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
+68 events. Every event also carries the global properties in 3.2. `?` marks an optional property. Every event and property is L2.
 
 #### app
 
@@ -116,8 +116,6 @@ Source codes: **S** server aggregate (all synced users, k-anonymised), **ASC** A
 | `auth_deferred` | User chose Later on the sign-in sheet | `trigger` (enum: first_letter \| invite \| invite_create \| sign_in \| settings) | PRD-REQ-016 |
 | `signed_out` | The session ended on this phone (observed): by the person, Apple revoked it, account switch, or the session was lost | `reason` (enum: user \| apple_revoked \| switch_account \| session_lost) | A-NFR-013, PRD-REQ-016 |
 | `invite_opened` | An invite link or code is opened in the app | `via` (enum: link \| code \| paste)<br>`signed_in` (bool) | B-REQ-007 |
-| `coparent_soon_opened` | The co-parent coming-soon presentation is shown (the Family tab, or the sheet any other door opens) | `surface` (enum: tab \| sheet) | PRD-REQ-016 |
-| `coparent_soon_notify` | Tell me when it is here is tapped on the coming-soon presentation (a note on this phone, nothing is sent to us) | (none) | PRD-REQ-016 |
 | `local_merge_choice` | User with local letters picks where they go at sign-in | `choice` (enum: existing \| new) | PRD-REQ-016 |
 
 #### children
@@ -407,7 +405,6 @@ Crash reports (Sentry) follow the same switch (LEGAL-REQ-003): the Sentry bootst
 | `auth_sheet_shown`, `auth_deferred` | `app/(auth)/sign-in/index.tsx`: on show and on Later, with `getSignInTrigger()` | auth | to wire |
 | `local_merge_choice` | sign-in re-ownership step | auth, sync | to wire |
 | `invite_opened` | `lib/family/pending-invite-watcher.tsx` | auth/family | to wire |
-| `coparent_soon_opened`, `coparent_soon_notify` | `components/family/coparent-soon.tsx`: on focus (tab or sheet) and on the Tell me tap | family | wired |
 | `invite_created`, `invite_failed` | `app/invite/new.tsx`: `trackInviteCreated({ role: 'parent', channel, shared, childIndex })`; on error `track('invite_failed', { stage, reason: inviteErrorKind(e) })` | family | to wire |
 | `member_removed`, `member_left`, `family_letter_reviewed` | family screens | family | to wire |
 | `capture_started`, `capture_discarded` | `app/listen.tsx`, `app/write.tsx` | capture (Mobile A) | to wire |

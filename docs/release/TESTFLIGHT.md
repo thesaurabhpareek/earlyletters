@@ -182,11 +182,11 @@ In order of speed:
 
 ## What testers get
 
-Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Tonight (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit purchases only through the Xcode StoreKit configuration file, never the sandbox (the products live on the production record, step 2.5).
+Both builds, from `develop`: first run (the 18+ question, the promise, a child, the signature, the spoken language, asked before the speech download), Home (a prompt, Speak or Type, Not much today), speaking a letter with Review and Word for word, typing a letter with drafts, the Book, the letter page, Recently deleted, Read together, Settings (children, reminders, appearance, recordings, language, storage, export, helplines, licences, Help), and the membership rule (2 free letters, then Plus, D-082) with StoreKit purchases only through the Xcode StoreKit configuration file, never the sandbox (the products live on the production record, step 2.5).
 
-Build 1 only: no accounts, no sign-in, no sync, no co-parent sharing (the Family tab shows coming soon), no delete-account.
+Build 1 only: no accounts, no sign-in, no sync, no co-parent sharing (no Family tab, no "Write this book together" row and no coming-soon screen; the bar is Home, Book and Me), no delete-account.
 
-Build 2 adds: Sign in with Apple and email sign-in (link or code) on Welcome and at the Keep the book moment, the consent sheets, sync of letters to staging, co-parent invite and join through the Family tab, Account, and Delete account only once `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` (needs step 12; the row is hidden otherwise). Recordings are not uploaded (backup is off), no Google sign-in, no analytics in either build.
+Build 2 adds: Sign in with Apple and email sign-in (link or code) on Welcome and at the Keep the book moment, the consent sheets, sync of letters to staging, co-parent invite and join through Me, the book, "Write this book together" (and the family page that row opens once an invite is pending or a co-parent has joined), Account, and Delete account only once `EXPO_PUBLIC_ACCOUNT_DELETION` is `on` (needs step 12; the row is hidden otherwise). Recordings are not uploaded (backup is off), no Google sign-in, no analytics in either build.
 
 ## What to check on a real phone (nobody has)
 

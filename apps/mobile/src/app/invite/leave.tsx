@@ -18,18 +18,18 @@
  *
  * Not reachable from an outside link: only `/` and `/invite` are (lib/family/entry.logic.ts).
  */
-import { useLocalSearchParams } from 'expo-router';
+import { Redirect, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 import { familyNotice } from '@/components/family/family-notice';
 import { LeaveChoices } from '@/components/family/leave-sheet';
 import { leaveButton, leaveChoices, leaveSheetView, type LeaveChoice } from '@/components/family/leave-sheet.logic';
-import { InviteComingSoon } from '@/components/family/invite-coming-soon';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { track } from '@/lib/analytics/track';
 import { useAuth } from '@/lib/auth/session-provider';
 import { AccountGate, ErrorLine, SheetBody, SheetFrame, SheetTitle, useCloseSheet } from '@/lib/auth/ui';
+import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { fill } from '@/lib/copy';
 import { familyCopy } from '@/lib/family/copy';
@@ -43,12 +43,12 @@ import { syncNow } from '@/lib/sync';
 
 /** Fixed per build (lib/capabilities.ts, and D-113 for build 2). Off: there is no shared book to leave. */
 export default function LeaveBookRoute() {
-  return inviteDestination('invite_leave', serverFeaturesEnabled()) === 'flow' ? <LeaveBook /> : serverFeaturesEnabled() ? <LeaveLater /> : <InviteComingSoon />;
+  return inviteDestination('invite_leave', serverFeaturesEnabled(), PLUS_ALPHA) === 'flow' ? <LeaveBook /> : serverFeaturesEnabled() && PLUS_ALPHA ? <LeaveLater /> : <Redirect href="/" />;
 }
 
 /**
- * Sharing is on but Leave waits for D-113 to lift: one plain coming-soon line. The co-parent
- * teaser (InviteComingSoon) is for builds without sharing; here it would say letters stay on
+ * Sharing is on but Leave waits for D-113 to lift: one plain line, and nothing offers this route yet. Builds without
+ * sharing redirect to Tonight (there is no co-parent coming-soon screen); the old teaser said letters stay on
  * this phone, which is not true once a book is shared.
  */
 function LeaveLater() {
