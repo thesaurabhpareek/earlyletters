@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { newQuietMark } from '../src/components/book/quiet-day.logic';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
 import { addPhotoToLetter, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
+import { photoChapters, photosLens } from '../src/lib/photos/lens';
 import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
@@ -275,5 +276,44 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     await runPick(p).done;
     expect(calls.permission).toBe(0);
     expect(Object.keys(p).filter((k) => /permission|authori[sz]/i.test(k))).toEqual(['requestPermission']); // only the spy we added
+  });
+});
+
+describe('[NS-01-R10][NS-01-R11][NS-01-R12] the Photos lens', () => {
+  const L = (id: string, over: object = {}) => ({ id, inBook: true, ...over });
+  const P = (entryId: string, over: object = {}) => ({ entryId, mediaId: `m-${entryId}`, ext: 'jpg' as const, bytes: 1, sha256: 'x', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null, ...over });
+  const ids = (lens: ReturnType<typeof photosLens>) => [...lens.photos.keys()].sort();
+
+  it('[NS-01-R10] offered only when a kept, open letter has a picture; no empty state otherwise', () => {
+    expect(photosLens([L('a')], [])).toEqual({ visible: false, photos: new Map() });
+    expect(photosLens([L('a')], [P('a')]).visible).toBe(true);
+    // a picture whose letter is not kept, a quiet day, a closed seal or a letter in Recently deleted does not count
+    expect(photosLens([L('a', { inBook: false })], [P('a')]).visible).toBe(false);
+    expect(photosLens([L('a', { kind: 'not_much' })], [P('a')]).visible).toBe(false);
+    expect(photosLens([L('a')], [P('a')], { isClosedSeal: () => true }).visible).toBe(false);
+    expect(photosLens([L('a')], [P('a', { deletedAt: '2026-11-12T00:00:00Z' })]).visible).toBe(false);
+  });
+  it('[NS-01-R11] lists the Book\'s own chapters, newest first, keeping only letters that have a picture, and keeps no count', () => {
+    const lens = photosLens([L('a'), L('b'), L('c'), L('d')], [P('a'), P('b'), P('d')]);
+    expect(ids(lens)).toEqual(['a', 'b', 'd']);
+    // The Book's chapters, newest first as the Book reads; a chapter whose letters have no picture is dropped.
+    const chapters = [
+      { key: 'm7', data: [{ id: 'd' }, { id: 'c' }] },
+      { key: 'm6', data: [{ id: 'x' }] },
+      { key: 'm5', data: [{ id: 'b' }, { id: 'a' }] },
+    ];
+    expect(photoChapters(chapters, lens.photos).map((c) => [c.key, c.data.map((e) => e.id)])).toEqual([['m7', ['d']], ['m5', ['b', 'a']]]);
+    expect(chapters[0].data.length).toBe(2); // the Book's own chapters are not changed
+    expect(Object.keys(lens).sort()).toEqual(['photos', 'visible']); // no total anywhere
+  });
+  it('[NS-01-R12] the lens disappears quietly when the last picture goes', async () => {
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const letters = [L('e1')];
+    expect(photosLens(letters, store.all()).visible).toBe(true);
+    removePhotoFromLetter(d, 'e1');
+    expect(photosLens(letters, store.all())).toEqual({ visible: false, photos: new Map() });
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    expect(photosLens([], store.all()).visible).toBe(false); // its letter is gone
   });
 });

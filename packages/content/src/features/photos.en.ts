@@ -28,6 +28,12 @@ export const photosCopy = {
     placeHint: 'Up to 60 characters. Only what you type is kept.',
   },
   book: {
+    lens: {
+      // TODO(founder): PROPOSED, needs word approval
+      months: 'Months',
+      // TODO(founder): PROPOSED, needs word approval
+      photos: 'Photos',
+    },
     letter: {
       // TODO(founder): PROPOSED, needs word approval
       addPhoto: 'Add a photo to this letter',

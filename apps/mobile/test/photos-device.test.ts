@@ -653,4 +653,7 @@ describe('[NS-01-R19] the remote pause hides the new surfaces and never turns th
       expect(body, fn).not.toMatch(/photosPausedNow|photosBuildEnabled/);
     }
   });
+  it('[NS-01-R19] every surface asks for the pause', () => {
+    for (const f of ['components/photos/letter-photo.tsx', 'app/(tabs)/book.tsx', 'lib/photos/use-photo-start.ts']) expect(readFileSync(join(SRC, f), 'utf8'), f).toMatch(/photosPausedNow\(\)/);
+  });
 });

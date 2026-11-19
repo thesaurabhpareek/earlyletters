@@ -164,6 +164,13 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     expect(page).toMatch(/if \(!on \|\| !pick\.ready\) return null;/);
     expect(photoSurfaces({ build: false, paused: false }).addActions).toBe(false);
   });
+  it('[NS-01-R19] off, the Book draws no lens row and no Photos page', () => {
+    const book = readFileSync(join(SRC, 'app', '(tabs)', 'book.tsx'), 'utf8');
+    expect(book).toMatch(/const lensOn = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.lens && lens\.visible;/);
+    expect(book).toMatch(/\{lensOn \? \(/);
+    expect(book).toMatch(/const showPhotos = lensOn && lensMode === 'photos';/);
+    expect(photoSurfaces({ build: false, paused: false }).lens).toBe(false);
+  });
 });
 
 describe('[NS-01-R20] new controls', () => {
@@ -195,5 +202,31 @@ describe('[NS-01-R22] the system picker is the only source', () => {
     for (const f of [...walk(join(SRC, 'lib', 'photos')), ...walk(join(SRC, 'components', 'photos'))]) {
       expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/launchCameraAsync|requestCameraPermissions|Take a photo now/);
     }
+  });
+});
+
+describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
+  it('[NS-01-R23] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
+    const f = join(SRC, 'app', '(tabs)', 'book.tsx');
+    const sf = parse(f);
+    let found = false;
+    visit(sf, (n) => {
+      if (jsxName(n) !== 'Button' && !(ts.isJsxSelfClosingElement(n) && n.tagName.getText() === 'Button')) return;
+      const attrs = ts.isJsxElement(n) ? n.openingElement.attributes : (n as ts.JsxSelfClosingElement).attributes;
+      const label = attrs.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'label');
+      if (!label || !label.getText().includes('book.empty.bookCta')) return;
+      found = true;
+      const onPress = attrs.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'onPress')!;
+      expect(onPress.getText().replace(/\s+/g, '')).toBe("onPress={()=>router.navigate('/')}");
+    });
+    expect(found).toBe(true);
+    // The Book now hosts the read-only Photos lens, so its flag, hook and lens component are allowed; nothing that can
+    // start a letter or open the picker is (start-intent, capture, the photo start, the picker, the pending picture).
+    expect(importsOf(sf).filter((m) => /start-intent|capture|photos\/(use-photo-start|use-photo-pick|photo-start|session|registry|pending|device|picker|attach)/.test(m))).toEqual([]);
+    expect(importsOf(sf).filter((m) => /photos/.test(m)).sort()).toEqual(['@/components/photos/photos-lens', '@/lib/photos/flag', '@/lib/photos/hooks', '@/lib/photos/lens', '@/lib/photos/pause']);
+    expect(readFileSync(f, 'utf8')).not.toMatch(/armListenStart|pathname: '\/(listen|write)'|href="\/(listen|write)"/);
+  });
+  it('[NS-01-R23] the lens copy has no "Add photos" button word', () => {
+    expect(JSON.stringify(photos.book.lens)).not.toMatch(/add/i);
   });
 });

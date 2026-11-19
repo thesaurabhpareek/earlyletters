@@ -1,11 +1,12 @@
 /** React hooks for the photo surfaces. Thin: the rules are in the files they call (surface, lens, pending, entry-media). */
-import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { subscribe as subscribeStore } from '../store';
+import { subscribe as subscribeStore, listEntriesForChild } from '../store';
 
 import { erasePictureOf, photoDeps } from './device';
 import { adoptPending } from './adopt';
 import { photoNotSaved, subscribePhotoNotSaved } from './failures';
+import { photosLens, type LensLetter, type PhotosLens } from './lens';
 import type { PendingPhoto } from './pending';
 import { getPending } from './registry';
 import { pictureCovered } from './surface';
@@ -53,6 +54,23 @@ export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto 
     return subscribeStore(() => setPhoto(read()));
   }, [read]);
   return photo;
+}
+
+/** The Book's Photos lens for one book: which of its kept, open letters have a picture (lens.ts). */
+export function usePhotosLens(childId: string | null): PhotosLens {
+  const [tick, setTick] = useState(0);
+  useEffect(() => subscribeStore(() => setTick((n) => n + 1)), []);
+  return useMemo(() => {
+    void tick;
+    if (!childId) return { visible: false, photos: new Map() };
+    try {
+      const letters: LensLetter[] = listEntriesForChild(childId).map((e) => ({ id: e.id, inBook: e.inBook, kind: e.kind }));
+      return photosLens(letters, photoDeps().store.all());
+    } catch {
+      return { visible: false, photos: new Map() };
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [childId, tick]);
 }
 
 /** Back, Close or Let it go before Keep: nothing stays, the picker's original included (NS-01-R4). Safe with no photo. */
