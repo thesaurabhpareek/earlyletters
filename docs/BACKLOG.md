@@ -3520,7 +3520,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 
 ## New scope, waves 1 and 2 (19 Nov 2026)
 
-Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-941 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
+Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-948 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
 
 #### BL-923 The launch sweep finishes a draft left `discarding` (N-07)
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
@@ -3617,7 +3617,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Plan: needs counsel's read and the founder's hours for the sessions.
 
 #### BL-936 One roadmap, December 2026 to May 2027
-- Status: ready. Mode: pair. Owner: content. Milestone: M15. Size: M.
+- Status: in-review (first draft `docs/roadmap/ROADMAP-2026-12-to-2027-05.md` in this PR). Mode: pair. Owner: content. Milestone: M15. Size: M.
 - Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product`.
 - Scope: one file under `docs/roadmap/` that maps the final rank to builds, with provisional dates marked as such; folds in what still holds from `docs/backlog/FUTURE.md`, its re-baseline and the files on PR #664 (read them; drop what is stale with a reason); maps BL ids to `C-` and `N-` ids; and states the capacity that has and has not been measured. `docs/ROADMAP.md` keeps its Superseded banner and points to it.
 - Done when: merged by Fri 27 Nov 2026. Dates in it are proposals until the founder sets them.
@@ -3653,6 +3653,54 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Scope: reuse `ChildSwitcher` (already used by `book.tsx`) on Home, above the dateline; it stacks at AX5 and names whose book the letter goes to for VoiceOver.
 - Fails on old code: a test that Home with two books renders the switcher, and with one book does not.
 - Done when: the tests pass.
+
+#### BL-942 Save a copy of the year: the Me action and the birthday slip (NS-11)
+- Status: blocked (BL-934, BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-934, BL-937.
+- Satisfies: NS-11-R1 to NS-11-R7 (`docs/product/prd/08-keeping-and-trust.md`).
+- Scope: the Save a copy screen reached from Me in 2 taps, using the existing export path; the Home slip in the birthday week, once a year per book, sharing the single Home slip; a local row for shown and dismissed. Words are the PROPOSED keys from BL-934. No notification.
+- Fails on old code: `[NS-11-R2]` and `[NS-11-R6]` fail (no slip, no screen).
+- Done when: R1 to R7 pass; journey J-N8 is in the device run sheet.
+
+#### BL-943 Reminders proven on a phone, with back-off and stop (NS-13)
+- Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: M.
+- Satisfies: NS-13-R1 to NS-13-R10 (`docs/product/prd/09-capture.md`). Also cited: #680, BL-770 (repeat), S1-135.
+- Scope: back-off after 7 unanswered days to weekly and stop after 4 more unanswered weeks (both numbers in one constant, PROPOSED); cancel today's reminder after a kept letter; the hour follows the phone's time zone and never fires in skipped hours; no name or letter text by default. Fold in or supersede the repeat work already open rather than duplicate it.
+- Fails on old code: `[NS-13-R3]`, `[NS-13-R4]` and `[NS-13-R8]`.
+- Done when: unit rows pass; journeys J-N3, J-N4 and J-N5 are rows in the device run sheet.
+
+#### BL-944 Requirement rows and data inventory for a letter's about-day (NS-15)
+- Status: ready. Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
+- Who: an interactive session as `product` with `privacy` and `data-architect`.
+- Satisfies: NS-15 (`docs/product/prd/09-capture.md`).
+- Scope: name the field, its sync and export shape, its data inventory row and its class (same as the letter's date), and confirm the rule that no date is ever read from the words.
+- Done when: the rows and the inventory draft are merged; BL-945 can be built without a question.
+
+#### BL-945 A letter for another day (NS-15)
+- Status: blocked (BL-944). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-944.
+- Satisfies: NS-15-R1 to NS-15-R7.
+- Scope: a tappable dateline on Review and on the author's letter page; the Book files by the about-day; both days shown; export carries both; only the author can change it; no future day.
+- Fails on old code: `[NS-15-R2]` and `[NS-15-R4]`.
+- Done when: R1 to R7 pass; J-N7 runs in CI.
+
+#### BL-946 One past letter on Home (NS-23)
+- Status: blocked (BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-937.
+- Satisfies: NS-23-R1 to NS-23-R6 (`docs/product/prd/10-reading-and-family.md`).
+- Scope: choose at most one letter from the same day of an earlier month or year, never sealed, hidden or the other parent's private letter; show it in the single Home slip; a switch in Me turns past letters off.
+- Fails on old code: `[NS-23-R4]` and `[NS-23-R5]`.
+- Done when: R1 to R6 pass and the switch label is approved by the founder.
+
+#### BL-947 Read the year back (NS-24)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: NS-24-R1 to NS-24-R3.
+- Scope: from the Book, start Read together at the first letter of a chosen year of {child}'s life and end at its last; skip the other parent's private letters; no summary or count page.
+- Fails on old code: `[NS-24-R1]`.
+- Done when: R1 to R3 pass.
+
+#### BL-948 Speed and accessibility rows in the device run sheet for every new card (NS-33, NS-34)
+- Status: blocked (BL-929). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-929.
+- Satisfies: `docs/product/prd/14-test-plan.md` sections 4 and 5.
+- Scope: one device row per journey J-N1 to J-N18 that needs a phone, P0 rows first, with the settings in section 5.
+- Done when: the rows exist in `docs/qa/DEVICE_TEST_PLAN.md` and each names its card id.
 
 ## Appendix: TDD proposal to BL mapping
 

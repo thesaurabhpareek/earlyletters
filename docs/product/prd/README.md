@@ -6,6 +6,28 @@ Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-I
 
 Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order (it follows X1 of the closed list; X1 does not order Share one letter, so the build order for Share is set by the build targets in the table below, not by the file order): photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (earliest Build 15).
 
+## Added 19 Nov 2026: the full pack
+
+Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, what we optimise, where everything lives, the master index of every ranked item). The ranked list itself is `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`.
+
+| File | Cards | Bucket |
+|---|---|---|
+| `00-product-frame.md` | frame, KPIs, IA, standing design, content and legal inputs, run cost, master index | all |
+| `08-keeping-and-trust.md` | NS-08 backup readiness, NS-09 let it go finishes, NS-10 new phone, NS-11 save a copy, NS-12 earlier versions | A Keeping |
+| `09-capture.md` | NS-13 reminders, NS-14 whose book, NS-15 another day, NS-16 someone else speaks, NS-17 second language, NS-18 typed days, NS-19 continue a draft, NS-20 two books | B Capture |
+| `10-reading-and-family.md` | NS-21 letter page, NS-22 calm header, NS-23 one past letter, NS-24 read the year back, NS-25 the other parent, NS-26 to NS-31 later family and keepsake items | C, D |
+| `11-foundations.md` | NS-32 notification budget, NS-33 accessibility, NS-34 speed, NS-35 one start, NS-36 data follows the letter, NS-37 Book stays fast | F Foundations |
+| `12-parked-and-not-built.md` | what we said no to, and what would change our mind | G Parked |
+| `13-engineering-plan.md` | sizes, skills, order, dependencies (Karma) | for the harness |
+| `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N18, device matrix, store-build gate | for `qa` |
+| `15-council-review.md` | what the council found and how each was answered | record |
+
+### How to read a card (NS-08 onward)
+
+Each card has, in order: who and when (the parent and the moment); why (the job and what goes wrong today); what (and what is not in scope); the happy path; the unhappy paths as a table; acceptance rows in Given, When, Then form with a number or an observable state and a test title; design inputs; content inputs (words in quotes are intent, `content` writes them, the founder approves them); legal, privacy and compliance inputs (counsel must confirm any legal reading); free or Plus; how it is measured with analytics off; open questions with an owner and a default.
+
+Cards for items further down the rank are shorter on purpose: they record the decision, the reason it waits, and what would reopen it, so nobody designs or builds them by accident.
+
 ## The ground rules every file obeys
 
 | Rule | Source |
