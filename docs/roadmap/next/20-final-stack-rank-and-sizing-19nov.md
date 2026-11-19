@@ -14,7 +14,7 @@ How the roles were run: one Claude session, reading the council protocol and eac
 - **N-05 is built.** #828 (one capture entry and the navigation test) is open and not a draft. It needs two counted reviews.
 - **ADR 0028 moved.** #797 was amended three times on 19 Nov. Its D3a answers the seal clock: two columns written once together, where the instant (`seal_opens_at`) is the rule and the date is for display. That matches the working rule in the exec record. Head `1bee878b` has no counted review yet.
 - **Find moved.** #798 was rebuilt onto develop on 19 Nov and is in a fix round at `e7d399b3`. GitHub reports 280 changed files for it, which cannot be its own delta; the true size was not re-read here.
-- **A conflict on the co-parent caption.** See section 6. C-22 is held out of the rank until the founder confirms which of his two answers stands.
+- **The co-parent caption is settled.** See section 6. C-22 is dropped.
 
 ## 2. In flight (not new rows; do not duplicate)
 
@@ -122,7 +122,7 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 53 | 54 | C-35 | Gifts and lifetime | 1 | L | Payments; banned word |  |
 | 54 | 55 | C-37 | A Share tab | 1 | M | Fails the founder's tab test |  |
 
-Held out of the rank: **C-22** (co-parent caption and sheet in store builds). See section 6.
+Dropped from the rank: **C-22** (co-parent caption and sheet in store builds), on the founder's answer of 19 Nov. See section 6.
 
 ## 5. Sizing in review load, waves 1 and 2
 
@@ -134,13 +134,11 @@ Held out of the rank: **C-22** (co-parent caption and sheet in store builds). Se
 
 The limit is review, not building. COORDINATION section 6 and D-132 need two counted reviews and green CI on each head. At that rate wave 1 is about 30 to 40 counted reviews. I have not measured how many counted reviews a day the sessions sustain; until that is measured, no date follows from this table.
 
-## 6. One question for the founder
+## 6. The co-parent caption: answered
 
-The record holds two answers from you on the co-parent caption, both dated 11 Nov and both relayed by me, not quoted:
-- closed question N1, amended: one small tappable caption in Me that opens one sheet with an on-device reminder (design spec 07);
-- D-161 as drafted in #827: no build shows a "coming soon" co-parent surface, which is what #720 shipped.
+The record held two relayed answers on the co-parent caption, both dated 11 Nov: closed question N1 as amended (one tappable caption in Me that opens one sheet, design spec 07), and D-161 as drafted in #827 (no build shows a "coming soon" co-parent surface, which is what #720 shipped).
 
-My recommendation: the shipped state stands (no caption in any build) and spec 07 waits, because a store build with a "coming soon" line invites App Review guideline 2.1(a) and the code already matches. Default if you say nothing: that. #827 is yours to merge and is where your own words go.
+Asked on 19 Nov which stands, with the first listed as 1 and the second as 2, the founder answered in chat: "Sorry second. Go for it". So the shipped state stands: no caption and no sheet in any build. C-22 is dropped from the rank, and design spec 07 waits until co-parent sharing is ready for store builds (C-21). #827 carries the decision record and is the founder's to merge (D-125).
 
 ## 7. Work packages
 
