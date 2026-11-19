@@ -1,16 +1,18 @@
 /// <reference types="node" />
 // The phone's wiring for Photo with a letter (src/lib/photos/device.ts) over a real SQLite and the expo-file-system
 // stand-in: the deps every picture write runs against, the one eraser every letter purge calls, the launch sweep, and
-// what the store adds to a phone where nothing is picked. Fictional family Asha.
+// the switch that decides whether anything registers. Fictional family Asha.
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
-import { erasePictureOf, photoDeps, sweepPhotosAtLaunch } from '../src/lib/photos/device';
+import { erasePictureOf, photoDeps, registerPhotoDevice, sweepPhotosAtLaunch } from '../src/lib/photos/device';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { expoPhotoFiles, photosDirectory } from '../src/lib/photos/files';
+import { setPhotosForTest } from '../src/lib/photos/flag';
+import { getPending, getPhotoPicker } from '../src/lib/photos/registry';
 import type { StoredPhoto } from '../src/lib/photos/types';
 import { createDisk, iosContainer, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -118,5 +120,25 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     const eraser = erase.slice(erase.indexOf('export const eraseAudioFile'), erase.indexOf('};', erase.indexOf('export const eraseAudioFile')));
     expect(eraser).toMatch(/erasePictureOf\(entryId\);/);
     expect(readFileSync(join(SRC, 'lib', 'capture', 'sweep.ts'), 'utf8')).toMatch(/sweepPhotosAtLaunch\(\)/);
+  });
+});
+
+describe('[NS-01-R19][NX-39-R37] the switch decides what registers, never the data rights', () => {
+  it('[NS-01-R19] with EXPO_PUBLIC_PHOTOS unset nothing registers: no picker and no pending picture, so no photo start can draw', () => {
+    expect(process.env.EXPO_PUBLIC_PHOTOS).toBeUndefined();
+    registerPhotoDevice();
+    expect(getPhotoPicker()).toBeNull();
+    expect(getPending()).toBeNull();
+  });
+
+  it('[NS-01-R19] with the switch on, a build without the native picker (Node here, Expo Go, web) still registers nothing', () => {
+    setPhotosForTest(true);
+    try {
+      registerPhotoDevice();
+      expect(getPhotoPicker()).toBeNull();
+      expect(getPending()).toBeNull();
+    } finally {
+      setPhotosForTest(null);
+    }
   });
 });

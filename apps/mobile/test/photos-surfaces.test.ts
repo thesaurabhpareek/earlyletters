@@ -4,6 +4,7 @@ import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import ts from 'typescript';
 import { entrySnapshot, type LocalEntryRow } from '../src/lib/sync/outbox';
+import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
 import { commitPhoto } from '../src/lib/photos/session';
 import { deps, makeJpeg } from './photos-helpers';
 
@@ -39,5 +40,20 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
       expect(importsOf(parse(f)).filter((m) => /sync|supabase|fetch|api/.test(m)), rel(f)).toEqual([]);
       expect(readFileSync(f, 'utf8'), rel(f)).not.toMatch(/\bfetch\(|XMLHttpRequest/);
     }
+  });
+});
+
+describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data rights', () => {
+  it('[NS-01-R19][NX-39-R37] off (the default), or paused remotely, nothing new draws; only "on" turns it on', () => {
+    expect(parsePhotosFlag(undefined)).toBe(false);
+    for (const v of ['', 'off', 'true', '1', 'yes']) expect(parsePhotosFlag(v)).toBe(false);
+    expect(parsePhotosFlag('on')).toBe(true);
+    expect(photoSurfaces({ build: false, paused: false })).toEqual({ start: false, lens: false, addActions: false });
+    expect(photoSurfaces({ build: true, paused: true })).toEqual({ start: false, lens: false, addActions: false });
+    expect(photoSurfaces({ build: true, paused: false })).toEqual({ start: true, lens: true, addActions: true });
+    // the remote can pause, and a config with nothing in it never pauses and never turns anything on
+    expect(photosPaused({ killSwitches: { photos: true } })).toBe(true);
+    expect(photosPaused(null)).toBe(false);
+    expect(photoSurfaces({ build: false, paused: photosPaused({ killSwitches: { photos: false } }) }).start).toBe(false);
   });
 });
