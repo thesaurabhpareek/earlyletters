@@ -4,6 +4,12 @@
  * the route renders exactly what Build 11 did: nothing here lists the books, listens to the store, reads or watches the
  * network, or starts a timer (route.logic.ts; tested as behaviour in test/use-first-run-route.test.ts). Records and sends
  * nothing.
+ *
+ * NX-36-S17: a ready, sync-on session with no book asks its account first (use-new-phone.ts) and is held on "Opening your
+ * book" until the account has said it has no book, so the child step is never shown while the book may be on its way. A
+ * signed-in session that cannot ask yet (the consent gate still being read, or unreadable, or a sign-out finishing) is held
+ * too (gate.logic.ts heldNewPhoneView); only a session that cannot be sent a book keeps the earlier route: sync declined, or
+ * consent not yet answered (`needsConsent`; the accepted gap and its follow-up are named at heldNewPhoneView).
  */
 import { authCopy } from '@scribe/content';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -12,7 +18,8 @@ import { isSignedIn, type AuthState } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { subscribe, listChildren } from '@/lib/store';
-import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
+import { RESTORE_WAIT_MS, firstRunGate, gateInputsFromAuth, heldNewPhoneView, restoreBlocksScreen, type FirstRunGateResult, type FirstRunStep } from './gate.logic';
+import { useNewPhone } from './use-new-phone';
 import { useOnline } from './use-online';
 import { failureStillCounts, firstRunScreen, type FirstRunScreen } from './welcome.logic';
 
@@ -36,6 +43,15 @@ export interface FirstRunRoute extends FirstRunGateResult {
    * Nothing with the switch off.
    */
   restartFromWelcome: () => void;
+  /**
+   * NX-36-S17: Try again on the slow and offline screens: asks the account again and nudges the pull, or, while the consent
+   * gate could not be read (`ready` with sync `unknown`), re-reads that gate.
+   */
+  retryOpening: () => void;
+  /** NX-36-S17: "Start a book" on No book here yet (the person chose to begin one: the child step). */
+  startBook: () => void;
+  /** NX-36-S17: the account has said it holds a book, so the opening screen may say "Your letters are coming across." */
+  accountHasBook: boolean;
 }
 
 export function useFirstRunRoute(): FirstRunRoute {
@@ -112,13 +128,31 @@ export function useFirstRunRoute(): FirstRunRoute {
     if (active) setPastWelcome(false);
   }, [active]);
 
+  const hasLocalBook = active && listChildren().length > 0;
+  // A ready session with sync on and no book asks its account first (NX-36-S17). A session whose consent gate is still being
+  // read, could not be read, or whose sign-out has not finished is held meanwhile (heldNewPhoneView): it may yet become sync
+  // on, and the first pull would bring the account's book. A session that cannot be sent a book (sync declined, or consent not
+  // yet answered: `needsConsent`, the accepted gap named at heldNewPhoneView) keeps the earlier route (`new`); so does every
+  // build with the switch off (nothing here is read then).
+  const asks = active && auth.state.status === 'ready' && auth.state.sync === 'on';
+  const np = useNewPhone({ enabled: asks, client: auth.client, hasLocalBook, online });
+  const held = active && !hasLocalBook ? heldNewPhoneView(auth.state, online) : undefined;
   const inputs = gateInputsFromAuth({
     serverFeatures: active,
     authState: auth.state,
-    hasLocalBook: active && listChildren().length > 0,
+    hasLocalBook,
     localStartChosen,
     online,
+    newPhone: np.view ?? held ?? 'new',
   });
+  // Try again while the consent gate could not be read re-reads that gate (the provider's own read; sync on then asks the
+  // account). Otherwise it is the account question again.
+  const gateUnread = active && auth.state.status === 'ready' && auth.state.sync === 'unknown';
+  const { refreshGate } = auth;
+  const retryOpening = useCallback(() => {
+    if (gateUnread) void refreshGate().catch(() => undefined);
+    else np.retry();
+  }, [gateUnread, refreshGate, np.retry]);
   const result = firstRunGate({ ...inputs, signInFailed: inputs.signInFailed && failureStillCounts(auth.state, setAside) });
   const restoring = restoreBlocksScreen(auth.state.status, restoreWaitedOut ? RESTORE_WAIT_MS : 0);
   // After the reconnect effect above (effects run in order), so that effect still sees the previous render's step.
@@ -135,5 +169,8 @@ export function useFirstRunRoute(): FirstRunRoute {
     tryAgain,
     markPastWelcome,
     restartFromWelcome,
+    retryOpening,
+    startBook: np.startBook,
+    accountHasBook: np.hasBook,
   };
 }

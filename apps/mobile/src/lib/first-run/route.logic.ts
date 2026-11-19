@@ -37,6 +37,9 @@ export function welcomeBeginAllowed(args: WelcomeGateArgs): boolean {
       authState: args.authState,
       hasLocalBook: serverFeatures && args.hasLocalBook(),
       localStartChosen: args.localStartChosen,
+      // The steps only render once the route has decided (the account said "new", or the earlier local start), so the
+      // Welcome's own question is not the account question (NX-36-S17 holds that on the route, use-first-run-route.ts).
+      newPhone: 'new',
     }),
   );
 }

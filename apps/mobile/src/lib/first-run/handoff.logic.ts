@@ -78,7 +78,9 @@ export function backShown(input: { accountFirst: boolean; step: FirstRunStepId }
  * on: if their account's book arrives, it must open on the Book, never offer a second book. So that one step, the start
  * step before the person has moved off it, is asked as the welcome. Every later step (the child step, the signature, the
  * last) is asked as itself and never hands over, and so is every build that opens on the Welcome (the mapping would
- * change nothing there). The fuller answer is S17 in #764.
+ * change nothing there). Since NX-36-S17 (new-phone.logic.ts) the route holds a signed-in phone with no book on "Opening
+ * your book" until the account has said it has no book, so the promise step is reached only once the account is new;
+ * this mapping stays as the second guard for a book that lands under it anyway.
  */
 export function welcomeHandoffStep(input: { start: FirstRunStepId; step: FirstRunStepId }): FirstRunStepId {
   return input.start === 'promise' && input.step === 'promise' ? 'welcome' : input.step;
