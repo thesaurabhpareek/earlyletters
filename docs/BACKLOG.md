@@ -3518,6 +3518,142 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Done when: these named tests pass: `[NX-39-R20] a middle hidden day splits a moment and the hidden day is a barrier the gap rule cannot bridge`; `[NX-39-R20] a lone leftover day with fewer than 3 items is dropped`; `[NX-39-R20] a leftover piece with 2 active days or 3 items survives with reasons from running R15 on its own items`; `[NX-39-R20] pieces do not copy the parent moment's reasons or city key`; `[NX-39-R41] the decisions store has no photo-key field and no function that stores one`; and the old test "pieces keep the moment city key, reasons and rule version" is removed or rewritten to the above.
 - Plan: P2b; install yes; no founder hours.
 
+## New scope, waves 1 and 2 (19 Nov 2026)
+
+Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-941 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
+
+#### BL-923 The launch sweep finishes a draft left `discarding` (N-07)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: F04-REQ-009 (Let it go, confirmed).
+- Problem: `store.ts` marks a draft `discarding` and then removes it (around lines 1267 and 1290). If the app stops between the two steps, or the file delete fails (#824), the draft stays `discarding`: hidden, with its audio still on the phone. `apps/mobile/src/lib/capture/sweep.logic.ts` and `sweep.ts` do not mention `discarding` at all, though comments in `store.ts`, `let-it-go.logic.ts` and `sync/merge.ts` say a launch sweep finishes it.
+- Scope: at launch, for each draft marked `discarding`, delete the file if present, then finish the discard. A file that still cannot be deleted leaves the row for the next launch. Correct the comments that claim this already exists. No new words on screen.
+- Fails on old code: a test that seeds one `discarding` draft with its file, runs the sweep and expects neither row nor file.
+- Done when: that test passes; a second case covers a delete that throws (row stays, no crash); the comments match the code.
+- Plan: no install; no founder step.
+
+#### BL-924 Discard on Listen keeps the draft when the recording cannot be deleted (N-07)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Satisfies: F04-REQ-009. Also cited: #824 (the same fix in Review).
+- Problem: `apps/mobile/src/app/listen.tsx` lines 433 to 438 delete the file inside an empty `catch` and then delete the draft row. A failed delete leaves audio on the phone with no row pointing at it.
+- Scope: route Discard on Listen through `letItGo` (`lib/capture/let-it-go.logic.ts`), as Review does: mark, delete, finish; a real delete failure keeps the row marked `discarding` for BL-923. A missing file still finishes.
+- Fails on old code: a test where the delete throws expects the draft row to remain.
+- Done when: the test passes and no path in `listen.tsx` deletes a file outside `letItGo`.
+- Plan: no install; no founder step.
+
+#### BL-925 Words for a recording that could not be let go yet (N-07)
+- Status: needs-decision (founder word approval). Mode: agent. Owner: content. Milestone: M15. Size: S.
+- Who: `content`; review `design-systems`.
+- Scope: one calm line, PROPOSED, in `packages/content`, for the moment a Let it go did not finish. It says what is true (the recording is still on this phone and the app will finish letting it go) with no fear, guilt or loss language and no blame.
+- Done when: the key exists, the content rules test passes, and the founder has approved the exact words in chat.
+- Plan: no install; needs the founder's word approval.
+
+#### BL-926 Review says so when Let it go did not finish (N-07)
+- Status: blocked (BL-925). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-925.
+- Satisfies: F04-REQ-009.
+- Problem: `apps/mobile/src/app/review.tsx` line 415 calls `letItGo` and ignores what it returns, so a failed delete is silent.
+- Scope: read the result; on failure show the BL-925 line once, announce it to VoiceOver, and leave Review usable.
+- Fails on old code: a test where the delete fails expects the line to be shown.
+- Done when: the test passes at the largest text size layout check.
+
+#### BL-927 Accessibility floor: the audit note with exact fixes (N-02)
+- Status: ready. Mode: agent. Owner: design systems. Milestone: M15. Size: S.
+- Satisfies: LEGAL-REQ-051 (WCAG 2.2 AA, Dynamic Type to AX5); A-NFR-005 to A-NFR-007.
+- Scope: one note under `docs/design/reviews/` naming, with file and line, four fixes: the letter page gets a level 1 heading (the dateline) found by the Headings rotor; the Me screen's heading equals the tab label; the Book lens control uses radio semantics (`ChoiceGroup` segmented or `ChipGroup`) in place of Buttons in a tab list; the Book header order at AX5 keeps every control at 44 pt or more. It says what can be checked in a test and what needs a phone.
+- Done when: the note is merged and BL-928 can be done from it without a question.
+
+#### BL-928 Accessibility floor fixes on the letter page, Me and the Book header (N-02)
+- Status: blocked (BL-927). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-927.
+- Satisfies: LEGAL-REQ-051.
+- Scope: the four fixes in BL-927's note. No new words. Do not touch the Book header files while #798 has a review in progress at its head; take the letter page and Me first.
+- Fails on old code: source checks for the heading role on the letter page and for radio semantics on the lens control.
+- Done when: those tests pass, and `qa` has added one device row to `docs/qa/DEVICE_TEST_PLAN.md` for the VoiceOver and AX5 walk of the three screens.
+
+#### BL-929 Device baseline run sheet for a small phone (N-01)
+- Status: ready. Mode: agent. Owner: qa engineer. Milestone: M15. Size: S.
+- Satisfies: `docs/prd/v2/06-nfr.md` rows 42 and 216, as reworded in BL-930.
+- Scope: one run sheet under `docs/qa/` for an iPhone SE (3rd generation): start of the screen hand-offs, time until controls are usable, frames over 16.7 ms on Home, Book scroll and the letter page, the save hand-off, and loops under Reduce Motion. It says how each number is read and where it is written down. No entry text, transcript or child name is recorded; examples use the family Asha.
+- Done when: the sheet is merged. The run itself is the founder's, on his phone, and is not part of this row.
+- Plan: needs the founder's phone and time afterwards (duration not estimated here).
+
+#### BL-930 Reword NFR rows 42 and 216 to what the built hand-offs can meet (N-01)
+- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
+- Who: `product` edits the requirement file; `design-systems` reviews.
+- Scope: in `docs/prd/v2/06-nfr.md`, row 42 becomes: a transition starts within 100 ms, controls are usable by 350 ms, no frame is over 16.7 ms, the named hand-offs are bounded by `sequenceMaxMs` (900 ms) and the save hand-off by `hardCeilingMs` (2000 ms). Row 216 becomes: loops change opacity only, run only on the focused screen, and do not run under Reduce Motion. Each keeps a device and a test line.
+- Done when: the rows are merged and BL-929 cites them.
+
+#### BL-931 Split #796 (Photo with a letter) into five reviewable PRs (N-11)
+- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: NS-01 (PRD `docs/product/prd/01-photo-with-a-letter.md`); CODE-R02 (review size limit).
+- Problem: #796 is 64 files and 3,747 added lines at `39efe1ac`, against a limit of 400 lines and 20 files. It has had no counted review since 11 Nov.
+- Scope: five PRs, each behind `EXPO_PUBLIC_PHOTOS` (default off), in this order: (1) the `expo-image-picker` pin, the licences list and the preflight change (release tooling: CTO plus two reviews); (2) the native `scribe-photo` module (security-architect review); (3) local migration 11, the `entry_media` store and the photo sweep (after ADR 0028 is accepted); (4) photo-first capture on Home through `startCapture` (after #828); (5) the Photos lens as letter cards. #796 closes when the fifth is open. If a slice still exceeds the limit, say why in its body.
+- Done when: five PRs are open with green CI, each inside the limit or with a stated exception, and #796 is closed with pointers.
+- Plan: no new install beyond #796's; device checks listed in #796 stay open.
+
+#### BL-932 The Book list stays light with photos: two derivatives (N-06)
+- Status: blocked (BL-931 slice 2). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931.
+- Satisfies: NS-01-R11 (the Photos lens is letter cards with a thumbnail).
+- Scope: two stored derivatives per photo, about 512 px and about 1280 px on the long edge; the original is read only for export. The Book list query selects no full-size path. No image is decoded while a take is recording.
+- Fails on old code: a test that the list query returns only the small derivative path, and one that the capture path imports no decoder.
+- Done when: the tests pass and BL-929's sheet has a Book scroll row with photos. Device numbers are not known yet.
+
+#### BL-933 Export schema 1.7.0 carries photo files (N-08)
+- Status: blocked (ADR 0028 acceptance, PR #797). Mode: agent. Owner: export owner. Milestone: M15. Size: M.
+- Satisfies: NS-01 export rows; ADR 0028 (export path `photos/<entry_id>/<media_id>.<ext>`). Also cited: BL-868.
+- Scope: the export ZIP includes each kept photo at the ADR's path, the schema version becomes 1.7.0, the README in the export names the folder, and the golden fixture for the family Asha gains one photo.
+- Fails on old code: the golden export test expects the photo file and version 1.7.0.
+- Done when: the golden test passes and an export made by 1.6 still reads.
+
+#### BL-934 Requirement: Save a copy of the year (C-03)
+- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
+- Who: `product` writes the requirement; `content` writes the words; `design-systems` reviews.
+- Scope: one file `docs/product/prd/08-save-a-copy.md` in the shape of the other files there. Export exists and is free (F15); this adds a "Save a copy" action in Take the book with you and one Home slip in the child's birthday week, sharing the single Home slip. No notification in the first version. The line is a keepsake line; it never says or implies loss. It states what the copy holds and that the parent chooses where it goes.
+- Done when: the file is merged with rows in Given, When, Then form, a device, a test, and the words marked PROPOSED for the founder.
+
+#### BL-935 Pilot kit for family-hears-it (C-19)
+- Status: ready. Mode: agent. Owner: user researcher. Milestone: M15. Size: S.
+- Satisfies: `docs/product/prd/03-family-hears-it-pilot.md`.
+- Scope: the session script, the consent texts as drafts for counsel, the recruiting note for 8 to 10 parents, and the sheet the answers go on. No build. Nothing leaves a phone except what a parent chooses to send themselves. No entry text or child name is kept in notes.
+- Done when: the kit is merged as drafts. The pilot does not start until counsel has read the consent texts (the founder's step, due 27 Nov).
+- Plan: needs counsel's read and the founder's hours for the sessions.
+
+#### BL-936 One roadmap, December 2026 to May 2027
+- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: M.
+- Who: `product`.
+- Scope: one file under `docs/roadmap/` that maps the final rank to builds, with provisional dates marked as such; folds in what still holds from `docs/backlog/FUTURE.md`, its re-baseline and the files on PR #664 (read them; drop what is stale with a reason); maps BL ids to `C-` and `N-` ids; and states the capacity that has and has not been measured. `docs/ROADMAP.md` keeps its Superseded banner and points to it.
+- Done when: merged by Fri 27 Nov 2026. Dates in it are proposals until the founder sets them.
+
+#### BL-937 The letter page as one "This letter" list (N-03)
+- Status: blocked (BL-928). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-928.
+- Scope: in `apps/mobile/src/app/letter/[id].tsx`, the rows for a letter (privacy, date, and later photo, a first, a seal) sit in one `ListSection` titled as a level 2 heading; Share is a button on its own row; Delete is last. Rows are at least 56 pt and grow with text size. No new words beyond keys that exist.
+- Fails on old code: a source check for the order (Share alone, Delete last) and the heading level.
+- Done when: the check passes and the BL-928 device row covers the page.
+
+#### BL-938 Book header calm: one bar for Find, the lens row and the month jump (N-04)
+- Status: blocked (PR #798 merged). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Who: `design-systems` writes the one-page delta first; `mobile` builds.
+- Scope: the header order at every text size is title, age, switcher, Read together, lens row, Find, Go to a month; the gear leaves the Book header; nothing is added. Every control is 44 pt or more at AX5.
+- Done when: a layout test at AX5 passes and the device row for the Book is updated.
+
+#### BL-939 Share one letter, Level 1 (text only), behind `EXPO_PUBLIC_SHARE_LETTER` (C-18)
+- Status: blocked (BL-937). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-937.
+- Satisfies: NS-05, the Level 1 rows of `docs/product/prd/05-share-one-letter.md`; design spec `docs/design/specs/03-SHARE-ONE-LETTER-11nov.md`.
+- Scope: from the letter page, the parent sends one letter's kept words through the phone's own share sheet. The text sent equals the kept words exactly, with no footer, brand name or link (NS-05-R16). No recording row and no recording path (X2). No Share tab. If Level 1 is more than one PR, split it here first.
+- Fails on old code: a test that the shared text is byte-equal to the kept words.
+- Done when: the test passes with the flag on, and the flag is off in `production`. Words need the founder's approval before any build turns it on.
+
+#### BL-940 Requirement: whose book this letter goes to, on Home (C-14)
+- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
+- Who: `product` adds the rows to `docs/product/prd/07-remaining-capability-rows.md`; `design-systems` reviews.
+- Problem: with two books, Home has no switcher and a new letter goes to the active child; only the dateline names the book.
+- Scope: rows for the existing `ChildSwitcher` at the top of Home when the account has two or more books, and nothing when it has one. `{child}` only.
+- Done when: the rows are merged with a device and a test each.
+
+#### BL-941 Child switcher on Home (C-14)
+- Status: blocked (BL-940). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-940.
+- Scope: reuse `ChildSwitcher` (already used by `book.tsx`) on Home, above the dateline; it stacks at AX5 and names whose book the letter goes to for VoiceOver.
+- Fails on old code: a test that Home with two books renders the switcher, and with one book does not.
+- Done when: the tests pass.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
