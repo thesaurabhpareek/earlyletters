@@ -1325,8 +1325,10 @@ export const en = {
       body: "Your letters are on this phone.",
     },
     localStart: {
-      // Red-team 10 Nov: it is added, not moved (the phone keeps it). TODO(founder, counsel): placeholder, needs word approval.
-      body: "This book is on this phone. Signing in adds it to your account after you agree.",
+      // Red-team 10 Nov: it is added, not moved (the phone keeps it). Second paragraph under signedOut.body, so "them"
+      // is the letters named there; the card does not say "on this phone" twice (Review B, 13 Nov).
+      // TODO(founder, counsel): placeholder, needs word approval.
+      body: "Signing in adds them to your account after you agree.",
     },
     // Spoken hint of the You tab button (spec key tabs.youA11yHint; kept here so tabs stays single words, NX-30a-R9).
     youTabHint: "Settings and account",
