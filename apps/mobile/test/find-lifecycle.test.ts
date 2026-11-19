@@ -7,7 +7,7 @@
 import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { migrate } from '../src/lib/db/migrations';
 import { entries, wipe } from '../src/lib/db/repos';
 import type { RepoContext } from '../src/lib/db/repos';
@@ -26,12 +26,28 @@ import {
 } from '../src/lib/find/lifecycle';
 import { searchLetters, type FindResult } from '../src/lib/find/search';
 import { forgetSearchView, registerFindExtraSource, resetFindExtraSources } from '../src/lib/find/sources';
+import { setFindForTest } from '../src/lib/find/flag';
+import type { SqlDb } from '../src/lib/db/sql';
+import * as store from '../src/lib/store';
 import { createSyncEngine } from '../src/lib/sync/engine';
 import { takeOwnership } from '../src/lib/sync/ownership';
 import type { PullResponse, PushOp, RpcResult, SupabaseLike } from '../src/lib/sync/types';
 import { findFixture, type FindFixture } from './helpers/find-fixture';
 import { nodeDb } from './helpers/node-db';
 import { insertBook } from './helpers/store-fixture';
+
+// The store opens through the node database below, never the phone's; and `ensureSearchIndex` is wrapped so the switch-off
+// tests can say it was never called (every call still runs the real one).
+vi.mock('expo-crypto', () => ({ getRandomBytes: (n: number) => new Uint8Array(n).fill(7) }));
+vi.mock('../src/lib/db/repos/open-native', () => ({
+  openNativeDb: () => {
+    throw new Error('native open must not be used in tests');
+  },
+}));
+vi.mock('../src/lib/find/lifecycle', async (importOriginal) => {
+  const real = await importOriginal<typeof import('../src/lib/find/lifecycle')>();
+  return { ...real, ensureSearchIndex: vi.fn(real.ensureSearchIndex) };
+});
 
 let f: FindFixture;
 afterEach(() => {
@@ -359,6 +375,72 @@ describe('[NS-02-R16] removed words leave the file', () => {
     } finally {
       close();
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('[NS-02-R1] a build with Find off opens the store and makes nothing of Find', () => {
+  let seq = 0;
+  const newId = () => `0199a5b0-0000-7000-8000-${String(++seq).padStart(12, '0')}`;
+  const openWith = (db: SqlDb) => store.openStore({ open: () => ({ db, close: () => {} }), now: () => '2026-11-19T09:00:00.000Z', newId });
+  /** The index, its map and the view, by name (the FTS5 shadow tables are the index's own and come and go with it). */
+  const findObjects = (db: SqlDb) =>
+    db.all<{ name: string }>(`SELECT name FROM sqlite_master WHERE name IN ('${SEARCH_TABLE}', '${SEARCH_ROWS_TABLE}', 'searchable_letters') ORDER BY name`).map((r) => r.name);
+  const findSettings = (db: SqlDb) => db.all<{ key: string }>(`SELECT key FROM settings WHERE key IN ('${FIND_DIRTY_SETTING}', '${FIND_SECURE_SETTING}')`);
+
+  afterEach(() => {
+    setFindForTest(null);
+    vi.useRealTimers();
+    store.closeStore();
+  });
+
+  it('[NS-02-R1] with EXPO_PUBLIC_BOOK_SEARCH unset, opening the store and the launch catch-up never call ensureSearchIndex and make no index, no view and no Find setting', () => {
+    setFindForTest(false);
+    vi.useFakeTimers();
+    const h = nodeDb();
+    try {
+      vi.mocked(ensureSearchIndex).mockClear();
+      expect(openWith(h.db).ok).toBe(true);
+      vi.advanceTimersByTime(60_000); // well past the 3 s catch-up delay
+      expect(store.ensureFindIndex()).toBe('off');
+      expect(store.findIndexReady()).toBe(false);
+      expect(ensureSearchIndex).not.toHaveBeenCalled();
+      expect(findObjects(h.db)).toEqual([]);
+      expect(findSettings(h.db)).toEqual([]);
+    } finally {
+      store.closeStore();
+      h.close();
+    }
+  });
+
+  it('[NS-02-R1] an index left by an earlier build is dropped by the catch-up when the switch is off, still without ensureSearchIndex; with the switch on the same open makes it', () => {
+    vi.useFakeTimers();
+    const h = nodeDb();
+    try {
+      // The control: an earlier build with Find on made the index off the first frame.
+      setFindForTest(true);
+      vi.mocked(ensureSearchIndex).mockClear();
+      expect(openWith(h.db).ok).toBe(true);
+      expect(findObjects(h.db)).toEqual([]); // nothing on the path to the first frame
+      vi.advanceTimersByTime(60_000);
+      expect(ensureSearchIndex).toHaveBeenCalledTimes(1);
+      expect(findObjects(h.db)).toEqual([SEARCH_TABLE, SEARCH_ROWS_TABLE, 'searchable_letters'].sort());
+      expect(store.findIndexReady()).toBe(true);
+      store.closeStore();
+
+      // This build has Find off: the catch-up drops the index (derived data nobody can reach) and asks nothing of lifecycle.
+      setFindForTest(false);
+      vi.mocked(ensureSearchIndex).mockClear();
+      expect(openWith(h.db).ok).toBe(true);
+      expect(findObjects(h.db)).toContain(SEARCH_TABLE); // still nothing on the first frame
+      vi.advanceTimersByTime(60_000);
+      expect(findObjects(h.db)).toEqual(['searchable_letters']); // the view stays: it holds no data
+      expect(findSettings(h.db)).toEqual([]);
+      expect(store.findIndexReady()).toBe(false);
+      expect(ensureSearchIndex).not.toHaveBeenCalled();
+    } finally {
+      store.closeStore();
+      h.close();
     }
   });
 });

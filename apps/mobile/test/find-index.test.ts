@@ -2,7 +2,8 @@
 /**
  * Find's index and scan against a real SQLite engine with FTS5 (node:sqlite). Fictional Asha family only; every
  * sentence below is made up for the test. The phone's own SQLite (expo-sqlite 57) is a device check: its podspec
- * compiles FTS5 in unless the Podfile sets expo.sqlite.enableFTS to false (test/find-fts5-build.test.ts).
+ * compiles FTS5 in unless the Podfile sets expo.sqlite.enableFTS to false (find-logic.test.ts, `[NS-02-R19] FTS5 on the
+ * phone`).
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { children, entries } from '../src/lib/db/repos';
@@ -225,7 +226,9 @@ describe('[NS-02-R19] the index and the scan agree', () => {
     'Two words. Cafe. Na\u00efve fa\u00e7ade, Zo\u00eb, \u00c5ngstr\u00f6m.',
     '\u3072\u3089\u304c\u306a\u306e\u65e5\u3002\u8239\u3067\u884c\u3063\u305f\u3002',
   ];
-  const queries = ['rain', 'laughed rain', 'RAIN', 'cafe', 'caf\u00e9 maman', 'nino', 'pina bonito', '\u0928\u093e\u0935', '\u0642\u0627\u0631\u0628', 'blue boat', 'boat', 'boathouse', 'blue boats', 'don', 'rain shine', 'naive facade', 'zoe', 'angstrom', 'xyz', '\u8239', '\u3072\u3089\u304c\u306a'];
+  // 'laug', 'pomm' and 'laughed ra' are satisfied by the last-word-prefix rule alone (no whole word matches them), so a drift
+  // on that rule between the two paths (an exact last term in the scan, or no star in the FTS expression) goes red here.
+  const queries = ['rain', 'laughed rain', 'RAIN', 'cafe', 'caf\u00e9 maman', 'nino', 'pina bonito', '\u0928\u093e\u0935', '\u0642\u0627\u0631\u0628', 'blue boat', 'boat', 'boathouse', 'blue boats', 'don', 'rain shine', 'naive facade', 'zoe', 'angstrom', 'xyz', '\u8239', '\u3072\u3089\u304c\u306a', 'laug', 'pomm', 'laughed ra'];
 
   it('[NS-02-R19] over the fixtures, the index path and the scan path return the same letters in the same order', () => {
     f = findFixture();

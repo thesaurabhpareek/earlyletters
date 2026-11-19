@@ -28,6 +28,13 @@ function files(dir: string, test: (p: string) => boolean): string[] {
   });
 }
 const FIND_FILES = [...files(join(SRC, 'lib', 'find'), (p) => /\.tsx?$/.test(p)), ...files(join(SRC, 'components', 'find'), (p) => /\.tsx?$/.test(p))];
+/**
+ * The Book's blur handler in find-mode.tsx, whole: the guard that keeps the query for Back (R12), then the query cleared and
+ * Find closed (R14). Tabs keep the Book mounted, so this handler is the only thing that clears the query when the parent
+ * leaves for another tab; it is pinned as one sequence because `setQuery('')` also exists in Cancel, and a handler reduced
+ * to the guard alone would otherwise stay green.
+ */
+const BLUR_HANDLER = /addListener\('blur', \(\) => \{\s*if \(!clearOnBlur\(\)\) return;\s*setQuery\(''\);\s*onClose\(\);\s*\}\)/;
 
 describe('[NS-02-R1] Find lives on the Book header only, behind a switch that default to off', () => {
   it('[NS-02-R1] the build switch reads EXPO_PUBLIC_BOOK_SEARCH and only the word on turns it on', () => {
@@ -219,6 +226,20 @@ describe('[NS-02-R11] no count on screen or in the VoiceOver string', () => {
   });
 });
 
+describe('[NS-02-R21] a result row is read once', () => {
+  it('[NS-02-R21] the row label ends "Opens the letter." one time and the row carries no accessibilityHint, so VoiceOver reads the sentence once (design 02 section 8)', () => {
+    const label = rowLabel('Saturday, 14 October', 'She laughed at the ducks.');
+    expect(label.endsWith(' Opens the letter.')).toBe(true);
+    expect(label.match(/Opens the letter\./g)).toHaveLength(1);
+    expect(findCopy.rowA11y.match(/Opens the letter\./g)).toHaveLength(1);
+    // The Card is one VoiceOver element with one label; a hint would be read after it, so the row sets none and imports
+    // nothing that holds one.
+    const row = strip(read('components/find/find-result-row.tsx'));
+    expect(row).toMatch(/accessibilityLabel=\{rowLabel\(datelineA11y, hit\.excerpt\.text\)\}/);
+    expect(row).not.toMatch(/accessibilityHint|openHint|@\/lib\/copy/);
+  });
+});
+
 describe('[NS-02-R3] no message under the minimum', () => {
   it('[NS-02-R3] below the minimum the screen draws nothing: no hint string exists and the idle view renders no element', () => {
     expect(Object.keys(findCopy)).not.toContain('hint');
@@ -276,7 +297,7 @@ describe('[NS-02-R12] Back keeps the query', () => {
     expect(files(join(SRC, 'app'), (p) => /find/i.test(relative(SRC, p)))).toEqual([]);
     const mode = strip(read('components/find/find-mode.tsx'));
     expect(mode).toMatch(/markOpeningLetter\(\);\s*onOpen\(id\);/);
-    expect(mode).toMatch(/addListener\('blur', \(\) => \{\s*if \(!clearOnBlur\(\)\) return;/);
+    expect(mode).toMatch(BLUR_HANDLER);
   });
 });
 
@@ -285,8 +306,7 @@ describe('[NS-02-R14] queries are not remembered', () => {
     const mode = read('components/find/find-mode.tsx');
     expect(mode).toMatch(/autoCorrect=\{false\}/);
     expect(mode).toMatch(/spellCheck=\{false\}/);
-    expect(mode).toMatch(/addListener\('blur'/);
-    expect(mode).toMatch(/setQuery\(''\)/);
+    expect(strip(mode)).toMatch(BLUR_HANDLER);
   });
 
   it('[NS-02-R14] nothing in Find writes a setting, a file, secure storage or a list: no recent searches, no suggestions', () => {
