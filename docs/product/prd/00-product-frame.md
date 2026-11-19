@@ -169,12 +169,11 @@ Rank and size come from `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.
 
 ## 10. Council review
 
-Reviewed on 19 Nov 2026 by the roles below, each played by a separate Claude session from its skill. Independence is of method only (one account, one model family). Findings and how each was answered: `15-council-review.md`.
+Reviewed on 19 Nov 2026 in two passes, each a separate Claude session playing the roles below from their skills (`15-council-review.md`). Independence is of method only (one account, one model family). Findings and how each was answered: `15-council-review.md`.
 
 | Role | Lens |
 |---|---|
-| Chief Product Officer | jobs, scope, measures |
-| Chief Design Officer | states, accessibility, information architecture |
-| Chief Privacy Officer, Chief Compliance Officer, Chief Legal Officer | what leaves the phone, claims, consent, children |
-| Chief Financial Officer, Chief Business Officer | run cost, Plus, print |
-| Karma (CTO) and quality | size, order, testability |
+| Chief Product Officer, Chief Design Officer, Chief Marketing Officer (pass 1) | jobs, scope, measures, states, accessibility, information architecture, claims |
+| Chief Privacy Officer, Chief Compliance Officer, Chief Legal Officer, Chief Financial Officer, CTO and quality (pass 2) | what leaves the phone, consent, children, run cost, size, order, testability |
+
+The Chief Business Officer was not run.

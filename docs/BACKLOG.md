@@ -3664,12 +3664,12 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 #### BL-943 Reminders proven on a phone, with back-off and stop (NS-13)
 - Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: M.
 - Satisfies: NS-13-R1 to NS-13-R10 (`docs/product/prd/09-capture.md`). Also cited: #680, BL-770 (repeat), S1-135.
-- Scope: back-off after 7 unanswered days to weekly and stop after 4 more unanswered weeks (both numbers in one constant, PROPOSED); cancel today's reminder after a kept letter; the hour follows the phone's time zone and never fires in skipped hours; no name or letter text by default. Fold in or supersede the repeat work already open rather than duplicate it.
+- Scope: back-off after 7 unanswered days to weekly and stop after 4 more unanswered weeks (both numbers in one constant, PROPOSED); cancel today's reminder after a letter is made (saved in any state, kept or waiting at Keep); the hour follows the phone's time zone and never fires in skipped hours; no name or letter text by default. Fold in or supersede the repeat work already open rather than duplicate it.
 - Fails on old code: `[NS-13-R3]`, `[NS-13-R4]` and `[NS-13-R8]`.
 - Done when: unit rows pass; journeys J-N3, J-N4 and J-N5 are rows in the device run sheet.
 
 #### BL-944 Requirement rows and data inventory for a letter's about-day (NS-15)
-- Status: ready. Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
+- Status: blocked (wave 3, after photo slices 3 and 4 and Find land: closed question X1 order). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S.
 - Who: an interactive session as `product` with `privacy` and `data-architect`.
 - Satisfies: NS-15 (`docs/product/prd/09-capture.md`).
 - Scope: name the field, its sync and export shape, its data inventory row and its class (same as the letter's date), and confirm the rule that no date is ever read from the words.
@@ -3690,7 +3690,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: R1 to R6 pass and the switch label is approved by the founder.
 
 #### BL-947 Read the year back (NS-24)
-- Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
+- Status: blocked (wave 3, after photo slices 3 and 4 and Find land: closed question X1 order). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
 - Satisfies: NS-24-R1 to NS-24-R3.
 - Scope: from the Book, start Read together at the first letter of a chosen year of {child}'s life and end at its last; skip the other parent's private letters; no summary or count page.
 - Fails on old code: `[NS-24-R1]`.
@@ -3699,7 +3699,7 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 #### BL-948 Speed and accessibility rows in the device run sheet for every new card (NS-33, NS-34)
 - Status: blocked (BL-929). Mode: agent. Owner: qa engineer. Milestone: M15. Size: S. Depends on: BL-929.
 - Satisfies: `docs/product/prd/14-test-plan.md` sections 4 and 5.
-- Scope: one device row per journey J-N1 to J-N18 that needs a phone, P0 rows first, with the settings in section 5.
+- Scope: one device row per journey J-N1 to J-N27 that needs a phone (including the P0 device journeys J-N19, J-N21, J-N23, J-N24 and J-N27), P0 rows first, with the settings in section 5.
 - Done when: the rows exist in `docs/qa/DEVICE_TEST_PLAN.md` and each names its card id.
 
 #### BL-949 Counsel questions raised by the new-scope pack

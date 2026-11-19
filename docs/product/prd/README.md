@@ -19,7 +19,7 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 | `11-foundations.md` | NS-32 notification budget, NS-33 accessibility, NS-34 speed, NS-35 one start, NS-36 data follows the letter, NS-37 Book stays fast | F Foundations |
 | `12-parked-and-not-built.md` | what we said no to, and what would change our mind | G Parked |
 | `13-engineering-plan.md` | sizes, skills, order, dependencies (Karma) | for the harness |
-| `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N18, device matrix, store-build gate | for `qa` |
+| `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N27, device matrix, store-build gate | for `qa` |
 | `15-council-review.md` | what the council found and how each was answered | record |
 
 ### How to read a card (NS-08 onward)

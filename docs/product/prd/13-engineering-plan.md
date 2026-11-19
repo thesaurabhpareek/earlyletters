@@ -104,8 +104,8 @@ The harness picks any row whose dependencies are done. This is the order of pref
 | Wave | Work | Why first |
 |---|---|---|
 | 1 | NS-09, NS-34 run sheet, NS-33, NS-10, NS-35 review, NS-36 review, NS-32 review, NS-03 kit, the photo split | Keeping and the floor; cheap; no decision blocks them |
-| 2 | NS-13 device proof, NS-21, NS-14, NS-11, NS-02 lands, NS-37 | Truth on screen and capture without friction |
-| 3 | NS-01 slices 3 to 5, NS-22, NS-05 Level 1, NS-15, NS-23 | The founder's order: photo, Find, then share |
+| 2 | NS-13 device proof, NS-21, NS-02 lands, NS-01 slices 3 and 4, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
+| 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find, in rank order: save a copy, whose book, share, another day, one past letter |
 | 4 | NS-24, NS-07, NS-06 Part A, NS-18, NS-04 spike | Reading back and the keepsake |
 | 5 | NS-06 Part B, NS-25, NS-16, NS-17 | Each behind a counsel or founder gate |
 
