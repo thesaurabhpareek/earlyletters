@@ -19,7 +19,7 @@ export interface Excerpt {
 }
 
 /** Sentence ends, in Latin, Devanagari (danda), Arabic and CJK script. */
-const SENTENCE_END = /[.!?।॥؟۔。！？]+["')\]»]*(?:\s+|$)|\n+/gu;
+const SENTENCE_END = /[.!?\u0964\u0965\u061f\u06d4\u3002\uff01\uff1f]+["')\]\u00bb]*(?:\s+|$)|\n+/gu;
 /** The longest slice shown, in UTF-16 units. A sentence longer than this is cut on whole words around the match. */
 export const EXCERPT_MAX = 180;
 

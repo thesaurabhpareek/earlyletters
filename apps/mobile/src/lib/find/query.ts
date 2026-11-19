@@ -4,7 +4,7 @@
  * on every fixture (NS-02-R19).
  *
  * - Words path: fewer than 3 characters does nothing (R3). Case is ignored and Latin accents are folded, so "cafe"
- *   finds "café" (R7); other scripts are matched as written, so a Devanagari or Arabic word finds itself (R8). Every
+ *   finds "caf\u00e9" (R7); other scripts are matched as written, so a Devanagari or Arabic word finds itself (R8). Every
  *   word must appear, in any order, and the last word matches as a prefix while the parent is still typing (R6).
  * - Substring path: a query with a Han, Hiragana, Katakana or Hangul character has no word breaks to match on, so one
  *   character is enough and each space-separated piece is looked for as written inside the letter (R3, F09-U24).

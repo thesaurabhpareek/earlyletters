@@ -8,8 +8,10 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { findCopy } from '@scribe/content';
-import { announcementFor, findView, rowLabel, segments } from '../src/components/find/find.logic';
+import { announcementFor, clearOnBlur, findView, markOpeningLetter, rowLabel, segments } from '../src/components/find/find.logic';
+import { fill } from '../src/lib/copy';
 import { findPaused, findSurface, parseBookSearchFlag } from '../src/lib/find/flag';
+import { ensureSearchIndex } from '../src/lib/find/lifecycle';
 import { findPausedNow } from '../src/lib/find/pause';
 import { foldText, ftsMatchString, matches, MIN_QUERY_CHARS, prepareQuery, snippetSource, tokenize } from '../src/lib/find/query';
 import { excerpt, EXCERPT_MAX, matchRanges } from '../src/lib/find/snippet';
@@ -90,18 +92,18 @@ describe('[NS-02-R3] what a query means', () => {
   });
 
   it('[NS-02-R3] one CJK character is enough and takes the substring rule; each space-separated piece is looked for as written', () => {
-    expect(prepareQuery('船')).toEqual({ kind: 'substring', terms: ['船'] });
-    expect(prepareQuery('小船 笑')).toEqual({ kind: 'substring', terms: ['小船', '笑'] });
-    expect(prepareQuery('ひ')).toEqual({ kind: 'substring', terms: ['ひ'] });
-    expect(prepareQuery('한')).toEqual({ kind: 'substring', terms: ['한'] });
-    expect(matches(prepareQuery('船'), { body: '我们看到了一只小船', extra: '' })).toBe(true);
-    expect(matches(prepareQuery('舟'), { body: '我们看到了一只小船', extra: '' })).toBe(false);
+    expect(prepareQuery('\u8239')).toEqual({ kind: 'substring', terms: ['\u8239'] });
+    expect(prepareQuery('\u5c0f\u8239 \u7b11')).toEqual({ kind: 'substring', terms: ['\u5c0f\u8239', '\u7b11'] });
+    expect(prepareQuery('\u3072')).toEqual({ kind: 'substring', terms: ['\u3072'] });
+    expect(prepareQuery('\ud55c')).toEqual({ kind: 'substring', terms: ['\ud55c'] });
+    expect(matches(prepareQuery('\u8239'), { body: '\u6211\u4eec\u770b\u5230\u4e86\u4e00\u53ea\u5c0f\u8239', extra: '' })).toBe(true);
+    expect(matches(prepareQuery('\u821f'), { body: '\u6211\u4eec\u770b\u5230\u4e86\u4e00\u53ea\u5c0f\u8239', extra: '' })).toBe(false);
   });
 });
 
 describe('[NS-02-R6] the words rule, as the scan reads it', () => {
   it('[NS-02-R6] every term, any order, last as a prefix, case and Latin accents folded', () => {
-    const row = { body: 'Un café avec maman, puis les canards.', extra: '' };
+    const row = { body: 'Un caf\u00e9 avec maman, puis les canards.', extra: '' };
     expect(matches(prepareQuery('CAFE maman'), row)).toBe(true);
     expect(matches(prepareQuery('canard'), row)).toBe(true); // prefix of the last term
     expect(matches(prepareQuery('canard maman'), row)).toBe(false); // "canard" is not whole, and it is not the last term
@@ -115,9 +117,9 @@ describe('[NS-02-R6] the words rule, as the scan reads it', () => {
   });
 
   it('[NS-02-R7] Latin accents fold and a Devanagari vowel sign does not', () => {
-    expect(foldText('Café Niño Coração Ångström')).toBe('cafe nino coracao angstrom');
-    expect(foldText('नाव')).toBe('नाव');
-    expect(tokenize('आज नाव').map((t) => t.text)).toEqual(['आज', 'नाव']);
+    expect(foldText('Caf\u00e9 Ni\u00f1o Cora\u00e7\u00e3o \u00c5ngstr\u00f6m')).toBe('cafe nino coracao angstrom');
+    expect(foldText('\u0928\u093e\u0935')).toBe('\u0928\u093e\u0935');
+    expect(tokenize('\u0906\u091c \u0928\u093e\u0935').map((t) => t.text)).toEqual(['\u0906\u091c', '\u0928\u093e\u0935']);
   });
 });
 
@@ -130,7 +132,7 @@ describe('[NS-02-R9] the excerpt is a slice of the parent\'s words', () => {
       return s / 0x100000000;
     };
   }
-  const WORDS = ['laughed', 'rain', 'blue', 'boat', 'café', 'niño', 'duck', 'park', 'hat', 'Asha', 'kite', 'song', 'bath', 'milk', 'slept', 'clapped', 'stairs', 'garden', 'moon', 'Papa'];
+  const WORDS = ['laughed', 'rain', 'blue', 'boat', 'caf\u00e9', 'ni\u00f1o', 'duck', 'park', 'hat', 'Asha', 'kite', 'song', 'bath', 'milk', 'slept', 'clapped', 'stairs', 'garden', 'moon', 'Papa'];
   const PUNCT = ['', '', '', ',', '.', '!', '?'];
 
   it('[NS-02-R9] for 200 random letters the excerpt is a contiguous substring, starts and ends on a whole word, holds the match, and has no ellipsis character', () => {
@@ -147,7 +149,7 @@ describe('[NS-02-R9] the excerpt is a slice of the parent\'s words', () => {
       expect(text.includes(e.text), label).toBe(true);
       expect(text.slice(e.offset, e.offset + e.text.length), label).toBe(e.text);
       expect(e.text.length, label).toBeLessThanOrEqual(EXCERPT_MAX + 4);
-      expect(e.text, label).not.toMatch(/[…–—]/);
+      expect(e.text, label).not.toMatch(/[\u2026\u2013\u2014]/);
       // whole words at both ends: the neighbours in the source are a space, a line break or the edge of the text
       expect(e.offset === 0 || /[\s]/.test(text[e.offset - 1]) || /[.!?]/.test(text[e.offset - 1]), label).toBe(true);
       expect(e.offset + e.text.length === text.length || /[\s]/.test(text[e.offset + e.text.length]), label).toBe(true);
@@ -176,10 +178,10 @@ describe('[NS-02-R9] the excerpt is a slice of the parent\'s words', () => {
   });
 
   it('[NS-02-R9] CJK text with no spaces is sliced at a character, never inside a surrogate pair, and still a substring', () => {
-    const text = '𠀀'.repeat(150) + '船' + '𠀀'.repeat(150);
-    const e = excerpt(prepareQuery('船'), text);
+    const text = '\u{20000}'.repeat(150) + '\u8239' + '\u{20000}'.repeat(150);
+    const e = excerpt(prepareQuery('\u8239'), text);
     expect(text.includes(e.text)).toBe(true);
-    expect(e.text).toContain('船');
+    expect(e.text).toContain('\u8239');
     expect(e.text).not.toMatch(/^[\uDC00-\uDFFF]|[\uD800-\uDBFF]$/);
   });
 
@@ -227,14 +229,22 @@ describe('[NS-02-R3] no message under the minimum', () => {
 });
 
 describe('[NS-02-R13] one calm line, no prompt to write', () => {
-  it('[NS-02-R13] the views are idle, results, none and failed; none shows the existing title and one quiet line', () => {
+  it('[NS-02-R13] the views are idle, results, none and failed; none shows book.empty.searchTitle and nothing else (FD-R10)', () => {
     expect(findView({ result: null, failed: false })).toBe('idle');
     expect(findView({ result: { status: 'idle' }, failed: false })).toBe('idle');
     expect(findView({ result: { status: 'done', hits: [], path: 'index' }, failed: false })).toBe('none');
     expect(findView({ result: null, failed: true })).toBe('failed');
+    // The second line under the title ("Try another word.") left with spec 02 section 9: no slot, no use anywhere in Find.
+    expect(Object.keys(findCopy)).not.toContain('noMatchHelp');
+    for (const p of FIND_FILES) expect(strip(readFileSync(p, 'utf8')), p).not.toMatch(/noMatchHelp|Try another word/);
     const src = strip(read('components/find/find-mode.tsx'));
-    expect(src).toMatch(/copy\.book\.empty\.searchTitle/);
-    expect(src).toMatch(/findCopy\.noMatchHelp/);
+    const start = src.indexOf("view === 'none' ? (");
+    expect(start).toBeGreaterThan(0);
+    const none = src.slice(start, src.indexOf(') : (', start));
+    // The no-match branch draws one Text, the existing title, and no second line, button, link or Find string.
+    expect(none).toMatch(/copy\.book\.empty\.searchTitle/);
+    expect(none.match(/<Text\b/g)).toHaveLength(1);
+    expect(none).not.toMatch(/<Button|<Pressable|onPress|findCopy\./);
   });
 
   it('[NS-02-R13] Find starts nothing: it imports no capture, recorder, router push to write or Home route, and has only Cancel and Try again as buttons', () => {
@@ -247,6 +257,26 @@ describe('[NS-02-R13] one calm line, no prompt to write', () => {
     expect(mode.match(/<Button\b/g)).toHaveLength(2);
     expect(mode).toMatch(/findCopy\.cancel/);
     expect(mode).toMatch(/findCopy\.retry/);
+  });
+});
+
+describe('[NS-02-R12] Back keeps the query', () => {
+  it('[NS-02-R12] the blur that follows a result opening its letter keeps the query, once; any other blur clears it', () => {
+    expect(clearOnBlur()).toBe(true); // leaving for another tab: cleared
+    markOpeningLetter();
+    expect(clearOnBlur()).toBe(false); // the letter page opens: the query stays for Back
+    expect(clearOnBlur()).toBe(true); // Back, then leaving: cleared again; the mark is spent
+  });
+
+  it('[NS-02-R12] Find is drawn over the Book, which stays mounted, and is no route of its own, so Back returns to the same query and place', () => {
+    const book = strip(read('app/(tabs)/book.tsx'));
+    expect(book).toMatch(/\{finding && findOn \? <FindMode /);
+    // `finding` is the state and that one render; the list under the overlay is never unmounted by it.
+    expect(book.match(/\bfinding\b/g)).toHaveLength(2);
+    expect(files(join(SRC, 'app'), (p) => /find/i.test(relative(SRC, p)))).toEqual([]);
+    const mode = strip(read('components/find/find-mode.tsx'));
+    expect(mode).toMatch(/markOpeningLetter\(\);\s*onOpen\(id\);/);
+    expect(mode).toMatch(/addListener\('blur', \(\) => \{\s*if \(!clearOnBlur\(\)\) return;/);
   });
 });
 
@@ -327,6 +357,73 @@ describe('[NS-02-R22] Find makes no network call', () => {
   it('[NS-02-R22] the only import of the remote module is the pause, which reads the config already on the phone', () => {
     const offenders = FIND_FILES.filter((p) => /remote/.test(strip(readFileSync(p, 'utf8')))).map((p) => relative(SRC, p));
     expect(offenders).toEqual([join('lib', 'find', 'pause.ts')]);
+  });
+
+  it('[NS-02-R22] Find makes 0 network calls: the index path, the scan path and the index build touch fetch and XMLHttpRequest 0 times', () => {
+    let calls = 0;
+    vi.stubGlobal('fetch', () => {
+      calls += 1;
+      return Promise.reject(new Error('Find must not reach the network'));
+    });
+    vi.stubGlobal(
+      'XMLHttpRequest',
+      class {
+        constructor() {
+          calls += 1;
+        }
+      },
+    );
+    const indexed = findFixture();
+    const scanned = findFixture({ index: false });
+    try {
+      indexed.add({ text: 'The blue boat floated past the lighthouse.' });
+      scanned.add({ text: 'The blue boat floated past the lighthouse.' });
+      const a = searchLetters(indexed.db, 'blue boat', 'child-asha');
+      const b = searchLetters(scanned.db, 'blue boat', 'child-asha');
+      expect(a.status === 'done' && a.path).toBe('index');
+      expect(b.status === 'done' && b.path).toBe('scan');
+      expect(a.status === 'done' && a.hits).toHaveLength(1);
+      ensureSearchIndex(scanned.db);
+      expect(searchLetters(scanned.db, '\u8239', 'child-asha').status).toBe('done'); // the CJK substring path
+      expect(calls).toBe(0);
+    } finally {
+      vi.unstubAllGlobals();
+      indexed.close();
+      scanned.close();
+    }
+  });
+});
+
+describe('[NS-02-R23][FD-R13] the short-query hint is VoiceOver-only and never drawn', () => {
+  it('[NS-02-R23][FD-R13] the field carries findCopy.fieldHint as its accessibilityHint and no text node renders it', () => {
+    expect(typeof findCopy.fieldHint).toBe('string');
+    const mode = strip(read('components/find/find-mode.tsx'));
+    // Once, as the field's accessibilityHint; never as the child of a Text or any other element.
+    expect(mode.match(/findCopy\.fieldHint/g)).toHaveLength(1);
+    expect(mode).toMatch(/<TextField[\s\S]*?accessibilityHint=\{findCopy\.fieldHint\}[\s\S]*?\/>/);
+    expect(mode).not.toMatch(/>\s*\{findCopy\.fieldHint\}/);
+    expect(mode).not.toMatch(/<Text[^>]*>[\s\S]{0,40}fieldHint/);
+    // TextField hands accessibilityHint to the TextInput and draws only `helper` and `error`, never the hint prop.
+    const field = strip(read('components/ui/text-field.tsx'));
+    expect(field).toMatch(/accessibilityHint=\{props\.accessibilityHint \?\? hint\}/);
+    expect(field).not.toMatch(/\{props\.accessibilityHint\}/);
+    // No other Find file mentions it, so nothing else can draw it. The idle view is still nothing (R3).
+    for (const p of FIND_FILES) if (!p.endsWith('find-mode.tsx')) expect(strip(readFileSync(p, 'utf8')), p).not.toMatch(/fieldHint/);
+    expect(mode).toMatch(/view === 'idle' \? null/);
+  });
+
+  it('[NS-02-R23] the hint is one sentence that names no number of results and does not claim three characters', () => {
+    expect(findCopy.fieldHint).not.toMatch(/\d|\b(three|results?|matches)\b/i);
+    expect(findCopy.fieldHint.match(/[.!?]/g)).toHaveLength(1);
+    expect(findCopy.fieldHint.endsWith('.')).toBe(true);
+  });
+});
+
+describe('[NX-31-R3] a book with no name', () => {
+  it("[NS-02][NX-31-R3] the placeholder names the book through the app's fill(), so a blank name reads \"Find in your child's book\"", () => {
+    expect(fill(findCopy.placeholder, { child: 'Asha' })).toBe("Find in Asha's book");
+    for (const blank of ['', '   ']) expect(fill(findCopy.placeholder, { child: blank }), JSON.stringify(blank)).toBe("Find in your child's book");
+    expect(strip(read('components/find/find-mode.tsx'))).toMatch(/placeholder=\{fill\(findCopy\.placeholder, \{ child: child\.name \}\)\}/);
   });
 });
 

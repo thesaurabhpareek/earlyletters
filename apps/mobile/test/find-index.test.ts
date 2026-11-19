@@ -88,13 +88,13 @@ describe('[NS-02-R6] how words match', () => {
 describe('[NS-02-R7] accents do not hide a word', () => {
   it('[NS-02-R7] French, Spanish and Portuguese words are found without their accents, and with them', () => {
     f = findFixture();
-    const fr = f.add({ text: 'Un café avec maman, puis une tarte.' });
-    const es = f.add({ text: 'El niño comió piña en la playa.' });
-    const pt = f.add({ text: 'Um abraço cheio de coração.' });
+    const fr = f.add({ text: 'Un caf\u00e9 avec maman, puis une tarte.' });
+    const es = f.add({ text: 'El ni\u00f1o comi\u00f3 pi\u00f1a en la playa.' });
+    const pt = f.add({ text: 'Um abra\u00e7o cheio de cora\u00e7\u00e3o.' });
     expect(find('cafe')).toEqual([fr]);
-    expect(find('café')).toEqual([fr]);
+    expect(find('caf\u00e9')).toEqual([fr]);
     expect(find('nino pina')).toEqual([es]);
-    expect(find('niño')).toEqual([es]);
+    expect(find('ni\u00f1o')).toEqual([es]);
     expect(find('coracao')).toEqual([pt]);
     expect(find('abraco')).toEqual([pt]);
   });
@@ -102,29 +102,29 @@ describe('[NS-02-R7] accents do not hide a word', () => {
   it('[NS-02-R7] unaccented text is found by an accented query', () => {
     f = findFixture();
     const a = f.add({ text: 'We had cafe and a long walk.' });
-    expect(find('café')).toEqual([a]);
+    expect(find('caf\u00e9')).toEqual([a]);
   });
 });
 
 describe('[NS-02-R8] other scripts are found as written', () => {
   it('[NS-02-R8] a whole Devanagari word finds its letter, and a vowel sign is not treated as an accent', () => {
     f = findFixture();
-    const hi = f.add({ text: 'आज आशा ने नाव देखी और हँसी।', language: 'hi' } as never);
-    f.add({ text: 'नव वर्ष की शुभकामनाएँ।' });
-    expect(find('नाव')).toEqual([hi]);
-    expect(find('नव')).toEqual([]); // two characters: below the floor
-    expect(find('देखी')).toEqual([hi]);
+    const hi = f.add({ text: '\u0906\u091c \u0906\u0936\u093e \u0928\u0947 \u0928\u093e\u0935 \u0926\u0947\u0916\u0940 \u0914\u0930 \u0939\u0901\u0938\u0940\u0964', language: 'hi' } as never);
+    f.add({ text: '\u0928\u0935 \u0935\u0930\u094d\u0937 \u0915\u0940 \u0936\u0941\u092d\u0915\u093e\u092e\u0928\u093e\u090f\u0901\u0964' });
+    expect(find('\u0928\u093e\u0935')).toEqual([hi]);
+    expect(find('\u0928\u0935')).toEqual([]); // two characters: below the floor
+    expect(find('\u0926\u0947\u0916\u0940')).toEqual([hi]);
   });
 
   it('[NS-02-R8] a whole Arabic word finds its letter, and the result carries the match', () => {
     f = findFixture();
-    const ar = f.add({ text: 'رأت آشا قارب أزرق على الماء.' });
-    const r = searchLetters(f.db, 'قارب', 'child-asha');
+    const ar = f.add({ text: '\u0631\u0623\u062a \u0622\u0634\u0627 \u0642\u0627\u0631\u0628 \u0623\u0632\u0631\u0642 \u0639\u0644\u0649 \u0627\u0644\u0645\u0627\u0621.' });
+    const r = searchLetters(f.db, '\u0642\u0627\u0631\u0628', 'child-asha');
     expect(ids(r)).toEqual([ar]);
     if (r.status === 'done') {
       const e = r.hits[0].excerpt;
       expect(e.marks).toHaveLength(1);
-      expect(e.text.slice(e.marks[0].start, e.marks[0].end)).toBe('قارب');
+      expect(e.text.slice(e.marks[0].start, e.marks[0].end)).toBe('\u0642\u0627\u0631\u0628');
     }
   });
 });
@@ -139,12 +139,12 @@ describe('[NS-02-R3] short queries do nothing; CJK uses the substring path', () 
 
   it('[NS-02-R3] one CJK character is enough and finds a character inside a run of text', () => {
     f = findFixture();
-    const zh = f.add({ text: '我们看到了一只小船，她笑了。' });
-    f.add({ text: '今天下雨了。' });
-    const r = searchLetters(f.db, '船', 'child-asha');
+    const zh = f.add({ text: '\u6211\u4eec\u770b\u5230\u4e86\u4e00\u53ea\u5c0f\u8239\uff0c\u5979\u7b11\u4e86\u3002' });
+    f.add({ text: '\u4eca\u5929\u4e0b\u96e8\u4e86\u3002' });
+    const r = searchLetters(f.db, '\u8239', 'child-asha');
     expect(ids(r)).toEqual([zh]);
     expect(r.status === 'done' && r.path).toBe('scan'); // substring path, not the word index
-    expect(find('小船 笑')).toEqual([zh]);
+    expect(find('\u5c0f\u8239 \u7b11')).toEqual([zh]);
   });
 
   it('[NS-02-R3] a words query uses the index when it is there', () => {
@@ -216,16 +216,16 @@ describe('[NS-02-R17] letters without words are not found', () => {
 describe('[NS-02-R19] the index and the scan agree', () => {
   const corpus = [
     'You laughed at the rain today.',
-    'Un café avec maman, puis une tarte aux pommes.',
-    'El niño comió piña; qué día tan bonito.',
-    'आज आशा ने नाव देखी और हँसी।',
-    'رأت آشا قارب أزرق على الماء.',
+    'Un caf\u00e9 avec maman, puis une tarte aux pommes.',
+    'El ni\u00f1o comi\u00f3 pi\u00f1a; qu\u00e9 d\u00eda tan bonito.',
+    '\u0906\u091c \u0906\u0936\u093e \u0928\u0947 \u0928\u093e\u0935 \u0926\u0947\u0916\u0940 \u0914\u0930 \u0939\u0901\u0938\u0940\u0964',
+    '\u0631\u0623\u062a \u0622\u0634\u0627 \u0642\u0627\u0631\u0628 \u0623\u0632\u0631\u0642 \u0639\u0644\u0649 \u0627\u0644\u0645\u0627\u0621.',
     'The blue boat, the blue boats, and a boathouse!',
     "Don't go, said Papa. Rain-or-shine, we went.",
-    'Two words. Cafe. Naïve façade, Zoë, Ångström.',
-    'ひらがなの日。船で行った。',
+    'Two words. Cafe. Na\u00efve fa\u00e7ade, Zo\u00eb, \u00c5ngstr\u00f6m.',
+    '\u3072\u3089\u304c\u306a\u306e\u65e5\u3002\u8239\u3067\u884c\u3063\u305f\u3002',
   ];
-  const queries = ['rain', 'laughed rain', 'RAIN', 'cafe', 'café maman', 'nino', 'pina bonito', 'नाव', 'قارب', 'blue boat', 'boat', 'boathouse', 'blue boats', 'don', 'rain shine', 'naive facade', 'zoe', 'angstrom', 'xyz', '船', 'ひらがな'];
+  const queries = ['rain', 'laughed rain', 'RAIN', 'cafe', 'caf\u00e9 maman', 'nino', 'pina bonito', '\u0928\u093e\u0935', '\u0642\u0627\u0631\u0628', 'blue boat', 'boat', 'boathouse', 'blue boats', 'don', 'rain shine', 'naive facade', 'zoe', 'angstrom', 'xyz', '\u8239', '\u3072\u3089\u304c\u306a'];
 
   it('[NS-02-R19] over the fixtures, the index path and the scan path return the same letters in the same order', () => {
     f = findFixture();

@@ -16,6 +16,26 @@ export function findView(input: { result: FindResult | null; failed: boolean }):
   return input.result.hits.length > 0 ? 'results' : 'none';
 }
 
+/**
+ * Back keeps the query (R12); leaving the Book clears it (R14). Find stays mounted over the Book while a result's letter
+ * page is open, so its state survives on its own; the one thing to decide is what the Book's blur means. A result that
+ * is opening its letter marks the next blur as "not leaving", once. Every other blur (another tab, the app closing)
+ * clears the query.
+ */
+let openingLetter = false;
+
+/** Called just before a result opens its letter. */
+export function markOpeningLetter(): void {
+  openingLetter = true;
+}
+
+/** Called on the Book's blur. False exactly once after markOpeningLetter (the query stays); true otherwise (clear it). */
+export function clearOnBlur(): boolean {
+  if (!openingLetter) return true;
+  openingLetter = false;
+  return false;
+}
+
 /** The one polite announcement for a view, or null when nothing should be said (idle says nothing: R3). */
 export function announcementFor(view: FindView, noMatchTitle: string): string | null {
   if (view === 'results') return findCopy.foundA11y;
@@ -25,7 +45,7 @@ export function announcementFor(view: FindView, noMatchTitle: string): string | 
 
 /** "{date}. {sentence}. Opens the letter." A sentence that already ends in a full stop does not get a second one. */
 export function rowLabel(date: string, sentence: string): string {
-  const s = sentence.replace(/[.।。]+\s*$/u, '');
+  const s = sentence.replace(/[.\u0964\u3002]+\s*$/u, '');
   return findCopy.rowA11y.replace('{date}', date).replace('{label}', s);
 }
 

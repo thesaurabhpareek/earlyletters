@@ -189,7 +189,7 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   return result;
 }
 
-// ── Find (NS-02; ADR 0028 D4) ───────────────────────────────────────────
+// -- Find (NS-02; ADR 0028 D4) ------------------------------------------------------------
 /** Pause after the store opens before Find's catch-up runs, so it is never on the path to the first frame. */
 const FIND_CATCH_UP_DELAY_MS = 3000;
 

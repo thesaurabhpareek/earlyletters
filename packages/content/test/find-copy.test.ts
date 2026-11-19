@@ -26,6 +26,28 @@ describe('[NS-02-R13] the no-match state is one calm line', () => {
     expect(en.book.empty.searchTitle).toBe('No letters with that word yet.');
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/\b(write|add|record|speak)\b/i);
   });
+  it('[NS-02-R13] find.en.ts has no noMatchHelp key: the title stands alone, with no second line (spec 02 section 9, FD-R10)', () => {
+    expect(Object.keys(findCopy)).not.toContain('noMatchHelp');
+    expect(ALL.map((l) => l.text)).not.toContain('Try another word.');
+  });
+});
+
+describe('[NS-02-R3] short queries show no drawn hint', () => {
+  it('[NS-02-R3] find.en.ts has no hint key', () => {
+    expect(Object.keys(findCopy)).not.toContain('hint');
+    expect(ALL.map((l) => l.text)).not.toContain('Type three letters to start.');
+    for (const l of ALL) expect(l.text, l.path).not.toMatch(/\bthree letters\b|\btype three\b/i);
+  });
+});
+
+describe('[NS-02-R23] the VoiceOver-only hint on the field', () => {
+  it('[NS-02-R23] fieldHint is one sentence that names no number of results and does not claim three characters', () => {
+    expect(typeof findCopy.fieldHint).toBe('string');
+    expect(findCopy.fieldHint).not.toMatch(/\d|\b(three|results?|matches)\b/i);
+    expect(findCopy.fieldHint.match(/[.!?]/g)).toHaveLength(1);
+    expect(findCopy.fieldHint.endsWith('.')).toBe(true);
+    expect(findCopy.fieldHint).not.toContain('{');
+  });
 });
 
 describe('[NS-02] Find obeys the voice rules', () => {
@@ -44,7 +66,7 @@ describe('[NS-02] Find obeys the voice rules', () => {
   it('[NS-02-R1] the header action is the single word Find', () => {
     expect(findCopy.button).toBe('Find');
   });
-  it('[NS-02-R12] does not use the internal word index, lens or query in what a parent reads', () => {
+  it('[NS-02][CR-25] does not use the internal word index, lens or query in what a parent reads', () => {
     for (const l of ALL) expect(l.text, l.path).not.toMatch(/\b(index|lens|query|database|FTS)\b/i);
   });
 });
