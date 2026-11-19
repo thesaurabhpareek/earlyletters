@@ -1,4 +1,5 @@
 // Fixtures and in-memory ports for the photo tests. The fictional family is Asha; no real picture is used.
+import type { PhotoFiles } from '../src/lib/photos/types';
 
 const seg = (marker: number, payload: number[]): number[] => [0xff, marker, (payload.length + 2) >> 8, (payload.length + 2) & 0xff, ...payload];
 const text = (s: string): number[] => Array.from(s, (c) => c.charCodeAt(0));
@@ -45,4 +46,27 @@ export function makeJpeg(o: JpegOptions = {}): Uint8Array {
   } else out.push(...seg(0xda, [1, 1, 0, 0, 0x3f, 0]), 0x10 + ((o.seed ?? 0) & 0x0f), 0x20, 0x30, 0x40, 0xff, 0xd9);
   out.push(...(o.trailing ?? []));
   return Uint8Array.from(out);
+}
+
+export function memoryFiles(opts: { free?: number; failWrite?: boolean } = {}): PhotoFiles & { disk: Map<string, Uint8Array>; writes: number } {
+  const disk = new Map<string, Uint8Array>();
+  const f = {
+    disk,
+    writes: 0,
+    async write(path: string, bytes: Uint8Array) {
+      f.writes++;
+      disk.set(path, bytes); // a failing disk still leaves a partial file behind
+      if (opts.failWrite) throw new Error('disk');
+    },
+    async remove(path: string) {
+      disk.delete(path);
+    },
+    async list() {
+      return [...disk.keys()];
+    },
+    async freeBytes() {
+      return opts.free ?? 1e9;
+    },
+  };
+  return f;
 }

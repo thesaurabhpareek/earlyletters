@@ -23,6 +23,7 @@
  */
 import { Platform } from 'react-native';
 import { removeListeningCopy } from '../audio-enhance';
+import { erasePictureOf } from '../photos/device';
 import { audioRows, eraseBook, eraseEntry, finishServerErased, purgeThenRecordLaunch, type AudioEraser } from '../store';
 import { removeWholeFrameCopiesOf } from './adts-file';
 import { erasableFiles } from './recordings';
@@ -34,6 +35,7 @@ export const eraseAudioFile: AudioEraser = (uri, entryId) => {
     removeWholeFrameCopiesOf(uri);
   }
   removeListeningCopy(entryId);
+  erasePictureOf(entryId); // the letter's picture goes with it (NS-01-R16); file first, then its row
 };
 
 /**

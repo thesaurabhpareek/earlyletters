@@ -508,6 +508,8 @@ export function saveLetterFromDraft(draftId: string, e: Entry, audioExists = tru
   // Held while waiting for its words (outbox.ts): the raw transcript is set once, later.
   letters.saveFromDraft(c, draftId, e, insertDefaults(e), audioExists, () => {
     if (held !== null) c.db.run('UPDATE entries SET held_v = ? WHERE id = ?', held, draftId);
+    // The draft's picture (entry_media, ADR 0028) becomes the letter's in the same transaction: same id, new owner.
+    c.db.run('UPDATE entry_media SET entry_id = draft_id, draft_id = NULL WHERE draft_id = ?', draftId);
     // The letter ledger counts a kept letter in the same transaction (D-082, D-083): the letter and its
     // count are written together or not at all. M17 (D-103): only this person's own letter, only with its
     // words; a voice-only letter, a quiet-day mark or another author's row never counts (ledger.recordKept).

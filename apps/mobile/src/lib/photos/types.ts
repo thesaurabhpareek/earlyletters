@@ -1,4 +1,39 @@
 /** Photo with a letter: shapes and the ports the logic runs against (tests use in-memory ones). */
+/** One picture per letter at P0. */
+export const STORED_EXT = 'jpg' as const;
+
+/**
+ * A kept picture, phone-only (ADR 0028 D1, the `entry_media` row). `deletedAt` is DERIVED by the store from its letter
+ * (`entries.deleted_at`): it is never written, so a restored letter needs no picture write and the two cannot drift.
+ */
+export interface StoredPhoto {
+  /** The owner: the kept letter's id, or the draft's id until Keep. They are the same id, so the picture never moves. */
+  entryId: string;
+  mediaId: string;
+  ext: typeof STORED_EXT;
+  /** Size of the stripped copy, its SHA-256 (a hash of a picture is L4) and its pixel size (entry_media columns). */
+  bytes: number;
+  sha256: string;
+  width: number | null;
+  height: number | null;
+  /** The parent's own words about the picture; null when they typed none. Never filled in by the app. */
+  text: string | null;
+  /** A place the parent typed, or null. Never filled in, suggested or read from the picture's own data. */
+  place: string | null;
+  addedAt: string;
+  deletedAt: string | null;
+}
+
+/**
+ * Where picture records live: the local `entry_media` table (migration 11). `put` never writes `deletedAt`. The owner is
+ * a letter, or a draft until Keep; `all()` lists kept letters' pictures only.
+ */
+export interface PhotoStore {
+  get(entryId: string): StoredPhoto | null;
+  put(photo: StoredPhoto): void;
+  remove(entryId: string): void;
+  all(): StoredPhoto[];
+}
 
 /** Files on the phone. Paths are relative to the photos folder: `<mediaId>.jpg` (ADR 0028 D1). No entry id in the name. */
 export interface PhotoFiles {
@@ -8,6 +43,8 @@ export interface PhotoFiles {
   list(): Promise<string[]>;
   freeBytes(): Promise<number>;
 }
+
+export const photoPath = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => `${p.mediaId}.${p.ext}`;
 
 /**
  * The native re-encode that turns a picture's pixels upright (ImageIO). Exif is dropped from the stored copy, so a
@@ -30,4 +67,15 @@ export interface PickedFiles {
   remove(uri: string): Promise<void>;
   /** Empties the picker's folder. Never throws. */
   sweep(): Promise<void>;
+}
+
+export interface PhotoDeps {
+  store: PhotoStore;
+  files: PhotoFiles;
+  newId: () => string;
+  now: () => Date;
+  /** SHA-256 of the stripped bytes, lower-case hex. */
+  sha256: (bytes: Uint8Array) => Promise<string>;
+  /** The native re-encode step. Absent until the device adapter exists. */
+  orientation?: OrientationBaker;
 }

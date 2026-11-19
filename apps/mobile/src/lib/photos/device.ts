@@ -1,0 +1,66 @@
+/**
+ * The phone's wiring for Photo with a letter: the entry_media store, the picture files, the hash, and the launch sweep.
+ * Screens use this and nothing deeper. Nothing here reads the photos switch: the data rights (the sweep, Erase now,
+ * Erase everything) work with the switch off (NS-01-R19).
+ */
+import * as Crypto from 'expo-crypto';
+import { File } from 'expo-file-system';
+import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
+import { createOrientationBaker } from './baker';
+import { entryMediaStore } from './entry-media';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory } from './files';
+import { sweepPhotos } from './housekeeping';
+import { photoPath, type PhotoDeps, type PickedFiles } from './types';
+
+const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
+
+let cached: PhotoDeps | null = null;
+let picked: PickedFiles | null = null;
+
+export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles());
+
+/** The native ImageIO step, when this build has it. Loaded on first use so a build or test without it is unaffected. */
+function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
+  } catch {
+    return null;
+  }
+}
+
+/** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. No native re-encode is registered yet. */
+export function photoDeps(): PhotoDeps {
+  cached ??= {
+    store: entryMediaStore(localSqlDb(), notifyStoreChanged),
+    files: expoPhotoFiles(),
+    newId: () => uuidv7(),
+    now: () => new Date(),
+    orientation: createOrientationBaker(nativeBaker(), expoBakedFiles()),
+    sha256: async (bytes) => hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as Uint8Array<ArrayBuffer>)),
+  };
+  return cached;
+}
+
+/** Launch: empties Caches/ImagePicker, removes strays, finishes interrupted purges. Never awaited by launch. */
+export function sweepPhotosAtLaunch(): Promise<void> {
+  return sweepPhotos(localSqlDb(), expoPhotoFiles(), pickedFilesPort()).then(
+    () => undefined,
+    () => undefined, // retried at the next launch
+  );
+}
+
+/**
+ * Erase now and the 30 day purge: the picture file first, then its row (called from the letter's audio eraser, which
+ * the store runs before it removes the letter). Throws when a file exists and cannot be removed, so the letter stays
+ * on the shelf for a retry, as a recording does. Synchronous, like the audio eraser.
+ */
+export function erasePictureOf(entryId: string): void {
+  const db = localSqlDb();
+  const rows = db.all<{ id: string }>('SELECT id FROM entry_media WHERE COALESCE(entry_id, draft_id) = ?', entryId);
+  for (const r of rows) {
+    const f = new File(photosDirectory(), photoPath({ mediaId: r.id, ext: 'jpg' }));
+    if (f.exists) f.delete();
+    db.run('DELETE FROM entry_media WHERE id = ?', r.id);
+  }
+}
