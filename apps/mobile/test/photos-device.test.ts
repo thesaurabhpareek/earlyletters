@@ -9,10 +9,11 @@ import { createOrientationBaker } from '../src/lib/photos/baker';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
+import { commitPhoto } from '../src/lib/photos/session';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
-import { makeJpeg, memoryFiles } from './photos-helpers';
+import { deps, makeJpeg, memoryFiles } from './photos-helpers';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
 vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
@@ -316,5 +317,11 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
     expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mKept', 'mLive']);
     expect(db.get('SELECT entry_id FROM entry_media WHERE id = ?', 'mKept')).toEqual({ entry_id: 'kept' });
     expect([...files.disk.keys()].sort()).toEqual(['mKept.jpg', 'mLive.jpg']);
+  });
+  it('[D1] a draft\'s picture needs no words, a kept letter\'s does', async () => {
+    const { d, files } = deps();
+    expect((await commitPhoto(d, { entryId: 'd1', finalText: '', bytes: makeJpeg(), text: null, requireWords: false })).status).toBe('stored');
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: '', bytes: makeJpeg(), text: null })).status).toBe('needs_words');
+    expect(files.disk.size).toBe(1);
   });
 });

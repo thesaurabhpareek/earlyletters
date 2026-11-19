@@ -1,0 +1,189 @@
+// NS-01 photo with a letter: capture, store, replace, lens (Node, no phone). Delete, restore and purge run the phone's
+// own eraser in photos-phone.test.ts.
+import { describe, expect, it } from 'vitest';
+import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
+import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
+import { normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
+import type { PhotoPicker } from '../src/lib/photos/types';
+import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
+
+const ONE = { entryId: 'e1', finalText: 'She laughed at the dog today.', text: null as string | null };
+
+describe('[NS-01-R6][NX-39-R8] the stored copy carries no metadata', () => {
+  it('[NS-01-R6][NX-39-R8] 0 of 10 stored files carry an Exif, XMP or IPTC segment', async () => {
+    const inputs = tenFixtures();
+    expect(inputs.filter(carriesMetadata).length).toBe(10); // positive control: every fixture really carries some
+    const { d, files } = deps();
+    let i = 0;
+    for (const bytes of inputs) {
+      const r = await commitPhoto(d, { ...ONE, entryId: `e${i++}`, bytes });
+      expect(r.status).toBe('stored');
+    }
+    const stored = [...files.disk.values()];
+    expect(stored.length).toBe(10);
+    expect(stored.filter(carriesMetadata).length).toBe(0);
+    // and each is still a whole JPEG
+    expect(stored.every((b) => stripJpeg(b).ok)).toBe(true);
+  });
+  it('[NS-01-R6] keeps the picture data and the colour profile, and drops the JFIF thumbnail', () => {
+    const r = stripJpeg(makeJpeg({ exif: true, icc: true, jfifThumb: true, seed: 5 }));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const text = Buffer.from(r.bytes).toString('latin1');
+    expect(text).toContain('ICC_PROFILE');
+    expect(r.bytes.slice(-6)).toEqual(Uint8Array.of(0x15, 0x20, 0x30, 0x40, 0xff, 0xd9));
+    expect(r.bytes[0]).toBe(0xff);
+    expect(r.bytes[1]).toBe(0xd8);
+  });
+  it('[NS-01-R6] reports what it cannot strip instead of keeping metadata: not a JPEG, or damaged', () => {
+    expect(stripJpeg(Uint8Array.of(0x89, 0x50, 0x4e, 0x47))).toEqual({ ok: false, reason: 'not_jpeg' });
+    expect(stripJpeg(makeJpeg().slice(0, 12))).toEqual({ ok: false, reason: 'corrupt' });
+    expect(stripJpeg(makeJpeg().slice(0, -2))).toEqual({ ok: false, reason: 'corrupt' }); // no end marker: cut short
+  });
+  it('[NS-01-R6] a turned picture is not rejected by the strip: it reports its orientation for the native step', () => {
+    const r = stripJpeg(makeJpeg({ exif: true, orientation: 6 }));
+    expect(r.ok).toBe(true);
+    expect(r.ok && r.orientation).toBe(6);
+    expect(r.ok && carriesMetadata(r.bytes)).toBe(false);
+  });
+  it('[NS-01-R6][C8] stops at the first unescaped end marker and drops what follows (F1)', () => {
+    const planted = Array.from(Buffer.from('....ftypmp42 mdta location +37.7749-122.4194 Exif\0\0 GPSLatitude', 'latin1'));
+    for (const progressive of [false, true]) {
+      const plain = stripJpeg(makeJpeg({ seed: 3, progressive }));
+      const withTail = stripJpeg(makeJpeg({ seed: 3, progressive, trailing: planted }));
+      expect(plain.ok && withTail.ok).toBe(true);
+      if (!plain.ok || !withTail.ok) return;
+      expect(Buffer.from(withTail.bytes).equals(Buffer.from(plain.bytes))).toBe(true); // byte for byte the same picture
+      expect(Buffer.from(withTail.bytes).toString('latin1')).not.toMatch(/ftyp|mdta|location|GPSLatitude/);
+      expect(carriesMetadata(withTail.bytes)).toBe(false);
+    }
+    // the escaped FF00 and the restart marker inside the data do not end it, and the second scan is kept
+    const prog = stripJpeg(makeJpeg({ progressive: true, seed: 3 }));
+    expect(prog.ok && Buffer.from(prog.bytes).toString('latin1')).toContain('\x31\x41\xff\xd9');
+  });
+});
+
+describe('[NS-01-R4][NX-39-R14] backing out writes nothing', () => {
+  it('[NS-01-R4][NX-39-R14] a picked picture that is let go writes 0 rows and 0 files', () => {
+    const { store, files } = deps();
+    const s = new PhotoSession();
+    s.pick({ uri: 'picker://one' });
+    s.setText('the swing');
+    s.discard();
+    expect(s.source).toBeNull();
+    expect(store.puts + files.writes).toBe(0);
+    expect(store.all()).toEqual([]);
+  });
+});
+
+describe('[NS-01-R5] a picture without words cannot be kept', () => {
+  it('[NS-01-R5] no words: Keep is off and commit writes nothing; words: it works', async () => {
+    expect(canKeepWithPhoto('')).toBe(false);
+    expect(canKeepWithPhoto('  \n ')).toBe(false);
+    const { d, store, files } = deps();
+    expect((await commitPhoto(d, { ...ONE, finalText: ' ', bytes: makeJpeg() })).status).toBe('needs_words');
+    expect(store.puts + files.writes).toBe(0);
+    expect(canKeepWithPhoto('She laughed.')).toBe(true);
+    expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('stored');
+  });
+});
+
+describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
+  it('[NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
+    expect(normalizePhotoText(undefined)).toBeNull();
+    expect(normalizePhotoText('x'.repeat(141))!.length).toBe(140);
+    expect(normalizePhotoText('  Asha on the swing  ')).toBe('Asha on the swing');
+    // counted in characters a person sees, not code units
+    expect(normalizePhotoText('\u{1F600}'.repeat(141))!.length).toBe(280);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg(), text: null });
+    expect(store.get('e1')!.text).toBeNull(); // never filled in or suggested
+    await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg(), text: 'y'.repeat(300) });
+    expect(store.get('e2')!.text!.length).toBe(140);
+  });
+  it('[NS-01-R21] the typed place is optional, at most 60 characters, the parent\'s only, and kept in its own field', async () => {
+    expect(normalizePhotoPlace(undefined)).toBeNull();
+    expect(normalizePhotoPlace('  ')).toBeNull();
+    expect(normalizePhotoPlace('  Grandma\'s garden ')).toBe('Grandma\'s garden');
+    expect(normalizePhotoPlace('p'.repeat(61))!.length).toBe(60);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg({ exif: true }), text: 'Asha on the swing' }); // the file's own place is never read
+    expect(store.get('e1')!.place).toBeNull();
+    expect(store.get('e1')!.text).toBe('Asha on the swing');
+    await commitPhoto(d, { ...ONE, entryId: 'e2', bytes: makeJpeg(), text: null, place: 'q'.repeat(90) });
+    expect(store.get('e2')!.place!.length).toBe(60);
+    expect(store.get('e2')!.text).toBeNull();
+    const s = new PhotoSession();
+    s.setPlace('  Park ');
+    expect(s.place).toBe('Park');
+    s.discard();
+    expect(s.place).toBeNull();
+  });
+});
+
+describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothing; iCloud and Live Photo behave', () => {
+  const picker = (outcome: 'picked' | 'cancelled' | 'failed' | 'throws', extra: { progress?: number[]; paired?: boolean } = {}) => {
+    const calls = { cancel: 0, permission: 0 };
+    const p: PhotoPicker & { requestPermission?: () => void } = {
+      open: ({ onProgress }) => {
+        extra.progress?.forEach((f) => onProgress?.(f));
+        return {
+          cancel: () => void calls.cancel++,
+          done:
+            outcome === 'throws'
+              ? Promise.reject(new Error('native'))
+              : Promise.resolve(outcome === 'picked' ? { status: 'picked' as const, asset: { uri: 'picker://still', pairedVideoUri: extra.paired ? 'picker://clip' : null } } : { status: outcome }),
+        };
+      },
+    };
+    p.requestPermission = () => void calls.permission++;
+    return { p, calls };
+  };
+  it('[NS-01-R17] a cancel and a decode failure write 0 files', async () => {
+    for (const o of ['cancelled', 'failed', 'throws'] as const) {
+      const { p } = picker(o);
+      const r = await runPick(p).done;
+      expect(r.status).toBe(o === 'throws' ? 'failed' : o);
+    }
+    const { d, files, store } = deps();
+    expect((await commitPhoto(d, { ...ONE, bytes: Uint8Array.of(0, 1, 2, 3) })).status).toBe('unreadable');
+    expect(files.disk.size + store.all().length).toBe(0);
+  });
+  it('[NS-01-R17] a full phone writes 0 files and the letter is not touched', async () => {
+    const { d, files, store } = deps({ files: memoryFiles({ free: 10 }) });
+    expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
+    expect(files.disk.size + store.all().length).toBe(0);
+  });
+  it('[NS-01-R17] a write that fails halfway leaves 0 files and 0 rows', async () => {
+    const { d, files, store } = deps({ files: memoryFiles({ failWrite: true }) });
+    expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('failed');
+    expect(files.disk.size + store.all().length).toBe(0);
+  });
+  it('[NS-01-R17][NX-39-R13] an iCloud-only picture reports progress and Cancel reaches the picker', async () => {
+    const seen: number[] = [];
+    const { p, calls } = picker('cancelled', { progress: [0.2, 0.7] });
+    const run = runPick(p, (f) => seen.push(f));
+    run.cancel();
+    expect(seen).toEqual([0.2, 0.7]);
+    expect(calls.cancel).toBe(1);
+    expect((await run.done).status).toBe('cancelled');
+  });
+  it('[NS-01-R17][NX-39-R12] a Live Photo stores its still only, 1 file', async () => {
+    const { p } = picker('picked', { paired: true });
+    const r = await runPick(p).done;
+    if (r.status !== 'picked') throw new Error('not picked');
+    expect(r.asset).toEqual({ uri: 'picker://still' }); // the paired clip is not carried on
+    const s = new PhotoSession();
+    s.pick({ uri: 'picker://still', pairedVideoUri: 'picker://clip' });
+    expect(s.source).toEqual({ uri: 'picker://still' });
+    const { d, files } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    expect(files.disk.size).toBe(1);
+  });
+  it('[NS-01-R2][NX-39-R2] the photo start asks no library question', async () => {
+    const { p, calls } = picker('picked');
+    await runPick(p).done;
+    expect(calls.permission).toBe(0);
+    expect(Object.keys(p).filter((k) => /permission|authori[sz]/i.test(k))).toEqual(['requestPermission']); // only the spy we added
+  });
+});
