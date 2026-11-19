@@ -45,7 +45,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 
 | Card | Size | Skills | Depends on | Gate |
 |---|---|---|---|---|
-| NS-13 Reminders proven | S to M | mobile, qa, content | NS-32 | device run with a time-zone change |
+| NS-13 Reminders proven | S to M | mobile, qa, content | none to start; re-run its device rows once NS-32 lands (NS-32 is small and already in review, so take it first when both are free) | device run with a time-zone change |
 | NS-14 Whose book | S | mobile, design-systems | none | none |
 | NS-15 Another day | M (adds a synced field) | mobile, sync, data-architect, privacy | NS-36 rule | data inventory row |
 | NS-16 Someone else speaks | M | mobile, content, privacy | NS-21 | counsel (packet Q2) |
@@ -84,7 +84,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 |---|---|---|---|---|
 | NS-34 Speed baseline | S (a run sheet) | qa | none | the founder's phone and time |
 | NS-33 Accessibility floor | S (2 changes) | design-systems, mobile, qa | none | device walk |
-| NS-35 One start | S to M (built; in review) | mobile | none | none |
+| NS-35 One start | S to M (merged on develop 19 Nov) | mobile | none | none |
 | NS-36 Data follows the letter | S to M | data-architect, privacy, mobile | ADR 0028 accepted | data inventory rows |
 | NS-37 Book stays fast | M | mobile | NS-01 native slice | device row |
 | NS-32 Notification budget | S (in review) | mobile | none | none |

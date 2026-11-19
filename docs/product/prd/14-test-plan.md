@@ -52,6 +52,11 @@ A test that runs against a stand-in says so in its title and the row stays "part
 | J-N15 | Every screen with Reduce Motion: no moving loop | NS-33, NS-34 | P1 | yes |
 | J-N16 | A recording in a language that is not offered: kept, no invented words, the letter says its words are waiting | NS-17 | P0 | yes |
 | J-N17 | Sweep every new string: no count, fear word, gendered word or banned punctuation | all | P0 | no |
+| J-N19 | Quiet a book: no reminder, no Save a copy slip and no past letter for it; unquiet brings them back | NS-13, NS-11, NS-23 | P0 (loss case) | yes |
+| J-N20 | VoiceOver only: start, stop, review, undo a fix and Keep a letter with no sighted help | NS-33 | P1 | yes |
+| J-N21 | Sign out with backup off: the sheet says recordings stay on this phone; after sign out every recording is still on the phone | NS-08 | P0 | yes |
+| J-N22 | Past the free allowance with no Plus: reminders still arrive by the same rules and never name Plus, a price or the Keep step | NS-13 | P0 | no |
+| J-N23 | An English-only build, a take spoken in another language: Review marks it in one tap, the words leave view, the audio stays, nothing is lost | NS-17 | P0 | yes |
 | J-N18 | Canary text through every new path (Find query, typed day, typed name, picture text): never in logs, crash reports, URLs or notifications | NS-02, NS-16, NS-18, NS-01 | P0 | no |
 
 ## 5. Device matrix

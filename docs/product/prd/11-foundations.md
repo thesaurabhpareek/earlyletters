@@ -8,7 +8,7 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 
 **Who.** P1, whose phone already buzzes too often.
 **Why.** Reminders, typed days, a future co-parent push, a Save a copy moment: each feature on its own seems reasonable, and together they become nagging. One budget, enforced in one place, makes the total a product decision instead of an accident.
-**Rule.** At most 1 notification from the app per day, of any kind (PROPOSED). Classes are registered in one list. A new class cannot ship without a row there and a priority. A day's notification is chosen by priority: a typed day, then a reminder. The back-off in NS-13 applies to the whole budget.
+**Rule.** At most 1 notification from the app per day, of any kind (PROPOSED). Classes are registered in one list. A new class cannot ship without a row there and a priority. A day's notification is chosen by priority: a typed day, then a reminder. The back-off in NS-13 applies to ordinary reminders only; it never suppresses a typed day the parent asked for (NS-18), which still counts toward the one-per-day limit.
 
 | Id | Given, When, Then |
 |---|---|
@@ -30,6 +30,9 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 | NS-33-R3 | Given the lens control, Then VoiceOver announces a single choice among options, with the selected one stated |
 | NS-33-R4 | Given the Book, letter page, Home and Review at the largest text size on an iPhone SE 3, Then no control is under 44 pt and no text is truncated (device) |
 | NS-33-R5 | Given Reduce Motion, Then no screen runs a moving loop (device) |
+| NS-33-R6 | Given VoiceOver on an iPhone SE 3, Then a parent can start, stop, review, undo a small fix and Keep a letter with no sighted help, and start and stop are announced within 1 s (device) |
+| NS-33-R7 | Given the largest text size with Bold Text, Then Home, Review, the Book and the letter page pass NS-33-R4 (device) |
+| NS-33-R8 | Given Increase Contrast, Then every text colour on those four screens holds at least 4.5:1 (test over tokens, plus device) |
 
 **What a public claim needs.** Apple's accessibility labels may be declared only for features a parent can use for every common task. None is declared until the device walk passes (design role ruling; founder decides).
 
@@ -37,7 +40,7 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 
 **Who.** A parent with an older, smaller iPhone and the baby already stirring.
 **Why.** Every speed and motion number in the requirements is unmeasured. A tap that answers late in the dark reads as "did it start recording?", the most anxious question in the product.
-**Targets (on an iPhone SE 3rd generation).** A screen change starts within 100 ms of the tap. Controls are usable by 350 ms. No frame over 16.7 ms while scrolling the Book or the letter page. The named hand-offs finish within 900 ms; the save hand-off within 2,000 ms. Loops change opacity only, run only on the screen in front, and stop under Reduce Motion.
+**Targets (on an iPhone SE 3rd generation).** Tap Speak to microphone live: p95 500 ms over 200 taps, cold and warm (F04-REQ-023; `06-nfr.md`). Cold start to first interactive frame: p50 1.2 s, p90 2.0 s (A-NFR-001). A screen change starts within 100 ms of the tap. Controls are usable by 350 ms. No frame over 16.7 ms while scrolling the Book or the letter page. The named hand-offs finish within 900 ms: Home to Listen, Listen to Review, Review to the Book after Keep, a Book card to its letter page. The save hand-off (Keep to the letter safe on disk and the Book showing it) within 2,000 ms. Loops change opacity only, run only on the screen in front, and stop under Reduce Motion.
 
 | Id | Given, When, Then |
 |---|---|
@@ -57,14 +60,17 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 ## NS-36. New kinds of data follow the letter (candidates N-08 and N-10, ranks 7 and 8)
 
 **Why a parent cares.** A picture, a first, a seal: each is a new thing stored about a letter. If any of them outlives the letter after a delete, shows up in a search after it was hidden, or is missing from an export, the promise "yours always" and "private" breaks quietly.
-**Rule for every new field or file.** It is deleted, hidden, sealed and restored in the same step as its letter; it appears in the export; it is found by Find only when the letter is; it has a row in the data inventory; it is never in a log.
+**Rule for every new field or file** (a picture, a first, a seal, the about-day of NS-15, the typed name of NS-16). It is deleted, hidden, sealed and restored in the same step as its letter; it appears in the export; it is found by Find only when the letter is; it has a row in the data inventory; it is never in a log.
 **The seal clock.** A sealed letter opens at an instant, stored as one moment in time; the date shown is for display. The same rule on every phone.
 
 | Id | Given, When, Then |
 |---|---|
 | NS-36-R1 | Given a letter with a picture, a first and a seal, When it is deleted, Then all three are gone in the same step, and come back with a restore |
 | NS-36-R2 | Given the export of such a letter, Then every part is in it |
-| NS-36-R3 | Given a sealed letter, Then it opens at the same instant on two phones in different time zones (device) |
+| NS-36-R3 | Given a sealed letter, Then it opens at the same instant on two of the author's own phones set to different time zones (device) |
+| NS-36-R4 | Given the on-device data rules (ADR 0028), Then they are accepted after two counted reviews before any picture, first or seal is written on a store build | the acceptance record |
+| NS-36-R5 | Given export schema 1.7.0, Then it carries pictures at the ADR's path, the about-day and the signature name, and an export from 1.6 still reads | golden export test |
+| NS-36-R6 | Given each new field, Then the data inventory (`docs/legal/data-policy.md` section 4) has its row before the field ships | inventory check |
 
 ## NS-37. The Book stays fast as it grows (candidate N-06, rank 10)
 

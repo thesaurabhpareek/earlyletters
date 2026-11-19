@@ -14,7 +14,7 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **Why.** A parent who means to keep letters forgets. A reminder at the right hour is the difference between twelve letters a year and sixty (HYPOTHESIS). Reminders are built; they have never been proven on a real phone across a time-zone change, a season change, or a week of silence. A reminder that repeats itself, fires at 3 a.m. after a flight, or keeps knocking is worse than none: it teaches the parent to turn notifications off for good.
 
-**What.** Prove on a phone what is built, and hold four behaviours as requirements: the parent chooses the hour and days; a reminder never shows the same words twice in a row; reminders back off when unanswered and never mention the gap; a reminder never shows {child}'s name or any letter words unless the parent chose that.
+**What.** Prove on a phone what is built, and hold, with every rule below keys on a letter *made* (saved in any state, including one waiting at Keep), never on *kept*, so a parent past the free allowance is not nudged toward the paywall, four behaviours as requirements: the parent chooses the hour and days; a reminder never shows the same words twice in a row; reminders back off when unanswered and never mention the gap; a reminder never shows {child}'s name or any letter words unless the parent chose that.
 
 **Happy path.**
 1. After keeping a first letter, the parent is offered reminders once, with the system permission asked only if they say yes.
@@ -32,7 +32,9 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 | Clock change in spring or autumn | The chosen hour holds |
 | Two books | One reminder, not one per child |
 | A child with only a due date (P3) | Prompts never mention a due date or count days to it |
-| A letter was already kept today | No reminder today |
+| A letter was already made today (kept or waiting at Keep) | No reminder today |
+| Free allowance used, no Plus | Reminders follow the same rules; no reminder names Plus, a price or the Keep step |
+| A quieted or hidden book | No reminder for it |
 | Notification arrives on a lock screen | No child name, no letter words by default |
 | Reminders off, then on again | Back-off state resets |
 
@@ -40,14 +42,16 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-13-R1 | Given reminders on at a chosen hour, When that hour comes on a chosen day and no letter was kept today, Then exactly 1 notification is delivered within 5 minutes of the hour (device) | `[NS-13-R1] one reminder at the chosen hour` |
+| NS-13-R1 | Given reminders on at a chosen hour, When that hour comes on a chosen day and no letter was made today, Then exactly 1 notification is delivered within 5 minutes of the hour (device) | `[NS-13-R1] one reminder at the chosen hour` |
 | NS-13-R2 | Given two consecutive reminders, Then their body text differs | `[NS-13-R2] never the same words twice running` |
-| NS-13-R3 | Given 7 days of reminders with no letter kept (PROPOSED), Then the next reminders are at most 1 per 7 days | `[NS-13-R3] unanswered reminders back off` |
-| NS-13-R4 | Given 4 further unanswered weekly reminders (PROPOSED), Then no reminder is scheduled until the parent keeps a letter or turns reminders on again | `[NS-13-R4] reminders stop on their own` |
+| NS-13-R3 | Given 7 days of reminders with no letter made (PROPOSED), Then the next reminders are at most 1 per 7 days | `[NS-13-R3] unanswered reminders back off` |
+| NS-13-R4 | Given 4 further unanswered weekly reminders (PROPOSED), Then no reminder is scheduled until the parent makes a letter or turns reminders on again | `[NS-13-R4] reminders stop on their own` |
 | NS-13-R5 | Given any reminder string, Then it contains no number of days, no count, and none of: miss, behind, forgot, streak, last chance | content rules test |
 | NS-13-R6 | Given the default settings, Then no reminder contains the child's name or letter text | `[NS-13-R6] lock screen shows no name by default` |
 | NS-13-R7 | Given the phone's time zone changes, Then the next reminder fires at the chosen hour in the new zone and none fires in the hours it skipped (device) | `[NS-13-R7] the hour follows the parent` |
-| NS-13-R8 | Given a letter kept today, Then today's pending reminder is cancelled | `[NS-13-R8] no reminder after a kept letter` |
+| NS-13-R8 | Given a letter made today, Then today's pending reminder is cancelled | `[NS-13-R8] no reminder after a made letter` |
+| NS-13-R11 | Given the allowance is used and no Plus, Then no reminder string names Plus, a price or the Keep step | `[NS-13-R11] reminders never sell` |
+| NS-13-R12 | Given a quieted or hidden book (F12-REQ-011), Then no reminder is scheduled for it | `[NS-13-R12] a quiet book gets no reminder` |
 | NS-13-R9 | Given a tap on a reminder, Then Home opens with that prompt shown within 2 seconds on an iPhone SE 3 (device) | `[NS-13-R9] the reminder lands on its prompt` |
 | NS-13-R10 | Given a child with a due date only, Then no reminder string refers to the due date | `[NS-13-R10] nothing about a due date` |
 
@@ -76,6 +80,8 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 |---|---|
 | One book | No switcher; no empty space where it would be |
 | A nameless book | The existing "Your child" label; never "Child 2" |
+| Two nameless books | Each also shows its birth or due date so the parent can tell them apart |
+| A reminder tap | Opens Home on the last active book |
 | Switch during a waiting draft | The draft stays with the child it was made for; the switcher changes only new letters |
 | A third book | The same control; it scrolls if needed |
 | VoiceOver | Reads "Letters go to {child}'s book" (intent) and the action to change it |
@@ -88,9 +94,11 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 | NS-14-R2 | Given 1 book, Then Home renders no switcher and no gap | `[NS-14-R2] one book shows none` |
 | NS-14-R3 | Given a switch, When a letter is then kept, Then it belongs to the chosen book | `[NS-14-R3] the letter files where the parent chose` |
 | NS-14-R4 | Given a waiting draft for child A and a switch to child B, Then the draft still belongs to A | `[NS-14-R4] a draft keeps its child` |
+| NS-14-R6 | Given a switch on Home, Then the Book opens on the same child | `[NS-14-R6] one selection for Home and Book` |
+| NS-14-R7 | Given two books with no name, Then each label includes its birth or due date | `[NS-14-R7] two nameless books are told apart` |
 | NS-14-R5 | Given the largest text size on an iPhone SE 3, Then the switcher, the dateline and the three capture controls are reachable without overlapping (device) | `[NS-14-R5] Home holds at AX5 with a switcher` |
 
-**Design inputs.** Reuse the Book's switcher exactly. It sits above the dateline, never between the prompt and the capture controls. Capture controls stay in the bottom third.
+**Design inputs.** Home and the Book share one selection: switching on either switches both. Reuse the Book's switcher exactly. It sits above the dateline, never between the prompt and the capture controls. Capture controls stay in the bottom third.
 **Content inputs.** One VoiceOver label. `{child}` only; never gendered.
 **Legal, privacy inputs.** None new. A child's name is already on this screen.
 **Free or Plus.** Free.
@@ -118,7 +126,8 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 | A day before the earliest sensible date (PROPOSED: 2 years before the due or birth date) | The picker does not go further back |
 | The parent changes the day again later | Allowed; both changes are the parent's; the said-on day never changes |
 | The other parent's letter | Only its author can change its day |
-| Reminders and "one past letter" | Use the about-day |
+| Age line, chapter, Read together order, Find order and one past letter | Use the about-day |
+| "A letter made today" for reminders | Uses the said-on day |
 | Export | Carries both dates |
 
 **Acceptance.**
@@ -142,16 +151,19 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 ## NS-16. Someone else speaks (candidate C-08, rank 29)
 
-**Who and when.** A grandmother visiting for a week, handed the parent's phone: "say something for her".
+**Who and when.** A grandmother visiting for a week, handed the parent's phone: "say something for {child}".
 
 **Why.** "Let family see the baby grow" is job 6, and the cheapest version of family is the person already in the room. Today a letter spoken by Nani on the parent's phone is signed as the parent.
 
 **What.** On Review, the author can sign this one letter as someone else, by a name they type. The letter shows that name. It is still the account holder's letter in every rule: who can edit it, how it is counted, where it is stored.
 
+**Happy path.** The parent opens Home, taps Speak and hands over the phone. Nani speaks. On Review the parent taps "From", types "Nani", and keeps. The Book shows the letter signed "From Nani", kept by the parent.
+
 **Unhappy paths.**
 
 | Case | What happens |
 |---|---|
+| The speaker uses a language not offered | As NS-17: no words are invented; the parent chooses the language or the recording waits |
 | The name field is left empty | The letter is signed as the parent, as today |
 | A name used before | Offered again from this phone's own list; never suggested from contacts |
 | The speaker is a child | Not allowed by the product: adults only. The screen does not ask, and the words do not invite a child to speak |
@@ -183,7 +195,9 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **What.** A language ships only when a native reviewer and the founder say its transcription and its rules are good enough to keep (the gate on record). Until then it is not offered. There is no translation, ever.
 
-**Unhappy paths.** A language that fails its gate is not listed. A recording made in a language that is not yet offered is kept as audio and waits; the app says so and never guesses at words. Mixed-language sentences are kept as spoken; where the model cannot write a stretch, the audio is the truth and the page says the words are not written down there.
+**How the app knows the language.** It does not guess. Each author's languages are set at first run and in Me. When a take is made, the language used is the author's chosen one; on Review the author can say "this was in another language" (intent), and the recording then waits as audio. No automatic language detection is used to decide what words to show (PROPOSED; `speech` and the CAIO role may propose a detector later, with a measured false-accept rate, as a separate requirement).
+
+**Unhappy paths.** A language that fails its gate is not listed. A recording the author marks as another language is kept as audio and waits; the app says so and never guesses at words. In an English-only build, a recording in another language can produce English-looking words nobody said: Review must make that easy to catch and mark (R5). Mixed-language sentences are kept as spoken; where the model cannot write a stretch, the audio is the truth and the page says the words are not written down there.
 
 **Acceptance (the gate, restated).**
 
@@ -192,6 +206,7 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 | NS-17-R1 | Given a language without a signed gate, Then it is absent from every picker in a store build |
 | NS-17-R2 | Given a recording in a language not offered, Then the recording is kept, no transcript is invented, and the letter says its words are waiting |
 | NS-17-R3 | Given any letter, Then no surface offers or performs translation or transliteration |
+| NS-17-R5 | Given an English-only build and a take, Then Review offers in one tap to mark it as another language, which removes the transcript from view, keeps the audio, and keeps the letter waiting; nothing is lost | `[NS-17-R5] another language is one tap from Review` |
 | NS-17-R4 | Given a language that ships, Then the store listing names it and no language that has not shipped |
 
 **Design inputs.** Language is chosen per author. Right-to-left and Devanagari layouts need a native-script reviewer before unlock.
@@ -207,15 +222,16 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **What.** In reminder settings the parent types a day and a few words of their own. On that day one reminder carries their words back to them. The app adds nothing to the words.
 
-**Unhappy paths.** A day in the past is not accepted. The day shares the single notification budget (NS-32): it replaces that day's ordinary reminder, never adds a second. Deleting the day cancels it. The words are the parent's and may contain a name: they chose it, and the lock-screen default still hides it unless they opted in.
+**Unhappy paths.** A day in the past is not accepted. The day shares the single notification budget (NS-32): it replaces that day's ordinary reminder, never adds a second. Deleting the day cancels it. The words are the parent's and may contain a name. iOS cannot hide one notification's body until unlock on its own, so by default the notification carries a fixed line (intent: "A day you wanted to remember") and the typed words show in the app after the tap. The parent can choose to show their words in the notification.
 
 **Acceptance (PROPOSED).**
 
 | Id | Given, When, Then |
 |---|---|
-| NS-18-R1 | Given a typed day and words, Then exactly 1 notification on that day carries those words unchanged |
+| NS-18-R1 | Given a typed day and words, Then exactly 1 notification is delivered that day, and the app shows those words unchanged after the tap |
 | NS-18-R2 | Given that day also has an ordinary reminder, Then only the typed one is delivered |
-| NS-18-R3 | Given the lock-screen default, Then the typed words are hidden until the phone is unlocked unless the parent chose to show them |
+| NS-18-R3 | Given the default, Then the notification body is the fixed line and never the typed words; Given the parent turned showing on, Then the body is their words unchanged |
+| NS-18-R4 | Given reminders have backed off or stopped (NS-13), Then a typed day is still delivered |
 
 **Legal, privacy inputs.** The words stay on the phone. No new data leaves it.
 

@@ -28,7 +28,7 @@ The opportunity tree in one view:
 
 ## 3. What we optimise, and how we will know
 
-North Star candidate (`03-goals-and-principles.md` section 4.1): **weekly making families**, families where any author kept a letter in the last 7 days. Business number beside it, never above it: paying families over first-time downloads by install week.
+North Star candidate (`03-goals-and-principles.md` section 4.1): **weekly making families**, families where any author made a letter (saved it in any state, kept or waiting at Keep) in the last 7 days. The kept-only version measures Plus as much as habit and sits beside it. Business number beside it, never above it: paying families over first-time downloads by install week.
 
 Guardrails are hard stops, not weights: zero lost letters; zero charges outside their triggers; zero paywalls before a parent has seen their words; zero counts of gaps, streaks or guilt lines; zero child names on a lock screen by default.
 
@@ -36,7 +36,7 @@ Analytics is off through the 1.0 line (D-124). So for each measure we say where 
 
 | Measure | Serves | Source now | Target |
 |---|---|---|---|
-| Letters kept per family per week | North Star input | Testers, by hand, numbers only | none set; a baseline first |
+| Letters made, and letters kept, per family per week | North Star input | Testers, by hand, numbers only | none set; a baseline first |
 | Families with a letter in the last 7 days | North Star | Testers, by hand | none set |
 | Paid starts over first-time downloads | Business | App Store Connect sales reports | 5% at week 8 [assumption on record] |
 | Lost letters reported | Guardrail | Support and testers | 0 |
@@ -59,7 +59,7 @@ Three tabs, one verb each. Only Home starts a letter. Elsewhere you can only add
 | Book | Read | Month chapters; the calm header (NS-22) with Read together, the lens choice, Find (NS-02), Go to a month; the letter page as one list (NS-21) with Share (NS-05), a first, a picture, a seal, the day it is about, earlier versions; read the year back (NS-24) |
 | Me | Look after | Account, plan, reminders (NS-13, NS-18), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
 
-Never a tab: Family, Library, Share. Nothing anywhere says "coming soon" for the other parent.
+Never a tab: Family, Library, Share. Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
 
 ## 5. Standing inputs for design
 
@@ -77,11 +77,11 @@ These are the council roles' standing positions. They are not legal advice. Coun
 
 - **What leaves the phone.** Nothing new leaves it without a privacy read. A child's voice or picture leaving it needs a security read and a counsel read first (X2; ruling 3).
 - **Door lines.** Any card that touches sign-in, an agreement, consent, age, deletion or support has Shown, Records, Never and Decline lines (COORDINATION section 10).
-- **Claims.** Every public sentence has a claims registry row and is true of the build that ships.
+- **Claims.** Every public sentence is true of the build that ships and has a row in the claims inventory, `docs/reviews/2026-10-claims-inventory.md` (section 2 row format), until a claims registry exists (D-123 deferred it). While recording backup is off, no public surface may imply a recording survives a lost phone.
 - **The privacy label** changes in the same build as the behaviour that changes it, never before or after.
 - **Children.** The parent is the user; the child is the subject. No feature asks a child to speak or use the app. The open edges are a baby's voice on a recording and a child's picture (counsel packet Q4).
 - **Another adult's words.** A letter spoken by someone else, or shared with a second adult, carries another person's data (packet Q2). NS-16 and NS-25 wait on it.
-- **Promises with no end date.** None. "Free forever" was replaced on 11 Nov.
+- **Open-ended promises on record.** Nothing free at v1.0 later moves behind Plus (principle 6); export is never gated; letters are never sold, never used for ads, never used to train models; the 90-day shutdown pledge. Each needs a claims row and is in counsel packet Q16. "Free forever" was replaced on 11 Nov and must not come back.
 
 ## 8. Keeping the cost of building and running low
 
@@ -165,7 +165,7 @@ Rank and size come from `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.
 
 ## 10. Council review
 
-Reviewed on 19 Nov 2026 by the roles below, each played by a Claude session from its skill. Independence is of method only. Findings and how each was answered: `15-council-review.md`.
+Reviewed on 19 Nov 2026 by the roles below, each played by a separate Claude session from its skill. Independence is of method only (one account, one model family). Findings and how each was answered: `15-council-review.md`.
 
 | Role | Lens |
 |---|---|

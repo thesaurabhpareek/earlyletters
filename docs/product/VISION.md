@@ -12,11 +12,11 @@ It is not for a parent who wants the app to write for them, for anyone under 18,
 
 ## The promise
 
-Early Letters is the baby memory book you fill by talking. The words stay yours: every small fix is shown and can be undone, your recording is kept as you made it, and each letter is filed by your child's age for your child to read and hear for years (`docs/prd/v2/03-goals-and-principles.md` section 1).
+What we say in public, the founder's decision of 1 Nov 2026 (D-139): letters to your child, in your own words and voice.
 
-Four things must stay true: your words with every fix in view; kept; private; yours always.
+The internal promise behind it (`03-goals-and-principles.md` section 1; BRAND.md and 03 still lead with the older descriptor and should be updated to match D-139): Early Letters is the baby memory book you fill by talking. The words stay yours: every small fix is shown and can be undone, your recording is kept as you made it, and each letter is filed by your child's age for your child to read and hear for years (`docs/prd/v2/03-goals-and-principles.md` section 1).
 
-Positioning, the founder's decision of 1 Nov 2026 (D-139): letters to your child, in your own words and voice.
+Four things must stay true: your words with every fix in view; kept; private; yours always. While recording backup is off, "kept" means kept on this phone and in any copy the parent saves; nothing we say may suggest more.
 
 ## The rule above every feature
 

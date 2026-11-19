@@ -6,7 +6,7 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 |---|---|---|---|---|
 | C-09 Hands-free start | 20 | P1 with both hands full | A time-boxed spike only (NS-04). No doorway ships from it | The spike's exit criteria pass on a phone and App Review rules allow it |
 | C-10 Quick capture from a doorway | 32 | P1 who wants one tap from the lock screen | After the spike; opens only when Ready on that phone (ruling 6, 19 Nov) | NS-04 exit passes; a reliability record of zero unmeant recordings in testing |
-| C-32 Pictures follow the account | 37 | P1 on a new phone | Not built: no picture leaves the phone in the next builds (ruling 3, 19 Nov) | A security read and a counsel read, then a founder decision. Until then the Photo words say where a picture lives |
+| C-32 Pictures follow the account | 38 | P1 on a new phone | Not built: no picture leaves the phone in the next builds (ruling 3, 19 Nov) | A security read and a counsel read, then a founder decision. Until then the Photo words say where a picture lives |
 | C-30 A past letter on the Home Screen | 45 | P1 who likes widgets | Waits: a letter's words on the Home Screen are visible to anyone who picks up the phone | Evidence parents want it, and a design that shows no words by default |
 | C-34 New first-run story cards | 46 | A first-time parent | Held until the account door is fixed and counsel has read the lines; the cards already built stand (ruling 7) | Counsel's read; tester notes that people do not understand what the app does |
 | C-39 Android | 47 | P2 with an Android phone | Not now: a second platform doubles every test | Recruiting shows a large share of mixed-platform couples (study U8) |

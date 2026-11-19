@@ -32,7 +32,7 @@ Cards for items further down the rank are shorter on purpose: they record the de
 
 | Rule | Source |
 |---|---|
-| Tabs are Home, Book and Me. Family is never a tab. Co-parent "coming soon" is one small caption line in Me; since the founder's 11 Nov amendment of N1 the line is tappable and opens one on-device sheet, with no row, badge or chevron (design spec 07; relayed by Karma, original not read). The Library is not a tab. | closed N1 to N3, design spec 07 |
+| Tabs are Home, Book and Me. Family is never a tab, the Library is not a tab, and no build shows a co-parent "coming soon" surface (founder answer of 19 Nov in chat, "Sorry second. Go for it"; D-161 as drafted in #827; D-160 on develop still allows "coming soon" until #827 merges). | closed N2, N3; D-161 draft |
 | Only Home starts a letter. Everything else adds to a letter that exists or reads kept letters. | `NAV-TAB-ROLES-10nov.md` P1, P2, P9 |
 | The machine may remove and repair, and may never add meaning. No streaks, points or counts of gaps. `{child}` only. | CLAUDE.md, BRAND.md, VOICE.md |
 | One gate: Keep after the allowance of 2, planned raise 2, 5, 10 (D-082). Capture is never blocked. What a family kept stays theirs to read, hear and export. No "free forever". | D-082, closed X3 and X4 |

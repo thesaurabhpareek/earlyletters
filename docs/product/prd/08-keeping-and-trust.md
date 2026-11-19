@@ -35,7 +35,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | Upload fails repeatedly | Same as above; nothing asks the parent to act unless they can act |
 | New phone, recording not yet arrived | The words are here; the recording is on its way. Never "kept on this phone" (NX-36-S17) |
 | Recording never backed up from the old phone | The page does not offer Play, and says the recording was only on the other phone, without blame |
-| Parent signs out | What stays on the phone and what does not, before they confirm |
+| Parent signs out | What stays on the phone and what does not, before they confirm (this case applies today too: NS-08-R6) |
 | Storage quota reached on our side | Capture and Keep still work; backup waits; the parent is not charged or blocked |
 
 **Acceptance.**
@@ -47,6 +47,8 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | NS-08-R3 | Given a scratch project, When the escrow drill is rehearsed, Then the run sheet records each step, what was seen, and what could not be run without production | the run sheet |
 | NS-08-R4 | Given the privacy label worksheet and the Privacy Policy draft, Then one page shows each answer and sentence that changes when backup turns on | the page, marked draft for counsel |
 | NS-08-R5 | Given any store profile in `eas.json`, Then `EXPO_PUBLIC_BACKUP` stays off until a founder decision turns it on | existing preflight check |
+| NS-08-R6 | Given backup off (today), When a parent confirms sign out, Then the sheet said beforehand that recordings stay only on this phone, and sign out deletes no recording | `[NS-08-R6] sign out never removes a recording` (UNVERIFIED what sign out does today: read it first) |
+| NS-08-R7 | Given backup off, Then no line in the app, the store listing, the site or Save a copy implies a recording survives the loss of the phone; checked per build against the claims inventory | claims inventory row, per build |
 
 **Design inputs.** None to build. Prepare: the letter-page provenance line needs four truthful states (on this phone; on this phone and backed up; on its way to this phone; not on this phone). Largest text size first. No lock, shield or "bank-level" imagery (VOICE.md).
 **Content inputs.** Four state lines as intent above; one sign-out line. None may say or imply a recording cannot be lost. D-102 forbids any claim that only the family's keys can open a backup. Words wait for counsel.
@@ -74,7 +76,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | App is killed between mark and delete | Next launch finishes it before Home is interactive or in the background, without delaying the first frame | Nothing |
 | File delete throws | The row stays marked; next launch retries | One line in Review (intent: "That recording is still on this phone. We will finish removing it.") |
 | File is already missing | The row is removed | Nothing |
-| Delete keeps failing across launches | Retries each launch; never surfaces the draft again as keepable | Nothing further; `qa` decides whether Storage in Me should show it |
+| Delete keeps failing across launches | Retries each launch; never surfaces the draft again as keepable | After 3 failed launches (PROPOSED), Storage in Me shows one line and a Remove now action, so the parent is never wrong about what is on the phone |
 
 **Acceptance.**
 
@@ -84,6 +86,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | NS-09-R2 | Given a `discarding` draft whose delete throws, When the sweep runs, Then the row remains marked and no error reaches the screen | `[NS-09-R2] a failed delete waits for the next launch` |
 | NS-09-R3 | Given Discard on Listen and a delete that throws, Then the draft row remains, marked `discarding` | `[NS-09-R3] Listen never removes a row whose file is still there` |
 | NS-09-R4 | Given Let it go in Review and a delete that fails, Then the BL-925 line is shown once and announced to VoiceOver | `[NS-09-R4] Review says when a recording is not gone yet` |
+| NS-09-R6 | Given a delete that has failed on 3 launches, Then Storage in Me shows the line and Remove now, and Remove now retries once | `[NS-09-R6] a stuck recording is visible in Storage` |
 | NS-09-R5 | Given 0 `discarding` drafts, Then the sweep adds no measurable work to launch (PROPOSED: under 5 ms on an iPhone SE 3; device) | BL-929 run sheet row |
 
 **Design inputs.** One inline line in Review, the app's own small muted voice, never the letter's serif, no icon, no red. It must not block leaving Review.
@@ -118,6 +121,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | Id | Given, When, Then | Test |
 |---|---|---|
 | NS-10-R0 | Given a returning account with no book on this phone and a consent still to give, When the app is opened, Then the consent sheet or a held screen with two ways forward is shown within 10 seconds, and the first-run child step is never shown | `[NS-10-R0] a returning account never meets the child step` |
+| NS-10-R2 | Given 10 seconds pass and the book is still arriving (for example 1,000 letters on a slow network), Then the Book shows the letters that have arrived with one line that more are on their way; it is never empty and never shows the child step | `[NS-10-R2] a slow arrival shows what has come` |
 | NS-10-R1 | Given two iPhones and one account with 5 or more letters, When the second phone signs in, Then every letter's words appear and no page says a recording is kept on that phone | device row S1-204 |
 
 **Design inputs.** The held screen exists. At the largest text size the two actions stack and stay 44 pt.
@@ -133,7 +137,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 
 **Why.** Export exists and is free (F15), and while backup is off it is the only second copy of the voice. Almost nobody exports without a reason to (HYPOTHESIS; no evidence of our own). A yearly moment the parent chooses turns a setting into a keepsake habit. It also tests, at no server cost, whether families want a second home for the voice.
 
-**What.** A "Save a copy" action in Me, where "Take the book with you" lives, and one slip on Home during the birthday week that leads to it. The copy is the existing export. No notification in the first version. No new file format.
+**What.** One row in Me for the existing export, renamed or kept as "Take the book with you" by `content` so Me never has two entries for the same file, and one slip on Home during the birthday week that leads to it. The copy is the existing export. No notification in the first version. No new file format.
 
 **Not in scope.** Automatic export. Any cloud of ours. A reminder that repeats. Any line that mentions losing anything.
 
@@ -153,18 +157,22 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | The share sheet is cancelled | Back on Save a copy; nothing is recorded as done |
 | No birthday yet (expecting parent, P3) | No slip. The action in Me is always there |
 | Two books | The slip names whose book; the copy is of that book |
+| A large book (1,000 letters, hours of audio) | Progress is shown; if the parent leaves the app the export resumes or says it stopped, and never leaves a half-made file |
+| A quieted or hidden book | No slip for that book |
 
 **Acceptance.**
 
 | Id | Given, When, Then | Test title |
 |---|---|---|
-| NS-11-R1 | Given Me, Then one action leads to Save a copy and it is reachable in 2 taps from the tab | `[NS-11-R1] Save a copy is two taps from Me` |
+| NS-11-R1 | Given Me, Then exactly one row leads to the export, reachable in 2 taps from the tab | `[NS-11-R1] Save a copy is two taps from Me` |
 | NS-11-R2 | Given a child with a birth date, When today is within 7 days after the birthday (PROPOSED window), Then Home shows the slip at most once per year per book | `[NS-11-R2] the slip shows once a year` |
 | NS-11-R3 | Given the slip is dismissed or the copy is saved, Then the slip does not show again until the next birthday | `[NS-11-R3] dismissed means gone for the year` |
 | NS-11-R4 | Given another Home slip is due, Then exactly one slip is shown (order: a waiting draft first) | `[NS-11-R4] one slip at a time` |
 | NS-11-R5 | Given the screen and the slip, Then no string contains a count of letters, a gap, or a word from the fear list in the content rules | content rules test |
 | NS-11-R6 | Given the export it produces, Then it is byte-identical to the export from Take the book with you | `[NS-11-R6] same export, one code path` |
 | NS-11-R7 | Given a child with only a due date, Then no slip is shown | `[NS-11-R7] no slip before a birth date` |
+| NS-11-R8 | Given a quieted or hidden book, Then no slip is shown for it | `[NS-11-R8] a quiet book gets no slip` |
+| NS-11-R9 | Given 1,000 letters, Then the export shows progress and, when interrupted, either resumes or reports that it stopped; no partial file is left where the parent chose | `[NS-11-R9] a big export is never half-made` (device) |
 
 **Design inputs.** The slip is the existing Home slip component; no new component. Save a copy is one screen: one sentence of what the copy holds, one primary action in the bottom third, at least 56 pt. At the largest text size the sentence wraps and the action stays visible without scrolling on an iPhone SE 3 (device). No celebration, no confetti, no badge.
 **Content inputs.** Two lines and one button. Tone: a keepsake ("a copy of the year, yours to keep"), never protection. Existing keys to stay consistent with: `exportNudge` ("Save a copy of your book in Files or iCloud Drive. It is yours to keep.") and `exportEmpty`. `{child}` only. The founder approves the words.

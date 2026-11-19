@@ -19,9 +19,9 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 **Order of rows (fixed; a row is absent when it does not apply, never disabled):**
 1. The day it is about, and the day it was said (NS-15)
 2. A first (NS-06 Part A)
-3. A picture (NS-01)
+3. A picture (NS-01). The picture itself shows in the body of the letter, above the words; this row only adds, changes or removes it. This order supersedes NS-06 OQ-A2's "the letter's action row" for a first
 4. Sealed until (NS-06 Part B)
-5. Who can read it (private or in the book)
+5. Who can read it (private or in the book). Absent while the book has one adult, because there is nobody to keep it from
 6. Earlier versions (NS-12)
 7. Where the recording is (the provenance line; NS-08)
 
@@ -58,7 +58,16 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 
 **Why.** The Book is for reading. Find, the lens choice, Read together and Go to a month are all useful and all compete for the same top inch.
 
-**What.** One bar in a fixed order: title, age, child switcher (two books only), Read together, the lens choice, Find, Go to a month. Settings does not live on the Book. Nothing is added.
+**What.** One bar in a fixed order: title, age, child switcher (two books only), Read together, the lens choice, Find, Go to a month. The gear leaves the Book. Its destinations move: book settings (name, dates, languages) to Me, then the child; Quiet this book and Hide this book (F12-REQ-011, F09-REQ-016) stay on the Book, in one menu at the end of the bar, within 2 taps (the F12 measure). Nothing is added.
+
+**Unhappy paths.**
+
+| Case | What happens |
+|---|---|
+| An empty book | Find and the lens choice are absent; Read together is absent; title and age remain |
+| One book | No switcher |
+| The largest text size | Controls wrap to a second line in the same order; Go to a month may fold into the end menu |
+| A quieted book | The bar is the same; the menu offers Unquiet |
 
 **Acceptance.**
 
@@ -66,7 +75,8 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 |---|---|
 | NS-22-R1 | Given the Book at the default text size on an iPhone SE 3, Then the first letter card's top edge is visible without scrolling (device) |
 | NS-22-R2 | Given the largest text size, Then every header control is 44 pt or more and stays in the fixed order |
-| NS-22-R3 | Given the Book, Then it has no settings control |
+| NS-22-R3 | Given the Book, Then it has no gear, and Quiet this book and Hide this book are reachable in 2 taps from the Book |
+| NS-22-R4 | Given a book with no letters, Then Find, the lens choice and Read together are absent, not disabled |
 
 **Design inputs.** This follows Find landing: design once, with Find in place. The month jump may fold into a menu at the largest sizes; design decides.
 
@@ -90,13 +100,16 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 | The parent dismisses it | Gone until tomorrow |
 | A letter the parent deleted and restored | Eligible again |
 | A hard day (no way to know) | The parent can turn past letters off in Me in one switch |
+| A quieted or hidden book | No past letter from it, ever |
 
 **Acceptance.**
 
 | Id | Given, When, Then |
 |---|---|
 | NS-23-R1 | Given a letter dated the same day of an earlier month or year, Then Home may show one card for it; never two |
-| NS-23-R2 | Given the card, Then it carries the letter's dateline and an opening fragment cut at a word, and no count |
+| NS-23-R2 | Given the card, Then it carries the letter's dateline and an opening fragment cut by the system word segmenter for the letter's language (so Chinese and Devanagari cut correctly), and no count |
+| NS-23-R7 | Given VoiceOver, Then the card is one element read as the dateline then the fragment, with the fragment in the letter's language |
+| NS-23-R8 | Given a quieted or hidden book, Then no letter from it is chosen |
 | NS-23-R3 | Given a tap, Then the letter opens in the Book; Back returns to Home |
 | NS-23-R4 | Given the switch in Me is off, Then no past letter appears on Home |
 | NS-23-R5 | Given a sealed, hidden or other-parent private letter, Then it is never chosen |
@@ -114,7 +127,19 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 
 **Why.** Read together is built for bedtime with {child}. The birthday is the other reading moment: the adults, together, once a year.
 
-**What.** From the Book, for a year of {child}'s life: Read together over that year's letters in book order, with the existing page turn. No summary, no highlights, no count of letters.
+**What.** From the Book, for a year of {child}'s life: Read together over that year's letters in book order, with the existing page turn. No summary, no highlights, no count of letters. A year runs from a birthday to the day before the next; Before You is its own year. The about-day (NS-15) sets the order.
+
+**Happy path.** On the birthday evening a parent opens the Book, chooses the year just ended, and taps Read the year. Read together opens at its first letter; they turn pages together; the last page is the last letter of the year, then the Book.
+
+**Unhappy paths.**
+
+| Case | What happens |
+|---|---|
+| A year with no letters | It is not offered |
+| Two books | The year is of the active book |
+| Sealed, hidden or the other parent's private letters | Skipped |
+| A letter whose recording is not on this phone | Its words show; Play is absent |
+| Interrupted | Back returns to the Book; starting again opens at the first letter |
 
 **Acceptance (PROPOSED).**
 
@@ -122,9 +147,11 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 |---|---|
 | NS-24-R1 | Given a year with letters, Then Read together can start at its first letter and ends at its last |
 | NS-24-R2 | Given the year view, Then no page contains text the parents did not say or type, except month headings |
-| NS-24-R3 | Given private letters of the other parent, Then they are skipped |
+| NS-24-R3 | Given private letters of the other parent, sealed letters or hidden letters, Then they are skipped |
+| NS-24-R4 | Given a year with no letters, Then it is not offered |
+| NS-24-R5 | Given a birth date, Then a year is birthday to the day before the next birthday, and Before You is its own year |
 
-**Free or Plus.** The existing Read together allowance applies, unchanged.
+**Free or Plus.** Free. Read together has no session limit and no Plus gate (M2; F10). Never write a line that implies a limit.
 
 ---
 
@@ -139,6 +166,18 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 **Happy path (when it ships).** Parent 1 invites from Me. Parent 2 opens the link, installs, signs in, agrees, and sees the book. Each signs their own letters.
 
 **Unhappy paths the design must cover.** The link is opened on an Android phone (the page says the app is iPhone only for now, and offers nothing that needs an account). The invite has expired. Parent 2 already has their own book. Parent 1 removes Parent 2. Parent 2 deletes their account. Two parents edit the same letter (only the author can). A third adult (refused: two parents only).
+
+**Acceptance (minimum, before any store build).**
+
+| Id | Given, When, Then |
+|---|---|
+| NS-25-R1 | Given a store build, Then no co-parent surface or "coming soon" line appears until this card's gates are met (D-162 draft) |
+| NS-25-R2 | Given an invite, When the second adult opens it, Then they see the inviter's sign-off and role only, and no child name or letter, until they agree |
+| NS-25-R3 | Given two parents, Then neither can read the other's private letters or delete the other's letters |
+| NS-25-R4 | Given the first parent removes the second, Then the second's phone stops receiving the book at its next sync, and the second keeps their own authored letters as the data policy says |
+| NS-25-R5 | Given a third adult opens an invite, Then joining is refused with a plain line |
+
+Full rows are in the co-parent backlog work and F11; this card adds the store-build gate.
 
 **Legal, privacy inputs.** A second adult sees every non-private letter, including health or pregnancy details the first parent spoke. The consent for that sharing is open for counsel (D-050; packet Q2). Counsel must confirm.
 
