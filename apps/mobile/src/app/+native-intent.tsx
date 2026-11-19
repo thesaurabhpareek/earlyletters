@@ -31,7 +31,6 @@ import { serverFeaturesEnabled } from '@/lib/capabilities';
 import { PLUS_ALPHA } from '@/lib/billing/alpha';
 import { planIncomingLink } from '@/lib/family/entry.logic';
 import { savePendingInvite } from '@/lib/family/pending-invite';
-import { inviteScreensHidden } from '@/lib/family/surfaces';
 import { isCaptureRoute, TONIGHT_HREF } from '@/lib/resilience/not-found.logic';
 import { getSetting } from '@/lib/store';
 

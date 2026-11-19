@@ -13,6 +13,7 @@ import { ToastHost } from '@/components/ui/toast';
 import { ReminderPrimeAsk } from '@/components/asks/reminder-prime-ask';
 import { useTheme } from '@/lib/a11y';
 import { copy } from '@/lib/copy';
+import { youTabHint } from '@/components/settings/you-tab-hint';
 
 /**
  * Tabs: Home, Book, Me (founder, 11 Nov 2026), in every build: servers on or off, alpha or store. Family is never a tab
@@ -48,7 +49,11 @@ export default function TabsLayout() {
   const button = (title: string) =>
     Platform.OS === 'ios'
       ? (props: Record<string, unknown>) => {
-          const { href: _href, ...rest } = props;
+          const { href: _href, ...base } = props;
+          // The Me tab says what it holds, from content (the spec's tabs.youA11yHint), only where the build has sign-in
+          // (components/settings/you-tab-hint.ts): with server features off nothing extra is said.
+          const hint = title === t.you ? youTabHint() : undefined;
+          const rest = hint ? { ...base, accessibilityHint: hint } : base;
           return <Pressable {...(rest as PressableProps)} {...LARGE_CONTENT(title)} />;
         }
       : undefined;

@@ -314,7 +314,7 @@ describe('the Settings row and the route honour it', () => {
     for (const [servers, deletion, signedIn] of states) {
       setServerFeaturesForTests(servers);
       setBuildFlagForTests('accountDeletion', deletion);
-      expect(run(rowCondition!, { capabilities, auth: { signedIn } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
+      expect(run(rowCondition!, { capabilities, auth: { signedIn }, you: { accountReady: true } }), `servers ${servers}, switch ${deletion}, signed in ${signedIn}`).toBe(servers && deletion && signedIn);
     }
   });
 
