@@ -47,7 +47,7 @@ Analytics is off through the 1.0 line (D-124). So for each measure we say where 
 | A recording sent to family in the pilot | NS-03 | The pilot sheet | set in NS-03 section 8 before it starts |
 | Speed on an SE 3 | NS-34 | The run sheet | the targets in NS-34 |
 
-Every target above without a number is set only after a first reading. A target with no source in the build that ships is not a target.
+Hand-sent measures: testers type numbers into their own message to the founder; the app composes nothing and sends nothing. The founder keeps them in one private sheet, deletes them 90 days after the tester round ends (PROPOSED), and the tester text says so (packet Q44). Every target above without a number is set only after a first reading. A target with no source in the build that ships is not a target.
 
 ## 4. Where everything lives (information architecture)
 
@@ -59,7 +59,9 @@ Three tabs, one verb each. Only Home starts a letter. Elsewhere you can only add
 | Book | Read | Month chapters; the calm header (NS-22) with Read together, the lens choice, Find (NS-02), Go to a month; the letter page as one list (NS-21) with Share (NS-05), a first, a picture, a seal, the day it is about, earlier versions; read the year back (NS-24) |
 | Me | Look after | Account, plan, reminders (NS-13, NS-18), past letters on Home switch, Save a copy (NS-11), take the book with you, storage, privacy, deletion; later, the other parent (NS-25) |
 
-Never a tab: Family, Library, Share. Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
+Never a tab: Family, Library, Share.
+
+Home shows one slip at a time, in this order: a waiting draft; Save a copy in the birthday week; a picture-first prompt; one past letter. A test pins the order (`[FRAME-SLIP] one slip, fixed priority`). Nothing anywhere says "coming soon" for the other parent (founder answer of 19 Nov; D-161 as drafted in #827, pending his merge; D-160 stands until then).
 
 ## 5. Standing inputs for design
 
@@ -77,7 +79,7 @@ These are the council roles' standing positions. They are not legal advice. Coun
 
 - **What leaves the phone.** Nothing new leaves it without a privacy read. A child's voice or picture leaving it needs a security read and a counsel read first (X2; ruling 3).
 - **Door lines.** Any card that touches sign-in, an agreement, consent, age, deletion or support has Shown, Records, Never and Decline lines (COORDINATION section 10).
-- **Claims.** Every public sentence is true of the build that ships and has a row in the claims inventory, `docs/reviews/2026-10-claims-inventory.md` (section 2 row format), until a claims registry exists (D-123 deferred it). While recording backup is off, no public surface may imply a recording survives a lost phone.
+- **Claims.** Every public sentence is true of the build that ships and has a row in the claims inventory, `docs/reviews/2026-10-claims-inventory.md` (section 2 row format), until a claims registry exists (D-123 deferred it). The CMO role keeps it and the CCO role checks each claim against the build (COUNCIL section 4). Claims this pack creates: the Let it go line (NS-09), no name on the lock screen by default (NS-13), languages named in the listing (NS-17), Read together has no limit (NS-24). While recording backup is off, no public surface may imply a recording survives a lost phone.
 - **The privacy label** changes in the same build as the behaviour that changes it, never before or after.
 - **Children.** The parent is the user; the child is the subject. No feature asks a child to speak or use the app. The open edges are a baby's voice on a recording and a child's picture (counsel packet Q4).
 - **Another adult's words.** A letter spoken by someone else, or shared with a second adult, carries another person's data (packet Q2). NS-16 and NS-25 wait on it.
@@ -92,13 +94,15 @@ These are the council roles' standing positions. They are not legal advice. Coun
 | Choice | Why it is cheap | When it starts to cost |
 |---|---|---|
 | Speech on the phone | No transcription bill per minute | Never per use; model hosting on our pack host is small |
-| Sync on Supabase, Free plan (D-159) | No monthly bill at a few hundred families | At the plan's storage, egress or user limits; a weekly check watches them |
+| Sync on Supabase, Free plan (D-159) | No monthly bill at the founder's expected few hundred users (8 Nov, relayed) | At the plan's limits (repo runbook `free-tier-ops.md`, read 8 Nov: 500 MB database, 1 GB storage, 5 GB egress, 50k monthly users). The weekly job checks database size and accounts only; storage and egress are read by hand; none of the three D-159 jobs is verified running |
+| Nightly database dump to GitHub artifacts | Free | The artifact quota (the runbook warns at 60 MB a file) |
 | No recording backup yet | Audio is the largest data by far | The day backup turns on (NS-08 sizes it first) |
 | Packs on Cloudflare R2 | Free egress | Past the free storage tier |
 | Local notifications only | No push service | NS-26 would add one |
 | Export through the system share sheet | We store and send nothing | Never |
 | No analytics, crash or ad SDK | No vendor bill and no data to protect | If the founder turns analytics on |
-| Email only for sign-in and account mail (Resend) | Free tier at this volume | Past its free sends |
+| Email only for sign-in and account mail (Resend) | Free tier at this volume | Past its free sends; the limit is not stated here and must be read from Resend's page before relying on it |
+| The founder's phones and time for each device run | No cash if he owns the phones | Buying a test phone is his decision; which phones he holds is not recorded here |
 
 Prices and free-tier limits change. They were read on 10 Nov for the exec record and must be read again before any decision rests on them.
 

@@ -19,7 +19,7 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 **Happy path.**
 1. After keeping a first letter, the parent is offered reminders once, with the system permission asked only if they say yes.
 2. They pick an hour and days. The default is evenings (existing design).
-3. At that hour a quiet notification arrives with a prompt. Tapping it opens Home with that prompt ready; one more tap starts speaking.
+3. At that hour a quiet notification arrives with a prompt chosen only from prompts that contain no `{child}` and no other name (the default; the existing opt-in to show the child's name stays as built, with its own door lines). Tapping it opens Home with that prompt ready; one more tap starts speaking.
 4. They keep a letter. Tomorrow's reminder has different words.
 
 **Unhappy paths.**
@@ -47,7 +47,8 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 | NS-13-R3 | Given 7 days of reminders with no letter made (PROPOSED), Then the next reminders are at most 1 per 7 days | `[NS-13-R3] unanswered reminders back off` |
 | NS-13-R4 | Given 4 further unanswered weekly reminders (PROPOSED), Then no reminder is scheduled until the parent makes a letter or turns reminders on again | `[NS-13-R4] reminders stop on their own` |
 | NS-13-R5 | Given any reminder string, Then it contains no number of days, no count, and none of: miss, behind, forgot, streak, last chance | content rules test |
-| NS-13-R6 | Given the default settings, Then no reminder contains the child's name or letter text | `[NS-13-R6] lock screen shows no name by default` |
+| NS-13-R6a | Given the default settings, Then every prompt eligible for a notification body contains no `{child}` token and no name (test over the whole pool) | `[NS-13-R6a] the notification pool is name-free` |
+| NS-13-R6b | Given the default settings, Then no delivered notification contains letter text | `[NS-13-R6b] no letter words on the lock screen` |
 | NS-13-R7 | Given the phone's time zone changes, Then the next reminder fires at the chosen hour in the new zone and none fires in the hours it skipped (device) | `[NS-13-R7] the hour follows the parent` |
 | NS-13-R8 | Given a letter made today, Then today's pending reminder is cancelled | `[NS-13-R8] no reminder after a made letter` |
 | NS-13-R11 | Given the allowance is used and no Plus, Then no reminder string names Plus, a price or the Keep step | `[NS-13-R11] reminders never sell` |
@@ -57,7 +58,19 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **Design inputs.** The one ask after the first kept letter: a sheet, one sentence, two equal choices; never a full-screen takeover. The settings screen exists. Back-off is invisible: no screen says reminders slowed down. At the largest text size the hour picker and day chips stack.
 **Content inputs.** A pool of prompts large enough that R2 holds for a year at the lowest frequency. Tone: an invitation, never a duty. Uses the 111 prompts where they fit a notification length. The founder approves any new line.
-**Legal, privacy, compliance inputs.** Local notifications only; nothing is sent to a server to deliver them. Apple's rule that notifications must not be required to use the app and must not carry marketing without consent applies (guideline 4.5.4; re-read before submission). The default of no name on the lock screen is a privacy promise and belongs in the claims registry.
+**Legal, privacy, compliance inputs.** Local notifications only; nothing is sent to a server to deliver them. Apple's rule that notifications must not be required to use the app and must not carry marketing without consent applies (guideline 4.5.4, which the compliance register reads as about push notifications: UNVERIFIED for local reminders; re-read before submission). The default of no name on the lock screen is a privacy promise and needs a claims inventory row.
+
+**State space (RR-5).**
+
+| Case | Expected | Test |
+|---|---|---|
+| Second account on the same phone | The first account's reminders are removed at sign-out; the second starts with none | `[NS-13-R13]` |
+| Sign out | Every reminder is cancelled | `[NS-13-R14]` |
+| Account deletion | Every reminder is cancelled | `[NS-13-R15]` |
+| Permission revoked later in iOS Settings | Nothing is scheduled; Me says how to turn them on; no in-app nag | `[NS-13-R16]` (device) |
+| Reminders switched off at the moment of scheduling | Nothing is scheduled | `[NS-13-R17]` |
+
+**Door lines for the name opt-in.** Shown: the existing setting and its words. Records: the choice, on the phone only. Never: a name or letter words in a notification unless the parent turned this on. Decline: reminders work without names.
 **Free or Plus.** Free.
 **Measure (by hand).** Testers report: reminders on or off after two weeks, and whether any felt like too much (yes or no). No content.
 **Open question.** The back-off numbers 7 days and 4 weeks are proposals. Owner: CPO role with `user-research`, after the first tester notes.
@@ -144,6 +157,17 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **Design inputs.** The dateline on Review becomes tappable, with a visible affordance (not a hidden gesture). The system date picker. The two-date line is the app's small voice, not the letter's serif.
 **Content inputs.** One two-date line; one VoiceOver hint. No "backdated", no "late".
+**State space (RR-5).**
+
+| Case | Expected | Test |
+|---|---|---|
+| Two of the author's phones set different days | The later change wins, by the existing merge rule; both phones show the same day after sync | `[NS-15-R8]` |
+| Retry after a lost answer | The change is applied once | `[NS-15-R9]` |
+| Changed offline | Applied at next sync | `[NS-15-R10]` |
+| Erase or account deletion | Removed with the letter | `[NS-15-R11]` |
+
+The field is added to the API contract in `packages/api` and to export schema 1.7.0 (NS-36-R5).
+
 **Legal, privacy inputs.** A new field syncs with the letter (the about-day). It is the parent's own data, same class as the letter's date. Data inventory row needed. Importing old voice memos is a different feature with another person's voice in play and is not in this card.
 **Free or Plus.** Free. It never changes how letters are counted.
 
@@ -182,6 +206,12 @@ Rule for every card here: only Home starts a letter. Capture is never blocked by
 
 **Design inputs.** The signature line on Review becomes a control. Typing a name is one field, not a profile.
 **Content inputs.** One line that says whose words these are, plainly.
+**Data rules.** The typed name syncs with the letter as part of its signature, so it is new server data about a person who is not a user: it needs a data inventory row, a privacy label read, and it is deleted with the letter or the account. The list of names used before stays on this phone only, and is cleared by Erase everything and sign-out.
+
+**Never.** The screen, its words and any prompt never invite a child, including a sibling, to speak. A content scan covers words that invite a child or sibling. Whether an older sibling's voice under a typed name is a child's data we collect is a counsel question (packet, COPPA section) before any build.
+
+**Door lines.** Shown: the From field and one line that the person speaking agreed to be recorded (intent). Records: nothing beyond the letter. Never: contacts, a photo of the speaker, a relationship field. Decline: the letter is signed as the parent.
+
 **Legal, privacy, compliance inputs.** This stores another adult's voice and words on the account holder's say-so. Washington's and Connecticut's consent rules for another adult's data in a letter are already an open counsel question (packet Q2). A typed name of a real person is personal data of a non-user. Counsel must confirm before build. This is why the card ranks where it does.
 **Free or Plus.** Counts as the keeper's letter.
 

@@ -3520,7 +3520,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 
 ## New scope, waves 1 and 2 (19 Nov 2026)
 
-Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-948 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
+Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md` (final rank, sizes, what is already in flight). Ids BL-923 to BL-949 are from `node scripts/agents/next-id.mjs` (it printed BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov. Milestone M15 is the proposed label for work after Build 12. Facts below were read on develop `09a104da`; none was run on a phone. No row here turns a flag on in `production`. `C-` and `N-` ids are the candidate ids of the 19 Nov scope round.
 
 #### BL-923 The launch sweep finishes a draft left `discarding` (N-07)
 - Status: ready. Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S.
@@ -3701,6 +3701,13 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Satisfies: `docs/product/prd/14-test-plan.md` sections 4 and 5.
 - Scope: one device row per journey J-N1 to J-N18 that needs a phone, P0 rows first, with the settings in section 5.
 - Done when: the rows exist in `docs/qa/DEVICE_TEST_PLAN.md` and each names its card id.
+
+#### BL-949 Counsel questions raised by the new-scope pack
+- Status: ready. Mode: agent. Owner: legal. Milestone: M15. Size: S.
+- Who: `legal`, `regulatory-affairs`; the founder sends the packet.
+- Satisfies: `docs/product/prd/15-council-review.md` ("Not fully closed").
+- Scope: add to `docs/legal/COUNSEL_PACKET.md`, numbered after its last question, with facts, a recommended default and what each blocks: (1) an older sibling's voice recorded under a typed name (NS-16); (2) a typed name of a non-user syncing with a letter (NS-16); (3) keeping earlier versions of words a parent edited out (NS-12); (4) the timing windows for plan notices under the notification budget (NS-32); (5) retention of typed days (NS-18); (6) how long the founder keeps testers' hand-sent numbers (product frame section 3).
+- Done when: merged as a draft for counsel; each card that waits on it names the question number.
 
 ## Appendix: TDD proposal to BL mapping
 

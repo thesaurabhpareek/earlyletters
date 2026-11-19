@@ -26,6 +26,8 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 
 Each card has, in order: who and when (the parent and the moment); why (the job and what goes wrong today); what (and what is not in scope); the happy path; the unhappy paths as a table; acceptance rows in Given, When, Then form with a number or an observable state and a test title; design inputs; content inputs (words in quotes are intent, `content` writes them, the founder approves them); legal, privacy and compliance inputs (counsel must confirm any legal reading); free or Plus; how it is measured with analytics off; open questions with an owner and a default.
 
+Priority: every acceptance row is P1 unless the P0 register in `14-test-plan.md` section 7 lists it with its RR-4 reason.
+
 Cards for items further down the rank are shorter on purpose: they record the decision, the reason it waits, and what would reopen it, so nobody designs or builds them by accident.
 
 ## The ground rules every file obeys

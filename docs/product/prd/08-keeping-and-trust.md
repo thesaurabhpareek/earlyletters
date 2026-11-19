@@ -10,7 +10,9 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 
 **Who and when.** P1, the evening parent, eight months in, whose phone holds every recording of their voice for {child}. The moment that matters is the day that phone is replaced, lost or broken.
 
-**Why.** The first store release ships with recording backup off. The words come back on a new phone when the parent signs in; the recordings do not. The voice is the keepsake (principle 1 of the design language), so today it lives in one place. That is the largest gap against job 1.
+**Why.** The first store release ships with recording backup off. The words come back on a new phone when the parent signs in; the recordings do not. The voice is the keepsake (principle 1 of the design language), so today it lives on this phone, and in the phone's own iCloud backup only if the parent has that turned on (D-033; `data-policy.md`). That is the largest gap against job 1.
+
+**Cost note (for the CFO before any flip).** Backup is free for every family (D-111 item 6), so storage and restore traffic grow with families, not payers. "Never a Plus feature" is an internal rule; it stays out of public copy until it is costed and counsel has read it.
 
 **Why not simply turn it on.** Three facts stop it (exec rulings of 19 Nov, ruling 2): production is on the Free plan by the founder's decision (D-159) and backup would fill its storage; turning it on changes the App Store privacy label and the Privacy Policy, which counsel must read; the escrow and restore drill has never run against production. So this card is the work that costs nothing and makes the later decision a short one.
 
@@ -43,7 +45,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | Id | Given, When, Then | Test or evidence |
 |---|---|---|
 | NS-08-R1 | Given the backup client, server and escrow code on develop, When the read is done, Then one note lists each difference between code and `BACKUP_RUNBOOK.md` and ADR 0023, with file and line, or says there is none | the note, reviewed by `security-architect` |
-| NS-08-R2 | Given the recording format in ADR 0005 and F08, Then the sizing note states bytes per minute, a low, base and high case for recordings per family per month marked as assumptions, and months until each storage choice on record is full | the note, reviewed by the CFO role |
+| NS-08-R2 | Given the recording format in ADR 0005 and F08, Then the sizing note states bytes per minute; a low, base and high case for recordings per family per month marked as assumptions; months until each storage choice on record is full; monthly and yearly cost per family for each storage path, with the price source and date read; restore traffic per new phone; and how many families fit in the Free plan's storage | the note, reviewed by the CFO role |
 | NS-08-R3 | Given a scratch project, When the escrow drill is rehearsed, Then the run sheet records each step, what was seen, and what could not be run without production | the run sheet |
 | NS-08-R4 | Given the privacy label worksheet and the Privacy Policy draft, Then one page shows each answer and sentence that changes when backup turns on | the page, marked draft for counsel |
 | NS-08-R5 | Given any store profile in `eas.json`, Then `EXPO_PUBLIC_BACKUP` stays off until a founder decision turns it on | existing preflight check |
@@ -85,13 +87,29 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | NS-09-R1 | Given one draft marked `discarding` with its file present, When the launch sweep runs, Then the file and the row are both gone | `[NS-09-R1] the sweep finishes a discarding draft` |
 | NS-09-R2 | Given a `discarding` draft whose delete throws, When the sweep runs, Then the row remains marked and no error reaches the screen | `[NS-09-R2] a failed delete waits for the next launch` |
 | NS-09-R3 | Given Discard on Listen and a delete that throws, Then the draft row remains, marked `discarding` | `[NS-09-R3] Listen never removes a row whose file is still there` |
-| NS-09-R4 | Given Let it go in Review and a delete that fails, Then the BL-925 line is shown once and announced to VoiceOver | `[NS-09-R4] Review says when a recording is not gone yet` |
+| NS-09-R4a | Given Let it go in Review and a delete that fails, Then the line is shown once for that take, on that Review visit |
+| NS-09-R4b | Given the line is shown, Then VoiceOver announces it | `[NS-09-R4] Review says when a recording is not gone yet` |
 | NS-09-R6 | Given a delete that has failed on 3 launches, Then Storage in Me shows the line and Remove now, and Remove now retries once | `[NS-09-R6] a stuck recording is visible in Storage` |
 | NS-09-R5 | Given 0 `discarding` drafts, Then the sweep adds no measurable work to launch (PROPOSED: under 5 ms on an iPhone SE 3; device) | BL-929 run sheet row |
 
 **Design inputs.** One inline line in Review, the app's own small muted voice, never the letter's serif, no icon, no red. It must not block leaving Review.
 **Content inputs.** One key (BL-925). True, calm, no blame, no "failed", no "error". Needs the founder's word approval.
-**Legal, privacy inputs.** This is a deletion promise kept on the phone. No server data. No counsel read needed for the fix; the line is a claim and goes in the claims registry.
+**State space (RR-5).** Letting go touches the server and other phones: a held draft syncs, and letting it go queues a discard that also removes its backup and marks it on the parent's other phone.
+
+| Case | Expected |
+|---|---|
+| Let go while offline | The discard is queued and sent when the phone is back online; the draft stays hidden meanwhile |
+| The server answer is lost | The discard is retried until acknowledged; never applied twice harmfully |
+| A second phone of the same author | The draft is marked discarding there and its local audio removed at that phone's next launch |
+| Account deletion with a discard still queued | Deletion removes it anyway; nothing waits on the queue |
+| Kill during the discard | As the launch sweep row (NS-09-R1) |
+
+| Id | Given, When, Then | Test title |
+|---|---|---|
+| NS-09-R7 | Given a let-go of a synced held draft, Then the discard is queued and stays queued until the server acknowledges it | `[NS-09-R7] the discard reaches the server` |
+| NS-09-R8 | Given the discard is applied on a second phone, Then that phone holds neither the row nor the audio after its next launch | `[NS-09-R8] let go follows to the other phone` (stand-in, then two phones) |
+
+**Legal, privacy inputs.** This is a deletion promise on the phone, on the server and on the parent's other phones. The fix changes no published sentence; the Review line is a claim and needs a claims inventory row. No counsel read needed for the fix itself.
 **Free or Plus.** Not applicable.
 **Backlog.** BL-923, BL-924, BL-925, BL-926.
 
@@ -111,6 +129,8 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 
 | Case | What the parent sees |
 |---|---|
+| A second account on the same phone (B signs in on a phone that holds A's book) | B never sees A's letters, recordings or child name; the app offers B their own book or a new one |
+| The parent declines the new Terms version | A plain line that the book stays on this phone; Take the book with you and Delete account still work (PRIV-R09) |
 | Consent outstanding at relaunch | The consent sheet again, or a held screen with Finish setup and Try another way. Never the child step |
 | No network | The held screen says the book needs a connection once, with a way to retry. No empty book |
 | The account truly has no book | "No book here yet" once, with Start a book once (not twice) |
@@ -121,12 +141,14 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | Id | Given, When, Then | Test |
 |---|---|---|
 | NS-10-R0 | Given a returning account with no book on this phone and a consent still to give, When the app is opened, Then the consent sheet or a held screen with two ways forward is shown within 10 seconds, and the first-run child step is never shown | `[NS-10-R0] a returning account never meets the child step` |
+| NS-10-R3 | Given account A's book on the phone, When account B signs in, Then no letter, recording or child name of A's is shown to B | `[NS-10-R3] a second account never sees the first` |
+| NS-10-R4 | Given a returning parent declines the new Terms, Then export and account deletion remain reachable | `[NS-10-R4] declining keeps export and deletion` |
 | NS-10-R2 | Given 10 seconds pass and the book is still arriving (for example 1,000 letters on a slow network), Then the Book shows the letters that have arrived with one line that more are on their way; it is never empty and never shows the child step | `[NS-10-R2] a slow arrival shows what has come` |
 | NS-10-R1 | Given two iPhones and one account with 5 or more letters, When the second phone signs in, Then every letter's words appear and no page says a recording is kept on that phone | device row S1-204 |
 
 **Design inputs.** The held screen exists. At the largest text size the two actions stack and stay 44 pt.
 **Content inputs.** Reuse the existing keys. The "No book here yet" line must not read as loss.
-**Legal, privacy inputs.** The consent sheet records an acceptance (PRIV-R21). Shown, Records, Never and Decline lines are in the first-run journey spec; unchanged here.
+**Door lines (COORDINATION section 10).** Shown: the existing consent sheet keys and versioned links. Records: the acceptance row per PRIV-R21. Never: no letter, name or recording of another account shown before sign-in completes. Decline: the book stays on this phone; export and deletion still work; nothing is uploaded.
 **Backlog.** BL-922.
 
 ---
@@ -135,7 +157,7 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 
 **Who and when.** P1 in {child}'s birthday week, in a reflective mood, or any day they think "I should have this somewhere else". Also P6: the copy is what outlives the app.
 
-**Why.** Export exists and is free (F15), and while backup is off it is the only second copy of the voice. Almost nobody exports without a reason to (HYPOTHESIS; no evidence of our own). A yearly moment the parent chooses turns a setting into a keepsake habit. It also tests, at no server cost, whether families want a second home for the voice.
+**Why.** Export exists and is free (F15), and while our backup is off it is the one second copy the parent controls directly (the phone's iCloud backup also holds recordings when that is on, D-033). Almost nobody exports without a reason to (HYPOTHESIS; no evidence of our own). A yearly moment the parent chooses turns a setting into a keepsake habit. It also tests, at no server cost, whether families want a second home for the voice.
 
 **What.** One row in Me for the existing export, renamed or kept as "Take the book with you" by `content` so Me never has two entries for the same file, and one slip on Home during the birthday week that leads to it. The copy is the existing export. No notification in the first version. No new file format.
 
@@ -169,7 +191,8 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | NS-11-R3 | Given the slip is dismissed or the copy is saved, Then the slip does not show again until the next birthday | `[NS-11-R3] dismissed means gone for the year` |
 | NS-11-R4 | Given another Home slip is due, Then exactly one slip is shown (order: a waiting draft first) | `[NS-11-R4] one slip at a time` |
 | NS-11-R5 | Given the screen and the slip, Then no string contains a count of letters, a gap, or a word from the fear list in the content rules | content rules test |
-| NS-11-R6 | Given the export it produces, Then it is byte-identical to the export from Take the book with you | `[NS-11-R6] same export, one code path` |
+| NS-11-R6a | Given the two entry points, Then both call the same export function (source check) | `[NS-11-R6a] one export code path` |
+| NS-11-R6b | Given two exports of the same book a minute apart, Then their manifests are equal apart from `generated_at` | `[NS-11-R6b] same export apart from its time` |
 | NS-11-R7 | Given a child with only a due date, Then no slip is shown | `[NS-11-R7] no slip before a birth date` |
 | NS-11-R8 | Given a quieted or hidden book, Then no slip is shown for it | `[NS-11-R8] a quiet book gets no slip` |
 | NS-11-R9 | Given 1,000 letters, Then the export shows progress and, when interrupted, either resumes or reports that it stopped; no partial file is left where the parent chose | `[NS-11-R9] a big export is never half-made` (device) |
@@ -203,5 +226,5 @@ Job served by this whole file: "Never lose what I made" (rank 1, `docs/prd/v2/02
 | NS-12-R2 | Given a restore, Then the restored words become a new version; no version is deleted |
 | NS-12-R3 | Given any version view, Then `raw_transcript` is never changed and no machine edit is applied on restore |
 
-**Design, content, legal inputs.** One row in the "This letter" list (NS-21). Words: dates, not judgments ("earlier", never "original" for an edited version). Retention of versions is a data-policy matter: `data-steward` confirms the clock before any build. Counsel must confirm any retention sentence.
+**Design, content, legal inputs.** One row in the "This letter" list (NS-21). Words: dates, not judgments ("earlier", never "original" for an edited version). The server keeps every version for the life of the letter (`data-policy.md`), so a word a parent edited out (a health detail, a name) is still kept. Before any build: either the author can remove an earlier version, or the screen says plainly that earlier versions are kept. Inventory row and a retention sentence for counsel (packet Q51) first.
 **Not started.** No requirement beyond this card. It waits for NS-21.

@@ -50,7 +50,7 @@ What we will not build, restated: no summaries, recaps or rewording (C-36); no c
 |---|---|---|---|
 | Does N-07 rise from 6 to 2? | CPO: yes, hidden audio after a failed delete is the one place the app keeps something the parent asked it to let go | Design: nobody has reported it | Rise. It is S, ready, and a durability defect does not wait for a report |
 | Does the pilot (C-19) rise from 16 to 14? | CPO: it costs no code and tests the largest bet | CLO: consent texts are unread by counsel | Rise, with the pilot itself gated on the counsel read. The kit is prepared now |
-| Does Save a copy (C-03) rise from 18 to 15? | CPO: it is the only second copy of the voice while backup is off | Design: any "in case" line is fear language | Rise. The requirement must be a keepsake line; content writes it, the founder approves the words |
+| Does Save a copy (C-03) rise from 18 to 15? | CPO: while our backup is off, it is the one second copy the parent controls directly | Design: any "in case" line is fear language | Rise. The requirement must be a keepsake line; content writes it, the founder approves the words |
 | Does Book header calm (N-04) stay above Share? | Design: yes, the header breaks at the largest text size | CTO: it rewrites the header Find is adding to, while Find is mid-review | Falls to 17, after Find lands. The AX5 defect itself is fixed sooner in N-02 |
 | Does Print-ready file (C-26) rise? | CBO: print is the best-evidenced gap in R6 | CFO, CLO: no spend, no partner, no seller role before an entity | Rises to 27 as a structure-only file. No spend is approved |
 | Does N-05 rise from 15 to 11? | CTO: it is built and changes nothing a parent sees | CPO: it adds review load ahead of Photo | Rise. One review now is cheaper than a rebase later |
@@ -89,7 +89,7 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | 20 | 21 | C-09 | Hands-free spike | 3 | spike S, build L | PRD 04; starts the Monday after the Build 13 cut | A spike, time-boxed. No doorway ships from it. |
 | 21 | 20 | C-20 | One past letter on Home | 3 | S | Not broken down | Shares the single Home slip. |
 | 22 | 22 | C-07 | A letter for another day | 3 | S to M | Not broken down | The app must never read a date out of the words. |
-| 23 | 25 | N-09 | One notification budget | 2 | S | In flight: #758 | Gates every reminder class after it. |
+| 23 | 25 | N-09 | One notification budget (taken before C-05 when both are free: reminders depend on it) | 2 | S | In flight: #758 | Gates every reminder class after it. |
 | 24 | 24 | N-12 | Doc and code drift | 1 | S | Needs its list copied into the repo first | Cheap; not urgent. |
 | 25 | 26 | C-23 | Firsts | 3 | M | Earliest Build 15 (PRD 06) | Tone risk: must not become milestones. |
 | 26 | 28 | C-25 | Read the year back | 3 | S to M | Not broken down | Read together is built; this is a thin layer. |

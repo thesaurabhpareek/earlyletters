@@ -53,7 +53,7 @@ Three tabs, one verb each: Home is where you say it, Book is where you read it, 
 
 ## How we will know
 
-Two headline numbers are on record: paying families over first-time downloads by install week, and weekly making families (`03-goals-and-principles.md` section 4.1). Analytics is off through the 1.0 line (D-124), so today neither can be read from the app. Until that changes, we learn from App Store Connect, from testers, and from the hand-sent phone-only measures confirmed on 19 Nov. Say this plainly whenever a target is quoted.
+Two headline numbers are on record: paying families over first-time downloads by install week, and weekly making families (`03-goals-and-principles.md` section 4.1). Analytics is off through the 1.0 line (D-124), so today neither can be read from the app. Until that changes, we learn from App Store Connect, from testers, and from numbers testers send by hand (the app composes and sends nothing; see the product frame, section 3). Say this plainly whenever a target is quoted.
 
 ## What this page does not settle
 

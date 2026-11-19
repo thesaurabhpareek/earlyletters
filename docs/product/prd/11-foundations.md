@@ -8,13 +8,14 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 
 **Who.** P1, whose phone already buzzes too often.
 **Why.** Reminders, typed days, a future co-parent push, a Save a copy moment: each feature on its own seems reasonable, and together they become nagging. One budget, enforced in one place, makes the total a product decision instead of an accident.
-**Rule.** At most 1 notification from the app per day, of any kind (PROPOSED). Classes are registered in one list. A new class cannot ship without a row there and a priority. A day's notification is chosen by priority: a typed day, then a reminder. The back-off in NS-13 applies to ordinary reminders only; it never suppresses a typed day the parent asked for (NS-18), which still counts toward the one-per-day limit.
+**Rule.** At most 1 notification from the app per day, of any kind (PROPOSED), with one exception: plan notices about a subscription (trial ending, renewal) are a class outside the budget, ranked above everything, and are never dropped or delayed by it, because their timing may be a legal duty (Q-003 memo; packet Q41; counsel must confirm the windows). Classes are registered in one list. A new class cannot ship without a row there and a priority. A day's notification is chosen by priority: a typed day, then a reminder. The back-off in NS-13 applies to ordinary reminders only; it never suppresses a typed day the parent asked for (NS-18), which still counts toward the one-per-day limit.
 
 | Id | Given, When, Then |
 |---|---|
 | NS-32-R1 | Given every scheduled class, Then at most 1 notification is delivered per local day |
 | NS-32-R2 | Given a class not in the registry, Then the build fails its test |
-| NS-32-R3 | Given two classes due the same day, Then only the higher priority is delivered |
+| NS-32-R3 | Given two budgeted classes due the same day, Then only the higher priority is delivered |
+| NS-32-R4 | Given a plan notice and any other notification due the same day, Then the plan notice is delivered on time |
 
 **Legal, privacy inputs.** All local. No push service until NS-26.
 
@@ -40,6 +41,8 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 
 **Who.** A parent with an older, smaller iPhone and the baby already stirring.
 **Why.** Every speed and motion number in the requirements is unmeasured. A tap that answers late in the dark reads as "did it start recording?", the most anxious question in the product.
+**How measured.** A release-configuration build on an iPhone SE 3, under the device protocol in `docs/prd/v2/06-nfr.md` section 0 (unplugged, 50% brightness, nominal thermal state), with the perf build markers named there; 200 samples per metric unless stated.
+
 **Targets (on an iPhone SE 3rd generation).** Tap Speak to microphone live: p95 500 ms over 200 taps, cold and warm (F04-REQ-023; `06-nfr.md`). Cold start to first interactive frame: p50 1.2 s, p90 2.0 s (A-NFR-001). A screen change starts within 100 ms of the tap. Controls are usable by 350 ms. No frame over 16.7 ms while scrolling the Book or the letter page. The named hand-offs finish within 900 ms: Home to Listen, Listen to Review, Review to the Book after Keep, a Book card to its letter page. The save hand-off (Keep to the letter safe on disk and the Book showing it) within 2,000 ms. Loops change opacity only, run only on the screen in front, and stop under Reduce Motion.
 
 | Id | Given, When, Then |
@@ -65,7 +68,9 @@ Status: Draft v1, 19 Nov 2026. Author: Karma with the Chief Product Officer role
 
 | Id | Given, When, Then |
 |---|---|
-| NS-36-R1 | Given a letter with a picture, a first and a seal, When it is deleted, Then all three are gone in the same step, and come back with a restore |
+| NS-36-R1a | Given a letter with a picture (original and both derivatives), a first and a seal, When it is deleted, Then all are hidden in the same step |
+| NS-36-R1b | Given that letter is restored within the recently deleted window (30 days on the server, `data-policy.md`), Then all come back |
+| NS-36-R1c | Given the window has passed, Then the purge removes every file and row for it, on the phone and the server | `[NS-36-R1c] purge removes picture files` |
 | NS-36-R2 | Given the export of such a letter, Then every part is in it |
 | NS-36-R3 | Given a sealed letter, Then it opens at the same instant on two of the author's own phones set to different time zones (device) |
 | NS-36-R4 | Given the on-device data rules (ADR 0028), Then they are accepted after two counted reviews before any picture, first or seal is written on a store build | the acceptance record |

@@ -42,7 +42,8 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 |---|---|---|
 | NS-21-R1 | Given any letter, Then the rows that apply appear in the fixed order above | `[NS-21-R1] rows in the fixed order` |
 | NS-21-R2 | Given a row that does not apply, Then it is absent, not disabled | `[NS-21-R2] absent, never greyed` |
-| NS-21-R3 | Given the page, Then Share is a separate button above the list and Delete is the last control on the page | `[NS-21-R3] Share apart, Delete last` |
+| NS-21-R3a | Given the page, Then Share is a separate button above the list | `[NS-21-R3a] Share apart` |
+| NS-21-R3b | Given the page, Then Delete is the last control on the page | `[NS-21-R3b] Delete last` |
 | NS-21-R4 | Given VoiceOver, Then the dateline is a level 1 heading and the list title a level 2 heading | `[NS-21-R4] headings for the rotor` |
 | NS-21-R5 | Given the largest text size on an iPhone SE 3, Then every row is at least 56 pt tall and no text is truncated (device) | device row |
 
@@ -106,7 +107,8 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 
 | Id | Given, When, Then |
 |---|---|
-| NS-23-R1 | Given a letter dated the same day of an earlier month or year, Then Home may show one card for it; never two |
+| NS-23-R1a | Given a letter whose day matches today's day in an earlier month or year, and no higher slip is due, Then Home shows a card for exactly one such letter, the most recent |
+| NS-23-R1b | Given several matches, Then still only one card is shown |
 | NS-23-R2 | Given the card, Then it carries the letter's dateline and an opening fragment cut by the system word segmenter for the letter's language (so Chinese and Devanagari cut correctly), and no count |
 | NS-23-R7 | Given VoiceOver, Then the card is one element read as the dateline then the fragment, with the fragment in the letter's language |
 | NS-23-R8 | Given a quieted or hidden book, Then no letter from it is chosen |
@@ -176,6 +178,9 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 | NS-25-R3 | Given two parents, Then neither can read the other's private letters or delete the other's letters |
 | NS-25-R4 | Given the first parent removes the second, Then the second's phone stops receiving the book at its next sync, and the second keeps their own authored letters as the data policy says |
 | NS-25-R5 | Given a third adult opens an invite, Then joining is refused with a plain line |
+| NS-25-R6 | Given the invite link page, Then it shows no child name and no letter (D-111 item 8) |
+
+**Door lines.** Shown: invite, accept, remove and leave words, with versioned links. Records: the acceptance per PRIV-R21. Never: a child name before acceptance. Decline: nothing joins; the inviter is not told why.
 
 Full rows are in the co-parent backlog work and F11; this card adds the store-build gate.
 
@@ -200,7 +205,7 @@ Full rows are in the co-parent backlog work and F11; this card adds the store-bu
 
 ## NS-29. Words that light up as they are read (candidate C-33, rank 38)
 
-**Who.** {child} at four, following a parent's finger, and later reading alone.
+**Who.** A parent reading a letter aloud to {child}, following the words with a finger. Designed for the parent's use, never for a child using the app alone (no feature asks a child to use the app).
 **Why it waits.** It needs word timings stored against the raw words, which the engine does not keep yet, and it must never mark a word the parent did not say. Size L. The F30 file already lists the hook v1.0 must keep (word timings with offsets into raw).
 
 ---
