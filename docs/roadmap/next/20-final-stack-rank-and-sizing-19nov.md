@@ -11,8 +11,8 @@ How the roles were run: one Claude session, reading the council protocol and eac
 ## 1. What changed since the first rank, and one correction
 
 - **Correction.** The exec record of 19 Nov ruled that Build 12 should carry a logic-only fix for "Recording kept on this phone". That fix was already on develop: #764 merged at 19:33 UTC, and `provenance.ts` and `letter-card.logic.ts` now name the place only when `audioUri` is set. I ruled from a read of `be1c1142` taken before that merge and did not re-read. Ruling 1 is satisfied by #764, not by new work. What is left of C-02 is BL-922 and device row S1-204.
-- **N-05 is built.** #828 (one capture entry and the navigation test) is open and not a draft. It needs two counted reviews.
-- **ADR 0028 moved.** #797 was amended three times on 19 Nov. Its D3a answers the seal clock: two columns written once together, where the instant (`seal_opens_at`) is the rule and the date is for display. That matches the working rule in the exec record. Head `1bee878b` has no counted review yet.
+- **N-05 is done.** #828 (one capture entry and the navigation test) merged on 19 Nov as `5f5dfaf4`.
+- **ADR 0028 moved.** #797 was amended three times on 19 Nov. Its D3a answers the seal clock: two columns written once together, where the instant (`seal_opens_at`) is the rule and the date is for display. That matches the working rule in the exec record. It was accepted under CR-62 (#831, merged as `a17254f6`); what remains is the founder's ready click on #797 and BL-868 (the export gate note).
 - **Find moved.** #798 was rebuilt onto develop on 19 Nov and is in a fix round at `e7d399b3`. GitHub reports 280 changed files for it, which cannot be its own delta; the true size was not re-read here.
 - **The co-parent caption is settled.** See section 6. C-22 is dropped.
 
@@ -20,10 +20,10 @@ How the roles were run: one Claude session, reading the council protocol and eac
 
 | Item | PR or row | State at 22:15 UTC, 19 Nov | Needs |
 |---|---|---|---|
-| N-05 | #828, head `a80648d4` | open, not draft | two counted reviews, green CI |
-| N-08, N-10 | #797, head `1bee878b` | draft | two counted reviews at this head, then Karma's acceptance |
+| N-05 | #828 | merged 19 Nov as `5f5dfaf4` | nothing |
+| N-08, N-10 | #797; #831 | ADR 0028 accepted under CR-62 (#831, `a17254f6`) | the founder's ready click on #797; BL-868 |
 | C-17 | #798, head `e7d399b3` | draft, flag `EXPO_PUBLIC_BOOK_SEARCH` | size re-read; device row S1-205 |
-| C-06 | #796, head `39efe1ac` | draft since 11 Nov, 64 files, 3,747 added lines | BL-931 |
+| C-06 | #796, head `8a026397` | draft; being split into five slices by Karma (slice 1 on `feat/mobile-photo-1-picker-pin`) | BL-931 |
 | C-02 | BL-922 | ready | an owner |
 | C-05 | #680, BL-770 | drafts | refresh against develop; device row S1-135 |
 | N-09 | #758 | draft | review |
@@ -68,16 +68,16 @@ Every PR costs two counted reviews. Sizes for items whose code was not read are 
 | Rank | Was | Id | Item | Value | Size [E] | State and gate | Why here |
 |---|---|---|---|---|---|---|---|
 | 1 | 2 | C-01 | Owner backup of recordings: prerequisites now, flip later | 5 | S to M (code not read) | Flip gated: hosting path, escrow drill, device run, counsel-read label and policy | Job 1, never lose what I made. With #764 the words follow a parent to a new phone and the voice does not. Only zero-cost work starts. |
-| 2 | 6 | N-07 | Discarding sweep and the two silent delete failures | 3 | S (3 PRs) | Ready: BL-923, BL-924, BL-926; words BL-925 | Durability before delight. A draft left `discarding` hides audio on the phone; S cost; nothing gates it. |
+| 2 | 6 | N-07 | Discarding sweep and the two silent delete failures | 3 | S (3 PRs) | In review: BL-923 and BL-924 in #832; BL-926 waits for the words in BL-925 | Durability before delight. A draft left `discarding` hides audio on the phone; S cost; nothing gates it. |
 | 3 | 4 | N-01 | Device baseline on a small phone | 4 | S (human run) | Ready: BL-929, then the founder's phone | Every performance and motion number in the plan is unmeasured. One run prices the rest. |
 | 4 | 3 | N-02 | Accessibility floor pass | 3 | S (2 PRs) | Ready: BL-927, then BL-928 | Every later feature lands on the letter page and the Book header. Raising the floor needs no decision. |
 | 5 | 5 | C-05 | Reminders made real | 4 | S to M | In flight: #680, BL-770; device row S1-135 | Built and unproven on a phone. The device run comes first. |
 | 6 | 1 | C-02 | New phone: close-out | 4 | M (BL-922) | Tier 0 merged in #764 (09a104da). Left: BL-922, device row S1-204 | Was rank 1. The false line is fixed on develop, so only the hold case remains. |
-| 7 | 8 | N-08 | ADR 0028 accepted; export 1.7.0; inventory rows | 3 | S to M | In review: #797 at 1bee878b needs two fresh reviews; export BL-933; #799 is the founder's merge | Photo, Find and seals all write new on-device data. One accepted rule first. |
-| 8 | 23 | N-10 | Seal clock | 2 | S (a decision) | Inside #797 D3a: the instant is the rule, the date is display | Up from 23 because #797 now answers it; it closes with N-08. |
-| 9 | 7 | N-11 | Split #796; check #798's true size | 2 | S to M | Ready: BL-931. #798 is mid-review; size to be re-read | Review is the gate. 64 files in one PR is not reviewed, it is skimmed. |
+| 7 | 8 | N-08 | ADR 0028 accepted; export 1.7.0; inventory rows | 3 | S to M | ADR 0028 accepted (CR-62, #831); export BL-933 after BL-868; #799 is the founder's merge | Photo, Find and seals all write new on-device data. One accepted rule first. |
+| 8 | 23 | N-10 | Seal clock | 2 | S (a decision) | Settled in ADR 0028 D3a, accepted under CR-62: the instant is the rule, the date is display | Up from 23 because #797 now answers it; it closes with N-08. |
+| 9 | 7 | N-11 | Split #796; check #798's true size | 2 | S to M | In progress: BL-931 (Karma). #798 is mid-review; size to be re-read | Review is the gate. 64 files in one PR is not reviewed, it is skimmed. |
 | 10 | 9 | N-06 | Book list stays light; two photo derivatives | 3 | M | BL-932, after BL-931 slice 2 | Photo must not slow the Book or a take. |
-| 11 | 15 | N-05 | One capture start and the navigation test | 2 | S to M | In review: #828 at a80648d4, needs two counted reviews | Up from 15: it is built, changes nothing a parent sees, and pins the founder's rule in a test. |
+| 11 | 15 | N-05 | One capture start and the navigation test | 2 | S to M | Done: #828 merged as `5f5dfaf4` | Up from 15: it is built, changes nothing a parent sees, and pins the founder's rule in a test. |
 | 12 | 10 | C-06 | Photo with a letter | 4 | M after the enablers | Alpha only until four conditions hold (ruling 4) | First in the founder's order (X1). |
 | 13 | 11 | C-17 | Find | 3 | M | In review: #798 at e7d399b3, behind a flag; device row S1-205 | Second in the founder's order. |
 | 14 | 16 | C-19 | Family-hears-it pilot (no build) | 3 | S (no code) | Ready: BL-935. Counsel read of consent texts is the founder's, due 27 Nov | Up from 16: costs no engineering and tests the largest bet, the people around the child. |
@@ -142,7 +142,7 @@ Asked on 19 Nov which stands, with the first listed as 1 and the second as 2, th
 
 ## 7. Work packages
 
-Rows BL-923 to BL-941 are in `docs/BACKLOG.md`, section "New scope, waves 1 and 2 (19 Nov 2026)". Ids came from `node scripts/agents/next-id.mjs` (BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov (no open PR uses BL-923 or above).
+Rows BL-923 to BL-949 are in `docs/BACKLOG.md`, section "New scope, waves 1 and 2 (19 Nov 2026)". Ids came from `node scripts/agents/next-id.mjs` (BL-923) and `node scripts/agents/id-collisions.mjs` on 19 Nov (no open PR uses BL-923 or above).
 
 Not broken down yet, with the reason: C-20, C-07, C-25, C-08, C-04 (no requirement file); N-12 (its list lives in session papers, not the repo); C-23, C-24, C-10 (PRD 06 puts them at Build 15 earliest); everything from rank 35 down.
 

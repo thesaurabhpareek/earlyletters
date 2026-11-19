@@ -84,7 +84,7 @@ Every change costs two counted reviews of different lenses and green CI. Review,
 |---|---|---|---|---|
 | NS-34 Speed baseline | S (a run sheet) | qa | none | the founder's phone and time |
 | NS-33 Accessibility floor | S (2 changes) | design-systems, mobile, qa | none | device walk |
-| NS-35 One start | S to M (merged on develop 19 Nov) | mobile | none | none |
+| NS-35 One start | done (#828, `5f5dfaf4`) | mobile | none | none |
 | NS-36 Data follows the letter | S to M | data-architect, privacy, mobile | ADR 0028 accepted | data inventory rows |
 | NS-37 Book stays fast | M | mobile | NS-01 slice 2 (the native module) | device row |
 | NS-32 Notification budget | S (in review) | mobile | none | none |
@@ -103,7 +103,7 @@ The harness picks any row whose dependencies are done. This is the order of pref
 
 | Wave | Work | Why first |
 |---|---|---|
-| 1 | NS-09, NS-34 run sheet, NS-33, NS-10, NS-35 review, NS-36 review, NS-32 review, NS-03 kit, the photo split | Keeping and the floor; cheap; no decision blocks them |
+| 1 | NS-09 (in review, #832), NS-34 run sheet, NS-33, NS-10, NS-32 review, NS-03 kit, the photo split (in progress); NS-35 merged and NS-36's ADR accepted (CR-62) | Keeping and the floor; cheap; no decision blocks them |
 | 2 | NS-13 device proof, NS-21, NS-02 lands, NS-01 slices 3 and 4, NS-37 | Truth on screen, then the founder's order: photo and Find first (closed question X1) |
 | 3 | NS-01 slice 5, NS-22, NS-11, NS-14, NS-05 Level 1, NS-15, NS-23 | After photo and Find, in rank order: save a copy, whose book, share, another day, one past letter |
 | 4 | NS-24, NS-07, NS-06 Part A, NS-18, NS-04 spike | Reading back and the keepsake |
@@ -128,4 +128,4 @@ security read + counsel (X2) -> NS-28, pictures leaving the phone
 
 ## 6. What the harness needs from each row
 
-A backlog row is ready to hand out only when it names: the card id it satisfies; scope in one paragraph; a test that fails on the old code; a done line; the owner skill; its dependencies; and whether it needs an install, a device or the founder. Rows BL-923 to BL-941 meet that. Later rows are written by `product` from these cards, wave by wave, so the backlog never runs more than one wave ahead of review.
+A backlog row is ready to hand out only when it names: the card id it satisfies; scope in one paragraph; a test that fails on the old code; a done line; the owner skill; its dependencies; and whether it needs an install, a device or the founder. Rows BL-923 to BL-949 meet that. Every row from wave 2 on is held with a status the dispatcher does not hand out until the founder approves the requirements in chat. Later rows are written by `product` from these cards, wave by wave, so the backlog never runs more than one wave ahead of review.
