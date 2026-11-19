@@ -11,7 +11,7 @@ import { getConfig } from 'expo/config';
 import { brand } from '../../../packages/brand/index';
 import { permissions } from '../../../packages/content/src/permissions.en';
 import { permissionCopy } from '../src/lib/permission-copy';
-import { ALLOWED_PERMISSION_NAMES, extraPermissions, plistUsageProblems, purposeStringProblem, REQUIRED_PLIST_USAGE } from '../scripts/preflight-lib.mjs';
+import { ALLOWED_PERMISSION_NAMES, askedConfigText, extraPermissions, plistUsageProblems, purposeStringProblem, REQUIRED_PLIST_USAGE } from '../scripts/preflight-lib.mjs';
 
 const APP = resolve(__dirname, '..');
 const src = (rel: string) => readFileSync(join(APP, rel), 'utf8');
@@ -247,6 +247,11 @@ describe('preflight permission allowlist (LEGAL-REQ-007): the microphone, notifi
       ['NSFaceIDUsageDescription', 'NSMicrophoneUsageDescription', 'faceIDPermission', 'microphonePermission', 'notificationPermission', 'notificationsPermission'].sort(),
     );
     expect(extraPermissions(JSON.stringify([{}, [['expo-audio', { microphonePermission: 'x' }], ['expo-local-authentication', { faceIDPermission: 'y' }]]]))).toEqual([]);
+    // Photo with a letter: the picker's options set to false ask for nothing; a string or true still does (NX-39-R52 C2).
+    const picker = (o: object) => askedConfigText([{}, [['expo-image-picker', o]]]);
+    expect(extraPermissions(picker({ photosPermission: false, cameraPermission: false, microphonePermission: 'm' }))).toEqual([]);
+    expect(extraPermissions(picker({ photosPermission: 'Allow photos', cameraPermission: false }))).toEqual(['photosPermission']);
+    expect(extraPermissions(picker({ cameraPermission: true }))).toEqual(['cameraPermission']);
     expect(extraPermissions('{"cameraPermission":"x","NSLocationWhenInUseUsageDescription":"y"}')).toEqual(['cameraPermission', 'NSLocationWhenInUseUsageDescription']);
   });
 
