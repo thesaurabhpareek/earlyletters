@@ -3,7 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
 import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
-import { normalizePhotoPlace, normalizePhotoText } from '../src/lib/photos/text';
+import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import type { PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
 
@@ -89,12 +89,17 @@ describe('[NS-01-R5] a picture without words cannot be kept', () => {
 });
 
 describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
+  it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
+    expect(photoA11yLabel(null)).toBe('Photo with this letter');
+    expect(photoA11yLabel('   ')).toBe('Photo with this letter');
+  });
   it('[NS-01-R21] photo text is the parent\'s, optional and 140 characters', async () => {
     expect(normalizePhotoText(undefined)).toBeNull();
     expect(normalizePhotoText('x'.repeat(141))!.length).toBe(140);
     expect(normalizePhotoText('  Asha on the swing  ')).toBe('Asha on the swing');
     // counted in characters a person sees, not code units
     expect(normalizePhotoText('\u{1F600}'.repeat(141))!.length).toBe(280);
+    expect(photoA11yLabel('Asha on the swing')).toBe('Asha on the swing');
     const { d, store } = deps();
     await commitPhoto(d, { ...ONE, bytes: makeJpeg(), text: null });
     expect(store.get('e1')!.text).toBeNull(); // never filled in or suggested

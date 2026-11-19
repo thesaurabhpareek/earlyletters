@@ -279,6 +279,15 @@ describe('the navigation test proves it can fail (design spec 06 section 10.3)',
     expect(codes(checkOneEntry(withFile('components/tonight/extra.tsx', "startCapture({ source: 'siri' });"), TAB_JOBS))).toEqual(['N3(g)']);
   });
 
+  it('[NS-01-R1] the photo start goes through startCapture; pushing Listen directly from Home or a photo file fails N3', () => {
+    const home = files.get(HOME) ?? '';
+    expect(startCalls(home)).toContain('photo');
+    const pushed = home.replace(/startCapture\(\{ source: 'photo',[^\n]*\}\)\)/, "router.push({ pathname: '/listen', params: { promptKey: prompt.key } }))");
+    expect(pushed).not.toBe(home);
+    expect(codes(checkOneEntry(withFile(HOME, pushed), TAB_JOBS))).toEqual(['N3(d)']);
+    expect(codes(checkOneEntry(withFile('lib/photos/use-photo-start.ts', "router.push({ pathname: '/listen', params });"), TAB_JOBS))).toEqual(['N3(d)']);
+  });
+
   it('[IA-N4] N4a a share screen and N4b a tab behind Tabs.Protected fail N4', () => {
     const share = layout.replace('<Tabs.Screen name="book"', '<Tabs.Screen name="share" options={{ title: t.book }} />\n          <Tabs.Screen name="book"');
     expect(share).not.toBe(layout);

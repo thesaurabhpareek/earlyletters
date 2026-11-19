@@ -16,6 +16,7 @@ import { sweepPhotos } from '../src/lib/photos/housekeeping';
 import { PendingPhoto } from '../src/lib/photos/pending';
 import { createPhotoPicker } from '../src/lib/photos/picker';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
+import { pictureCovered, PHOTO_BLANK_WITHOUT_APP_LOCK } from '../src/lib/photos/surface';
 import type { PickedFiles, StoredPhoto } from '../src/lib/photos/types';
 import { androidContainer, createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -412,6 +413,24 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     stubborn.remove = async () => { throw new Error('busy'); };
     await sweepPhotos(db, stubborn, pickedMemory({}));
     expect(rows()).toBe(1);
+  });
+});
+
+describe('[NS-01-R13][NX-39-R36][C10] the switcher snapshot is blank (Karma ruling: with or without App lock)', () => {
+  it('[NS-01-R13][C10] a photo on screen is covered whenever the app is not in front, App lock on or off', () => {
+    expect(PHOTO_BLANK_WITHOUT_APP_LOCK).toBe(true);
+    for (const lockOn of [true, false]) {
+      expect(pictureCovered('inactive', lockOn)).toBe(true);
+      expect(pictureCovered('background', lockOn)).toBe(true);
+      expect(pictureCovered('active', lockOn)).toBe(false);
+    }
+    expect(pictureCovered('active', true, false)).toBe(true); // locked cold open
+  });
+  it('[NS-01-R13][C10] every component that draws a stored or pending picture goes through PhotoFrame, which asks the cover', () => {
+    const dir = join(SRC, 'components', 'photos');
+    const drawsImage = walk(dir).filter((f) => /<Image\b/.test(readFileSync(f, 'utf8'))).map((f) => relative(dir, f));
+    expect(drawsImage).toEqual(['photo-frame.tsx']);
+    expect(readFileSync(join(dir, 'photo-frame.tsx'), 'utf8')).toMatch(/usePictureCovered\(\)[\s\S]*if \(covered \|\| failed\)/);
   });
 });
 

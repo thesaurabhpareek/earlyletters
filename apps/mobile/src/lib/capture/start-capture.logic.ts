@@ -5,11 +5,12 @@
  * consolidation, so a person sees no change, servers on or off.
  *
  * Sources: Home's cluster (speak, type, notMuchToday, photo) and the four doorway names the PRD README gives (widget,
- * controlCenterControl, actionButton, siri). `photo` is reserved for NS-01 and the doorways for the hands-free work
- * (NS-04, NS-06 Part C): until their PRs land, planning them starts nothing. Nothing that arrives from outside the app
- * turns the microphone on (lib/resilience/start-intent.ts, +native-intent.tsx); that rule stays with the doorways
- * when they are built. A new source or doorway is added here, in the same PR as its handler, with a `design-systems`
- * approval line (spec 06 section 10.3).
+ * controlCenterControl, actionButton, siri). `photo` is Home's photo start (NS-01, behind EXPO_PUBLIC_PHOTOS): called
+ * once the system picker has returned a picture, it opens Listen at Ready with that picture. The doorways are reserved
+ * for the hands-free work (NS-04, NS-06 Part C): until their PRs land, planning them starts nothing. Nothing that
+ * arrives from outside the app turns the microphone on (lib/resilience/start-intent.ts, +native-intent.tsx); that rule
+ * stays with the doorways when they are built. A new source or doorway is added here, in the same PR as its handler,
+ * with a `design-systems` approval line (spec 06 section 10.3).
  *
  * Mode changes inside a capture already begun (Type instead on Listen, Record again and Write the words on Review) are
  * not starts: those screens `router.replace` among themselves and never push a capture route. Opening a waiting draft
@@ -35,6 +36,11 @@ export type CaptureRequest = { source: CaptureSource; prompt?: CapturePrompt };
 export type CapturePlan =
   /** Open a capture screen. `armListen` is Speak's tap that lets Listen start the microphone (start-intent.ts). */
   | { kind: 'route'; pathname: CaptureRoute; mode: 'spoken' | 'typed'; armListen: boolean; params: Record<string, string> }
+  /**
+   * Home's photo start (NS-01): Listen at Ready with the picture already chosen. Not armed, because nothing records
+   * until the person taps (F04, design spec 01 section 3.2), and no capture event: nothing is said or typed yet.
+   */
+  | { kind: 'photo'; pathname: '/listen'; params: Record<string, string> }
   /** "Not much today": a mark with no words for today (D-084), one a day. */
   | { kind: 'quietDay' }
   /** A source whose behaviour is not built yet: nothing happens. */
@@ -62,6 +68,7 @@ export function planCapture(req: CaptureRequest): CapturePlan {
     case 'notMuchToday':
       return { kind: 'quietDay' };
     case 'photo':
+      return { kind: 'photo', pathname: '/listen', params: promptParams(req.prompt) };
     case 'widget':
     case 'controlCenterControl':
     case 'actionButton':

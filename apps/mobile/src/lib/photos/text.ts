@@ -1,4 +1,5 @@
 import { PHOTO_PLACE_MAX, PHOTO_TEXT_MAX } from './types';
+import { photos } from './copy';
 
 const graphemes = (s: string): string[] => {
   const Seg = (Intl as unknown as { Segmenter?: new (l?: string, o?: { granularity: 'grapheme' }) => { segment(s: string): Iterable<{ segment: string }> } }).Segmenter;
@@ -19,3 +20,9 @@ export const normalizePhotoText = (typed: string | null | undefined): string | n
 
 /** The typed place (NS-01-R21): optional, at most 60 characters, only what the parent typed. */
 export const normalizePhotoPlace = (typed: string | null | undefined): string | null => capTyped(typed, PHOTO_PLACE_MAX);
+
+/**
+ * The picture's one text alternative for VoiceOver (NS-01-R9, R21): the parent's words when they typed any, else the
+ * fixed phrase. Never generated.
+ */
+export const photoA11yLabel = (text: string | null | undefined): string => normalizePhotoText(text) ?? photos.book.photos.a11yCard;
