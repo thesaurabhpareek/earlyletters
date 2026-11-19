@@ -3400,7 +3400,7 @@ Each row adds a `Plan:` line: phase (P0 to P4b of NX-39 v2 section 3), whether i
 - Fails on old code: the spec's "original bytes" line contradicts LEGAL-REQ-013.
 - Done when: the edit is in a PR for the founder.
 - Plan: P0; no install; founder merge.
-- Note (19 Nov 2026, CR-62): the export PR for photos (BL-933 in open PR #829) is gated on this row, because `docs/legal/DELETION_AND_EXPORT_SPEC.md:335` still promises original bytes (`photos/<entry_id>.<jpg|heic>`) while NS-01-R6 and ADR 0028 D2 export only the stripped copy. The fix to that spec line is `legal`'s, with `content` for the words; this row's owner is unchanged. ADR 0028 fixes the path in the export as `photos/<entry_id>/<media_id>.<ext>` (D2 and Q3; D1 fixes the phone path, `Library/Application Support/photos/<media_id>.jpg`).
+- Note (19 Nov 2026, CR-62): the export PR for photos (BL-933 in open PR #829) is gated on this row, because `docs/legal/DELETION_AND_EXPORT_SPEC.md:335` still promises original bytes (`photos/<entry_id>.<jpg|heic>`) while NS-01-R6, NS-01-R14 and ADR 0028 D2 export only the stripped copy. This row's owner (`data-architect`) drafts the edit with `legal`, and `content` for any words; the founder merges it (D-125). The photo export PR does not merge until the founder has merged that edit. ADR 0028 fixes the path in the export as `photos/<entry_id>/<media_id>.<ext>` (D2 and Q3; D1 fixes the phone path, `Library/Application Support/photos/<media_id>.jpg`).
 
 #### BL-869 Name the shared notification cap and the quiet window, and register every notification class (NX-39-R26, R61)
 - Status: ready. Mode: agent. Owner: reminders owner. Milestone: M15. Size: S.
