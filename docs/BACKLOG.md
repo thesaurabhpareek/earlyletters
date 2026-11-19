@@ -3576,8 +3576,8 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Plan: needs the founder's phone and time afterwards (duration not estimated here).
 
 #### BL-930 Reword NFR rows 42 and 216 to what the built hand-offs can meet (N-01)
-- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
-- Who: `product` edits the requirement file; `design-systems` reviews.
+- Status: ready. Mode: pair. Owner: qa engineer. Milestone: M15. Size: S.
+- Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product` edits the requirement file; `design-systems` reviews.
 - Scope: in `docs/prd/v2/06-nfr.md`, row 42 becomes: a transition starts within 100 ms, controls are usable by 350 ms, no frame is over 16.7 ms, the named hand-offs are bounded by `sequenceMaxMs` (900 ms) and the save hand-off by `hardCeilingMs` (2000 ms). Row 216 becomes: loops change opacity only, run only on the focused screen, and do not run under Reduce Motion. Each keeps a device and a test line.
 - Done when: the rows are merged and BL-929 cites them.
 
@@ -3604,8 +3604,8 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: the golden test passes and an export made by 1.6 still reads.
 
 #### BL-934 Requirement: Save a copy of the year (C-03)
-- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
-- Who: `product` writes the requirement; `content` writes the words; `design-systems` reviews.
+- Status: ready. Mode: pair. Owner: content. Milestone: M15. Size: S.
+- Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product` writes the requirement; `content` writes the words; `design-systems` reviews.
 - Scope: one file `docs/product/prd/08-save-a-copy.md` in the shape of the other files there. Export exists and is free (F15); this adds a "Save a copy" action in Take the book with you and one Home slip in the child's birthday week, sharing the single Home slip. No notification in the first version. The line is a keepsake line; it never says or implies loss. It states what the copy holds and that the parent chooses where it goes.
 - Done when: the file is merged with rows in Given, When, Then form, a device, a test, and the words marked PROPOSED for the founder.
 
@@ -3617,8 +3617,8 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Plan: needs counsel's read and the founder's hours for the sessions.
 
 #### BL-936 One roadmap, December 2026 to May 2027
-- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: M.
-- Who: `product`.
+- Status: ready. Mode: pair. Owner: content. Milestone: M15. Size: M.
+- Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product`.
 - Scope: one file under `docs/roadmap/` that maps the final rank to builds, with provisional dates marked as such; folds in what still holds from `docs/backlog/FUTURE.md`, its re-baseline and the files on PR #664 (read them; drop what is stale with a reason); maps BL ids to `C-` and `N-` ids; and states the capacity that has and has not been measured. `docs/ROADMAP.md` keeps its Superseded banner and points to it.
 - Done when: merged by Fri 27 Nov 2026. Dates in it are proposals until the founder sets them.
 
@@ -3642,8 +3642,8 @@ Written 19 Nov 2026 by Karma with the CPO role, docs only. Source: `docs/roadmap
 - Done when: the test passes with the flag on, and the flag is off in `production`. Words need the founder's approval before any build turns it on.
 
 #### BL-940 Requirement: whose book this letter goes to, on Home (C-14)
-- Status: ready. Mode: agent. Owner: product. Milestone: M15. Size: S.
-- Who: `product` adds the rows to `docs/product/prd/07-remaining-capability-rows.md`; `design-systems` reviews.
+- Status: ready. Mode: pair. Owner: design systems. Milestone: M15. Size: S.
+- Who: an interactive session as `product` writes it (the `product` agent has no backlog owner name, so the dispatcher cannot assign it); `product` adds the rows to `docs/product/prd/07-remaining-capability-rows.md`; `design-systems` reviews.
 - Problem: with two books, Home has no switcher and a new letter goes to the active child; only the dateline names the book.
 - Scope: rows for the existing `ChildSwitcher` at the top of Home when the account has two or more books, and nothing when it has one. `{child}` only.
 - Done when: the rows are merged with a device and a test each.
