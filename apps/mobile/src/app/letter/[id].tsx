@@ -78,6 +78,7 @@ import { languageFor, retryWords, startSpeechDownload, waitingForLanguageNote } 
 import { wordsCopy } from '@/lib/transcription-queue/copy';
 import { useSpeechDownload, useWordsJob } from '@/lib/transcription-queue/use-words';
 import { AppNote } from '@/components/book/app-note';
+import { LetterPhoto } from '@/components/photos/letter-photo';
 import { belowIsBook, bookHandoff, pageRestPlan, type NavState } from '@/components/book/book.logic';
 import { provenanceOf } from '@/components/book/chapters';
 import { entryDateline, movedToast } from '@/components/book/date-change.logic';
@@ -410,6 +411,8 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
         </View>
 
         <Animated.View style={[{ gap: 28 }, restBody]}>
+        {/* The letter's picture beside its words (NS-01-R7 to R9): absent when the photos switch is off. */}
+        {words !== 'waiting' ? <LetterPhoto entryId={entry.id} finalText={entry.finalText} own={own} /> : null}
         {spoken && <AudioPlayer entryId={entry.id} />}
 
         {wordsCard && <WaitingCard entry={entry} kind={wordsCard} onWrite={() => setWriting(true)} />}

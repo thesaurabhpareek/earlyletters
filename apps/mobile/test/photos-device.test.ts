@@ -7,10 +7,12 @@ import ts from 'typescript';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LATEST_VERSION, MIGRATIONS, migrate } from '../src/lib/db/migrations';
 import { adoptPending } from '../src/lib/photos/adopt';
+import { editPhotoWords } from '../src/lib/photos/attach';
 import { createOrientationBaker } from '../src/lib/photos/baker';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { clearPhotoNotSaved, photoNotSaved } from '../src/lib/photos/failures';
 import { photosPausedNow } from '../src/lib/photos/pause';
+import { photos } from '../src/lib/photos/copy';
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
 import { sweepPhotos } from '../src/lib/photos/housekeeping';
 import { PendingPhoto } from '../src/lib/photos/pending';
@@ -563,6 +565,30 @@ describe('[ADR 0028 D1] a draft owns its picture until Keep', () => {
   });
 });
 
+describe('[NS-01-R21] the parent edits the words and the place of a kept picture', () => {
+  it('[NS-01-R21] only what is typed is stored, trimmed and cut to 140 and 60; empty clears; the other field is left alone', async () => {
+    const { d, store } = deps();
+    await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'first', place: 'the park' });
+    expect(editPhotoWords(d, 'e1', { text: `  ${'x'.repeat(200)}  ` })).toBe(true);
+    expect(store.get('e1')!.text!.length).toBe(140);
+    expect(store.get('e1')!.place).toBe('the park');
+    editPhotoWords(d, 'e1', { place: 'y'.repeat(90) });
+    expect(store.get('e1')!.place!.length).toBe(60);
+    editPhotoWords(d, 'e1', { text: '   ', place: '' });
+    expect(store.get('e1')).toMatchObject({ text: null, place: null });
+    expect(editPhotoWords(d, 'nobody', { text: 'x' })).toBe(false);
+  });
+  it('[NS-01-R21] the sqlite store keeps an edit across put (same media id, same file)', () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const { d } = deps({ store: entryMediaStore(db) as never });
+    d.store.put(row('e1', 'm1'));
+    editPhotoWords(d, 'e1', { text: 'Rain boots', place: 'the back step' });
+    expect(d.store.get('e1')).toMatchObject({ mediaId: 'm1', text: 'Rain boots', place: 'the back step' });
+  });
+});
+
 describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter, and the letter page says so once', () => {
   const WORDS = 'Asha and the rain boots.';
   beforeEach(() => {
@@ -592,6 +618,21 @@ describe('[NS-01-R17] a picture that cannot be stored never un-keeps the letter,
     await p.set({ uri: 'file:///c/ImagePicker/a.jpg' });
     await expect(adoptPending(p, () => { throw new Error('db'); }, 'e1', WORDS, true)).resolves.toBeUndefined();
     expect(photoNotSaved('e1')).toBe(true);
+  });
+  it('[NS-01-R17] the letter page draws the line from the content slot, above Add again, for the author only', () => {
+    const src = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(src).toMatch(/usePhotoNotSaved\(entryId\)/);
+    expect(src).toMatch(/\{notSaved \? <Text[^>]*>\{photos\.book\.letter\.notSaved\}<\/Text> : null\}/);
+    expect(src.indexOf('photos.book.letter.notSaved')).toBeLessThan(src.indexOf('photos.book.letter.addPhoto'));
+    expect(src).toMatch(/return own && words \?/);
+    expect(src).toMatch(/clearPhotoNotSaved\(entryId\)/);
+    expect(photos.book.letter.notSaved).toMatch(/words are kept/);
+  });
+  it('[NS-01-R17] Review stores a Home pick with the draft and the letter page and Review share the same controls', () => {
+    const rv = readFileSync(join(SRC, 'components', 'photos', 'review-photo.tsx'), 'utf8');
+    expect(rv).toMatch(/adoptPendingPhoto\(draftId, finalText, false\)/);
+    expect(rv).toMatch(/<LetterPhoto entryId=\{draftId\} finalText=\{finalText\} own draft \/>/);
+    expect(readFileSync(join(SRC, 'app', 'review.tsx'), 'utf8')).toMatch(/<ReviewPhoto draftId=\{draft\.id\} finalText=\{finalText\} \/>/);
   });
 });
 

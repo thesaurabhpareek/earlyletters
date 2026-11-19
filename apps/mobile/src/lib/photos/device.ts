@@ -13,7 +13,7 @@ import { photosBuildEnabled } from './flag';
 import { sweepPhotos } from './housekeeping';
 import { PendingPhoto } from './pending';
 import { registerPending, registerPhotoPicker } from './registry';
-import { photoPath, type PhotoDeps, type PickedFiles } from './types';
+import { photoPath, type PhotoDeps, type PickedFiles, type StoredPhoto } from './types';
 
 const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 
@@ -44,6 +44,9 @@ export function photoDeps(): PhotoDeps {
   };
   return cached;
 }
+
+/** Where a stored picture can be drawn from. */
+export const photoUri = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => new File(photosDirectory(), photoPath(p)).uri;
 
 /**
  * Registers Apple's system picker, only when the photos switch is on in this build. The picker module is required here

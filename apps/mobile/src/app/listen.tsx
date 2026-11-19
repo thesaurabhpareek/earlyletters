@@ -34,7 +34,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
-import { discardPendingPhoto } from '@/lib/photos/hooks';
+import { discardPendingPhoto, dropDraftPicture } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -437,7 +437,10 @@ export default function Listen() {
               new File(uri).delete();
             } catch {}
           }
-          if (id) deleteDraft(id);
+          if (id) {
+            deleteDraft(id);
+            dropDraftPicture(id);
+          }
           discardPendingPhoto(); // "The photo goes too": nothing of it was stored
           router.back();
         },

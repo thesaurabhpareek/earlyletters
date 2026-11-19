@@ -158,6 +158,12 @@ describe('[NS-01-R19][NX-39-R37] the switch removes the screens, not the data ri
     await adoptPending(null, () => d, 'e1', 'Asha and the rain boots.', true);
     expect(files.writes + store.puts).toBe(0);
   });
+  it('[NS-01-R19] off, the letter page and Review draw no photo control', () => {
+    const page = readFileSync(join(SRC, 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).toMatch(/const on = photoSurfaces\(\{ build: photosBuildEnabled\(\), paused: photosPausedNow\(\) \}\)\.addActions;/);
+    expect(page).toMatch(/if \(!on \|\| !pick\.ready\) return null;/);
+    expect(photoSurfaces({ build: false, paused: false }).addActions).toBe(false);
+  });
 });
 
 describe('[NS-01-R20] new controls', () => {

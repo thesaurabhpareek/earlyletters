@@ -13,7 +13,58 @@ export const photosCopy = {
     // TODO(founder): PROPOSED, needs word approval
     openFailed: 'That photo could not be opened. Choose another.',
   },
+  text: {
+    // The parent's own words about the picture, up to 140 characters. Never filled in by the app (NS-01-R21).
+    // TODO(founder): PROPOSED, needs word approval
+    label: 'Words about this photo',
+    // TODO(founder): PROPOSED, needs word approval
+    optional: 'Optional',
+    // TODO(founder): PROPOSED, needs word approval
+    hint: 'Up to 140 characters. Only what you type is kept.',
+    // A place the parent types for the photo, up to 60 characters. Never filled in, never read from the photo (NS-01-R21).
+    // TODO(founder): PROPOSED, needs word approval
+    placeLabel: 'Where was this?',
+    // TODO(founder): PROPOSED, needs word approval
+    placeHint: 'Up to 60 characters. Only what you type is kept.',
+  },
   book: {
+    letter: {
+      // TODO(founder): PROPOSED, needs word approval
+      addPhoto: 'Add a photo to this letter',
+      // Once one photo is attached (design spec 01 section 4 names the action "Change photo").
+      // TODO(founder): PROPOSED, needs word approval
+      changePhoto: 'Change photo',
+      // Asked before a second photo replaces the first (NS-01-R7): the first stays until the parent chooses.
+      replacePhotoAsk: {
+        // TODO(founder): PROPOSED, needs word approval
+        question: 'Use this photo instead?',
+        // TODO(founder): PROPOSED, needs word approval
+        body: 'The first photo stays until you choose.',
+        // TODO(founder): PROPOSED, needs word approval
+        confirm: 'Use this photo',
+        // TODO(founder): PROPOSED, needs word approval
+        keep: 'Keep the first',
+      },
+      // The toast after a replace, with Undo for 10 seconds (NS-01-R7).
+      // TODO(founder): PROPOSED, needs word approval
+      replacePhotoUndo: 'Photo changed.',
+      // Taking the photo off, with Undo for 10 seconds (NS-01-R7, R8; design spec 01 sections 4 and 7).
+      // TODO(founder): PROPOSED, needs word approval
+      removePhoto: 'Take the photo off',
+      // TODO(founder): PROPOSED, needs word approval
+      removed: 'Photo taken off.',
+      // TODO(founder): PROPOSED, needs word approval
+      undo: 'Undo',
+      // Shown on the letter page when a photo chosen for this letter could not be stored (NS-01-R17). The letter and its
+      // words are kept; the line names no cause and asks for nothing. Never describes the picture.
+      // TODO(founder): PROPOSED, needs word approval
+      notSaved: 'The photo did not come along with this letter. Your words are kept, and you can add it again.',
+      // The picture's file is gone (design spec 01 section 6): the letter reads whole.
+      // TODO(founder): PROPOSED, needs word approval
+      missing: 'Not on this phone any more',
+      // TODO(founder): PROPOSED, needs word approval
+      missingRemove: 'Remove',
+    },
     photos: {
       // The fixed VoiceOver label of a picture when the parent typed no words about it (NS-01-R9). Never machine text.
       // TODO(founder): PROPOSED, needs word approval

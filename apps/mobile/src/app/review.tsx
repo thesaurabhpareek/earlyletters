@@ -127,6 +127,7 @@ import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recor
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
+import { ReviewPhoto } from '@/components/photos/review-photo';
 import { commitPendingPhoto } from '@/lib/photos/hooks';
 import { languageCleanOptions, rulesForLanguage } from '@/lib/language';
 import { clearReadItBack } from '@/lib/read-it-back';
@@ -967,6 +968,8 @@ export default function Review() {
           <Text variant="title1" asHeading>
             {reviewHeading({ typedOnly: typed && !spoken })}
           </Text>
+          {/* The picture chosen with this letter, before Keep (NS-01-R7): add, change, take off, with Undo. Absent when off. */}
+          {draft && !isSample ? <ReviewPhoto draftId={draft.id} finalText={finalText} /> : null}
 
           {isSample && (
             <View className="rounded-2xl border border-caution p-3">

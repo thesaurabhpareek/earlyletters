@@ -1,12 +1,15 @@
 /** React hooks for the photo surfaces. Thin: the rules are in the files they call (surface, lens, pending, entry-media). */
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
+import { subscribe as subscribeStore } from '../store';
 
-import { photoDeps } from './device';
+import { erasePictureOf, photoDeps } from './device';
 import { adoptPending } from './adopt';
+import { photoNotSaved, subscribePhotoNotSaved } from './failures';
 import type { PendingPhoto } from './pending';
 import { getPending } from './registry';
 import { pictureCovered } from './surface';
+import type { StoredPhoto } from './types';
 
 const noopSubscribe = () => () => {};
 
@@ -33,6 +36,25 @@ export function usePendingPhoto(): PendingPhoto | null {
   return p;
 }
 
+/** The kept letter's picture, not while its letter waits in Recently deleted. */
+export function useLetterPhoto(entryId: string | null | undefined): StoredPhoto | null {
+  const read = useCallback(() => {
+    if (!entryId) return null;
+    try {
+      const p = photoDeps().store.get(entryId);
+      return p && !p.deletedAt ? p : null;
+    } catch {
+      return null;
+    }
+  }, [entryId]);
+  const [photo, setPhoto] = useState<StoredPhoto | null>(read);
+  useEffect(() => {
+    setPhoto(read());
+    return subscribeStore(() => setPhoto(read()));
+  }, [read]);
+  return photo;
+}
+
 /** Back, Close or Let it go before Keep: nothing stays, the picker's original included (NS-01-R4). Safe with no photo. */
 export function discardPendingPhoto(): void {
   void getPending()?.discard();
@@ -44,3 +66,17 @@ export const adoptPendingPhoto = (ownerId: string, finalText: string, requireWor
 
 /** At Keep, for the letter that now exists: a picture still pending is stored with it. */
 export const commitPendingPhoto = (entryId: string, finalText: string): Promise<void> => adoptPendingPhoto(entryId, finalText, true);
+
+/** True while the letter page should say its photo did not come along. */
+export function usePhotoNotSaved(ownerId: string): boolean {
+  return useSyncExternalStore(subscribePhotoNotSaved, () => photoNotSaved(ownerId));
+}
+
+/** A draft is let go: its picture goes with it, file first then row (NS-01-R16). Never throws; the sweep finishes it. */
+export function dropDraftPicture(draftId: string): void {
+  try {
+    erasePictureOf(draftId);
+  } catch {
+    // the launch sweep removes a picture whose draft is gone
+  }
+}
