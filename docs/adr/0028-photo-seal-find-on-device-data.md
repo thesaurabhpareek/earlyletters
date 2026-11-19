@@ -1,11 +1,12 @@
 # ADR 0028: On-device data for Photo with a letter, the sealed letter and Find
 
-- **Status:** Proposed. Docs only. No migration file is written here and nothing is applied anywhere. Every `supabase/**` change below is a proposal for a later PR that needs red-team review and the founder's `approve-migration` label (D-041, DB-R11); the founder applies hosted-project changes through CI on a tag.
+- **Status:** Proposed, amended 19 Nov 2026; acceptance by Karma after two reviews. Docs only. No migration file is written here and nothing is applied anywhere. Every `supabase/**` change below is a proposal for a later PR that needs red-team review and the founder's `approve-migration` label (D-041, DB-R11); the founder applies hosted-project changes through CI on a tag.
 - **Author:** `data-architect`. Reviewers asked: `mobile` (owner of PR #796), `sync`, `privacy`, `security-architect`, `qa`, `product`.
-- **Number:** 0028 is the next free number on `develop` at `da83fb1ee` and on every remote branch I listed. The PRD for Photo with a letter (PR #795) and PR #796's code comments cite "ADR 0027" for the export bump; 0027 is the kill-safe recording container, so those citations should read 0028. The coordinator may renumber.
-- **Labels:** [R] repo fact read this session, [P] a proposal of this ADR, [U] unverified: not run, not read, or depends on a device or library I did not open.
-- **Inputs:** PRD NS-01 (PR #795, `docs/product/prd/01-photo-with-a-letter.md`), NS-02 Find, NS-06 Part B sealed letter (same PR); PR #796 at head `f73c518c` (`apps/mobile/src/lib/photos/*`); `apps/mobile/src/lib/db/migrations.ts` (latest version 9) [R]; `apps/mobile/src/lib/export/{schema,pack,build.logic}.ts` (`EXPORT_SCHEMA_VERSION = '1.6.0'`, `photo: null`, `photos: 0`) [R]; `supabase/migrations/20260930000000_scribe_core.sql` and `20261016000000_sync_v1_server.sql` [R]; ADR 0025 (sync); `docs/engineering/03-database-and-schema.md`, `04-data-quality-and-lifecycle.md`.
-- **Not run:** no app, no device, no database test, no FTS5 build. Disk is tight, so I installed nothing. Every claim about FTS5 or `expo-file-system` behaviour is [U].
+- **Amended 19 Nov 2026 (`data-architect`, at Karma's request):** D1 records what PR #796 builds (`Library/Application Support/photos`, local migration 11) and why. D3 and D3a carry the seal-clock reconciliation the new-scope PRD assigned to `data-architect` with an answer due Fri 20 Nov 2026 (`NEW-SCOPE-INDEX-11nov.md` section 8; NS-06-B1 and OQ-B2; design 04 FS-R7 and the B6 clock rows; design 02 FD-R9): two columns, the instant and the chosen day, written once together; the opening rule compares the instant with now. D4 reads the instant, not a local date. The sync names in D3 are corrected to the shipped engine (`book_entries`, `sync_xid`). Every amended passage is marked [A]; the rest is as drafted on 11 Nov 2026.
+- **Number:** 0028 is the next free number on `develop` at `da83fb1ee` and on every remote branch I listed. The PRD for Photo with a letter (PR #795) and PR #796's code comments cite "ADR 0027" for the export bump; 0027 is the kill-safe recording container, so those citations should read 0028. The coordinator may renumber. [A] At `6a11c808` the PRD still says 0027 in `docs/product/prd/01-photo-with-a-letter.md:143`; `product` fixes it in one line.
+- **Labels:** [R] repo fact read this session, [P] a proposal of this ADR, [U] unverified (UNVERIFIED): not run, not read, or depends on a device or library I did not open, [A] amended on 19 Nov 2026.
+- **Inputs:** PRD NS-01 (PR #795, `docs/product/prd/01-photo-with-a-letter.md`), NS-02 Find, NS-06 Part B sealed letter (same PR); PR #796 at head `f73c518c`, re-read at `39efe1ac` on 19 Nov 2026 (`apps/mobile/src/lib/photos/*`, `lib/db/migrations.ts`, `lib/erase-everything.ts`) [R]; PR #798 (Find) at head `6ff39d75` (`apps/mobile/src/lib/find/*`) [R] [A]; `apps/mobile/src/lib/db/migrations.ts` (latest version 9 when drafted; 10 on `develop` at `09a104da`, the agreements table, lines 393 to 394) [R] [A]; `apps/mobile/src/lib/export/{schema,pack,build.logic}.ts` (`EXPORT_SCHEMA_VERSION = '1.6.0'`, `photo: null`, `photos: 0`) [R]; `supabase/migrations/20260930000000_scribe_core.sql` and `20261016000000_sync_v1_server.sql` [R]; `20261004100000_sync_engine.sql` (the pull predicate and cursor) and `20261003000000_security_and_family.sql` (`book_entries`) [R] [A]; ADR 0025 (sync); PRD NS-06 Part B, design specs 04 and 02 and `NEW-SCOPE-INDEX-11nov.md`, merged as `6a11c808` [R] [A]; `docs/engineering/03-database-and-schema.md`, `04-data-quality-and-lifecycle.md`.
+- **Not run:** no app, no device, no database test, no FTS5 build. Disk is tight, so I installed nothing. Every claim about FTS5 or `expo-file-system` behaviour is [U]. [A] Apple's File System Programming Guide ("File System Basics", developer.apple.com archive) was opened on 19 Nov 2026 and is quoted where used.
 
 ## Context
 
@@ -21,9 +22,9 @@ Facts that shape the answer [R]:
 
 ## Decisions
 
-### D1. The phone table: `entry_media` (migration 10) [P]
+### D1. The phone table: `entry_media` (migration 11) [P] [A]
 
-One new local migration, version 10, in `apps/mobile/src/lib/db/migrations.ts`. It adds a table only; no existing row changes; nothing is queued to the sync outbox (same shape as migration 9).
+One new local migration, version 11, in `apps/mobile/src/lib/db/migrations.ts`. This ADR first said 10; `develop` took 10 for the agreements table (`migrations.ts:393-394` at `09a104da`), so PR #796 appends 11 (`migrations.ts:428-469` at `39efe1ac`) [R]. It adds a table and three indexes only; no existing row changes; nothing is queued to the sync outbox (same shape as migrations 9 and 10). The table #796 creates matches the shape below column for column, with the level of each column in the migration comment [R].
 
 ```
 entry_media
@@ -48,15 +49,17 @@ Decisions inside it:
 
 - **Class.** The picture itself is L4 (a child's image; `DATA_CLASSIFICATION.md`), the typed text and place are L4 (the parent's words), the ids and sizes are L2. `privacy` confirms; I label the columns in the migration comments in the same PR, as migration 9 does.
 - **No `deleted_at` on the row.** PR #796's `StoredPhoto.deletedAt` copies a state the letter already owns. A copy can drift (letter restored, photo still hidden). The row is hidden whenever its letter's `entries.deleted_at` is set, by join; restore needs no photo write. The `PhotoStore` adapter maps `deletedAt` from that join. If the mobile engineer prefers the field, the adapter must still derive it, never store it. Default: derive.
-- **File path is `Documents/photos/<media_id>.jpg`, not `<entry_id>/<media_id>.jpg`.** A draft is kept by changing the row's owner in one transaction (`draft_id` to `entry_id`); the file never moves, so a kill at Keep cannot leave a file under the wrong folder. The folder in the export is derived (D2). [U: whether a draft id equals the entry id at Keep; I did not read `drafts.ts`. If it does, either path works and the engineer may keep PR #796's.]
+- **Storage location is `Library/Application Support/photos/<media_id>.jpg` on iOS, and `<app files folder>/photos/<media_id>.jpg` elsewhere (Android, later).** [A] This ADR first said `Documents/photos`. Karma ruled that the security review wins (finding T5, quoted in #796 `lib/photos/files.ts:3-5`), and #796 builds it that way: `photosDirectory()` derives the folder from the Documents uri (`files.ts:20-27`) [R]. Why Application Support, from Apple's File System Programming Guide (opened 19 Nov 2026): Documents "can be made available to the user through file sharing" and should hold only files "you may wish to expose to the user"; the `Library` subdirectories are "for any files you don't want exposed to the user" and Application Support is for "all app data files except those associated with the user's documents". So a child's picture never appears in the Files app, whatever sharing setting a later build adds. The folder is kept across launches: it is not `Caches` or `tmp`, which the system may purge. Backup: Apple says the contents of Application Support "are backed up by iTunes and iCloud" unless a file is excluded with `NSURLIsExcludedFromBackupKey`; #796 makes no such call for pictures (the only `setExcludedFromBackup` callers on its branch are `lib/model-files.ts:43` and `lib/packs/app-support.ts:38`, for models and packs) [R], so the pictures are in the iPhone backup, the NX-39 F9 default (Q4). The file name is the media id, never an original name, and no entry id is in it. A draft keeps its id when it becomes a letter (the `mobile` note on PR #797; `adopt.ts:12-16` passes one `ownerId` for draft and letter) [R], so `draft_id` moves to `entry_id` in the same transaction as the letter and the file never moves (Q2 closed). The folder in the export is derived (D2; `types.ts:55`).
 - **One picture per letter** is the unique index, not the table shape. Build 13 caps at one; a later multi-photo build drops that one index in its own migration (no table rebuild).
-- **Backup.** The folder is not excluded from the iPhone backup (NX-39 F9 default: pictures in the backup) [U: no `expo-file-system` exclusion call is made, so the default of the platform applies]. The owner backup of ADR 0024 does not carry pictures in Build 13 (audio only); `privacy` words that plainly.
+- **Backup.** The folder is not excluded from the iPhone backup (NX-39 F9 default: pictures in the backup); confirmed by the absence of any exclusion call under `lib/photos/` at `39efe1ac` [R] [A]. The owner backup of ADR 0024 does not carry pictures in Build 13 (audio only); `privacy` words that plainly.
 
-Kill-safety order, each step safe to repeat: (1) write the stripped copy to `Documents/photos/<id>.jpg.part` and rename; (2) in one transaction insert the row; (3) at launch a sweep deletes any `.part`, any file with no row older than one day, and any row whose file is missing (the letter then reads whole with no picture, no message, OQ-2 default). A cancelled pick writes nothing (NS-01-R4).
+Kill-safety order, each step safe to repeat [A]: (1) write the stripped copy whole to `Library/Application Support/photos/<id>.jpg` (#796 writes with `overwrite: true`, `files.ts:49-51`, no `.part` step; a half-written file has no row and is swept) [R]; (2) in one transaction insert the row; (3) at launch a sweep deletes any file with no row and any row whose file is missing (the letter then reads whole with no picture, no message, OQ-2 default). A cancelled pick writes nothing (NS-01-R4).
 
 Sync: `enqueueEntryUpsert` and the pull merge never read or write `entry_media`, and the push mapper always sends `photo_path: null` (NS-01-R15). Pull must not overwrite a local row. Test below.
 
-Migration plan: migration 10 ships with photos. If Find (D4) and the seal (D3) migrate in the same train, they take 11 and 12 in merge order; two open PRs must never both claim a number, so the later one renumbers on rebase. A phone that has a newer version than the app (downgrade) is refused by the existing migrator.
+Migration plan [A]: migration 11 ships with photos (#796). Find (D4) has no migration: #798 creates its index with `CREATE VIRTUAL TABLE IF NOT EXISTS` from `ensureSearchIndex`, whose own comment says "Not a migration" (`lib/find/lifecycle.ts:169, 195-200`) [R]. The seal (D3) takes the next free number when it is built; two open PRs must never both claim a number, so the later one renumbers on rebase. A phone that has a newer version than the app (downgrade) is refused by the existing migrator.
+
+For the #796 builder [A]: one comment line is stale. `apps/mobile/src/lib/db/migrations.ts:435` at head `39efe1ac` reads "The picture file is `Documents/photos/<id>.jpg`"; it must read `Library/Application Support/photos/<id>.jpg` (iOS; the app's files folder elsewhere), the same words as `lib/photos/files.ts:3`. Nothing else in the migration changes.
 
 ### D2. Export schema 1.7.0 and the golden plan [P]
 
@@ -66,7 +69,7 @@ Migration plan: migration 10 ships with photos. If Find (D4) and the seal (D3) m
 - JSON schema (`export-v1.schema.json`): `photo` becomes `oneOf [null, object]` with `additionalProperties: false` on the object. The 1.6.0 schema stays in `_v1.6.0` untouched, so an old file still validates.
 - `counts.photos` = the number of photo files written, never including letters in Recently deleted (they are not exported, NS-01-R14) and never a letter that fails to export. The manifest `files` list gains each photo with its sha256, and `verify.ts` checks them exactly as it does audio. A missing or mismatched photo file is reported like `audio_missing` and `audio_mismatch`; Build 13 adds `photo_missing` to `counts` only if `product` wants it [default: no, a missing file simply writes `photo: null`].
 - Words never change: the export for a letter with and without a picture has a byte-identical `final_text` and `text_file`. Photo text and place are exported (they are the parent's words; NS-01-R21).
-- A sealed letter's picture is exported with the letter (the words are on the phone; NS-06-B5). The `sealed_until` field itself is a separate additive minor, 1.8.0, shipped with the seal build and not before.
+- A sealed letter's picture is exported with the letter (the words are on the phone; NS-06-B5). The seal fields (`seal_opens_at`, `seal_opens_on`, `seal_cleared_at`; D3a) are a separate additive minor, 1.8.0, shipped with the seal build and not before [A].
 - No original bytes, no "originals" option, no metadata segment: the export test scans every photo for Exif, XMP and IPTC markers (NS-01-R6).
 
 Golden fixture plan (fictional family "Asha" only; no real photo is ever a fixture):
@@ -79,9 +82,9 @@ Golden fixture plan (fictional family "Asha" only; no real photo is ever a fixtu
 
 The export stays readable without the app (README.txt and `index.html` link the picture; `content` words the line).
 
-### D3. The sealed letter: should a seal sync? [P]
+### D3. The sealed letter: should a seal sync? [P] [A]
 
-Recommendation: **the seal date syncs; the seal is a display rule on the author's own phones; and no other person's phone receives a sealed letter's words until the day.** Build 15 at the earliest, behind the five-parent study (NS-06 OQ-B1); nothing here is built before then.
+Recommendation: **the seal syncs as columns on `entries` (D3a); the seal is a display rule on the author's own phones; and no other person's phone receives a sealed letter's row or words until the instant.** Build 15 at the earliest, behind the five-parent study (NS-06 OQ-B1); nothing here is built before then. The PRD at `6a11c808` (NS-06-B8) and design spec 04 section B6a already carry the author-only rule; only the clock was left open, and D3a answers it.
 
 Why not the two simpler answers:
 
@@ -90,24 +93,74 @@ Why not the two simpler answers:
 
 Design:
 
-- **Server:** one nullable column `entries.sealed_until date` (a calendar date, like `occurred_on`, no time zone), additive, L3 (the date a parent chose; `privacy` confirms). Author-only write. A trigger enforces the rules the PRD states: it can be set only to a date later than today when the letter is kept or sealed from the letter page, can be cleared by the author (Open now), and once cleared or passed it cannot be set again (needs a second column or a ledger fact; proposed `sealed_opened_at timestamptz`, set by the trigger, never by the client).
-- **Visibility:** the one visibility predicate (`book_access`, D-024, DB-R23) gains a rule: a reader who is not the author sees the row only when `sealed_until is null or sealed_until <= current_date` evaluated in UTC plus one day of grace, so the server never opens a letter earlier than any time zone. Until then the sync pull returns no row for the other reader at all (the same way held drafts are author-only rows, ADR 0025). The author's phones receive the row whole and hide it by the date.
-- **Cost:** a co-parent's phone learns nothing about a sealed letter, including that it exists. That is stronger than the PRD text ("the seal date travels with the letter so the other parent's phone hides it too") and it needs no honest-limits sentence for a co-parent. [U: the sync engine's pull cursor must not stall on a row it may not return; `sync` owns that proof. Open on the day: the row must enter the other reader's pull via the existing `server_seq` bump, so a nightly touch (or a bump when the date passes) is needed. This is the hard part and the reason the default is "not before Build 15".]
-- **Export:** a sealed letter is exported whole with `sealed_until` (1.8.0), for its author only. Another person's export never contains words they cannot read.
-- **Find:** a sealed letter is not in the index until its day (D4).
+- **Server:** three nullable columns on `entries`, additive, written by the author only (RLS as today): `seal_opens_at timestamptz` (the instant, NS-06-B1), `seal_opens_on date` (the day the parent chose, as typed, like `occurred_on`) and `seal_cleared_at timestamptz` (stamped by the server when the author chooses Open now; this ADR first called it `sealed_opened_at`, renamed because "opened" is also what the day does). All three L3 (a day a parent chose and the times of their own acts; `privacy` confirms). A trigger `entries_12_seal_guard` (prefix per DB-R04) enforces the PRD: the pair may go from null to a value only when `seal_opens_at > now()` and the row is a letter with words (never a quiet-day mark, NS-06-B10); a set pair never changes and never returns to null; `seal_cleared_at` is set to `now()` by the server when the client sends any non-null value, is never cleared, and is refused while the pair is null; every refusal carries one typed SQLSTATE (proposed `SCSEL`, added to the error-code list with `sync`). The CHECK `entries_seal_pair` (D3a) keeps the pair together. Re-seal is refused by construction: a non-null pair cannot change, and a cleared seal keeps its pair.
+- **Visibility:** the one visibility predicate for another reader is the `book_entries` view (`20261003000000_security_and_family.sql:563-579`), which the pull uses for every row the caller did not write (`20261004100000_sync_engine.sql:372`) [R]. This ADR first named `book_access` (D-024) and `server_seq` (DB-R23); neither exists in `supabase/migrations/` at `09a104da`, so the shipped names are used here, and chapter 03's steward is told in the PR body that DB-R23 and the code disagree [A]. The view gains one clause for rows the caller did not write: `(e.seal_opens_at is null or e.seal_cleared_at is not null or e.seal_opens_at <= now())`. Until the instant the pull returns no row for the other reader at all, the same way a private letter is not sent (`sync_engine.sql:43-46`). The author's phones receive the row whole (the pull sends every own row, `sync_engine.sql:353`) and hide it by the same rule. The view does not expose the three seal columns to another reader, so the other phone never learns a letter was sealed (default; `product` may change it, Q11).
+- **Publishing at the instant when the author's phone is offline (NS-06-B8 asks `data-architect`):** the pull cursor is `entries.sync_xid`, stamped by trigger on every insert or update (`sync_engine.sql:26-37, 95-113`) [R]. A row that becomes readable without a write is never pulled by a phone whose cursor has passed it, so a server job `publish_opened_seals()` runs every 15 minutes on the purge worker's cadence (`supabase/cron/purge-worker.sql`): `update public.entries set updated_at = now() where seal_opens_at <= now() and updated_at < seal_opens_at`, through the partial index `entries_seal_due_idx` (D3a). The update restamps `sync_xid`, the row leaves the index, and the next pull of any other reader carries it as a normal letter. Delay for others: at most one cadence after the instant; the author's own phones open it at the instant with no network. The function is `security definer` with `search_path = pg_catalog, public`, revoked from clients (DB-R14, DB-R15). [U: that an update of `updated_at` alone passes `entries_guard_immutable`, and that the pull's digest path does not fight the republish; `sync` owns both proofs.] The job is the only server reader of the seal columns besides `book_entries` (DB-R22).
+- **Export:** a sealed letter is exported whole with its three seal fields (1.8.0), for its author only. Another person's export never contains words they cannot read.
+- **Find:** a sealed letter is not in the index until the instant (D4).
 - **Photos:** a picture on a sealed letter is not shown or counted by the Photos lens until the letter opens (NS-01-R10). The file stays on the phone.
 - **Erase and delete:** a sealed letter deletes and purges like any letter; the seal does not extend the 30-day window.
 - **Allowance:** a sealed letter counts when kept (NS-06-B7). The seal is not a Plus feature.
-- **Tests (written when built, listed so the design is checked now):** author reads own sealed row; other member reads 0 rows; other member's pull returns 0 rows and an advancing cursor; day arrives, other member gets the row; author clears; re-seal refused; a past date refused; client cannot set `sealed_opened_at`; purge works on a sealed row.
+- **Tests (written when built, listed so the design is checked now):** author reads own sealed row; other member reads 0 rows; other member's pull returns 0 rows and an advancing cursor; the instant passes and the job republishes the row once (a second run changes nothing); other member gets the row at the next pull; author clears (`seal_cleared_at` stamped by the server, never by the client); re-seal refused; a change of a set pair refused; a past instant refused; a pair two days apart refused; a quiet-day mark refused; purge works on a sealed row; the author's second phone receives the row before the instant and hides it. Device tests: the D3a list.
 
-Default if nobody decides: **do not build the seal.** If the founder wants it, the default design is the one above. Founder-only parts: whether to build at all, whether an author may hide a letter from the other parent (NS-06 OQ-B2; counsel on minors and "open at 18").
+Default if nobody decides: **do not build the seal.** If the founder wants it, the default design is the one above. Founder-only parts: whether to build at all, whether an author may hide a letter from the other parent (Q6, NS-06 OQ-B2; counsel on minors and "open at 18").
 
-### D4. Find index: storage and lifecycle [P]
+### D3a. The seal clock: one stored field or two [P] [A]
+
+The question (`NEW-SCOPE-INDEX-11nov.md` section 8, the `data-architect` row; NS-06-B1 and OQ-B2; design 04 FS-R7 and the B6 clock rows; design 02 FD-R9; answer due Fri 20 Nov 2026): the PRD stores one absolute UTC instant, the author's local midnight at the start of the chosen day in the device's zone at sealing; D3 as drafted stored a calendar date with a UTC-plus-one-day grace for other readers. One field or two? This section is a proposal for Karma's acceptance after two reviews; until then FS-R7, the 04 B6 clock rows and 02 FD-R9 stay PROVISIONAL, as the index says.
+
+Three ways, weighed:
+
+1. **One calendar date, opened by the local date at read time** (D3 as drafted). Rejected. A flight east or a zone change opens the letter up to 26 hours early (UTC-12 to UTC+14), which FS-R7 forbids, and the server's grace day opens it for others at a different moment than for the author: two clocks for one promise.
+2. **One instant only** (NS-06-B1 as worded). Rejected as the only field. The rule is exact and the same on every device and on the server (compare with now). But the words the author reads, "hidden until <day>", would have to be derived from the instant in the reader's current zone, and that is the wrong day whenever the reader is west of the sealing zone (the day before) or more than 24 hours east of it (the day after). Example: sealed in London for 10 Jan, stored `2027-01-10T00:00:00Z`, shown in New York as 9 Jan. Storing a zone id to fix the words would put a coarse location (an IANA zone) on the server row for no gain.
+3. **The instant and the chosen day, both written once in the same statement and never updated** (CHOSEN). The instant is the rule; the day is the words. Drift is impossible by construction: neither column may change once set (the trigger, as for `raw_transcript`), and the CHECK keeps them within one day of each other. The day adds nothing the author did not type.
+
+Schema (server, additive to `entries`; written as a migration only when the seal is built, timestamped after the newest applied file, DB-R08):
+
+```
+seal_opens_at    timestamptz  null   the instant: local midnight at the start of the chosen day, in the
+                                     device's zone at sealing, kept in UTC (NS-06-B1)                  L3
+seal_opens_on    date         null   the day the parent chose, as typed (the words; like occurred_on)   L3
+seal_cleared_at  timestamptz  null   server-stamped when the author chooses Open now; never cleared     L3
+CHECK entries_seal_pair (
+  (seal_opens_at is null) = (seal_opens_on is null)
+  and (seal_opens_at is null
+       or seal_opens_on between ((seal_opens_at at time zone 'UTC')::date - 1)
+                            and ((seal_opens_at at time zone 'UTC')::date + 1))
+  and (seal_cleared_at is null or seal_opens_at is not null))
+INDEX entries_seal_due_idx on entries (seal_opens_at)
+  where seal_opens_at is not null and updated_at < seal_opens_at      -- the publish job; a row leaves it once published
+```
+
+Names follow DB-R01: `_at` for an instant, `_on` for a date; the shared stem `seal_opens` ties the pair. `comment on column` carries each level (DQ-R01). Device mirror (DB-R25; the next free local migration when built, with the level of each column in the comment as migration 11 does): `entries.seal_opens_at TEXT` as `YYYY-MM-DDTHH:MM:SSZ` (whole seconds; the instant is a midnight), `entries.seal_opens_on TEXT` as `YYYY-MM-DD` (like `occurred_on`, `migrations.ts:67`), `entries.seal_cleared_at TEXT`; `drafts` carries the pair from Review until Keep copies it to the letter; index `entries_seal_idx ON entries (seal_opens_at) WHERE seal_opens_at IS NOT NULL AND seal_cleared_at IS NULL` for the Book's closed rows and the launch catch-up. The zone is never stored.
+
+The opening rule, one sentence: a letter is open when `seal_opens_at IS NULL OR seal_cleared_at IS NOT NULL OR seal_opens_at <= now()`, where `now` is the current UTC instant and never a local date; the same expression is the one visibility function on the phone (NS-06-B6), the clause added to `book_entries` on the server (D3) and the clause in `searchable_letters` (D4).
+
+How the instant is made, on the device at sealing: take the chosen `YYYY-MM-DD`, find the start of that day in the device's zone at that moment, convert to UTC, and store it beside the date. FS-R7's case: sealed in UTC-8 for 10 Jan gives `seal_opens_at = 2027-01-10T08:00:00Z` and `seal_opens_on = 2027-01-10`; at UTC+14 with the clock at `07:59:00Z` the letter is closed, at `08:00:00Z` it is open, and the row still says 10 Jan.
+
+What each reader and surface reads:
+
+- **The words** ("hidden until <day>"; `content` owns them): `seal_opens_on`, rendered as a date in the reader's locale; never computed from the instant.
+- **Find:** `searchable_letters` reads `seal_opens_at` and `seal_cleared_at` (the opening rule), never the date (D4).
+- **Export (1.8.0, author only):** all three fields, by their column names. PRD NS-06-B5 names one `sealed_until` field; that row should read as this pair plus the cleared time, and `product` aligns it in one line (Q10).
+- **Another reader:** nothing before the instant; a normal letter after it, with no seal columns (D3).
+
+The considerations Karma named:
+
+- *The author travels across zones before the day:* the instant does not move (NS-06-B1b), so the letter never opens before the start of the chosen day where it was sealed, and the Book row keeps saying the day chosen. Honest limit, for `content` to word: in a zone west of where it was sealed the letter opens during the evening before the shown day, local time; a clock set forward by hand opens it early on that phone, and the app does not claim to prevent that (NS-06 B5).
+- *The co-parent in another zone (co-parent sharing is later, D-121):* no row before the instant (NS-06-B8); after it, a normal letter through the publish job (D3), the same instant for everyone, no grace day.
+- *Export and Find:* above. Find reads the instant, so the index needs no local-date logic and no time-zone case.
+- *The letter is author-only until it opens:* true for the row and the words; the seal columns reach only the author's own phones, backup and new-phone restore before the instant (NS-06 B6, the Records line).
+- *The words users read:* the chosen day, stored, so what the parent typed is what the parent reads.
+
+Tests on the device, when built (each titled with its id): `[NS-06-B1]` sealing writes the pair and nothing else about the words; `[NS-06-B1b][FS-R7]` the UTC-8 to UTC+14 case with clock and zone injection; the row says the chosen day in three zones; `[NS-06-B3]` Open now sets `seal_cleared_at` and the letter reads at once; a second seal on the same letter is refused; `[NS-06-B6]` one visibility function, call sites listed; `[FD-R9]` the index moves at Open now in the same transaction and at the instant on the next `reconcileSearch`, and a zone change leaves the index unchanged; the export of a sealed letter carries the three fields for its author and nothing for another reader; `[NS-06-B10]` a quiet-day mark cannot carry a seal.
+
+### D4. Find index: storage and lifecycle [P] [A]
 
 - **Where:** an FTS5 virtual table `letter_search` inside `scribe.db` (one file, one lock, iOS Data Protection covers it, `secure_delete` already on). Not a second database file.
-- **Shape:** its own content (not external-content), columns `body` (the `final_text` as kept) and `extra` (the parent-typed Firsts label, photo text and typed place), tokenizer `unicode61 remove_diacritics 2` [U: present on SDK 57's SQLite; `enableFTS` in the config plugin is a native change that needs an EAS build, per NS-02]. Plus a one-row-per-letter map `letter_search_rows (entry_id TEXT PRIMARY KEY, row_id INTEGER UNIQUE)`, because `entries` has a TEXT key and its implicit rowid can change on VACUUM. If the tokenizer cannot fold accents (NS-02-R7), index a folded copy in `extra`; the fallback substring scan (NS-02-R19) stays.
+- **Shape:** its own content (not external-content), columns `body` (the `final_text` as kept) and `extra` (the parent-typed Firsts label, photo text and typed place), tokenizer `unicode61 remove_diacritics 2` (#798 creates it so, `lib/find/lifecycle.ts:169`; PRD NS-02 section 10 says `expo-sqlite` 57.0.3 compiles FTS5 by default, so no config change, UNVERIFIED on a phone) [A]. Plus a one-row-per-letter map `letter_search_rows (entry_id TEXT PRIMARY KEY, row_id INTEGER UNIQUE)`, because `entries` has a TEXT key and its implicit rowid can change on VACUUM. If the tokenizer cannot fold accents (NS-02-R7), index a folded copy in `extra`; the fallback substring scan (NS-02-R19) stays.
 - **Never in the index:** `raw_transcript`, audio-derived text, a date or place read from a picture, the child's name, a query. The query is never stored.
-- **One predicate.** A SQL view `searchable_letters` returns the letters that may be found right now: in the active child's book; `deleted_at is null`; the book not hidden for this person; (own letters, including own private) or (another author's letter that is in the book and not private); `sealed_until is null or sealed_until <= today` (local calendar date). `reindexLetter(entryId)` runs inside the same transaction as every letter write: delete the letter's index row, then insert from `searchable_letters` if it is there. One function, one view, so the lifecycle table below cannot drift.
+- **One predicate.** A SQL view `searchable_letters` returns the letters that may be found right now: in the active child's book; `deleted_at is null`; the book not hidden for this person; (own letters, including own private) or (another author's letter that is in the book and not private); open by the seal rule of D3a, `seal_opens_at IS NULL OR seal_cleared_at IS NOT NULL OR seal_opens_at <= strftime('%Y-%m-%dT%H:%M:%SZ', 'now')` (SQLite's `'now'` is UTC and the text format is the column's, so the compare is exact; never a local calendar date) [A]. #798's view at `6ff39d75` (`lib/find/sources.ts:86-99`) has every other clause and no seal clause yet, because the seal is not built; the seal build adds this one clause and nothing else to the view [R]. `reindexLetter(entryId)` (#798 `lifecycle.ts:95`) runs inside the same transaction as every letter write: delete the letter's index row, then insert from `searchable_letters` if it is there. One function, one view, so the lifecycle table below cannot drift.
 
 | Event | Index effect | When |
 |---|---|---|
@@ -117,13 +170,13 @@ Default if nobody decides: **do not build the seal.** If the founder wants it, t
 | Purge (30 days, or Delete now) | terms removed (already gone) and map row removed | same transaction as the purge |
 | Hide (a book or a letter, for me) | terms removed; unhide adds back | same transaction |
 | Seal set | terms removed | same transaction |
-| Open now, or the day arrives | terms added | Open now: same transaction. Day arrives: `indexOpenedSeals(today)` at launch and on foreground; also covers a time zone change |
+| Open now, or the instant arrives | terms added | Open now: same transaction. The instant arrives: `reconcileSearch` (#798 `lifecycle.ts:139`, the launch catch-up) at launch and on foreground re-reads the view, so the letter enters the index then. A time zone change changes nothing, because the rule reads the instant (D3a) [A] |
 | Another author's letter becomes private (synced) | terms removed; public again adds back | in the sync merge transaction |
 | Letter synced in from another phone | upsert if visible | in the sync merge transaction |
 | Erase everything, Delete account | index dropped, not row-deleted | see D5 |
 
 - **Physical removal.** FTS5 deletes add markers; old segment bytes can remain until a merge [U: SQLite FTS5 documentation, not re-opened]. After any removal event the app runs the FTS5 `optimize` command within 24 hours, off the first frame, at idle (PROPOSED number; `privacy` may tighten). `secure_delete` zeroes freed pages. Honest limit, stated plainly in the PR: "not found" is immediate; the bytes are gone at the next merge; the file is under iOS Data Protection either way. If the FTS5 `secure-delete` option exists in the SDK 57 SQLite [U], turn it on and the 24 hour line can go.
-- **Rebuild.** The index is derived and can always be rebuilt from `entries` and `entry_media` (NS-02-R19). A missing or older index never blocks Keep. Rebuild runs after migration 11 and after any integrity check failure (`INSERT INTO letter_search(letter_search) VALUES('integrity-check')` [U]).
+- **Rebuild.** The index is derived and can always be rebuilt from `entries` and `entry_media` (NS-02-R19). A missing or older index never blocks Keep. Rebuild runs when `ensureSearchIndex` finds the table missing or stale (there is no Find migration, D1) and after any integrity check failure [A] (`INSERT INTO letter_search(letter_search) VALUES('integrity-check')` [U]).
 - **Never leaves the phone:** not synced, not in the export, not in the owner backup, not in the recovery export. The owner backup and recovery export builders are allowlists today for what they carry [U: I did not read `backup/format.ts` to the end]; a test asserts no `letter_search*` table name appears in either (below). The iPhone's own device backup includes `scribe.db` and therefore the index; that is the same exposure as the words themselves and is L4 on the phone.
 - **Class:** `letter_search.body` and `.extra` are L4 (parent's words), `letter_search_rows.*` L2. Added to `data-policy.md` section 4 by the build PR; `privacy` confirms.
 - **Budget:** 1,200 letters, index file at most 10 MB, one search adds at most 50 MB peak memory (NS-02-R20, PROPOSED). I did not measure. `qa` owns the device run.
@@ -131,7 +184,7 @@ Default if nobody decides: **do not build the seal.** If the founder wants it, t
 ### D5. Delete, erase everything, delete account [P]
 
 - **Delete a letter.** The picture file and `entry_media` row stay while the letter is in Recently deleted (hidden by join). Purge removes the file first, then the row, then the index row, in that order, so a kill leaves a row without a file (swept, harmless) and never a file without a row that anything can reach. This matches PR #796's `purgePhotoWithLetter`; Let it go on a draft does the same for `draft_id` rows.
-- **Erase everything.** Order: (1) the pending mark (exists), (2) delete every file under `Documents/photos` by listing the folder, not by reading rows, so strays go too (PR #796 `wipeAllPhotos` does this), (3) **`DROP TABLE letter_search` before `removeEverything` runs**, because that function deletes rows of every table in `sqlite_master` and would delete the FTS shadow tables' rows directly, which corrupts the index [U: confirm on SDK 57]; (4) `removeEverything` (it clears `entry_media` and `letter_search_rows` as ordinary tables), (5) `compactAfterErase` (VACUUM, exists), (6) the index is recreated empty at the next launch by `ensureSearchIndex()`, which is not a migration. The mark makes every step safe to repeat after a kill. Erase works with the photos and Find switches off (NS-01-R19).
+- **Erase everything.** Order: (1) the pending mark (exists), (2) delete every file under `Library/Application Support/photos` by listing the folder, not by reading rows, so strays go too (#796: `eraseDeviceFiles` deletes the whole folder, `lib/erase-everything.ts:63-65`, and `wipeAllPhotos` lists it, `lib/photos/lifecycle.ts:19-22`) [R] [A], (3) **`DROP TABLE letter_search` before `removeEverything` runs**, because that function deletes rows of every table in `sqlite_master` and would delete the FTS shadow tables' rows directly, which corrupts the index [U: confirm on SDK 57] (#798 does this: `dropSearchIndex` runs before the rows go and `removeEverything` drops the table too, `lib/find/lifecycle.ts:29-31`) [R] [A]; (4) `removeEverything` (it clears `entry_media` and `letter_search_rows` as ordinary tables), (5) `compactAfterErase` (VACUUM, exists), (6) the index is recreated empty at the next launch by `ensureSearchIndex()`, which is not a migration. The mark makes every step safe to repeat after a kill. Erase works with the photos and Find switches off (NS-01-R19).
 - **Delete account (signed in).** The server has no picture, so there is nothing to purge there; the existing storage purge queue for `entry-photos` stays as a safety net. The phone side is the same as Erase everything and runs when the parent erases the phone; the account flow does not claim to have removed pictures from a phone it cannot reach (`content` words that, as for audio on other phones today).
 - **Server-side photo copies, if any.** If the production check in D6 finds objects in `entry-photos`, they are legacy test data; they go through the existing deletion worker, not a manual delete (DB-R09, SEC rules).
 - A purged id never returns (DB-R19). A picture row for a purged letter cannot be created because the letter id is refused at insert.
@@ -156,21 +209,23 @@ The mobile engineer does not wait on this for the feature: the client-side half 
 ## Tests required (summary)
 
 Phone (`apps/mobile/test`, node SQLite helper):
-- `migrations.v10.test.ts`: version 10 is the latest; table and indexes exist; a v9 database with a letter, a draft and an outbox row is byte-identical after; nothing queued; CHECKs refuse a long text or a second photo for one letter; one of `entry_id` or `draft_id` only.
-- Keep moves a draft's picture to the letter in one transaction; a kill between steps (simulated) leaves one consistent state; the sweep removes strays and `.part` files.
+- `migrations.v11.test.ts` [A]: version 11 is the latest; table and indexes exist; a v10 database with a letter, a draft, an agreement row and an outbox row is byte-identical after; nothing queued; CHECKs refuse a long text or a second photo for one letter; one of `entry_id` or `draft_id` only.
+- Keep moves a draft's picture to the letter in one transaction; a kill between steps (simulated) leaves one consistent state; the sweep removes strays (files with no row, and rows with no file).
 - Delete, restore, purge, Let it go and Erase everything for letter and picture (PR #796's lifecycle tests, against the real adapter).
 - `[NS-01-R15]` sync: a letter with a picture pushes `photo_path: null`, uploads 0 bytes, and a pull never changes `entry_media`.
 - Export: D2's list. Backup: no `entry_media` bytes and no `letter_search*` table in the owner backup or recovery export.
-- Find: one test per row of the D4 lifecycle table; day-arrives and time-zone-change cases; erase drops the index and a relaunch recreates it empty; index and fallback agree on the fixtures (NS-02-R19); `raw_transcript` is never indexed; a purged id never returns.
+- Find: one test per row of the D4 lifecycle table; the instant-arrives case with clock injection, and a zone change that leaves the index unchanged [A]; erase drops the index and a relaunch recreates it empty; index and fallback agree on the fixtures (NS-02-R19); `raw_transcript` is never indexed; a purged id never returns.
 - Class labels: every new column carries its L-level in the migration comment (the local equivalent of the server classification test; `qa` is asked to add a mobile check that fails on an unlabelled new column).
+
+Seal, when built: the device list in D3a [A].
 
 Server (`supabase/tests`): D6 item 4; for the seal, the list in D3 when it is built.
 
 ## Consequences
 
-- The mobile engineer can start the device adapter against D1 now. Changes to PR #796: `photoPath` is by media id; `StoredPhoto.deletedAt` becomes derived; `draftId` joins the type.
+- #796 at `39efe1ac` matches D1 as amended: the path is by media id (`lib/photos/files.ts:3`), `StoredPhoto.deletedAt` is derived (`lib/photos/types.ts:11-14`), the row is migration 11 [R]. One line remains for its builder: the migration comment (D1) [A].
 - `lib/export` changes in one PR (schema, pack, build.logic, verify, goldens, JSON schema), under the 400 line limit only if the golden diff is counted separately; split the golden regeneration into its own commit (CODE-R01).
-- One server migration (D6) and, much later, one for the seal, both founder-gated.
+- One server migration (D6) and, much later, one for the seal (three columns, one CHECK, one index, one trigger, one job function; D3 and D3a), both founder-gated [A].
 - Cost: the unique index and the derived deleted state mean a small join on every picture read. At one picture per letter and 1,200 letters this is not a budget risk [U: not measured].
 
 ## Alternatives considered
@@ -180,25 +235,31 @@ Server (`supabase/tests`): D6 item 4; for the seal, the list in D3 when it is bu
 - External-content FTS5 table: rejected; the delete path needs the old values, and visibility is not a column.
 - SQL triggers for the index: rejected for the seal and hide cases, because visibility changes with the date, not with a row event. One function plus a launch catch-up is simpler to test.
 - Server-enforced seal only for the author's phones: that is the default above; the stronger "no row at all for others" is chosen because a display rule cannot honestly protect words that already sit on another phone.
+- One calendar date, or one instant only, for the seal clock: rejected in D3a (the first opens early across zones; the second shows the wrong day west of the sealing zone) [A].
+- The IANA zone beside the instant, to derive the day: rejected; a zone is a coarse location on the server row, and the chosen day is what the parent typed [A].
 
 ## Open questions (each has a default)
 
 | Id | Question | Owner | Default if no answer | By |
 |---|---|---|---|---|
-| Q1 | Row hidden by join, or a stored `deleted_at` on `entry_media`? | `mobile` with me | Join (derived). | Before the adapter is written |
-| Q2 | File path by media id, or `<entry_id>/<media_id>`? | `mobile` | Media id (no move at Keep). | Same |
+| Q1 | Row hidden by join, or a stored `deleted_at` on `entry_media`? | `mobile` with me | Closed 19 Nov 2026: join; #796 derives it (`lib/photos/types.ts:11-14`) [R] [A] | Closed |
+| Q2 | File path by media id, or `<entry_id>/<media_id>`? | `mobile` | Closed 19 Nov 2026: media id under `Library/Application Support/photos` (`files.ts:3`); a draft keeps its id at Keep (`mobile` note on #797) [R] [A] | Closed |
 | Q3 | Export path of the picture inside the ZIP | `product` (NX-39-R32) | `photos/<entry_id>/<media_id>.jpg` | Before the export PR |
-| Q4 | Does the owner backup carry pictures? | `privacy`, founder | No in Build 13; the iPhone backup does. | Build 13 freeze |
+| Q4 | Does the owner backup carry pictures? | `privacy`, founder | No in Build 13; the iPhone backup does (#796 makes no exclusion call, D1) [A] | Build 13 freeze |
 | Q5 | Is `optimize` within 24 hours enough, or must removal be immediate? | `privacy` | 24 hours, at idle. | Find build |
-| Q6 | Do we build the sealed letter, and may an author hide a letter from the other parent? | Founder with counsel | Not built. | Fri 20 Nov 2026 (NS-06 OQ-B1) |
+| Q6 | Do we build the sealed letter (NS-06 OQ-B1), and may an author hide a letter from the other parent (NS-06 OQ-B2)? With it, counsel's words for "open at 18" and any duty to a minor (NS-06 B5). OPEN: founder with counsel; D3a is the data design if yes, not an answer to this. | Founder with counsel | Not built. | Fri 20 Nov 2026 (NS-06 OQ-B1) |
 | Q7 | Does the server refuse a non-null `photo_path` for clients (D6)? | Founder (migration) | Yes, in the next migration PR. | The next migration train |
 | Q8 | Production check: any `entry-photos` objects or non-null `photo_path`? | Founder (read-only) | Assume zero; the migration touches no value. | Before the tag |
+| Q9 | Accept D3a: two columns (the instant and the chosen day) plus `seal_cleared_at`, opening by the instant? [A] | Karma, after two reviews | D3a stands as the proposal; no seal build before acceptance; FS-R7, 04 B6 and 02 FD-R9 stay PROVISIONAL | Before any seal build |
+| Q10 | Export field names for the seal: the three column names (D3a), or the PRD's single `sealed_until` (NS-06-B5)? [A] | `product` | The column names; NS-06-B5 is aligned in one line | The 1.8.0 export PR |
+| Q11 | Does `book_entries` show the seal columns to another reader after the instant? [A] | `product` with `privacy` | No; the other reader gets a normal letter | Before the seal build |
 
 ## Founder-only versus mine
 
 Founder-only: applying any migration to a hosted project (D6, later the seal); the `approve-migration` label; whether to build the sealed letter and whether an author may hide a letter from the other parent (Q6); the production read-only count (Q8); any spend; legal wording of the seal, minors and "open at 18" (counsel).
-Mine, decided here unless overruled: D1 table shape, D2 export bump and golden plan, D4 index storage and lifecycle, D5 erase order, the tests list, the numbering. Not mine, requested: `sync` narrows `photo_path` (D6.2); `privacy` confirms classes and the backup line; `qa` the mobile class-label check and the device budget run; `content` the parent-facing words.
+Karma's: acceptance or amendment of D3a (the seal clock) after two reviews; until then it is a proposal (Q9) [A].
+Mine, decided here unless overruled: D1 table shape and its 19 Nov amendments, D2 export bump and golden plan, D4 index storage and lifecycle, D5 erase order, the tests list, the numbering. Not mine, requested: `sync` narrows `photo_path` (D6.2); `privacy` confirms classes and the backup line; `qa` the mobile class-label check and the device budget run; `content` the parent-facing words.
 
 ## Sources
 
-Repo files named in Inputs, read at `da83fb1ee` and PR #796 head `f73c518c`. External documentation (SQLite FTS5, `expo-sqlite`, `expo-file-system`) was not re-opened this session and is marked [U] where it matters.
+Repo files named in Inputs, first read at `da83fb1ee` and PR #796 head `f73c518c` (11 Nov 2026); re-read on 19 Nov 2026 at `develop` `09a104da`, #796 `39efe1ac`, #798 `6ff39d75`, and the PRD and design specs merged as `6a11c808` [A]. Apple, File System Programming Guide, "File System Basics" (developer.apple.com, archive), opened 19 Nov 2026, for the sandbox folders and backup [A]. External documentation for SQLite FTS5, `expo-sqlite` and `expo-file-system` was not re-opened and is marked [U] where it matters.
