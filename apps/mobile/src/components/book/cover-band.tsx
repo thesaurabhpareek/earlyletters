@@ -20,6 +20,7 @@
  */
 import { BookOpenTextIcon } from 'phosphor-react-native/src/icons/BookOpenText';
 import { GearSixIcon } from 'phosphor-react-native/src/icons/GearSix';
+import { MagnifyingGlassIcon } from 'phosphor-react-native/src/icons/MagnifyingGlass';
 import { useId, useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
@@ -50,10 +51,12 @@ export interface CoverBandProps {
   readTogether?: { label: string; hint: string; onPress: () => void } | null;
   /** The Months button, only when there is more than one month to go to. */
   months?: { label: string; hint: string; onPress: () => void } | null;
+  /** Find (NS-02), only when the build has it on, it is not paused and the book has a letter to find. Absent, not greyed. */
+  find?: { label: string; hint: string; onPress: () => void } | null;
   settings: { label: string; onPress: () => void };
 }
 
-export function CoverBand({ title, age, switcher, readTogether, months, settings }: CoverBandProps) {
+export function CoverBand({ title, age, switcher, readTogether, months, find, settings }: CoverBandProps) {
   const { c, scheme, highContrast, reduceTransparency } = useTheme();
   const plain = highContrast || reduceTransparency;
   const stacked = useIsAccessibilitySize();
@@ -86,6 +89,7 @@ export function CoverBand({ title, age, switcher, readTogether, months, settings
   const trailing = (
     <>
       {months ? <Button variant="quiet" size="sm" label={months.label} accessibilityHint={months.hint} onPress={months.onPress} testID="book.months" /> : null}
+      {find ? <IconButton icon={MagnifyingGlassIcon} label={find.label} accessibilityHint={find.hint} onPress={find.onPress} testID="book.find" /> : null}
       <IconButton icon={GearSixIcon} label={settings.label} onPress={settings.onPress} testID="book.settings" />
     </>
   );

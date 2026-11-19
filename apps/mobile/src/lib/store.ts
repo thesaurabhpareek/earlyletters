@@ -59,6 +59,9 @@ import {
 import type { NewDraft } from './db/repos/drafts';
 import { openNativeDb, type OpenedDb } from './db/repos/open-native';
 import { capabilities } from './capabilities';
+import { findBuildEnabled } from './find/flag';
+import { dropSearchIndex, ensureSearchIndex, optimizeIfDue, searchIndexExists, type EnsureResult } from './find/lifecycle';
+import { searchLetters, type FindResult } from './find/search';
 import { SHELF_DAYS } from './shelf-days';
 import {
   SYNC_SETTING,
@@ -182,8 +185,57 @@ export function openStore(options: OpenStoreOptions = {}): OpenStoreResult {
   const result: OpenStoreResult = { ok: !migration.newer, newer: migration.newer, error: null, migration };
   conn = { opened, ctx: { db: opened.db, now, newId }, result };
   if (result.ok) vacuumOnceForSecureDelete(conn.ctx);
+  if (result.ok) scheduleFindCatchUp();
   return result;
 }
+
+// ── Find (NS-02; ADR 0028 D4) ───────────────────────────────────────────
+/** Pause after the store opens before Find's catch-up runs, so it is never on the path to the first frame. */
+const FIND_CATCH_UP_DELAY_MS = 3000;
+
+/**
+ * The launch catch-up and the idle merge of Find's index. With Find switched off in this build the index, if an
+ * earlier build made one, is dropped (derived data nobody can reach). With it on, the index is made when missing,
+ * checked, brought level with the letters, and merged when a removal is waiting (so the bytes of removed words leave
+ * the file). Never throws, never awaits, and does nothing on a build that has no index and Find off.
+ */
+export function ensureFindIndex(): EnsureResult | 'off' {
+  const c = ctx();
+  if (!findBuildEnabled()) {
+    if (searchIndexExists(c.db)) dropSearchIndex(c.db);
+    return 'off';
+  }
+  const r = ensureSearchIndex(c.db);
+  if (r === 'ready') optimizeIfDue(c.db);
+  return r;
+}
+
+function scheduleFindCatchUp(): void {
+  try {
+    if (!findBuildEnabled() && !searchIndexExists(ctx().db)) return;
+  } catch {
+    return;
+  }
+  const handle = setTimeout(() => {
+    try {
+      ensureFindIndex();
+    } catch {
+      // The scan still answers; the next launch tries again.
+    }
+  }, FIND_CATCH_UP_DELAY_MS) as unknown as { unref?: () => void };
+  handle.unref?.();
+}
+
+/** Whether Find's fast index is there and trusted (false while it is being made, or where FTS5 is missing). */
+export function findIndexReady(): boolean {
+  return searchIndexExists(ctx().db);
+}
+
+/** Find in one book: the parent's own words, newest first. Reads this phone only. Throws if even the scan cannot read. */
+export function findLetters(raw: string, childId: string): FindResult {
+  return searchLetters(ctx().db, raw, childId);
+}
+
 
 /** Set once the database file was rebuilt with secure_delete on (BL-387, #520). An ISO time, L2. */
 /** The 18+ stop record (age-gate.ts, D-026). Read here only so Erase everything keeps a stop still running. */
@@ -1077,6 +1129,9 @@ export function eraseEverythingLocal(eraseAudio: AudioEraser, eraseFiles: Device
   // in `settings`, never in the Keychain); an expired one goes with everything else.
   const stoppedAt = settings.getSetting(c, AGE_STOPPED_AT);
   const stopRunning = stoppedAt !== null && decideGate({ passed: false, stoppedAt }, Date.parse(c.now())).decision === 'stop';
+  // ADR 0028 D5 step 3: Find's index is dropped before the rows go; deleting the rows of an FTS5 table's shadow tables
+  // one by one would corrupt it. It is made again, empty, by the next launch's catch-up. Whatever the Find switch says.
+  dropSearchIndex(c.db);
   c.db.transaction(() => wipe.removeEverything(c, stopRunning ? [AGE_STOPPED_AT] : []));
   compactAfterErase(c, true);
   bus.emit('settings', 'children', 'entries', 'drafts', 'orphan_audio');
