@@ -1,0 +1,1 @@
+10 Nov product-nav | done: four-tab revision of NX-41, NX-42 capability map (46 rows), NX-43 Home and memories, NX-44 Firsts (proposal), BL-906 to BL-915, docs only | next: reconcile with the design lead's four-tab revision on PR #789 (BL-898) | blocked/needs: founder FD-1 to FD-4, NX-44 FD-1, F09 Q4
