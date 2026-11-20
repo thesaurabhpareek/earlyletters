@@ -728,7 +728,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Security lens, a note and not a gate: a PR that adds code that CI runs goes to the `security` agent for one of the two counted reviews first.
 - Founder-only. For these he names the PR and the full sha, or does the step himself (CR-54 stands):
   - all of `.github/**`, and `.github/CODEOWNERS` itself. The deploy, agents, claude, testflight and release-ios workflows reach hosted migrations, secrets, permissions and Environments, and the three required checks are defined there;
-  - this rule: any edit to CR-70, to the CR-70 paragraph and the "Merging into `develop`" paragraph in COORDINATION.md, to the decision file `docs/ops/proposed/standing-merge-delegation-decision.md`, or to CTO skill section 3. The delegation cannot widen itself;
+  - this rule: any edit to CR-70, to the "Merging into `develop`" paragraph in COORDINATION.md, to the decision file `docs/ops/proposed/standing-merge-delegation-decision.md`, or to CTO skill section 3. The delegation cannot widen itself;
   - `scripts/agents/**`, `docs/agents/**` and `compliance/**`. They have CODEOWNERS entries, and the agents workflow runs `scripts/agents/*.mjs` with API keys and the app private key. The founder's earlier "merge #912" path (CR-54) still applies to `scripts/agents`;
   - `scripts/release/**` and `scripts/ops/**` (release-ios and staging-smoke run them with EXPO_TOKEN, review contact JSON and the staging database URL);
   - everything `app.config.ts` loads at build time: `apps/mobile/src/lib/build-env.ts`, `permission-copy.ts`, `privacy-manifest.ts`, `packages/design-tokens/fonts/index.ts`, plus `apps/mobile/metro.config.js`, `apps/mobile/store.config.json` and `apps/mobile/scripts/**`;
