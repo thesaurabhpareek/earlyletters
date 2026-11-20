@@ -28,9 +28,11 @@
  */
 import { router, usePathname } from 'expo-router';
 import { useEffect, useMemo, useReducer, useRef, useState, useSyncExternalStore } from 'react';
+import { bookVisibleTo } from '@/lib/auth/account-scope.logic';
 import { authUserId } from '@/lib/auth/machine.logic';
 import { useAuth } from '@/lib/auth/session-provider';
 import { getSetting, listChildren, subscribeTo } from '@/lib/store';
+import { SYNC_SETTING } from '@/lib/sync/outbox';
 import { loadStatus, type DeletionClient } from './api';
 import { decideGate, type GateDecision } from './first-run-gate.logic';
 import { clearDeadNote, phoneHasDeletedBook, recordBookBack, recordStatus } from './note-store';
@@ -44,6 +46,8 @@ const MAX_TIMER_MS = 2 ** 31 - 1;
 const subscribe = (onChange: () => void) => subscribeTo(['settings', 'children'], onChange);
 const readRaw = (): string | null => getSetting(OPEN_REQUEST_KEY);
 const readHasBook = (): boolean => listChildren().length > 0;
+/** BL-961: the account that owns this phone's book (sync.ownerId). */
+const readOwner = (): string | null => getSetting(SYNC_SETTING.owner);
 
 export type FirstRunGate = { screen: PhoneScreen; request: OpenRequest | null };
 
@@ -105,6 +109,10 @@ export function useFirstRunGate(): FirstRunGate {
   // It is also who a read is asked as, read at render time: the auth store's snapshot is published by the provider's
   // effect, which runs after this screen's, so on the first read of a sign-in it still holds the previous state.
   const userId = authUserId(auth.state);
+  // BL-961 (`[X4-R1]`): another account signed in on a phone that holds this owner's book sees no book (the store's lists
+  // are empty for it), but the note is the owner's: it is never asked about, rewritten or cleared for that account.
+  const owner = useSyncExternalStore(subscribe, readOwner, readOwner);
+  const ownersNote = bookVisibleTo({ owner, sessionUser: userId });
   const checked = answer.for === userId && answer.checked;
   const confirmed = answer.for === userId && answer.confirmed;
 
@@ -118,18 +126,18 @@ export function useFirstRunGate(): FirstRunGate {
 
   // Signed in, no book: ask the server whether a request is open. Again for another account.
   useEffect(() => {
-    if (!client || hasBook || !userId) return;
+    if (!client || hasBook || !userId || !ownersNote) return;
     return askServer(client, userId, setAnswer, latestAsked);
-  }, [client, hasBook, userId]);
+  }, [client, hasBook, userId, ownersNote]);
 
   // Signed in, a book listed, an open request still noted: ask once. Not undone with the effect (a book arriving, the
   // note being rewritten): the answer is the server's word and is written either way.
   const refreshWithBook = gate.refreshWithBook;
   useEffect(() => {
-    if (!client || !refreshWithBook || !userId || refreshedFor.current === userId) return;
+    if (!client || !refreshWithBook || !userId || !ownersNote || refreshedFor.current === userId) return;
     refreshedFor.current = userId;
     askServer(client, userId, setAnswer, latestAsked);
-  }, [client, refreshWithBook, userId]);
+  }, [client, refreshWithBook, userId, ownersNote]);
 
   // The book is back: a cancelled wait is over.
   useEffect(() => {
@@ -140,8 +148,8 @@ export function useFirstRunGate(): FirstRunGate {
   // confirm) is removed here, not in render.
   const clear = gate.clear;
   useEffect(() => {
-    if (clear) clearDeadNote(raw);
-  }, [clear, raw]);
+    if (clear && ownersNote) clearDeadNote(raw);
+  }, [clear, raw, ownersNote]);
 
   // Re-read the clock when the note stops counting by itself (nothing else would re-render the screen then).
   const expiresAt = noteExpiresAtMs(note);

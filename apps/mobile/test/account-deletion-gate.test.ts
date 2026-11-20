@@ -624,13 +624,14 @@ describe('the wiring that is read off the source (the behaviour is run in accoun
     expect(s).toMatch(/const leave = gate\.leave;\s*useEffect\(\(\) => \{\s*if \(leave\) router\.replace\('\/book'\);\s*\}, \[leave\]\);/);
     expect(s.match(/router\.replace\(/g)).toHaveLength(1);
     // Writes are in effects, not in render: the dead note is removed there, with the value that was judged.
-    expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear\) clearDeadNote\(raw\);\s*\}, \[clear, raw\]\);/);
+    // BL-961: never for another account signed in on the owner's phone (test/account-note.test.ts).
+    expect(s).toMatch(/useEffect\(\(\) => \{\s*if \(clear && ownersNote\) clearDeadNote\(raw\);\s*\}, \[clear, raw, ownersNote\]\);/);
     // A read is asked as the account signed in at render time, and the answer counts for that account only.
     expect(s).toContain('if (s.ok) recordStatus(s.value, askedAs);');
     expect(s).toContain('const checked = answer.for === userId && answer.checked;');
     expect(s).toContain('const confirmed = answer.for === userId && answer.confirmed;');
-    expect(s).toContain('}, [client, hasBook, userId]);');
-    expect(s).toContain('}, [client, refreshWithBook, userId]);');
+    expect(s).toContain('}, [client, hasBook, userId, ownersNote]);');
+    expect(s).toContain('}, [client, refreshWithBook, userId, ownersNote]);');
   });
 
   it('[S-C] decideGate reuses the welcome\'s own allow-list for the replace', () => {
@@ -688,7 +689,7 @@ describe('the routes use the gate', () => {
 
   it('the gate hook is quiet at launch: one read of the open request, only signed in with no book, never awaited by a screen', () => {
     const s = read('lib', 'account-deletion', 'use-first-run-gate.ts');
-    expect(s).toContain('if (!client || hasBook || !userId) return;');
+    expect(s).toContain('if (!client || hasBook || !userId || !ownersNote) return;'); // BL-961: not as another account
     expect(s).toContain('const refreshWithBook = gate.refreshWithBook;');
     expect(s.match(/loadStatus\(/g)).toHaveLength(1);
     expect(s).toContain('void loadStatus(client)');
