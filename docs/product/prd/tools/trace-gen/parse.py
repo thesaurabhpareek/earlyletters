@@ -87,7 +87,7 @@ def blocks(t,rx,levels=(2,3)):
         else: i+=1
     return out
 def sec_n(t,n):
-    m=re.search(r'\n## %d\. .*?(?=\n## \d+\. |\Z)'%n,t,re.S)
+    m=re.search(r'\n## %d\. .*?(?=\n## |\Z)'%n,t,re.S)   # ends at the next level-2 heading of any kind, so an unnumbered "## Addendum" is not read as part of the last numbered section
     return m.group(0) if m else ''
 SECN={c:dict(cc=5,eng=6,q=7,des=4) for c in FIRST}; SECN['SEC']=dict(cc=8,eng=9,q=10,des=7)
 FIN_OWNER={'F1':'founder','F2':'founder','F3':'founder','F4':'founder','F5':'founder (engages counsel)','F6':'founder','F7':'founder','F8':'founder','F9':'founder','F10':'founder','F11':'founder; counsel Q41(f)','F12':'founder, accountant, counsel','F13':'founder (engages accountant)'}
@@ -209,8 +209,10 @@ def load():
         t=read(f); D[code]={'text':t,'name':f}
         rows=[]
         for l in t.split('\n'):
-            if code in FIRST: ok=l.startswith('| FR-')
-            else: ok=re.match(r'\| FR-%s-\d+[a-z]?[ |]'%code,l)
+            # an FR row has the six columns (id, requirement, links, priority, lane, evidence). The addenda also hold two- and
+            # three-cell "neighbouring rows extended" lines that start with an id ("| FR-OPS-22 (flag matrix) | note |"); those are
+            # pointers to a row that already exists and must not be read as a second row for that id. "FR-LCY-33 (proposal)" is a real row.
+            ok=re.match(r'\| FR-%s-\d+[a-z]?[ |]'%('[A-Z]{3}' if code in FIRST else code),l) and len(cells(l))>=6
             if ok:
                 c=cells(l); rows.append(dict(id=c[0].split(' ')[0],req=c[1],links=c[2],prio=c[3],lane=c[4],ev=c[5]))
         D[code]['frs']=rows
@@ -220,11 +222,11 @@ def load():
         t=D[code]['text']
         if code in FIRST:
             sn=SECN[code]
-            ccs=sec_n(t,sn['cc']); qsec=[sec_n(t,sn['q'])]; dsec=[sec_n(t,sn['des'])]; esec=[sec_n(t,sn['eng'])]
+            ccs=sec_n(t,sn['cc']); qsec=[sec_n(t,sn['q'])]; dsec=[sec_n(t,sn['des'])]+[b for b in blocks(t,r'Design needs',(3,)) if b not in sec_n(t,sn['des'])]; esec=[sec_n(t,sn['eng'])]   # design: the numbered section plus the addendum's Design needs subsections
         else:
             ccs='\n'.join(blocks(t,r'^\d+\.? .*Card changes',(2,)) or blocks(t,r'Card changes'))
             qsec=blocks(t,r'questions',(2,)) or blocks(t,r'questions')
-            dsec=blocks(t,r'^(\d+\.? )?Design needs',(2,)) or blocks(t,r'Design needs')
+            dsec=blocks(t,r'Design needs',(2,3))   # every Design needs section, the addendum's included (check.py counts the same way)
             esec=blocks(t,r'^(\d+\.? )?Engineering needs',(2,)) or blocks(t,r'Engineering needs')
             if code=='NTC': esec=blocks(t,r'neighbours must change',(2,))+esec
         D[code]['cc']=parse_cc(code,ccs)

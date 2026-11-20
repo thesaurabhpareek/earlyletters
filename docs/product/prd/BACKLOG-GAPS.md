@@ -4,9 +4,9 @@ Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a ba
 
 ## 1. Result in one paragraph
 
-850 P0 rows were read: 479 acceptance rows in cards 01 to 12, 19 and 21 (NS-01 to NS-50 with P0 rows) and 371 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block. 76 more cite an existing `BL-nnn` in the row's own text (4 NS rows, 72 FR rows). **588 have no row-level backlog row**: 544 with no backlog mention at all, and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 588 (about eight times E30's), because cards 19 and 21 (183 P0 rows: 96 in NS-38 to NS-45 and 87 in NS-46 to NS-50) and the function reviews (299 P0 FR rows with no cite) have no backlog rows by design: each card says "new rows needed (no id invented)". The 20 Nov regeneration (`p0.py`, after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows) moved the totals from 826 / 565 to 850 / 588; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4). Cards 22 to 27 are not read by `p0.py` (it reads cards 00 to 21 and `functions/*.md`), so the P0 rows of NS-51 and NS-52 (card 27: 27 and 26 rows with Priority P0 in the section 7 tables, counted by a table parse in a later session, 53 in all, all drop C) are not in the script's totals. They are groups G36 and G37 in 5.1.
+1,048 P0 rows were read (`p0.py`, 20 Nov, regenerated after the tooling fixes described below): 534 acceptance rows in cards 01 to 12, 19, 21 and 27 (NS-01 to NS-52 with P0 rows; card 27 holds 27 in NS-51 and 26 in NS-52) and 514 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block (all NS rows). 81 more cite an existing `BL-nnn` in the row's own text (6 NS rows, 75 FR rows). **781 have no row-level backlog row**: 737 with no backlog mention at all (298 NS rows, 439 FR rows), and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 781 (about eleven times E30's): 590 from the locked cards, cards 19 and 21 and the first function reviews (groups G01 to G35: 588 at the first run, plus NS-17-R11 and NS-17-R12, which the K17 ruling added to card 09 later on 20 Nov), 51 from NS-51 and NS-52 (G36, G37) and 140 FR rows added to the function files by the 20 Nov addenda (G38). Cards 19, 21 and 27 (96, 87 and 53 P0 rows) and the function reviews have no backlog rows by design: each card says "new rows needed (no id invented)". The first run of 20 Nov moved the totals from 826 / 565 to 850 / 588 after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4).
 
-**Update, 20 Nov (later run, same branch, function files edited since).** `p0.py --json` now reads 993 P0 rows: 479 in NS cards (unchanged: 186 row-covered, 4 cite-covered, 44 card-level only, 245 gap) and 514 in `functions/*.md` (75 cite-covered, 439 gap), so 728 rows have no row-level backlog row (684 with no mention, 44 card-level only), not 588. The 140 extra FR gap rows are the 20 Nov addenda to the function reviews (FR rows that section 7 does not list); they are group G38 and are not in the per-card numbers of sections 3 and 7, which stay as first generated. With NS-51 and NS-52 the figures are 1,046 P0 rows and 781 with no row (588 + 140 + 53, the sum of the 38 groups). NS-46 to NS-50 counts (22, 27, 13, 21, 4) were checked against `p0.py --md` and match sections 3 and 7. `p0.py --groups` stops with `StopIteration` at the new FR-AIS rows (FR-AIS-57 and later are in no entry of its `AIS` table), so the group counts in section 5 come from section 7, not from a new run; `qa` owns the script.
+**Update, 20 Nov (regenerated; the pack tooling was repaired).** `p0.py` now reads cards 00 to 27 and `functions/*.md` (cards 22 to 26 hold no P0 acceptance row; card 27 adds 53). It does not count the 38 rows filed from this file (their status starts `proposed (docs/product/prd/BACKLOG-GAPS.md`) as cover, so `--gaps` and `--groups` keep listing the gaps those rows propose to close; once Karma or the founder sets a row to `ready` it counts as cover like any other row. `--groups` no longer stops with `StopIteration` at FR-AIS-57 and later: FR rows from the first id of each file's 20 Nov addendum on are group G38 (table `ADDENDUM_FROM` in the script), NS-51 is G36 and NS-52 is G37. The group counts in 5.1 are the output of `p0.py --groups` and sum to 781. Per-card counts in section 3 are the output of `p0.py --gaps`; NS-01 to NS-50 are unchanged from the first run except NS-17 (9 to 11 rows: NS-17-R11 and NS-17-R12, both gaps, so G05 is 28 and `BL-182` names 26: it does not name those two). **Two of the 53 rows of card 27 are cite-covered, not gaps:** NS-51-R24 cites BL-961 and NS-52-R18 cites BL-933. BL-045 lists 27 rows and BL-046 lists 26 (the table parse of the 53) while `p0.py` counts 26 and 25 gap rows; `docs/BACKLOG.md` is not edited here (the extra ids do no harm in a Satisfies line). Every other one of the 38 proposed rows (BL-182 apart) names the same number of rows, and the same ids, as `p0.py` (NS ids compared through the script's own parser; FR ranges expanded by hand-written code that is not kept in the repo). Sections 3, 5, 5.1 and 8 are refreshed. Section 7 is the first run's list (G01 to G35, 588 rows; NS-17-R11 and NS-17-R12 are not in it) and is not regenerated: the rows of G36 to G38 (191) are in the `Satisfies:` lines of BL-045, BL-046 and BL-047.
 
 Card 20 (`20-founder-direction-20nov.md`), 00, 13, 12 hold no P0 acceptance rows. `14-test-plan.md` holds the P0 register (a copy), `15`, `16`, `18` are review records: none is read as a row source.
 
@@ -43,7 +43,7 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | NS-14 | 4 | 2 | 0 | 0 | 2 |
 | NS-15 | 4 | 4 | 0 | 0 | 0 |
 | NS-16 | 8 | 8 | 0 | 0 | 0 |
-| NS-17 | 9 | 0 | 0 | 0 | 9 |
+| NS-17 | 11 | 0 | 0 | 0 | 11 |
 | NS-18 | 3 | 3 | 0 | 0 | 0 |
 | NS-19 | 2 | 0 | 0 | 0 | 2 |
 | NS-21 | 5 | 2 | 0 | 0 | 3 |
@@ -70,32 +70,34 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | NS-48 | 13 | 0 | 0 | 0 | 13 |
 | NS-49 | 21 | 0 | 0 | 0 | 21 |
 | NS-50 | 4 | 0 | 0 | 0 | 4 |
-| FR-AIS | 43 | 0 | 6 | 0 | 37 |
-| FR-BKO | 11 | 0 | 4 | 0 | 7 |
-| FR-CMP | 16 | 0 | 1 | 0 | 15 |
-| FR-CUL | 16 | 0 | 1 | 0 | 15 |
-| FR-DAT | 11 | 0 | 2 | 0 | 9 |
-| FR-DAY | 12 | 0 | 5 | 0 | 7 |
-| FR-FIN | 6 | 0 | 1 | 0 | 5 |
-| FR-LCY | 18 | 0 | 0 | 0 | 18 |
-| FR-LEG | 15 | 0 | 4 | 0 | 11 |
-| FR-LOC | 20 | 0 | 3 | 0 | 17 |
-| FR-MKT | 20 | 0 | 1 | 0 | 19 |
-| FR-MSG | 23 | 0 | 14 | 0 | 9 |
-| FR-NTC | 9 | 0 | 0 | 0 | 9 |
-| FR-OPP | 4 | 0 | 0 | 0 | 4 |
-| FR-OPS | 15 | 0 | 3 | 0 | 12 |
-| FR-PHS | 23 | 0 | 0 | 0 | 23 |
-| FR-POL | 8 | 0 | 0 | 0 | 8 |
-| FR-PRT | 4 | 0 | 1 | 0 | 3 |
-| FR-PRV | 22 | 0 | 7 | 0 | 15 |
-| FR-QAL | 16 | 0 | 3 | 0 | 13 |
-| FR-REL | 15 | 0 | 6 | 0 | 9 |
-| FR-RSH | 14 | 0 | 4 | 0 | 10 |
+| NS-51 | 27 | 0 | 1 | 0 | 26 |
+| NS-52 | 26 | 0 | 1 | 0 | 25 |
+| FR-AIS | 54 | 0 | 6 | 0 | 48 |
+| FR-BKO | 17 | 0 | 4 | 0 | 13 |
+| FR-CMP | 23 | 0 | 1 | 0 | 22 |
+| FR-CUL | 23 | 0 | 1 | 0 | 22 |
+| FR-DAT | 16 | 0 | 2 | 0 | 14 |
+| FR-DAY | 18 | 0 | 5 | 0 | 13 |
+| FR-FIN | 8 | 0 | 1 | 0 | 7 |
+| FR-LCY | 24 | 0 | 0 | 0 | 24 |
+| FR-LEG | 21 | 0 | 4 | 0 | 17 |
+| FR-LOC | 24 | 0 | 3 | 0 | 21 |
+| FR-MKT | 26 | 0 | 1 | 0 | 25 |
+| FR-MSG | 28 | 0 | 14 | 0 | 14 |
+| FR-NTC | 17 | 0 | 0 | 0 | 17 |
+| FR-OPP | 5 | 0 | 0 | 0 | 5 |
+| FR-OPS | 19 | 0 | 4 | 0 | 15 |
+| FR-PHS | 35 | 0 | 0 | 0 | 35 |
+| FR-POL | 9 | 0 | 0 | 0 | 9 |
+| FR-PRT | 8 | 0 | 1 | 0 | 7 |
+| FR-PRV | 35 | 0 | 7 | 0 | 28 |
+| FR-QAL | 21 | 0 | 3 | 0 | 18 |
+| FR-REL | 24 | 0 | 6 | 0 | 18 |
+| FR-RSH | 17 | 0 | 4 | 0 | 13 |
 | FR-RSK | 4 | 0 | 0 | 0 | 4 |
-| FR-SEC | 11 | 0 | 2 | 0 | 9 |
-| FR-SUP | 15 | 0 | 4 | 0 | 11 |
-| TOTAL | 850 | 186 | 76 | 44 | 544 |
+| FR-SEC | 18 | 0 | 4 | 0 | 14 |
+| FR-SUP | 20 | 0 | 4 | 0 | 16 |
+| TOTAL | 1048 | 186 | 81 | 44 | 737 |
 
 ## 4. Free ids
 
@@ -155,11 +157,11 @@ Rules used: one group is one deliverable or one reviewable stack; rows stay in t
 | G34 | Research and validation rules (FR-RSH) | all FR-RSH gaps (10) | 10 | BL-981 | S | BL-038 |
 | G35 | Messaging and entry points (FR-MSG) | all FR-MSG gaps (9) | 9 | BL-364, BL-510, BL-053 | M | BL-039 |
 
-Row counts sum to 588 (check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 76 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
+Row counts sum to 590 for G01 to G35 (588 at the first run; G05 is now 28 with NS-17-R11 and NS-17-R12; check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 81 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
 
 ### 5.1 Group to backlog id (the same ids as `docs/BACKLOG.md`, section "Locked pack: P0 rows with no backlog row")
 
-If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this table is corrected. G36 and G37 are the P0 rows of NS-51 and NS-52 (`27-photo-moments-and-media.md`, 27 and 26 rows, all drop C, counted by a table parse because `p0.py` does not read card 27). G38 is the 140 FR rows added to `functions/*.md` on 20 Nov that section 7 does not list. Status of every row is `proposed`. Owner is the backlog owner name; the agent handle is the roster agent that name maps to (`agents/roster.json`). `product` has no owner name in the roster, so G01 and G38 carry the founder as Owner in the backlog and the product agent does the edit.
+If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this table is corrected. G36 and G37 are the P0 rows of NS-51 and NS-52 (`27-photo-moments-and-media.md`, 27 and 26 rows, all drop C; `p0.py` reads card 27 and counts 26 and 25 gap rows, one cite-covered row in each). G38 is the 140 FR rows added to `functions/*.md` on 20 Nov that section 7 does not list. Status of every row is `proposed`. Owner is the backlog owner name; the agent handle is the roster agent that name maps to (`agents/roster.json`). `product` has no owner name in the roster, so G01 and G38 carry the founder as Owner in the backlog and the product agent does the edit.
 
 | Group | Backlog id | Owner (backlog name) | Agent handle | Size | Rows |
 |---|---|---|---|---|---|
@@ -167,7 +169,7 @@ If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this
 | G02 | BL-127 | user researcher | user-research | S | 7 |
 | G03 | BL-128 | sync owner | sync | L | 8 |
 | G04 | BL-181 | mobile engineer | mobile | M | 9 |
-| G05 | BL-182 | content, speech engineer | content | L | 26 |
+| G05 | BL-182 | content, speech engineer | content | L | 28 |
 | G06 | BL-183 | mobile engineer | mobile | M | 10 |
 | G07 | BL-184 | mobile engineer, design systems | mobile | S | 7 |
 | G08 | BL-185 | qa engineer | qa | M | 16 |
@@ -198,12 +200,12 @@ If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this
 | G33 | BL-029 | content | content | M | 19 |
 | G34 | BL-038 | user researcher | user-research | S | 10 |
 | G35 | BL-039 | content | content | M | 9 |
-| G36 | BL-045 | mobile engineer, privacy engineer | mobile | L | 27 |
-| G37 | BL-046 | mobile engineer, privacy engineer | mobile | L | 26 |
+| G36 | BL-045 | mobile engineer, privacy engineer | mobile | L | 26 |
+| G37 | BL-046 | mobile engineer, privacy engineer | mobile | L | 25 |
 | G38 | BL-047 | founder (done by product) | product | M | 140 |
 | Total | | | | | 781 |
 
-Check: 588 rows in G01 to G35, 53 in G36 and G37, 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
+Check: 590 rows in G01 to G35 (588 at the first run, G05 gained NS-17-R11 and NS-17-R12), 51 in G36 and G37 (26 and 25; BL-045 and BL-046 list 27 and 26 because NS-51-R24 and NS-52-R18 are cite-covered, see section 1), 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
 
 ## 6. Coarse plan if only four ids are allowed (Tier A, BL-826 to BL-829)
 
@@ -217,6 +219,8 @@ Check: 588 rows in G01 to G35, 53 in G36 and G37, 140 in G38 (781). Ids not used
 Check: 139 + 109 + 144 + 196 = 588. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
 
 ## 7. Full gap list (588 rows)
+
+This is the first run's list (groups G01 to G35). The 191 rows of G36 to G38 are not listed here (see the Update in section 1), and the "of N P0 rows" figures in the headings below are the first run's; section 3 has the current counts.
 
 Band `none` means nothing in the backlog names the row or its card. Band `card-level only` means a backlog row names the whole card. Group is the proposed row of section 5. One-line text is the first 100 characters of the Given, When, Then cell (FR rows start with the rule's title); `(cut)` marks a shortened line.
 
@@ -1078,7 +1082,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-SUP-17 | Given any build, When a parent taps "If you are struggling" in Me, Then the page shows the lines (cut) | functions/support.md | none | G33 |
 | FR-SUP-21 | Given a parent asks us to bring back pictures, recordings or a sealed letter's words from a lost or (cut) | functions/support.md | none | G33 |
 
-## 8. Rows covered only by a cite (76), for review
+## 8. Rows covered only by a cite (81), for review
 
 Row-level `Satisfies:` ids are stronger than a cite in a function row's Links cell. These rows cite an existing heading, so they are not gaps, but each cite should be read: a status of `deferred`, `needs-founder` or `done` means the work is not scheduled, or is finished and untested against this row.
 
@@ -1087,6 +1091,8 @@ NS-01-R61 BL-870
 NS-41-R6 BL-961
 NS-42-R7 BL-577
 NS-46-R25 BL-985
+NS-51-R24 BL-961
+NS-52-R18 BL-933
 FR-AIS-04 BL-987
 FR-AIS-11 BL-043
 FR-AIS-20 BL-043
@@ -1107,13 +1113,13 @@ FR-DAY-09 BL-965
 FR-DAY-10 BL-965
 FR-DAY-11 BL-965
 FR-FIN-02 BL-958
-FR-LOC-15 BL-411
-FR-LOC-17 BL-411
-FR-LOC-18 BL-105
 FR-LEG-01 BL-931
 FR-LEG-03 BL-444
 FR-LEG-09 BL-577
 FR-LEG-18 BL-104
+FR-LOC-15 BL-411
+FR-LOC-17 BL-411
+FR-LOC-18 BL-105
 FR-MKT-25 BL-109,BL-981
 FR-MSG-01 BL-053,BL-368
 FR-MSG-03 BL-368
@@ -1132,6 +1138,7 @@ FR-MSG-36 BL-364
 FR-OPS-03 BL-961
 FR-OPS-15 BL-976
 FR-OPS-23 BL-958
+FR-OPS-44 BL-958
 FR-PRT-01 BL-973
 FR-PRV-01 BL-485
 FR-PRV-02 BL-577,BL-579
@@ -1155,6 +1162,8 @@ FR-RSH-14 BL-981
 FR-RSH-16 BL-962
 FR-SEC-01 BL-961
 FR-SEC-02 BL-961
+FR-SEC-27 BL-870
+FR-SEC-34 BL-961
 FR-SUP-01 BL-100
 FR-SUP-15 BL-237,BL-783
 FR-SUP-16 BL-105
@@ -1165,6 +1174,7 @@ FR-SUP-23 BL-100,BL-367
 
 - Update 20 Nov: the GitHub REST API worked in the later run (`id-collisions.mjs` printed 22 collisions among open PRs, none on the 38 ids filed; `gh pr list` does not work here because GraphQL is blocked, so PRs were read with `gh api repos/<owner>/<repo>/pulls`). Not checked: issue titles and comments, pull request review comments, and other forks. All pages of open and closed pull requests were read (854). The 38 ids are therefore free as far as those checks can say; a collision with an id remembered by a person is still possible.
 - Open pull requests (first run). `node scripts/agents/next-id.mjs` and `id-collisions.mjs` call the GitHub API; the first printed `BL-1000` here but I cannot say whether the API calls succeeded (they are allowed to fail silently), so ids held by open PRs (for example BL-790 and BL-882 to BL-889 appear in cards but not in `docs/BACKLOG.md`) are not excluded from the free-id tiers. Ask Karma to run `node scripts/agents/id-collisions.mjs` before allocating.
+- Update 20 Nov (tooling): the split of FR rows into G38 uses the first id number of each file's addendum (`ADDENDUM_FROM` in `p0.py`, read from the function files on this branch); an FR row added later below that number would be grouped by its file with G05 to G35. The 38 proposed rows are left out of the cover count by their `proposed (docs/product/prd/BACKLOG-GAPS.md` status text only. The two cite-covered rows of card 27 (NS-51-R24, NS-52-R18) were not checked against the rows they cite (BL-961, BL-933).
 - Whether a gap is real work. A row with no backlog row may already be built and tested (NS-09-R1 to R3 look done through #832; the NS-01 to NS-02 rows may be built in the stacked PRs #833 and later). I read no code and ran no test for this file; "gap" means no backlog row, not no implementation.
 - Whether each of the 186 row-covered rows is satisfied by the row that names it. A range such as `NS-13-R1 to NS-13-R33` is taken at its word; I did not read the 186 covering rows' scope against each Given/When/Then.
 - Ids used in other repos, other branches that were not fetched, or deleted PR titles: only the local clone's `git log --all` and `git branch -a` were searched.

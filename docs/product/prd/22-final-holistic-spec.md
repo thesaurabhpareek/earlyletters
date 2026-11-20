@@ -92,7 +92,7 @@ Gates G0 to G6 are the release gates in `14-test-plan.md` (compliance's evidence
 
 | Gate | What it needs for this scope |
 |---|---|
-| G0 | The trace reads NS ids; every P0 row has a test and a backlog row. Card 21 now has 182 rows and 87 P0 with no backlog row (`BACKLOG-GAPS.md` lists the earlier count; regenerate after this PR). |
+| G0 | The trace reads NS ids; every P0 row has a test and a backlog row. Card 21 now has 182 rows and 87 P0 with no backlog row. P0 rows in the pack by `p0.py` on 20 Nov: 1,048 (534 in NS-01 to NS-52, 514 in `functions/*.md`); 781 have no row-level backlog row (`BACKLOG-GAPS.md` section 1). |
 | G1 | On-device data rules for the L4 store (ADR 0028). |
 | G2 | Counsel reads: source licences (NS-46-R23), CUL-Q5 to Q7 and Q11, the consent line, the recent-days lines, DPLA 3.3.3(H), 5.1.3. |
 | G3 | The founder approves every word (`days.*`, `culture.*`, `ntc.*`, `features.photos.suggestions.*`). |

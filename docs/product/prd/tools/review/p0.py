@@ -9,7 +9,7 @@ Usage (from the repo root or anywhere):
   python3 -I p0.py <repo-root> --json     every P0 row with its coverage, as JSON
 
 What it reads
-  Cards docs/product/prd/NN-*.md for NN 00 to 21 and docs/product/prd/functions/*.md
+  Cards docs/product/prd/NN-*.md for NN 00 to 27 (27 holds NS-51 and NS-52) and docs/product/prd/functions/*.md
   (except BRIEF.md). An acceptance row is a markdown table row whose first cell
   is a row id and whose Priority column (found from the table header) starts
   with P0. quality.md also carries a copy of the P0 register for other
@@ -146,7 +146,7 @@ def row_covered(rid, exact, ranges, lits):
 
 def read_rows(root):
     base = os.path.join(root, 'docs/product/prd')
-    files = [f for f in sorted(glob.glob(os.path.join(base, '[0-9][0-9]-*.md'))) if int(os.path.basename(f)[:2]) <= 21 and os.path.basename(f)[:2] != '14']
+    files = [f for f in sorted(glob.glob(os.path.join(base, '[0-9][0-9]-*.md'))) if int(os.path.basename(f)[:2]) <= 27 and os.path.basename(f)[:2] != '14']
     files += [f for f in sorted(glob.glob(os.path.join(base, 'functions', '*.md'))) if not f.endswith('BRIEF.md')]
     rows = []
     card_text_bl = {}
@@ -183,10 +183,18 @@ def card_of(rid):
     return m.group(1) if m else rid
 
 
+def from_gaps(b):
+    """True for the 38 proposed rows filed from BACKLOG-GAPS.md."""
+    return b['status'].lower().startswith('proposed (docs/product/prd/backlog-gaps')
+
+
 def usable(b):
     """A backlog row counts as covering only if it delivers: not superseded or
-    withdrawn, and not one of the review or requirement-writing rows."""
+    withdrawn, not one of the review or requirement-writing rows, and not one of the proposals filed from BACKLOG-GAPS.md."""
     st = b['status'].lower()
+    # the 38 rows filed from BACKLOG-GAPS.md are the proposals for the gaps this script lists: they must not hide the gaps they propose to close
+    if from_gaps(b):
+        return False
     if st.startswith(('superseded', 'withdrawn', 'cancelled')):
         return False
     return not re.match(r'(Function review|End-to-end experience|Requirements from|Requirements completion)', b['title'])
@@ -200,6 +208,8 @@ def analyse(root):
     # (not "sections of" lists and not the founder-instruction review rows)
     card_named = collections.defaultdict(set)
     for k, v in blocks.items():
+        if from_gaps(v):
+            continue
         for line in v['lines']:
             if line.startswith('- Satisfies:') and 'sections of' not in line and "founder's 20 Nov" not in line:
                 for c in mentions([line])[3]:
@@ -259,9 +269,19 @@ FR_GROUP = {'FR-LOC': 'G05', 'FR-QAL': 'G08', 'FR-CMP': 'G10', 'FR-DAY': 'G18', 
             'FR-SUP': 'G33', 'FR-POL': 'G33', 'FR-RSH': 'G34', 'FR-MSG': 'G35'}
 
 
+# first id number added to each function file by the 20 Nov addenda (photo moments and pictures and videos). FR rows from
+# this number on are group G38; the rows below it are the ones the grouping above was written for.
+ADDENDUM_FROM = {'PRV': 36, 'LEG': 21, 'CMP': 22, 'SEC': 27, 'RSK': 7, 'PHS': 58, 'DAT': 36, 'FIN': 25, 'OPS': 37, 'REL': 62,
+                 'BKO': 28, 'PRT': 48, 'AIS': 57, 'RSH': 30, 'QAL': 25, 'LOC': 30, 'LCY': 35, 'MSG': 39, 'MKT': 35, 'SUP': 24,
+                 'NTC': 22, 'DAY': 26, 'CUL': 28, 'OPP': 13, 'POL': 14}
+NS_GROUP.update({'NS-51': 'G36', 'NS-52': 'G37'})
+
+
 def group_of(r):
     if r['tier'] == 'card-only':
         return 'G01'
+    if r['card'].startswith('FR-') and _n(r['id']) >= ADDENDUM_FROM.get(r['card'][3:], 10 ** 6):
+        return 'G38'
     if r['card'] == 'FR-AIS':
         n = _n(r['id'])
         return next(g for g, ids in AIS.items() if n in ids)

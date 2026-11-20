@@ -15,7 +15,7 @@ Docs only. Nothing here is built, no decision is recorded, no date is set. This 
 | State of 43 named PRs | `gh api repos/thesaurabhpareek/earlyletters/pulls/<n>` | 17:10 |
 | `develop` head `51aa84b2e` (16:45 UTC) and what merged after the pack branch's merge-base `4f89d659b` | `git fetch origin develop`, `git log 4f89d659b..origin/develop` | about 17:20 |
 | Rows on `develop` versus this branch | `git show origin/develop:docs/BACKLOG.md` against `docs/BACKLOG.md` | 17:20 |
-| Counts of P0 rows | `python3 -I docs/product/prd/tools/review/p0.py . --json` (850 rows) | 17:15 |
+| Counts of P0 rows | `python3 -I docs/product/prd/tools/review/p0.py . --json` (850 rows at 17:15; 1,048 rows on the regenerated run, `BACKLOG-GAPS.md` section 1) | 17:15 |
 | Repository variable `AGENTS_ENABLED`, workflow runs | `gh api .../actions/variables/...` returned 403 ("not permitted through this proxy") | UNVERIFIED |
 
 Two traps in the sources, found while checking:
@@ -84,7 +84,7 @@ P0 rows by drop (from the card 21 table, intersected with `p0.py`): NS-46 22 (B 
 
 ### 1e. Pictures and videos from the library (file 26, card 27)
 
-Card 27 (`27-photo-moments-and-media.md`, CURRENT, 20 Nov) holds NS-51 (42 rows) and NS-52 (44 rows). Counting table rows marked P0: NS-51 27, NS-52 26, total 53, all drop C ("C, spike first"). `p0.py` reads cards 00 to 21 only, so these 53 are not in the 850 and have no backlog row (UNVERIFIED by a script run; I counted rows in the card). Prerequisites are the card's section 22 lines; I cite them and do not restate them. Ids M01 to M03 and sizes are mine, PROPOSED.
+Card 27 (`27-photo-moments-and-media.md`, CURRENT, 20 Nov) holds NS-51 (42 rows) and NS-52 (44 rows). Counting table rows marked P0: NS-51 27, NS-52 26, total 53, all drop C ("C, spike first"). `p0.py` now reads cards 00 to 27, so the 53 are in its 1,048: 26 and 25 gap rows, and NS-51-R24 and NS-52-R18, which cite BL-961 and BL-933 (script run 20 Nov, `BACKLOG-GAPS.md` section 1). Prerequisites are the card's section 22 lines; I cite them and do not restate them. Ids M01 to M03 and sizes are mine, PROPOSED.
 
 | Id | Workstream | Owner | Drop | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|---|
@@ -92,7 +92,7 @@ Card 27 (`27-photo-moments-and-media.md`, CURRENT, 20 Nov) holds NS-51 (42 rows)
 | M02 | NS-52 Pictures and videos with a letter. Variant A (phone only) is the default; variant B (hosted) only after X2 and a money decision | `mobile`, `data-architect`, `sync` (B), `privacy`; `finance` estimate for B | C | G2 label (A), Q45, Q48, Q54, X2 (B); G5; spike (transcode, metadata, iCloud); Q-PM-2, 3, 4, 7, 10 | card 27 section 22: NS-01 on `testflight`, NS-11 and the export minor, NS-36 erase registry, P07, NS-49 picture sources, L03; the ruling on #835 before it merges (`24` step 0.4, Q-E12: local migration for several pictures and video); `24` step 5.1 then 5.3 | L, a stack | no row; card written |
 | M03 | Function addenda ("Addendum 20 Nov 2026") in the function files | the function agents; `product` integrates | - | - | card 27 | S each | present as uncommitted edits in the working tree in 23 function files at 17:40 UTC (`git status`); not reviewed by me |
 
-### 1f. Function-review rows (371 P0 FR rows, 299 with no cite, groups in `BACKLOG-GAPS.md` section 5)
+### 1f. Function-review rows (514 P0 FR rows, 439 with no cite: 299 first counted in groups G05 to G35 and 140 added by the 20 Nov addenda in G38; the gap counts in the table are the first count; groups in `BACKLOG-GAPS.md` section 5)
 
 | Function files | Gap rows | Group | Owner | Gate or dependency | Size |
 |---|---|---|---|---|---|
@@ -188,7 +188,7 @@ No date below is invented. A gate opens "after" an event. Gate meanings are in `
 
 | Gate | Opens after | Evidence the record needs | Date |
 |---|---|---|---|
-| G0 trace and a row per P0 | P01, P02, and the 588 gap rows each named by a row (or a `Satisfies:` edit, G01) | `scripts/trace.mjs` ratchet on; `p0.py --gaps` shows 0 | none; "after P02" for new ids |
+| G0 trace and a row per P0 | P01, P02, and the 781 gap rows (590 + 51 + 140) each named by a row (or a `Satisfies:` edit, G01) | `scripts/trace.mjs` ratchet on; `p0.py --gaps` shows 0 | none; "after P02" for new ids |
 | G1 on-device data rules, export schema | BL-933 (blocked on BL-868 and BL-931). ADR 0028 (#797) is merged | export 1.7.0 merged | none |
 | G2 counsel reads | founder sends packets (#872; Q-numbers in section 4); answers from counsel | dated answers or a written founder risk acceptance | none; counsel time is not known |
 | G3 words | BL-965 packet #870 and BL-925 #866 reviewed | founder's yes per key set | none |
@@ -215,7 +215,7 @@ Defaults hold for design and build only, never for public text, a counsel answer
 | # | Ask | Type | Unblocks | Default if unanswered | Source |
 |---|---|---|---|---|---|
 | 1 | Merge #846 | merge | dispatcher sees BL-952 to BL-987; every row named below | rows stay invisible; interactive sessions keep working from the branch | P01 |
-| 2 | Approve the engineering row for four-digit ids (P02); it is a founder-owned path | decision, then a merge | all 35 new-row groups; G0 | no id above BL-999; use `Satisfies:` edits and Tier A ids (section 6.3) | `BACKLOG-GAPS.md` section 4 |
+| 2 | Approve the engineering row for four-digit ids (P02); it is a founder-owned path | decision, then a merge | all 38 new-row groups; G0 | no id above BL-999; use `Satisfies:` edits and Tier A ids (section 6.3) | `BACKLOG-GAPS.md` section 4 |
 | 3 | Q-FD-7 which drop ships when | decision | planning of D01 to D05; what "1.0" holds | A next build; B only if its gates close before the 1.0 freeze; C after approval | card 21, 22 section 7 |
 | 4 | Confirm or amend the Build 13 contents (the r3 line 58 proposal) | decision | who may start what; which flags stay dark | proposal stands | section 2.1 |
 
@@ -290,7 +290,7 @@ Defaults are the ones card 27 states (section "Founder questions Q-PM-1 to Q-PM-
 | Drop B is promised for 1.0 on four unbuilt rows and three external gates | card 21; `budget.ts` absent | 1.0 contents | Q-FD-7 default keeps B conditional |
 | Drop C needs the NS-13 anchor but BL-537 is deferred to 1.1 | BL-537 row; card 21 drop C | C order | decide in Q-FD-7 or move BL-537 |
 | File 26 reverses three earlier rulings (level 3 closed, no video, one picture) | file 26 section 1 | NS-49, NS-01, OPP-16 text; 21 and 22 still say level 3 is closed | consolidation pass (section 8); RV-18 onward in `GAP-LOG.md` |
-| NS-51 and NS-52 (53 P0 rows, outside `p0.py`) can contradict the privacy rules (no analysis of the library off the phone, no captions) | file 26 section 1 | label, counsel | spike first; "a feature that cannot meet them is redesigned, not waived" |
+| NS-51 and NS-52 (53 P0 rows, read by `p0.py` since 20 Nov) can contradict the privacy rules (no analysis of the library off the phone, no captions) | file 26 section 1 | label, counsel | spike first; "a feature that cannot meet them is redesigned, not waived" |
 | Cost of media storage is unknown | file 26 section 3 (finance cost model not written) | Q-PM-2 and Q-PM-3 | do not set a plan price before the model |
 | Counsel time is unknown | no dated counsel answer in the repo | G2 for every card | flags stay off; count answers, not dates |
 | Mobile is the bottleneck | `mobile` takes the owner names `mobile engineer`, `export owner`, `reminders owner`; 18 open `agent:mobile` PRs against `wip_limit` 3 | all of 1a to 1e | split owner names in the roster (a proposal, section 6.4) |

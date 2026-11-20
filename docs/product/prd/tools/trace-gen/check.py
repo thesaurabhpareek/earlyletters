@@ -23,8 +23,9 @@ ids=[]
 for f in files:
     for l in open(os.path.join(FD,f+'.md'),encoding='utf-8'):
         m=re.match(r'\| (FR-(?:%s)-\d+[a-z]?)[ |]'%OWN[f],l)
-        if m: ids.append(m.group(1))
-check('FR rows (own code only)',len(ids),741)
+        # six columns = a requirement row; the addenda's 2 or 3 cell "neighbouring rows extended" lines point at an existing row
+        if m and len([x for x in l.strip().strip('|').split(' | ')])>=6: ids.append(m.group(1))
+check('FR rows (own code only)',len(ids),947)
 check('FR ids unique',len(set(ids)),len(ids))
 # forward table in the trace
 fw=[]
@@ -61,7 +62,7 @@ links={}
 for f in files:
     for l in open(os.path.join(FD,f+'.md'),encoding='utf-8'):
         m=re.match(r'\| (FR-(?:%s)-\d+[a-z]?)[ |]'%OWN[f],l)
-        if m:
+        if m and len(l.strip().strip('|').split(' | '))>=6:
             c=[x.strip() for x in l.strip().strip('|').split(' | ')]
             links[m.group(1).split(' ')[0]]=cards_of(c[2]) if len(c)>2 else set()
 doc2b={}

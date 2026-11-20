@@ -6,7 +6,7 @@ Fictional family: Asha only. ASCII only.
 
 ## 0. What this file is and how it was made
 
-Built by a script from the 23 function files in `docs/product/prd/functions/` (first wave: `support`, `marketing`, `operations`, `finance`, `data-and-measurement`, `privacy`, `legal`, `compliance`, `risk-security`; second wave: `back-office`, `messaging-and-entry-points`, `languages-and-localisation`, `reliability`, `ai-and-speech`, `research-validation`, `quality`, `lifecycle-and-platforms`, `print-and-fulfilment`; third wave: `days-library`, `notification-catalogue`, `cultural-background-data`, `photos-and-suggestions`, `feature-opportunities`; `BRIEF.md` is the brief and is not read as a function), the cards `00` to `19` (titles, row ids and the first-run screen table of card 19) and `20-founder-direction-20nov.md` (the proposed cards NS-46 to NS-50), and `21-days-cultural-photos-home.md`, `GAP-LOG.md` (the rulings K1 to K10, R-IA-1 to R-IA-6, N-1 to N-8, CB-1 to CB-6 and DL-1 to DL-10 are read from it and marked on the items they decide), and the e2e design inventory read from `origin/docs/e2e-ux-20nov` (head `45b9d42b3` when read; 5 of 5 `DESIGN.md` files found). The script is kept in the repository at `docs/product/prd/tools/trace-gen/` (`gen.py`, `parse.py`, `model.py`, `groups.py`, `eng.py`, `calc.py`, `rulings.py`, plus `check.py`, an independent re-parse); rerun `python3 docs/product/prd/tools/trace-gen/gen.py` then `python3 docs/product/prd/tools/trace-gen/check.py` when a function file, a card or `GAP-LOG.md` changes. Every FR id, link, verdict, proposed change, question and engineering row below is read from those files; the only hand-written parts are the merge groups in `groups.py` (which proposals are the same), the conflict texts in `gen.py` (positions are quoted from the files; recommendations are Karma-side proposals, not rulings), the mapping from a GAP-LOG ruling to the items it decides (`rulings.py`), and the status derivation rule. Wording in quotes or after a handle is copied from the source file.
+Built by a script from the 23 function files in `docs/product/prd/functions/` (first wave: `support`, `marketing`, `operations`, `finance`, `data-and-measurement`, `privacy`, `legal`, `compliance`, `risk-security`; second wave: `back-office`, `messaging-and-entry-points`, `languages-and-localisation`, `reliability`, `ai-and-speech`, `research-validation`, `quality`, `lifecycle-and-platforms`, `print-and-fulfilment`; third wave: `days-library`, `notification-catalogue`, `cultural-background-data`, `photos-and-suggestions`, `feature-opportunities`; `BRIEF.md` is the brief and is not read as a function), the cards `00` to `19` (titles, row ids and the first-run screen table of card 19) and `20-founder-direction-20nov.md` (the proposed cards NS-46 to NS-50), and `21-days-cultural-photos-home.md`, `GAP-LOG.md` (the rulings K1 to K10, R-IA-1 to R-IA-6, N-1 to N-8, CB-1 to CB-6 and DL-1 to DL-10 are read from it and marked on the items they decide), and the e2e design inventory read from `origin/docs/e2e-ux-20nov` (head `7e6849843` when read; 5 of 5 `DESIGN.md` files found). The script is kept in the repository at `docs/product/prd/tools/trace-gen/` (`gen.py`, `parse.py`, `model.py`, `groups.py`, `eng.py`, `calc.py`, `rulings.py`, plus `check.py`, an independent re-parse); rerun `python3 docs/product/prd/tools/trace-gen/gen.py` then `python3 docs/product/prd/tools/trace-gen/check.py` when a function file, a card or `GAP-LOG.md` changes. Every FR id, link, verdict, proposed change, question and engineering row below is read from those files; the only hand-written parts are the merge groups in `groups.py` (which proposals are the same), the conflict texts in `gen.py` (positions are quoted from the files; recommendations are Karma-side proposals, not rulings), the mapping from a GAP-LOG ruling to the items it decides (`rulings.py`), and the status derivation rule. Wording in quotes or after a handle is copied from the source file.
 
 Source states to keep in mind:
 
@@ -14,37 +14,38 @@ Source states to keep in mind:
 - NS-46 to NS-50: written in `21-days-cultural-photos-home.md` as a locked-shape draft that still needs Karma's ruling on its open items (3d) and the founder's answers; no function reviewed them, so no function has a verdict for them. The reverse view in section 2 lists the FRs that name them, from the FR Links, the requirement text and (`~c`) the card's own text.
 - The Links column of an FR row is where the author names card rows, e2e ids and backlog rows (BRIEF "How each function's requirements get linked"). When an FR names none, this file says so and does not guess; where a screen in the FR is on the card 19 screen table, or a linked FR has a card, that card is shown as a suggestion only.
 - `GAP-LOG.md` rulings taken so far on function items: 41 (K1 to K10 and the SEC-13 note, R-IA-1 to R-IA-6, N-1 to N-8, CB-1 to CB-6, DL-1 to DL-10). Items they decide are marked `ruled (id)` below. A ruling that only says "founder confirms" or "counsel must confirm" is marked ruled with that open step kept in the item.
+- The 20 Nov addenda to the function files (photo moments, pictures and videos; cards NS-51 and NS-52 in `27-photo-moments-and-media.md`) are read for their FR rows (sections 0.1 and 1, so every FR id of the addenda has a forward row and a P0 count) and for their Design needs subsections (section 6). Their card changes, questions and engineering rows are NOT read into sections 3, 4 and 5, and section 2 has no row for NS-51 and NS-52: an FR link to those two cards is kept in the forward table only. Read the addenda in the function files for those.
 
 ### 0.1 Totals
 
 | Function (code) | File | FR rows | P0 rows |
 |---|---|---|---|
-| support (SUP) | functions/support.md | 23 | 15 |
-| policy (POL) | functions/support.md | 13 | 8 |
-| marketing (MKT) | functions/marketing.md | 34 | 20 |
-| operations (OPS) | functions/operations.md | 36 | 15 |
-| finance (FIN) | functions/finance.md | 24 | 6 |
-| data (DAT) | functions/data-and-measurement.md | 35 | 11 |
-| privacy (PRV) | functions/privacy.md | 35 | 22 |
-| legal (LEG) | functions/legal.md | 20 | 15 |
-| compliance (CMP) | functions/compliance.md | 21 | 16 |
-| security (SEC) | functions/risk-security.md | 25 | 11 |
-| risk (RSK) | functions/risk-security.md | 6 | 4 |
-| back-office (BKO) | functions/back-office.md | 27 | 11 |
-| messaging (MSG) | functions/messaging-and-entry-points.md | 38 | 23 |
-| languages (LOC) | functions/languages-and-localisation.md | 29 | 20 |
-| reliability (REL) | functions/reliability.md | 61 | 15 |
-| ai-and-speech (AIS) | functions/ai-and-speech.md | 56 | 43 |
-| research (RSH) | functions/research-validation.md | 29 | 14 |
-| quality (QAL) | functions/quality.md | 24 | 16 |
-| lifecycle (LCY) | functions/lifecycle-and-platforms.md | 34 | 18 |
-| print (PRT) | functions/print-and-fulfilment.md | 48 | 4 |
-| days (DAY) | functions/days-library.md | 25 | 12 |
-| notifications (NTC) | functions/notification-catalogue.md | 21 | 9 |
-| cultural-data (CUL) | functions/cultural-background-data.md | 27 | 16 |
-| photos (PHS) | functions/photos-and-suggestions.md | 38 | 23 |
-| opportunities (OPP) | functions/feature-opportunities.md | 12 | 4 |
-| Total | | 741 | 371 |
+| support (SUP) | functions/support.md | 30 | 20 |
+| policy (POL) | functions/support.md | 15 | 9 |
+| marketing (MKT) | functions/marketing.md | 43 | 26 |
+| operations (OPS) | functions/operations.md | 44 | 19 |
+| finance (FIN) | functions/finance.md | 34 | 8 |
+| data (DAT) | functions/data-and-measurement.md | 44 | 16 |
+| privacy (PRV) | functions/privacy.md | 48 | 35 |
+| legal (LEG) | functions/legal.md | 27 | 21 |
+| compliance (CMP) | functions/compliance.md | 28 | 23 |
+| security (SEC) | functions/risk-security.md | 34 | 18 |
+| risk (RSK) | functions/risk-security.md | 7 | 4 |
+| back-office (BKO) | functions/back-office.md | 36 | 17 |
+| messaging (MSG) | functions/messaging-and-entry-points.md | 46 | 28 |
+| languages (LOC) | functions/languages-and-localisation.md | 37 | 24 |
+| reliability (REL) | functions/reliability.md | 72 | 24 |
+| ai-and-speech (AIS) | functions/ai-and-speech.md | 68 | 54 |
+| research (RSH) | functions/research-validation.md | 35 | 17 |
+| quality (QAL) | functions/quality.md | 31 | 21 |
+| lifecycle (LCY) | functions/lifecycle-and-platforms.md | 43 | 24 |
+| print (PRT) | functions/print-and-fulfilment.md | 56 | 8 |
+| days (DAY) | functions/days-library.md | 33 | 18 |
+| notifications (NTC) | functions/notification-catalogue.md | 31 | 17 |
+| cultural-data (CUL) | functions/cultural-background-data.md | 36 | 23 |
+| photos (PHS) | functions/photos-and-suggestions.md | 52 | 35 |
+| opportunities (OPP) | functions/feature-opportunities.md | 17 | 5 |
+| Total | | 947 | 514 |
 
 Policy (POL) is in the support file; risk (RSK) and security (SEC) are in the risk-security file. FR ids with a letter suffix (FR-PRT-34a, FR-LCY-33 "(proposal)") are kept as written. Photos numbers its FRs in bands (01 to 04, 10 to 25, 30 to 34, 40 to 44, 50 to 57), so FR-PHS-05 to 09 and the other gaps are not missing rows. Quality's file also lists 143 existing FR ids in its P0 register (section 3c) and 296 + 96 card rows; those are index lines, not FR definitions, and are not counted here (see K16).
 
@@ -99,6 +100,15 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-POL-11 | policy | P1 | NO CARD LINK | - | none named | counsel; needs Karma ruling |
 | FR-POL-12 | policy | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-POL-13 | policy | P0 (b) | NS-03 | - | none named | founder; needs Karma ruling |
+| FR-SUP-24 | support | P0 (a) | NS-51; NS-52 | - | new row needed | needs Karma ruling |
+| FR-SUP-25 | support | P0 (a) | NS-36; NS-51; NS-52 | - | new row needed | needs Karma ruling |
+| FR-SUP-26 | support | P0 (a,b) | NS-52 | - | none named | needs Karma ruling |
+| FR-SUP-27 | support | P0 (a,b) | NS-52 | - | none named | needs Karma ruling |
+| FR-SUP-28 | support | P0 (b) | NS-36; NS-52 | - | BL-551 | needs Karma ruling |
+| FR-SUP-29 | support | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-SUP-30 | support | P1 | NS-33; NS-52 | - | none named | needs Karma ruling |
+| FR-POL-14 | policy | P0 (b) | NS-52 | - | none named | counsel; founder; needs Karma ruling |
+| FR-POL-15 | policy | P1 (b) | NS-52 | - | none named | counsel; needs Karma ruling |
 | FR-MKT-01 | marketing | P0 (a,b) | pack-wide (frame or every card) | E-S27 | none named | needs Karma ruling |
 | FR-MKT-02 | marketing | P0 (b) | NO CARD LINK | - | new row needed (NR-03) | needs Karma ruling |
 | FR-MKT-03 | marketing | P0 (a,b) | NS-24 | B-S19, B-S20 | none named | needs Karma ruling |
@@ -133,6 +143,15 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-MKT-32 | marketing | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-MKT-33 | marketing | P1 (b) | NS-38 to NS-45 | E-S02, E-S27 | none named | needs Karma ruling |
 | FR-MKT-34 | marketing | P0 (a) | pack-wide (frame or every card) | - | none named | needs Karma ruling |
+| FR-MKT-35 | marketing | P0 (a,b) | NS-51; NS-52 | - | new row needed | needs Karma ruling |
+| FR-MKT-36 | marketing | P0 (b) | NS-51; NS-52 | C-S08, C-S21 | new row needed | needs Karma ruling |
+| FR-MKT-37 | marketing | P0 (b) | NS-51; NS-52 | A-S03, B-S04, E-S27 | none named | needs Karma ruling |
+| FR-MKT-38 | marketing | P1 (a) | NS-46 R33 | - | none named | locked row |
+| FR-MKT-39 | marketing | P0 (b) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-MKT-40 | marketing | P0 (b) | NS-51 | - | new row needed | needs Karma ruling |
+| FR-MKT-41 | marketing | P0 (a) | NS-52 | E-S11 | none named | founder; needs Karma ruling |
+| FR-MKT-42 | marketing | P1 (b) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-MKT-43 | marketing | P1 (a) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-OPS-01 | operations | P1 | NS-01 R19; NS-02; NS-08 R14; NS-09 R17; NS-25 R11 | E-ST05, E-ST13c | new row needed (NR-22) | locked row |
 | FR-OPS-02 | operations | P1 | NS-02 | E-ST13a | none named | needs Karma ruling |
 | FR-OPS-03 | operations | P0 (a) | NS-08 R6 | E-ST17 | BL-961 | founder |
@@ -169,6 +188,14 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-OPS-36 | operations | P1 | NS-40 R9 | E-S14, E-S04.refused-region | none named | locked row |
 | FR-OPS-34 | operations | P1 | NS-07 | - | none named | needs Karma ruling |
 | FR-OPS-35 | operations | P1 | NO CARD LINK | - | BL-999 (text), new row needed (NR-62) | founder; needs Karma ruling |
+| FR-OPS-37 | operations | P1 | NS-52 | - | new row needed | needs Karma ruling |
+| FR-OPS-38 | operations | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-39 | operations | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-40 | operations | P1 | NS-52 | - | none named | founder; needs Karma ruling |
+| FR-OPS-41 | operations | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-42 | operations | P0 (b) | NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-43 | operations | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-44 | operations | P0 (b) | NS-51; NS-52 | - | BL-958 | needs Karma ruling |
 | FR-FIN-01 | finance | P1 | NS-08 R2; plus pack-wide | - | none named | locked row |
 | FR-FIN-02 | finance | P0 (a) | pack-wide (frame or every card) | - | BL-958, BL-988 | needs Karma ruling |
 | FR-FIN-03 | finance | P0 (c) | NS-08; NS-10 | - | new row needed (NR-18) | needs Karma ruling |
@@ -193,6 +220,16 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-FIN-22 | finance | P0 (b) | NO CARD LINK | - | none named | founder; needs Karma ruling |
 | FR-FIN-23 | finance | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-FIN-24 | finance | P2 | NS-07; NS-30 | - | none named | counsel; founder |
+| FR-FIN-25 | finance | P1 | NS-51; NS-52 | - | new row needed | founder; needs Karma ruling |
+| FR-FIN-26 | finance | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-FIN-27 | finance | P1 | NS-52 | - | none named | founder; needs Karma ruling |
+| FR-FIN-28 | finance | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-FIN-29 | finance | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-FIN-30 | finance | P0 (a) | NS-52 | E-S10, E-S12 | none named | founder; needs Karma ruling |
+| FR-FIN-31 | finance | P1 | (from text) NS-52 | - | none named | needs Karma ruling |
+| FR-FIN-32 | finance | P0 (b) | NO CARD LINK | - | none named | founder; needs Karma ruling |
+| FR-FIN-33 | finance | P1 | NS-51 | - | none named | needs Karma ruling |
+| FR-FIN-34 | finance | P2 | (from text) NS-51, NS-52 | - | none named | needs Karma ruling |
 | FR-DAT-01 | data | P0 (b) | NS-07 | - | BL-975, new row needed (NR-30) | locked row |
 | FR-DAT-02 | data | P0 (a) | pack-wide (frame or every card) | C-S01, C-S04 | none named | needs Karma ruling |
 | FR-DAT-03 | data | P0 (a) | pack-wide (frame or every card) | A-S13, B-S19, B-S20, E-S10, E-S26 | none named | needs Karma ruling |
@@ -228,6 +265,15 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-DAT-33 | data | P1 | NS-39 | - | BL-994 | needs Karma ruling |
 | FR-DAT-34 | data | P2 | (from text) NS-45 | E-S16 | none named | needs Karma ruling |
 | FR-DAT-35 | data | P0 (b) | NS-40; NS-41 | E-S03, E-S04, E-S07 | none named | ruled (K10); counsel |
+| FR-DAT-36 | data | P0 (a) | NS-51; NS-52 | - | new row needed | needs Karma ruling |
+| FR-DAT-37 | data | P0 (a) | NS-51; NS-52 | C-S18 | none named | needs Karma ruling |
+| FR-DAT-38 | data | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-DAT-39 | data | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-DAT-40 | data | P0 (a) | NS-51; NS-52 | - | none named | founder; needs Karma ruling |
+| FR-DAT-41 | data | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-DAT-42 | data | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-DAT-43 | data | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-DAT-44 | data | P1 | NS-52 | - | none named | needs Karma ruling |
 | FR-PRV-01 | privacy | P0 (b) | NO CARD LINK | C-S01; new screen needed | BL-485 | needs Karma ruling |
 | FR-PRV-02 | privacy | P0 (b,c) | NS-42 | E-S03, E-S07, C-S11, D-S16, C-S21 (text) | BL-577, BL-579, BL-994 (eng table) | needs Karma ruling |
 | FR-PRV-03 | privacy | P1 | NO CARD LINK | C-S04 | BL-577 (eng table) | needs Karma ruling |
@@ -236,11 +282,11 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRV-06 | privacy | P0 (b) | NS-36 R6 | - | BL-960 | founder |
 | FR-PRV-07 | privacy | P1 | NS-01 | - | BL-961 (eng table) | needs Karma ruling |
 | FR-PRV-08 | privacy | P1 (b) | NS-08 | - | BL-960 (eng table) | needs Karma ruling |
-| FR-PRV-09 | privacy | P1 (a) | NO CARD LINK | - | new row needed (NR-20) | counsel; needs Karma ruling |
+| FR-PRV-09 | privacy | P1 (a) | NO CARD LINK | - | new row needed (NR-20) | counsel; founder; needs Karma ruling |
 | FR-PRV-10 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-43, NS-39, NS-41) | E-S08, E-S05 (text) | new row needed (NR-32) | needs Karma ruling |
-| FR-PRV-11 | privacy | P0 (a) | NO CARD LINK | - | new row needed (NR-33), new row needed (NR-161) | needs Karma ruling |
+| FR-PRV-11 | privacy | P0 (a) | NO CARD LINK | - | new row needed (NR-33), new row needed (NR-162) | needs Karma ruling |
 | FR-PRV-12 | privacy | P1 | NO CARD LINK | - | new row needed (NR-02) | needs Karma ruling |
-| FR-PRV-13 | privacy | P0 (a) | NS-02 R25; NS-25 R2 R6 | - | new row needed (NR-33), new row needed (NR-161) | locked row |
+| FR-PRV-13 | privacy | P0 (a) | NS-02 R25; NS-25 R2 R6 | - | new row needed (NR-33), new row needed (NR-162) | locked row |
 | FR-PRV-14 | privacy | P0 (a) | NO CARD LINK | E-S18 | BL-961, BL-994 (eng table) | needs Karma ruling |
 | FR-PRV-15 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-45) | C-S03, C-S19 | BL-961 (eng table), BL-994 (eng table) | ruled (K4) |
 | FR-PRV-16 | privacy | P0 (a) | NS-01 R50; NS-06 A22; NS-21 R12 | A-S07, A-S06, B-S08, B-S11, B-S12, A-S09, D-S08, E-S08 (text) | BL-962 | locked row |
@@ -254,15 +300,28 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRV-24 | privacy | P0 (b) | NS-39; NS-40; NS-41; NS-43 | E-S01, E-S08, E-S02 (text) | BL-579, BL-994 (eng table) | needs Karma ruling |
 | FR-PRV-25 | privacy | P0 (b) | NO CARD LINK | - | BL-994 (eng table) | ruled (K5) |
 | FR-PRV-26 | privacy | P0 (b) | NS-40 | E-S03.region | BL-994 (eng table), new row needed (NR-39) | needs Karma ruling |
-| FR-PRV-27 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-41, NS-10) | E-S06, C-S10 | BL-994 (eng table) | counsel; needs Karma ruling |
+| FR-PRV-27 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-41, NS-10) | E-S06, C-S10 | BL-994 (eng table) | counsel; founder; needs Karma ruling |
 | FR-PRV-28 | privacy | P0 (b) | NO CARD LINK (suggested via card 19 screen table: NS-42, NS-41, NS-43, NS-39) | E-S07, E-S08, E-S14, E-S24 | BL-994 (eng table) | needs Karma ruling |
 | FR-PRV-35 | privacy | P1 | NS-41 | - | BL-994 (eng table), new row needed (NR-37) | needs Karma ruling |
 | FR-PRV-29 | privacy | P1 | NS-07 | - | BL-975 | needs Karma ruling |
 | FR-PRV-30 | privacy | P0 (b) | NS-01 | - | none named | needs Karma ruling |
 | FR-PRV-31 | privacy | P0 (b) | NO CARD LINK | - | BL-958 (eng table), BL-988 (eng table) | needs Karma ruling |
-| FR-PRV-32 | privacy | P1 (b) | NS-25 | E-S07, D-S13 (text) | none named | counsel; needs Karma ruling |
+| FR-PRV-32 | privacy | P1 (b) | NS-25 | E-S07, D-S13 (text) | none named | counsel; founder; needs Karma ruling |
 | FR-PRV-33 | privacy | P0 (b) | NO CARD LINK | C-S01 | none named | needs Karma ruling |
 | FR-PRV-34 | privacy | P0 (a) | NS-01 R16 R52; NS-05 R10; NS-07; NS-36; NS-37 R5 | - | new row needed (NR-36) | needs Karma ruling |
+| FR-PRV-36 | privacy | P0 (b) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-PRV-37 | privacy | P0 (b) | NS-39; NS-51 | E-S01, E-S08 | none named | needs Karma ruling |
+| FR-PRV-38 | privacy | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-PRV-39 | privacy | P0 (a) | NS-02; NS-51 | - | none named | needs Karma ruling |
+| FR-PRV-40 | privacy | P0 (a) | NS-01 R33 | - | none named | locked row |
+| FR-PRV-41 | privacy | P0 (a) | NS-52 | C-S19, C-S20 | none named | needs Karma ruling |
+| FR-PRV-42 | privacy | P0 (b) | NS-11; NS-52 | - | none named | needs Karma ruling |
+| FR-PRV-43 | privacy | P0 (b) | NS-01 R27 | - | none named | locked row |
+| FR-PRV-44 | privacy | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-PRV-45 | privacy | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-PRV-46 | privacy | P0 (a) | NS-32; NS-48 | - | none named | needs Karma ruling |
+| FR-PRV-47 | privacy | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-PRV-48 | privacy | P0 (b) | NS-01 R32 | - | none named | locked row |
 | FR-LEG-01 | legal | P0 (b) | NS-01 R26 R32 R61 | A-S03, B-S11 | BL-931 | locked row |
 | FR-LEG-02 | legal | P0 (b) | NS-01 R31; NS-02; NS-06 B18 | C-S20, C-S19 | new row needed (NR-40) | ruled (K4) |
 | FR-LEG-03 | legal | P0 (a) | NS-25 | D-S18 | BL-444 | founder; needs Karma ruling |
@@ -283,6 +342,13 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-LEG-18 | legal | P0 (b) | pack-wide (frame or every card) | - | BL-104 | needs Karma ruling |
 | FR-LEG-19 | legal | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-LEG-20 | legal | P0 (b) | NS-42 | E-S03, E-S07 | none named | counsel; founder; needs Karma ruling |
+| FR-LEG-21 | legal | P0 (b) | NS-51 | - | none named | needs Karma ruling |
+| FR-LEG-22 | legal | P0 (b) | NS-52 | - | none named | needs Karma ruling |
+| FR-LEG-23 | legal | P0 (b) | pack-wide (frame or every card) | - | none named | needs Karma ruling |
+| FR-LEG-24 | legal | P0 (b) | NS-51 | - | none named | needs Karma ruling |
+| FR-LEG-25 | legal | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-LEG-26 | legal | P0 (b) | NS-51 | - | none named | needs Karma ruling |
+| FR-LEG-27 | legal | P0 (b) | NS-52 | - | none named | needs Karma ruling |
 | FR-CMP-01 | compliance | P0 (b) | pack-wide (frame or every card) | - | new row needed (NR-50) | needs Karma ruling |
 | FR-CMP-02 | compliance | P1 | NS-06; NS-17 | - | none named | founder |
 | FR-CMP-03 | compliance | P0 (b) | NS-01; NS-35 | E-S04, E-S07 | new row needed (NR-46) | founder; needs Karma ruling |
@@ -304,6 +370,13 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-CMP-19 | compliance | P0 (b) | NS-05; NS-25 | - | none named | ruled (K6); founder |
 | FR-CMP-20 | compliance | P0 (b) | pack-wide (frame or every card) | - | none named | needs Karma ruling |
 | FR-CMP-21 | compliance | P1 | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CMP-22 | compliance | P0 (b) | NS-51 | - | none named | founder; needs Karma ruling |
+| FR-CMP-23 | compliance | P0 (b) | NS-01 R22 | - | none named | locked row |
+| FR-CMP-24 | compliance | P0 (b) | NS-51 | - | none named | needs Karma ruling |
+| FR-CMP-25 | compliance | P0 (b) | NS-52 | - | none named | needs Karma ruling |
+| FR-CMP-26 | compliance | P0 (b) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CMP-27 | compliance | P0 (b) | NS-39 | E-S03 | none named | needs Karma ruling |
+| FR-CMP-28 | compliance | P0 (b) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-SEC-01 | security | P0 (a) | NS-01 R29; NS-02 R24; NS-25 R19; NS-41 R6 | E-S18 | BL-961 | needs Karma ruling |
 | FR-SEC-02 | security | P0 (a) | NO CARD LINK | E-S15 | BL-961 | needs Karma ruling |
 | FR-SEC-03 | security | P0 (a) | NS-02 R24; NS-11 R22; NS-13 R13 | - | BL-961 (eng table) | needs Karma ruling |
@@ -335,6 +408,16 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-RSK-04 | risk | P0 (b) | NS-25 | - | none named | founder; needs Karma ruling |
 | FR-RSK-05 | risk | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-RSK-06 | risk | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-SEC-27 | security | P0 (a) | NS-06; NS-25; NS-52 | - | BL-870 | needs Karma ruling |
+| FR-SEC-28 | security | P0 (a) | NS-52 | - | none named | needs Karma ruling |
+| FR-SEC-29 | security | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-SEC-30 | security | P0 (a) | NS-01 R6; NS-05 R6b; NS-52 | - | none named | locked row |
+| FR-SEC-31 | security | P0 (a) | NS-01; NS-49 R19 | - | none named | locked row |
+| FR-SEC-32 | security | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-SEC-33 | security | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-SEC-34 | security | P0 (a) | (from text) NS-51, NS-52 | - | BL-961 (text) | needs Karma ruling |
+| FR-SEC-35 | security | P0 (a) | NS-05; NS-11 | - | none named | needs Karma ruling |
+| FR-RSK-07 | risk | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-BKO-01 | back-office | P0 (a) | NS-45 | - | new row needed (NR-60) | needs Karma ruling |
 | FR-BKO-02 | back-office | P1 (a) * | NS-36; NS-45 | - | new row needed (NR-57) | needs Karma ruling |
 | FR-BKO-03 | back-office | P0 (a) | NO CARD LINK | - | BL-237 | founder; needs Karma ruling |
@@ -362,6 +445,15 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-BKO-25 | back-office | P1 | NO CARD LINK | - | new row needed (NR-63) | needs Karma ruling |
 | FR-BKO-26 | back-office | P1 | NS-45 | E-S15, E-ST02, C-S04, C-S20 | BL-552, BL-553, BL-551 (eng table) | needs Karma ruling |
 | FR-BKO-27 | back-office | P1 | NS-45 | C-S02 | new row needed (NR-64) | counsel; needs Karma ruling |
+| FR-BKO-28 | back-office | P0 (a) | NS-52 | - | new row needed | needs Karma ruling |
+| FR-BKO-29 | back-office | P0 (a) | NS-52 | - | none named | needs Karma ruling |
+| FR-BKO-30 | back-office | P0 (a) | NS-09; NS-52 | - | none named | needs Karma ruling |
+| FR-BKO-31 | back-office | P0 (b) | NS-52 | - | none named | founder; needs Karma ruling |
+| FR-BKO-32 | back-office | P0 (b) | NS-52 | - | none named | counsel; founder; needs Karma ruling |
+| FR-BKO-33 | back-office | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-BKO-34 | back-office | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-BKO-35 | back-office | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-BKO-36 | back-office | P1 | NS-51 | - | none named | needs Karma ruling |
 | FR-MSG-01 | messaging | P0 (c) | NS-41 R18 R11 | E-S05, E-S06 | BL-053, BL-368, BL-364 (eng table), BL-510 (eng table), new row needed (NR-65), new row needed (NR-74) | founder; needs Karma ruling |
 | FR-MSG-02 | messaging | P1 | NS-41 | E-S05 | BL-368 | needs Karma ruling |
 | FR-MSG-03 | messaging | P0 (c) | NS-41 R18 | E-S02, E-S24 | BL-368, new row needed (NR-74) | founder; needs Karma ruling |
@@ -400,6 +492,14 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-MSG-36 | messaging | P0 (a) | NS-25 R6; NS-41 R16 | D-S14 | BL-364 | locked row |
 | FR-MSG-37 | messaging | P1 | NS-33 | - | BL-364 | needs Karma ruling |
 | FR-MSG-38 | messaging | P1 | NS-41 | E-S05 | BL-100, BL-368, new row needed (NR-71) | founder; needs Karma ruling |
+| FR-MSG-39 | messaging | P1 | NS-35 R5; NS-49 R2 R4; NS-51; NS-52 | - | none named | locked row |
+| FR-MSG-40 | messaging | P0 (c,a) | NS-51 | D-S04; new screen needed | none named | needs Karma ruling |
+| FR-MSG-41 | messaging | P0 (a) | NS-32; NS-48 R5; NS-51 R11 R12 R25 | - | none named | locked row |
+| FR-MSG-42 | messaging | P1 (a) * | NS-50 R4 R5; NS-51 | - | none named | locked row |
+| FR-MSG-43 | messaging | P0 (b) | NS-49 R25; NS-51 | - | none named | locked row |
+| FR-MSG-44 | messaging | P0 (b) | NS-01 R22 R49; NS-04; NS-51; NS-52 | - | none named | locked row |
+| FR-MSG-45 | messaging | P0 (a,b) | NS-05; NS-52 | - | none named | counsel; needs Karma ruling |
+| FR-MSG-46 | messaging | P1 | NS-01 R31; NS-45 | - | none named | locked row |
 | FR-LOC-01 | languages | P0 (a) | NS-17 R1 R4 | A-S10, E-S08 | new row needed (NR-75) | locked row |
 | FR-LOC-02 | languages | P0 (a) | NS-17 R4 | - | none named | founder |
 | FR-LOC-03 | languages | P0 (a) | NS-17 R2 | - | BL-109 (eng table), new row needed (NR-75) | founder |
@@ -429,6 +529,14 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-LOC-27 | languages | P1 | NS-17 | - | none named | founder; needs Karma ruling |
 | FR-LOC-28 | languages | P0 (a) | NS-17 R10 | A-S07.language | new row needed (NR-81) | locked row |
 | FR-LOC-29 | languages | P0 (a) | NS-17 | - | none named | needs Karma ruling |
+| FR-LOC-30 | languages | P0 (b) | NS-51; NS-52 | - | BL-321 | counsel; needs Karma ruling |
+| FR-LOC-31 | languages | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-LOC-32 | languages | P1 | NS-51 | - | none named | needs Karma ruling |
+| FR-LOC-33 | languages | P1 | NS-01 R11; NS-52 | - | none named | locked row |
+| FR-LOC-34 | languages | P0 (a) | NS-01 R21a R54; NS-52 | - | none named | locked row |
+| FR-LOC-35 | languages | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-LOC-36 | languages | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-LOC-37 | languages | P0 (a,b) | NS-38 | - | none named | needs Karma ruling |
 | FR-REL-01 | reliability | P1 | NS-10 R8; NS-34; NS-35 | E-ST01, E-ST04 | BL-999 | needs Karma ruling |
 | FR-REL-02 | reliability | P1 | NS-38 to NS-45 | E-ST02, E-ST03, E-S14, E-S16 | new row needed (NR-91) | needs Karma ruling |
 | FR-REL-03 | reliability | P1 | NS-41 | E-S05, E-S06, E-S14.outage | BL-994 | needs Karma ruling |
@@ -486,10 +594,21 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-REL-55 | reliability | P1 | NO CARD LINK (suggested via card 19 screen table: NS-41) | E-ST02, E-S14 | new row needed (NR-90) | needs Karma ruling |
 | FR-REL-56 | reliability | P1 | NS-06; NS-11; NS-13 R7; NS-23; NS-32 R6 | - | BL-929, new row needed (NR-90) | locked row |
 | FR-REL-57 | reliability | P2 | NS-22; NS-24 | - | BL-929, new row needed (NR-90) | needs Karma ruling |
-| FR-REL-58 | reliability | P1 | NS-40 | E-S03 | new row needed (NR-90) | counsel; needs Karma ruling |
+| FR-REL-58 | reliability | P1 | NS-40 | E-S03 | new row needed (NR-90) | counsel; founder; needs Karma ruling |
 | FR-REL-59 | reliability | P0 (a) | NS-08 R8; NS-10 R6; NS-37 R4; NS-44 R5 | E-ST37, E-ST17 | BL-978, new row needed (NR-90) | needs Karma ruling |
 | FR-REL-60 | reliability | P1 | NS-10 R14 R6 | - | BL-961, BL-978 (eng table) | needs Karma ruling |
 | FR-REL-61 | reliability | P0 (a) | NS-08 R8; NS-10 R13; NS-11 | C-S12 | none named | locked row |
+| FR-REL-62 | reliability | P0 (a) | NS-01 R17a; NS-52 | - | none named | locked row |
+| FR-REL-63 | reliability | P0 (c) | NS-49; NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-REL-64 | reliability | P0 (c) | NS-01; NS-52 | - | none named | locked row |
+| FR-REL-65 | reliability | P0 (c) | NS-34; NS-37 R2; NS-51; NS-52 | - | none named | locked row |
+| FR-REL-66 | reliability | P1 | NS-37; NS-52 | - | none named | needs Karma ruling |
+| FR-REL-67 | reliability | P0 (a) | NS-51; NS-52 | C-S18 | none named | needs Karma ruling |
+| FR-REL-68 | reliability | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-REL-69 | reliability | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-REL-70 | reliability | P0 (a) | NS-01 R27; NS-10; NS-52 | - | none named | locked row |
+| FR-REL-71 | reliability | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-REL-72 | reliability | P0 (c) | NS-34; NS-37; NS-51; NS-52 | - | none named | needs Karma ruling |
 | FR-AIS-01 | ai-and-speech | P0 (a) | NS-12 R3; NS-19 R4 | - | new row needed (NR-92) | founder; needs Karma ruling |
 | FR-AIS-02 | ai-and-speech | P0 (a) | NS-06 A5 | - | new row needed (NR-92) | founder; needs Karma ruling |
 | FR-AIS-03 | ai-and-speech | P0 (a) | NO CARD LINK | - | new row needed (NR-92) | needs Karma ruling |
@@ -546,6 +665,18 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-AIS-54 | ai-and-speech | P0 (a) | NS-05 R17; NS-06 A5 | - | none named | needs Karma ruling |
 | FR-AIS-55 | ai-and-speech | P0 (a) | NS-01 R50; NS-06 A22; NS-21 R12 | A-S06, A-S07, B-S08 | BL-962 | locked row |
 | FR-AIS-56 | ai-and-speech | P0 (a) | NS-09; plus pack-wide | A-S07, B-S08 | none named | needs Karma ruling |
+| FR-AIS-57 | ai-and-speech | P0 (a) | NS-01 R33; NS-49 R25; NS-51 R5 R29 R33 | - | new row needed | locked row |
+| FR-AIS-58 | ai-and-speech | P0 (a) | NS-46; NS-51 R7 | - | none named | locked row |
+| FR-AIS-59 | ai-and-speech | P0 (a) | NS-01 R3 R9a R9b R21b R21c; NS-49 R9; NS-51; NS-52 | - | none named | locked row |
+| FR-AIS-60 | ai-and-speech | P0 (a) | NO CARD LINK | - | new row needed | needs Karma ruling |
+| FR-AIS-61 | ai-and-speech | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-AIS-62 | ai-and-speech | P0 (a,b) | NS-02 R5; NS-52 | - | new row needed | locked row |
+| FR-AIS-63 | ai-and-speech | P1 (a) | NS-52 | - | none named | founder; needs Karma ruling |
+| FR-AIS-64 | ai-and-speech | P0 (a) | NS-01 R8; NS-52 | - | none named | locked row |
+| FR-AIS-65 | ai-and-speech | P0 (b) | NS-51 | - | none named | needs Karma ruling |
+| FR-AIS-66 | ai-and-speech | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-AIS-67 | ai-and-speech | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-AIS-68 | ai-and-speech | P0 (a) | NS-01 R21a R50; NS-52 | - | none named | locked row |
 | FR-RSH-01 | research | P1 | pack-wide (frame or every card) | - | BL-981 | needs Karma ruling |
 | FR-RSH-02 | research | P1 | NS-03 R6 | - | BL-981, new row needed | founder |
 | FR-RSH-03 | research | P0 (a) | NO CARD LINK | - | new row needed (NR-106) | founder; needs Karma ruling |
@@ -575,6 +706,12 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-RSH-27 | research | P0 (a) | NS-03 | - | none named | founder; needs Karma ruling |
 | FR-RSH-28 | research | P1 | NO CARD LINK | - | BL-981 | needs Karma ruling |
 | FR-RSH-29 | research | P1 | NO CARD LINK | - | new row needed | needs Karma ruling |
+| FR-RSH-30 | research | P0 (b) | NS-51; NS-52 | - | none named | counsel; needs Karma ruling |
+| FR-RSH-31 | research | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-RSH-32 | research | P1 | NS-51 | new screen needed | BL-981 | needs Karma ruling |
+| FR-RSH-33 | research | P1 (a) * | NS-51 | - | none named | founder; needs Karma ruling |
+| FR-RSH-34 | research | P2 | NS-52 | - | none named | needs Karma ruling |
+| FR-RSH-35 | research | P0 (a) | NS-51 | - | none named | needs Karma ruling |
 | FR-QAL-01 | quality | P0 (a) | NS-38 to NS-45 | - | new row needed | needs Karma ruling |
 | FR-QAL-02 | quality | P0 (a) | NO CARD LINK | - | BL-002 | founder; needs Karma ruling |
 | FR-QAL-03 | quality | P0 (a) | NO CARD LINK | E-S27 | BL-002 (eng table), new row needed | needs Karma ruling |
@@ -599,6 +736,13 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-QAL-22 | quality | P0 (c) | NS-41 | E-S05, E-S06, E-S14 | new row needed | needs Karma ruling |
 | FR-QAL-23 | quality | P0 (b) | NS-33 R6 R12; NS-40 | - | none named | founder; needs Karma ruling |
 | FR-QAL-24 | quality | P1 | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-QAL-25 | quality | P0 (a) | NS-51; NS-52 | - | new row needed | needs Karma ruling |
+| FR-QAL-26 | quality | P0 (c) | NS-49 R28; NS-51; NS-52 | - | none named | founder |
+| FR-QAL-27 | quality | P0 (a) | NS-48 R28; NS-51; NS-52 | - | none named | locked row |
+| FR-QAL-28 | quality | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-QAL-29 | quality | P0 (a) | NS-51; NS-52 | - | none named | founder; needs Karma ruling |
+| FR-QAL-30 | quality | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-QAL-31 | quality | P1 | NS-51; NS-52 | - | none named | needs Karma ruling |
 | FR-LCY-01 | lifecycle | P0 (a) | NS-01 | E-S01, E-ST37 | new row needed (NR-116) | needs Karma ruling |
 | FR-LCY-02 | lifecycle | P0 (a) | NS-39 R11 | E-S01.recovery, E-S01.recovery-exporting | new row needed (NR-116) | needs Karma ruling |
 | FR-LCY-03 | lifecycle | P0 (a) | NS-45 R13 | E-S16, E-S01 | new row needed (NR-117) | locked row |
@@ -633,6 +777,15 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-LCY-32 | lifecycle | P2 | NS-25 | - | none named | needs Karma ruling |
 | FR-LCY-33 | lifecycle | P1 | NO CARD LINK | new screen needed | new row needed | needs Karma ruling |
 | FR-LCY-34 | lifecycle | P0 (a) | NO CARD LINK | - | new row needed | needs Karma ruling |
+| FR-LCY-35 | lifecycle | P0 (a) | NS-01 R35; NS-52 | - | new row needed | locked row |
+| FR-LCY-36 | lifecycle | P0 (a) | NS-11; NS-52 | - | new row needed | needs Karma ruling |
+| FR-LCY-37 | lifecycle | P0 (a) | NS-01 R27 R28 R56; NS-10; NS-51; NS-52 | C-S08 | new row needed | locked row |
+| FR-LCY-38 | lifecycle | P1 | NS-52 | - | none named | counsel; needs Karma ruling |
+| FR-LCY-39 | lifecycle | P1 | NS-49 R18; NS-51; NS-52 | - | new row needed | locked row |
+| FR-LCY-40 | lifecycle | P0 (b) | NS-25; NS-52 | - | new row needed | counsel; needs Karma ruling |
+| FR-LCY-41 | lifecycle | P0 (a,b) | NS-01 R16c R31 R55; NS-45; NS-52 | - | none named | locked row |
+| FR-LCY-42 | lifecycle | P0 (a) | NS-01 R29 R30; NS-51; NS-52 | - | none named | locked row |
+| FR-LCY-43 | lifecycle | P1 | NS-52 | - | none named | founder; needs Karma ruling |
 | FR-PRT-01 | print | P0 (b) | NS-07 C28; NS-30 | C-S04 | BL-973, new row needed (NR-128) | locked row |
 | FR-PRT-02 | print | P0 (a) | NS-07 C28 | C-S04, C-S05 | none named | locked row |
 | FR-PRT-03 | print | P1 | NO CARD LINK | C-S05.ready | none named | needs Karma ruling |
@@ -681,6 +834,14 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRT-46 | print | P2 (b) * | NO CARD LINK | - | none named | founder; needs Karma ruling |
 | FR-PRT-47 | print | P2 (b) * | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PRT-34 | print | P2 | NS-30 | - | none named | founder; needs Karma ruling |
+| FR-PRT-48 | print | P2 | NS-30; NS-52 | - | none named | needs Karma ruling |
+| FR-PRT-49 | print | P0 (b) | NS-30; NS-52; plus pack-wide | - | none named | needs Karma ruling |
+| FR-PRT-50 | print | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-PRT-51 | print | P0 (a) | NS-30; NS-52 | - | none named | needs Karma ruling |
+| FR-PRT-52 | print | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-PRT-53 | print | P1 | NS-30 | - | none named | needs Karma ruling |
+| FR-PRT-54 | print | P0 (a) | NS-52 | - | none named | needs Karma ruling |
+| FR-PRT-55 | print | P0 (a) | NS-30; NS-51 | - | none named | needs Karma ruling |
 | FR-DAY-01 | days | P1 | NS-18; NS-46 R1 | - | new row needed | locked row |
 | FR-DAY-02 | days | P0 (a) | NS-46 R2 | A-S01; new screen needed | new row needed | locked row |
 | FR-DAY-03 | days | P0 (c) | NS-18; NS-32 | D-S10, D-S11 | BL-982, BL-966 | ruled (CB-2, N-2; amended) |
@@ -703,9 +864,17 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-DAY-20 | days | P0 (a) | NS-46 R17 | - | new row needed | locked row |
 | FR-DAY-21 | days | P1 | NO CARD LINK | - | new row needed | needs Karma ruling |
 | FR-DAY-22 | days | P1 | NS-46 | - | none named | needs Karma ruling |
-| FR-DAY-23 | days | P0 (b) | NS-46 | - | none named | ruled (DL-4); counsel |
+| FR-DAY-23 | days | P0 (b) | NS-46 | - | none named | ruled (DL-4); counsel; founder |
 | FR-DAY-24 | days | P1 | NS-46 R5 | - | none named | locked row; ruling also DL-3 |
 | FR-DAY-25 | days | P0 (a) | NS-31; NS-46 R18 | - | new row needed | locked row |
+| FR-DAY-26 | days | P0 (a) | NS-32 R1 R3; NS-50 R1; NS-51 | - | none named | locked row |
+| FR-DAY-27 | days | P0 (a) | NS-50 R1 R2 | A-S01 | none named | locked row |
+| FR-DAY-28 | days | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-DAY-29 | days | P0 (a,b) | NS-51 | - | none named | needs Karma ruling |
+| FR-DAY-30 | days | P1 | NS-46 R8 | - | none named | locked row |
+| FR-DAY-31 | days | P1 | NS-32 R3 | - | none named | locked row |
+| FR-DAY-32 | days | P0 (a,b) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-DAY-33 | days | P0 (a) | NS-01 | - | none named | needs Karma ruling |
 | FR-NTC-01 | notifications | P0 (a) | NS-32 R11; NS-48 | - | new row needed | locked row |
 | FR-NTC-02 | notifications | P0 (a) | NS-13 R19; NS-32 R1 R7 | - | new row needed | locked row |
 | FR-NTC-03 | notifications | P0 (a) | NS-13 R18 | - | new row needed | locked row; ruling also N-6 |
@@ -727,48 +896,67 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-NTC-19 | notifications | P1 | NS-13; NS-32 R3 | - | none named | locked row |
 | FR-NTC-20 | notifications | P1 | NS-13; NS-32 | - | none named | needs Karma ruling |
 | FR-NTC-21 | notifications | P2 | NS-17 | - | none named | needs Karma ruling |
-| FR-CUL-01 | cultural-data | P0 (a) | NS-36; NS-47 | C-S24 | new row needed (NR-160) | ruled (CB-1) |
-| FR-CUL-02 | cultural-data | P0 (a) | NS-18; NS-47 R1 | D-S06, C-S24 | new row needed (NR-160) | locked row |
+| FR-NTC-22 | notifications | P0 (a) | NS-32 R1 R2 R3 R5 R15; NS-51 | - | none named | locked row |
+| FR-NTC-23 | notifications | P0 (a) | NS-13; NS-32 R1 R7 R15 | - | new row needed (NR-160) | locked row |
+| FR-NTC-24 | notifications | P0 (a) | NS-13 R18 R19 | - | new row needed (NR-160) | locked row |
+| FR-NTC-25 | notifications | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-NTC-26 | notifications | P0 (a) | NS-32 R10 R12 R13 | - | none named | locked row |
+| FR-NTC-27 | notifications | P0 (a,b) | NS-13; NS-51 | - | none named | locked row |
+| FR-NTC-28 | notifications | P0 (a) | NS-32 R14; NS-51 | - | new row needed (NR-160) | locked row |
+| FR-NTC-29 | notifications | P0 (a) | NS-48 R5; NS-49 R3 | - | none named | locked row |
+| FR-NTC-30 | notifications | P1 (a) | NS-13; NS-49 R25; NS-51 | - | none named | locked row |
+| FR-NTC-31 | notifications | P1 | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CUL-01 | cultural-data | P0 (a) | NS-36; NS-47 | C-S24 | new row needed (NR-161) | ruled (CB-1) |
+| FR-CUL-02 | cultural-data | P0 (a) | NS-18; NS-47 R1 | D-S06, C-S24 | new row needed (NR-161) | locked row |
 | FR-CUL-03 | cultural-data | P0 (a) | NS-47 R2 | C-S15 | none named | locked row |
-| FR-CUL-04 | cultural-data | P0 (a) | NS-47 R3 | E-S24 | new row needed (NR-32), new row needed (NR-161), new row needed (NR-162), new row needed (NR-164) | locked row |
-| FR-CUL-05 | cultural-data | P0 (a) | NS-13; NS-35; NS-47 R4 | - | new row needed (NR-162) | locked row; ruling also CB-3 |
-| FR-CUL-06 | cultural-data | P0 (a) | NS-37 R4; NS-47 R5 | - | new row needed (NR-160) | locked row |
+| FR-CUL-04 | cultural-data | P0 (a) | NS-47 R3 | E-S24 | new row needed (NR-32), new row needed (NR-162), new row needed (NR-163), new row needed (NR-165) | locked row |
+| FR-CUL-05 | cultural-data | P0 (a) | NS-13; NS-35; NS-47 R4 | - | new row needed (NR-163) | locked row; ruling also CB-3 |
+| FR-CUL-06 | cultural-data | P0 (a) | NS-37 R4; NS-47 R5 | - | new row needed (NR-161) | locked row |
 | FR-CUL-07 | cultural-data | P0 (a) | NS-13 R22; NS-47 R6 | E-S24, C-S10 | new row needed (NR-32) | locked row |
 | FR-CUL-08 | cultural-data | P0 (a) | NS-47 R7 | - | new row needed (NR-32) | locked row |
-| FR-CUL-09 | cultural-data | P0 (a) | NS-47 R8 | - | new row needed (NR-164) | locked row |
+| FR-CUL-09 | cultural-data | P0 (a) | NS-47 R8 | - | new row needed (NR-165) | locked row |
 | FR-CUL-10 | cultural-data | P1 (a) | NS-11; NS-47 R9 | C-S04 | new row needed (NR-32) | ruled (CB-4) |
-| FR-CUL-11 | cultural-data | P0 (a,b) | NS-32; NS-47 R10 | - | new row needed (NR-161) | locked row |
-| FR-CUL-12 | cultural-data | P0 (a) | NS-13; NS-32 R12 R13; NS-47 R11 | D-S06, D-S10 | new row needed (NR-163), new row needed (NR-166) | ruled (CB-5, N-2) |
+| FR-CUL-11 | cultural-data | P0 (a,b) | NS-32; NS-47 R10 | - | new row needed (NR-162) | locked row |
+| FR-CUL-12 | cultural-data | P0 (a) | NS-13; NS-32 R12 R13; NS-47 R11 | D-S06, D-S10 | new row needed (NR-164), new row needed (NR-167) | ruled (CB-5, N-2) |
 | FR-CUL-13 | cultural-data | P1 | NS-23; NS-47 R12 | A-S01, C-S24 | none named | locked row |
 | FR-CUL-14 | cultural-data | P1 (b) | NS-32 | - | none named | ruled (CB-5); counsel |
-| FR-CUL-15 | cultural-data | P0 (a) | NS-47 R13 | C-S03 | BL-961, new row needed (NR-160) | ruled (CB-4) |
-| FR-CUL-16 | cultural-data | P0 (a) | NS-36; NS-47 R14 | C-S19 | new row needed (NR-160) | needs Karma ruling |
+| FR-CUL-15 | cultural-data | P0 (a) | NS-47 R13 | C-S03 | BL-961, new row needed (NR-161) | ruled (CB-4) |
+| FR-CUL-16 | cultural-data | P0 (a) | NS-36; NS-47 R14 | C-S19 | new row needed (NR-161) | needs Karma ruling |
 | FR-CUL-17 | cultural-data | P1 (b) | NS-45; NS-47 R15 | C-S20 | none named | ruled (CB-4) |
 | FR-CUL-18 | cultural-data | P1 (b) | NS-39; NS-47 R16 | E-S01, E-S08 | none named | locked row; ruling also CB-6 |
-| FR-CUL-19 | cultural-data | P1 | NS-13; NS-47 R17 | A-S13, D-S04, A-S01 | new row needed (NR-165) | locked row; ruling also CB-6 |
+| FR-CUL-19 | cultural-data | P1 | NS-13; NS-47 R17 | A-S13, D-S04, A-S01 | new row needed (NR-166) | locked row; ruling also CB-6 |
 | FR-CUL-20 | cultural-data | P1 | NS-47 R18 | - | none named | locked row; ruling also CB-6 |
-| FR-CUL-21 | cultural-data | P0 (b) | NS-47 R19 | C-S24 | new row needed (NR-165) | locked row |
+| FR-CUL-21 | cultural-data | P0 (b) | NS-47 R19 | C-S24 | new row needed (NR-166) | locked row |
 | FR-CUL-22 | cultural-data | P0 (a) | NS-47 R20 | - | none named | locked row |
 | FR-CUL-23 | cultural-data | P0 (b) | NS-47 | E-S27 | BL-975 (eng table) | counsel; needs Karma ruling |
 | FR-CUL-24 | cultural-data | P1 (b) | NS-46 | - | none named | needs Karma ruling |
 | FR-CUL-25 | cultural-data | P1 | NS-18; NS-25 | D-S13, D-S18 | none named | needs Karma ruling |
 | FR-CUL-26 | cultural-data | P1 (b) | NS-33 | C-S24, A-S01.daysAsk | none named | needs Karma ruling |
 | FR-CUL-27 | cultural-data | P2 | NS-47 | - | none named | founder; needs Karma ruling |
+| FR-CUL-28 | cultural-data | P0 (a,b) | NS-51 | - | none named | needs Karma ruling |
+| FR-CUL-29 | cultural-data | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-CUL-30 | cultural-data | P0 (a,b) | NS-51 | - | none named | needs Karma ruling |
+| FR-CUL-31 | cultural-data | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CUL-32 | cultural-data | P1 (a) | NS-13; NS-51 | - | none named | needs Karma ruling |
+| FR-CUL-33 | cultural-data | P0 (a) | NS-36 | - | none named | needs Karma ruling |
+| FR-CUL-34 | cultural-data | P0 (a,b) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CUL-35 | cultural-data | P0 (a,b) | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-CUL-36 | cultural-data | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PHS-01 | photos | P1 | NS-01 R1 R23a; NS-35 | A-S04; new screen needed | new row needed | locked row |
-| FR-PHS-02 | photos | P1 | NS-01 R1; NS-35; NS-50 | - | new row needed (NR-170) | locked row; ruling also R-IA-3 |
-| FR-PHS-03 | photos | P1 | NS-01 R8 R9b | - | new row needed (NR-170) | locked row |
+| FR-PHS-02 | photos | P1 | NS-01 R1; NS-35; NS-50 | - | new row needed (NR-171) | locked row; ruling also R-IA-3 |
+| FR-PHS-03 | photos | P1 | NS-01 R8 R9b | - | new row needed (NR-171) | locked row |
 | FR-PHS-04 | photos | P0 (a) | NS-01 R21b R33; NS-48 | - | none named | locked row |
-| FR-PHS-10 | photos | P1 | NS-01 R59 R19 | new screen needed | new row needed (NR-167) | locked row |
-| FR-PHS-11 | photos | P0 (a) | NS-01 R2 R22 | - | new row needed (NR-167) | locked row |
-| FR-PHS-12 | photos | P0 (a) | NS-01 R3 R6 R17c R52 | - | new row needed (NR-167) | locked row |
-| FR-PHS-13 | photos | P1 | NS-01 | new screen needed | new row needed (NR-167) | needs Karma ruling |
-| FR-PHS-14 | photos | P0 (a) | NS-01 R8 R9b R21a R21b | new screen needed | new row needed (NR-167) | founder |
-| FR-PHS-15 | photos | P0 (a) | NS-01 R9b R33 | - | new row needed (NR-167) | locked row |
-| FR-PHS-16 | photos | P1 | NS-01 R17a | new screen needed | new row needed (NR-167) | locked row |
-| FR-PHS-17 | photos | P0 (a) | NS-01 R4 | new screen needed | new row needed (NR-167) | locked row |
-| FR-PHS-18 | photos | P1 | NS-01 R2 | new screen needed | new row needed (NR-167) | locked row |
-| FR-PHS-19 | photos | P0 (a) | NS-01 R13a R47 | - | new row needed (NR-167) | locked row |
-| FR-PHS-20 | photos | P0 (a) | NS-01 R14 R15 R26 | - | new row needed (NR-167) | locked row |
+| FR-PHS-10 | photos | P1 | NS-01 R59 R19 | new screen needed | new row needed (NR-168) | locked row |
+| FR-PHS-11 | photos | P0 (a) | NS-01 R2 R22 | - | new row needed (NR-168) | locked row |
+| FR-PHS-12 | photos | P0 (a) | NS-01 R3 R6 R17c R52 | - | new row needed (NR-168) | locked row |
+| FR-PHS-13 | photos | P1 | NS-01 | new screen needed | new row needed (NR-168) | needs Karma ruling |
+| FR-PHS-14 | photos | P0 (a) | NS-01 R8 R9b R21a R21b | new screen needed | new row needed (NR-168) | founder |
+| FR-PHS-15 | photos | P0 (a) | NS-01 R9b R33 | - | new row needed (NR-168) | locked row |
+| FR-PHS-16 | photos | P1 | NS-01 R17a | new screen needed | new row needed (NR-168) | locked row |
+| FR-PHS-17 | photos | P0 (a) | NS-01 R4 | new screen needed | new row needed (NR-168) | locked row |
+| FR-PHS-18 | photos | P1 | NS-01 R2 | new screen needed | new row needed (NR-168) | locked row |
+| FR-PHS-19 | photos | P0 (a) | NS-01 R13a R47 | - | new row needed (NR-168) | locked row |
+| FR-PHS-20 | photos | P0 (a) | NS-01 R14 R15 R26 | - | new row needed (NR-168) | locked row |
 | FR-PHS-21 | photos | P1 | NS-01 R19 | - | new row needed | locked row |
 | FR-PHS-22 | photos | P0 (b) | NS-35 | - | new row needed | needs Karma ruling |
 | FR-PHS-23 | photos | P0 (b) | NS-01 R32 | - | new row needed | locked row |
@@ -784,14 +972,28 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PHS-42 | photos | P1 | NO CARD LINK | - | new row needed | needs Karma ruling |
 | FR-PHS-43 | photos | P0 (a) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PHS-44 | photos | P0 (a) | NS-01 | - | none named | needs Karma ruling |
-| FR-PHS-50 | photos | P0 (a) | NS-01 | - | new row needed (NR-172) | needs Karma ruling |
+| FR-PHS-50 | photos | P0 (a) | NS-01 | - | new row needed (NR-173) | needs Karma ruling |
 | FR-PHS-51 | photos | P0 (a) | NS-01 R51 | - | new row needed (NR-32) | locked row |
 | FR-PHS-52 | photos | P0 (a) | NS-01 R6 R14 | - | none named | locked row |
 | FR-PHS-53 | photos | P0 (a) | NS-01 | - | none named | needs Karma ruling |
 | FR-PHS-54 | photos | P0 (b) | NS-01 | - | none named | needs Karma ruling |
-| FR-PHS-55 | photos | P0 (b) | NS-01 | - | new row needed (NR-172) | needs Karma ruling |
+| FR-PHS-55 | photos | P0 (b) | NS-01 | - | new row needed (NR-173) | needs Karma ruling |
 | FR-PHS-56 | photos | P0 (b) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PHS-57 | photos | P0 (a) | NS-01 R33 | - | none named | locked row |
+| FR-PHS-58 | photos | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-59 | photos | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-60 | photos | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-61 | photos | P0 (a) | NS-32; NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-62 | photos | P1 | NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-63 | photos | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-64 | photos | P0 (a) | NS-49; NS-51 | - | none named | needs Karma ruling |
+| FR-PHS-65 | photos | P0 (a) | NS-01; NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-PHS-66 | photos | P0 (a) | NS-01 R22; NS-52 | - | none named | locked row |
+| FR-PHS-67 | photos | P0 (c) | NS-52 | - | none named | needs Karma ruling |
+| FR-PHS-68 | photos | P1 | NS-01 R6; NS-52 | - | none named | locked row |
+| FR-PHS-69 | photos | P0 (a) | NS-52 | - | none named | needs Karma ruling |
+| FR-PHS-70 | photos | P0 (b) | NS-49 R30; NS-52 | - | none named | locked row |
+| FR-PHS-71 | photos | P0 (a) | NS-01; NS-02; NS-52 | - | none named | needs Karma ruling |
 | FR-OPP-01 | opportunities | P1 | NS-35 R3 | - | none named | locked row |
 | FR-OPP-02 | opportunities | P1 | NS-01 R1 R19 R20a | A-S01, A-S03 | BL-931 | locked row; ruling also R-IA-3 |
 | FR-OPP-03 | opportunities | P0 (a) | NS-01; NS-32 | A-S03 | new row needed | needs Karma ruling |
@@ -804,6 +1006,11 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-OPP-10 | opportunities | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-OPP-11 | opportunities | P2 | NS-09 | A-S07 | new row needed | needs Karma ruling |
 | FR-OPP-12 | opportunities | P1 | NO CARD LINK | - | none named | needs Karma ruling |
+| FR-OPP-13 | opportunities | P1 | NS-52 | - | none named | needs Karma ruling |
+| FR-OPP-14 | opportunities | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-OPP-15 | opportunities | P1 | NS-23 | - | none named | needs Karma ruling |
+| FR-OPP-16 | opportunities | P1 | NS-07; NS-24; NS-52 | - | none named | locked row |
+| FR-OPP-17 | opportunities | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 
 ## 2. Reverse view per card, NS-01 to NS-50
 
@@ -817,111 +1024,111 @@ Card titles are read from the cards on disk (NS-46 to NS-50 are the proposed tit
 
 | Card | support | marketing | operations | finance | data | privacy | legal | compliance | security and risk | FRs touching |
 |---|---|---|---|---|---|---|---|---|---|---|
-| NS-01 | P | P | P | C | P | C | P | P | P | 89 |
-| NS-02 | C | P | P | C | P | C | C | C | P | 34 |
+| NS-01 | P | P | P | C | P | C | P | P | P | 119 |
+| NS-02 | C | P | P | C | P | C | C | C | P | 37 |
 | NS-03 | P | C | C | C | C | C | P | C | C | 21 |
-| NS-04 | C | C | C | C | C | C | C | C | C | 7 |
-| NS-05 | P | P | P | C | P | C | P | P | C | 37 |
-| NS-06 | P | P | P | P | P | P | P | P | P | 57 |
-| NS-07 | P | C | P | P | P | P | P | C | P | 40 |
+| NS-04 | C | C | C | C | C | C | C | C | C | 8 |
+| NS-05 | P | P | P | C | P | C | P | P | C | 40 |
+| NS-06 | P | P | P | P | P | P | P | P | P | 58 |
+| NS-07 | P | C | P | P | P | P | P | C | P | 41 |
 | NS-08 | P | P | P | P | P | P | P | P | C | 43 |
-| NS-09 | C | C | C | C | C | C | C | C | C | 17 |
-| NS-10 | P | C | P | P | P | P | P | P | P | 47 |
-| NS-11 | P | C | C | C | P | P | C | C | P | 25 |
+| NS-09 | C | C | C | C | C | C | C | C | C | 19 |
+| NS-10 | P | C | P | P | P | P | P | P | P | 49 |
+| NS-11 | P | C | C | C | P | P | C | C | P | 28 |
 | NS-12 | C | C | P | M | P | P | P | C | C | 18 |
-| NS-13 | C | P | P | C | P | C | C | C | C | 37 |
+| NS-13 | C | P | P | C | P | C | C | C | C | 42 |
 | NS-14 | C | C | C | C | P | C | C | C | C | 8 |
 | NS-15 | C | C | C | C | P | C | C | C | C | 6 |
 | NS-16 | M | C | P | C | P | P | P | P | C | 26 |
-| NS-17 | C | P | P | P | P | P | P | P | P | 53 |
+| NS-17 | C | P | P | P | P | P | P | P | P | 54 |
 | NS-18 | C | C | C | C | C | C | P | C | C | 23 |
 | NS-19 | C | C | C | n/a | n/a | C | C | C | C | 6 |
 | NS-20 | C | C | C | n/a | n/a | C | C | C | C | 4 |
 | NS-21 | P | C | C | C | C | C | C | C | C | 13 |
 | NS-22 | C | C | C | C | C | C | C | C | C | 7 |
-| NS-23 | P | C | C | C | C | C | C | C | C | 16 |
-| NS-24 | C | P | C | C | P | C | C | C | C | 14 |
-| NS-25 | M | P | P | P | P | P | M | P | P | 59 |
+| NS-23 | P | C | C | C | C | C | C | C | C | 17 |
+| NS-24 | C | P | C | C | P | C | C | C | C | 15 |
+| NS-25 | M | P | P | P | P | P | M | P | P | 61 |
 | NS-26 | C | C | C | P | n/a | C | C | C | C | 8 |
 | NS-27 | C | C | C | n/a | n/a | C | C | C | C | 2 |
 | NS-28 | C | C | C | P | n/a | C | C | C | C | 7 |
 | NS-29 | C | C | C | C | n/a | C | C | C | C | 2 |
-| NS-30 | C | C | C | P | n/a | C | C | C | C | 8 |
+| NS-30 | C | C | C | P | n/a | C | C | C | C | 15 |
 | NS-31 | C | C | C | n/a | n/a | C | C | C | C | 2 |
-| NS-32 | C | P | C | C | C | C | C | C | C | 39 |
-| NS-33 | P | C | P | C | P | C | C | P | C | 24 |
-| NS-34 | C | C | P | P | C | C | C | C | C | 32 |
-| NS-35 | C | C | C | C | C | C | C | C | C | 18 |
-| NS-36 | P | C | P | C | C | P | P | P | C | 28 |
-| NS-37 | C | C | C | C | C | C | C | C | C | 11 |
-| NS-38 | NR | P | NR | P | P | C | P | P | C | 42 |
-| NS-39 | NR | P | NR | C | C | C | C | C | C | 40 |
+| NS-32 | C | P | C | C | C | C | C | C | C | 48 |
+| NS-33 | P | C | P | C | P | C | C | P | C | 25 |
+| NS-34 | C | C | P | P | C | C | C | C | C | 34 |
+| NS-35 | C | C | C | C | C | C | C | C | C | 19 |
+| NS-36 | P | C | P | C | C | P | P | P | C | 31 |
+| NS-37 | C | C | C | C | C | C | C | C | C | 14 |
+| NS-38 | NR | P | NR | P | P | C | P | P | C | 43 |
+| NS-39 | NR | P | NR | C | C | C | C | C | C | 42 |
 | NS-40 | NR | P | NR | C | P | P | C | P | C | 34 |
 | NS-41 | NR | M | NR | NR | P | P | P | P | C | 56 |
 | NS-42 | NR | M | NR | NR | M | M | P | P | C | 33 |
 | NS-43 | NR | M | NR | NR | M | M | NR | NR | C | 34 |
 | NS-44 | NR | M | NR | NR | M | M | NR | NR | C | 29 |
-| NS-45 | NR | M | NR | NR | M | M | NR | NR | M | 45 |
-| NS-46 | - | - | - | - | - | - | - | - | - | 32 |
-| NS-47 | - | - | - | - | - | - | - | - | - | 34 |
-| NS-48 | - | - | - | - | - | - | - | - | - | 26 |
-| NS-49 | - | - | - | - | - | - | - | - | - | 42 |
-| NS-50 | - | - | - | - | - | - | - | - | - | 3 |
+| NS-45 | NR | M | NR | NR | M | M | NR | NR | M | 48 |
+| NS-46 | - | - | - | - | - | - | - | - | - | 38 |
+| NS-47 | - | - | - | - | - | - | - | - | - | 35 |
+| NS-48 | - | - | - | - | - | - | - | - | - | 32 |
+| NS-49 | - | - | - | - | - | - | - | - | - | 58 |
+| NS-50 | - | - | - | - | - | - | - | - | - | 7 |
 
 **Second and third wave (fourteen functions)**
 
 | Card | back-office | messaging | languages | reliability | ai-and-speech | research | quality | lifecycle | print | days | notifications | cultural-data | photos | opportunities | FRs touching |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| NS-01 | - | NR | C | P | C | - | P | P | C | n/a | - | n/a | - | - | 89 |
-| NS-02 | - | NR | n/a | P | C | - | P | P | - | n/a | - | - | - | - | 34 |
+| NS-01 | - | NR | C | P | C | - | P | P | C | n/a | - | n/a | - | - | 119 |
+| NS-02 | - | NR | n/a | P | C | - | P | P | - | n/a | - | - | - | - | 37 |
 | NS-03 | - | NR | - | C | P | - | P | n/a | - | n/a | - | - | - | - | 21 |
-| NS-04 | - | NR | - | C | P | - | P | n/a | - | n/a | - | - | - | - | 7 |
-| NS-05 | - | NR | P | P | C | - | P | C | - | n/a | - | - | - | - | 37 |
-| NS-06 | - | NR | - | P | C | - | P | P | C | n/a | - | - | - | - | 57 |
-| NS-07 | - | NR | P | P | n/a | - | P | P | P | n/a | - | - | - | - | 40 |
+| NS-04 | - | NR | - | C | P | - | P | n/a | - | n/a | - | - | - | - | 8 |
+| NS-05 | - | NR | P | P | C | - | P | C | - | n/a | - | - | - | - | 40 |
+| NS-06 | - | NR | - | P | C | - | P | P | C | n/a | - | - | - | - | 58 |
+| NS-07 | - | NR | P | P | n/a | - | P | P | P | n/a | - | - | - | - | 41 |
 | NS-08 | - | NR | - | P | P | - | P | P | C | n/a | - | - | - | - | 43 |
-| NS-09 | - | NR | - | P | C | - | P | C | - | n/a | - | - | - | - | 17 |
-| NS-10 | - | P | P | P | P | - | P | P | - | n/a | - | - | - | - | 47 |
-| NS-11 | - | NR | - | P | C | - | P | P | C | n/a | - | M | - | - | 25 |
+| NS-09 | - | NR | - | P | C | - | P | C | - | n/a | - | - | - | - | 19 |
+| NS-10 | - | P | P | P | P | - | P | P | - | n/a | - | - | - | - | 49 |
+| NS-11 | - | NR | - | P | C | - | P | P | C | n/a | - | M | - | - | 28 |
 | NS-12 | - | NR | - | P | C | - | P | P | C | n/a | - | - | - | - | 18 |
-| NS-13 | - | C | - | C | n/a | - | P | P | - | P | - | P | - | - | 37 |
+| NS-13 | - | C | - | C | n/a | - | P | P | - | P | - | P | - | - | 42 |
 | NS-14 | - | NR | - | P | n/a | - | P | P | - | n/a | - | - | - | - | 8 |
 | NS-15 | - | NR | - | P | n/a | - | P | P | - | n/a | - | - | - | - | 6 |
 | NS-16 | - | NR | C | P | P | - | P | P | - | n/a | - | - | - | - | 26 |
-| NS-17 | - | NR | P | P | C | - | P | P | P | n/a | - | - | - | - | 53 |
+| NS-17 | - | NR | P | P | C | - | P | P | P | n/a | - | - | - | - | 54 |
 | NS-18 | - | C | - | P | C | - | P | P | - | P | - | P | - | - | 23 |
 | NS-19 | - | NR | - | P | C | - | P | P | - | n/a | - | - | - | - | 6 |
 | NS-20 | - | NR | - | P | n/a | - | P | P | - | n/a | - | - | - | - | 4 |
 | NS-21 | - | NR | - | P | C | - | P | C | - | n/a | - | - | - | - | 13 |
 | NS-22 | - | NR | - | P | n/a | - | P | C | P | n/a | - | - | - | - | 7 |
-| NS-23 | - | NR | C | P | n/a | - | P | C | - | n/a | - | - | - | - | 16 |
-| NS-24 | - | NR | P | P | n/a | - | P | C | C | n/a | - | - | - | - | 14 |
-| NS-25 | - | P | - | P | P | - | P | P | P | n/a | - | C | - | - | 59 |
+| NS-23 | - | NR | C | P | n/a | - | P | C | - | n/a | - | - | - | - | 17 |
+| NS-24 | - | NR | P | P | n/a | - | P | C | C | n/a | - | - | - | - | 15 |
+| NS-25 | - | P | - | P | P | - | P | P | P | n/a | - | C | - | - | 61 |
 | NS-26 | - | C | - | C | C | - | - | C | - | n/a | - | - | - | - | 8 |
 | NS-27 | - | NR | - | C | C | - | - | C | - | n/a | - | - | - | - | 2 |
 | NS-28 | - | NR | - | C | C | - | - | C | C | n/a | - | - | - | - | 7 |
 | NS-29 | - | NR | - | C | C | - | - | C | - | n/a | - | - | - | - | 2 |
-| NS-30 | - | NR | - | C | C | - | - | C | P | n/a | - | - | - | - | 8 |
+| NS-30 | - | NR | - | C | C | - | - | C | P | n/a | - | - | - | - | 15 |
 | NS-31 | - | NR | - | C | C | - | - | C | - | C | - | - | - | - | 2 |
-| NS-32 | - | C | - | C | n/a | - | P | C | - | P | - | P | - | - | 39 |
-| NS-33 | - | NR | P | C | n/a | - | P | P | - | n/a | - | - | - | - | 24 |
-| NS-34 | - | NR | - | P | P | - | P | P | - | n/a | - | - | - | - | 32 |
-| NS-35 | - | NR | - | C | n/a | - | C | P | - | n/a | - | - | - | - | 18 |
-| NS-36 | - | NR | C | P | n/a | - | P | P | - | n/a | - | M | - | - | 28 |
-| NS-37 | - | NR | - | P | n/a | - | P | n/a | - | n/a | - | - | - | - | 11 |
-| NS-38 | - | P | P | P | P | - | P | P | - | - | - | - | - | - | 42 |
-| NS-39 | - | C | C | P | C | - | M | P | - | - | - | C | - | - | 40 |
+| NS-32 | - | C | - | C | n/a | - | P | C | - | P | - | P | - | - | 48 |
+| NS-33 | - | NR | P | C | n/a | - | P | P | - | n/a | - | - | - | - | 25 |
+| NS-34 | - | NR | - | P | P | - | P | P | - | n/a | - | - | - | - | 34 |
+| NS-35 | - | NR | - | C | n/a | - | C | P | - | n/a | - | - | - | - | 19 |
+| NS-36 | - | NR | C | P | n/a | - | P | P | - | n/a | - | M | - | - | 31 |
+| NS-37 | - | NR | - | P | n/a | - | P | n/a | - | n/a | - | - | - | - | 14 |
+| NS-38 | - | P | P | P | P | - | P | P | - | - | - | - | - | - | 43 |
+| NS-39 | - | C | C | P | C | - | M | P | - | - | - | C | - | - | 42 |
 | NS-40 | - | C | C | P | n/a | - | M | P | - | - | - | C | - | - | 34 |
 | NS-41 | - | P | C | P | n/a | - | M | P | - | - | - | C | - | - | 56 |
 | NS-42 | - | NR | C | P | n/a | - | M | P | - | - | - | - | - | - | 33 |
 | NS-43 | - | - | C | P | n/a | - | M | P | - | - | - | - | - | - | 34 |
 | NS-44 | - | - | NR | P | n/a | - | M | P | - | - | - | P | - | - | 29 |
-| NS-45 | - | - | NR | P | n/a | - | M | P | - | - | - | M | - | - | 45 |
-| NS-46 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 32 |
-| NS-47 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 34 |
-| NS-48 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 26 |
-| NS-49 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 42 |
-| NS-50 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 3 |
+| NS-45 | - | - | NR | P | n/a | - | M | P | - | - | - | M | - | - | 48 |
+| NS-46 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 38 |
+| NS-47 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 35 |
+| NS-48 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 32 |
+| NS-49 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 58 |
+| NS-50 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 7 |
 
 No per-card verdict table in the file (all cells `-` above): back-office, research, notifications, photos, opportunities. Of these, back-office gives a verdict per back-office area, not per card (its section 2.3); research, photos and opportunities give a coverage check and no verdict; notifications gives a coverage check and the proposed card NS-48.
 
@@ -979,56 +1186,56 @@ Union of: the Links column (no mark), the requirement text (`~t`), the FR rows n
 
 | Card | FR ids |
 |---|---|
-| NS-01 Photo with a letter (01-photo-with-a-letter.md) | SUP-04~t~v; SUP-11; SUP-21; MKT-01~t; MKT-11; MKT-12; MKT-17~t; OPS-01; OPS-05; OPS-17; OPS-18~t~v; OPS-22~v; OPS-23; OPS-27~t~v; OPS-28~t~v; OPS-31; FIN-06; DAT-07~t; DAT-10; DAT-11; DAT-13; DAT-21~t; DAT-31~t; PRV-06~v; PRV-07; PRV-16; PRV-18; PRV-30; PRV-34; LEG-01; LEG-02; LEG-14; LEG-18~t; CMP-01~t; CMP-03; CMP-04; CMP-06~t; CMP-08; CMP-12~t; CMP-20~t; SEC-01; SEC-22; SEC-14; SEC-18; REL-23; REL-34~v; REL-48; REL-49; AIS-53; AIS-55; RSH-11; QAL-12; LCY-01; LCY-21; LCY-31; PRT-12; PRT-13~v; PHS-01; PHS-02; PHS-03; PHS-04; PHS-10; PHS-11; PHS-12; PHS-13; PHS-14; PHS-15; PHS-16; PHS-17; PHS-18; PHS-19; PHS-20; PHS-21; PHS-23; PHS-24; PHS-25; PHS-33; PHS-40; PHS-41; PHS-44; PHS-50; PHS-51; PHS-52; PHS-53; PHS-54; PHS-55; PHS-57; OPP-02; OPP-03 |
-| NS-02 Find (02-find.md) | SUP-04~t~v; SUP-11; MKT-01~t; MKT-07; MKT-11; MKT-13; MKT-17~t; OPS-01; OPS-02; OPS-05; OPS-17; OPS-18~t; OPS-22~v; OPS-23~v; OPS-31; DAT-06~t; DAT-21~t; DAT-27; DAT-30; PRV-10~v; PRV-13; PRV-14~v; LEG-02; CMP-03~v; SEC-01; SEC-03; SEC-18; REL-23; REL-39; REL-48~v; REL-49; AIS-32; RSH-11; QAL-12 |
+| NS-01 Photo with a letter (01-photo-with-a-letter.md) | SUP-04~t~v; SUP-11; SUP-21; MKT-01~t; MKT-11; MKT-12; MKT-17~t; OPS-01; OPS-05; OPS-17; OPS-18~t~v; OPS-22~v; OPS-23; OPS-27~t~v; OPS-28~t~v; OPS-31; OPS-39~t; FIN-06; DAT-07~t; DAT-10; DAT-11; DAT-13; DAT-21~t; DAT-31~t; DAT-43~t; PRV-06~v; PRV-07; PRV-16; PRV-18; PRV-30; PRV-34; PRV-40; PRV-43; PRV-48; LEG-01; LEG-02; LEG-14; LEG-18~t; CMP-01~t; CMP-03; CMP-04; CMP-06~t; CMP-08; CMP-12~t; CMP-20~t; CMP-23; SEC-01; SEC-22; SEC-14; SEC-18; SEC-27~t; SEC-30; SEC-31; MSG-44; MSG-46; LOC-33; LOC-34; REL-23; REL-34~v; REL-48; REL-49; REL-59~t; REL-62; REL-64; REL-70; AIS-53; AIS-55; AIS-57; AIS-59; AIS-64; AIS-68; RSH-11; QAL-12; LCY-01; LCY-21; LCY-31; LCY-35; LCY-37; LCY-41; LCY-42; PRT-12; PRT-13~v; DAY-33; PHS-01; PHS-02; PHS-03; PHS-04; PHS-10; PHS-11; PHS-12; PHS-13; PHS-14; PHS-15; PHS-16; PHS-17; PHS-18; PHS-19; PHS-20; PHS-21; PHS-23; PHS-24; PHS-25; PHS-33; PHS-40; PHS-41; PHS-44; PHS-50; PHS-51; PHS-52; PHS-53; PHS-54; PHS-55; PHS-57; PHS-65; PHS-66; PHS-68; PHS-71; OPP-02; OPP-03 |
+| NS-02 Find (02-find.md) | SUP-04~t~v; SUP-11; MKT-01~t; MKT-07; MKT-11; MKT-13; MKT-17~t; OPS-01; OPS-02; OPS-05; OPS-17; OPS-18~t; OPS-22~v; OPS-23~v; OPS-31; DAT-06~t; DAT-21~t; DAT-27; DAT-30; PRV-10~v; PRV-13; PRV-14~v; PRV-39; LEG-02; CMP-03~v; SEC-01; SEC-03; SEC-18; REL-23; REL-39; REL-48~v; REL-49; AIS-32; AIS-62; RSH-11; QAL-12; PHS-71 |
 | NS-03 The family-hears-it pilot (03-family-hears-it-pilot.md) | SUP-16; POL-03; POL-13; MKT-25; FIN-13; DAT-08~t; DAT-10~t; LEG-11; LOC-18; AIS-26; RSH-02; RSH-13; RSH-14; RSH-15; RSH-17; RSH-19; RSH-20; RSH-21; RSH-22; RSH-24; RSH-27 |
-| NS-04 Hands-free capture (04-hands-free-capture-spike.md) | OPS-27; FIN-06; PRV-17; AIS-24; PHS-22~t; OPP-05; OPP-06 |
-| NS-05 Share one letter (05-share-one-letter.md) | SUP-04~t; SUP-07; POL-03; POL-08; POL-09; MKT-01~t; MKT-11; MKT-14; MKT-17; MKT-19; OPS-01~v; OPS-18~t; OPS-23~v; OPS-26; DAT-06~t; DAT-27; PRV-13~v; PRV-34; LEG-05; LEG-18~t; CMP-01~t; CMP-05; CMP-06~t; CMP-07~t; CMP-12~t; CMP-19; SEC-17; BKO-12; LOC-13; REL-54~v; REL-55~v; REL-56~v; AIS-32; AIS-54; RSH-10; RSH-11; RSH-19 |
-| NS-06 Firsts, the sealed letter and quick capture (06-firsts-sealed-letter-quick-capture.md) | SUP-04~t; SUP-07~t~v; SUP-11; MKT-01~t; MKT-11; MKT-13; MKT-17~t; OPS-05; OPS-06; OPS-07; OPS-08; OPS-18~t; OPS-23~v; OPS-24; OPS-26; OPS-27; OPS-28~t; FIN-02~t; FIN-06; FIN-19; DAT-12; DAT-27; PRV-10~v; PRV-16; PRV-17; PRV-18~v; LEG-02; LEG-06; LEG-07; LEG-08; LEG-18~t; CMP-02; CMP-03~v; CMP-07~t; CMP-08; CMP-12~t; SEC-21; SEC-14; SEC-18; SEC-20; RSK-03; REL-13~v; REL-17; REL-42; REL-45~v; REL-46; REL-56; AIS-02; AIS-46; AIS-53; AIS-54; AIS-55; RSH-07; QAL-13; LCY-25; OPP-05; OPP-08 |
-| NS-07 Remaining rows of the capability map (NX-42): quiet days (C5), the printable book (C28), the label guard (G11), and what is cited or parked (07-remaining-capability-rows.md) | SUP-20~v; MKT-01~t; OPS-26; OPS-34; FIN-24; DAT-01; DAT-09; DAT-17; DAT-20; PRV-17~v; PRV-29; PRV-34; LEG-12; LEG-13~v; CMP-05; SEC-06~v; SEC-08; LOC-13; LOC-15; REL-48; REL-49~v; AIS-05; AIS-32; RSH-09; LCY-21; PRT-01; PRT-02; PRT-04; PRT-05; PRT-07; PRT-08; PRT-10; PRT-11; PRT-12; PRT-14; PRT-16; PRT-37; PRT-39; PRT-42; PRT-43 |
+| NS-04 Hands-free capture (04-hands-free-capture-spike.md) | OPS-27; FIN-06; PRV-17; MSG-44; AIS-24; PHS-22~t; OPP-05; OPP-06 |
+| NS-05 Share one letter (05-share-one-letter.md) | SUP-04~t; SUP-07; POL-03; POL-08; POL-09; MKT-01~t; MKT-11; MKT-14; MKT-17; MKT-19; OPS-01~v; OPS-18~t; OPS-23~v; OPS-26; DAT-06~t; DAT-27; PRV-13~v; PRV-34; LEG-05; LEG-18~t; CMP-01~t; CMP-05; CMP-06~t; CMP-07~t; CMP-12~t; CMP-19; SEC-17; SEC-30; SEC-35; BKO-12; MSG-45; LOC-13; REL-54~v; REL-55~v; REL-56~v; AIS-32; AIS-54; RSH-10; RSH-11; RSH-19 |
+| NS-06 Firsts, the sealed letter and quick capture (06-firsts-sealed-letter-quick-capture.md) | SUP-04~t; SUP-07~t~v; SUP-11; MKT-01~t; MKT-11; MKT-13; MKT-17~t; OPS-05; OPS-06; OPS-07; OPS-08; OPS-18~t; OPS-23~v; OPS-24; OPS-26; OPS-27; OPS-28~t; FIN-02~t; FIN-06; FIN-19; DAT-12; DAT-27; PRV-10~v; PRV-16; PRV-17; PRV-18~v; LEG-02; LEG-06; LEG-07; LEG-08; LEG-18~t; CMP-02; CMP-03~v; CMP-07~t; CMP-08; CMP-12~t; SEC-21; SEC-14; SEC-18; SEC-20; RSK-03; SEC-27; REL-13~v; REL-17; REL-42; REL-45~v; REL-46; REL-56; AIS-02; AIS-46; AIS-53; AIS-54; AIS-55; RSH-07; QAL-13; LCY-25; OPP-05; OPP-08 |
+| NS-07 Remaining rows of the capability map (NX-42): quiet days (C5), the printable book (C28), the label guard (G11), and what is cited or parked (07-remaining-capability-rows.md) | SUP-20~v; MKT-01~t; OPS-26; OPS-34; FIN-24; DAT-01; DAT-09; DAT-17; DAT-20; PRV-17~v; PRV-29; PRV-34; LEG-12; LEG-13~v; CMP-05; SEC-06~v; SEC-08; LOC-13; LOC-15; REL-48; REL-49~v; AIS-05; AIS-32; RSH-09; LCY-21; PRT-01; PRT-02; PRT-04; PRT-05; PRT-07; PRT-08; PRT-10; PRT-11; PRT-12; PRT-14; PRT-16; PRT-37; PRT-39; PRT-42; PRT-43; OPP-16 |
 | NS-08 Recording backup: get ready, do not turn it on (08-keeping-and-trust.md) | SUP-05; SUP-07~v; SUP-21; MKT-06; MKT-29; OPS-01; OPS-03; OPS-12; OPS-15; OPS-16; OPS-18~t; OPS-20; OPS-23; OPS-24~t; FIN-01; FIN-02~t; FIN-03; FIN-04; FIN-05; DAT-14; PRV-06~v; PRV-08; PRV-09~v; PRV-30~t~v; LEG-09; LEG-16; CMP-03~v; CMP-05; CMP-12~t; REL-04; REL-07; REL-09; REL-10~v; REL-11~v; REL-12~v; REL-18; REL-37; REL-59; REL-61; RSH-10; LCY-13; LCY-14; PRT-39~t~v |
-| NS-09 Let it go always finishes (08-keeping-and-trust.md) | SUP-04~t; SUP-08; MKT-01~t; OPS-01; OPS-18~t~v; DAT-09~t~v; DAT-17; LEG-17; REL-12; REL-13; REL-17; REL-42; REL-47; AIS-04; AIS-56; QAL-15; OPP-11 |
-| NS-10 A new phone: close the last gap (08-keeping-and-trust.md) | SUP-02~v; SUP-04~t; SUP-07; SUP-13; SUP-21; MKT-01~t; OPS-07~v; OPS-14~v; OPS-21; FIN-03; FIN-11; FIN-19; DAT-08; DAT-14; PRV-14~v; PRV-20; LEG-04; LEG-09; CMP-17; CMP-18; SEC-05; BKO-07; MSG-07; LOC-14; REL-01; REL-07; REL-08; REL-15; REL-39; REL-42; REL-43; REL-47; REL-48; REL-53; REL-59; REL-60; REL-61; AIS-06; QAL-05~t; LCY-04; LCY-09; LCY-10; LCY-11; LCY-12; LCY-13; LCY-14; LCY-26 |
-| NS-11 Save a copy of the year (08-keeping-and-trust.md) | SUP-04~t; SUP-07; SUP-20~v; MKT-01~t; OPS-18~t; DAT-13; DAT-25; DAT-27; PRV-14~v; SEC-03; SEC-06~v; SEC-08; LOC-13; REL-54~v; REL-55~v; REL-56; REL-61; AIS-05; RSH-23; LCY-12; LCY-20; LCY-21; LCY-22; LCY-25; CUL-10 |
+| NS-09 Let it go always finishes (08-keeping-and-trust.md) | SUP-04~t; SUP-08; MKT-01~t; OPS-01; OPS-18~t~v; OPS-39~t; DAT-09~t~v; DAT-17; LEG-17; BKO-30; REL-12; REL-13; REL-17; REL-42; REL-47; AIS-04; AIS-56; QAL-15; OPP-11 |
+| NS-10 A new phone: close the last gap (08-keeping-and-trust.md) | SUP-02~v; SUP-04~t; SUP-07; SUP-13; SUP-21; MKT-01~t; OPS-07~v; OPS-14~v; OPS-21; FIN-03; FIN-11; FIN-19; DAT-08; DAT-14; PRV-14~v; PRV-20; LEG-04; LEG-09; CMP-17; CMP-18; SEC-05; BKO-07; MSG-07; LOC-14; REL-01; REL-07; REL-08; REL-15; REL-39; REL-42; REL-43; REL-47; REL-48; REL-53; REL-59; REL-60; REL-61; REL-70; AIS-06; QAL-05~t; LCY-04; LCY-09; LCY-10; LCY-11; LCY-12; LCY-13; LCY-14; LCY-26; LCY-37 |
+| NS-11 Save a copy of the year (08-keeping-and-trust.md) | SUP-04~t; SUP-07; SUP-20~v; MKT-01~t; OPS-18~t; DAT-13; DAT-25; DAT-27; PRV-14~v; PRV-42; SEC-03; SEC-06~v; SEC-08; SEC-35; LOC-13; REL-54~v; REL-55~v; REL-56; REL-61; AIS-05; RSH-23; LCY-12; LCY-20; LCY-21; LCY-22; LCY-25; LCY-36; CUL-10 |
 | NS-12 Earlier versions of my own words (08-keeping-and-trust.md) | SUP-04~t; SUP-07~t~v; OPS-05; OPS-06; OPS-07; OPS-24~t; FIN-02~t; FIN-04; PRV-21; LEG-08; LEG-17; SEC-20; REL-45; REL-47; AIS-01; AIS-04; AIS-06; PRT-16 |
-| NS-13 Reminders that help and then step back (09-capture.md) | SUP-04~t~v; MKT-01~t; MKT-20; OPS-01~v; OPS-18~t; OPS-26; FIN-09; DAT-32; SEC-03; MSG-16; MSG-18; MSG-19; MSG-20; MSG-21; REL-56; RSH-05; RSH-08; RSH-23; QAL-13; DAY-03~v; DAY-08; DAY-09; NTC-02; NTC-03; NTC-04; NTC-06; NTC-11; NTC-12; NTC-14; NTC-19; NTC-20; CUL-05; CUL-07; CUL-12; CUL-19; PHS-31; PHS-32 |
+| NS-13 Reminders that help and then step back (09-capture.md) | SUP-04~t~v; MKT-01~t; MKT-20; OPS-01~v; OPS-18~t; OPS-26; FIN-09; DAT-32; SEC-03; MSG-16; MSG-18; MSG-19; MSG-20; MSG-21; REL-56; RSH-05; RSH-08; RSH-23; QAL-13; DAY-03~v; DAY-08; DAY-09; NTC-02; NTC-03; NTC-04; NTC-06; NTC-11; NTC-12; NTC-14; NTC-19; NTC-20; NTC-23; NTC-24; NTC-27; NTC-30; CUL-05; CUL-07; CUL-12; CUL-19; CUL-32; PHS-31; PHS-32 |
 | NS-14 Whose book this letter goes to (09-capture.md) | SUP-04~t~v; OPS-18~t; DAT-08; DAT-09~t; CMP-03~t; REL-54~v; REL-55~v; REL-56~v |
 | NS-15 A letter for another day (09-capture.md) | SUP-04~v; LOC-11; LOC-12; REL-54; REL-55~v; REL-56~v |
 | NS-16 Someone else speaks (09-capture.md) | POL-08; OPS-04; OPS-05; OPS-06; OPS-07; OPS-17; DAT-27; PRV-14~v; PRV-22; PRV-30~t; LEG-08; LEG-15; LEG-18~t; CMP-12~t; CMP-14; SEC-18; REL-13~v; REL-23; REL-46~v; AIS-07; AIS-26; AIS-27; AIS-34; AIS-45; RSH-19; OPP-07 |
-| NS-17 A second spoken language, when it passes its gate (09-capture.md) | SUP-04~v; MKT-11; MKT-26; MKT-28; OPS-24~t~v; OPS-25~v; FIN-02~t; FIN-08; FIN-20; DAT-23; DAT-27; PRV-19; LEG-13; CMP-02; LOC-01; LOC-02; LOC-03; LOC-04; LOC-05; LOC-06; LOC-07; LOC-08; LOC-09; LOC-10; LOC-17; LOC-19; LOC-21; LOC-22; LOC-26; LOC-27; LOC-28; LOC-29; REL-08; REL-50; AIS-04; AIS-07; AIS-09; AIS-10; AIS-11; AIS-16; AIS-20; AIS-22; AIS-23; AIS-24; AIS-28; AIS-33; AIS-34; AIS-43; AIS-53; RSH-12; RSH-16; PRT-10; NTC-21 |
+| NS-17 A second spoken language, when it passes its gate (09-capture.md) | SUP-04~v; MKT-11; MKT-26; MKT-28; OPS-24~t~v; OPS-25~v; FIN-02~t; FIN-08; FIN-20; DAT-23; DAT-27; PRV-19; LEG-13; CMP-02; LOC-01; LOC-02; LOC-03; LOC-04; LOC-05; LOC-06; LOC-07; LOC-08; LOC-09; LOC-10; LOC-17; LOC-18~c; LOC-19; LOC-21; LOC-22; LOC-26; LOC-27; LOC-28; LOC-29; REL-08; REL-50; AIS-04; AIS-07; AIS-09; AIS-10; AIS-11; AIS-16; AIS-20; AIS-22; AIS-23; AIS-24; AIS-28; AIS-33; AIS-34; AIS-43; AIS-53; RSH-12; RSH-16; PRT-10; NTC-21 |
 | NS-18 Typed days in reminders (09-capture.md) | SUP-04~t~v; MKT-20; OPS-17; DAT-27; PRV-14~v; LEG-08; SEC-18; MSG-18; REL-23; REL-54~v; REL-55~v; REL-56~v; AIS-07; RSH-05; DAY-01; DAY-03; DAY-04; DAY-15; DAY-16; NTC-08; CUL-02; CUL-15~t; CUL-25 |
 | NS-19 Add more to this letter (09-capture.md) | SUP-04~v; REL-54~v; REL-55~v; REL-56~v; AIS-01; AIS-07 |
 | NS-20 A letter to two books (09-capture.md) | SUP-04~t~v; REL-54~v; REL-55~v; REL-56~v |
 | NS-21 The letter page reads as one place (10-reading-and-family.md) | SUP-04~t; SUP-07; OPS-18~t; OPS-22~v; PRV-16; CMP-08; REL-45; REL-54~v; REL-55~v; REL-56~v; AIS-08; AIS-53; AIS-55 |
 | NS-22 The Book header stays calm (10-reading-and-family.md) | OPS-18~t; OPS-22~v; MSG-31; REL-54; REL-55~v; REL-56~v; REL-57 |
-| NS-23 One past letter on Home (10-reading-and-family.md) | SUP-04~t~v; SUP-16; OPS-18~t; OPS-22~v; OPS-26; DAT-09~t; PRV-14~v; SEC-22; LOC-16; LOC-18; REL-54; REL-55~v; REL-56; RSH-21; CUL-13; OPP-04 |
-| NS-24 Read the year back (10-reading-and-family.md) | SUP-04~v; MKT-01~t; MKT-03; OPS-18~t; OPS-22~v; DAT-25; LOC-11; REL-54~v; REL-55~v; REL-56~v; REL-57; AIS-41; RSH-23; PRT-05~v |
-| NS-25 The other parent, in the store app (10-reading-and-family.md) | SUP-04; SUP-07~v; POL-03; POL-04; POL-05; POL-09; MKT-01~t; MKT-05; MKT-17; MKT-26; OPS-01; OPS-04; OPS-05; OPS-06; OPS-10; OPS-18~t; OPS-21; FIN-02~t; FIN-19; PRV-13; PRV-30~t~v; PRV-32; LEG-03; LEG-09; LEG-10; LEG-18~t; CMP-01~t; CMP-03~t~v; CMP-07~t; CMP-12~t; CMP-13; CMP-19; SEC-01; SEC-09; SEC-10; SEC-23; SEC-20; RSK-04; BKO-12; BKO-14; BKO-15; MSG-14; MSG-23; MSG-24; MSG-27; MSG-28; MSG-29; MSG-30; MSG-36; REL-13~v; REL-46~v; AIS-08; RSH-06; RSH-19; LCY-30; LCY-32; PRT-26~v; PRT-37; CUL-25 |
+| NS-23 One past letter on Home (10-reading-and-family.md) | SUP-04~t~v; SUP-16; OPS-18~t; OPS-22~v; OPS-26; DAT-09~t; PRV-14~v; SEC-22; LOC-16; LOC-18; REL-54; REL-55~v; REL-56; RSH-21; CUL-13; OPP-04; OPP-15 |
+| NS-24 Read the year back (10-reading-and-family.md) | SUP-04~v; MKT-01~t; MKT-03; OPS-18~t; OPS-22~v; DAT-25; LOC-11; REL-54~v; REL-55~v; REL-56~v; REL-57; AIS-41; RSH-23; PRT-05~v; OPP-16 |
+| NS-25 The other parent, in the store app (10-reading-and-family.md) | SUP-04; SUP-07~v; POL-03; POL-04; POL-05; POL-09; MKT-01~t; MKT-05; MKT-17; MKT-26; OPS-01; OPS-04; OPS-05; OPS-06; OPS-10; OPS-18~t; OPS-21; FIN-02~t; FIN-19; PRV-13; PRV-30~t~v; PRV-32; LEG-03; LEG-09; LEG-10; LEG-18~t; CMP-01~t; CMP-03~t~v; CMP-07~t; CMP-12~t; CMP-13; CMP-19; SEC-01; SEC-09; SEC-10; SEC-23; SEC-20; RSK-04; SEC-27; BKO-12; BKO-14; BKO-15; MSG-14; MSG-23; MSG-24; MSG-27; MSG-28; MSG-29; MSG-30; MSG-36; REL-13~v; REL-46~v; AIS-08; RSH-06; RSH-19; LCY-30; LCY-32; LCY-40; PRT-26~v; PRT-37; CUL-25 |
 | NS-26 Hear when the other parent writes (10-reading-and-family.md) | POL-03~v; FIN-02~t; PRV-30~t; CMP-05; SEC-17; BKO-12; MSG-16; MSG-17 |
 | NS-27 Who can read each letter (10-reading-and-family.md) | POL-03; BKO-12 |
 | NS-28 A family link or circle (10-reading-and-family.md) | POL-03; MKT-17; FIN-02~t; CMP-05; SEC-17; BKO-12; PRT-39~t~v |
 | NS-29 Words that light up as they are read (10-reading-and-family.md) | POL-03~v; AIS-41 |
-| NS-30 A book you can hold (10-reading-and-family.md) | POL-03~v; FIN-24; LEG-12; RSH-09; PRT-01; PRT-06; PRT-39; PRT-34 |
+| NS-30 A book you can hold (10-reading-and-family.md) | POL-03~v; FIN-24; LEG-12; RSH-09; PRT-01; PRT-06; PRT-23~c; PRT-39; PRT-34; PRT-48; PRT-49; PRT-51; PRT-52~t; PRT-53; PRT-55 |
 | NS-31 A library of moments (10-reading-and-family.md) | POL-03; DAY-25 |
-| NS-32 One notification budget (11-foundations.md) | SUP-04~t~v; MKT-01~t; MKT-20; FIN-09; DAT-09~t; SEC-21; MSG-16; MSG-17; MSG-18; MSG-19; MSG-20; MSG-21; MSG-22; REL-56; RSH-05; RSH-08; QAL-13; DAY-03; DAY-07; DAY-09; NTC-01; NTC-02; NTC-04; NTC-06; NTC-07; NTC-08; NTC-09; NTC-10; NTC-11; NTC-16; NTC-19; NTC-20; CUL-11; CUL-12; CUL-14; PHS-30; PHS-31; PHS-32; OPP-03 |
-| NS-33 Everyone can use it (11-foundations.md) | SUP-22; MKT-18; OPS-30~t~v; DAT-08; DAT-24; DAT-27; CMP-06; CMP-07; CMP-08~v; CMP-10; MSG-12; MSG-33; MSG-37; LOC-16; REL-31; REL-40~v; REL-41~v; RSH-12; QAL-07; QAL-09; QAL-10; QAL-23; LCY-15; CUL-26 |
-| NS-34 It feels quick on the smallest phone (11-foundations.md) | OPS-27; OPS-28; OPS-30~t~v; OPS-31; FIN-19; DAT-15; DAT-16; REL-01; REL-27; REL-29; REL-31; REL-32; REL-33; REL-34; REL-35; REL-36; REL-37; REL-38; REL-39~t; REL-40; REL-48; REL-49; REL-50; AIS-35; AIS-36; AIS-37; AIS-42; AIS-44; AIS-51; QAL-07; QAL-12; LCY-15 |
-| NS-35 Only Home starts a letter, and a test proves it (11-foundations.md) | SUP-08; MKT-21; OPS-30~v; DAT-17; CMP-03; LOC-20; REL-01; REL-32; REL-33; REL-40; REL-41; REL-48; CUL-05; PHS-01; PHS-02; PHS-22; OPP-01; OPP-05 |
-| NS-36 New kinds of data follow the letter (11-foundations.md) | SUP-08; SUP-15; MKT-01~t; OPS-07; OPS-24~v; DAT-09~t; DAT-13; DAT-17; PRV-06; PRV-07~v; PRV-34; LEG-08; SEC-06; BKO-02; MSG-34; MSG-35; REL-13; REL-17; REL-45; REL-46; REL-47~v; QAL-21; LCY-20; LCY-22; LCY-23; LCY-29; CUL-01; CUL-16 |
-| NS-37 The Book stays fast as it grows (11-foundations.md) | OPS-30~v; DAT-15; PRV-34; REL-34; REL-37; REL-39; REL-48~v; REL-49; REL-59; QAL-21; CUL-06 |
-| NS-38 The App Store page and install (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-05~v; MKT-06~v; MKT-08; MKT-09~v; MKT-11~v; MKT-15~v; MKT-21; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; FIN-10; PRV-30~v; LEG-04; CMP-06~v; CMP-09; CMP-11~v; CMP-19~v; SEC-26~v; MSG-26; MSG-32; MSG-33; LOC-22; LOC-23; REL-02; REL-03~v; REL-55~v; REL-59~v; AIS-21; AIS-48; RSH-04; RSH-26; QAL-01; QAL-05; QAL-20; LCY-05; LCY-06 |
-| NS-39 First launch and the first interaction (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-21; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33; PRV-24; CMP-09; SEC-07~v; SEC-25; MSG-09; MSG-19; MSG-24; MSG-26; MSG-30; LOC-24; REL-02; REL-03~v; REL-55~v; REL-59~v; AIS-12; AIS-13; AIS-14; AIS-16; AIS-25; AIS-29; AIS-44; RSH-04; QAL-01; QAL-05; QAL-06; QAL-15; LCY-02; LCY-05; CUL-18 |
+| NS-32 One notification budget (11-foundations.md) | SUP-04~t~v; MKT-01~t; MKT-20; FIN-09; DAT-09~t; PRV-46; SEC-21; MSG-16; MSG-17; MSG-18; MSG-19; MSG-20; MSG-21; MSG-22; MSG-41; REL-56; RSH-05; RSH-08; QAL-13; DAY-03; DAY-07; DAY-09; DAY-26; DAY-31; NTC-01; NTC-02; NTC-04; NTC-06; NTC-07; NTC-08; NTC-09; NTC-10; NTC-11; NTC-16; NTC-19; NTC-20; NTC-22; NTC-23; NTC-26; NTC-28; CUL-11; CUL-12; CUL-14; PHS-30; PHS-31; PHS-32; PHS-61; OPP-03 |
+| NS-33 Everyone can use it (11-foundations.md) | SUP-22; SUP-30; MKT-18; OPS-30~t~v; DAT-08; DAT-24; DAT-27; CMP-06; CMP-07; CMP-08~v; CMP-10; MSG-12; MSG-33; MSG-37; LOC-16; REL-31; REL-40~v; REL-41~v; RSH-12; QAL-07; QAL-09; QAL-10; QAL-23; LCY-15; CUL-26 |
+| NS-34 It feels quick on the smallest phone (11-foundations.md) | OPS-27; OPS-28; OPS-30~t~v; OPS-31; FIN-19; DAT-15; DAT-16; REL-01; REL-27; REL-29; REL-31; REL-32; REL-33; REL-34; REL-35; REL-36; REL-37; REL-38; REL-39~t; REL-40; REL-48; REL-49; REL-50; REL-65; REL-72; AIS-35; AIS-36; AIS-37; AIS-42; AIS-44; AIS-51; QAL-07; QAL-12; LCY-15 |
+| NS-35 Only Home starts a letter, and a test proves it (11-foundations.md) | SUP-08; MKT-21; OPS-30~v; DAT-17; CMP-03; MSG-39; LOC-20; REL-01; REL-32; REL-33; REL-40; REL-41; REL-48; CUL-05; PHS-01; PHS-02; PHS-22; OPP-01; OPP-05 |
+| NS-36 New kinds of data follow the letter (11-foundations.md) | SUP-08; SUP-15; SUP-25; SUP-28; MKT-01~t; OPS-07; OPS-24~v; DAT-09~t; DAT-13; DAT-17; PRV-06; PRV-07~v; PRV-34; LEG-08; SEC-06; BKO-02; MSG-34; MSG-35; REL-13; REL-17; REL-45; REL-46; REL-47~v; QAL-21; LCY-20; LCY-22; LCY-23; LCY-29; CUL-01; CUL-16; CUL-33 |
+| NS-37 The Book stays fast as it grows (11-foundations.md) | OPS-30~v; DAT-15; PRV-34; REL-34; REL-37; REL-39; REL-48~v; REL-49; REL-59; REL-65; REL-66; REL-72; QAL-21; CUL-06 |
+| NS-38 The App Store page and install (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-05~v; MKT-06~v; MKT-08; MKT-09~v; MKT-11~v; MKT-15~v; MKT-21; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; FIN-10; PRV-30~v; LEG-04; CMP-06~v; CMP-09; CMP-11~v; CMP-19~v; SEC-26~v; MSG-26; MSG-32; MSG-33; LOC-22; LOC-23; LOC-37; REL-02; REL-03~v; REL-55~v; REL-59~v; AIS-21; AIS-48; RSH-04; RSH-26; QAL-01; QAL-05; QAL-20; LCY-05; LCY-06 |
+| NS-39 First launch and the first interaction (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-21; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33; PRV-24; PRV-37; CMP-09; CMP-27; SEC-07~v; SEC-25; MSG-09; MSG-19; MSG-24; MSG-26; MSG-30; LOC-24; REL-02; REL-03~v; REL-55~v; REL-59~v; AIS-12; AIS-13; AIS-14; AIS-16; AIS-25; AIS-29; AIS-44; RSH-04; QAL-01; QAL-05; QAL-06; QAL-15; LCY-02; LCY-05; CUL-18 |
 | NS-40 Age and region checks (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-21; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36; DAT-33~t; DAT-35; PRV-24; PRV-25~v; PRV-26; CMP-09; CMP-15; MSG-24; MSG-30; LOC-24; REL-02; REL-03~v; REL-55~v; REL-58; REL-59~v; RSH-04; RSH-13; QAL-01; QAL-05; QAL-06; QAL-13; QAL-15; QAL-23; LCY-05 |
 | NS-41 Sign up and sign in (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t; DAT-35; PRV-05; PRV-14~v; PRV-24; PRV-27~v; PRV-35; LEG-04; CMP-09; CMP-13~v; SEC-01; SEC-02~v; SEC-05; SEC-11; SEC-24; BKO-07; MSG-01; MSG-02; MSG-03; MSG-04; MSG-05; MSG-06; MSG-07; MSG-08; MSG-09; MSG-10; MSG-11; MSG-15; MSG-23; MSG-25; MSG-36; MSG-38; REL-02; REL-03; REL-55~v; REL-59~v; RSH-04; QAL-01; QAL-04~t; QAL-05; QAL-06; QAL-15; QAL-22; LCY-05 |
 | NS-42 Agreements and notices at collection (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t~v; DAT-34~v; PRV-02; PRV-04; PRV-32~v; LEG-09; LEG-20; CMP-07~v; CMP-09; MSG-32; REL-02; REL-03~v; REL-55~v; REL-59~v; RSH-04; QAL-01; QAL-05; QAL-06; QAL-15; QAL-21; LCY-05 |
 | NS-43 Setting up the first book (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t~v; DAT-34~v; PRV-24; PRV-28~v; LEG-02~v; CMP-09; CMP-17~v; SEC-25; LOC-11; LOC-12; REL-02; REL-03~v; REL-54; REL-55~v; REL-56~t; REL-59~v; RSH-04; QAL-01; QAL-05; QAL-06; QAL-15; LCY-05 |
 | NS-44 The first letter and the allowance (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t~v; DAT-34~v; PRV-10~v; PRV-16~v; PRV-24~v; LEG-02~v; CMP-09; CMP-17~v; REL-02; REL-03~v; REL-55~v; REL-59; RSH-04; QAL-01; QAL-05; LCY-05; LCY-30 |
-| NS-45 Account life after first run (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25; OPS-33~v; OPS-36~v; DAT-33~v; DAT-34~t~v; PRV-14~v; PRV-15~v; PRV-18~v; LEG-02~v; CMP-09; CMP-17~v; SEC-06; SEC-07~v; SEC-12; BKO-01; BKO-02; BKO-04; BKO-07; BKO-26; BKO-27; REL-02; REL-03~v; REL-55~v; REL-59~v; QAL-01; QAL-05; QAL-15; QAL-21; LCY-03; LCY-09; LCY-11; LCY-17; LCY-18; LCY-19; LCY-26; CUL-17 |
-| NS-46 Days we mark (21-days-cultural-photos-home.md) | CMP-01~c; RSH-24~c; QAL-09~c; DAY-01; DAY-02; DAY-03~c; DAY-04; DAY-05; DAY-06; DAY-07~c; DAY-08; DAY-09; DAY-10; DAY-11; DAY-12; DAY-13; DAY-14; DAY-15; DAY-16; DAY-17; DAY-18; DAY-19; DAY-20; DAY-21~c; DAY-22; DAY-23; DAY-24; DAY-25; NTC-08; NTC-09; CUL-04~c; CUL-24 |
-| NS-47 Cultural background: the optional ask, what is kept, and the lock-screen rules (21-days-cultural-photos-home.md) | PRV-07~c; PRV-24~c; PRV-34~c; SEC-22~c; RSH-21~c; LCY-31~c; NTC-09; CUL-01; CUL-02; CUL-03; CUL-04; CUL-05; CUL-06; CUL-07; CUL-08; CUL-09; CUL-10; CUL-11; CUL-12; CUL-13; CUL-14~c; CUL-15; CUL-16; CUL-17; CUL-18; CUL-19; CUL-20; CUL-21; CUL-22; CUL-23; CUL-24~c; CUL-25~c; CUL-26~c; CUL-27 |
-| NS-48 Notification catalogue and rotation (21-days-cultural-photos-home.md) | LOC-10~c; LOC-11~c; REL-32~c; RSH-08~c; NTC-01; NTC-02~c; NTC-03~c; NTC-04~c; NTC-05; NTC-06~c; NTC-07; NTC-08~c; NTC-09~c; NTC-10~c; NTC-11~c; NTC-12~c; NTC-13; NTC-14~c; NTC-15~c; NTC-16~c; NTC-17; NTC-18; NTC-19~c; NTC-20~c; NTC-21~c; PHS-04 |
-| NS-49 Picture-first start and Journaling Suggestions (21-days-cultural-photos-home.md) | PRV-34~c; RSH-03~c; LCY-31~c; PHS-01~c; PHS-02~c; PHS-03~c; PHS-04~c; PHS-10~c; PHS-11~c; PHS-12~c; PHS-13~c; PHS-14~c; PHS-15~c; PHS-16~c; PHS-17~c; PHS-18~c; PHS-19~c; PHS-20~c; PHS-21~c; PHS-22~c; PHS-23~c; PHS-24~c; PHS-25~c; PHS-30~c; PHS-31~c; PHS-32~c; PHS-33~c; PHS-34~c; PHS-40~c; PHS-41~c; PHS-42~c; PHS-43~c; PHS-44~c; PHS-50~c; PHS-51~c; PHS-52~c; PHS-53~c; PHS-54~c; PHS-55~c; PHS-56~c; PHS-57~c; OPP-02~c |
-| NS-50 Home today (21-days-cultural-photos-home.md) | MKT-23~c; MKT-24~c; PHS-02 |
+| NS-45 Account life after first run (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25; OPS-33~v; OPS-36~v; DAT-33~v; DAT-34~t~v; PRV-14~v; PRV-15~v; PRV-18~v; LEG-02~v; CMP-09; CMP-17~v; SEC-06; SEC-07~v; SEC-12; BKO-01; BKO-02; BKO-04; BKO-07; BKO-26; BKO-27; MSG-46; REL-02; REL-03~v; REL-55~v; REL-59~v; QAL-01; QAL-05; QAL-15; QAL-21; LCY-03; LCY-09; LCY-11; LCY-17; LCY-18; LCY-19; LCY-26; LCY-27~c; LCY-41; CUL-17 |
+| NS-46 Days we mark (21-days-cultural-photos-home.md) | MKT-38; CMP-01~c; MSG-42~t; LOC-32~t; AIS-58; RSH-24~c; QAL-09~c; DAY-01; DAY-02; DAY-03~c; DAY-04; DAY-05; DAY-06; DAY-07~c; DAY-08; DAY-09; DAY-10; DAY-11; DAY-12; DAY-13; DAY-14; DAY-15; DAY-16; DAY-17; DAY-18; DAY-19; DAY-20; DAY-21~c; DAY-22; DAY-23; DAY-24; DAY-25; DAY-30; NTC-08; NTC-09; CUL-04~c; CUL-24; PHS-60~t |
+| NS-47 Cultural background: the optional ask, what is kept, and the lock-screen rules (21-days-cultural-photos-home.md) | PRV-07~c; PRV-24~c; PRV-34~c; SEC-22~c; LOC-32~t; RSH-21~c; LCY-31~c; NTC-09; CUL-01; CUL-02; CUL-03; CUL-04; CUL-05; CUL-06; CUL-07; CUL-08; CUL-09; CUL-10; CUL-11; CUL-12; CUL-13; CUL-14~c; CUL-15; CUL-16; CUL-17; CUL-18; CUL-19; CUL-20; CUL-21; CUL-22; CUL-23; CUL-24~c; CUL-25~c; CUL-26~c; CUL-27 |
+| NS-48 Notification catalogue and rotation (21-days-cultural-photos-home.md) | PRV-46; MSG-41; LOC-10~c; LOC-11~c; LOC-12~c; LOC-32~t; REL-32~c; RSH-08~c; QAL-27; NTC-01; NTC-02~c; NTC-03~c; NTC-04~c; NTC-05; NTC-06~c; NTC-07; NTC-08~c; NTC-09~c; NTC-10~c; NTC-11~c; NTC-12~c; NTC-13; NTC-14~c; NTC-15~c; NTC-16~c; NTC-17; NTC-18; NTC-19~c; NTC-20~c; NTC-21~c; NTC-29; PHS-04 |
+| NS-49 Picture-first start and Journaling Suggestions (21-days-cultural-photos-home.md) | PRV-34~c; CMP-23~t; SEC-31; MSG-39; MSG-43; LOC-32~t; LOC-37~t; REL-63; AIS-57; AIS-59; RSH-03~c; QAL-26; QAL-28~t; LCY-31~c; LCY-39; NTC-29; NTC-30; PHS-01~c; PHS-02~c; PHS-03~c; PHS-04~c; PHS-10~c; PHS-11~c; PHS-12~c; PHS-13~c; PHS-14~c; PHS-15~c; PHS-16~c; PHS-17~c; PHS-18~c; PHS-19~c; PHS-20~c; PHS-21~c; PHS-22~c; PHS-23~c; PHS-24~c; PHS-25~c; PHS-30~c; PHS-31~c; PHS-32~c; PHS-33~c; PHS-34~c; PHS-40~c; PHS-41~c; PHS-42~c; PHS-43~c; PHS-44~c; PHS-50~c; PHS-51~c; PHS-52~c; PHS-53~c; PHS-54~c; PHS-55~c; PHS-56~c; PHS-57~c; PHS-64; PHS-70; OPP-02~c |
+| NS-50 Home today (21-days-cultural-photos-home.md) | MKT-23~c; MKT-24~c; MSG-42; LOC-32~t; DAY-26; DAY-27; PHS-02 |
 
 ### 2c. Cards a function split into parts
 
@@ -1051,7 +1258,7 @@ Union of: the Links column (no mark), the requirement text (`~t`), the FR rows n
 
 ### 2d. FRs that name the frame or every card and no single card
 
-39 FRs: SUP-01, MKT-01, MKT-04, MKT-10, MKT-15, MKT-16, MKT-24, MKT-31, MKT-34, OPS-11, OPS-18, OPS-22, OPS-33, FIN-02, FIN-14, FIN-15, FIN-17, FIN-21, DAT-02, DAT-03, DAT-04, DAT-05, DAT-06, DAT-07, DAT-18, DAT-19, DAT-21, DAT-22, LEG-18, CMP-01, CMP-12, CMP-20, SEC-19, MSG-13, AIS-17, AIS-38, RSH-01, RSH-18, RSH-25.
+40 FRs: SUP-01, MKT-01, MKT-04, MKT-10, MKT-15, MKT-16, MKT-24, MKT-31, MKT-34, OPS-11, OPS-18, OPS-22, OPS-33, FIN-02, FIN-14, FIN-15, FIN-17, FIN-21, DAT-02, DAT-03, DAT-04, DAT-05, DAT-06, DAT-07, DAT-18, DAT-19, DAT-21, DAT-22, LEG-18, LEG-23, CMP-01, CMP-12, CMP-20, SEC-19, MSG-13, AIS-17, AIS-38, RSH-01, RSH-18, RSH-25.
 
 ## 3. Needs a ruling: proposed card changes, deduplicated, and conflicts between functions
 
@@ -1099,7 +1306,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - privacy: FR-PRV-18 (privacy, P0 (b)): Given C-S20 "What happens", Then it states, in plain lines or a link to Privacy section 10: the 30-day change of mind; the 31, 38 and 45-day clock; the sent-email copy kept to about day 60; the kept-author book entry (child's name, birth date, due date) while a former member's letters remain (D-116); that pictures and recordings stay on each phone until that phone is erased (NS-01-R31); that saved copies and iPhone backups are the parent's own and are not reached; that letters hidden until a day are deleted and never open (D6); that consent records are kept 3 years without the person's id; and that Plus billing continues through Apple until cancelled
 - support: FR-SUP-14 (support, P0 (b)): Given a deletion request, Then the help centre and M3 point first to Me, Delete account (C-S20; Guideline 5.1.1(v)) and to the web page `brand.web.deleteAccount`, say the 30 days to change your mind (Terms 10.1), and say that the Apple plan is cancelled separately. By email, Route 1 stays closed until BL-551 and the reply promises no date
 - operations: OPS Q7: "Can a restore on Free be promised not to bring back deleted items?" Default: No promise; the privacy text must not say deletions survive a disaster restore on Free (`free-tier-ops.md`) Owner: counsel Q51 (retention and deletion exceptions); counsel must confirm
-- privacy: PRV PQ-10: "Is the restore-window limit (up to 24 hours of deletions can return after losing the project on the Free plan) something the policy must say?" Default: Say it in the incident notice, not in the policy; prove the replay (FR-PRV-09) so the window shrinks to zero where the ledger survives Owner: Counsel Q51
+- privacy: PRV PQ-10: "Is the restore-window limit (up to 24 hours of deletions can return after losing the project on the Free plan) something the policy must say?" Default: Say it in the incident notice, not in the policy; prove the replay (FR-PRV-09) so the window shrinks to zero where the ledger survives Owner: Counsel Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - Ruled K4 (GAP-LOG): deletion texts: legal's scope (four texts and a build-truth rule), privacy's retained-list on C-S20, support's Me-first entry; one key family in `packages/content`. The Free-plan restore line is ruled by counsel Q-note; default: say it plainly in Privacy 7.
 - Merged rulings: R-023, R-128
 
@@ -1109,7 +1316,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - compliance: CMP C-2: "Installs made before 1 Jan 2027: must the app ask the platform for an age signal for existing users, and by when? May a signal be kept with the Terms acceptance as evidence?" Default: Request at every launch on iOS 26+ from 1 Jan 2027; keep nothing Owner: counsel Q46
 - compliance: CMP C-3: "Texas SB 2420: which developer duties apply to an 18+ app with an 18+ rating while the stay holds?" Default: Honour the store's age category signal as in FR-CMP-15; rating 18+ Owner: counsel Q46 (with CR-004)
 - privacy: FR-PRV-25 (privacy, P0 (b)): Given the age step, Then only `ageGate.passed` (after Yes) or `ageGate.stoppedAt` (after No) is kept, on the phone; a store age signal, when one is read, is used in memory and recorded only as the `age_signal` enum in the Terms record's context; never a date, age or range on the phone or server
-- support: SUP Q-SUP-13: "Keep "I answered by mistake" on the age stop in store builds?" Default: Keep it (LEGAL-REQ-002 neutrality). Support never acts on an age answer it cannot see Owner: counsel, Q46 (area E CG14)
+- support: SUP Q-SUP-13: "Keep "I answered by mistake" on the age stop in store builds?" Default: Keep it (LEGAL-REQ-002 neutrality). Support never acts on an age answer it cannot see Owner: counsel, Q46 (area E CG14) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - Ruled K5 (GAP-LOG): store nothing on the Texas age signal until counsel Q46 answers (FR-CMP-15 over FR-PRV-25).
 
 **K6. Is the age-rating questionnaire re-answered for NS-05 Level 1 (compliance: yes; marketing: no change) [RULED K6]**
@@ -1118,7 +1325,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - compliance: CMP K-5 (R-033) on NS-05 section 17 and NS-25 section 17: Add the age-rating re-answer as a gate (FR-CMP-19) Why: ASC says "letters are never distributed"
 - marketing: FR-MKT-17 (marketing, P1 (b)): Given a release that ships NS-25 (two parents in one book), NS-05 Level 2 or 3, or NS-28, Then the age rating questionnaire (User-Generated Content, Messaging and Chat) is re-answered and recorded in `docs/store/app-store-connect-1.0.md` before submission; NS-01, NS-02, NS-05 Level 1 and NS-06 are proposed as no change, because nothing is distributed inside the app (Share leaves through the parent's own share sheet)
 - marketing: MKT MQ-8: "Age rating at NS-25: does two parents reading one book change User-Generated Content or Messaging answers?" Default: No change for NS-01 to NS-06; re-answer at NS-25 with counsel's view Owner: Counsel: needs a number from legal
-- support: SUP Q-SUP-7: "Is the two-parent book "user-generated content" under Guideline 1.2?" Default: Treat it as not, while it stays capped at two parents who invite each other. Treat anything hosted for a third person as 1.2 Owner: counsel and the founder (needs a number from legal)
+- support: SUP Q-SUP-7: "Is the two-parent book "user-generated content" under Guideline 1.2?" Default: Treat it as not, while it stays capped at two parents who invite each other. Treat anything hosted for a third person as 1.2 Owner: counsel and the founder (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - Ruled K6 (GAP-LOG): re-read the age rating at NS-05 Level 1 (cheap check), full re-answer at NS-25 and NS-05 Levels 2 and 3.
 - Merged rulings: R-033
 
@@ -1154,7 +1361,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - data: FR-DAT-35 (data, P0 (b)): Server-side counts named by cards (NS-40 refusals by country code, NS-41 sign-in success per method) are read only as weekly aggregates through a named runbook that writes an audit row; no person row, email, address or user id leaves the query. Each count is published as 0 or at least 10, with the complement rule, and a country with fewer than 10 refusals joins "other". The NS-40 count never carries, or is derived from, an age answer (TRACKING_PLAN: "An under-18 answer is never sent"). Each count gets a level, a retention clock and a deletion path in `DATA_CLASSIFICATION.md` in the same PR that builds it
 - privacy: FR-PRV-26 (privacy, P0 (b)): Given the D-131 country check at account creation, When it runs, Then the IP address is used in memory and dropped; only a daily count by check, outcome and jurisdiction code (refusals only) is kept for 2 years (D-136); the refusal shows one line and asks nothing; the label stays unchanged unless counsel answers Q57(f) otherwise. And the IP addresses and emails Supabase Auth keeps in its own audit log have their retention read for the production plan and written in data-policy 4.2, so no sentence says "we do not keep your IP address" without naming that vendor log
 - data: DAT FQ-09: "Founder and counsel: may the NS-40 refusal counts by country and the NS-41 sign-in counts be computed in the 1.0 line?" Default: Needs a number from legal for the country count. Default: yes for NS-41 as an aggregate under a runbook (it serves a reliability target); NS-40 only with the FR-DAT-35 limits and a privacy read first Owner: counsel
-- privacy: PRV PQ-7: "Is a country derived in memory at sign-up and never kept "collected" for the label?" Default: Not collected; label unchanged (CPrivO-2) Owner: Counsel Q57(f)
+- privacy: PRV PQ-7: "Is a country derived in memory at sign-up and never kept "collected" for the label?" Default: Not collected; label unchanged (CPrivO-2) Owner: Counsel Q57(f) FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - Ruled K10 (GAP-LOG): country counts: privacy's storage rule is the source (daily count, 2 years); data's weekly k=10 view reads from it.
 - Merged rulings: R-120
 
@@ -1163,7 +1370,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - notifications: FR-NTC-02 (notifications, P0 (a)): Given the catalogue is on or off, When a plan is built from the same inputs, Then the set of (id, date, time, class) is identical, so the catalogue never raises volume
 - notifications: FR-NTC-03 (notifications, P0 (a)): Given a plan for any future date, Then every input is computable at plan time: recency is `fireDate - anchorDate` and never a clock read at delivery
 - GAP-LOG N-6: "the axis is days between the fire date and the newest made letter, not hours (every input must be known at plan time, iOS schedules up to 35 days ahead). Depends on NS-13's anchor and back-off, not yet built." (rules the axis, not what triggers a re-plan)
-- reliability: FR-REL-59 (reliability, P0 (a)): Device restore and phone-to-phone transfer, as one matrix kept next to NS-10: what returns (the database and recordings in the iPhone backup, D-033; Keychain items depending on the backup type, UNVERIFIED), what does not (speech models, packs, listening copies, picture copies, caches: NS-37-R4), and what must be rebuilt (Find index, planned notifications, the Plus decision). Required results: letters appear once (NS-10-R6); the free allowance counts the same (NS-44-R5 "Keychain ledger plus mirror plus letters"); notifications are re-planned at the first launch after a restore as after an update (E-ST37); a stale `server_epoch` takes the `reset` path (`engine.ts:251`)
+- reliability: FR-REL-59 (reliability, P0 (a)): Device restore and phone-to-phone transfer, as one matrix kept next to NS-10: what returns (the database and recordings in the iPhone backup, D-033; Keychain items depending on the backup type, UNVERIFIED), what does not (speech models, packs, listening copies, list and page picture copies, caches: NS-37-R4; stored picture copies DO return with the iPhone backup, NS-01-R27. Superseded in part by FR-REL-70 on 20 Nov), and what must be rebuilt (Find index, planned notifications, the Plus decision). Required results: letters appear once (NS-10-R6); the free allowance counts the same (NS-44-R5 "Keychain ledger plus mirror plus letters"); notifications are re-planned at the first launch after a [cut; see source]
 - reliability: FR-REL-56 (reliability, P1): Time zones and the date line. Given the parent keeps a letter at UTC+14 or UTC-12, near midnight, or flies across the date line with auto time zone on or off, Then the letter's day is the phone's local date, the server accepts it (the server range is "to tomorrow", NS-43 line 1230), the age on that day never shifts (`dates.ts` uses noon UTC so "no time zone can shift the date"), and the birthday-week slip uses the local date. Spring-forward and fall-back nights (repeated 01:30): two letters keep distinct, ordered. Run by setting the date, time and zone by hand
 - reliability: FR-REL-54 (reliability, P1): A wrong device clock never corrupts the book. Given the phone's date is set a year back, a year forward, before the child's birth, or to 2001, When a letter is kept, Then it keeps, its day is shown and can be changed with the "another day" control (NS-15), month chapters and age math use the letter's day, ordering inside a day is stable (by day, then time, then id, so an id built from a wrong clock moves only its own letter), and nothing else reorders. How Keep handles a date before birth (`isBeforeBirth` exists in `dates.ts`) is UNVERIFIED
 - messaging: FR-MSG-21 (messaging, P1): Given quiet hours, Then local reminders are clamped to 07:00 to 21:30, no email other than sign-in mail and a notice whose legal window would close is sent in 21:30 to 07:00 in the person's time zone, and a time zone change re-plans the schedule
@@ -1211,11 +1418,11 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - lifecycle: FR-LCY-11 (lifecycle, P0 (a)): Given an account was deleted (on this phone or another) and this phone still holds the book, When the person signs in to a new account (a new user id, even with the same email), Then the claim screen is offered again and, after the masked-email tap, the letters on this phone are claimed by the new account; they are never stranded behind `sync_account_mismatch`. Nothing uploads before that tap
 - lifecycle: FR-LCY-19 (lifecycle, P0 (a,b)): Given phone A deletes the account while phone B is signed in with a synced book and unsent letters, When B next talks to the server and gets `deleted`, Then B signs out once with one plain line in Me, its whole book stays readable, playable and exportable, its unsent letters are kept (never discarded), nothing uploads, and the person is offered the claim path of FR-LCY-11 on a later sign-in. During the 30-day window the account is not deleted: B keeps syncing; Cancel deletion on any phone returns everything (NS-45-R9, R10)
 - lifecycle: FR-LCY-27 (lifecycle, P1): Given a person writes that the parent has died or cannot act, When support reads it, Then the first reply is human and kind, makes no promise about access, says what we can and cannot see (recordings are not on our servers while backup is off; no one at the company reads letters), and follows a runbook that counsel has read before the first store release has outside families: who may receive one export of a sole parent's book, on what documents, and never an account takeover (counsel Q49 default is "no clause; runbook before C1"). Claude roles are not lawyers; counsel must confirm RUFADAA and any other law, none of which I read. Apple's Legacy Contact page lists "device backups" among data [cut; see source]
-- lifecycle: LCY LQ-9: "Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one?" Default: No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names Owner: counsel Q49, support Q-SUP-10
+- lifecycle: LCY LQ-9: "Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one?" Default: No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names Owner: counsel Q49, support Q-SUP-10 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - back-office: FR-BKO-07 (back-office, P0 (a)): One recovery card, one decision table. Given the recovery runbook BL-598 asks for (PR #620 is not on this branch), Then `docs/ops/runbooks/account-recovery.md` decides each case once. (1) "I lost my email": nothing changes by hand; point to Apple's own account recovery if the person signed in with Apple, or to the mail provider's recovery if the sign-in is a code to an email; the sign-in email is never edited (`double_confirm_changes`, runbook section 0). (2) "My new phone shows no book": the person used a different sign-in way last time; macro M9; no hand merge of two accounts in 1.0, because a merge moves one account's letters into another on a stranger's word (default; Q-BKO-1). (3) [cut; see source]
 - back-office: FR-BKO-26 (back-office, P1): A suspended or limited account looks like itself, not like a loss. Given BL-552 suspends sign-in and sync for one account while keeping all data, When that person opens the app, Then the book stays readable on the phone, sync waits, and one neutral line is shown (not "banned", not a reason); the person can still Save a copy and Delete account; Terms 10.2's "export for at least 30 days" is met by that route. No state implies the data is gone
 - back-office: FR-BKO-27 (back-office, P1): A hand act is visible to the person it affects. Given any back-office change to one person's account (a suspension, a deletion opened for them, an access limit, a hand consent act), When it is done, Then a content-free email goes to the address on the account naming only the kind of act and the date, except where counsel rules a safety case must not (Q-BKO-4), and an audit row exists. This adopts input G5 and G6 (email on deletion request, new-sign-in email) already proposed under FR-SEC-12, and adds the by-hand acts to the same list
-- back-office: BKO Q-BKO-1: "May support ever merge two accounts, or move letters from one account to another, for a parent who signed in two different ways?" Default: No, never by hand in 1.0. The parent signs in the original way. It would move one account's letters on a stranger's word. Reopen when there is an in-app way to link identities, proved by both sign-ins Owner: Founder, with `security-architect`
+- back-office: BKO Q-BKO-1: "May support ever merge two accounts, or move letters from one account to another, for a parent who signed in two different ways?" Default: No, never by hand in 1.0. The parent signs in the original way. It would move one account's letters on a stranger's word. Reopen when there is an in-app way to link identities, proved by both sign-ins FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader Owner: Founder, with `security-architect`
 - Recommendation (not a ruling): Three points. (1) A parent who cannot act: lifecycle plans a runbook for who may receive one export of a sole parent's book (FR-LCY-27, LQ-9), back-office's rule is that nothing is changed or moved by hand and support never reads letters (FR-BKO-07, FR-BKO-02). These agree only if the export is made by the account holder's own phone or by a counsel-read process that hands over the Save a copy file the person already holds; recommend FR-LCY-27 says so and that no staff tool exports a book. (2) States: a deleted-elsewhere phone (FR-LCY-19, one line in Me) and a suspended account (FR-BKO-26, one neutral line) must not share words; ask `content` and area E for two lines and two states. (3) Claim after deletion (FR-LCY-11: the new account claims the phone's letters after the masked-email tap) is parent-driven and does not conflict with "no hand merge" (Q-BKO-1), provided the claim is never done by staff; say so in FR-LCY-11. A back-office deletion opened for someone (FR-BKO-27) sends the content-free email; the 30-day window in FR-LCY-19 applies to both. Counsel must confirm the death runbook; Karma rules the rest.
 
 **K16. Quality's 552 P0 rows versus the test plan register (and the P0 rows the later files add) [OPEN]**
@@ -1223,8 +1430,8 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - quality, section 3d: Register in 14 section 7 (cards 01 to 12) 296; card 19 96; errata row 1; function review rows 143; QAL rows 16; "Total P0 rows named by the pack 296 + 96 + 1 + 143 + 16 = 552". "Not 552 distinct tests."
 - quality, FR-QAL-01 and FR-QAL-02: 14 section 7 regenerated with three tables plus the errata row, and `scripts/trace.mjs` reading `docs/product/prd` including `functions/*.md`.
 - test plan, `14-test-plan.md` section 7: "Rebuilt 20 Nov 2026 ... 296 P0 rows" for cards 01 to 12 only (this script counted 296 ids in the register).
-- this script, recount: Card 19 P0 rows: 96 of 123 (quality: 96 of 123, matches). P0 FR rows now: 371 across the 23 files (first-wave files 143, QAL 16, the other thirteen later files 212). Quality counted 143 from the nine first-wave files and 16 for itself, so its 552 omits the later files' 212 P0 FR rows.
-- Recommendation (not a ruling): Quality's arithmetic reconciles with the register and card 19 and is right for the pack as it stood when quality wrote it; it is now stale. The new total of P0 ids the pack names is 296 + 96 + 1 + 371 (every P0 FR row in the 23 files, QAL included) = 764, and it is a list of ids, not of tests (quality says so). Recommend `qa` regenerates 14 section 7 with all 23 function files (FR-QAL-01 already asks for the extended script), prints the total, and does not publish 552. Quality's 143 for the nine first-wave files is exact (this script counts 143 rows whose priority cell starts "P0"). 27 rows (first-wave and later) have a priority cell that mentions P0 without starting with it (SUP-02, SUP-13, POL-08, OPS-12, OPS-30, LEG-05, LEG-16, BKO-02, BKO-12, BKO-20, LOC-09, LOC-11, REL-09, REL-18, AIS-24, AIS-28, RSH-04, RSH-08, PRT-07, PRT-10, PRT-18, PRT-19, PRT-21, PRT-28, PRT-31, PRT-46, PRT-47); the script does not count them as P0, and their owners should settle one priority before the register is regenerated.
+- this script, recount: Card 19 P0 rows: 96 of 123 (quality: 96 of 123, matches). P0 FR rows now: 514 across the 23 files (first-wave files 199, QAL 21, the other thirteen later files 294). Quality counted 143 from the nine first-wave files and 16 for itself, so its 552 omits the later files' 294 P0 FR rows.
+- Recommendation (not a ruling): Quality's arithmetic reconciles with the register and card 19 and is right for the pack as it stood when quality wrote it; it is now stale. The new total of P0 ids the pack names is 296 + 96 + 1 + 514 (every P0 FR row in the 23 files, QAL included) = 907, and it is a list of ids, not of tests (quality says so). Recommend `qa` regenerates 14 section 7 with all 23 function files (FR-QAL-01 already asks for the extended script), prints the total, and does not publish 552. Quality's 143 for the nine first-wave files is exact (this script counts 199 rows whose priority cell starts "P0"). 29 rows (first-wave and later) have a priority cell that mentions P0 without starting with it (SUP-02, SUP-13, POL-08, OPS-12, OPS-30, LEG-05, LEG-16, BKO-02, BKO-12, BKO-20, MSG-42, LOC-09, LOC-11, REL-09, REL-18, AIS-24, AIS-28, RSH-04, RSH-08, RSH-33, PRT-07, PRT-10, PRT-18, PRT-19, PRT-21, PRT-28, PRT-31, PRT-46, PRT-47); the script does not count them as P0, and their owners should settle one priority before the register is regenerated.
 
 **K17. Two proposals for the same row id NS-17-R11 [OPEN]**
 
@@ -1253,7 +1460,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - cultural-data: CUL C03 (R-065) on NS-13 settings table and `prefs.ts`: Add the separate day-name switch beside `notifications.lockScreenNames`; document that app lock forces both off Why: FR-CUL-12
 - cultural-data: CUL CUL-Q9: "Separate switch for the day's name in a note, default off, forced off by App lock?" Default: Yes. The direction says the faith is named "only when the parent has switched on names in notifications"; a separate switch avoids exposing a faith just because the child's name was switched on Owner: Founder none
 - notifications: FR-NTC-09 (notifications, P0 (b)): Given a family or faith day, or names off, Then the lock-screen title is neutral ("Something for the book today") and the day shows when unlocked; a faith or family day's name appears in a title only with names on
-- notifications: NTC Q-NTC-2: "Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes)" Default: Public only; family and faith need names on Owner: not stated (read as founder)
+- notifications: NTC Q-NTC-2: "Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes)" Default: Public only; family and faith need names on CLOSED 20 Nov, see GAP-LOG Closures CL-040 Owner: not stated (read as founder)
 - card 21 (NS-46 to NS-50), "Conflicts and open items" item 1: **One names switch or two (CB-5 and DL-10 against N-7 and DAY 5.1).** Compatible: N-7 is about the child's name, CB-5 about a day's name. Resolution (RV-13): the day-name switch lives on the Days page (C-S24) so Reminders keeps one names switch; a typed day's words follow the same switch (RV-8, NS-47-R37, needs an NS-18-R3 errata row). Karma confirms.
 - card 21 (NS-46 to NS-50), "Conflicts and open items" item 2: **A public day's name in a title (N-3) against "the day's name shows only behind its own switch" (CB-5).** Resolution (RV-1): `publicTitleOk` is a hand-listed allowlist and with App lock on every title is neutral (NS-46-R36); default pending founder: Q-FD-18.
 - card 21 (NS-46 to NS-50), "Conflicts and open items" item 3: **The same neutral words, three drafts.** Kept as three strings for three jobs (typed-day title; library-day neutral title; hidden-preview placeholder) plus one neutral body per tone (NS-46-R37); the DAY 5.1 and 5.4 samples are superseded. `content` decides the words.
@@ -1264,8 +1471,8 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 
 **K20. Variants per day, per season and per grid cell (notification catalogue versus days library) [RULED N-1, DL-5]**
 
-- notifications: NTC Q-NTC-1: "Variants per grid cell: the founder's 8 to 12, or 6" Default: 6; revisit after the first tester sheet Owner: not stated (read as founder)
-- days: DAY Q-DAY-7: "Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1)" Default: 4 per day and 3 per season; 8 to 12 only for the evening grid Owner: Karma
+- notifications: NTC Q-NTC-1: "Variants per grid cell: the founder's 8 to 12, or 6" Default: 6; revisit after the first tester sheet CLOSED 20 Nov, see GAP-LOG Closures CL-040 Owner: not stated (read as founder)
+- days: DAY Q-DAY-7: "Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1)" Default: 4 per day and 3 per season; 8 to 12 only for the evening grid Owner: Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085
 - days: DAY C8 (R-137) on GAP-LOG N-1: Reconcile the 8 to 12 variants per layer with 4 per day and 3 per season for a once-a-year day (4.6) Why: Q-DAY-7
 - Ruled N-1 (GAP-LOG): 6 variants per grid cell (one plan holds at most 11 evening nudges, each cell is visited about once); the founder's 8 to 12 applies to the day, season and last-letter layers. Launch floor about 128 variants, filled later in content drops.
 - Ruled DL-5 (GAP-LOG): 4 variants per day and 3 per season (a day recurs once a year).
@@ -1274,7 +1481,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 **K21. Exclamation marks in notifications: VOICE.md line 70 versus line 160 and the checker [RULED N-5]**
 
 - notifications: VOICE.md:70 says "At most one exclamation mark per month across all notifications." VOICE.md:160 says exclamation marks are budgeted per surface, three in all, "none in notifications". The checker enforces none (notification-catalogue 12.1).
-- notifications: NTC Q-NTC-7: "Exclamation marks in notifications" Default: Zero; correct `VOICE.md:70` Owner: not stated (read as founder)
+- notifications: NTC Q-NTC-7: "Exclamation marks in notifications" Default: Zero; correct `VOICE.md:70` CLOSED 20 Nov, see GAP-LOG Closures CL-040 Owner: not stated (read as founder)
 - Ruled N-5 (GAP-LOG): zero exclamation marks. VOICE.md line 70 is corrected to match line 160 and the checker.
 
 ### 3b. Proposed card changes, merged (one ruling each)
@@ -2308,17 +2515,17 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 **QI-01** Co-parent removal and what limits a parent's access
 
-- Owner as stated: counsel, Q50; counsel; counsel Q50, Q53; Counsel (Q50 family; needs a number from legal); Founder, counsel. Counsel numbers: Q50, Q53. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel, Q50 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement; counsel; counsel Q50, Q53 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement; Counsel (Q50 family; needs a number from legal); Founder, counsel. Counsel numbers: Q50, Q53. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-6 (`functions/support.md`): What evidence lets us limit a co-parent's access (Terms 4.4)? Default: A verified court order, or a counsel decision case by case, using the counsel-led runbook
 - LEG L-1 (`functions/legal.md`): Co-parent removal: is the 72-hour undo plus no later removal enforceable and fair between separating parents, and is it enough that the rule is shown at invite and accept (FR-LEG-10)? What evidence standard limits a parent's access under Terms 4.4? Default: As drafted (D11); the rule shown on both sheets; access limited only on a verified court order or a safety report checked by the founder Number: Q53, Q50
 - SEC Q-S7 (`functions/risk-security.md`): May a co-parent be removed for safety after 72 hours? Default: Keep the Terms (72 hours only) until counsel answers
-- BKO Q-BKO-4 (`functions/back-office.md`): In a safety case, is the limited person told, and when? Terms 10.2 says "where we can, we will tell you why first"; Terms 4.4 says "after checking, we may limit". They can pull in opposite directions when the reporter may be at risk Default: Counsel decides per case until a standard exists; default is no notice beyond the neutral in-app line and the one content-free email of FR-BKO-27 sent only if counsel says it is safe
-- BKO Q-BKO-5 (`functions/back-office.md`): Does the 4-hour or same-day handling of a safety report need a second reader, given one founder? Default: Counsel is the second reader for any act that limits or ends an account. For a macro M6 reply, no second reader: speed matters more
+- BKO Q-BKO-4 (`functions/back-office.md`): In a safety case, is the limited person told, and when? Terms 10.2 says "where we can, we will tell you why first"; Terms 4.4 says "after checking, we may limit". They can pull in opposite directions when the reporter may be at risk Default: Counsel decides per case until a standard exists; default is no notice beyond the neutral in-app line and the one content-free email of FR-BKO-27 sent only if counsel says it is safe FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
+- BKO Q-BKO-5 (`functions/back-office.md`): Does the 4-hour or same-day handling of a safety report need a second reader, given one founder? Default: Counsel is the second reader for any act that limits or ends an account. For a macro M6 reply, no second reader: speed matters more FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
 - FRs cited: LEG-10, BKO-27
 
 **QI-02** [PARTLY RULED K6: MKT MQ-8] Is the two-parent book or a shared letter user-generated content (Guideline 1.2) and the age-rating answers
 
-- Owner as stated: counsel and the founder (needs a number from legal); Counsel: needs a number from legal; counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel and the founder (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement; Counsel: needs a number from legal; counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-7 (`functions/support.md`): Is the two-parent book "user-generated content" under Guideline 1.2? Default: Treat it as not, while it stays capped at two parents who invite each other. Treat anything hosted for a third person as 1.2
 - MKT MQ-8 (`functions/marketing.md`): Age rating at NS-25: does two parents reading one book change User-Generated Content or Messaging answers? Default: No change for NS-01 to NS-06; re-answer at NS-25 with counsel's view
 - CMP C-5 (`functions/compliance.md`): Does guideline 1.2 (user-generated content: filtering, reporting, blocking) apply to a book shared by two parents, and to a letter sent through the parent's own share sheet? Default: Treat NS-25 as in scope for a report route (LEGAL-REQ-056, `legal.md` FR-LEG-10); NS-05 out of scope (we host nothing) Number: needs a number from legal (with CR-086)
@@ -2327,12 +2534,12 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 **QI-03** Someone else speaks (NS-16): a non-user's name and words in a letter
 
-- Owner as stated: counsel, Q48; counsel; Counsel. Counsel numbers: Q45, Q46, Q48, Q54. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel, Q48 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement; counsel; Counsel. Counsel numbers: Q45, Q46, Q48, Q54. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-8 (`functions/support.md`): A person with no account whose words are in another parent's letter asks for removal. What do we owe them? Default: We tell them we cannot see or change the letter, and suggest they ask the author. NS-16 waits on the answer
 - LEG L-6 (`functions/legal.md`): Someone else speaks: on the parent's say-so, may we store another adult's name and words in the parent's letter, and what if the speaker is a child? Default: Instruction line only (D9); flag off in production until read; tagged `child-input` Number: Q48, Q45, Q46
 - CMP C-6 (`functions/compliance.md`): Under 5.1.2(i), is storing a non-user's name and words in a parent's synced letter (NS-16) on the parent's say-so acceptable, or does App Review expect the speaker's permission in the app? Default: Instruction line only (D9); describe the feature in the Notes Number: Q48
-- PRV PQ-8 (`functions/privacy.md`): Is a typed name of a non-user (NS-16) a Contact Info row? Default: No row; the flag stays off in production until answered Number: Q54 (proposed sub-question (f))
-- OPP OQ-4 (`functions/feature-opportunities.md`): Counsel: a child's voice and a third party's voice in a letter Default: Needs a number from legal (Q45, Q48); default: parked until read
+- PRV PQ-8 (`functions/privacy.md`): Is a typed name of a non-user (NS-16) a Contact Info row? Default: No row; the flag stays off in production until answered Number: Q54 (proposed sub-question (f)) FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
+- OPP OQ-4 (`functions/feature-opportunities.md`): Counsel: a child's voice and a third party's voice in a letter Default: Needs a number from legal (Q45, Q48); default: parked until read FOUNDER-ANSWERED 20 Nov, default accepted (CL-060): Counsel Q45 and Q48; parked until read. Decision made, action pending founder hands: counsel engagement
 
 **QI-04** Pilot and tester texts, consent and retention
 
@@ -2340,7 +2547,7 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 - LEG L-7 (`functions/legal.md`): Concierge pilot with tester families: consent texts W and V, notes retention 30 days, consent records 12 months, and Arm V (a child's voice sent by the parent to a relative) Default: Arm W only until the reads; texts as NS-03 section 15 Number: needs a number from legal; with Q44, Q45, Q51
 - LEG L-13 (`functions/legal.md`): May the founding family and outside testers agree to texts published as 0.9.0 test versions, and must the app re-ask at 1.0.0? Until then, which version does the store build record (FR-LEG-20)? Default: Record only a published version; 0.9.0 for testers, 1.0.0 with re-consent after counsel Number: Q44
 - DAT FQ-08 (`functions/data-and-measurement.md`): Counsel: the tester round text and retention Default: Q44 (real families under draft texts) and Q51 (retention), packet 1.5.0, as the frame already cites. Default: D5
-- RSH RQ-5 (`functions/research-validation.md`): Counsel: tester and study texts, and retention Default: Q44 and Q51 as the pilot uses; default D4 (12 months for consent records) and the clocks of FR-RSH-22
+- RSH RQ-5 (`functions/research-validation.md`): Counsel: tester and study texts, and retention Default: Q44 and Q51 as the pilot uses; default D4 (12 months for consent records) and the clocks of FR-RSH-22 FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: LEG-20, RSH-22
 
 **QI-05** Tester answers that are personal data (language, assistive technology)
@@ -2355,8 +2562,8 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 - Owner as stated: Counsel: needs a number from legal (Q41(f) covers only what an offer code must say); founder; counsel Q41(f); founder; counsel. Counsel numbers: Q41. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-9 (`functions/marketing.md`): Offer codes to pilot, study or TestFlight families after their read-outs: is a free Plus period a material connection that each family must disclose if they post or review? Default: Treat it as one: no code before the read-out, and any code carries a disclosure line (F1)
 - FIN F11 (`functions/finance.md`): Offer codes Default: None (recommendation: None until counsel answers Q41(f) and the pilot reads out)
-- RSH RQ-2 (`functions/research-validation.md`): Founder: any incentive? Default: None beyond a thank-you message, as NS-03 OQ-3. My recommendation to consider: a small fixed thank-you for people he does not know. Any spend is his decision
-- RSH RQ-7 (`functions/research-validation.md`): Counsel and tax adviser: any duty from a thank-you payment Default: Needs a number from legal. Default: none given until answered; UNVERIFIED
+- RSH RQ-2 (`functions/research-validation.md`): Founder: any incentive? Default: None beyond a thank-you message, as NS-03 OQ-3. My recommendation to consider: a small fixed thank-you for people he does not know. Any spend is his decision FOUNDER-ANSWERED 20 Nov, default accepted (CL-074, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel and accountant engagement
+- RSH RQ-7 (`functions/research-validation.md`): Counsel and tax adviser: any duty from a thank-you payment Default: Needs a number from legal. Default: none given until answered; UNVERIFIED FOUNDER-ANSWERED 20 Nov, default accepted (CL-074, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel and accountant engagement
 
 **QI-07** Sign-in required in the store build (Terms 3.1, 5.1.1(v), listing variant)
 
@@ -2376,7 +2583,7 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 **QI-09** [RULED K5] Age signals and the under-18 stop (Texas, California, "I answered by mistake")
 
-- Owner as stated: counsel; counsel, Q46 (area E CG14). Counsel numbers: Q46. Due: 1 Jan 2027 is the date in the question (stated).
+- Owner as stated: counsel; counsel, Q46 (area E CG14) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: Q46. Due: 1 Jan 2027 is the date in the question (stated).
 - CMP C-2 (`functions/compliance.md`): Installs made before 1 Jan 2027: must the app ask the platform for an age signal for existing users, and by when? May a signal be kept with the Terms acceptance as evidence? Default: Request at every launch on iOS 26+ from 1 Jan 2027; keep nothing Number: Q46
 - CMP C-3 (`functions/compliance.md`): Texas SB 2420: which developer duties apply to an 18+ app with an 18+ rating while the stay holds? Default: Honour the store's age category signal as in FR-CMP-15; rating 18+ Number: Q46 (with CR-004)
 - SUP Q-SUP-13 (`functions/support.md`): Keep "I answered by mistake" on the age stop in store builds? Default: Keep it (LEGAL-REQ-002 neutrality). Support never acts on an age answer it cannot see
@@ -2386,7 +2593,7 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 **QI-10** [RULED K4] Restore window on the Free plan and what the policy may say about deletions
 
 - Owner as stated: Counsel; counsel Q51 (retention and deletion exceptions); counsel must confirm. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-10 (`functions/privacy.md`): Is the restore-window limit (up to 24 hours of deletions can return after losing the project on the Free plan) something the policy must say? Default: Say it in the incident notice, not in the policy; prove the replay (FR-PRV-09) so the window shrinks to zero where the ledger survives Number: Q51
+- PRV PQ-10 (`functions/privacy.md`): Is the restore-window limit (up to 24 hours of deletions can return after losing the project on the Free plan) something the policy must say? Default: Say it in the incident notice, not in the policy; prove the replay (FR-PRV-09) so the window shrinks to zero where the ledger survives Number: Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - OPS Q7 (`functions/operations.md`): Can a restore on Free be promised not to bring back deleted items? Default: No promise; the privacy text must not say deletions survive a disaster restore on Free (`free-tier-ops.md`)
 - Ruled K4 (GAP-LOG): deletion texts: legal's scope (four texts and a build-truth rule), privacy's retained-list on C-S20, support's Me-first entry; one key family in `packages/content`. The Free-plan restore line is ruled by counsel Q-note; default: say it plainly in Privacy 7.
 - FRs cited: PRV-09
@@ -2395,11 +2602,11 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 - Owner as stated: counsel; Counsel. Counsel numbers: Q48, Q51, Q55. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-11 (`functions/legal.md`): Earlier versions and the right to delete: does a deletion right reach a removed earlier version, and on what clock? Default: Erased on the deleted-letter clock (D8) Number: Q51, Q48
-- PRV PQ-5 (`functions/privacy.md`): Does an access request reach server-held data the phone's copy lacks (earlier versions, `audit_events` and `deletion_requests` rows about the person)? Default: Yes: include the person's own rows in `account.json` and the versions in the author's copy Number: needs a number from legal (near Q55)
+- PRV PQ-5 (`functions/privacy.md`): Does an access request reach server-held data the phone's copy lacks (earlier versions, `audit_events` and `deletion_requests` rows about the person)? Default: Yes: include the person's own rows in `account.json` and the versions in the author's copy Number: needs a number from legal (near Q55) FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
 **QI-12** Leak and breach notification clocks
 
-- Owner as stated: needs a number from legal; counsel must confirm; counsel Q28. Counsel numbers: Q28. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: needs a number from legal; counsel must confirm; counsel Q28 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: Q28. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - OPS Q9 (`functions/operations.md`): Notification clocks for the new data kinds in a leak (From name of another adult, first labels, seal dates) Default: Treat each as the letter's own class (L4) until counsel says otherwise
 - SEC Q-S5 (`functions/risk-security.md`): Breach notice: do letters, a child's details, voice recordings or pictures held by this app count as personal information or a personal health record under California Civil Code 1798.82 and the FTC HBNR, and on which clock? Default: Treat as covered for readiness (packet Q28 default). Counsel must confirm
 
@@ -2414,51 +2621,51 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 - Owner as stated: counsel; Counsel. Counsel numbers: Q57. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - DAT FQ-09 (`functions/data-and-measurement.md`): Founder and counsel: may the NS-40 refusal counts by country and the NS-41 sign-in counts be computed in the 1.0 line? Default: Needs a number from legal for the country count. Default: yes for NS-41 as an aggregate under a runbook (it serves a reliability target); NS-40 only with the FR-DAT-35 limits and a privacy read first
-- PRV PQ-7 (`functions/privacy.md`): Is a country derived in memory at sign-up and never kept "collected" for the label? Default: Not collected; label unchanged (CPrivO-2) Number: Q57(f)
+- PRV PQ-7 (`functions/privacy.md`): Is a country derived in memory at sign-up and never kept "collected" for the label? Default: Not collected; label unchanged (CPrivO-2) Number: Q57(f) FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - Ruled K10 (GAP-LOG): country counts: privacy's storage rule is the source (daily count, 2 years); data's weekly k=10 view reads from it.
 - FRs cited: DAT-35
 
 **QI-15** Who may open the recovery kit ("if I cannot act") and whether a second person has production reach
 
-- Owner as stated: Founder, counsel (needs a number from legal); Founder; founder; needs a number from legal. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- BKO Q-BKO-3 (`functions/back-office.md`): Is a second person with any production reach acceptable, and what must the policy say first? Default: No second person by default. If the founder names one, the policy line 55 and any health-privacy text are changed first, the person holds sealed recovery only, and counsel confirms the access fits Privacy 3 and the sensitive-data consent
-- BKO Q-BKO-6 (`functions/back-office.md`): Who holds the sealed recovery kit if the founder names no one: nobody, or an attorney or a family member? Default: Nobody; the plan records the accepted risk and the pre-staged pause. Revisit at the first month with a person outside the founder's family
+- Owner as stated: Founder, counsel (needs a number from legal); Founder; founder; needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- BKO Q-BKO-3 (`functions/back-office.md`): Is a second person with any production reach acceptable, and what must the policy say first? Default: No second person by default. If the founder names one, the policy line 55 and any health-privacy text are changed first, the person holds sealed recovery only, and counsel confirms the access fits Privacy 3 and the sensitive-data consent FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
+- BKO Q-BKO-6 (`functions/back-office.md`): Who holds the sealed recovery kit if the founder names no one: nobody, or an attorney or a family member? Default: Nobody; the plan records the accepted risk and the pre-staged pause. Revisit at the first month with a person outside the founder's family FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
 - REL Q-REL-3 (`functions/reliability.md`): Who may open the key and the "if I cannot act" sheet? Default: One trusted adult holds the sealed sheet; opening it gives the key, not family data access without a second step. Counsel must confirm any access consequence
 
 **QI-16** Backup copies: GitHub as a named processor, a second copy outside GitHub, and the decryption key copies
 
-- Owner as stated: Counsel; founder; counsel PQ-3; Founder, `security-architect`. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-3 (`functions/privacy.md`): Is GitHub, holding our nightly dump encrypted to a key only the founder holds, a processor we must name? Default: Name it in `subprocessors.md` and the policy's backup sentence anyway; minimal cost, no surprise Number: needs a number from legal
+- Owner as stated: Counsel; founder; counsel PQ-3 FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone; Founder, `security-architect`. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- PRV PQ-3 (`functions/privacy.md`): Is GitHub, holding our nightly dump encrypted to a key only the founder holds, a processor we must name? Default: Name it in `subprocessors.md` and the policy's backup sentence anyway; minimal cost, no surprise Number: needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - REL Q-REL-2 (`functions/reliability.md`): Second copy of the backup outside GitHub (FR-REL-11)? Default: Yes, monthly, to one place the founder controls; name it in the policy's backup sentence if counsel asks
-- BKO Q-BKO-7 (`functions/back-office.md`): Is the nightly backup's decryption key held only by the founder? Is there a second offline copy, and has a restore from it been tested? Default: Two offline copies in different places, restore tested at the first monthly drill and recorded. UNVERIFIED today which copies exist
+- BKO Q-BKO-7 (`functions/back-office.md`): Is the nightly backup's decryption key held only by the founder? Is there a second offline copy, and has a restore from it been tested? Default: Two offline copies in different places, restore tested at the first monthly drill and recorded. UNVERIFIED today which copies exist FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
 - FRs cited: REL-11
 
 **QI-17** Training-data terms of each speech model (counsel Q9)
 
 - Owner as stated: Counsel (Q9); not stated (read as founder). Counsel numbers: Q9. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- AIS AQ-5 (`functions/ai-and-speech.md`): Counsel Q9: the training-data terms of the Hindi small model (S2: GramVaani, ULCA, Shrutilipi, FLEURS) and of Whisper large-v3-turbo; is shipping them in a paid app acceptable? Default: Counsel must confirm before Hindi ships; until then English only
+- AIS AQ-5 (`functions/ai-and-speech.md`): Counsel Q9: the training-data terms of the Hindi small model (S2: GramVaani, ULCA, Shrutilipi, FLEURS) and of Whisper large-v3-turbo; is shipping them in a paid app acceptable? Default: Counsel must confirm before Hindi ships; until then English only FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - LOC C-LOC-3 (`functions/languages-and-localisation.md`): Training-data terms for each speech model (Hindi small, any model for Mandarin or Arabic) Default: Packet Q9, Q12, live. Default: no language ships until Q9 is answered for its model (FR-LEG-13). Counsel must confirm.
 - FRs cited: LEG-13
 
 **QI-18** A child's voice: in a parent's recording and in a test set
 
 - Owner as stated: Counsel; Counsel (Q45). Counsel numbers: Q45. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-11 (`functions/privacy.md`): A baby's voice on a parent's recording: provided by the parent, or collected from a child? Default: Unchanged: parent-as-user; no speaker identification, no voiceprints; the FTC FAQ treats a child's voice as personal information (S5 F.6), so this stays the open edge before backup ships Number: Q45
-- AIS AQ-8 (`functions/ai-and-speech.md`): Counsel Q45 and the child's voice: may a test set contain a child speaking, and with what consent text? Default: No child in any test set until counsel answers; adult actors and scripted clips only (FR-AIS-26, 37)
+- PRV PQ-11 (`functions/privacy.md`): A baby's voice on a parent's recording: provided by the parent, or collected from a child? Default: Unchanged: parent-as-user; no speaker identification, no voiceprints; the FTC FAQ treats a child's voice as personal information (S5 F.6), so this stays the open edge before backup ships Number: Q45 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
+- AIS AQ-8 (`functions/ai-and-speech.md`): Counsel Q45 and the child's voice: may a test set contain a child speaking, and with what consent text? Default: No child in any test set until counsel answers; adult actors and scripted clips only (FR-AIS-26, 37) FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: AIS-26, AIS-37
 
 **QI-19** Is the ticked-days list special-category data by inference (GDPR Article 9 and US state rules)
 
-- Owner as stated: Counsel (needs a number from legal); Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: Counsel (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement; Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - DAY Q-DAY-11 (`functions/days-library.md`): Is the ticked-days list "special category" data by inference, wherever it is stored (GDPR Article 9 and similar laws)? Default: Counsel must confirm. Keep it on the phone only and out of analytics, logs, crash reports and the exported copy until counsel answers (see `functions/cultural-background-data.md`)
 - CUL CUL-Q6 (`functions/cultural-background-data.md`): Does GDPR Article 9, or a US state sensitive-data rule, reach religion or origin data that is stored only on the user's own phone and never received by us? Is an app maker a controller for it? Does a US-only storefront (compliance.md line 161) change the answer? Default: Design as if it did: explicit, optional, withdrawable, never received; counsel confirms. S3 Art 9(1), 9(2)(a) and S4 are the only texts read Number: needs a number from legal
 
 **QI-20** [RULED DL-10, CB-5, N-3] Whether a day's name may show on the lock screen
 
-- Owner as stated: Privacy, counsel (needs a number from legal); Founder; not stated (read as founder). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: Privacy, counsel (needs a number from legal) CLOSED 20 Nov, see GAP-LOG Closures CL-087; Founder; not stated (read as founder). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - DAY Q-DAY-6 (`functions/days-library.md`): May a tradition day's name show on the lock screen when "Names in notifications" is on? Does it need a second, plain line? Default: One switch, one plain line: "This can also show the name of a day your family keeps."
 - CUL CUL-Q9 (`functions/cultural-background-data.md`): Separate switch for the day's name in a note, default off, forced off by App lock? Default: Yes. The direction says the faith is named "only when the parent has switched on names in notifications"; a separate switch avoids exposing a faith just because the child's name was switched on
-- NTC Q-NTC-2 (`functions/notification-catalogue.md`): Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes) Default: Public only; family and faith need names on
+- NTC Q-NTC-2 (`functions/notification-catalogue.md`): Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes) Default: Public only; family and faith need names on CLOSED 20 Nov, see GAP-LOG Closures CL-040
 - Ruled DL-10 (GAP-LOG): a tradition day's name on the lock screen only with its own names switch on (CB-5); privacy and counsel decide beyond that.
 - Ruled CB-5 (GAP-LOG): lock screen: every library-day note shares one neutral body; the day's name shows only behind its own switch, default off and forced off while App lock is on, separate from `notifications.lockScreenNames`.
 - Ruled N-3 (GAP-LOG): only public days (seasons, civic) may name themselves in a lock-screen title; family and faith days need "names in notifications" on.
@@ -2466,460 +2673,460 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 **QI-21** Who sells a printed book, sales tax and the accountant
 
 - Owner as stated: founder, counsel, accountant; accountant, counsel; founder (engages accountant). Counsel numbers: Q47. Due: before the first order (stated in the question); before the first payout (CR-120) (stated).
-- PRT Q-PRT-2 (`functions/print-and-fulfilment.md`): Who is the seller: the founder as an individual (D-004), or an entity formed first (BK-14 recommends the entity before the first order)? Default: Entity first; selling physical goods as an individual carries personal liability; accountant and counsel to confirm Number: Q47
-- PRT Q-PRT-6 (`functions/print-and-fulfilment.md`): Sales tax: which states, who collects, which tool, and does an individual seller change the answer? Default: Pilot only where the accountant has settled; use a tax tool (S6 lists one) Number: CR-120; FR-FIN-24; finance A7
+- PRT Q-PRT-2 (`functions/print-and-fulfilment.md`): Who is the seller: the founder as an individual (D-004), or an entity formed first (BK-14 recommends the entity before the first order)? Default: Entity first; selling physical goods as an individual carries personal liability; accountant and counsel to confirm Number: Q47 CLOSED 20 Nov, see GAP-LOG Closures CL-097
+- PRT Q-PRT-6 (`functions/print-and-fulfilment.md`): Sales tax: which states, who collects, which tool, and does an individual seller change the answer? Default: Pilot only where the accountant has settled; use a tax tool (S6 lists one) Number: CR-120; FR-FIN-24; finance A7 CLOSED 20 Nov, see GAP-LOG Closures CL-097
 - FIN F13 (`functions/finance.md`): Engage an accountant before the first payout (CR-120) Default: Not engaged (CR-120 stays Gap) (recommendation: Yes, with the brief below)
 - FRs cited: FIN-24
 
 **QI-22** Privacy 3 says we read letters "only if you ask us for help". May support refuse to read letters even when a parent asks, and should that phrase be removed?
 
-- Owner as stated: counsel, Q43 (claims). Counsel numbers: Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel, Q43 (claims) CLOSED 20 Nov, see GAP-LOG Closures CL-099. Counsel numbers: Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-1 (`functions/support.md`): Privacy 3 says we read letters "only if you ask us for help". May support refuse to read letters even when a parent asks, and should that phrase be removed? Default: Support never reads. Remove "if you ask us for help" from Privacy 3, or narrow it to "if you ask us in writing to look at a specific letter". Counsel must confirm
 
 **QI-23** How long do we keep support emails, and emails that arrived with letter content?
 
-- Owner as stated: counsel, Q51. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel, Q51 CLOSED 20 Nov, see GAP-LOG Closures CL-099. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-4 (`functions/support.md`): How long do we keep support emails, and emails that arrived with letter content? Default: Correspondence: 12 months after the ticket closes. A message carrying content: delete the content and attachments when the request closes, and keep only the log row
 
 **QI-24** Does support ever call emergency services for someone who writes in danger?
 
-- Owner as stated: counsel (needs a number from legal), BL-105. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel (needs a number from legal), BL-105 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-5 (`functions/support.md`): Does support ever call emergency services for someone who writes in danger? Default: No. Support gives the emergency number and the helplines (M6) and the founder reads it the same day. Counsel and the BL-105 clinician must confirm
 
-**QI-25** Executors and guardians after a death
+**QI-25** If a printed book (NS-30) ever ships, who handles refunds and delivery problems?
 
-- Owner as stated: counsel, Q49. Counsel numbers: Q49. Due: before C1 (stated in the row).
+- Owner as stated: founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- SUP Q-SUP-9 (`functions/support.md`): If a printed book (NS-30) ever ships, who handles refunds and delivery problems? Default: Decide before NS-30 reopens. It is not Apple
+
+**QI-26** Executors and guardians after a death
+
+- Owner as stated: counsel, Q49 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: Q49. Due: before C1 (stated in the row).
 - SUP Q-SUP-10 (`functions/support.md`): Executors and guardians after a death Default: No clause and no action. Write the runbook before C1
 
-**QI-26** After a loss, may billing notices stop while Apple still bills?
+**QI-27** After a loss, may billing notices stop while Apple still bills?
 
-- Owner as stated: counsel, Q52. Counsel numbers: Q52. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel, Q52 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: Q52. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SUP Q-SUP-11 (`functions/support.md`): After a loss, may billing notices stop while Apple still bills? Default: They continue (packet default). Support explains how to cancel through Apple
 
-**QI-27** The FAQ answer in `site.en.ts:109` lists Read together as "never locked away". Replace it?
+**QI-28** Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept?
+
+- Owner as stated: founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- SUP Q-SUP-14 (`functions/support.md`): Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept? Default: No. Change the sentences first, or build BL-551 first (CR-60)
+
+**QI-29** The FAQ answer in `site.en.ts:109` lists Read together as "never locked away". Replace it?
 
 - Owner as stated: Founder; counsel Q40. Counsel numbers: Q40. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-1 (`functions/marketing.md`): The FAQ answer in `site.en.ts:109` lists Read together as "never locked away". Replace it? Default: Yes: list only what the Terms 8.2 permanent list covers (reading kept letters, playing their recordings, export) and say "Read together is free" with no time word
 
-**QI-28** The welcome email says letters and recordings "stay on your iPhone", false once sign-in syncs letters (D-160). Remove now?
+**QI-30** The welcome email says letters and recordings "stay on your iPhone", false once sign-in syncs letters (D-160). Remove now?
 
 - Owner as stated: Founder; counsel Q34, Q43. Counsel numbers: Q34, Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-2 (`functions/marketing.md`): The welcome email says letters and recordings "stay on your iPhone", false once sign-in syncs letters (D-160). Remove now? Default: Yes: remove the line in one PR to `main` (removing a false claim promises less); classify the email before any further send
 
-**QI-29** The site says "Your letters are never used to train AI." Replace with the D-061 promise words?
+**QI-31** The site says "Your letters are never used to train AI." Replace with the D-061 promise words?
 
 - Owner as stated: Founder; counsel Q16, Q43. Counsel numbers: Q16, Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-3 (`functions/marketing.md`): The site says "Your letters are never used to train AI." Replace with the D-061 promise words? Default: Yes
 
-**QI-30** Keep specific prices in the store description (Apple advises against it)?
+**QI-32** Keep specific prices in the store description (Apple advises against it)?
 
 - Owner as stated: Founder; counsel Q37, Q41. Counsel numbers: Q37, Q41. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-4 (`functions/marketing.md`): Keep specific prices in the store description (Apple advises against it)? Default: Remove the prices from the description; keep the subscription and auto-renewal paragraph; prices stay on Apple's page and the website (D-075)
 
-**QI-31** Trademark: the name is not cleared (D-121 note). Hold paid placement and permanent printed uses until cleared?
+**QI-33** Trademark: the name is not cleared (D-121 note). Hold paid placement and permanent printed uses until cleared?
 
 - Owner as stated: Counsel Q10. Counsel numbers: Q10. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - MKT MQ-12 (`functions/marketing.md`): Trademark: the name is not cleared (D-121 note). Hold paid placement and permanent printed uses until cleared? Default: Yes
 
-**QI-32** A status page
+**QI-34** A status page
 
 - Owner as stated: founder; every public sentence is a claim: counsel Q43 (privacy claims) where it touches privacy. Counsel numbers: Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - OPS Q4 (`functions/operations.md`): A status page Default: Yes: a static page on the website, no subscriptions, no times; content-free
 
-**QI-33** Suspending an account on a possible sanctions match
+**QI-35** Suspending an account on a possible sanctions match
 
 - Owner as stated: counsel Q57; counsel must confirm. Counsel numbers: Q57. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - OPS Q8 (`functions/operations.md`): Suspending an account on a possible sanctions match Default: Suspend sign-in, keep everything, tell counsel the same day
 
-**QI-34** Counsel
+**QI-36** Counsel
 
 - Owner as stated: founder (engages counsel). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - FIN F5 (`functions/finance.md`): Counsel Default: No engagement (recommendation: One packet with the pack's gating questions, fixed fee)
 
-**QI-35** D-004 hedge: start an entity in parallel (due 27 Nov)
+**QI-37** D-004 hedge: start an entity in parallel (due 27 Nov)
 
 - Owner as stated: founder, accountant, counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: due 27 Nov (stated).
 - FIN F12 (`functions/finance.md`): D-004 hedge: start an entity in parallel (due 27 Nov) Default: No entity, no spend; the 5.1.1(ix) risk stays accepted (recommendation: Talk to the accountant and counsel first; the $800 California LLC tax and formation costs are the accountant's to confirm)
 
-**QI-36** When a parent withdraws sensitive-data consent, what happens to letters already on our server?
+**QI-38** When a parent withdraws sensitive-data consent, what happens to letters already on our server?
 
 - Owner as stated: Founder, then counsel. Counsel numbers: Q48. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-1 (`functions/privacy.md`): When a parent withdraws sensitive-data consent, what happens to letters already on our server? Default: Writes stop at once; nothing is deleted by the withdrawal itself; the sheet offers Save a copy and Delete account in the same place. A deletion offer that is one tap away keeps withdrawal as easy as agreeing without making it destructive Number: Q48 (consent design); OQ-L1 in BL-485
+- PRV PQ-1 (`functions/privacy.md`): When a parent withdraws sensitive-data consent, what happens to letters already on our server? Default: Writes stop at once; nothing is deleted by the withdrawal itself; the sheet offers Save a copy and Delete account in the same place. A deletion offer that is one tap away keeps withdrawal as easy as agreeing without making it destructive Number: Q48 (consent design); OQ-L1 in BL-485 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-37** Does a right to correct reach a letter's raw transcript, or a From name that is insert-only today?
+**QI-39** Should sign-up rows that hold only an email be deleted after a period: an address that never confirmed its code (NS-41 O-12), and a confirmed account that never accepted the Terms and holds nothing?
+
+- Owner as stated: Founder (retention). Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- PRV PQ-2 (`functions/privacy.md`): Should sign-up rows that hold only an email be deleted after a period: an address that never confirmed its code (NS-41 O-12), and a confirmed account that never accepted the Terms and holds nothing? Default: Yes: never-confirmed rows after 7 days (the card's default); confirmed rows with no Terms and no book after 30 days, by the purge path with a receipt and no email Number: Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
+
+**QI-40** Does a right to correct reach a letter's raw transcript, or a From name that is insert-only today?
 
 - Owner as stated: Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-4 (`functions/privacy.md`): Does a right to correct reach a letter's raw transcript, or a From name that is insert-only today? Default: The raw transcript stays as the record of what was heard and is never changed; the author corrects the final text; the From name becomes correctable by its author Number: needs a number from legal
+- PRV PQ-4 (`functions/privacy.md`): Does a right to correct reach a letter's raw transcript, or a From name that is insert-only today? Default: The raw transcript stays as the record of what was heard and is never changed; the author corrects the final text; the From name becomes correctable by its author Number: needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-38** Does a separate consent apply before the first invite shares earlier letters that may mention health?
+**QI-41** Does a separate consent apply before the first invite shares earlier letters that may mention health?
 
 - Owner as stated: Counsel. Counsel numbers: Q48. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-9 (`functions/privacy.md`): Does a separate consent apply before the first invite shares earlier letters that may mention health? Default: No second consent; the invite sheet's line (FR-PRV-32); one tap at the first share is ready if counsel says yes Number: Q48 (D-050)
+- PRV PQ-9 (`functions/privacy.md`): Does a separate consent apply before the first invite shares earlier letters that may mention health? Default: No second consent; the invite sheet's line (FR-PRV-32); one tap at the first share is ready if counsel says yes Number: Q48 (D-050) FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: PRV-32
 
-**QI-39** Sign-in codes as sensitive personal information
+**QI-42** Sign-in codes as sensitive personal information
 
 - Owner as stated: Counsel. Counsel numbers: Q56. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRV PQ-12 (`functions/privacy.md`): Sign-in codes as sensitive personal information Default: Treat as sensitive; never logged (FR-PRV-27) Number: Q56
+- PRV PQ-12 (`functions/privacy.md`): Sign-in codes as sensitive personal information Default: Treat as sensitive; never logged (FR-PRV-27) Number: Q56 FOUNDER-ANSWERED 20 Nov, default accepted (CL-081, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: PRV-27
 
-**QI-40** Sealed letters and minors: may a letter be hidden until a day in the child's minority or adulthood with no delivery by us? Does "open at 18" wording, or any later reading by the grown child, create a duty to deliver, verify age or obtain consent? Who may open a sole author's sealed letter after death or incapacity?
+**QI-43** Sealed letters and minors: may a letter be hidden until a day in the child's minority or adulthood with no delivery by us? Does "open at 18" wording, or any later reading by the grown child, create a duty to deliver, verify age or obtain consent? Who may open a sole author's sealed letter after death or incapacity?
 
 - Owner as stated: counsel. Counsel numbers: Q49. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-2 (`functions/legal.md`): Sealed letters and minors: may a letter be hidden until a day in the child's minority or adulthood with no delivery by us? Does "open at 18" wording, or any later reading by the grown child, create a duty to deliver, verify age or obtain consent? Who may open a sole author's sealed letter after death or incapacity? Default: Ordinary dates only, latest the 25th birthday, no age wording, no delivery, deleted with the account (D6); no fiduciary clause yet Number: needs a number from legal; with Q49
 
-**QI-41** A sealed letter and a court order or custody dispute: may the author hide a letter from the other parent (B8), and what do we do with an order for a hidden letter?
+**QI-44** A sealed letter and a court order or custody dispute: may the author hide a letter from the other parent (B8), and what do we do with an order for a hidden letter?
 
 - Owner as stated: counsel. Counsel numbers: Q50. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-3 (`functions/legal.md`): A sealed letter and a court order or custody dispute: may the author hide a letter from the other parent (B8), and what do we do with an order for a hidden letter? Default: Yes, the author may hide; orders handled under the Q50 runbook; the hiding does not change what we hand over Number: Q50
 
-**QI-42** Shared letter: is a parent sending a picture of their child, or a letter naming another adult, through their own share sheet outside our collection and responsibility, as with Export?
+**QI-45** Shared letter: is a parent sending a picture of their child, or a letter naming another adult, through their own share sheet outside our collection and responsibility, as with Export?
 
 - Owner as stated: counsel. Counsel numbers: Q45, Q48. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-4 (`functions/legal.md`): Shared letter: is a parent sending a picture of their child, or a letter naming another adult, through their own share sheet outside our collection and responsibility, as with Export? Default: Same as Export: the parent's own act; we collect nothing; the picture toggle off by default; flag off in production until the read is on record Number: Q45, Q48
 
-**QI-43** Is the NX-33 label line above the photo picker, and the "Pictures stay on this phone" claim, accurate and sufficient?
+**QI-46** Is the NX-33 label line above the photo picker, and the "Pictures stay on this phone" claim, accurate and sufficient?
 
 - Owner as stated: counsel. Counsel numbers: Q43. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-5 (`functions/legal.md`): Is the NX-33 label line above the photo picker, and the "Pictures stay on this phone" claim, accurate and sufficient? Default: Line absent until read; claim used only while NS-01-R15, R26, R61 pass on the candidate Number: Q43
 
-**QI-44** Printable PDF: are OFL fonts embedded in a parent's PDF, printed by a print shop of the parent's choice, within Terms 5.6 "personal and family use", or should 5.6 name print shops?
+**QI-47** Printable PDF: are OFL fonts embedded in a parent's PDF, printed by a print shop of the parent's choice, within Terms 5.6 "personal and family use", or should 5.6 name print shops?
 
 - Owner as stated: founder, counsel. Counsel numbers: Q12. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - LEG L-10 (`functions/legal.md`): Printable PDF: are OFL fonts embedded in a parent's PDF, printed by a print shop of the parent's choice, within Terms 5.6 "personal and family use", or should 5.6 name print shops? Default: Add "including through a print shop you choose" to 5.6; OFL allows the embedding [S5] Number: Q12 (IP), counsel confirms
 
-**QI-45** Should Save a copy and the printable book ask for the owner check when App lock is off?
+**QI-48** Should Save a copy and the printable book ask for the owner check when App lock is off?
 
-- Owner as stated: founder; counsel to confirm the step does not conflict with LEGAL-REQ-040. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: founder; counsel to confirm the step does not conflict with LEGAL-REQ-040 CLOSED 20 Nov, see GAP-LOG Closures CL-068. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SEC Q-S2 (`functions/risk-security.md`): Should Save a copy and the printable book ask for the owner check when App lock is off? Default: No. Keep as built (ask only with App lock) and add the FR-SEC-08 line. Export is never gated (LEGAL-REQ-040), and an owner check is not a gate, but it adds a step where none is required. Erase and Delete do get the check (FR-SEC-06)
 - FRs cited: SEC-06, SEC-08
 
-**QI-46** Is a join by the wrong adult through a forwarded invite link a security incident needing notice, or a support case?
+**QI-49** Is a join by the wrong adult through a forwarded invite link a security incident needing notice, or a support case?
 
-- Owner as stated: counsel Q23, Q50. Counsel numbers: Q23, Q50. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel Q23, Q50 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: Q23, Q50. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - SEC Q-S6 (`functions/risk-security.md`): Is a join by the wrong adult through a forwarded invite link a security incident needing notice, or a support case? Default: Support case with the 72-hour undo, logged as a security event; counsel must confirm
 
-**QI-47** Do we send any invite email (C-2)?
+**QI-50** Do we send any invite email (C-2)?
 
 - Owner as stated: founder; counsel must confirm provider and consent effect (needs a number from legal). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- MSG Q-MSG-3 (`functions/messaging-and-entry-points.md`): Do we send any invite email (C-2)? Default: No. The parent shares the link from their own messages
+- MSG Q-MSG-3 (`functions/messaging-and-entry-points.md`): Do we send any invite email (C-2)? Default: No. The parent shares the link from their own messages FOUNDER-ANSWERED 20 Nov, default accepted (CL-063, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-48** Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)?
+**QI-51** Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)?
 
 - Owner as stated: founder, counsel must confirm (needs a number from legal). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- MSG Q-MSG-5 (`functions/messaging-and-entry-points.md`): Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)? Default: Build the page: it is where a person who lost the phone and the `deletion-confirm` email land; the in-app route stays primary
+- MSG Q-MSG-5 (`functions/messaging-and-entry-points.md`): Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)? Default: Build the page: it is where a person who lost the phone and the `deletion-confirm` email land; the in-app route stays primary FOUNDER-ANSWERED 20 Nov, default accepted (CL-063, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-49** May the founder tell families that deleted items might reappear after a restore?
+**QI-52** May the founder tell families that deleted items might reappear after a restore?
 
-- Owner as stated: counsel Q51. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - REL Q-REL-7 (`functions/reliability.md`): May the founder tell families that deleted items might reappear after a restore? Default: Yes, in the incident message only, not in the policy (`privacy.md` PQ-10); counsel must confirm
 
-**QI-50** Is Vercel Hobby acceptable for a commercial site?
+**QI-53** Is Vercel Hobby acceptable for a commercial site?
 
-- Owner as stated: founder; counsel must confirm. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: founder; counsel must confirm FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - REL Q-REL-8 (`functions/reliability.md`): Is Vercel Hobby acceptable for a commercial site? Default: UNVERIFIED (the page read does not say). Confirm the plan; finance assumes Pro ($20)
 
-**QI-51** Is the age stop's clock a compliance issue?
+**QI-54** Is the age stop's clock a compliance issue?
 
-- Owner as stated: counsel; needs a number from legal. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: counsel; needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - REL Q-REL-9 (`functions/reliability.md`): Is the age stop's clock a compliance issue? Default: Ask compliance to read FR-REL-58
 - FRs cited: REL-58
 
-**QI-52** Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)?
+**QI-55** Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)?
 
 - Owner as stated: Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- AIS AQ-6 (`functions/ai-and-speech.md`): Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)? Default: Needs a number from legal; reading in FR-AIS-46; do not publish an EU statement until answered
+- AIS AQ-6 (`functions/ai-and-speech.md`): Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)? Default: Needs a number from legal; reading in FR-AIS-46; do not publish an EU statement until answered FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: AIS-46
 
-**QI-53** Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count?
+**QI-56** Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count?
 
 - Owner as stated: Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- AIS AQ-7 (`functions/ai-and-speech.md`): Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count? Default: Needs a number from legal; meanwhile no voiceprint, no speaker identification, no diarization (FR-AIS-45)
+- AIS AQ-7 (`functions/ai-and-speech.md`): Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count? Default: Needs a number from legal; meanwhile no voiceprint, no speaker identification, no diarization (FR-AIS-45) FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: AIS-45
 
-**QI-54** Counsel: advertising law on any accuracy claim (FR-AIS-48)
+**QI-57** Counsel: advertising law on any accuracy claim (FR-AIS-48)
 
 - Owner as stated: Counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- AIS AQ-9 (`functions/ai-and-speech.md`): Counsel: advertising law on any accuracy claim (FR-AIS-48) Default: Needs a number from legal; no accuracy claim until answered
+- AIS AQ-9 (`functions/ai-and-speech.md`): Counsel: advertising law on any accuracy claim (FR-AIS-48) Default: Needs a number from legal; no accuracy claim until answered FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: AIS-48
 
-**QI-55** Is a server transcription path ever wanted (older phones, a re-run)?
+**QI-58** Is a server transcription path ever wanted (older phones, a re-run)?
 
 - Owner as stated: Founder, security-architect, counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- AIS AQ-10 (`functions/ai-and-speech.md`): Is a server transcription path ever wanted (older phones, a re-run)? Default: No for 1.0 (X2); revisit only with a measured need and the full Shown, Records, Never and Decline set
+- AIS AQ-10 (`functions/ai-and-speech.md`): Is a server transcription path ever wanted (older phones, a re-run)? Default: No for 1.0 (X2); revisit only with a measured need and the full Shown, Records, Never and Decline set CLOSED 20 Nov, see GAP-LOG Closures CL-094
 
-**QI-56** Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care?
+**QI-59** Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care?
 
 - Owner as stated: counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- RSH RQ-6 (`functions/research-validation.md`): Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care? Default: Needs a number from legal. Default: yes or no only, nothing kept, FR-RSH-23. I did not verify Apple's or any regulator's treatment of pregnancy information; the privacy review reports Apple lists it as sensitive info (privacy.md line 40, second-hand)
+- RSH RQ-6 (`functions/research-validation.md`): Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care? Default: Needs a number from legal. Default: yes or no only, nothing kept, FR-RSH-23. I did not verify Apple's or any regulator's treatment of pregnancy information; the privacy review reports Apple lists it as sensitive info (privacy.md line 40, second-hand) FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: RSH-23
 
-**QI-57** The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy?
+**QI-60** The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy?
 
 - Owner as stated: founder. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- LCY LQ-1 (`functions/lifecycle-and-platforms.md`): The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy? Default: Alpha families stay on the alpha app until each says otherwise; the store app starts clean for them; staging is kept until each family has a Save a copy and a dated notice, then retired; the decision is recorded in `DECISIONS.md` Number: needs a number from legal for any duty to them as users
+- LCY LQ-1 (`functions/lifecycle-and-platforms.md`): The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy? Default: Alpha families stay on the alpha app until each says otherwise; the store app starts clean for them; staging is kept until each family has a Save a copy and a dated notice, then retired; the decision is recorded in `DECISIONS.md` Number: needs a number from legal for any duty to them as users FOUNDER-ANSWERED 20 Nov, default accepted (CL-077): Default: tell them before build; founder gift decision. Decision made, action pending founder hands: tell the alpha families, gift decision
 
-**QI-58** Alpha testers with more kept letters than the allowance: give them anything?
+**QI-61** Alpha testers with more kept letters than the allowance: give them anything?
 
 - Owner as stated: founder, counsel. Counsel numbers: Q40. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- LCY LQ-7 (`functions/lifecycle-and-platforms.md`): Alpha testers with more kept letters than the allowance: give them anything? Default: Tell them before the build; change nothing in the ledger; a Plus offer code is a founder gift decision, outside the app Number: Q40
+- LCY LQ-7 (`functions/lifecycle-and-platforms.md`): Alpha testers with more kept letters than the allowance: give them anything? Default: Tell them before the build; change nothing in the ledger; a Plus offer code is a founder gift decision, outside the app Number: Q40 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-59** Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}?
+**QI-62** Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}?
 
 - Owner as stated: founder, counsel. Counsel numbers: Q45. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- LCY LQ-8 (`functions/lifecycle-and-platforms.md`): Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}? Default: Yes Number: needs a number from legal; with L-2 and Q45
+- LCY LQ-8 (`functions/lifecycle-and-platforms.md`): Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}? Default: Yes Number: needs a number from legal; with L-2 and Q45 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-60** Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one?
+**QI-63** Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one?
 
 - Owner as stated: counsel. Counsel numbers: Q49. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- LCY LQ-9 (`functions/lifecycle-and-platforms.md`): Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one? Default: No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names Number: Q49, support Q-SUP-10
+- LCY LQ-9 (`functions/lifecycle-and-platforms.md`): Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one? Default: No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names Number: Q49, support Q-SUP-10 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-61** Inactive accounts: confirm "no automatic deletion in v1" against storage limits
+**QI-64** Inactive accounts: confirm "no automatic deletion in v1" against storage limits
 
 - Owner as stated: counsel. Counsel numbers: Q51. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- LCY LQ-10 (`functions/lifecycle-and-platforms.md`): Inactive accounts: confirm "no automatic deletion in v1" against storage limits Default: Keep as is; revisit at the first real inactive account Number: data policy OQ-11, Q51
+- LCY LQ-10 (`functions/lifecycle-and-platforms.md`): Inactive accounts: confirm "no automatic deletion in v1" against storage limits Default: Keep as is; revisit at the first real inactive account Number: data policy OQ-11, Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
-**QI-62** Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R])
+**QI-65** Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R])
 
 - Owner as stated: founder, CFO. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRT Q-PRT-4 (`functions/print-and-fulfilment.md`): Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R]) Default: Do not fix any price until a real wholesale quote and card fee are in section 3.4; price shown all-in with tax visible Number: needs a number from legal (SB 478, UNVERIFIED)
+- PRT Q-PRT-4 (`functions/print-and-fulfilment.md`): Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R]) Default: Do not fix any price until a real wholesale quote and card fee are in section 3.4; price shown all-in with tax visible Number: needs a number from legal (SB 478, UNVERIFIED) CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
-**QI-63** Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say?
+**QI-66** Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say?
 
 - Owner as stated: counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRT Q-PRT-5 (`functions/print-and-fulfilment.md`): Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say? Default: Assume it applies; build to its notice and refund timing Number: needs a number from legal
+- PRT Q-PRT-5 (`functions/print-and-fulfilment.md`): Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say? Default: Assume it applies; build to its notice and refund timing Number: needs a number from legal CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
-**QI-64** Is the other parent asked before their in-book letters are printed in a book the first parent buys?
+**QI-67** Is the other parent asked before their in-book letters are printed in a book the first parent buys?
 
 - Owner as stated: founder, counsel. Counsel numbers: Q30. Due: before their in-book letters are printed in a book the first parent buys? (stated in the question).
-- PRT Q-PRT-7 (`functions/print-and-fulfilment.md`): Is the other parent asked before their in-book letters are printed in a book the first parent buys? Default: Notice, not approval (FR-PRT-37) Number: Q30 (printed books row); Terms 7.1
+- PRT Q-PRT-7 (`functions/print-and-fulfilment.md`): Is the other parent asked before their in-book letters are printed in a book the first parent buys? Default: Notice, not approval (FR-PRT-37) Number: Q30 (printed books row); Terms 7.1 CLOSED 20 Nov, see GAP-LOG Closures CL-097
 - FRs cited: PRT-37
 
-**QI-65** Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)?
+**QI-68** Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)?
 
 - Owner as stated: counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRT Q-PRT-8 (`functions/print-and-fulfilment.md`): Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)? Default: Counsel to answer; assume none until told Number: needs a number from legal
+- PRT Q-PRT-8 (`functions/print-and-fulfilment.md`): Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)? Default: Counsel to answer; assume none until told Number: needs a number from legal CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
-**QI-66** Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print?
+**QI-69** Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print?
 
 - Owner as stated: founder, content. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRT Q-PRT-9 (`functions/print-and-fulfilment.md`): Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print? Default: Blank with a choice to change the letter themselves; no automatic substitution Number: needs a number from legal for the face licence
+- PRT Q-PRT-9 (`functions/print-and-fulfilment.md`): Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print? Default: Blank with a choice to change the letter themselves; no automatic substitution Number: needs a number from legal for the face licence CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
-**QI-67** Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)?
+**QI-70** Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)?
 
 - Owner as stated: counsel, CLO. Counsel numbers: Q11. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
-- PRT Q-PRT-12 (`functions/print-and-fulfilment.md`): Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)? Default: Processor, with deletion after shipping; if the partner will not accept that, it is not the partner Number: Q11
+- PRT Q-PRT-12 (`functions/print-and-fulfilment.md`): Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)? Default: Processor, with deletion after shipping; if the partner will not accept that, it is not the partner Number: Q11 CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
-**QI-68** [RULED DL-8] May the library offer days of a religion without a member of that community reviewing them?
+**QI-71** [RULED DL-8] May the library offer days of a religion without a member of that community reviewing them?
 
-- Owner as stated: Founder, counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: Founder, counsel CLOSED 20 Nov, see GAP-LOG Closures CL-087. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - DAY Q-DAY-9 (`functions/days-library.md`): May the library offer days of a religion without a member of that community reviewing them? Default: No: a reviewer from each of the six biggest groups reads the tradition's rows and names before ship; costs a small fee or a volunteer; a family can always add their own
 - Ruled DL-8 (GAP-LOG): a member of each tradition reviews its rows before ship.
 
-**QI-69** Licence of the sources (FR-DAY-23)
+**QI-72** Licence of the sources (FR-DAY-23)
 
-- Owner as stated: Counsel (needs a number from legal). Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
+- Owner as stated: Counsel (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - DAY Q-DAY-10 (`functions/days-library.md`): Licence of the sources (FR-DAY-23) Default: Compute rule-based dates; license or cite each table; counsel confirms
 - FRs cited: DAY-23
 
-**QI-70** Is the list left out of Save a copy (default)?
+**QI-73** Is the list left out of Save a copy (default)?
 
 - Owner as stated: Founder, counsel. Counsel numbers: Q55. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - CUL CUL-Q5 (`functions/cultural-background-data.md`): Is the list left out of Save a copy (default)? Default: Yes, left out; one line says so Number: needs a number from legal (near Q55, access)
 
-**QI-71** Do we leave the privacy label's answer as "not collected" for this data, relying on the on-device rule (S1), and do we add the Privacy Policy sentence?
+**QI-74** Do we leave the privacy label's answer as "not collected" for this data, relying on the on-device rule (S1), and do we add the Privacy Policy sentence?
 
 - Owner as stated: Counsel, legal. Counsel numbers: Q57. Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - CUL CUL-Q7 (`functions/cultural-background-data.md`): Do we leave the privacy label's answer as "not collected" for this data, relying on the on-device rule (S1), and do we add the Privacy Policy sentence? Default: Yes to both; the label is re-run per build (FR-CUL-23) Number: Q57(f)-adjacent: needs a number from legal
 - FRs cited: CUL-23
 
-**QI-72** (a) The Developer Program License Agreement duties on suggestion data (A2 links to it; not read). (b) Whether using the picker changes the Apple privacy label or App Review notes (5.1.1(iii)). (c) Whether the wording above the picker counts as a notice under any law the packet lists. (d) Level 3: a library permission for a child's pictures (COPPA-style readings; the privacy review's S5 says a child's image is personal information when collected online; we collect nothing today)
+**QI-75** (a) The Developer Program License Agreement duties on suggestion data (A2 links to it; not read). (b) Whether using the picker changes the Apple privacy label or App Review notes (5.1.1(iii)). (c) Whether the wording above the picker counts as a notice under any law the packet lists. (d) Level 3: a library permission for a child's pictures (COPPA-style readings; the privacy review's S5 says a child's image is personal information when collected online; we collect nothing today)
 
 - Owner as stated: counsel. Counsel numbers: none cited (a source may say "needs a number from legal"). Due: proposed, not stated by any function: before G2 (counsel reads) of the store candidate whose flag the answer gates; until then the default holds.
 - PHS Counsel (new, needs a number from legal) (`functions/photos-and-suggestions.md`): (a) The Developer Program License Agreement duties on suggestion data (A2 links to it; not read). (b) Whether using the picker changes the Apple privacy label or App Review notes (5.1.1(iii)). (c) Whether the wording above the picker counts as a notice under any law the packet lists. (d) Level 3: a library permission for a child's pictures (COPPA-style readings; the privacy review's S5 says a child's image is personal information when collected online; we collect nothing today) Default: Counsel must confirm; defaults as above
 
 ### 4.2 Founder (and other owner) questions
 
-**QI-73** [RULED K8] When production moves to Supabase Pro
+**QI-76** [RULED K8] When production moves to Supabase Pro
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F1 (`functions/finance.md`): When does production move to Supabase Pro ($25 a month, $300 a year)? Default: Stay on Free (D-159) (recommendation: At 60% of any Free limit on the weekly check, or before any backup flip. Keep the spend cap on)
 - OPS Q1 (`functions/operations.md`): When a Free quota passes 80%, move to Pro for that month? Default: Yes, same week, because after the first grace period Supabase gives no second one (billing FAQ, 20 Nov). Pro's price was not read this session: read it on the day
 - Ruled K8 (GAP-LOG): paid-tier triggers: ask the founder at 60% of a limit, move at 80%.
 
-**QI-74** [RULED K8] EAS Starter in a heavy month
+**QI-77** [RULED K8] EAS Starter in a heavy month
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F6 (`functions/finance.md`): EAS Starter Default: Stay on Free (D-092) (recommendation: Batch native changes; upgrade only for a month that needs it)
 - OPS Q3 (`functions/operations.md`): EAS Starter in a heavy month Default: Yes for any month past 12 planned builds (D-092 already allows it)
 - Ruled K8 (GAP-LOG): paid-tier triggers: ask the founder at 60% of a limit, move at 80%.
 
-**QI-75** [RULED K8] Resend before a public launch
+**QI-78** [RULED K8] Resend before a public launch
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F7 (`functions/finance.md`): Resend Pro Default: Stay on Free (recommendation: Upgrade before a public launch day if 100 a day could be reached)
 - OPS Q2 (`functions/operations.md`): Resend at public launch Default: Stay on Free until expected email sign-ins pass 50 a day (half the 100-a-day cap), then a paid tier; paid prices not read this session
 - Ruled K8 (GAP-LOG): paid-tier triggers: ask the founder at 60% of a limit, move at 80%.
 
-**QI-76** Which test phones exist
+**QI-79** Which test phones exist
 
-- Owner as stated: founder; not stated (read as founder). Due: before the first run sheet (stated); before the first run sheet of the pack (stated).
+- Owner as stated: founder; not stated (read as founder); founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone. Due: before the first run sheet (stated); before the first run sheet of the pack (stated).
 - FIN F2 (`functions/finance.md`): Which phones do you hold (SE 3, iOS 17, a second phone, an iPad)? Default: Buy nothing; iPad rows on the simulator; second-phone rows stay off in production (recommendation: Name them before the first run sheet; buy a used SE 3 only if none is held)
 - OPS Q11 (`functions/operations.md`): Which test phones exist Default: The founder lists them before the first run sheet of the pack; missing rows are waivers in the build record
 - QAL Q1 (`functions/quality.md`): Which phones does the founder hold, and will he buy or borrow one on iOS 17 and one on iOS 26 or later? (14 s5: not recorded; spend is his call) Default: Use the SE 3 and one current phone daily (as DEVICE_TEST_PLAN says), borrow an iOS 17 phone; until a pass has a phone it is "not run" and G4 does not pass
 - REL Q-REL-6 (`functions/reliability.md`): Buy or borrow a 3 GB class phone for the Tier B spot run? Default: Borrow if possible; otherwise a waiver line, never for a lost letter
 
-**QI-77** What a support or takeover reply may promise about time
+**QI-80** What a support or takeover reply may promise about time
 
 - Owner as stated: Founder; founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- BKO Q-BKO-2 (`functions/back-office.md`): May a takeover reply promise a time? BL-598 says 4 hours. Default: No published time. Internal target "same day". Reword BL-598's acceptance line to "within 4 hours of the founder reading the report". Counsel must confirm that no speed appears in Terms or Privacy
-- MSG Q-MSG-6 (`functions/messaging-and-entry-points.md`): What reply time do we promise at `hello@`? Default: "Within 2 working days", only if a person reads it each working day
+- BKO Q-BKO-2 (`functions/back-office.md`): May a takeover reply promise a time? BL-598 says 4 hours. Default: No published time. Internal target "same day". Reword BL-598's acceptance line to "within 4 hours of the founder reading the report". Counsel must confirm that no speed appears in Terms or Privacy FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
+- MSG Q-MSG-6 (`functions/messaging-and-entry-points.md`): What reply time do we promise at `hello@`? Default: "Within 2 working days", only if a person reads it each working day FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures)
 
-**QI-78** Which languages the first store build promises, and the order after it
+**QI-81** Which languages the first store build promises, and the order after it
 
 - Owner as stated: Founder; not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- AIS AQ-2 (`functions/ai-and-speech.md`): Which languages are promised for 1.0: English only, or more? A language needs a recorded gate, a native sign-off, a hosted model and a licence record Default: English only until another passes all four; one language at a time (FR-AIS-11, 23, finance FR-FIN-20)
-- LOC Q-LOC-1 (`functions/languages-and-localisation.md`): Which language unlocks second, third and so on? Default: Spanish, Portuguese, French, Mandarin, Hindi, Arabic, one at a time (FR-LOC-06). The founder may put his own families first; the order is never promised to a parent.
+- AIS AQ-2 (`functions/ai-and-speech.md`): Which languages are promised for 1.0: English only, or more? A language needs a recorded gate, a native sign-off, a hosted model and a licence record Default: English only until another passes all four; one language at a time (FR-AIS-11, 23, finance FR-FIN-20) CLOSED 20 Nov, see GAP-LOG Closures CL-094
+- LOC Q-LOC-1 (`functions/languages-and-localisation.md`): Which language unlocks second, third and so on? Default: Spanish, Portuguese, French, Mandarin, Hindi, Arabic, one at a time (FR-LOC-06). The founder may put his own families first; the order is never promised to a parent. CLOSED 20 Nov, see GAP-LOG Closures CL-098
 - FRs cited: FIN-20, LOC-06, AIS-11, AIS-23
 
-**QI-79** [RULED N-1, DL-5] Variants per grid cell and per day
+**QI-82** [RULED N-1, DL-5] Variants per grid cell and per day
 
-- Owner as stated: not stated (read as founder); Karma. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-1 (`functions/notification-catalogue.md`): Variants per grid cell: the founder's 8 to 12, or 6 Default: 6; revisit after the first tester sheet
-- NTC Q-NTC-8 (`functions/notification-catalogue.md`): Ship the full set at freeze, or the floor at freeze and the rest in a content drop Default: Floor at freeze, rest as a content drop (Design B already planned this, `NOTIFICATIONS.md:59`)
+- Owner as stated: not stated (read as founder); Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- NTC Q-NTC-1 (`functions/notification-catalogue.md`): Variants per grid cell: the founder's 8 to 12, or 6 Default: 6; revisit after the first tester sheet CLOSED 20 Nov, see GAP-LOG Closures CL-040
+- NTC Q-NTC-8 (`functions/notification-catalogue.md`): Ship the full set at freeze, or the floor at freeze and the rest in a content drop Default: Floor at freeze, rest as a content drop (Design B already planned this, `NOTIFICATIONS.md:59`) CLOSED 20 Nov, see GAP-LOG Closures CL-041
 - DAY Q-DAY-7 (`functions/days-library.md`): Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1) Default: 4 per day and 3 per season; 8 to 12 only for the evening grid
 - Ruled N-1 (GAP-LOG): 6 variants per grid cell (one plan holds at most 11 evening nudges, each cell is visited about once); the founder's 8 to 12 applies to the day, season and last-letter layers. Launch floor about 128 variants, filled later in content drops.
 - Ruled DL-5 (GAP-LOG): 4 variants per day and 3 per season (a day recurs once a year).
 
-**QI-80** [PARTLY RULED DL-9: DAY Q-DAY-12] What "East East" meant (Q-FD-1)
+**QI-83** [PARTLY RULED DL-9: DAY Q-DAY-12] What "East East" meant (Q-FD-1)
 
-- Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Founder; Founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-089): Culture group not religion; same plain-words ask as Q-FD-1. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - CUL CUL-Q1 (`functions/cultural-background-data.md`): What does "East East" mean (Q-FD-1)? Default: There is no such option. "Another tradition" and "Not now" cover it; "Prefer not to say" is the same as "Not now"
 - DAY Q-DAY-12 (`functions/days-library.md`): Q-FD-1 "East East": if the founder meant "East Asian", that is a culture or origin group, not a religion, and its days (Lunar New Year, Lantern, Mid-Autumn, Chuseok, Dragon Boat) are in the culture-led group above and need no religion answer Default: Treat "East Asian" as a region choice only if the founder confirms; otherwise stay with "Prefer not to say"
 - Ruled DL-9 (GAP-LOG): "East East" may mean East Asian, a culture or origin group, not a religion; the founder confirms (Q-FD-1). The library offers Lunar New Year, Mid-Autumn and Norooz as culture-led days.
 
-**QI-81** Do we state a response time for ordinary support (not data requests)?
+**QI-84** Do we state a response time for ordinary support (not data requests)?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder CLOSED 20 Nov, see GAP-LOG Closures CL-099. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - SUP Q-SUP-2 (`functions/support.md`): Do we state a response time for ordinary support (not data requests)? Default: No public time. Data requests keep Privacy 10's 45 days
 
-**QI-82** Support in languages other than English?
+**QI-85** Support in languages other than English?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder CLOSED 20 Nov, see GAP-LOG Closures CL-099. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - SUP Q-SUP-3 (`functions/support.md`): Support in languages other than English? Default: English only at 1.0. The help centre says so once
 
-**QI-83** If a printed book (NS-30) ever ships, who handles refunds and delivery problems?
+**QI-86** May the Help mail subject carry the app version and build (not an id), to save a question?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- SUP Q-SUP-9 (`functions/support.md`): If a printed book (NS-30) ever ships, who handles refunds and delivery problems? Default: Decide before NS-30 reopens. It is not Apple
-
-**QI-84** May the Help mail subject carry the app version and build (not an id), to save a question?
-
-- Owner as stated: founder, `privacy`. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder, `privacy` CLOSED 20 Nov, see GAP-LOG Closures CL-099. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - SUP Q-SUP-12 (`functions/support.md`): May the Help mail subject carry the app version and build (not an id), to save a question? Default: No. Ask for the version in the reply (M20)
 
-**QI-85** Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept?
-
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- SUP Q-SUP-14 (`functions/support.md`): Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept? Default: No. Change the sentences first, or build BL-551 first (CR-60)
-
-**QI-86** Pictures in NS-01 store art: illustration or licensed photography?
+**QI-87** Pictures in NS-01 store art: illustration or licensed photography?
 
 - Owner as stated: Founder (spend if licensed). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - MKT MQ-6 (`functions/marketing.md`): Pictures in NS-01 store art: illustration or licensed photography? Default: Illustration (no likeness, no release, no spend); never an AI-generated photo of a child
 
-**QI-87** Rating request: when may Apple's prompt be called?
+**QI-88** Rating request: when may Apple's prompt be called?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - MKT MQ-7 (`functions/marketing.md`): Rating request: when may Apple's prompt be called? Default: FR-MKT-23 as written; first request no earlier than the second kept letter
 - FRs cited: MKT-23
 
-**QI-88** The welcome email renders the D-118 name from `site.ts` into a separate surface. Does D-118 cover the email?
+**QI-89** The welcome email renders the D-118 name from `site.ts` into a separate surface. Does D-118 cover the email?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - MKT MQ-10 (`functions/marketing.md`): The welcome email renders the D-118 name from `site.ts` into a separate surface. Does D-118 cover the email? Default: No: the email uses Asha
 
-**QI-89** Add any keyword for photos, Find or Share when they ship?
+**QI-90** Add any keyword for photos, Find or Share when they ship?
 
 - Owner as stated: Founder (keyword field as submitted). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - MKT MQ-11 (`functions/marketing.md`): Add any keyword for photos, Find or Share when they ship? Default: No keyword added for them; language names only when shipped
 
-**QI-90** Ever block an old app version?
+**QI-91** Ever block an old app version?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - OPS Q5 (`functions/operations.md`): Ever block an old app version? Default: No in the 1.0.x line: a line in Me only; servers stay compatible with every live build
 
-**QI-91** The seventh flip condition (copy of the Storage objects)
+**QI-92** The seventh flip condition (copy of the Storage objects)
 
 - Owner as stated: founder with security-architect. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - OPS Q6 (`functions/operations.md`): The seventh flip condition (copy of the Storage objects) Default: No flip until a copy job of the encrypted `entry-audio` objects to a second store exists, with a monthly restore check
 
-**QI-92** Re-enable `agents.yml`
+**QI-93** Re-enable `agents.yml`
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - OPS Q10 (`functions/operations.md`): Re-enable `agents.yml` Default: Keep it disabled until open agent PRs are under `max_open_agent_prs` (66 against 10 today) or the cap is raised by the founder; ops changes nothing
 
-**QI-93** Second languages
+**QI-94** Second languages
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F3 (`functions/finance.md`): Second languages Default: No spend (recommendation: One at a time, after a corpus pre-check)
 
-**QI-94** Proof books
+**QI-95** Proof books
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F4 (`functions/finance.md`): Proof books Default: No spend (taken 20 Nov) (recommendation: Wait until NS-07 is next in the wave)
 
-**QI-95** Is the website allowed on Vercel Hobby?
+**QI-96** Is the website allowed on Vercel Hobby?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F8 (`functions/finance.md`): Is the website allowed on Vercel Hobby? Default: No change (recommendation: Read Vercel's fair use page; if commercial use needs Pro, decide with that page open)
 
-**QI-96** Is the Small Business Program enrolment approved, and on what date?
+**QI-97** Is the Small Business Program enrolment approved, and on what date?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F9 (`functions/finance.md`): Is the Small Business Program enrolment approved, and on what date? Default: Not enrolled (30% in year one) (recommendation: Enrol now if not done; it costs $0 and the rate starts 15 days after the fiscal month of approval)
 
-**QI-97** Billing Grace Period in App Store Connect
+**QI-98** Billing Grace Period in App Store Connect
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - FIN F10 (`functions/finance.md`): Billing Grace Period in App Store Connect Default: Off (recommendation: On, 16 days, paid renewals only: no lost days of paid service when recovered (V7); trial-to-paid failures excluded)
 
-**QI-98** May the server `insights` aggregates be read in the 1.0 line?
+**QI-99** May the server `insights` aggregates be read in the 1.0 line?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAT FQ-01 (`functions/data-and-measurement.md`): May the server `insights` aggregates be read in the 1.0 line? Default: No. The frame does not list them as a source, INSIGHTS_LOOP is superseded for v1.0, what production holds is unknown to sessions, and at C1 size k = 10 suppresses nearly every cell. Revisit after launch with a runbook and audit row (FR-DAT-28)
 - FRs cited: DAT-28
 
-**QI-99** [RULED K3] Minimum first-time downloads before the allowance rule fires: 500 (D-125) or 1,000 (F14 6.9)?
+**QI-100** [RULED K3] Minimum first-time downloads before the allowance rule fires: 500 (D-125) or 1,000 (F14 6.9)?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAT FQ-02 (`functions/data-and-measurement.md`): Minimum first-time downloads before the allowance rule fires: 500 (D-125) or 1,000 (F14 6.9)? Default: 500, the later ruling, with the 95% interval printed beside the point. At 500 the interval around 4% runs 2.3% to 5.7%, so a read near the line is close to a coin toss; the founder sees that before acting
 - Ruled K3 (GAP-LOG): pricing allowance rule fires at 500 first-time downloads with the 95% interval shown (D-125); F14 6.9's 1,000 is superseded.
 
-**QI-100** Are offer-code starts excluded from the business number?
+**QI-101** Are offer-code starts excluded from the business number?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAT FQ-03 (`functions/data-and-measurement.md`): Are offer-code starts excluded from the business number? Default: Yes; the founder subtracts the codes he gave by hand until ASC's report fields are verified (UNVERIFIED)
 
-**QI-101** Round cadence and length during C1
+**QI-102** Round cadence and length during C1
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAT FQ-04 (`functions/data-and-measurement.md`): Round cadence and length during C1 Default: Every 2 weeks, 5 questions at most, Q-NS-1 and Q-FID-1 always
 
-**QI-102** Withdrawal clock for a tester's rows
+**QI-103** Withdrawal clock for a tester's rows
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAT FQ-05 (`functions/data-and-measurement.md`): Withdrawal clock for a tester's rows Default: Deleted within 7 days of the request, dated note
 
-**QI-103** Should sign-up rows that hold only an email be deleted after a period: an address that never confirmed its code (NS-41 O-12), and a confirmed account that never accepted the Terms and holds nothing?
-
-- Owner as stated: Founder (retention). Counsel numbers cited: Q51. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRV PQ-2 (`functions/privacy.md`): Should sign-up rows that hold only an email be deleted after a period: an address that never confirmed its code (NS-41 O-12), and a confirmed account that never accepted the Terms and holds nothing? Default: Yes: never-confirmed rows after 7 days (the card's default); confirmed rows with no Terms and no book after 30 days, by the purge path with a receipt and no email Number: Q51
-
 **QI-104** Once a book has a birthday, may the parent clear the due date, or should it clear itself?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRV PQ-6 (`functions/privacy.md`): Once a book has a birthday, may the parent clear the due date, or should it clear itself? Default: Keep it, with a Clear control in Me; never clear it without the parent
+- PRV PQ-6 (`functions/privacy.md`): Once a book has a birthday, may the parent clear the due date, or should it clear itself? Default: Keep it, with a Clear control in Me; never clear it without the parent Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-082: Keep with Clear control in Me
 
 **QI-105** Leave: ship BL-444 before co-parent is in a store build, or keep the Terms wording "not in the app yet"?
 
@@ -2928,95 +3135,95 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 **QI-106** When ADR 0031 hides A's book and A can no longer sign in, may the phone owner (device passcode) open a hidden book only to Save a copy?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder CLOSED 20 Nov, see GAP-LOG Closures CL-068. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - SEC Q-S1 (`functions/risk-security.md`): When ADR 0031 hides A's book and A can no longer sign in, may the phone owner (device passcode) open a hidden book only to Save a copy? Default: Yes, only Save a copy, after the owner check and a line naming the risk. It is no weaker than D1, which already lets anyone read a signed-out book, and it keeps the only copy of a voice from being stranded
 
 **QI-107** Fund an independent penetration test before the first person outside the family stores letters on the server?
 
-- Owner as stated: founder (spend). Due: before the first person outside the family stores letters on the server (stated).
+- Owner as stated: founder (spend) FOUNDER-ANSWERED 20 Nov, default accepted (CL-069, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: pen test spend. Due: before the first person outside the family stores letters on the server (stated).
 - SEC Q-S3 (`functions/risk-security.md`): Fund an independent penetration test before the first person outside the family stores letters on the server? Default: Yes, scoped to sign-in, invite links and codes, Edge Functions, RLS and the iOS build; Asha data only. Without it, say plainly that the R-17 review is self-assessed
 
 **QI-108** Bot check on email send (card O-7)
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder CLOSED 20 Nov, see GAP-LOG Closures CL-070: Turnstile before public TestFlight link. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - SEC Q-S4 (`functions/risk-security.md`): Bot check on email send (card O-7) Default: Agree with O-7: Turnstile before the public TestFlight link, subprocessor page first, Apple unaffected
 
 **QI-109** May support ever merge two accounts, or move letters from one account to another, for a parent who signed in two different ways?
 
 - Owner as stated: Founder, with `security-architect`. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- BKO Q-BKO-1 (`functions/back-office.md`): May support ever merge two accounts, or move letters from one account to another, for a parent who signed in two different ways? Default: No, never by hand in 1.0. The parent signs in the original way. It would move one account's letters on a stranger's word. Reopen when there is an in-app way to link identities, proved by both sign-ins
+- BKO Q-BKO-1 (`functions/back-office.md`): May support ever merge two accounts, or move letters from one account to another, for a parent who signed in two different ways? Default: No, never by hand in 1.0. The parent signs in the original way. It would move one account's letters on a stranger's word. Reopen when there is an in-app way to link identities, proved by both sign-ins FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
 
 **QI-110** Set up `abuse@` as an alias to the founder's inbox?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- BKO Q-BKO-8 (`functions/back-office.md`): Set up `abuse@` as an alias to the founder's inbox? Default: Yes, with `security@`, when the aliases are made live. Until then the policy and Help say `hello@` only. Liveness UNVERIFIED
+- BKO Q-BKO-8 (`functions/back-office.md`): Set up `abuse@` as an alias to the founder's inbox? Default: Yes, with `security@`, when the aliases are made live. Until then the policy and Help say `hello@` only. Liveness UNVERIFIED FOUNDER-ANSWERED 20 Nov, default accepted (CL-066, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: two offline key copies, abuse@ alias, counsel second reader
 
 **QI-111** Is the live DMARC record still `p=none` with reports to `hello@`, and do we move reports to a `dmarc@` inbox now (C-4)?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-1 (`functions/messaging-and-entry-points.md`): Is the live DMARC record still `p=none` with reports to `hello@`, and do we move reports to a `dmarc@` inbox now (C-4)? Default: Yes: `dmarc@`, stage 1, move on by the clean-report rule
+- MSG Q-MSG-1 (`functions/messaging-and-entry-points.md`): Is the live DMARC record still `p=none` with reports to `hello@`, and do we move reports to a `dmarc@` inbox now (C-4)? Default: Yes: `dmarc@`, stage 1, move on by the clean-report rule FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes
 
 **QI-112** How does the founder reply from `hello@` (which provider), so DMARC and the Apple relay both pass (SECURITY Q4)?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-2 (`functions/messaging-and-entry-points.md`): How does the founder reply from `hello@` (which provider), so DMARC and the Apple relay both pass (SECURITY Q4)? Default: Reply through a provider that signs with a registered domain, or send replies through Resend; register whatever is chosen
+- MSG Q-MSG-2 (`functions/messaging-and-entry-points.md`): How does the founder reply from `hello@` (which provider), so DMARC and the Apple relay both pass (SECURITY Q4)? Default: Reply through a provider that signs with a registered domain, or send replies through Resend; register whatever is chosen FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes
 
 **QI-113** Is the one billing push dropped for v1 (C-1)?
 
 - Owner as stated: founder, Karma. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-4 (`functions/messaging-and-entry-points.md`): Is the one billing push dropped for v1 (C-1)? Default: Yes. Local plan notice only; push waits for BL-546
+- MSG Q-MSG-4 (`functions/messaging-and-entry-points.md`): Is the one billing push dropped for v1 (C-1)? Default: Yes. Local plan notice only; push waits for BL-546 CLOSED 20 Nov, see GAP-LOG Closures CL-064
 
 **QI-114** Is a Marketing URL set in App Store Connect, and is it the home page?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-7 (`functions/messaging-and-entry-points.md`): Is a Marketing URL set in App Store Connect, and is it the home page? Default: Set it to the home page only when the claims are checked (marketing)
+- MSG Q-MSG-7 (`functions/messaging-and-entry-points.md`): Is a Marketing URL set in App Store Connect, and is it the home page? Default: Set it to the home page only when the claims are checked (marketing) FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures)
 
 **QI-115** Does the email font set stay off (EMAIL_IDENTITY 4.5) and the logo stay inline?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-8 (`functions/messaging-and-entry-points.md`): Does the email font set stay off (EMAIL_IDENTITY 4.5) and the logo stay inline? Default: Yes, keep both off to preserve "no request tells us it was opened"
+- MSG Q-MSG-8 (`functions/messaging-and-entry-points.md`): Does the email font set stay off (EMAIL_IDENTITY 4.5) and the logo stay inline? Default: Yes, keep both off to preserve "no request tells us it was opened" FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes
 
 **QI-116** Time Sensitive interruption level for a restore request, when push is reopened
 
 - Owner as stated: founder, sync. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-9 (`functions/messaging-and-entry-points.md`): Time Sensitive interruption level for a restore request, when push is reopened Default: Do not ask for it until NS-08 is live and Apple's rule is read
+- MSG Q-MSG-9 (`functions/messaging-and-entry-points.md`): Time Sensitive interruption level for a restore request, when push is reopened Default: Do not ask for it until NS-08 is live and Apple's rule is read FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes
 
 **QI-117** Is clipboard paste after an invite install acceptable in the invite sheet's words, given iOS shows its own paste prompt (UNVERIFIED)?
 
 - Owner as stated: founder, privacy. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- MSG Q-MSG-10 (`functions/messaging-and-entry-points.md`): Is clipboard paste after an invite install acceptable in the invite sheet's words, given iOS shows its own paste prompt (UNVERIFIED)? Default: Yes, only on the person's tap, with one line before it
+- MSG Q-MSG-10 (`functions/messaging-and-entry-points.md`): Is clipboard paste after an invite install acceptable in the invite sheet's words, given iOS shows its own paste prompt (UNVERIFIED)? Default: Yes, only on the person's tap, with one line before it FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures)
 
 **QI-118** Hindi script default (D-031, listed Open): Devanagari, Roman or automatic
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-2 (`functions/languages-and-localisation.md`): Hindi script default (D-031, listed Open): Devanagari, Roman or automatic Default: Devanagari for Hindi words and Latin for English words, per author, never transliterated (the gate already checks this); the founder rules after the 14-recording experiment results.
+- LOC Q-LOC-2 (`functions/languages-and-localisation.md`): Hindi script default (D-031, listed Open): Devanagari, Roman or automatic Default: Devanagari for Hindi words and Latin for English words, per author, never transliterated (the gate already checks this); the founder rules after the 14-recording experiment results. CLOSED 20 Nov, see GAP-LOG Closures CL-098
 
 **QI-119** Prompts: which language do they show in when a second language is chosen?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-3 (`functions/languages-and-localisation.md`): Prompts: which language do they show in when a second language is chosen? Default: English until a reviewed set exists; then the author's primary spoken language, never a machine translation (FR-LOC-20).
+- LOC Q-LOC-3 (`functions/languages-and-localisation.md`): Prompts: which language do they show in when a second language is chosen? Default: English until a reviewed set exists; then the author's primary spoken language, never a machine translation (FR-LOC-20). CLOSED 20 Nov, see GAP-LOG Closures CL-098
 - FRs cited: LOC-20
 
 **QI-120** Should the Book's frame (dateline, labels, cover) follow the spoken language?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-4 (`functions/languages-and-localisation.md`): Should the Book's frame (dateline, labels, cover) follow the spoken language? Default: No at 1.0; English frame with an honest line; a later row with its own reviewer (FR-LOC-13).
+- LOC Q-LOC-4 (`functions/languages-and-localisation.md`): Should the Book's frame (dateline, labels, cover) follow the spoken language? Default: No at 1.0; English frame with an honest line; a later row with its own reviewer (FR-LOC-13). CLOSED 20 Nov, see GAP-LOG Closures CL-098
 - FRs cited: LOC-13
 
 **QI-121** When do interface languages open, and which first?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-5 (`functions/languages-and-localisation.md`): When do interface languages open, and which first? Default: Not before the second speech language ships; Hindi first if opened (BL-321); each its own reviewer and decision.
+- LOC Q-LOC-5 (`functions/languages-and-localisation.md`): When do interface languages open, and which first? Default: Not before the second speech language ships; Hindi first if opened (BL-321); each its own reviewer and decision. CLOSED 20 Nov, see GAP-LOG Closures CL-098
 
 **QI-122** Who are the native reviewers and what is the budget?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-6 (`functions/languages-and-localisation.md`): Who are the native reviewers and what is the budget? Default: One native parent-reviewer per language for tables, prompts, listing and rules; founder names a role, not a person, in the evidence file; the [E] $1,000 to $1,500 stands until a quote exists.
+- LOC Q-LOC-6 (`functions/languages-and-localisation.md`): Who are the native reviewers and what is the budget? Default: One native parent-reviewer per language for tables, prompts, listing and rules; founder names a role, not a person, in the evidence file; the [E] $1,000 to $1,500 stands until a quote exists. CLOSED 20 Nov, see GAP-LOG Closures CL-098
 
 **QI-123** Is the distress-pattern clinician review (BL-105) a gate for every language, or only English?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LOC Q-LOC-7 (`functions/languages-and-localisation.md`): Is the distress-pattern clinician review (BL-105) a gate for every language, or only English? Default: A gate for each language before any line implies noticing; "If you are struggling" stays for all.
+- LOC Q-LOC-7 (`functions/languages-and-localisation.md`): Is the distress-pattern clinician review (BL-105) a gate for every language, or only English? Default: A gate for each language before any line implies noticing; "If you are struggling" stays for all. CLOSED 20 Nov, see GAP-LOG Closures CL-098
 
 **QI-124** Is an English-only consent, privacy policy and subscription notice enough for a parent in the US storefront who speaks another language?
 
@@ -3041,83 +3248,83 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 **QI-128** Accept that a lost project means days, not hours, until FR-REL-08 is done, and say nothing public about recovery time?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - REL Q-REL-1 (`functions/reliability.md`): Accept that a lost project means days, not hours, until FR-REL-08 is done, and say nothing public about recovery time? Default: Yes. Read the Supabase custom-domain option on the day Pro is considered
 - FRs cited: REL-08
 
 **QI-129** Host the status page off Vercel (FR-REL-05)?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - REL Q-REL-4 (`functions/reliability.md`): Host the status page off Vercel (FR-REL-05)? Default: Yes, a plain static page on a second provider
 - FRs cited: REL-05
 
 **QI-130** Second contact route on another domain (FR-REL-21)?
 
-- Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - REL Q-REL-5 (`functions/reliability.md`): Second contact route on another domain (FR-REL-21)? Default: Yes
 - FRs cited: REL-21
 
 **QI-131** Do we accept the F05 bars (English, Spanish, French, Portuguese, Mandarin 10%; Hindi 15%; Arabic 20% per dialect group; names 95%; zero phantom words) as the pass line for v1.0, to be re-ruled after the first real run?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- AIS AQ-1 (`functions/ai-and-speech.md`): Do we accept the F05 bars (English, Spanish, French, Portuguese, Mandarin 10%; Hindi 15%; Arabic 20% per dialect group; names 95%; zero phantom words) as the pass line for v1.0, to be re-ruled after the first real run? Default: Yes, as proposals; re-rule after the first run (FR-AIS-22). F05 Q2
+- AIS AQ-1 (`functions/ai-and-speech.md`): Do we accept the F05 bars (English, Spanish, French, Portuguese, Mandarin 10%; Hindi 15%; Arabic 20% per dialect group; names 95%; zero phantom words) as the pass line for v1.0, to be re-ruled after the first real run? Default: Yes, as proposals; re-rule after the first run (FR-AIS-22). F05 Q2 CLOSED 20 Nov, see GAP-LOG Closures CL-093
 - FRs cited: AIS-22
 
 **QI-132** Should a whispered take that the detector drops be a hard stop on shipping a language?
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- AIS AQ-3 (`functions/ai-and-speech.md`): Should a whispered take that the detector drops be a hard stop on shipping a language? Default: Not a numeric bar until the first measurement; the failure must be visible and recoverable (FR-AIS-25)
+- AIS AQ-3 (`functions/ai-and-speech.md`): Should a whispered take that the detector drops be a hard stop on shipping a language? Default: Not a numeric bar until the first measurement; the failure must be visible and recoverable (FR-AIS-25) CLOSED 20 Nov, see GAP-LOG Closures CL-093
 - FRs cited: AIS-25
 
 **QI-133** May `speech` add the "Check this" mark (FR-AIS-31) on Review? It adds a surface; the constitution allows it (it marks, never changes)
 
 - Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- AIS AQ-4 (`functions/ai-and-speech.md`): May `speech` add the "Check this" mark (FR-AIS-31) on Review? It adds a surface; the constitution allows it (it marks, never changes) Default: No for 1.0. Park as P2; build after the first gate shows what the real doubtful-word rate is
+- AIS AQ-4 (`functions/ai-and-speech.md`): May `speech` add the "Check this" mark (FR-AIS-31) on Review? It adds a surface; the constitution allows it (it marks, never changes) Default: No for 1.0. Park as P2; build after the first gate shows what the real doubtful-word rate is CLOSED 20 Nov, see GAP-LOG Closures CL-093
 - FRs cited: AIS-31
 
 **QI-134** Mirror the model files on our own host before the store build, at what storage cost (`finance` FR-FIN-08)?
 
 - Owner as stated: Founder. Due: before the store build (stated in the question).
-- AIS AQ-11 (`functions/ai-and-speech.md`): Mirror the model files on our own host before the store build, at what storage cost (`finance` FR-FIN-08)? Default: Yes: one extra model copy (574,041,195 bytes) is far inside the free tier the finance row reads; confirm with FR-FIN-08
+- AIS AQ-11 (`functions/ai-and-speech.md`): Mirror the model files on our own host before the store build, at what storage cost (`finance` FR-FIN-08)? Default: Yes: one extra model copy (574,041,195 bytes) is far inside the free tier the finance row reads; confirm with FR-FIN-08 CLOSED 20 Nov, see GAP-LOG Closures CL-094
 - FRs cited: FIN-08
 
 **QI-135** Founder: how do we reach parents the founder does not know?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-1 (`functions/research-validation.md`): Founder: how do we reach parents the founder does not know? Default: A friend's introduction or a parent group he already belongs to; no paid recruiting tool; no recruiting in the app. If unanswered, S2 and S-B1 to S-B3 run with the founder's list only and every read-out says the group is friendly (FR-DAT-29)
+- RSH RQ-1 (`functions/research-validation.md`): Founder: how do we reach parents the founder does not know? Default: A friend's introduction or a parent group he already belongs to; no paid recruiting tool; no recruiting in the app. If unanswered, S2 and S-B1 to S-B3 run with the founder's list only and every read-out says the group is friendly (FR-DAT-29) CLOSED 20 Nov, see GAP-LOG Closures CL-073
 - FRs cited: DAT-29
 
 **QI-136** Founder and counsel: may a session be audio or video recorded?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-3 (`functions/research-validation.md`): Founder and counsel: may a session be audio or video recorded? Default: No. Notes by code only. Needs a number from legal if ever asked (a baby may be audible; Q45)
+- RSH RQ-3 (`functions/research-validation.md`): Founder and counsel: may a session be audio or video recorded? Default: No. Notes by code only. Needs a number from legal if ever asked (a baby may be audible; Q45) FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 
 **QI-137** Founder and counsel: may a relative or co-parent take part directly?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-4 (`functions/research-validation.md`): Founder and counsel: may a relative or co-parent take part directly? Default: Relay through the parent by default; direct only with the parent's introduction and the relative's own consent (FR-RSH-19). Counsel Q48 for another adult, Q22 for a recipient abroad
+- RSH RQ-4 (`functions/research-validation.md`): Founder and counsel: may a relative or co-parent take part directly? Default: Relay through the parent by default; direct only with the parent's introduction and the relative's own consent (FR-RSH-19). Counsel Q48 for another adult, Q22 for a recipient abroad FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement
 - FRs cited: RSH-19
 
 **QI-138** Karma: does Review's marking of small fixes make it "a feature that writes" for research purposes?
 
 - Owner as stated: karma. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-8 (`functions/research-validation.md`): Karma: does Review's marking of small fixes make it "a feature that writes" for research purposes? Default: Yes, excluded from every study; only Q-FID-1 is asked (FR-RSH-16). Karma rules
+- RSH RQ-8 (`functions/research-validation.md`): Karma: does Review's marking of small fixes make it "a feature that writes" for research purposes? Default: Yes, excluded from every study; only Q-FID-1 is asked (FR-RSH-16). Karma rules CLOSED 20 Nov, see GAP-LOG Closures CL-076
 - FRs cited: RSH-16
 
 **QI-139** Founder: the sequence in F1
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-9 (`functions/research-validation.md`): Founder: the sequence in F1 Default: Moderated on a founder-owned phone, Asha only, until G0; parents' own builds only after G0 and green P0 tests
+- RSH RQ-9 (`functions/research-validation.md`): Founder: the sequence in F1 Default: Moderated on a founder-owned phone, Asha only, until G0; parents' own builds only after G0 and green P0 tests CLOSED 20 Nov, see GAP-LOG Closures CL-073
 
 **QI-140** Founder: C1 composition. Should at least a third of C1 be people he did not know before?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-10 (`functions/research-validation.md`): Founder: C1 composition. Should at least a third of C1 be people he did not know before? Default: Yes, if the list allows; otherwise label every number "friendly group" and treat stranger evidence from stage 7 as the first unbiased read
+- RSH RQ-10 (`functions/research-validation.md`): Founder: C1 composition. Should at least a third of C1 be people he did not know before? Default: Yes, if the list allows; otherwise label every number "friendly group" and treat stranger evidence from stage 7 as the first unbiased read CLOSED 20 Nov, see GAP-LOG Closures CL-073
 
 **QI-141** Founder: who runs sessions?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- RSH RQ-11 (`functions/research-validation.md`): Founder: who runs sessions? Default: The founder or a human researcher he names, from my guide; I never speak to participants
+- RSH RQ-11 (`functions/research-validation.md`): Founder: who runs sessions? Default: The founder or a human researcher he names, from my guide; I never speak to participants CLOSED 20 Nov, see GAP-LOG Closures CL-073
 
 **QI-142** Which P0 device rows can never be waived?
 
@@ -3159,132 +3366,132 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 **QI-149** Build "Bring a copy in" (import of a Save a copy file)?
 
 - Owner as stated: founder, `product`. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-2 (`functions/lifecycle-and-platforms.md`): Build "Bring a copy in" (import of a Save a copy file)? Default: Not for the first store release. Reopen if a family cannot move a book any other way, or the closing runbook needs it. If built, verbatim restore only, through `verifyEdits`
+- LCY LQ-2 (`functions/lifecycle-and-platforms.md`): Build "Bring a copy in" (import of a Save a copy file)? Default: Not for the first store release. Reopen if a family cannot move a book any other way, or the closing runbook needs it. If built, verbatim restore only, through `verifyEdits` Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-150** Export split above 2 GB: before pictures are on in production, or later?
 
 - Owner as stated: founder, `product`. Due: before pictures are on in production (stated in the question).
-- LCY LQ-3 (`functions/lifecycle-and-platforms.md`): Export split above 2 GB: before pictures are on in production, or later? Default: Before pictures are on in production (it also removes the 3.9 GB ceiling)
+- LCY LQ-3 (`functions/lifecycle-and-platforms.md`): Export split above 2 GB: before pictures are on in production, or later? Default: Before pictures are on in production (it also removes the 3.9 GB ceiling) Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-151** Stay iPhone-only with iPad as a compatibility smoke row, portrait only?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-4 (`functions/lifecycle-and-platforms.md`): Stay iPhone-only with iPad as a compatibility smoke row, portrait only? Default: Yes through the 1.0.x line; no "works on iPad" claim
+- LCY LQ-4 (`functions/lifecycle-and-platforms.md`): Stay iPhone-only with iPad as a compatibility smoke row, portrait only? Default: Yes through the 1.0.x line; no "works on iPad" claim Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-152** Keep iOS 17 as the floor through 1.0.x?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-5 (`functions/lifecycle-and-platforms.md`): Keep iOS 17 as the floor through 1.0.x? Default: Yes Number: D-040
+- LCY LQ-5 (`functions/lifecycle-and-platforms.md`): Keep iOS 17 as the floor through 1.0.x? Default: Yes Number: D-040 CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-153** Server support window for old builds
 
 - Owner as stated: founder, `ops`. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-6 (`functions/lifecycle-and-platforms.md`): Server support window for old builds Default: The current and previous wire version, and any build installable in the last 12 months; additive changes first
+- LCY LQ-6 (`functions/lifecycle-and-platforms.md`): Server support window for old builds Default: The current and previous wire version, and any build installable in the last 12 months; additive changes first Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-154** If `.aac` does not play in a browser, may the export carry a lossless rewrap beside the original?
 
 - Owner as stated: Karma, founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-11 (`functions/lifecycle-and-platforms.md`): If `.aac` does not play in a browser, may the export carry a lossless rewrap beside the original? Default: Keep the original byte for byte; add a rewrap only if the browser test fails, and only as an extra file
+- LCY LQ-11 (`functions/lifecycle-and-platforms.md`): If `.aac` does not play in a browser, may the export carry a lossless rewrap beside the original? Default: Keep the original byte for byte; add a rewrap only if the browser test fails, and only as an extra file Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-155** Should an account made only with Apple be able to add an email sign-in so it can ever be used on another platform?
 
 - Owner as stated: `security`, founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- LCY LQ-12 (`functions/lifecycle-and-platforms.md`): Should an account made only with Apple be able to add an email sign-in so it can ever be used on another platform? Default: Ask `security` to review before C-39 reopens; not now
+- LCY LQ-12 (`functions/lifecycle-and-platforms.md`): Should an account made only with Apple be able to add an email sign-in so it can ever be used on another platform? Default: Ask `security` to review before C-39 reopens; not now Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-078
 
 **QI-156** Build the printed book at all, or stay with the free file?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRT Q-PRT-1 (`functions/print-and-fulfilment.md`): Build the printed book at all, or stay with the free file? Default: Ship the free file in 1.0; decide at the go/no-go on evidence; do not build ordering before FR-PRT-34 is true
+- PRT Q-PRT-1 (`functions/print-and-fulfilment.md`): Build the printed book at all, or stay with the free file? Default: Ship the free file in 1.0; decide at the go/no-go on evidence; do not build ordering before FR-PRT-34 is true Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-097
 - FRs cited: PRT-34
 
 **QI-157** Which partner, and may the CBO role request a written quote (a contact, which the CBO role may not do)?
 
 - Owner as stated: founder. Counsel numbers cited: Q11. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRT Q-PRT-3 (`functions/print-and-fulfilment.md`): Which partner, and may the CBO role request a written quote (a contact, which the CBO role may not do)? Default: No contact until the founder says so; shortlist Lulu first, Gelato second, from public pages only Number: Q11 for the DPA
+- PRT Q-PRT-3 (`functions/print-and-fulfilment.md`): Which partner, and may the CBO role request a written quote (a contact, which the CBO role may not do)? Default: No contact until the founder says so; shortlist Lulu first, Gelato second, from public pages only Number: Q11 for the DPA CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
 **QI-158** Where is the line between a defect (we pay) and the parent's own content (they pay)? And a goodwill allowance?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRT Q-PRT-10 (`functions/print-and-fulfilment.md`): Where is the line between a defect (we pay) and the parent's own content (they pay)? And a goodwill allowance? Default: FR-PRT-29 as written; a founder-set goodwill reprint allowance, 1 per 20 orders [A]
+- PRT Q-PRT-10 (`functions/print-and-fulfilment.md`): Where is the line between a defect (we pay) and the parent's own content (they pay)? And a goodwill allowance? Default: FR-PRT-29 as written; a founder-set goodwill reprint allowance, 1 per 20 orders [A] Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-097
 - FRs cited: PRT-29
 
 **QI-159** Are page order and the Year One range (FR-PRT-05, -06) as recommended?
 
 - Owner as stated: founder, product. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRT Q-PRT-11 (`functions/print-and-fulfilment.md`): Are page order and the Year One range (FR-PRT-05, -06) as recommended? Default: Oldest first; Before You plus months 0 to 11
+- PRT Q-PRT-11 (`functions/print-and-fulfilment.md`): Are page order and the Year One range (FR-PRT-05, -06) as recommended? Default: Oldest first; Before You plus months 0 to 11 Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-097
 - FRs cited: PRT-05, PRT-06
 
 **QI-160** Pilot limit: 50 orders a month and a holiday cutoff?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PRT Q-PRT-13 (`functions/print-and-fulfilment.md`): Pilot limit: 50 orders a month and a holiday cutoff? Default: Yes
+- PRT Q-PRT-13 (`functions/print-and-fulfilment.md`): Pilot limit: 50 orders a month and a holiday cutoff? Default: Yes Number: none CLOSED 20 Nov, see GAP-LOG Closures CL-097
 
 **QI-161** Do the library's two tones (bright, quiet) and the neutral lock-screen rule in 5.1 stand?
 
-- Owner as stated: Karma, founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Karma, founder CLOSED 20 Nov, see GAP-LOG Closures CL-085. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-1 (`functions/days-library.md`): Do the library's two tones (bright, quiet) and the neutral lock-screen rule in 5.1 stand? Default: Yes
 
 **QI-162** [RULED DL-1] R-FD-3: are Memorial Day and Veterans Day offered?
 
-- Owner as stated: Karma, founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Karma, founder CLOSED 20 Nov, see GAP-LOG Closures CL-086: Offer both quiet, never pre-ticked. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-2 (`functions/days-library.md`): R-FD-3: are Memorial Day and Veterans Day offered? Default: Offer both with the `quiet` tone and the name only; never pre-ticked. If the founder prefers, offer Veterans Day only and leave Memorial Day to a typed day
 - Ruled DL-1 (GAP-LOG): Memorial Day and Veterans Day are offered with the quiet tone, name only, never pre-ticked.
 
 **QI-163** [RULED DL-6] Time of day for a library day
 
-- Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Founder CLOSED 20 Nov, see GAP-LOG Closures CL-025. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-3 (`functions/days-library.md`): Time of day for a library day Default: 09:00 local, the birthday time
 - Ruled DL-6 (GAP-LOG): 09:00 local for a library day; one budgeted note a day still holds.
 
 **QI-164** [RULED DL-7] Which countries' national days and country-specific dates ship, and when
 
-- Owner as stated: Founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Founder CLOSED 20 Nov, see GAP-LOG Closures CL-022. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-4 (`functions/days-library.md`): Which countries' national days and country-specific dates ship, and when Default: US only in the first release; India, Mexico, China, Japan, South Korea, Singapore, Indonesia and Sri Lanka lists (section 4.5) in a later drop, each after its authority is read
 - Ruled DL-7 (GAP-LOG): US-only national days at first, others when the founder names a country field in scope (founder).
 
 **QI-165** [RULED DL-2] A birthday and a library day on the same date
 
-- Owner as stated: Karma. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-5 (`functions/days-library.md`): A birthday and a library day on the same date Default: The birthday is sent; the library day yields
 - Ruled DL-2 (GAP-LOG): a birthday wins over a library day on the same date (amends the NS-32 priority list: birthday, then library day, then month, then evening; a typed day the parent typed still ranks first). Two ticked library days on one date give one note naming both after the tap.
 
 **QI-166** Is a regional or sub-community day (Pongal, Onam, Parsi New Year, Norooz) in the first release?
 
-- Owner as stated: Content. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
+- Owner as stated: Content CLOSED 20 Nov, see GAP-LOG Closures CL-023. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
 - DAY Q-DAY-8 (`functions/days-library.md`): Is a regional or sub-community day (Pongal, Onam, Parsi New Year, Norooz) in the first release? Default: Yes if its list was read and the parent can move it; no if not
 
 **QI-167** [RULED N-4] May a visible body mention the kind of the last letter ("a picture with it?")
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-3 (`functions/notification-catalogue.md`): May a visible body mention the kind of the last letter ("a picture with it?") Default: Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on
+- NTC Q-NTC-3 (`functions/notification-catalogue.md`): May a visible body mention the kind of the last letter ("a picture with it?") Default: Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on Superseded by NS-48-R5 on 20 Nov: no "a picture with it?" body. CLOSED 20 Nov, see GAP-LOG Closures CL-040
 - Ruled N-4 (GAP-LOG): a visible body may mention the kind of the last letter; a title never does.
 
 **QI-168** Mixed-age siblings with names off
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-4 (`functions/notification-catalogue.md`): Mixed-age siblings with names off Default: No age questions; the grid runs
+- NTC Q-NTC-4 (`functions/notification-catalogue.md`): Mixed-age siblings with names off Default: No age questions; the grid runs CLOSED 20 Nov, see GAP-LOG Closures CL-040
 
 **QI-169** Do more variants reduce turn-off?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-5 (`functions/notification-catalogue.md`): Do more variants reduce turn-off? Default: Hypothesis, test with the tester sheet; ship the floor, measure, then fill
+- NTC Q-NTC-5 (`functions/notification-catalogue.md`): Do more variants reduce turn-off? Default: Hypothesis, test with the tester sheet; ship the floor, measure, then fill CLOSED 20 Nov, see GAP-LOG Closures CL-041
 
 **QI-170** [RULED N-7] Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-6 (`functions/notification-catalogue.md`): Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch Default: One names switch (fewer settings); mine the 87 rows for wording
+- NTC Q-NTC-6 (`functions/notification-catalogue.md`): Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch Default: One names switch (fewer settings); mine the 87 rows for wording CLOSED 20 Nov, see GAP-LOG Closures CL-040
 - Ruled N-7 (GAP-LOG): content mines the existing 87 rows and 174 variants in docs/design/NOTIFICATIONS.md and docs/design/notifications/COPY_INVENTORY.md first; one text per variant with a `{child}` slot, one names switch (the separate "Show celebration names" switch is refused).
 
 **QI-171** [RULED N-5] Exclamation marks in notifications
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-7 (`functions/notification-catalogue.md`): Exclamation marks in notifications Default: Zero; correct `VOICE.md:70`
+- NTC Q-NTC-7 (`functions/notification-catalogue.md`): Exclamation marks in notifications Default: Zero; correct `VOICE.md:70` CLOSED 20 Nov, see GAP-LOG Closures CL-040
 - Ruled N-5 (GAP-LOG): zero exclamation marks. VOICE.md line 70 is corrected to match line 160 and the checker.
 
 **QI-172** Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages)
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- NTC Q-NTC-9 (`functions/notification-catalogue.md`): Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages) Default: Use the age the Book shows; a corrected-age family is a separate ruling
+- NTC Q-NTC-9 (`functions/notification-catalogue.md`): Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages) Default: Use the age the Book shows; a corrected-age family is a separate ruling CLOSED 20 Nov, see GAP-LOG Closures CL-041
 
 **QI-173** Keep a tradition and a country as stored fields (the founder's ask) or only the days the parent ticks (my recommendation)?
 
@@ -3324,70 +3531,70 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 **QI-179** Do we want level 2 in the first photo release or after NS-01 reaches `testflight`?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-1 (`functions/photos-and-suggestions.md`): Do we want level 2 in the first photo release or after NS-01 reaches `testflight`? Default: After NS-01 on `testflight`; the picture flow is proved first
+- PHS Q-PHS-1 (`functions/photos-and-suggestions.md`): Do we want level 2 in the first photo release or after NS-01 reaches `testflight`? Default: After NS-01 on `testflight`; the picture flow is proved first CLOSED 20 Nov, see GAP-LOG Closures CL-037
 
 **QI-180** Raise `IOS_DEPLOYMENT_TARGET` from 17.0 to 17.2, or hide the suggestions start on 17.0 and 17.1?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-2 (`functions/photos-and-suggestions.md`): Raise `IOS_DEPLOYMENT_TARGET` from 17.0 to 17.2, or hide the suggestions start on 17.0 and 17.1? Default: Hide it (keep 17.0). Raising drops phones; no figure read
+- PHS Q-PHS-2 (`functions/photos-and-suggestions.md`): Raise `IOS_DEPLOYMENT_TARGET` from 17.0 to 17.2, or hide the suggestions start on 17.0 and 17.1? Default: Hide it (keep 17.0). Raising drops phones; no figure read CLOSED 20 Nov, see GAP-LOG Closures CL-037
 
 **QI-181** Does the Journaling Suggestions entitlement need an Apple request?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-3 (`functions/photos-and-suggestions.md`): Does the Journaling Suggestions entitlement need an Apple request? Default: `mobile` enables it on the test App ID in step 1 of the spike and reports; if it needs approval, `founder` files it
+- PHS Q-PHS-3 (`functions/photos-and-suggestions.md`): Does the Journaling Suggestions entitlement need an Apple request? Default: `mobile` enables it on the test App ID in step 1 of the spike and reports; if it needs approval, `founder` files it FOUNDER-ANSWERED 20 Nov, default accepted (CL-042): Same as Q-FD-11. Decision made, action pending founder hands: Apple entitlement request if the portal needs one
 
 **QI-182** Apple's notifications (iOS 26 and later) open our app: yes, in a second step, or never in 1.x?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-4 (`functions/photos-and-suggestions.md`): Apple's notifications (iOS 26 and later) open our app: yes, in a second step, or never in 1.x? Default: Second step, after the spike; not in the first level 2 build
+- PHS Q-PHS-4 (`functions/photos-and-suggestions.md`): Apple's notifications (iOS 26 and later) open our app: yes, in a second step, or never in 1.x? Default: Second step, after the spike; not in the first level 2 build CLOSED 20 Nov, see GAP-LOG Closures CL-043
 
 **QI-183** May the suggestion's `title` appear as an editable label above the picture?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-5 (`functions/photos-and-suggestions.md`): May the suggestion's `title` appear as an editable label above the picture? Default: Yes, as Apple's text, editable and clearable, never prefilled into the letter's words (FR-PHS-14)
+- PHS Q-PHS-5 (`functions/photos-and-suggestions.md`): May the suggestion's `title` appear as an editable label above the picture? Default: Yes, as Apple's text, editable and clearable, never prefilled into the letter's words (FR-PHS-14) CLOSED 20 Nov, see GAP-LOG Closures CL-035
 - FRs cited: PHS-14
 
 **QI-184** Do we ever read a place, workout or other item from a suggestion?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-6 (`functions/photos-and-suggestions.md`): Do we ever read a place, workout or other item from a suggestion? Default: No in 1.x
+- PHS Q-PHS-6 (`functions/photos-and-suggestions.md`): Do we ever read a place, workout or other item from a suggestion? Default: No in 1.x CLOSED 20 Nov, see GAP-LOG Closures CL-043
 
 **QI-185** Level 3 spike: run it at all?
 
 - Owner as stated: not stated (read as founder). Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- PHS Q-PHS-7 (`functions/photos-and-suggestions.md`): Level 3 spike: run it at all? Default: No now. If yes, section 6 only; Q-FD-4's default stands
+- PHS Q-PHS-7 (`functions/photos-and-suggestions.md`): Level 3 spike: run it at all? Default: No now. If yes, section 6 only; Q-FD-4's default stands CLOSED 20 Nov, see GAP-LOG Closures CL-043
 
 **QI-186** Founder: which two of the five go to a card first?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- OPP OQ-1 (`functions/feature-opportunities.md`): Founder: which two of the five go to a card first? Default: OPP-01 (already NS-49) and OPP-03 (cheapest); decide OPP-02 after the NS-04 result
+- OPP OQ-1 (`functions/feature-opportunities.md`): Founder: which two of the five go to a card first? Default: OPP-01 (already NS-49) and OPP-03 (cheapest); decide OPP-02 after the NS-04 result CLOSED 20 Nov, see GAP-LOG Closures CL-058: OPP-01 and OPP-03; OPP-02 after NS-04 result
 
 **QI-187** Founder: may the lock-screen doorway study run before the spike?
 
 - Owner as stated: founder. Due: before the spike? (stated in the question).
-- OPP OQ-2 (`functions/feature-opportunities.md`): Founder: may the lock-screen doorway study run before the spike? Default: Yes, the demand question only (section 6.3 b); no build
+- OPP OQ-2 (`functions/feature-opportunities.md`): Founder: may the lock-screen doorway study run before the spike? Default: Yes, the demand question only (section 6.3 b); no build CLOSED 20 Nov, see GAP-LOG Closures CL-059
 
 **QI-188** Founder: is OPP-04 wanted, given the parent holds the phone and the child is not a user?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- OPP OQ-3 (`functions/feature-opportunities.md`): Founder: is OPP-04 wanted, given the parent holds the phone and the child is not a user? Default: Yes, as a prompt set only; no child screen
+- OPP OQ-3 (`functions/feature-opportunities.md`): Founder: is OPP-04 wanted, given the parent holds the phone and the child is not a user? Default: Yes, as a prompt set only; no child screen CLOSED 20 Nov, see GAP-LOG Closures CL-059
 
 **QI-189** Founder: is OPP-09 (a next step after Keep) wanted at all?
 
 - Owner as stated: founder. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- OPP OQ-5 (`functions/feature-opportunities.md`): Founder: is OPP-09 (a next step after Keep) wanted at all? Default: No, hold
+- OPP OQ-5 (`functions/feature-opportunities.md`): Founder: is OPP-09 (a next step after Keep) wanted at all? Default: No, hold CLOSED 20 Nov, see GAP-LOG Closures CL-059
 
 **QI-190** Karma: does OPP-03 reopen NS-23's slot rule?
 
 - Owner as stated: karma. Due: proposed, not stated by any function: before the build or text it gates starts (G3 for words); until then the default holds.
-- OPP OQ-6 (`functions/feature-opportunities.md`): Karma: does OPP-03 reopen NS-23's slot rule? Default: No; separate rule, same one-slip limit
+- OPP OQ-6 (`functions/feature-opportunities.md`): Karma: does OPP-03 reopen NS-23's slot rule? Default: No; separate rule, same one-slip limit CLOSED 20 Nov, see GAP-LOG Closures CL-059
 
 ### 4.3 Summary
 
 | | Entries |
 |---|---|
-| Counsel entries | 72 |
-| Founder and other-owner entries | 118 |
+| Counsel entries | 75 |
+| Founder and other-owner entries | 115 |
 | With a due date stated in a source | 11 |
 | With a proposed due rule only | 179 |
 | Ruled in GAP-LOG (every merged question) | 20 |
@@ -3396,7 +3603,7 @@ One row of the photos file ("Existing numbers", Q43 Q45 Q48 Q54 "unchanged") is 
 
 ## 5. Engineering rows needed
 
-From the engineering section of each function file (section 6 of the first-wave files, section 9 of risk-security, found by heading in the others; days and notifications keep theirs in sections 11 and 8 and 12.3). 246 source rows merge into 223 entries. New rows carry a working handle NR-nn; the backlog id is Karma's to allocate, and none may be above BL-999 (the dispatcher reads only three-digit ids; privacy and the dispatcher note under BL-999 say so). Sizes are given only where the source gave them; splitting into PRs a reviewer can read in ten minutes is for the engineering thread. A later-wave row is classed "new" unless it starts with a BL id, says "change" beside a BL id, or sits in a BL column.
+From the engineering section of each function file (section 6 of the first-wave files, section 9 of risk-security, found by heading in the others; days and notifications keep theirs in sections 11 and 8 and 12.3). 249 source rows merge into 226 entries. New rows carry a working handle NR-nn; the backlog id is Karma's to allocate, and none may be above BL-999 (the dispatcher reads only three-digit ids; privacy and the dispatcher note under BL-999 say so). Sizes are given only where the source gave them; splitting into PRs a reviewer can read in ten minutes is for the engineering thread. A later-wave row is classed "new" unless it starts with a BL id, says "change" beside a BL id, or sits in a BL column.
 
 Data's section 6.2 (candidate analytics events) is not an engineering row: none is in the catalogue and adding any is a founder decision while analytics is off (FR-DAT-26), so it is not listed here. Several later files also list sections that are not rows (BKO "Runbook cards that need writing" section 6 is covered by its row "report-a-concern.md ..."; REL and QAL tables of limits and fixtures are inputs to rows). Rows from the photos file that read "Planner change for NS-32: none" and from lifecycle "No row from this file for server migrations" are kept as notes in 5.3.
 
@@ -3563,24 +3770,25 @@ Data's section 6.2 (candidate analytics events) is not an engineering row: none 
 | NR-157 (new row needed) | `lastMadeLetter()` reader | notifications | see source | none cited | - |
 | NR-158 (new row needed) | day-part filter and migration of the 8 built variants | notifications | see source | none cited | - |
 | NR-159 (new row needed) | tester-sheet row for retirement | notifications | see source | none cited | - |
-| NR-160 (new row needed) | New (mobile): The days module with its single store, excluded from backup, per-account scope, sign-out and Erase hooks; registry entry / FR-CUL- [cont. in source] | cultural-data | see source | CUL-01, CUL-02, CUL-06, CUL-15, CUL-16 | - |
-| NR-161 (new row needed) | New (mobile, qa): Import-boundary test (one reader); route-registry and error-message scans gain the FR-CUL-04 name list / FR-CUL-11; FR-PRV-11, 13 | cultural-data | see source | PRV-11, PRV-13, CUL-04, CUL-11 | - |
-| NR-162 (new row needed) | New (data-architect): Migration lint: no column, view or RPC argument named like tradition, religion, faith, country, origin or culture; no `prompt_key` [cont. in source] | cultural-data | see source | CUL-04, CUL-05 | - |
-| NR-163 (new row needed) | New (mobile): Planner: a `libraryDay` slot with one neutral body; no day key in an identifier or `userInfo`; the day-name switch and its app-loc [cont. in source] | cultural-data | see source | CUL-12 | - |
-| NR-164 (new row needed) | New (analytics): Allowlist negative test for the FR-CUL-04 names and for any count of these choices / FR-CUL-09 | cultural-data | see source | CUL-04, CUL-09 | - |
-| NR-165 (new row needed) | New (mobile): Home `daysAsk` card state and its show rules; Me, Days we mark / FR-CUL-19, 21 | cultural-data | see source | CUL-19, CUL-21 | - |
-| NR-166 (new row needed) | New (device walk): J-CUL-01: lock screen, Notification Center, Apple Watch mirror, Focus summary, Show Previews set to Never, App lock on and off, na [cont. in source] | cultural-data | see source | CUL-12 | - |
-| NR-167 (new row needed) | `scribe-photo` suggestions module (SwiftUI picker in a hosting controller, `isAvailable()` by OS version, `pickSuggestion()` retur [cont. in source] | photos | mobile | PHS-10, PHS-11, PHS-12, PHS-13, PHS-14, PHS-15, PHS-16, PHS-17, PHS-18, PHS-19, PHS-20 | - |
-| NR-168 (new row needed) | Expo config entitlement `com.apple.developer.journal.allow` behind `EXPO_PUBLIC_SUGGESTIONS`; `security` plist and entitlement rev [cont. in source] | photos | mobile, security | none cited | - |
-| NR-169 (new row needed) | source scan test that bans any `JournalingSuggestion.*` type other than Photo and LivePhoto and any PhotoKit authorisation, fetch  [cont. in source] | photos | mobile | none cited | - |
-| NR-170 (new row needed) | `startCapture` `source` closed list gains `suggestion` (FR-PHS-02); the source is never persisted (FR-PHS-03). Owner `mobile`. | photos | mobile | PHS-02, PHS-03 | - |
-| NR-171 (new row needed) | spike SP-PHS-1 and an ADR (section 6). Owner `mobile`, `architect`. | photos | mobile, architect | none cited | - |
-| NR-172 (new row needed) | privacy and data rows (FR-PHS-50), claims inventory row, App Review notes (FR-PHS-55). Owner `privacy`, `legal`, `content`. | photos | privacy, legal | PHS-50, PHS-55 | - |
-| NR-173 (new row needed) | Note: `content`, S: a prompt set for the child to answer, and the same-question rule's wording (OPP-03, OPP-04). | opportunities | see source | none cited | - |
-| NR-174 (new row needed) | Note: `mobile`, S: the prompt-by-date selection rule, pure function, with tests (OPP-03). | opportunities | see source | none cited | - |
-| NR-175 (new row needed) | Note: `mobile`, M: Lock Screen control behind a flag, after the NS-04 exit (OPP-02). | opportunities | see source | none cited | - |
-| NR-176 (new row needed) | Note: `mobile`, M: bring-in start through the system picker (OPP-05). | opportunities | see source | none cited | - |
-| NR-177 (new row needed) | Note: `qa`, S: tests that no offered surface carries a count or an earlier answer's words. | opportunities | see source | none cited | - |
+| NR-160 (new row needed) | Note: `selectNotificationKey` pool for `ntc.pm.*` under `evening`; planner input `momentsKnown` as a boolean per date with no asset data [cont. in source] | notifications | see source | NTC-23, NTC-24, NTC-28 | - |
+| NR-161 (new row needed) | New (mobile): The days module with its single store, excluded from backup, per-account scope, sign-out and Erase hooks; registry entry / FR-CUL- [cont. in source] | cultural-data | see source | CUL-01, CUL-02, CUL-06, CUL-15, CUL-16 | - |
+| NR-162 (new row needed) | New (mobile, qa): Import-boundary test (one reader); route-registry and error-message scans gain the FR-CUL-04 name list / FR-CUL-11; FR-PRV-11, 13 | cultural-data | see source | PRV-11, PRV-13, CUL-04, CUL-11 | - |
+| NR-163 (new row needed) | New (data-architect): Migration lint: no column, view or RPC argument named like tradition, religion, faith, country, origin or culture; no `prompt_key` [cont. in source] | cultural-data | see source | CUL-04, CUL-05 | - |
+| NR-164 (new row needed) | New (mobile): Planner: a `libraryDay` slot with one neutral body; no day key in an identifier or `userInfo`; the day-name switch and its app-loc [cont. in source] | cultural-data | see source | CUL-12 | - |
+| NR-165 (new row needed) | New (analytics): Allowlist negative test for the FR-CUL-04 names and for any count of these choices / FR-CUL-09 | cultural-data | see source | CUL-04, CUL-09 | - |
+| NR-166 (new row needed) | New (mobile): Home `daysAsk` card state and its show rules; Me, Days we mark / FR-CUL-19, 21 | cultural-data | see source | CUL-19, CUL-21 | - |
+| NR-167 (new row needed) | New (device walk): J-CUL-01: lock screen, Notification Center, Apple Watch mirror, Focus summary, Show Previews set to Never, App lock on and off, na [cont. in source] | cultural-data | see source | CUL-12 | - |
+| NR-168 (new row needed) | `scribe-photo` suggestions module (SwiftUI picker in a hosting controller, `isAvailable()` by OS version, `pickSuggestion()` retur [cont. in source] | photos | mobile | PHS-10, PHS-11, PHS-12, PHS-13, PHS-14, PHS-15, PHS-16, PHS-17, PHS-18, PHS-19, PHS-20 | - |
+| NR-169 (new row needed) | Expo config entitlement `com.apple.developer.journal.allow` behind `EXPO_PUBLIC_SUGGESTIONS`; `security` plist and entitlement rev [cont. in source] | photos | mobile, security | none cited | - |
+| NR-170 (new row needed) | source scan test that bans any `JournalingSuggestion.*` type other than Photo and LivePhoto and any PhotoKit authorisation, fetch  [cont. in source] | photos | mobile | none cited | - |
+| NR-171 (new row needed) | `startCapture` `source` closed list gains `suggestion` (FR-PHS-02); the source is never persisted (FR-PHS-03). Owner `mobile`. | photos | mobile | PHS-02, PHS-03 | - |
+| NR-172 (new row needed) | spike SP-PHS-1 and an ADR (section 6). Owner `mobile`, `architect`. | photos | mobile, architect | none cited | - |
+| NR-173 (new row needed) | privacy and data rows (FR-PHS-50), claims inventory row, App Review notes (FR-PHS-55). Owner `privacy`, `legal`, `content`. | photos | privacy, legal | PHS-50, PHS-55 | - |
+| NR-174 (new row needed) | Note: `content`, S: a prompt set for the child to answer, and the same-question rule's wording (OPP-03, OPP-04). | opportunities | see source | none cited | - |
+| NR-175 (new row needed) | Note: `mobile`, S: the prompt-by-date selection rule, pure function, with tests (OPP-03). | opportunities | see source | none cited | - |
+| NR-176 (new row needed) | Note: `mobile`, M: Lock Screen control behind a flag, after the NS-04 exit (OPP-02). | opportunities | see source | none cited | - |
+| NR-177 (new row needed) | Note: `mobile`, M: bring-in start through the system picker (OPP-05). | opportunities | see source | none cited | - |
+| NR-178 (new row needed) | Note: `qa`, S: tests that no offered surface carries a count or an earlier answer's words. | opportunities | see source | none cited | - |
 
 Merged duplicates (same row asked by more than one function): NR-02 = support New: Mail URL test, privacy New (mobile); NR-03 = support New: Help content in the rules scan, marketing Public-surface forbid scan, finance New: price scan in content rules, messaging Export email copy to `rules.test.ts` if it is stil, quality Source scans for the 40 S-kind FR rows, grouped by, notifications Copy home; NR-15 = marketing Store candidate claims diff, compliance New; NR-18 = operations New, finance New: weekly limits job reads Storage and egress; NR-20 = operations New, privacy New (ops, sync); NR-32 = privacy New (qa, platform), security New, reliability New, cultural-data New (qa, platform), photos New.
 
@@ -3638,6 +3846,8 @@ Merged duplicates (same row asked by more than one function): NR-02 = support Ne
 | #819 rework | compliance | Trace sees NS ids (G0) |
 | Existing, unblock | security | `SECURITY.md`, `docs/ops/INCIDENT.md`, `docs/ops/SECRETS.md`, threat model (SEC-R01, R02, R23); SHA pins in `ci.yml` (SEC-R10) |
 | No row from this file for server migrations. Any schema change that a requirement above implies goes to `data-architect` as a migration task; I do not write migrations | lifecycle | none |
+| Note | notifications | Rules-test forbidden-word list additions for FR-NTC-25. |
+| Note | notifications | Cancel-on-switch-off and on-permission-change hooks (extends sign-out `forgetReminders`). |
 | Note | photos | Planner change for NS-32: none for level 2. Apple's notification is not scheduled by our planner (`planner.ts` kinds stay `evening`, `monthAge`, `birthday`, line 106). |
 
 Related pairs to keep together when the rows are written: BL-485 (privacy) and the compliance withdrawal control are the same control; BL-577 (privacy) and the legal consent-record row are the same record writer; the BL-961 change (privacy, security and cultural-data, which adds its store to the `[X4-R1]` enumeration) must list the four split test ids from the security proposal CC-2 (R-019 in 3b).
@@ -3667,9 +3877,12 @@ Conflicts in section 3a that touch this area: K2 (the Home Plus line sits on A-S
 | legal | A-S09 From sheet | Keep "Ask before you record someone else"; add nothing that reads as an attestation (D9). | LEG-15 |
 | legal | A-S03 Picker | The NX-33 label line stays absent until counsel's Q43 read (NS-01 section 12). | LEG-01 |
 | security | A-S14 doorways, D-S10 | Every widget, control and placeholder string is neutral; no name in any state | SEC-21 |
+| messaging | Capture cluster sheet (A-S01 area, new states) | Moments entry inside "Start from a photo"; Photos explainer; limited-access state; denied state silent | (none cited in the row) |
+| messaging | Home slip (A-S01 slip states) | Moment rank, words only; no thumbnail; "Not now" | (none cited in the row) |
 | languages | A-S07.language, A-S10, E-S08 | A reconciled line for A-S10 and the held-language card when a build hears more than one language: the language chip on Review, the "another language" mark when the list has one entry (G-06), and the waiting line with its first sentence only / FR-LOC-01, 02, 28 | LOC-01, LOC-02, LOC-28 |
 | languages | B-S04, B-S05, B-S08, A-S07; C-S05 | Font decision for Arabic and Chinese in the app and the PDF with a size cost; Hindi line-height and Bold Text states for the letter page, Book card and Find snippet / FR-LOC-15, 16 | LOC-15, LOC-16 |
 | languages | A-S07, B-S05.rtlLabel, B-S07, D-S02.rtl | A right-to-left state list with a mixed-direction line, each state drawn once (Review, letter page, Book card, Find, Months, Firsts, share sheet, export) / FR-LOC-17 | LOC-17 |
+| languages | Review and letter page media tiles (A-S07, B-S08) | Parent-words field with Devanagari and Arabic examples; no truncation at AX5 | (none cited in the row) |
 | reliability | E-S17, A-S04.lowSpace | Draw the under 1 GB line (G-E04) and the 0 bytes at Keep case ("Recorded before the app closed" returns) / FR-REL-48 | REL-48 |
 | ai-and-speech | A-S07 Review, words card | The "recorded but no words" state names whisper and noise in plain words and keeps Type the words as the one primary action. Title revised from "No talking in this one" to a line that also fits a whisper (F05-U13 proposes "We could not make out words this time"; `content` writes). The recording is always playable / 25, 29 / A | (none cited in the row) |
 | ai-and-speech | A-S07 Review, small fixes | One quiet "Check this" mark for a flagged span: dotted underline, tappable, 44 pt target, not by colour alone (Differentiate Without Colour), VoiceOver reads "Check this word" with the heard text; never a count, never a gap line / 31, 32 / A | (none cited in the row) |
@@ -3678,9 +3891,11 @@ Conflicts in section 3a that touch this area: K2 (the Home Plus line sits on A-S
 | ai-and-speech | A-S06 Write and every words field | Writing tools, autocorrect and predictive text off, shown as a design annotation on each field; a test id per field / 55 / A, B | (none cited in the row) |
 | ai-and-speech | A-S04 Listen, A-S05 recording | When the take is mostly silent or under the speech floor, one calm line before Finish: "That was quiet. The recording is kept." (intent; `content` writes). Never says nothing was heard as a fault / 25, 29 / A | (none cited in the row) |
 | ai-and-speech | Review, small-fix explainer | A one-line help sentence that says what the fixes are (removed "um", repeats, spelling of a name you taught, a full stop) and that nothing is added; no "AI" and no "we cleaned" wording / 48, 56 / A, content | (none cited in the row) |
+| ai-and-speech | Picture and video tiles on Review and the letter page (A-S07, B-S08) | Fixed accessibility phrase; parent's words field with writing tools off; no generated alt text; video has no transcript affordance / 59, 62, 68 | (none cited in the row) |
 | research | A-S01.first, A-S04.primer, E-S02, E-S03, E-S07, E-S08, E-S10, E-S12 | A clickable first-run path with no dead ends, so S2 can run on a prototype before a build exists / FR-RSH-04 | RSH-04 |
 | quality | A-S12, B-S11, B-S15, D-S19, C-S17 | Undo window seconds per toast and sheet, in one table / NS-33-R15 and T4 tie windows to VoiceOver; a test needs the seconds. FR-QAL-09 | QAL-09 |
 | days | A-S01 slip rank (R-IA-3, R-IA-5) | Ask card on Home / "Would you like a note on days that matter to your family?" with Choose and Not now; shown once; pending Q-FD-2 | (none cited in the row) |
+| days | A-S01 | A-S01 Home on a ticked day: one slot, the day's landing, Start from a picture stays in its usual place; a state with a moment present and a state on a `quiet` day (new states needed). | (none cited in the row) |
 | cultural-data | A-S01 Home (state `daysAsk`, proposed) | One card, used once, in the slot where the Home slips already rise. Words: the question, "Choose days", "Not now". Equal weight for both buttons. No count, no badge. Gone after either answer / FR-CUL-19, 26 | CUL-19, CUL-26 |
 | cultural-data | A-S01 Home strip (today strip, NS-50) | A day we mark today shows its name; nothing for tomorrow; never a list / FR-CUL-13 | CUL-13 |
 | cultural-data | A-S13 After Keep | No change: the ask never rises here; keep the Keep gate and reminder ask as the only hand-offs / FR-CUL-19 | CUL-19 |
@@ -3690,10 +3905,11 @@ Conflicts in section 3a that touch this area: K2 (the Home Plus line sits on A-S
 | opportunities | A-S14 | Lock Screen control and Home Screen prompt widget, one state set, redacted text while locked / FR-OPP-05 | OPP-05 |
 | opportunities | A-S07 | A first view of Review with fewer controls before Keep / FR-OPP-11 | OPP-11 |
 | opportunities | A-S09 | A "from {child}" path in plain words / FR-OPP-07 | OPP-07 |
+| opportunities | A-S01 | A-S01: the "same question again" state with no old words (existing need) gains a version where last year's letter's picture is shown only on the NS-23 slip. | (none cited in the row) |
 
 **6.1.2 FRs naming screens of this area with no design-needs row**
 
-MKT-28 (A-S10); LEG-08 (A-S09); LOC-08 (A-S07.language); LOC-09 (A-S10); LOC-11 (A-S08); LOC-20 (A-S01); REL-33 (A-S04); REL-54 (A-S05); AIS-07 (A-S06); AIS-16 (A-S07); AIS-25 (A-S07); AIS-27 (A-S09); AIS-29 (A-S07, A-S04); AIS-30 (A-S07); AIS-31 (A-S07); AIS-55 (A-S06, A-S07); AIS-56 (A-S07); RSH-05 (A-S01); RSH-12 (A-S05, A-S10); RSH-16 (A-S07); QAL-08 (A-S01, A-S07); DAY-02 (A-S01); PHS-01 (A-S04); OPP-03 (A-S03); OPP-06 (A-S14); OPP-08 (A-S03)
+MKT-28 (A-S10); MKT-37 (A-S03); LEG-08 (A-S09); LOC-08 (A-S07.language); LOC-09 (A-S10); LOC-11 (A-S08); LOC-20 (A-S01); REL-33 (A-S04); REL-54 (A-S05); AIS-07 (A-S06); AIS-16 (A-S07); AIS-25 (A-S07); AIS-27 (A-S09); AIS-29 (A-S07, A-S04); AIS-30 (A-S07); AIS-31 (A-S07); AIS-55 (A-S06, A-S07); AIS-56 (A-S07); RSH-05 (A-S01); RSH-12 (A-S05, A-S10); RSH-16 (A-S07); QAL-08 (A-S01, A-S07); DAY-02 (A-S01); DAY-27 (A-S01); PHS-01 (A-S04); OPP-03 (A-S03); OPP-06 (A-S14); OPP-08 (A-S03)
 
 ### 6.2 B. Book and reading
 
@@ -3724,15 +3940,18 @@ Conflicts in section 3a that touch this area: K12 (dates and digits on the lette
 | languages | C-S05 (printable), C-S04, B-S08 | Honest "the app is in English" lines where a non-English book is read, exported or printed (printable book intro, Save a copy screen, Plus or Me help) / FR-LOC-13 | LOC-13 |
 | languages | B-S04, B-S05, B-S08, A-S07; C-S05 | Font decision for Arabic and Chinese in the app and the PDF with a size cost; Hindi line-height and Bold Text states for the letter page, Book card and Find snippet / FR-LOC-15, 16 | LOC-15, LOC-16 |
 | languages | A-S07, B-S05.rtlLabel, B-S07, D-S02.rtl | A right-to-left state list with a mixed-direction line, each state drawn once (Review, letter page, Book card, Find, Months, Firsts, share sheet, export) / FR-LOC-17 | LOC-17 |
+| languages | Review and letter page media tiles (A-S07, B-S08) | Parent-words field with Devanagari and Arabic examples; no truncation at AX5 | (none cited in the row) |
 | ai-and-speech | B-S08 letter page | "Exactly as said" and "With small fixes" appear for the author only and never for the other parent / 08 / B | (none cited in the row) |
+| ai-and-speech | Picture and video tiles on Review and the letter page (A-S07, B-S08) | Fixed accessibility phrase; parent's words field with writing tools off; no generated alt text; video has no transcript affordance / 59, 62, 68 | (none cited in the row) |
 | research | B-S12, B-S13, B-S14, B-S16 | Concept walk states for seals and Firsts exactly as drawn, with the limit line shown / FR-RSH-07 | RSH-07 |
 | quality | A-S12, B-S11, B-S15, D-S19, C-S17 | Undo window seconds per toast and sheet, in one table / NS-33-R15 and T4 tie windows to VoiceOver; a test needs the seconds. FR-QAL-09 | QAL-09 |
+| lifecycle | B-S08 letter page | Missing media state for pictures and video; media removed for another adult (state to add) | (none cited in the row) |
 | print | PRT-S01 A book to hold (sheet) | Choose the book and the run of chapters (default Before You plus 0 to 11), see the authors named, one line saying what happens next; entry only from C-S04, B-S02 and C-S06 / FR-PRT-06, -16 | PRT-06, PRT-16 |
 | print | PRT-S02 Preview, every page | Full-page paging of the exact file; changes route back to B-S08; the one softer-picture line; the emoji and missing-glyph states; the order approve button; AX5, VoiceOver, offline / FR-PRT-05 to -15 | PRT-05, PRT-06, PRT-07, PRT-08, PRT-09, PRT-10, PRT-11, PRT-12, PRT-13, PRT-14, PRT-15 |
 
 **6.2.2 FRs naming screens of this area with no design-needs row**
 
-LEG-01 (B-S11); LEG-08 (B-S12, B-S13); AIS-07 (B-S08); AIS-31 (B-S08); AIS-55 (B-S08); AIS-56 (B-S08); RSH-11 (B-S04, B-S06); QAL-08 (B-S01, B-S15)
+MKT-37 (B-S04); LEG-01 (B-S11); LEG-08 (B-S12, B-S13); AIS-07 (B-S08); AIS-31 (B-S08); AIS-55 (B-S08); AIS-56 (B-S08); RSH-11 (B-S04, B-S06); QAL-08 (B-S01, B-S15)
 
 ### 6.3 C. Keeping and trust
 
@@ -3781,6 +4000,8 @@ Conflicts in section 3a that touch this area: K4 (C-S20 deletion lines), K9 (C-S
 | lifecycle | C-S10, C-S11 | A state for "this phone's letters belong to another sign-in": names the method, offers Save a copy and Erase everything / FR-LCY-10 | LCY-10 |
 | lifecycle | C-S04 | A state for a split copy (part names, one sentence, no count of what is missing); `tooBig` stops being a dead end that points to "Write to us" / FR-LCY-21 | LCY-21 |
 | lifecycle | C-S01 signed-out card | The signed-out state after a device restore reads as normal, not as a fault / FR-LCY-09 | LCY-09 |
+| lifecycle | C-S10 and sign-out sheets | Name pictures and videos once where media exists (NS-01-R30 extended); deleted-elsewhere state names media | (none cited in the row) |
+| lifecycle | C-S04 Save a copy | Size estimate and split line for media; no promise of video playback in every program | (none cited in the row) |
 | print | C-S04, C-S05 (existing) | The 1.0 file: one plain line saying what the file is and is not (FR-PRT-02); no change to the buttons; add the help-article link / FR-PRT-02, -03 | PRT-02, PRT-03 |
 | print | PRT-S01 A book to hold (sheet) | Choose the book and the run of chapters (default Before You plus 0 to 11), see the authors named, one line saying what happens next; entry only from C-S04, B-S02 and C-S06 / FR-PRT-06, -16 | PRT-06, PRT-16 |
 | print | C-S06 (year-end slip) | A quiet line to a book to hold, no countdown, off when the flag is off / FR-PRT-16 | PRT-16 |
@@ -3792,7 +4013,7 @@ Conflicts in section 3a that touch this area: K4 (C-S20 deletion lines), K9 (C-S
 
 **6.3.2 FRs naming screens of this area with no design-needs row**
 
-SUP-13 (C-S02); SUP-14 (C-S20); MKT-23 (C-S19, C-S20); MKT-24 (C-S06); DAT-02 (C-S01, C-S04); PRV-03 (C-S04); PRV-05 (C-S11.declined); PRV-20 (C-S11.declined); PRV-27 (C-S10); SEC-04 (C-S19); SEC-12 (C-S02, C-S20); BKO-07 (C-S02); BKO-24 (C-S01); BKO-27 (C-S02); MSG-34 (C-S20); LOC-10 (C-S01); LOC-14 (C-S18); LOC-18 (C-S01); LOC-25 (C-S01); REL-61 (C-S12); RSH-21 (C-S01); QAL-08 (C-S01); LCY-04 (C-S08); LCY-11 (C-S20); LCY-12 (C-S04, C-S10); LCY-13 (C-S09, C-S12); LCY-19 (C-S10, C-S20); LCY-20 (C-S04); LCY-22 (C-S04); LCY-25 (C-S04); LCY-26 (C-S10); PRT-01 (C-S04); PRT-33 (C-S01); CUL-01 (C-S24); CUL-03 (C-S15); CUL-07 (C-S10); CUL-13 (C-S24); CUL-26 (C-S24)
+SUP-13 (C-S02); SUP-14 (C-S20); MKT-23 (C-S19, C-S20); MKT-24 (C-S06); MKT-36 (C-S08, C-S21); DAT-02 (C-S01, C-S04); DAT-37 (C-S18); PRV-03 (C-S04); PRV-05 (C-S11.declined); PRV-20 (C-S11.declined); PRV-27 (C-S10); PRV-41 (C-S19, C-S20); SEC-04 (C-S19); SEC-12 (C-S02, C-S20); BKO-07 (C-S02); BKO-24 (C-S01); BKO-27 (C-S02); MSG-34 (C-S20); LOC-10 (C-S01); LOC-14 (C-S18); LOC-18 (C-S01); LOC-25 (C-S01); REL-61 (C-S12); REL-67 (C-S18); RSH-21 (C-S01); QAL-08 (C-S01); LCY-04 (C-S08); LCY-11 (C-S20); LCY-12 (C-S04, C-S10); LCY-13 (C-S09, C-S12); LCY-19 (C-S10, C-S20); LCY-20 (C-S04); LCY-22 (C-S04); LCY-25 (C-S04); LCY-26 (C-S10); LCY-37 (C-S08); PRT-01 (C-S04); PRT-33 (C-S01); CUL-01 (C-S24); CUL-03 (C-S15); CUL-07 (C-S10); CUL-13 (C-S24); CUL-26 (C-S24)
 
 ### 6.4 D. Family, sharing and reminders
 
@@ -3826,6 +4047,7 @@ Conflicts in section 3a that touch this area: K11 (reminders on D-S04 to D-S10),
 | messaging | D-S14 (invite link page) | Add the App Store button in launch mode above the copy steps, with `.iphone` and `.other-device` both keeping the "ignore it" and write-to-us lines; no expiry wording; decide the link-preview card (generic, no name) / FR-MSG-27, FR-MSG-28, FR-MSG-29 | MSG-27, MSG-28, MSG-29 |
 | messaging | D-S15 (peek) | `.error-expired`, `.error-used`, `.error-revoked` carry all the validity language; add the line for a person who pasted an invite after install / FR-MSG-28, FR-MSG-30 | MSG-28, MSG-30 |
 | messaging | D-S04, D-S06.denied, E-S12.withAsk | No change to design; add the rule that "No" is never asked again / FR-MSG-19, FR-MSG-20 | MSG-19, MSG-20 |
+| messaging | Me, Reminders (D-S06) | Line that moments do not send reminders; the existing reminder setting unchanged | (none cited in the row) |
 | languages | A-S07, B-S05.rtlLabel, B-S07, D-S02.rtl | A right-to-left state list with a mixed-direction line, each state drawn once (Review, letter page, Book card, Find, Months, Firsts, share sheet, export) / FR-LOC-17 | LOC-17 |
 | research | C-S03, C-S08, E-S10, D-S02 | Print-ready "read aloud" cards of each screen, one per comprehension question / FR-RSH-10 | RSH-10 |
 | research | D-S04, D-S11 and the neutral notification set (GAP D G-D19) | Five mock notifications as images (Asha, no child name), for the reading test / FR-RSH-08 | RSH-08 |
@@ -3842,7 +4064,7 @@ Conflicts in section 3a that touch this area: K11 (reminders on D-S04 to D-S10),
 
 **6.4.2 FRs naming screens of this area with no design-needs row**
 
-MKT-25 (D-S23); LEG-08 (D-S08); LEG-09 (D-S16); SEC-23 (D-S14); BKO-12 (D-S18); BKO-14 (D-S18, D-S19, D-S20); MSG-14 (D-S13, D-S15); MSG-16 (D-S04); MSG-17 (D-S10, D-S04); MSG-18 (D-S10, D-S11); MSG-21 (D-S06.lateClamp, D-S07); MSG-23 (D-S14); MSG-24 (D-S14.iphone); MSG-34 (D-S18); MSG-35 (D-S18); MSG-36 (D-S14); RSH-05 (D-S04, D-S11); RSH-11 (D-S02); PRT-36 (D-S18); PRT-37 (D-S18); DAY-03 (D-S10, D-S11); DAY-06 (D-S08, D-S09); DAY-07 (D-S10.oneDay, D-S10.twoDays); DAY-08 (D-S10); DAY-09 (D-S10, D-S11); DAY-10 (D-S10, D-S11); DAY-11 (D-S11); DAY-15 (D-S08); DAY-16 (D-S06, D-S09); DAY-19 (D-S11); CUL-19 (D-S04); CUL-25 (D-S13, D-S18)
+MKT-25 (D-S23); LEG-08 (D-S08); LEG-09 (D-S16); SEC-23 (D-S14); BKO-12 (D-S18); BKO-14 (D-S18, D-S19, D-S20); MSG-14 (D-S13, D-S15); MSG-16 (D-S04); MSG-17 (D-S10, D-S04); MSG-18 (D-S10, D-S11); MSG-21 (D-S06.lateClamp, D-S07); MSG-23 (D-S14); MSG-24 (D-S14.iphone); MSG-34 (D-S18); MSG-35 (D-S18); MSG-36 (D-S14); MSG-40 (D-S04); RSH-05 (D-S04, D-S11); RSH-11 (D-S02); PRT-36 (D-S18); PRT-37 (D-S18); DAY-03 (D-S10, D-S11); DAY-06 (D-S08, D-S09); DAY-07 (D-S10.oneDay, D-S10.twoDays); DAY-08 (D-S10); DAY-09 (D-S10, D-S11); DAY-10 (D-S10, D-S11); DAY-11 (D-S11); DAY-15 (D-S08); DAY-16 (D-S06, D-S09); DAY-19 (D-S11); CUL-19 (D-S04); CUL-25 (D-S13, D-S18)
 
 ### 6.5 E. Foundations and system states
 
@@ -3940,13 +4162,14 @@ Conflicts in section 3a that touch this area: K2 (E-S26 line), K5 (E-S03 minor-s
 | lifecycle | E-S24 claim screen | New state: "your earlier account was deleted; keep these letters in this account?" Same masked-email and tap rules as ADR 0023 layer 3; words say what happens, not who is at fault / FR-LCY-11, 19 | LCY-11, LCY-19 |
 | lifecycle | E-S16 | One line, one rule: the "update available" and "can no longer reach your account" words as two states of the same line, absent when current. Resolves NS-45-R14 against K-E05 / FR-LCY-17 | LCY-17 |
 | lifecycle | E-S01.recovery | Keep "Export what's readable" on every recovery state; it must run against an older-schema file / FR-LCY-02 | LCY-02 |
+| lifecycle | E-S24 and the deletion screens | Media and thumbnails in what is removed, by words, not file names | (none cited in the row) |
 | print | E-S13 and E-S14 | Order screens under outage and offline: the order status reads the last known state; creation of an order is disabled offline with a line; pause line from FR-PRT-41 / FR-PRT-41 | PRT-41 |
 | cultural-data | E-S01 to E-S08 | No change; a design check that none gains a tradition or country field / FR-CUL-18 | CUL-18 |
 | cultural-data | E-S27 App Store page | Screenshots only from the Asha book; a screenshot of Days we mark uses a synthetic tradition or seasonal days only, never a real tradition on a fictional family / FR-CUL-08, 23 | CUL-08, CUL-23 |
 
 **6.5.2 FRs naming screens of this area with no design-needs row**
 
-SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E-S02, E-S14, E-S27); MKT-10 (E-S27); MKT-11 (E-S27); MKT-15 (E-S27); MKT-17 (E-S27); MKT-18 (E-S27); MKT-30 (E-S27); OPS-03 (E-ST17); OPS-04 (E-ST29); OPS-10 (E-S05.error-email, E-S06.error-rate, E-S14.outage); OPS-11 (E-ST02, E-ST03); OPS-12 (E-ST02); OPS-13 (E-ST02); OPS-16 (E-ST10, E-ST11); OPS-19 (E-ST01, E-ST02); OPS-31 (E-S27); OPS-36 (E-S14, E-S04.refused-region); DAT-21 (E-S26); DAT-34 (E-S16); DAT-35 (E-S03, E-S04, E-S07); PRV-05 (E-S07.declined); LEG-20 (E-S03, E-S07); CMP-03 (E-S04, E-S07); CMP-13 (E-S03); CMP-16 (E-S07); CMP-18 (E-S02); SEC-05 (E-S24); SEC-22 (E-S22); SEC-11 (E-S05); BKO-07 (E-S06, E-S09); BKO-19 (E-ST05, E-ST13c); MSG-01 (E-S05, E-S06); MSG-02 (E-S05); MSG-04 (E-S06.help); MSG-06 (E-S06); MSG-09 (E-S02); MSG-10 (E-S06); MSG-11 (E-S05.error-email, E-S14); MSG-12 (E-S13); MSG-16 (E-S28); MSG-17 (E-S28); MSG-22 (E-S28); MSG-23 (E-S05); MSG-24 (E-S03); MSG-25 (E-S06); MSG-26 (E-S27); MSG-30 (E-S03); MSG-31 (E-S20); MSG-32 (E-S27); MSG-33 (E-S13); MSG-38 (E-S05); LOC-14 (E-S08); LOC-24 (E-S02); REL-01 (E-ST01, E-ST04); REL-02 (E-ST02, E-ST03, E-S14, E-S16); REL-05 (E-ST02, E-ST03); REL-10 (E-ST02); REL-13 (E-ST47); REL-14 (E-ST47); REL-15 (E-ST17); REL-19 (E-ST02, E-ST05); REL-21 (E-S13, E-S14); REL-22 (E-ST02); REL-24 (E-S13, E-ST40); REL-26 (E-ST02); REL-28 (E-ST02); REL-32 (E-S01, E-ST37, E-ST41); REL-33 (E-ST35, E-ST36, E-ST38); REL-36 (E-ST36); REL-37 (E-ST32); REL-40 (E-ST01); REL-41 (E-S10, E-ST01); REL-42 (E-ST02); REL-43 (E-ST39); REL-44 (E-ST05); REL-49 (E-ST38, E-ST39); REL-51 (E-ST02); REL-52 (E-S05, E-S06, E-S14); REL-58 (E-S03); REL-59 (E-ST37, E-ST17); AIS-09 (E-S08.open); AIS-13 (E-S08.open); AIS-14 (E-S08.open); AIS-20 (E-S08.open); AIS-44 (E-S17, E-S19); RSH-12 (E-S23); RSH-21 (E-S27, E-S28); QAL-03 (E-S27); QAL-05 (E-S01, E-S10, E-S14, E-S24, E-S26); QAL-06 (E-S05, E-S06, E-S08); QAL-20 (E-S27); QAL-22 (E-S05, E-S06, E-S14); LCY-01 (E-S01, E-ST37); LCY-03 (E-S16, E-S01); LCY-05 (E-S03.agreeOnly, E-S24, E-S10, E-S11); LCY-10 (E-S18); LCY-15 (E-ST46); LCY-16 (E-S27); LCY-24 (E-S16); LCY-26 (E-S02); LCY-30 (E-S11); PRT-15 (E-S23); PRT-17 (E-S04, E-S07, E-S18); PRT-18 (E-S07); PRT-19 (E-S27); PRT-24 (E-S07); PRT-26 (E-S14); PRT-33 (E-S13); PRT-42 (E-S17); CUL-04 (E-S24); CUL-07 (E-S24)
+SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E-S02, E-S14, E-S27); MKT-10 (E-S27); MKT-11 (E-S27); MKT-15 (E-S27); MKT-17 (E-S27); MKT-18 (E-S27); MKT-30 (E-S27); MKT-37 (E-S27); MKT-41 (E-S11); OPS-03 (E-ST17); OPS-04 (E-ST29); OPS-10 (E-S05.error-email, E-S06.error-rate, E-S14.outage); OPS-11 (E-ST02, E-ST03); OPS-12 (E-ST02); OPS-13 (E-ST02); OPS-16 (E-ST10, E-ST11); OPS-19 (E-ST01, E-ST02); OPS-31 (E-S27); OPS-36 (E-S14, E-S04.refused-region); FIN-30 (E-S10, E-S12); DAT-21 (E-S26); DAT-34 (E-S16); DAT-35 (E-S03, E-S04, E-S07); PRV-05 (E-S07.declined); PRV-37 (E-S01, E-S08); LEG-20 (E-S03, E-S07); CMP-03 (E-S04, E-S07); CMP-13 (E-S03); CMP-16 (E-S07); CMP-18 (E-S02); CMP-27 (E-S03); SEC-05 (E-S24); SEC-22 (E-S22); SEC-11 (E-S05); BKO-07 (E-S06, E-S09); BKO-19 (E-ST05, E-ST13c); MSG-01 (E-S05, E-S06); MSG-02 (E-S05); MSG-04 (E-S06.help); MSG-06 (E-S06); MSG-09 (E-S02); MSG-10 (E-S06); MSG-11 (E-S05.error-email, E-S14); MSG-12 (E-S13); MSG-16 (E-S28); MSG-17 (E-S28); MSG-22 (E-S28); MSG-23 (E-S05); MSG-24 (E-S03); MSG-25 (E-S06); MSG-26 (E-S27); MSG-30 (E-S03); MSG-31 (E-S20); MSG-32 (E-S27); MSG-33 (E-S13); MSG-38 (E-S05); LOC-14 (E-S08); LOC-24 (E-S02); REL-01 (E-ST01, E-ST04); REL-02 (E-ST02, E-ST03, E-S14, E-S16); REL-05 (E-ST02, E-ST03); REL-10 (E-ST02); REL-13 (E-ST47); REL-14 (E-ST47); REL-15 (E-ST17); REL-19 (E-ST02, E-ST05); REL-21 (E-S13, E-S14); REL-22 (E-ST02); REL-24 (E-S13, E-ST40); REL-26 (E-ST02); REL-28 (E-ST02); REL-32 (E-S01, E-ST37, E-ST41); REL-33 (E-ST35, E-ST36, E-ST38); REL-36 (E-ST36); REL-37 (E-ST32); REL-40 (E-ST01); REL-41 (E-S10, E-ST01); REL-42 (E-ST02); REL-43 (E-ST39); REL-44 (E-ST05); REL-49 (E-ST38, E-ST39); REL-51 (E-ST02); REL-52 (E-S05, E-S06, E-S14); REL-58 (E-S03); REL-59 (E-ST37, E-ST17); AIS-09 (E-S08.open); AIS-13 (E-S08.open); AIS-14 (E-S08.open); AIS-20 (E-S08.open); AIS-44 (E-S17, E-S19); RSH-12 (E-S23); RSH-21 (E-S27, E-S28); QAL-03 (E-S27); QAL-05 (E-S01, E-S10, E-S14, E-S24, E-S26); QAL-06 (E-S05, E-S06, E-S08); QAL-20 (E-S27); QAL-22 (E-S05, E-S06, E-S14); LCY-01 (E-S01, E-ST37); LCY-03 (E-S16, E-S01); LCY-05 (E-S03.agreeOnly, E-S24, E-S10, E-S11); LCY-10 (E-S18); LCY-15 (E-ST46); LCY-16 (E-S27); LCY-24 (E-S16); LCY-26 (E-S02); LCY-30 (E-S11); PRT-15 (E-S23); PRT-17 (E-S04, E-S07, E-S18); PRT-18 (E-S07); PRT-19 (E-S27); PRT-24 (E-S07); PRT-26 (E-S14); PRT-33 (E-S13); PRT-42 (E-S17); CUL-04 (E-S24); CUL-07 (E-S24)
 
 ### 6.F Needs that name no screen of any area (cross-area, website, artefacts)
 
@@ -3954,7 +4177,13 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 |---|---|---|---|
 | support | New state: the Help fallback sheet | Mail did not open: address plus Copy (`helpLinks.noMail*`). It exists in code and is not drawn | SUP-01, SUP-22 |
 | support | Web: help centre pages and the Support URL | New pages in `apps/web` built from `packages/content`, at the NS-33 floor | SUP-04, SUP-22 |
+| support | In-app "Pictures and videos" and "Photo moments" rows need a Help link to their article (Me, Help and legal; new row, ids not read). |  | (none cited in the row) |
+| support | Error states with a help path (section 4.2 pattern): upload failed, storage full, iCloud download pending, limited access, video too long. Each keeps the system-state voice, no "error", "Write to us" outside the `SystemLine`. |  | (none cited in the row) |
+| support | The empty "my pictures are missing" state in a letter says where the picture is (on this phone, in iCloud) in the parent's terms; new screen or state needed. |  | (none cited in the row) |
 | marketing | Website (no e2e id) | `site.ts` scenes redrawn with three tabs; any drawn letter uses words from the sample letter, no new real names | MKT-05, MKT-32 |
+| marketing | Store frames: if a media frame is wanted, one Ready or Review frame with an illustrated picture; none for photo moments (permission and moment list are the parent's own library, hard to show honestly). |  | (none cited in the row) |
+| marketing | Explainer and permission copy must be read by marketing for claim drift (key set to `content`). |  | (none cited in the row) |
+| marketing | A synthetic-library install for captures (design-systems, qa). |  | (none cited in the row) |
 | operations | New screen needed (website, not the app) | A status page: what works, what waits, no times, no form; dark and light; AX5 reflow; words from `content` with claims rows | OPS-20 |
 | finance | Printed book purchase (NS-30) | New screen needed only if NS-30 is ever taken up: a purchase outside Apple, not designed now | FIN-24 |
 | data | Every screen, every area | No research question, survey card, feedback composer with counts, or "send us your numbers" control. Nothing here needs a new screen | DAT-02 |
@@ -3968,17 +4197,29 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | messaging | `/open` and `/auth/confirm` (web, no e2e id yet: new screen id needed in area E) | Treat both as designed screens: states installed-fallback, not-installed (store link), Android or computer, fragment dropped, prelaunch / FR-MSG-25, FR-MSG-26, FR-MSG-24 | MSG-24, MSG-25, MSG-26 |
 | messaging | New screen needed (area E): the web not-found page and the website Support, deletion and legal pages | Design, copy and accessibility pass in the same frame as the legal pages / FR-MSG-31, FR-MSG-33, FR-MSG-34, FR-MSG-37 | MSG-31, MSG-33, MSG-34, MSG-37 |
 | messaging | Email templates (`packages/emails`) | A relay-address variant of "why you got this" (FR-MSG-05); the bounce-row string; templates for any new email only after the catalog table (FR-MSG-09) / FR-MSG-05, FR-MSG-07, FR-MSG-09 | MSG-05, MSG-07, MSG-09 |
+| messaging | New settings screen in Me (area C) | Moments on, pause, albums that count, remove what the app remembers (shared with the AI addendum) | (none cited in the row) |
 | languages | none | New screen needed: a one-line "the date is kept in the calendar your phone uses" note is not required on any screen (help article only); no new screen for calendars at 1.0 / FR-LOC-12 | LOC-12 |
+| languages | New explainer, limit lines, attach states (areas A, C) | Longest-string and AX5 states in English at 1.0.x; a layout that does not depend on English line length; RTL states drawn (FR-LOC-36) | LOC-36 |
+| languages | Video player (new, area B) | Controls and captions area: no caption we generate; a parent's words only | (none cited in the row) |
 | reliability | Letter page (area B; id to assign) | New state: the conflict note, one line and two actions, in the letter's own place, in dark and light, AX5 and VoiceOver; no count, no badge; words from `content`. / FR-REL-45 | REL-45 |
 | reliability | Website (new screen needed) | Status page on a second host: what works, what waits, no times, no form; dark, light, AX5 / FR-REL-05, 19 | REL-05, REL-19 |
 | reliability | E design section 9 matrix | Add rows: Tier B phone, hung server, captive portal, clock back and forward, DST night, date line, device restore, two-phone clone, memory warning in each long operation / FR-REL-31 to 60 | REL-31, REL-32, REL-33, REL-34, REL-35, REL-36, REL-37, REL-38, REL-39, REL-40, REL-41, REL-42, REL-43, REL-44, REL-45, REL-46, REL-47, REL-48, REL-49, REL-50, REL-51, REL-52, REL-53, REL-54, REL-55, REL-56, REL-57, REL-58, REL-59, REL-60 |
+| ai-and-speech | Moment invitation and the permission explainer (new screen needed, area A) | Words say: your phone's pictures stay on the phone; the app looks at dates only. Never "we found", "best", "memories"; no thumbnails in any lock-screen or Home-slip rendering; no count / 57, 59, 61 | (none cited in the row) |
+| ai-and-speech | Me, Pictures settings (new screen needed, area C) | Moments on, pause, albums that count (album choice is a filter the parent sets, no album names read for words), "Remove what the app remembers" / 57, 58 | (none cited in the row) |
 | research | Every prototype (`PROTOTYPE.html` in areas A to E) | A "participant mode" that hides the state switcher and any researcher-only controls, plays a task path end to end, and shows the Asha book only. The state switcher stays for researchers (C DESIGN line 5 describes one) / FR-RSH-03, FR-RSH-15; S1, S2 | RSH-03, RSH-15 |
 | research | No app screen | Nothing in the product asks a research question, shows a survey, or composes a message (FR-DAT-02). Nothing here adds an app screen / all | DAT-02 |
 | research | New artefacts outside the app | Tester guide; consent texts (one per study); question bank rows; read-out template with the pass-chance tables. `content` writes the words and the founder approves; they pass the content rules; none implies the app writes anything / FR-RSH-17, FR-RSH-24 | RSH-17, RSH-24 |
+| research | (no screen named) | Design (areas A, C): prototype participant mode with a fictional library; permission explainer and limited-access states drawn for S12; mock-up images of the invitation in Home slip, in the capture cluster and as a lock-screen line (neutral only); where-it-lives lines as read-aloud cards (FR-RSH-10 pattern). | RSH-10 |
+| research | (no screen named) | Card changes (for Karma): README studies table gains S12 and S13 (the S2 to S11 additions from C-1 stand); NS-51 section 21 and NS-52 section 21 reference B.3 and B.4 and state "no pass number before 10"; FR-RSH-15 carries the pointer above. | RSH-15 |
+| research | (no screen named) | Engineering: BL-981 gains S12 and S13; new row (`design-systems`, S) fictional library fixture; new row (`qa`) confirm `no-real-family-data` covers `docs/research/studies/**` (already asked in section 12). | (none cited in the row) |
 | quality | `docs/design/system/tokens.v2.json`; A 3a fallback | A measured contrast pair list (text token on background token) for Home, Review, the Book, the letter page, and for each glass fallback surface / NS-33-R8 is a token test; it needs the pair list as data. FR-QAL-08, FR-QAL-09 | QAL-08, QAL-09 |
 | quality | none | No design change for fixtures; test seams are never visible to a parent / keeps the constitution: a test control that writes or shapes words must not ship | (none cited in the row) |
+| quality | (no screen named) | Design: states for limited, denied and restricted library on the explainer; video poster and player states with App lock and Reduce Motion; storage and iCloud download states; limit lines. Areas A, C, E: "Function needs accounted for: FR-QAL-26". | QAL-26 |
+| quality | (no screen named) | Card changes (for Karma): `14` s5 gains P9 to P15; `14` s4 gains journeys J-N40 to J-N43 (moment to kept letter; attach several and a video; media after restore; media after deletion), ids for Karma to confirm after the card 19 and ns46-50 numbering (J-N37 to J-N39 are proposed in the ns46-50 qa review F-14); Annex E.3 changes "Pictures: licensed or illustrated images only" to include generated videos with a tone. | (none cited in the row) |
+| quality | (no screen named) | Engineering (new rows needed, none above BL-999 invented): media fixture library (`qa`, `mobile`); the library boundary stand-in with the five authorisation states; binary strings read per candidate for library and speech APIs (extends ns46-50 qa F-08); video encode test on the candidate job; rules-test drift extension (F-01). | (none cited in the row) |
 | lifecycle | New screen needed | Only if LQ-2 is ruled yes: "Bring a copy in" (choose a file, a plain check, what came in). No id yet / FR-LCY-33 | LCY-33 |
 | lifecycle | Outside the app (help centre) | Articles: "A new phone", "Where my recordings are", "Giving {child} the book", "If you cannot sign in", "If someone cannot use their account", "Opening a copy on a computer". Written by `content` under the legacy rule / FR-LCY-12, 14, 25, 26, 27 | LCY-12, LCY-14, LCY-25, LCY-26, LCY-27 |
+| lifecycle | A new screen in Me | Where pictures and videos live, one place, true for the build (default: phone and phone backup) | (none cited in the row) |
 | print | PRT-S03 Where to send it, and what it costs | Address (US only), copies and addresses, price with shipping and tax, delivery range, the Print Terms link, the hosted payment hand-off; the unsupported-country line / FR-PRT-19 to -25, -32, -34a | PRT-19, PRT-20, PRT-21, PRT-22, PRT-23, PRT-24, PRT-25, PRT-32, PRT-34a |
 | print | PRT-S04 Order status | State list in plain words, tracking link, cancel while on hold, Write to us / FR-PRT-26 to -28, -38, -40 | PRT-26, PRT-27, PRT-28, PRT-38, PRT-40 |
 | print | PRT-S05 Orders and Order again | History, reorder through a new preview / FR-PRT-35 | PRT-35 |
@@ -3989,10 +4230,15 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | days | New screen needed | Browse days sheet / Groups in the order in FR-DAY-17; tick per day; "Dates differ by country" picker question for authority variants; nothing pre-ticked; "Done" is the only exit; no "select all" | DAY-17 |
 | days | `WORDS.md` for area D | Words / New key family `days.*`: names, the neutral lock strings, the two landing templates, the quiet landing, the picker question, the "around" line, the next-year line; all from section 5, all through the rules test | (none cited in the row) |
 | days | Browse days sheet | Hemisphere / Season names for the parent's hemisphere; a small switch in the row, not a setting elsewhere | (none cited in the row) |
+| days | (no screen named) | Capture area moments view: a day with a ticked day shows no day name beside the cluster (label by date only). | (none cited in the row) |
 | notifications | (no screen named) | Me > Reminders (screen id not read): a way to see, without changing volume, what the next notification will read like. `reminders.en.ts` has a "How it will look" preview and a "Next:" line already; they must call the same selection so the preview matches what arrives. | (none cited in the row) |
 | notifications | (no screen named) | Me > Reminders: no new switch for the catalogue. Variety is not a setting. | (none cited in the row) |
 | notifications | (no screen named) | No new screen for NS-48. NS-46 owns the days picker and "Days we mark". | (none cited in the row) |
 | notifications | (no screen named) | Lock-screen neutral title and neutral placeholder strings for NS-46 and NS-47 days: "Something for the book today" is mine (sample `ntc.occ.neutral.01`); the direction's own wording is the same line. | (none cited in the row) |
+| notifications | (no screen named) | Me, Reminders: no new switch here; the Photo moments switch lives with NS-51's settings, and Me, Reminders "Next:" preview must show a moment nudge's neutral wording through the same selection. | (none cited in the row) |
+| notifications | (no screen named) | Capture area: a moments view that a tap lands on, with an empty state that never says "nothing found" or counts. | (none cited in the row) |
+| cultural-data | (no screen named) | Permission explainer for the library (new screen needed) with no cultural wording; checked by this lens before design signs off. | (none cited in the row) |
+| cultural-data | (no screen named) | Moments view: clusters labelled by date only, one visual treatment for every date. | (none cited in the row) |
 | photos | new screen needed | One-choice sheet when a suggestion holds several photos | (none cited in the row) |
 | photos | new screen needed; extends NS-01 Ready with a picture | Ready with a suggestion label (title, date) that reads as Apple's text, editable, clearable | (none cited in the row) |
 | photos | new screen needed | Suggestion with no photo: one calm line, picture-less letter | (none cited in the row) |
@@ -4001,22 +4247,23 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | photos | owned by NS-50 | Home strip tile for the picker (NS-50) | (none cited in the row) |
 | photos | `content` | Words: all lines by `content`, none implying the app finds, chooses, writes or understands a picture; banned: memory, moment, album, best, caption, AI, smart, suggested for you | (none cited in the row) |
 | opportunities | New screen needed | A "Bring in" start and its picker states / FR-OPP-08 | OPP-08 |
+| opportunities | (no screen named) | Review and the Book: a video's cover-frame chooser (new screen needed). | (none cited in the row) |
 
 ## 7. Checks and findings
 
 ### 7.1 Counts reconcile
 
-- FR rows read from the 23 files: 741 (support 23; policy 13; marketing 34; operations 36; finance 24; data 35; privacy 35; legal 20; compliance 21; security 25; risk 6; back-office 27; messaging 38; languages 29; reliability 61; ai-and-speech 56; research 29; quality 24; lifecycle 34; print 48; days 25; notifications 21; cultural-data 27; photos 38; opportunities 12).
-- Rows in the forward table: 741; distinct FR ids in it: 741; every FR id appears exactly once: yes.
+- FR rows read from the 23 files: 947 (support 30; policy 15; marketing 43; operations 44; finance 34; data 44; privacy 48; legal 27; compliance 28; security 34; risk 7; back-office 36; messaging 46; languages 37; reliability 72; ai-and-speech 68; research 35; quality 31; lifecycle 43; print 56; days 33; notifications 31; cultural-data 36; photos 52; opportunities 17).
+- Rows in the forward table: 947; distinct FR ids in it: 947; every FR id appears exactly once: yes.
 - FR ids written in any of the 23 files that have no row: none (every cross-reference resolves).
 - Gap in the source numbering: FR-SEC-13 has no row; GAP-LOG (K-SEC13 note) says the security author fills or retires it. FR-PHS numbers in bands and has no 05 to 09, 26 to 29, 35 to 39, 45 to 49 by design. FR-PRT-34a and FR-LCY-33 "(proposal)" are read as written.
-- Proposed card changes read: 237; rulings after merging: 152. Questions read: 240; index entries: 190. Engineering rows read: 246; entries: 223 (new rows needed: 177). Design-needs rows read: 245.
+- Proposed card changes read: 237; rulings after merging: 152. Questions read: 240; index entries: 190. Engineering rows read: 249; entries: 226 (new rows needed: 178). Design-needs rows read: 280.
 - Rulings read from GAP-LOG: 41 (CB-1, CB-2, CB-3, CB-4, CB-5, CB-6, DL-1, DL-2, DL-3, DL-4, DL-5, DL-6, DL-7, DL-8, DL-9, DL-10, K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K-SEC13, N-1, N-2, N-3, N-4, N-5, N-6, N-7, N-8, R-IA-1, R-IA-2, R-IA-3, R-IA-4, R-IA-5, R-IA-6). FRs marked ruled: 22. Card-change rulings marked ruled or partly ruled: 17 of 152. Question entries ruled or partly ruled: 22 of 190. Conflicts ruled in full: 14 of 21 (plus 2 partly ruled).
 - BL ids above BL-999 in the 23 files: none proposed. The string "BL-1000" appears twice, both times to say that ids from BL-1000 are invisible to the dispatcher (cultural-data, privacy); no function file allocates a BL id, every new row is "new row needed" and Karma allocates ids with `next-id.mjs`. Section 5 uses NR-nn working handles only. (The numbering rules at the top of `docs/BACKLOG.md` leave BL-055 to BL-099 unused; nothing here allocates in that range.)
 
 ### 7.2 Card links
 
-- FRs whose Links column names at least one NS card: 519. Frame or every-card only: 39. No NS card in Links but one in the requirement text: 4. No card link at all: 179.
+- FRs whose Links column names at least one NS card: 705. Frame or every-card only: 40. No NS card in Links but one in the requirement text: 7. No card link at all: 195.
 - FRs with no card link at all (the author named decisions, counsel questions, e2e screens, files, other FRs or code instead of a card row; some name a proposed card such as NS-AI, which is not a card number). Per the BRIEF each FR should name a card row or "new card row needed"; these name neither. Suggested card, where shown, comes from the card 19 screen table or from a linked FR that has a card; it is a suggestion only:
 
 | FR id | Function | What the Links column names | Suggested card |
@@ -4045,6 +4292,7 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-MKT-27 | marketing | `14-test-plan.md` gates; T5; ROADMAP | none derivable |
 | FR-MKT-30 | marketing | E-S27; D-075, D-083 | none derivable |
 | FR-MKT-32 | marketing | D-118; D13 | none derivable |
+| FR-MKT-43 | marketing | FR-MKT-31; section 3c | none derivable |
 | FR-OPS-09 | operations | `sanctions-match.md` gaps table; Q57; D-121, D-137 | none derivable |
 | FR-OPS-13 | operations | E-ST02, J-E13 | none derivable |
 | FR-OPS-14 | operations | E-ST02, E-ST03, E-S14, J-E03, J-E13; `LOCAL_START_FALLBACK` | NS-41 |
@@ -4058,6 +4306,7 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-FIN-18 | finance | `13` section 1; platform pass 5.3 to 5.6 | none derivable |
 | FR-FIN-22 | finance | CR-120; Q2-09 | none derivable |
 | FR-FIN-23 | finance | D-004 points 3 and 4 | none derivable |
+| FR-FIN-32 | finance | FR-FIN-22; F13 | none derivable |
 | FR-DAT-26 | data | TRACKING_PLAN 6.5; D-161; `12` C-42; D-111 | none derivable |
 | FR-DAT-28 | data | TRACKING_PLAN section 4; INSIGHTS_LOOP banner; CDO skill section 4 | none derivable |
 | FR-DAT-29 | data | D-045; TRACKING_PLAN 1.4 | none derivable |
@@ -4075,10 +4324,15 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-PRV-28 | privacy | E-S07, E-S08, E-S14, E-S24; D-039; J-N26; PRIV-R08 | NS-42, NS-41, NS-43, NS-39 |
 | FR-PRV-31 | privacy | D-095, D-124; PRIV-R05, R13; label 2.2.0 Usage Data row | none derivable |
 | FR-PRV-33 | privacy | C-S01 "Privacy" row (no screen id); `privacy.tsx`; PRIV-R17 | none derivable |
+| FR-PRV-44 | privacy | FR-PRV-14; FR-SEC-01 to 03; `[X4-R1]` | via linked FR (SEC-01: NS-01, NS-02, NS-25, NS-41; SEC-03: NS-02, NS-11, NS-13) |
+| FR-PRV-45 | privacy | FR-PRV-10; OBS-R10; D-124 | none derivable |
+| FR-PRV-47 | privacy | Q-PM-4; FR-PRV-36 | via linked FR (PRV-36: NS-51, NS-52) |
 | FR-LEG-19 | legal | all; LEGAL-REQ-064 | none derivable |
 | FR-CMP-11 | compliance | `14-test-plan.md` section 6; LEGAL-REQ-042 path | none derivable |
 | FR-CMP-16 | compliance | E-S07, C-S01; D-128; Privacy 9; Q48 | NS-42, NS-41 |
 | FR-CMP-21 | compliance | CR-004, CR-005; skill section 5 | none derivable |
+| FR-CMP-26 | compliance | FR-CMP-01; FR-LEG-24 | via linked FR (LEG-24: NS-51) |
+| FR-CMP-28 | compliance | FR-CMP-05; FR-PRV-36 | via linked FR (CMP-05: NS-05, NS-07, NS-08, NS-26, NS-28; PRV-36: NS-51, NS-52) |
 | FR-SEC-02 | security | J-E17, E-S15, BL-961, ADR 0031 | none derivable |
 | FR-SEC-04 | security | J-E17, C-S19, E-S18, ADR 0031 | none derivable |
 | FR-SEC-07 | security | C-S03, D1, E-S22 | NS-45 |
@@ -4089,6 +4343,7 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-RSK-02 | risk | Q28, Q23, SEC-R05, SEC-R23 | none derivable |
 | FR-RSK-05 | risk | FR-SEC-10, FR-SEC-11, `docs/ops/runbooks/free-tier-ops.md` | via linked FR (SEC-10: NS-25; SEC-11: NS-41) |
 | FR-RSK-06 | risk | E21, ADR 0029 rule 4 | none derivable |
+| FR-RSK-07 | risk | FR-RSK-05; FIN addendum | none derivable |
 | FR-BKO-03 | back-office | Card row: new card row needed; no screen; BL-237 | none derivable |
 | FR-BKO-05 | back-office | BL-236 (done in part), BL-237; FR-SEC-20 (security events); no screen; new row needed | via linked FR (SEC-20: NS-06, NS-12, NS-25) |
 | FR-BKO-06 | back-office | LEGAL-REQ-025; SEC-R25; FR-RSK-01; no screen; new row needed | none derivable |
@@ -4139,6 +4394,7 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-AIS-49 | ai-and-speech | FR-AIS-19; FR-AIS-02; BL-new-A | via linked FR (AIS-02: NS-06) |
 | FR-AIS-50 | ai-and-speech | OPERATING_MODEL.md; risk-security RSK; BL-new-K | none derivable |
 | FR-AIS-52 | ai-and-speech | FR-AIS-36; FR-AIS-50 | via linked FR (AIS-36: NS-34) |
+| FR-AIS-60 | ai-and-speech | FR-AIS-57, 59; BL new row | via linked FR (AIS-57: NS-01, NS-49, NS-51; AIS-59: NS-01, NS-49, NS-51, NS-52) |
 | FR-RSH-03 | research | 14-test-plan lines 7, 13, 90; README lines 151 to 156; S-B1 to S-B3; new row needed (`qa`, a founder-family flag profile for moderated sessions) | none derivable |
 | FR-RSH-28 | research | 14-test-plan line 96 (G3); section 8 of this file; BL-981 | none derivable |
 | FR-RSH-29 | research | Section 3; new row needed | none derivable |
@@ -4192,7 +4448,13 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-PRT-46 | print | PRT-S03, PRT-S07 | none derivable |
 | FR-PRT-47 | print | all order screens | none derivable |
 | FR-DAY-21 | days | `functions/support.md`; BL: new row needed (NR-DAY-13) | none derivable |
+| FR-DAY-32 | days | FR-DAY-04, 20; FR-CUL-29 | via linked FR (DAY-04: NS-18, NS-46; DAY-20: NS-46; CUL-29: NS-51) |
 | FR-NTC-15 | notifications | new card row needed; new row needed | none derivable |
+| FR-NTC-31 | notifications | FR-NTC-17; `CLAUDE.md` privacy rules | via linked FR (NTC-17: NS-48) |
+| FR-CUL-31 | cultural-data | FR-DAY-29; FR-CUL-20 | via linked FR (DAY-29: NS-51; CUL-20: NS-47) |
+| FR-CUL-34 | cultural-data | FR-CUL-08; FR-PRV-10 | via linked FR (CUL-08: NS-47) |
+| FR-CUL-35 | cultural-data | FR-DAY-29, 32; `CLAUDE.md` privacy rules | via linked FR (DAY-29: NS-51) |
+| FR-CUL-36 | cultural-data | FR-CUL-27 | via linked FR (CUL-27: NS-47) |
 | FR-PHS-34 | photos | `app.config.ts:257`; new row needed | none derivable |
 | FR-PHS-42 | photos | new ADR; new row needed | none derivable |
 | FR-PHS-43 | photos | CLAUDE.md content rules; direction 4.2 | none derivable |
@@ -4200,16 +4462,17 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 | FR-OPP-09 | opportunities | Q45, Q48 as cited in research-validation | none derivable |
 | FR-OPP-10 | opportunities | `functions/research-validation.md` FR-RSH-01 to 03, 14, 15, 21, 24 | via linked FR (RSH-02: NS-03; RSH-14: NS-03; RSH-15: NS-03; RSH-21: NS-03, NS-23; RSH-24: NS-03) |
 | FR-OPP-12 | opportunities | All A to E areas; G-05 | none derivable |
+| FR-OPP-17 | opportunities | `research-validation.md` FR-RSH-01 to 03, 21 | via linked FR (RSH-02: NS-03; RSH-21: NS-03, NS-23) |
 
-- FRs whose card appears only in the requirement text: OPS-30, DAT-31, DAT-34, QAL-04.
-- No-card-link counts by function code: AIS 12, BKO 18, CMP 3, DAT 3, DAY 1, FIN 6, LCY 8, LEG 1, LOC 1, MKT 6, NTC 1, OPP 3, OPS 7, PHS 4, POL 7, PRT 31, PRV 14, QAL 10, REL 19, RSH 3, RSK 4, SEC 6, SUP 11.
+- FRs whose card appears only in the requirement text: OPS-30, FIN-31, FIN-34, DAT-31, DAT-34, SEC-34, QAL-04.
+- No-card-link counts by function code: AIS 13, BKO 18, CMP 5, CUL 4, DAT 3, DAY 2, FIN 7, LCY 8, LEG 1, LOC 1, MKT 7, NTC 2, OPP 4, OPS 7, PHS 4, POL 7, PRT 31, PRV 17, QAL 10, REL 19, RSH 3, RSK 5, SEC 6, SUP 11.
 
 ### 7.3 e2e screen ids and backlog links
 
-- FRs with no e2e screen id in Links or text: 400 of 741 (many are policy, finance, data or documentation requirements with no screen). They are: SUP-03, SUP-04, SUP-05, SUP-06, SUP-07, SUP-08, SUP-09, SUP-10, SUP-11, SUP-15, SUP-16, SUP-17, SUP-19, SUP-20, SUP-21, SUP-22, SUP-23, POL-01, POL-02, POL-03, POL-04, POL-05, POL-06, POL-08, POL-09, POL-10, POL-11, POL-12, POL-13, MKT-02, MKT-05, MKT-07, MKT-26, MKT-27, MKT-31, MKT-32, MKT-34, OPS-05, OPS-06, OPS-08, OPS-09, OPS-15, OPS-17, OPS-18, OPS-22, OPS-23, OPS-24, OPS-26, OPS-27, OPS-28, OPS-29, OPS-32, OPS-34, OPS-35, FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06, FIN-08, FIN-14, FIN-15, FIN-16, FIN-17, FIN-18, FIN-19, FIN-20, FIN-21, FIN-22, FIN-23, FIN-24, DAT-01, DAT-04, DAT-05, DAT-06, DAT-07, DAT-08, DAT-09, DAT-10, DAT-11, DAT-12, DAT-14, DAT-16, DAT-17, DAT-18, DAT-19, DAT-20, DAT-22, DAT-23, DAT-24, DAT-25, DAT-26, DAT-27, DAT-28, DAT-29, DAT-30, DAT-31, DAT-32, DAT-33, PRV-06, PRV-07, PRV-08, PRV-09, PRV-11, PRV-12, PRV-13, PRV-17, PRV-19, PRV-21, PRV-22, PRV-23, PRV-25, PRV-35, PRV-29, PRV-30, PRV-31, PRV-34, LEG-13, LEG-14, LEG-17, LEG-18, LEG-19, CMP-01, CMP-02, CMP-04, CMP-05, CMP-10, CMP-11, CMP-12, CMP-14, CMP-19, CMP-20, CMP-21, SEC-03, SEC-14, SEC-15, SEC-16, SEC-17, SEC-18, SEC-19, SEC-20, SEC-24, SEC-26, RSK-01, RSK-02, RSK-03, RSK-04, RSK-05, RSK-06, BKO-01, BKO-02, BKO-03, BKO-04, BKO-05, BKO-06, BKO-08, BKO-09, BKO-10, BKO-11, BKO-13, BKO-16, BKO-18, BKO-20, BKO-21, BKO-22, BKO-23, BKO-25, MSG-13, MSG-37, LOC-02, LOC-03, LOC-04, LOC-05, LOC-06, LOC-12, LOC-19, LOC-21, LOC-22, LOC-23, LOC-26, LOC-27, LOC-29, REL-04, REL-06, REL-08, REL-09, REL-11, REL-12, REL-16, REL-17, REL-20, REL-23, REL-25, REL-27, REL-29, REL-30, REL-31, REL-34, REL-35, REL-38, REL-39, REL-46, REL-47, REL-50, REL-53, REL-56, REL-57, REL-60, AIS-01, AIS-02, AIS-03, AIS-04, AIS-05, AIS-06, AIS-08, AIS-10, AIS-11, AIS-12, AIS-15, AIS-17, AIS-18, AIS-19, AIS-21, AIS-22, AIS-23, AIS-24, AIS-26, AIS-28, AIS-32, AIS-33, AIS-34, AIS-35, AIS-36, AIS-37, AIS-38, AIS-39, AIS-40, AIS-41, AIS-42, AIS-43, AIS-45, AIS-46, AIS-47, AIS-48, AIS-49, AIS-50, AIS-51, AIS-52, AIS-53, AIS-54, RSH-01, RSH-02, RSH-03, RSH-13, RSH-14, RSH-15, RSH-17, RSH-18, RSH-19, RSH-20, RSH-22, RSH-23, RSH-24, RSH-25, RSH-26, RSH-27, RSH-28, RSH-29, QAL-01, QAL-02, QAL-04, QAL-10, QAL-11, QAL-12, QAL-13, QAL-14, QAL-15, QAL-16, QAL-17, QAL-18, QAL-19, QAL-21, QAL-23, QAL-24, LCY-06, LCY-07, LCY-08, LCY-14, LCY-18, LCY-23, LCY-27, LCY-28, LCY-29, LCY-31, LCY-32, LCY-34, PRT-04, PRT-06, PRT-08, PRT-09, PRT-10, PRT-12, PRT-13, PRT-20, PRT-21, PRT-22, PRT-23, PRT-25, PRT-27, PRT-28, PRT-29, PRT-30, PRT-31, PRT-32, PRT-34a, PRT-35, PRT-38, PRT-39, PRT-40, PRT-43, PRT-44, PRT-45, PRT-46, PRT-47, PRT-34, DAY-01, DAY-13, DAY-14, DAY-18, DAY-20, DAY-21, DAY-22, DAY-23, DAY-24, DAY-25, NTC-01, NTC-02, NTC-03, NTC-04, NTC-05, NTC-06, NTC-07, NTC-08, NTC-09, NTC-10, NTC-11, NTC-12, NTC-13, NTC-14, NTC-15, NTC-16, NTC-17, NTC-18, NTC-19, NTC-20, NTC-21, CUL-05, CUL-06, CUL-08, CUL-09, CUL-11, CUL-14, CUL-20, CUL-22, CUL-24, CUL-27, PHS-02, PHS-03, PHS-04, PHS-11, PHS-12, PHS-15, PHS-19, PHS-20, PHS-21, PHS-22, PHS-23, PHS-24, PHS-25, PHS-30, PHS-33, PHS-34, PHS-40, PHS-41, PHS-42, PHS-43, PHS-44, PHS-50, PHS-51, PHS-52, PHS-53, PHS-54, PHS-55, PHS-56, PHS-57, OPP-01, OPP-09, OPP-10, OPP-12.
-- FRs that say "new screen needed" in Links: PRV-01, BKO-14, BKO-15, BKO-17, MSG-07, REL-05, REL-45, LCY-11, LCY-33, PRT-05, PRT-07, DAY-02, DAY-04, DAY-05, DAY-06, DAY-09, DAY-11, DAY-12, DAY-15, DAY-16, DAY-17, PHS-01, PHS-10, PHS-13, PHS-14, PHS-16, PHS-17, PHS-18, PHS-31, PHS-32.
-- Screen ids in FR rows that are not in the five DESIGN.md files: C-S24, E-ST47. (116 distinct ids in FR rows; the design inventory holds 162 ids.)
-- FRs with no backlog row named in Links, text or any engineering table: 282 of 741. Many are docs, founder or counsel items; Karma decides which need a row: SUP-04, SUP-05, SUP-07, SUP-08, SUP-09, SUP-10, SUP-11, SUP-19, SUP-20, SUP-21, SUP-22, POL-01, POL-03, POL-05, POL-06, POL-08, POL-09, POL-11, POL-12, POL-13, MKT-01, MKT-03, MKT-04, MKT-05, MKT-06, MKT-07, MKT-08, MKT-09, MKT-10, MKT-11, MKT-12, MKT-13, MKT-14, MKT-15, MKT-16, MKT-17, MKT-19, MKT-21, MKT-22, MKT-24, MKT-27, MKT-28, MKT-29, MKT-30, MKT-31, MKT-32, MKT-33, MKT-34, OPS-02, OPS-10, OPS-11, OPS-13, OPS-17, OPS-24, OPS-26, OPS-27, OPS-28, OPS-29, OPS-31, OPS-32, OPS-33, OPS-36, OPS-34, FIN-01, FIN-05, FIN-07, FIN-12, FIN-13, FIN-14, FIN-15, FIN-16, FIN-17, FIN-18, FIN-19, FIN-21, FIN-22, FIN-23, FIN-24, DAT-02, DAT-03, DAT-09, DAT-14, DAT-16, DAT-17, DAT-18, DAT-19, DAT-20, DAT-21, DAT-22, DAT-23, DAT-24, DAT-25, DAT-27, DAT-28, DAT-29, DAT-30, DAT-31, DAT-32, DAT-34, DAT-35, PRV-23, PRV-30, PRV-32, PRV-33, LEG-04, LEG-05, LEG-06, LEG-08, LEG-11, LEG-14, LEG-16, LEG-17, LEG-19, LEG-20, CMP-02, CMP-05, CMP-06, CMP-07, CMP-08, CMP-12, CMP-13, CMP-17, CMP-18, CMP-19, CMP-20, CMP-21, SEC-04, SEC-05, SEC-07, SEC-08, SEC-21, SEC-22, SEC-09, SEC-12, SEC-23, SEC-15, SEC-17, SEC-19, SEC-24, SEC-25, SEC-26, RSK-01, RSK-02, RSK-03, RSK-04, RSK-05, RSK-06, MSG-12, MSG-18, MSG-19, MSG-20, MSG-21, MSG-22, MSG-28, LOC-02, LOC-04, LOC-05, LOC-06, LOC-07, LOC-08, LOC-09, LOC-13, LOC-14, LOC-16, LOC-20, LOC-21, LOC-22, LOC-23, LOC-24, LOC-25, LOC-27, LOC-29, REL-05, REL-06, REL-17, REL-27, REL-29, REL-30, REL-33, REL-35, REL-36, REL-50, REL-52, REL-53, REL-61, AIS-05, AIS-06, AIS-08, AIS-14, AIS-16, AIS-29, AIS-30, AIS-33, AIS-34, AIS-37, AIS-38, AIS-41, AIS-44, AIS-46, AIS-47, AIS-48, AIS-53, AIS-54, AIS-56, RSH-13, RSH-17, RSH-18, RSH-19, RSH-21, RSH-22, RSH-23, RSH-26, RSH-27, QAL-12, QAL-13, QAL-14, QAL-17, QAL-18, QAL-19, QAL-20, QAL-21, QAL-23, QAL-24, LCY-10, LCY-13, LCY-32, PRT-02, PRT-03, PRT-04, PRT-16, PRT-17, PRT-18, PRT-21, PRT-22, PRT-24, PRT-25, PRT-34a, PRT-35, PRT-36, PRT-37, PRT-39, PRT-43, PRT-45, PRT-46, PRT-47, PRT-34, DAY-22, DAY-23, DAY-24, NTC-08, NTC-11, NTC-16, NTC-19, NTC-20, NTC-21, CUL-03, CUL-13, CUL-14, CUL-17, CUL-18, CUL-20, CUL-22, CUL-24, CUL-25, CUL-26, CUL-27, PHS-04, PHS-24, PHS-25, PHS-31, PHS-32, PHS-43, PHS-44, PHS-52, PHS-53, PHS-54, PHS-56, PHS-57, OPP-01, OPP-09, OPP-10, OPP-12.
+- FRs with no e2e screen id in Links or text: 593 of 947 (many are policy, finance, data or documentation requirements with no screen). They are: SUP-03, SUP-04, SUP-05, SUP-06, SUP-07, SUP-08, SUP-09, SUP-10, SUP-11, SUP-15, SUP-16, SUP-17, SUP-19, SUP-20, SUP-21, SUP-22, SUP-23, POL-01, POL-02, POL-03, POL-04, POL-05, POL-06, POL-08, POL-09, POL-10, POL-11, POL-12, POL-13, SUP-24, SUP-25, SUP-26, SUP-27, SUP-28, SUP-29, SUP-30, POL-14, POL-15, MKT-02, MKT-05, MKT-07, MKT-26, MKT-27, MKT-31, MKT-32, MKT-34, MKT-35, MKT-38, MKT-39, MKT-40, MKT-42, MKT-43, OPS-05, OPS-06, OPS-08, OPS-09, OPS-15, OPS-17, OPS-18, OPS-22, OPS-23, OPS-24, OPS-26, OPS-27, OPS-28, OPS-29, OPS-32, OPS-34, OPS-35, OPS-37, OPS-38, OPS-39, OPS-40, OPS-41, OPS-42, OPS-43, OPS-44, FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06, FIN-08, FIN-14, FIN-15, FIN-16, FIN-17, FIN-18, FIN-19, FIN-20, FIN-21, FIN-22, FIN-23, FIN-24, FIN-25, FIN-26, FIN-27, FIN-28, FIN-29, FIN-31, FIN-32, FIN-33, FIN-34, DAT-01, DAT-04, DAT-05, DAT-06, DAT-07, DAT-08, DAT-09, DAT-10, DAT-11, DAT-12, DAT-14, DAT-16, DAT-17, DAT-18, DAT-19, DAT-20, DAT-22, DAT-23, DAT-24, DAT-25, DAT-26, DAT-27, DAT-28, DAT-29, DAT-30, DAT-31, DAT-32, DAT-33, DAT-36, DAT-38, DAT-39, DAT-40, DAT-41, DAT-42, DAT-43, DAT-44, PRV-06, PRV-07, PRV-08, PRV-09, PRV-11, PRV-12, PRV-13, PRV-17, PRV-19, PRV-21, PRV-22, PRV-23, PRV-25, PRV-35, PRV-29, PRV-30, PRV-31, PRV-34, PRV-36, PRV-38, PRV-39, PRV-40, PRV-42, PRV-43, PRV-44, PRV-45, PRV-46, PRV-47, PRV-48, LEG-13, LEG-14, LEG-17, LEG-18, LEG-19, LEG-21, LEG-22, LEG-23, LEG-24, LEG-25, LEG-26, LEG-27, CMP-01, CMP-02, CMP-04, CMP-05, CMP-10, CMP-11, CMP-12, CMP-14, CMP-19, CMP-20, CMP-21, CMP-22, CMP-23, CMP-24, CMP-25, CMP-26, CMP-28, SEC-03, SEC-14, SEC-15, SEC-16, SEC-17, SEC-18, SEC-19, SEC-20, SEC-24, SEC-26, RSK-01, RSK-02, RSK-03, RSK-04, RSK-05, RSK-06, SEC-27, SEC-28, SEC-29, SEC-30, SEC-31, SEC-32, SEC-33, SEC-34, SEC-35, RSK-07, BKO-01, BKO-02, BKO-03, BKO-04, BKO-05, BKO-06, BKO-08, BKO-09, BKO-10, BKO-11, BKO-13, BKO-16, BKO-18, BKO-20, BKO-21, BKO-22, BKO-23, BKO-25, BKO-28, BKO-29, BKO-30, BKO-31, BKO-32, BKO-33, BKO-34, BKO-35, BKO-36, MSG-13, MSG-37, MSG-39, MSG-41, MSG-42, MSG-43, MSG-44, MSG-45, MSG-46, LOC-02, LOC-03, LOC-04, LOC-05, LOC-06, LOC-12, LOC-19, LOC-21, LOC-22, LOC-23, LOC-26, LOC-27, LOC-29, LOC-30, LOC-31, LOC-32, LOC-33, LOC-34, LOC-35, LOC-36, LOC-37, REL-04, REL-06, REL-08, REL-09, REL-11, REL-12, REL-16, REL-17, REL-20, REL-23, REL-25, REL-27, REL-29, REL-30, REL-31, REL-34, REL-35, REL-38, REL-39, REL-46, REL-47, REL-50, REL-53, REL-56, REL-57, REL-60, REL-62, REL-63, REL-64, REL-65, REL-66, REL-68, REL-69, REL-70, REL-71, REL-72, AIS-01, AIS-02, AIS-03, AIS-04, AIS-05, AIS-06, AIS-08, AIS-10, AIS-11, AIS-12, AIS-15, AIS-17, AIS-18, AIS-19, AIS-21, AIS-22, AIS-23, AIS-24, AIS-26, AIS-28, AIS-32, AIS-33, AIS-34, AIS-35, AIS-36, AIS-37, AIS-38, AIS-39, AIS-40, AIS-41, AIS-42, AIS-43, AIS-45, AIS-46, AIS-47, AIS-48, AIS-49, AIS-50, AIS-51, AIS-52, AIS-53, AIS-54, AIS-57, AIS-58, AIS-59, AIS-60, AIS-61, AIS-62, AIS-63, AIS-64, AIS-65, AIS-66, AIS-67, AIS-68, RSH-01, RSH-02, RSH-03, RSH-13, RSH-14, RSH-15, RSH-17, RSH-18, RSH-19, RSH-20, RSH-22, RSH-23, RSH-24, RSH-25, RSH-26, RSH-27, RSH-28, RSH-29, RSH-30, RSH-31, RSH-33, RSH-34, RSH-35, QAL-01, QAL-02, QAL-04, QAL-10, QAL-11, QAL-12, QAL-13, QAL-14, QAL-15, QAL-16, QAL-17, QAL-18, QAL-19, QAL-21, QAL-23, QAL-24, QAL-25, QAL-26, QAL-27, QAL-28, QAL-29, QAL-30, QAL-31, LCY-06, LCY-07, LCY-08, LCY-14, LCY-18, LCY-23, LCY-27, LCY-28, LCY-29, LCY-31, LCY-32, LCY-34, LCY-35, LCY-36, LCY-38, LCY-39, LCY-40, LCY-41, LCY-42, LCY-43, PRT-04, PRT-06, PRT-08, PRT-09, PRT-10, PRT-12, PRT-13, PRT-20, PRT-21, PRT-22, PRT-23, PRT-25, PRT-27, PRT-28, PRT-29, PRT-30, PRT-31, PRT-32, PRT-34a, PRT-35, PRT-38, PRT-39, PRT-40, PRT-43, PRT-44, PRT-45, PRT-46, PRT-47, PRT-34, PRT-48, PRT-49, PRT-50, PRT-51, PRT-52, PRT-53, PRT-54, PRT-55, DAY-01, DAY-13, DAY-14, DAY-18, DAY-20, DAY-21, DAY-22, DAY-23, DAY-24, DAY-25, DAY-26, DAY-28, DAY-29, DAY-30, DAY-31, DAY-32, DAY-33, NTC-01, NTC-02, NTC-03, NTC-04, NTC-05, NTC-06, NTC-07, NTC-08, NTC-09, NTC-10, NTC-11, NTC-12, NTC-13, NTC-14, NTC-15, NTC-16, NTC-17, NTC-18, NTC-19, NTC-20, NTC-21, NTC-22, NTC-23, NTC-24, NTC-25, NTC-26, NTC-27, NTC-28, NTC-29, NTC-30, NTC-31, CUL-05, CUL-06, CUL-08, CUL-09, CUL-11, CUL-14, CUL-20, CUL-22, CUL-24, CUL-27, CUL-28, CUL-29, CUL-30, CUL-31, CUL-32, CUL-33, CUL-34, CUL-35, CUL-36, PHS-02, PHS-03, PHS-04, PHS-11, PHS-12, PHS-15, PHS-19, PHS-20, PHS-21, PHS-22, PHS-23, PHS-24, PHS-25, PHS-30, PHS-33, PHS-34, PHS-40, PHS-41, PHS-42, PHS-43, PHS-44, PHS-50, PHS-51, PHS-52, PHS-53, PHS-54, PHS-55, PHS-56, PHS-57, PHS-58, PHS-59, PHS-60, PHS-61, PHS-62, PHS-63, PHS-64, PHS-65, PHS-66, PHS-67, PHS-68, PHS-69, PHS-70, PHS-71, OPP-01, OPP-09, OPP-10, OPP-12, OPP-13, OPP-14, OPP-15, OPP-16, OPP-17.
+- FRs that say "new screen needed" in Links: PRV-01, BKO-14, BKO-15, BKO-17, MSG-07, MSG-40, REL-05, REL-45, RSH-32, LCY-11, LCY-33, PRT-05, PRT-07, DAY-02, DAY-04, DAY-05, DAY-06, DAY-09, DAY-11, DAY-12, DAY-15, DAY-16, DAY-17, PHS-01, PHS-10, PHS-13, PHS-14, PHS-16, PHS-17, PHS-18, PHS-31, PHS-32.
+- Screen ids in FR rows that are not in the five DESIGN.md files: none. (116 distinct ids in FR rows; the design inventory holds 213 ids.)
+- FRs with no backlog row named in Links, text or any engineering table: 461 of 947. Many are docs, founder or counsel items; Karma decides which need a row: SUP-04, SUP-05, SUP-07, SUP-08, SUP-09, SUP-10, SUP-11, SUP-19, SUP-20, SUP-21, SUP-22, POL-01, POL-03, POL-05, POL-06, POL-08, POL-09, POL-11, POL-12, POL-13, SUP-26, SUP-27, SUP-29, SUP-30, POL-14, POL-15, MKT-01, MKT-03, MKT-04, MKT-05, MKT-06, MKT-07, MKT-08, MKT-09, MKT-10, MKT-11, MKT-12, MKT-13, MKT-14, MKT-15, MKT-16, MKT-17, MKT-19, MKT-21, MKT-22, MKT-24, MKT-27, MKT-28, MKT-29, MKT-30, MKT-31, MKT-32, MKT-33, MKT-34, MKT-37, MKT-38, MKT-39, MKT-41, MKT-42, MKT-43, OPS-02, OPS-10, OPS-11, OPS-13, OPS-17, OPS-24, OPS-26, OPS-27, OPS-28, OPS-29, OPS-31, OPS-32, OPS-33, OPS-36, OPS-34, OPS-38, OPS-39, OPS-40, OPS-41, OPS-42, OPS-43, FIN-01, FIN-05, FIN-07, FIN-12, FIN-13, FIN-14, FIN-15, FIN-16, FIN-17, FIN-18, FIN-19, FIN-21, FIN-22, FIN-23, FIN-24, FIN-26, FIN-27, FIN-28, FIN-29, FIN-30, FIN-31, FIN-32, FIN-33, FIN-34, DAT-02, DAT-03, DAT-09, DAT-14, DAT-16, DAT-17, DAT-18, DAT-19, DAT-20, DAT-21, DAT-22, DAT-23, DAT-24, DAT-25, DAT-27, DAT-28, DAT-29, DAT-30, DAT-31, DAT-32, DAT-34, DAT-35, DAT-37, DAT-38, DAT-39, DAT-40, DAT-41, DAT-42, DAT-43, DAT-44, PRV-23, PRV-30, PRV-32, PRV-33, PRV-36, PRV-37, PRV-38, PRV-39, PRV-40, PRV-41, PRV-42, PRV-43, PRV-44, PRV-45, PRV-46, PRV-47, PRV-48, LEG-04, LEG-05, LEG-06, LEG-08, LEG-11, LEG-14, LEG-16, LEG-17, LEG-19, LEG-20, LEG-21, LEG-22, LEG-23, LEG-24, LEG-25, LEG-26, LEG-27, CMP-02, CMP-05, CMP-06, CMP-07, CMP-08, CMP-12, CMP-13, CMP-17, CMP-18, CMP-19, CMP-20, CMP-21, CMP-22, CMP-23, CMP-24, CMP-25, CMP-26, CMP-27, CMP-28, SEC-04, SEC-05, SEC-07, SEC-08, SEC-21, SEC-22, SEC-09, SEC-12, SEC-23, SEC-15, SEC-17, SEC-19, SEC-24, SEC-25, SEC-26, RSK-01, RSK-02, RSK-03, RSK-04, RSK-05, RSK-06, SEC-28, SEC-29, SEC-30, SEC-31, SEC-32, SEC-33, SEC-35, RSK-07, BKO-29, BKO-30, BKO-31, BKO-32, BKO-33, BKO-34, BKO-35, BKO-36, MSG-12, MSG-18, MSG-19, MSG-20, MSG-21, MSG-22, MSG-28, MSG-39, MSG-40, MSG-41, MSG-42, MSG-43, MSG-44, MSG-45, MSG-46, LOC-02, LOC-04, LOC-05, LOC-06, LOC-07, LOC-08, LOC-09, LOC-13, LOC-14, LOC-16, LOC-20, LOC-21, LOC-22, LOC-23, LOC-24, LOC-25, LOC-27, LOC-29, LOC-31, LOC-32, LOC-33, LOC-34, LOC-35, LOC-36, LOC-37, REL-05, REL-06, REL-17, REL-27, REL-29, REL-30, REL-33, REL-35, REL-36, REL-50, REL-52, REL-53, REL-61, REL-62, REL-63, REL-64, REL-65, REL-66, REL-67, REL-68, REL-69, REL-70, REL-71, REL-72, AIS-05, AIS-06, AIS-08, AIS-14, AIS-16, AIS-29, AIS-30, AIS-33, AIS-34, AIS-37, AIS-38, AIS-41, AIS-44, AIS-46, AIS-47, AIS-48, AIS-53, AIS-54, AIS-56, AIS-58, AIS-59, AIS-61, AIS-63, AIS-64, AIS-65, AIS-66, AIS-67, AIS-68, RSH-13, RSH-17, RSH-18, RSH-19, RSH-21, RSH-22, RSH-23, RSH-26, RSH-27, RSH-30, RSH-31, RSH-33, RSH-34, RSH-35, QAL-12, QAL-13, QAL-14, QAL-17, QAL-18, QAL-19, QAL-20, QAL-21, QAL-23, QAL-24, QAL-26, QAL-27, QAL-28, QAL-29, QAL-30, QAL-31, LCY-10, LCY-13, LCY-32, LCY-38, LCY-41, LCY-42, LCY-43, PRT-02, PRT-03, PRT-04, PRT-16, PRT-17, PRT-18, PRT-21, PRT-22, PRT-24, PRT-25, PRT-34a, PRT-35, PRT-36, PRT-37, PRT-39, PRT-43, PRT-45, PRT-46, PRT-47, PRT-34, PRT-48, PRT-49, PRT-50, PRT-51, PRT-52, PRT-53, PRT-54, PRT-55, DAY-22, DAY-23, DAY-24, DAY-26, DAY-27, DAY-28, DAY-29, DAY-30, DAY-31, DAY-32, DAY-33, NTC-08, NTC-11, NTC-16, NTC-19, NTC-20, NTC-21, NTC-22, NTC-25, NTC-26, NTC-27, NTC-29, NTC-30, NTC-31, CUL-03, CUL-13, CUL-14, CUL-17, CUL-18, CUL-20, CUL-22, CUL-24, CUL-25, CUL-26, CUL-27, CUL-28, CUL-29, CUL-30, CUL-31, CUL-32, CUL-33, CUL-34, CUL-35, CUL-36, PHS-04, PHS-24, PHS-25, PHS-31, PHS-32, PHS-43, PHS-44, PHS-52, PHS-53, PHS-54, PHS-56, PHS-57, PHS-58, PHS-59, PHS-60, PHS-61, PHS-62, PHS-63, PHS-64, PHS-65, PHS-66, PHS-67, PHS-68, PHS-69, PHS-70, PHS-71, OPP-01, OPP-09, OPP-10, OPP-12, OPP-13, OPP-14, OPP-15, OPP-16, OPP-17.
 - BL ids cited by FR rows that do not appear in `docs/BACKLOG.md`: none. Several are ids the function file says it has not read on this branch (for example BL-999, BL-997, BL-992 in the reliability file are range-end ids the backlog may not carry yet); Karma checks them against `next-id.mjs` before the rows are filed.
 
 ### 7.4 Coverage tables

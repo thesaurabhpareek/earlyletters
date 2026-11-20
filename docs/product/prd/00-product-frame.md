@@ -196,10 +196,10 @@ Added 20 Nov 2026 (index only; the cards own every row; ranks above are unchange
 | NS-48 | Notification catalogue and rotation | 21 | 13 | A phase 1, B, C | B Capture |
 | NS-49 | Picture-first start and Journaling Suggestions | 21 | 21 | A level 1, C level 2 | B Capture |
 | NS-50 | Home today | 21 | 4 | B (R13 in A, R6 and R16 in C) | B Capture |
-| NS-51 | Photo moments (level 3, reverses "level 3 closed") | card 27, being written (`26-founder-direction-photos-library-and-media.md`) | not yet | not yet | C Reading and keepsakes |
-| NS-52 | Pictures and videos with a letter (limits proposed, founder confirms) | card 27, being written | not yet | not yet | C Reading and keepsakes |
+| NS-51 | Photo moments (level 3, reverses "level 3 closed") | 27 (`27-photo-moments-and-media.md`; direction in `26-founder-direction-photos-library-and-media.md`) | 27 | C, spike first | C Reading and keepsakes |
+| NS-52 | Pictures and videos with a letter (limits proposed, founder confirms) | 27 | 26 | C, spike first | C Reading and keepsakes |
 
-All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
+All 87 P0 rows of NS-46 to NS-50 are counted above (22 + 27 + 13 + 21 + 4); NS-01 to NS-37 hold 296 (`14-test-plan.md` section 7) plus NS-17-R11 and NS-17-R12 from K17 (298), and NS-51 and NS-52 add 53 (27 + 26). P0 rows in the pack by `p0.py` on 20 Nov: 1,048, of which 534 in NS-01 to NS-52 (298 + 96 + 87 + 53) and 514 in `functions/*.md`; 781 have no row-level backlog row (`BACKLOG-GAPS.md` section 1). The five-card scope has no one cut in the reviews' reading: it stands on planner work that is not built (`budget.ts`, the quiet reader BL-985, typed days BL-982, the slip registry BL-963).
 
 ## 10. Council review
 
