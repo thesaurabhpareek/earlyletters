@@ -16,7 +16,7 @@ The app as built is the baseline: read the screens in `apps/mobile/src/app` and 
 
 - The constitution: the machine may remove and repair; it may never add meaning. No caption, summary, rewrite, suggested first, detected moment or generated text anywhere.
 - Three tabs: Home (Say), Book (Read), Me (Look after). Only Home starts a letter. Family is never a tab. No "coming soon" surface in any build.
-- Home slips, one at a time, fixed order: (1) the existing waiting cards; (2) the seal-opened line on its day; (3) Save a copy in the birthday week; (4) one past letter. The reminder ask and the Plus line are not slips; the photo start is part of the capture cluster.
+- Home slips, one at a time, fixed order (errata E36): (1) the existing waiting cards; (2) the seal-opened line on its day; (2b) a day the parent chose, today; (3) Save a copy in the birthday week; (3b) the Days ask; (4) one past letter. The reminder ask and the Plus line are not slips; the photo start is part of the capture cluster.
 - Undo windows (T4): open for the stated seconds, or until VoiceOver has read the undo line plus that many seconds, whichever is later; with Switch Control, until the parent moves on.
 - Sign-out keeps the book on the phone and says so (D1). Writing tools off on letter fields (D2). Nothing donated to Spotlight or Siri (D3).
 - Words: no em dashes, en dashes, curly quotes, ellipsis characters or emoji; no fear, guilt or loss language; never imply AI writes; `{child}`, never a gendered child; no streaks, points, badges or counts of gaps; "stored copy" for the picture file; "Printable", never "print-ready". Parent-facing words only from the BRAND.md glossary; internal terms (take, entry, draft, pack, lens, index) never reach a parent.
@@ -57,3 +57,15 @@ Content lead:
 - Design changes no engineering plan. Where a screen needs something the engineering plan or backlog does not have, list it under "Engineering gaps" with the backlog row it belongs to.
 - Write only inside your area folder. Do not commit, push, open PRs or post anywhere; Karma collects, reconciles and commits.
 - ASCII only in every file (the content rules apply to docs too).
+
+## 6. The gap loop with product (added 20 Nov on the founder's instruction)
+
+Design and product work together while design runs, so the requirements improve wherever design finds a gap.
+- Every lead keeps a "Card gaps" table (id, card row, what is missing or unclear, proposed default) and an "Engineering gaps" table (gap, file, backlog row). Write gaps as soon as you find them, not only at the end.
+- Karma (product side) collects them into `docs/product/prd/GAP-LOG.md` on branch `docs/locked-pack-inputs-20nov`, with one ruling per gap: card change (applied through `18-errata-after-lock.md` or the new card file), founder question (with a default), engineering gap (sent to the engineering thread), or no change (with the reason).
+- Until a gap is ruled, design uses its own proposed default and marks the screen state "pending ruling G-xx". After a ruling, the leads re-key to it in their reconciliation pass.
+- The journey from App Store download to the first kept letter is now carded separately (`docs/product/prd/19-from-download-to-first-letter.md`, NS-38 onward). Area E designs it end to end; gaps there come back the same way.
+
+## 7. Function requirements (added 20 Nov on the founder's instruction)
+
+Legal, compliance, privacy, support and policy, marketing, operations, risk and security, data and measurement, and finance are reviewing the requirements and writing the ones they need (`docs/product/prd/functions/*.md` on `docs/locked-pack-inputs-20nov`, ids `FR-<CODE>-nn`). Each has a "Design needs" section keyed to your screen ids. After the reviews land, each area runs one reconciliation pass and adds a section "Function needs accounted for": FR id, screen and state, what changed (screen, state, string, flow) or why nothing changed. Linked in `docs/product/prd/FUNCTION-TRACE.md`.
