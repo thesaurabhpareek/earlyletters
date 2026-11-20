@@ -1,10 +1,12 @@
 # Backlog gaps: P0 rows with no backlog row (20 Nov 2026)
 
-Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a backlog row) and errata E30 (`18-errata-after-lock.md`). Docs only. Nothing in `docs/BACKLOG.md` was changed; the groups below are proposals for Karma to allocate. The list is generated: `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps | --md | --groups | --json` (script header explains the rules). Re-run it after every backlog edit; the numbers below are for this branch (`docs/locked-pack-inputs-20nov`).
+Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a backlog row) and errata E30 (`18-errata-after-lock.md`). Docs only. The groups below are filed as 38 `proposed` rows in `docs/BACKLOG.md` (section "Locked pack: P0 rows with no backlog row"; 5.1 maps group to id, and `docs/BACKLOG.md` wins if the two differ); Karma or the founder sets them to `ready`. The list is generated: `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps | --md | --groups | --json` (script header explains the rules). Re-run it after every backlog edit; the numbers below are for this branch (`docs/locked-pack-inputs-20nov`). Counts refreshed 20 Nov 2026 by running `p0.py` at head f8eead016: 850 P0 rows, 588 with no row-level backlog row (first version: 826 and 565).
 
 ## 1. Result in one paragraph
 
-826 P0 rows were read: 455 acceptance rows in cards 01 to 12, 19 and 21 (NS-01 to NS-50 with P0 rows) and 371 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block. 75 more cite an existing `BL-nnn` in the row's own text (3 NS rows, 72 FR rows). **565 have no row-level backlog row**: 521 with no backlog mention at all, and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. E30 said "about 70"; the true figure under a row-level reading is eight times that, because cards 19 and 21 (159 P0 rows, NS-38 to NS-50) and the function reviews (299 P0 FR rows with no cite) have no backlog rows by design: each card says "new rows needed (no id invented)".
+850 P0 rows were read: 479 acceptance rows in cards 01 to 12, 19 and 21 (NS-01 to NS-50 with P0 rows) and 371 P0 FR rows in `functions/*.md`. 186 are named by a row-level id or range in a backlog block. 76 more cite an existing `BL-nnn` in the row's own text (4 NS rows, 72 FR rows). **588 have no row-level backlog row**: 544 with no backlog mention at all, and 44 (NS-01, NS-05, NS-11) where only a whole-card `Satisfies:` line (NS-01 by BL-931, BL-933, BL-958 and the study row BL-981; NS-05 by BL-939 and BL-981; NS-11 by BL-963) names the card. **Superseded: E30's "about 70".** E30 (`18-errata-after-lock.md`) counted only the 20 Nov additions to a few locked cards. The real figure under a row-level reading is 588 (about eight times E30's), because cards 19 and 21 (183 P0 rows: 96 in NS-38 to NS-45 and 87 in NS-46 to NS-50) and the function reviews (299 P0 FR rows with no cite) have no backlog rows by design: each card says "new rows needed (no id invented)". The 20 Nov regeneration (`p0.py`, after the ten reviews of NS-46 to NS-50 took card 21 from 63 to 87 P0 rows) moved the totals from 826 / 565 to 850 / 588; the earlier NS-46 to NS-50 counts (14, 17, 11, 17, 4) were stale and are replaced below (22, 27, 13, 21, 4). Cards 22 to 27 are not read by `p0.py` (it reads cards 00 to 21 and `functions/*.md`), so the P0 rows of NS-51 and NS-52 (card 27: 27 and 26 rows with Priority P0 in the section 7 tables, counted by a table parse in a later session, 53 in all, all drop C) are not in the script's totals. They are groups G36 and G37 in 5.1.
+
+**Update, 20 Nov (later run, same branch, function files edited since).** `p0.py --json` now reads 993 P0 rows: 479 in NS cards (unchanged: 186 row-covered, 4 cite-covered, 44 card-level only, 245 gap) and 514 in `functions/*.md` (75 cite-covered, 439 gap), so 728 rows have no row-level backlog row (684 with no mention, 44 card-level only), not 588. The 140 extra FR gap rows are the 20 Nov addenda to the function reviews (FR rows that section 7 does not list); they are group G38 and are not in the per-card numbers of sections 3 and 7, which stay as first generated. With NS-51 and NS-52 the figures are 1,046 P0 rows and 781 with no row (588 + 140 + 53, the sum of the 38 groups). NS-46 to NS-50 counts (22, 27, 13, 21, 4) were checked against `p0.py --md` and match sections 3 and 7. `p0.py --groups` stops with `StopIteration` at the new FR-AIS rows (FR-AIS-57 and later are in no entry of its `AIS` table), so the group counts in section 5 come from section 7, not from a new run; `qa` owns the script.
 
 Card 20 (`20-founder-direction-20nov.md`), 00, 13, 12 hold no P0 acceptance rows. `14-test-plan.md` holds the P0 register (a copy), `15`, `16`, `18` are review records: none is read as a row source.
 
@@ -63,10 +65,10 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | NS-43 | 11 | 0 | 0 | 0 | 11 |
 | NS-44 | 10 | 0 | 0 | 0 | 10 |
 | NS-45 | 15 | 0 | 0 | 0 | 15 |
-| NS-46 | 14 | 0 | 0 | 0 | 14 |
-| NS-47 | 17 | 0 | 0 | 0 | 17 |
-| NS-48 | 11 | 0 | 0 | 0 | 11 |
-| NS-49 | 17 | 0 | 0 | 0 | 17 |
+| NS-46 | 22 | 0 | 1 | 0 | 21 |
+| NS-47 | 27 | 0 | 0 | 0 | 27 |
+| NS-48 | 13 | 0 | 0 | 0 | 13 |
+| NS-49 | 21 | 0 | 0 | 0 | 21 |
 | NS-50 | 4 | 0 | 0 | 0 | 4 |
 | FR-AIS | 43 | 0 | 6 | 0 | 37 |
 | FR-BKO | 11 | 0 | 4 | 0 | 7 |
@@ -93,7 +95,7 @@ Columns: P0 rows; row-covered (id or range in a backlog block); cite-covered (th
 | FR-RSK | 4 | 0 | 0 | 0 | 4 |
 | FR-SEC | 11 | 0 | 2 | 0 | 9 |
 | FR-SUP | 15 | 0 | 4 | 0 | 11 |
-| TOTAL | 826 | 186 | 75 | 44 | 521 |
+| TOTAL | 850 | 186 | 76 | 44 | 544 |
 
 ## 4. Free ids
 
@@ -108,49 +110,100 @@ Highest used id is BL-999, so no id above it is allowed by the dispatcher. Only 
 
 Findings: BL-736 and BL-737 exist only in commit subjects and the branch `test/bl-736-alpha-allowance`; BL-917 to BL-921 are proposed in `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` (BACKLOG.md:3137 says so) and BL-922 was taken after them. Using any Tier B id risks colliding with an id a person remembers from a commit message; ask Karma to confirm one block. Recommended block if the fine plan is used: **BL-677 to BL-711** (35 consecutive Tier B ids, one per group G01 to G35). If only Tier A is accepted, use the coarse plan in section 6 (four groups, BL-826 to BL-829). The better fix is the engineering row to read four-digit ids (`lib.mjs:52`, `:74`, `:141`, `lib.test.mjs:130`); then `BL-1000` onward is free and no hole is needed. I did not open that row; it is a person's call.
 
+
+Recheck 20 Nov (this run). Checked for each id 001 to 999: `docs/BACKLOG.md`; every tracked and untracked file in the repo; `git log --all` messages (3,798 commits); local and remote branch names and tags; the titles, branch names and bodies of all 854 pull requests (178 open, 676 closed) read through the REST API; the ids that `node scripts/agents/id-collisions.mjs` lists as added by open PRs (it ran; the API worked, and it still lists collisions among open PRs on BL-771 to BL-774, which are not among the 38); and the full history of changed lines (`git log --all -G`) for the ids used. Result: Tier A (826 to 829) is now named in `23-dependency-map-and-plan.md` (BL-826 reserved for the four-digit id fix) and is kept for the engineering rows listed in its section 6.4; most of Tier B is named by an open PR (BL-621 to BL-726 are added by #599, BL-727 and BL-728 by #621, BL-757 to BL-825 by #684 and #707, BL-830 to BL-840 by #733, BL-898 to BL-915 by #790) or by a range in an open PR's text (606, 611 to 619, 730 to 732, 735, 741 to 755), so the recommended block BL-677 to BL-711 is **not free**. The ids filed are the 38 listed in 5.1: the ids the backlog's own Numbering paragraph calls free for later splits and no file, commit or PR uses (126 to 128, 181 to 188, 198, 208, 291 to 298, 328), then 6 to 8, 17 to 19, 25 to 29, 38, 39 and 45 to 47, which no file, commit, branch or PR has ever named. BL-055 to BL-099 are never used (the Numbering rule), BL-350 is named in an old header, and 48 and 49 are spare.
+
 ## 5. Proposed grouping: 35 new backlog rows
 
 Rules used: one group is one deliverable or one reviewable stack; rows stay in the owner lane the card or function file names; a group that mostly adds "Satisfies" ids to an existing row says so (cheaper than a new row). `Depends on` names existing headings; none of the proposals depends on a row that lacks a heading. Status of each dependency was read on this branch. Sizes follow the harness meaning (S under a day of agent work, M a few PRs, L a stack of reviewable PRs) and are estimates, not measurements.
 
-| Group | Title (as a heading would read) | Covers P0 rows | Rows | Depends on | Size | Suggested id |
+| Group | Title (as a heading would read) | Covers P0 rows | Rows | Depends on | Size | Backlog id (filed in docs/BACKLOG.md, 5.1) |
 |---|---|---|---|---|---|---|
-| G01 | Name the card rows in the rows that already carry them (no new work, edit `Satisfies:` lines) | NS-01 (26 rows: R4, R8, R9a, R9b, R13a, R13b, R15, R16a-c, R17a, R17c, R18, R21b, R22, R25, R26, R27, R31, R33, R35, R36, R51, R52, R55, R62); NS-05 (15); NS-11 R10, R12, R23 | 44 | BL-931, BL-939, BL-963 (the rows edited) | S | BL-677 |
-| G02 | Pilot privacy and consent handling (NS-03) | NS-03-R1 to R5, R7, R8 | 7 | BL-935 (ready; it holds only the kit and names the card file, not these rows) | S | BL-678 |
-| G03 | Recording backup flip rows (NS-08 R10 to R19) | NS-08-R10, R11, R13, R14, R16, R17, R18, R19 | 8 | BL-976 (blocked, PR #622); waits for the founder's flip decision, as BL-976 says | L | BL-679 |
-| G04 | Let it go and child switcher: the rows BL-923 to BL-926 do not name | NS-09-R1 to R4b, R7, R8; NS-14-R8, R11 | 9 | BL-925, BL-926, BL-977, BL-941. BL-923 and BL-924 are `done (#832)` and probably already satisfy NS-09-R1 to R3 in code: add the ids, then test | M | BL-680 |
-| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 26 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-681 |
-| G06 | Capture and reading stragglers of the 20 Nov lock | NS-19-R1, R4; NS-21-R9, R11, R13; NS-24-R10; NS-35-R1, R3, R4; NS-37-R2 | 10 | BL-931, BL-952, BL-947 | M | BL-682 |
-| G07 | Accessibility floor rows (NS-33 R1 to R8) | NS-33-R1, R2, R4 to R8 | 7 | BL-927, BL-928, BL-984. BL-927 to BL-928 satisfy LEGAL-REQ-051, not these ids: the fix may be Satisfies lines | S | BL-683 |
-| G08 | Quality gates: test plan rows, trace ratchet for backlog rows (NS-34, FR-QAL) | NS-34-R2, R5, R6; FR-QAL-01, 03, 05, 06, 11, 12, 15, 16, 17, 20 to 23 | 16 | BL-929, BL-948, BL-964 (trace sees NS ids). Proposed new check: `p0.py` as a CI step (`docs/ops/proposed/` patch, qa cannot edit workflows) | M | BL-684 |
-| G09 | Data follows the letter (NS-36) | NS-36-R1a to R1d, R2, R3, R5, R7, R8, R10, R11, R12 | 12 | BL-933 (blocked), BL-959 (blocked), BL-960, BL-952 | M | BL-685 |
-| G10 | Store candidate gate evidence and App Store record (NS-38, FR-CMP) | NS-38-R1 to R5, R7 to R9; FR-CMP-01, 03 to 07, 11 to 13, 15 to 20 | 23 | BL-958, BL-965, BL-975. Founder steps for the store record are not agent work | M | BL-686 |
-| G11 | First launch: age first, no prompt, offline (NS-39) | NS-39-R1 to R6, R10, R11, R12, R14 | 10 | BL-965, BL-958 | M | BL-687 |
-| G12 | The age gate and the country hook (NS-40) | NS-40-R1 to R3, R5 to R10, R12, R13 | 11 | BL-965; D-131 counsel path | M | BL-688 |
-| G13 | Sign in: Apple, email code, link, session (NS-41) | NS-41-R1 to R5, R7, R9, R10, R11, R13, R14, R16, R18 to R20, R22, R23 | 17 | BL-053 (needs-founder FT-07/12/13), BL-961; split into three PRs (screens, server limits, Apple) | L | BL-689 |
-| G14 | Agree to the Terms and the sensitive-data question (NS-42) | NS-42-R1 to R6, R9, R10, R11, R13, R15, R16 | 12 | BL-577, BL-579 (both deferred), G13. NS-42-R7 is cite-covered by BL-577 | M | BL-690 |
-| G15 | The first book: name, birthday, signs-as (NS-43) | NS-43-R1 to R4, R6, R7, R8, R10, R11, R13, R14 | 11 | G12, G14 | M | BL-691 |
-| G16 | The first Keep and the allowance gate (NS-44) | NS-44-R1 to R4, R6 to R10, R12 | 10 | G15, BL-965 | M | BL-692 |
-| G17 | Sign out and Delete account on the phone (NS-45) | NS-45-R1 to R3, R5 to R13, R15, R16, R18 | 15 | BL-237 (done in part), BL-961, G13 | L | BL-693 |
-| G18 | Days we mark and the Home slip (NS-46, NS-50, FR-DAY) | NS-46-R2, R4, R5, R7, R8, R13, R14, R16, R17, R19, R22, R23, R25, R27; NS-50-R2, R3, R8, R11; FR-DAY-02, 04, 06, 15, 20, 23, 25 | 25 | BL-966, BL-963, BL-965, BL-537 (deferred). Counsel and a tradition reviewer gate public days (NS-46-R23, FR-DAY-23) | L | BL-694 |
-| G19 | Cultural background store and lock-screen rules (NS-47, FR-CUL) | NS-47-R1 to R9, R11, R12, R13, R15, R16, R21, R22, R23; FR-CUL-01 to 09, 11, 12, 16, 21, 22, 23 | 32 | G18, BL-961, BL-975 (label guard). Privacy review before any build outside the founder's family | L | BL-695 |
-| G20 | Notification catalogue and rotation (NS-48, FR-NTC) | NS-48-R1 to R5, R8 to R11, R21, R26; FR-NTC-01 to 05, 08 to 11 | 20 | BL-966, G18, BL-537 | M | BL-696 |
-| G21 | Suggestions from the library, level 2 (NS-49, FR-PHS, FR-OPP) | NS-49-R3, R6, R7, R9 to R13, R15, R16, R19, R21, R23 to R27; FR-PHS-04, 11, 12, 14, 15, 17, 19, 20, 22, 23, 33, 40, 41, 43, 44, 50 to 57; FR-OPP-03, 05, 06, 09 | 44 | BL-931, BL-952, BL-962; build in two stacks (module, then governance and label) | L | BL-697 |
-| G22 | Engine guard tests: edit types, verifier, raw words (FR-AIS) | FR-AIS-01, 02, 03, 06, 07, 08, 35, 39, 40, 45, 54, 56 | 12 | none | S | BL-698 |
-| G23 | Model files: trust, licence record, download, memory (FR-AIS) | FR-AIS-09, 10, 13, 15, 16, 17, 19, 43 | 8 | BL-043 (needs-founder, cited by four AIS rows) | M | BL-699 |
-| G24 | Voice and language handling in the engine (FR-AIS) | FR-AIS-21, 23, 25, 26, 27, 29, 33, 34 | 8 | G05 | M | BL-700 |
-| G25 | AI governance: test sets, agent permissions, source scan (FR-AIS) | FR-AIS-36, 37, 46, 47, 48, 49, 50, 51, 53 | 9 | none; AIS-46 asks counsel a new numbered question | S | BL-701 |
-| G26 | Back office, operations and finance runbooks (FR-BKO, FR-OPS, FR-FIN) | all FR-BKO, FR-OPS, FR-FIN gaps (24) | 24 | BL-237; BL-551 to BL-553 exist only as bullets: convert to headings first | M | BL-702 |
-| G27 | Reliability and lifecycle (FR-REL, FR-LCY) | all FR-REL, FR-LCY gaps (27) | 27 | BL-961, BL-566, BL-978, BL-929 | L | BL-703 |
-| G28 | Security and risk rows (FR-SEC, FR-RSK) | all FR-SEC, FR-RSK gaps (13) | 13 | BL-961, BL-962, BL-552 (bullet only) | M | BL-704 |
-| G29 | Measurement guardrails (FR-DAT) | all FR-DAT gaps (9) | 9 | BL-975 | S | BL-705 |
-| G30 | Privacy engineering rows (FR-PRV) | all FR-PRV gaps (15) | 15 | BL-960, BL-962, BL-577 | M | BL-706 |
-| G31 | Legal texts and print rules (FR-LEG, FR-PRT) | all FR-LEG gaps (11), FR-PRT-02, 39, 45 | 14 | BL-973 (blocked), BL-949; counsel answers gate the public texts | M | BL-707 |
-| G32 | Marketing claims and store words (FR-MKT) | all FR-MKT gaps (19) | 19 | BL-965, BL-958 | M | BL-708 |
-| G33 | Support and policy (FR-SUP, FR-POL) | all FR-SUP, FR-POL gaps (19) | 19 | BL-364, BL-444, BL-551 and BL-552 (bullets) | M | BL-709 |
-| G34 | Research and validation rules (FR-RSH) | all FR-RSH gaps (10) | 10 | BL-981 | S | BL-710 |
-| G35 | Messaging and entry points (FR-MSG) | all FR-MSG gaps (9) | 9 | BL-364, BL-510, BL-053 | M | BL-711 |
+| G01 | Name the card rows in the rows that already carry them (no new work, edit `Satisfies:` lines) | NS-01 (26 rows: R4, R8, R9a, R9b, R13a, R13b, R15, R16a-c, R17a, R17c, R18, R21b, R22, R25, R26, R27, R31, R33, R35, R36, R51, R52, R55, R62); NS-05 (15); NS-11 R10, R12, R23 | 44 | BL-931, BL-939, BL-963 (the rows edited) | S | BL-126 |
+| G02 | Pilot privacy and consent handling (NS-03) | NS-03-R1 to R5, R7, R8 | 7 | BL-935 (ready; it holds only the kit and names the card file, not these rows) | S | BL-127 |
+| G03 | Recording backup flip rows (NS-08 R10 to R19) | NS-08-R10, R11, R13, R14, R16, R17, R18, R19 | 8 | BL-976 (blocked, PR #622); waits for the founder's flip decision, as BL-976 says | L | BL-128 |
+| G04 | Let it go and child switcher: the rows BL-923 to BL-926 do not name | NS-09-R1 to R4b, R7, R8; NS-14-R8, R11 | 9 | BL-925, BL-926, BL-977, BL-941. BL-923 and BL-924 are `done (#832)` and probably already satisfy NS-09-R1 to R3 in code: add the ids, then test | M | BL-181 |
+| G05 | Languages: only what is shipped, in a store build (NS-17, FR-LOC) | NS-17-R1 to R8, R10; FR-LOC-01 to 05, 08, 10, 13, 19 to 24, 26, 28, 29 | 26 | BL-965, BL-958; FR-LOC-10 cites BL-321, which has only a table row | L | BL-182 |
+| G06 | Capture and reading stragglers of the 20 Nov lock | NS-19-R1, R4; NS-21-R9, R11, R13; NS-24-R10; NS-35-R1, R3, R4; NS-37-R2 | 10 | BL-931, BL-952, BL-947 | M | BL-183 |
+| G07 | Accessibility floor rows (NS-33 R1 to R8) | NS-33-R1, R2, R4 to R8 | 7 | BL-927, BL-928, BL-984. BL-927 to BL-928 satisfy LEGAL-REQ-051, not these ids: the fix may be Satisfies lines | S | BL-184 |
+| G08 | Quality gates: test plan rows, trace ratchet for backlog rows (NS-34, FR-QAL) | NS-34-R2, R5, R6; FR-QAL-01, 03, 05, 06, 11, 12, 15, 16, 17, 20 to 23 | 16 | BL-929, BL-948, BL-964 (trace sees NS ids). Proposed new check: `p0.py` as a CI step (`docs/ops/proposed/` patch, qa cannot edit workflows) | M | BL-185 |
+| G09 | Data follows the letter (NS-36) | NS-36-R1a to R1d, R2, R3, R5, R7, R8, R10, R11, R12 | 12 | BL-933 (blocked), BL-959 (blocked), BL-960, BL-952 | M | BL-186 |
+| G10 | Store candidate gate evidence and App Store record (NS-38, FR-CMP) | NS-38-R1 to R5, R7 to R9; FR-CMP-01, 03 to 07, 11 to 13, 15 to 20 | 23 | BL-958, BL-965, BL-975. Founder steps for the store record are not agent work | M | BL-187 |
+| G11 | First launch: age first, no prompt, offline (NS-39) | NS-39-R1 to R6, R10, R11, R12, R14 | 10 | BL-965, BL-958 | M | BL-188 |
+| G12 | The age gate and the country hook (NS-40) | NS-40-R1 to R3, R5 to R10, R12, R13 | 11 | BL-965; D-131 counsel path | M | BL-198 |
+| G13 | Sign in: Apple, email code, link, session (NS-41) | NS-41-R1 to R5, R7, R9, R10, R11, R13, R14, R16, R18 to R20, R22, R23 | 17 | BL-053 (needs-founder FT-07/12/13), BL-961; split into three PRs (screens, server limits, Apple) | L | BL-208 |
+| G14 | Agree to the Terms and the sensitive-data question (NS-42) | NS-42-R1 to R6, R9, R10, R11, R13, R15, R16 | 12 | BL-577, BL-579 (both deferred), G13. NS-42-R7 is cite-covered by BL-577 | M | BL-291 |
+| G15 | The first book: name, birthday, signs-as (NS-43) | NS-43-R1 to R4, R6, R7, R8, R10, R11, R13, R14 | 11 | G12, G14 | M | BL-292 |
+| G16 | The first Keep and the allowance gate (NS-44) | NS-44-R1 to R4, R6 to R10, R12 | 10 | G15, BL-965 | M | BL-293 |
+| G17 | Sign out and Delete account on the phone (NS-45) | NS-45-R1 to R3, R5 to R13, R15, R16, R18 | 15 | BL-237 (done in part), BL-961, G13 | L | BL-294 |
+| G18 | Days we mark and the Home slip (NS-46, NS-50, FR-DAY) | NS-46-R2, R4, R5, R7, R8, R14, R16, R17, R19, R22, R23, R26, R27, R30, R31, R32, R34, R35, R36, R46, R48; NS-50-R2, R3, R8, R11; FR-DAY-02, 04, 06, 15, 20, 23, 25 | 32 | BL-966, BL-963, BL-965, BL-537 (deferred). Counsel and a tradition reviewer gate public days (NS-46-R23, FR-DAY-23) | L | BL-295 |
+| G19 | Cultural background store and lock-screen rules (NS-47, FR-CUL) | NS-47-R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, R12, R13, R15, R16, R17, R18, R21, R22, R23, R24, R25, R26, R29, R34, R36, R38; FR-CUL-01, 02, 03, 04, 05, 06, 07, 08, 09, 11, 12, 16, 21, 22, 23 | 42 | G18, BL-961, BL-975 (label guard). Privacy review before any build outside the founder's family | L | BL-296 |
+| G20 | Notification catalogue and rotation (NS-48, FR-NTC) | NS-48-R1, R2, R3, R4, R5, R9, R10, R11, R21, R26, R28, R30, R36; FR-NTC-01, 02, 03, 04, 05, 08, 09, 10, 11 | 22 | BL-966, G18, BL-537 | M | BL-297 |
+| G21 | Suggestions from the library, level 2 (NS-49, FR-PHS, FR-OPP) | NS-49-R3, R6, R7, R9, R10, R11, R12, R13, R15, R16, R17, R19, R21, R23, R24, R25, R26, R27, R28, R33, R35; FR-OPP-03, 05, 06, 09; FR-PHS-04, 11, 12, 14, 15, 17, 19, 20, 22, 23, 33, 40, 41, 43, 44, 50, 51, 52, 53, 54, 55, 56, 57 | 48 | BL-931, BL-952, BL-962; build in two stacks (module, then governance and label) | L | BL-298 |
+| G22 | Engine guard tests: edit types, verifier, raw words (FR-AIS) | FR-AIS-01, 02, 03, 06, 07, 08, 35, 39, 40, 45, 54, 56 | 12 | none | S | BL-328 |
+| G23 | Model files: trust, licence record, download, memory (FR-AIS) | FR-AIS-09, 10, 13, 15, 16, 17, 19, 43 | 8 | BL-043 (needs-founder, cited by four AIS rows) | M | BL-006 |
+| G24 | Voice and language handling in the engine (FR-AIS) | FR-AIS-21, 23, 25, 26, 27, 29, 33, 34 | 8 | G05 | M | BL-007 |
+| G25 | AI governance: test sets, agent permissions, source scan (FR-AIS) | FR-AIS-36, 37, 46, 47, 48, 49, 50, 51, 53 | 9 | none; AIS-46 asks counsel a new numbered question | S | BL-008 |
+| G26 | Back office, operations and finance runbooks (FR-BKO, FR-OPS, FR-FIN) | all FR-BKO, FR-OPS, FR-FIN gaps (24) | 24 | BL-237; BL-551 to BL-553 exist only as bullets: convert to headings first | M | BL-017 |
+| G27 | Reliability and lifecycle (FR-REL, FR-LCY) | all FR-REL, FR-LCY gaps (27) | 27 | BL-961, BL-566, BL-978, BL-929 | L | BL-018 |
+| G28 | Security and risk rows (FR-SEC, FR-RSK) | all FR-SEC, FR-RSK gaps (13) | 13 | BL-961, BL-962, BL-552 (bullet only) | M | BL-019 |
+| G29 | Measurement guardrails (FR-DAT) | all FR-DAT gaps (9) | 9 | BL-975 | S | BL-025 |
+| G30 | Privacy engineering rows (FR-PRV) | all FR-PRV gaps (15) | 15 | BL-960, BL-962, BL-577 | M | BL-026 |
+| G31 | Legal texts and print rules (FR-LEG, FR-PRT) | all FR-LEG gaps (11), FR-PRT-02, 39, 45 | 14 | BL-973 (blocked), BL-949; counsel answers gate the public texts | M | BL-027 |
+| G32 | Marketing claims and store words (FR-MKT) | all FR-MKT gaps (19) | 19 | BL-965, BL-958 | M | BL-028 |
+| G33 | Support and policy (FR-SUP, FR-POL) | all FR-SUP, FR-POL gaps (19) | 19 | BL-364, BL-444, BL-551 and BL-552 (bullets) | M | BL-029 |
+| G34 | Research and validation rules (FR-RSH) | all FR-RSH gaps (10) | 10 | BL-981 | S | BL-038 |
+| G35 | Messaging and entry points (FR-MSG) | all FR-MSG gaps (9) | 9 | BL-364, BL-510, BL-053 | M | BL-039 |
 
-Row counts sum to 565 (check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 75 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
+Row counts sum to 588 (check: `p0.py --groups`). Every gap row sits in exactly one group; the per-row group is the last column of section 7. The 76 cite-covered rows are not in any group; section 8 lists them because a cite to a deferred, needs-founder or done row is weaker than a `Satisfies:` line.
+
+### 5.1 Group to backlog id (the same ids as `docs/BACKLOG.md`, section "Locked pack: P0 rows with no backlog row")
+
+If this table and `docs/BACKLOG.md` ever differ, `docs/BACKLOG.md` wins and this table is corrected. G36 and G37 are the P0 rows of NS-51 and NS-52 (`27-photo-moments-and-media.md`, 27 and 26 rows, all drop C, counted by a table parse because `p0.py` does not read card 27). G38 is the 140 FR rows added to `functions/*.md` on 20 Nov that section 7 does not list. Status of every row is `proposed`. Owner is the backlog owner name; the agent handle is the roster agent that name maps to (`agents/roster.json`). `product` has no owner name in the roster, so G01 and G38 carry the founder as Owner in the backlog and the product agent does the edit.
+
+| Group | Backlog id | Owner (backlog name) | Agent handle | Size | Rows |
+|---|---|---|---|---|---|
+| G01 | BL-126 | founder (done by product) | product | S | 44 |
+| G02 | BL-127 | user researcher | user-research | S | 7 |
+| G03 | BL-128 | sync owner | sync | L | 8 |
+| G04 | BL-181 | mobile engineer | mobile | M | 9 |
+| G05 | BL-182 | content, speech engineer | content | L | 26 |
+| G06 | BL-183 | mobile engineer | mobile | M | 10 |
+| G07 | BL-184 | mobile engineer, design systems | mobile | S | 7 |
+| G08 | BL-185 | qa engineer | qa | M | 16 |
+| G09 | BL-186 | export owner, mobile engineer | mobile | M | 12 |
+| G10 | BL-187 | platform, content | ops | M | 23 |
+| G11 | BL-188 | mobile engineer | mobile | M | 10 |
+| G12 | BL-198 | mobile engineer, privacy engineer | mobile | M | 11 |
+| G13 | BL-208 | auth owner | security | L | 17 |
+| G14 | BL-291 | privacy engineer, mobile engineer | privacy | M | 12 |
+| G15 | BL-292 | mobile engineer | mobile | M | 11 |
+| G16 | BL-293 | mobile engineer, payments engineer | mobile | M | 10 |
+| G17 | BL-294 | mobile engineer, privacy engineer | mobile | L | 15 |
+| G18 | BL-295 | mobile engineer, content | mobile | L | 32 |
+| G19 | BL-296 | privacy engineer, mobile engineer | privacy | L | 42 |
+| G20 | BL-297 | reminders owner | mobile | M | 22 |
+| G21 | BL-298 | mobile engineer | mobile | L | 48 |
+| G22 | BL-328 | speech engineer | speech | S | 12 |
+| G23 | BL-006 | speech engineer | speech | M | 8 |
+| G24 | BL-007 | speech engineer | speech | M | 8 |
+| G25 | BL-008 | speech engineer | speech | S | 9 |
+| G26 | BL-017 | platform | ops | M | 24 |
+| G27 | BL-018 | platform | ops | L | 27 |
+| G28 | BL-019 | security engineer | security | M | 13 |
+| G29 | BL-025 | analytics engineer | analytics | S | 9 |
+| G30 | BL-026 | privacy engineer | privacy | M | 15 |
+| G31 | BL-027 | legal | legal | M | 14 |
+| G32 | BL-028 | content | content | M | 19 |
+| G33 | BL-029 | content | content | M | 19 |
+| G34 | BL-038 | user researcher | user-research | S | 10 |
+| G35 | BL-039 | content | content | M | 9 |
+| G36 | BL-045 | mobile engineer, privacy engineer | mobile | L | 27 |
+| G37 | BL-046 | mobile engineer, privacy engineer | mobile | L | 26 |
+| G38 | BL-047 | founder (done by product) | product | M | 140 |
+| Total | | | | | 781 |
+
+Check: 588 rows in G01 to G35, 53 in G36 and G37, 140 in G38 (781). Ids not used: BL-826 to BL-829 are reserved for the engineering rows in `23-dependency-map-and-plan.md` section 6.4, BL-048 and BL-049 are spare.
 
 ## 6. Coarse plan if only four ids are allowed (Tier A, BL-826 to BL-829)
 
@@ -158,12 +211,12 @@ Row counts sum to 565 (check: `p0.py --groups`). Every gap row sits in exactly o
 |---|---|---|---|
 | C1 (BL-826) Locked-card residue, cards 01 to 37 | G01 to G09 | 139 | L |
 | C2 (BL-827) First run, sign-in, consent, first Keep, sign out and store gate (NS-38 to NS-45, FR-CMP) | G10 to G17 | 109 | L |
-| C3 (BL-828) Days, cultural background, notifications, suggestions (NS-46 to NS-50 and their FR rows) | G18 to G21 | 121 | L |
+| C3 (BL-828) Days, cultural background, notifications, suggestions (NS-46 to NS-50 and their FR rows) | G18 to G21 | 144 | L |
 | C4 (BL-829) Function-review rows without a card (AIS, ops, reliability, security, privacy, legal, marketing, support, research, messaging, data) | G22 to G35 | 196 | L |
 
-Check: 139 + 109 + 121 + 196 = 565. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
+Check: 139 + 109 + 144 + 196 = 588. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
 
-## 7. Full gap list (565 rows)
+## 7. Full gap list (588 rows)
 
 Band `none` means nothing in the backlog names the row or its card. Band `card-level only` means a backlog row names the whole card. Group is the proposed row of section 5. One-line text is the first 100 characters of the Given, When, Then cell (FR rows start with the rule's title); `(cut)` marks a shortened line.
 
@@ -490,26 +543,33 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-45-R16 | Given servers off in the build, Then no Account, Sign out or Delete account row shows, and Erase (cut) | 19-from-download-to-first-letter.md | none | G17 |
 | NS-45-R18 | Given VoiceOver and AX5 on SE 3, Then the sign-out sheet, both deletion steps, the scheduled screen (cut) | 19-from-download-to-first-letter.md | none | G17 |
 
-### NS-46 (14 of 14 P0 rows)
+### NS-46 (21 of 22 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
 | NS-46-R2 | Given Days, Browse, or the ask slip is opened, Then no day is ticked; a day is scheduled only after (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R4 | Given the NS-32 registry after this card, Then it has no new class and the planner emits a (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-46-R5 | Given a ticked day delivered, Then it is not deleted after delivery and recurs next year until the (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R5 | Given a typed day delivered (NS-18-R7), Then it is deleted the day after as before, and no code (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R7 | Given two budgeted notes due on one date, Then the order is: a day the parent typed, birthday, (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-46-R8 | Given two ticked days on one date (fixtures 14 Feb 2029 and 16 May 2027), Then exactly 1 note is (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-46-R13 | Given a tap on a library-day note, Then Home opens within 2 seconds on an SE 3 showing the day's (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R8 | Given two ticked days on one date (planner, store, landing and lock-screen tests use synthetic ids (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R14 | Given a moving day, Then the row carries an authority and a country or tradition and precision: (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R16 | Given Memorial Day, Veterans Day, Good Friday, Yom Kippur or a national day whose name refers to a (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-46-R17 | Given every days.* key, When the rules test runs, Then none has "your" before a day name, a (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R17 | Given every days.landing.*, days.lock.*, days.picker.*, days.nextYear.* and days.door.* (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R19 | Given a day the library does not hold, Then Add a day (NS-18) takes it in the parent's own words (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R22 | Given a day note, Then no title, body or landing says "last year", "again", "another" or shows (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R23 | Given a tradition's rows, Then a member of that tradition has reviewed them and the review is on (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-46-R25 | Given a quieted or hidden book (R-IA-6), Then it receives no library note; Given every included (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R26 | Given VoiceOver, Voice Control, Switch Control and AX5 with Bold Text on an SE 3, Then every (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-46-R27 | Given any day note, Then it names no Plus, price, allowance or Keep step (NS-13-R11) and the (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R30 | Given the planner builds candidates for every source (typedDay, birthday, libraryDay, (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R31 | Given reminders are off and notifications are allowed, Then libraryDay and typedDay still plan (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R32 | Given a library-day note is tapped, Then the handler routes to Home (not the Book), the payload (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R34 | Given a delivered or opened note of kind libraryDay or typedDay with analytics consent granted, (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R35 | Given the first tick, Then the line shown before it says a reminder arrives on that day and that (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R36 | Given publicTitleOk, Then it is a hand-listed allowlist in the data, true only for seasonal and (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R46 | Given the release that turns days on, When the listing and the support page are read, Then the (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-46-R48 | Given the library, Then it is one file identical for every phone and any refresh is a single (cut) | 21-days-cultural-photos-home.md | none | G18 |
 
-### NS-47 (17 of 17 P0 rows)
+### NS-47 (27 of 27 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -518,20 +578,30 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-47-R3 | Given any answer, Then no column, key or label on a child, a book, a letter or a share says the (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R4 | Given the ask, a tick, a clear, the claim step and a re-plan, Then a network fake sees 0 requests (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R5 | Given a tap on a library-day note, Then Home shows an ordinary prompt from the existing catalogue; (cut) | 21-days-cultural-photos-home.md | none | G19 |
-| NS-47-R6 | Given the store, Then it lives in a file or database excluded from the iPhone backup (as (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R6 | Given the store, Then it lives in a file or database in Application Support (not Caches) excluded (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R7 | Given the claim step (E-S24) or a new phone, Then a claimed book re-keys the store unchanged and (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R8 | Given the log canary with synthetic tradition and day keys (for example zz-test-tradition, never (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R9 | Given opt-in analytics (off through 1.0, D-124) or the k-anonymised insights, Then no event, (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R10 | Given a Save a copy file built with every key set, Then no file holds a key, day, tradition or (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R11 | Given the module boundary, Then only the days module reads the store; the planner gets opaque slots (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R12 | Given a library-day note of any layer with the day-name switch off (the default) or App lock on, (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R13 | Given the lock-screen title, Then a seasonal or civic day (publicTitleOk true) may be its own (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R15 | Given account A signs out (book kept, D1), Then the store and its scheduled notes are cleared at (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R16 | Given Erase everything, When it finishes, Then the store, the flag and every pending library-day (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R17 | Given Delete account, Then this phone clears the store at once and every other phone clears it when (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R18 | Given first run (E-S01 to E-S08), Then no field, card, picker or line about tradition, faith or (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R21 | Given Days, Then every ticked day can be unticked in one tap and "Clear all" (one confirm, an F6 (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R22 | Given the call-out at the point of choice, Then every sentence has a claims-inventory row true of (cut) | 21-days-cultural-photos-home.md | none | G19 |
 | NS-47-R23 | Given a store candidate, Then privacy re-runs the label against the binary: "not collected" holds (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R24 | Given two parents on one book (NS-25), Then each phone holds its own store and nothing on the (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R25 | Given the ask slip, C-S25 and C-S24 at AX5 with Bold Text, VoiceOver, Voice Control and Switch (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R26 | Given the Days page, Browse, Day detail, the day slip and the ask slip, When the app goes inactive, (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R29 | Given the ask slip, C-S25 and C-S24, Then the call-out is a static DoorNote (new shared (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R34 | Given packages/analytics/test/, Then FORBIDDEN_KEY and a new enum-value and event-name test (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R36 | Given every notification category, Then none sets hiddenPreviewsShowTitle (a test reads the (cut) | 21-days-cultural-photos-home.md | none | G19 |
+| NS-47-R38 | Given every lock-screen title and body in any switch state, Then none holds both a day name of a (cut) | 21-days-cultural-photos-home.md | none | G19 |
 
-### NS-48 (11 of 11 P0 rows)
+### NS-48 (13 of 13 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
@@ -539,28 +609,31 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-48-R2 | Given the catalogue on or off and the same plan inputs across cadences, books and time zones, Then (cut) | 21-days-cultural-photos-home.md | none | G20 |
 | NS-48-R3 | Given a plan for any future date, Then every input is computable at plan time: recency is the fire (cut) | 21-days-cultural-photos-home.md | none | G20 |
 | NS-48-R4 | Given recency r1 to r4, Then the copy is a question or an invitation that is shorter and more open (cut) | 21-days-cultural-photos-home.md | none | G20 |
-| NS-48-R5 | Given a last letter within 6 days, Then the question follows from its kind and never summarises it (cut) | 21-days-cultural-photos-home.md | none | G20 |
-| NS-48-R8 | Given a ticked day or season on a date (source libraryDay), Then it takes the one budgeted slot, (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R5 | Given a last letter within 6 days, Then the question follows from its kind, only spoke and (cut) | 21-days-cultural-photos-home.md | none | G20 |
 | NS-48-R9 | Given a family, tradition, culture-led or national day, or names off, Then the lock-screen title (cut) | 21-days-cultural-photos-home.md | none | G20 |
 | NS-48-R10 | Given any variant in either rendering, Then the title is at most 40 characters and the body at most (cut) | 21-days-cultural-photos-home.md | none | G20 |
-| NS-48-R11 | Given names off (the default) or App lock on, Then no title or body contains a child name; a title (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R11 | Given names off (the default) or App lock on, Then no title or body contains a child name; a new (cut) | 21-days-cultural-photos-home.md | none | G20 |
 | NS-48-R21 | Given a quieted or hidden book, or one with "Include in my reminders" off, Then it contributes no (cut) | 21-days-cultural-photos-home.md | none | G20 |
-| NS-48-R26 | Given the planner, When NS-46 and NS-48 add sources and keys, Then a test proves that no local date (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R26 | Given the planner, When NS-46 and NS-48 add sources and keys, Then the one-a-day rule lives only in (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R28 | Given every key in days.lock.*, days.landing.*, ntc.* and notifications.dayNames.*, When (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R30 | Given any ntc.kind.* or age-band line, Then it asks about the child without stating or implying (cut) | 21-days-cultural-photos-home.md | none | G20 |
+| NS-48-R36 | Given a book with a due date and no birth date, Then every title and body in either rendering names (cut) | 21-days-cultural-photos-home.md | none | G20 |
 
-### NS-49 (17 of 17 P0 rows)
+### NS-49 (21 of 21 P0 rows)
 
 | Row | One line | Card file | Band | Group |
 |---|---|---|---|---|
 | NS-49-R3 | Given a letter that began from a picture, When Home next shows a reminder note or a slip, Then (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R6 | Given the parent taps the suggestions start, Then the system picker opens in Apple's process, the (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R7 | Given a picked suggestion with at least one photo or Live Photo, Then the first still is copied (cut) | 21-days-cultural-photos-home.md | none | G21 |
-| NS-49-R9 | Given a suggestion with a title or date range, Then they show only as a label above the picture (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R9 | Given a suggestion with a title or date range, Then they show only as "From your phone: (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R10 | Given a suggestion that holds a location, workout, contact, song, podcast, media, steps, state of (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R11 | Given the parent cancels or dismisses the picker, declines Apple's first-use sheet, has Journaling (cut) | 21-days-cultural-photos-home.md | none | G21 |
-| NS-49-R12 | Given App lock is up or the app goes inactive during the picker, Then a result that returns while (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R12 | Given App lock is up or the app goes inactive during the picker, Then the picker cannot be started (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R13 | Given a letter kept from the suggestions path, Then it holds one stored copy and no suggestion (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R15 | Given the entitlement com.apple.developer.journal.allow, Then it is added in the Expo config's (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R16 | Given level 2 ships, Then the where-it-lives lines and the privacy policy say in plain words that (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R17 | Given AX5 and VoiceOver, Voice Control and Switch Control, Then the suggestions choice and the (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R19 | Given the Apple file URL, Then the app accepts it only if it is a regular file readable in the (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R21 | Given the suggestion id on the notification path, Then the handler never logs or stores it and (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R23 | Given a child's picture or a picture showing another adult arrives through level 2, Then nothing (cut) | 21-days-cultural-photos-home.md | none | G21 |
@@ -568,6 +641,9 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-49-R25 | Given any production, preview or testflight build in the 1.x line, Then there is no photo-library (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R26 | Given a level 3 spike is asked for, Then it runs only on exp/photos-library-nudge, on a (cut) | 21-days-cultural-photos-home.md | none | G21 |
 | NS-49-R27 | Given the privacy label, Then its effect for level 2 is "no change while only the chosen picture (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R28 | Given a binary built with the module and the entitlement, When it launches and runs the core loop (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R33 | Given the whole suggestion flow (open, pick, cancel, keep, erase), Then a network fake sees 0 (cut) | 21-days-cultural-photos-home.md | none | G21 |
+| NS-49-R35 | Given level 2, Then DPLA 3.3.3(H) (the API only "for journaling purposes", the use "clearly evident (cut) | 21-days-cultural-photos-home.md | none | G21 |
 
 ### NS-50 (4 of 4 P0 rows)
 
@@ -576,7 +652,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | NS-50-R2 | Given a ticked day whose date is today, Then Home shows its name and one line; Given any other (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-50-R3 | Given the slip, Then its words are the NS-46 landing words (days.landing.*) and a quiet day (cut) | 21-days-cultural-photos-home.md | none | G18 |
 | NS-50-R8 | Given a quieted or hidden active book, or "Include in my reminders" off, Then no day slip shows for (cut) | 21-days-cultural-photos-home.md | none | G18 |
-| NS-50-R11 | Given Home on any day, Then the count of slip-like items is at most 1 and no screen shows a count (cut) | 21-days-cultural-photos-home.md | none | G18 |
+| NS-50-R11 | Given Home on any day, Then at most one slip rank shows at a time (rank 1, the waiting set, keeps (cut) | 21-days-cultural-photos-home.md | none | G18 |
 
 ### FR-AIS (37 of 43 P0 rows)
 
@@ -1002,7 +1078,7 @@ Band `none` means nothing in the backlog names the row or its card. Band `card-l
 | FR-SUP-17 | Given any build, When a parent taps "If you are struggling" in Me, Then the page shows the lines (cut) | functions/support.md | none | G33 |
 | FR-SUP-21 | Given a parent asks us to bring back pictures, recordings or a sealed letter's words from a lost or (cut) | functions/support.md | none | G33 |
 
-## 8. Rows covered only by a cite (75), for review
+## 8. Rows covered only by a cite (76), for review
 
 Row-level `Satisfies:` ids are stronger than a cite in a function row's Links cell. These rows cite an existing heading, so they are not gaps, but each cite should be read: a status of `deferred`, `needs-founder` or `done` means the work is not scheduled, or is finished and untested against this row.
 
@@ -1010,6 +1086,7 @@ Row-level `Satisfies:` ids are stronger than a cite in a function row's Links ce
 NS-01-R61 BL-870
 NS-41-R6 BL-961
 NS-42-R7 BL-577
+NS-46-R25 BL-985
 FR-AIS-04 BL-987
 FR-AIS-11 BL-043
 FR-AIS-20 BL-043
@@ -1086,7 +1163,8 @@ FR-SUP-23 BL-100,BL-367
 
 ## 9. What I could not verify
 
-- Open pull requests. `node scripts/agents/next-id.mjs` and `id-collisions.mjs` call the GitHub API; the first printed `BL-1000` here but I cannot say whether the API calls succeeded (they are allowed to fail silently), so ids held by open PRs (for example BL-790 and BL-882 to BL-889 appear in cards but not in `docs/BACKLOG.md`) are not excluded from the free-id tiers. Ask Karma to run `node scripts/agents/id-collisions.mjs` before allocating.
+- Update 20 Nov: the GitHub REST API worked in the later run (`id-collisions.mjs` printed 22 collisions among open PRs, none on the 38 ids filed; `gh pr list` does not work here because GraphQL is blocked, so PRs were read with `gh api repos/<owner>/<repo>/pulls`). Not checked: issue titles and comments, pull request review comments, and other forks. All pages of open and closed pull requests were read (854). The 38 ids are therefore free as far as those checks can say; a collision with an id remembered by a person is still possible.
+- Open pull requests (first run). `node scripts/agents/next-id.mjs` and `id-collisions.mjs` call the GitHub API; the first printed `BL-1000` here but I cannot say whether the API calls succeeded (they are allowed to fail silently), so ids held by open PRs (for example BL-790 and BL-882 to BL-889 appear in cards but not in `docs/BACKLOG.md`) are not excluded from the free-id tiers. Ask Karma to run `node scripts/agents/id-collisions.mjs` before allocating.
 - Whether a gap is real work. A row with no backlog row may already be built and tested (NS-09-R1 to R3 look done through #832; the NS-01 to NS-02 rows may be built in the stacked PRs #833 and later). I read no code and ran no test for this file; "gap" means no backlog row, not no implementation.
 - Whether each of the 186 row-covered rows is satisfied by the row that names it. A range such as `NS-13-R1 to NS-13-R33` is taken at its word; I did not read the 186 covering rows' scope against each Given/When/Then.
 - Ids used in other repos, other branches that were not fetched, or deleted PR titles: only the local clone's `git log --all` and `git branch -a` were searched.

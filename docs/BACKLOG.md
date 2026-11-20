@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); run `node scripts/agents/next-id.mjs` for the next free id.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"; they leave the free list above); `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix.
 
 ---
 
@@ -31,7 +31,7 @@ Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, confl
 
 **Agent team (ADR 0018).** Unattended work is now assigned by `scripts/agents/dispatch.mjs` to the agent whose `backlog_owner_names` in `agents/roster.json` include the task's first non-founder Owner. Rules 1 to 9 above still apply to every run. A task `blocked` only by backlog ids that are all `done` counts as ready. Only the `product` agent edits tasks other than its own status line.
 
-Status values: `ready`; `blocked (reason)`; `needs-founder (FT-##)`: waits on a step in `docs/FOUNDER_TASKS.md`; `needs-decision (D-### or Q-###)`; `in-progress (<agent>)`: claimed on BOARD.md this wave; `in-review (PR #n)`; `done (evidence)`; `superseded (by D-### or BL-###)`; `deferred (release, FUTURE id)`.
+Status values: `proposed (source)`: written but not yet allocated, never started by the dispatcher until Karma or the founder sets `ready`; `ready`; `blocked (reason)`; `needs-founder (FT-##)`: waits on a step in `docs/FOUNDER_TASKS.md`; `needs-decision (D-### or Q-###)`; `in-progress (<agent>)`: claimed on BOARD.md this wave; `in-review (PR #n)`; `done (evidence)`; `superseded (by D-### or BL-###)`; `deferred (release, FUTURE id)`.
 Mode values: `agent`, `human` (founder, device, store, vendor or secrets), `pair` (interactive session with the founder).
 Severity tags: **[Critical]** blocks launch or makes a published statement false; **[High]** must land before the related feature reaches non-founder users.
 
@@ -4050,6 +4050,284 @@ Written 20 Nov 2026 by Karma. Mode pair: these run in an interactive session (ag
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
 Note: `scripts/agents/lib.mjs` parses only three-digit ids (`BL-\d{3}`), so the next id after BL-999 is invisible to the dispatcher; the five function rows above are grouped to stay inside BL-999. The id format change is an engineering row.
+
+## Locked pack: P0 rows with no backlog row (20 Nov 2026, proposed)
+
+Written 20 Nov 2026 by the product agent, docs only. `docs/product/prd/BACKLOG-GAPS.md` found P0 rows on the locked cards and in the function reviews that no row names; the 38 rows below take them in groups, one id per group. The group number (G01 to G38) is the same in `BACKLOG-GAPS.md`, which holds the row lists and the group-to-id table (section 5.1); if the two differ, this file wins. Every row is `proposed`: the dispatcher skips it until Karma or the founder sets `ready`, and a row of size L is split into reviewable PRs at that point (rule 5 above). Nothing here copies or changes a requirement; the cards and function files stay the source of truth.
+
+Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and BL-999 is the last one used, so these rows use holes that no heading, file, commit, branch or PR names: BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 (all in the "free for later splits" list in the Numbering paragraph), then BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039 and BL-045 to BL-047 (never named anywhere). BL-826 to BL-829 stay reserved for the engineering rows `docs/product/prd/23-dependency-map-and-plan.md` section 6.4 proposes (the four-digit id fix, the status corrections, the p0.py check); BL-048 and BL-049 are left spare. Once the dispatcher reads four digits these rows can move to BL-1000 and up.
+
+#### BL-126 Name the card rows in the rows that already carry them (NS-01, NS-05, NS-11)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G01; Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: S. Depends on: BL-931, BL-939, BL-963.
+- Satisfies: 44 P0 rows with no backlog row: NS-01-R4, NS-01-R8, NS-01-R9a, NS-01-R9b, NS-01-R13a, NS-01-R13b, NS-01-R15, NS-01-R16a, NS-01-R16b, NS-01-R16c, NS-01-R17a, NS-01-R17c, NS-01-R18, NS-01-R21b, NS-01-R22, NS-01-R25 to NS-01-R27, NS-01-R31, NS-01-R33, NS-01-R35 to NS-01-R36, NS-01-R51 to NS-01-R52, NS-01-R55, NS-01-R62, NS-05-R3a, NS-05-R3b, NS-05-R4a, NS-05-R5a, NS-05-R5b, NS-05-R6a, NS-05-R6b, NS-05-R7, NS-05-R10a, NS-05-R10b, NS-05-R12, NS-05-R18, NS-05-R21, NS-05-R25, NS-05-R27, NS-11-R10, NS-11-R12, NS-11-R23.
+- Scope: tests first, then code or words only where a test fails, for the rows above: add the row ids to the Satisfies lines of the rows that already do the work, and move any row no existing row covers to its own row; a backlog edit, no code. The product agent does this in its standing duty on a docs PR (no roster owner name exists for `product`, so the Owner is the founder and the dispatcher never starts it). The card is the source of truth; nothing here changes a row.
+- Done when: every row id above appears in the Satisfies line of a row that does its work, or has a row of its own; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G01. Group G01; 44 rows.
+
+#### BL-127 Pilot privacy and consent handling (NS-03)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G02; Karma or the founder sets it to ready). Mode: agent. Owner: user researcher. Milestone: M15. Size: S. Depends on: BL-935.
+- Satisfies: 7 P0 rows with no backlog row: NS-03-R1 to NS-03-R5, NS-03-R7 to NS-03-R8.
+- Scope: tests first, then code or words only where a test fails, for the rows above: the pilot's counsel and security reads, 30-day deletion of notes and contact details, no inducements before the read-out, agents never read the private log; a checklist and a read-out file test, no phone code. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G02. Group G02; 7 rows.
+
+#### BL-128 Recording backup, flip build rows (NS-08 R10 to R19)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G03; Karma or the founder sets it to ready). Mode: agent. Owner: sync owner. Milestone: M15. Size: L. Depends on: BL-976.
+- Satisfies: 8 P0 rows with no backlog row: NS-08-R10 to NS-08-R11, NS-08-R13 to NS-08-R14, NS-08-R16 to NS-08-R19.
+- Scope: tests first, then code or words only where a test fails, for the rows above: the rows marked as the flip build; waits for the founder's flip decision, as BL-976 says. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G03. Group G03; 8 rows.
+
+#### BL-181 Let it go and the child switcher: rows BL-923 to BL-926 do not name (NS-09, NS-14)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G04; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-925, BL-926, BL-977, BL-941.
+- Satisfies: 9 P0 rows with no backlog row: NS-09-R1 to NS-09-R3, NS-09-R4a, NS-09-R4b, NS-09-R7 to NS-09-R8, NS-14-R8, NS-14-R11.
+- Scope: tests first, then code or words only where a test fails, for the rows above: BL-923 and BL-924 are done (#832) and may already satisfy NS-09-R1 to R3: add the ids first, then test. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G04. Group G04; 9 rows.
+
+#### BL-182 Languages: only what is shipped, in a store build (NS-17, FR-LOC)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G05; Karma or the founder sets it to ready). Mode: agent. Owner: content, speech engineer. Milestone: M15. Size: L. Depends on: BL-965, BL-958.
+- Satisfies: 26 P0 rows with no backlog row: FR-LOC-01 to FR-LOC-05, FR-LOC-08, FR-LOC-10, FR-LOC-13, FR-LOC-19 to FR-LOC-24, FR-LOC-26, FR-LOC-28 to FR-LOC-29, NS-17-R1 to NS-17-R8, NS-17-R10.
+- Scope: tests first, then code or words only where a test fails, for the rows above: a language is offered only when its pack is in the build; FR-LOC-10 cites BL-321, which has no heading. Note: split into at most four PRs when made ready. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G05. Group G05; 26 rows.
+
+#### BL-183 Capture and reading stragglers of the 20 Nov lock (NS-19, NS-21, NS-24, NS-35, NS-37)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G06; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-931, BL-952, BL-947.
+- Satisfies: 10 P0 rows with no backlog row: NS-19-R1, NS-19-R4, NS-21-R9, NS-21-R11, NS-21-R13, NS-24-R10, NS-35-R1, NS-35-R3 to NS-35-R4, NS-37-R2.
+- Scope: tests first, then code or words only where a test fails, for the rows above: single rows left over on locked cards. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G06. Group G06; 10 rows.
+
+#### BL-184 Accessibility floor rows (NS-33 R1 to R8)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G07; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: S. Depends on: BL-927, BL-928, BL-984.
+- Satisfies: 7 P0 rows with no backlog row: NS-33-R1 to NS-33-R2, NS-33-R4 to NS-33-R8.
+- Scope: tests first, then code or words only where a test fails, for the rows above: BL-927 and BL-928 satisfy LEGAL-REQ-051, not these ids, so the fix may be Satisfies lines. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G07. Group G07; 7 rows.
+
+#### BL-185 Quality gates: test plan rows and a trace ratchet for backlog rows (NS-34, FR-QAL)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G08; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer. Milestone: M15. Size: M. Depends on: BL-929, BL-948, BL-964.
+- Satisfies: 16 P0 rows with no backlog row: FR-QAL-01, FR-QAL-03, FR-QAL-05 to FR-QAL-06, FR-QAL-11 to FR-QAL-12, FR-QAL-15 to FR-QAL-17, FR-QAL-20 to FR-QAL-23, NS-34-R2, NS-34-R5 to NS-34-R6.
+- Scope: tests first, then code or words only where a test fails, for the rows above: test plan rows and a check that runs p0.py; the workflow change is a proposal under docs/ops/proposed/, qa cannot edit workflows. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G08. Group G08; 16 rows.
+
+#### BL-186 Data follows the letter (NS-36)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G09; Karma or the founder sets it to ready). Mode: agent. Owner: export owner, mobile engineer. Milestone: M15. Size: M. Depends on: BL-933, BL-959, BL-960, BL-952.
+- Satisfies: 12 P0 rows with no backlog row: NS-36-R1a, NS-36-R1b, NS-36-R1c, NS-36-R1d, NS-36-R2 to NS-36-R3, NS-36-R5, NS-36-R7 to NS-36-R8, NS-36-R10 to NS-36-R12.
+- Scope: tests first, then code or words only where a test fails, for the rows above: what leaves, stays and is erased with a letter. Note: BL-933 and BL-959 are blocked today. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G09. Group G09; 12 rows.
+
+#### BL-187 Store candidate gate evidence and the App Store record (NS-38, FR-CMP)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G10; Karma or the founder sets it to ready). Mode: agent. Owner: platform, content. Milestone: M15. Size: M. Depends on: BL-958, BL-965, BL-975.
+- Satisfies: 23 P0 rows with no backlog row: FR-CMP-01, FR-CMP-03 to FR-CMP-07, FR-CMP-11 to FR-CMP-13, FR-CMP-15 to FR-CMP-20, NS-38-R1 to NS-38-R5, NS-38-R7 to NS-38-R9.
+- Scope: tests first, then code or words only where a test fails, for the rows above: evidence rows for the store candidate; the founder's steps on the store record are not part of this row. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G10. Group G10; 23 rows.
+
+#### BL-188 First launch: age first, no prompt, offline (NS-39)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G11; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M. Depends on: BL-965, BL-958.
+- Satisfies: 10 P0 rows with no backlog row: NS-39-R1 to NS-39-R6, NS-39-R10 to NS-39-R12, NS-39-R14.
+- Scope: tests first, then code or words only where a test fails, for the rows above: the first screens before any account. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G11. Group G11; 10 rows.
+
+#### BL-198 The age gate and the country hook (NS-40)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G12; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: M. Depends on: BL-965.
+- Satisfies: 11 P0 rows with no backlog row: NS-40-R1 to NS-40-R3, NS-40-R5 to NS-40-R10, NS-40-R12 to NS-40-R13.
+- Scope: tests first, then code or words only where a test fails, for the rows above: age gate and country hook; the counsel path is D-131. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G12. Group G12; 11 rows.
+
+#### BL-208 Sign in: Apple, email code, link and session (NS-41)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G13; Karma or the founder sets it to ready). Mode: agent. Owner: auth owner. Milestone: M15. Size: L. Depends on: BL-053, BL-961.
+- Satisfies: 17 P0 rows with no backlog row: NS-41-R1 to NS-41-R5, NS-41-R7, NS-41-R9 to NS-41-R11, NS-41-R13 to NS-41-R14, NS-41-R16, NS-41-R18 to NS-41-R20, NS-41-R22 to NS-41-R23.
+- Scope: tests first, then code or words only where a test fails, for the rows above: sign-in screens, server limits and the Apple path; BL-053 waits on founder steps FT-07, FT-12 and FT-13. Note: three PRs: screens, server limits, Apple. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G13. Group G13; 17 rows.
+
+#### BL-291 Agree to the Terms and the sensitive-data question (NS-42)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G14; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: M. Depends on: BL-577, BL-579.
+- Satisfies: 12 P0 rows with no backlog row: NS-42-R1 to NS-42-R6, NS-42-R9 to NS-42-R11, NS-42-R13, NS-42-R15 to NS-42-R16.
+- Scope: tests first, then code or words only where a test fails, for the rows above: consent screens; NS-42-R7 is already cited by BL-577; build after the sign-in row (BL-208). Note: BL-577 and BL-579 are deferred. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G14. Group G14; 12 rows.
+
+#### BL-292 The first book: name, birthday, signs-as (NS-43)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G15; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: M.
+- Satisfies: 11 P0 rows with no backlog row: NS-43-R1 to NS-43-R4, NS-43-R6 to NS-43-R8, NS-43-R10 to NS-43-R11, NS-43-R13 to NS-43-R14.
+- Scope: tests first, then code or words only where a test fails, for the rows above: first book setup; build after the age-gate row (BL-198) and the Terms row (BL-291). The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G15. Group G15; 11 rows.
+
+#### BL-293 The first Keep and the allowance gate (NS-44)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G16; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, payments engineer. Milestone: M15. Size: M. Depends on: BL-965.
+- Satisfies: 10 P0 rows with no backlog row: NS-44-R1 to NS-44-R4, NS-44-R6 to NS-44-R10, NS-44-R12.
+- Scope: tests first, then code or words only where a test fails, for the rows above: first Keep and the allowance gate; build after the first-book row (BL-292). The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G16. Group G16; 10 rows.
+
+#### BL-294 Sign out and Delete account on the phone (NS-45)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G17; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-237, BL-961.
+- Satisfies: 15 P0 rows with no backlog row: NS-45-R1 to NS-45-R3, NS-45-R5 to NS-45-R13, NS-45-R15 to NS-45-R16, NS-45-R18.
+- Scope: tests first, then code or words only where a test fails, for the rows above: sign out and account deletion on the phone; build after the sign-in row (BL-208). Note: BL-237 is done in part; split into at most three PRs. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G17. Group G17; 15 rows.
+
+#### BL-295 Days we mark and the Home slip (NS-46, NS-50, FR-DAY)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G18; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, content. Milestone: M15. Size: L. Depends on: BL-966, BL-963, BL-965, BL-537.
+- Satisfies: 32 P0 rows with no backlog row: FR-DAY-02, FR-DAY-04, FR-DAY-06, FR-DAY-15, FR-DAY-20, FR-DAY-23, FR-DAY-25, NS-46-R2, NS-46-R4 to NS-46-R5, NS-46-R7 to NS-46-R8, NS-46-R14, NS-46-R16 to NS-46-R17, NS-46-R19, NS-46-R22 to NS-46-R23, NS-46-R26 to NS-46-R27, NS-46-R30 to NS-46-R32, NS-46-R34 to NS-46-R36, NS-46-R46, NS-46-R48, NS-50-R2 to NS-50-R3, NS-50-R8, NS-50-R11.
+- Drop (card 21, Rows by drop): B for 22 of the 25 NS rows, B and C for 2, C for 1.
+- Scope: tests first, then code or words only where a test fails, for the rows above: days, the ask slip and the Home slip; counsel and a tradition reviewer gate public days (NS-46-R23, FR-DAY-23). Note: BL-537 is deferred; split by drop. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G18. Group G18; 32 rows.
+
+#### BL-296 Cultural background store and lock-screen rules (NS-47, FR-CUL)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G19; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-961, BL-975.
+- Satisfies: 42 P0 rows with no backlog row: FR-CUL-01 to FR-CUL-09, FR-CUL-11 to FR-CUL-12, FR-CUL-16, FR-CUL-21 to FR-CUL-23, NS-47-R1 to NS-47-R13, NS-47-R15 to NS-47-R18, NS-47-R21 to NS-47-R26, NS-47-R29, NS-47-R34, NS-47-R36, NS-47-R38.
+- Drop (card 21, Rows by drop): B for 26 of the 27 NS-47 rows, C for 1; the FR-CUL rows carry no drop.
+- Scope: tests first, then code or words only where a test fails, for the rows above: the background store and what a lock screen may show; privacy review before any build outside the founder's family; build after the days row (BL-295). Note: split by drop. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G19. Group G19; 42 rows.
+
+#### BL-297 Notification catalogue and rotation (NS-48, FR-NTC)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G20; Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: M. Depends on: BL-966, BL-537.
+- Satisfies: 22 P0 rows with no backlog row: FR-NTC-01 to FR-NTC-05, FR-NTC-08 to FR-NTC-11, NS-48-R1 to NS-48-R5, NS-48-R9 to NS-48-R11, NS-48-R21, NS-48-R26, NS-48-R28, NS-48-R30, NS-48-R36.
+- Drop (card 21, Rows by drop): A for 6 of the 13 NS-48 rows, B for 3, C for 4; the FR-NTC rows carry no drop.
+- Scope: tests first, then code or words only where a test fails, for the rows above: the catalogue and its rotation; build after the days row (BL-295). Note: BL-537 is deferred. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G20. Group G20; 22 rows.
+
+#### BL-298 Suggestions from the library, level 2 (NS-49, FR-PHS, FR-OPP)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G21; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-952, BL-962.
+- Satisfies: 48 P0 rows with no backlog row: FR-OPP-03, FR-OPP-05 to FR-OPP-06, FR-OPP-09, FR-PHS-04, FR-PHS-11 to FR-PHS-12, FR-PHS-14 to FR-PHS-15, FR-PHS-17, FR-PHS-19 to FR-PHS-20, FR-PHS-22 to FR-PHS-23, FR-PHS-33, FR-PHS-40 to FR-PHS-41, FR-PHS-43 to FR-PHS-44, FR-PHS-50 to FR-PHS-57, NS-49-R3, NS-49-R6 to NS-49-R7, NS-49-R9 to NS-49-R13, NS-49-R15 to NS-49-R17, NS-49-R19, NS-49-R21, NS-49-R23 to NS-49-R28, NS-49-R33, NS-49-R35.
+- Drop (card 21, Rows by drop): A for 3 of the 21 NS-49 rows, C for 18; the FR-PHS and FR-OPP rows carry no drop.
+- Scope: tests first, then code or words only where a test fails, for the rows above: level 2 suggestions behind EXPO_PUBLIC_SUGGESTIONS. Note: two stacks: the module, then governance and the label. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G21. Group G21; 48 rows.
+
+#### BL-328 Engine guard tests: edit types, verifier, raw words (FR-AIS)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G22; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S.
+- Satisfies: 12 P0 rows with no backlog row: FR-AIS-01 to FR-AIS-03, FR-AIS-06 to FR-AIS-08, FR-AIS-35, FR-AIS-39 to FR-AIS-40, FR-AIS-45, FR-AIS-54, FR-AIS-56.
+- Scope: tests first, then code or words only where a test fails, for the rows above: guard tests for the edit types, the verifier and raw_transcript. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G22. Group G22; 12 rows.
+
+#### BL-006 Model files: trust, licence record, download and memory (FR-AIS)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G23; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: M. Depends on: BL-043.
+- Satisfies: 8 P0 rows with no backlog row: FR-AIS-09 to FR-AIS-10, FR-AIS-13, FR-AIS-15 to FR-AIS-17, FR-AIS-19, FR-AIS-43.
+- Scope: tests first, then code or words only where a test fails, for the rows above: how model files are trusted, licensed, downloaded and kept in memory. Note: BL-043 waits on the founder's recordings (FT-21, FT-22). The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G23. Group G23; 8 rows.
+
+#### BL-007 Voice and language handling in the engine (FR-AIS)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G24; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: M.
+- Satisfies: 8 P0 rows with no backlog row: FR-AIS-21, FR-AIS-23, FR-AIS-25 to FR-AIS-27, FR-AIS-29, FR-AIS-33 to FR-AIS-34.
+- Scope: tests first, then code or words only where a test fails, for the rows above: voice and language handling; build after the languages row (BL-182). The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G24. Group G24; 8 rows.
+
+#### BL-008 AI governance: test sets, agent permissions and the source scan (FR-AIS)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G25; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S.
+- Satisfies: 9 P0 rows with no backlog row: FR-AIS-36 to FR-AIS-37, FR-AIS-46 to FR-AIS-51, FR-AIS-53.
+- Scope: tests first, then code or words only where a test fails, for the rows above: test sets, agent permissions and a source scan; FR-AIS-46 asks counsel a new numbered question. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G25. Group G25; 9 rows.
+
+#### BL-017 Back office, operations and finance runbooks (FR-BKO, FR-OPS, FR-FIN)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G26; Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: M. Depends on: BL-237.
+- Satisfies: 24 P0 rows with no backlog row: FR-BKO-01, FR-BKO-09, FR-BKO-13 to FR-BKO-14, FR-BKO-16, FR-BKO-18, FR-BKO-21, FR-FIN-03, FR-FIN-05, FR-FIN-09, FR-FIN-11, FR-FIN-22, FR-OPS-06, FR-OPS-08 to FR-OPS-11, FR-OPS-14, FR-OPS-16 to FR-OPS-17, FR-OPS-24, FR-OPS-28, FR-OPS-31, FR-OPS-33.
+- Scope: tests first, then code or words only where a test fails, for the rows above: runbooks and checks. Note: BL-551 to BL-553 are bullet rows the dispatcher cannot see; give them headings first. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G26. Group G26; 24 rows.
+
+#### BL-018 Reliability and lifecycle (FR-REL, FR-LCY)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G27; Karma or the founder sets it to ready). Mode: agent. Owner: platform. Milestone: M15. Size: L. Depends on: BL-961, BL-566, BL-978, BL-929.
+- Satisfies: 27 P0 rows with no backlog row: FR-LCY-01 to FR-LCY-04, FR-LCY-06 to FR-LCY-07, FR-LCY-09 to FR-LCY-14, FR-LCY-17, FR-LCY-19 to FR-LCY-21, FR-LCY-28, FR-LCY-34, FR-REL-13, FR-REL-17, FR-REL-23 to FR-REL-24, FR-REL-33, FR-REL-41, FR-REL-43, FR-REL-45, FR-REL-61.
+- Scope: tests first, then code or words only where a test fails, for the rows above: reliability and lifecycle rows. Note: BL-566 needs the founder (W0-17); split by file. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G27. Group G27; 27 rows.
+
+#### BL-019 Security and risk rows (FR-SEC, FR-RSK)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G28; Karma or the founder sets it to ready). Mode: agent. Owner: security engineer. Milestone: M15. Size: M. Depends on: BL-961, BL-962.
+- Satisfies: 13 P0 rows with no backlog row: FR-RSK-02 to FR-RSK-04, FR-RSK-06, FR-SEC-03 to FR-SEC-04, FR-SEC-16, FR-SEC-18, FR-SEC-21 to FR-SEC-24, FR-SEC-26.
+- Scope: tests first, then code or words only where a test fails, for the rows above: security and risk rows; FR-SEC-xx and FR-RSK-xx cite BL-552, a bullet row. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G28. Group G28; 13 rows.
+
+#### BL-025 Measurement guardrails (FR-DAT)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G29; Karma or the founder sets it to ready). Mode: agent. Owner: analytics engineer. Milestone: M15. Size: S. Depends on: BL-975.
+- Satisfies: 9 P0 rows with no backlog row: FR-DAT-02 to FR-DAT-03, FR-DAT-05, FR-DAT-09, FR-DAT-14, FR-DAT-20, FR-DAT-27, FR-DAT-32, FR-DAT-35.
+- Scope: tests first, then code or words only where a test fails, for the rows above: guardrails on what may be measured. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G29. Group G29; 9 rows.
+
+#### BL-026 Privacy engineering rows (FR-PRV)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G30; Karma or the founder sets it to ready). Mode: agent. Owner: privacy engineer. Milestone: M15. Size: M. Depends on: BL-960, BL-962, BL-577.
+- Satisfies: 15 P0 rows with no backlog row: FR-PRV-10 to FR-PRV-11, FR-PRV-13, FR-PRV-15, FR-PRV-18 to FR-PRV-20, FR-PRV-25 to FR-PRV-28, FR-PRV-30 to FR-PRV-31, FR-PRV-33 to FR-PRV-34.
+- Scope: tests first, then code or words only where a test fails, for the rows above: privacy engineering rows. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G30. Group G30; 15 rows.
+
+#### BL-027 Legal texts and print rules (FR-LEG, FR-PRT)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G31; Karma or the founder sets it to ready). Mode: agent. Owner: legal. Milestone: M15. Size: M. Depends on: BL-973, BL-949.
+- Satisfies: 14 P0 rows with no backlog row: FR-LEG-02, FR-LEG-04, FR-LEG-06 to FR-LEG-08, FR-LEG-10 to FR-LEG-13, FR-LEG-15, FR-LEG-20, FR-PRT-02, FR-PRT-39, FR-PRT-45.
+- Scope: tests first, then code or words only where a test fails, for the rows above: legal texts and print rules; counsel answers gate every public text. Note: BL-973 is blocked. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G31. Group G31; 14 rows.
+
+#### BL-028 Marketing claims and store words (FR-MKT)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G32; Karma or the founder sets it to ready). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-965, BL-958.
+- Satisfies: 19 P0 rows with no backlog row: FR-MKT-01 to FR-MKT-03, FR-MKT-05 to FR-MKT-09, FR-MKT-11 to FR-MKT-12, FR-MKT-15 to FR-MKT-16, FR-MKT-19 to FR-MKT-20, FR-MKT-22, FR-MKT-28 to FR-MKT-29, FR-MKT-32, FR-MKT-34.
+- Scope: tests first, then code or words only where a test fails, for the rows above: claims and store words. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G32. Group G32; 19 rows.
+
+#### BL-029 Support and policy (FR-SUP, FR-POL)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G33; Karma or the founder sets it to ready). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-364, BL-444.
+- Satisfies: 19 P0 rows with no backlog row: FR-POL-02 to FR-POL-07, FR-POL-12 to FR-POL-13, FR-SUP-03 to FR-SUP-05, FR-SUP-07, FR-SUP-09 to FR-SUP-12, FR-SUP-14, FR-SUP-17, FR-SUP-21.
+- Scope: tests first, then code or words only where a test fails, for the rows above: support and policy rows; BL-551 and BL-552 are bullet rows. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G33. Group G33; 19 rows.
+
+#### BL-038 Research and validation rules (FR-RSH)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G34; Karma or the founder sets it to ready). Mode: agent. Owner: user researcher. Milestone: M15. Size: S. Depends on: BL-981.
+- Satisfies: 10 P0 rows with no backlog row: FR-RSH-03, FR-RSH-13, FR-RSH-15, FR-RSH-17, FR-RSH-19 to FR-RSH-22, FR-RSH-26 to FR-RSH-27.
+- Scope: tests first, then code or words only where a test fails, for the rows above: research and validation rules. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G34. Group G34; 10 rows.
+
+#### BL-039 Messaging and entry points (FR-MSG)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G35; Karma or the founder sets it to ready). Mode: agent. Owner: content. Milestone: M15. Size: M. Depends on: BL-364, BL-510, BL-053.
+- Satisfies: 9 P0 rows with no backlog row: FR-MSG-11 to FR-MSG-12, FR-MSG-14 to FR-MSG-15, FR-MSG-18 to FR-MSG-19, FR-MSG-22, FR-MSG-24, FR-MSG-28.
+- Scope: tests first, then code or words only where a test fails, for the rows above: messaging and entry points. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G35. Group G35; 9 rows.
+
+#### BL-045 Photo moments, level 3 (NS-51)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G36; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-961, BL-985.
+- Satisfies: 27 P0 rows of NS-51 (`docs/product/prd/27-photo-moments-and-media.md`): NS-51-R1 to NS-51-R3, NS-51-R5 to NS-51-R6, NS-51-R8 to NS-51-R12, NS-51-R15 to NS-51-R19, NS-51-R23 to NS-51-R26, NS-51-R28 to NS-51-R31, NS-51-R33 to NS-51-R34, NS-51-R37, NS-51-R42.
+- Drop: C for every row (card 27 conventions).
+- Scope: tests first, then code or words only where a test fails, for the rows above: photo moments on the phone; every row is drop C and the spike comes first (Q-PM-7), which needs a device. Note: build after the suggestions row (BL-298). The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-51). Group G36; 27 rows.
+
+#### BL-046 Pictures and videos with a letter (NS-52)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G37; Karma or the founder sets it to ready). Mode: pair. Owner: mobile engineer, privacy engineer. Milestone: M15. Size: L. Depends on: BL-931, BL-961, BL-985.
+- Satisfies: 26 P0 rows of NS-52 (`docs/product/prd/27-photo-moments-and-media.md`): NS-52-R2 to NS-52-R6, NS-52-R8, NS-52-R10 to NS-52-R11, NS-52-R15 to NS-52-R19, NS-52-R21 to NS-52-R23, NS-52-R25, NS-52-R28 to NS-52-R30, NS-52-R32, NS-52-R36 to NS-52-R38, NS-52-R40, NS-52-R44.
+- Drop: C for every row (card 27 conventions).
+- Scope: tests first, then code or words only where a test fails, for the rows above: several pictures and videos per letter; every row is drop C and the spike comes first (Q-PM-7), which needs a device. The card is the source of truth; nothing here changes a row.
+- Done when: every row above has a passing test whose title starts with its id in brackets, or its Satisfies line sits on a row that does; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/27-photo-moments-and-media.md section 7 (the P0 rows of NS-52). Group G37; 26 rows.
+
+#### BL-047 P0 rows added to the function reviews on 20 Nov (functions/*.md)
+- Status: proposed (docs/product/prd/BACKLOG-GAPS.md G38; Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: M.
+- Satisfies: 140 P0 rows of `docs/product/prd/functions/*.md` that `BACKLOG-GAPS.md` section 7 does not list, as counted by `p0.py` on 20 Nov: FR-AIS-57 to FR-AIS-62, FR-AIS-64 to FR-AIS-68, FR-BKO-28 to FR-BKO-32, FR-BKO-35, FR-CMP-22 to FR-CMP-28, FR-CUL-28 to FR-CUL-31, FR-CUL-33 to FR-CUL-35, FR-DAT-36 to FR-DAT-40, FR-DAY-26 to FR-DAY-29, FR-DAY-32 to FR-DAY-33, FR-FIN-30, FR-FIN-32, FR-LCY-35 to FR-LCY-37, FR-LCY-40 to FR-LCY-42, FR-LEG-21 to FR-LEG-24, FR-LEG-26 to FR-LEG-27, FR-LOC-30, FR-LOC-34 to FR-LOC-35, FR-LOC-37, FR-MKT-35 to FR-MKT-37, FR-MKT-39 to FR-MKT-41, FR-MSG-40 to FR-MSG-41, FR-MSG-43 to FR-MSG-45, FR-NTC-22 to FR-NTC-29, FR-OPP-14, FR-OPS-39, FR-OPS-42 to FR-OPS-43, FR-PHS-58 to FR-PHS-61, FR-PHS-63 to FR-PHS-67, FR-PHS-69 to FR-PHS-71, FR-POL-14, FR-PRT-49, FR-PRT-51, FR-PRT-54 to FR-PRT-55, FR-PRV-36 to FR-PRV-48, FR-QAL-25 to FR-QAL-29, FR-REL-62 to FR-REL-65, FR-REL-67 to FR-REL-68, FR-REL-70 to FR-REL-72, FR-RSH-30 to FR-RSH-31, FR-RSH-35, FR-SEC-28, FR-SEC-30 to FR-SEC-31, FR-SEC-33, FR-SEC-35, FR-SUP-24 to FR-SUP-28.
+- Scope: tests first, then code or words only where a test fails, for the rows above: sort each new FR row into one of the groups above (or its own row) and add its id to the Satisfies line of the row that takes it; no new requirements. Note: count again with p0.py before editing. The product agent does this in its standing duty on a docs PR (no roster owner name exists for `product`, so the Owner is the founder and the dispatcher never starts it). The card is the source of truth; nothing here changes a row.
+- Done when: every row id above appears in the Satisfies line of a row that does its work, or has a row of its own; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
+- Source: docs/product/prd/BACKLOG-GAPS.md G38. Group G38; 140 rows.
 
 ## Appendix: TDD proposal to BL mapping
 
