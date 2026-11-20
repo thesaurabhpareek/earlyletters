@@ -777,3 +777,207 @@ Lines are "1 / 2" codes from 8.2: the first two lines to write for `days.landing
 ### 8.7 Family milestones that are not dates
 
 Quinceanera is described by the source as a girl's 15th birthday, religious and social, with practice that varies and families who skip it (S24). It is far from a child of 0 to 5. The same holds for a baptism, a naming day, a Bar or Bat Mitzvah, a first communion, a first haircut and an aqiqah. None is a library day (DAY 6). The only supported ways to mark one are (a) the parent's own typed day (NS-18) and (b) a plain prompt the parent opens by hand. The app never offers one because of a heritage, a place, a name or a tick; never gives a milestone an age; and never gives {child} a gender through one.
+
+---
+
+## 9. Logic inputs for part 3
+
+Part 3 ([03-in-app-and-reminder-logic.md](03-in-app-and-reminder-logic.md), section 11) owns the logic. This section lists only what the data in this file gives it, and the rules a calendar adds that part 3 may not have seen.
+
+### 9.1 CSV columns and the day record
+
+| Part 3 section 11.1 field | CSV column | Note |
+|---|---|---|
+| `id` | `id` | Stable, never reused |
+| `layer` | `layer` | seasonal, family, civic, tradition, culture, as in DAY. Two proposed additions: `heritage_month`, `regional`. `community_event` rows are not library days |
+| `nameKey` | `key_name` | `days.name.<id>` |
+| rule or table | `date_rule_type`, `rule_text`, `next_2027`, `next_2028`, `carried_2027`, `carried_2028` | `n/r` is a blank cell. Only the 2027 and 2028 columns are filled here; DAY holds 2026 to 2030 for carried rows |
+| `authority` | `authority`, `source` | One authority per row; where two lists differ the second list is in `carried_*` or `date_note` and becomes its own table row in code |
+| `precision` | `precision` | `about` for lunar, lunisolar, solar-community and Nowruz rows; `exact` otherwise; `none` for non-dates |
+| `beginsAtSunset` | `begins_at_sunset` | Jewish, Islamic and Baha'i days |
+| `tone` | `tone` | `quiet` for Memorial Day, Veterans Day, Good Friday, Yom Kippur |
+| `publicTitleOk` | `public_title_ok` | Hand-listed: four season starts, the meteorological starts, New Year's Day, Independence Day, Labor Day, Thanksgiving (Q-FD-18). A test lists each |
+| `preTicked` | not a column | Always false in code |
+| `years` | derived | The years with a value in `next_*` or `carried_*` |
+| (new) | `offered_when`, `sensitivity`, `drop`, `library_status` | Gate 1 behaviour, copy care, release drop, and whether the row is a library day |
+
+### 9.2 What a calendar adds to the chooser
+
+| Id | Rule | Why |
+|---|---|---|
+| E-1 | A heritage month is one library day on its first day. It does not repeat inside the month and is never a series. Where its first day is also another ticked day's date, the two merge into one note naming both (NS-46-R8) | 1 May 2027 and 2028 and 15 Sep 2027 are real cases (5.2) |
+| E-2 | Where a tradition has two or more authorities for one festival, the parent's choice (a question about a date, never about belief) selects the row. Without one, the first listed row is used, shown "around", and movable (part 3 section 11.4) | NS-46-R14 |
+| E-3 | `begins_at_sunset` rows send on the morning of the daytime date the list gives. Never by sunset. Hanukkah's first candle date is the morning of that date, before the candle | DAY 3.5; NS-46-R10 |
+| E-4 | Western and Orthodox Easter on the same date (16 Apr 2028; 13 Apr 2031 and 9 Apr 2034 by my computation) are two ticked days on one date: one note, two names | NS-46-R8 |
+| E-5 | A row without a date for the coming year plans nothing and shows the calm line only on the Days page (NS-46-R15). Islamic and Hindu tables should ship two years, so this line is the common case in year three | Section 4 |
+| E-6 | A `quiet` row on a date with a bright row makes the note quiet (part 3 section 6.3 rule 4) | NS-46-R16 |
+| E-7 | `blocked` and `candidate` rows are not in the bundled table, so no tick can exist for them (NS-46-R43 drops an id that is gone, silently) | Section 8.6 |
+| E-8 | No row has an hour. The clock is the parent's phone and 09:00 (NS-46-R10) | Q-FD-19 |
+| E-9 | A regional row, if shipped, is an ordinary library day. Its place is a label in Browse and nothing else; the planner never reads a place | 6.4 |
+| E-10 | The same date, a federal "observed" Friday or Monday, and the calendar date: the library uses the calendar date always | S1; DAY 4.1 |
+
+### 9.3 Data tests this file would ask for
+
+Titles only; part 3 holds the harness (PB-08) and PB-10 holds the oracle test.
+
+1. Every CSV row has all columns and is ASCII.
+2. `offered_when` is one of the allowed values, and no `tradition` row is `always`.
+3. `public_title_ok` is `yes` only for the hand-listed ids.
+4. No `library_status` `excluded` or `candidate` id appears in the bundled library.
+5. No `yes` row has `source` `none read`.
+6. Every `next_*` value equals the rule's computed date for the rule rows, against the OPM schedule and Hebcal feed as oracles (S1, S8), with the read-on date committed.
+7. A date in `carried_*` is never copied to `next_*` without a re-read.
+8. A key in `key_in_app` that is not in `packages/content/src` fails the drift test (NS-48-R28) once the family exists.
+9. No row `key_email` or `key_push` is anything but "none" or "parked".
+10. No marketing file (`store.en.ts`, `site.en.ts`, `packages/emails`) contains a `days.name.*` key or a faith day name outside a written allowlist (NS-46-R47).
+
+---
+
+## 10. Where event messages live, and where they never do
+
+| Surface | Event content | Source |
+|---|---|---|
+| Local reminder, 09:00 on a ticked day | One neutral title and body; an allowlisted day may use its name | NS-47-R12, R13 |
+| Home day slip (rank 2b), by any route | The day's name and one line (`days.landing.*`); quiet days replace the prompt block | NS-46-R13, NS-50, Q-FD-24 |
+| Days page, Browse, Day detail, the ask slip | Names, dates ("around" where it moves), the call-out | NS-46, NS-47 |
+| Me, Reminders | One line that chosen days still send a reminder and where to stop it | NS-46-R35 |
+| A passive seasonal or festival line for a parent who ticked nothing | **None.** Nothing is shown for a day the parent did not tick | NS-46-R2; part 3 section 11.2 |
+| Email | **None.** No event, festival or heritage email, and none on a day | E75; NS-46-R47; part 3 L-04 |
+| Push | **None** in 1.0, and never for a day, because the server cannot know which days are ticked | E79; part 3 section 13.1 |
+| Store listing, website, social, ads, press | **None.** No tradition, day name, greeting or holiday image | NS-46-R47, Q-FD-28 |
+| A letter, a book page, the printed book | **None added by the app.** A letter written on a ticked day carries no day name unless the parent types it | NS-47-R3, R5 |
+| Analytics, logs, crash reports | **None.** No day, tradition or place | NS-47-R8, R9, R34 |
+
+---
+
+## 11. What it must never say
+
+### 11.1 Everywhere
+
+The codes N1 to N11 in 8.4 apply to every row, in the app and anywhere else a day word could appear.
+
+### 11.2 Words that trip the rules test or its spirit
+
+| Word or idea | Why |
+|---|---|
+| "dead", "die", "death", "passed away" | The fear pattern in `rules.test.ts` matches them. A name such as "Day of the Dead" would need an allowlist and is excluded today (8.6) |
+| "celebrate", "gather", "together", "around the table" | NS-46-R17: a family may only mark a day, and presence is never assumed |
+| "magic", "smart", "perfect", "generate", "enhance" | The AI pattern in `rules.test.ts` |
+| A digit outside a date | NS-46-R17. A festival name with a number needs the names allowlist |
+| "your religion", "your faith", "your tradition", "your culture", "your heritage" | NS-46-R38; N6 |
+| "last year", "again", "another", "first" | NS-46-R22; N4 |
+
+### 11.3 Cautions by community: what the app must not presume
+
+These are not facts about any community. They are limits on what the app may assume, and every one needs the cultural read in section 12 before it is final.
+
+| Group | The app must not |
+|---|---|
+| African American and Black communities | Assume Juneteenth, Kwanzaa or Black History Month is "for" any family; explain or summarise a history; use a name or a surname as a signal |
+| Native American, Alaska Native and Native Hawaiian communities | Offer ceremonial days of any nation or any powwow date; suggest attending, photographing or posting about a powwow (S20 records that some Native people feel powwows have been harmed by spectatorship); pair the heritage month with Thanksgiving; offer a tribal affiliation option; use mascots, feathers or "spirit" language; drop diacritics in Hawaiian names without a read |
+| Latino and Hispanic communities | Treat "Hispanic" and "Latino" as one label for every family; assume Catholic practice; offer Quinceanera, Dia de los Muertos, Las Posadas or Dia de Reyes as a default; infer origin from a name or a language |
+| Asian American, Native Hawaiian and Pacific Islander communities | Treat many communities as one; infer from a name; pick one national date for a shared festival; use food, dress or animal-sign copy |
+| Arab American and Muslim communities | Treat Arab and Muslim as one; assume a sighting or calculation method; use "Mubarak"; mention fasting, sacrifice or children in a day line; name Ashura, Lailat al-Qadr or the days within Ramadan |
+| Jewish communities | Treat heritage as religion; mention persecution or the Holocaust next to any day; say "Jewish Christmas"; assume the Diaspora schedule is every family's; send an evening note for a day that begins at sundown |
+| Christian communities | Assume Christmas or Easter is kept; rank Western against Orthodox or call one "the other"; assume a church from a name |
+| Hindu, Sikh, Jain and Buddhist communities | Treat South Asian as one; pick a regional date for the family; tag Diwali to one faith; use "festival of lights" or "colours"; choose among national Buddha's birthday dates |
+| Baha'i, Zoroastrian and Persian communities | Say Nowruz is only Persian; assume the Tehran-midnight rule; name a belief |
+| People of no faith, or of a faith that keeps no holidays, and interfaith households | Ask; imply a gap; order the list; assume Halloween, Christmas or birthdays are kept |
+| Families that are bereaved, single, adoptive, foster, grandparent-led, same-sex, or without a partner | Assume who holds the phone on Mother's Day, Father's Day, Grandparents' Day, Siblings Day or Valentine's Day (DAY 5.2) |
+| Veteran, military and bereaved-by-service families | Use "thank you for your service", "sacrifice", "heroes" or "remember" on Memorial Day or Veterans Day |
+| LGBTQ+ families | Offer Pride Month by inference from a family's make-up. Not offered at all until it has its own read and a founder ruling |
+
+---
+
+## 12. Counsel and cultural review: who should read this before any word ships
+
+Nothing here is a reviewer record. NS-46-R23 and Q-FD-9 need one recorded per tradition, by a pseudonymous id, the tradition id, a date and "read"; the person's name stays out of the repository. PB-04 recruits them.
+
+### 12.1 Counsel
+
+| Id | Question | Source |
+|---|---|---|
+| C-1 | Whether a special-category rule (GDPR Article 9, US state sensitive-data laws) reaches a list of days that never leaves the phone | CUL-Q6; NS-47 section 17 |
+| C-2 | The consent line before the first tick, and whether a day reminder is "advertising" under the Apple licence (Attachment 1 section 2.2) | NS-46-R35 |
+| C-3 | App Review 4.5.4 for a local note, and 5.1.1 for an optional question about days | CUL-Q11; FR-CUL-14; CUL-Q8 (UNVERIFIED) |
+| C-4 | Licences for every copied table: Hebcal, timeanddate, Drik Panchang, Hong Kong Observatory, USNO, Library of Congress sites. Prefer computing rule dates | FR-DAY-23; NS-46-R23 |
+| C-5 | The claim "The days you choose stay on this phone", the iPhone backup, and the device-transfer test | NS-47-R6, R22 |
+| C-6 | **New:** a place picker as a new item of sensitive data, and whether a ticked state holiday is location data | Section 6; Q-EV-2 |
+| C-7 | **New:** heritage-month rows (a national observance that names an ethnic group) and the "Browse all" visibility of tradition days under platform content rules (1.1.1) | Section 5; Q-EV-4 |
+| C-8 | The age rating re-read for NS-46 | K6 |
+| C-9 | Whether naming a faith day on a lock screen behind the day-name switch needs a second plain line | Q-DAY-6 |
+| C-10 | Marketing: confirm the "no tradition, no greeting, no holiday imagery" rule covers paid targeting and press | NS-46-R47 |
+
+### 12.2 Cultural reads (a member of each community; for each: names, dates by community, never-say list, quiet or bright tone, whether it should be offered at all)
+
+| Read | Covers (rows) | Specific questions |
+|---|---|---|
+| African American and Black communities | `juneteenth`, `mlk_day`, `kwanzaa`, `black_history_month` | Offer Kwanzaa to everyone (`always`) or only after a pick? Is the first day alone right? Tone for Juneteenth |
+| Arab American communities | `arab_american_heritage_month` (candidate) | Whether to offer at all; the name; April |
+| Asian American, Native Hawaiian and Pacific Islander (several readers: East Asian, South Asian, Southeast Asian, Pacific Islander) | `aanhpi_heritage_month`, `lunar_new_year`, `lantern_festival`, `dragon_boat`, `mid_autumn_chuseok`, `songkran`, `obon`, `qingming` | The month's name; which community lists differ (Chinese, Korean, Vietnamese); the Qingming and Obon exclusions |
+| Native American and Alaska Native communities | `native_american_heritage_month`, `powwow`, `thanksgiving`, `columbus_day` | The month's name; the Thanksgiving copy; that no ceremonial row exists; whether Indigenous Peoples' Day should ever be offered |
+| Native Hawaiian and Pacific Islander communities | `kuhio_day`, `kamehameha_day`, `hawaii_statehood_day`, `lei_day` | Spelling and diacritics; whether a name-only line is right |
+| Baha'i community | `naw_ruz_bahai`, `ridvan` | The 2027 dates from the World Centre; wording of the day names |
+| Buddhist communities (Theravada, Mahayana, Vajrayana; Thai, Sri Lankan, Chinese, Vietnamese, Korean, Japanese, Tibetan) | `vesak`, `makha_bucha`, `asalha_bucha`, `bodhi_day`, `ullambana` | Which dates; the "which date" question; the exclusions |
+| Christian communities (Catholic, Protestant, Orthodox, Oriental Orthodox; also groups that do not keep holidays) | `christmas_day`, `epiphany_three_kings`, `ash_wednesday`, `palm_sunday`, `good_friday`, `easter_western`, `pentecost`, `christmas_orthodox`, `easter_orthodox`, `las_posadas`, `all_saints_souls` | Names; Orthodox calendars (Coptic, Ethiopian, Armenian were not read); Good Friday as a quiet day |
+| Hindu communities (North and South; Gujarati, Tamil, Telugu, Kannada, Malayali, Bengali, Nepali) | The Hindu rows and `diwali` | Which tithi and region by default; whether Diwali is offered under Hindu, Sikh and Jain pickers or only in Browse; `karva_chauth`, `pongal`, `onam` |
+| Jain community | `mahavir_jayanti`, `diwali` | Dates and names; whether Diwali belongs here |
+| Jewish communities (Reform, Conservative, Orthodox; Ashkenazi, Sephardi, Mizrahi; Diaspora and Israeli) | The Jewish rows and `jewish_american_heritage_month` | Names; Yom Kippur as quiet; the evening note; heritage month wording |
+| Latino and Hispanic communities (Mexican, Puerto Rican, Cuban, Central American, South American, Caribbean) | `hispanic_heritage_month`, `epiphany_three_kings`, `quinceanera`, `dia_de_los_muertos`, `cinco_de_mayo`, `las_posadas`, `mexican_independence` | "Hispanic" and "Latino"; whether a quiet, name-only Dia de los Muertos is right or the exclusion stands; Quinceanera as a typed day only |
+| Muslim communities (Sunni, Shia, Ahmadi; by sighting, calculation or Saudi announcement) | The Muslim rows | The default list for a US family; the "which date" question; Mawlid; the exclusions |
+| Parsi and Zoroastrian community | `parsi_new_year` | Calendar (Shahenshahi, Kadmi, Fasli) |
+| Persian, Kurdish, Afghan and Central Asian communities | `nowruz`, `yalda` | The date rule; the 2027 edge case; the name; at least three readers |
+| Sikh community | `vaisakhi`, `gurpurab_nanak` | Dates (Nanakshahi and Bikrami), spelling, SGPC |
+| LGBTQ+ community and families | `pride_month`, family days | Whether Pride Month is ever offered; family-day wording |
+| Bereaved, adoptive, foster, single-parent and grandparent-led families | `mothers_day`, `fathers_day`, `grandparents_day`, `siblings_day`, `valentines_day` | The universal lines (L1, L14) |
+| Military and veteran families | `memorial_day`, `veterans_day` | Quiet tone and the single line |
+| A native-speaker and reading-level read | Every line | Plain words, an age-4 reading level not needed; plain adult English |
+
+---
+
+## 13. Questions and proposed defaults
+
+Defaults hold until answered and are the requirement for design and build, never for public text, a counsel answer or a store submission.
+
+| Id | Question | Default | Who |
+|---|---|---|---|
+| Q-EV-1 | Keep religion and region as no stored fields? | Yes, as Q-FD-5 and CL-013. No persistent background logic | founder, counsel |
+| Q-EV-2 | Add a place picker (a browse filter, memory only) for state days? | No place picker in the first drop; regional rows ship later with a reviewer each (Q-FD-17). If yes: section 6.3 | founder, counsel |
+| Q-EV-3 | Per-day landing lines, `days.landing.<id>.<n>`, indexed by year (PC-3)? | Shared lines per tone only until the first tradition reviews land; per-day lines for civic, seasonal and family days first (they need no reviewer) | product, content |
+| Q-EV-4 | Add a heritage-month layer (nine months, one reminder each, first day)? | Not in Drop B. Drop C after counsel C-7 and the cultural reads | founder, counsel |
+| Q-EV-5 | Offer culture-led days (Lunar New Year, Kwanzaa, Mid-Autumn and Chuseok, Nowruz) to every parent without a question (Q-FD-1)? | Yes, as ruled, and a reviewer may move any to `background_picked` | founder, cultural reads |
+| Q-EV-6 | Which traditions in the first tradition drop? | Those the founder can reach reviewers for (Q-FD-9); NS-46's own list (Christmas, Easter, Hanukkah, Eid al-Fitr, Diwali, Lunar New Year) is the working order, alphabetical in the UI | founder |
+| Q-EV-7 | Which list is the default for a US family where Islamic lists differ? | The first listed row, shown "around", movable; the picker asks "Which date should we use?" Not a ranking of methods | cultural read, product |
+| Q-EV-8 | Ten years of dates? | Rule dates compute without limit; Easter-based and astronomical days compute from sourced oracles; table days (Islamic, Hindu, Sikh, Jain, Buddhist, Baha'i, Chinese) ship two years and show the calm no-date line after that | product, ops |
+| Q-EV-9 | Bundled tables or a downloadable pack? | Bundled, refreshed by app update (DAY 3.6, NS-46-R48). A pack only if Islamic tentative dates need a mid-year fix; then one whole-library fetch | Karma, mobile |
+| Q-EV-10 | Reopen any excluded day (Dia de los Muertos, Obon, Qingming, Columbus or Indigenous Peoples' Day, Daylight saving)? | No. A family adds its own typed day. Cultural reads may ask again | cultural reads |
+| Q-EV-11 | Offer Pride Month, Arab American Heritage Month, Caribbean-American Heritage Month, or any other candidate? | Not until a source is read, a cultural read exists and the founder rules | founder |
+| Q-EV-12 | Names with diacritics (Hawaiian, Spanish)? | In-app names keep their correct spelling if the rules test allows it. The test I read bans dashes, curly quotes and ellipsis characters, and I did not check whether a Hawaiian okina (U+02BB) is caught; `content` runs it. This ASCII file cannot show them | content |
+| Q-EV-13 | Ship Nowruz, Naw-Ruz or Ridvan before an official calendar is read? | No | content |
+
+---
+
+## 14. Backlog candidates for part 5
+
+Part 5 ([05-backlog-proposed.md](05-backlog-proposed.md)) already holds PB-04 (tradition reviewers), PB-10 (civic, family and seasonal rows with an oracle test), PB-11 (`days.*` keys), PB-15 (the October review), PB-18 (one tradition per PR) and PB-19 (lines by year). This file adds no duplicate. It proposes these extra rows for `product` to number:
+
+| Proposed row | What | Depends on | Mode |
+|---|---|---|---|
+| E-A | Check this file's `next_*` against the oracle and commit the oracle table with its read-on date (OPM, USNO, Hebcal, HKO) | PB-10 | agent |
+| E-B | Read the unread primaries: Baha'i World Centre 2027, the Iranian calendar for Nowruz, SGPC for Vaisakhi and Gurpurab, a panchang for Holi and Navratri, the national Vesak lists for 2028, and the Central Hilal Sighting Committee | PB-04 | human with agent |
+| E-C | Cultural reads per community in 12.2, one recorded reviewer id each | PB-04 | human |
+| E-D | Counsel items C-6 and C-7 added to the PB-02 brief | PB-02 | human |
+| E-E | Heritage-month layer and place picker proposals as two errata drafts, if the founder says yes to Q-EV-2 or Q-EV-4 | PB-01 | agent |
+| E-F | The scan in 9.3 test 10 (no marketing file holds a day key) | PB-13 | agent |
+
+---
+
+## 15. What I could not do
+
+- Verify any date from a primary religious body. Section 1.3 lists them.
+- Read the licences of the sources. FR-DAY-23 stands.
+- Run the rules test on the proposed lines.
+- Confirm the lock-screen behaviour on a device (J-CUL-01 is a device walk).
+- Name a reviewer. None is recorded.
+
+`content`
