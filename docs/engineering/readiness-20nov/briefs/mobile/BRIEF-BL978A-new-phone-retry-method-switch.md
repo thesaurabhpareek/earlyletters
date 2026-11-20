@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:16 UTC). Already stale in the design: `consent.ts:117` minted a new key per call; #903 fixed it (R7 done; `consent.ts:113` now holds an answer).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Already stale in the design: `consent.ts:117` minted a new key per call; #903 fixed it (R7 done; `consent.ts:113` now holds an answer).
 Blocked until: BL-922 merged (this builds on it, backlog line 3908); the PROPOSED method line for R12 read by the founder. Open for `sync` (not mine): whether `sync_pull` serves rows while consent is outstanding (G1, issue #909) and OQ-6 (what the other phone sees after a deletion elsewhere, R9: no code until `sync` answers). The R7 half of this design PR is done and merged as #903 [V].
 
 ```
-BRIEF BL-978a (new phone: R8, R10, R11, R12)      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:16 UTC
+BRIEF BL-978a (new phone: R8, R10, R11, R12)      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13 (Q1: founder decides which P0 rows hold the cut)   Wave: 1
 
 1. GOAL: When a returning account arrives on a new phone, a lost "which books" answer is re-asked inside the same 10 seconds without restarting the clock, the kill switch shows the local book,

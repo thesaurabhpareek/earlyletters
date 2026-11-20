@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and #879 head `e27d104e`, 20 Nov 20:12 UTC). The handoff cites `use-account-deletion.ts:53` and `open-request.ts:144-157`; both hold on develop. It also names an `ownersNote` check: that name is NOT on develop (it arrives with #879's `account-note.test.ts`); re-open #879 before copying the shape.
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and #879 head `e27d104e`, 20 Nov 19:04 UTC). The handoff cites `use-account-deletion.ts:53` and `open-request.ts:144-157`; both hold on develop. It also names an `ownersNote` check: that name is NOT on develop (it arrives with #879's `account-note.test.ts`); re-open #879 before copying the shape.
 Blocked until: #879 merged (the handoff's own condition; `bookVisibleNow()` does not exist on develop). Handoff issue: #911 (karma to mobile). Nothing for the founder. The note is a cache the server rewrites at A's next sign-in, so this is a P1-class fix, not a must-fix on #879.
 
 ```
-BRIEF HO-911 (Delete account under a second account)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:12 UTC
+BRIEF HO-911 (Delete account under a second account)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13 (rides with BL-961, which holds the cut)   Wave: 1
 
 1. GOAL: When account B opens Settings, Delete account (by deep link, or a screen left mounted) on a phone that holds A's book, A's local deletion note is left exactly as it was.
@@ -12,7 +12,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13 (rides with BL-96
    Title (PROPOSED, no catalogue row; follow the catalogue's pattern, PR #925): `[NS-10-R3][X4-R1] Delete account under a second account leaves the owner's note`
    Fixture: Asha-A's book and a scheduled deletion note for A on a `node:sqlite` store; B signed in; B's server status is `none`; run `refresh` (mount, and a `userId` change); assert the note is byte-identical.
    Red on develop: `noteAfterRead` (`open-request.ts:144-157`) returns null for A's note when B's status is `none`, and `recordStatus(s.value, userId)` at `use-account-deletion.ts:53` writes that away.
-   Mutant: delete the new `bookVisibleNow()` (or owner) guard in `refresh`.
+   Second test (fail closed): when the owner cannot be read, nothing is written. Mutant: delete the new `bookVisibleNow()` (or owner) guard in `refresh`.
 
 3. FILES  Touch: apps/mobile/src/lib/account-deletion/use-account-deletion.ts (the guard in `refresh`), one test beside `test/account-deletion-note-store.test.ts`.
    Never: lib/account-deletion/open-request.ts logic (a pure function that is right for A), lib/store.ts, app/_layout.tsx, the deletion RPC, supabase/**.
@@ -51,6 +51,6 @@ Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13 (rides with BL-96
 
 15. STOP AND ASK: the fix needs a change to `open-request.ts` semantics; B must be blocked from deleting B's own account.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-ho911 agent:mobile -->`.
+16. HARNESS: claim row held by Karma for lib/reminders/** only; lib/account-deletion/** has none yet (Karma adds it). Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-ho911 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-ho911.md`. Comments start `<!-- agent:mobile -->`.
 ```
