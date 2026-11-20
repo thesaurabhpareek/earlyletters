@@ -661,7 +661,7 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   - AX-10 NS-12 export of earlier versions: the founder decides (privacy: the author's export carries the author's versions, because export spec 4.2 promises them; card default: not exported). Until then, not exported.
   - AX-11 Undo: one clock, the toast's own dismissal (`11-foundations.md`), under ADR 0035's number.
   - AX-12 Second account on one phone (`[X4-R1]`, NS-10-R3): both halves, under ADR 0031: a screen cover beside `AppLockLayer`, and one `bookVisibleTo` check for store reads, the Find catch-up and the reminder planner. Owner BL-961.
-  - AX-13 Schema change ids: eval A's (L11 to L15, S1 to S5, H1); designs cite those only.
+  - AX-13 Schema change ids: eval A's (L11 to L15, S1 to S5), plus H1, the hooks refactor, which is `data-and-sync.md`'s own id (eval A has none); designs cite those only.
   - AX-14 Seal facts: ADR 0028 D3a's three columns, and the error code `SCSEL`, not a second meaning for `22023` (API-R09).
   - AX-15 and AX-16: fact fixes in the next docs touch of `09-capture.md`; `11-foundations.md` is 367 lines, so no split.
   - AX-17 Boundary ids: `security.md`'s B1 to B7, with eval C's TB6 to TB8 added as B8 to B10 by `security-architect`.
