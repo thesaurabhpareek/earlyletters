@@ -1126,8 +1126,8 @@ Ids proposed (flagged, none assigned by area D except D-S27): D-S27 (the nudge's
 
 | State | What it shows | Notes |
 |---|---|---|
-| `photoMoment` (default rendering, names off, previews Always, App lock off) | App; title and body from the neutral pool: the card's wording is "Some pictures from the weekend are here" (direction section 2); no count, no picture described, no child name, no place, no exclamation mark | Intent only: `content` writes the key. The day-part word ("the weekend", "this week") comes from the dates, never from what a picture shows |
-| `photoMoment-plain` | The fallback with no mention of pictures: the one neutral title ("Something for the book today") and a neutral body | Offered because a lock screen that says "pictures" tells a passer-by something about the phone; open question Q-D-R2 |
+| `photoMoment` (default rendering, names off, previews Always, App lock off) | App; the default is the plain wording (title "Something for the book today", neutral body) per card 27 NS-51-R11 and the founder default F3: a lock screen never mentions pictures; no count, no picture described, no child name, no place, no exclamation mark | Intent only: `content` writes the key. The day-part word ("the weekend", "this week") comes from the dates, never from what a picture shows |
+| `photoMoment-plain` | The default rendering (same wording as `photoMoment`), with no mention of pictures: the one neutral title ("Something for the book today") and a neutral body | Offered because a lock screen that says "pictures" tells a passer-by something about the phone; open question Q-D-R2 |
 | `photoMoment-hidden` | Previews hidden: the app name and the category's neutral placeholder only ("Something for the book, whenever you have a minute."); no category sets `hiddenPreviewsShowTitle` | NS-47-R36 |
 | `photoMoment-appLock` | App lock on: the plain rendering, forced, as every other class (names and pictures not mentioned) | Mirrors NS-47-R12 |
 | `photoMoment-oneDay` | A photo moment and a plan notice on one date: the only allowed two; a photo moment and a birthday or ticked day on one date: only the higher shows (section 5.3) | NS-32-R4 |
@@ -1157,7 +1157,7 @@ Every state: interruption level `active`, never time-sensitive, no sound set by 
 
 | Id | What | Default |
 |---|---|---|
-| G-D30 | Whether a lock screen may say "pictures" at all (direction wording) | Draw both `photoMoment` and `photoMoment-plain`; the parent's App lock forces plain; CPrivO decides |
+| G-D30 | Whether a lock screen may say "pictures" at all (direction wording) | CLOSED by the locked default (NS-51-R11, Q-PM-9): plain wording is the default; a wording that says "pictures" is not drawn as a default; App lock forces plain as well |
 | G-D31 | Where in the NS-32 priority list the source ranks | After a ticked day, before month and evening; Karma |
 | G-D32 | Whether the nudge may add a reminder on a day with none | No: it replaces an evening slot only |
 | G-D33 | Compliance C-01 applies if a photo reminder reads as promoting use of the app | Consent line at opt-in and the visible switch here; counsel reads |

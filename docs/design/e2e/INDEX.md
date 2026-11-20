@@ -752,13 +752,13 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 
 **Area A (DESIGN 11.3, 12, 13)**
 
-- A 11.3 item 1. FR-OPP-03 and FR-PHS-54 say "only the chosen item reaches the app"; RV-12 ruled that wrong. This file follows RV-12 and NS-49-R16; the FR text needs the amendment.
+- A 11.3 item 1. FR-OPP-03 and FR-PHS-54 say "only the chosen item reaches the app"; RV-12 ruled that wrong. This file follows RV-12 and NS-49-R16; the FR text is amended (20 Nov).
 - A 11.3 item 2. FR-OPP-07 ("from {child}" path) against NS-16-R5 (never invite a child to speak): not drawn.
 - A 11.3 item 3. FR-OPP-04 ("the same question again") against NS-46-R22 and the "no again" rule in NS-48-R4: not drawn.
 - A 11.3 item 4. NS-50-R3 against R15 on one or two renderings of a quiet-tone day (G-22).
-- A 11.3 item 5. NS-49-R1 says "one of the equal starts" in section 3 and "never larger than Speak" and "quiet capsule" in R1; the design draws it quiet, third (the section 23 default). The card text itself disagrees.
+- A 11.3 item 5. NS-49-R1 says "one of the equal starts" in section 3 and "never larger than Speak" and "quiet capsule" in R1; the design draws it quiet, third (the section 23 default). The card text is corrected (20 Nov): the third and quiet start.
 - A 11.3 item 6. FUNCTION-TRACE 6.1 row for cultural-data says "A-S01 Home strip (today strip, NS-50)": the product ruling is slip, not strip (R-IA-3). The design follows the ruling.
-- A 11.3 item 7. NS-47-R29 prescribes `DoorNote` "dismissible" in a list of what it must never be, but its sentence reads "never collapsed, dismissible, behind an info glyph or glass": ambiguous list; this file reads it as "never dismissible".
+- A 11.3 item 7. NS-47-R29 prescribes `DoorNote` "dismissible" in a list of what it must never be, but its sentence reads "never collapsed, dismissible, behind an info glyph or glass": ambiguous list; this file reads it as "never dismissible"; the card is corrected to say so (20 Nov).
 - A 12 (Round 2) Status: PROPOSED. Source: `docs/product/prd/26-founder-direction-photos-library-and-media.md` (committed f8eead016). The cards NS-51 (photo moments, library access) and NS-52 (several pictures and videos with a letter) are being written in `27-photo-moments-and-media.md`, which did not exist when this was written, so everything below is keyed to NS-51 and NS-52 by name, uses PROPOSED ids, and is [cut]
 - A 12.5 Direction 26 asks for the app to show the parent their own pictures as an invitation "in the capture area". The pack's rules say a picture suggestion is never a slip or a tile (NS-50-R10, R-IA-3) and Home is not a feed. Default: no new element on Home. The invitation is the third item of the photo start's menu (A-S01.photoMenu), present only when the parent has opted in and a moment exists, plus the neutral [cut]
 - A 13 Q-A7: A Home element for photo moments, if the founder wants one (direction 26) / None; the entry is the photo menu's third item and area D's neutral reminder (12.5) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-104: Defaults stand (ask above prompt unless SE 3 check fails; fold waiting set; accept; one card shape; three thumbnails; 6/2/60; added order)

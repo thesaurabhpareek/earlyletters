@@ -361,7 +361,7 @@ function fromsheet(st){S._back='A-S07:default';var base=review('default');
  var inner=T('footnote','From','muted')+'<div class="field t-body" aria-label="From">'+v(2)+val+'<span style="border-left:2px solid var(--accent)"></span></div>';
  if(st==='tooLong') inner+=T('footnote','A little shorter, please.','caution','style="margin-top:4px" role="alert"');
  inner+=T('footnote',v(3)+'Ask before you record someone else.','muted','style="margin-top:10px"');
- if(st==='recent'||st==='typing') inner+=T('footnote','Names used on this phone','muted','style="margin-top:14px"')+'<div class="chipsP" style="margin-top:6px">'+v(4)+['Nani','Dada','Aunt Mira'].map(function(n){return '<span class="chipP" data-go="A-S07:fromSet">'+n+'</span>';}).join('')+'</div>';
+ if(st==='recent'||st==='typing') inner+=T('footnote','Names used on this phone','muted','style="margin-top:14px"')+'<div class="chipsP" style="margin-top:6px">'+v(4)+['Grandma','Grandpa','Aunt Lena'].map(function(n){return '<span class="chipP" data-go="A-S07:fromSet">'+n+'</span>';}).join('')+'</div>';
  inner+='<div class="col" style="margin-top:16px">'+B('Done',{kind:'primary',full:true,dim:st==='tooLong',go:st==='tooLong'?'':'A-S07:fromSet',vo:5})+B('Sign as Mama',{kind:'quiet',full:true,go:'A-S07:default'})+'</div>';
  return base.replace(/<\/div>$/,sheet(v(1)+'Who is speaking?',inner)+'</div>');}
 /* ---------- A-S10 Another language ---------- */
