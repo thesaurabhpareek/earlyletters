@@ -128,6 +128,35 @@ describe('[NS-10-R7] one acceptance row after a retry', () => {
     expect(f.rows).toHaveLength(4);
   });
 
+  it('lost Agree, then a decline, then Agree again: the last Agree is its own act, with its own key and time', async () => {
+    const f = fakeServer();
+    vi.useFakeTimers({ toFake: ['Date'] });
+    try {
+      vi.setSystemTime(new Date('2026-11-20T19:00:00.000Z'));
+      f.server.loseNext = true;
+      await expect(recordConsent(f.sb, 'sensitive', true, 'email', ASHA_PARENT)).rejects.toBeTruthy();
+      vi.setSystemTime(new Date('2026-11-20T19:01:00.000Z'));
+      await recordConsent(f.sb, 'sensitive', false, 'email', ASHA_PARENT);
+      vi.setSystemTime(new Date('2026-11-20T19:02:00.000Z'));
+      await recordConsent(f.sb, 'sensitive', true, 'email', ASHA_PARENT);
+    } finally {
+      vi.useRealTimers();
+    }
+    // Three acts, in the order the parent gave them, each with its own key; the last is an accept, timed after the decline.
+    expect(f.rows.map((r) => r.p_action)).toEqual(['accept', 'decline', 'accept']);
+    expect(new Set(f.sent.map((s) => s.key)).size).toBe(3);
+    expect(String(f.rows[2].p_client_recorded_at) > String(f.rows[1].p_client_recorded_at)).toBe(true);
+  });
+
+  it('a lost Agree on Terms is dropped by any later answer to Terms from the same person', async () => {
+    const f = fakeServer();
+    f.server.loseNext = true;
+    await expect(recordConsent(f.sb, 'terms', true, 'apple', ASHA_PARENT)).rejects.toBeTruthy();
+    await recordConsent(f.sb, 'age', true, 'apple', ASHA_PARENT);
+    await recordConsent(f.sb, 'terms', true, 'apple', ASHA_PARENT);
+    expect(new Set(f.sent.map((s) => s.key)).size).toBe(3);
+  });
+
   it('an under-18 answer is still never sent', async () => {
     const f = fakeServer();
     await recordConsent(f.sb, 'age', false, 'apple', ASHA_PARENT);
@@ -163,11 +192,25 @@ describe('heldAnswers: one key per answer until the server confirms', () => {
     const { heldAnswers } = await import('../src/lib/auth/consent-key.logic');
     let n = 0;
     const held = heldAnswers(() => `key-${++n}`);
-    const first = held.hold('answer-a', () => '2026-11-20T19:00:00.000Z');
-    expect(held.hold('answer-a', () => '2026-11-20T19:00:09.000Z')).toEqual(first);
+    const first = held.hold('asha:terms', 'answer-a', () => '2026-11-20T19:00:00.000Z');
+    expect(held.hold('asha:terms', 'answer-a', () => '2026-11-20T19:00:09.000Z')).toEqual(first);
     expect(first).toEqual({ key: 'key-1', recordedAt: '2026-11-20T19:00:00.000Z' });
-    expect(held.hold('answer-b', () => '2026-11-20T19:00:10.000Z').key).toBe('key-2');
-    held.confirmed('answer-a');
-    expect(held.hold('answer-a', () => '2026-11-20T19:01:00.000Z')).toEqual({ key: 'key-3', recordedAt: '2026-11-20T19:01:00.000Z' });
+    expect(held.hold('asha:sensitive', 'answer-b', () => '2026-11-20T19:00:10.000Z').key).toBe('key-2');
+    held.confirmed('asha:terms');
+    expect(held.hold('asha:terms', 'answer-a', () => '2026-11-20T19:01:00.000Z')).toEqual({ key: 'key-3', recordedAt: '2026-11-20T19:01:00.000Z' });
+    // Another group was not touched.
+    expect(held.hold('asha:sensitive', 'answer-b', () => '2026-11-20T19:02:00.000Z').key).toBe('key-2');
+  });
+
+  it('another answer in the same group ends the hold; a hold ends before the server forgets the key', async () => {
+    const { heldAnswers, HOLD_MS } = await import('../src/lib/auth/consent-key.logic');
+    let n = 0;
+    const held = heldAnswers(() => `key-${++n}`);
+    held.hold('asha:sensitive', 'agree', () => '2026-11-20T19:00:00.000Z');
+    held.hold('asha:sensitive', 'decline', () => '2026-11-20T19:01:00.000Z');
+    expect(held.hold('asha:sensitive', 'agree', () => '2026-11-20T19:02:00.000Z')).toEqual({ key: 'key-3', recordedAt: '2026-11-20T19:02:00.000Z' });
+    expect(HOLD_MS).toBeLessThan(24 * 60 * 60 * 1000);
+    const late = new Date(Date.parse('2026-11-20T19:02:00.000Z') + HOLD_MS).toISOString();
+    expect(held.hold('asha:sensitive', 'agree', () => late)).toEqual({ key: 'key-4', recordedAt: late });
   });
 });

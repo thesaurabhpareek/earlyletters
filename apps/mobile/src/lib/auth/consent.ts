@@ -108,7 +108,9 @@ export async function recordConsent(
     step === 'sensitive' ? {} : step === 'terms' ? { auth: method ?? 'unknown', age_attested: true } : { age_attested: true };
   // Everything record_policy_act fingerprints that can differ between two taps (ids and enums only, never text).
   const answerId = JSON.stringify([userId, document, version, accepted, step, context]);
-  const held = answers.hold(answerId, () => new Date().toISOString());
+  // One person's answers to one document: a new answer ends any earlier hold (consent-key.logic.ts).
+  const group = JSON.stringify([userId, document]);
+  const held = answers.hold(group, answerId, () => new Date().toISOString());
   const { error } = await sb
     .rpc('record_policy_act', {
       p_document: document,
@@ -125,7 +127,7 @@ export async function recordConsent(
     })
     .setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
   if (error) throw error;
-  answers.confirmed(answerId);
+  answers.confirmed(group);
 }
 
 /** True when this error means "consent is missing" (pause and show the sheets, never drop a write). */
