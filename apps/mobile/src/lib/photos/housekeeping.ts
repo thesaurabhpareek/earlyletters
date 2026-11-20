@@ -2,13 +2,14 @@
  * Keeps the picture files and the entry_media rows in step (ADR 0028 D1, D5). Safe to repeat after any kill:
  * - a draft's picture whose draft became a letter (a kill between the letter and the move) is handed to the letter;
  * - the picker's temporary originals are removed (review C7, NX-39-R53);
- * - a file with no row is removed (a kill between the write and the row);
+ * - a file with no row is removed (a kill between the write and the row); a name of another shape is not ours, so it
+ *   is neither removed nor counted;
  * - a row whose letter is gone (purged) loses its file first, then the row;
  * - a row whose file is missing is removed, so the letter reads whole with no picture and no message (OQ-2).
  * It never reads the photos switch: the data rights work with the switch off (NS-01-R19). It never touches words.
  */
 import type { SqlDb } from '../db/sql';
-import { photoPath, type PhotoFiles, type PickedFiles } from './types';
+import { isStoredName, photoPath, type PhotoFiles, type PickedFiles } from './types';
 
 export interface SweepCounts {
   orphanFiles: number;
@@ -53,7 +54,7 @@ export async function sweepPhotos(db: SqlDb, files: PhotoFiles, picked: PickedFi
     } else wanted.add(name);
   }
   for (const name of have) {
-    if (wanted.has(name)) continue;
+    if (wanted.has(name) || !isStoredName(name)) continue;
     try {
       await files.remove(name);
       counts.orphanFiles++;
