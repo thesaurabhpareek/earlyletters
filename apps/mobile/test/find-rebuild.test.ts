@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { noteRecordingSession } from '../src/lib/capture/busy';
 import { migrate } from '../src/lib/db/migrations';
 import { entries, type RepoContext } from '../src/lib/db/repos';
-import { dropSearchIndex, ensureSearchIndex, FIND_DIRTY_SETTING, FIND_SECURE_SETTING, forgetSearchState, reindexLetter, reconcileSearch, SEARCH_ROWS_TABLE } from '../src/lib/find/lifecycle';
+import { dropSearchIndex, ensureSearchIndex, FIND_DIRTY_SETTING, FIND_SECURE_SETTING, forgetSearchState, reindexLetter, reconcileSearch, SEARCH_ROWS_TABLE, searchIndexExists } from '../src/lib/find/lifecycle';
 import { optimizeIfDue, REBUILD_BATCH, rebuildSearchIndex } from '../src/lib/find/rebuild';
 import { searchLetters, type FindResult } from '../src/lib/find/search';
 import { forgetSearchView } from '../src/lib/find/sources';
@@ -64,6 +64,19 @@ describe('[NS-02-R35] the index rebuilds in small batches', () => {
     expect(await rebuildSearchIndex(f.db, { busy: () => false, pause })).toBe('ready');
     expect([...paths]).toEqual(['scan:451']);
     expect(mapCount()).toBe(451);
+  });
+
+  it('[NS-02-R35][NS-02-R19] a rebuild killed partway is not trusted by the next process: the scan answers until a catch-up finishes', async () => {
+    f = findFixture({ index: false });
+    seed(600);
+    let batches = 0;
+    void rebuildSearchIndex(f.db, { busy: () => false, pause: () => (++batches === 2 ? new Promise<void>(() => {}) : Promise.resolve()) });
+    while (batches < 2) await new Promise((r) => setTimeout(r, 0)); // the process dies here, 400 of 600 indexed
+    forgetSearchState(f.db); // the next process
+    const r = searchLetters(f.db, 'harbour', 'child-asha');
+    expect([mapCount(), searchIndexExists(f.db), r.status === 'done' && r.path, ids(r).length]).toEqual([400, false, 'scan', 600]);
+    expect(ensureSearchIndex(f.db)).toBe('ready');
+    expect([mapCount(), searchLetters(f.db, 'harbour', 'child-asha').status === 'done' && searchIndexExists(f.db)]).toEqual([600, true]);
   });
 
   it('[NS-02-R35] nothing runs while a take is recording; the rebuild starts when the take ends', async () => {
