@@ -24,7 +24,7 @@ Status: Proposed, 20 Nov 2026 (RD-I1). Author: `sync`. Target: `docs/tdd/new-sco
 | `apps/mobile/test/first-run-no-plus.test.ts`, `free-allowance.test.ts` | NS-44 rows | FP-14 |
 | `apps/mobile/test/update-line.test.ts`, `account-deletion-steps.test.ts` | NS-45-R5, R13, R15 | FP-15, FP-16 |
 
-Journeys (PROPOSED, `qa`): J-FR1 clean install to first kept letter on an SE 3 with Asha only, 90 s target (F03-REQ-008) and no permission prompt before Speak; J-FR2 airplane-mode install; J-FR3 restored phone; J-FR4 deletion request, kill, relaunch, cancel on a second phone. Device rows go on the run sheet of the build that carries them (`NS-34` pattern).
+Journeys (PROPOSED, `qa`): J-FR1 clean install to first kept letter on an SE 3 with Asha only, 90 s target (F03-REQ-008) and no permission prompt before Speak; on an iOS 26.2 account the Declared Age Range system sheet may appear at launch and is recorded as an expected system sheet, not a failure of NS-39-R2 (OQ-F11), and a run on iOS 17 to 26.1 records that no sheet appears; J-FR2 airplane-mode install; J-FR3 restored phone; J-FR4 deletion request, kill, relaunch, cancel on a second phone. Device rows go on the run sheet of the build that carries them (`NS-34` pattern).
 
 ## 15. The 96 P0 rows
 
@@ -126,6 +126,24 @@ Journeys (PROPOSED, `qa`): J-FR1 clean install to first kept letter on an SE 3 w
 | NS-45-R15 | `[NS-45-R15] deletion offline is clear` | U | SB | none | Delete account offline: line says nothing changed; no RPC call made | Call the RPC offline |
 | NS-45-R16 | `[NS-45-R16] servers-off has no account rows` | U | SB | none | Servers off: no Account, Sign out or Delete rows; Erase and export work | Show the rows |
 | NS-45-R18 | `[NS-45-R18] leaving works with VoiceOver and at AX5` | D | DV | none | VoiceOver and AX5 on SE 3 through sign-out sheet, both deletion steps, scheduled screen, update line | Pin the actions off-screen |
+
+
+## 15b. Added in round 2 (review A and B): rows the first draft missed
+Ids marked PROPOSED are not on any card; they are test titles for a row product may add (CF-7, CF-9) or for a design point. `qa` numbers them.
+
+| Row | Exact title (PROPOSED unless a card id) | Lvl | Run | Today | Fixture, act, assert | Mutant that must turn it red |
+|---|---|---|---|---|---|---|
+| NS-42-R7 (probe) | `[NS-42-R7] signature probe: old and new argument lists` | I | CI | none | `supabase/tests`: call `record_policy_act` by name with the 11 old named arguments and with the 13 new ones after `20261108000000`: both record; with `app.consent_fields_required = on` the 11-argument call raises 23502 | Apply the builder before the migration (the 13-argument call must fail with no candidate: the red state that proves the order) |
+| NS-42 gate | `[NS-42-GATE] zero sheet acts with app_build null in 14 days` | P | DOC | none | `scripts/ops` read-only count on `policy_acceptances` for sheet methods with `app_build is null` over the last 14 days; the checklist for flipping `app.consent_fields_required` needs 0 for 14 days | Flip with a non-zero count |
+| NS-42-R17 | `[NS-42-R17] withdrawing stops sync and keeps the letters on the phone` | I | SB | fails | After Yes, Me, Privacy offers Withdraw; one `withdraw` row; outbox pauses; nothing deleted; export works (needs CF-9 ruled and `withdraw_sensitive_data`) | Delete local letters on withdraw |
+| NS-41-R25 (hostile) | `[NS-41-R25] a hostile signed signIn true keeps every session` | U | SB | none | Feed a validly signed config with `killSwitches.signIn: true` to a phone with a session (FR-SEC-16): session kept and refreshed; a phone with none shows E-S14.outage with the local start | End the session on `signIn` |
+| NS-40-R15 | `[NS-40-R15] a hook error shows the outage screen, never the refusal` | I | CI | fails | Hook lookup error: per the ruling on CF-7 either sign-up proceeds (fail open, counted `error`) or is refused as an outage (fail closed); in both the phone shows no refusal and stores nothing; db case forces `ops.country_of` to raise | Map a hook error to `region_refused` |
+| NS-40-R16 | `[NS-40-R16] the age signal, IP and country reach no log` | S | SB | none | J-N18 canary over the age read, the sign-up error path and the refusal screen: no age value, range, IP, country code or hook message in logs, breadcrumbs, route params, analytics | Log the hook message in a catch |
+| NS-45-R4 (listener) | `[NS-45-R4] a revoke event signs out after uploads` | U | SB | none | Fake `addRevokeListener` emitter fires while foregrounded: `apple_revoked` sign-out once after uploads; listener removed at sign-out | Leave it registered |
+| NS-44-FS31 | `[NS-44-FS31] under 1 GB shows a line, under 50 MB refuses` | U | SB | none | `spaceLine` and `freeBytesFrom` stub: 900 MB gives the line and Speak starts; 40 MB refuses; no byte figure rendered | Render the byte count |
+| manifest | `[PRIVACY-MANIFEST] disk-space reason stays E174.1 and no free-space figure is shown` | S | SB | none | `lib/privacy-manifest.ts` DiskSpace entry lists only E174.1; scan fails when a component formats `availableDiskSpace` or `freeBytes` | Add 85F4.1 or format the figure |
+| NS-39-R2 (exception) | `[NS-39-R2] only Apple's age sheet may appear at launch` | J | DV | none | iOS 26.2 account: the one allowed system sheet is Declared Age Range; any other prompt fails the flow | Request notifications at launch |
+| Turnstile | `[NS-41-CAPTCHA] the email send carries a token and a refused challenge has words` | I | CI | none | After FP-20: send with and without a token against staging with CAPTCHA on; no token never reaches a log | Log the token |
 
 ## 16. Harness notes
 - One shared stub kit `apps/mobile/test/helpers/first-run-stubs.ts` (PROPOSED): throwing fetch, Supabase client with recorded calls, Keychain and settings in memory, `expo-local-authentication` and `expo-apple-authentication` fakes (the real imports are a baseline failure in the sandbox: 8 files, 73 tests), a fixed clock, and Asha A and Asha B fixtures. Built once in FP-12, reused by FP-6 to FP-16.
