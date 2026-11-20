@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:41 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:04 UTC).
 Blocked until: BL-931 and BL-932 (PR b needs the list copy). `design-systems` confirms the large-text thumbnail (88 pt from AX3, backlog default) before PR a. The lens radio group (R48) is already built in #840; do not rebuild it. Catalogue B has no title for R42 (fit, never crop): the title below is PROPOSED and product or qa confirms it.
 
 ```
-BRIEF BL-956 (pictures at large text, Smart Invert, fit, light lens)   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:41 UTC
+BRIEF BL-956 (pictures at large text, Smart Invert, fit, light lens)   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 1. GOAL: When text is at AX3 or larger, Speak, Type and Change stay on screen with the thumbnail at most 88 pt; every picture ignores Smart Invert; a panorama
@@ -57,6 +57,6 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 15. STOP AND ASK: the 88 pt rule is changed by design-systems; `components/ui/**` must change; a decode miss tempts `expo-image`.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl956 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl956 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl956.md`. Branches `feat/mobile-bl-956-{a-frame,b-lens}`. Comments start `<!-- agent:mobile -->`.
 ```

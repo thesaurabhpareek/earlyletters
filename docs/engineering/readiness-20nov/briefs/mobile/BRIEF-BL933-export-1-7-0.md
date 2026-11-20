@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:30 UTC).
-Blocked until: BL-868 merged (the `docs/legal` edit, founder merges it, D-125, CR-62 item 3; legal and content draft the words; BL-868 is "ready, not written" [V plan 2.2]); BL-931 done (#835 to #840 merged); Karma rules the export minor (errata E25 holds BL-933 until the founder merges the legal edit; E5 allocates minors in merge order). Conflict for product: NS-52 (several items per letter, unlocked, PACK-DELTA-3 in PR #932) cannot fit `ExportEntry.photo: ExportPhoto | null`; AX-3 (export for minors) is a CR-67 item in the same ADR amendment (BL-959, not seen merged [U]). Build the locked card: one picture.
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Blocked until: BL-868 merged (the `docs/legal` edit, founder merges it, D-125, CR-62 item 3; legal and content draft the words; BL-868 is "ready, not written" [V plan 2.2]); BL-931 done (#835 to #840 merged); Karma rules the export minor (errata E25 holds BL-933 until the founder merges the legal edit; E5 allocates minors in merge order). Conflict for product: NS-52 (several items per letter, unlocked, PACK-DELTA-3 in PR #932) cannot fit `ExportEntry.photo: ExportPhoto | null`; AX-3 (export for minors) is a CR-67 item in the same ADR amendment (BL-959, not seen merged [U]). Build the locked card: one picture. The number "1.7.0" is the plan's placeholder: E5 allocates minors in merge order and CR-67 AX-3 (export for minors) is in the same ADR amendment, so the version is set when the PR merges, not hard-coded earlier.
 
 ```
-BRIEF BL-933 (export schema 1.7.0)                Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:30 UTC
+BRIEF BL-933 (export schema 1.7.0)                Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (export owner)   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 1. GOAL: When a parent exports the book, each kept picture is in the ZIP at `photos/<entry_id>/<media_id>.jpg` as the stored copy only, with no
@@ -63,6 +63,6 @@ Agent: mobile (export owner)   Lane: Pack 1 (Photo and media)   Build: 14 on   W
 
 15. STOP AND ASK: the minor number is contested; the export must carry several pictures or video (NS-52); a column is classed without privacy; `docs/legal/**` must change.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl933 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl933 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl933.md`. Branches `feat/mobile-bl-933-{a-schema,b-golden}`. Comments start `<!-- agent:mobile -->`.
 ```

@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:25 UTC).
-Blocked until: BL-931 is done (all of #835 to #840 merged); BL-953 merged (same Swift file); `expo-image` is NOT adopted (LD-06, PR #919), so a decode miss on a device needs its own ruling. Open conflicts for product and Karma: NS-52 (several pictures, video, unlocked, PACK-DELTA-3 in PR #932) multiplies copies and posters; FR-REL-66 asks memory under 150 MB with 1,000 letters, 300 pictures, 100 videos. Do not build for media; build for one picture and leave the rows open. The design is Conflict E3: SectionList (design) against FlatList (eval B).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Blocked until: BL-931 is done (all of #835 to #840 merged); BL-953 merged (same Swift file); `expo-image` is NOT adopted (LD-06, PR #919), so a decode miss on a device needs its own ruling. Open conflicts for product and Karma: NS-52 (several pictures, video, unlocked, PACK-DELTA-3 in PR #932) multiplies copies and posters; FR-REL-66 asks memory under 150 MB with 1,000 letters, 300 pictures, 100 videos. Do not build for media; build for one picture and leave the rows open. Open owner: the Low Power Mode read has NO owner: the design names `scribe-system`, which does not exist, and `expo-battery` is not installed [V]; Karma decides (one native read, or the D-065 dependency); until then regeneration waits on `captureBusy()` only and the Low Power rule stays an open row. The design is Conflict E3: SectionList (design) against FlatList (eval B).
 
 ```
-BRIEF BL-932 (NS-37, three PRs)                   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:25 UTC
+BRIEF BL-932 (NS-37, three PRs)                   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: gates 14 on (J-N13)   Wave: 2
 
 1. GOAL: When the Book holds 1,000 letters and 300 pictures, the lens and the letter page read only a 512 px list copy and a 1,280 px page copy,
@@ -65,6 +65,6 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: gates 14 on (J-N13)   Wa
 
 15. STOP AND ASK: a Swift change beyond `makeCopy`; a new dependency (expo-image, expo-battery); copy names the ADR does not know (route to data-architect); product amends NS-37 for media.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl932 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl932 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl932.md`. Branches `feat/mobile-bl-932-{a-makecopy,b-writer,c-readers}`. Comments start `<!-- agent:mobile -->`.
 ```
