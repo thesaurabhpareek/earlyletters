@@ -14,7 +14,7 @@ Decisions and facts that bind Build 13 work; re-check each against `develop` bef
 - No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` line 11); `AGENTS_ENABLED` not verified (verified 2026-11-20).
 - Only `startCapture({source})` starts a letter (`apps/mobile/src/lib/capture/start-capture.ts:24`; #828, 5f5dfaf4; NS-35); `apps/mobile/test/navigation-one-entry.test.ts` fails on any other push of `/listen` or `/write` (verified 2026-11-20).
 - ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is only on #797's branch (verified 2026-11-20).
-- The photo work is nine stacked PRs, each on the slice below: #834, #841, #842, #835 to #840 (#833 closed under the picker ruling). BL-931 still says eight, #833 to #840 (verified 2026-11-20).
+- The photo work is stacked slices, each on the one below: #834 merged (76a4a5d7, `scribe-photo`); #841, #842 and #835 to #840 open; #833 closed under the picker ruling. BL-931 still says eight PRs, #833 to #840 (verified 2026-11-20).
 - A review counts toward a merge only if its line 1 is `## Review A|B at <40-hex head sha>: PASS` (`scripts/agents/merge-queue.mjs:72`); Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
