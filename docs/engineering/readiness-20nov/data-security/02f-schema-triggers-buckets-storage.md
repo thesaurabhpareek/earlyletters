@@ -4,7 +4,7 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 
 ## Triggers (49 on 15 tables, plus `on_auth_user_created` on `auth.users`)
 
-The triggers are where the constitution lives in the database: `raw_transcript` immutable (`entries_guard`), append-only evidence (`*_guard`, `*_no_truncate`), pseudonymisation at account deletion (`profiles_pseudonymise_*`), the consent gate on content writes (`*_consent_gate`). `on_auth_user_created` (after insert on `auth.users`, function `handle_new_user`, `20260930000000:35-36`) creates the profile row and is outside the list below because it sits in the `auth` schema. Test pointers are in 02e under the function name.
+The triggers are where the constitution lives in the database: `raw_transcript` immutable (`entries_guard`), append-only evidence (`*_guard`, `*_no_truncate`), pseudonymisation at account deletion (`profiles_pseudonymise_*`), the consent gate on content writes (`*_consent_gate`). `on_auth_user_created` (after insert on `auth.users`, function `handle_new_user`, `20260930000000:35-36`) creates the profile row and is outside the list below because it sits in the `auth` schema. Test pointers are in 02e under the function name. The counts here reproduce with the recipe in 02e.
 
 | Table | Trigger | When | Function | Enforces |
 |---|---|---|---|---|
@@ -64,8 +64,8 @@ Three buckets are created by migrations [V: `storage.buckets` after all 31 files
 
 | Bucket | Created at | Limit and types | Path | L | Read | Write | Retention and deletion | Tests |
 |---|---|---|---|---|---|---|---|---|
-| entry-photos | `20260930000000:289-292` | 10 MiB; jpeg, heic, png | `{child_id}/{author_id}/{entry_id}.{ext}` | L4 (path L3) | author, and members who may read the letter (`can_read_entry_photo`, `entry_photos_read`) | author insert and update, with member, live book, consent and not-purged checks (`20261028000000:88-96`); author delete | with the letter: `purge_due` queues the exact path; book purge queues the prefix; account purge queues `{child}/{author}/`. Queue drained by the purge worker | access_matrix, data_governance, former_member_purge, purge_batching |
-| entry-audio | `20261023000000:677-680` | 20 MiB; octet-stream | `{child}/{author}/{entry}.m4a.enc` | L4 (ciphertext) | owner only, never switched off (`backup_object_readable`) | owner, exact pending path only, while backup is on and consented (`backup_object_writable`) | per 02d `audio_blobs`; delete enqueues the exact path (`audio_blobs_after_change`) | audio_backup, audio_backup_purge, backup_role |
+| entry-photos | `20260930000000:289-292` | 10 MiB; jpeg, heic, png | `{child_id}/{author_id}/{entry_id}.{ext}` | L4 (path L3) | author, and members who may read the letter (`can_read_entry_photo`, `entry_photos_read`) | author insert and update, with member, live book, consent and not-purged checks (`20261028000000:88-99`); author delete | with the letter: `purge_due` queues the exact path; book purge queues the prefix; account purge queues `{child}/{author}/`. Queue drained by the purge worker | access_matrix, data_governance, former_member_purge, purge_batching |
+| entry-audio | `20261023000000:677-680` | 20 MiB; octet-stream | `{child}/{author}/{entry}.m4a.enc` | L4 (ciphertext) | owner only, never switched off (`backup_object_readable`) | owner, exact pending path only, while backup is on and consented (`backup_object_writable`) | per 02d `audio_blobs`; delete enqueues the exact path (`audio_blobs_after_change`) | access_matrix, audio_backup, audio_backup_purge, former_member_purge |
 | ops-ledger | `20261004200000:611` | none set | `purges/YYYY-MM-DD.jsonl`, `escrow/YYYY-MM-DD.run-<stamp>.jsonl` | L3 | service role only; no storage policy | service role only | 60 days; never purged by account or book deletion (`buckets.ts` scope system) | ops_deletion_worker; worker tests |
 | child-photos | not created | n/a | `{child_id}/{uuid}.{ext}` | L4 | n/a | n/a | referenced by `ops_storage_residue`, `purge_book_keep_authors` (`20261023010000:143`) and `children.photo_path`; the worker skips a bucket that does not exist | none (nothing to test) |
 | inbox, avatars, exports | not created | n/a | see `DATA_CLASSIFICATION.md` 4.4 | L4, L3, L4 | n/a | n/a | planned (v1.1, P1) | none |
@@ -77,7 +77,7 @@ Three buckets are created by migrations [V: `storage.buckets` after all 31 files
 | entry_photos_no_anonymous | all | restrictive: anonymous sessions cannot touch entry-photos |
 | entry_photos_read | select | own folder, or `can_read_entry_photo(name)` |
 | entry_photos_author_insert | insert | own folder, depth 2, member, live book, consent, not an erased letter id |
-| entry_photos_author_update | update | same as insert (a rename or upsert goes through update) |
+| entry_photos_author_update | update | USING: own folder; WITH CHECK: the new row passes every insert check (a rename or upsert goes through update) |
 | entry_photos_author_delete | delete | own folder |
 | entry_audio_no_anonymous | all | restrictive |
 | entry_audio_owner_read | select | `backup_object_readable(name)` |

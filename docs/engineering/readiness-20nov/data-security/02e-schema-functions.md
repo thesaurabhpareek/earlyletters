@@ -1,15 +1,26 @@
 # 02e Schema reference: functions
 
-Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: develop `4d33978f` (cited code and migration paths unchanged at `12c55d66`), 31 migrations loaded in the test harness and read from `pg_proc` [V]. `sync_private` (17 functions, 1 table) is a schema the API does not expose; `20261016000000:227-234` grants USAGE to authenticated. Part of 02 (see 02a for the legend and the file list).
+Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: develop `4d33978f` (cited code and migration paths unchanged at `12c55d66`), 31 migrations loaded in the test harness and read from `pg_proc` [V]. `sync_private` (17 functions, 1 table; 15 granted to au, 2 definer-only) is a schema the API does not expose; `20261016000000:227-234` grants USAGE to authenticated. Part of 02 (see 02a for the legend and the file list).
 
 ## What the catalog shows
 
-- 206 functions in `public`, `ops`, `insights` and `sync_private`: 55 callable by a signed-in person (client RPCs), 17 in `sync_private` (granted to au but not reachable through the API), 42 callable by `service_role` only, 47 internal helpers no role may call, 39 trigger functions (02f), 6 in `insights`. [V]
+- 206 functions in `public`, `ops`, `insights` and `sync_private`: 55 callable by a signed-in person (client RPCs), 15 in `sync_private` (granted to au but not reachable through the API; 2 more are definer-only and sit in the internal list), 42 callable by `service_role` only, 46 internal non-trigger helpers no role may call (44 in `public` and `ops`, 2 in `sync_private`), 42 trigger functions (02f; includes `ops.audit_log_guard`, `ops.audit_log_no_truncate` and `handle_new_user`), 6 in `insights`. [V]
 - No function is executable by `PUBLIC` or by `anon`: 0 of 206 [V in the harness; the hosted project's grants were not read, U]. This is the default-privilege reset of `20261023060000_explicit_grants.sql` plus a revoke in each migration; `supabase/tests/grants.mjs:18-27` lists the `service_role` functions and `explicit_grants.test.mjs` pins them.
 - All 206 set `search_path` with `pg_temp` last [V] (`20261028000000_pg_temp_last_and_purged_photos.sql`; `pg_temp_search_path.test.mjs`, `v1_gate_search_path.test.mjs`). 154 run as definer (owner rights, so they are the only way past RLS) and 52 as invoker. Of the invokers, `sync_push` is the main one that writes letters with the caller's own table grants.
 - Authenticated RPCs have no list in `grants.mjs` today (`SERVICE_ROLE_FUNCTIONS` only); a new RPC has no failing test for a wrong grant (Gap G-17; `data-and-sync.md` R9 says `qa` adds `AUTHENTICATED_FUNCTIONS`).
 - "Tests naming it" lists test files in `supabase/tests` whose text contains the function name; it is a pointer, not a proof of an allow and a deny case.
 - Latest definition is the last migration file that creates the function (an older file may define it first; never edit those).
+
+## How to reproduce every [V] count in this file and in 02f
+
+Build the database as the tests do: `createDb(files)` from `supabase/tests/harness.mjs` with all 31 files of `supabase/migrations` sorted by name (PGlite, default grants "none"; run again with `SCRIBE_DEFAULT_GRANTS=legacy`: the PUBLIC and anon counts stay 0, so the migrations' own revokes carry it). Then query:
+
+- functions: `select n.nspname, p.proname, p.prosecdef, p.proconfig, p.prorettype::regtype from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname in ('public','ops','insights','sync_private') and p.prokind = 'f'` (206 rows; 154 `prosecdef`; 42 return `trigger`);
+- roles: `has_function_privilege('anon'|'authenticated'|'service_role', p.oid, 'execute')`; PUBLIC: `exists (select 1 from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a where a.grantee = 0 and a.privilege_type = 'EXECUTE')` (0 rows);
+- search_path: every `proconfig` has a `search_path=` entry ending in `pg_temp`;
+- triggers: `select count(*), count(distinct tgrelid) from pg_trigger where not tgisinternal` for the three schemas (49 on 15 tables); storage: `select count(*) from pg_policies where schemaname = 'storage'` (9) and `select id from storage.buckets` (3).
+
+The 44 functions in `supabase/tests/grants.mjs:18-33` (`SERVICE_ROLE_FUNCTIONS`) are the same set as the 42 service-only rows here plus `dictionary_forms_valid` and `is_anonymous`, which au can also execute. A hosted project needs the same queries run by the founder; none was run (U).
 
 ## Client RPCs (callable by au; rows limited by the function)
 
@@ -22,42 +33,42 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | backup_confirm(uuid,bytea) | definer | 20261023000000:947 | mark an upload done after checking size and hash | access_matrix, audio_backup, audio_backup_purge +1 |
 | backup_delete_all(int) | definer | 20261023000000:1014 | turn backup off and delete every recording backup | access_matrix, audio_backup |
 | backup_discard(uuid) | definer | 20261023000000:995 | drop one reservation or orphan backup | access_matrix, audio_backup, audio_backup_purge |
-| backup_object_readable(text) | definer | 20261023000000:697 | storage policy helper: own backup objects only | access_matrix, audio_backup, former_member_purge |
-| backup_object_writable(text) | definer | 20261023000000:685 | storage policy helper: the exact pending path only | access_matrix, audio_backup |
+| backup_object_readable(text) | definer | 20261023000000:697 | helper (policy or predicate, not a product call): storage policy helper: own backup objects only | access_matrix, audio_backup, former_member_purge |
+| backup_object_writable(text) | definer | 20261023000000:685 | helper (policy or predicate, not a product call): storage policy helper: the exact pending path only | access_matrix, audio_backup |
 | backup_pending_requests(uuid) | definer | 20261023000000:1054 | what restore requests wait for this phone | access_matrix, audio_backup_escrow |
 | backup_register_device(uuid,bytea) | definer | 20261023000000:716 | enrol a phone by public key | access_matrix, audio_backup, audio_backup_escrow +1 |
 | backup_revoke_device(uuid) | definer | 20261023000000:752 | revoke an enrolled phone | access_matrix, audio_backup, audio_backup_escrow |
 | backup_store_key(uuid,int,int,jsonb,bytea) | definer | 20261023000000:784 | store the escrow wrap of a book key | access_matrix, audio_backup, audio_backup_escrow +3 |
 | book_update(uuid,jsonb) | definer | 20261109000000:98 | change a book's settings (name, nickname, dates, look) | access_matrix, child_name_optional, children_entitlements +3 |
-| can_read_entry_photo(text) | definer | 20261003000000:586 | storage policy helper: may this person read a letter photo | access_matrix, pg_temp_search_path |
-| can_write_content() | definer | 20261003000000:182 | consent gate predicate for content writes | access_matrix |
+| can_read_entry_photo(text) | definer | 20261003000000:586 | helper (policy or predicate, not a product call): storage policy helper: may this person read a letter photo | access_matrix, pg_temp_search_path |
+| can_write_content() | definer | 20261003000000:182 | helper (policy or predicate, not a product call): consent gate predicate for content writes | access_matrix |
 | cancel_account_deletion() | definer | 20261005000000:460 | cancel an open account deletion (5 per day) | access_matrix, audio_backup, audio_backup_escrow +5 |
 | cancel_book_deletion(uuid) | definer | 20261003000000:691 | cancel a book deletion inside the grace period | access_matrix, data_governance |
-| child_is_live(uuid) | definer | 20261002020000:84 | is the book not tombstoned or purged | access_matrix, pg_temp_search_path |
+| child_is_live(uuid) | definer | 20261002020000:84 | helper (policy or predicate, not a product call): is the book not tombstoned or purged | access_matrix, pg_temp_search_path |
 | create_child(uuid,text,date,date) | definer | 20261015000000:778 | make a book (rate limited to 20 per day) | access_matrix, child_name_optional, children_entitlements +6 |
 | create_child_invite(uuid,text,text) | definer | 20261015020000:118 | make an invite; 7-argument form takes phone-made hashes | access_matrix, db_followup_family_cap, db_followup_idempotency_rates +6 |
 | create_child_invite(uuid,uuid,text,bytea,bytea,text) | definer | 20261015020000:231 | make an invite; 7-argument form takes phone-made hashes | access_matrix, db_followup_family_cap, db_followup_idempotency_rates +6 |
 | create_first_run_children(jsonb) | definer | 20261015000000:798 | make the first-run books as one batch | access_matrix, child_name_optional, children_entitlements +1 |
 | delete_entry(uuid) | definer | 20261015000000:829 | tombstone the author's own letter | access_matrix, data_governance, db_followup_family_cap +6 |
-| dictionary_forms_valid(jsonb) | invoker | 20261015030000:70 | shape check for dictionary forms | access_matrix, grants* |
-| is_anonymous() | invoker | 20261003000000:55 | reads the anonymous claim of the JWT | access_matrix, audio_backup, consent_grants_tightening +3 |
-| is_child_member(uuid) | definer | 20260930000000:57 | RLS predicate: caller is in the book | access_matrix, pg_temp_search_path, rls +1 |
-| is_child_parent(uuid) | definer | 20261002020000:57 | RLS predicate: caller is a parent of the book | access_matrix, pg_temp_search_path, v1_gate_search_path |
-| is_valid_client_uuid7(uuid) | invoker | 20261003010000:57 | accepts only well-formed UUIDv7 client ids | access_matrix |
+| dictionary_forms_valid(jsonb) | invoker | 20261015030000:70 | helper (policy or predicate, not a product call): shape check for dictionary forms (also executable by service_role) | access_matrix, grants* |
+| is_anonymous() | invoker | 20261003000000:55 | helper (policy or predicate, not a product call): reads the anonymous claim of the JWT (also executable by service_role) | access_matrix, audio_backup, consent_grants_tightening +3 |
+| is_child_member(uuid) | definer | 20260930000000:57 | helper (policy or predicate, not a product call): RLS predicate: caller is in the book | access_matrix, pg_temp_search_path, rls +1 |
+| is_child_parent(uuid) | definer | 20261002020000:57 | helper (policy or predicate, not a product call): RLS predicate: caller is a parent of the book | access_matrix, pg_temp_search_path, v1_gate_search_path |
+| is_valid_client_uuid7(uuid) | invoker | 20261003010000:57 | helper (policy or predicate, not a product call): accepts only well-formed UUIDv7 client ids | access_matrix |
 | leave_child(uuid,boolean) | definer | 20261005000000:337 | leave a book, keep or take out own letters | access_matrix, data_governance, db_followup_family_cap +9 |
-| my_auto_add_in(uuid) | definer | 20261003000000:115 | caller's auto-add setting for a book | access_matrix |
-| my_role_in(uuid) | definer | 20261003000000:110 | caller's role in a book | access_matrix |
+| my_auto_add_in(uuid) | definer | 20261003000000:115 | helper (policy or predicate, not a product call): caller's auto-add setting for a book | access_matrix |
+| my_role_in(uuid) | definer | 20261003000000:110 | helper (policy or predicate, not a product call): caller's role in a book | access_matrix |
 | my_sync_gate() | definer | 20261003000000:171 | caller's consent gate state for the app | access_matrix, consent_grants_tightening, security_family |
 | peek_invite(text) | definer | 20261015010000:141 | show inviter signature and role before joining | access_matrix, v1_gate_coparent, v1_gate_limits_peek_pepper +1 |
-| photo_entry_is_purged(text) | definer | 20261028000000:62 | storage policy helper: is the letter purged | access_matrix, pg_temp_search_path |
+| photo_entry_is_purged(text) | definer | 20261028000000:62 | helper (policy or predicate, not a product call): storage policy helper: is the letter purged | access_matrix, pg_temp_search_path |
 | policy_actions_needed() | definer | 20261005000000:558 | documents the caller must act on | access_matrix, consent_grants_tightening, data_governance +2 |
 | rate_hit(text) | definer | 20261015000000:88 | count a call against a rate bucket | access_matrix, db_followup_idempotency_rates, v1_gate_limits_peek_pepper |
 | record_policy_act(text,text,text,text,text,text,text,text,tim...) | definer | 20261108000000:118 | record a consent or acknowledgement act | access_matrix, audio_backup, audio_backup_escrow +16 |
 | remove_child_member(uuid,uuid,boolean) | definer | 20261005000000:362 | a parent removes a family member | access_matrix, db_followup_family_cap, v1_gate_coparent +1 |
 | request_account_deletion(text,boolean) | definer | 20261005000000:408 | start an account deletion with 30-day grace | access_matrix, audio_backup, audio_backup_escrow +12 |
 | request_book_deletion(uuid,text) | definer | 20261003000000:661 | start a book deletion with 30-day grace | access_matrix, audio_backup_purge, data_governance +8 |
-| require_content_consent() | definer | 20261003000000:190 | raise SCCON when content may not be written | access_matrix |
-| require_user() | invoker | 20261003000000:62 | every RPC starts here; returns the caller id | access_matrix |
+| require_content_consent() | definer | 20261003000000:190 | helper (policy or predicate, not a product call): raise SCCON when content may not be written | access_matrix |
+| require_user() | invoker | 20261003000000:62 | helper (policy or predicate, not a product call): every RPC starts here; returns the caller id | access_matrix |
 | restore_entry(uuid) | definer | 20261015000000:842 | restore a tombstoned letter within 30 days | access_matrix, data_governance, db_followup_language +1 |
 | review_family_letter(uuid,text,text) | definer | 20261003000000:502 | a parent adds or sets aside a family letter | access_matrix, db_followup_family_cap, security_family |
 | revoke_invite(uuid) | definer | 20261003000000:349 | revoke an open invite | access_matrix, security_family, v1_gate_limits_peek_pepper |
@@ -71,7 +82,7 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | undo_parent_join(uuid,uuid) | definer | 20261015020000:403 | undo a parent join within 72 hours | access_matrix, former_member_purge, v1_gate_coparent +1 |
 | withdraw_family_letter(uuid) | definer | 20261003000000:532 | a family member takes back a letter | access_matrix, security_family, v1_gate_hardening |
 
-## sync_private helpers (granted to au; the API does not expose the schema, `sync_push` calls them)
+## sync_private helpers granted to au (15; the API does not expose the schema, `sync_push` calls them)
 
 | Function | Runs as | Latest definition | Purpose | Tests naming it |
 |---|---|---|---|---|
@@ -79,7 +90,6 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | sync_private.dup_outcome(uuid,uuid) | definer | 20261016000000:254 | was the op applied before | access_matrix, sync_v1_server |
 | sync_private.erase_entry(uuid) | definer | 20261016000000:881 | hard-delete a letter now and record it | access_matrix, former_member_purge, purge_legal_holds +1 |
 | sync_private.erase_held(uuid) | definer | 20261016000000:830 | hard-delete a held draft | access_matrix, sync_v1_server |
-| sync_private.erasure_recorded(uuid,uuid) | definer | 20261016000000:398 | was this letter id erased | sync_v1_server |
 | sync_private.held_discard(uuid,xid8) | definer | 20261016000000:771 | delete a held draft and its words | access_matrix, sync_v1_server |
 | sync_private.held_dup(uuid,uuid) | invoker | 20261016000000:752 | repeat check for a held op | access_matrix, sync_v1_server |
 | sync_private.held_id_taken(uuid) | definer | 20261016000000:627 | is the held draft id in use | access_matrix, sync_v1_server |
@@ -87,7 +97,6 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | sync_private.held_state(uuid,boolean) | invoker | 20261016000000:645 | stamp the state of a held draft | access_matrix, entries_machine_edits_check, sync_v1_server |
 | sync_private.held_upsert(uuid,uuid,o jsonb) | invoker | 20261016000000:680 | write a held draft | access_matrix, sync_v1_server |
 | sync_private.keep_check(uuid,uuid,text,xid8) | definer | 20261016000000:797 | checks before a Keep | access_matrix |
-| sync_private.letter_id_taken(uuid,uuid) | definer | 20261016000000:407 | is the letter id used by another author | sync_v1_server |
 | sync_private.lock_letter_id(uuid) | invoker | 20261016000000:291 | advisory lock for an id | access_matrix, sync_v1_server |
 | sync_private.note_answer(uuid,jsonb) | definer | 20261016000000:276 | store the first answer of an op | access_matrix |
 | sync_private.note_applied(uuid,uuid,boolean,boolean) | definer | 20261016000000:239 | record that an entry op applied | access_matrix, sync_v1_server |
@@ -140,12 +149,10 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | sync_begin_epoch(text,timestamptz) | definer | 20261004100000:143 | start a restore epoch | access_matrix, grants*, sync_engine |
 | sync_housekeeping(timestamptz,int) | definer | 20261015000000:749 | trim receipts, windows, idempotency keys | access_matrix, db_followup_idempotency_rates, grants* +2 |
 
-## Internal helpers (no role may call; reached from other definer functions or policies)
+## Internal helpers (46; no role may call; reached from other definer functions or policies; includes `sync_private.erasure_recorded` and `sync_private.letter_id_taken`, definer-only since `20261016000000:2066-2067`)
 
 | Function | Runs as | Latest definition | Purpose | Tests naming it |
 |---|---|---|---|---|
-| ops.audit_log_guard() | invoker | 20261004200000:50 | trigger: append-only guard | none |
-| ops.audit_log_no_truncate() | invoker | 20261108020000:94 | trigger: block truncate | audit_append_only |
 | audit(text,text,uuid,uuid,jsonb) | definer | 20261002020000:332 | write an audit_events row (definer, no role may call) | access_matrix, audit_append_only, data_governance +4 |
 | backup_account_deleting(uuid) | definer | 20261023000000:171 | is an account deletion open | access_matrix |
 | backup_entry_exists(uuid,uuid,uuid) | definer | 20261023000000:188 | does the letter still exist | access_matrix, audio_backup |
@@ -178,7 +185,6 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | escrow_rotation_on(int,int) | invoker | 20261023000000:243 | is a rotation on | access_matrix |
 | escrow_set_request_state(uuid,uuid,text) | definer | 20261023000000:1412 | move a restore request state | access_matrix, audio_backup_escrow |
 | family_share_consent_required() | invoker | 20261015020000:96 | is family-share consent required | access_matrix, v1_gate_coparent |
-| handle_new_user() | definer | 20260930000000:27 | trigger on auth.users: create the profile | rls |
 | idempotency_claim(uuid,text,jsonb) | invoker | 20261005000000:165 | claim a request key (invoker) | access_matrix |
 | idempotency_store(uuid,text,jsonb) | invoker | 20261005000000:198 | store the first result (invoker) | access_matrix |
 | invite_policy_checks(uuid,text) | definer | 20261015020000:103 | invite role and consent checks | access_matrix |
@@ -191,6 +197,8 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 | subscription_instant(jsonb,boolean) | invoker | 20261016001000:227 | validate a status timestamp | access_matrix |
 | subscription_rate_hit(uuid,text) | invoker | 20261016001000:193 | count a status call | access_matrix |
 | subscription_report_switch() | invoker | 20261016001000:215 | raise unless reporting is on | access_matrix |
+| sync_private.erasure_recorded(uuid,uuid) | definer | 20261016000000:398 | was this letter id erased | sync_v1_server |
+| sync_private.letter_id_taken(uuid,uuid) | definer | 20261016000000:407 | is the letter id used by another author | sync_v1_server |
 
 ## insights schema helpers (service_role executes the k helpers and language_mix_available; _language_counts has no grant)
 
@@ -209,5 +217,5 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 
 ## Questions for the council
 
-- Q-e1 (CISO) Add `AUTHENTICATED_FUNCTIONS` to `grants.mjs`. Default: yes, owner `qa`, listing the 55 above; `data-architect` supplies the list.
+- Q-e1 (CISO) Add `AUTHENTICATED_FUNCTIONS` to `grants.mjs`. Default: yes, owner `qa`, listing the 55 client RPCs and the 15 granted sync_private helpers above (not the two definer-only ones); `data-architect` supplies the list.
 - Q-e2 (CDO) `sync_push` is an invoker function and relies on direct table grants for `entries`, `held_drafts` and `child_member_prefs`. Default: keep as is; moving it to definer would widen what a bug can reach.
