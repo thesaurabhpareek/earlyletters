@@ -1,5 +1,7 @@
 # Engineering plan: size, skills, order and dependencies (Karma, 19 Nov 2026)
 
+Task-level plan (one row per backlog row and open PR, critical paths, capacity, device batches): `16-engineering-project-plan.md`.
+
 For the harness and the engineers. The product cards say what and why; this file says how big, who, and in what order. It sets no dates: release dates are the founder's. Sizes are estimates [E] and are re-sized by the engineer who picks the work.
 
 ## 1. How to read a size
