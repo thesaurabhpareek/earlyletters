@@ -12,10 +12,10 @@ Before the PR is opened:
 - [ ] Fixtures use the family Asha only; no real name, letter, picture, voice or path anywhere (CLAUDE.md privacy rules).
 - [ ] ASCII only in added lines (no em or en dashes, curly quotes, ellipsis characters, emoji) except a fixture that needs a script on purpose.
 - [ ] No `console.*`, log, breadcrumb, analytics or crash call carries content, a path or a hash (OBS-R02; `docs/engineering/ENFORCEMENT.md:52` [V]).
-- [ ] Sandbox baseline unchanged: 8 `apps/mobile` test files red (`app-lock-wiring`, `capabilities`, `config`, `hosting-ios17`, `licences`, `preflight-production`, `privacy-manifest`, `store-sign-in-capabilities`; missing `expo-local-authentication` and `expo-clipboard`; 73 tests) and `tsc` shows its 5 known errors [V, run in the #835 to #838 reviews]. Nothing else red.
+- [ ] Sandbox baseline unchanged (a rule for agents in the sandbox, not a CI gate): 8 `apps/mobile` test files red (`app-lock-wiring`, `capabilities`, `config`, `hosting-ios17`, `licences`, `preflight-production`, `privacy-manifest`, `store-sign-in-capabilities`; missing `expo-local-authentication` and `expo-clipboard`; 73 tests) and `tsc` shows its 5 known errors [V, run in the #835 to #838 reviews]. Nothing else red.
 
 Before it merges:
-- [ ] CI `required` and `applied migrations unchanged` green (`.github/README.md` branch protection list [V]).
+- [ ] CI `required`, compliance-fence and `applied migrations unchanged` green (`.github/README.md` branch protection list [V]).
 - [ ] Two independent reviews on the current head, each starting `## Review A|B at <sha>: ...` and counted under CR-63 (`docs/agents/cto/RULINGS.md:594` [V]); merge by Karma (D-132, `docs/DECISIONS.md:655` [V]).
 - [ ] Every Must fix closed with a commit, and the head re-read from the API after the last push.
 - [ ] Anything only a phone can prove is listed under "Not verified" in the PR body and has a row on a run sheet (`JOURNEYS-AND-DEVICE-SHEETS.md`).

@@ -9,6 +9,8 @@ Engineers (mostly agents) build to the rows in the four `TEST-CASE-CATALOGUE-*.m
 
 Card revision covered: locked pack v1.0 at `450bcb4a`; the newer inputs branch (`40c6eb4a`, cards 19, 21, 27 locked rev 2, PRs #934 and #935) is not reconciled.
 
+Real figure: 36 tested, not 39: 3 of trace's "tested" rows (NS-01-R4, NS-01-R9a, NS-07-C28-13) come from trace's own fixtures (`scripts/trace.test.mjs`) and are not citations in app tests [V, grep of bracketed ids outside `scripts/`].
+
 Where we start (to reproduce: check out develop `16e61549`, put the cards from `450bcb4a` and its `14-test-plan.md` in one folder, run `node scripts/trace.mjs --no-write --register <folder>/14-test-plan.md --out <file>`; its NS section prints the 296 / 39 / 13 / 244 / 269 counts. The baseline of 8 files and 73 tests comes from the #835 to #838 reviews' full `apps/mobile` runs; I did not re-run it [U]): 296 P0 rows; 39 tested, 13 named only as a device row, 244 untested; 269 with no backlog row [V, command output, 20 Nov]. The cites that exist are not yet checked against C-01; see section 9.
 
 ## 1. The six facts that shaped these rules
@@ -27,6 +29,8 @@ Each one is a defect a reviewer found in the photo stack, quoted from the PR com
 Two more patterns come from develop itself. A test cites a row in parentheses, `(NS-10-R3)`, so trace does not see it (`apps/mobile/test/account-scope.test.ts:47` [V]). A test whose title cites `[NS-33-R4]` scans source for truncation while the row also asks for 44 pt and a phone run (`a11y-ax5.test.ts:73` against the card, `docs/product/prd/11-foundations.md:265` [V]).
 
 ## 2. Rules for a test that proves a row
+
+Status of the C-nn rules: all of them, and the refuse list in section 8, are Rec (qa proposals built from the reviews and the rulings cited). Only ruling T1 (C-01), CODE-R02 to R04 and CR-63 are already ruled. Adopting them is for Karma and the stewards.
 
 **C-01 One cite means the whole row (ruling T1 of P-8).** A test puts `[NS-nn-Rn]` in its title only if it fails when any clause of that row's Given, When, Then is broken. A set of tests may prove a row together: each cites the row, and exactly one of them (the one nearest the others) carries a set comment. A partial test cites nothing; it uses its own backlog id. How P-8 applied it: `docs/agents/checkins/qa-p8.md:2` [V]; PR #888 body, row NS-09-R3 [V]; the comment is at `apps/mobile/test/sweep.disk.test.ts:416` [V].
 
@@ -79,7 +83,7 @@ A surviving mutant is a Must fix. It is never explained away in the PR body.
 
 | Thing | Limit | Basis |
 |---|---|---|
-| CI end to end | under 10 minutes; split a slow job, do not raise its timeout | qa charter; `.github/README.md:63` "Keeping CI under 10 minutes" [V] |
+| CI end to end | under 10 minutes for the Linux jobs (the macOS simulator job takes about 20 minutes and is outside this budget [E, reviewer figure]); split a slow job, do not raise its timeout | qa charter; `.github/README.md:63` "Keeping CI under 10 minutes" [V] |
 | One unit test | under 200 ms typical; vitest default 5 s is the ceiling | Rec; F6 shows the default bites under load |
 | One integration test on node SQLite | under 2 s | Rec |
 | A parse of all of `src` | set the timeout in the test (15 s) and pre-filter by text | #838 N1 [V, PR comment] |
@@ -117,13 +121,13 @@ G0 to G6 are locked (`14-test-plan.md:96`, "Gates, in order" [V]). G7 to G11 are
 | G4 | Every P0 device row passes on the candidate (waivers: 14 section 6) | the store build | 14:96, 98 [V] |
 | G5 | Privacy label and claims inventory match what the build sends | the store build | 14:96 [V] |
 | G6 | No `production` flag is on while its card has an open P0 | the store build, via `preflight-production` | 14:96 [V]; no row for `EXPO_PUBLIC_PHOTOS` today, #837 note N1 [V, PR comment] |
-| G7 (Rec) | A PR into `develop`: `npm test` baseline unchanged (8 files, 73 tests red in the sandbox, nothing else), typecheck (5 known errors), content tests, `test:db` and `test:functions` when their paths change; C-03 and C-05 evidence in the PR body | the merge (CR-63 review plus CI, D-132) | `docs/agents/cto/RULINGS.md:594`; `docs/DECISIONS.md:655` [V] |
-| G8 (Rec) | Applied production migrations recorded (`.github/migrations-applied.txt`, `supabase/APPLY.md`) | a release PR and tag | plan P-7 "release gate G8", `17-engineering-project-plan.md:254` [V on #847 branch] |
+| G7 (Rec) | A PR into `develop`: CI `required`, compliance-fence and applied-migrations-unchanged green; typecheck, content tests, `test:db` and `test:functions` when their paths change; C-03 and C-05 evidence in the PR body. The sandbox baseline (8 files, 73 tests red, 5 known tsc errors) is a rule for agents working in the sandbox, checked by reviewers; CI has no such baseline and is not a gate on it | the merge (CR-63 review plus CI, D-132) | `docs/agents/cto/RULINGS.md:594`; `docs/DECISIONS.md:655` [V] |
+| G8 (Rec) | Applied production migrations recorded (`.github/migrations-applied.txt`, `supabase/APPLY.md`) | a release PR and tag | plan P-7 "release gate G8", `17-engineering-project-plan.md:266` [V, plan refreshed to 458fae46] |
 | G9 (Rec) | Mutant list green for every P0 row the build carries (section 5), once the runner exists | a store candidate | this file |
 | G10 (Rec) | Performance and accessibility numbers recorded against the budgets (NS-34 run sheet), each met or missed; a miss holds the feature (NS-34-R2) | the feature, then the build | card `docs/product/prd/11-foundations.md:416` [V] |
 | G11 (Rec) | Upgrade test: last store build to candidate with a seeded 1,000-letter Asha book; export round trip on the old and new schema | a store candidate | 14:42 "Every store candidate" [V] |
 
-## 8. What a reviewer must refuse
+## 8. What a reviewer must refuse (Rec)
 
 Refuse and mark CHANGES (a must-fix, so the verdict cannot be `PASS WITH NOTES`: CR-63, `RULINGS.md:594` [V]) when any of these is true:
 1. A test cites a row it does not wholly prove and is not part of a labelled set (C-01).
