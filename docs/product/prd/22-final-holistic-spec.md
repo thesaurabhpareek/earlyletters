@@ -140,6 +140,17 @@ Founder digest: defaults that stand (added 20 Nov, one line each, default and de
 | E47 (CL-121) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
 | E56 (CL-130) | A No at the age step sends nothing and writes no server row (the phone keeps a local stop flag, NS-40-R3); Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
 | E59 (CL-133) | The free allowance is per phone, not per account | Per phone, as built | `18` E59 |
+| E67 (F-1) | Writing tools on letter fields (SOQ F-1): accept the recorded finding, or fund the small native setting (NSC-05)? Until decided, the production profile keeps the photos flag off and the Firsts label waits | OFF on letter fields (brief D2); not shown in a production profile without the native setting | `18` E67; SOQ F-1 |
+| E67 (F-9) | The G1 server gate (block others' rows at once on a newer Terms version, or after a grace window)? | Grace window as `POLICY_VERSIONING.md` sections 5 and 6 say (numbers not re-read); the age attestation is never graced | `18` E67; SOQ F-9 |
+| E67 (F-12) | A secret scan in CI and `docs/ops/SECRETS.md` | Yes, both (neither exists today); the CI file is a proposal under `docs/ops/proposed` until he copies it | `18` E67; SOQ F-12 |
+| E67 (K-7) | Copy the label-guard workflow from `docs/ops/proposed/workflows/label-guard.yml` to `.github/workflows` (D-124) | Its source states no default; it stays uncopied and the guard runs where someone runs it | `18` E67; SOQ K-7 |
+| E67 (K3) | Where card NS-09-R6 meets founder decision 15 (`storage.tsx`: "letters and recordings never appear here") | The card wins (E28): one state line, "A recording is still being removed", and Remove now; never a list, never a count | `18` E28, E67 |
+| E67 (plan Q3) | Seals: in scope, or "not built" (plan #847 section 5.3, Q3) | In scope, as cards 05, 06 and 21 say: built after Share one letter and its study, a sealed letter has no Share control, Home shows the seal-opened line at rank 2; no seal code until counsel answers (rows stay blocked, `23` 4.6 item 36) | `18` E67; plan #847 Q3 |
+| E67 (plan Q4) | Keep #798 as one PR with a size exception (plan Q4) | Recommendation only, no default: no, split as BL-952 says; #798 as one PR waits for his answer | `18` E67; plan #847 Q4 |
+| E67 (plan Q5) | The size exception for the plan file itself (plan Q5) | Recommendation only: accept; the plan file does not merge until he answers | `18` E67; plan #847 Q5 |
+| E67 (plan Q6) | Switch on the autonomous agent lane (plan Q6, SOQ F-10) | Off for waves 1 and 2; interactive sessions run the agents | `18` E67; plan #847 Q6 |
+| E67 (plan Q7) | The daily run cap (plan Q7) | Unchanged at 30 while the lane is off | `18` E67; plan #847 Q7 |
+| E67 (dependencies) | Engineering-owned (`mobile`, CR-69 A8): `expo-symbols` (design rulings 31 and 35, the Icon wrapper, chrome only), `expo-battery` (the lamp off under Low Power Mode, ruling 31) and `expo-image` or an equivalent decision (media posters). Product states the need only; he approves new dependencies | Not added until he approves | `18` E67; CR-69 A8 |
 | CL-008 | Pilot notes kept 30 days, consent records 12 months; no pilot before the reads | 30 days and 12 months | card 03 |
 | CL-099 | Support keeps messages 12 months; support never reads a letter | 12 months | `functions/support.md` |
 | CL-015 | Which drop ships what: A with Build 13, B only if its gates close before freeze, C after 1.0; NS-49 level 1 moved from A to B (E31) | As recorded | card 21 release line |
@@ -172,7 +183,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E61); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E68); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).

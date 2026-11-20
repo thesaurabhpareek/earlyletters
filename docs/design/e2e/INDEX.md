@@ -4,6 +4,8 @@ Status: rebuilt 20 Nov 2026 by the area E design lead, by script (`docs/design/e
 
 How to read: screen ids `<area>-Snn` and state ids `<area>-Snn.<state>` are from each area `DESIGN.md` (inventory row, a `###` screen heading, and every `.state` the file names, see the script header for the exact rule); motion ids are each area's own scheme (A `MA-nn`, B `B-Mnn`, C `M-Cnn`, D `D-Mnn`, E `E-Mnn`); transitions `T-*` and primitives `m.*` are the system names of `docs/design/system/MOTION.md`. "Card row" is the NS ids named in the screen's inventory card column (or, for a screen with no inventory row, in the first paragraph under its heading). Round 2 ids (NS-51, NS-52 and every id defined under a Round 2 or PROPOSED section) are marked PROPOSED: their cards (`27-photo-moments-and-media.md`) are not in the pack on disk, so they are keyed by card name and wait for a ruling. A state marked `[P]` is named only inside a Round 2 section. A state written as a plain word in prose, with no screen id and no leading dot, is not counted.
 
+Design rulings 25 to 37 (radii, springs, glass, icons, the tab bar, haptics) are recorded in `RULINGS-20nov.md` in this folder; it lists, by ruling, the area screens each one touches. The index lists screens and states and never restates a ruling.
+
 ## 1. Counts
 
 | Area | Screen ids | of which PROPOSED | State ids | Motion ids | of which PROPOSED | T-* transitions used |

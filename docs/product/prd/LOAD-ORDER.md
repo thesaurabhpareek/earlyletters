@@ -6,7 +6,7 @@ Rules:
 - Stop at the cap. If the task needs more, read by id: grep the NS, FR, K, RV, CL or E id and read only that row or section (REGISTRY "Lines" column says what a whole file costs).
 - Never load a file whose REGISTRY status is SUPERSEDED-BY or whose "Load when" says do not load (the review records, except section 8 of REV-eng-A and REV-eng-B, which C18 cites; the first-round direction file C20, the older PRD sets, the Project docs).
 - "Area" means the design area (A to E) of the card you are working on; `docs/product/prd/22-final-holistic-spec.md` section 3 and `00-product-frame.md` give the card to area map. Design files are on branch `docs/e2e-ux-20nov`.
-- A locked statement is changed only by an errata row in C18 (next free E number; highest E61). Rulings are read from GAPLOG by id, not re-argued.
+- A locked statement is changed only by an errata row in C18 (next free E number; highest E68). Rulings are read from GAPLOG by id, not re-argued.
 
 ## Everyone, first (about 90 lines)
 

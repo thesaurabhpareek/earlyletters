@@ -55,7 +55,7 @@ Policy (POL) is in the support file; risk (RSK) and security (SEC) are in the ri
 
 - `counsel`: a question to counsel (section 7 of the function file, or its counsel number) cites the FR, or the FR's owner lane names counsel.
 - `founder`: a question to the founder cites the FR, or the owner lane names the founder.
-- `needs Karma ruling`: a proposed card change cites the FR, or the FR names no locked card row (it is a new requirement the function adds, which Karma links or declines), and no GAP-LOG ruling decides it.
+- `needs Karma ruling`: a proposed card change cites the FR, or the FR names no locked card row (it is a new requirement the function adds, which Karma links or declines), and no GAP-LOG ruling, errata row (E) or closure (CL) decides it. An FR that an E or CL row names shows `ruled (E##)`.
 - `ruled (id)`: it would need a ruling, and a GAP-LOG ruling decides it: the ruling names the FR, or every proposed card change that cites the FR is ruled. `amended` means the ruling changes what the FR says (the FR text is not edited; see 3c).
 - `locked row`: none of the above. It rests on a locked card row or an existing decision and needs no new ruling. (This is what the earlier version of this file called "ruled"; it does not mean Karma has ruled on the FR itself.)
 - Priority: the first priority in the FR's row, with its RR-4 reasons in brackets; `*` means the row carries more than one priority (read the source row).
@@ -192,7 +192,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-OPS-35 | operations | P1 | NO CARD LINK | - | BL-999 (text), new row needed (NR-62) | founder; needs Karma ruling |
 | FR-OPS-37 | operations | P1 | NS-52 | - | new row needed | needs Karma ruling |
 | FR-OPS-38 | operations | P1 | NS-52 | - | none named | needs Karma ruling |
-| FR-OPS-39 | operations | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
+| FR-OPS-39 | operations | P0 (a) | NS-51; NS-52 | - | none named | ruled (E38) |
 | FR-OPS-40 | operations | P1 | NS-52 | - | none named | founder; needs Karma ruling |
 | FR-OPS-41 | operations | P1 | NS-52 | - | none named | needs Karma ruling |
 | FR-OPS-42 | operations | P0 (b) | NS-52 | - | none named | needs Karma ruling |
@@ -268,7 +268,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-DAT-34 | data | P2 | (from text) NS-45 | E-S16 | none named | needs Karma ruling |
 | FR-DAT-35 | data | P0 (b) | NS-40; NS-41 | E-S03, E-S04, E-S07 | none named | ruled (K10); counsel |
 | FR-DAT-36 | data | P0 (a) | NS-51; NS-52 | - | new row needed | needs Karma ruling |
-| FR-DAT-37 | data | P0 (a) | NS-51; NS-52 | C-S18 | none named | needs Karma ruling |
+| FR-DAT-37 | data | P0 (a) | NS-51; NS-52 | C-S18 | none named | ruled (E38) |
 | FR-DAT-38 | data | P0 (a) | NS-51; NS-52 | - | none named | needs Karma ruling |
 | FR-DAT-39 | data | P0 (a) | NS-51 | - | none named | needs Karma ruling |
 | FR-DAT-40 | data | P0 (a) | NS-51; NS-52 | - | none named | founder; needs Karma ruling |
@@ -300,7 +300,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRV-22 | privacy | P1 (b) | NS-16 | - | BL-980 (eng table) | needs Karma ruling |
 | FR-PRV-23 | privacy | P2 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PRV-24 | privacy | P0 (b) | NS-39; NS-40; NS-41; NS-43 | E-S01, E-S08, E-S02 (text) | BL-579, BL-994 (eng table) | needs Karma ruling |
-| FR-PRV-25 | privacy | P0 (b) | (from text) NS-40 | - | BL-994 (eng table) | ruled (K5) |
+| FR-PRV-25 | privacy | P0 (b) | (from text) NS-40 | - | BL-994 (eng table) | ruled (K5, E50) |
 | FR-PRV-26 | privacy | P0 (b) | NS-40 | E-S03.region | BL-994 (eng table), new row needed (NR-39) | needs Karma ruling |
 | FR-PRV-27 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-41, NS-10) | E-S06, C-S10 | BL-994 (eng table) | counsel; founder; needs Karma ruling |
 | FR-PRV-28 | privacy | P0 (b) | NO CARD LINK (suggested via card 19 screen table: NS-42, NS-41, NS-43, NS-39) | E-S07, E-S08, E-S14, E-S24 | BL-994 (eng table) | needs Karma ruling |
@@ -310,7 +310,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRV-31 | privacy | P0 (b) | NO CARD LINK | - | BL-958 (eng table), BL-988 (eng table) | needs Karma ruling |
 | FR-PRV-32 | privacy | P1 (b) | NS-25 | E-S07, D-S13 (text) | none named | counsel; founder; needs Karma ruling |
 | FR-PRV-33 | privacy | P0 (b) | NO CARD LINK | C-S01 | none named | needs Karma ruling |
-| FR-PRV-34 | privacy | P0 (a) | NS-01 R16 R52; NS-05 R10; NS-07; NS-36; NS-37 R5 | - | new row needed (NR-36) | needs Karma ruling |
+| FR-PRV-34 | privacy | P0 (a) | NS-01 R16 R52; NS-05 R10; NS-07; NS-36; NS-37 R5 | - | new row needed (NR-36) | ruled (E33) |
 | FR-PRV-36 | privacy | P0 (b) | NS-51; NS-52 | - | none named | needs Karma ruling |
 | FR-PRV-37 | privacy | P0 (b) | NS-39; NS-51 | E-S01, E-S08 | none named | needs Karma ruling |
 | FR-PRV-38 | privacy | P0 (a) | NS-51 | - | none named | needs Karma ruling |
@@ -366,7 +366,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-CMP-13 | compliance | P0 (b) | NS-25 R2 R6 | E-S03, D-S14, D-S15, D-S16 | none named | needs Karma ruling |
 | FR-CMP-14 | compliance | P0 (b) | NS-16 | - | BL-119 | needs Karma ruling |
 | FR-CMP-15 | compliance | P0 (b) | NS-40 | E-S01, E-S03 | new row needed (NR-47) | ruled (K5); counsel; founder |
-| FR-CMP-16 | compliance | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-42, NS-41) | E-S07, C-S01 | new row needed (NR-48) | needs Karma ruling |
+| FR-CMP-16 | compliance | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-42, NS-41) | E-S07, C-S01 | new row needed (NR-48) | ruled (E46) |
 | FR-CMP-17 | compliance | P0 (b) | NS-10 | C-S20 | none named | needs Karma ruling |
 | FR-CMP-18 | compliance | P0 (b) | NS-10 | E-S02 | none named | founder; needs Karma ruling |
 | FR-CMP-19 | compliance | P0 (b) | NS-05; NS-25 | - | none named | ruled (K6); founder |
@@ -382,9 +382,9 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-SEC-01 | security | P0 (a) | NS-01 R29; NS-02 R24; NS-25 R19; NS-41 R6 | E-S18 | BL-961 | needs Karma ruling |
 | FR-SEC-02 | security | P0 (a) | NO CARD LINK | E-S15 | BL-961 | needs Karma ruling |
 | FR-SEC-03 | security | P0 (a) | NS-02 R24; NS-11 R22; NS-13 R13 | - | BL-961 (eng table) | needs Karma ruling |
-| FR-SEC-04 | security | P0 (a) | NO CARD LINK | C-S19, E-S18 | none named | needs Karma ruling |
+| FR-SEC-04 | security | P0 (a) | NO CARD LINK | C-S19, E-S18 | none named | ruled (E49) |
 | FR-SEC-05 | security | P1 | NS-10 R5; NS-41 R5 | E-S24 | none named | locked row |
-| FR-SEC-06 | security | P1 | NS-36; NS-45 | C-S19 | new row needed (NR-52) | counsel; founder; needs Karma ruling |
+| FR-SEC-06 | security | P1 | NS-36; NS-45 | C-S19 | new row needed (NR-52) | ruled (E54); counsel; founder |
 | FR-SEC-07 | security | P1 | NO CARD LINK (suggested via card 19 screen table: NS-45) | C-S03, E-S22 | none named | needs Karma ruling |
 | FR-SEC-08 | security | P1 | NS-07; NS-11 | C-S04, C-S05 | none named | counsel; founder; needs Karma ruling |
 | FR-SEC-21 | security | P0 (a) | NS-06; NS-32 R12 | A-S14, D-S10 | none named | needs Karma ruling |
@@ -664,14 +664,14 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-AIS-51 | ai-and-speech | P0 (b) | NS-34 R5 | - | new row needed (NR-102) | locked row |
 | FR-AIS-52 | ai-and-speech | P1 | NO CARD LINK | - | new row needed (NR-102) | needs Karma ruling |
 | FR-AIS-53 | ai-and-speech | P0 (a) | NS-01 R50; NS-06; NS-17 R3; NS-21 R12; plus pack-wide | - | none named | needs Karma ruling |
-| FR-AIS-54 | ai-and-speech | P0 (a) | NS-05 R17; NS-06 A5 | - | none named | needs Karma ruling |
+| FR-AIS-54 | ai-and-speech | P0 (a) | NS-05 R17; NS-06 A5 | - | none named | ruled (E39) |
 | FR-AIS-55 | ai-and-speech | P0 (a) | NS-01 R50; NS-06 A22; NS-21 R12 | A-S06, A-S07, B-S08 | BL-962 | locked row |
 | FR-AIS-56 | ai-and-speech | P0 (a) | NS-09; plus pack-wide | A-S07, B-S08 | none named | needs Karma ruling |
 | FR-AIS-57 | ai-and-speech | P0 (a) | NS-01 R33; NS-49 R25; NS-51 R5 R29 R33 | - | new row needed | locked row |
 | FR-AIS-58 | ai-and-speech | P0 (a) | NS-46; NS-51 R7 | - | none named | locked row |
 | FR-AIS-59 | ai-and-speech | P0 (a) | NS-01 R3 R9a R9b R21b R21c; NS-49 R9; NS-51; NS-52 | - | none named | locked row |
 | FR-AIS-60 | ai-and-speech | P0 (a) | NO CARD LINK | - | new row needed | needs Karma ruling |
-| FR-AIS-61 | ai-and-speech | P0 (a) | NS-51 | - | none named | needs Karma ruling |
+| FR-AIS-61 | ai-and-speech | P0 (a) | NS-51 | - | none named | ruled (E39) |
 | FR-AIS-62 | ai-and-speech | P0 (a,b) | NS-02 R5; NS-52 | - | new row needed | locked row |
 | FR-AIS-63 | ai-and-speech | P1 (a) | NS-52 | - | none named | founder; needs Karma ruling |
 | FR-AIS-64 | ai-and-speech | P0 (a) | NS-01 R8; NS-52 | - | none named | locked row |
@@ -715,7 +715,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-RSH-34 | research | P2 | NS-52 | - | none named | needs Karma ruling |
 | FR-RSH-35 | research | P0 (a) | NS-51 | - | none named | needs Karma ruling |
 | FR-QAL-01 | quality | P0 (a) | NS-38 to NS-45 | - | new row needed | needs Karma ruling |
-| FR-QAL-02 | quality | P0 (a) | NO CARD LINK | - | BL-002 | founder; needs Karma ruling |
+| FR-QAL-02 | quality | P0 (a) | NO CARD LINK | - | BL-002 | ruled (E55); founder |
 | FR-QAL-03 | quality | P0 (a) | NO CARD LINK | E-S27 | BL-002 (eng table), new row needed | needs Karma ruling |
 | FR-QAL-04 | quality | P1 | (from text) NS-41 | - | new row needed | needs Karma ruling |
 | FR-QAL-05 | quality | P0 (c) | NS-38 to NS-45 | E-S01, E-S10, E-S14, E-S24, E-S26 | new row needed | needs Karma ruling |
@@ -757,7 +757,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-LCY-10 | lifecycle | P0 (a,b) | NS-10 R3 R5 R12 | E-S18, C-S10, C-S19 | none named | locked row |
 | FR-LCY-11 | lifecycle | P0 (a) | NS-10 R9; NS-45 | E-S24, E-S18, C-S20; new screen needed | new row needed (NR-120) | needs Karma ruling |
 | FR-LCY-12 | lifecycle | P0 (a) | NS-10; NS-11 | C-S04, C-S10 | new row needed | needs Karma ruling |
-| FR-LCY-13 | lifecycle | P0 (a) | NS-08; NS-10 R1 R13 R14 | C-S09, C-S12 | none named | locked row |
+| FR-LCY-13 | lifecycle | P0 (a) | NS-08; NS-10 R1 R13 R14 | C-S09, C-S12 | none named | locked row; ruling also E59 |
 | FR-LCY-14 | lifecycle | P0 (a) | NS-08; NS-10 | - | new row needed | needs Karma ruling |
 | FR-LCY-15 | lifecycle | P1 | NS-33; NS-34 | E-ST46 | new row needed | needs Karma ruling |
 | FR-LCY-16 | lifecycle | P1 | NO CARD LINK | E-S27 | new row needed | founder; needs Karma ruling |
@@ -913,7 +913,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-CUL-03 | cultural-data | P0 (a) | NS-47 R2 | C-S15 | none named | locked row |
 | FR-CUL-04 | cultural-data | P0 (a) | NS-47 R3 | E-S24 | new row needed (NR-32), new row needed (NR-162), new row needed (NR-163), new row needed (NR-165) | locked row |
 | FR-CUL-05 | cultural-data | P0 (a) | NS-13; NS-35; NS-47 R4 | - | new row needed (NR-163) | locked row; ruling also CB-3 |
-| FR-CUL-06 | cultural-data | P0 (a) | NS-37 R4; NS-47 R5 | - | new row needed (NR-161) | locked row |
+| FR-CUL-06 | cultural-data | P0 (a) | NS-37 R4; NS-47 R5 | - | new row needed (NR-161) | locked row; ruling also E37 |
 | FR-CUL-07 | cultural-data | P0 (a) | NS-13 R22; NS-47 R6 | E-S24, C-S10 | new row needed (NR-32) | locked row |
 | FR-CUL-08 | cultural-data | P0 (a) | NS-47 R7 | - | new row needed (NR-32) | locked row |
 | FR-CUL-09 | cultural-data | P0 (a) | NS-47 R8 | - | new row needed (NR-165) | locked row |
@@ -978,7 +978,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PHS-51 | photos | P0 (a) | NS-01 R51 | - | new row needed (NR-32) | locked row |
 | FR-PHS-52 | photos | P0 (a) | NS-01 R6 R14 | - | none named | locked row |
 | FR-PHS-53 | photos | P0 (a) | NS-01 | - | none named | needs Karma ruling |
-| FR-PHS-54 | photos | P0 (b) | NS-01 | - | none named | needs Karma ruling |
+| FR-PHS-54 | photos | P0 (b) | NS-01 | - | none named | ruled (RV-12) |
 | FR-PHS-55 | photos | P0 (b) | NS-01 | - | new row needed (NR-173) | needs Karma ruling |
 | FR-PHS-56 | photos | P0 (b) | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PHS-57 | photos | P0 (a) | NS-01 R33 | - | none named | locked row |
@@ -998,7 +998,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PHS-71 | photos | P0 (a) | NS-01; NS-02; NS-52 | - | none named | needs Karma ruling |
 | FR-OPP-01 | opportunities | P1 | NS-35 R3 | - | none named | locked row |
 | FR-OPP-02 | opportunities | P1 | NS-01 R1 R19 R20a | A-S01, A-S03 | BL-931 | locked row; ruling also R-IA-3 |
-| FR-OPP-03 | opportunities | P0 (a) | NS-01; NS-32 | A-S03 | new row needed | needs Karma ruling |
+| FR-OPP-03 | opportunities | P0 (a) | NS-01; NS-32 | A-S03 | new row needed | ruled (RV-12) |
 | FR-OPP-04 | opportunities | P1 | NS-23 | A-S01 | new row needed | needs Karma ruling |
 | FR-OPP-05 | opportunities | P0 (a) | NS-04; NS-06; NS-35 R3 R4 R7 | A-S14 | new row needed | locked row |
 | FR-OPP-06 | opportunities | P0 (a) | NS-04 | A-S14 | new row needed | needs Karma ruling |
@@ -4260,7 +4260,7 @@ SUP-12 (E-S11); POL-07 (E-S03); MKT-04 (E-S10, E-S11); MKT-06 (E-S27); MKT-08 (E
 - FR ids written in any of the 23 files that have no row: none (every cross-reference resolves).
 - Gap in the source numbering: FR-SEC-13 has no row; GAP-LOG (K-SEC13 note) says the security author fills or retires it. FR-PHS numbers in bands and has no 05 to 09, 26 to 29, 35 to 39, 45 to 49 by design. FR-PRT-34a and FR-LCY-33 "(proposal)" are read as written.
 - Proposed card changes read: 237; rulings after merging: 152. Questions read: 240; index entries: 190. Engineering rows read: 249; entries: 226 (new rows needed: 178). Design-needs rows read: 280.
-- Rulings read from GAP-LOG: 41 (CB-1, CB-2, CB-3, CB-4, CB-5, CB-6, DL-1, DL-2, DL-3, DL-4, DL-5, DL-6, DL-7, DL-8, DL-9, DL-10, K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K-SEC13, N-1, N-2, N-3, N-4, N-5, N-6, N-7, N-8, R-IA-1, R-IA-2, R-IA-3, R-IA-4, R-IA-5, R-IA-6). FRs marked ruled: 22. Card-change rulings marked ruled or partly ruled: 17 of 152. Question entries ruled or partly ruled: 22 of 190. Conflicts ruled in full: 14 of 21 (plus 2 partly ruled).
+- Rulings read from GAP-LOG: 41 (CB-1, CB-2, CB-3, CB-4, CB-5, CB-6, DL-1, DL-2, DL-3, DL-4, DL-5, DL-6, DL-7, DL-8, DL-9, DL-10, K1, K2, K3, K4, K5, K6, K7, K8, K9, K10, K-SEC13, N-1, N-2, N-3, N-4, N-5, N-6, N-7, N-8, R-IA-1, R-IA-2, R-IA-3, R-IA-4, R-IA-5, R-IA-6). FRs marked ruled: 33. Card-change rulings marked ruled or partly ruled: 17 of 152. Question entries ruled or partly ruled: 22 of 190. Conflicts ruled in full: 14 of 21 (plus 2 partly ruled).
 - BL ids above BL-999 in the 23 files: none proposed. The string "BL-1000" appears twice, both times to say that ids from BL-1000 are invisible to the dispatcher (cultural-data, privacy); no function file allocates a BL id, every new row is "new row needed" and Karma allocates ids with `next-id.mjs`. Section 5 uses NR-nn working handles only. (The numbering rules at the top of `docs/BACKLOG.md` leave BL-055 to BL-099 unused; nothing here allocates in that range.)
 
 ### 7.2 Card links
