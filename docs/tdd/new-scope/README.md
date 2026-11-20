@@ -45,12 +45,12 @@ Karma's rulings on AX-1 to AX-17 and on the eleven decisions `architecture.md` s
 | Finding | Where | Card row | Fix owner |
 |---|---|---|---|
 | A second signed-in account sees the first account's book | `first-run/gate.logic.ts:110-125`; `sync/ownership.ts:49` stops only sync | NS-10-R3, [X4-R1] | BL-961 (both halves, CR-67 AX-12) |
-| A consent retry writes a second acceptance row | `consent.ts:88` (`heldAnswers`) holds one key per answer [Amended 12-A2] | NS-10-R7 | built; needs only its title |
+| A consent retry writes a second acceptance row | `consent.ts:88` (`heldAnswers`) holds one key per answer [Amended 12-A2] | NS-10-R7 | built and titled (`test/consent-retry-one-key.test.ts:79`) |
 | Reminders still come for a quieted book [Amended 17-A13: fixed; the planner drops quiet books, `planner.ts:303`, `prefs.ts:127`, `test/reminders-quiet-books.test.ts`] | none now | NS-32-R14, J-N19 | built |
 | "A month ago" ignores Quiet this book | `draft-card.logic.ts:190-206` | J-N19 | quiet-and-consent fix |
 | Sign-out leaves reminders planned | card NS-13-R14 says not built | NS-13-R14 | BL-967 |
 | No switch for the system writing tools on a text field | React Native 0.86.3 has no prop | ruling D2 | CR-67 AX-1 |
-| Caption and place ceilings count code points | #835 `migrations.ts:460-461` | NS-01 caps, BL-957 | photo stack, before #835 merges |
+| Caption and place ceilings count code points | #835 `migrations.ts:462-463` (was 460-461) | NS-01 caps, BL-957 | photo stack, before #835 merges |
 | Find reads one item's words [Amended 16-A-13] | `find/sources.ts:53` (`LIMIT 1`; verified) | NS-52-R41 | NS-52 |
-| The sweep deletes a row whose file is missing [Amended 16-A-13] | #840 `housekeeping.ts:53` (Unverified: no such file in the #835 or #840 heads read here) | NS-52-R40 | NS-52 |
+| The sweep deletes a row whose file is missing [Amended 16-A-13] | `apps/mobile/src/lib/photos/housekeeping.ts:53` at the #835 head `39cf30d3` (`counts.missingFileRows++`) [V] | NS-52-R40 | NS-52 |
 | Export has no streaming or ZIP64 [Amended 16-A-13] | `lib/export/pack.ts:10, :14, :21` (verified) | NS-52 | `data-architect` |
