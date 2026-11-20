@@ -507,7 +507,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         const cur = stateRef.current;
         if (!sb || cur.status !== 'needsConsent') return { ok: false, error: 'unknown' };
         try {
-          await recordConsentAct(sb, step, accepted, cur.method);
+          await recordConsentAct(sb, step, accepted, cur.method, cur.userId);
           if (step === 'terms' && accepted) {
             // Apple shares the name once; it waits in the Keychain until Terms are accepted.
             const name = await takePendingAppleName();
@@ -530,7 +530,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         const cur = stateRef.current;
         if (!sb || !isSignedIn(cur)) return { ok: false, error: 'unknown' };
         try {
-          await recordConsentAct(sb, 'sensitive', true, null);
+          await recordConsentAct(sb, 'sensitive', true, null, cur.userId);
           await checkGate();
           return { ok: true };
         } catch (e) {
