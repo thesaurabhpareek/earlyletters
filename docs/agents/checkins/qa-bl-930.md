@@ -1,0 +1,1 @@
+11:30 (20 Nov) qa | done: BL-930 draft rows 42 and 216 in docs/qa/NS-34-TARGETS.md, 3 CONFIRM points for product | next: product edits 06-nfr; BL-929 run sheet | blocked/needs: product's yes on CONFIRM 1 to 3
