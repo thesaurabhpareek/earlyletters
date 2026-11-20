@@ -7,9 +7,9 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { newQuietMark } from '../src/components/book/quiet-day.logic';
 import { carriesMetadata, stripJpeg } from '../src/lib/photos/strip';
-import { addPhotoToLetter, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
+import { addPhotoToLetter, editPhotoWords, removePhotoFromLetter, settlePhotoChange, undoPhotoChange } from '../src/lib/photos/attach';
 import { photoChapters, photosLens } from '../src/lib/photos/lens';
-import { canKeepWithPhoto, commitPhoto, PhotoSession, runPick } from '../src/lib/photos/session';
+import { canKeepWithPhoto, commitPhoto, PHOTO_FREE_MARGIN_BYTES, PhotoSession, runPick } from '../src/lib/photos/session';
 import { normalizePhotoPlace, normalizePhotoText, photoA11yLabel } from '../src/lib/photos/text';
 import { photoPath, UNDO_WINDOW_MS, type PhotoPicker } from '../src/lib/photos/types';
 import { deps, makeJpeg, memoryFiles, tenFixtures } from './photos-helpers';
@@ -196,6 +196,16 @@ describe('[NS-01-R25] a quiet day cannot carry a picture', () => {
 });
 
 describe('[NS-01-R9][NS-01-R21] the picture has the parent\'s words or a fixed label', () => {
+  it('[NS-01-R21][BL-957] the letter page keeps 140 and 60 characters a person sees: no maxLength on its fields (UTF-16 units), and editing caps by characters', async () => {
+    const page = readFileSync(join(__dirname, '..', 'src', 'components', 'photos', 'letter-photo.tsx'), 'utf8');
+    expect(page).not.toMatch(/maxLength/);
+    const { d, store } = deps();
+    await commitPhoto(d, { ...ONE, bytes: makeJpeg() });
+    const ki = '\u0915\u093F';
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}';
+    expect(editPhotoWords(d, 'e1', { text: ki.repeat(141), place: family.repeat(61) })).toBe(true);
+    expect([store.get('e1')!.text, store.get('e1')!.place]).toEqual([ki.repeat(140), family.repeat(60)]);
+  });
   it('[NS-01-R9] no typed words: the label is "Photo with this letter"', () => {
     expect(photoA11yLabel(null)).toBe('Photo with this letter');
     expect(photoA11yLabel('   ')).toBe('Photo with this letter');
@@ -265,6 +275,15 @@ describe('[NS-01-R17][NX-39-R12][NX-39-R13][NX-39-R14] failed picks leave nothin
     const { d, files, store } = deps({ files: memoryFiles({ free: 10 }) });
     expect((await commitPhoto(d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
     expect(files.disk.size + store.all().length).toBe(0);
+  });
+  it('[NS-01-R45] a picture needs room plus 50 MB', async () => {
+    const size = (stripJpeg(makeJpeg()) as { bytes: Uint8Array }).bytes.length;
+    const short = deps({ files: memoryFiles({ free: size + PHOTO_FREE_MARGIN_BYTES - 1 }) });
+    expect((await commitPhoto(short.d, { ...ONE, bytes: makeJpeg() })).status).toBe('no_space');
+    expect(short.files.disk.size + short.store.all().length).toBe(0);
+    const enough = deps({ files: memoryFiles({ free: size + PHOTO_FREE_MARGIN_BYTES }) });
+    expect((await commitPhoto(enough.d, { ...ONE, bytes: makeJpeg() })).status).toBe('stored');
+    expect(PHOTO_FREE_MARGIN_BYTES).toBe(50 * 1024 * 1024);
   });
   it('[NS-01-R17] a write that fails halfway leaves 0 files and 0 rows', async () => {
     const { d, files, store } = deps({ files: memoryFiles({ failWrite: true }) });
