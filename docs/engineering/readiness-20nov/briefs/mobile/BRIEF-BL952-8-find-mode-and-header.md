@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
-Blocked until: #894 and #895 merged (words, switch, wiring); #840 merged (this slice edits `app/(tabs)/book.tsx` and registers keys in `packages/content/src/features/index.ts`, which the photo stack owns until then: Karma's ruling); #879 merged for R24 (the guard is #895's). Not opened yet: the PR does not exist [V: no open PR titled "BL-952 (8/8)"]. Karma: please accept the 8a/8b split (the plan counts one PR 8 of 8). Conflict C-09 (PR #923): "Months" appears twice in one bar once Find and "Go to a month" land; product and content rule the word.
+Blocked until: #894 and #895 merged (words, switch, wiring); #840 merged (this slice edits `app/(tabs)/book.tsx` and registers keys in `packages/content/src/features/index.ts`, which the photo stack owns until then: Karma's ruling); #879 merged for R24 (the guard is #895's). Not opened yet: the PR does not exist [V: no open PR titled "BL-952 (8/8)"]. Karma: please accept the 8a/8b split (the plan counts one PR 8 of 8). C-09 is ruled (CL-116): "Go to a month" stands for the Book bar button, so "Months" is not twice in one bar (the rename is BL-938).
 
 ```
 BRIEF BL-952-8 (Find mode and header)             Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
@@ -56,7 +56,7 @@ Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wa
 
 11. LENSES: A principal-architect, B compliance-engineer (plan 2.2). `design-systems` reads the screen (it owns `components/ui`).
 
-12. ORDER: after #894, #895, #840, #879; before BL-938 (the Book header, wave 3). Blocked by: founder (words, via #894), content (R39 reword), product (C-09).
+12. ORDER: after #894, #895, #840, #879; before BL-938 (the Book header, wave 3). Blocked by: founder (words, via #894), content (R39 reword), .
 
 13. DEFINITION OF DONE
     [ ] tests red on old code; `npm test -w apps/mobile`: only the 8 baseline files red; `npm test -w packages/content`; `npx tsc --noEmit` apps/mobile: only the 5 known errors
