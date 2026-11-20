@@ -4,7 +4,7 @@ Status: CURRENT | Owner: product | Replaces: none | Load when: you asked a quest
 
 Written by product for Karma, 20 Nov 2026. This file points; the rulings live in `18-errata-after-lock.md` (E) and `GAP-LOG.md` "Closures 20 Nov" (CL). It changes no card. Rule used throughout: show less, store less, send less, undoable. "Founder" and "counsel" mean the default stands and the item is in the founder digest (`22-final-holistic-spec.md` section 7); it is not closed for good.
 
-Basis: 24 product questions on #934 (merged), 13 design questions on #935 (closed, replaced by #978), rulings in `docs/design/e2e/RULINGS-20nov.md`, the second-round check, and engineering's ask to drop CF-1, CF-8 and Q57. At the start of this round 24 of 37 had an E and CL id; the 13 design ones had only the design file (four of them also E68). E69 gives all 13 an id. Nothing is left NOT closed. Items that are not requirement questions are listed at the end with their owner.
+Basis: 24 product questions on #934 (merged), 13 design questions on #935 (closed, replaced by #978), rulings in `docs/design/e2e/RULINGS-20nov.md`, the second-round check, and engineering's ask to drop CF-1, CF-8 and Q57. At the start of this round the 24 product questions had an E and CL id; the 13 design ones had only the design file (four of them also E68), so 28 of 37 had an id. E69 gives all 13 an id. Every question has an answer. Founder-only and counsel-only defaults stay open for him or counsel, not closed for good. Items that are not requirement questions are listed at the end with their owner.
 
 ## 1. The 24 product questions (#934)
 

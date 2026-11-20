@@ -2,7 +2,7 @@
 
 Status: CURRENT | 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: restarting after a usage limit or outage.
 
-Status detail: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E68); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Remaining threads below are execution-side or historical; the closures are applied in place (`GAP-LOG.md` "Closures 20 Nov").
+Status detail: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E73); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Remaining threads below are execution-side or historical; the closures are applied in place (`GAP-LOG.md` "Closures 20 Nov").
 
 If a usage limit or outage stops any session, restart at 03:01 Pacific (founder, 19 Nov). Anything not pushed is lost, so every thread pushes to `docs/locked-pack-inputs-20nov` (product) or `docs/e2e-ux-20nov` (design) at least every 30 minutes. No force push. Do not move the head of #846.
 
