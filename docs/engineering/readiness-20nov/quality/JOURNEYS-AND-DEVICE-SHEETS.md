@@ -9,7 +9,7 @@ Row ids point to the four `TEST-CASE-CATALOGUE-*.md` files; the rule names (C-nn
 - **Who runs it.** The founder, on his phones, with qa's sheet (`14-test-plan.md:26`, device level [V]). Agents cannot hold a phone. Agents write the sheet, build the simulator flows and read the evidence file the founder or a helper fills in.
 - **Where the result goes.** One evidence file per session at `docs/qa/evidence/<date>-<build>-<phone>.md`, copied from `docs/qa/evidence/TEMPLATE.md` [V]. A session with two phones is one file named after phone A (template comment [V]).
 - **Asha only.** Every device row runs on a separate install signed in to a test account that holds only the fictional Asha book. No run sheet, screenshot, recording, log, trace or note carries a real name, letter, picture or voice (`14-test-plan.md:90`, ruled 20 Nov [V]). The identity rules of `docs/qa/run-sheets/README.md` (drill phones only, drill accounts only, the check before the first step) apply to every sheet below [V].
-- **Pass, miss, waive.** Each step records PASS, MISS or NOT RUN with the build fingerprint. A P0 row may be waived by the founder in writing only when no suitable phone was available, never for a lost letter or recording, a leak off the phone, a name or letter words on a lock screen, or a guilt or count line; every waiver goes in the build record (`14-test-plan.md:98` [V]). A MISS on a speed or accessibility number holds its feature (NS-34-R2).
+- **Pass, miss, waive.** Each step records PASS, MISS or NOT RUN with the build fingerprint. A P0 row may be waived by the founder in writing only when no suitable phone was available, never for a lost letter or recording, a leak off the phone, a name or letter words on a lock screen, or a guilt or count line; every waiver goes in the build record (`14-test-plan.md:98` [V]). Needs founder confirmation: my reading that this makes the two-phone rows (NS-09-R8, NS-10-R1, R6) unwaivable, because they are loss or leak class. A MISS on a speed or accessibility number holds its feature (NS-34-R2).
 - **A device pass does not replace a unit test.** The sheet proves what only a phone shows. Where a unit test is a stand-in it says `[stand-in]` (C-10).
 
 ## 1. Phones and the minimum set
@@ -22,7 +22,7 @@ Row ids point to the four `TEST-CASE-CATALOGUE-*.md` files; the rule names (C-nn
 | D | A second phone on the same account | sync, new phone, seals, let go on a second phone | J-N2, J-N14, NS-09-R8, NS-10-R1, R6 |
 | E | An iPad | App Review runs the iPhone app on iPad | launch and layout only |
 
-Which phones the founder holds is not recorded (`14-test-plan.md:83` [V]). He says which he has before the first sheet; buying one is his decision. Rec, the smallest set that still covers every P0 device row: A plus D (any two phones, one of them the smallest he owns). With fewer than two phones the two-phone rows cannot run and, being a leak or loss class, cannot be waived: they hold the build.
+Which phones the founder holds is not recorded (`14-test-plan.md:83` [V]). He says which he has before the first sheet; buying one is his decision. Rec, the smallest set that still covers every P0 device row: A plus D (any two phones, one of them the smallest he owns). With fewer than two phones the two-phone rows cannot run and, being a leak or loss class, cannot be waived: they hold the build (the founder confirms this reading).
 
 Settings to walk on every phone that has them (`14-test-plan.md:92` [V]): largest accessibility text size with Bold Text, VoiceOver, Voice Control, Switch Control, Reduce Motion, Increase Contrast, Smart Invert, dark mode, Low Power Mode, airplane mode where a step says so.
 
@@ -40,7 +40,7 @@ GAP S0-1: no documented way to seed 1,000 Asha letters and 300 pictures on a pho
 
 ## 3. Sheet S-13: the Build 13 cut (keeping and the floor)
 
-Rows from the plan's Q1 default: BL-922 (NS-10-R0), BL-925 and BL-926 (NS-09-R4a, R4b), BL-928 (NS-33-R1, R2, R4), BL-961 (NS-10-R3), BL-967 (NS-13 never-list rows) [V, `17-engineering-project-plan.md:272`]. Whether these hold the cut is the founder's decision (Q1); this sheet covers them either way. Phones: A, D, and B if he has it.
+Rows from the plan's Q1 default: BL-922 (NS-10-R0), BL-925 and BL-926 (NS-09-R4a, R4b), BL-928 (NS-33-R1, R2, R4), BL-961 (NS-10-R3), P-4a (NS-09-R6, not built) and BL-966's NS-32-R12 test; BL-967 and P-9 have merged, so the reminder rows below are regression checks [V, `17-engineering-project-plan.md:284`, D9, refreshed to 458fae46]. Whether these hold the cut is the founder's decision (Q1); this sheet covers them either way. Phones: A, D, and B if he has it.
 
 | Step | Journey and rows | Phone, settings | Steps | Expected | Run by |
 |---|---|---|---|---|---|
@@ -55,12 +55,13 @@ Rows from the plan's Q1 default: BL-922 (NS-10-R0), BL-925 and BL-926 (NS-09-R4a
 | 3.9 | J-N20; NS-33-R6 | A; VoiceOver only, eyes off | Start, stop, review, undo a small fix, Keep | Done without sighted help; start and stop announced within 1 s | founder |
 | 3.10 | NS-33-R9, R10 | A; Voice Control, then Switch Control | Say every visible label on the five screens; scan with Switch Control | Every control responds | founder |
 | 3.11 | J-N24, J-N4, J-N22, J-N26; NS-13 never-list rows | A; reminders on, default settings, over a week | Collect every notification the phone shows; lock the phone each time | No child name, no letter words, no count of days, no due date, no Plus, price or Keep step; no body repeats twice running | founder collects, qa reads |
+| 3.11b | NS-09-R6 (P1, P-4a not built) | A | Fail a delete on 3 launches (e2e seam), open Where your letters live | A stuck line and Remove now; K3: the card says Storage, the built screen differs, product rules | founder after P-4a lands |
 | 3.12 | J-N17 (CI, not a phone) | CI | `npm test -w packages/content` and the string sweep | No count, fear word, gendered word or banned punctuation | CI |
-| 3.13 | Kill harness (50 runs) when capture, store or erase changed | Mac with Xcode, e2e simulator build | `node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <UDID> --app <App.app> --runs 50` [V, header] | Exit 0 (every run kept its letter or take exactly once; self-check caught every plant) | qa or ops on the founder's Mac |
+| 3.13 | Kill harness (50 runs) when capture, store or erase changed | Mac with Xcode, e2e simulator build | `node apps/mobile/e2e/kill/run-kill-harness.mjs --mode dl02 --udid <UDID> --app <App.app> --runs 50` [V, header] | Exit 0 (every run kept its letter or take exactly once; self-check caught every plant) | founder, on his Mac (agents cannot) |
 
 ## 4. Sheet S-14: the Build 14 candidate (photo, Find, Share, reminders, letter page)
 
-Rec: photo and Find merge dark and Build 14 turns them on after the counsel read (17:270, D7 [V]). Phones: A, C, D, B.
+Rec: photo and Find merge dark and Build 14 turns them on after the counsel read (17:282, D7 [V], plan refreshed to 458fae46). Phones: A, C, D, B.
 
 | Step | Journey and rows | Phone, settings | Steps | Expected | Run by |
 |---|---|---|---|---|---|
@@ -86,7 +87,7 @@ Rec: photo and Find merge dark and Build 14 turns them on after the counsel read
 
 ## 5. Sheet S-15 and later: seals, Firsts, hands-free, reading back
 
-Rec: Build 15 carries Firsts and seals (17:472 [V]). Rows are written ahead so the sheet is not new work later.
+Rec: Build 15 carries Firsts and seals (17:489 [V]). Rows are written ahead so the sheet is not new work later.
 
 | Step | Journey and rows | Phone, settings | Steps | Expected | Run by |
 |---|---|---|---|---|---|
@@ -148,7 +149,7 @@ Journeys whose real time is weeks (J-N4) run as unit tests on the planner with a
 | S0-4 | Two-phone rows need two phones and two drill Apple accounts | Use drill accounts A and B of the run-sheets README | founder |
 | S0-5 | A second language speaker for J-N16 and J-N23 | The founder or a family member reads an Asha script in the language | founder |
 | S0-6 | Time-zone steps need a way to move the clock | Settings, General, Date and Time manually; for seals the e2e clock seam | `mobile` |
-| S0-7 | The kill harness needs a Mac with Xcode and the e2e build wiring line (`RA-20-18`) | Founder's Mac; confirm the wiring line is present [U] | `ops` |
+| S0-7 | The kill harness needs a Mac with Xcode and the e2e build wiring line (`RA-20-18`) | Wiring line is present: `useE2eSeams()` at `apps/mobile/src/app/_layout.tsx:153`, import at :44 [V]. The founder runs it on his Mac | founder |
 
 ## 9. Samples checked for this file
 
