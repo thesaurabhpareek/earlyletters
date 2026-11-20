@@ -155,6 +155,7 @@ What locked means:
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).
+- Questions, feedback and review comments on any locked row follow `FEEDBACK-LOOP.md`: intake with the row id, a triage class, parallel lens reviews, and an errata row with a plan delta line when a locked statement changes.
 
 Remains execution-side (nothing here is a requirement question):
 - Spikes: hands-free (NS-04, five days), date chip (BL-843), level 3 on `exp/photos`, Journaling Suggestions entitlement step 1, pictures and videos (transcode, metadata, iCloud), weak-link launch run.
