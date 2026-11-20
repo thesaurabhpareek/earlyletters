@@ -1,6 +1,6 @@
 ---
 name: expo-native-module
-description: Build or review an Expo local native module in apps/mobile/modules (Swift on iOS): layout, the source-scan tests CI can run, the iOS compile job, permission and store rules, and who reviews. Use for any change there.
+description: "Build or review an Expo local native module in apps/mobile/modules (Swift on iOS): layout, the source-scan tests CI can run, the iOS compile job, permission and store rules, and who reviews. Use for any change there."
 ---
 
 # Expo local native modules and the Swift scan (Early Letters)
@@ -35,15 +35,15 @@ Load this before you add or change anything under `apps/mobile/modules/**`, add 
 
 - A linked module ships its calls in every build, whatever an `EXPO_PUBLIC_*` switch says. A permission call with no purpose string in the build can bring ITMS-90683 at upload. So no permission call ships unless the founder accepted the purpose string (Karma's ruling of 20 Nov on #833; NS-01-R2, NS-01-R22).
 - Prefer system UI that needs no permission. One photo comes from `PHPickerViewController` presented by `scribe-photo`, never from `expo-image-picker` (same ruling; BL-931).
-- Before adding a package with native code, read its iOS source under `node_modules/<pkg>/ios` for permission calls (`requestAuthorization`, `requestAccess`) and background modes. That is how #833's two reviews found `expo-image-picker`'s calls.
+- Before adding a package with native code, read its iOS source under `node_modules/<pkg>/ios` for permission calls (`requestAuthorization`, `requestAccess`) and background modes. That is how #833's two reviews found `expo-image-picker`'s calls. A new dependency also needs the founder's approval on the PR (AIE-R21) and its justification in the PR body (CODE-R17).
 - No `UIBackgroundModes`, app group or location without a founder decision (BL-864; NS-04 EX-3 in `docs/product/prd/04-hands-free-capture-spike.md`).
-- `security-architect` reads the plist, entitlement and lockfile diff (`docs/product/prd/01-photo-with-a-letter.md` line 140). The roster's review paths do not route `apps/mobile/modules/**` to it, so ask for that review in the PR body.
+- `security-architect` reads the lockfile and plist diff (`docs/product/prd/01-photo-with-a-letter.md` line 140, NX-39-R52) and any entitlement delta (`docs/product/prd/README.md` line 82). The roster's review paths do not route `apps/mobile/modules/**` to it, so ask for that review in the PR body.
 
 ## 5. Before you ask for review
 
 1. Focused tests, then `npm test -w apps/mobile`, then `npx tsc --noEmit` in `apps/mobile`.
 2. The scan tests fail when you remove the guard they protect (try it, then restore it).
-3. `ios-compile.yml` is green at the head, or the PR says it is red and why. A green compile is the first proof the Swift builds at all.
+3. `ios-compile.yml` is green at the head, or the PR says it is red and why. A red macOS check still holds the merge (`merge-queue.mjs` WATCH-RED, line 55). A green compile is the first proof the Swift builds at all.
 4. The PR names the device rows still owed, and asks `security-architect` for the native read.
 
 ## 6. Evidence this is repeated know-how
