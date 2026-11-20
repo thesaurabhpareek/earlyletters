@@ -70,6 +70,9 @@ export function runPick(picker: PhotoPicker, onProgress?: (fraction: number) => 
   return { done, cancel: () => run.cancel() };
 }
 
+/** The room a stored copy needs besides its own size (NS-01-R45, PROPOSED in the locked card): 50 MB. */
+export const PHOTO_FREE_MARGIN_BYTES = 50 * 1024 * 1024;
+
 export type CommitResult =
   | { status: 'stored'; photo: StoredPhoto }
   | { status: 'needs_words' }
@@ -102,7 +105,7 @@ export async function commitPhoto(
   }
   if (carriesMetadata(stripped.bytes)) return { status: 'failed' }; // belt and braces: never store a copy that still carries any
   try {
-    if ((await deps.files.freeBytes()) < stripped.bytes.length * 2) return { status: 'no_space' };
+    if ((await deps.files.freeBytes()) < stripped.bytes.length + PHOTO_FREE_MARGIN_BYTES) return { status: 'no_space' };
   } catch {
     return { status: 'failed' };
   }

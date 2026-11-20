@@ -1,1 +1,2 @@
 11:14 (20 Nov) mobile | done: 3a ceilings 1120/480 (3b1df635, pushed 447611c2); 3b merged 3a, caps now count graphemes with a code-point backstop, test red on old code | next: 3b checks, push, cascade 4a to 5, bodies | blocked/needs: journal post and PR labels refused by the session's permission check
+12:15 (20 Nov) mobile | done: 3b grapheme caps (7b21c256), R45 room plus 50 MB (293a8006), 4a and 4b merged | next: cascade 3b again to 4a, 4b, 4c (maxLength) and 5 (lens ChoiceGroup) | blocked/needs: journal post and PR labels refused by the session's permission check
