@@ -5,13 +5,15 @@
  */
 import * as Crypto from 'expo-crypto';
 import { File } from 'expo-file-system';
+import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
-import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory } from './files';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory, pickerDestination } from './files';
 import { photosBuildEnabled } from './flag';
 import { sweepPhotos } from './housekeeping';
 import { PendingPhoto } from './pending';
+import { createPhotoPicker } from './picker';
 import { registerPending, registerPhotoPicker } from './registry';
 import { photoPath, type PhotoDeps, type PickedFiles, type StoredPhoto } from './types';
 
@@ -22,8 +24,11 @@ let picked: PickedFiles | null = null;
 
 export const pickedFilesPort = (): PickedFiles => (picked ??= expoPickedFiles());
 
-/** The native ImageIO step, when this build has it. Loaded on first use so a build or test without it is unaffected. */
-function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null {
+/**
+ * The native module (the picker and ImageIO), when this build has it. Loaded on first use, so a build or a test without
+ * it is unaffected.
+ */
+function nativePhoto(): ScribePhotoNative | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     return (require('../../../modules/scribe-photo') as typeof import('../../../modules/scribe-photo')).ScribePhoto;
@@ -32,14 +37,14 @@ function nativeBaker(): { reencodeUpright(uri: string): Promise<string> } | null
   }
 }
 
-/** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. No native re-encode is registered yet. */
+/** The deps `commitPhoto`, `addPhotoToLetter` and the rest run against. The re-encode is absent without the native module. */
 export function photoDeps(): PhotoDeps {
   cached ??= {
     store: entryMediaStore(localSqlDb(), notifyStoreChanged),
     files: expoPhotoFiles(),
     newId: () => uuidv7(),
     now: () => new Date(),
-    orientation: createOrientationBaker(nativeBaker(), expoBakedFiles()),
+    orientation: createOrientationBaker(nativePhoto(), expoBakedFiles(() => uuidv7())),
     sha256: async (bytes) => hex(await Crypto.digest(Crypto.CryptoDigestAlgorithm.SHA256, bytes as Uint8Array<ArrayBuffer>)),
   };
   return cached;
@@ -49,21 +54,18 @@ export function photoDeps(): PhotoDeps {
 export const photoUri = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => new File(photosDirectory(), photoPath(p)).uri;
 
 /**
- * Registers Apple's system picker, only when the photos switch is on in this build. The picker module is required here
- * and nowhere else, so a build with the switch off never evaluates it (it is still linked; see the PR).
+ * Registers Apple's system picker (scribe-photo's pickOne) and the pending picture, only when the photos switch is on
+ * in this build and the native module is in it. Otherwise (switch off, Expo Go, web, Android) nothing registers, so
+ * Home draws no photo start.
  */
 let registered = false;
 export function registerPhotoDevice(): void {
   if (registered || !photosBuildEnabled()) return;
   registered = true;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { createPhotoPicker } = require('./picker') as typeof import('./picker');
-    registerPhotoPicker(createPhotoPicker());
-    registerPending(new PendingPhoto(pickedFilesPort()));
-  } catch {
-    // The native picker is not in this build (Expo Go, web): Home draws no photo start.
-  }
+  const native = nativePhoto();
+  if (!native) return;
+  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7())));
+  registerPending(new PendingPhoto(pickedFilesPort()));
 }
 
 /** Launch: empties Caches/ImagePicker, removes strays, finishes interrupted purges. Never awaited by launch. */

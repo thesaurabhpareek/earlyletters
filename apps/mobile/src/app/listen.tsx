@@ -83,8 +83,9 @@ import { haptic } from '@/lib/haptics';
 import { useMotion, useReducedMotion } from '@/lib/motion';
 import { track, trackCaptureDiscarded } from '@/lib/analytics/track';
 import { freeBytesFrom } from '@/lib/capture/free-space';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { VOICE_RECORDING_OPTIONS, abandonTake, beginTake, finalizeTake, type StopReason } from '@/lib/capture/recorder';
-import { deleteDraft, getActiveChild, setRecordingProgress } from '@/lib/store';
+import { beginDiscard, finishDiscard, getActiveChild, setRecordingProgress } from '@/lib/store';
 import { KEEP_AWAKE_TAGS, useKeepAwakeWhile } from '@/lib/resilience/keep-awake';
 import { consumeListenStart } from '@/lib/resilience/start-intent';
 
@@ -431,16 +432,10 @@ export default function Listen() {
           // Only once the person has confirmed (MOTION 6, 5.8 row 2), and after the session has stopped: iOS mutes
           // haptics while recording.
           haptic('warning');
-          // The one place audio is deleted: the parent confirmed it.
-          if (uri) {
-            try {
-              new File(uri).delete();
-            } catch {}
-          }
-          if (id) {
-            deleteDraft(id);
-            dropDraftPicture(id);
-          }
+          // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
+          // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
+          if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (id) dropDraftPicture(id); // its picture goes too, file then row (NS-01-R16)
           discardPendingPhoto(); // "The photo goes too": nothing of it was stored
           router.back();
         },

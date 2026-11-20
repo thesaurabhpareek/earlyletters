@@ -538,7 +538,7 @@ function adoptHeldDraft(db: SqlDb, id: string, now: string): void {
  * backup (F08 6.5 B), never through sync. A draft with ops still queued keeps its
  * own values (the queued op is the later writer). Nothing is ever deleted here:
  * a draft let go elsewhere is marked `discarding` (the launch sweep finishes it,
- * F04-REQ-004), a waiting letter let go elsewhere goes to Recently deleted.
+ * F04-REQ-009), a waiting letter let go elsewhere goes to Recently deleted.
  */
 function applyHeldRows(db: SqlDb, rows: (PulledHeld | PulledHeldGone)[], owner: string | null, now: string): number {
   let n = 0;
