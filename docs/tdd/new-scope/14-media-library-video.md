@@ -40,11 +40,11 @@ The decisions that matter most:
 
 | Column | Change | Level | Note |
 |---|---|---|---|
-| `kind` | CHECK `IN ('photo','video')` | L1 | the only list a reader switches on |
-| `ext` | CHECK coupled to kind (below) | L1 | `jpg` for photo; `mp4` or `mov` for video |
+| `kind` | CHECK `IN ('photo','video')` | L2 (PROPOSED; OQ-P2) | the only list a reader switches on |
+| `ext` | CHECK coupled to kind (below) | L2 (PROPOSED; OQ-P2) | `jpg` for photo; `mp4` or `mov` for video |
 | `position` | new, `INTEGER NOT NULL DEFAULT 0`, CHECK `>= 0 AND < 1000` | L2 | the parent's order, dense per owner. The card calls it `order`, a reserved word in SQL (Conflict C-2) |
 | `duration_ms` | new, nullable, CHECK `> 0 AND <= 600000` | L2 | videos only; the 60 s limit is code (`limits.ts`), the CHECK is a ceiling like 11's text ceilings |
-| `bytes`, `sha256`, `width`, `height` | unchanged | L1, L4, L2, L2 | a video's `bytes` is up to 100 MB; `sha256` is computed natively over the stored file (part 2, 1.4) |
+| `bytes`, `sha256`, `width`, `height` | unchanged | L2, L4, L2, L2 (`bytes` PROPOSED L2) | a video's `bytes` is up to 100 MB; `sha256` is computed natively over the stored file (part 2, 1.4) |
 | `photo_text`, `place` | unchanged | L4 | the parent's words for one item; for a video too. Rec: the same field is the "Describe this" text of NS-52-R28 (OQ-M3) |
 
 Coupled CHECK (Rec; it sits in the rebuild under the default path B, or in #835 under A-minimal): `CHECK ((kind = 'photo' AND ext = 'jpg') OR (kind = 'video' AND ext IN ('mp4','mov')))`. Two triggers hold the coupling with `duration_ms`, on INSERT and on UPDATE (four triggers, or two with `BEFORE INSERT OR UPDATE` split as SQLite requires): `entry_media_video_needs_duration` and `entry_media_photo_no_duration`, `RAISE(ABORT, 'media_shape')` with a fixed code, no value in the message (TDD 01 4.2 rule 2). Under the rebuild the coupling can be a table CHECK instead, and `ADD COLUMN ... CHECK` across columns is not needed (whether expo-sqlite 57 accepts any `ADD COLUMN ... CHECK` is Unverified). Types: `MediaKind = 'photo' | 'video'` is declared once in `lib/photos/types.ts` and the closed union `MediaErrorCode` (`media_not_available`, `no_space`, `video_unreadable`, `video_too_large`, `video_too_long`, `media_limit`, `media_missing`) once in `lib/photos/media-errors.ts` (CODE-R13, CODE-R15).
@@ -66,7 +66,7 @@ Coupled CHECK (Rec; it sits in the rebuild under the default path B, or in #835 
 
 A row stores no path (Rec): `poster_path` in the card (`27:408`) is dropped in favour of a name derived from the media id. Reason: the sweep already rebases paths after an app update because the container path changes (`capture/sweep.ts:8`), so a stored absolute path rots (Conflict C-2). The poster of a video is the frame at t = 0, chosen by a rule, never by judging the picture (NS-52-R29; R27 is the parent's own choice for print, later).
 
-**2.5 Classification.** Every new column carries its level in the migration comment (`local-classification.test.ts`, `11-foundations.md` section 6 rule 5). The video file, its poster, the derived copies, `sha256` and the typed words are L4. `position` and `duration_ms` are L2: neither identifies a child or a family alone. A hash of a picture is L4 (`DATA_CLASSIFICATION.md` 1.1.2, ADR 0028 D1). `privacy` rules the class; this file proposes (OQ-P1).
+**2.5 Classification.** Every new column carries its level in the migration comment (`local-classification.test.ts`, `11-foundations.md` section 6 rule 5). The video file, its poster, the derived copies, `sha256` and the typed words are L4. `position` and `duration_ms` are L2: neither identifies a child or a family alone. A hash of a picture is L4 (`DATA_CLASSIFICATION.md` 1.1.2, ADR 0028 D1). `privacy` rules the class; this file proposes (OQ-P1). OQ-P2 for `privacy`: `data-and-sync.md:39` and OQ-P2 there say L2 for `kind`, `ext` and `bytes`, while the #835 migration comments say L1; this file uses L2 and records the difference as a question, not a decision.
 
 ## 3. The moments index (NS-51-R6, R23; the Conflict line)
 
