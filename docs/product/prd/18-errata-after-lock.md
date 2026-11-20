@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E68) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E73) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E68 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E73 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Six are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, and E67 (its lines). The closure rows are CL-117 to CL-142 in `GAP-LOG.md`, one per row E43 to E68 in order (CL-117 is E43, CL-136 is E62).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Six are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, and E67 (its lines). E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-147 in `GAP-LOG.md`, one per row E43 to E73 in order (CL-117 is E43, CL-136 is E62, CL-143 is E69).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -119,6 +119,11 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E66 | none (records) | tdd new-scope 13, 14, 15 | mobile, privacy |
 | E67 | none; defaults stand, no dependency added until the founder approves | `22` section 7 | mobile, principal-architect |
 | E68 | none (B1 corrections) | cards 01, 11, 19 | design-systems, mobile |
+| E69 | none (records; one token PR for radii, one constant for the spring, as ruled) | `docs/design/e2e/RULINGS-20nov.md` rulings 25 to 37 | design-systems, mobile |
+| E70 | none; the refused-region screen already moves after the code step (E62); the phone holds the refusal in memory for that attempt | card 19 NS-41-R2; first-run design CF-8 | mobile, security-architect |
+| E71 | none; the one clean-up row stays as E63 says | card 19 NS-40-R7, FR-PRV-25, BL-577; first-run design CF-1 | data-architect, mobile |
+| E72 | none; default as E47; one proposed sub-question for counsel | NS-40-R9; COUNSEL_PACKET Q57 (proposal only) | security-architect, regulatory-affairs |
+| E73 | none; the claim step is the only adoption | card 21 NS-47-R7; CR-69 A4 | mobile |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
@@ -195,3 +200,49 @@ Ruling: carry the rulings into the cards, in place, as B1 corrections. Card 01 N
 Edited in place: cards 01, 11 and 19. Plan delta: none (no re-size); `design-systems` checks the PhotoFrame token and heading PRs, `mobile`.
 
 Founder note: E62 to E68 add no item to the founder's own list beyond the digest lines of E67; each default stands until he changes it.
+
+## Third round, E69 to E73 (20 Nov, Karma with product, from engineering's last asks)
+
+Source: engineering's 37 questions on #934 and #935, read against the record one by one (the table is in `ENGINEERING-QUESTIONS-CLOSED-20nov.md`), and engineering's ask to drop CF-1, CF-8 and Q57 as open items. Same rule: show less, store less, send less, undoable. Founder-only and counsel-only items keep a stated default and stay in the digest. The closure rows are CL-143 to CL-147 in `GAP-LOG.md`, one per row E69 to E73 in order (CL-143 is E69).
+
+### E69: design questions 25 to 37 get an id (20 Nov, Karma with product)
+
+Question (#935, closed and replaced by #978): thirteen design questions had a ruling in `docs/design/e2e/RULINGS-20nov.md` and no E or CL id. Only 27, 29, 31 and 33 had one (E68).
+
+Ruling: the thirteen rulings stand as written in that file: DS2-03 radii (25), MOTION-OPEN-2 spring 0.30 s (26), NS-01-R41 `mediaFrame` (27), FOUNDATIONS-Q1 glass dim 35 percent (28), NS-33-R1 heading trait plus a device read (29), FOUNDATIONS-Q5 glass fallback (30), MOTION-OPEN-1 the lamp (31), COMPONENTS-G3 tab bar (32), MOTION-OPEN-3 haptics (33), FOUNDATIONS-Q4 `moon.stars` (34), FOUNDATIONS-Q6 icons, chrome only (35), OQ-H1 slip height (36), MOTION-ACCEPTANCE-8 timing source (37). Each is a default that stands until the Chief Design Officer says otherwise. None is the founder's, except the new dependencies that 31 and 35 need, which are already in E67 (not added until he approves). Where a ruling ends in a number or a look (28, 25), the Chief Design Officer approves it on the PR from the screenshots or the measured numbers; that is a design approval, not a requirement change. The device rows (29, 36) are stand-ins until a person has run them, and nothing is claimed green before. Ruling 32 reads as built: the three tab roots keep the bar, the letter page is a pushed route and hides it, as it does today (`_layout.tsx:229`). No card word changes beyond what E68 already did.
+
+Edited in place: none. Plan delta: none for the pack; DS2-03 is one token PR with before and after screenshots, the spring is one constant (ENG-M1), `mediaFrame` and the glass fallback are token additions with pair tests; `design-systems`, `mobile`.
+
+### E70: CF-8 closed, the card wording is final (20 Nov, Karma with product)
+
+Question (engineering, first-run design CF-8, and the open part of E62): the hook fires on user creation, so for a refused new person no code may be sent and the refused screen has no route. What does the phone do?
+
+Ruling: the card wording of NS-41-R2 and NS-40-R9 is final as E62 left it. For the build the default is this. Send always lands on the same wait screen with the same words ("check your email"), whatever the server answered, so a person watching the screen learns nothing about the address or the place. If the server refused the sign-up, the phone keeps that refusal in memory for that one attempt (nothing is written to the phone) and, when the person enters a code, shows the refused-region screen (E-S04.refused-region) instead of a wrong-code line. If nothing was refused, the normal code result shows. Resend repeats the same request. An existing account from a refused place signs in as before (the hook fires on creation only). Whether someone calling the server directly could still tell a refused new address from an existing one is a security read for `security-architect` at FP-6, not a requirement; while the hook is off (E47) there is nothing to tell. If the read finds the two cannot be made alike, the hook stays off and the question comes back as an erratum, not as a build blocker. It shows and stores less than any other reading.
+
+Edited in place: NS-41-R2 in card 19 (one clause) and the CF-8 line in `docs/tdd/new-scope/12-first-run-5.md`. Plan delta: FP-6 builds the in-memory hold and the same wait screen; no new screen, no re-size; `mobile`, `security-architect`.
+
+### E71: CF-1 closed, no age_signal in any card or function row (20 Nov, Karma with product)
+
+Question (engineering CF-1, amendments 15 and 16): can CF-1 be dropped from the conflict list?
+
+Ruling: yes for the cards. NS-40-R2, R6 and R7, FR-PRV-25, FR-CMP-15 and the last criterion of BL-577 all say the Terms record carries `age_attested: true` and no age signal (checked at the head of this PR; E50). What is left is a clean-up, not a conflict, and E63 already owns it: one migration and two docs PRs, `data-architect`, one proposed row with no BL id until #912 merges. The first-run build sends no `age_signal`; its test is `[NS-40-R7]`. The legal text (`POLICY_VERSIONING.md` line 410) is proposed by product and merged by the founder, and nothing is applied without `approve-migration`.
+
+Edited in place: the CF-1 line in `docs/tdd/new-scope/12-first-run-5.md` (marked closed, points to E63 for the clean-up). Plan delta: none beyond E63; engineering removes CF-1 from its conflict list and tracks only the E63 row; `data-architect`, `mobile`.
+
+### E72: Q57 and the region hook, fail open or closed (20 Nov, Karma with product; COUNSEL-ONLY default)
+
+Question (engineering, the Q57 line): is the open question for the hook fail open or fail closed, and does it block the build?
+
+Ruling: counsel's and the founder's, not ruled for good. The default is E47, restated: if the country lookup itself fails while sign-in is up, the sign-up goes through and an error is counted (File 28 as written); the hook stays off until counsel and the Chief Compliance Officer answer. `COUNSEL_PACKET.md` Q57 (a) to (f) ask about the block, name screening and the label; none of them asks this. Product proposes one more sub-question for the founder to merge into the packet (legal text is his): "(g) If our country lookup fails, may the sign-up go through and be counted (our default), or must it be refused until the lookup works?" Its default is "go through and count", and its deadline is the packet's: before the sign-up check is switched on. It does not block the build: FP-6 builds both screens either way (a refusal after the code step, an outage as an outage, never one as the other), so a "closed" answer later changes only the File 28 migration and the Outage row's wording, not the phone. Nothing is blocked meanwhile, because the hook is off.
+
+Edited in place: none (the digest line E47 stays and cites E72). Plan delta: none; FP-6 and File 28 as E47 says; `security-architect`, `regulatory-affairs`.
+
+### E73: wider adoption of the days file (20 Nov, Karma with product; CR-69 A4)
+
+Question (CR-69 A4 ends "Wider adoption waits for product to confirm on #934"; no question was filed): may a local days file be adopted by anyone other than the person at the claim step?
+
+Ruling: no. A local days file is adopted only at the claim step (E-S24) by the same person (NS-47-R7); a new phone starts empty. Any other first sign-in that finds a local file deletes it and starts empty. It stores and shows less, and a wrong adoption would put one person's days in another's book. This is engineering's A4 sentence, confirmed; engineering deletes "Wider adoption waits for product" from A4 in its next edit of CR-69 (also A12 and A13, which still describe questions now ruled: A13 closes by E43 to E59 and E69; A12's Q-E10 is E64).
+
+Edited in place: none. Plan delta: none; the A4 text only; `mobile`.
+
+Founder note: E69 to E73 add no item to the founder's own list. E72 keeps the E47 line (counsel-only) in the digest and adds one proposed sub-question for counsel, merged only by him.

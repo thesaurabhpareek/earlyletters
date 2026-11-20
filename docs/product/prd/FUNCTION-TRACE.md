@@ -300,7 +300,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-PRV-22 | privacy | P1 (b) | NS-16 | - | BL-980 (eng table) | needs Karma ruling |
 | FR-PRV-23 | privacy | P2 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-PRV-24 | privacy | P0 (b) | NS-39; NS-40; NS-41; NS-43 | E-S01, E-S08, E-S02 (text) | BL-579, BL-994 (eng table) | needs Karma ruling |
-| FR-PRV-25 | privacy | P0 (b) | (from text) NS-40 | - | BL-994 (eng table) | ruled (K5, E50) |
+| FR-PRV-25 | privacy | P0 (b) | (from text) NS-40 | - | BL-994 (eng table) | ruled (K5, E50, E71) |
 | FR-PRV-26 | privacy | P0 (b) | NS-40 | E-S03.region | BL-994 (eng table), new row needed (NR-39) | needs Karma ruling |
 | FR-PRV-27 | privacy | P0 (a) | NO CARD LINK (suggested via card 19 screen table: NS-41, NS-10) | E-S06, C-S10 | BL-994 (eng table) | counsel; founder; needs Karma ruling |
 | FR-PRV-28 | privacy | P0 (b) | NO CARD LINK (suggested via card 19 screen table: NS-42, NS-41, NS-43, NS-39) | E-S07, E-S08, E-S14, E-S24 | BL-994 (eng table) | needs Karma ruling |

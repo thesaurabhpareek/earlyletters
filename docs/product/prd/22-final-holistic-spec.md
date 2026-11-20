@@ -137,7 +137,7 @@ Founder digest: defaults that stand (added 20 Nov, one line each, default and de
 |---|---|---|---|
 | E43 (CL-117) | First-run (NS-38 to NS-45) ships as Drop D: after wave 1 and Drop A, before any family outside yours signs in | Yes, in that order | `18` E43 |
 | E46 (CL-120) | The sensitive-data withdrawal control is not built today; I add one P0 row and it is built before anyone outside the family signs in | Add the row; counsel-adjacent | `18` E46 |
-| E47 (CL-121) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
+| E47 (CL-121, CL-146, E72) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
 | E56 (CL-130) | A No at the age step sends nothing and writes no server row (the phone keeps a local stop flag, NS-40-R3); Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
 | E59 (CL-133) | The free allowance is per phone, not per account | Per phone, as built | `18` E59 |
 | E67 (F-1) | Writing tools on letter fields (SOQ F-1): accept the recorded finding, or fund the small native setting (NSC-05)? Until decided, the production profile keeps the photos flag off and the Firsts label waits | OFF on letter fields (brief D2); not shown in a production profile without the native setting | `18` E67; SOQ F-1 |
@@ -183,7 +183,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E68); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E73); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).
