@@ -17,7 +17,7 @@ Common state rule for every screen below: `offline`, `killswitch` (`serverFeatur
 | C-S07 Which book | Chooser sheet | none | `en.children.*` | `Sheet`, `ChoiceGroup` | Radio; current book marked by check | N (inv) |
 | C-S08 Where letters live | Row page, flip states | local, flip, signedout | `en.settings.*` | `ListRow` | One element per row; state in words | B: `settings/where-letters-live.tsx` |
 | C-S09 Letter page provenance | "Where the recording is" line | notHere, onPhone, otherParent, arriving | `auth.newPhone.*` (PROPOSED) | `ListRow` (letter list row 7) | Line is a words row, not an icon; VO reads where | N |
-| C-S10 Opening your book | New phone, returning account | loading, noBook, offline, wrongAccount, held | `auth.newPhone.*`, `auth.outage.*` | `StateScreen`, `m.progress.wait` | No spinner; busy words stand still at every RM setting (tokens.v2 rule, Conflict D-05); never a blank screen | P: launch and restore code partly built [U] |
+| C-S10 Opening your book | New phone, returning account | loading, noBook, offline, wrongAccount, held | `auth.newPhone.*`, `auth.outage.*` | `StateScreen`, `m.progress.wait` | No spinner; busy words stand still at every RM setting (tokens.v2 rule, Conflict C-03); never a blank screen | P: launch and restore code partly built [U] |
 | C-S11 Returning consent | Sheet and "not agreed" screen | declined, withdrawn, serversOff | `auth.consent.*` | `Sheet`, `AgreementRow` | Agreement box unticked by default; Decline as visible as Agree (PRIV-R21 Shown/Records/Never) | P: consent screen built (`(auth)/sign-in/consent.tsx`) |
 | C-S12 Book-level new phone line | One line above first chapter | dismissed | `en.book.arrivalLine` | `InlineState` | Line, not a banner; dismiss named by word | P: `arrivalLine` position built [per B DESIGN, U] |
 | C-S13 Earlier versions | List | loading, error-fetch_failed, offlineNone | `en.book.*` | `ListRow` | Error is words + Try again; no count | N |
@@ -56,7 +56,7 @@ Common state rule for every screen below: `offline`, `killswitch` (`serverFeatur
 | D-S14 Invite link page (web) | Web | expired, iphone, otherDevice | `site.invite.*` | web tokens (`dist/tokens.web.css`) | Same tokens as app; 48 px targets (`target.web`) | n/a (web) |
 | D-S15 Join ask: peek | Top of join sheet | error-expired/not_found/revoked/used, unknownInviter | `family.accept.*`, SCINV/SCCAP codes | `JoinAsk` | Error maps to words per code; no blame | P: `components/family/join-ask.tsx` |
 | D-S16 Accept: agreement | Bottom of same sheet | error-book_full, family_share_consent, joining | `family.errors.*` | `AgreementRow` | Agreement box required, unticked | P |
-| D-S17 Joined arrival | Arrival | slow, twobooks, notYet | `family.accept.*` | `StateScreen` | No cover-opening ceremony (v2 retires `JoinedCover`) | P: cover ceremony still built (Conflict D-06) |
+| D-S17 Joined arrival | Arrival | slow, twobooks, notYet | `family.accept.*` | `StateScreen` | No cover-opening ceremony (v2 retires `JoinedCover`) | P: cover ceremony still built (Conflict C-04) |
 | D-S18 Family page | Members, pending, undo | twoParents-undoable, undo-open/closed | `family.members.*`, `family.undoJoin.*` | `ListRow` | 72 h undo shown as words | P: `family.tsx` |
 | D-S19 Undo join confirm | Confirm | error-SCPAR | `family.undoJoin.*` | `ConfirmSheet` | Destructive by word | P |
 | D-S20 Other parent after undo | Notice | default | `family.undone` | `StateScreen` | Words only | N |
