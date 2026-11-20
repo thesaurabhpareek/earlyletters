@@ -2831,6 +2831,27 @@ Severity: **S0** blocks build 2 or can lose a word or break a promise now; **S1*
   - Given the alpha running, when the connector list is read, then no agent session can reach the staging organization.
 - Extends: AF-06, SR-12.
 
+#### BL-727 One source check for the sign-in rules chapter 05 states but nothing tests (from BL-602)
+- Status: ready. Mode: agent. Owner: security engineer. Severity: S2.
+- Who: `security`, with `qa` for where it runs.
+- Problem: the BL-602 sweep (8 Nov 2026) found IAM-R05, R06, R07, R09, R11, R12 and R23 held by code or config that no test pins. A change to any of them would pass CI today.
+- Acceptance:
+  - Given `apps/mobile/src`, when the check runs, then the only `.auth.signIn*` calls are `signInWithOtp` (email), `signInWithIdToken` with provider `apple` or `google`, and the passkey path; a `signInAnonymously`, `signInWithPassword` or `resetPasswordForEmail` call anywhere fails it (IAM-R05, R06, R07).
+  - Given `apps/mobile/src/lib/auth/email.ts`, when `shouldCreateUser` is anything but `true`, then it fails, until BL-581 decides otherwise (IAM-R09 no-reveal).
+  - Given `supabase/config.toml`, when `refresh_token_reuse_interval` is not 10, then `auth_config.test.mjs` fails (IAM-R11).
+  - Given the session provider, when "Sign out other devices" runs, then `signOut` is called with scope `others`; and given `SESSION_LOST` with 2 letters queued, then the outbox still holds 2 (IAM-R12).
+  - Given `.github/workflows/agents.yml`, when it names any secret whose name contains `SUPABASE` or `SERVICE_ROLE`, then the check fails (IAM-R23).
+- Extends: IAM-R05 to R07, R09, R11, R12, R23; MONO-01.
+
+#### BL-728 A dashboard user deletion cannot hard-delete letters (DB-17, from BL-602)
+- Status: deferred (after the 9 Nov go/no-go, CR-47). Mode: agent. Owner: data architect. Severity: S2.
+- Who: `data-architect` with `data-steward`; review by `security-architect`.
+- Problem: `profiles.id references auth.users(id) on delete cascade` (`20260930000000_scribe_core.sql:19`), so deleting a user in Supabase > Authentication deletes their profile and, through it, their books and letters without the purge pipeline, receipts or legal-hold checks. IAM-R22 forbids it by review only.
+- Acceptance:
+  - Given an Asha parent with 3 letters and no deletion request, when `delete from auth.users` runs for them, then it is refused and the 3 letters remain.
+  - Given an account deletion through `request_account_deletion` and the purge worker, when it finishes, then the auth user is gone as today.
+- Extends: IAM-R22, DATA-REQ-020.
+
 ### Data and database
 
 #### BL-583 One applied-migrations record per project (DATA-02)
