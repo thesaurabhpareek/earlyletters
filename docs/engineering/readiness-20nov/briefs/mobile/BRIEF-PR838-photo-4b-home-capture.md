@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:04 UTC).
-Blocked until: #837 merged (its base is `feat/mobile-photo-4a-pending`; its head branch is `feat/mobile-photo-4-capture`); the founder's size exception at the new size (617 added, 12 removed, 25 files; reviewers counted 629, 56 over the 573 covered); the five PROPOSED photo keys read by the founder (`packages/content/src/features/photos.en.ts`, +28 lines; `needs:founder`); #854 merged. Conflict sent to product, not decided here: card R20b wants Change last in VoiceOver order, the slice keeps Change under the picture (plan M30; React Native's reading-order override is experimental).
+Blocked until: #837 merged (its base is `feat/mobile-photo-4a-pending`; its head branch is `feat/mobile-photo-4-capture`); the founder's size exception at the new size (617 added, 12 removed, 25 files; reviewers counted 629, 56 over the 573 covered); the five PROPOSED photo keys read by the founder (`packages/content/src/features/photos.en.ts`, +28 lines; `needs:founder`); #854 merged. R20b is settled by erratum E40: the VoiceOver order is thumbnail, Change, prompt, Speak, Type, each announcing its state, as built here; the test title is unchanged. C-08 is ruled (CL-116): "Start from a photo" is third and quiet; Home has six slip ranks (E36), none of them touched here.
 
 ```
 BRIEF PR-838 (BL-931 slice 4b)                    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
@@ -16,7 +16,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
      [NS-01-R4][NX-39-R14] backing out writes nothing
      [NS-01-R13a][NX-39-R36] the switcher snapshot shows no picture
      [NS-01-R13b] no picture before unlock
-     [NS-01-R20b] VoiceOver order on Ready   (OPEN: conflict above)
+     [NS-01-R20b] VoiceOver order on Ready   (as built; E40 order: thumbnail, Change, prompt, Speak, Type)
      [NS-01-R24] photo strings match no forbidden pattern
      [NS-01-R59] no picker, no photo controls
    Red on develop: no `PhotoStartButton`, no `source: 'photo'` in `start-capture.logic.ts`. Mutants: R1 add a PhotoStartButton to Book; R3 make
@@ -52,14 +52,14 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 8. BUDGETS (PR #928): L-06 screen change starts within 100 ms; L-07 Home to Listen within 900 ms (device, HOLD the motion change); A-04 AX5 + Bold Text,
    Speak on screen at AX3 with a picture, thumbnail 88 pt (R39, not met in this slice per N7). Not measured here.
 
-9. ACCEPTANCE  Experience: A-S01 Home (Start from a photo quiet, third; C-08 conflict open), A-S03, A-S11 (EX-01 44 pt, EX-04 order, EX-08 Reduce Motion, EX-11 Smart Invert);
+9. ACCEPTANCE  Experience: A-S01 Home (Start from a photo quiet, third; C-08 ruled: third and quiet), A-S03, A-S11 (EX-01 44 pt, EX-04 order, EX-08 Reduce Motion, EX-11 Smart Invert);
    motion MA-01 and MA-12 (PR #922). Test cases above; rows R39, R40, R42 stay open for BL-956. Done also means: red on old code and on each named mutant.
 
 10. PR BREAKDOWN: exists (#838, 25 files, over the 20-file limit by the founder's exception). Fallback split if the exception is withdrawn: 4b-1 lib/photos, lib/capture and the content keys with their tests (about 14 files); 4b-2 screens and components (index, listen, review, write, photo-start, thumb, frame) (about 11 files), 4b-2 based on 4b-1. Existing PR #838, base feat/mobile-photo-4a-pending. Rebuild and retarget when #837 merges. Flag-off proof: `photos-surfaces.test.ts` (off: no registration, no controls).
 
 11. LENSES: A principal-architect, B design-systems. Both PASS WITH NOTES at 03704c71 (14:55 and 15:50 UTC).
 
-12. ORDER: after #837; before #839. Blocked by: founder (size, keys, #854), product (R20b).
+12. ORDER: after #837; before #839. Blocked by: founder (size, keys, #854), nothing from product.
     CI at head: `mergeable_state` unstable; dl01 "1 of 1 (5 runs)" cancelled [V check-runs]: re-run.
 
 13. DEFINITION OF DONE
@@ -69,7 +69,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 14. ONLY A PHONE CAN PROVE: VoiceOver reading order on Ready; AX5 (R20c) and AX3 thumbnail; Reduce Motion; switcher snapshot timing; Undo toast (JOURNEYS rows 4.4, 4.5, PR #925).
 
-15. STOP AND ASK: product has not ruled R20b; a word is needed; `ErrorLine` must move to `components/ui` (design-systems); the base moves; two failed attempts.
+15. STOP AND ASK: a word is needed; `ErrorLine` must move to `components/ui` (design-systems); the base moves; two failed attempts.
 
 16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-pr838 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-pr838.md`. Branch feat/mobile-photo-4-capture (exists, no force). Comments start `<!-- agent:mobile -->`.

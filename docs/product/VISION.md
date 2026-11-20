@@ -46,7 +46,7 @@ Three tabs, one verb each: Home is where you say it, Book is where you read it, 
 
 ## The next six months, in one line each
 
-- **Now (Build 12, the first store release):** sign-in, sync, free plan and Plus, English, recording backup off (D-157 to D-160).
+- **Now (Build 12, the first store release):** sign-in, sync, the first 2 letters free then Plus, English, recording backup off (D-157 to D-160).
 - **Next (Builds 13 and 14):** make what exists safer and truer, then a photo with a letter, finding a letter by a word, and sharing one letter as text (closed question X1; exec rulings of 19 Nov).
 - **Then:** the people around the child (hearing a letter, co-parent in store builds), the physical keepsake (a print-ready file first), and a longer life for the book (firsts, sealed letters). That order is the founder's working order from 10 Nov (`exec-rulings-2026-11-10-expansion.md`, Q4).
 - **Always out:** trackers, health or feeding logs, recaps written by a machine, moods, streaks, counts, seen-by receipts, translation (same record).
