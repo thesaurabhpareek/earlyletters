@@ -413,6 +413,7 @@ describe('[BL-924] Discard on Listen keeps the draft when the recording cannot b
     return { id: take.id, uri: rec.uri!, gone };
   }
 
+  // NS-09-R3 is proven by this set together, each citing it: sweep.disk.test.ts:417 (Listen's Discard steps with a delete that throws keep the row, marked discarding) and listen.test.ts:347 (Listen's confirmed Discard runs exactly those steps, and nothing else there deletes).
   it('[NS-09-R3][BL-924] a delete that throws keeps the draft row, marked and hidden, with its recording; the next launch finishes both', async () => {
     let app = await launch();
     const asha = addAsha(app);
