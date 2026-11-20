@@ -86,7 +86,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Chief Privacy Officer | Does a device class word ("an iPhone") plus time count as L2 or L3 in an email? | L3 with the address; never stored in a log |
 | CCO, CLO | Are A1 to A9 transactional under CAN-SPAM and need no unsubscribe, and does the incident notice (E14) stay counsel-approved by hand? | Yes transactional; yes by hand |
 | CPO | Order of build: A4 (done), A5, A7, A8, then A1, then A6 and A3 | D1 (founder approved 20 Nov; product confirms): A1 before the first outside family; A3 and A6 after the BL-598 runbook |
-| CISO | When the 20-a-day backstop is reached, does a new takeover warning still send? | Yes, in one summary, never silently dropped [E] |
+| CISO | Do you agree the 20-a-day backstop never holds required notices or the security alerts A1, A3 to A9 (07.2 rule 6)? | Yes [E, product confirms]; never silently dropped |
 | CMO, CDesO | The words: subjects, the neutral lock-screen lines, the alert bodies (all PROPOSED keys `comms.alert.*`) | Written by `content` as a person, linted, approved by the founder |
 
 ### 5.3 Founder and counsel
