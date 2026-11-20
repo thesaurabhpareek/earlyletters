@@ -1,3 +1,7 @@
+# P0 register by card (generated)
+
+Status: CURRENT (generated list; LOCKED rev 2 inputs) | 20 Nov 2026 | Owner: `qa` (script `tools/review/p0.py`) | Replaces: none | Load when: you need the P0 row ids of one card; regenerate with `python3 -I docs/product/prd/tools/review/p0.py <repo-root>` (it prints TOTAL on stderr: 1,050).
+
 | Card | P0 rows | Reasons |
 |---|---|---|
 | NS-01 | NS-01-R4, NS-01-R6, NS-01-R8, NS-01-R9a, NS-01-R9b, NS-01-R13a, NS-01-R13b, NS-01-R14, NS-01-R15, NS-01-R16a, NS-01-R16b, NS-01-R16c, NS-01-R17a, NS-01-R17c, NS-01-R18, NS-01-R21b, NS-01-R22, NS-01-R25, NS-01-R26, NS-01-R27, NS-01-R29, NS-01-R30, NS-01-R31, NS-01-R32, NS-01-R33, NS-01-R35, NS-01-R36, NS-01-R37a, NS-01-R38a, NS-01-R38b, NS-01-R49, NS-01-R50, NS-01-R51, NS-01-R52, NS-01-R55, NS-01-R61, NS-01-R62 | (a) (b) (c) |
@@ -34,7 +38,7 @@
 | NS-39 | NS-39-R1, NS-39-R2, NS-39-R3, NS-39-R4, NS-39-R5, NS-39-R6, NS-39-R10, NS-39-R11, NS-39-R12, NS-39-R14 | (a) (b) (c) |
 | NS-40 | NS-40-R1, NS-40-R2, NS-40-R3, NS-40-R5, NS-40-R6, NS-40-R7, NS-40-R8, NS-40-R9, NS-40-R10, NS-40-R12, NS-40-R13 | (b) |
 | NS-41 | NS-41-R1, NS-41-R2, NS-41-R3, NS-41-R4, NS-41-R5, NS-41-R6, NS-41-R7, NS-41-R9, NS-41-R10, NS-41-R11, NS-41-R13, NS-41-R14, NS-41-R16, NS-41-R18, NS-41-R19, NS-41-R20, NS-41-R22, NS-41-R23 | (a) (b) (c) |
-| NS-42 | NS-42-R1, NS-42-R2, NS-42-R3, NS-42-R4, NS-42-R5, NS-42-R6, NS-42-R7, NS-42-R9, NS-42-R10, NS-42-R11, NS-42-R13, NS-42-R15, NS-42-R16 | (a) (b) |
+| NS-42 | NS-42-R1, NS-42-R2, NS-42-R3, NS-42-R4, NS-42-R5, NS-42-R6, NS-42-R7, NS-42-R9, NS-42-R10, NS-42-R11, NS-42-R13, NS-42-R15, NS-42-R16, NS-42-R17, NS-42-R18 | (a) (b) |
 | NS-43 | NS-43-R1, NS-43-R2, NS-43-R3, NS-43-R4, NS-43-R6, NS-43-R7, NS-43-R8, NS-43-R10, NS-43-R11, NS-43-R13, NS-43-R14 | (a) (b) (c) |
 | NS-44 | NS-44-R1, NS-44-R2, NS-44-R3, NS-44-R4, NS-44-R6, NS-44-R7, NS-44-R8, NS-44-R9, NS-44-R10, NS-44-R12 | (a) (b) (c) |
 | NS-45 | NS-45-R1, NS-45-R2, NS-45-R3, NS-45-R5, NS-45-R6, NS-45-R7, NS-45-R8, NS-45-R9, NS-45-R10, NS-45-R11, NS-45-R12, NS-45-R13, NS-45-R15, NS-45-R16, NS-45-R18 | (a) (b) (c) |

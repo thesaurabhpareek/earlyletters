@@ -114,7 +114,7 @@ Layer rule for BL and PR ids (final audit, 20 Nov): ids are not stripped by scri
 | REV-ns46-50-product | `docs/product/prd/tools/review/ns46-50/product.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~221 |
 | REV-ns46-50-qa | `docs/product/prd/tools/review/ns46-50/qa.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~268 |
 | REV-ns46-50-security | `docs/product/prd/tools/review/ns46-50/security.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~174 |
-| REV-p0-table | `docs/product/prd/tools/review/p0-table.md` | execution | WORKING-INPUT (generated; no header added because the script rewrites it) | `qa` | none | reading per-card P0 counts; otherwise do not load | ~70 |
+| REV-p0-table | `docs/product/prd/tools/review/p0-table.md` | execution | WORKING-INPUT (generated; the status header is added after each regeneration) | `qa` | none | reading per-card P0 counts; otherwise do not load | ~70 |
 | REV-queue | `docs/product/prd/tools/review/queue.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~4 |
 | REV-r1-product-design-cmo-cbo | `docs/product/prd/tools/review/r1-product-design-cmo-cbo.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~399 |
 | REV-r2-privacy-legal-security-data-ai | `docs/product/prd/tools/review/r2-privacy-legal-security-data-ai.md` | execution | WORKING-INPUT (record; findings applied in the cards; do not load) | the review role named in the file | none | auditing where a finding came from; otherwise do not load | ~802 |
@@ -207,5 +207,5 @@ Banners were added to the top of: `13-engineering-plan.md` (sections 4 and 5), `
 - Project docs: not readable from this session; statuses are expectations, marked UNVERIFIED.
 - `docs/product/prd/17-engineering-project-plan.md` (PR #847) is not on this branch and has no row.
 - Design file headers and line counts are read from the design worktree head at the time of writing; that branch moves.
-- `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md` now carry the four-field header (final audit, 20 Nov); `tools/review/p0-table.md` has none because the script rewrites it.
+- `FUNCTION-TRACE.md` and `BACKLOG-GAPS.md` now carry the four-field header (final audit, 20 Nov); `tools/review/p0-table.md` gets its header after each regeneration (20 Nov review A item 7).
 - Owners are taken from each file's own header text; where a file named no agent handle, the role is written as the file words it.
