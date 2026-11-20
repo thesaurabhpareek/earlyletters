@@ -78,6 +78,8 @@ T1 (`[NS-36-R11]`, owner `sync`): every column in `FIELD_GROUP_COLUMNS`, `SHARED
 
 ### 2.5 Export, erase and classes
 
+[Amended 17-A11] The days folder joins `eraseDeviceFiles` and the Caches suggestion folder joins `CACHE_COPIES` (AP-6, `architecture.md:128`); NS-46 to NS-50 need no local migration, no L-number, and nothing is synced or exported.
+
 Export minors: eval A s3, adopted: E1 1.7.0 pictures (BL-933, gated by BL-868), E2 1.8.0 Firsts, E3 1.9.0 seals (1.8.0 if the seal merges first), and a media minor for videos and several pictures, by merge order [Amended 16-A-8]; no bump for NS-12, NS-15, NS-16, NS-37; NS-17's waiting-letter question stays with eval A. Delete, restore, purge, let go, Erase everything, sign-out and server account deletion per new field: eval A s4, adopted; F2 and F3 add only "removed at completion and by the launch sweep; never exported". Classes: eval A s1.6, adopted.
 
 ### 2.6 Inventory (BL-960, `privacy` with me; the founder merges)
