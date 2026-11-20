@@ -2,6 +2,8 @@
 
 Author: `mobile` for Karma. Docs only. 30 briefs, one file each, in the shape of `BRIEF-TEMPLATE.md` (PR #916), 16 fields, at most 78 lines each. Written at develop `16e61549` and the PR heads named in each brief, 20 Nov 18:46 to 19:05 UTC. Every brief starts with "re-open every file:line" and a "Blocked until" line. Tags: [V] checked in git or GitHub on 20 Nov, [E] estimate, [U] not verified. Nothing here decides a founder, counsel or product question; words are PROPOSED keys only.
 
+Claim rows: Karma holds them for the #835 to #840 files, Find, account and `lib/reminders/**`. No claim yet for BL-953, BL-954, BL-955, BL-956, BL-957, BL-932, BL-933, P-1, P-5 (each says so in field 16), and `lib/account-deletion/**` (HO-910, HO-911). Karma adds them.
+
 Sources read: the refreshed plan (`17-engineering-project-plan.md` section 2 at `458fae46`), PRs #916, #917 (packs 0 to 4), #919 and #920 (libraries), #921 to #923 (experience, motion, delta), #924 to #927 (catalogue A to D), #914 and #915 (security), #928 to #930 (budgets, via #928 and #929), #931 to #933 (delta 3 and 6, resync list), the open handoffs #907 to #911, and the PR bodies and reviews of #835 to #840, #871, #879, #894, #895. Not read in full: catalogue D, `CODE-QUALITY-GATES.md`, `OBSERVABILITY-WITHOUT-CONTENT.md`, motion acceptance rows beyond MA-01, 03, 12.
 
 ## What I checked against GitHub first (all open at 18:46 UTC; none merged since 17:35)
@@ -20,10 +22,10 @@ Order is within a lane (1 first). Size S about 300 lines or less, M one or two P
 | P5 | `BRIEF-PR839-photo-4c-letter-page.md` | photo | #838 | 603 lines, 17 files | principal-architect / design-systems | 1 | founder (size, 13 keys), product (C-01, N7) |
 | P6 | `BRIEF-PR840-photo-5-photos-lens.md` | photo | #839 | 342 lines, 12 files (inside CODE-R02) | design-systems / principal-architect | 1 | founder (1 key), product (C-09) |
 | P7 | `BRIEF-BL953-stored-copy-cap.md` | photo | BL-931 | S | principal-architect / security-architect | 2 | BL-931 |
-| P8 | `BRIEF-P1-icloud-progress-and-cancel.md` | photo | BL-931, BL-953, BL-878 | S | principal-architect / security-architect | 1 | founder (word), an id |
-| P9 | `BRIEF-BL957-one-length-rule.md` | photo | #836 (soft) | S | principal-architect / data-steward | 2 | nothing hard |
+| P8 | `BRIEF-P1-icloud-progress-and-cancel.md` | photo | BL-931, BL-953 (wave 2), BL-878, row 33-3 (`progress-bar.tsx` is not on develop) | S | principal-architect / security-architect | 2 (plan 2.4) | founder (word), an id, design-systems (33-3) |
+| P9 | `BRIEF-BL957-one-length-rule.md` | photo | #839 (field limits live in components/photos/*); reuses `splitsCluster` (`packages/core/src/text.ts:78`) and `graphemes()` (`book-cover.logic.ts:104`) | S | principal-architect / data-steward | 2 | #839 |
 | P10 | `BRIEF-P5-pictures-follow-the-letter-tests.md` | photo | #835 | S, tests | data-steward / compliance-engineer | 2 | #835 |
-| P11 | `BRIEF-BL954-undo-windows.md` | photo | BL-931 | S, 2 PRs | design-systems / principal-architect | 2 | product (C-02) |
+| P11 | `BRIEF-BL954-undo-windows.md` (rewritten to CR-67 AX-11: one clock, `createUndo` is row 33-3 and design-systems') | photo | row 33-3, BL-931 | S, PR 1 about 120 lines then caller batches of at most 8 files | design-systems / principal-architect | 2 | 33-3, product (R38a/R38c wording) |
 | P12 | `BRIEF-BL955-picture-survives-kill.md` | photo | BL-931 | S | principal-architect / data-steward | 2 | Karma (E2) |
 | P13 | `BRIEF-BL932-list-copies.md` | photo | BL-931, BL-953 | M, 3 PRs | principal-architect / security-architect, data-steward | 2 | product (NS-52 shape) |
 | P14 | `BRIEF-BL956-pictures-large-text-invert-fit.md` | photo | BL-932 | M, 2 PRs | design-systems / principal-architect | 2 | design-systems (88 pt), product |
@@ -69,3 +71,21 @@ Size exceptions at the new sizes for #835 to #839 (783, 1,015, 732, 629, 603; #8
 
 ## Cites
 Sampled about 60 file:line cites across the briefs against develop `16e61549` and the PR heads. All held except: `consent.ts:117` (now `:113`), `prefs.ts:116` (now `:127`), `preflight-testflight.mjs:636` (now `:644-646`), `photos/device.ts:95` (now `:102-104` at #839), `lib/store/repos/children.ts` (does not exist), `debounce.ts:10` (now `:9`, `:26`). Each is corrected in its brief. Not verified: the content of catalogue D, `getLastNotificationResponse` on 57.0.21, `fractionCompleted` for iCloud loads, any phone behaviour.
+
+## Unmerged sources, by PR (read with `git show origin/<branch>:docs/engineering/readiness-20nov/<path>`)
+| PR | Branch | Path |
+|---|---|---|
+| #916 | `agent/ai-eng-lead/readiness-skills` | `skills/BRIEF-TEMPLATE.md` |
+| #917 | `agent/ai-eng-lead/readiness-skills-packs` | `skills/KNOWLEDGE-PACKS.md`, `KNOWLEDGE-PACKS-2.md` |
+| #914 | `agent/security-architect/readiness-rd-d` | `security/SECURITY-PRIVACY-ACCEPTANCE.md`, `-2-CARDS.md` |
+| #915 | `agent/security-architect/readiness-rd-d-2` | `security/ABUSE-AND-FAILURE-CASES.md`, `SECURE-CODING-CHECKLIST.md` |
+| #919, #920 | `agent/mobile/readiness-libraries`, `-2` | `libraries/LIBRARY-DECISIONS*.md`, `ALREADY-HAVE.md` |
+| #921 | `agent/design-systems/readiness-experience` | `experience/EXPERIENCE-ACCEPTANCE.md`, `-2.md` |
+| #922 | `agent/design-systems/readiness-experience-motion-a11y` | `experience/MOTION-ACCEPTANCE.md`, `A11Y-ACCEPTANCE.md` |
+| #923 | `agent/design-systems/readiness-experience-delta` | `experience/DESIGN-DELTA.md` |
+| #924 | `agent/qa/readiness-quality-1` | `quality/DEFINITION-OF-DONE.md`, `CHECKS-AND-BALANCES.md` |
+| #925 | `agent/qa/readiness-quality-2` | `quality/TEST-CASE-CATALOGUE-A-*.md`, `JOURNEYS-AND-DEVICE-SHEETS.md` |
+| #926 | `agent/qa/readiness-quality-3` | `quality/TEST-CASE-CATALOGUE-B-*.md`, `-C-wave-2.md` |
+| #927 | `agent/qa/readiness-quality-4` | `quality/TEST-CASE-CATALOGUE-D-*.md` |
+| #928, #929 | `agent/ops/readiness-performance`, `-2` | `performance/NFR-BUDGETS.md`, `MEASUREMENT-PLAN.md` |
+| #931, #932, #933 | `agent/principal-architect/readiness-inputs`, `-pack-delta-b`, `-pack-delta-c` | `inputs/PACK-DELTA*.md`, `RESYNC-LIST.md` |
