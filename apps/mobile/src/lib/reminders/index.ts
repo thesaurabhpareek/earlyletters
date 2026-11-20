@@ -25,7 +25,8 @@ export {
   type ReminderTime,
   type ReminderWindow,
 } from './planner';
-export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, writePrefs } from './prefs';
+export { LOCK_SCREEN_NAMES_DEFAULT, lockScreenNamesOn, plannerChildren, readPrefs, REMINDER_SESSION_KEY, REMINDER_SETTING_KEYS, writePrefs } from './prefs';
+export { endReminderSession, sessionEnded, settleReminderSession } from './session';
 export {
   currentPlan,
   disableReminders,
