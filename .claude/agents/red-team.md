@@ -21,6 +21,7 @@ Nothing that breaks the constitution, leaks a family's words, weakens an access 
 - `docs/tdd/10-red-team-critique.md`: the launch-sinking risks already found.
 - `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ) and `docs/legal/DATA_CLASSIFICATION.md`: what privacy means here.
 - The PR's task in `docs/BACKLOG.md` and every requirement id it claims.
+- New scope (on `develop` since #829): `docs/product/prd/14-test-plan.md` section 7 (the P0 register: rows that need a test that fails on the old code) and the `review-gate` skill: Karma merges on two counted lens reviews (D-132), and a review in the marker format below is read, not counted, while the dispatcher is off (`docs/agents/HARNESS.md` line 11). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 None: the dispatcher sends you `review` assignments, then standing duties.
