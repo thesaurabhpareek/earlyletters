@@ -13,7 +13,7 @@ What changed from the 3 Oct morning version:
 
 Requirements are cited, never copied. Sources: `docs/prd/PRD.md` (PRD-REQ, conflict log K-##), `docs/prd/A-*.md`, `B-*.md`, `C-*.md` (A/B/C-REQ, -NFR), `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ), `docs/legal/DELETION_AND_EXPORT_SPEC.md` (DATA-REQ). If a PRD line and a LEGAL-REQ disagree, LEGAL-REQ wins until the founder decides. Decisions: D-### in `docs/DECISIONS.md`; open questions: Q-### in `docs/agents/DEBATES.md`; design detail: TDD ## (`docs/tdd/`).
 
-**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"; they leave the free list above); `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix.
+**Numbering.** Existing ids (BL-001 to BL-321) never change. **BL-055 to BL-099 are never used** (TDD 03 and TDD 09 proposed colliding numbers there; the appendix maps every TDD proposal). New ids from this consolidation: BL-322 to BL-326 (security review follow-ups) and BL-330 to BL-349. Free for later splits: BL-123 to BL-129, BL-131 to BL-133, BL-138, BL-139, BL-149, BL-152, BL-153, BL-155, BL-161 to BL-169, BL-179 to BL-189, BL-197 to BL-199, BL-204, BL-207 to BL-209, BL-223 to BL-230, BL-246, BL-253, BL-254, BL-274, BL-281, BL-285, BL-287, BL-290 to BL-299, BL-315, BL-316, BL-318, BL-327 to BL-329; BL-351 to BL-369 are the brand, email and web handoffs, and BL-370 to BL-434 are the M-JR journey review block (4 Oct 2026); BL-435 is free; BL-436 to BL-440 are release engineering (ADR 0022, 13 Oct 2026; BL-440 is listed first because it is the v1.0 blocker); BL-441 to BL-443 are the coverage baseline follow-ups (`docs/qa/COVERAGE.md`, PR #180, 16 Oct 2026); BL-444 is the left-books follow-up (D-113, PR #184, 23 Oct 2026); BL-445 is the typed-code follow-up (D-120, 27 Oct 2026); BL-446 to BL-456 are the review follow-ups of 28 Oct 2026 (section "Review follow-ups (28 Oct 2026)"); BL-457 to BL-474 are the second wave of 28 Oct 2026 (section "Review follow-ups, wave 2 (28 Oct 2026)"); BL-475 to BL-484 are the third wave of 30 Oct 2026 (section "Review follow-ups, wave 3 (30 Oct 2026)"); BL-485 to BL-497 are the fourth wave of 30 Oct 2026 (section "Review follow-ups, wave 4 (30 Oct 2026)"); BL-499 to BL-508 are the fifth wave of 30 Oct 2026 (section "Review follow-ups, wave 5 (30 Oct 2026)"; BL-498 is not used: the id script counted the earlier "next block starts at BL-498" as taken); BL-509 to BL-527 are the sixth wave of 31 Oct 2026 (section "Review follow-ups, wave 6 (31 Oct 2026)"); BL-528 is the offline consent-record gap (CR-35, CCO-4, PR #456), filed beside BL-323; BL-529 is the export's profile fields (LEGAL-REQ-034, PR #469); BL-530 to BL-550 are M13 (section "M13. Reminders, nudges and photo moments", 1 Nov 2026); BL-006 to BL-008, BL-017 to BL-019, BL-025 to BL-029, BL-038, BL-039, BL-045 to BL-047, BL-126 to BL-128, BL-181 to BL-188, BL-198, BL-208, BL-291 to BL-298 and BL-328 are the proposed P0-gap rows of 20 Nov 2026 (section "Locked pack: P0 rows with no backlog row"); BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329 are the proposed quality-catalogue gap rows and the perf profile row of 20 Nov 2026 (section "Locked pack: quality-catalogue P0 gap rows and the perf profile"); all of these leave the free list above; `node scripts/agents/next-id.mjs` prints BL-1000, which the dispatcher cannot read yet, so run it for the next free id only after the four-digit fix.
 
 ---
 
@@ -4328,6 +4328,102 @@ Ids. The dispatcher reads only three-digit ids (`scripts/agents/lib.mjs`), and B
 - Scope: tests first, then code or words only where a test fails, for the rows above: sort each new FR row into one of the groups above (or its own row) and add its id to the Satisfies line of the row that takes it; no new requirements. Note: count again with p0.py before editing. The product agent does this in its standing duty on a docs PR (no roster owner name exists for `product`, so the Owner is the founder and the dispatcher never starts it). The card is the source of truth; nothing here changes a row.
 - Done when: every row id above appears in the Satisfies line of a row that does its work, or has a row of its own; `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps` no longer lists them.
 - Source: docs/product/prd/BACKLOG-GAPS.md G38. Group G38; 140 rows.
+
+## Locked pack: quality-catalogue P0 gap rows and the perf profile (20 Nov 2026, proposed)
+
+Written 20 Nov 2026 by the product agent in reply to engineering's readiness files (PRs #925 to #927 for the qa test-case catalogues, #929 for the measurement plan). The four catalogues (`docs/engineering/readiness-20nov/quality/TEST-CASE-CATALOGUE-A` to `D`) mark 28 rows GAP: the card plus the catalogue line is not yet enough to write a test that can fail. 23 of the 28 are P0 (the other five are P1: NS-03-R6, NS-03-R9, NS-33-R14, NS-01-R17b, NS-01-R20e and are not here). The rows below take the 23 in 12 groups and add one row for the `perf` EAS profile and marker harness (S19 and S20 in `06-nfr.md` section 0, H1 in the measurement plan). Each group row closes a test-design gap; the P0 rows themselves may already sit in the Satisfies line of another row (named under "Builds beside"), so these rows add no Satisfies claim and `p0.py --gaps` counts do not change. Every row is `proposed`: the dispatcher skips it until Karma or the founder sets `ready`. Nothing here copies or changes a requirement; the cards and function files stay the source of truth, and several GAP causes are already fixed in the cards by errata E41 and E42 and the in-place edits of the same day.
+
+Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: each id below appears in no heading, file, commit message, branch name or PR title of the repository (checked with `git grep -w`, `git log --all --grep` and the titles of all PRs), and each is in the "free for later splits" list of the Numbering paragraph: BL-129, BL-132, BL-138, BL-139, BL-162, BL-163, BL-168, BL-254, BL-287, BL-290, BL-299, BL-327 and BL-329. BL-826 to BL-829 stay reserved (not used here). Once the dispatcher reads four digits these rows can move to BL-1000 and up.
+
+#### BL-129 Pilot process checks: counsel read, voice reads, deletion clocks, no rewards (NS-03)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, rows marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: user researcher, qa engineer. Milestone: M15. Size: S. Depends on: BL-127.
+- Closes the test-design gap of 5 P0 rows: NS-03-R1, NS-03-R2, NS-03-R4, NS-03-R5, NS-03-R7. Builds beside BL-127, which already names them.
+- Scope: a node check that reads the front matter of the pilot file and fails when a dated counsel read or voice read is missing before the first contact or consent date, when a founder deletion note is missing at 30 days and 12 months, when a withdrawal has no deletion note within 2 working days, or when a code or gift appears before the read-out; process rows, no phone code. The checks start as checklist lines in the pilot file and become the node check when the pilot file exists.
+- Done when: each row has a check whose title starts with its id in brackets and a mutant (a missing date) that turns it red.
+- Source: catalogue A, NS-03 section.
+
+#### BL-132 Agents never read the pilot log: a path guard (NS-03-R8)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; Karma or the founder sets it to ready). Mode: pair. Owner: founder. Milestone: M15. Size: S. Depends on: BL-127.
+- Closes the test-design gap of 1 P0 row: NS-03-R8. Builds beside BL-127.
+- Scope: add the pilot log path to the agent read deny list and test it in `scripts/agents`. `scripts/agents/**` is founder-owned, so the Owner is the founder and the dispatcher never starts it.
+- Done when: a test fails when an agent run could read the private pilot log path, and `[NS-03-R8]` names it.
+- Source: catalogue A, NS-03 section.
+
+#### BL-138 Review says when a recording is not gone yet: an announce port (NS-09-R4b)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-181.
+- Closes the test-design gap of 1 P0 row: NS-09-R4b. Builds beside BL-181.
+- Scope: announce through one port `announce(text, delayMs)` so a test with fake timers can assert one announcement after the settle delay and none on mount; keep a device row for the real VoiceOver read. The title is `[NS-09-R4b] Review says when a recording is not gone yet` (fixed in card 08 on 20 Nov).
+- Done when: the unit test passes and the device row is on the next run sheet.
+- Source: catalogue A, NS-09 section.
+
+#### BL-139 Voice Control and Switch Control scans (NS-33-R9, R10)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, rows marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: BL-984.
+- Closes the test-design gap of 2 P0 rows: NS-33-R9, NS-33-R10. Builds beside BL-984.
+- Scope: two unit scans, one that the visible text equals the accessibility label on every Button, one that every pressable has an accessibility role and is reachable; the device rows (say each label, scan each control) stay for the run sheet. The gate is G4, so the device rows are not waivable.
+- Done when: both scans pass with a positive control and a mutant that turns each red.
+- Source: catalogue A, NS-33 section.
+
+#### BL-162 An XCUITest audit target for the accessibility audit (NS-33-R16)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; errata E42; Karma or the founder sets it to ready). Mode: pair. Owner: qa engineer, mobile engineer. Milestone: M15. Size: L. Depends on: BL-984.
+- Closes the test-design gap of 1 P0 row: NS-33-R16. Builds beside BL-984.
+- Scope: add an XCUITest target to the e2e profile that runs `performAccessibilityAudit()` at the largest text size on each named screen and fails on a critical violation. No XCUITest target exists in `apps/mobile` today. Engineering's estimate is about 3 engineer-days [E, an estimate, not a commitment]. Until it exists the row is a hand run with Accessibility Inspector recorded `[stand-in]` and is not claimed green.
+- Done when: the target runs in CI on a macOS runner and `[NS-33-R16] automated audit` cites it.
+- Source: catalogue A, NS-33 section; `docs/engineering/readiness-20nov/experience/DESIGN-DELTA.md` build item 15.
+
+#### BL-163 The pending-notification ceiling test at 60 in total (NS-32-R4b)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: reminders owner. Milestone: M15. Size: S. Depends on: BL-966.
+- Closes the test-design gap of 1 P0 row: NS-32-R4b, whose text now says 60 in total with plan notices first (E13, applied in card 11 on 20 Nov).
+- Scope: fill 60 budgeted notes, add 4 plan notices, assert all 4 are kept first, the budgeted notes give way, and the total is at most 60; the old 64 expectation is gone from BL-966's title and scope.
+- Done when: `[NS-32-R4b] plan notices at the iOS ceiling` passes and a mutant that lets the total reach 64 turns it red.
+- Source: catalogue A, NS-32 section; errata E13.
+
+#### BL-168 A miss holds the feature, and markers carry no content (NS-34-R2, R6)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, rows marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, platform. Milestone: M15. Size: M. Depends on: BL-185, BL-329.
+- Closes the test-design gap of 2 P0 rows: NS-34-R2, NS-34-R6. Builds beside BL-185.
+- Scope: a scripted check in the production preflight that reads `docs/qa/evidence` for a MISS and fails when the feature flag is on in `production`; a typed allowlist `PerfMarker` so marker names and payloads carry no path, text or name, plus a source scan with a positive control and a log canary reading the sink.
+- Done when: both rows have a test that starts with its id in brackets and a mutant that turns it red.
+- Source: catalogue A, NS-34 section; measurement plan H1.
+
+#### BL-254 Data follows the letter: the ADR acceptance record and the inventory check (NS-36-R4, R6)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue A, rows marked GAP; Karma or the founder sets it to ready). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: S. Depends on: BL-959, BL-960.
+- Closes the test-design gap of 2 P0 rows: NS-36-R4, NS-36-R6. Builds beside BL-959 and BL-960. The titles `[NS-36-R4] ADR 0028 merged with the L3 fix before any write` and `[NS-36-R6] each new field has its inventory row` are in card 11 since 20 Nov.
+- Scope: a check that ADR 0028 is on `develop` with its X10 fix and the classification test lists the L3 columns before any picture is written on a store build; a scan of `docs/legal/data-policy.md` section 4 and `docs/legal/DATA_CLASSIFICATION.md` for each new column the local migrations add. The legal files change only through the founder's merge.
+- Done when: both checks run in the sandbox and a mutant (a new column with no row) turns the second red.
+- Source: catalogue A, NS-36 section.
+
+#### BL-287 Writing tools off, or the field stays off in production: one shared test (NS-01-R50, NS-21-R12, NS-06-A22)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogues B, C, D, rows marked GAP; errata E41; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer, design systems. Milestone: M15. Size: M. Depends on: BL-962.
+- Closes the test-design gap of 3 P0 rows: NS-01-R50, NS-21-R12, NS-06-A22. Builds beside BL-962.
+- Scope: one shared source test with two branches, as the cards now say: the field sets the writing-tools behaviour to none through the native setting of ADR 0039 (PROPOSED), or, while that setting is not built, the field is not shown in any `production` profile and a test fails a `production` profile that shows it (CR-67 AX-1). Titles: `[NS-01-R50]`, `[NS-01-R50b]`, `[NS-21-R12]`, `[NS-21-R12b]`, `[NS-06-A22]`, `[NS-06-A22b]`. The Review editor already ships without the setting; that is reported to the founder, not decided here.
+- Done when: the shared test passes on the default branch and a mutant that shows a field in `production` without the setting turns it red.
+- Source: catalogues B (NS-01), C (NS-21), D (NS-06).
+
+#### BL-290 Documentation checks: spike findings, counsel page, flip condition (NS-04-R4, NS-08-R4, NS-08-R9)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue D, rows marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: qa engineer, privacy engineer. Milestone: M15. Size: S. Depends on: BL-972, BL-976.
+- Closes the test-design gap of 3 P0 rows: NS-04-R4, NS-08-R4, NS-08-R9. Builds beside BL-972 and BL-976.
+- Scope: a node check over the shape of the findings file (each trigger section has Plist, Entitlement, Label and an allowed audio line); a checklist in the claims inventory that a counsel page exists with each label and policy delta; a line in the flip checklist that the seventh flip condition is answered or has a written no-copy record. No phone code.
+- Done when: each row has a checker or a checklist line whose title starts with its id in brackets.
+- Source: catalogue D, NS-04 and NS-08 sections.
+
+#### BL-299 Printed fonts are embedded, licensed and complete (NS-07-C28-13)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue D, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: mobile engineer. Milestone: M15. Size: S. Depends on: BL-973.
+- Closes the test-design gap of 1 P0 row: NS-07-C28-13. Builds beside BL-973.
+- Scope: a test over the font dictionary of the fixture PDF: every font embedded and subset, no missing glyph, the OFL licences listed. Which Arabic and CJK face is UNVERIFIED and is settled by the library review first.
+- Done when: `[NS-07-C28-13] fonts are embedded, licensed and complete` passes on the fixture and a mutant font file turns it red.
+- Source: catalogue D, NS-07 section.
+
+#### BL-327 English output on other languages is measured (NS-17-R2)
+- Status: proposed (docs/engineering/readiness-20nov/quality catalogue D, row marked GAP; Karma or the founder sets it to ready). Mode: agent. Owner: speech engineer. Milestone: M15. Size: S. Depends on: BL-182.
+- Closes the test-design gap of 1 P0 row: NS-17-R2. Builds beside BL-182.
+- Scope: a test that every offered or unoffered language has a gate evidence row, so the fixture runs of `npm run gate` in each unoffered language are filed and Review always shows words.
+- Done when: `[NS-17-R2] English output on other languages is measured` passes and a language with no evidence row turns it red.
+- Source: catalogue D, NS-17 section.
+
+#### BL-329 The perf EAS profile and the marker harness (S19, S20; measurement plan H1)
+- Status: proposed (docs/engineering/readiness-20nov/performance/MEASUREMENT-PLAN.md H1, PR #929; Karma or the founder sets it to ready). Mode: pair. Owner: platform, mobile engineer. Milestone: M15. Size: M. Depends on: BL-929, BL-185.
+- Scope: one more profile in `apps/mobile/eas.json` cloned from `testflight` with `EXPO_PUBLIC_PERF=on`; `lib/perf/markers.ts` with the typed allowlist of BL-168; the production preflight refuses the flag in `production` (FR-OPS-22); one EAS build per candidate. This is the build that BL-929's run sheet needs for latency, scroll and memory rows (NS-34 section 10). `.github/` and EAS settings changes are proposals until the founder applies them.
+- Done when: a perf build installs on the small-phone baseline, a marker run produces content-free numbers, and the preflight fails a `production` profile with the flag on.
+- Source: `docs/product/prd/11-foundations.md` NS-34 section 10; measurement plan H1 ("someone must own H1; I recommend `product` adds one").
 
 ## Appendix: TDD proposal to BL mapping
 
