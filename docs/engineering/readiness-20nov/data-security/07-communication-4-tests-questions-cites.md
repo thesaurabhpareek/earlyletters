@@ -39,7 +39,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Alert: event to queued row | p95 under 200 ms inside the same database call that caused it | Rec [E]: same bar as the local save commit (DATA-REQ-048) because it rides the same transaction; no network call in it |
 | Alert: queued row to provider accepted | p95 under 60 s, p99 under 10 min; a miss pages `ops` | Rec [E]: a takeover warning is only useful soon; the purge worker already runs every 15 minutes (`purge-worker/alerts.ts` header), so alerts get their own 1-minute drain or a database webhook |
 | Sign-in mail | p90 under 30 s | `docs/emails/SECURITY.md` finding on `A-NFR-004` (as read in 3.4) |
-| Rate limits | alert mail: first 5 per account per hour one by one, then one summary within minutes, backstop 20 per account per day [E, reviewer's number] (D2), no A2 email; sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
+| Rate limits | alert mail: first 5 per account per hour one by one, then one summary within minutes, backstop 20 per account per day [E, reviewer's number; product confirms] (D2), no A2 email; sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
 
 ## 3. What could not be verified
 
@@ -60,7 +60,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | C3 | Locked NS-32-R4b says 64; code plans 60 plus 4 | E13, CR-69 A1, CL-115: 60 in total | `mobile` (BL-966) |
 | C4 | Built birthday title names the day on a lock screen | `GAP-LOG.md:203` default (a founder item, still open) | `product` and `privacy` decide; `mobile` waits |
 | C5 | No notification category or hidden-preview placeholder in code | NS-32-R13 | `mobile` |
-| C6 | Catalogue says `new-device-sign-in` is a 1.0 email; no card names it and nothing sends it | No card names it; PRD V2 F02-REQ-017 is P0 and puts it before the switch flip (`docs/prd/v2/features/F02-account.md:232, 306`). Cards win over PRD V2 (CR-66, `docs/agents/cto/RULINGS.md:632`); product confirms (D1). Built before the first outside family | `product` confirms: Q-COM-1 |
+| C6 | Catalogue says `new-device-sign-in` is a 1.0 email; no card names it and nothing sends it | No card names it; PRD V2 F02-REQ-017 is P0 and puts it before the switch flip (`docs/prd/v2/features/F02-account.md:232, 306`). Cards win over PRD V2 (CR-66, `docs/agents/cto/RULINGS.md:632`); product confirms (D1; founder approved 20 Nov). Built before the first outside family | `product` confirms: Q-COM-1 |
 | C8 | The built `new-device-sign-in` template says "We will sign that device out" (`packages/content/src/emails/auth.en.ts:199`) and no lever exists | C10: build the lever or remove the line (words PROPOSED); D1 words replace it with the in-app path | `content`, `sync` |
 | C7 | The founder-paging job in `SECURITY.md` section 3.4 is a Rec; it is not found as code | `docs/emails/SECURITY.md:122` | `security-architect`, `ops` |
 
@@ -70,7 +70,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 
 | Id | Question | Default engineering builds |
 |---|---|---|
-| Q-COM-1 | Which security alert emails exist at v1: new sign-in on a new device (A1), recovery (A3), sign-out of all devices (A6)? | D1 (product confirms): A1 built before the first outside family, no action link; A5, A7, A8 as specified; A3 and A6 after the BL-598 runbook; email only |
+| Q-COM-1 | Which security alert emails exist at v1: new sign-in on a new device (A1), recovery (A3), sign-out of all devices (A6)? | D1 (founder approved 20 Nov; product confirms against PRD V2 F02-REQ-017; cards win, CR-66): A1 built before the first outside family, no action link; A5, A7, A8 as specified; A3 and A6 after the BL-598 runbook; email only |
 | Q-COM-2 | A control "Sign out other devices" already exists in Me, Account (`account.tsx:181-251`; it ends the other phones, keeps this one). Should using it send a confirmation email (A6), and should a "sign out everywhere including this phone" exist? (Correction: the question first posted on the PR said no control existed; that premise was wrong.) | Keep the control as built. Build the A6 confirmation email after the BL-598 runbook (D1); no second control; I5 tells each signed-out phone |
 | Q-COM-3 | Are security alerts sent between 21:30 and 07:00? | Yes (exempt), like sign-in mail; AGREED (D2) |
 | Q-COM-4 | In the email-changed notice to the old address, is the new address shown in full or masked? | Masked (first letter and domain) |
@@ -85,7 +85,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | CISO | Is a salted device-id hash per account (new table) acceptable for A1, and who may read it? | Yes; service role and the alert function only; deleted with the account; the CPrivO label read (does the hash count as Device ID, CQ8) comes before the table is built (D1) |
 | Chief Privacy Officer | Does a device class word ("an iPhone") plus time count as L2 or L3 in an email? | L3 with the address; never stored in a log |
 | CCO, CLO | Are A1 to A9 transactional under CAN-SPAM and need no unsubscribe, and does the incident notice (E14) stay counsel-approved by hand? | Yes transactional; yes by hand |
-| CPO | Order of build: A4 (done), A5, A7, A8, then A1, then A6 and A3 | D1: A1 before the first outside family; A3 and A6 after the BL-598 runbook |
+| CPO | Order of build: A4 (done), A5, A7, A8, then A1, then A6 and A3 | D1 (founder approved 20 Nov; product confirms): A1 before the first outside family; A3 and A6 after the BL-598 runbook |
 | CISO | When the 20-a-day backstop is reached, does a new takeover warning still send? | Yes, in one summary, never silently dropped [E] |
 | CMO, CDesO | The words: subjects, the neutral lock-screen lines, the alert bodies (all PROPOSED keys `comms.alert.*`) | Written by `content` as a person, linted, approved by the founder |
 
@@ -93,7 +93,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 
 | To | Question | Default |
 |---|---|---|
-| Founder | New-device sign-in email before the first outside family (D1, question 7 of the record)? | Yes |
+| Founder | New-device sign-in email before the first outside family (D1, item 7 of the record) | Approved 20 Nov ("I approve all you asked me"); product confirms against PRD V2 F02-REQ-017 |
 | Founder | Remote push (APNs) in a later version? | No. Not decided here; 07.3 section 4 lists what would change |
 | Founder | G-D21: neutral birthday title when names are off | The neutral title ("Something for the book today" family); D4 AGREED and widened: no month number or "A year of letters." with names off; founder confirms |
 | Counsel | Whether Guideline 4.5.4 applies to local reminders (`09-capture.md:253`) and the notice of a data act sent after deletion | Local only, no promotion; receipts are legal notices |
