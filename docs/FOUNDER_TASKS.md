@@ -1,5 +1,7 @@
 # Founder tasks: everything only you can do, in order
 
+> SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the FT list of 3 Oct (1 of 57 ticked on 30 Oct); anything open is in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
+
 Owner: backlog-consolidation PM for the coordinator. Version 1, 3 Oct 2026. Starts **Mon 5 Oct 2026**.
 This is the one list. It collects every founder step from `docs/ops/*`, `supabase/APPLY.md`, `docs/analytics/INSIGHTS_LOOP.md` section 4, ADR 0013 to 0017, `docs/DECISIONS.md`, `docs/agents/DEBATES.md`, the five future-backlog files and the agents' reports. Engineering tasks that wait on these are in `docs/BACKLOG.md` (BL-###); dates come from `docs/ROADMAP.md` 2.1.
 
