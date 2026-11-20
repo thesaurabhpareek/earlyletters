@@ -34,7 +34,7 @@ import { PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
 import { ListeningAura } from '@/components/capture/listening-aura';
 import { PendingPhotoThumb } from '@/components/photos/pending-photo-thumb';
-import { discardPendingPhoto, dropDraftPicture } from '@/lib/photos/hooks';
+import { discardPendingPhoto } from '@/lib/photos/hooks';
 import { METER_MS, METER_SILENT, meterDb, progressMark } from '@/components/capture/listen-meter.logic';
 import { useRecorderClock } from '@/components/capture/use-recorder-clock';
 import {
@@ -435,7 +435,6 @@ export default function Listen() {
           // The one place audio is deleted: the parent confirmed it. Let it go's steps, as in Review (BL-924): a file
           // that will not delete keeps the row, marked and off every list, for the launch sweep to finish.
           if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
-          if (id) dropDraftPicture(id); // its picture goes too, file then row (NS-01-R16)
           discardPendingPhoto(); // "The photo goes too": nothing of it was stored
           router.back();
         },

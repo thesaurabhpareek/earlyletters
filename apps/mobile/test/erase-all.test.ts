@@ -21,6 +21,7 @@ import type { SqlDb } from '../src/lib/db/sql';
 import { createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { photosDirectory } from '../src/lib/photos/files';
+import { letItGo } from '../src/lib/capture/let-it-go.logic';
 import { nodeDb } from './helpers/node-db';
 import { letter } from './helpers/store-fixture';
 
@@ -1162,6 +1163,22 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     expect(files.filter(has)).toEqual([]);
     expect(h.disk.dirs.has(PHOTOS())).toBe(false);
     expect(mediaRows()).toEqual([]);
+  });
+
+  it('[ADR 0028 D5] Let it go and deleteDraft take a draft\'s picture at once, the file first and then its row; a draft not being let go keeps its own', async () => {
+    const app = await launch();
+    const f = family(app);
+    const file = picture(f.draftId, 'mD');
+    expect(app.store.finishDiscard(f.draftId)).toBe(false); // not marked for Let it go: nothing goes
+    expect(has(file)).toBe(true);
+    // The steps Review's Let it go and Listen's Discard run (BL-924).
+    const steps = { beginDiscard: app.store.beginDiscard, deleteFile: (u: string) => void h.disk.files.delete(u), finishDiscard: app.store.finishDiscard };
+    expect(letItGo(f.draftId, f.draft, steps)).toBe(true);
+    expect([has(file), mediaRows()]).toEqual([false, []]);
+    const typed = app.store.createDraft({ childId: f.asha, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: 0, state: 'ready' });
+    const second = picture(typed.id, 'mT');
+    app.store.deleteDraft(typed.id); // Write's emptied draft
+    expect([has(second), mediaRows()]).toEqual([false, []]);
   });
 
   it('[ADR 0028 D1] Keep moves a draft\'s picture to the letter inside the letter\'s own transaction: a failed Keep leaves it the draft\'s', async () => {

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { subscribe as subscribeStore } from '../store';
 
-import { erasePictureOf, photoDeps } from './device';
+import { photoDeps } from './device';
 import { adoptPending } from './adopt';
 import { photoNotSaved, subscribePhotoNotSaved } from './failures';
 import type { PendingPhoto } from './pending';
@@ -72,11 +72,3 @@ export function usePhotoNotSaved(ownerId: string): boolean {
   return useSyncExternalStore(subscribePhotoNotSaved, () => photoNotSaved(ownerId));
 }
 
-/** A draft is let go: its picture goes with it, file first then row (NS-01-R16). Never throws; the sweep finishes it. */
-export function dropDraftPicture(draftId: string): void {
-  try {
-    erasePictureOf(draftId);
-  } catch {
-    // the launch sweep removes a picture whose draft is gone
-  }
-}
