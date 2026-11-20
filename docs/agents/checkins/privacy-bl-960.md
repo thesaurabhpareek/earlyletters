@@ -1,3 +1,4 @@
 05:49 (20 Nov) privacy | done: read design s4, #854, #799, develop migrations; journal stub posted | next: data-policy s4 current facts (backup tables, entry-audio, D-159 nightly dump, held_drafts), then card rows in both files | blocked/needs: none
 11:12 (20 Nov) privacy | done: both files edited and pushed (aaf0dd2c), content tests 395/395 serially, develop scratch merge clean | next: open PR on #854, labels, journal | blocked/needs: founder merges docs/legal (D-125)
 11:26 (20 Nov) privacy | done: Review B must-fix (drill copy qualifies the 7-day backup clock in s5, s6; open) and note 1 (withheld flag on server only if S3, CR-67 AX-5) | next: push, PR body notes 3-5 | blocked/needs: BL row for DC 4.1 regeneration (Karma; BACKLOG not mine)
+11:45 (20 Nov) privacy | done: Review A must-fixes (4.3 table restored; plus.statusReport and plus.notesSeen L3) and note 1; handoffs #886 mobile, #887 data-architect | next: push, reply | blocked/needs: none

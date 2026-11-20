@@ -566,11 +566,11 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | `entries.seal_opens_at`, `seal_opens_on`, `seal_cleared_at` (NS-06 Part B, ADR 0028 D3a, BL-969) | L4 (CR-62; a chosen day can state a birthday; the instant states the sealing zone's offset). Author row only, never in `book_entries` |
 | The withheld-words flag on `held_drafts`, only if S3 is ruled in (CR-67 AX-5 in #856; under the rule in force a flagged take is not pushed until it has typed words) (NS-17; named `words_withheld` or `language_withheld`, whichever lands; no BL row at the lock) | L4: it states the take was in another language (rule 1.1.2: not reduced) |
 | `entry_versions.edit_level`; `entry_versions.author_edits`, `locked_spans` (NS-12, BL-979, if its design extends the table) | L2; L4 (derived from the words, rule 1.1.2) |
-
-The migrations that add `first_label` and the seal columns also add them to `mustBeL4` in `supabase/tests/classification.test.mjs:24`.
 | `member_return_links` (hashed bearer token) | Hash L3 |
 | `child_key_grants` (family members hearing each other's recordings; v1.1 shared voice) | L4 |
 | `waitlist` (web) | Email L3 |
+
+The migrations that add `first_label` and the seal columns also add them to `mustBeL4` in `supabase/tests/classification.test.mjs:24`.
 
 `ops_audit_log` (LEGAL-REQ-025) is built as `ops.audit_log` (4.1.2).
 
@@ -796,7 +796,9 @@ File paths cited in this section are under `apps/mobile/src/`. Protection floor 
 | `child.bornCardHidden.<child id>` | L4 | Holds the due date the card was hidden for (rule 1.1.7) (`components/child/child-settings.logic.ts:42`) |
 | `db.secureDeleteVacuumAt`, `lastLaunchAt`, `lastExportedAt` | L2 | Times (`lib/store.ts:192, 789`; `app/settings/export.tsx:39`) |
 | `letters.keptEver` | L2 | Count of letters ever kept, a number only (D-082) |
-| `newPhone.arrival`, `review.defaultView`, `plus.notesSeen`, `plus.statusReport` | L2 | No name, date, text or id (`lib/first-run/new-phone.logic.ts:86`, `components/capture/review-view.logic.ts:16`, `lib/billing/plan-notice.tsx:30`, `lib/billing/status-report.logic.ts:51`) |
+| `newPhone.arrival`, `review.defaultView` | L2 | No name, date, text or id (`lib/first-run/new-phone.logic.ts:86`, `components/capture/review-view.logic.ts:16`) |
+| `plus.statusReport` | L3 | The account the sent marks belong to (a person id, rule 1.1.4), a fingerprint per purchase keyed by product and first-purchase date, and waiting consent facts (product, first-purchase date, terms version, shown time, owner account): purchase state of a person (`lib/billing/status-report.logic.ts:51, 65-86`). Its code comment at `:18` says L2; L3 is the level here |
+| `plus.notesSeen` | L3 | Ids of plan notes shown, `plan.<kind>.<date>`: each carries a renewal or trial-end date, purchase state of a person, as `subscription_status.renewal_date` is L3 on the server (`lib/billing/plan-notice.tsx:30`; `lib/billing/plan-reminders.logic.ts:190, 292, 339`) |
 | `e2eKillDrill.owned` | L2 | Development and test builds only (`dev/kill-drill.logic.ts:66`) |
 | `find.dirtyAt`, `find.secureDelete` | L2 | In PR #798. A time; a flag. The code comment at `lib/find/lifecycle.ts:38` says L1: flags about this phone's database are L2 (section 1) |
 | Planned: `discard.failures.<draft id>` (NS-09, BL-977); `copySlip.<child id>.<year>` (NS-11, BL-942) | L3 key, L2 value | A retry count; a shown mark |
