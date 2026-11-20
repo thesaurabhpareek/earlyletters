@@ -443,6 +443,57 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     store.remove('e1');
     expect(store.get('e1')).toBeNull();
   });
+  it('[NS-01-R21][DQ-R05] the caps count code points as the column CHECK does and cut only between whole characters, with or without Intl.Segmenter, against the real store (#836 review A N1)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const d = { ...deps().d, store: entryMediaStore(db) };
+    const family = '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}'; // one family emoji, five code points
+    const cases = [
+      '\u0915\u093F'.repeat(140), // Devanagari "ki": a consonant and its vowel sign
+      'a' + '\u0915\u094D\u0937'.repeat(60), // a conjunct across a virama
+      'e\u0301'.repeat(100), // an accent written as two code points
+      family.repeat(30),
+      'x'.repeat(137) + family,
+    ];
+    const intl = Intl as { Segmenter?: unknown };
+    const seg = intl.Segmenter;
+    for (const engine of ['with Segmenter', 'as on Hermes']) {
+      if (engine === 'as on Hermes') delete intl.Segmenter;
+      try {
+        for (const typed of cases) {
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: typed, place: typed })).status, engine).toBe('stored');
+          const kept = entryMediaStore(db).get('e1')!;
+          for (const [v, max] of [[kept.text!, 140], [kept.place!, 60]] as const) {
+            expect(Array.from(v).length, engine).toBeLessThanOrEqual(max);
+            expect(typed.startsWith(v), engine).toBe(true);
+            // whole characters: nothing that joins the one before (a mark, a ZWJ, a skin tone) starts what was cut
+            expect(/^[\p{M}\u200D\u{1F3FB}-\u{1F3FF}]/u.test(typed.slice(v.length)) || /[\u200D\u094D]$/u.test(v), engine).toBe(false);
+          }
+        }
+      } finally {
+        intl.Segmenter = seg;
+      }
+    }
+  });
+  it('[NS-01-R17] a failed commit never throws, even when taking its row back fails, and keeps the earlier picture (#836 review A N5)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store: entryMediaStore(db) };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    db.run("CREATE TRIGGER full BEFORE INSERT ON entry_media BEGIN SELECT RAISE(ABORT, 'database or disk is full'); END");
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([entryMediaStore(db).get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    db.run('DROP TRIGGER full');
+    // The owner went (a let-go draft) between the write and the row: put and the restore both refuse; still no throw.
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
+    const store = entryMediaStore(db);
+    const racing = { ...d, store: { ...store, put: (p: Parameters<typeof store.put>[0]) => (db.run("DELETE FROM drafts WHERE id = 'd1'"), store.put(p)) } };
+    await expect(commitPhoto(racing, { entryId: 'd1', finalText: '', bytes: makeJpeg({ seed: 3 }), text: null, requireWords: false })).resolves.toEqual({ status: 'failed' });
+    expect([...files.disk.keys()]).toEqual(['m1.jpg']);
+  });
   it('[D1] put refuses an owner that is neither a letter nor a draft, with a typed error, and writes nothing (DQ-R07)', () => {
     const { db } = nodeDb();
     migrate(db, ctx);
