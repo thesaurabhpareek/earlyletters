@@ -20,9 +20,10 @@ Exit 0 is a pass, 1 is a finding, 2 means the guard itself could not run. Each F
 ## What it cannot do (residual risk, NS-07-G11-4)
 
 - A session can still record a matching decision on the base branch before the PR, and the guard will pass. The guard reads `docs/DECISIONS.md` from the base branch, so a decision added in the same PR does not count, but it cannot tell who wrote an earlier one. **The founder's merge remains the real gate.**
-- It reads added lines block by block, by name. Data sent through a helper defined elsewhere, or under a field name it does not know, passes. An edited line counts as added, so rewording a call that already carries content fails until it is recorded.
+- It reads added lines block by block, by name. Data sent through a helper defined elsewhere, under a field name it does not know, or with the call and the content in two hunks, passes; so does an SDK added outside `apps/mobile/package.json`. An edited line counts as added, and a new file is one block, so a call that sits near a content name for another reason (a trailing comment, a `recordingState` in the same new file) fails until it is recorded or reworded. A moved file counts as all added.
+- In migrations it reads statement by statement, outside dollar-quoted bodies: a function counts by its arguments and return type, not its name or body. Replaying all 31 migrations on `develop` (20 Nov) gives 14 hits, each a content table, column, bucket or function.
 - It never decides the label. Counsel confirms the label itself (Q54).
 
 ## Turning it on (NS-07-G11-5)
 
-The job is `docs/ops/proposed/workflows/label-guard.yml`. The founder copies it to `.github/workflows/label-guard.yml` (D-124: the Claude GitHub App cannot edit workflows) after the locked cards merge (#846), because the pre-lock cards on `develop` lack their label lines and G11-2 would fail every PR. When it has been green for a week, add `label guard` to the required checks on `develop`.
+The job is `docs/ops/proposed/workflows/label-guard.yml`. It runs the base branch's copy of the guard, so a change to the guard takes effect only after it merges, and the job can only run once the guard is on `develop`. The founder copies it to `.github/workflows/label-guard.yml` (D-124: the Claude GitHub App cannot edit workflows) after the locked cards merge (#846), because the pre-lock cards on `develop` lack their label lines and G11-2 would fail every PR. When it has been green for a week, add `label guard` to the required checks on `develop`.

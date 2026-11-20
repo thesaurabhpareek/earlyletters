@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { labelEffectProblems, LABEL_FILE, runGuard } from '../../../scripts/release/label-effect.mjs';
+import { labelEffectProblems, LABEL_FILE, labelTriggers, parseDiff, runGuard } from '../../../scripts/release/label-effect.mjs';
 
 const REPO = join(__dirname, '..', '..', '..');
 const GUARD = join(REPO, 'scripts', 'release', 'label-effect.mjs');
@@ -33,6 +33,8 @@ const LEAVING = {
   'a server column for a picture': diff('supabase/migrations/20261201000000_photos.sql', ['alter table public.entries', '  add column photo_path text;']),
   'a server function taking a child name': diff('supabase/migrations/20261201000001_names.sql', ['create or replace function public.set_child_name(c uuid, child_name text) returns void', "language sql as $$ update public.children set name = child_name where id = c $$;"]),
   'a server bucket for pictures': diff('supabase/migrations/20261201000003_bucket.sql', ["insert into storage.buckets (id, name) values ('entry-photos', 'entry-photos');"]),
+  'a child date on the children table': diff('supabase/migrations/20261201000004_due.sql', ['alter table public.children add column due_date date;']),
+  'the children table with a name': diff('supabase/migrations/20261201000005_book.sql', ['create table public.children (', '  id uuid primary key,', '  name text not null', ');']),
 };
 
 describe('[NS-07-G11-1] data leaving the phone needs a recorded label change', () => {
@@ -80,7 +82,9 @@ describe('[NS-07-G11-1] data leaving the phone needs a recorded label change', (
       diff('apps/mobile/test/sync.test.ts', ["fetch(url, { body: 'transcript' });"]),
       diff('apps/mobile/src/lib/sync/push.ts', ['// fetch() never carries the raw_transcript here']),
       diff('supabase/migrations/20261201000002_ops.sql', ['create table ops.cron_runs (id bigint);', 'create function public.purge_due() returns void', 'language plpgsql as $$', 'begin', "  perform public.enqueue_storage_purge('entry-photos', p, false);", 'end $$;']),
-      diff('apps/mobile/app.config.ts', ["const STRIP = ['com.apple.developer.applesignin'];"]),
+      diff('apps/mobile/app.config.ts', ["const STRIP = ['com.apple.developer.applesignin'];", "  ['expo-image-picker', { photosPermission: false, cameraPermission: false }],"]),
+      diff('supabase/migrations/20261201000006_scoped.sql', ['create table public.child_notes_seen (child_id uuid references public.children(id), seen_at timestamptz);', 'alter table public.children add column archived_at timestamptz;']),
+      diff('supabase/migrations/20261201000007_access.sql', ['create or replace function public.can_read_entry_photo(p_name text) returns boolean', 'language sql as $$ select true $$;']),
       diff('docs/product/prd/01-photo-with-a-letter.md', ['fetch the photo']),
     ].join('\n');
     for (const body of ['', 'Per D-900.', 'Per D-777.']) expect(guard(ordinary, body)).toEqual({ lines: [], failed: false });
@@ -107,7 +111,8 @@ describe('[NS-07-G11-3] a new SDK, entitlement or usage string', () => {
     const bump = diff('apps/mobile/package.json', ['    "@sentry/react-native": "^7.1.0",'], ['    "@sentry/react-native": "^7.0.0",']);
     const reword = diff('apps/mobile/app.config.ts', ['      NSMicrophoneUsageDescription: copy.micV2,'], ['      NSMicrophoneUsageDescription: copy.mic,']);
     const other = diff('apps/mobile/package.json', ['    "expo-image": "~3.0.0",']);
-    expect(guard([bump, reword, other].join('\n'))).toEqual({ lines: [], failed: false });
+    const entitlement = diff('apps/mobile/app.config.ts', ["      'com.apple.developer.healthkit': true,"], ["      'com.apple.developer.healthkit': false,"]);
+    expect(guard([bump, reword, other, entitlement].join('\n'))).toEqual({ lines: [], failed: false });
   });
 });
 
@@ -145,35 +150,79 @@ describe('[NS-07-G11-4] [NS-07-G11-5] the README and the CI job', () => {
     expect(readme).toMatch(/The founder's merge remains the real gate/);
   });
 
-  it('[NS-07-G11-5] the guard runs on every PR: the proposed job, its exit codes and a guard error', () => {
+  it('[NS-07-G11-5] the guard runs on every PR: the proposed job', () => {
     const job = readFileSync(join(REPO, 'docs', 'ops', 'proposed', 'workflows', 'label-guard.yml'), 'utf8');
     expect(job).toMatch(/pull_request:\n\s+branches: \[develop\]\n\s+types: \[opened, synchronize, reopened, edited\]/);
     expect(job).toMatch(/PR_BODY: \$\{\{ github\.event\.pull_request\.body \}\}/);
-    expect(job).toMatch(/run: node scripts\/release\/label-effect\.mjs --base "origin\/\$BASE_REF" --head HEAD$/m);
+    expect(job).toMatch(/run: git worktree add --detach "\$RUNNER_TEMP\/base" "origin\/\$BASE_REF"$/m);
+    expect(job).toMatch(/run: node "\$RUNNER_TEMP\/base\/scripts\/release\/label-effect\.mjs" --base "origin\/\$BASE_REF" --head HEAD$/m);
+    expect(job).not.toMatch(/uses: [^\n]*@v\d|ubuntu-latest/);
 
-    const dir = mkdtempSync(join(tmpdir(), 'label-guard-'));
+  });
+});
+
+describe('reading the diff', () => {
+  it('[NS-07-G11-1a] names a SQL statement by its first non-blank line', () => {
+    const [t] = labelTriggers(parseDiff(diff('supabase/migrations/20261201000008_x.sql', ['', 'alter table public.entries add column final_text text;'])));
+    expect(t.line).toBe(2);
+  });
+
+  it('[NS-07-G11-1a] a diff header it cannot read stops the guard instead of skipping the file', () => {
+    expect(() => parseDiff('diff --git "a/apps/mobile/src/x\\"y.ts" "b/apps/mobile/src/x\\"y.ts"\n+fetch(transcript)')).toThrow(/cannot read/);
+  });
+});
+
+/** A throwaway git repository for the CLI, with the base branch committed. */
+function scratchRepo() {
+  const dir = mkdtempSync(join(tmpdir(), 'label-guard-'));
+  const git = (...a: string[]) => execFileSync('git', ['-c', 'user.name=Asha', '-c', 'user.email=asha@example.invalid', ...a], { cwd: dir, encoding: 'utf8' });
+  const put = (p: string, t: string) => (mkdirSync(join(dir, dirname(p)), { recursive: true }), writeFileSync(join(dir, p), t));
+  const commit = (m: string) => (git('add', '-A'), git('commit', '-q', '-m', m));
+  const run = (args: string[], body = '') => spawnSync(process.execPath, [GUARD, ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, PR_BODY: body } });
+  git('init', '-q', '-b', 'base');
+  put('docs/DECISIONS.md', DECISIONS + '\n');
+  put('scripts/helpers/send.ts', 'await fetch(u, { body: transcript });\n');
+  commit('base');
+  return { dir, git, put, commit, run };
+}
+
+describe('the command line', () => {
+  it('[NS-07-G11-1a] exits 1 on an unrecorded change, 0 once recorded, and 2 when the guard itself cannot run', () => {
+    const { dir, git, put, commit, run } = scratchRepo();
     try {
-      const git = (...a: string[]) => execFileSync('git', ['-c', 'user.name=Asha', '-c', 'user.email=asha@example.invalid', ...a], { cwd: dir, encoding: 'utf8' });
-      const put = (p: string, t: string) => (mkdirSync(join(dir, dirname(p)), { recursive: true }), writeFileSync(join(dir, p), t));
-      git('init', '-q', '-b', 'base');
-      put('docs/DECISIONS.md', DECISIONS + '\n');
-      put('docs/product/prd/99-fixture.md', CARD_OK.text);
-      git('add', '.');
-      git('commit', '-q', '-m', 'base');
       git('checkout', '-q', '-b', 'head');
       put('apps/mobile/src/lib/backup/upload.ts', "await sb.storage.from('entry-audio').upload(path, bytes);\n");
-      git('add', '.');
-      git('commit', '-q', '-m', 'head');
-      const run = (args: string[], env: Record<string, string> = {}) => spawnSync(process.execPath, [GUARD, ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, PR_BODY: '', ...env } });
+      commit('head');
       expect(run(['--base', 'base', '--head', 'head']).status).toBe(1);
       put(LABEL_FILE, '| Audio | Collected |\n');
-      git('add', '.');
-      git('commit', '-q', '-m', 'label');
-      expect(run(['--base', 'base', '--head', 'head'], { PR_BODY: 'Per D-900.' }).status).toBe(0);
+      commit('label');
+      expect(run(['--base', 'base', '--head', 'head'], 'Per D-900.').status).toBe(0);
       const broken = run(['--base', 'no-such-branch', '--head', 'head']);
       expect(broken.status).toBe(2);
       expect(broken.stderr).toMatch(/^Label guard error: /m);
       expect(run([]).status).toBe(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('[NS-07-G11-1a] reads DECISIONS.md from the base, a moved file as added, and a non-ASCII path', () => {
+    const { dir, git, put, commit, run } = scratchRepo();
+    try {
+      git('checkout', '-q', '-b', 'moved');
+      mkdirSync(join(dir, 'apps/mobile/src/lib'), { recursive: true });
+      git('mv', 'scripts/helpers/send.ts', 'apps/mobile/src/lib/send.ts');
+      commit('move into the app');
+      expect(run(['--base', 'base']).status).toBe(1);
+      git('checkout', '-q', '-b', 'self-recorded', 'base');
+      put('apps/mobile/src/lib/s\u00e9.ts', 'await fetch(u, { body: transcript });\n');
+      put(LABEL_FILE, '| Other User Content | Collected |\n');
+      put('docs/DECISIONS.md', `${DECISIONS}\n### D-950 Words leave the phone (fictional)\n- The privacy label changes.\n`);
+      commit('a decision written in the same PR');
+      const r = run(['--base', 'base'], 'Per D-950.');
+      expect(r.status).toBe(1);
+      expect(r.stdout).toMatch(/G11-1a apps\/mobile\/src\/lib\/s\u00e9\.ts:1 /);
+      expect(r.stdout).toMatch(/D-950: not a decision in docs\/DECISIONS\.md on the base branch/);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
