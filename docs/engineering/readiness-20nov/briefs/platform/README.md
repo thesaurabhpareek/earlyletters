@@ -24,7 +24,7 @@ Order is the order to start them. "Blocked" names who must act before the agent 
 | 12 | `BRIEF-CI-LINT-lint-introduction.md` | CI | ops | 8, 9 | M | principal-architect | security-architect | 2 | Founder: approves new dev dependencies; pastes the job |
 | 13 | `BRIEF-CI-SIZEGATE-size-gate.md` | CI | ops | first measured run | M | principal-architect | security-architect | 2 | Founder: first measured run; pastes the step |
 | 14 | `BRIEF-CI-Q1-macos-queue-measure.md` | CI | ops | none | S | security-architect | principal-architect | 1 | Founder: one dispatch (or one Mac run); pastes a small patch |
-| 15 | `BRIEF-CI-Q2-macos-queue-changes.md` | CI | ops | 14 | M | security-architect | principal-architect | 2 | Founder: picks among Q2, Q3, Q4, Q6; pastes each. Q5 is spend, not briefed |
+| 15 | `BRIEF-CI-Q2-macos-queue-changes.md` | CI | ops | 14 | M | security-architect | principal-architect | 2 | Founder: picks among Q2, Q3, Q4; pastes each. Q5 is spend and Q6 is dropped after review B (needs a wider token, cuts against green on the head sha); neither briefed |
 | 16 | `BRIEF-BL-964-trace-ratchet.md` | process | qa | #846 for PR 2 | M | principal-architect | ai-eng-lead | 1 | #846 merge (founder, product); founder: 07 Q8 (`--check` blocking) |
 | 17 | `BRIEF-QA-TITLES-test-title-cite-rules.md` | process | qa | 16 (PR 1) | S | principal-architect | qa peer | 1 | nothing (report only) |
 | 18 | `BRIEF-P-8-9-followups.md` | process | qa | 17 | S | qa peer | compliance-engineer | 1 | nothing; product for a card title fix |
@@ -42,7 +42,7 @@ Parallel starts today (nothing blocks the writing): 4, 7 (follow-ups), 8, 9 (Opt
 - `scripts/agents/**`: briefs 22 and 23 produce proposals under `docs/ops/proposed/`; an agent never writes there.
 - Workflow edits (two reviews and the founder): 5, 7, 8, 9, 10, 11, 12, 13, 14, 15 (paste a patch from `docs/ops/proposed/`). One sitting can paste 7, 8 and 9 together.
 - Accounts and secrets: 1 (`SUPABASE_DB_URL_PROD`), 6 (`app-store` environment, EXPO_TOKEN), 9 (GitHub secret scanning and push protection settings). The agent never reads or prints a value.
-- Decisions: Q1 (the cut), the marketing version, merge method for 3, size-exception proof (10), lint dependencies (12), Option A or B (9), perf profile distribution (20), `--check` blocking (16).
+- Decisions: Q1 (the cut), the marketing version, merge method for 3, size-exception proof (10), lint dependencies (12), Option A or B (9), perf profile distribution (20; default now internal), `--check` blocking (16).
 
 ## Checked against GitHub and develop; not briefed because done or not mine
 
@@ -70,3 +70,7 @@ Parallel starts today (nothing blocks the writing): 4, 7 (follow-ups), 8, 9 (Opt
 ## Cites
 
 About 70 locations opened for these 23 briefs and this file; about 58 held as first written; about 12 were wrong in my notes or in #929 and are fixed here (release-ios.yml job line numbers, J-N13 line, kill-harness cache save, store-flags lines, protocol.mjs lines, ios-compile `workflow_dispatch` line, and the 14-test-plan line base). Not verified: GitHub cache scoping and the 10 GB limit (docs.github.com not fetched), the `compare` API fields used in brief 22, whether agent tokens can dispatch workflows or set labels, anything about production or Apple state, and cards 21 to 27 and the function files.
+
+## After review B (20 Nov, pushed as normal commits)
+
+F4: the `db-production` approval covers the whole deploy job, so a green dry run pushes by itself; the brief now says so and asks for a two-job proposal. The file count is [U] (31 minus 2 is arithmetic). #830: per-hunk review of main's 3 commits (656 files, 4 migrations), not the stat; both branches hold the same 31 migrations. Size gate: hard budgets have no waiver, baselines are compared with the base branch. Trace baseline: same. Perf profile: default internal. Merge queue: skipped is accepted only when the queue itself says not native; removing eas.json is a loosening for Karma. Q6 dropped.
