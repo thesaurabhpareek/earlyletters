@@ -261,7 +261,7 @@ A VoiceOver user recording at 2 a.m.; a grandparent at the largest text size; a 
 ### 7. Acceptance criteria
 | Id | Given, When, Then | Priority | Test title |
 |---|---|---|---|
-| NS-33-R1 | Given the letter page, Then its dateline is a level 1 heading | P0 (b: LEGAL-REQ-051) | `[NS-33-R1] letter page heading` |
+| NS-33-R1 | Given the letter page, Then its dateline is a level 1 heading; the unit test asserts the heading trait and reading order, and the level is recorded from a VoiceOver rotor read on a device, marked `[stand-in]`; the row stays partial until that read (design ruling 29, E68) | P0 (b: LEGAL-REQ-051) | `[NS-33-R1] letter page heading` |
 | NS-33-R2 | Given Me, Then the screen heading equals the tab label | P0 (b) | `[NS-33-R2] Me heading matches tab` |
 | NS-33-R3 | Given the lens control, Then VoiceOver announces a single choice among options, with the selected one stated | P0 (b) | `[NS-33-R3] lens is a choice, not tabs` |
 | NS-33-R4 | Given the Book, the letter page, Home and Review at the largest text size on an iPhone SE 3, Then no control is under 44 pt and no text is truncated (device) | P0 (b) | `[NS-33-R4] AX5 on SE 3` |

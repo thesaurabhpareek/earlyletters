@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E61) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E68) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E61 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E68 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Five are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59. The closure rows are CL-117 to CL-135 in `GAP-LOG.md`, one per row E43 to E61 in order (CL-117 is E43).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Six are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, and E67 (its lines). The closure rows are CL-117 to CL-142 in `GAP-LOG.md`, one per row E43 to E68 in order (CL-117 is E43, CL-136 is E62).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -112,10 +112,17 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E59 | none | NS-44 O-13, FR-LCY-13 | mobile, finance |
 | E60 | no new BL id until the dispatcher fix merges | `23` 6.3 | principal-architect, chief-of-staff |
 | E61 | NS-49-R9 constitution reading | `21` | Karma, chief AI officer lens |
+| E62 | none; no new screen, the refused-region screen moves after the code step | card 19 NS-41-R2, NS-40-R9; first-run design FP-6, CF-8 | mobile, security-architect |
+| E63 | one migration row (written, never applied) and two docs PRs; no BL id until #912 merges | `docs/BACKLOG.md` (proposed row); 07-privacy-engineering, APPLY.md, POLICY_VERSIONING | data-architect, privacy; founder merges the legal text |
+| E64 | none; no server reader in Drop A | card 21 NS-46-R25, NS-46-R49 | mobile, sync |
+| E65 | unblocks media PR 19; no re-size | card 27 NS-52-R41 | mobile |
+| E66 | none (records) | tdd new-scope 13, 14, 15 | mobile, privacy |
+| E67 | none; defaults stand, no dependency added until the founder approves | `22` section 7 | mobile, principal-architect |
+| E68 | none (B1 corrections) | cards 01, 11, 19 | design-systems, mobile |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
-One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
+One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), E67 (eleven digest lines: writing tools, G1 grace, secret scan, label-guard copy, K3, plan Q3 to Q7, dependencies), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
 
 ### E61: NS-49-R9 and the constitution (20 Nov, Karma with the Chief AI Officer lens)
 
@@ -126,3 +133,65 @@ Ruling: no, on three conditions. (1) Only the parent's tap on "Use this" copies 
 Edited in place: NS-49-R9 in card 21 gains the three conditions as test titles. Plan delta: one test title per condition on the NS-49 level 1 PR; no flag, no migration.
 
 Founder note: item 40 hands this reading to the executive team; this is that reading.
+
+## Second round, E62 to E68 (20 Nov, Karma with product, from engineering's check of the locked pack)
+
+Source: the engineering check of the locked pack (qa, read only) and the second-round rulings of 20 Nov. Same rule as E43 to E61: where the answer shows less, stores less, sends less or can be undone, take it. Founder-held items get the default stated and go in the founder digest (`22-final-holistic-spec.md` section 7); they are not closed for good. The closure rows are CL-136 to CL-142 in `GAP-LOG.md`, one per row E62 to E68 in order (CL-136 is E62).
+
+### E62: CF-8, region_refused at email Send (20 Nov, Karma with product)
+
+Question (engineering, first-run design CF-8): a refused-region answer at email Send tells a person whether an address is new, against NS-41-R2.
+
+Ruling: Send gives the same answer for a new and for an existing address: "check your email". A refused region is shown only after the code is entered and the country lookup has run. So Send says nothing about the address and nothing about the place. It shows less.
+
+Open for build, not for the ruling: the hook fires on user creation, so for a refused new person no code may be sent and the refused screen has no route. `mobile` and `security-architect` confirm the mechanism when FP-6 is built (for example, a code is sent and the hook refuses at verify, or the phone shows the same wait screen for both). The same answer at Send stands either way. `docs/tdd/new-scope/12-first-run.md` section 3.3 still describes the old at-Send behaviour until engineering syncs it.
+
+Edited in place: NS-41-R2 and NS-40-R9 in card 19 (and the refused-country state row and the E-S04.refused-region note), and the FP-6 row and the CF-8 line in `docs/tdd/new-scope/12-first-run-5.md`. Plan delta: no new screen; the refused-region screen (E-S04.refused-region) moves after the code step; FP-6 (refusal and outage mapping) maps `region_refused` after the code step; `mobile`, `security-architect`.
+
+### E63: age_signal leftovers after E50 (20 Nov, Karma with product)
+
+Question (engineering CF-1 residue): E50 removed `age_signal` from FR-PRV-25 and BL-577 only. It is still allowed in `docs/engineering/07-privacy-engineering.md` line 67, `docs/legal/POLICY_VERSIONING.md` line 410, `supabase/APPLY.md` line 311 and the context allowlists in the migrations `20261003000000`, `20261005000000` and `20261108000000`.
+
+Ruling: no `age_signal` value is stored or allowed anywhere. The old migrations are not edited. A new migration removes it from the allowlist, and two docs PRs fix the text, all owned by `data-architect`. The legal text (`POLICY_VERSIONING.md`) is proposed by product and merged by the founder. Nothing is applied without the `approve-migration` label and the founder's apply step.
+
+Edited in place: one proposed backlog row with no BL id (it waits for the four-digit id fix in PR #912, E60), in `docs/BACKLOG.md`. Plan delta: one migration row (written, never applied) and two docs PRs; `data-architect`, `privacy`.
+
+### E64: Q-E10, does celebrations_paused reach the phone (20 Nov, Karma with product)
+
+Question (handoff Q-E10): NS-46-R49 and the paused clause of R25 need a phone reader. The only holder today is the server column.
+
+Ruling: in the first build the phone owns the setting locally and the planner reads it from the phone only. The server column `child_member_prefs.celebrations_paused` is a mirror for a second phone later; nothing reads it in Drop A. It sends nothing new and reads nothing from the server.
+
+Edited in place: NS-46-R25 and NS-46-R49 in card 21 (both are built against the local setting). Plan delta: no server reader in Drop A; the planner's day-candidate PR reads the local setting; `mobile`, `sync`.
+
+### E65: NS-52-R41, the lens card (20 Nov, Karma with product)
+
+Question (media design C-7): one lens card per letter or one per item.
+
+Ruling: one lens card per letter, drawn from the poster of the letter's first picture. The other items in the letter open in the Review strip, not as more cards. The default in engineering's design was per letter; this takes it.
+
+Edited in place: NS-52-R41 in card 27 (test title unchanged). Plan delta: unblocks media PR 19 (the lens); no re-size; `mobile`.
+
+### E66: four design records, OQ-D3, OQ-D4, OQ-P1, OQ-H2 (20 Nov, Karma with product)
+
+Ruling: take engineering's stated defaults and record them. OQ-D3: in Expo Go and on the web the days feature is unavailable and the flag is off in those profiles (`mobile`; `13-days-culture-home.md`). OQ-D4: `ownerKey` is a hash of the user id, kept in a file and a settings key (`privacy`; an id is L3 and already held). OQ-P1: a typed day and a library day share the identifier `el.day.<isoDate>`, so a re-plan that changes the winner changes only its kind (`mobile` with the NS-18 owner; `14-days-planner-and-catalogue.md`). OQ-H2: the C-S26 selection is held in one module-level holder, not a route param (`mobile`; `15-home-and-picture-first.md`). All four store less or the same; none changes a card row.
+
+Edited in place: none (records only). Plan delta: none; `mobile`, `privacy`.
+
+### E67: founder digest additions (20 Nov, Karma with product)
+
+Question (engineering check, section 8 item 8, and the dependency items): founder items were missing from the digest.
+
+Ruling: add each to `22-final-holistic-spec.md` section 7 with its default stated, as founder-only, not closed for good. (a) Writing tools (SOQ F-1): the default stays OFF on letter fields (brief D2). (b) The G1 grace window (F-9). (c) The secret scan in CI (F-12). (d) The label-guard workflow copy (K-7). (e) The K3 boundary with founder decision 15 (`storage.tsx`). (f) Plan #847 Q3 to Q7: seals (Q3, with the card default), the #798 size exception (Q4), the plan file size exception (Q5), the agent lane (Q6), the daily run cap (Q7). (g) Dependencies: engineering owns the ask (mobile, CR-69 A8) and product only states the need. Design rulings 31 and 35 (the Icon wrapper, chrome only) need `expo-symbols`; ruling 31 (lamp off under Low Power Mode) needs `expo-battery`; media posters need `expo-image` or an equivalent decision. The founder approves new dependencies (A8). Default: not added until he approves.
+
+Edited in place: `22-final-holistic-spec.md` section 7 (eleven new lines) and the founder-only list above. Plan delta: none; no dependency is added and nothing in the plan moves on a default; `mobile` and `principal-architect` carry the dependency ask.
+
+### E68: cards against design rulings (20 Nov, Karma with product)
+
+Question (engineering check, table 3): four design rulings were not in the cards, and two cards contradicted them.
+
+Ruling: carry the rulings into the cards, in place, as B1 corrections. Card 01 NS-01-R41 names the token `mediaFrame` (ruling 27). Card 11 NS-33-R1 gets the `[stand-in]` device-read line (ruling 29). Card 19 stops saying waiting states breathe (ruling 31: the launch mark, "Signing you in" and "Setting up your account" stay still; the lamp is the one ambient exception), and the E-S08.open success haptic is none (ruling 33; the first Keep keeps its one success, NS-44-R12). Card 01 R15, R21a and R22 point to E34 (true as written until NS-52 ships).
+
+Edited in place: cards 01, 11 and 19. Plan delta: none (no re-size); `design-systems` checks the PhotoFrame token and heading PRs, `mobile`.
+
+Founder note: E62 to E68 add no item to the founder's own list beyond the digest lines of E67; each default stands until he changes it.

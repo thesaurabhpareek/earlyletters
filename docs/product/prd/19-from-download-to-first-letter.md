@@ -254,7 +254,7 @@ The first second decides whether the app feels calm or broken. Three rules carry
 | Empty | No book: the path continues to NS-40 to NS-43 |
 | Many (1,000 letters, 300 pictures) | Returning launch: cold start budget holds (NS-34, NS-37) |
 | Offline | Section 5 first row; capture never waits on a network |
-| Slow | Breathing launch mark after 350 ms, no count; held screens at 10 s (DESIGN rule 5) |
+| Slow | Still launch mark after 350 ms (waiting states do not breathe, ruling 31, E68; the lamp is the one ambient exception), no count; held screens at 10 s (DESIGN rule 5) |
 | Failed | E-S01.recovery; E-S14.outage |
 | Interrupted (call, Siri, alarm, the baby) | No audio session is active before Listen; the same screen on return |
 | App killed mid-flow | Relaunch returns to the first unanswered step: age question if unanswered, Welcome if no session, consent sheet if consent is outstanding (NS-42), child step inputs are lost (under 60 s of typing; F03-U12) |
@@ -432,7 +432,7 @@ The product is for adults only, with no minor mode (D-006, PRD-REQ-019, LEGAL-RE
 | System age signal says under 18 (when built) | The stop at once, no question | `ageGate.stoppedAt` only |
 | System age signal declined, error, over 3 s, iOS below 26.2 | Our question decides; a decline is not proof of adulthood | nothing |
 | An old account whose Terms row lacks the attestation | The consent sheet's age step (the gate's own pills, no lamp) | Yes: a `terms` accept with `age_attested: true`. No: the session ends and the 18+ gate closes (`session-provider.tsx:310-325`); nothing about the No is sent |
-| Sign-up from a refused country (when D-131's hook ships) | One neutral full screen (E-S04.refused-region, new state): intent "{app} can't be set up from here." with "Terms of Service" and "Contact us"; never asks where the person is, never names a list or a country, never says "sanctions" | phone: nothing. Server: the daily count with the country code for refusals only (D-136) |
+| Sign-up from a refused country (when D-131's hook ships) | After the code step (E62; Send gives the same answer for every address), one neutral full screen (E-S04.refused-region, new state): intent "{app} can't be set up from here." with "Terms of Service" and "Contact us"; never asks where the person is, never names a list or a country, never says "sanctions" | phone: nothing. Server: the daily count with the country code for refusals only (D-136) |
 | A person in a refused country signs in to an account made elsewhere | Signs in normally: the hook runs only when a user is created (D-131). Terms 2.4 covers the rest | nothing |
 | VPN or a wrong IP location | Same refusal screen; Contact us is the way forward; support never asks where they are (Privacy 12) | as above |
 | Under 18 learned later (support report, or a system signal on a signed-in account) | Support runs `docs/ops/runbooks/underage-account.md`: under 13 deleted within 10 days; 13 to 17 closed with export offered where allowed; never asks for ID or a birth date | one content-free audit row |
@@ -475,7 +475,7 @@ The product is for adults only, with no minor mode (D-006, PRD-REQ-019, LEGAL-RE
 | NS-40-R6 | Given any system age answer, Then a test spying on the settings store, the Keychain, the logger and the analytics client sees zero writes carrying it, and nothing about it is sent to our server | P0 (b) | `[NS-40-R6] the system age signal is never stored` |
 | NS-40-R7 | Given a new account's Terms record, Then it carries `age_attested: true` and no `age_signal` value, and the server refuses `age_attested: false` | P0 (b) | `[NS-40-R7] attestation is recorded, never an age` |
 | NS-40-R8 | Given No on the consent sheet's age step, Then the session ends locally, the 18+ gate closes, nothing is sent to the server and no policy act is recorded (a No sends nothing and writes no server row; the phone keeps `ageGate.stoppedAt`, NS-40-R3; E56) | P0 (b) | `[NS-40-R8] No at the age step ends the session` |
-| NS-40-R9 | Given D-131's hook on, When a sign-up comes from a refused country, Then the app shows the neutral refusal screen with Terms and Contact us, stores nothing on the phone, and never asks where the person is; a failed lookup is never shown as a refusal, and a refusal is never shown as an outage (E47) | P0 (b) | `[NS-40-R9] a refused sign-up is calm and stores nothing` |
+| NS-40-R9 | Given D-131's hook on, When a sign-up comes from a refused country, Then after the code is entered (never at Send, E62) the app shows the neutral refusal screen with Terms and Contact us, stores nothing on the phone, and never asks where the person is; a failed lookup is never shown as a refusal, and a refusal is never shown as an outage (E47) | P0 (b) | `[NS-40-R9] a refused sign-up is calm and stores nothing` |
 | NS-40-R10 | Given D-131's hook on, When Apple, Google (if on) and email sign-ups are each made from a test refused location in staging, Then each is refused by the hook | P0 (b) | `[NS-40-R10] every sign-in method meets the country check` (staging) |
 | NS-40-R11 | Given an existing account signing in from a refused country, Then sign-in succeeds (the hook runs only on user creation) | P1 | `[NS-40-R11] the country check is at creation only` (staging) |
 | NS-40-R12 | Given the hook's daily counts, Then they hold counts by result and the country code for refusals only, and no IP address, email or user id | P0 (b) | `[NS-40-R12] country counts hold no person` |
@@ -564,7 +564,7 @@ Risk checks:
 - Ruling D3: n/a because no letter exists. Ruling D2: n/a because no text field.
 
 ### 15. Design inputs
-E-S03 (default, reason-noAnswer, reason-noTick, agreeOnly, stop, stop-after24h, ax5, vo, dark). New state E-S04.refused-region (replaces WORDS' HOLD state E-S03.region, because the refusal arrives at sign-up, not at the age screen): StateScreen warm, no drawing of a map or flag, one line, Terms and Contact us as quiet actions, no Try again (it would fail the same way). The consent sheet's age step uses the gate's own pills (built). No new component.
+E-S03 (default, reason-noAnswer, reason-noTick, agreeOnly, stop, stop-after24h, ax5, vo, dark). New state E-S04.refused-region (replaces WORDS' HOLD state E-S03.region, because the refusal arrives at sign-up, after the code step (E62), not at the age screen): StateScreen warm, no drawing of a map or flag, one line, Terms and Contact us as quiet actions, no Try again (it would fail the same way). The consent sheet's age step uses the gate's own pills (built). No new component.
 
 ### 16. Content inputs
 REUSE `en.ageGate.*`, `en.beforeBegin.*` (registered, COUNSEL). New PROPOSED keys `system.region.title` and `system.region.body` from WORDS 9 move from HOLD to needed when File 28 ships; intent "{app} can't be set up from here." and "If you think this is wrong, contact us." (the WORDS draft "Nothing was set up on this phone." is true and may stay). Never "sanctions", "blocked", "country", "not allowed". `content` writes; counsel reads; the founder approves.
@@ -691,7 +691,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | Empty | New account: E-S08 next |
 | Many (1,000 letters, 300 pictures) | Returning account: NS-10-R2 (what has arrived shows at 10 s); claim of a large local book: one transaction, p95 500 ms for a year (F02 section 9) |
 | Offline at each step | Welcome: E-S14.offline. E-S05 Send: `network` inline. E-S06 code: `network`, field clears. Link opened offline: the verify screen offers Type the code first. E-S07: `network` per step, the sheet stays. E-S24: Keep waits for the account read (E-S24.waiting). Launch while signed in: no message, the gate is re-read on foreground |
-| Slow | "Signing you in" breathes; at 10 s on first run the outage screen; Apple's sheet is Apple's |
+| Slow | "Signing you in" stays still (ruling 31, E68); at 10 s on first run the outage screen; Apple's sheet is Apple's |
 | Failed | Rows 3, 7, 13, 14 |
 | Interrupted (call, Siri, alarm, the baby) | Apple's sheet is the system's; on return the screen is as left; a code typed is kept in the field |
 | App killed mid-flow | After Send: row 22. After Apple, before Terms: the session is kept, the Apple name waits in the Keychain, relaunch shows the consent sheet or the held screen (row 33). On the claim screen: row 36. During the Apple token capture: nothing for the parent; deletion receipt says `apple: no_token` and ops are alerted |
@@ -720,7 +720,7 @@ Every failure keeps the person where they are, says what happened in words, says
 | Id | Given, When, Then | Priority | Test title |
 |---|---|---|---|
 | NS-41-R1 | Given a store build with servers on, Then the Welcome offers exactly Sign in with Apple (where available) and Sign in with email, at equal size, with no password, name or phone field, and the words "sign up", "log in", "create account" appear nowhere (one door, answers CG12) | P0 (c) | `[NS-41-R1] one door, two ways in` |
-| NS-41-R2 | Given a known and an unknown address, When Send is tapped, Then the screens, the words and the request shape are identical (`shouldCreateUser: true`) | P0 (b) | `[NS-41-R2] new and returning look the same` |
+| NS-41-R2 | Given a known and an unknown address, When Send is tapped, Then the screens, the words and the request shape are identical (`shouldCreateUser: true`), including from a place the region hook refuses: Send answers "check your email" for every address, and a refused region is shown only after the code is entered and the country lookup has run (E62) | P0 (b) | `[NS-41-R2] new and returning look the same` |
 | NS-41-R3 | Given an email link requested on phone A, When it is opened on phone B or by another person, Then no session is created and the person is sent to type the code; the five steps of review finding H1 fail on the code | P0 (a)(b) | `[NS-41-R3] a link signs in only the phone that asked` |
 | NS-41-R4 | Given an account signed in on this phone, When any email link opens the app, Then the session is unchanged and the refused screen says how to change accounts | P0 (a)(b) | `[NS-41-R4] a link never replaces a session` |
 | NS-41-R5 | Given letters on the phone owned by no account, When sign-in and consent finish, Then no letter is claimed or uploaded until Keep in this account is tapped on a screen that shows the masked address or the method | P0 (a)(b) | `[NS-41-R5] claim needs consent and a tap` |
@@ -932,7 +932,7 @@ A person must see what they agree to before we collect, and we must be able to p
 | First use | Section 4 |
 | Empty, many | n/a because agreements hold no content |
 | Offline | Step 2 is local; steps 5 and 6 need a connection and say so in place |
-| Slow | "Setting up your account" breathes; at 10 s the step's own retry line |
+| Slow | "Setting up your account" stays still (ruling 31, E68); at 10 s the step's own retry line |
 | Failed | `consent_unavailable` with Try again |
 | Interrupted | The sheet stays as it was |
 | App killed mid-flow | Section 5 row "Killed" |
@@ -1106,7 +1106,7 @@ The book needs only what makes it the child's: the date that places each letter 
 1. E-S08.promise: "Exactly as you said it." with the small fix shown, not described. Continue.
 2. E-S08.name: "Who is this book for?"; a name field marked optional (`nameOptionalLabel`, `nameOptionalHelp`), then born or not yet here as two equal choices, then the birthday or the due date (a wheel; the system compact picker at AX3 and above). "Add another" (quiet) for twins or more. Continue.
 3. E-S08.signsAs: "What does {child} call you?" with example chips and "Not talking yet? Pick the name you hope to hear."; the cover shows "From {signsAs}". Continue ("Sign my letters").
-4. E-S08.open: "The book is open." "Say one thing about {child} today. That is a letter." The cover opens; the success haptic once (K-3). The speech card (NS-39). The one filled button leads to Home.
+4. E-S08.open: "The book is open." "Say one thing about {child} today. That is a letter." The cover opens; no haptic here (design ruling 33, E68; the first Keep keeps its one success, NS-44-R12). The speech card (NS-39). The one filled button leads to Home.
 5. Home (NS-35: first run ends on Home), with the book active.
 The books are written to the phone when step 4 is reached; with a session and consent they are queued to the server (`create_first_run_children` or `create_child`, idempotent on the phone's UUIDv7, `store.ts:334-349`).
 

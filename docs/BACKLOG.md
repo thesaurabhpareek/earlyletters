@@ -4425,6 +4425,16 @@ Ids. The dispatcher reads three-digit ids only. Collision check on 20 Nov 2026: 
 - Done when: a perf build installs on the small-phone baseline, a marker run produces content-free numbers, and the preflight fails a `production` profile with the flag on.
 - Source: `docs/product/prd/11-foundations.md` NS-34 section 10; measurement plan H1 ("someone must own H1; I recommend `product` adds one").
 
+## Proposed rows waiting for a four-digit id (20 Nov 2026)
+
+These rows have no BL id. The dispatcher reads three-digit ids only, and four-digit ids start after PR #912 merges (errata E60). Until then they are not tasks the dispatcher can see; when #912 merges, `next-id.mjs` gives each an id and the row becomes a `####` heading. Written by `product`.
+
+- **Proposed row (no BL id yet): remove `age_signal` from the consent context allowlist (errata E63, CL-137).**
+  - Status: proposed (docs/product/prd/18-errata-after-lock.md E63; Karma or the founder sets it to ready once the id exists). Mode: agent (the migration is written, never applied). Owner: data architect. Milestone: M15. Size: S. Depends on: the four-digit id fix (PR #912).
+  - Scope: one new migration that drops `age_signal` from the context allowlist kept by `20261003000000_security_and_family.sql`, `20261005000000_family_cap_language_idempotency.sql` and `20261108000000_consent_record_fields.sql` (the old files are never edited), with a test that a context holding `age_signal` is refused. Two docs PRs go with it: one edits `docs/engineering/07-privacy-engineering.md` line 67 and `supabase/APPLY.md` line 311 (owner: data architect); one proposes the edit to `docs/legal/POLICY_VERSIONING.md` line 410 (legal text: the founder merges, product proposes).
+  - Done when: the new migration and its test pass in CI, no file outside `docs/product/prd/18-errata-after-lock.md` and the CL record names `age_signal` as an allowed value, and the migration is NOT applied: it waits for the `approve-migration` label and the founder's apply step.
+  - Satisfies: NS-40-R7, FR-PRV-25, PRIV-R21 (the Terms record carries `age_attested: true` and nothing about an age).
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.

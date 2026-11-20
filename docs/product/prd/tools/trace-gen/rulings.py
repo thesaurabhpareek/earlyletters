@@ -62,3 +62,30 @@ for rid,fs in {'CB-2':['FR-DAY-03'],'N-2':['FR-DAY-03'],'DL-2':['FR-DAY-07'],'DL
             if rid not in RULED_FR[f]: RULED_FR[f].append(rid)
 AMENDED={'FR-DAY-03':'CB-2 amends it: a chosen day is not a typed day; it is a separate yearly store with a `libraryDay` source (no new class); card 21 reads it as a ranked source inside the typedDay group and asks Karma to confirm (its item 8)',
  'FR-PHS-02':'R-IA-3 amends it: one more rank in the single Home slip slot, not a strip of several items'}
+
+# Errata rows (18-errata-after-lock.md) and closure lines (GAP-LOG.md "Closures 20 Nov") that decide an FR.
+# An E row names the FR in its "Where" cell (table rows) or in its heading (### E sections); a CL line names it in its
+# parenthesis. Both are read from the files, so a new E or CL row that cites an FR shows up on the next run.
+ERR=open(os.path.join(PRD,'18-errata-after-lock.md'),encoding='utf-8').read()
+def _ruled_by(rid,f):
+    if f in FRS:
+        RULED_FR.setdefault(f,[])
+        if rid not in RULED_FR[f]: RULED_FR[f].append(rid)
+_cl_err={}   # CL id -> E id named in the CL line ("errata E46")
+for l in GL.split('\n'):
+    m=re.match(r'^- (CL-\d+) \(([^)]*)\)',l)
+    if not m: continue
+    cl,paren=m.group(1),m.group(2)
+    me=re.search(r'errata (E\d+)',paren)
+    if me: _cl_err[cl]=me.group(1)
+    elif int(cl[3:])>=114:
+        for f in fr_ids(paren): _ruled_by(cl,f)
+for l in ERR.split('\n'):
+    m=re.match(r'^\| (E\d+) \|(.*)\|\s*$',l)
+    if m:
+        for f in fr_ids(m.group(2)): _ruled_by(m.group(1),f)
+    m=re.match(r'^### (E\d+): (.*)',l)
+    if m and int(m.group(1)[1:])>=61:
+        for f in fr_ids(m.group(2)): _ruled_by(m.group(1),f)
+# RV-12 (GAP-LOG "Applied without an E number" in 18-errata): the wording of these two FRs follows it.
+for _f in ('FR-OPP-03','FR-PHS-54'): _ruled_by('RV-12',_f)
