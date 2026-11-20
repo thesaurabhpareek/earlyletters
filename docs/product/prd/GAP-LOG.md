@@ -433,3 +433,14 @@ Karma
 - N-8: evening-worded variants are dropped before 17:00 (day-part filter).
 - Engineering: string `key` in the planner, untie name rotation from the 8 variants, a `lastMadeLetter()` reader; picture and first kinds fall back to the grid until NS-01 and NS-06 supply flags.
 Karma
+
+## Cultural background data rulings (20 Nov, from functions/cultural-background-data.md)
+- CB-1: all of it is L4 (religion, country a family is from, the ticked days). Apple's label and GDPR Article 9 name religion and origin; counsel must confirm how they apply to data that never leaves the phone.
+- CB-2: a chosen day is NOT a typed day. NS-18 says "Not in scope: recurring days, days the app suggests, syncing typed days" and deletes a typed day after delivery. This amends 20-founder-direction section 3.1: the library uses a separate yearly store that feeds the same planner slot and the same one-a-day budget (`libraryDay` source, not a new class; N-2 stands).
+- CB-3: a library-day note opens a generic prompt, never a day-specific prompt key (`entries.prompt_key` syncs to the server at L2). A test compares the synced row to a control.
+- CB-4: sign-out clears the store (as NS-13 and NS-18 do); the list is not in Save a copy, with a test that no phone-settings key leaks into the export.
+- CB-5: lock screen: every library-day note shares one neutral body; the day's name shows only behind its own switch, default off and forced off while App lock is on, separate from `notifications.lockScreenNames`.
+- CB-6: ask never in first run; after the first kept letter but not in the same sitting; once, "Not now" final for Home, Me > Days stays reachable. No "Eastern" option: "Another tradition" and "Not now" only; several traditions allowed; never prefilled from locale or storefront; country and tradition never suggest each other.
+- FOUNDER (defaults): CUL-Q2 store only the ticked days and treat tradition and country as a browse filter forgotten when the sheet closes (recommended; if the founder wants stored fields every rule in the file still applies); CUL-Q4 keep this store out of the iPhone backup so "only on this phone" is true (else a longer call-out); CUL-Q10 when to ask; Q-FD-1 meaning of "East East".
+- COUNSEL (need numbers from legal): export (Q5), GDPR Article 9 and US state rules for device-only data (Q6), Apple label answer (Q7), whether 4.5.4 applies to local notifications (Q11). App Review's view of an optional faith or origin question (5.1.1(iii)) found no source; fallback is a plain browse-and-tick list with no question.
+Karma
