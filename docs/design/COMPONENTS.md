@@ -53,10 +53,11 @@ Tokens are referenced by contract name only. Values belong to the designer in `p
 ## 0. Shared rules (apply to every component)
 
 ### 0.1 Accessibility baseline
-- **Targets:** every tappable thing is at least 44×44pt. If the visual is smaller, use `hitSlop` to reach 44.
-- **Roles:** use RN `role` (or `accessibilityRole`): `button`, `link`, `header`, `switch`, `adjustable`, `tab`, `image`, `text`, `alert`.
+- **Targets:** every tappable thing is at least 44 by 44 pt. If the visual is smaller, use `hitSlop` to reach 44. The touch area counts `hitSlop`; an automated audit reads the drawn frame, so a `hitSlop` control may still be flagged (NS-33-R16).
+- **Roles:** use RN `role` (or `accessibilityRole`): `button`, `link`, `heading` (iOS Header trait; `Text asHeading`), `switch`, `adjustable`, `radiogroup` and `radio` (ChoiceGroup), `image`, `text`, `alert`. `tab` only inside the tab bar. A choice of views on one screen is a `radiogroup` of `radio`s, never a `tablist` of Buttons: iOS gives `tablist` no trait (NS-33-R3; `reviews/NS-33-ACCESSIBILITY-FLOOR.md` section 6).
+- **Headings:** one level 1 heading per screen, and it is the first heading: the screen's title, or on the letter page its dateline (NS-33-R1). A tab root's heading is its tab label (NS-33-R2). iOS reads no heading level through React Native; `aria-level` reaches the web build only.
 - **Labels** describe the thing ("Speak a note"); **hints** describe the result ("Starts recording"). Hints are optional and never repeat the label.
-- **Dynamic Type:** never set `allowFontScaling={false}`. Caps come only from `tokens.type[*].maxScale` through `Text` (display 1.6, title1 1.8, title2 2.0, letterDateline 2.4); body, label and letter text are uncapped (TDD 09 C1, decided in favour of DESIGN_LANGUAGE 3). Layouts must reflow at AX5: rows stack, nothing truncates silently, and buttons grow taller instead of clipping. Android: the same props apply to the system font size; check at maximum size on device.
+- **Dynamic Type:** never set `allowFontScaling={false}`. Caps come only from `tokens.type[*].maxScale` through `Text` (hero and display 1.6, title1 and promptHero 1.8, title2 2.0, letterDateline 2.4, numeral 1.4); body, label and letter text are uncapped (TDD 09 C1, decided in favour of DESIGN_LANGUAGE 3). Layouts must reflow at AX5: rows stack, nothing truncates silently, and buttons grow taller instead of clipping. On Home, Review, the Book and the letter page nothing truncates at all at accessibility sizes: no ellipsis, no cut line, no text under another element, no word split by a narrow box (NS-33-R4; definitions in `reviews/NS-33-ACCESSIBILITY-FLOOR.md` section 2). Android: the same props apply to the system font size; check at maximum size on device.
 - **Reduce Motion:** never read the setting directly. Use `useMotion()` → `{ reduced, spring(token), fade() }` (MOTION section 4). Movement keeps `ReduceMotion.System`; the fallback is a paired 200ms opacity fade (`motion.fadeMs`), not a jump. Android: animator scale 0 reports reduced.
 - **Reduce Transparency / Increase Contrast:** `BlurSurface` falls back to `surfaceRaised`; `line` gets thicker. Android never blurs.
 - **Focus:** `focus` colour ring (2pt) for keyboard and Switch Control on iOS, keyboard / switch access on Android, and `focus-visible` on web.
@@ -169,19 +170,19 @@ type IconButtonProps = {
 - **Purpose:** the only way text is rendered. It maps one to one to the type styles.
 ```ts
 type TextProps = RNTextProps & {
-  variant?: TypeStyle;                         // default 'body'
-  tone?: 'default' | 'muted' | 'accent' | 'onAccent' | 'caution' | 'success';
-  weight?: 'regular' | 'medium' | 'semibold';  // only where the style allows
-  asHeading?: 1 | 2 | 3;                       // sets role="header"
+  variant?: TypeStyle;                         // a ramp token (tokens.type); old shadcn names still work
+  tone?: 'default' | 'muted' | 'accent' | 'onAccent' | 'destructive' | 'onDestructive' | 'success' | 'caution' | 'recording' | 'inverse';
+  caps?: boolean;                              // textTransform: VoiceOver still hears sentence case
+  asHeading?: boolean | 1 | 2 | 3;             // role="heading" (iOS Header trait); a number also sets aria-level (web only)
   selectable?: boolean;                        // true for letterBody
   scale?: number;                              // Reading Size, letter styles only
   trim?: 'figures';                            // line box trimmed to lining figures (numeral)
 };
 ```
-- **Mapping:** `display/title1/title2` → heading roles when `asHeading` is set. `letterBody` uses `font-letter` with a generous line height. `letterDateline` uses small caps-like tracking and the `textMuted` tone. `maxFontSizeMultiplier`: 2.0 for `letterBody`/`body`/`callout`, 1.5 for others, 1.3 for `display`.
+- **Mapping:** any variant takes the heading role when `asHeading` is set (`components/ui/text.tsx:166-173`). `letterBody` uses `font-letter` with a generous line height. `letterDateline` uses small caps-like tracking and the `textMuted` tone. `maxFontSizeMultiplier` comes from the token's `maxScale` (0.1 lists them). A caller sets a lower one only on chrome, as the letter page's "Aa" (with the Large Content Viewer), the Book's inline bar title and the player's clock do; letter text never (D-027).
 - **States:** none. **Haptics:** none. **Motion:** none.
 - **Figures:** a style that sets numbers carries its figure features in the token (`numeral`: lining, proportional) and never negative tracking (`packages/design-tokens/test/fonts.test.ts` measures the 1 and 8 of "18" in the bundled face). `trim="figures"` is text-box-trim for numerals: with the line at least as tall as the face, iOS and the web both centre the face, so the margins from `tokens.fontMetrics` (ascent, descent, figure height, figure side bearing) leave exactly the figures' ink, scaled with Dynamic Type up to the style's cap. The left margin removes the figure's side bearing so a large numeral starts on the same optical edge as the small text beside it.
-- **A11y:** never truncate `letterBody`; `numberOfLines` is allowed only for previews and must have a full-text `accessibilityLabel`.
+- **A11y:** never truncate `letterBody`; `numberOfLines` is allowed only for previews and must have a full-text `accessibilityLabel`. On Home, Review, the Book and the letter page a preview drops its line limit at accessibility sizes (`numberOfLines={ax ? undefined : n}` with `ax` from `useIsAccessibilitySize()`; NS-33-R4; BL-928 (c) adds the scan, `apps/mobile/test/a11y-ax5.test.ts`). A card excerpt uses `ExcerptFade`, never `numberOfLines`.
 - **Builds on:** RNR `text.tsx` (`TextClassContext` kept; variants replaced with our 11 styles). Web: a `Text` component that renders `p`/`h1..h3`/`span` with the same variant classes.
 - **Android later:** same code. Bundle Mukta, Literata and Tiro as app fonts (no system fallback differences); check Devanagari matras and line height on Android, and the 1.08x Tiro factor.
 
@@ -290,6 +291,7 @@ type TextAreaProps = Omit<TextInputProps, 'style' | 'multiline'> & {
 - **Android later:** same code. Keyboard: `KeyboardAvoidingView` behaviour differs (Android usually `height` or none with edge-to-edge); test in a `formSheet`. Set `textAlignVertical="top"` for multiline on Android.
 
 ### 2.9 SegmentedControl
+- **Status (20 Nov 2026): not built.** There is no `platform/segmented-control` (`components/platform/` holds `blur-surface` and `toggle`). The built single choice is `ChoiceGroup layout="segmented"` (`components/ui/choice-group.tsx`): a `radiogroup` of `radio`s with `checked`, at least 48 pt, stacking from xxxLarge, selected shown by fill, edge and check. Use it for any choice of views on one screen, the Book's lens included (NS-33-R3). The spec below stays as the plan if a native control is ever needed.
 - **Purpose:** switching views on one screen (Read / Listen; All / Notes / Letters).
 ```ts
 type SegmentedControlProps<T extends string> = {
