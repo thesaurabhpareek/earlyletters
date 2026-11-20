@@ -26,7 +26,7 @@ Read the 6 percent as a measure of the pack, not of the app. The repo has 295 mo
 
 P0 means a promise breaks if it fails (card 14, section 1): a letter or recording lost, a word changed, a charge or paywall out of place, something leaves the phone that should not, a count or guilt line, a child's name on a lock screen. P0 blocks any build to anyone outside the founder's family. P1 blocks a store build. P2 is tracked.
 
-Release line (card 21 "Release line and cut", E31, 22 section 4; the earlier pointer that put NS-46, 47 and 50 in Drop A is wrong and is corrected here): Drop A is NS-48 phase 1 only (E31, CL-015: NS-49 level 1 R1, R3, R4, R25, R26 moved from A to B because it needs NS-01, which Build 13 keeps dark; P0 by drop reads A 6, B 55, B+C 2, C 24); Drop B is NS-46, 47, 50, NS-49 level 1, and the rest of NS-49 only if its gates close before the 1.0 freeze; Drop C is NS-51, NS-52 after 1.0 (the NS-51 spike runs in Build 13); Drop D is first run NS-38 to NS-45, after wave 1 and Drop A and before any family outside the founder's signs in. The Build 13 content list is a proposal (NS-09, 10, 32, 13, 33 on; NS-01, 02, 37 and export 1.7.0 dark), not a ruling.
+Release line (card 21 "Release line and cut", E31, 22 section 4; the earlier pointer that put NS-46, 47 and 50 in Drop A is wrong and is corrected here): Drop A is NS-48 phase 1 only (E31, CL-015; P0 by drop reads A 6, B 55, B+C 2, C 24). Drop B is NS-46 (US only, plain browse-and-tick list), NS-47 store rules only, NS-50 rank 2b, and NS-49 level 1 R1, R3, R4, R25, R26, which E31 moved from A to B because it needs NS-01, which Build 13 keeps dark, and which ships only if the A-S01 re-draw passes its AX5 test (NS-49-R1); all of B ships in 1.0 only if its gates close before the freeze, otherwise 1.1. NS-47 ask slip and the rest of NS-49 are Drop C; Drop C is NS-51, NS-52 after 1.0 (the NS-51 spike runs in Build 13); Drop D is first run NS-38 to NS-45, after wave 1 and Drop A and before any family outside the founder's signs in. Nothing in Drop A is a content change. The Build 13 content list is a separate proposal (NS-09, 10, 32, 13, 33 on; NS-01, 02, 37 and export 1.7.0 dark), not a ruling.
 
 ## 3. The twenty risks that matter most (ranked)
 
@@ -67,7 +67,7 @@ Wave 0, enabling, before any card's tests (each is a small PR, none needs the fo
 
 Wave 1, Build 13 (Drop A): NS-48 phase 1 floor, content rules drift (NS-48-R28 has a test in `rules-drift.test.ts`, file 02 rates it PARTIAL; not yet traced, not run today), analytics allowlist rows (cited in `allowlist-pins.test.ts`: NS-46-R34, NS-47-R9, NS-47-R34, NS-48-R2, NS-48-R38, NS-49-R36, NS-50-R17; not run today), plus whichever of NS-09, 10, 32, 13, 33 the founder confirms. Device rows J-N37 and J-N38 only gate if NS-46, 47 or 50 flags turn on.
 
-Wave 2, Drop B gates: NS-46, 47, 50 (days module and budget first), NS-49 level 1 and the flag-off proof, then the lock-screen device walk.
+Wave 2, Drop B gates: NS-46, NS-47 store rules, NS-50 rank 2b (days module and budget first), NS-49 level 1 (only if the A-S01 re-draw passes AX5) and the flag-off proof, then the lock-screen device walk.
 
 Wave 3, Drop D: card 19 stack and J-N28 to J-N36, before any outside family signs in.
 
