@@ -144,6 +144,8 @@ Question (engineering, first-run design CF-8): a refused-region answer at email 
 
 Ruling: Send gives the same answer for a new and for an existing address: "check your email". A refused region is shown only after the code is entered and the country lookup has run. So Send says nothing about the address and nothing about the place. It shows less.
 
+Open for build, not for the ruling: the hook fires on user creation, so for a refused new person no code may be sent and the refused screen has no route. `mobile` and `security-architect` confirm the mechanism when FP-6 is built (for example, a code is sent and the hook refuses at verify, or the phone shows the same wait screen for both). The same answer at Send stands either way. `docs/tdd/new-scope/12-first-run.md` section 3.3 still describes the old at-Send behaviour until engineering syncs it.
+
 Edited in place: NS-41-R2 and NS-40-R9 in card 19 (and the refused-country state row and the E-S04.refused-region note), and the FP-6 row and the CF-8 line in `docs/tdd/new-scope/12-first-run-5.md`. Plan delta: no new screen; the refused-region screen (E-S04.refused-region) moves after the code step; FP-6 (refusal and outage mapping) maps `region_refused` after the code step; `mobile`, `security-architect`.
 
 ### E63: age_signal leftovers after E50 (20 Nov, Karma with product)
