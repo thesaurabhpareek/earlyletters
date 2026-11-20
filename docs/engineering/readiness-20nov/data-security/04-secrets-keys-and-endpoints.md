@@ -295,7 +295,7 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 - **Conflict (chapter 06 vs code):** SEC-R10 says `agents.yml` is the unpinned workflow; it is pinned and four others are not. Route: security-architect fixes the chapter text through the RFC handoff; the pinning goes to `qa`.
 - **Conflict (chapter 06 vs repo):** SEC-R03, R08, R09 cite PR #30 for `security.yml`, `dependabot.yml`, `audit-ignore.json`; none is on `develop`. Route: `qa` and the founder (is PR #30 still wanted, or is the work re-planned).
 - **Conflict (function file vs card):** the notification catalogue and function files list co-parent push (F11, NS-26); `NOTIFICATIONS.md:36` and `security.md:261` say not in v1.0. Cards win (CR-66): NS-26 is parked, so no push work is planned. Route: product to confirm in the feedback loop that no v1.0 row depends on push.
-- **Conflict (PRD V2 vs templates):** the new-device sign-in email is P0 and "before any escrow release" in PRD V2 (`docs/prd/v2/reviews/DISPOSITION-B.md:72`, F02-REQ-017, F02-U33 at `docs/prd/v2/features/F02-account.md:182`), and "1.0, not launch-blocking" in `supabase/templates/README.md:50`. No sender exists in code either way. Route: product, question `F02-REQ-017` posted on this PR; default engineering builds nothing until answered, and backup stays off. **Superseded by the Conflict in section 14 (E78 and the founder's word).**
+- **Conflict (PRD V2 vs templates):** the new-device sign-in email is P0 and "before any escrow release" in PRD V2 (`docs/prd/v2/reviews/DISPOSITION-B.md:72`, F02-REQ-017, F02-U33 at `docs/prd/v2/features/F02-account.md:182`), and "1.0, not launch-blocking" in `supabase/templates/README.md:50`. No sender exists in code either way. Route: product, question `F02-REQ-017` posted on this PR; default engineering builds nothing until answered, and backup stays off. **Superseded by the Conflict in section 14 (E78 and the founder's decision).**
 - **Conflict (config vs chapter):** `config.toml` header says Google sign-in in v1.0 (D-054); IAM-R05 follows D-044 (v1.1). Same as file 03; product and founder.
 
 ## 11. Questions for the council (each with a default)
@@ -303,7 +303,7 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 1. Founder: remote push, ever? E79: none in 1.0 (no APNs key, token table or push entitlement); if ever, only NS-26 co-parent push, fixed words, never a security alert, and the first PR is a rule file (D-20nov B1).
 2. CISO: distinct secret key per function? CLOSED by D-20nov C2: no wait for the platform; a database role per function, `purge-worker` keeps the key alone.
 3. CISO: build `security_events`? CLOSED by D-20nov C3: yes, its own service-only store, 12 months, named reader (section 13).
-4. CCO and counsel: is a new-device email required or only offered? Whether it is a legal duty stays counsel's. When it is built is settled: section 14 (E78, founder's word).
+4. CCO and counsel: is a new-device email required or only offered? Whether it is a legal duty stays counsel's. When it is built is settled: section 14 (E78, founder's decision).
 5. CPO: S-07 email to the other parent when a co-parent leaves? Default: in-app line only.
 6. CTO: `security.yml` and SHA pins? CLOSED by D-20nov A5: two PRs, pins first, then scanning; PR #30 is not revived whole.
 7. Founder: the stop page? CLOSED by D-20nov C7: backup stays off, and a preflight check enforces it (section 13).
@@ -355,6 +355,6 @@ Ids: E76 to E81 (`docs/product/prd/18-errata-after-lock.md:129-134`), FR-SEC-36 
 - **Alert cap (E81).** Any alert sender, NS-08-R21 first: first 5 an hour one by one, the rest folded into one summary within minutes, 20 alert emails per account per day as a backstop that logs its own breach to `security_events`; never on sign-in codes. The number 20 is a reviewer's number [E, per D-20nov D2], now carried by E81. Test: a cap test is part of the sender's PR.
 - **`dictionary_terms` (E80).** Stays built and unreachable; not an endpoint. Nothing to add to section 5.
 
-Conflict (founder's word vs E78): see file 03 section 17. The founder approved the new-device email before the first outside family (`DECISIONS-20nov.md` section 8 item 7, section 10); E78 and NS-08-R21 say a gate before the backup flip. The founder's word wins; product aligns E78. Backup stays off until both the email and B5 and C7 (section 13) hold, as before.
+Conflict (E78 vs the founder's decision): E78 / NS-08-R21 gate the new-device email before the backup flip; the founder decided (DECISIONS-20nov.md section 8 item 7) before the first outside family. The founder's date is earlier and so stricter: building the email before the first outside family satisfies both. Cards win on wording (CR-66), so product records the founder's decision in an erratum; engineering builds to the stricter gate. Backup stays off until the email and B5 and C7 (section 13) hold, as before. File 03 section 17 has the same text.
 
 Not verified: any hosted state; the sender, table and page are unbuilt.
