@@ -14,9 +14,9 @@ Sources: designs `docs/tdd/new-scope/12-first-run-5.md`, `17-days-prs-and-amendm
 |---|---|---|---|---|
 | First-run, Drop D | NS-38 to NS-45 | 21 (FP-1 to FP-20, FP-10 as a and b, FP-16 as a and b; FP-11 unused) | about 5,600 | `12-first-run-5.md:34-62` |
 | Days, culture, Home | NS-46 to NS-50 | 35: Stack A 4, B 18, C 5, P 8 | about 8,480 | `17-days-prs-and-amendments.md:5-60` |
-| Media: photo moments, library, video | NS-51, NS-52 | 33 (2 are spikes) | about 7,400 | `16-media-flags-tests-prs.md:99-141` |
+| Media: photo moments, library, video | NS-51, NS-52 | 32 shippable: the design counts 33, and its PR 1 (amend #835) is withdrawn by CR-69 A2; 2 are spikes | about 7,300 | `16-media-flags-tests-prs.md:99-141` |
 
-About 89 PRs and 21,500 lines [E] on top of 17's 4.3 counts. They land in waves 1 to 5 as 17 section 4.3 defines them; section 6 below says how that moves the bands. Every PR is at most 400 lines and 20 files in its design, so none needs a size exception unless review finds it larger [E].
+About 88 PRs and 21,400 lines [E] (21 + 35 + 32; the design's media PR 1 is withdrawn) on top of 17's 4.3 counts. They land in waves 1 to 5 as 17 section 4.3 defines them; section 6 below says how that moves the bands. Every PR is at most 400 lines and 20 files in its design, so none needs a size exception unless review finds it larger [E].
 
 ### 1.1 First-run, Drop D (NS-38 to NS-45)
 
@@ -55,14 +55,14 @@ Keys: `killSwitches.photoMoments`, `.videos`, `.signIn`, `.libraryDays`; flags `
 
 ## 2. Rows from the agent briefs that the plan had no row for
 
-Briefs are on develop (#937 to #963). Waves and sizes are theirs [E].
+Briefs #937 to #963 are on develop except #946 and #952 (platform briefs, open at 21:30 UTC [V gh]); develop holds 18 of the 23 platform brief files (the others are on those open PRs or otherwise not on develop [U]). Waves and sizes are theirs [E].
 
 Platform (`briefs/platform/README.md`, 23 briefs):
 - Release path: B13-CHECKS (wire the `release-ios.yml` checks; founder pastes the patch) and B13-CUT (release branch and RC tag), and BL-976-WIRE (the keep-safe preflight is wired nowhere; `release-ios.yml` runs no preflight). Add all three to 17 section 3a's release path.
 - CI: CI-PIN (17 unpinned `uses`), CI-SECRET (Option A own script, or B a new tool, which is a dependency: founder, F-12), CI-PRSIZE, CI-COV, CI-LINT (founder approves the dev dependencies), CI-SIZEGATE, CI-Q1 and CI-Q2 (macOS queue), QA-TITLES, KILL-MEDIA (M, wave 2, after #835 to #839), HG-H3 (stack status script; `scripts/agents/` is the founder's).
 - BL-929 splits per brief 19 and 20: ASHA seeded generator (M, wave 1 to 2) and PERF profile with markers (M, wave 2; needs a BL row from product). Hand runs record 20 samples per metric and are marked `[stand-in]`, never green; 200 samples once the markers exist (E53).
 - BL-964 PR 2 no longer waits for #846 (closed): the ratchet targets locked cards 00 to 16 first, then 19, 21, 27 and the function files as each merges (E55, CL-129); whether `--check` blocks is the founder's (07 Q8).
-- HG-MQ (brief 23, A9): a `skipped` required check counts only when the queue itself computes not-native and the `changes` job succeeded (a test is required). The proposal lives under `docs/ops/proposed/` for the founder to apply (`scripts/agents/**` is CODEOWNERS:31); a founder patch also adds `apps/mobile/eas.json` to the `changes` match (`ios-compile.yml:301`). Relevant to 17 risk 9. The F4 two-job deploy proposal is the same kind (db-production approval covers the whole job, so a green dry run pushes alone).
+- HG-MQ (brief 23, A9): a `skipped` required check counts only when the queue itself computes not-native and the `changes` job succeeded (a test is required). The proposal lives under `docs/ops/proposed/` for the founder to apply (`scripts/agents/**` is CODEOWNERS:31); `eas.json` stays in `NATIVE_PATHS` (A9; `merge-queue.mjs:73`), so a brief that removes it from that list (the #952 draft of HG-MQ item 1) must be corrected before it is applied; the founder patch instead adds `apps/mobile/eas.json` to the `changes` match (`ios-compile.yml:308` (the `changes` job starts at :288)). Relevant to 17 risk 9. The F4 two-job deploy proposal is the same kind (db-production approval covers the whole job, so a green dry run pushes alone).
 - Tests in `scripts/guards/*.test.mjs`, `scripts/qa/skip-guard.test.mjs`, `scripts/packs/*.test.ts` and `scripts/size/lib.test.ts` run in no CI list (platform README); no row yet.
 
 Data (`briefs/data/README.md`, 22 briefs):
@@ -82,7 +82,7 @@ Mobile (`briefs/mobile/README.md`, 30 briefs): HO-908, HO-910, HO-911 (17 listed
 
 ## 4. Capacity, in one paragraph
 
-The three stacks add about 89 PRs. At 4 passes a PR (17 section 4.2) that is about 356 passes. Wave 2 absorbs first-run, days A and B and the media spine; wave 5 absorbs NS-51. Against 17's bands (low 46, mid 290, high 1,390 passes a week) that is about 7.7 weeks at the low band, 1.2 at the mid band and 0.3 at the high band, on top of 17's own [E]. This is arithmetic on the designs' counts, not a forecast; the founder's gates bind first (17 section 5.2).
+The three stacks add about 88 PRs. At 4 passes a PR (17 section 4.2) that is about 352 passes. Wave 2 absorbs first-run, days A and B and the media spine; wave 5 absorbs NS-51. Against 17's bands (low 46, mid 290, high 1,390 passes a week) that is about 7.7 weeks at the low band, 1.2 at the mid band and 0.3 at the high band, on top of 17's own [E]. This is arithmetic on the designs' counts, not a forecast; the founder's gates bind first (17 section 5.2).
 
 ## 5. Designs added since 17 section 10
 
