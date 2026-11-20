@@ -22,6 +22,9 @@
  *   repeats within 8 nudges and no title shows twice in a row (C-REQ-006).
  * - No child name unless the user turned "Names in notifications" on
  *   (D-025). Never any letter text.
+ * - A quieted book adds nothing (F12-REQ-011; NS-13-R12, NS-32-R14): no
+ *   month or birthday note, never named, and while every book is quiet no
+ *   evening nudge either.
  *
  * Not here (P1, later): back-off after unopened nudges (C-REQ-008),
  * `gentleReturn`, plan notices, per-book "pause celebrations".
@@ -72,6 +75,8 @@ export interface PlannerChild {
   birthday: string | null;
   /** "Include {child} in my reminders" (Child.remindersOn). */
   included: boolean;
+  /** "Quiet this book" is on for this person (Child.quiet): the book adds no notification of any kind. */
+  quiet?: boolean;
 }
 
 export interface PlanInput {
@@ -295,7 +300,8 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   const today: CalendarDate = { y: todayParts.y, m: todayParts.m, d: todayParts.d };
   const lastDay = dayNumber(today) + monthHorizon - 1;
   const eveningLastDay = dayNumber(today) + horizon - 1;
-  const included = input.children.filter((c) => c.included);
+  const awake = input.children.filter((c) => !c.quiet);
+  const included = awake.filter((c) => c.included);
   const out: PlannedNotification[] = [];
 
   // Month and birthday notes, grouped by day and kind.
@@ -337,8 +343,9 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     });
   }
 
-  // Evening nudges.
-  const weekdays = activeWeekdays(prefs);
+  // Evening nudges. While every book is quiet, none: a nudge would be for a book this person quieted.
+  const allQuiet = input.children.length > 0 && awake.length === 0;
+  const weekdays = allQuiet ? [] : activeWeekdays(prefs);
   if (weekdays.length > 0) {
     const quietUntil = Math.max(
       input.lastSaveAt != null ? input.lastSaveAt + RECENT_SAVE_QUIET_MS : -Infinity,

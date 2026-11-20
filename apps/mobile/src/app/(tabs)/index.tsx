@@ -27,6 +27,8 @@
  * Type never animate in (MOTION principle 2). "Another thought": the old prompt leaves (exitMs) and the new one rises
  * in from when it is half gone. Reduce Motion: one 200 ms fade on a prompt change.
  * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`, Not much today `soft`. Nothing else.
+ * One capture entry (design spec 06 N3, PRD 01 section 3): Speak, Type and Not much today begin through
+ * startCapture({ source }) in lib/capture/start-capture.ts; nothing else on any tab starts a letter.
  * Before the birth (a due date, no birthday) the dateline reads "Asha", the dot, "Before You" and the prompt comes from the set
  * written for it; "Another thought" never shows the prompt that is on screen again (components/tonight/prompt.logic).
  * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo. Nothing on Tonight counts:
@@ -45,7 +47,7 @@ import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-nativ
 import { selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
+import { markOn } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
 import { HeldRow } from '@/components/tonight/held-row';
@@ -70,23 +72,21 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
 import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
-import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
+import { startCapture } from '@/lib/capture/start-capture';
 import { copy, fill } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
-import { armListenStart } from '@/lib/resilience/start-intent';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import {
   deleteEntry,
+  getActiveChild,
   getActiveChildId,
   getFamily,
   listDrafts,
   listEntries,
-  saveEntry,
   subscribe,
   todayISO,
-  uuidv7,
   type Draft,
   type Entry,
   type Family,
@@ -95,15 +95,22 @@ import {
 const M = tokens.motion;
 
 /**
- * What Tonight shows: the book, every waiting draft (listDrafts, all of them), the book's entries, and the moment they
- * were read. The day, the greeting's daypart, the lamp's tone and each card's dateline all come from `at`, so a room read
- * again (on focus, on a change in the store, on coming back from the background) is never stale.
+ * What Tonight shows: the book, whether this person quieted it, every waiting draft (listDrafts, all of them), the
+ * book's entries, and the moment they were read. The day, the greeting's daypart, the lamp's tone and each card's
+ * dateline all come from `at`, so a room read again (on focus, on a change in the store, on coming back from the
+ * background) is never stale.
  */
-type Room = { family: Family | null; drafts: Draft[]; entries: Entry[]; at: Date };
+type Room = { family: Family | null; quiet: boolean; drafts: Draft[]; entries: Entry[]; at: Date };
 
 function readRoom(): Room {
   const childId = getActiveChildId();
-  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries(), at: new Date() };
+  return {
+    family: getFamily(),
+    quiet: getActiveChild()?.quiet === true,
+    drafts: childId ? listDrafts(childId) : [],
+    entries: listEntries(),
+    at: new Date(),
+  };
 }
 
 export default function Tonight() {
@@ -198,7 +205,11 @@ export default function Tonight() {
   // The held list also closes when the person leaves Tonight (blur).
   useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
   const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
-  const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
+  // A quieted book brings nothing back (NS-23-R8, J-N19).
+  const monthAgo = useMemo(
+    () => resurfaced(room?.entries ?? [], today, cards.length, { quiet: !!room?.quiet }),
+    [room?.entries, room?.quiet, today, cards.length],
+  );
 
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
@@ -225,15 +236,12 @@ export default function Tonight() {
   const lineIn = FadeIn.duration(M.fadeMs).delay(Math.round(M.exitMs / 2)).reduceMotion(ReduceMotion.Never);
 
   const keepNotMuch = () => {
-    // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
-    // Today by the clock at the tap, not the room's last read.
-    const day = todayISO();
-    const existing = markOn(listEntries(), day);
-    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });
-    if (!existing) saveEntry(mark);
+    // One mark a day, no words (D-084): the one capture entry keeps it; the line and its Undo stay here.
+    const kept = startCapture({ source: 'notMuchToday' });
+    if (kept.kind !== 'quietDay') return;
     haptic('soft');
     announce(copy.notMuch.savedToast);
-    setKeptMark(mark.id);
+    setKeptMark(kept.markId);
   };
 
   const undoNotMuch = () => {
@@ -241,13 +249,8 @@ export default function Tonight() {
     setKeptMark(null);
   };
 
-  const start = (mode: 'spoken' | 'typed') => {
-    const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
-    const active = getActiveChildId();
-    trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
-    if (mode === 'spoken') armListenStart(); // the tap that lets Listen start the microphone
-    router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
-  };
+  // Speak and Type: the one capture entry opens Listen or Write, carrying the prompt on screen (lib/capture/start-capture.ts).
+  const promptParam = { key: prompt.key, libraryVersion: PROMPT_LIBRARY_VERSION };
 
   // Speak, Type and the quiet link: pinned under the scroll, or inline under the prompt at accessibility sizes.
   const actions = (
@@ -255,8 +258,8 @@ export default function Tonight() {
       {/* Before the person records, not only at Review: new letters need Plus (SR-C-08). Never a count or a price. */}
       {showPlusLine ? <PlusLine /> : null}
       <ButtonRow>
-        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
-        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => startCapture({ source: 'speak', prompt: promptParam })} />
+        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />

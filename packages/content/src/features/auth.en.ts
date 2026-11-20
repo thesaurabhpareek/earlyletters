@@ -104,6 +104,9 @@ export const authCopy = {
      */
     // Names no provider: a build may offer neither Apple nor Google (SIGN-01, BL-475 point 3).
     pausedOtherWays: 'The link in the newest email still works, and so do the other ways to sign in.',
+    // NX-36 S5, the recovery set after a minute (NX-31-R11). Placeholder words; each needs founder word approval.
+    noMailHelp: 'Nothing yet? Look in spam, or send a new email.',
+    announceResend: 'You can send another email.',
   },
 
   /**
@@ -139,6 +142,21 @@ export const authCopy = {
     // the connection returns, so the line says what the person does.
     body: 'Connect to the internet, then tap Try again.',
   },
+  // NX-36-S17 Tier 0 (docs/design/specs/S17-NEW-PHONE-SPEC-10nov.md section 4.2): a signed-in phone with no book, on an
+  // account that has one. None of these is a registered row. Words are the spec's, pending the founder's approval of
+  // each row. Not here on purpose: arrivedWords and the recording sentence (Tier 1 and 2, counsel-read).
+  newPhone: {
+    // State A: the heading, then one sentence. States no place and no count.
+    loading: 'Opening your book.',
+    loadingBody: 'Your letters are coming across.',
+    // The arrival line on the first Book after arrival (D4: one place), and for an empty book.
+    arrivedPlain: 'Your book is here.',
+    // State C. The buttons reuse outage.retry and consent.noBook.tryAnother.
+    slowTitle: 'Your book is taking a while.',
+    slowBody: 'Check your connection, then try again.',
+    // State D. Its sentence reuses offline.body.
+    offlineTitle: 'Opening your book needs a connection.',
+  },
 
   verify: {
     title: 'Signing you in',
@@ -162,6 +180,18 @@ export const authCopy = {
     keep: 'Keep in this account',
     notMine: 'Not my account',
     waiting: 'Finish setting up to choose where your letters are kept.',
+    // Account-first slice 4a (exec council decision, 9 Nov 2026, D). Shown when the account already has a book and this phone
+    // holds a book or letters: "Keep in this account" adds the phone's book to it as a second book, and nothing is merged or
+    // deleted (the recordings stay on the phone that made them). Each says where letters go, so counsel reads it, and each
+    // needs founder word approval. What is true: every book the server accepts is added as its own book; one it would refuse
+    // (no birthday or due date, or an id the phone did not make) stays on the phone and is not added. The screen cannot know
+    // that before the tap. Nothing is deleted either way (apps/mobile/test/first-run-new-account.test.ts runs the claim on a
+    // real phone database).
+    bodyHasBook: 'This account already has a book. The book on this phone will be added to it as a second book. Nothing is deleted.',
+    // Not new words: the registered sentence of `sheet.bodies.settings` (and `first_letter`, `account.signedOutBody`), word for
+    // word. A test pins that it is the second sentence of `sheet.bodies.settings`.
+    recordingsNote: 'Recordings are kept on the phone that made them.',
+    keepHint: 'Adds the book on this phone to this account as a second book. Nothing is deleted.',
   },
 
   errors: {

@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area E motion prototype (internal)</title>
+<!--
+  Area E. Foundations and system states: motion prototype. Self-contained: no network, no framework.
+  Token values copied from packages/design-tokens/src/tokens.ts (motion, colours, atmosphere) on 20 Nov 2026.
+  Proposed tokens (MOTION.md section 7) are marked "proposed". Words on the stages are placeholders, not approved copy.
+  Fictional family only (Asha). Keyed to MOTION.md ids (MP-nn working names, E-Mnn moments).
+  Glass rule (Expo SDK 57): a glass surface never animates its opacity to 0; its effect style animates instead.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--surfaceRaised:#FFFFFF;--text:#2B2722;--textMuted:#6B645B;--accent:#8A5A3B;
+  --accentSoft:#F1E6DC;--onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--caution:#94661A;--scrim:#2B272252;
+  --lampCore:rgba(255,226,168,0.78);--lampTail:rgba(243,201,139,0.35);
+  --glassBg:rgba(255,255,255,0.55);--glassBorder:rgba(255,255,255,0.7);
+}
+.dark{
+  --bg:#161412;--surface:#1B1917;--surfaceRaised:#201D1A;--text:#F2ECE4;--textMuted:#B3AA9E;--accent:#D9A47E;
+  --accentSoft:#3A2E25;--onAccent:#1E1612;--line:#33302C;--focus:#8CC4DE;--caution:#E3B866;--scrim:#0000008C;
+  --lampCore:rgba(255,226,168,0.16);--lampTail:rgba(243,201,139,0.18);
+  --glassBg:rgba(40,36,32,0.55);--glassBorder:rgba(255,255,255,0.12);
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#ECE7E0;color:#2B2722}
+body.pagedark{background:#0E0D0C;color:#F2ECE4}
+header{position:sticky;top:0;z-index:50;background:inherit;padding:12px 20px;border-bottom:1px solid #0002;display:flex;flex-wrap:wrap;gap:16px;align-items:center}
+header h1{font-size:16px;margin:0 16px 0 0}
+header label{display:flex;gap:6px;align-items:center;cursor:pointer}
+main{padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.demo{background:#fff8;border:1px solid #0001;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px}
+body.pagedark .demo{background:#ffffff0d;border-color:#fff1}
+.demo h2{font-size:14px;margin:0}
+.demo .meta{font-size:12px;opacity:.8;margin:0}
+.demo .acts{display:flex;flex-wrap:wrap;gap:6px}
+.demo .acts button{font:inherit;font-size:12px;padding:6px 10px;border-radius:8px;border:1px solid #0003;background:#fff;color:#2B2722;cursor:pointer;min-height:32px}
+.demo .log{font:12px ui-monospace,Menlo,monospace;opacity:.85;min-height:16px}
+.wrap{width:225px;height:487px;align-self:center;border-radius:30px;overflow:hidden;border:6px solid #1c1a18;position:relative}
+.screen{width:375px;height:812px;transform:scale(.6);transform-origin:0 0;background:var(--bg);color:var(--text);position:relative;overflow:hidden;font-size:17px}
+.pad{position:absolute;inset:64px 20px 40px 20px;display:flex;flex-direction:column;gap:12px}
+.lamp{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse 95% 70% at 50% 0%,var(--lampCore) 0%,var(--lampTail) 38%,transparent 75%);opacity:0}
+.lamp.center{background:radial-gradient(ellipse 80% 55% at 50% 42%,var(--lampCore) 0%,var(--lampTail) 40%,transparent 75%)}
+.lamp.breath{animation:breath var(--breathMs,9000ms) ease-in-out infinite alternate}
+@keyframes breath{from{filter:none}to{filter:opacity(.88)}}
+.h1{font:600 28px/1.2 Georgia,serif}
+.body{font:17px/1.45 Georgia,serif}
+.small{font-size:15px;color:var(--textMuted)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;min-height:56px;border-radius:28px;background:var(--accent);color:var(--onAccent);font-weight:600;border:0;font-size:17px;width:100%;cursor:pointer;user-select:none}
+.btn.quiet{background:transparent;color:var(--accent);min-height:44px}
+.btn.outline{background:transparent;color:var(--text);border:1px solid var(--line)}
+.card{background:var(--surfaceRaised);border:1px solid var(--line);border-radius:16px;padding:16px;cursor:pointer;user-select:none}
+.foot{position:absolute;left:20px;right:20px;bottom:40px;display:flex;flex-direction:column;gap:8px}
+.scrim{position:absolute;inset:0;background:var(--scrim);opacity:0;pointer-events:none}
+.glass{background:var(--glassBg);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);border:1px solid var(--glassBorder);transition-property:background,backdrop-filter,-webkit-backdrop-filter,border-color;transition-timing-function:cubic-bezier(0.2,0,0,1)}
+.glass.none{background:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;border-color:transparent}
+.rt .glass,.rt .glass.none{background:var(--surfaceRaised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line)}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;top:120px;border-radius:38px;padding:28px 20px;transform:translateY(110%)}
+.toast{position:absolute;left:16px;right:16px;bottom:110px;border-radius:24px;padding:14px 16px;display:flex;align-items:center;gap:12px;min-height:56px}
+.toast .msg{flex:1;position:relative}
+.sysline{overflow:hidden;height:0}
+.sysline .in{padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--line);font-size:15px;position:relative}
+.ph{background:var(--surface);border-radius:10px;height:22px}
+.spin{width:20px;height:20px;border-radius:50%;border:3px solid currentColor;border-right-color:transparent;animation:spin 800ms linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.moon{width:72px;height:72px;border-radius:50%;box-shadow:inset -14px 0 0 0 var(--accent);align-self:center}
+.cover{position:absolute;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none}
+.mark{font:700 64px Georgia,serif;color:var(--accent)}
+.tabs{position:absolute;left:24px;right:24px;bottom:24px;height:64px;border-radius:32px;display:flex}
+.tabs button{flex:1;background:transparent;border:0;color:var(--textMuted);font-size:13px;cursor:pointer}
+.tabs button.on{color:var(--accent);font-weight:700}
+.book{position:relative;height:300px}
+.book>div{position:absolute;inset:0;border-radius:6px 16px 16px 6px;display:flex;align-items:center;justify-content:center;font:600 24px Georgia,serif}
+.swapbox{position:relative}
+.swapbox>span{display:block}
+.swapbox>span.old{position:absolute;left:0;right:0;top:0}
+.field{border:1px solid var(--line);border-radius:12px;padding:14px;font-size:22px;letter-spacing:6px;background:var(--surfaceRaised)}
+a{color:inherit}
+table.ix{border-collapse:collapse;font-size:12px;margin:0 20px}
+table.ix td,table.ix th{border-bottom:1px solid #0001;padding:3px 8px;text-align:left}
+</style>
+</head>
+<body>
+<header>
+  <h1>Area E motion prototype</h1>
+  <label><input type="checkbox" id="rm"> Reduce Motion</label>
+  <label><input type="checkbox" id="dark"> Dark</label>
+  <label><input type="checkbox" id="rt"> Reduce Transparency</label>
+  <label><input type="checkbox" id="slow"> Slow motion x5 (review only)</label>
+  <label><input type="checkbox" id="v2"> v2 spring.standard (0.30 s: 439, 38.5)</label>
+  <span id="note" style="font-size:12px;opacity:.75">Durations are today's tokens.motion; "proposed" marks MOTION.md section 7. Titles give the design system v2 names (docs/design/system/MOTION.md); "RETIRED in v2" marks today's moves that v2 proposes to remove.</span>
+</header>
+<main id="main"></main>
+<script>
+"use strict";
+/* ---------- tokens (copied from packages/design-tokens/src/tokens.ts, 20 Nov 2026) ---------- */
+var T = {
+  fadeMs:200, exitMs:160, enter:{dy:8, ms:280}, staggerMs:30, staggerMax:6, swapMs:150, dissolveMs:280,
+  sequenceMaxMs:900, newMarkMs:1600, emptyBreathMs:8000,
+  lamp:{arriveMs:1200, returnMs:280, leaveMs:160, breathMs:9000, breathOpacityMin:0.88},
+  press:{scale:0.97, cardScale:0.98, opacity:0.9, reducedMs:90 /* proposed name; value as built in press.ts */},
+  cover:{holdMs:300, dx:8},
+  springs:{snappy:[520,46,1], standard:[260,30,1], gentle:[90,18,1]},
+  /* proposed (MOTION.md section 7) */
+  loading:{placeholderAfterMs:350, heldAfterMs:10000}, systemLine:{showAfterMs:2000, hideAfterMs:1000}, toastHoldMs:4000,
+  retryBeatMs:500 /* launch.logic.ts RETRY_BEAT_MS */
+};
+var EASE = "cubic-bezier(0.2,0,0,1)";
+var S = { rm:false, slow:1 };
+
+/* ---------- helpers ---------- */
+function d(ms){ return ms * S.slow; }
+function h(tag, cls, text){ var e=document.createElement(tag); if(cls) e.className=cls; if(text!=null) e.textContent=text; return e; }
+function wait(ms){ return new Promise(function(r){ setTimeout(r, d(ms)); }); }
+function anim(el, kf, ms, delay, easing){
+  var a = el.animate(kf, {duration:d(ms), delay:d(delay||0), easing:easing||EASE, fill:"both"});
+  return a.finished.catch(function(){});
+}
+function stopAll(root){ root.querySelectorAll("*").forEach(function(e){ e.getAnimations && e.getAnimations().forEach(function(a){ a.cancel(); }); }); }
+/* Spring integrator (stiffness, damping, mass), dt-based so 60 and 120 Hz match; slowed by the review switch. */
+function spring(from, to, name, onUpd, gen, demo){
+  return new Promise(function(res){
+    var p=T.springs[name], k=p[0], c=p[1], m=p[2], x=from, v=0, last=performance.now();
+    function step(now){
+      if (demo && demo.gen!==gen) return res();
+      var dt=Math.min(0.05,(now-last)/1000)/S.slow; last=now;
+      for (var i=0;i<8;i++){ var a=(-k*(x-to)-c*v)/m; v+=a*dt/8; x+=v*dt/8; }
+      onUpd(x);
+      if (Math.abs(x-to) < 0.0005*Math.max(1,Math.abs(to-from)) && Math.abs(v) < 0.01){ onUpd(to); res(); }
+      else requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  });
+}
+/* MP-03 enter */
+function enter(el, i){
+  i=i||0; if (i>=T.staggerMax){ el.style.opacity=1; return Promise.resolve(); }
+  if (S.rm) return anim(el,[{opacity:0},{opacity:1}],T.fadeMs);
+  return anim(el,[{opacity:0,transform:"translateY("+T.enter.dy+"px)"},{opacity:1,transform:"none"}],T.enter.ms,i*T.staggerMs);
+}
+/* MP-04 leave */
+function leave(el){
+  if (S.rm) return anim(el,[{opacity:1},{opacity:0}],T.exitMs);
+  return anim(el,[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-"+T.enter.dy+"px)"}],T.exitMs);
+}
+/* MP-05 exit (transient UI) */
+function exitEl(el){
+  if (S.rm) return anim(el,[{opacity:1},{opacity:0}],T.fadeMs);
+  return anim(el,[{opacity:1,transform:"none"},{opacity:0,transform:"translateY("+T.enter.dy+"px)"}],T.exitMs);
+}
+/* MP-06 swap in place: old words out, new words in, same box, swapMs, also the RM form */
+function swap(box, text){
+  var old = box.querySelector("span:not(.old)");
+  var n = h("span", null, text);
+  if (old){ old.classList.add("old"); anim(old,[{opacity:1},{opacity:0}],T.swapMs).then(function(){ old.remove(); }); }
+  box.appendChild(n);
+  return anim(n,[{opacity:0},{opacity:1}],T.swapMs);
+}
+function fade(el, from, to, ms){ return anim(el,[{opacity:from},{opacity:to}],ms==null?T.fadeMs:ms); }
+/* Glass surfaces: never opacity 0 on the glass; animate the effect style (regular <-> none). */
+function glassStyle(el, regular, ms){
+  el.style.transitionDuration = d(ms) + "ms";
+  el.classList.toggle("none", !regular);
+  return wait(ms);
+}
+/* MP-16 lamp level */
+function lampTo(lamp, to, ms){
+  var from = parseFloat(getComputedStyle(lamp).opacity) || 0;
+  lamp.getAnimations().forEach(function(a){ if(a.animationName!=="breath") a.cancel(); });
+  if (S.rm || ms===0){ lamp.style.opacity = to; return Promise.resolve(); }
+  lamp.style.opacity = from;
+  var p = anim(lamp,[{opacity:from},{opacity:to}],ms);
+  return p.then(function(){ lamp.style.opacity = to; });
+}
+function setBreath(lamp, on){ lamp.style.setProperty("--breathMs", d(T.lamp.breathMs/2)+"ms"); lamp.classList.toggle("breath", !!on && !S.rm); }
+
+/* ---------- demo frame ---------- */
+var demos = [];
+function demo(id, title, meta, build){
+  demos.push({id:id, title:title, meta:meta, build:build});
+}
+function mount(dm){
+  var box=h("section","demo"); box.id=dm.id;
+  box.appendChild(h("h2",null,dm.id+". "+dm.title));
+  box.appendChild(h("p","meta",dm.meta));
+  var wrap=h("div","wrap"), scr=h("div","screen"); wrap.appendChild(scr); box.appendChild(wrap);
+  var acts=h("div","acts"), log=h("div","log","Haptic: none");
+  box.appendChild(acts); box.appendChild(log);
+  dm.gen=0; dm.scr=scr; dm.log=log; dm.acts=acts;
+  dm.haptic=function(n){ log.textContent="Haptic: "+n+" (at "+new Date().toLocaleTimeString()+")"; };
+  dm.act=function(label, fn){ var b=h("button",null,label); b.onclick=function(){ fn(dm.gen); }; acts.appendChild(b); return b; };
+  dm.reset=function(){ dm.gen++; stopAll(scr); scr.innerHTML=""; acts.innerHTML=""; log.textContent="Haptic: none"; dm.build(dm); dm.act("Reset", function(){ dm.reset(); }); };
+  document.getElementById("main").appendChild(box);
+  dm.reset();
+}
+function lit(scr, centre){ var l=h("div","lamp"+(centre?" center":"")); scr.appendChild(l); return l; }
+function pad(scr){ var p=h("div","pad"); scr.appendChild(p); return p; }
+
+/* ---------- MP-01, MP-02 press ---------- */
+demo("MP-01 MP-02 = m.tap","Press: control and card","Press and hold. Control 0.97, card 0.98 on snappy. RM: opacity 0.9 over 90 ms, no scale. No haptic on a navigation press.",function(dm){
+  var p=pad(dm.scr);
+  var card=h("div","card"); card.appendChild(h("div","small","Month 4")); card.appendChild(h("div","body","Asha laughed at the rain today. (sample)"));
+  p.appendChild(card);
+  var f=h("div","foot"), b=h("button","btn","Continue"); f.appendChild(b); dm.scr.appendChild(f);
+  function wire(el, scale){
+    var cur=1, g=0;
+    function go(to){
+      g++; var my=g;
+      if (S.rm){ el.style.transform="none"; anim(el,[{opacity:getComputedStyle(el).opacity},{opacity: to?T.press.opacity:1}],T.press.reducedMs,0,"linear"); return; }
+      el.style.opacity=1;
+      spring(cur, to?scale:1, "snappy", function(x){ if(my===g){ cur=x; el.style.transform="scale("+x+")"; } });
+    }
+    el.addEventListener("pointerdown",function(){ go(true); });
+    ["pointerup","pointerleave","pointercancel"].forEach(function(e){ el.addEventListener(e,function(){ go(false); }); });
+  }
+  wire(card, T.press.cardScale); wire(b, T.press.scale);
+});
+
+/* ---------- MP-03 enter ---------- */
+demo("MP-03 = m.enter.group","Enter with stagger","Opacity 0 to 1, y 8 to 0, 280 ms, 30 ms stagger for the first 6; item 7 has no entrance. RM: one 200 ms fade. The button is there from frame 1.",function(dm){
+  var p=pad(dm.scr), items=[];
+  ["Wednesday 20 November","Good evening","What made you smile today?","Line 4","Line 5","Line 6","Line 7: past staggerMax, no entrance"].forEach(function(t,i){ var e=h("div",i<3?"body":"small",t); e.style.opacity=0; p.appendChild(e); items.push(e); });
+  var f=h("div","foot"); f.appendChild(h("button","btn","Speak")); dm.scr.appendChild(f);
+  dm.act("Play", function(){ stopAll(p); items.forEach(function(e,i){ e.style.opacity=0; enter(e,i); }); });
+});
+
+/* ---------- MP-07 step hand-off (E-M09) ---------- */
+demo("MP-07 E-M13 = T-STEP m.step","First run step hand-off (E-S08)","Leaving words go up and out (160 ms), then the next step enters (280 ms, stagger). Lamp unchanged. Continue static and silent. RM: 200 ms fade out, 200 ms fade in.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=0.5;
+  var p=pad(dm.scr), block=h("div"); p.appendChild(block);
+  var steps=[["Who is this book for?","A name for the cover. (placeholder)"],["A birthday or a due date","(placeholder)"],["How you sign","Mama, Papa, or your name. (placeholder)"]], i=0;
+  function render(){ block.innerHTML=""; var a=h("div","h1",steps[i][0]), b=h("div","body",steps[i][1]); block.appendChild(a); block.appendChild(b); return [a,b]; }
+  render();
+  var f=h("div","foot"), c=h("button","btn","Continue"); f.appendChild(c); dm.scr.appendChild(f);
+  var busy=false;
+  c.onclick=function(){ if(busy) return; busy=true; var g=dm.gen;
+    leave(block).then(function(){ if(g!==dm.gen) return; i=(i+1)%steps.length; block.getAnimations().forEach(function(a){a.cancel();}); var els=render(); els.forEach(function(e,k){ S.rm?fade(e,0,1):enter(e,k); }); busy=false; });
+  };
+  dm.act("Continue", function(){ c.onclick(); });
+});
+
+/* ---------- MP-06 swap: wrong code (E-M16) ---------- */
+demo("MP-06 E-M22 = m.swap","Swap in place: a wrong code (E-S06.error-wrong_code)","The line under the field cross-fades in place (150 ms). No shake, no red, no haptic. The field keeps its digits.",function(dm){
+  var p=pad(dm.scr);
+  p.appendChild(h("div","h1","Enter the code"));
+  p.appendChild(h("div","field","482 913"));
+  var line=h("div","swapbox small"); line.appendChild(h("span",null,"We sent a code to a***@example.com (placeholder)")); p.appendChild(line);
+  var f=h("div","foot"); f.appendChild(h("button","btn","Continue")); dm.scr.appendChild(f);
+  dm.act("Wrong code", function(){ swap(line,"That code did not match. Try the newest email. (placeholder)"); });
+  dm.act("Expired", function(){ swap(line,"That code has expired. Send a new email. (placeholder)"); });
+});
+
+/* ---------- MP-08 dissolve ---------- */
+demo("MP-08 = T-COVER m.cover","Route dissolve (Home to Listen)","Cross-dissolve 280 ms; RM 200 ms. Home's lamp leaves over 160 ms as the unlit room covers it, and returns over 280 ms.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
+  var home=pad(dm.scr); home.appendChild(h("div","h1","Good evening")); home.appendChild(h("div","body","What made you smile today?"));
+  var hf=h("div","foot"); hf.appendChild(h("button","btn","Speak")); dm.scr.appendChild(hf);
+  var listen=h("div"); listen.style.cssText="position:absolute;inset:0;background:var(--bg);opacity:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px";
+  listen.appendChild(h("div","body","Listening")); var disc=h("div"); disc.style.cssText="width:120px;height:120px;border-radius:60px;background:var(--accent)"; listen.appendChild(disc);
+  dm.scr.appendChild(listen); var open=false;
+  dm.act("Toggle Home / Listen", function(){
+    open=!open; var ms=S.rm?T.fadeMs:T.dissolveMs;
+    if(open){ lampTo(l,0,T.lamp.leaveMs); setBreath(l,false); fade(listen,0,1,ms).then(function(){listen.style.opacity=1;}); }
+    else { fade(listen,1,0,ms).then(function(){listen.style.opacity=0;}); lampTo(l,1,T.lamp.returnMs).then(function(){ setBreath(l,true); }); }
+  });
+});
+
+/* ---------- MP-10 Keep gate sheet (E-M30 to E-M35) ---------- */
+demo("MP-10 E-M30..E-M35 = T-GATE m.sheet.own","The Keep gate sheet (E-S10, glass; v2 target is the native sheet)","Rises on the standard spring over a scrim; the held card enters; buttons static from frame 1. RM: no travel, the glass animates its effect style (never opacity 0), content and scrim fade 200 ms. No lamp, no price motion, no pulse.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","small","Review")); p.appendChild(h("div","body","Asha found the spoon again and would not let go. (sample)"));
+  var rf=h("div","foot"); rf.appendChild(h("button","btn","Keep")); dm.scr.appendChild(rf);
+  var scrim=h("div","scrim"); dm.scr.appendChild(scrim);
+  var sh=h("div","sheet glass none"); var inner=h("div"); inner.style.cssText="display:flex;flex-direction:column;gap:14px;height:100%";
+  inner.appendChild(h("div","h1","Keep this letter with Plus (placeholder)"));
+  var held=h("div","card"); held.style.transform="rotate(-2deg)"; held.appendChild(h("div","body","Asha found the spoon again...")); inner.appendChild(held);
+  var note=h("div","swapbox small"); note.appendChild(h("span",null,"It is safe here and waits on Home. (placeholder)")); inner.appendChild(note);
+  var sp=h("div"); sp.style.flex="1"; inner.appendChild(sp);
+  var seeP=h("button","btn","See Plus"), hold=h("button","btn quiet","Keep it here for now"); inner.appendChild(seeP); inner.appendChild(hold);
+  sh.appendChild(inner); dm.scr.appendChild(sh);
+  var home=h("div"); home.style.cssText="position:absolute;inset:0;background:var(--bg);opacity:0;pointer-events:none";
+  var hp=pad(home); hp.appendChild(h("div","h1","Good evening")); var wc=h("div","card"); wc.appendChild(h("div","small","Waiting to be kept.")); hp.appendChild(wc);
+  var toast=h("div","toast glass none"); toast.style.opacity=1; var tm=h("div","msg"); tm.textContent="Your letter is waiting on Home. (placeholder)"; tm.style.opacity=0; toast.appendChild(tm); home.appendChild(toast);
+  dm.scr.appendChild(home);
+  var y=1.1, isOpen=false;
+  function setY(v){ y=v; sh.style.transform="translateY("+(v*100)+"%)"; }
+  function open(g){
+    if(isOpen) return; isOpen=true; scrim.style.opacity=0; fade(scrim,0,1).then(function(){scrim.style.opacity=1;});
+    if(S.rm){ setY(0); inner.style.opacity=0; glassStyle(sh,true,T.fadeMs); fade(inner,0,1); fade(held,0,1); }
+    else { glassStyle(sh,true,0); inner.style.opacity=1; spring(y,0,"standard",setY,g,dm); enter(held,0); }
+  }
+  function close(g){
+    if(!isOpen) return Promise.resolve(); isOpen=false; fade(scrim,1,0,S.rm?T.fadeMs:T.exitMs).then(function(){scrim.style.opacity=0;});
+    if(S.rm){ return Promise.all([glassStyle(sh,false,T.fadeMs), fade(inner,1,0)]).then(function(){ setY(1.1); inner.style.opacity=1; }); }
+    var start=y; return anim(sh,[{transform:"translateY("+start*100+"%)"},{transform:"translateY(110%)"}],T.exitMs).then(function(){ sh.getAnimations().forEach(function(a){a.cancel();}); setY(1.1); glassStyle(sh,false,0); });
+  }
+  dm.act("Keep (open gate)", open);
+  dm.act("See Plus, offline (E-M32)", function(){ if(isOpen) swap(note,"You are offline. Plus opens when you are back. (placeholder)"); });
+  dm.act("Plus on (E-M33)", function(g){ if(!isOpen) return; dm.haptic("success"); close(g); });
+  dm.act("Keep it here for now (E-M34)", function(g){
+    close(g).then(function(){ var ms=S.rm?T.fadeMs:T.dissolveMs; fade(home,0,1,ms).then(function(){ home.style.opacity=1; glassStyle(toast,true,S.rm?T.fadeMs:T.enter.ms); enter(tm,0); }); });
+  });
+  dm.act("Dismiss (E-M35)", close);
+  seeP.onclick=function(){ dm.log.textContent="Haptic: none (opening Apple's sheet is navigation)"; var bx=h("span","swapbox"); bx.appendChild(h("span",null,"See Plus")); seeP.innerHTML=""; seeP.appendChild(bx); swap(bx,"Opening the App Store"); setTimeout(function(){ seeP.textContent="See Plus"; }, d(1500)); };
+  dm.act("See Plus busy (E-M31)", function(){ if(isOpen) seeP.onclick(); });
+  hold.onclick=function(){ dm.acts.children[3].click(); };
+});
+
+/* ---------- E-M40 to E-M42 system line ---------- */
+demo("E-M40..E-M43 = T-SYSLINE","SystemLine under its control","In place under the control it is about (no global banner). A drop while the screen is open shows the line only if it holds 2 s (proposed); rows below reflow on standard and the line fades in. A new state swaps the words. Back for 1 s (proposed): fade, then reflow. No slide, no haptic. RM: instant reflow, fades.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","h1","Account")); p.appendChild(h("div","card","Sync"));
+  var sl=h("div","sysline"), si=h("div","in"), sw=h("div","swapbox"); sw.appendChild(h("span",null,"")); si.appendChild(sw); sl.appendChild(si); p.appendChild(sl);
+  ["Sign out","Delete account"].forEach(function(t){ var r=h("div","card",t); p.appendChild(r); });
+  var shown=false, offline=false, tShow=null, tHide=null, H=0;
+  function setH(v){ sl.style.height=Math.max(0,v)+"px"; }
+  function show(text){
+    shown=true; sw.innerHTML=""; sw.appendChild(h("span",null,text)); H=si.offsetHeight+12;
+    si.style.opacity=0;
+    if(S.rm){ setH(H); fade(si,0,1).then(function(){si.style.opacity=1;}); }
+    else { spring(0,H,"standard",setH); fade(si,0,1).then(function(){si.style.opacity=1;}); }
+  }
+  function hide(){
+    shown=false; exitEl(si).then(function(){ si.style.opacity=0; si.getAnimations().forEach(function(a){a.cancel();}); if(S.rm) setH(0); else spring(H,0,"standard",setH); });
+  }
+  dm.act("Go offline", function(){ offline=true; clearTimeout(tHide); clearTimeout(tShow); dm.log.textContent="Offline: waiting "+T.systemLine.showAfterMs+" ms before showing"; tShow=setTimeout(function(){ if(offline && !shown){ show("Waiting for a connection. Your book is all here. (placeholder)"); dm.log.textContent="Haptic: none"; } }, d(T.systemLine.showAfterMs)); });
+  dm.act("Blink (offline 1 s)", function(){ offline=true; tShow=setTimeout(function(){ if(offline && !shown) show("You are offline. (placeholder)"); }, d(T.systemLine.showAfterMs)); setTimeout(function(){ offline=false; dm.log.textContent="Blink: nothing shown"; }, d(1000)); });
+  dm.act("Pause replaces (E-M41)", function(){ if(shown) swap(sw,"Paused for now. (placeholder)"); });
+  dm.act("Back online", function(){ offline=false; clearTimeout(tShow); if(!shown) return; tHide=setTimeout(function(){ if(!offline && shown) hide(); }, d(T.systemLine.hideAfterMs)); });
+});
+
+/* ---------- E-M52 to E-M54 outage ---------- */
+demo("E-M52..E-M54 = m.fade m.swap","Sign-in outage and offline (E-S14)","The welcome's lamp leaves (160 ms) as the problem screen arrives in one 200 ms fade: no lamp, no breath. Offline to outage swaps the words. Try again: busy, then the block exits, the lamp returns (280 ms) and the welcome words enter.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
+  var w=pad(dm.scr); var wh=h("div","h1","A book you fill by talking. (placeholder)"); w.appendChild(wh);
+  var block=h("div"); block.style.cssText="position:absolute;inset:0;background:var(--bg);opacity:0;pointer-events:none";
+  var bp=pad(block); bp.style.justifyContent="center"; var t=h("div","swapbox h1"); t.appendChild(h("span",null,"You are offline (placeholder)")); bp.appendChild(t);
+  var b=h("div","swapbox body"); b.appendChild(h("span",null,"Signing in needs a connection. (placeholder)")); bp.appendChild(b);
+  var bf=h("div","foot"), tr=h("button","btn"); tr.appendChild(h("span",null,"Try again")); bf.appendChild(tr); block.appendChild(bf);
+  dm.scr.appendChild(block);
+  var f=h("div","foot"); f.appendChild(h("button","btn","Continue")); dm.scr.appendChild(f);
+  dm.act("Offline (E-M52)", function(){ setBreath(l,false); lampTo(l,0,T.lamp.leaveMs); block.style.pointerEvents="auto"; fade(block,0,1).then(function(){block.style.opacity=1;}); });
+  dm.act("Becomes outage (E-M53)", function(){ swap(t,"We cannot reach sign-in right now (placeholder)"); swap(b,"Your book on this phone is fine. Try again soon. (placeholder)"); });
+  dm.act("Try again works (E-M54)", function(g){
+    var bx=h("span","swapbox"); bx.appendChild(h("span",null,"Try again")); tr.innerHTML=""; tr.appendChild(bx); swap(bx,"Trying again");
+    wait(T.retryBeatMs).then(function(){ if(g!==dm.gen) return; exitEl(block).then(function(){ block.style.opacity=0; block.style.pointerEvents="none"; block.getAnimations().forEach(function(a){a.cancel();}); tr.innerHTML="<span>Try again</span>"; });
+      lampTo(l,1,T.lamp.returnMs).then(function(){ setBreath(l,true); }); enter(wh,0); });
+  });
+});
+
+/* ---------- MP-15 cover, E-M70, E-M73 ---------- */
+demo("MP-15 E-M70 E-M73 = T-LOCK","Privacy cover and unlock","Going to the background draws the cover at once (no fade in: the app switcher snapshot must never catch the book). Unlock fades it out over 200 ms onto an already rendered room. No check mark, no haptic.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","h1","Asha, month 4")); p.appendChild(h("div","body","You held my finger all the way home. (sample)"));
+  var c=h("div","cover"); c.appendChild(h("div","mark","\"")); dm.scr.appendChild(c);
+  dm.act("Background", function(){ c.getAnimations().forEach(function(a){a.cancel();}); c.style.opacity=1; });
+  dm.act("Unlock", function(){ fade(c,1,0).then(function(){ c.style.opacity=0; }); });
+});
+
+/* ---------- MP-16 lamp ---------- */
+demo("MP-16 = lamp (system section 10, pending)","Lamp: arrive, leave, return, breath (breath RETIRED in v2, proposal)","Arrive 1200 ms (first lit room after a cold launch), leave 160 ms under an unlit room, return 280 ms, breath 9 s to 0.88. RM: the light is at its level, still. Never on Plus, errors or the system line.",function(dm){
+  var l=lit(dm.scr); var p=pad(dm.scr); p.appendChild(h("div","h1","Good evening"));
+  dm.act("Cold launch: arrive", function(){ setBreath(l,false); l.style.opacity=0; lampTo(l,1,T.lamp.arriveMs).then(function(){ setBreath(l,true); }); });
+  dm.act("Unlit room covers", function(){ setBreath(l,false); lampTo(l,0,T.lamp.leaveMs); });
+  dm.act("Returns", function(){ lampTo(l,1,T.lamp.returnMs).then(function(){ setBreath(l,true); }); });
+  dm.act("Dim to form 0.5 (1200 ms)", function(){ setBreath(l,false); lampTo(l,0.5,T.lamp.arriveMs); });
+});
+
+/* ---------- MP-17 + E-M20 to E-M22 ---------- */
+demo("MP-17 E-M20o..E-M22o","Opening your book (C-S10 via E-S09); the breath is RETIRED in v2 (proposal): tick Reduce Motion to see the still form","After 350 ms the moon breathes opacity 1 to 0.85 over 8 s; still under RM. At 10 s (C-S10.slow) two actions cross-fade into a slot reserved from frame 1 (no reflow) and the moon stops. A failed read swaps the words.",function(dm){
+  var p=pad(dm.scr); p.style.justifyContent="center"; p.style.alignItems="stretch";
+  var moon=h("div","moon"); p.appendChild(moon);
+  var t=h("div","swapbox h1"); t.appendChild(h("span",null,"Opening your book (placeholder)")); p.appendChild(t);
+  var slot=h("div"); slot.style.cssText="height:120px;display:flex;flex-direction:column;gap:8px"; p.appendChild(slot);
+  var br=null;
+  function breathe(on){ if(br){ br.cancel(); br=null; } if(on && !S.rm){ br=moon.animate([{opacity:1},{opacity:0.85}],{duration:d(T.emptyBreathMs/2),iterations:Infinity,direction:"alternate",easing:"ease-in-out"}); } }
+  breathe(true);
+  dm.act("Jump to 10 s (E-M21)", function(){ if(slot.children.length) return; breathe(false); swap(t,"This is taking longer than usual (placeholder)"); var a=h("button","btn","Finish setup"), b=h("button","btn quiet","Try another way"); slot.appendChild(a); slot.appendChild(b); fade(a,0,1,T.swapMs); fade(b,0,1,T.swapMs); });
+  dm.act("Read fails (E-M22o)", function(){ breathe(false); swap(t,"We could not open it just now (placeholder)"); });
+});
+
+/* ---------- MP-18 busy ---------- */
+demo("MP-18 E-M17 = m.progress.wait + m.swap","Busy in a control","Three modes. Area E recommendation: busy words at every setting, no indicator (DESIGN rule 5). v2 system: indicator plus busy words, words only under RM. As built: indicator only, spinning under RM too (gap G-EM2, breaks NS-33-R5).",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","h1","Sign in"));
+  var f=h("div","foot"), a=h("button","btn"), e=h("button","btn outline","Continue with email"); a.appendChild(h("span",null,"Sign in with Apple")); f.appendChild(a); f.appendChild(e); dm.scr.appendChild(f);
+  var modes=["Area E recommendation","v2 system","As built"], mode=0;
+  var cb=dm.act("Mode: "+modes[0], function(){ mode=(mode+1)%3; cb.textContent="Mode: "+modes[mode]; });
+  dm.act("Tap Sign in", function(g){
+    dm.haptic("tap (provider button, as built)");
+    e.style.opacity=0.45; var lab=a.firstChild;
+    var words = mode===0 || (mode===1) , spinner = (mode===1 && !S.rm) || mode===2;
+    if(words){ var bx=h("span","swapbox"); bx.appendChild(h("span",null,"Sign in with Apple")); a.innerHTML=""; a.appendChild(bx); swap(bx,"Signing in (placeholder)"); if(spinner) a.insertBefore(h("span","spin"), bx); }
+    else { a.insertBefore(h("span","spin"), lab); }
+    wait(1800).then(function(){ if(g!==dm.gen) return; a.innerHTML="<span>Sign in with Apple</span>"; e.style.opacity=1; });
+  });
+});
+
+/* ---------- MP-19 placeholders ---------- */
+demo("MP-19 section 5 = m.fade","Waiting bands W0 to W2","Under 350 ms: nothing. Then static placeholders fade in (200 ms) and the content swaps in (150 ms). At 10 s: the held state with a way forward swaps in. Never shimmer, never a spinner.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","h1","Plan"));
+  var region=h("div"); region.style.cssText="display:flex;flex-direction:column;gap:10px;position:relative;min-height:120px"; p.appendChild(region);
+  var slowL=h("div","small"); slowL.style.opacity=0; p.appendChild(slowL);
+  function run(ms, g){
+    region.innerHTML=""; slowL.style.opacity=0; slowL.textContent=""; var phs=null, t0=performance.now();
+    var a=setTimeout(function(){ if(g!==dm.gen) return; phs=h("div"); phs.style.cssText="display:flex;flex-direction:column;gap:10px"; [80,60,70].forEach(function(w){ var b=h("div","ph"); b.style.width=w+"%"; phs.appendChild(b); }); region.appendChild(phs); fade(phs,0,1); }, d(T.loading.placeholderAfterMs));
+    var b=setTimeout(function(){ if(g!==dm.gen) return; slowL.textContent="This is taking longer than usual. Try again (placeholder)"; fade(slowL,0,1,T.swapMs); }, d(T.loading.heldAfterMs));
+    setTimeout(function(){ if(g!==dm.gen) return; clearTimeout(a); clearTimeout(b);
+      var c=h("div"); c.innerHTML="<div class='body'>Free: 2 letters a year (placeholder)</div><div class='small'>Plus is not on.</div>";
+      if(phs){ phs.style.position="absolute"; phs.style.left=0; phs.style.right=0; fade(phs,1,0,T.swapMs).then(function(){ phs.remove(); }); region.appendChild(c); fade(c,0,1,T.swapMs); }
+      else { region.appendChild(c); }
+      if(slowL.textContent) exitEl(slowL).then(function(){ slowL.textContent=""; });
+      dm.log.textContent="Ready at "+Math.round((performance.now()-t0)/S.slow)+" ms (token time)";
+    }, d(ms));
+  }
+  dm.act("Ready in 200 ms", function(g){ run(200,g); });
+  dm.act("Ready in 1500 ms", function(g){ run(1500,g); });
+  dm.act("Ready in 6000 ms", function(g){ run(6000,g); });
+  dm.act("Ready in 12000 ms", function(g){ run(12000,g); });
+});
+
+/* ---------- MP-20 wash ---------- */
+demo("MP-20 = m.mark","Wash on a newly arrived letter","accentSoft fades out over 1600 ms. RM: shown, then fades (the fade is the fallback). Never on Plus, sign-in or an update.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","small","Month 4"));
+  var c=h("div","card"); c.appendChild(h("div","body","Asha met the neighbour's cat. (sample)")); p.appendChild(c);
+  dm.act("Arrive", function(){ anim(c,[{background:getComputedStyle(dm.scr).getPropertyValue("--accentSoft").trim()},{background:getComputedStyle(dm.scr).getPropertyValue("--surfaceRaised").trim()}],T.newMarkMs,0,"linear"); });
+});
+
+/* ---------- MP-23 toast ---------- */
+demo("MP-23 = m.toast","Toast and undo line (glass)","Enters 280 ms; without an action it leaves after 4 s (default; never while VoiceOver runs); with Undo it stays. A new toast swaps its words (150 ms). Exit: the glass animates its effect style, never opacity 0. Undo gives tap.",function(dm){
+  var p=pad(dm.scr); p.appendChild(h("div","h1","Book"));
+  var t=h("div","toast glass none"), m=h("div","msg swapbox"), u=h("button","btn quiet","Undo"); u.style.width="auto"; u.style.display="none";
+  m.appendChild(h("span",null,"")); t.appendChild(m); t.appendChild(u); dm.scr.appendChild(t); m.style.opacity=0;
+  var on=false, timer=null, vo=false;
+  function show(text, undo, g){
+    clearTimeout(timer); u.style.display=undo?"block":"none";
+    if(on){ swap(m,text); } else { on=true; m.innerHTML=""; m.appendChild(h("span",null,text)); glassStyle(t,true,S.rm?T.fadeMs:T.enter.ms); enter(m,0); }
+    if(!undo && !vo){ timer=setTimeout(function(){ if(g===dm.gen) hide(); }, d(T.toastHoldMs)); }
+  }
+  function hide(){ if(!on) return; on=false; u.style.display="none"; glassStyle(t,false,S.rm?T.fadeMs:T.exitMs); exitEl(m).then(function(){ m.style.opacity=0; m.getAnimations().forEach(function(a){a.cancel();}); }); }
+  u.onclick=function(){ dm.haptic("tap"); hide(); };
+  dm.act("Show (no action)", function(g){ show("Saved to Files. (placeholder)", false, g); });
+  dm.act("Show with Undo", function(g){ show("Picture taken off. (placeholder)", true, g); });
+  var vb=dm.act("VoiceOver: off", function(){ vo=!vo; vb.textContent="VoiceOver: "+(vo?"on":"off"); });
+  dm.act("Close", hide);
+});
+
+/* ---------- E-M09 finish ---------- */
+demo("E-M09 E-M15","The book is open (E-S08.open): today's build; the cover opening and its success haptic are RETIRED in v2","The lamp rises from the form light (0.5) to finish (1.0) over 1200 ms; the cover holds 300 ms, then cross-fades to the flyleaf with an 8 pt shift on standard. success once. RM: lamp at level, a 200 ms cross-fade, no shift.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=0.5;
+  var p=pad(dm.scr); var bk=h("div","book"), front=h("div",null,"Asha"), fly=h("div",null,"The book is open. (placeholder)");
+  front.style.background="var(--accent)"; front.style.color="var(--onAccent)"; fly.style.background="var(--surfaceRaised)"; fly.style.border="1px solid var(--line)"; fly.style.fontSize="18px"; fly.style.opacity=0;
+  bk.appendChild(fly); bk.appendChild(front); p.appendChild(bk);
+  var f=h("div","foot"); f.appendChild(h("button","btn","Continue")); dm.scr.appendChild(f);
+  dm.act("Reach finish", function(g){
+    dm.haptic("success"); front.style.opacity=1; fly.style.opacity=0;
+    lampTo(l,1,T.lamp.arriveMs).then(function(){ if(g===dm.gen) setBreath(l,true); });
+    if(S.rm){ fade(front,1,0); fade(fly,0,1).then(function(){ fly.style.opacity=1; front.style.opacity=0; }); return; }
+    wait(T.cover.holdMs).then(function(){ if(g!==dm.gen) return;
+      fade(front,1,0).then(function(){ front.style.opacity=0; }); fly.style.opacity=1;
+      spring(T.cover.dx,0,"standard",function(x){ fly.style.transform="translateX("+x+"px)"; },g,dm);
+      fade(fly,0,1); });
+  });
+});
+
+/* ---------- E-M80 tabs ---------- */
+demo("E-M80 = T-TAB","Tab switch","Native swap, no animation, no haptic; content never re-enters. The arriving tab's lamp starts at the last tab's light and settles over 280 ms (Home 1.0 evening, Book 0.6, Me no lamp). RM: light at its level.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=1; setBreath(l,true);
+  var p=pad(dm.scr), title=h("div","h1","Good evening"); p.appendChild(title);
+  var tabs=h("div","tabs glass"); var levels={Home:1,Book:0.6,Me:0}, words={Home:"Good evening",Book:"Asha's book",Me:"Me"};
+  Object.keys(levels).forEach(function(k,i){ var b=h("button",i===0?"on":"",k); b.onclick=function(){ tabs.querySelectorAll("button").forEach(function(x){x.className="";}); b.className="on"; title.textContent=words[k]; setBreath(l,false); var to=levels[k]; lampTo(l,to,to===0?T.lamp.leaveMs:T.lamp.returnMs).then(function(){ if(k==="Home") setBreath(l,true); }); }; tabs.appendChild(b); });
+  dm.scr.appendChild(tabs);
+});
+
+/* ---------- MP-26 scheme ---------- */
+demo("MP-26 E-M76 = m.instant","Appearance change","The next frame is in the new scheme; nothing cross-fades; the lamp is at its level for the scheme. tap on the choice.",function(dm){
+  var l=lit(dm.scr); l.style.opacity=1; var p=pad(dm.scr); p.appendChild(h("div","h1","Appearance")); p.appendChild(h("div","card","Light / Dark / System"));
+  dm.act("Switch scheme", function(){ dm.haptic("tap"); dm.scr.classList.toggle("dark"); });
+});
+
+/* ---------- E-M06 gate stop ---------- */
+demo("E-M09a = T-STEP","Age gate: the stop screen (E-S03.stop)","The question leaves (160 ms) and the stop line fades into the same room (200 ms). Same mark, same light. No red, no shake. tap only on the answer.",function(dm){
+  var l=lit(dm.scr,true); l.style.opacity=0.6;
+  var p=pad(dm.scr); p.style.alignItems="center"; p.appendChild(h("div","mark","\""));
+  var q=h("div"); q.style.cssText="display:flex;flex-direction:column;gap:12px;align-items:center"; q.appendChild(h("div","body","Are you 18 or older? (placeholder)"));
+  var row=h("div"); row.style.cssText="display:flex;gap:12px"; var y=h("button","btn outline","Yes"), n=h("button","btn outline","No"); y.style.width="120px"; n.style.width="120px"; row.appendChild(y); row.appendChild(n); q.appendChild(row); p.appendChild(q);
+  var stop=h("div","body","This app is for grown-ups. (placeholder)"); stop.style.opacity=0; p.appendChild(stop);
+  dm.act("No, then Continue", function(){ dm.haptic("tap (the answer)"); leave(q).then(function(){ q.style.visibility="hidden"; fade(stop,0,1).then(function(){ stop.style.opacity=1; }); }); });
+});
+
+/* ---------- boot ---------- */
+var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+var rmBox=document.getElementById("rm"); if(mq && mq.matches){ rmBox.checked=true; S.rm=true; }
+rmBox.onchange=function(){ S.rm=rmBox.checked; demos.forEach(function(x){ x.reset(); }); };
+document.getElementById("v2").onchange=function(e){ T.springs.standard = e.target.checked ? [439,38.5,1] : [260,30,1]; demos.forEach(function(x){ x.reset(); }); };
+document.getElementById("slow").onchange=function(e){ S.slow=e.target.checked?5:1; demos.forEach(function(x){ x.reset(); }); };
+document.getElementById("dark").onchange=function(e){ document.body.classList.toggle("pagedark",e.target.checked); document.querySelectorAll(".screen").forEach(function(s){ s.classList.toggle("dark",e.target.checked); }); };
+document.getElementById("rt").onchange=function(e){ document.querySelectorAll(".screen").forEach(function(s){ s.classList.toggle("rt",e.target.checked); }); };
+demos.forEach(mount);
+</script>
+</body>
+</html>

@@ -53,7 +53,7 @@ test('[J18] dark mode: the same screens at night', async ({ app, record }) => {
   await step('happy', 'A letter, dark', 'The letter page at night: the words in the letter face, signed "From Mama", the pill player ("Hear Mama" and its length), the provenance line and the actions.');
 
   await app.goBack();
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await expect(btn(app, 'Speak')).toBeVisible();
   await app.getByText('Read it back', { exact: true }).click();
   await expect(app.getByRole('heading', { name: 'Read it back' })).toBeVisible();

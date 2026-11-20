@@ -324,8 +324,24 @@ export const site = {
     body: `Open ${NAME} on your iPhone and type the code from this email. It signs you in, or confirms your email if you are new.`,
     onPhone: 'Already on your iPhone? Tap below, then type the code.',
     open: `Open ${NAME}`,
-    expired: 'If the app says the code has expired, tap "Send a new email".',
+    expired: 'If the code does not work, tap Send a new email in the app.',
     notYou: 'If you did not ask for this email, you can ignore it. Nothing changes.',
+    home: `Back to ${NAME}`,
+  },
+
+  /**
+   * The page behind the link at the end of most emails, https://earlyletters.com/open (app/open/page.tsx; BL-510,
+   * TPL-06). It shows only when the app did not open the link. It carries no token and asks for nothing. PROPOSED
+   * words: they need the founder's approval before this page is merged.
+   */
+  openApp: {
+    title: `Open ${NAME}`,
+    line: `Open ${NAME} on your iPhone.`,
+    body: `If ${NAME} is on this phone, tap below. If it is not, you can get it from the App Store.`,
+    bodyPrelaunch: `If ${NAME} is on this phone, tap below.`,
+    open: `Open ${NAME}`,
+    get: `Get ${NAME} on the App Store`,
+    onComputer: `On a computer? Open this link on the iPhone that has ${NAME}.`,
     home: `Back to ${NAME}`,
   },
 

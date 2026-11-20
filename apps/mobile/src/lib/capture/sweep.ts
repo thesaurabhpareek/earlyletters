@@ -10,7 +10,9 @@
  * re-attaches stray recordings to the active book as drafts (they show on
  * Tonight), and reports the rest in Settings > Recordings. A take a kill cut
  * off is probed first: one that will not play is kept and listed, not shown
- * as ready (D-085). The sweep never deletes audio. After it, the 30 day shelf
+ * as ready (D-085). The one recording it deletes is a let-go draft's: a
+ * draft left `discarding` (a kill mid Let it go, or a file that would not
+ * delete) loses its file, then its row (BL-923). After it, the 30 day shelf
  * purge runs (erase.ts), also when the listing failed (erasing needs no
  * snapshot), never while a take is being recorded. Returns counts only.
  */
@@ -19,6 +21,7 @@ import {
   audioRows,
   deleteDraft,
   finalizeDraftAudio,
+  finishDiscard,
   getActiveChildId,
   getDraft,
   listOrphanAudio,
@@ -28,9 +31,10 @@ import {
 } from '../store';
 import { removeWholeFrameCopies } from './adts-file';
 import { purgeShelfAtLaunch } from './erase';
+import { letItGo } from './let-it-go.logic';
 import { probePlayable } from './probe';
 import { activeTakeId, hashAudioFile } from './recorder';
-import { filesForRecording, listRecordingFiles } from './recordings';
+import { erasableFiles, filesForRecording, listRecordingFiles } from './recordings';
 import { fileNameOf, planLaunchSweep, type SweepAction, type SweepFile } from './sweep.logic';
 
 export type SweepReport = Record<SweepAction['kind'], number>;
@@ -145,7 +149,28 @@ async function reconcile(): Promise<SweepReport> {
       case 'missing-audio':
         // Reported by count only (no content, no ids leave the phone). The row is left exactly as it is.
         break;
+      case 'finish-discard':
+        finishLetGo(a.draftId);
+        break;
     }
   }
   return report;
+}
+
+/**
+ * Let it go stopped after its first step (BL-923; let-it-go.logic.ts): the recording goes where it is now, then the
+ * row. Never a file another draft or letter may own (erase.ts's rule), a letter kept under the same id included. A
+ * file that still will not delete keeps the row, marked and off every list, for the next launch. The mark is read
+ * again first: a pull may have brought the draft back (sync/merge.ts applyHeldRows), and then nothing is touched.
+ */
+function finishLetGo(id: string): void {
+  letItGo(id, getDraft(id)?.audioUri, {
+    beginDiscard: () => getDraft(id)?.state === 'discarding', // step 1 was taken before the app stopped
+    deleteFile: (uri) => {
+      const { drafts, entries } = audioRows();
+      const others = [...drafts.filter((d) => d.id !== id), ...entries].flatMap((r) => (r.audioUri ? [r.audioUri] : []));
+      for (const f of erasableFiles(uri, others)) f.delete();
+    },
+    finishDiscard,
+  });
 }

@@ -82,8 +82,9 @@ describe('no haptic while the recorder is recording (MOTION 6)', () => {
 
 describe('one start tick, not two', () => {
   it("Speak plays the start tick, then opens Listen, whose start goes through createStartTick", () => {
-    expect(tonight).toMatch(/<Button size="capture" icon=\{MicrophoneIcon\} label=\{t\.speakButton\} haptic="press" onPress=\{\(\) => start\('spoken'\)\} \/>/);
-    expect(tonight).toMatch(/if \(mode === 'spoken'\) armListenStart\(\);/);
+    expect(tonight).toMatch(/<Button size="capture" icon=\{MicrophoneIcon\} label=\{t\.speakButton\} haptic="press" onPress=\{\(\) => startCapture\(\{ source: 'speak', prompt: promptParam \}\)\} \/>/);
+    // Speak's arming tap lives in the one capture entry (lib/capture/start-capture.ts), run before the push.
+    expect(code(src('lib/capture/start-capture.ts'))).toMatch(/if \(plan\.armListen\) armListenStart\(\);/);
     // Listen knows Speak opened it (consumeListenStart, read once) and hands that to the tick rule.
     expect(listen).toMatch(/const startTick = useRef\(createStartTick\(tapped\.current\)\)\.current;/);
     const start = body(listen, 'start');

@@ -44,7 +44,7 @@ test('[J13b] the reminder card after the first letter (C-REQ-001 Rev, DR-12 B): 
   await expect(app.getByRole('heading', { name: 'A gentle nudge, now and then?' })).toHaveCount(0);
   await step('unhappy', 'No reminders', 'No OS prompt; one calm line. Settings, Reminders still offers them.');
 
-  await tab(app, 'Tonight').click();
+  await tab(app, 'Home').click();
   await typeLetter(app, 'You laughed at the rain.');
   await expect(selectedTab(app, 'Book')).toBeVisible({ timeout: 6000 });
   await app.waitForTimeout(2500);

@@ -16,7 +16,7 @@
  *  - remote documents never fall back to the Supabase URL (lib/remote);
  *  - sign-in screens, Account and Delete account rows are not offered, and every
  *    co-parent entry point shows the "coming soon" presentation instead
- *    (components/family/coparent-soon.tsx, lib/family/entry.logic.ts).
+ *    (lib/family/entry.logic.ts; nothing is drawn, 11 Nov 2026).
  *
  * Remote config can never turn this on (BRIEF decision 16: nothing server-driven
  * may change what is collected). The value is read from the bundle only; this

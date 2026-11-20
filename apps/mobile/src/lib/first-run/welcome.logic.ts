@@ -52,7 +52,8 @@ export function failureStillCounts(state: AuthState, setAside: AuthState | null)
  * `joinButton` back in as `coParent` applied the rule twice and made any flag behind it inert.
  *
  * There is no second flag here and no second `familySurfacesShown`: that name exists once, in entry.logic.ts, and means the
- * Family tab and the Settings row (D-126), which a servers-on store build shows. The join door is not that decision.
+ * Settings row "Write this book together" (D-126; Family is never a tab), which only a servers-on alpha build shows, never a
+ * store build. The join door is not that decision.
  */
 export function invitedDoorShown(input: { alpha: boolean; coParent: boolean }): boolean {
   return visibleCoParentDoors(input.coParent, input.alpha).joinButton;
@@ -70,18 +71,25 @@ export function welcomeErrorMessage(kind: AuthErrorKind | null): string | null {
   return authErrorMessage(kind);
 }
 
-export type FirstRunScreen = 'blank' | 'welcome' | 'outage' | 'steps';
+export type FirstRunScreen = 'blank' | 'welcome' | 'outage' | 'steps' | 'opening' | 'slow' | 'offlineBook' | 'noBookHere';
+
+/** The screens of "Opening your book" (NX-36-S17), one per gate step; onboarding.tsx draws them (new-phone-screens.tsx). */
+const NEW_PHONE_SCREENS: Partial<Record<FirstRunStep, FirstRunScreen>> = { openingBook: 'opening', slowBook: 'slow', offlineBook: 'offlineBook', noBookHere: 'noBookHere' };
 
 /**
- * Which screen the first-run route draws. The gate answers where a person with no session starts (`signIn`, `outage`);
- * this keeps a person who is already INSIDE first run where they are. Once past the welcome step of the steps (a name or a
- * date may be typed), a lost session, a failed attempt or a dropped connection must not swap the steps for the Welcome or
- * the outage screen, which would throw away what they typed (route.logic.ts: "must keep Continue when the auth state moves
- * under them"). The book stays on the phone either way; signing in again is in Settings. And neither screen shows while the
- * session is still being read: a returning person who is offline at launch is not told sign-in needs a connection.
+ * Which screen the first-run route draws. The gate answers where a person with no session starts (`signIn`, `outage`),
+ * and where a signed-in phone with no book waits for its account (NX-36-S17: `openingBook`, `slowBook`, `offlineBook`,
+ * `noBookHere`); this keeps a person who is already INSIDE first run where they are. Once past the welcome step of the
+ * steps (a name or a date may be typed), a lost session, a failed attempt, a dropped connection or the account asked again
+ * must not swap the steps for the Welcome, the outage screen or the loading screen, which would throw away what they typed
+ * (route.logic.ts: "must keep Continue when the auth state moves under them"). The book stays on the phone either way;
+ * signing in again is in Settings. And neither sign-in screen shows while the session is still being read: a returning
+ * person who is offline at launch is not told sign-in needs a connection.
  */
 export function firstRunScreen(input: { step: FirstRunStep; outage: 'offline' | 'outage' | null; restoring: boolean; pastWelcome: boolean }): FirstRunScreen {
   if (input.pastWelcome) return 'steps';
+  const newPhone = NEW_PHONE_SCREENS[input.step];
+  if (newPhone) return newPhone;
   const outage = input.step === 'outage' && input.outage !== null;
   if (input.step !== 'signIn' && !outage) return 'steps';
   // While the session is still being read (a signed-in person offline at launch) neither screen is right yet: show nothing.

@@ -1,6 +1,6 @@
 # NX-40: First run and sign-in, end to end: a short story intro, then an account, then the book, then the way back in
 
-Status: v1, 10 Nov 2026 (UTC). Docs only. Author: `product`, for the first-run and sign-in team (brief: Karma). Nothing here is reserved in `DECISIONS.md`. Backlog rows BL-891 to BL-897 are in `docs/BACKLOG.md` (ids from `scripts/agents/next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge, other team members may have taken the same numbers). NX-37 is unused; NX-40 is the next free id (NX-39 is the highest in the repo and on open PRs).
+Status: v1, 10 Nov 2026 (UTC); amended 11 Nov 2026 for the CTO rulings on the seven conflicts (section 12). Docs only. Author: `product`, for the first-run and sign-in team (brief: Karma). Nothing here is reserved in `DECISIONS.md`. Backlog rows BL-891 to BL-897 are in `docs/BACKLOG.md` (ids from `scripts/agents/next-id.mjs` on 10 Nov; run `id-collisions.mjs` before merge, other team members may have taken the same numbers). NX-37 is unused; NX-40 is the next free id (NX-39 is the highest in the repo and on open PRs).
 
 Tag: EVIDENCE = a repo file or an Apple page read this session (named). HYPOTHESIS = anything about what a parent feels or does. UNVERIFIED = not read. Every privacy or promise line is COUNSEL-READ, not cleared.
 
@@ -9,7 +9,7 @@ Tag: EVIDENCE = a repo file or an Apple page read this session (named). HYPOTHES
 | Founder direction (10 Nov, quoted in the team brief) | First open: Instagram-like stories with value props, nicely animated like the website, an option to skip, then log in or sign up; and "next time you come in Face ID and everything works" |
 | Already decided | Sign-in REQUIRED in Build 12; sign-up must work; account before the book opens; co-parent surfaces say "coming soon"; fallback rule below |
 | Builds on, does not re-specify | NX-31 (first run, R1 to R29, door lines, gates G1 to G7), NX-36 (screens S0 to S17), NX-32 (account management), NX-03 (age and agreement), NX-02 (methods), NX-05 (reviewer path), NX-04 and NX-08 (deletion, withdrawal) |
-| Sibling team files (read on their branches, not edited) | Journey and state map: `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` (branch `docs/first-run-journey-10nov`; not yet pushed when I wrote this, so section ids below are by name, not number). Motion, words, research, tests, animation feasibility: see the brief |
+| Sibling team files (read on their branches, not edited) | Journey and state map: `docs/design/specs/FIRST-RUN-AND-SIGN-IN-JOURNEY-10nov.md` (branch `docs/first-run-journey-10nov`; not yet pushed when I wrote this, so section ids below are by name, not number; the file is now on develop and its state ids are `stories`, `ageGate`, `signIn`, `outage`, `openingBook`, `slowBook`, `offlineBook`, `noBookHere`, `childStep`, `openTonight`, to be cited in place of section names by BL-891). Motion, words, research, tests, animation feasibility: see the brief |
 | Size | M for tier A new work (most of A is already on the PR stack); M for tier B; tier C later |
 
 ## 1. Goals and non-goals
@@ -44,7 +44,7 @@ Non-goals
 - Conflict found in code: `apple.ts` line 51 requests `FULL_NAME` and `EMAIL`; NX-31-R9 says the scope is email only. For `design-systems`/`mobile`: resolve in BL-896 (the product choice is email only; a parent's name is never used).
 - App lock (`src/lib/app-lock/machine.ts`, `controller.ts`): off until the parent turns it on; locks on cold start and after a grace (immediately, 1 minute default, 5 minutes); uses `expo-local-authentication` with device-passcode fallback allowed (`disableDeviceFallback: false`); if the passcode is removed the lock turns off and says so once. It is independent of the account session.
 - Reduce Motion is read in `src/lib/motion.ts` (`AccessibilityInfo.isReduceMotionEnabled` and a change listener).
-- Stack, in merge order: #700 (db: optional child name), #701/#716/#703 (name optional on phone, surfaces, copy), #720 (three tabs when servers on), #722 gate, #724 Welcome and sign in plus outage and offline, #728 code, consent, child step, #737 new account and claim, #738 You tab states, #764 S17 "Opening your book" (draft, stacked on #738). #764 edits `gate.logic.ts`, `use-first-run-route.ts`, `onboarding.tsx` and `book.tsx`. **Collision rule:** the story intro (R1 to R9) must mount before the age gate through its own file and its own gate step; it must not edit those four files until #764 merges, and BL-892 names that dependency.
+- Stack, in merge order: #700 (db: optional child name), #701/#716/#703 (name optional on phone, surfaces, copy), #720 (three tabs when servers on), #722 gate, #724 Welcome and sign in plus outage and offline, #728 code, consent, child step, #737 new account and claim, #738 You tab states, #764 S17 "Opening your book" (draft, stacked on #738). #764 edits `gate.logic.ts`, `use-first-run-route.ts`, `onboarding.tsx` and `book.tsx`. **Collision rule:** the story intro (R1 to R9) mounts AFTER the age gate (the age question stays the pinned root gate) as its own gate step (`stories`) in its own file; it must not edit those four files until #764 merges, and BL-892 names that dependency.
 
 ## 4. Numbered requirements
 
@@ -52,12 +52,12 @@ Each row: Given, When, Then. Ids are `NX-40-R#`.
 
 | Id | Requirement |
 |---|---|
-| R1 | Order. Given a fresh install, When the app opens, Then the order is: story intro (tier B, or absent in tier A), age and agreement (NX-03), Welcome and sign in (NX-31 screen 2), code, consent, child, signature, book open, first letter. Nothing after the intro is reordered by this file |
-| R2 | Skip. Given the intro on any frame, When the parent taps Skip, Then they land on the same screen as finishing, in one tap, Skip is visible from the first frame, its target is at least 48 pt, and it is reachable with one thumb (bottom half) |
+| R1 | Order. Given a fresh install, When the app opens, Then the order is: the age question (NX-03, the pinned root gate; the Terms line stays where NX-31 puts it), story intro (tier B, or absent in tier A), Welcome and sign in (NX-31 screen 2), code, consent, child, signature, book open, first letter. Nothing after the intro is reordered by this file |
+| R2 | Skip. Given the intro on any frame, When the parent taps Skip, Then they land on the same screen as finishing, in one tap, Skip is visible from the first frame, sits top right (journey spec), and its target is at least 48 pt (ruling 11 Nov; where the journey spec said 44 pt, 48 pt now holds). Next and Back, when shown (Reduce Motion, VoiceOver), stay at the bottom of the screen. Whether a 48 pt target fits top right beside the progress bars at AX5 text on an iPhone SE 3 is UNVERIFIED until the device row |
 | R3 | The intro asks nothing, records nothing about the person, needs no network and shows no OS permission sheet. Its only stored fact is "intro seen on this phone" in local settings, erased by "Erase everything on this phone" |
-| R4 | Length and rhythm. Given the intro, Then it has 3 to 4 frames (proposed), each holds long enough to read at the default text size, auto-advance is paused while the finger is down, and a tap on the right or left moves forward or back. A first-time parent can finish in under 20 seconds or skip in 1 tap (HYPOTHESIS targets) |
+| R4 | Length and rhythm. Given the intro, Then it has 3 frames (ruling 11 Nov; a fourth is tier C and needs counsel), each holds long enough to read at the default text size, auto-advance is paused while the finger is down, and a tap on the right or left moves forward or back. A first-time parent can finish in under 20 seconds or skip in 1 tap (HYPOTHESIS targets) |
 | R5 | Truth. Given any intro line, Then it is true for the Build 12 binary: no "kept safe", no backup, no sharing today, no AI writes or tidies the words, no number of letters, no child name. Lines are COUNSEL-READ; the final words are `content`'s (`FIRST-RUN-WORDS-10nov.md`) |
-| R6 | One sign-in entry. Given the end of the intro or Skip, Then the next screen after the age answer is NX-31 screen 2 with Apple and email at equal weight (NX-31-R8, R17); the intro itself shows no sign-in button |
+| R6 | One sign-in entry. Given the end of the intro or Skip, Then the next screen is NX-31 screen 2 with Apple and email at equal weight (NX-31-R8, R17); the intro itself shows no sign-in button |
 | R7 | Providers. Given the Build 12 production profile, Then the screen shows only the providers whose preconditions are in the build (Apple, email); a test asserts that Google and passkey are absent when their switches and ids are absent |
 | R8 | A seen intro is not shown again on the same install, including after sign-out. After a reinstall it is shown once more (nothing synced to say otherwise). A signed-in phone that holds a book never sees it |
 | R9 | Accessibility and motion. Given Reduce Motion on, Then frames are still, there is no auto-advance, and the parent moves with Next. Given VoiceOver on, Then each frame is one element read in order with a "Next" and "Skip" action, nothing auto-advances, and focus lands on the frame title when it changes. Given text at AX5, Then no line clips and the Skip and Next buttons stay on screen |
@@ -69,8 +69,8 @@ Each row: Given, When, Then. Ids are `NX-40-R#`.
 | R15 | Session end. Given a session that ended (expiry, forced sign-out, deleted elsewhere), Then NX-31-R22 and R26 hold: reading, recording and export on the phone keep working and a plain "Sign in" card appears; nothing is wiped |
 | R16 | Every failure in section 6 has a visible next step, no error code shown to a parent, no dead end, and nothing typed is lost (NX-31-R4) |
 | R17 | Content rules. Every new string passes `packages/content/test/rules.test.ts` (no em dash, en dash, curly quote, ellipsis character, emoji; no fear, guilt, loss; no gendering; `{child}` never the name; BRAND.md glossary words) |
-| R18 | Analytics. See section 9: only allowlisted, content-free events; nothing runs unless the parent opted in (D-124 item 3) |
-| R19 | Tier-B gating. The intro is behind a build switch (proposed `EXPO_PUBLIC_FIRST_RUN_INTRO`), off in `production` until the founder rules, and off or on in `testflight` as the founder chooses; with it off the first screen is the age gate exactly as the stack builds it |
+| R18 | Analytics. See section 9: nothing is sent, queued or stored for analytics before the parent opts in (D-124 item 3); the intro adds no event of its own, only `stories_outcome` and `stories_last_card` on `analytics_opted_in` |
+| R19 | Tier-B gating. The intro is behind a build switch (proposed `EXPO_PUBLIC_FIRST_RUN_INTRO`), off in `production` until the founder rules, and off or on in `testflight` as the founder chooses; with it off the first screen after the age answer is Welcome and sign in exactly as the stack builds it |
 | R20 | Website match. Colours, type, spacing, motion tokens come from `packages/design-tokens`; the motion designer's timing (`FIRST-RUN-MOTION-SPEC-10nov.md`) is the only source of durations and easings; this file sets none |
 
 ## 5. Happy paths: user stories with acceptance criteria
@@ -78,7 +78,7 @@ Each row: Given, When, Then. Ids are `NX-40-R#`.
 Format: As a ..., I want ..., so that ... Acceptance is Given/When/Then. Screen names are NX-31 and NX-36's; the journey lead's state map names the states.
 
 **H1 First launch to first letter (P1).** As a new parent on a first night, I want to open the app and be writing within a few minutes, so that I do not lose the moment.
-- Given a fresh install online, When I open the app, Then I see the intro (tier B) or the age question (tier A), and I am never shown a tab bar before I have an account (R1, NX-31-R17).
+- Given a fresh install online, When I open the app, Then I see the age question, then the intro (tier B only), and I am never shown a tab bar before I have an account (R1, NX-31-R17).
 - When I answer 18 or older and agree, Then the next screen is Welcome and sign in.
 - When I sign in with Apple, Then there is no code step; I reach the child step; I may leave the name empty (NX-31-R3).
 - When I tap Keep on my first take, Then the letter is kept and one reminder card follows (NX-31-R6). No lock, analytics or sharing ask appears in session 1 (NX-31-R2).
@@ -129,7 +129,7 @@ Columns: what happens, what the parent sees (words are `content`'s), source of t
 | U4 | Email already used | The same flow signs them in; the screen never says whether an address exists. If it is an Apple-created account with a relay address and the parent types another email, they get `noBook` and "Try another way" | NX-31 5.1, R12 |
 | U5 | Account deleted | If deleted elsewhere while the phone holds a book: R15. If a deleted account's email signs in again, it is a new empty account and the screen says "No book here yet" | NX-31-R22, NX-32, NX-04 |
 | U6 | Blocked region | Refusal at sign-up only, not at app open; words from NX-03-R7 (held). Not designed here | NX-03 |
-| U7 | Under 18 | NX-03-R2 stop screen; nothing stored beyond the time; the intro (tier B) may already have shown, which is harmless since it asks and stores nothing (R3) | NX-03 |
+| U7 | Under 18 | NX-03-R2 stop screen; nothing stored beyond the time; the intro never shows before the age answer, so an under-18 parent sees the stop screen first | NX-03 |
 | U8 | Apple private relay email | A relay address is accepted as the account email; mail to it must arrive (sender domain registered with Apple, a gate in NX-31-R20). The app never shows the real Apple email and never asks for another. Apple's name is not used (conflict with `apple.ts`, BL-896) | NX-31-R9, NX-02 |
 | U9 | App killed mid-signup | Reopens on the first screen not completed; a still-valid code is offered again; a signed-in parent is never sent back to Welcome; typed child values are kept; the age answer is not asked again | NX-31-R4, 5.2 |
 | U10 | Restore after reinstall | A reinstall starts at the age question (the answer is stored on the phone and is not restored); a session is not assumed; sign-in finds the book (H6); local-only books made by the fallback are lost with the app unless exported, and the fallback copy must not promise otherwise. Whether iOS restores any app files from an iCloud backup is UNVERIFIED | NX-31 5.3, R13 |
@@ -147,7 +147,7 @@ Columns: what happens, what the parent sees (words are `content`'s), source of t
 | Tier | Contents | Needs |
 |---|---|---|
 | A, must have for Build 12 | Account-first path as the stack builds it (NX-31 R17 to R19, R22, R26, R27); Welcome and sign in with Apple and email only (R6, R7); returning-user path incl. S17 Tier 0 (H6); lock offer wording correct and true (R12, FD-3); unhappy paths U1 to U15 in the QA plan; accessibility rows R9 for the screens that exist; Apple name scope fixed (BL-896) | #700, #720, #724, #728, #738, #764 merged; NX-31 gates G1 to G7 |
-| B, stretch behind a flag | Story intro of 3 to 4 frames, skip, replay-free (R1 to R10, R19), static art first, one light motion per frame | Words (content), timing (motion), feasibility (mobile), counsel read of the lines, #764 merged |
+| B, stretch behind a flag | Story intro of 3 frames, skip, replay-free (R1 to R10, R19), static art first, one light motion per frame | Words (content), timing (motion), feasibility (mobile), counsel read of the lines, #764 merged |
 | C, later | Richer animation (parallax, per-frame scenes matching the website), a sound option, an intro per language, an intro variant for an invited second parent when co-parent exists | Build 12 data; founder |
 
 Recommendation: ship A; build B now in parallel behind `EXPO_PUBLIC_FIRST_RUN_INTRO`, off in `production`, on in `testflight`, and let the founder switch it on for the public build only if its device row passes on the decision day with no open A gate. Reason: the stack is the critical path (a chain of nine PRs, each stacked on the previous, and a new head voids reviews per #764), A carries the account rejection risk, and a story intro adds copy for counsel to read. If B is not ready it ships in 1.0.1, which costs the founder's "first impression" ask one release. This is a recommendation, not a ruling; Karma rules on tiers.
@@ -165,7 +165,7 @@ Honest frame: analytics is opt-in and off in every 1.0 profile (D-124 item 3), a
 | Measure | How | Allowed? |
 |---|---|---|
 | Time to first kept letter, Apple and email paths; taps to Speak | Scripted runs on an iPhone SE 3 (Maestro) and a small study; no telemetry | Yes (NX-31-R15 targets, HYPOTHESIS) |
-| Intro skip rate, frames seen | Existing opt-in events cannot say it. Proposed new allowlisted events `intro_shown`, `intro_skipped`, `intro_finished` with one enum prop (frame bucket 1 to 4 or "end"); `analytics` adds them to `catalog.ts` with the content-free test, only for parents who opted in later | Names not in the catalog today (UNVERIFIED that none exists beyond `auth_*`); BL-895 |
+| Stories outcome (finished, skipped, none) and last card (0 to 3) | Nothing is sendable before consent (D-124 item 3; TRACKING_PLAN section 1), so there are no `intro_*` events and no pre-consent buffer. The journey spec section 6 proposal stands: `stories_outcome` and `stories_last_card` are added to `analytics_opted_in`, read from local settings at consent time; `analytics` owns the catalog row | Yes, opt-in only; names not in the catalog today (UNVERIFIED that none exists); BL-895 |
 | Sign-in success and failure | Existing `auth_sheet_shown`, `auth_method_selected`, `auth_succeeded`, `auth_failed`, `auth_email_sent`, `auth_deferred`, `signed_out`, with enum reasons, no address | Yes, opt-in only |
 | Lock adoption | Existing settings-level facts only through allowlisted keys; no per-user biometric result | Yes if already in the catalog, else not added |
 | Completion of screen 3 among those who pass screen 1 (NX-31-R15 85% target) | Study, not telemetry | HYPOTHESIS |
@@ -187,7 +187,7 @@ Release plan against the fallback rule (NX-31 section 0; brief):
 | Id | Decision | Recommendation | Default if no answer |
 |---|---|---|---|
 | FD-1 | Does the story intro ship in Build 12, or in 1.0.1 (tier B, section 7)? | Build it now; decide to switch on at the Build 12 decision day if tier A is closed | Off in `production`; ships in 1.0.1 |
-| FD-2 | Does the intro show before the age question (the founder's order) or after it? | Before: it asks and stores nothing, so it is safe, and it gives the parent a reason before the legal questions | Before |
+| FD-2 | RULED 11 Nov (Karma, existing ruling stands): the intro shows AFTER the age question. The age gate stays pinned at the root; moving it needs counsel. Reversible: if counsel later agrees, the intro can be hosted ahead of the gate without changing its content | (was: before) | After |
 | FD-3 | "Next time you come in Face ID": the lock offer is in session 3 (decided 9 Nov, NX-31-R14). Keep, or offer it at the end of the first letter or on the second open? | Offer it on the second open, once, as a single card on Tonight (not on the first night: the first night is for the letter). This changes R14 of NX-31 and needs his word, not ours. HYPOTHESIS that earlier help | Session 3 stays; the founder's line is true only after the lock is on |
 | FD-4 | Google sign-in later: leave off through 1.0.1? | Leave off; two ways in is enough for a first public build and 4.8 is simple with Apple plus email | Off |
 | FD-5 | Apple name scope: email only (NX-31-R9) vs the full name that the code asks for today | Email only | Email only (BL-896) |
@@ -200,10 +200,19 @@ Release plan against the fallback rule (NX-31 section 0; brief):
 - `apple.ts` scope versus NX-31-R9: FD-5.
 - NX-31 G4 and G6 need the Notes for Review to name the local start; no change from this file.
 
+Rulings of 11 Nov 2026 (Karma, CTO), applied in this file. Items 1 to 4 and 7 changed the text above; 5 and 6 are outside this file.
+1. Intro order: after the age gate (R1, R6, R19, FD-2, BL-892).
+2. Skip: 48 pt minimum, top right per the journey spec (R2). The journey spec is changed from 44 pt to 48 pt for Skip. The bottom-half reach rule is dropped because Skip is at the top; Next and Back at the bottom stay for assistive use.
+3. Story deck: 3 cards with the journey spec ids (`story.talk.v1`, `story.exact.v3`, `story.voice.v1`). The Private card (`story.private.v3`) is withheld until counsel reads it. Card 2 is the journey spec's `story.exact.v3` "It stays in your words." and not the words file's `story.words.v1`.
+4. Lock offer: session 3 (NX-31-R14). `onboarding.tsx` on develop (checked 11 Nov) still mounts `LockOffer` on "The book is open.", so U16 and the tier A line "lock offer wording correct and true" are not yet true of the binary.
+5. BL-507 points 2 and 3 are not touched (founder confirms the rule first).
+6. Ids: BL-892, 893 and 895 stay; the journey spec's BL-898 to BL-906 are superseded (see its section 9.1).
+7. Analytics: no `intro_*` events (section 9, BL-895). The sign-in screen words conflict (Apple and email only versus the words file's Google and passkey rows; "Create account") is open with `content`; this file invents no copy.
+
 ## 13. UNVERIFIED list
 
-Session lifetime; iOS lockout and passcode fallback details; whether iCloud backup restores any app data after reinstall; any WCAG or HIG rule on auto-advancing content (not read; the pause-on-press and Reduce Motion rules are my judgement); NX-31's own reading of Apple 5.1.1(v) risk beyond the page text I re-read; the intro event names not existing in the catalog; the open states of #700 to #764 after 10 Nov.
+Session lifetime; iOS lockout and passcode fallback details; whether iCloud backup restores any app data after reinstall; any WCAG or HIG rule on auto-advancing content (not read; the pause-on-press and Reduce Motion rules are my judgement); NX-31's own reading of Apple 5.1.1(v) risk beyond the page text I re-read; whether `stories_outcome` and `stories_last_card` exist in the catalog (they do not as of the journey spec); whether a 48 pt Skip fits top right at AX5; the open states of #700 to #764 after 10 Nov.
 
 ## 14. Trace
 
-R1 to R8, R19: founder direction 1, NX-31 section 2. R9, R10: NX-35, `docs/design`. R11 to R15: founder direction 1 ("next time you come in Face ID"), F17, NX-31-R14, R22. R16: NX-31 section 5. R18: D-124 item 3, `packages/analytics`. Backlog: BL-891 (requirements and trace, this file), BL-892 intro scaffolding behind a flag, BL-893 intro screen and a11y, BL-894 test seams and Maestro rows for H1 to H9 and U1 to U15, BL-895 intro events, BL-896 Apple scope, BL-897 session length record.
+R1 to R8, R19: founder direction 1, NX-31 section 2. R9, R10: NX-35, `docs/design`. R11 to R15: founder direction 1 ("next time you come in Face ID"), F17, NX-31-R14, R22. R16: NX-31 section 5. R18: D-124 item 3, `packages/analytics`. Backlog: BL-891 (requirements and trace, this file), BL-892 intro scaffolding behind a flag (after the age gate), BL-893 intro screen and a11y (3 frames), BL-894 test seams and Maestro rows for H1 to H9 and U1 to U15, BL-895 stories outcome on the opt-in event (no intro events), BL-896 Apple scope, BL-897 session length record.

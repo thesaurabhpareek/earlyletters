@@ -18,6 +18,7 @@ import { Platform } from 'react-native';
 import { HEADER_IDEMPOTENCY_KEY } from '@scribe/api';
 import { idempotencyKey } from '../supabase/client';
 import { errorCode } from '../supabase/errors.logic';
+import { heldAnswers } from './consent-key.logic';
 import type { AuthMethod, ConsentStep, SyncGate } from './machine.logic';
 
 type PolicyDocument = 'terms' | 'sensitive-data';
@@ -83,23 +84,33 @@ function platform(): 'ios' | 'android' | 'web' {
   return Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web';
 }
 
+/** Answers waiting for the server, each with one key (consent-key.logic.ts; NS-10-R7). */
+const answers = heldAnswers(idempotencyKey);
+
 /**
  * Records one answer. Terms and age record a `terms` accept carrying
  * `age_attested: true`; sensitive-data records accept or decline. An under-18
  * answer is never recorded (the server refuses age_attested false); the
- * caller ends the session instead.
+ * caller ends the session instead. A retry of an answer the server has not
+ * confirmed resends the same key and client time, so it is one row (NS-10-R7).
  */
 export async function recordConsent(
   sb: SupabaseClient,
   step: ConsentStep,
   accepted: boolean,
   method: AuthMethod | null,
+  userId: string,
 ): Promise<void> {
   if ((step === 'terms' || step === 'age') && !accepted) return;
   const document: PolicyDocument = step === 'sensitive' ? 'sensitive-data' : 'terms';
   const version = await currentVersion(sb, document);
   const context =
     step === 'sensitive' ? {} : step === 'terms' ? { auth: method ?? 'unknown', age_attested: true } : { age_attested: true };
+  // Everything record_policy_act fingerprints that can differ between two taps (ids and enums only, never text).
+  const answerId = JSON.stringify([userId, document, version, accepted, step, context]);
+  // One person's answers to one document: a new answer ends any earlier hold (consent-key.logic.ts).
+  const group = JSON.stringify([userId, document]);
+  const held = answers.hold(group, answerId, () => new Date().toISOString());
   const { error } = await sb
     .rpc('record_policy_act', {
       p_document: document,
@@ -111,11 +122,12 @@ export async function recordConsent(
       p_platform: platform(),
       // The sheets are in English at v1.0 (BRIEF decision 6).
       p_locale: 'en',
-      p_client_recorded_at: new Date().toISOString(),
+      p_client_recorded_at: held.recordedAt,
       p_context: context,
     })
-    .setHeader(HEADER_IDEMPOTENCY_KEY, idempotencyKey());
+    .setHeader(HEADER_IDEMPOTENCY_KEY, held.key);
   if (error) throw error;
+  answers.confirmed(group);
 }
 
 /** True when this error means "consent is missing" (pause and show the sheets, never drop a write). */

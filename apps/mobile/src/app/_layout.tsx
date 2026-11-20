@@ -15,6 +15,7 @@ import { RootErrorBoundary } from '@/components/resilience/error-boundary';
 import { GlobalFaultScreen } from '@/components/resilience/global-fault-screen';
 import { startGlobalErrorHandlers, useGlobalFault } from '@/lib/resilience/global-errors';
 import { LaunchRecovery } from '@/components/resilience/launch-recovery';
+import { installGlobalErrorHandler } from '@/lib/resilience/global-handler';
 import { UIProvider } from '@/components/ui/provider';
 import { useTheme } from '@/lib/a11y';
 import { answerAgeGate, useAgeGate } from '@/lib/age-gate';
@@ -122,6 +123,9 @@ function startServices(launchedAt: number): void {
 }
 
 const launchedAt = Date.now();
+
+// BL-370: an error outside rendering is never logged and never ends the app unless it is fatal (lib/resilience/global-handler.ts).
+installGlobalErrorHandler((globalThis as { ErrorUtils?: Parameters<typeof installGlobalErrorHandler>[0] }).ErrorUtils, { dev: __DEV__ });
 
 /**
  * A render error anywhere under the root layout lands here instead of a blank screen: calm words, Try again

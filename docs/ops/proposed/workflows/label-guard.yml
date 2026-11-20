@@ -1,0 +1,41 @@
+# Proposed: copy to .github/workflows/label-guard.yml (BL-975, NS-07-G11-5; docs/ops/LABEL_GUARD.md).
+# Runs the privacy label guard on every pull request into develop, and again when the PR body is edited, because the
+# body carries the D-id. A guard error exits 2 and fails the job; nothing here passes silently.
+# The PR body reaches the script only through an environment variable, never through the shell text. The job runs the
+# base branch's copy of the guard against the PR checkout, so a PR cannot loosen the guard that judges it.
+name: Label guard
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: label-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  label-guard:
+    name: label guard
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+      - name: The guard as it is on the base branch
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: git worktree add --detach "$RUNNER_TEMP/base" "origin/$BASE_REF"
+      - name: Privacy label guard (NS-07 G11)
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node "$RUNNER_TEMP/base/scripts/release/label-effect.mjs" --base "origin/$BASE_REF" --head HEAD

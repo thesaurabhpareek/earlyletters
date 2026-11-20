@@ -252,16 +252,18 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         expect(exp.extra?.serverFeatures).toBe(on);
         expect(exp.extra?.backup).toBe(false);
         expect(exp.extra?.statusReport).toBe(false);
-        // Needs the server switch too, so it reads false wherever servers are off; in preview it is false because the profile leaves it unwritten.
-        expect(exp.extra?.accountDeletion).toBe(false);
+        // Needs the server switch too, so it reads false wherever servers are off; in the alpha profiles it is false because the profile leaves it unwritten.
+        // Production writes it on and has servers on (build 12), so it reads true there; it was false while production was servers off.
+        if (name === 'production') expect(exp.extra?.accountDeletion).toBe(true);
+        else expect(exp.extra?.accountDeletion).toBe(on && eas.build[name].env?.EXPO_PUBLIC_ACCOUNT_DELETION === 'on');
       });
     }
   });
 
-  it('server features are on in preview, and in testflight only after the R-17 flip; never production or development', () => {
+  it('server features are on in preview and production (build 12, founder 8 Nov 2026), and in testflight only after the R-17 flip; never development', () => {
     const on = Object.entries(eas.build).filter(([, p]) => p.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on').map(([n]) => n);
     // The flip (docs/release/TESTFLIGHT.md, "The flip") is the testflight line alone; this test passes either side of it.
-    expect(on).toEqual(TESTFLIGHT_FLIPPED ? ['preview', 'testflight'] : ['preview']);
+    expect(on).toEqual(TESTFLIGHT_FLIPPED ? ['preview', 'production', 'testflight'] : ['preview', 'production']);
   });
 
   describe('preview profile (alpha build 2: servers on, staging, TestFlight)', () => {
@@ -353,7 +355,7 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
         easText.replace(/("testflight": \{[\s\S]*?"EXPO_PUBLIC_SERVER_FEATURES": )"off"/, '$1"on"'),
       ) as typeof eas;
       expect(flipped.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
-      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+      expect(flipped.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
       const { env: a, ...restA } = flipped.build.testflight;
       const { env: b, ...restB } = flipped.build.preview;
       expect(restA).toEqual(restB);
@@ -375,9 +377,16 @@ describe('eas.json (POPS-02, POPS-08): the alpha profile story (D-106)', () => {
     expect(withChannel, 'these profiles name an update channel; eas build would install expo-updates (D-091)').toEqual([]);
   });
 
-  it('production stays off (store submission is re-planned after the alpha, D-106)', () => {
-    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
-    expect(configForProfile('production').extra?.serverFeatures).toBe(false);
+  it('production is on (build 12 runs servers on against the production backend, founder 8 Nov 2026), with backup, the status report and analytics still off', () => {
+    const env = eas.build.production.env;
+    expect(env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
+    expect(env?.EXPO_PUBLIC_BACKUP).toBe('off');
+    expect(env?.EXPO_PUBLIC_STATUS_REPORT).toBe('off');
+    expect(env?.EXPO_PUBLIC_ANALYTICS).toBe('off');
+    const extra = configForProfile('production').extra;
+    expect(extra?.serverFeatures).toBe(true);
+    expect(extra?.backup).toBe(false);
+    expect(extra?.statusReport).toBe(false);
   });
 
   it('development stays off (a dev client on the founder desk talks to no server unless .env.development.local says so)', () => {

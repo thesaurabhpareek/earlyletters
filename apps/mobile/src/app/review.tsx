@@ -48,7 +48,8 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -63,6 +64,7 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
 import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
@@ -91,6 +93,7 @@ import {
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
 import {
+  isShortTake,
   lengthA11y,
   progressClock,
   recordingKept,
@@ -138,6 +141,8 @@ import {
   getDraftReview,
   getEntry,
   getSetting,
+  beginDiscard,
+  finishDiscard,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -393,6 +398,26 @@ export default function Review() {
   const recordAgain = () => {
     haptic('tap');
     router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
+
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
   };
 
   // Mini player for the recording ("Hear it").
@@ -742,6 +767,7 @@ export default function Review() {
       ? wordsCard({
           emptyFile: file === 'empty',
           unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -768,6 +794,7 @@ export default function Review() {
     // The person writes the words for this recording; the app never fills them in (S16).
     write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
     recordAgain,
+    letGo,
     download: () => void startSpeechDownload(language),
     // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
     cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
@@ -1176,11 +1203,27 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
   );
 }
 
-/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
 function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const detail =
     shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -1189,16 +1232,24 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
       accessibilityHint={pendingCopy.review.editA11yHint}
       accessibilityState={{ expanded: open }}
       testID="review.fixRow"
-      className="min-h-12 flex-row items-center gap-3 py-1">
-      <Text variant="labelSmall">{label}</Text>
-      <Text
-        variant="footnote"
-        className="flex-1"
-        numberOfLines={1}
-        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
-        {detail}
-      </Text>
-      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -1210,6 +1261,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
   type: 'review.type',
   write: 'review.write',
   recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
   download: 'review.getReady',
   cellular: 'review.mobileData',
   later: 'review.later',

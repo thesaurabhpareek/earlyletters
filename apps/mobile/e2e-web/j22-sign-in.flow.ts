@@ -190,7 +190,7 @@ test('[J22b] DR-12 B: the reminder card after the first letter; Keep the book on
   const now = await app.evaluate(() => Date.now());
   await app.clock.setSystemTime(now + 25 * 60 * MIN);
   await app.reload();
-  await tab(app, 'Tonight').click(); // the relaunch reopens the Book it was on
+  await tab(app, 'Home').click(); // the relaunch reopens the Book it was on
   await expect(btn(app, /^Type/)).toBeVisible({ timeout: 15_000 });
   await typeLetter(app, 'You laughed at the dog all through breakfast.');
   await expect(app.getByText(`Added to ${CHILD}'s book.`)).toBeVisible();
@@ -300,15 +300,14 @@ test('[J22d] account setup: Terms, then sensitive data declined at the same size
   await expect(app.getByText('On', { exact: true })).toBeVisible();
 });
 
-test('[J22e] from the Family tab: sign in to invite', async ({ app, record }) => {
+test('[J22e] from the family page: sign in to invite', async ({ app, record }) => {
   const step = journey(record, 'J22', 'sign-in', 50);
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
-  await openOn(app, '/?seed=asha');
-  await tab(app, 'Family').click();
+  await openOn(app, '/family?seed=asha');
   await btn(app, 'Invite a co-parent').click();
   await btn(app, 'Sign in').click();
   await expectSheet(app, 'Sign in to invite a co-parent', 'You both sign in, each on your own phone.');
-  await step('happy', 'Sign in to invite', 'From the Family tab\'s invite: you both sign in, each on your own phone. About this book, so its cover sits beside the title.');
+  await step('happy', 'Sign in to invite', 'From the family page\'s invite: you both sign in, each on your own phone. About this book, so its cover sits beside the title.');
   await btn(app, 'Not now').click();
   expect(m.serverCalls(), 'Not now asks nothing of the server').toEqual([]);
 });
@@ -519,19 +518,18 @@ test('[J22i] the invite sheet\'s gate says why in its own words, and nothing abo
   const step = journey(record, 'J22', 'sign-in', 90);
   const m = await mockServer(app, { user: MAMA, email: EMAIL });
   consentGate(m, { terms: false, age: false, sensitive: false });
-  await openOn(app, '/?seed=asha');
-  await tab(app, 'Family').click();
+  await openOn(app, '/family?seed=asha');
   await btn(app, 'Invite a co-parent').click();
   await btn(app, 'Sign in').click();
   await signInWithEmail(app);
   await expect(app.getByRole('heading', { name: 'Before your book syncs' })).toBeVisible({ timeout: 15_000 });
   await btn(app, 'Not now').last().click();
-  // `.last()`: on the web the Family tab's card, with the same sentence, stays in the tree under the sheet.
+  // `.last()`: on the web the family page's card, with the same sentence, stays in the tree under the sheet.
   const finish = app.getByRole('button', { name: 'Finish setting up', exact: true }).last();
   await expect(app.getByText('Finish setting up your account to invite someone.').last()).toBeVisible({ timeout: 15_000 });
   await expect(finish).toBeVisible();
   await expect(app.getByText('Not set up yet')).toHaveCount(0);
-  await step('unhappy', 'Invite, setup not finished', 'The invite sheet says why in its own words, as the Family tab\'s card does: "Finish setting up your account to invite someone." Account keeps "Not set up yet" as its row value.');
+  await step('unhappy', 'Invite, setup not finished', 'The invite sheet says why in its own words, as the family page\'s card does: "Finish setting up your account to invite someone." Account keeps "Not set up yet" as its row value.');
 
   await finish.click();
   await btn(app, 'Agree and continue').click();

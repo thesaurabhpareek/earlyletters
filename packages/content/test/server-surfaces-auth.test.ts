@@ -161,6 +161,25 @@ const REGISTERED: Record<string, string> = {
   'consent.terms.notNow': 'Not now',
 };
 
+/**
+ * The eleven words the founder approved for the first-run Welcome and the outage and offline screens (#724), on Tue 10 Nov
+ * 2026 (Pacific), word for word. A later change to any of them needs a new approval, so this test fails first. The
+ * agreement line is the registered consent line itself (above), not a copy of it.
+ */
+const FIRST_RUN_APPROVED: Record<string, string> = {
+  'sheet.bodies.sign_in_first': 'Sign in to begin your book.',
+  'sheet.agreeLine': REGISTERED['consent.terms.agreeLine'],
+  'firstRun.errors.provider': 'That sign-in did not finish. Try again, or try another way.',
+  'outage.title': 'Sign-in cannot be reached right now.',
+  'outage.body': 'Try again in a moment.',
+  'outage.retry': 'Try again',
+  'outage.startLocal': 'Start on this phone',
+  'outage.startLocalNote': 'Start the book on this phone for now. You can sign in later and choose to keep your letters in your account.',
+  'outage.backOnline': 'You are back online.',
+  'offline.title': 'Sign-in needs a connection.',
+  'offline.body': 'Connect to the internet, then tap Try again.',
+};
+
 describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
   it('has every CHG and NEW row of S52 to S56, word for word', () => {
     for (const [key, words] of Object.entries(CHAPTER_7)) expect(at(key), key).toBe(words);
@@ -184,6 +203,12 @@ describe('[EXPERIENCE_PASS_2026-10 P8a] chapter 7 words in authCopy', () => {
       expect(line).not.toMatch(/Apple|Google|an hour|\d/);
       expect(line).toMatch(/a few minutes/);
     }
+  });
+
+  it('has the eleven founder-approved first-run Welcome, outage and offline words, word for word (#724, 10 Nov)', () => {
+    for (const [key, words] of Object.entries(FIRST_RUN_APPROVED)) expect(at(key), key).toBe(words);
+    // The Welcome and the consent sheet say one sentence, so neither can drift from the registered line.
+    expect(authCopy.sheet.agreeLine).toBe(authCopy.consent.terms.agreeLine);
   });
 
   it('deletes the RET keys it stopped showing (no P7 clean-up left for P8)', () => {

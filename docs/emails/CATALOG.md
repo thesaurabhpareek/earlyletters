@@ -198,11 +198,10 @@ Conflict to resolve (PM): DATA-REQ-053 promises contributors "a server export li
 
 **How our functions send.** Supabase Auth sends its six templates (`supabase/templates`, text wordmark, HTML only: Supabase Auth has no plain-text part, accepted, TPL-10). The escrow function sends the three recovery key emails from `supabase/functions/escrow/email/templates.ts` (text wordmark). Every other email is sent by our own Edge Functions with `renderForResend` from `packages/emails/generated/resend.ts` (TPL-02): HTML with the inline logo, the plain-text twin, the logo attachments in Resend's REST shape, values HTML-escaped, and a throw on any missing value. Dates use `longDate` from the same module ("Monday, November 2, 2026", D-028, TPL-08). Usage: `packages/emails/README.md`.
 
-**Website pages emails need.** `packages/emails/src/links.ts` is the email side of the route contract; a test fails when an email links to a path that is neither built nor listed. Built on `main`: `/`, `/privacy`, `/terms`, `/auth/callback`, `/auth/confirm`, `/j`, `/unsubscribe`. Still needed:
+**Website pages emails need.** `packages/emails/src/links.ts` is the email side of the route contract; a test fails when an email links to a path that is neither built nor listed. Built on `main`: `/`, `/privacy`, `/terms`, `/auth/callback`, `/auth/confirm`, `/j`, `/open`, `/unsubscribe`. Still needed:
 
 | Path | Used by | Needed by |
 |---|---|---|
-| `/open` (page plus AASA path) | `{appUrl}` in 14 emails | build 2 (first release with server features, D-121) |
 | `/stop` | `backup-restore-requested` | before owner backup ships |
 | `/subscription-terms` | `trial-started`, `plus-started` | before reminder emails ship, or point `{subscriptionTermsUrl}` at `/terms` (SUB-10) |
 | `/delete-account/confirm` | `deletion-confirm` | before the D-042 email route takes requests |

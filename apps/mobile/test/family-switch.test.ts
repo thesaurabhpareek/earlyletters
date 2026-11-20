@@ -218,7 +218,7 @@ describe('[F19-REQ-011] switch on: nothing is sent, and the screens say invites 
     expect(joinPlan(failed)).toEqual({ view: 'failed', next: 'none' });
     expect(joinPlan({ ...failed, error: null })).toEqual({ view: 'peeking', next: 'peek' });
     // The Family tab keeps listing while invites are paused, and Cancel invite is never held back there.
-    const tab = src('app/(tabs)/family.tsx');
+    const tab = src('app/family.tsx');
     expect(tab).toMatch(/setPending\(await listPendingInvites\(client, childId\)\)/);
     expect(tab).not.toMatch(/invitesPaused/);
     expect(src('lib/family/invites.ts')).toMatch(/export async function revokeInvite\(sb: FamilyClient, inviteId: string\): Promise<void> \{\s*const \{ error \} = await sb\.rpc\('revoke_invite'/);
@@ -253,7 +253,7 @@ describe('[F19-REQ-011] killSwitches.sync on: the pending list waits and the tab
   });
 
   it('the Family tab keeps what it shows when the list is not read, and drops a cancelled row itself', () => {
-    const tab = src('app/(tabs)/family.tsx');
+    const tab = src('app/family.tsx');
     expect(tab).toMatch(/try \{\s*setPending\(await listPendingInvites\(client, childId\)\);\s*\} catch \{\s*\/\/ Keep what is shown/);
     expect(tab).toMatch(/await revokeInvite\(client, row\.id\);[\s\S]{0,120}setPending\(\(rows\) => rows\.filter\(\(r\) => r\.id !== row\.id\)\);/);
   });
@@ -357,7 +357,7 @@ describe('[F11-REQ-019] the pending list from sync_books', () => {
     const rows = readPendingInvites(SYNC_BOOKS, ASHA);
     expect(visiblePendingRows(rows, true).map((r) => r.id)).toEqual(['i-3', 'i-2']);
     expect(visiblePendingRows(rows, false).map((r) => r.id)).toEqual(['i-3', 'i-2', 'i-1']);
-    expect(src('app/(tabs)/family.tsx')).toMatch(/\{visiblePendingRows\(pending, state\.full\)\.map\(\(p\) => \(/);
+    expect(src('app/family.tsx')).toMatch(/\{visiblePendingRows\(pending, state\.full\)\.map\(\(p\) => \(/);
   });
 
   it('a book not listed, or listed without invites (not a parent), has none; an answer without books is not a list', () => {
@@ -400,7 +400,7 @@ describe('[F11-REQ-019] the pending list from sync_books', () => {
     const invites = src('lib/family/invites.ts').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
     expect(invites).not.toMatch(/child_invites/);
     expect(invites).toMatch(/sb\.rpc\('sync_books'\)/);
-    const tab = src('app/(tabs)/family.tsx');
+    const tab = src('app/family.tsx');
     expect(tab).toMatch(/status=\{p\.status === 'open' \? openUntil\(p\.expiresAt\) : f\.members\.expired\}/);
     expect(tab).toMatch(/\{p\.status === 'open' && \(\s*<RowAction\s+testID="family\.pending\.cancel"/);
     expect(tab).toMatch(/openInvites: openCount/);

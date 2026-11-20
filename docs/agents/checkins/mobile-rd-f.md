@@ -1,0 +1,1 @@
+18:35 (20 Nov) mobile | done: inventory of 62 deps, registry facts for ~50 packages, 5 files (LIBRARY-DECISIONS index, A, B, ALREADY-HAVE, ADOPTION-RULES) | next: PR, journal | blocked/needs: downloads API unreachable (U)

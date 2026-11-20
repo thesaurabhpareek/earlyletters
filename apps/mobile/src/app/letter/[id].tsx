@@ -216,7 +216,8 @@ function OpeningBlock({
 }) {
   return (
     <View style={{ gap: CARD_TEXT_GAP }}>
-      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} testID={focusRef ? 'letter.dateline' : undefined}>
+      {/* NS-33-R1: the dateline is the page's level 1 heading, and its first. The carried copies stay hidden from VoiceOver. */}
+      <Text ref={focusRef ?? undefined} variant="letterDateline" caps accessibilityLabel={spokenDateline} asHeading={1} testID={focusRef ? 'letter.dateline' : undefined}>
         {dateline}
       </Text>
       {/* "Exactly as said" and Reading Size cross-fade the words over 150 ms; the size itself never animates. */}
@@ -324,7 +325,7 @@ function Page({ entry, child, size, onSize, showOriginal, onToggleOriginal, open
   // One provenance line (S27): "Spoken, with small fixes. Recording kept on this phone." The other parent's
   // recording is on their phone, which the player's place says (D-073), so the line names only how it was made, and
   // only that it was spoken: this phone never holds their raw words, so it cannot know whether any fix was made (S8).
-  const provenanceLine = provenanceLineOf(entry, { own, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
+  const provenanceLine = provenanceLineOf(entry, { own, audioUri: entry.audioUri, words: copy.book.provenance, recordingOnPhone: copy.book.recordingOnPhone });
   // The words card: a recording waiting for its words, or one with no words that the store can still take words for (S3).
   const wordsCard = wordsCardKind({ own, words, canWrite: words === 'nobodySpoke' && canTypeWordsFor(entry.id) });
 

@@ -343,6 +343,18 @@ describe('a long take does not grow memory (#480)', () => {
   });
 });
 
+describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+    const c = code(listen);
+    const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
+    // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
+    expect(onConfirm).toContain('if (id) letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });');
+    expect(c.match(/\bletItGo\(/g)).toHaveLength(1);
+    expect(c.match(/deleteIfPresent\(/g)).toHaveLength(1);
+    expect(c).not.toMatch(/\.delete\(\)|deleteDraft/);
+  });
+});
+
 describe('[BL-563] Listen never sticks on "finishing", and never offers Let it go there', () => {
   it('finishing offers no discard: the only control left never deletes the take', () => {
     expect(listenRoom('finishing').discard).toBe(false);

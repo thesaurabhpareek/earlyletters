@@ -1,0 +1,5 @@
+Status: WORKING-INPUT (record; findings applied in the cards; do not load) | 20 Nov 2026 | Owner: the review role named in the file | Replaces: none | Load when: auditing where a finding came from; otherwise do not load.
+
+E motion decisions ruled by Karma: waiting states still (retire Breathe); busy words at every setting, no spinner; first-run lamp 280 ms (lamp.returnMs); tokens: loading.heldAfterMs 10000.
+Foundations rulings: Q2 radii approved; Q3 Devanagari letter text keeps Tiro Regular under Bold Text, UI Mukta SemiBold, stage 2 heavier serif; Q4 Home symbol house; Q5 dark fallback surfaceRaised, IC edge controlBorder, 1 pt; Q6 SF Symbols everywhere on iOS; Q1 clear glass contrast is a device row, symbols only until measured. Component conflicts from D: F1 drops quiet-day line and delete Undo timer; S1 own placeholder.
+COMPONENTS rulings: keep ChoiceGroup for the lens (radio semantics, stacks at AX sizes; NS-33-R3); confirmation split approved (native action sheet for simple, sheet for sign-out/erase and typed confirms); token names: target.md exists (48), layout.rowMin = size.row (52) in tokens.v2.json; components use size.row.

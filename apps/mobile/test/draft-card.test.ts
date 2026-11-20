@@ -284,29 +284,31 @@ describe('[S09] A month ago', () => {
     ...over,
   });
   const TODAY = '2026-10-17';
+  /** A book this person has not quieted; the quiet case is test/month-ago-quiet.test.ts. */
+  const AWAKE = { quiet: false };
 
   it('the newest letter in the book dated 28 to 35 days ago, one card, with its words and how VoiceOver reads it', () => {
-    const pick = resurfaced([letter('a', '2026-09-12'), letter('b', '2026-09-19'), letter('c', '2026-09-14')], TODAY, 0);
+    const pick = resurfaced([letter('a', '2026-09-12'), letter('b', '2026-09-19'), letter('c', '2026-09-14')], TODAY, 0, AWAKE);
     expect(pick?.id).toBe('b'); // 28 days ago, the newest in the window
     expect(pick?.kicker).toBe('A month ago');
     expect(pick?.a11yLabel).toBe(`A month ago. ${letter('b', '2026-09-19').finalText} A letter from ${dayDate('2026-09-19')}. Opens the letter.`);
     expect(RESURFACE_DAYS).toEqual({ from: 28, to: 35 });
-    expect(resurfaced([letter('edge', '2026-09-12')], TODAY, 0)?.id).toBe('edge'); // 35 days
+    expect(resurfaced([letter('edge', '2026-09-12')], TODAY, 0, AWAKE)?.id).toBe('edge'); // 35 days
   });
 
   it('never when a draft is waiting, never a private letter, a quiet-day mark, a letter with no words, or outside the window', () => {
-    expect(resurfaced([letter('b', '2026-09-19')], TODAY, 1)).toBeNull();
-    expect(resurfaced([letter('p', '2026-09-19', { inBook: false })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('q', '2026-09-19', { kind: 'not_much', finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0)).toBeNull();
-    expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0)).toBeNull(); // 27 and 36 days
+    expect(resurfaced([letter('b', '2026-09-19')], TODAY, 1, AWAKE)).toBeNull();
+    expect(resurfaced([letter('p', '2026-09-19', { inBook: false })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('q', '2026-09-19', { kind: 'not_much', finalText: '' })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('w', '2026-09-19', { finalText: '' })], TODAY, 0, AWAKE)).toBeNull();
+    expect(resurfaced([letter('young', '2026-09-20'), letter('old', '2026-09-11')], TODAY, 0, AWAKE)).toBeNull(); // 27 and 36 days
   });
 
   it('[F09-REQ-003] never a letter dated to a month only: "A month ago" and its date would state a day nobody gave', () => {
     const month = { ...letter('m', '2026-09-19'), occurredPrecision: 'month' as const };
-    expect(resurfaced([month], TODAY, 0)).toBeNull();
+    expect(resurfaced([month], TODAY, 0, AWAKE)).toBeNull();
     // A day letter in the window still comes back, and the month-only one never takes its place.
-    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0)?.id).toBe('d');
+    expect(resurfaced([month, letter('d', '2026-09-14')], TODAY, 0, AWAKE)?.id).toBe('d');
   });
 });
 
@@ -324,8 +326,11 @@ describe('[S33] not much today, and the light', () => {
 
   it('the mark stores no words, and the kept line is the line in text with the Moon, never a count or a success colour (source)', () => {
     const screen = code('app/(tabs)/index.tsx');
-    expect(screen).toContain('newQuietMark(');
-    expect(screen).toContain('markOn(listEntries(), day)');
+    // The mark is kept by the one capture entry (lib/capture/start-capture.ts); Home asks for it and shows the line.
+    expect(screen).toContain("startCapture({ source: 'notMuchToday' })");
+    const oneEntry = code('lib/capture/start-capture.ts');
+    expect(oneEntry).toContain('newQuietMark(');
+    expect(oneEntry).toContain('markOn(listEntries(), day)');
     const inline = code('components/tonight/quiet-day-inline.tsx');
     expect(inline).toContain('<MoonIcon size={20} color={c.textMuted}');
     expect(inline).toContain('<Text variant="callout">{copy.notMuch.savedToast}</Text>');
