@@ -8,7 +8,9 @@ Blocked until: NS-16 (BL-980): counsel Q45, Q46, Q48, Q54 answered. NS-17: no ba
 2. CARD ROWS and TEST TITLES
    Rows: NS-16-R6, R16 (L14); NS-17-R7, R8 (L15, S3, C8).
    Tests (exact; PR #927 catalogue D):
-     [NS-17-R8] withheld words never on the server         CI: a pushed held draft has no words after the next push; mutant: push final_text
+     [NS-17-R8] withheld words never on the server         CI. Arrange (it can fail): push a held draft WITH words (raw_transcript and final_text non-empty, assert they are stored); act: push the same draft with words_withheld true; assert both are now null and words_withheld is true; then act again as a stale phone that never saw the mark, pushing the words; assert they are ignored. Mutant: let held_upsert write final_text on a withheld row.
+     [S3] raw_transcript may go to null only with words_withheld set in the same update   (else SCIMM); mutant: drop the guard in held_drafts_stamp
+     [C8] HELD_DRAFT_DATA_KEYS holds words_withheld and PulledHeldSchema parses a row with it   unit in contract-drift; mutant: leave the key out
      [NS-17-R7] withheld words stay withheld               phone; mutant: index the withheld text
      [NS-16-R16] name purged with the account              CI; mutant: leave the name column
      [NS-16-R6] over thirty refused before upload          phone; the database counts code points (30), the app counts graphemes (eval A s1.5)

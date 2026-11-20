@@ -7,14 +7,14 @@ Blocked until: counsel Q51, Q32, Q48 answered through the BL-949 packet the foun
 
 2. CARD ROWS and TEST TITLES
    Rows: NS-12-R1 to R8; D8 (card 08 lines 828-835).
-   Tests (exact; PR #927 catalogue D, lane data-architect): [NS-12-R2] restore adds a version (mutant: overwrite the old version); [NS-12-R3] restore never re-runs the engine (raw_transcript unchanged, engine port spy never called; mutant: re-run the pipeline); [NS-12-R6] removing a version deletes it (CI; mutant: soft hide only); [NS-12-R8] never another author's versions (mutant: fetch then hide). Also [NS-12-R1], [NS-12-R7] by card title.
+   Tests (exact; PR #927 catalogue D, lane data-architect): [NS-12-R2] restore adds a version (mutant: overwrite the old version); [NS-12-R3] restore never re-runs the engine: split in two because a database test cannot hold an engine-port spy. Database half (this brief): after a restore raw_transcript is byte-identical and machine_edits equals the stored version's (mutant: restore writes a recomputed machine_edits). Phone half (the mobile brief, same title with the suffix ' (phone)'): the engine port spy is never called on restore (mutant: re-run the pipeline); [NS-12-R6] removing a version deletes it (CI; mutant: soft hide only); [NS-12-R8] never another author's versions (mutant: fetch then hide). Also [NS-12-R1], [NS-12-R7] by card title.
    Cells: entry_versions_list and entry_version_remove: allow for the author of a live letter, deny for the other parent, a former member, anon; refuse under a legal hold; second remove returns { missing: true }.
    Red on develop: no reader exists and authenticated has no grant on entry_versions (20261023060000_explicit_grants.sql:49-51).
 
 3. FILES: TOUCH / DO NOT TOUCH
    Touch:  supabase/migrations/<next-id>_entry_versions_read.sql (entry_versions gains edit_level, author_edits, locked_spans; replace entries_record_version(); two definer RPCs with grants in the same file), supabase/tests/entry_versions_read.test.mjs (new), supabase/tests/grants.mjs (see below), packages/api/src/server/sync.ts (C7 types, endpoint class read_rpc) with `sync`, docs/agents/checkins/data-architect-bl-979.md
    Never:  raw_transcript (immutable by trigger; no cascade across authors), the engine and verifyEdits, applied migrations, export code (no version export until AX-10), charters, memory, roster, workflows, BACKLOG, BOARD.
-   Shared file rule: grants.mjs has no list for functions granted to `authenticated` (eval A R9); `qa` adds AUTHENTICATED_FUNCTIONS first, otherwise the access matrix carries the allow and deny cells and the PR says so.
+   Shared file rule: grants.mjs has no list for functions granted to `authenticated` (eval A R9); no QA row exists for AUTHENTICATED_FUNCTIONS: Karma will ask product for the row; until then the access matrix carries the allow and deny cells and the PR says so.
 
 4. READING PACK
 PR #917 KNOWLEDGE-PACKS.md Pack 5; data-and-sync.md sections 2.3 (S5), 5 (NS-12), 10 (CP5); 08-keeping.md section 6 and OQ-DS1 to DS5 (develop); eval A s1.4 S5.
