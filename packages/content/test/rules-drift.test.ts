@@ -47,7 +47,10 @@ function reachable(entry: string): Set<string> {
   return seen;
 }
 
-/** The text of rules.test.ts that builds the surfaces the rules read, without the import list. */
+/**
+ * The text of rules.test.ts that builds the surfaces the rules read, without the import list. The last filter
+ * (`^  name,$`) assumes import members sit one per line inside `import { ... } from`, as they do now.
+ */
 const WIRED = RULES.split('\n').filter((l) => !/^import |^\} from |^  [\w]+,$/.test(l)).join('\n');
 
 /** Exports built only from other exports; each source must be wired. */
@@ -55,11 +58,21 @@ const DERIVED: Record<string, string[]> = {
   emailsById: ['authEmails', 'lifecycleEmails', 'familyEmails', 'billingEmails', 'accountEmails', 'backupEmails'],
 };
 
-/** Exports that are not in `ALL`, with the test that reads them instead. A new entry needs a reason. */
-/** Screen families that mention reminders or notifications but are shown in the app, not on the lock screen. */
+/**
+ * Screen families that mention reminders or notifications but are shown in the app, not on the lock screen.
+ * Exact keys only, never a wildcard under a family: a new key beside them is checked until listed here.
+ */
 const SCREEN_FAMILIES =
-  /^(?:en\.(?:onboarding\.reminder|settings|settingsMore|settingsHome|children\.settings)\b|features\.(?:reminders\.(?!neutral\.|together\.)|billing\.(?:plan|confirmation)|family\.soon\.notify))/;
+  /^(?:en\.(?:onboarding\.reminder|settings\.reminders|children\.settings|settingsMore|settingsHome)|features\.(?:reminders\.(?:priming|settings|weekdays|weekdaysShort)|billing\.(?:plan|confirmation)|family\.soon\.notify))(?:\.|\[|$)/;
+/** A key named for a push or a notification is lock-screen text unless it is a listed screen line. */
+const PUSH_NAMED = /(?:push|notification)[^.]*$/i;
+const PUSH_SCREEN_LINES = new Set<string>([
+  'en.settings.privacy.notificationsLine',
+  'features.billing.plan.notificationsOff',
+  'features.billing.plan.turnOnNotifications',
+]);
 
+/** Exports that are not in `ALL`, with the test that reads them instead. A new entry needs a reason. */
 const EXEMPT: Record<string, string> = {
   testflightCopy: 'testflight.test.ts',
   appReviewCopy: 'app-review.test.ts',
@@ -120,6 +133,10 @@ describe('content rules drift', () => {
     const lookalike = /(^|\.)(notifications?|neutral|together|reminders?|days|culture|ntc|dayNames|suggestions)(\.|\[)/;
     const unchecked = lines.filter((l) => lookalike.test(l.path) && !NOTIFICATION_PATH.test(l.path) && !SCREEN_FAMILIES.test(l.path));
     expect(unchecked.map((l) => l.path)).toEqual([]);
+    // A screen family can still hide a lock-screen line, such as settings.pushBody: a key named for a push or a
+    // notification must be in scope or listed in PUSH_SCREEN_LINES by exact path.
+    const pushNamed = lines.filter((l) => PUSH_NAMED.test(l.path) && !NOTIFICATION_PATH.test(l.path) && !PUSH_SCREEN_LINES.has(l.path));
+    expect(pushNamed.map((l) => l.path)).toEqual([]);
   });
 
   it('[NS-48-R28] notification lines fit a lock screen: 40 for a title, 110 for a body, wherever the key lives', () => {
