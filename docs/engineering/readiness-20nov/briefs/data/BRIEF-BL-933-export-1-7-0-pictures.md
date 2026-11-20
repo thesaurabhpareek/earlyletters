@@ -13,6 +13,8 @@ Blocked until: BL-868 merged by the founder (E25), BL-931 (all photo slices) mer
      [NS-36-R7] export versions one way                             mutant: loosen the 1.6.0 schema to ignore unknown keys
      [NS-36-R2] export holds every part (picture, copies, first, seal when they exist)   mutant: skip the photo object in the writer
      [NS-11-R10] the copy holds every picture                       mutant: skip the stored copy for the oldest
+   Positive control for the no-Exif check: a synthetic Asha source JPEG that carries GPS Exif (latitude and longitude in the GPS IFD, plus XMP and IPTC blocks) is committed as a fixture; the scan helper first asserts it FINDS GPS in the source, then asserts it finds none in the exported copy. Mutant: copy the original bytes (red because the scan then finds GPS).
+     [NS-01-R14][NX-39-R32] export names are built from ids only    hostile-name test: a letter whose caption is `../../x` and place is `a/b\c` and whose ids are valid; assert every path in the ZIP matches photos/<uuid>/<uuid>.jpg and no entry contains `..`, `/` from text or a separator from text. Mutant: put the caption in the filename.
    Red on develop: lib/export has no photo writer; EXPORT_SCHEMA_VERSION is 1.6.0 (schema.ts:90).
 
 3. FILES: TOUCH / DO NOT TOUCH

@@ -8,6 +8,18 @@ Blocked until: BL-931 (all photo slices) and BL-952 (8/8 Find) done, BL-963 (the
 2. CARD ROWS and TEST TITLES
    Rows: NS-11-R1 to R8, R12, R13 to R16, R21 to R24; R10 rides BL-933 (card 08 lines 650-674).
    P0 tests (exact; PR #927 catalogue D): [NS-11-R8] a quiet book gets no slip (mutant: ignore quiet in slip selection); [NS-11-R12] export works after a lapse (mutant: gate export on hasPlus); [NS-11-R23] no temp copy left behind (mutant: delete only on success); [NS-11-R5] no counts or fear (content test; mutant: 'you have 120 letters').
+   NEW titles (the card gives them, catalogue D (PR #927) has no row for them; they are new, so qa adds the catalogue rows): R1, R2, R3, R4, R6a, R6b, R7, R13, R16, R22. Each gets this arrange and mutant:
+     R1 arrange: Me with the Export row only; assert the route is reached in 2 taps; mutant: add a second row.
+     R2 arrange: birthday 12 Jun, today 12 Jun, 19 Jun, 20 Jun (window is 7 days after, OQ-10); assert due on the first two and not the third; once a year: a second year the same day is due again. mutant: ignore the year in the state key.
+     R3 arrange: dismiss, then same year later day; assert not shown; next year shown. mutant: store dismissed without the year.
+     R4 arrange: slip registry holds waiting card and copy slip; assert one shows in ruled order. mutant: show both.
+     R6a assert the slip and the Me row call the same exported function (spy). mutant: slip builds its own ZIP.
+     R6b export twice a minute apart; manifests equal apart from generated_at. mutant: embed a counter.
+     R7 child with only a due date: no slip. mutant: use due date as birth date.
+     R13 leap day: birthday 29 Feb 2024, today 28 Feb 2027 (window starts 28 Feb in a non-leap year), 27 Feb not; 2028 uses 29 Feb. mutant: skip the 28 Feb rule.
+     R16 share result 'full destination': assert no 'saved' state written. mutant: write saved on any completion.
+     R22 A's slip state, B signs in: B sees none. mutant: state key without the account.
+   Every other title above: arrange is a seeded Asha book through copySlipDue with injected today; the mutant is the one named.
    Others by card title: [NS-11-R1] Save a copy is two taps from Me; [NS-11-R2] the slip shows once a year; [NS-11-R3] dismissed means gone for the year; [NS-11-R4] one slip at a time; [NS-11-R6a] one export code path; [NS-11-R6b] same export apart from its time; [NS-11-R7] no slip before a birth date; [NS-11-R13] leap-day birthday; [NS-11-R16] a full destination marks nothing done; [NS-11-R22] slip state belongs to one account.
    Red on develop: no copySlipDue exists; Me's Export row (app/settings/index.tsx:161) and Where your letters live both carry an export row (design K13).
 
