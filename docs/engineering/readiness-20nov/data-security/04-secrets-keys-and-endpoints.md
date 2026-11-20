@@ -19,7 +19,7 @@ SK-01. Name a secret by purpose and holder, never by value, in every document, c
 SK-02. A secret has one holder store, one reader job, one owner and a rotation interval. A new secret adds its row to this file and to `docs/ops/SECURITY.md` in the same PR (SEC-R02). `docs/ops/SECRETS.md`, which SEC-R02 names, does not exist; `SECURITY.md` section 1 plays that role (G-04-08).
 SK-03. Public identifiers are listed as public so scanners allow them (SEC-R03): Supabase URL, publishable key, PostHog project key, Sentry DSN, Google client ids, the EAS project id, the signing and escrow **public** keys, the Apple provider token the website uses for store links.
 SK-04. Anything in `EXPO_PUBLIC_*` or `NEXT_PUBLIC_*` is public by construction: Expo and Next inline it into the bundle at build time. A name that contains KEY, SECRET, TOKEN or PASSWORD in an `EXPO_PUBLIC_*` variable is refused in review unless it is on the public list in section 3.
-SK-05. One secret key per backend component and one project per environment; no account-wide token in CI (SEC-R04). Deploys read GitHub Environment secrets with a required approver.
+SK-05. One secret key per backend component and one project per environment; no account-wide token in CI (SEC-R04). Deploys read GitHub Environment secrets, intended to need a required approver [U]: the workflows only name the environments.
 SK-06. A secret never crosses to an agent. Agents hold none of the Supabase, Resend, Apple, PostHog or PayPal credentials, and no connector with write access to them (SEC-R19, IAM-R23).
 SK-07. Logs carry closed enums and counts, never an id, an address, a code or a key (`supabase/functions/_shared/log/`, file 05 owns the schema).
 SK-08. A client-side check is never a security control. Every limit below is also in the database or at the gateway.
@@ -32,7 +32,7 @@ Class: **S** secret (revoke on leak), **P** public by design, **I** identifier (
 
 | Name (purpose) | Class | Holder (store) | Reads | Rotate | Cite |
 |---|---|---|---|---|---|
-| Secret key `SUPABASE_SECRET_KEYS`, legacy `SUPABASE_SERVICE_ROLE_KEY` (skips row security, calls the 44 service RPCs) | S | Edge Function secrets, injected by the platform | `purge-worker`, `apple-token` (one RPC), `invite-redeem` (one RPC), `analytics-forget` (quota RPC) | with the key; delete the old after replacing (SEC-R05) | `_shared/keys/keys.ts:31-33`; `purge-worker/config.ts:46` [V] |
+| Secret key `SUPABASE_SECRET_KEYS`, legacy `SUPABASE_SERVICE_ROLE_KEY` (skips row security; calls the 44 service RPCs, and also opens the Auth admin and Storage APIs, which grants do not limit) | S | Edge Function secrets, injected by the platform | `purge-worker`, `apple-token` (one RPC), `invite-redeem` (one RPC), `analytics-forget` (quota RPC) | with the key; delete the old after replacing (SEC-R05) | `_shared/keys/keys.ts:31-33`; `purge-worker/config.ts:46` [V] |
 | Publishable key `SUPABASE_PUBLISHABLE_KEYS`, legacy `SUPABASE_ANON_KEY` (public by design) | P | injected; also in the app and in Vault | `invite-redeem`, `subscription-status`, `apple-token`, `analytics-forget` for the session check | with the key | `keys.ts:36-38` [V] |
 | Database URL for deploys `SUPABASE_DB_URL_STAGING`, `SUPABASE_DB_URL_PROD` (owner role, full database) | S | GitHub Environments `staging`, `db-production` | `deploy-db.yml` steps only | yearly, on suspicion | `deploy-db.yml:120,240`; `SECRETS_REVIEW.md:179-195` [V] |
 | Management token `SUPABASE_ACCESS_TOKEN_STAGING` (function deploy; must be scoped, not a classic token) | S | GitHub Environment `staging` | `deploy-functions.yml` | 90 days **Rec** | `SECRETS_REVIEW.md:179-187` [V]; scope itself [U] |
@@ -90,6 +90,7 @@ Escrow design check: the escrow project holds the private key but has no main-da
 
 ### 2.6 CI, release and agents (names only; steps in `SECRETS_REVIEW.md`)
 
+**Tagging:** only the 12 names in the last sentence were found in `.github/workflows`; every other name in this paragraph comes from `SECRETS_REVIEW.md` section 4 and is [V doc], [U] in the workflows (no workflow on `develop` reads them).
 `EXPO_TOKEN` (robot users per lane), App Store Connect keys per lane (`ASC_API_KEY_*`), `ASC_REVIEW_CONTACT_JSON` (personal data, not a credential), `PACKS_S3_*` (R2 token, one bucket), `BACKUP_DB_URL` and the age recipient (private backup repository), `PUBLIC_REPO_ISSUES_TOKEN`. Agents: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `AGENTS_APP_PRIVATE_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`. Names found in `.github/workflows` by `grep secrets\.`: 12 distinct (`SUPABASE_*` 6, `EXPO_TOKEN`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `AGENTS_APP_PRIVATE_KEY`, `ASC_REVIEW_CONTACT_JSON`). [V] No workflow reads a Supabase secret key, a Resend key, an APNs key or a PostHog key.
 
 Founder-shell variables for `scripts/ops` (exported for one session, never in a dotfile in the repo; `SECURITY.md:62-67`). Values never appear anywhere:
@@ -132,7 +133,7 @@ Checks that stop a leak, and their state:
 | Check | State |
 |---|---|
 | GitHub secret scanning and push protection | founder setting; [U] |
-| `gitleaks` full-history job (SEC-R03) | **not on `develop`**: no `security.yml`, `grep -rl gitleaks .github` finds only `CODEOWNERS` (G-04-01) |
+| `gitleaks` full-history job (SEC-R03) | **not on `develop`**: no `security.yml`, `grep -rl gitleaks .github` finds nothing (G-04-01) |
 | `.ipa` bundle scan for secret patterns (SEC-R03, TDD 04 8.3) | not yet; release gate |
 | `*.p8` ignored | `.gitignore:17` lists `*.p8` [V] |
 | Test that no `EXPO_PUBLIC_*` name holds KEY, SECRET or TOKEN outside section 3's list | not yet; **Rec** a 15-line test in `apps/mobile/test` (handoff to `security`) |
@@ -145,7 +146,7 @@ Storage rules. Edge Function secrets: Supabase function secrets only (`supabase 
 Rotation. Yearly for `PURGE_WORKER_SECRET`, Resend, PostHog and `TOKEN_KEK` (`SECURITY.md:99`); 90 days for CI tokens that `SECRETS_REVIEW.md` marks; every 5 months for an Apple web client secret if used. Never rotate: `app.consent_pepper`. Rotate only by letting old data expire: `INVITE_CODE_PEPPER`. Rotate by adding a version: `TOKEN_KEK_V<n>`, `ESCROW_PRIVATE_KEY_V<n>`, signing keys (needs an app release to revoke, `keys.ts:11-15`).
 
 On suspected exposure: revoke first, rotate second, investigate third, write it down (SEC-R05). The order for the three that matter most:
-1. Secret key leaked: delete it in the dashboard, redeploy functions (they read the injected key), check `ops.audit_log` and the Auth logs for use, run `ops_schema_health()`. A leak can call 44 RPCs including purge and deletion, but cannot read a table. [V] grants.
+1. Secret key leaked: delete it in the dashboard, redeploy functions (they read the injected key), check `ops.audit_log`, the Auth logs and the Storage logs for use, run `ops_schema_health()`. A leak can call 44 RPCs including purge and deletion, and can use the Auth admin API (list or delete users, read their addresses) and the Storage API (read or delete photos, ciphertext and the ledger), which grants do not limit; it cannot read a table over the Data API. Treat it as an L3 and L4 incident. [V] grants.
 2. `ESCROW_PRIVATE_KEY_V<n>` leaked: set `ESCROW_SWITCH` off and `app.escrow_enabled` off, run the runbook rotation, tell owners whose keys were released (`escrow_unwraps` rows). Recordings stay encrypted under the per-book key; the leak matters only together with the sealed wraps in the main database.
 3. Signing key leaked: publish with the backup key, ship a release that drops the old one (`keys.ts:11-15`). Until then an attacker with the key can sign remote config and content bundles. This is the largest single trust anchor in the product; see threat T4.
 
@@ -256,14 +257,14 @@ What exists today, what a signal may carry, and what it may never carry. "Emits"
 | S-09 | Step-up required | **Yes** for backup deletion (`SCSTP`, `backup_server.sql:1013-1023`); **not** for account deletion (G-03-02) | RPC | none | n/a | in-app |
 | S-10 | Our own ops alerts | yes: deletion SLA kinds (`tombstones_overdue`, `request_stuck`, `step_failed`, `queue_stuck`, `scheduled_overdue`) to `ALERT_EMAIL` | purge worker | kind and count | any id | email to the founder |
 
-Rules for every signal: content-free (no letter, child name, family detail, transcript); the recipient is the account's own verified address only; the email says what happened and what to do, with no link that signs anyone in except the Supabase link they asked for; "we never ask for a code or password" line on every security mail (`auth.en.ts:201`); never sent as push (section 6); every send is logged as a closed enum with the template id, never the address; and a person can always see it again in the app. A signal about person A is never sent to person B except S-07 to the other parent. Frequency and quiet hours: file 07.
+Rules for every signal: content-free (no letter, child name, family detail, transcript); the recipient is the account's own verified address only; the email says what happened and what to do, with no link that signs anyone in except the Supabase link they asked for; "we never ask for a code or password" line on every security mail (`auth.en.ts:201`); never sent as push (**Rec**, default no, founder decides, section 6); every send is logged as a closed enum with the template id, never the address; and a person can always see it again in the app. A signal about person A is never sent to person B except S-07 to the other parent. Frequency and quiet hours: file 07.
 
 ## 8. Threat model summary (entries for `docs/security/threat-model.md`, which does not exist)
 
 | Id | Asset (level) | Entry point | Abuse case | Control | Test or proof | Residual |
 |---|---|---|---|---|---|---|
 | T1 | Letters, child details (L4) | PostgREST with the publishable key | read or write another family's rows | RLS, column grants, definer RPCs | `access_matrix.test.mjs` six personas | hosted state [U] |
-| T2 | Service key (S) | Edge Function env, founder shell | leak lets caller run purge or deletion RPCs | no table grants, 44 RPCs, audit | `grants.mjs`, `explicit_grants.test.mjs` | one key for all functions (G-04-06) |
+| T2 | Service key (S) | Edge Function env, founder shell | leak lets caller run purge or deletion RPCs, list or delete users, read or delete Storage objects | no table grants, 44 RPCs, audit; Auth admin and Storage reach NOT limited by grants (residual) | `grants.mjs`, `explicit_grants.test.mjs` | one key for all functions (G-04-06) |
 | T3 | Session (S) | stolen phone or token | act as the person for up to a refresh lifetime | Keychain this-device-only, 15-minute JWT, rotation with reuse detection, step-up for backup delete | `config.toml:41-43`, `secure-storage.ts:24` | no step-up for account deletion (G-03-02) |
 | T4 | Signing key (K) | founder's machine | forged remote config or content bundle | key only on founder machine, two keys, app verifies | `packages/api` integrity tests | compromise needs an app release |
 | T5 | Recovery key (S) | escrow project | open someone's backup | two projects, pinned public key, email before release, stop link | `escrow` tests | stop page not built (G-04-02) |
@@ -282,7 +283,7 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 | G-04-03 | Both public-key lists are empty: `BUNDLED_ESCROW_KEYS` (TODO) and `PINNED_PUBLIC_KEYS`. So backup cannot be turned on until the key ceremony; right and safe, but a release checklist item. | `apps/mobile/src/lib/backup/escrow-keys.ts:12-14`; `escrow/public-keys.ts:19-21` | Info | founder, ops |
 | G-04-04 | 17 workflow steps use mutable tags (`actions/checkout@v4`, `setup-node@v4`, `cache@v4`, `upload-artifact@v4`) in `ci.yml` (7), `web.yml` (3), `web-e2e.yml` (5), `migration-guard.yml` (2). SEC-R10 requires full SHAs; chapter 06 says `agents.yml` is the unpinned one, and it is now pinned (stale). | `.github/workflows/ci.yml:31,32,38,55,70,81,92`; `migration-guard.yml:20,23`; `web.yml:52,54,61`; `web-e2e.yml:43,45,50,61,77` | Medium | qa, ops |
 | G-04-05 | No security event store or alert: SEC-R24 (`security_events`) is not built; wrong sign-in codes, a tripped global invite pause and new-device sign-ins leave nothing we can see or send. | no table in `supabase/migrations` (grep `security_events`) | Medium | data-architect, sync |
-| G-04-06 | One secret key per project, shared by four functions. The most exposed function (`invite-redeem`, internet-facing and doing a service RPC) and the destructive one (`purge-worker`) share it. | `_shared/keys/keys.ts:28-31` | Medium | ops, [U] platform support |
+| G-04-06 | One secret key per project, shared by four functions. The most exposed function (`invite-redeem`, internet-facing and doing a service RPC) and the destructive one (`purge-worker`) share it. | `_shared/keys/keys.ts:31-33` | Medium | ops, [U] platform support |
 | G-04-07 | The website launch-list form relies on in-memory limits that Vercel instances do not share; the real limit is a WAF rule nobody has confirmed. | `apps/web/src/lib/notify/rate-limit.ts:1-10` | Medium | ops (founder console) |
 | G-04-08 | Rules point to files that do not exist: `docs/ops/SECRETS.md` (SEC-R02), `docs/security/threat-model.md` (SEC-R01), `SECURITY.md` at the root and `docs/ops/INCIDENT.md` (SEC-R23). `docs/ops/SECURITY.md` and the runbooks cover part of it. | `docs/engineering/06-security-engineering.md:29,33,85` | Low | security, ops |
 | G-04-09 | Hosted Data API exposed-schema list, `pg_graphql` and Realtime state, and Auth rate limits are only checklists in `SECURITY.md:123-136`; `config.toml` has no `[api]` block and applies to the local stack only. | `supabase/config.toml:1-12`; `SECURITY.md:123-136` | Medium until read back in the dashboard | ops |
