@@ -15,7 +15,7 @@ A log line, audit row, metric or crash report holds L2 values only: closed enums
 |---|---|---|
 | Live database has migration files 1 and 2 only. `audit_events`, `ops.audit_log`, `escrow_unwraps`, the guards and every table in section 3.3 and 3.4 exist in the repo and its tests, not in production | [V] | `supabase/APPLY.md:48` ("`early-letters` has files 1 and 2 applied"), `:34` (file 32 not applied) |
 | Production Supabase is on the Free plan: platform logs kept 1 day; no Platform Audit Logs (Team and Enterprise only) | [V] as read by the function reviews, 20 Nov; plan facts [U] against the dashboard | `docs/product/prd/functions/operations.md:30`, `reliability.md:28`, `back-office.md` FR-BKO-04 |
-| In every 1.0.x build analytics is off: no PostHog or Sentry client constructed, `EXPO_PUBLIC_ANALYTICS` off | [V] | `apps/mobile/src/lib/analytics/index.ts:41`, `capabilities.ts:65,125`, FR-DAT-01, label 2.2.0 |
+| In every 1.0.x build analytics is off: no PostHog or Sentry client constructed, `EXPO_PUBLIC_ANALYTICS` off | [V] | `apps/mobile/src/lib/analytics/index.ts:41`, `apps/mobile/src/lib/capabilities.ts:65,125`, FR-DAT-01, label 2.2.0 |
 | The typed analytics catalogue is built and tested (68 events, `SCHEMA_VERSION` 8) and is the only legal shape for a metric when analytics returns | [V] | `packages/analytics/src/catalog.ts:212`; count of top-level keys of `EVENTS` between lines 215 and 935 |
 | One server logger exists and is used by every Edge Function except `content` | [V] | `supabase/functions/_shared/log/log.ts:219-262`; import scan of `supabase/functions/*` (escrow has its own, `escrow/log.ts:1-9`) |
 | No ESLint config, so the "no `console` in the app" rule is not machine-enforced on the device | [V] none of `.eslintrc*`, `eslint.config*` exist at the root | chapter 10 OBS-R05 |
@@ -31,7 +31,7 @@ So the honest sentence for any parent-facing claim today is the one in LEGAL-REQ
 | Store | What it holds | Level | Kept | Rule |
 |---|---|---|---|---|
 | Release console | Nothing. One `console.warn` exists in the global fault handler; what the line holds is not pinned by a test [U] | L2 | Not stored | `apps/mobile/src/lib/resilience/global-errors.ts:49` [V]. FR-PRV-11 and OBS-R05 say the message holds codes only; that is a card row, the scan test is not built [U] |
-| Local rejected writes (`rejected_writes`) | op id, SQLSTATE, `req_id` so a parent can quote it | L2 | Until the parent resolves it | chapter 10 OBS-R03, "How to apply" [V]; table name per the chapter, check against `apps/mobile/src/lib/db/migrations.ts` before building [U] |
+| Local rejected writes (`rejected_writes`) | op id, SQLSTATE, `req_id` so a parent can quote it | L2 | Until the parent resolves it | chapter 10 OBS-R03, "How to apply" [V]; table exists at `apps/mobile/src/lib/db/migrations.ts:217` [V] |
 | PostHog SDK state (only after a yes, only if the build has analytics) | queue, random analytics id, flags; memory only | L2 | Until the app is killed or consent is withdrawn | `packages/analytics/src/posthog.ts:163-196` (`persistence: 'memory'`) [V] |
 | Safety tiers | Device only. No server row, no event, no log, no crash field | L4 | Life of the install | LEGAL-REQ-015 [V `ENGINEERING_REQUIREMENTS.md:149-153`]; DC 4.6 |
 | Apple crash reports | Apple's own reports reach us through App Store Connect only for people who share diagnostics. Not our SDK | L2 after Apple's own handling [U] | Apple's window [U] | label 2.2.0 Diagnostics row; FR-DAT-16 |
