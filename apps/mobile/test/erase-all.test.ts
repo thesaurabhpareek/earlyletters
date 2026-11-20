@@ -1148,9 +1148,36 @@ describe('[NS-01-R16][ADR 0028 D5] every erase path takes a picture, the file fi
     const picked = put(h.disk, `${h.disk.caches}ImagePicker/0A1B2C3D-0000-4000-8000-0000000000P1.img`, 10);
     app = await launch();
     await app.sweep.runLaunchSweep();
-    await new Promise((r) => setTimeout(r, 50)); // the photo sweep is not awaited by launch
-    expect(has(picked)).toBe(false);
+    await vi.waitFor(() => expect(has(picked)).toBe(false)); // the photo sweep is not awaited by launch
     expect(fetches).toBe(0);
+  });
+
+  it('[NS-01-R16] the 30 day purge takes a deleted letter\'s picture, and the day-30 book purge a deleted book\'s, in the purge itself; a live letter keeps its own (#836 reviews)', async () => {
+    let app = await launch();
+    const f = family(app);
+    const a2 = picture(f.ids.a2, 'mA2'); // in Recently deleted from T0
+    const avi = picture(f.ids.v1, 'mV1');
+    const a1 = picture(f.ids.a1, 'mA1');
+    app.store.deleteBook(f.avi);
+    for (const day of [30, 31]) {
+      vi.setSystemTime(T0 + day * DAY + 1000);
+      app = await launch();
+      await app.sweep.runLaunchSweep();
+    }
+    // Asserted before the photo sweep (which launch does not await) could tidy up: the purge's own eraser took them.
+    expect([has(a2), has(avi), has(a1), mediaRows()]).toEqual([false, false, true, ['mA1']]);
+  });
+
+  it('[NS-01-R16] the eraser removes the file first and then the row: a picture file that will not go keeps its row and its letter for the next try (#836 review B Q2)', async () => {
+    const app = await launch();
+    const f = family(app);
+    const p = picture(f.ids.a2, 'mA2');
+    h.disk.undeletable.add(p);
+    expect(app.erase.eraseDeletedLetter(f.ids.a2)).toBe(false);
+    expect([has(p), mediaRows(), rowKept(f.ids.a2)]).toEqual([true, ['mA2'], true]);
+    h.disk.undeletable.delete(p);
+    expect(app.erase.eraseDeletedLetter(f.ids.a2)).toBe(true);
+    expect([has(p), mediaRows()]).toEqual([false, []]);
   });
 
   it('[NS-01-R16][NX-39-R31] Erase everything removes the photos folder itself (strays too) and both caches, even when no row eraser touches a picture', async () => {

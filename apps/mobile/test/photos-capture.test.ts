@@ -1,5 +1,7 @@
-// NS-01 photo with a letter: capture, store, replace, lens (Node, no phone). Delete, restore and purge run the phone's
-// own eraser in photos-phone.test.ts.
+// NS-01 photo with a letter in Node, no phone: the strip and the metadata guard, backing out, the words rule, a second
+// picture with its confirm and Undo, changes that never touch the words or the recording, the quiet day, the parent's own
+// words and place, and failed picks. The real store, the caps against its CHECK and the erase paths run in
+// photos-device, photos-phone and erase-all.
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
@@ -64,6 +66,25 @@ describe('[NS-01-R6][NX-39-R8] the stored copy carries no metadata', () => {
     // the escaped FF00 and the restart marker inside the data do not end it, and the second scan is kept
     const prog = stripJpeg(makeJpeg({ progressive: true, seed: 3 }));
     expect(prog.ok && Buffer.from(prog.bytes).toString('latin1')).toContain('\x31\x41\xff\xd9');
+  });
+});
+
+describe('[NS-01-R6] the last guard reads marker segments, never the compressed picture', () => {
+  it('[NS-01-R6] a clean picture whose compressed data happens to hold "8BIM" and "MPF" is stored; an Exif signature in a segment the strip keeps is still refused, and nothing is written (#836 reviews A N2, B Q5)', async () => {
+    let x = 7;
+    const noise = Array.from({ length: 4096 }, () => (x = (Math.imul(x, 1103515245) + 12345) >>> 0) >>> 24);
+    const sigs = (s: string) => Array.from(s, (c) => c.charCodeAt(0));
+    const scan = [...noise.slice(0, 2000), ...sigs('8BIM'), ...noise.slice(2000), ...sigs('MPF\0')].flatMap((v) => (v === 0xff ? [0xff, 0x00] : [v]));
+    const base = makeJpeg();
+    const sos = base.findIndex((v, i) => v === 0xff && base[i + 1] === 0xda);
+    const clean = Uint8Array.from([...base.slice(0, sos + 2 + ((base[sos + 2] << 8) | base[sos + 3])), ...scan, 0xff, 0xd9]);
+    expect([stripJpeg(clean).ok, carriesMetadata(clean)]).toEqual([true, false]);
+    expect((await commitPhoto(deps().d, { ...ONE, bytes: clean })).status).toBe('stored');
+    const exif = sigs('Exif\0\0MM');
+    const planted = Uint8Array.from([0xff, 0xd8, 0xff, 0xf0, 0, exif.length + 2, ...exif, ...makeJpeg({ seed: 5 }).slice(2)]);
+    const { d, files } = deps();
+    expect((await commitPhoto(d, { ...ONE, bytes: planted })).status).toBe('failed');
+    expect(files.disk.size).toBe(0);
   });
 });
 
