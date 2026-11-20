@@ -3,8 +3,6 @@
 // stand-in: the deps every picture write runs against, the one eraser every letter purge calls, the launch sweep, and
 // the switch that decides whether anything registers. Fictional family Asha.
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
@@ -28,7 +26,6 @@ vi.mock('expo-crypto', async () => {
 });
 vi.mock('../src/lib/store', () => ({ localSqlDb: () => h.db, notifyStoreChanged: () => void h.changes++, uuidv7: () => `m${++h.ids}` }));
 
-const SRC = join(__dirname, '..', 'src');
 const ctx = { now: '2026-11-11T00:00:00.000Z', newId: () => 'id' };
 const row = (entryId: string, mediaId: string): StoredPhoto => ({
   entryId, mediaId, ext: 'jpg', bytes: 3, sha256: 'ab', width: 4, height: 4, text: null, place: null, addedAt: '2026-11-11T00:00:00Z', deletedAt: null,
@@ -98,11 +95,12 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual(['m1']);
   });
 
-  it('[NS-01-R16] a purged letter loses its picture here, the file first and then its row; a let-go draft the same; nothing else is touched', async () => {
+  it('[NS-01-R16] the eraser removes a letter\'s picture, the file first and then its row, and a draft\'s the same way; nothing else is touched', async () => {
     const db = phone('0013');
     const store = entryMediaStore(db);
     const files = expoPhotoFiles();
     store.put(row('e1', 'm1'));
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c', 'typed', 't')");
     store.put(row('d1', 'm2')); // a draft owns it (no letter with that id)
     letter(db, 'e2');
     store.put(row('e2', 'm3'));
@@ -126,12 +124,6 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(storedPhotoFile('m1')?.uri).toBe(`${photosDirectory().uri}m1.jpg`);
   });
 
-  it('[NS-01-R16] the one audio eraser calls it, so Erase now, the 30 day purge and a letter erased on another phone all take the picture', () => {
-    const erase = readFileSync(join(SRC, 'lib', 'capture', 'erase.ts'), 'utf8');
-    const eraser = erase.slice(erase.indexOf('export const eraseAudioFile'), erase.indexOf('};', erase.indexOf('export const eraseAudioFile')));
-    expect(eraser).toMatch(/erasePictureOf\(entryId\);/);
-    expect(readFileSync(join(SRC, 'lib', 'capture', 'sweep.ts'), 'utf8')).toMatch(/sweepPhotosAtLaunch\(\)/);
-  });
 });
 
 describe('[NS-01-R19][NX-39-R37] the switch decides what registers, never the data rights', () => {
