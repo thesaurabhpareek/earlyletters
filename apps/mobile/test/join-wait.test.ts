@@ -127,7 +127,7 @@ describe('[S2] the screens', () => {
 
   it('the welcome passes which step shows and whether it is in front, and draws the line, "Begin the book" and Try again from the hook', () => {
     const first = code('app/onboarding.tsx');
-    expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;\s*const showContinue = joining\.begin;/);
+    expect(first).toMatch(/const joining = useWelcomeJoinWait\(\{ onWelcome: step === 'welcome', inFront: pathname === '\/onboarding' \}\);\s*const joinLine = joining\.line;[\s\S]*?const showContinue = continueMayShow\(\{\s*begin: joining\.begin,\s*onWelcome: step === 'welcome',/);
     expect(first).toMatch(/\{showContinue \? \(\s*<View>\s*<Button size="lg" fullWidth disabled=\{disabled\} label=\{cta\}/);
     expect(first).toMatch(/\{joining\.retry \? <Button variant="quiet" size="sm" label=\{familyCopy\.accept\.tryAgain\} onPress=\{joining\.onRetry\}/);
     // #374's controls: the line sits between the reason line and Continue, in the one controls block, and both stay

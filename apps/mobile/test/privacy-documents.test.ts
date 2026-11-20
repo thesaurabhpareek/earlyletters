@@ -5,7 +5,7 @@
  * below mirrors `REMOVED_ROUTES` in apps/web/e2e/support/legal.ts on `main`, where the website's own tests check that
  * those routes answer 404. If the website brings a page back, take it off this list in the same change.
  */
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { brand } from '@scribe/brand';
@@ -45,5 +45,35 @@ describe('[S44] Privacy links only to pages the website serves', () => {
     // The content keys stay for S14 and #163 to retire with the notice document.
     expect(en.settings.privacy.healthPrivacyLink.length).toBeGreaterThan(0);
     expect(en.settings.privacy.subprocessorsLink.length).toBeGreaterThan(0);
+  });
+});
+
+/** Every file under src, for the app-wide scan below. */
+const allFiles = (dir: string): string[] =>
+  readdirSync(dir).flatMap((name) => {
+    const full = join(dir, name);
+    return statSync(full).isDirectory() ? allFiles(full) : /\.(ts|tsx)$/.test(name) ? [full.slice(SRC.length + 1)] : [];
+  });
+
+describe('[BL-564] No screen opens a legal page the website removed', () => {
+  const web = brand.web as Record<string, unknown>;
+
+  it('the sign-in consent sheet links to the Terms and the Privacy Policy only', () => {
+    const sheet = code('app/(auth)/sign-in/consent.tsx');
+    const opened = [...sheet.matchAll(/open\(brand\.web\.(\w+)\)/g)].map((m) => m[1]);
+    expect(opened).toEqual(['terms', 'privacy']);
+  });
+
+  it('no file in the app opens a removed route', () => {
+    const offenders: string[] = [];
+    for (const rel of allFiles(SRC)) {
+      for (const m of code(rel).matchAll(/brand\.web\.(\w+)/g)) {
+        const url = web[m[1]];
+        if (typeof url !== 'string') continue;
+        const path = new URL(url).pathname;
+        if (WEBSITE_REMOVED_ROUTES.includes(path)) offenders.push(`${rel}: ${m[1]} -> ${path}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 });

@@ -1,0 +1,1 @@
+07:45 (10 Nov) design-systems-motion | done: motion spec draft (docs/design/specs/FIRST-RUN-MOTION-SPEC-10nov.md), docs only | next: re-check the journey branch when it appears, draft PR | blocked/needs: journey branch not on origin yet

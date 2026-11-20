@@ -309,6 +309,8 @@ describe('[ADR 0027, privacy] the whole-frame copy never outlives an erase', () 
     app.store.saveEntry(letter({ id, childId: asha, audioUri: uri }));
     app.store.deleteEntry(id);
     vi.setSystemTime(T0 + 30 * 24 * 60 * 60 * 1000 + 60_000);
+    // A launch that has already seen this time (QE-05: the purge counts time by the last recorded launch).
+    app.store.recordLaunch(Date.now());
     expect(app.erase.purgeShelfAtLaunch()).toBe(1);
     expect(h.disk.files.has(leftover)).toBe(false);
     expect(h.disk.files.has(uri)).toBe(false);

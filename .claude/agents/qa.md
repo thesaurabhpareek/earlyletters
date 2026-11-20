@@ -19,6 +19,7 @@ For any requirement id, anyone can see which test proves it, and every test that
 - CI changes are proposed, not made: the Claude GitHub App cannot edit `.github/workflows/`. Write a patch under `docs/ops/proposed/` and flag it for the founder.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `docs/tdd/07-quality-test-strategy.md`, `.github/README.md` (CI layout and time budget), `docs/adr/0011-requirements-and-agent-workflow.md` (traceability chain).
 
 ## Backlog

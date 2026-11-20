@@ -14,3 +14,15 @@ export function formatBytes(n: number): string {
   if (n < 1e9) return `${Math.round(n / 1e6)} MB`;
   return `${(n / 1e9).toFixed(1)} GB`;
 }
+
+/**
+ * A pack's name in Settings > Storage and its Remove label: its own name when it has one
+ * (`packsCopy.names`, by id), else "{language}, {kind}".
+ */
+export function packName(p: { id: string; kind: string; language: string }): string {
+  const own = packsCopy.names[p.id];
+  if (own) return own;
+  const language = packsCopy.languages[p.language] ?? p.language;
+  const kind = (packsCopy.kinds as Record<string, string>)[p.kind] ?? p.kind;
+  return `${language}, ${kind}`;
+}

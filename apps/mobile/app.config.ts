@@ -4,8 +4,8 @@
  * app.json (lumira-letters, Expo-blue splash, default microphone string).
  *
  * Identity comes from packages/brand only: name, scheme, bundle id, colours.
- * No public name is typed in this file (CLAUDE.md). The microphone purpose
- * string comes from src/lib/permission-copy.ts (part of pendingCopy; text
+ * No public name is typed in this file (CLAUDE.md). The microphone and Face ID
+ * purpose strings come from src/lib/permission-copy.ts (part of pendingCopy; text
  * from docs/legal/app-store-privacy-labels.md 4, counsel review pending).
  *
  * Build profile (eas.json `env.EXPO_PUBLIC_APP_ENV`, POPS-02): development
@@ -108,6 +108,19 @@ const withoutRemotePush: ConfigPlugin = (c) =>
   });
 
 /**
+ * A build without sign-in (signInCapable below) carries no sign-in entitlement. ios.usesAppleSignIn and
+ * ios.associatedDomains are already left out of its config, but the expo-apple-authentication plugin, which prebuild
+ * applies because the package is installed, writes com.apple.developer.applesignin regardless. As with
+ * withoutRemotePush, a mod registered earlier runs later, so both keys are gone from the written entitlements file.
+ */
+export const SIGN_IN_ENTITLEMENTS = ['com.apple.developer.applesignin', 'com.apple.developer.associated-domains'] as const;
+const withoutSignInEntitlements: ConfigPlugin = (c) =>
+  withEntitlementsPlist(c, (m) => {
+    for (const k of SIGN_IN_ENTITLEMENTS) delete m.modResults[k];
+    return m;
+  });
+
+/**
  * The iOS privacy manifest (BL-349, LEGAL-REQ-043): required-reason APIs, no
  * tracking, and the collected data types for this build's switches, from
  * src/lib/privacy-manifest.ts (evidence and Apple's sources are there). A build
@@ -123,6 +136,8 @@ type PrivacyManifestModule = typeof import('./src/lib/privacy-manifest');
 const { privacyManifest } = loadTs<PrivacyManifestModule>('./src/lib/privacy-manifest.ts');
 
 const microphone = permissionCopy.microphone.replace('{app}', brand.name);
+/** NSFaceIDUsageDescription for the app lock (F1; security.md section 2). Draft pending counsel (LEGAL-REQ-007, F17 Q3). */
+const faceId = permissionCopy.faceId.replace('{app}', brand.name);
 
 /**
  * The marketing version (CFBundleShortVersionString, versionName) lives only in version.json, shared by
@@ -142,7 +157,6 @@ function reversedGoogleClientId(clientId: string | undefined): string | null {
   const m = /^([A-Za-z0-9-]+)\.apps\.googleusercontent\.com$/.exec((clientId ?? '').trim());
   return m ? `com.googleusercontent.apps.${m[1]}` : null;
 }
-const googleIosUrlScheme = reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID);
 
 /**
  * Server features (sign-in, sync, co-parent sharing) and the build flags on top of
@@ -166,13 +180,36 @@ function capabilityFlags() {
   };
 }
 
+/**
+ * Whether a build carries the native sign-in capabilities: the Sign in with Apple entitlement (ios.usesAppleSignIn and
+ * the expo-apple-authentication plugin, which writes com.apple.developer.applesignin), the Associated Domains
+ * entitlement (universal links for email sign-in and invites) and the Google URL scheme. App Review guideline 2.5.19
+ * ("no hidden, dormant, or undocumented features"; store compliance review for build 12, risk 5): the store build
+ * (`production`) with server features off has no sign-in, so it carries none of them. Every other build keeps them as
+ * before: development, `testflight` and the `preview` alpha (build 2 signs in against staging). A production build
+ * with server features on (the sign-in 1.0.x) gets them back without a config change.
+ *
+ * Config and entitlements only. The native modules stay autolinked in every build: expo-apple-authentication is imported at the top of
+ * src/lib/auth/ui.tsx, which the Family tab loads, so removing its native module could crash the store build; the
+ * Google Sign-In and passkey pods are loaded lazily (src/lib/auth/google.ts, passkey.ts) but unlinking them per
+ * profile changes the pod set and needs its own device check (see the PR that added this).
+ */
+export function signInCapable(appEnv: AppEnv, serverFeatures: boolean): boolean {
+  return appEnv !== 'production' || serverFeatures;
+}
+
 export default ({ config }: ConfigContext): ExpoConfig => {
   const APP_ENV = appEnvFromProcess();
   // B-9: EXPO_PUBLIC_E2E=1 only in a development build, and on EAS only in the e2e profile (build-env.ts).
   const e2eStop = e2eRefusal({ e2e: process.env.EXPO_PUBLIC_E2E, appEnv: APP_ENV, easBuildProfile: process.env.EAS_BUILD_PROFILE });
   if (e2eStop !== null) throw new Error(e2eStop);
   const appId = `${bundleId()}${ID_SUFFIX[APP_ENV]}`;
-  return withoutRemotePush({
+  const signIn = signInCapable(APP_ENV, capabilityFlags().serverFeatures);
+  // Read per evaluation, so one process can evaluate several profiles. Never in a build without sign-in, even if
+  // the EAS environment holds the client id.
+  const googleIosUrlScheme = signIn ? reversedGoogleClientId(process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID) : null;
+  const stripSignIn: ConfigPlugin = signIn ? (c) => c : withoutSignInEntitlements;
+  return stripSignIn(withoutRemotePush({
   ...config,
   name: brand.name,
   slug: brand.codename,
@@ -205,12 +242,21 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     infoPlist: {
       CADisableMinimumFrameDurationOnPhone: true,
+      // Declared so Linking.canOpenURL answers for them (Apple requires declared schemes; that tel and mailto need it
+      // is to be confirmed by the S1-23 V-10 device check). The crisis lines (tel) and Write to us (mailto) ask it
+      // first, then show the number or address to copy when the device reports it cannot (F20-REQ-005, F20-REQ-007).
+      LSApplicationQueriesSchemes: ['tel', 'mailto'],
     },
-    // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
-    usesAppleSignIn: true,
-    // Universal links for email sign-in and invites (/auth/callback, /j); the website serves the AASA
-    // file (docs/ops/AUTH_SETUP.md section 5). Domain from packages/brand, never typed here.
-    associatedDomains: [`applinks:${brand.publisher.domain}`],
+    // Only in a build that can sign in (signInCapable above; guideline 2.5.19).
+    ...(signIn
+      ? {
+          // Sign in with Apple entitlement (PRD A-REQ-016; expo-apple-authentication plugin below).
+          usesAppleSignIn: true,
+          // Universal links for email sign-in and invites (/auth/callback, /j); the website serves the AASA
+          // file (docs/ops/AUTH_SETUP.md section 5). Domain from packages/brand, never typed here.
+          associatedDomains: [`applinks:${brand.publisher.domain}`],
+        }
+      : {}),
     entitlements: {
       [DATA_PROTECTION_ENTITLEMENT]: DATA_PROTECTION_CLASS,
     },
@@ -262,7 +308,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         enableBackgroundRecording: false,
       },
     ],
+    // Writes the Sign in with Apple entitlement. Prebuild applies it whenever the package is installed, listed or
+    // not, so a build without sign-in removes the key afterwards (withoutSignInEntitlements).
     'expo-apple-authentication',
+    // App lock (F1, CPO-2, CISO-1): Face ID, Touch ID or the iPhone passcode before the book opens. The plugin
+    // writes NSFaceIDUsageDescription (and Android's biometric permissions for later). Off until the parent turns
+    // it on; the purpose string is the only permission it adds (preflight LEGAL-REQ-007 check).
+    ['expo-local-authentication', { faceIDPermission: faceId }],
     // Brand fonts embedded at build time (no runtime load on launch). The list is
     // @scribe/design-tokens/fonts `fontFiles` (repo-root paths); its .ttf requires are
     // Metro assets, so they are stubbed here.
@@ -274,8 +326,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         ),
       },
     ],
-    // Google sign-in (PRD A-REQ-017): only when this build has the iOS client id, because the
-    // plugin needs its reversed form as a URL scheme (docs/ops/AUTH_SETUP.md section 3).
+    // Google sign-in (PRD A-REQ-017): only in a build that can sign in and has the iOS client id, because
+    // the plugin needs its reversed form as a URL scheme (docs/ops/AUTH_SETUP.md section 3).
     ...(googleIosUrlScheme ? [['@react-native-google-signin/google-signin', { iosUrlScheme: googleIosUrlScheme }] as [string, object]] : []),
   ],
   experiments: {
@@ -288,5 +340,5 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // EAS project `scribe` in the organization earlyletters-team (created 1 Nov 2026, docs/release/TESTFLIGHT.md step 3). Not a secret.
     eas: { projectId: '0bc517fb-a526-4f0f-892a-5ab676a86e6b' },
   },
-  });
+  }));
 };

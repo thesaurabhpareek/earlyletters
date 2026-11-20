@@ -6,7 +6,10 @@
  * can be put back (withoutEdit). One control, "With small fixes | Exactly as
  * said", is both the view and the choice for this letter until it is saved;
  * choosing Exactly as said keeps the fixes in state, so it is reversible
- * (D-086, review-view.logic.ts). The raw
+ * (D-086, review-view.logic.ts). The person's own choices (fixes put back,
+ * the view, their words from Change words) are written to the draft as they
+ * happen and come back when Review reopens, so a kill before Keep loses none
+ * of them (SR-C-06, CR-39; lib/capture/review-persist.logic.ts). The raw
  * transcript is set once on the draft and never changed. Saving writes the
  * entry locally first, then the success haptic, then the saved moment, which
  * lands on the Book (components/capture/saved-moment.tsx, EXPERIENCE_PASS S21).
@@ -45,7 +48,8 @@ import { CheckIcon } from 'phosphor-react-native/src/icons/Check';
 import { PauseIcon } from 'phosphor-react-native/src/icons/Pause';
 import { PlayIcon } from 'phosphor-react-native/src/icons/Play';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
+import { File } from 'expo-file-system';
+import { Alert, AppState, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import {
   ENGINE_VERSION,
@@ -60,7 +64,9 @@ import {
   type RejectedEdit,
 } from '@scribe/core';
 import { tokens } from '@scribe/design-tokens';
+import { deleteIfPresent, letItGo } from '@/lib/capture/let-it-go.logic';
 import { laterWordsDraft } from '@/components/capture/later-words.logic';
+import { settleDraft, settleForKeep } from '@/components/capture/review-settle.logic';
 import { LetterSheet } from '@/components/capture/letter-sheet';
 import { SavedMoment } from '@/components/capture/saved-moment';
 import { Transcript } from '@/components/capture/transcript';
@@ -71,6 +77,7 @@ import {
   countLine,
   letterHeader,
   primaryDestination,
+  putBackNoteShows,
   reviewHasOwnChanges,
   reviewHeading,
   savePrimaryLabel,
@@ -86,6 +93,7 @@ import {
 } from '@/components/capture/review-view.logic';
 import { clockOf } from '@/components/tonight/draft-card.logic';
 import {
+  isShortTake,
   lengthA11y,
   progressClock,
   recordingKept,
@@ -100,7 +108,7 @@ import {
 import { isPreviewAudioPresent } from '@/dev/preview-audio';
 import { isOwnEntry } from '@/components/child/child-store';
 import { PlusGate } from '@/components/child/plus-gate';
-import { holdOnce, storedWords } from '@/components/child/plus-gate.logic';
+import { holdOnce, holdWithoutSheet, storedWords } from '@/components/child/plus-gate.logic';
 import { WhoseBookSheet } from '@/components/child/whose-book-sheet';
 import { Button, ButtonRow } from '@/components/ui/button';
 import { useUnlitRoom } from '@/components/ui/lamp';
@@ -109,10 +117,13 @@ import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { ModalHeader } from '@/components/ui/screen-header';
 import { InlineState, StateScreen } from '@/components/ui/state-screen';
 import { Text } from '@/components/ui/text';
+import { useToast } from '@/components/ui/toast';
+import { billingCopy } from '@scribe/content';
 import { childIndexOf, fromReminderWithin2h, promptKindOf, track, trackLetterSaved, trackMachineEditsRejected, wordCountOf } from '@/lib/analytics/track';
 import { setAudioMode } from '@/lib/audio-mode';
 import { consumeKeep, peekKeep } from '@/lib/capture/keep-intent';
-import { ensureAudioHash } from '@/lib/capture/recorder';
+import { mountReview, restoreApplied, reviewWriter, withoutPutBack, wordsBase } from '@/lib/capture/review-persist.logic';
+import { ensureAudioHash, finishingTake, isFinishing } from '@/lib/capture/recorder';
 import { copy, fill, pendingCopy, plural } from '@/lib/copy';
 import { devShortcutsAllowed } from '@/lib/build-env';
 import { haptic } from '@/lib/haptics';
@@ -127,8 +138,11 @@ import {
   dictionaryFor,
   getChild,
   getDraft,
+  getDraftReview,
   getEntry,
   getSetting,
+  beginDiscard,
+  finishDiscard,
   holdDraft,
   keepReviewedWords,
   listChildren,
@@ -138,6 +152,7 @@ import {
   saveVoiceOnlyFromDraft,
   setActiveChildId,
   setDraftChild,
+  setDraftReview,
   setSetting,
   todayISO,
   type Draft,
@@ -212,12 +227,22 @@ export default function Review() {
   const [saveFailed, setSaveFailed] = useState(false);
   // Set when the Keep step needs Plus: the letter is held, not saved (see the header).
   const [gate, setGate] = useState<KeepGate | null>(null);
+  const toast = useToast();
   // The calm line on the saved card after the second free letter (once: the count passes it once).
   const [secondFree, setSecondFree] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [voiceOnly, setVoiceOnly] = useState(false);
   const [keptForWords, setKeptForWords] = useState(false);
   const [raw, setRaw] = useState<string>(typed ? draft!.typedText! : (draft?.rawTranscript ?? ''));
+  // The person's choices from an earlier visit (a kill, or Close and reopen), on these same words only (SR-C-06).
+  // A letter whose words arrived later has no draft row, so nothing is stored or restored for it.
+  const [mounted] = useState(() =>
+    mountReview({
+      saved: draftId && !later ? getDraftReview(draftId) : null,
+      words: raw,
+      defaultView: typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING)),
+    }),
+  );
   const [isSample, setIsSample] = useState(false);
   const [level] = useState<EditLevel>(typed ? 'verbatim' : spokenEditLevel(language));
   const [applied, setApplied] = useState<Edit[]>([]);
@@ -225,13 +250,14 @@ export default function Review() {
   const [restored, setRestored] = useState<{ edit: Edit; index: number } | null>(null);
   const [wash, setWash] = useState(false);
   // How this letter reads: with the small fixes, or exactly as said. Starts from the Settings default (Word for word switch).
-  const [view, setView] = useState<ReviewView>(() => (typed ? 'fixes' : viewFromSetting(getSetting(DEFAULT_VIEW_SETTING))));
-  // The view Review opened with: choosing the other one is a change of the person's, kept only until Keep (S1).
+  // The view the person chose on an earlier visit (SR-C-06), else the Settings default (Word for word switch).
+  const [view, setView] = useState<ReviewView>(mounted.view);
+  // The view Review opened with: choosing the other one is a change of the person's, kept on the draft until Keep (S1).
   const [openedView] = useState(view);
   // How many fixes the machine proposed for this letter (the view control and the zero wordings read it).
   const [proposed, setProposed] = useState(0);
   const [editing, setEditing] = useState(false);
-  const [userText, setUserText] = useState<string | null>(null);
+  const [userText, setUserText] = useState<string | null>(mounted.userText);
   const [wordsArrived, setWordsArrived] = useState(false);
   const [savedTo, setSavedTo] = useState<'book' | 'private' | null>(null);
   const [firstNote, setFirstNote] = useState(() => !typed && getSetting('review.firstNoteSeen') !== '1');
@@ -263,17 +289,66 @@ export default function Review() {
   // What the verifier refused is counted once at save (machine_edit_rejected: type, source, reason only).
   const rejected = useRef<RejectedEdit[]>([]);
   const reverted = useRef(0);
+  // The fixes the person put back, as the engine proposed them; stored on the draft (SR-C-06).
+  const putBacks = useRef<Edit[]>(mounted.putBack);
   useEffect(() => {
     if (!raw || typed) return;
     const result = cleanSpoken(raw, dictionary, language, undefined, languageCleanOptions(letterLanguage));
     rejected.current = result.rejected;
-    setApplied(result.applied);
+    // Only leaves out what the person put back: every fix shown is one the verifier just accepted (constitution).
+    const kept = restoreApplied(result.applied, putBacks.current);
+    putBacks.current = kept.putBack;
+    reverted.current = kept.putBack.length;
+    setApplied(kept.applied);
     setProposed(result.applied.length);
   }, [raw, typed, dictionary, language, letterLanguage]);
 
+  // Writes the person's choices to the draft as they happen (SR-C-06): put-backs and the view at once, typed words
+  // at most 300 ms after the first change, however long the editing goes on (F04-REQ-011, F06-REQ-036), and at once
+  // when the app leaves the foreground, at Done and at Close.
+  // Sample words (development builds) are never saved, so nothing is stored for them either.
+  const persist = useRef({ base: wordsBase(raw), on: !!draftId && !later && !isSample });
+  persist.current = { base: wordsBase(raw), on: !!draftId && !later && !isSample };
+  const [writer] = useState(() =>
+    reviewWriter((patch) => {
+      if (draftId && persist.current.on) setDraftReview(draftId, persist.current.base, patch);
+    }),
+  );
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (s) => {
+      if (s !== 'active') writer.flush();
+    });
+    return () => {
+      sub.remove();
+      writer.flush();
+    };
+  }, [writer]);
+  // Every change of the person's words goes to the draft within 300 ms; the words restored on mount are already there.
+  const lastWords = useRef(userText);
+  useEffect(() => {
+    if (userText === lastWords.current) return;
+    lastWords.current = userText;
+    writer.text(userText);
+  }, [userText, writer]);
+  // Done writes the words at once.
+  useEffect(() => {
+    if (!editing) writer.flush();
+  }, [editing, writer]);
+
   // Ask the queue for words (idempotent: a reopened Review joins the same job).
   useEffect(() => {
-    if (phase === 'transcribing' && draft?.audioUri) requestWords(draft.id);
+    // A slow save on Listen opens Review while the take is still being kept (state 'recording', no length or hash):
+    // wait for that save, show the finished row, and only then ask for words (BL-563; review-settle.logic).
+    if (phase !== 'transcribing' || !draft?.audioUri) return;
+    let live = true;
+    void settleDraft(draft.id, { getDraft, running: finishingTake, waitMs: null }).then((settled) => {
+      if (!live || !settled) return;
+      if (settled !== draft) setDraft(settled);
+      if (settled.state !== 'recording') requestWords(settled.id);
+    });
+    return () => {
+      live = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -299,7 +374,8 @@ export default function Review() {
   // Re-read once a second while they are being written down; "Read it back later", once offered, stays.
   const writingNow = phase === 'transcribing' && (!job || job.phase === 'queued' || job.phase === 'running');
   const shownAt = useRef(Date.now());
-  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}`;
+  // A new part, or a whole percent more within one, is progress (whisper.rn reports within a part).
+  const progressKey = `${job?.phase ?? 'none'}:${job?.progress?.done ?? 0}:${Math.floor((job?.progress?.fraction ?? 0) * 100)}`;
   const progress = useRef({ key: progressKey, at: Date.now() });
   progress.current = progressClock(progress.current, progressKey, Date.now());
   const laterOffered = useRef(false);
@@ -322,6 +398,26 @@ export default function Review() {
   const recordAgain = () => {
     haptic('tap');
     router.replace({ pathname: '/listen', params: draft?.promptKey ? { promptKey: draft.promptKey } : {} });
+  };
+
+  // "Let it go" (BL-379): asks first; the row and the audio file go only after the confirm. Nothing else deletes audio here.
+  const letGo = () => {
+    if (!draft) return;
+    const id = draft.id;
+    const uri = draft.audioUri;
+    Alert.alert(copy.listen.discardTitle, copy.listen.discardBody, [
+      { text: copy.listen.keepButton, style: 'cancel' },
+      {
+        text: copy.listen.discardConfirm,
+        style: 'destructive',
+        onPress: () => {
+          haptic('warning');
+          letItGo(id, uri, { beginDiscard, deleteFile: (u) => deleteIfPresent(new File(u)), finishDiscard });
+          if (router.canGoBack()) router.back();
+          else router.replace('/');
+        },
+      },
+    ]);
   };
 
   // Mini player for the recording ("Hear it").
@@ -364,6 +460,8 @@ export default function Review() {
     haptic('tap');
     reverted.current++;
     track('machine_edit_reverted', { edit_type: edit.type, source: edit.source });
+    putBacks.current = [...putBacks.current, edit];
+    writer.putBack(putBacks.current);
     setApplied(next.applied);
     setRestored({ edit, index });
     setOpenEdit(null);
@@ -377,6 +475,8 @@ export default function Review() {
     reverted.current = Math.max(0, reverted.current - 1);
     const next = [...applied];
     next.splice(restored.index, 0, restored.edit);
+    putBacks.current = withoutPutBack(putBacks.current, restored.edit);
+    writer.putBack(putBacks.current);
     setApplied(next);
     setRestored(null);
   };
@@ -386,6 +486,7 @@ export default function Review() {
     if (next === view) return;
     haptic('tap');
     if (next === 'exact') track('review_action', { action: 'show_exactly_said' });
+    writer.view(next);
     setView(next);
     setRestored(null);
     setOpenEdit(null);
@@ -445,6 +546,20 @@ export default function Review() {
     if (devPass.current) return false;
     const g = await keepSheetFor(wordsOnScreen);
     if (g === null) return false;
+    if (g.decision.kind === 'hold') {
+      // Plus is not known yet on this phone (no StoreKit read, no cached plan; RT-PLS-10): hold the letter exactly as
+      // "Keep it here for now" does, with the destination chosen at this Keep, and show no Plus sheet. Tonight shows
+      // it waiting; by the next Keep the read has landed and the gate decides. The held line says so, on screen and
+      // to VoiceOver (the toast announces once and outlives this screen), the same words the Keep sheet uses. A second
+      // tap does nothing (holdWithoutSheet: one hold, one line, one back). No letter_held event: that one counts holds
+      // chosen at the Keep sheet, and no sheet was shown here (keepSheetFor notes nothing for a hold either).
+      holdWithoutSheet(holding, {
+        hold: () => (later || !draft ? true : holdDraft(draft.id, { inBookChoice: heldInBook.current })),
+        say: () => toast.show({ message: later ? billingCopy.keepGate.heldNoteLetter : billingCopy.keepGate.heldNote }),
+        leave: () => (router.canGoBack() ? router.back() : router.replace('/')),
+      });
+      return true;
+    }
     setGate(g);
     return true;
   };
@@ -459,6 +574,7 @@ export default function Review() {
     if (!draft || !child || saving.current || isSample) return; // sample words are never saved
     saving.current = true;
     heldInBook.current = inBook;
+    writer.flush(); // the words on screen are on the draft before Keep (a held letter keeps them; a kept one takes them)
     player.pause();
     // Out of playback, as togglePlay does: announcements wait while a recording plays (lib/a11y), so the saved
     // moment's sentence would otherwise be held until the Book (#289 lens B, S6).
@@ -470,6 +586,8 @@ export default function Review() {
         saving.current = false; // held: the draft is untouched
         return;
       }
+      // The row as it is now: a save that finished after Review opened has the real length and file (BL-563).
+      const live = getDraft(draft.id) ?? draft;
       const firstLetter = !hasAnyLetter();
       // A letter whose words arrived later is already saved: its words count now, at this Keep (later-words.logic).
       if (later) keepLaterLetter(draft.id, inBook);
@@ -491,8 +609,8 @@ export default function Review() {
           soundsLikeMe: null, // "Does this sound like you?" is not asked in v1.0 (D-086); the field stays null
           childId: child.id,
           authorSignsAs: child.signsAs,
-          audioUri: draft.audioUri,
-          audioDurationMs: draft.audioDurationMs,
+          audioUri: live.audioUri,
+          audioDurationMs: live.audioDurationMs,
           audioSha256: audio.sha256,
           audioBytes: audio.bytes,
         },
@@ -505,7 +623,7 @@ export default function Review() {
         childIndex: childIndexOf(child.id),
         role: 'parent',
         promptKind: promptKindOf(draft.promptKey),
-        audioMs: draft.audioDurationMs,
+        audioMs: live.audioDurationMs,
         wordCount: wordCountOf(finalText),
         machineEdits: inForce.length,
         editsReverted: reverted.current + setAsideAtSave(view, applied),
@@ -532,7 +650,17 @@ export default function Review() {
     await setAudioMode('idle').catch(() => {}); // as in save: the saved moment is said at once
     setSaveFailed(false);
     try {
-      const audio = await ensureAudioHash(draft);
+      // A take still being saved has no real length or hash: join that save first, and keep nothing while it runs
+      // (BL-563). The take stays; the words wait in Review starts when the save ends.
+      const settled = await settleForKeep(draft.id, { getDraft, running: finishingTake });
+      if (!settled) {
+        saving.current = false;
+        // Nothing was kept. Say why only when waiting can help: the save is still running (the hung-save case, #618).
+        // A save that ended and left the row unfinished, or no row, keeps the old quiet return.
+        if (isFinishing(draft.id)) toast.show({ message: copy.review.keepStillSaving });
+        return;
+      }
+      const audio = await ensureAudioHash(settled);
       // No Keep gate here (M17, D-103; F14 6.1): this letter has no words (the queue has none yet, nobody spoke,
       // or only development sample words show, never saved), so it never counts and never opens the Keep sheet.
       // It counts later, at the save where its words are first on screen.
@@ -639,6 +767,7 @@ export default function Review() {
       ? wordsCard({
           emptyFile: file === 'empty',
           unreadable: file === 'unreadable',
+          shortTake: isShortTake(draft.audioDurationMs),
           job,
           download: {
             ask: showReviewAsk({ choice: speechDownloadChoice(), progress: download.progress, hold: download.hold }),
@@ -665,6 +794,7 @@ export default function Review() {
     // The person writes the words for this recording; the app never fills them in (S16).
     write: () => router.replace({ pathname: '/write', params: { draftId: draft.id } }),
     recordAgain,
+    letGo,
     download: () => void startSpeechDownload(language),
     // Cellular data for this download only, on this tap only; the Wi-Fi default stays (D-087).
     cellular: () => void startSpeechDownload(language, { allowCellularOnce: true }),
@@ -805,9 +935,13 @@ export default function Review() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <ModalHeader
-        onClose={() => router.back()}
-        // Say what is true: the person's own changes (Change words, a fix put back, the other view) are only on this screen until Keep
-        // (P4 critics' pass S1; storing them on the draft is build 3's item, #274 N1).
+        onClose={() => {
+          writer.flush();
+          router.back();
+        }}
+        // The person's own changes (Change words, a fix put back, the other view) are written to the draft as they
+        // happen (SR-C-06), but the hint still steps aside while any is there (P4 critics' pass S1): whether Close
+        // should now say "Saved on this phone" over them is a design and copy call, handed off (W6b PR).
         closeHint={reviewHasOwnChanges({ userText, applied: applied.length, proposed, view, openedView }) ? undefined : pendingCopy.write.savedOnPhone}
         leading={
           editing ? (
@@ -925,7 +1059,7 @@ export default function Review() {
                     </Animated.View>
                   )}
 
-                  {restored && (
+                  {putBackNoteShows({ restored: !!restored, editing, userText }) && (
                     <View className="flex-row flex-wrap items-center gap-x-2" accessibilityLiveRegion="polite">
                       <Text variant="subhead" tone="muted">{pendingCopy.review.putBack}</Text>
                       <Button size="sm" variant="quiet" onPress={undoPutBack}>
@@ -992,6 +1126,8 @@ export default function Review() {
                   testID="review.edit"
                   onPress={() => {
                     track('review_action', { action: 'edit_text' });
+                    // The put-back line speaks about the fixes; once the words are the person's own it is stale (QE-02).
+                    setRestored(null);
                     setEditing(true);
                   }}>
                   <Text>{pendingCopy.review.editTextButton}</Text>
@@ -1067,11 +1203,27 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
   );
 }
 
-/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
 function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const detail =
     shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -1080,16 +1232,24 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
       accessibilityHint={pendingCopy.review.editA11yHint}
       accessibilityState={{ expanded: open }}
       testID="review.fixRow"
-      className="min-h-12 flex-row items-center gap-3 py-1">
-      <Text variant="labelSmall">{label}</Text>
-      <Text
-        variant="footnote"
-        className="flex-1"
-        numberOfLines={1}
-        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
-        {detail}
-      </Text>
-      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
     </Pressable>
   );
 }
@@ -1101,6 +1261,7 @@ const WORDS_TEST_ID: Record<WordsAction, string> = {
   type: 'review.type',
   write: 'review.write',
   recordAgain: 'review.recordAgain',
+  letGo: 'review.letGo',
   download: 'review.getReady',
   cellular: 'review.mobileData',
   later: 'review.later',
@@ -1171,7 +1332,7 @@ function ProgressLine({ value }: { value: number }) {
   const pct = Math.max(0, Math.min(100, Math.round(value * 100)));
   return (
     <View
-      className="h-1 w-full overflow-hidden rounded-full bg-muted"
+      className="h-1 w-full overflow-hidden rounded-full bg-input"
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 0, max: 100, now: pct }}>
       <View className="h-1 rounded-full bg-primary" style={{ width: `${pct}%` }} />

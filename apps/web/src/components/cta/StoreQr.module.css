@@ -1,0 +1,74 @@
+/* The launch action in the end card: badge on touch devices, QR beside a text link on a laptop. No motion. */
+.launch {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+.badge {
+  display: flex;
+  justify-content: center;
+}
+.qr {
+  display: none;
+}
+/* A device with a fine pointer and hover: the QR replaces the badge (one badge per layout, one action at a time). */
+@media (hover: hover) and (pointer: fine) {
+  .launch[data-qr] .badge {
+    display: none;
+  }
+  .launch[data-qr] .qr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: left;
+  }
+}
+.tile {
+  flex: none;
+  display: block;
+  width: 160px;
+  height: 160px;
+  border-radius: 10px;
+}
+.words {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+.hint {
+  margin: 0;
+  font: 400 16px/1.4 var(--font-sans);
+  color: var(--night-ink);
+}
+.link {
+  font: 500 16px/1.4 var(--font-sans);
+  color: var(--night-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+}
+.link:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+@media (max-height: 700px) {
+  .tile {
+    width: 136px;
+    height: 136px;
+  }
+}
+@media (max-width: 420px) {
+  .launch[data-qr] .qr {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  .words {
+    align-items: center;
+  }
+}

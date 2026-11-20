@@ -3,10 +3,9 @@
  * so test/delete-account.test.ts runs it in Node. The deletion itself (the two steps, the 30-day window, cancel, the
  * per-book lines) is S14's, in lib/account-deletion/**; this file only lays those lines out and picks the words.
  *
- * Held for counsel (spec chapter 7 and section 7, C8: the deletion lines P8 corrects go to counsel before they ship).
- * The page shows today's words until counsel clears the new ones; then the switch is the one line named:
- * - `intro`: `c.what.intro` to `c.what.introProposed` ("... your letters, recordings, books and recording backup
- *   from our servers. ..."). Then `introProposed` moves into `what.intro` in packages/content and the key goes.
+ * Held for counsel (spec chapter 7 and section 7, C8: what deletion removes, and the 30 days, are retention promises).
+ * Build 12 (servers on, recording backup off) shows `c.what.intro`, which names only what the build holds on our
+ * servers (letters and books); the proposed line that named a recording backup is gone from packages/content.
  */
 import { accountDeletionCopy as c } from '@scribe/content';
 import { confirmationMatches, expectedDeletionDate, localDay } from '@/lib/account-deletion/logic';

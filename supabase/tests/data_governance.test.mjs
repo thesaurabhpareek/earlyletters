@@ -158,7 +158,7 @@ check('users cannot read others\' acceptances', (await as(B, `select 1 from poli
 check('clients cannot insert acceptances directly', await fails(() => as(A, `insert into policy_acceptances (profile_id, document, version, action, method, surface, app_version, platform) values ('${A}', 'terms', '1.0.0', 'accept', 'signin_sheet', 'x', '1', 'ios')`)));
 check('acceptances are append-only, even for the service role', await fails(() => sys(`update policy_acceptances set action='decline' where id='${actA}'`)));
 check('unknown versions are refused', await fails(() => as(A, `select public.record_policy_act('terms', '9.9.9', 'accept', 'signin_sheet', 'auth.sheet', '1.0.0', 'ios')`)));
-check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', 'public.record_policy_act(text,text,text,text,text,text,text,text,timestamptz,bytea,jsonb)', 'execute') ok`)).rows[0].ok);
+check('anonymous visitors cannot record acts', !(await sys(`select has_function_privilege('anon', p.oid, 'execute') ok from pg_proc p where p.proname = 'record_policy_act'`)).rows.some((r) => r.ok));
 
 // ── TC-08 Delete book with a co-parent = remove own letters and leave ─────
 const BOOK2 = await newChild(B);

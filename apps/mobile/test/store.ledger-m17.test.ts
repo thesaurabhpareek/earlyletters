@@ -185,3 +185,19 @@ describe('[F14-REQ-023] the ledger never decreases', () => {
     expect(counts()).toEqual({ recorded: 1, present: 1 });
   });
 });
+
+describe('[D-133] a note kept through the store counts like a letter', () => {
+  it('saveLetterFromDraft with kind note counts it in the save transaction, the same as a letter', () => {
+    const c = asha();
+    const text = 'Asha, you waved at the bus.';
+    const d = store.createDraft({ childId: c, captureMode: 'typed', promptKey: null, audioUri: null, audioDurationMs: null, typedText: text });
+    store.saveLetterFromDraft(d.id, {
+      id: d.id, kind: 'note', occurredOn: '2026-10-03', capturedAt: now(), captureMode: 'typed', editLevel: 'verbatim', promptKey: null,
+      engineVersion: 5, rawTranscript: text, machineEdits: [], finalText: text, inBook: true, soundsLikeMe: null, childId: c, authorSignsAs: 'Mama', audioUri: null,
+    });
+    expect(store.getEntry(d.id)?.kind).toBe('note');
+    expect(counts()).toEqual({ recorded: 1, present: 1 });
+    keepTyped(c);
+    expect(counts()).toEqual({ recorded: 2, present: 2 });
+  });
+});

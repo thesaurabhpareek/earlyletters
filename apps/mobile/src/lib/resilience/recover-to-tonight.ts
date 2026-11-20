@@ -1,6 +1,6 @@
 /**
- * "Go to Tonight" from the error screen. The root layout is the thing that is showing the error, so
- * the navigator is not mounted yet: remount first (`retry`), then go to Tonight as soon as the router is
+ * "Go to Home" from the error screen. The root layout is the thing that is showing the error, so
+ * the navigator is not mounted yet: remount first (`retry`), then go Home as soon as the router is
  * ready (`go` is router.replace, passed in so this stays pure and tested in Node). Polls briefly and gives up quietly; the person is still on a working screen either way.
  */
 import { TONIGHT_HREF } from './not-found.logic';

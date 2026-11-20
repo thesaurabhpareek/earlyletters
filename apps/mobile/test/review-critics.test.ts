@@ -107,7 +107,7 @@ describe('[S1] Close never says "Saved on this phone" over changes only on the s
 
 describe('[S2] Write\'s two destinations are stacked, as Review\'s footer is', () => {
   it('"Add to Asha\'s book" full width, "Keep private" quiet beneath; no side-by-side row', () => {
-    const pair = write.slice(write.indexOf('<View className="gap-1 border-t border-border'), write.indexOf('</KeyboardAvoidingView>'));
+    const pair = write.slice(write.indexOf('const footer = ('), write.indexOf('const status ='));
     expect(pair).toMatch(/<Button size="lg" fullWidth label=\{addButtonLabel\(child\.name\)\} onPress=\{\(\) => keep\(true\)\} disabled=\{empty\} testID="write\.keep\.book" \/>\s*<Button variant="quiet" fullWidth label=\{copy\.review\.destination\.privateButton\} onPress=\{\(\) => keep\(false\)\} disabled=\{empty\} testID="write\.keep\.private" \/>/);
     expect(write).not.toMatch(/ButtonRow/);
   });

@@ -21,5 +21,11 @@ export function expoSqlDb(d: SQLite.SQLiteDatabase): SqlDb {
  * Durability first (TDD 01 3.2.1): WAL with synchronous=FULL, so a commit
  * survives power loss (WAL with NORMAL can drop the last commits). Both are
  * per-connection settings, so they run on every open, outside any transaction.
+ *
+ * secure_delete (BL-387, privacy Review A on #520): SQLite overwrites deleted
+ * content with zeros instead of leaving it in free pages, so an erased letter's
+ * words or a child's name are not left readable in `scribe.db`, which an iPhone
+ * backup copies. The erase paths then truncate the WAL (store.ts
+ * compactAfterErase), where the old page images would otherwise wait.
  */
-export const OPEN_PRAGMAS = 'PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL;';
+export const OPEN_PRAGMAS = 'PRAGMA journal_mode = WAL; PRAGMA synchronous = FULL; PRAGMA secure_delete = ON;';

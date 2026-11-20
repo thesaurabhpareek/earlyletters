@@ -12,9 +12,9 @@
  * online and needs no secrets. It cannot see the EAS "production" environment on expo.dev; the UNVERIFIED lines
  * name what to check there by hand.
  *
- * Every check below is a FAIL when it does not hold. Today two of them FAIL by design until the founder steps are
- * done: the pack signing keys (packages/api/src/keys.ts is empty, docs/ops/PACKS_HOSTING.md step 1) and the App
- * Store Connect record (submit.production.ios.ascAppId), and extra.eas.projectId until step 3's PR.
+ * Every check below is a FAIL when it does not hold. On develop two of them may still FAIL by design: the App Store
+ * Connect record (submit.production.ios.ascAppId, a founder step), and update-channel (the production profile sets
+ * "channel" without expo-updates; REL-06/RS-15 removes it after the 9 Nov go/no-go, D-124 item 1).
  *
  * Exit code: 1 if any FAIL, otherwise 0.
  */
@@ -22,12 +22,28 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { envFileProblems } from './env-file-guard.mjs';
-import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys } from './preflight-lib.mjs';
+import { createReport, expo, packManifestPublished, parseJsonOut, privacyManifestDeclared, secretKind, signingKeys, updateChannelMessage, updateChannelProblems } from './preflight-lib.mjs';
 
 export const PROFILE = 'production';
 
 /** Build flags that only ever belong to test builds (B-9): the e2e seams and the web preview seams. */
 export const SEAM_FLAGS = ['EXPO_PUBLIC_E2E', 'EXPO_PUBLIC_WEB_PREVIEW'];
+
+/** Google sign-in client ids (src/lib/auth/google.ts): neither may reach the v1.0 store build. */
+export const GOOGLE_FLAGS = ['EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID', 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID'];
+
+/**
+ * The data types the production privacy manifest declares with servers on, backup and status report off
+ * (apps/mobile/src/lib/privacy-manifest.ts COLLECTED_ROWS; the App Privacy worksheet, proposals/privacy-label-servers-on.md
+ * section 5). Exactly these, no more (no Audio Data, Device ID or Purchase History) and no fewer.
+ */
+export const SERVERS_ON_COLLECTED = [
+  'NSPrivacyCollectedDataTypeEmailAddress',
+  'NSPrivacyCollectedDataTypeName',
+  'NSPrivacyCollectedDataTypeOtherUserContent',
+  'NSPrivacyCollectedDataTypeSensitiveInfo',
+  'NSPrivacyCollectedDataTypeUserID',
+];
 
 /**
  * The ACCOUNT_DELETION decision for a profile, read from the profile table in docs/release/ENVIRONMENTS.md:
@@ -49,6 +65,29 @@ export function accountDeletionDecision(environmentsMd, profile = PROFILE) {
   return null;
 }
 
+const isOn = (v) => String(v ?? '').trim().toLowerCase() === 'on';
+/** Entitlement keys only a build that can sign in carries (app.config.ts SIGN_IN_ENTITLEMENTS). */
+export const SIGN_IN_ENTITLEMENTS = ['com.apple.developer.applesignin', 'com.apple.developer.associated-domains'];
+const GOOGLE_PLUGIN = '@react-native-google-signin/google-signin';
+
+/**
+ * Every sign-in capability an evaluated config still carries: `cfg` is the public config, `introspected` the
+ * `expo config --type introspect` result, which holds the entitlements and Info.plist that prebuild writes (mods
+ * included, so the Sign in with Apple key that expo-apple-authentication adds on its own shows up there).
+ */
+export function signInCapabilities(cfg, introspected) {
+  const ent = Object.keys(introspected?.ios?.entitlements ?? {});
+  const schemes = (introspected?.ios?.infoPlist?.CFBundleURLTypes ?? []).flatMap((t) => t?.CFBundleURLSchemes ?? []);
+  const plugins = (cfg?.plugins ?? []).map((p) => (Array.isArray(p) ? p[0] : p));
+  return [
+    ...(cfg?.ios?.usesAppleSignIn ? ['ios.usesAppleSignIn'] : []),
+    ...((cfg?.ios?.associatedDomains ?? []).length ? [`ios.associatedDomains (${cfg.ios.associatedDomains.join(', ')})`] : []),
+    ...ent.filter((k) => SIGN_IN_ENTITLEMENTS.includes(k)).map((k) => `entitlement ${k}`),
+    ...schemes.filter((u) => /^com\.googleusercontent\.apps\./.test(String(u))).map((u) => `Google URL scheme ${u}`),
+    ...(plugins.includes(GOOGLE_PLUGIN) ? [`the ${GOOGLE_PLUGIN} plugin`] : []),
+  ];
+}
+
 const isOff = (v) => String(v ?? '').trim().toLowerCase() === 'off';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,6 +96,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  *
  * - `eas`: apps/mobile/eas.json, parsed
  * - `cfg`: `expo config --type public --json` with the production profile's env, or null when it did not evaluate
+ * - `introspected`: `expo config --type introspect --json` with the same env (entitlements and Info.plist after mods), or null
  * - `environmentsMd`: docs/release/ENVIRONMENTS.md
  * - `keysSource`: packages/api/src/keys.ts
  * - `publishedSource`: supabase/functions/config/published.ts
@@ -64,9 +104,11 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  * - `appConfigSource`: apps/mobile/app.config.ts
  * - `shellEnv`: the environment this runs in (a local build reads it)
  * - `envFiles`: apps/mobile/.env* files, as [{ name, text }]
+ * - `mobilePackage`: apps/mobile/package.json, parsed (absent or unreadable counts as no expo-updates)
  *
- * Each result has an `id`: english-only, analytics, servers, backup, status-report, account-deletion, signing-keys,
- * pack-manifest, privacy-manifest, version, project-id, asc-app-id, seams, secrets (and config when `expo config` failed).
+ * Each result has an `id`: app-env, english-only, spoken-languages, analytics, servers, google-signin, backup, status-report,
+ * account-deletion, signing-keys, pack-manifest, privacy-manifest, sign-in, version, project-id, update-channel, asc-app-id,
+ * seams, secrets (and config when `expo config` failed).
  */
 export function productionChecks(input) {
   const { results, pass, fail, unverified, check } = createReport();
@@ -78,12 +120,30 @@ export function productionChecks(input) {
   if (!prof) fail(`eas.json has no "${PROFILE}" build profile.`, 'profile');
   if (!cfg) fail(`\`expo config --type public\` did not evaluate with the ${PROFILE} profile's env${input.cfgError ? `: ${input.cfgError}` : ''}.`, 'config');
 
+  // Founder, 1 Nov 2026 ("No letter limit in alpha"; src/lib/billing/alpha.ts): every app env but production is an alpha
+  // build with no letter limit and no Plus offer. The store build must say production, and the evaluated config agree.
+  check(
+    env.EXPO_PUBLIC_APP_ENV === 'production' && (!cfg || cfg.extra?.appEnv === 'production'),
+    `${PROFILE} profile: EXPO_PUBLIC_APP_ENV=production (the store build, with the free-letter limit and Plus; config extra.appEnv production)`,
+    `${PROFILE} profile EXPO_PUBLIC_APP_ENV is ${JSON.stringify(env.EXPO_PUBLIC_APP_ENV)} (config extra.appEnv ${JSON.stringify(cfg?.extra?.appEnv)}); anything but "production" builds an alpha app with no letter limit and no Plus (billing/alpha.ts).`,
+    'app-env',
+  );
+
   // D-121 item 1: the first store build transcribes English only.
   check(
     env.EXPO_PUBLIC_ENGLISH_ONLY === 'on',
     `${PROFILE} profile: EXPO_PUBLIC_ENGLISH_ONLY=on (the first store build offers English only, D-121 item 1)`,
     `${PROFILE} profile EXPO_PUBLIC_ENGLISH_ONLY is ${JSON.stringify(env.EXPO_PUBLIC_ENGLISH_ONLY)}; the store build must say "on" (D-121 item 1), or the picker offers languages the listing does not name.`,
     'english-only',
+  );
+
+  // D-121 item 1, D-125 item 2: the spoken-language list is written out and names English alone. A language joins it
+  // only in the release whose listing names it, after its own gate; that pull request changes this check with it.
+  check(
+    (env.EXPO_PUBLIC_SPOKEN_LANGUAGES ?? '').trim().toLowerCase() === 'en',
+    `${PROFILE} profile: EXPO_PUBLIC_SPOKEN_LANGUAGES=en (the store build hears English only, D-121 item 1)`,
+    `${PROFILE} profile EXPO_PUBLIC_SPOKEN_LANGUAGES is ${JSON.stringify(env.EXPO_PUBLIC_SPOKEN_LANGUAGES)}; the store build must say "en" (D-121 item 1, D-125 item 2): unset means every language, and any other language needs its gate and a listing that names it.`,
+    'spoken-languages',
   );
 
   // D-088: no analytics in the first store build, and no PostHog key named in the profile.
@@ -94,13 +154,26 @@ export function productionChecks(input) {
     'analytics',
   );
 
-  // D-100, D-121: servers off in the store build, written out, and the evaluated config agrees.
+  // Founder decision, 8 Nov 2026 (build 12): the store build runs with servers on, against the production backend.
+  // Supersedes the servers-off check of D-100 and D-121 item 1. Written out, and the evaluated config agrees.
   check(
-    isOff(env.EXPO_PUBLIC_SERVER_FEATURES) && (!cfg || cfg.extra?.serverFeatures === false),
-    `${PROFILE} profile: EXPO_PUBLIC_SERVER_FEATURES=off (no sign-in, sync or co-parent; config extra.serverFeatures false)`,
-    `${PROFILE} profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(env.EXPO_PUBLIC_SERVER_FEATURES)} (config extra.serverFeatures ${cfg?.extra?.serverFeatures}); the store build says "off" until the founder re-plans the submission after the R-17 gate (D-100, D-121).`,
+    isOn(env.EXPO_PUBLIC_SERVER_FEATURES) && (!cfg || cfg.extra?.serverFeatures === true),
+    `${PROFILE} profile: EXPO_PUBLIC_SERVER_FEATURES=on (sign-in, sync and co-parent; config extra.serverFeatures true)`,
+    `${PROFILE} profile EXPO_PUBLIC_SERVER_FEATURES is ${JSON.stringify(env.EXPO_PUBLIC_SERVER_FEATURES)} (config extra.serverFeatures ${cfg?.extra?.serverFeatures}); build 12 is a servers-on build against the production backend (founder, 8 Nov 2026), and the privacy label says data is collected.`,
     'servers',
   );
+
+  // Google sign-in stays out of v1.0: with no client id the button never shows (src/lib/auth/google.ts,
+  // googleSignInAvailable) and the label names no Google collection. Names only; the values are never read here.
+  {
+    const named = GOOGLE_FLAGS.filter((k) => String(env[k] ?? '').trim() !== '' || String(shell[k] ?? '').trim() !== '');
+    check(
+      named.length === 0,
+      `no Google client id (${GOOGLE_FLAGS.join(', ')}) in the ${PROFILE} profile or this shell (Google sign-in is out of v1.0)`,
+      `${named.join(', ')} set for the ${PROFILE} build. Google sign-in is out of v1.0: remove it from eas.json and from the EAS "${prof?.environment ?? PROFILE}" environment, or the Google button shows and the privacy label is wrong.`,
+      'google-signin',
+    );
+  }
 
   // F19-REQ-025: the build flags are written "off" explicitly.
   for (const [flag, id, extraKey, what] of [
@@ -155,17 +228,52 @@ export function productionChecks(input) {
     'pack-manifest',
   );
 
-  // App Store privacy manifest (ITMS-91053), and with servers off it declares no collected data.
+  // App Store privacy manifest (ITMS-91053). With servers on it declares exactly the servers-on set: linked to the
+  // person, never for tracking, App Functionality only. Audio Data, Device ID and Purchase History need backup or
+  // the status report, both off in this build.
   {
     const pm = cfg?.ios?.privacyManifests;
     const collected = pm?.NSPrivacyCollectedDataTypes ?? [];
+    const types = collected.map((c) => c.NSPrivacyCollectedDataType).sort();
+    const sameSet = types.length === SERVERS_ON_COLLECTED.length && SERVERS_ON_COLLECTED.every((t, i) => types[i] === t);
+    const plain = collected.every((c) => c.NSPrivacyCollectedDataTypeLinked === true && c.NSPrivacyCollectedDataTypeTracking === false && (c.NSPrivacyCollectedDataTypePurposes ?? []).join() === 'NSPrivacyCollectedDataTypePurposeAppFunctionality');
     check(
-      Boolean(cfg) && privacyManifestDeclared(pm) && collected.length === 0,
-      `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories, no collected data with servers off)`,
+      Boolean(cfg) && privacyManifestDeclared(pm) && sameSet && plain,
+      `privacy manifest declared (tracking false, ${pm?.NSPrivacyAccessedAPITypes?.length ?? 0} required-reason categories, ${types.length} collected data types: the servers-on set, linked, App Functionality only)`,
       !privacyManifestDeclared(pm)
         ? 'No privacy manifest in the production config (ios.privacyManifests), tracking is not false, or it declares no required-reason category.'
-        : `The production privacy manifest declares collected data (${collected.map((c) => c.NSPrivacyCollectedDataType).join(', ')}) in a build with server features off.`,
+        : !sameSet
+          ? `The production privacy manifest declares [${types.join(', ')}]; a servers-on build with backup and the status report off declares exactly [${SERVERS_ON_COLLECTED.join(', ')}] (privacy-manifest.ts).`
+          : 'A collected data type in the production privacy manifest is not linked, is used for tracking, or has a purpose other than App Functionality.',
       'privacy-manifest',
+    );
+  }
+
+  // Guideline 2.5.19 (no dormant features; store compliance review for build 12, risk 5): the store build with servers
+  // off has no sign-in, so it carries no Sign in with Apple entitlement, no associated domains and no Google URL
+  // scheme (app.config.ts signInCapable). With servers ON (the sign-in build) the reverse holds: the Apple entitlement
+  // and associated domains must be present, or sign-in would ship without its capabilities. Read from the introspected
+  // config, which is what prebuild writes.
+  {
+    const found = signInCapabilities(cfg, input.introspected);
+    const serversOn = cfg?.extra?.serverFeatures === true;
+    // Build 12 has no Google sign-in. This reads the built artifact (URL scheme, plugin); a Google client-id check on the
+    // profile's env names (#698) is a different input, so the two do not duplicate.
+    const google = found.filter((f) => f.startsWith('Google URL scheme') || f.includes('google-signin'));
+    const evaluated = Boolean(cfg) && Boolean(input.introspected);
+    const hasApple = found.includes('ios.usesAppleSignIn') && found.some((f) => f === `entitlement ${SIGN_IN_ENTITLEMENTS[0]}`);
+    const hasDomains = found.some((f) => f.startsWith('ios.associatedDomains')) && found.includes(`entitlement ${SIGN_IN_ENTITLEMENTS[1]}`);
+    check(
+      evaluated && (serversOn ? hasApple && hasDomains && google.length === 0 : found.length === 0),
+      serversOn
+        ? 'sign-in capabilities in the servers-on build: Sign in with Apple entitlement and associated domains present (app.config.ts signInCapable)'
+        : 'no sign-in capability in the store build: no Sign in with Apple entitlement, no associated domains, no Google URL scheme (guideline 2.5.19; the native modules stay linked, dormant)',
+      !evaluated
+        ? `\`expo config --type introspect\` did not evaluate with the ${PROFILE} profile's env${input.introspectError ? `: ${input.introspectError}` : ''}, so the entitlements cannot be checked.`
+        : serversOn
+          ? `The ${PROFILE} profile has server features on but the evaluated config lacks the Sign in with Apple entitlement or the associated domains, or carries a Google URL scheme or plugin, which build 12 does not offer (found: ${found.join('; ') || 'none'}). app.config.ts signInCapable keeps them whenever server features are on.`
+          : `The ${PROFILE} config carries ${found.join('; ')}, but this build offers no sign-in (guideline 2.5.19, "no hidden, dormant, or undocumented features"). app.config.ts signInCapable leaves them out of a production build with server features off.`,
+      'sign-in',
     );
   }
 
@@ -195,6 +303,15 @@ export function productionChecks(input) {
     'project-id',
   );
 
+  // RS-07, D-091: a build profile that sets an EAS Update channel without expo-updates installed stops a
+  // non-interactive `eas build` (alpha build 1; #538). Every profile is checked, not only production: release-ios.yml
+  // and testflight.yml both build non-interactively. One FAIL per offending profile, each naming it.
+  {
+    const { withChannel, profiles } = updateChannelProblems(eas, input.mobilePackage);
+    if (profiles.length) for (const name of profiles) fail(updateChannelMessage(name, eas.build[name].channel), 'update-channel');
+    else pass(withChannel.length ? `expo-updates is a dependency, so the channel in ${withChannel.map((n) => `"${n}"`).join(', ')} can be configured (D-091)` : 'no eas.json build profile sets an EAS Update channel (D-091, #538)', 'update-channel');
+  }
+
   // The production App Store Connect record, so `eas submit --profile production` needs no prompt.
   {
     const id = eas.submit?.[PROFILE]?.ios?.ascAppId;
@@ -218,7 +335,7 @@ export function productionChecks(input) {
       `${found.join('; ')}. Test seams never go in a build that can be uploaded (B-9): remove it.`,
       'seams',
     );
-    unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds no ${SEAM_FLAGS.join(' or ')} and no secret (this script cannot read it). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`, 'eas-environment');
+    unverified(`the EAS "${prof?.environment ?? PROFILE}" environment on expo.dev holds EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY for scribe-prod (a servers-on build with neither signs nobody in), no ${GOOGLE_FLAGS.join(' or ')}, no ${SEAM_FLAGS.join(' or ')} and no secret (this script cannot read it). Check the names with \`npx eas-cli@24.10.0 env:list --environment ${prof?.environment ?? PROFILE}\` in apps/mobile.`, 'eas-environment');
   }
 
   // No Supabase secret or service_role key in any env the build can read: every eas.json profile, this shell, .env* files.
@@ -267,20 +384,32 @@ export function readInputs(mobileDir, shellEnv = process.env) {
   const profEnv = eas?.build?.[PROFILE]?.env ?? {};
   // Project values and test seams come from the profile alone here; the seams and secrets checks read the shell.
   const buildEnv = { ...profEnv };
-  for (const k of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID', 'EXPO_PUBLIC_POSTHOG_KEY', ...SEAM_FLAGS]) {
+  for (const k of ['EXPO_PUBLIC_SUPABASE_URL', 'EXPO_PUBLIC_SUPABASE_ANON_KEY', 'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY', ...GOOGLE_FLAGS, 'EXPO_PUBLIC_POSTHOG_KEY', ...SEAM_FLAGS]) {
     if (!(k in profEnv)) buildEnv[k] = '';
   }
   const r = expo(mobileDir, ['config', '--type', 'public', '--json'], mobileDir, buildEnv);
   const cfg = parseJsonOut(r);
+  const ri = expo(mobileDir, ['config', '--type', 'introspect', '--json'], mobileDir, buildEnv);
+  const introspected = parseJsonOut(ri);
+  const tail = (x) => (x.stderr || x.stdout || '').trim().split('\n').slice(-3).join(' | ');
   return {
     eas,
     cfg,
-    cfgError: cfg ? undefined : (r.stderr || r.stdout || '').trim().split('\n').slice(-3).join(' | '),
+    cfgError: cfg ? undefined : tail(r),
+    introspected,
+    introspectError: introspected ? undefined : tail(ri),
     environmentsMd: read(join(repo, 'docs/release/ENVIRONMENTS.md')),
     keysSource: read(join(repo, 'packages/api/src/keys.ts')),
     publishedSource: read(join(repo, 'supabase/functions/config/published.ts')),
     versionJson: read(join(mobileDir, 'version.json')),
     appConfigSource: read(join(mobileDir, 'app.config.ts')),
+    mobilePackage: (() => {
+      try {
+        return JSON.parse(read(join(mobileDir, 'package.json')));
+      } catch {
+        return null;
+      }
+    })(),
     shellEnv,
     envFiles: readdirSync(mobileDir)
       .filter((f) => f.startsWith('.env'))

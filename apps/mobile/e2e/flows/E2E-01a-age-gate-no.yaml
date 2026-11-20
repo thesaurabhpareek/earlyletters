@@ -20,22 +20,24 @@ tags:
     file: ../subflows/launch-fresh.yaml
     env:
       E2E_OFFLINE: "1"
-# 1. The gate is the first and only route; nothing selected, Continue disabled.
+# 1. The gate is the first and only route; nothing selected, box unticked. Continue is never disabled:
+#    tapped with no answer it shows the reason line and stores nothing (F2).
 - assertVisible:
     id: "gate.screen"
-- assertVisible:
+- tapOn:
     id: "gate.continue"
-    enabled: false
+- assertVisible:
+    id: "gate.reason"
 - assertNotVisible:
     id: "onboarding.step.welcome"
 - assertNotVisible:
     id: "tab.tonight"
 # 2. No: the stop screen, with no way to record or write and no way back yet.
+#    The box stays unticked: No goes to the stop whatever the box says, and nothing about it is stored.
 - tapOn:
     id: "gate.no"
 - tapOn:
     id: "gate.continue"
-    enabled: true
 - assertVisible:
     id: "gate.stop"
 - assertNotVisible:

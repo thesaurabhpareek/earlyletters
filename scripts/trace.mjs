@@ -4,7 +4,7 @@
 // Reads requirement definitions from the PRD, collects every requirement ID cited in the
 // docs, the backlog, the PR template and test titles, and writes docs/TRACE.md.
 //
-//   node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--out <file>] [--repo <dir>]
+//   node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--out <file>] [--repo <dir>] [--register <file>]
 //
 // docsRoot defaults to docs/prd/v2 when it exists, else docs/prd (the 1.3 PRD and its
 // appendices A, B and C). Two layouts are understood:
@@ -32,6 +32,10 @@
 // shrink against docs/qa/b1-p0-uncited.baseline (--baseline <file>, --catalog <file> override);
 // --update-baseline rewrites the baseline, and only when the new set is a subset of the old one.
 // --json prints the headline counts, duplicates and undefined IDs as one JSON object (for CI).
+//
+// NS rows (BL-964, gate G0): the acceptance tables of the cards 00 to 12 beside the register
+// (--register, default docs/product/prd/14-test-plan.md), each P0 row reported as tested,
+// partial, journey, device or untested, with its backlog rows. Report only for now.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -218,8 +222,11 @@ export function retiredIds(md) {
 
 const TITLE_CALL = /(?:^|[^\w.$])(?:it|test|describe|check|Deno\.test)(?:\.(?:only|skip|todo|fails|concurrent|sequential|each\s*\([^)]*\)))*\s*\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/g;
 
-/** Test titles in a test file's source, each { title, line, ids }. Only titles that cite an ID. */
-export function testTitles(src) {
+/**
+ * Test titles in a test file's source, each { title, line, ids, skipped }. Only titles that cite
+ * an ID; `pick` reads the IDs (the NS reader passes nsBracketed). `skipped` is .skip, .todo or .fails.
+ */
+export function testTitles(src, pick = extractIds) {
   const out = [];
   const lineStarts = [0];
   for (let i = 0; i < src.length; i++) if (src[i] === '\n') lineStarts.push(i + 1);
@@ -229,8 +236,11 @@ export function testTitles(src) {
     return lo + 1;
   };
   for (const m of src.matchAll(TITLE_CALL)) {
-    const ids = extractIds(m[2]);
-    if (ids.length) out.push({ title: m[2], line: lineOf(m.index + (/^[\w$]/.test(m[0]) ? 0 : 1)), ids });
+    const ids = pick(m[2]);
+    // The modifier before the title (`it.skip(`), or a node:test option after it (`{ skip: true }`).
+    const skipped = /\.(?:skip|todo|fails)\b/.test(m[0].slice(0, -(m[2].length + 2)))
+      || /^\s*,\s*\{[^}]*\b(?:skip|todo)\s*:\s*(?!false\b)/.test(src.slice(m.index + m[0].length, m.index + m[0].length + 120));
+    if (ids.length) out.push({ title: m[2], line: lineOf(m.index + (/^[\w$]/.test(m[0]) ? 0 : 1)), ids, skipped });
   }
   return out;
 }
@@ -239,7 +249,7 @@ export function testTitles(src) {
  * Requirement IDs a Maestro flow names in its `tags:` list (first YAML document only, the
  * flow's config). Line based, so it needs no YAML package: `tags:` then `  - ID` items.
  */
-export function flowTags(src) {
+export function flowTags(src, pick = extractIds) {
   const lines = src.split(/\r?\n/);
   const ids = new Set();
   let inTags = false;
@@ -248,7 +258,7 @@ export function flowTags(src) {
     if (/^tags:\s*$/.test(l)) { inTags = true; continue; }
     if (!inTags) continue;
     const item = l.match(/^\s+-\s+["']?([^"'#]+?)["']?\s*(?:#.*)?$/);
-    if (item) { for (const id of extractIds(item[1])) ids.add(id); continue; }
+    if (item) { for (const id of pick(item[1])) ids.add(id); continue; }
     if (/^\S/.test(l)) inTags = false;
   }
   return [...ids];
@@ -272,14 +282,17 @@ const read = (p) => fs.readFileSync(p, 'utf8');
 const exists = (p) => { try { fs.accessSync(p); return true; } catch { return false; } };
 
 /** Build the whole model. Pure apart from reading files. */
+/** A path as the report shows it: repo-relative, or from `docs/` when it lies outside the repo. */
+export function shownPath(repo, p) {
+  const r = path.relative(repo, p).split(path.sep).join('/');
+  if (!r.startsWith('..')) return r;
+  const i = p.split(path.sep).join('/').lastIndexOf('/docs/');
+  return i >= 0 ? p.split(path.sep).join('/').slice(i + 1) : p;
+}
+
 export function collect({ repo, docsRoot }) {
   const rel = (p) => path.relative(repo, p).split(path.sep).join('/');
-  const shown = (p) => {
-    const r = rel(p);
-    if (!r.startsWith('..')) return r;
-    const i = p.split(path.sep).join('/').lastIndexOf('/docs/');
-    return i >= 0 ? p.split(path.sep).join('/').slice(i + 1) : p;
-  };
+  const shown = (p) => shownPath(repo, p);
   const layout = exists(path.join(docsRoot, 'features')) ? 'v2' : 'legacy';
 
   const defs = [];
@@ -504,6 +517,202 @@ export function renderTrace(m) {
     for (const id of strays) L.push(`| ${id} | ${[...m.tests.get(id)].sort().map((t) => `\`${t}\``).join(', ')} |`);
     L.push('');
   }
+  if (m.ns) L.push(renderNs(m.ns));
+  return L.join('\n');
+}
+
+// NS acceptance rows (BL-964, gate G0; grammar from eval C s3.2). Definitions are the acceptance
+// tables (`Id | Given, When, Then | Priority | Test title`) of the cards 00 to 12 next to the
+// register (`14-test-plan.md`); its section 7 lists the P0 rows and names the cross-cutting ids.
+// A test counts only when its title cites the id in brackets and is not .skip, .todo or .fails;
+// `[stand-in]` in the title makes it partial (14 section 2). Report only: nothing here fails.
+export const NS_SOURCE = String.raw`(?<![A-Za-z0-9-])(?:NS-\d{2}-[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?|NX-\d{2}[a-z]?-[A-Z]\d{1,3}[a-z]?|X\d{1,2}-R\d{1,2}[a-z]?|FRAME-[A-Z]{2,12})(?![A-Za-z0-9-])`;
+const NS_ONLY = new RegExp(`^${NS_SOURCE}$`);
+const NS_TOK = String.raw`[A-Z]\d{1,2}(?:-\d{1,2})?[a-z]?(?![A-Za-z0-9-])`;
+const CARD_FILE = /^(?:0\d|1[0-2])-[^/\\]*\.md$/;
+const uniq = (a) => [...new Set(a)];
+export const cmpNs = (a, b) => a.localeCompare(b, 'en', { numeric: true });
+
+/** Every NS-family id in `text`, bracketed or not (Maestro tags, prose). */
+export const nsIds = (text) => uniq(text.match(new RegExp(NS_SOURCE, 'g')) || []);
+/** Ids written in brackets: `[NS-01-R4][NX-39-R14] title` gives both. Test titles count only these. */
+export const nsBracketed = (text) => uniq([...text.matchAll(new RegExp(`\\[(${NS_SOURCE})\\]`, 'g'))].map((m) => m[1]));
+
+const nsOrd = (id) => { const m = id.match(/^(NS-\d{2}-[A-Z])(\d+)(?:-(\d+))?([a-z]?)$/); return m && [m[1], +m[2], m[3] ? +m[3] : -1, m[4]]; };
+function nsBetween(lo, id, hi) {
+  const [a, x, b] = [lo, id, hi].map(nsOrd);
+  if (!a || !x || !b || a[0] !== x[0] || b[0] !== x[0] || b[1] - a[1] > 200) return false;
+  const cmp = (p, q) => p[1] - q[1] || p[2] - q[2] || p[3].localeCompare(q[3]);
+  return cmp(a, x) <= 0 && cmp(x, b) <= 0;
+}
+
+/**
+ * Ids a backlog or register line cites, with the shorthand of eval C s3.2: after a full NS id,
+ * bare rows inherit its card (`NS-01-R37a, R37b`), and `X to Y` expands to the rows of `defined`
+ * between them (`NS-09-R1 to R4b`, `NS-07-C28-1 to NS-07-C28-19`). A bare token that is not in
+ * `defined` ends the list, so `NS-01-R4, P0` cites one row and a range never invents a row.
+ */
+export function nsCited(text, defined = new Set()) {
+  const out = new Set(nsIds(text));
+  const sep = String.raw`(?:\s*,\s*(?:and\s+)?|\s+to\s+|\s+and\s+)`;
+  const re = new RegExp(String.raw`(?<![A-Za-z0-9-])NS-(\d{2})-(${NS_TOK})((?:${sep}(?:NS-\1-)?${NS_TOK})*)`, 'g');
+  for (const m of text.matchAll(re)) {
+    const card = `NS-${m[1]}-`;
+    let prev = card + m[2];
+    for (const s of m[3].matchAll(new RegExp(String.raw`(${sep})(NS-\d{2}-)?(${NS_TOK})`, 'g'))) {
+      const id = card + s[3];
+      if (!s[2] && !defined.has(id)) break;
+      if (/to/.test(s[1])) for (const d of defined) if (nsBetween(prev, d, id)) out.add(d);
+      out.add(id);
+      prev = id;
+    }
+  }
+  return [...out];
+}
+
+/** Acceptance rows of one card, each { id, priority, spec, line, device, journeys }. */
+export function nsDefinitions(md, spec) {
+  const defs = [];
+  for (const t of parseTables(md.split(/\r?\n/))) {
+    if (!/^Id$/i.test(t.header[0]) || !/^Given/i.test(t.header[1] || '')) continue;
+    const pc = t.header.findIndex((h) => /^Priority$/i.test(h));
+    const tc = t.header.findIndex((h) => /^Test\b/i.test(h));
+    for (const r of t.rows) {
+      const id = stripMd(r.cells[0]);
+      if (!NS_ONLY.test(id)) continue;
+      // A device row says so after the backticked title, `(device row S1-204)`, or at the end of
+      // its Given/When/Then, `(PROPOSED; device)`; a device word mid-sentence is not a marker.
+      const [gwt, tt] = [r.cells[1] || '', tc > 0 ? r.cells[tc] || '' : ''].map((c) => c.replace(/`[^`]*`/g, ''));
+      const mark = String.raw`\(([^()]*\b(?:device|run sheet|two-phone)\b[^()]*)\)`;
+      const dev = tt.match(new RegExp(mark, 'i')) || gwt.match(new RegExp(`${mark}\\W*$`, 'i')) || tt.match(/\bS1-\d+\b/);
+      defs.push({ id, priority: pc > 0 ? priorityCell(r.cells[pc] || '') : '', spec, line: r.line,
+        device: dev ? (dev[1] || dev[0]).trim() : '', journeys: uniq(r.cells.join(' ').match(/\bJ-N\d+\b/g) || []) });
+    }
+  }
+  return defs;
+}
+
+/** The NS model for one register file and the cards beside it. Pure apart from reading files. */
+export function collectNs({ repo, register }) {
+  const rel = (p) => shownPath(repo, p);
+  const add = (map, k, v) => { if (!map.has(k)) map.set(k, []); map.get(k).push(v); };
+  const dir = path.dirname(register);
+  const cards = fs.readdirSync(dir).filter((n) => CARD_FILE.test(n)).sort().map((n) => path.join(dir, n));
+  const defs = cards.flatMap((f) => nsDefinitions(read(f), rel(f)));
+  const byId = new Map();
+  for (const d of defs) add(byId, d.id, d);
+  const known = new Set(byId.keys());
+
+  // Section 7 of the register: its tables list the P0 rows; its prose brackets the cross-cutting ids.
+  const { lines, offset } = sectionLines(read(register), 7);
+  const listed = new Set();
+  for (const t of parseTables(lines, offset)) for (const r of t.rows) for (const c of r.cells) for (const id of nsCited(c, known)) listed.add(id);
+  // A card with no Priority column (develop before the lock) takes P0 from the register.
+  for (const d of defs) if (!d.priority && listed.has(d.id)) d.priority = 'P0';
+  const cross = [];
+  lines.forEach((l, i) => { for (const id of nsBracketed(l)) if (/^(?:X\d|FRAME-)/.test(id) && !cross.some((c) => c.id === id)) cross.push({ id, priority: 'P0', spec: rel(register), line: offset + i + 1, device: '', journeys: [] }); });
+
+  // Evidence: unit, source and SQL test titles; e2e-web journeys and Maestro tags run outside npm test.
+  const self = path.join(path.dirname(fileURLToPath(import.meta.url)), 'trace.test.mjs');
+  const tests = new Map(), journeys = new Map(), cited = new Map(), jnAt = new Map();
+  const pick = (t) => [...nsBracketed(t), ...(t.match(/\[J-N\d+\]/g) || []).map((x) => x.slice(1, -1))];
+  let skipped = 0;
+  const titled = walk(repo, isTestFile).filter((f) => f !== self).map((f) => [f, false])
+    .concat(walk(path.join(repo, 'apps', 'mobile', 'e2e-web'), (p) => /\.flow\.ts$/.test(p)).map((f) => [f, true]));
+  for (const [f, journey] of titled) {
+    for (const t of testTitles(read(f), pick)) {
+      if (t.skipped) { skipped++; continue; }
+      const at = `${rel(f)}:${t.line}`;
+      const jn = t.title.match(/\bJ-N\d+\b/g) || [];
+      for (const j of jn) add(jnAt, j, at);
+      for (const id of t.ids.filter((x) => !x.startsWith('J-N'))) {
+        add(cited, id, at);
+        if (journey) add(journeys, id, [...jn, at].join(' '));
+        else add(tests, id, { at, partial: /\[stand-in\]/i.test(t.title) });
+      }
+    }
+  }
+  for (const f of walk(path.join(repo, 'apps', 'mobile', 'e2e', 'flows'), (p) => /\.ya?ml$/.test(p))) {
+    for (const id of flowTags(read(f), nsIds)) { add(cited, id, `${rel(f)}:tags`); add(journeys, id, `${rel(f)}:tags`); }
+    for (const j of flowTags(read(f), (t) => t.match(/\bJ-N\d+\b/g) || [])) add(jnAt, j, `${rel(f)}:tags`);
+  }
+  // Section 4 of the register: the journeys, with the flows or tests whose title or tags name them.
+  const s4 = sectionLines(read(register), 4);
+  const jnRows = parseTables(s4.lines, s4.offset).filter((t) => /^Id$/i.test(t.header[0]) && /^Journey/i.test(t.header[1] || ''))
+    .flatMap((t) => t.rows.map((r) => ({ id: stripMd(r.cells[0]), cards: stripMd(r.cells[2] || ''), priority: priorityCell(r.cells[3] || ''), device: stripMd(r.cells[4] || '') })))
+    .map((j) => ({ ...j, at: uniq(jnAt.get(j.id) || []) }));
+
+  // Backlog rows (RR-3): a citation belongs to the BL id of the heading above it.
+  const backlog = new Map();
+  const blFiles = [path.join(repo, 'docs', 'BACKLOG.md')].concat(walk(path.join(repo, 'docs', 'backlog'), (p) => p.endsWith('.md'))).filter(exists);
+  for (const f of blFiles) {
+    let bl = '';
+    read(f).split(/\r?\n/).forEach((l, i) => {
+      if (/^#{1,6}\s/.test(l)) bl = (l.match(/^#{1,6}\s+(BL-\d+)/) || [])[1] || '';
+      for (const id of nsCited(l, known)) add(backlog, id, bl || `${rel(f)}:${i + 1}`);
+    });
+  }
+
+  const row = (d) => {
+    const t = tests.get(d.id) || [];
+    const status = t.some((x) => !x.partial) ? 'tested' : t.length ? 'partial' : journeys.has(d.id) ? 'journey'
+      : d.device ? 'device' : 'untested';
+    return { ...d, at: `${d.spec}:${d.line}`, status, tests: uniq(t.map((x) => x.at)), journeys: uniq([...d.journeys, ...(journeys.get(d.id) || [])]), backlog: uniq(backlog.get(d.id) || []) };
+  };
+  const p0 = defs.filter((d) => d.priority === 'P0').map(row);
+  const p0Ids = new Set(p0.map((r) => r.id));
+  const isNx = (id) => id.startsWith('NX-');
+  return {
+    register: rel(register), cards: cards.map(rel), rows: defs.length, p0, cross: cross.map(row), skipped, journeys: jnRows,
+    repeated: [...byId].filter(([, ds]) => ds.length > 1).map(([id, ds]) => ({ id, at: ds.map((d) => `${d.spec}:${d.line}`) })),
+    listedNotP0: [...listed].filter((id) => !p0Ids.has(id)).sort(cmpNs),
+    p0NotListed: p0.filter((r) => !listed.has(r.id)).map((r) => r.id),
+    strays: [...cited].filter(([id]) => !isNx(id) && !known.has(id) && !cross.some((c) => c.id === id)).map(([id, at]) => ({ id, at: uniq(at) })).sort((a, b) => cmpNs(a.id, b.id)),
+    splitCited: [...cited].filter(([id]) => known.has(id) && /^(?!P\d$)./.test(byId.get(id)[0].priority)).map(([id, at]) => ({ id, at: uniq(at) })),
+    nxCited: [...cited.keys()].filter(isNx).sort(cmpNs),
+  };
+}
+
+const NS_STATUSES = ['tested', 'partial', 'journey', 'device', 'untested'];
+
+export function summarizeNs(ns) {
+  const by = (rs, s) => rs.filter((r) => r.status === s).length;
+  return {
+    cards: ns.cards.length, rows: ns.rows, p0: ns.p0.length, cross: ns.cross.length,
+    ...Object.fromEntries(NS_STATUSES.map((s) => [s, by(ns.p0, s)])),
+    crossTested: by(ns.cross, 'tested'), p0NoBacklog: ns.p0.filter((r) => !r.backlog.length).length,
+    listedNotP0: ns.listedNotP0.length, p0NotListed: ns.p0NotListed.length, strays: ns.strays.length,
+    splitCited: ns.splitCited.length, repeated: ns.repeated.length, skipped: ns.skipped, nxCited: ns.nxCited.length,
+    journeys: ns.journeys.length, journeysNamed: ns.journeys.filter((j) => j.at.length).length,
+  };
+}
+
+export function renderNs(ns) {
+  const s = summarizeNs(ns);
+  const list = (a, n = 3) => a.slice(0, n).map((x) => `\`${x}\``).join(', ') + (a.length > n ? ` and ${a.length - n} more` : '');
+  const L = ['## NS acceptance rows (locked cards, gate G0)', ''];
+  L.push(`Read from the cards beside \`${ns.register}\` (\`--register\`). A row is **tested** when an active test title cites it in brackets, **partial** when only \`[stand-in]\` titles do, **journey** when only an e2e-web flow or a Maestro tag does (they do not run in \`npm test\`), **device** when its card names a phone row and no test cites it, else **untested**. Report only: nothing here fails a build yet (BL-964).`);
+  L.push('', '| Measure | Count |', '|---|---|');
+  L.push(`| Cards read | ${s.cards} |`, `| Acceptance rows | ${s.rows} |`, `| P0 rows | ${s.p0} |`);
+  for (const st of NS_STATUSES) L.push(`| P0 ${st} | ${s[st]} |`);
+  L.push(`| P0 with no backlog row | ${s.p0NoBacklog} |`, `| Cross-cutting ids tested | ${s.crossTested} of ${s.cross} |`);
+  L.push(`| Register lists, card does not say P0 | ${s.listedNotP0} |`, `| Card says P0, register does not list | ${s.p0NotListed} |`);
+  L.push(`| Bracketed ids in test titles defined nowhere | ${s.strays} |`, `| Titles citing a split or withdrawn row | ${s.splitCited} |`);
+  L.push(`| Skipped titles citing an NS id (not counted) | ${s.skipped} |`, `| NX ids in test titles (outside source, not checked) | ${s.nxCited} |`, '');
+  if (ns.listedNotP0.length) L.push(`Register lists, card does not say P0: ${ns.listedNotP0.join(', ')}.`, '');
+  if (ns.p0NotListed.length) L.push(`Card says P0, register does not list: ${ns.p0NotListed.join(', ')}.`, '');
+  for (const x of ns.strays) L.push(`- Defined nowhere: ${x.id} at ${list(x.at)}`);
+  for (const x of ns.splitCited) L.push(`- Split or withdrawn row cited: ${x.id} at ${list(x.at)}`);
+  for (const x of ns.repeated) L.push(`- Defined twice: ${x.id} at ${x.at.join(', ')}`);
+  if (ns.strays.length || ns.splitCited.length || ns.repeated.length) L.push('');
+  L.push('| P0 row | Status | Where | Device row | Journeys | Backlog |', '|---|---|---|---|---|---|');
+  for (const r of [...ns.p0, ...ns.cross]) {
+    L.push(`| ${r.id} | ${r.status} | ${esc(r.tests.length ? list(r.tests) : '')} | ${esc(r.device)} | ${esc(r.journeys.join(', '))} | ${esc(r.backlog.join(', '))} |`);
+  }
+  L.push('', `Journeys (register section 4): ${ns.journeys.filter((j) => j.at.length).length} of ${ns.journeys.length} named by a test or flow title.`, '');
+  L.push('| Journey | Cards | Priority | Device | Named by |', '|---|---|---|---|---|');
+  for (const j of ns.journeys) L.push(`| ${j.id} | ${esc(j.cards)} | ${j.priority} | ${esc(j.device)} | ${esc(list(j.at))} |`);
+  L.push('');
   return L.join('\n');
 }
 
@@ -602,7 +811,7 @@ const BASELINE_HEAD = '# B1 P0 requirement IDs with no test title citing them (H
   '# This file may only shrink. Cite the ID in a test title as [ID] and delete the line.\n';
 
 function parseArgs(argv) {
-  const a = { check: false, scope: null, catalog: null, baseline: null, updateBaseline: false, write: true, out: null, repo: null, root: null, json: false };
+  const a = { check: false, scope: null, catalog: null, baseline: null, updateBaseline: false, write: true, out: null, repo: null, root: null, json: false, register: null };
   for (let i = 0; i < argv.length; i++) {
     const v = argv[i];
     if (v === '--check') a.check = true;
@@ -614,6 +823,7 @@ function parseArgs(argv) {
     else if (v === '--update-baseline') a.updateBaseline = true;
     else if (v === '--out') a.out = argv[++i];
     else if (v === '--repo') a.repo = argv[++i];
+    else if (v === '--register') a.register = argv[++i];
     else if (v === '--help' || v === '-h') a.help = true;
     else if (!v.startsWith('--')) a.root = v;
     else throw new Error(`unknown option ${v}`);
@@ -623,12 +833,18 @@ function parseArgs(argv) {
 
 export function main(argv = process.argv.slice(2), log = console.log) {
   const args = parseArgs(argv);
-  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>] [--scope b1 [--catalog <csv>] [--baseline <file>] [--update-baseline]]'); return 0; }
+  if (args.help) { log('node scripts/trace.mjs [docsRoot] [--check] [--no-write] [--json] [--out <file>] [--repo <dir>] [--register <14-test-plan.md>] [--scope b1 [--catalog <csv>] [--baseline <file>] [--update-baseline]]'); return 0; }
   if (args.scope && args.scope !== 'b1') throw new Error(`unknown scope ${args.scope} (only b1)`);
   const repo = path.resolve(args.repo || path.join(path.dirname(fileURLToPath(import.meta.url)), '..'));
   const docsRoot = path.resolve(repo, args.root || (exists(path.join(repo, 'docs/prd/v2')) ? 'docs/prd/v2' : 'docs/prd'));
   const m = collect({ repo, docsRoot });
   const s = summarize(m);
+  // The NS register defaults to develop's copy; --register reads another (the lock branch, a fixture).
+  const register = path.resolve(repo, args.register || 'docs/product/prd/14-test-plan.md');
+  if (args.register && !exists(register)) throw new Error(`no register at ${register}`);
+  // Report mode: a card the NS parser cannot read is logged, never a failed npm test.
+  try { m.ns = exists(register) ? collectNs({ repo, register }) : null; } catch (e) { if (args.check) throw e; m.ns = null; log(`  trace NS skipped: ${e.message}`); }
+  const ns = m.ns && summarizeNs(m.ns);
   if (args.write) {
     const out = path.resolve(repo, args.out || 'docs/TRACE.md');
     fs.writeFileSync(out, renderTrace(m) + '\n');
@@ -646,6 +862,7 @@ export function main(argv = process.argv.slice(2), log = console.log) {
       duplicateIds: m.duplicates.map((d) => ({ id: d.id, at: d.at.map((x) => `${x.spec}:${x.line}`) })),
       undefinedIds: m.undefinedIds,
       wouldFailCheck: failed,
+      ns: ns && { register: m.ns.register, ...ns, untestedP0: m.ns.p0.filter((r) => r.status === 'untested').map((r) => r.id) },
     }));
     return args.check && failed ? 1 : 0;
   }
@@ -657,6 +874,12 @@ export function main(argv = process.argv.slice(2), log = console.log) {
     `${s.idsInTests} IDs in ${s.taggedTitles} test titles; ${s.idsInFlows} IDs in Maestro flow tags.`);
   for (const d of m.duplicates) log(`  defined in two specs: ${d.id} (${d.at.map((x) => `${x.spec}:${x.line}`).join(', ')})`);
   for (const id of m.undefinedIds) log(`  undefined: ${id} (${m.citations.get(id)[0]})`);
+  if (ns) {
+    log(`trace NS (${m.ns.register}): ${ns.rows} acceptance rows in ${ns.cards} cards, ${ns.p0} P0: ${NS_STATUSES.map((k) => `${ns[k]} ${k}`).join(', ')}; ` +
+      `${ns.p0NoBacklog} P0 with no backlog row; cross-cutting ${ns.crossTested} of ${ns.cross} tested; register vs cards ${ns.listedNotP0} listed not P0, ${ns.p0NotListed} P0 not listed; ` +
+      `${ns.strays} bracketed ids defined nowhere; ${ns.skipped} skipped titles not counted. Report only.`);
+    for (const x of m.ns.strays) log(`  NS id defined nowhere: ${x.id} (${x.at[0]})`);
+  }
   if (args.check && failed) return 1;
   if (failed) log('  report mode: not failing. Run with --check to fail on these.');
   return 0;

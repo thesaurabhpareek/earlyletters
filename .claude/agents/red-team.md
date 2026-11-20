@@ -16,6 +16,7 @@ Nothing that breaks the constitution, leaks a family's words, weakens an access 
 - `docs/reviews/**`: audit reports and risk tracking.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md`: the constitution and privacy rules you enforce.
 - `docs/tdd/10-red-team-critique.md`: the launch-sinking risks already found.
 - `docs/legal/ENGINEERING_REQUIREMENTS.md` (LEGAL-REQ) and `docs/legal/DATA_CLASSIFICATION.md`: what privacy means here.

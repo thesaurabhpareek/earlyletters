@@ -10,11 +10,14 @@ book/       A printable book for each child, by month of age (PDF).
 letters/    Every letter and note as a plain text file, one folder per child and month.
 audio/      Every recording on this phone, exactly as it was made (AAC audio, as .m4a or .aac).
             Open them in any music or video player.
+waiting/    Letters that are waiting to be kept or read back, when you have any:
+            your own words as a plain text file and the original recording.
 data/       entries.json: every letter, with your words exactly as heard, every small
             fix, and the final text. children.json: the books on this phone.
             account.json: your plan, whether you were signed in, the books you belong to,
             the names we always spell your way, your consent choices and, when you are
             signed in, your profile (see below).
+            waiting.json, when you have any: the letters that are waiting.
 schema/     A description of the data files, for anyone building a reader.
 index.html  Open in any web browser to read every letter and hear every recording.
             It works with no connection and no app.
@@ -59,4 +62,4 @@ KEEPING IT SAFE
 This export is not locked with a password. Keep it somewhere private,
 and keep a second copy somewhere else.
 
-Format early-letters-export, version 1.4.0. Questions: hello@earlyletters.com
+Format early-letters-export, version 1.6.0. Questions: hello@earlyletters.com

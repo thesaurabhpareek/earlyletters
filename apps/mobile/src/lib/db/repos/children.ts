@@ -8,6 +8,7 @@
  */
 import type { RepoContext } from './context';
 import type { Child, NewChild } from './types';
+import { BOOK_NOT_DELETED_SQL } from './wipe';
 
 interface ChildRow {
   id: string;
@@ -25,8 +26,11 @@ interface ChildRow {
 const COLS = `c.id, c.name, c.birthday, c.due_date, p.signs_as, p.reminders_on, c.family_can_read, c.role, c.created_by_me, p.quiet_at`;
 const FROM = 'children c LEFT JOIN child_member_prefs p ON p.child_id = c.id';
 
-/** Books this person left, or that were deleted on the server, are not listed (their own letters stay on the phone). */
-const LISTED = "c.server_state NOT IN ('left', 'deleted')";
+/**
+ * Books this person left, or that were deleted on the server, are not listed (their own letters stay on the phone).
+ * Nor is a book deleted on this phone: it waits in Recently deleted for 30 days (wipe.ts).
+ */
+const LISTED = `c.server_state NOT IN ('left', 'deleted') AND ${BOOK_NOT_DELETED_SQL}`;
 /** Hidden for this person, or (support path, F12 6.2 D) for the whole book. */
 const HIDDEN = '(p.hidden_at IS NOT NULL OR c.hidden_at IS NOT NULL)';
 
@@ -53,6 +57,15 @@ export function listVisible({ db }: RepoContext): Child[] {
 
 export function listHidden({ db }: RepoContext): Child[] {
   return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE ${HIDDEN} AND ${LISTED} ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
+}
+
+/**
+ * Books the server closed for good ('deleted'), which `LISTED` leaves out. A sole parent's account-deletion request
+ * closes hers, and the phone keeps her letters in Recently deleted for the grace period. Export reads these while a
+ * request is open (DATA-REQ-053, BL-446); nothing else lists them.
+ */
+export function listClosedByServer({ db }: RepoContext): Child[] {
+  return db.all<ChildRow>(`SELECT ${COLS} FROM ${FROM} WHERE c.server_state = 'deleted' ORDER BY c.created_at ASC, c.id ASC`).map(fromRow);
 }
 
 export function get({ db }: RepoContext, id: string): Child | null {

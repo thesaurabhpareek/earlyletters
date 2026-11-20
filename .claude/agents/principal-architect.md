@@ -19,6 +19,7 @@ Keep Early Letters easy and safe to change: small reviewable diffs, one definiti
 - `agents/principal-architect/MEMORY.md`
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `CLAUDE.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 1, 15, 16, 17), your three chapters.
 - `docs/tdd/02-sync-backend.md` 3.4 to 4, `docs/tdd/06-performance-reliability.md` 2, 3, 5.
 - `docs/DECISIONS.md` D-003, D-021, D-023, D-024, D-035, D-041. ADR 0004, ADR 0010.

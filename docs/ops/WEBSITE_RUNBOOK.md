@@ -16,12 +16,12 @@ Nothing in this file was applied to Vercel, Porkbun or Apple. It is the plan, pl
 
 | Item | Value |
 |---|---|
-| Vercel team | `saurabhrspareek-gmailcoms-projects` (id `team_8RVbBQ3AfedviapbHWLAP3Wx`) |
-| Vercel project | `earlyletters-web`, from GitHub `thesaurabhpareek/earlyletters` |
+| Vercel team | The founder's Vercel team (see the private setup record) |
+| Vercel project | `earlyletters`, from GitHub `thesaurabhpareek/earlyletters` |
 | Root Directory | `apps/web` |
 | Primary domain | `earlyletters.com` |
 | Redirect domains (308 to the primary) | `www.earlyletters.com`, `earlyletters.app`, `www.earlyletters.app` |
-| DNS host | Porkbun (nameservers stay at Porkbun, never move them) |
+| DNS host | `earlyletters.com`: Porkbun nameservers; keep them there. `earlyletters.app`: Cloudflare nameservers since 1 Nov 2026 (D-097), DNSSEC on (DS record from Cloudflare at the registry). Verified (public DNS lookups, 1 Nov 2026) |
 | Email | Resend on `send.earlyletters.com`; Porkbun forwarding on the apex. Never touch these records (section 5) |
 | Install / build | `vercel.json` in `apps/web`: `npm ci --workspace=@scribe/web`, then `next build` |
 | Launch switch | `NEXT_PUBLIC_APP_STORE_URL` (build time, so a launch is a redeploy) |
@@ -104,8 +104,11 @@ Redeploy; check in section 9. To turn off: unset the variable and Redeploy.
 
 ### 4.1 What Porkbun has today (Verified: public DNS lookups, 2026-10-03)
 
-Both domains use Porkbun nameservers (`curitiba`, `fortaleza`, `maceio`, `salvador` `.ns.porkbun.com`).
-Both still carry Porkbun's default parking records:
+On 2026-10-03 both domains used Porkbun nameservers (`curitiba`, `fortaleza`, `maceio`, `salvador` `.ns.porkbun.com`).
+
+**Update, 1 Nov 2026 (Verified: public DNS lookups for NS and DS, 1 Nov 2026):** `earlyletters.com` still uses those four Porkbun nameservers and has a DS record (DNSSEC on). `earlyletters.app` moved to Cloudflare nameservers on 1 Nov 2026 for D-097 (`packs.earlyletters.app` on R2; steps in `docs/ops/PACKS_HOSTING.md`, "If earlyletters.app is not on Cloudflare yet"), with DNSSEC on and Cloudflare's DS record at the registry. For `earlyletters.app`, add and change records in the Cloudflare dashboard, not Porkbun's DNS Records page; where this runbook says Porkbun for `.app` records, read Cloudflare. The parking table below is the 3 Oct state and is history.
+
+On 2026-10-03 both still carried Porkbun's default parking records:
 
 | Domain | Parking records seen |
 |---|---|
@@ -137,7 +140,7 @@ Rules:
 
 ### 4.3 Order of work
 
-1. Founder creates `earlyletters-web` and gets one green deployment. Check it on its `*.vercel.app` URL with section 9, parts A and B.
+1. Founder creates the Vercel project (named `earlyletters`) and gets one green deployment. Check it on its `*.vercel.app` URL with section 9, parts A and B.
 2. **Save a copy of every Porkbun record first** (screenshot, or the command in section 5). Nothing else is optional here.
 3. In Vercel: Settings > Domains > Add: `earlyletters.com` (this is the primary and gets Production). Then add
    `www.earlyletters.com`, `earlyletters.app` and `www.earlyletters.app`.

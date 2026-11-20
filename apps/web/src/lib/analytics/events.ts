@@ -26,7 +26,7 @@ export const SCENE_IDS = [
 export type SceneId = (typeof SCENE_IDS)[number];
 
 /** Where a call to action sits. Also the App Store campaign token suffix (see appStoreHref in launch.ts). */
-export const CTA_PLACEMENTS = ['header', 'pill', 'start', 'footer'] as const;
+export const CTA_PLACEMENTS = ['header', 'pill', 'start', 'footer', 'qr'] as const;
 export type CtaPlacement = (typeof CTA_PLACEMENTS)[number];
 
 /** Which action the visitor was offered: the email form before launch, the App Store badge after. */

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { plural } from '../src/lib/copy';
-import { dateLocale, dayDate, letterDateline, longDate } from '../src/lib/dates';
+import { dateLocale, dayDate, entryLetterDateline, letterDateline, longDate } from '../src/lib/dates';
 
 describe('dates and plurals (TDD 09 L1, L4)', () => {
   it('[B-NFR-007] a US phone gets US date order', () => {
@@ -27,7 +27,23 @@ describe('dates and plurals (TDD 09 L1, L4)', () => {
   it('the letter dateline keeps the age sentence from core', () => {
     const child = { name: 'Asha', birthday: '2026-03-01', dueDate: null };
     expect(letterDateline(child, '2026-09-29', 'en-US')).toMatch(/^Tuesday, September 29, 2026\. Asha is .+ old\.$/);
-    expect(letterDateline({ name: 'Asha', birthday: null, dueDate: null }, '2026-09-29', 'en-US')).toBe('Tuesday, September 29, 2026.');
+  });
+
+  // QE-01: the Book files every letter without a birthday in Before You (`isBeforeBirth`), so the dateline says the
+  // same. A due date is never an age anchor, even 12 days past it.
+  it('with no birthday, the dateline reads before birth, never an age from the due date', () => {
+    const expecting = { name: 'Asha', birthday: null, dueDate: '2026-11-11' };
+    expect(letterDateline(expecting, '2026-11-23', 'en-US')).toBe('Monday, November 23, 2026. Before Asha was born.');
+    expect(letterDateline(expecting, '2026-11-01', 'en-US')).toBe('Sunday, November 1, 2026. Before Asha was born.');
+    const neither = { name: 'Asha', birthday: null, dueDate: null }; // a child with neither date
+    expect(letterDateline(neither, '2026-09-29', 'en-US')).toBe('Tuesday, September 29, 2026. Before Asha was born.');
+    expect(entryLetterDateline(expecting, { occurredOn: '2026-11-23', occurredPrecision: 'day' }, 'en-US')).not.toMatch(/old/);
+  });
+
+  it('a day before the birthday reads before birth; the birthday itself starts the age', () => {
+    const born = { name: 'Asha', birthday: '2026-11-20', dueDate: '2026-11-11' };
+    expect(letterDateline(born, '2026-11-19', 'en-US')).toBe('Thursday, November 19, 2026. Before Asha was born.');
+    expect(letterDateline(born, '2026-11-23', 'en-US')).toMatch(/^Monday, November 23, 2026\. Asha is 3 days old\.$/);
   });
 
   it('"1 small fix", not "1 small fixes"', () => {

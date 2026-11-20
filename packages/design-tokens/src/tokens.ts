@@ -158,6 +158,30 @@ const fontFamily = {
 
 type Weight = '400' | '500' | '600' | '700';
 
+/** OpenType figure features, as React Native's `fontVariant` names them (web: `font-variant-numeric`). */
+type FigureVariant = 'lining-nums' | 'oldstyle-nums' | 'tabular-nums' | 'proportional-nums';
+
+/**
+ * Vertical and side metrics of a bundled face, in em, read from its own file (hhea, glyf, hmtx) and checked
+ * against it in test/fonts.test.ts. They let a style trim its line box to the ink of its figures (CSS calls this
+ * text-box-trim: cap to alphabetic), so a large numeral sits on the spacing scale instead of on the face's tall
+ * ascender, and starts on the same optical left edge as the small text beside it.
+ */
+interface FaceMetrics {
+  /** hhea ascender. */
+  ascent: number;
+  /** hhea descender, as a positive number. */
+  descent: number;
+  /** The tallest lining figure's top (0, 2, 3, 6, 8, 9 share it). */
+  figureHeight: number;
+  /** The figures' mean left side bearing: the white a numeral carries before its ink. */
+  figureBearing: number;
+}
+
+const fontMetrics: Partial<Record<string, FaceMetrics>> = {
+  [fontFamily.serifMedium]: { ascent: 1.177, descent: 0.308, figureHeight: 0.722, figureBearing: 0.026 },
+};
+
 interface TypeStyle {
   fontFamily: string;
   /** Size in pt at the default ("Large") Dynamic Type setting. */
@@ -170,6 +194,8 @@ interface TypeStyle {
   dynamicTypeStyle: string;
   /** Upper bound multiplier for this style at accessibility sizes (null = unbounded). */
   maxScale: number | null;
+  /** Figure features, for styles that set numbers (absent: the face's defaults). */
+  fontVariant?: readonly FigureVariant[];
 }
 
 const ts = (
@@ -180,7 +206,8 @@ const ts = (
   letterSpacing: number,
   dynamicTypeStyle: string,
   maxScale: number | null,
-): TypeStyle => ({ fontFamily, fontSize, lineHeight, fontWeight, letterSpacing, dynamicTypeStyle, maxScale });
+  fontVariant?: readonly FigureVariant[],
+): TypeStyle => ({ fontFamily, fontSize, lineHeight, fontWeight, letterSpacing, dynamicTypeStyle, maxScale, ...(fontVariant ? { fontVariant } : {}) });
 
 /**
  * Sizes mirror Apple's iOS "Large (default)" Dynamic Type table where a system
@@ -216,8 +243,15 @@ const type = {
   prompt: ts(fontFamily.serif, 24, 32, '400', 0, 'title3', null),
   /** Tonight's prompt as the screen's one literary line, on the lit paper with no card (EXPERIENCE_PASS S09). */
   promptHero: ts(fontFamily.serif, 28, 36, '400', 0, 'title1', 1.8),
-  /** A month opener's numeral in the Book (S26). Capped lower than display: at 1.4x it is already 90 pt. */
-  numeral: ts(fontFamily.serifMedium, 64, 64, '500', -0.5, 'largeTitle', 1.4),
+  /**
+   * A month opener's numeral in the Book (S26). Capped lower than display: at 1.4x it is already 90 pt.
+   * Lining, proportional figures (Literata's defaults, asked for so a fallback face cannot swap in oldstyle) with
+   * +1 pt of tracking: at -0.5 the 1 and 8 of "18" sat 2.6 pt apart and closed up in dark mode (TestFlight build 1).
+   * The line is 1.5 em, taller than the face's own 1.485 em, so iOS and the web both centre the face in it, and the
+   * opener trims it to the figures' ink with `fontMetrics` (Text `trim`); at 64 / 64 iOS sat the figures on the
+   * line's floor and pushed their tops into the kicker.
+   */
+  numeral: ts(fontFamily.serifMedium, 64, 96, '500', 1, 'largeTitle', 1.4, ['lining-nums', 'proportional-nums']),
 } as const;
 
 /** Smallest type size anywhere, at the default Dynamic Type setting (DESIGN_LANGUAGE 3). */
@@ -437,6 +471,7 @@ export const tokens = {
   type,
   minFontSize,
   fontFamily,
+  fontMetrics,
   readingScale,
   elevation,
   motion,
@@ -461,5 +496,6 @@ export type Daypart = keyof typeof atmosphere.daypart;
 export type MotionToken = 'snappy' | 'standard' | 'gentle';
 export type Colors = { readonly [K in ColorToken]: string };
 export type TypeStyleSpec = TypeStyle;
+export type FaceMetricsSpec = FaceMetrics;
 
 export default tokens;

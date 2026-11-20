@@ -562,6 +562,36 @@ describe('policy', () => {
     expect(m.packPath('speech-model.test')).not.toBeNull();
   });
 
+  it('[S1-97b] cancel(id) on a pack held for Wi-Fi says so (cancelled), and it does not start when Wi-Fi comes', async () => {
+    const big: PackSpec = { id: 'speech-model.test', version: 1, body: bytesOf(CELLULAR_FREE_BYTES + 1), kind: 'speech-model', language: 'mul', required: false };
+    serve(big);
+    const network = new FakeNetwork('cellular');
+    const m = makeManager({ manifest: async () => manifestOf([big]), network, chunkBytes: 2_000_000 });
+    m.load();
+    expect(await m.ensurePack('speech-model.test')).toEqual({ ok: false, reason: 'waiting_for_wifi' });
+    const events: PackProgress[] = [];
+    m.onProgress((p) => events.push(p));
+    m.cancel('speech-model.test');
+    // The language row reads the last event: without this one it would keep saying "Waits for Wi-Fi" for a download that no longer resumes.
+    expect(events).toEqual([{ id: 'speech-model.test', version: null, phase: 'cancelled', bytesDone: 0, bytesTotal: 0, failure: 'cancelled' }]);
+    expect(m.waiting()).toEqual([]);
+    network.set('wifi');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(server!.log.length).toBe(0);
+    expect(m.packPath('speech-model.test')).toBeNull();
+    // The person's own Download carries it on.
+    expect((await m.ensurePack('speech-model.test')).ok).toBe(true);
+  });
+
+  it('[S1-97b] cancel(id) on a pack that is neither running nor waiting stays silent (the detector, once installed, when Stop covers both packs)', () => {
+    const m = makeManager({ manifest: async () => manifestOf([]) });
+    m.load();
+    const events: PackProgress[] = [];
+    m.onProgress((p) => events.push(p));
+    m.cancel('speech-model.nothing');
+    expect(events).toEqual([]);
+  });
+
   it('downloads small packs on mobile data, and large ones when the person allows it', async () => {
     const small: PackSpec = { id: 'text-rules.pt', version: 1, body: bytesOf(2000) };
     const big: PackSpec = { id: 'speech-model.test', version: 1, body: bytesOf(CELLULAR_FREE_BYTES + 1), kind: 'speech-model', language: 'mul', required: false };

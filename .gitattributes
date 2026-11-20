@@ -2,3 +2,6 @@
 docs/agents/checkins/*.md merge=union
 # The rules file is not a log: edits to it merge normally and can conflict.
 docs/agents/checkins/README.md !merge
+
+# Legal texts are published byte for byte; git must never change a line ending (BL-565).
+apps/web/content/legal/**/*.md -text

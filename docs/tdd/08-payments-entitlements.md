@@ -367,7 +367,7 @@ None planned for v1.
 
 ### 4.8 Restore purchases (C-REQ-020, C-NFR-003)
 
-- Restore appears on the Plus sheet footer (`plus.legal.links`) and in Settings > Plan. It calls `Purchases.restorePurchases()` and then `sync_plan()`. Target: within 10 s for 99%.
+- Restore appears on the Plus sheet footer (`plus.legal.restoreLink`) and in Settings > Plan. It calls `Purchases.restorePurchases()` and then `sync_plan()`. Target: within 10 s for 99%.
 - Restore behaviour (Rec): transfer to the current account **only if the old account has no active subscription**. That stops one Apple ID's Plus hopping between two parents' accounts on a shared iPad, which would silently move Book Plus between books. It still recovers a person who made a new account after deleting the old one. If the transfer is blocked, the client shows: "This Apple Account's Plus is linked to another Early Letters account. Sign in with that account, or contact us." (The brand name comes from `packages/brand`.)
 - **Risk:** support tickets from families sharing an Apple ID. Measure them.
 - Outcomes are logged as `restore_result{outcome}`.
@@ -408,14 +408,14 @@ Test: section 9.1, suite E2E-L.
 
 ## 6. Paywall design rules (Apple 3.1.2, DPLA Schedule 2 3.8(b), CA 17602, LEGAL-REQ-046)
 
-The Plus sheet is one component, `apps/mobile/src/components/plus/plus-sheet.tsx`. It replaces `plus-gate.tsx`. Every rule below becomes a snapshot or UI test.
+The Plus sheet is one component, `apps/mobile/src/components/plus/plus-sheet.tsx`. It replaces `plus-gate.tsx`. Every rule below becomes a snapshot or UI test. Status on 11 Nov 2026: `plus-sheet.tsx` does not exist yet; the sheet on develop is `apps/mobile/src/components/child/plus-gate.tsx`, and the legal strings are `en.plus.legal.*` in `packages/content/src/strings.en.ts`.
 
 **Content (before the button)**
 1. What Plus adds, matching the Subscription Terms list exactly. The list is one string set in `packages/content`, and a test asserts equality with `subscription-terms.md` (Apple 3.1.2(c); counsel note in Subscription Terms).
 2. The promise line `billingCopy.store.promise` (registered; it was `plus.promise`, deleted in P7): "Your first two letters are free. Every letter you keep stays yours to read, play and export, with or without Plus." (K-11)
 3. Two plan options. **Neither is preselected** (C-REQ-022). Each leads with the billed amount ("$29.99 a year") from `StoreProduct.priceString`; any free period is secondary text. A per-month equivalent of the annual price is not shown in v1 (Rec: it only adds review risk).
-4. Under the chosen plan: `plus.legal.renewTrial` when the store reports intro eligibility (`checkTrialOrIntroductoryPriceEligibility`), otherwise `plus.legal.renewNoTrial`. `{trialLength}` comes from the product's intro offer and `{cancelByDate}` is computed from it. No "free" word appears unless eligible (C-REQ-022, H2).
-5. `plus.legal.cancel`, then `plus.legal.agree` directly above the button (H3). The links `plus.legal.links` (Terms, Privacy, Subscription terms, Restore) open in-app.
+4. Under the chosen plan: `plus.legal.renewAnnual` or `plus.legal.renewMonthly` when the store reports intro eligibility (`checkTrialOrIntroductoryPriceEligibility`), otherwise `plus.legal.renewNoTrialAnnual` or `plus.legal.renewNoTrialMonthly`. `{trialLength}` comes from the product's intro offer and `{cancelByDate}` is computed from it. No "free" word appears unless eligible (C-REQ-022, H2).
+5. `plus.legal.cancel`, then `plus.legal.agree` directly above the button (H3). The link labels `plus.legal.termsLink`, `privacyLink`, `subscriptionTermsLink` and `restoreLink` (Terms, Privacy, Subscription terms, Restore) open in-app.
 
 **Layout and behaviour**
 6. All of item 4 to 5 is visible at the default text size without scrolling past the button, and wraps without truncation at AX5. VoiceOver reads price, period, trial and renewal as one element with the button hint (C-NFR-006, LEGAL-REQ-051).

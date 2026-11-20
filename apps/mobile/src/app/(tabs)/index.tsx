@@ -9,8 +9,10 @@
  *
  * Layout: the dateline ("Asha · 7 months", read aloud as "Asha, 7 months"); the greeting in title2, two tones; the
  * prompt as the one literary line (promptHero), on the paper with no card, its caps label now only its accessibility
- * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals (or, when none is waiting,
- * "A month ago"); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
+ * hint; "Another thought"; then one card per draft from listDrafts, newest first, no totals, except that two or more
+ * letters held at the Keep step fold into one row that opens their list (F14-REQ-041) (or, when none is waiting,
+ * "A month ago"); once the free letters are used and Plus is off, one standing line above Speak and Type says new
+ * letters need Plus, with no button (SR-C-08, F14-REQ-040); Speak and Type pinned below, so several drafts scroll above them. At accessibility text sizes the
  * pinned buttons would take half the screen and scroll the question away, so they ride inline under the prompt, in the
  * scroll, before the cards (the rule Review's footer follows, footerPlacement; P3 critics' pass S1).
  *
@@ -25,6 +27,8 @@
  * Type never animate in (MOTION principle 2). "Another thought": the old prompt leaves (exitMs) and the new one rises
  * in from when it is half gone. Reduce Motion: one 200 ms fade on a prompt change.
  * Haptics: Speak / Type `press` (a capture starts), Another thought `tap`, Not much today `soft`. Nothing else.
+ * One capture entry (design spec 06 N3, PRD 01 section 3): Speak, Type and Not much today begin through
+ * startCapture({ source }) in lib/capture/start-capture.ts; nothing else on any tab starts a letter.
  * Before the birth (a due date, no birthday) the dateline reads "Asha", the dot, "Before You" and the prompt comes from the set
  * written for it; "Another thought" never shows the prompt that is on screen again (components/tonight/prompt.logic).
  * Not much today saves a mark with no words (D-084); the kept line carries an inline Undo. Nothing on Tonight counts:
@@ -40,12 +44,14 @@ import { PencilSimpleIcon } from 'phosphor-react-native/src/icons/PencilSimple';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, ScrollView, View } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeOut, ReduceMotion } from 'react-native-reanimated';
-import { renderTemplate, selectPrompt } from '@scribe/core';
+import { selectPrompt } from '@scribe/core';
 import { PROMPT_LIBRARY_VERSION, PROMPTS } from '@scribe/content';
 import { tokens } from '@scribe/design-tokens';
-import { markOn, newQuietMark } from '@/components/book/quiet-day.logic';
+import { markOn } from '@/components/book/quiet-day.logic';
 import { CardSource, useHiddenBehindCardPage } from '@/components/motion/card-transition';
 import { DraftCard } from '@/components/tonight/draft-card';
+import { HeldRow } from '@/components/tonight/held-row';
+import { PlusLine } from '@/components/tonight/plus-line';
 import {
   draftCards,
   greetingParts,
@@ -57,6 +63,7 @@ import {
   tonightLampIntensity,
 } from '@/components/tonight/draft-card.logic';
 import { tonightPromptInput, tonightStageLabel } from '@/components/tonight/prompt.logic';
+import { heldCountOf, plusLineShows, tonightRows } from '@/components/tonight/tonight-plus.logic';
 import { QuietDayInline } from '@/components/tonight/quiet-day-inline';
 import { ResurfacedCard } from '@/components/tonight/resurfaced-card';
 import { Button, ButtonRow } from '@/components/ui/button';
@@ -64,23 +71,22 @@ import { Lamp } from '@/components/ui/lamp';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { Text } from '@/components/ui/text';
 import { announce, useIsAccessibilitySize } from '@/lib/a11y';
-import { childIndexOf, promptKindOf, trackCaptureStarted } from '@/lib/analytics/track';
-import { copy } from '@/lib/copy';
+import { freeLettersAllowance, lettersKeptNow, PLUS_ALPHA, usePlan } from '@/lib/billing';
+import { startCapture } from '@/lib/capture/start-capture';
+import { copy, fill } from '@/lib/copy';
 import { dayDate } from '@/lib/dates';
 import { haptic } from '@/lib/haptics';
 import { STANDARD_EASING, useMotion } from '@/lib/motion';
-import { armListenStart } from '@/lib/resilience/start-intent';
 import { footerPlacement } from '@/lib/review-layout.logic';
 import {
   deleteEntry,
+  getActiveChild,
   getActiveChildId,
   getFamily,
   listDrafts,
   listEntries,
-  saveEntry,
   subscribe,
   todayISO,
-  uuidv7,
   type Draft,
   type Entry,
   type Family,
@@ -89,15 +95,22 @@ import {
 const M = tokens.motion;
 
 /**
- * What Tonight shows: the book, every waiting draft (listDrafts, all of them), the book's entries, and the moment they
- * were read. The day, the greeting's daypart, the lamp's tone and each card's dateline all come from `at`, so a room read
- * again (on focus, on a change in the store, on coming back from the background) is never stale.
+ * What Tonight shows: the book, whether this person quieted it, every waiting draft (listDrafts, all of them), the
+ * book's entries, and the moment they were read. The day, the greeting's daypart, the lamp's tone and each card's
+ * dateline all come from `at`, so a room read again (on focus, on a change in the store, on coming back from the
+ * background) is never stale.
  */
-type Room = { family: Family | null; drafts: Draft[]; entries: Entry[]; at: Date };
+type Room = { family: Family | null; quiet: boolean; drafts: Draft[]; entries: Entry[]; at: Date };
 
 function readRoom(): Room {
   const childId = getActiveChildId();
-  return { family: getFamily(), drafts: childId ? listDrafts(childId) : [], entries: listEntries(), at: new Date() };
+  return {
+    family: getFamily(),
+    quiet: getActiveChild()?.quiet === true,
+    drafts: childId ? listDrafts(childId) : [],
+    entries: listEntries(),
+    at: new Date(),
+  };
 }
 
 export default function Tonight() {
@@ -122,6 +135,12 @@ export default function Tonight() {
   const [arriving, setArriving] = useState(() => tonightArrival.pending());
   // While a card's page is up (CardToPage), Tonight is hidden from screen readers under it.
   const behind = useHiddenBehindCardPage();
+  // Plus (SR-C-08, F14-REQ-040): the plan from usePlan, and letters kept read again with the room on focus and on a
+  // return to the front (never awaited before the first frame). Null until read, so the line never shows on a guess.
+  const plan = usePlan();
+  const [lettersKept, setLettersKept] = useState<number | null>(null);
+  // Two or more held letters fold into one row (F14-REQ-041); the row opens their list in place.
+  const [heldOpen, setHeldOpen] = useState(false);
 
   const load = useCallback(() => setRoom(readRoom()), []);
   const focused = useRef(false);
@@ -132,6 +151,7 @@ export default function Tonight() {
   // The room and the prompt's inputs, read again: on focus, and when the app comes back to the front.
   const refresh = useCallback(() => {
     load();
+    void lettersKeptNow().then(setLettersKept);
     const entries = listEntries();
     setRecent(entries.map((e) => e.promptKey).filter((k): k is string => !!k));
     setDaysSince(entries[0] ? Math.floor((Date.parse(todayISO()) - Date.parse(entries[0].occurredOn)) / 864e5) : null);
@@ -171,13 +191,25 @@ export default function Tonight() {
   const family = room?.family;
   const birthday = family?.childBirthday ?? null;
 
+  const childName = family?.childName;
   const prompt = useMemo(
-    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey }), PROMPTS),
-    [birthday, daysSince, recent, today, shuffle, leftKey],
+    () => selectPrompt(tonightPromptInput({ birthday, today, daysSinceLastEntry: daysSince, recentKeys: recent, shuffle, leftKey, childName }), PROMPTS),
+    [birthday, daysSince, recent, today, shuffle, leftKey, childName],
   );
 
   const cards = useMemo(() => draftCards(room?.drafts ?? [], room?.at), [room?.drafts, room?.at]);
-  const monthAgo = useMemo(() => resurfaced(room?.entries ?? [], today, cards.length), [room?.entries, today, cards.length]);
+  const rows = useMemo(() => tonightRows(cards), [cards]);
+  // A new held letter, or one kept or let go, closes the held list; the row shows the new count, closed.
+  const heldCount = heldCountOf(rows);
+  useEffect(() => setHeldOpen(false), [heldCount]);
+  // The held list also closes when the person leaves Tonight (blur).
+  useFocusEffect(useCallback(() => () => setHeldOpen(false), []));
+  const showPlusLine = plusLineShows({ plan: plan.view, now: new Date().toISOString(), lettersKept, allowance: freeLettersAllowance(), alpha: PLUS_ALPHA });
+  // A quieted book brings nothing back (NS-23-R8, J-N19).
+  const monthAgo = useMemo(
+    () => resurfaced(room?.entries ?? [], today, cards.length, { quiet: !!room?.quiet }),
+    [room?.entries, room?.quiet, today, cards.length],
+  );
 
   if (room === undefined) return null;
   if (room.family === null) return <Redirect href="/onboarding" />;
@@ -186,8 +218,9 @@ export default function Tonight() {
   const child = book.childName;
   const daypart = clock.daypart;
   const greeting = greetingParts(t.greeting[daypart], book.signsAs);
-  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the child;
-  // the day's date is only the function's fallback for its other caller, the Family tab.
+  // The stage is always there ("7 months", or "Before You" before the birth), so the dateline always names the stage,
+  // and the child too when the book has a name (NX-36 S13); the day's date is only the function's fallback for its
+  // other caller, the Family tab.
   const dateline = tonightDateline(child, tonightStageLabel(book.childBirthday, today), dayDate(today));
   // S33: lights down for the evening once today is kept as a quiet day; Undo brings the light back.
   const lampLevel = tonightLampIntensity(daypart, !!markOn(room.entries, today));
@@ -203,15 +236,12 @@ export default function Tonight() {
   const lineIn = FadeIn.duration(M.fadeMs).delay(Math.round(M.exitMs / 2)).reduceMotion(ReduceMotion.Never);
 
   const keepNotMuch = () => {
-    // One mark a day: a second tap adds nothing. The words are never written by the app (D-084).
-    // Today by the clock at the tap, not the room's last read.
-    const day = todayISO();
-    const existing = markOn(listEntries(), day);
-    const mark = existing ?? newQuietMark({ id: uuidv7(), occurredOn: day, capturedAt: new Date().toISOString() });
-    if (!existing) saveEntry(mark);
+    // One mark a day, no words (D-084): the one capture entry keeps it; the line and its Undo stay here.
+    const kept = startCapture({ source: 'notMuchToday' });
+    if (kept.kind !== 'quietDay') return;
     haptic('soft');
     announce(copy.notMuch.savedToast);
-    setKeptMark(mark.id);
+    setKeptMark(kept.markId);
   };
 
   const undoNotMuch = () => {
@@ -219,20 +249,17 @@ export default function Tonight() {
     setKeptMark(null);
   };
 
-  const start = (mode: 'spoken' | 'typed') => {
-    const params = { promptKey: prompt.key, promptLibraryVersion: String(PROMPT_LIBRARY_VERSION) };
-    const active = getActiveChildId();
-    trackCaptureStarted({ mode, source: 'tonight', promptKind: promptKindOf(prompt.key), childIndex: childIndexOf(active), role: 'parent' });
-    if (mode === 'spoken') armListenStart(); // the tap that lets Listen start the microphone
-    router.push({ pathname: mode === 'typed' ? '/write' : '/listen', params });
-  };
+  // Speak and Type: the one capture entry opens Listen or Write, carrying the prompt on screen (lib/capture/start-capture.ts).
+  const promptParam = { key: prompt.key, libraryVersion: PROMPT_LIBRARY_VERSION };
 
   // Speak, Type and the quiet link: pinned under the scroll, or inline under the prompt at accessibility sizes.
   const actions = (
     <View className={inlineActions ? 'mt-6 gap-2' : 'gap-2 px-5 pb-3 pt-3'}>
+      {/* Before the person records, not only at Review: new letters need Plus (SR-C-08). Never a count or a price. */}
+      {showPlusLine ? <PlusLine /> : null}
       <ButtonRow>
-        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => start('spoken')} />
-        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => start('typed')} />
+        <Button size="capture" icon={MicrophoneIcon} label={t.speakButton} haptic="press" onPress={() => startCapture({ source: 'speak', prompt: promptParam })} />
+        <Button size="capture" icon={PencilSimpleIcon} label={t.typeButton} haptic="press" onPress={() => startCapture({ source: 'type', prompt: promptParam })} />
       </ButtonRow>
       {keptMark ? (
         <QuietDayInline onUndo={undoNotMuch} entering={lineIn} />
@@ -267,7 +294,7 @@ export default function Tonight() {
         <Animated.View entering={enter(2)} className="mt-6">
           <Animated.View key={prompt.key} entering={shuffle === 0 ? undefined : promptIn} exiting={promptOut}>
             <Text variant="promptHero" accessibilityHint={t.promptLabel}>
-              {renderTemplate(prompt.text, { child })}
+              {fill(prompt.text, { child })}
             </Text>
           </Animated.View>
           <Button
@@ -289,11 +316,17 @@ export default function Tonight() {
 
         {cards.length > 0 ? (
           <View className="mt-8 gap-3">
-            {cards.map((card, i) => (
-              <Animated.View key={card.id} entering={enter(3 + i)}>
-                <DraftCard card={card} onPress={() => router.push(card.route)} />
-              </Animated.View>
-            ))}
+            {rows.map((row, i) =>
+              row.kind === 'held' ? (
+                <Animated.View key={row.id} entering={enter(3 + i)}>
+                  <HeldRow row={row} open={heldOpen} onToggle={() => setHeldOpen((o) => !o)} onOpenCard={(card) => router.push(card.route)} />
+                </Animated.View>
+              ) : (
+                <Animated.View key={row.card.id} entering={enter(3 + i)}>
+                  <DraftCard card={row.card} onPress={() => router.push(row.card.route)} />
+                </Animated.View>
+              ),
+            )}
           </View>
         ) : monthAgo ? (
           <Animated.View entering={enter(3)} className="mt-8">

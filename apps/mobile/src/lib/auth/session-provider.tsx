@@ -21,6 +21,8 @@
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react';
 import { AppState } from 'react-native';
+import { settleReminderSession } from '../reminders/session';
+import { useRemoteConfig } from '../remote';
 import { currentUserId, getSetting, localSqlDb, setSetting } from '../store';
 import { getSupabaseOrNull, SESSION_STORAGE_KEY, startAutoRefreshWhileActive } from '../supabase/client';
 import { errorCode, isNetworkError } from '../supabase/errors.logic';
@@ -36,6 +38,7 @@ import { signInWithGoogle } from './google';
 import type { EmailLinkType } from './links.logic';
 import {
   authReducer,
+  authUserId,
   canSync,
   initialAuthState,
   isSignedIn,
@@ -50,6 +53,7 @@ import {
 } from './machine.logic';
 import { signInWithPasskey as passkeySignIn } from './passkey';
 import { clearPendingEmailRequest, clearWrongCodes, notePendingEmailRequest, noteWrongCode, readPendingEmailRequest, sessionSavedOnPhone, wrongCodeTimes } from './pending';
+import { reauthPhaseOf, reauthStep, REAUTH_EPOCH_KEY } from './reauth.logic';
 import { registerSensitiveDataRow } from './sensitive-row';
 
 export type Outcome = { ok: true } | { ok: false; error: AuthErrorKind };
@@ -189,6 +193,18 @@ export function SessionProvider({ children, onUnder18 }: Props) {
     };
   }, [sb]);
   useEffect(() => publishAuth(state), [state]);
+  // BL-967 (NS-13-R14, R13, R15): one hook on the signed-in user id. When it goes (Sign out and account deletion finish
+  // below, the under-18 answer, a sign-out Supabase makes itself) or another account replaces it, reminders end; and
+  // at launch, a session that ended before a kill is caught by its mark (lib/reminders/session.ts).
+  const sessionUser = authUserId(state);
+  const authSettled = state.status !== 'restoring';
+  const lastSessionUser = useRef<string | null>(null);
+  useEffect(() => {
+    if (!authSettled) return;
+    const before = lastSessionUser.current;
+    lastSessionUser.current = sessionUser;
+    void settleReminderSession(before, sessionUser);
+  }, [sessionUser, authSettled]);
   // BL-485 (b): Settings > Privacy's "Sync and family sharing" row reads this auth state. Read and subscribe only: no
   // `open`, because nothing withdraws the consent yet (lib/auth/sensitive-row.ts). Registered whether or not a Supabase
   // client exists: without one the state is signed out and the row says "Not signed in", as before.
@@ -321,6 +337,22 @@ export function SessionProvider({ children, onUnder18 }: Props) {
       onUnder18?.();
     })();
   }, [under18, sb, onUnder18]);
+
+  // BL-597 / F02-REQ-023: the founder raised `forceReauthEpoch`. A signed-in phone signs out once, after its queued
+  // letters are up; a signed-out phone just notes the number. Letters on the phone stay (local sign-out only).
+  const remoteEpoch = useRemoteConfig().forceReauthEpoch;
+  const previousStatus = useRef<string | null>(null);
+  const reauthPhase = reauthPhaseOf(state.status, isSignedIn(state), previousStatus.current);
+  useEffect(() => {
+    const step = reauthStep({ remoteEpoch, storedRaw: getSetting(REAUTH_EPOCH_KEY), phase: reauthPhase });
+    if (step.record !== null) setSetting(REAUTH_EPOCH_KEY, String(step.record));
+    if (step.signOut) {
+      void pendingUploads().then((n) => dispatch({ type: 'SIGN_OUT_REQUESTED', reason: 'force_reauth', pendingUploads: n }));
+    }
+  }, [remoteEpoch, reauthPhase]);
+  useEffect(() => {
+    previousStatus.current = state.status;
+  });
 
   const remember = useCallback((m: AuthMethod) => {
     setSetting(LAST_METHOD_KEY, m);
@@ -475,7 +507,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         const cur = stateRef.current;
         if (!sb || cur.status !== 'needsConsent') return { ok: false, error: 'unknown' };
         try {
-          await recordConsentAct(sb, step, accepted, cur.method);
+          await recordConsentAct(sb, step, accepted, cur.method, cur.userId);
           if (step === 'terms' && accepted) {
             // Apple shares the name once; it waits in the Keychain until Terms are accepted.
             const name = await takePendingAppleName();
@@ -498,7 +530,7 @@ export function SessionProvider({ children, onUnder18 }: Props) {
         const cur = stateRef.current;
         if (!sb || !isSignedIn(cur)) return { ok: false, error: 'unknown' };
         try {
-          await recordConsentAct(sb, 'sensitive', true, null);
+          await recordConsentAct(sb, 'sensitive', true, null, cur.userId);
           await checkGate();
           return { ok: true };
         } catch (e) {

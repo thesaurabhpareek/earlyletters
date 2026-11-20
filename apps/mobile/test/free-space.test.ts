@@ -55,12 +55,15 @@ describe('where it is used (source)', () => {
   it('Listen reads Paths.availableDiskSpace through it, before beginTake, and never on web', () => {
     const listen = src('app/listen.tsx');
     expect(listen).toMatch(/freeBytesFrom\(\(\) => Paths\.availableDiskSpace\)/);
-    // The reading reaches the blocker (review A L4: a `freeBytes: null` mutant survived).
-    expect(listen).toMatch(/startBlocker\(\{ granted: perm\.granted, freeBytes: freeBytesNow\(\) \}\)/);
     expect(listen).toMatch(/Platform\.OS === 'web' \? null/);
-    const start = listen.slice(listen.indexOf('const start = async'), listen.indexOf('const grantedNow'));
+    // The reading reaches the blocker (review A L4: a `freeBytes: null` mutant survived). Since the
+    // primer change the screen hands the reading to startTake, and startTake feeds startBlocker.
+    expect(listen).toMatch(/freeBytes: freeBytesNow,/);
+    const logic = src('components/capture/listen.logic.ts');
+    expect(logic).toMatch(/startBlocker\(\{ granted: perm\.granted, freeBytes: d\.freeBytes\(\) \}\)/);
+    const start = logic.slice(logic.indexOf('export async function startTake'));
     expect(start.indexOf('startBlocker(')).toBeGreaterThan(-1);
-    expect(start.indexOf('startBlocker(')).toBeLessThan(start.indexOf('beginTake('));
+    expect(start.indexOf('startBlocker(')).toBeLessThan(start.indexOf('d.begin()'));
   });
 
   it('the module stays pure: no React Native or expo import, so it runs here', () => {

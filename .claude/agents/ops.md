@@ -18,6 +18,7 @@ Builds stay green and fast, releases are boring and repeatable, and the team alw
 - `.github/README.md` documentation.
 
 ## You read first
+- `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `.github/README.md` (CI layout, time budget, branch protection), `docs/tdd/06-performance-reliability.md`, `docs/ROADMAP.md` milestone M12.
 - `CLAUDE.md` release tags: `ios-v<major>.<minor>.<patch>`.
 

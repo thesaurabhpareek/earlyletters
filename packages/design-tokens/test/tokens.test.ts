@@ -155,7 +155,8 @@ describe('design tokens: type', () => {
   });
   it('the two literary lines of the experience pass: Tonight\'s prompt and the month numeral', () => {
     expect(tokens.type.promptHero).toMatchObject({ fontFamily: tokens.fontFamily.serif, fontSize: 28, lineHeight: 36, letterSpacing: 0, dynamicTypeStyle: 'title1', maxScale: 1.8 });
-    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 64, letterSpacing: -0.5, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    expect(tokens.type.numeral).toMatchObject({ fontFamily: tokens.fontFamily.serifMedium, fontSize: 64, lineHeight: 96, letterSpacing: 1, dynamicTypeStyle: 'largeTitle', maxScale: 1.4 });
+    expect(tokens.type.numeral.fontVariant).toEqual(['lining-nums', 'proportional-nums']);
     // Tonight's prompt is larger than the old card prompt, and smaller than the first-run hero.
     expect(tokens.type.promptHero.fontSize).toBeGreaterThan(tokens.type.prompt.fontSize);
     expect(tokens.type.promptHero.fontSize).toBeLessThan(tokens.type.hero.fontSize);

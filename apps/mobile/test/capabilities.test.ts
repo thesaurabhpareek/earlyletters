@@ -51,20 +51,20 @@ describe('server features switch: off unless a build says on', () => {
     expect(capabilities).toEqual({ signIn: false, sync: false, coParent: false, backup: false, statusReport: false, accountDeletion: false, analytics: false, englishOnly: false });
   });
 
-  it('is on only where flipped: the preview alpha (D-106), and testflight after the R-17 flip; production and development are off (eas.json)', () => {
+  it('is on only where flipped: the preview alpha (D-106), production (build 12, founder 8 Nov 2026), and testflight after the R-17 flip; development is off (eas.json)', () => {
     const eas = JSON.parse(readFileSync(join(APP, 'eas.json'), 'utf8')) as { build: Record<string, { env?: Record<string, string> }> };
     const profiles = Object.keys(eas.build);
     expect(profiles).toEqual(expect.arrayContaining(['development', 'preview', 'production', 'testflight']));
     // The R-17 flip is the testflight line alone (docs/release/TESTFLIGHT.md); this test passes either side of it.
     const flipped = eas.build.testflight.env?.EXPO_PUBLIC_SERVER_FEATURES === 'on';
-    const expected = flipped ? ['preview', 'testflight'] : ['preview'];
+    const expected = flipped ? ['preview', 'production', 'testflight'] : ['preview', 'production'];
     const on = profiles.filter((name) => parseServerFeatures(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES));
     expect(on).toEqual(expected);
     for (const name of profiles) {
       // Written out as on or off in every profile, never left to a default.
       expect(eas.build[name].env?.EXPO_PUBLIC_SERVER_FEATURES, name).toBe(expected.includes(name) ? 'on' : 'off');
     }
-    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
+    expect(eas.build.production.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('on');
     expect(eas.build.development.env?.EXPO_PUBLIC_SERVER_FEATURES).toBe('off');
   });
 
@@ -240,7 +240,9 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     expect(code).not.toMatch(/process\.env\s*\[/);
     expect(code).not.toMatch(/\{[^}]*\}\s*=\s*process\.env\b/);
     const reads = [...code.matchAll(/process\.env\.([A-Za-z0-9_]+)/g)].map((m) => m[1]);
-    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(reads.sort()).toEqual(['EXPO_PUBLIC_ACCOUNT_DELETION', 'EXPO_PUBLIC_ANALYTICS', 'EXPO_PUBLIC_BACKUP', 'EXPO_PUBLIC_ENGLISH_ONLY', 'EXPO_PUBLIC_SERVER_FEATURES', 'EXPO_PUBLIC_SPOKEN_LANGUAGES', 'EXPO_PUBLIC_STATUS_REPORT']);
+    expect(code).toMatch(/const SPOKEN_LANGUAGES_BUILD_VALUE: readonly string\[\] \| null = parseLanguageList\(process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES\);/);
+    expect(code.match(/process\.env\.EXPO_PUBLIC_SPOKEN_LANGUAGES/g)?.length).toBe(1);
     expect(code).toMatch(/const ENGLISH_ONLY_BUILD_VALUE: boolean = parseServerFeatures\(process\.env\.EXPO_PUBLIC_ENGLISH_ONLY\);/);
     expect(code).toMatch(/return englishOnlyTestOverride \?\? ENGLISH_ONLY_BUILD_VALUE;/);
     expect(code).toMatch(/get englishOnly\(\): boolean \{\s*return englishOnlyEnabled\(\);/);
@@ -257,6 +259,25 @@ describe('[D-111 item 4, D-121] English only: on in the alpha profiles and the s
     const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_ENGLISH_ONLY' in p.env);
     expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'production', 'testflight']);
     for (const [n, p] of naming) expect(p.env?.EXPO_PUBLIC_ENGLISH_ONLY, n).toBe('on');
+  });
+
+  it('eas.json writes EXPO_PUBLIC_SPOKEN_LANGUAGES as "en" exactly where English only is on, and nowhere else (D-125 item 2)', () => {
+    const text = readFileSync(join(APP, 'eas.json'), 'utf8');
+    expect(text.match(/"EXPO_PUBLIC_SPOKEN_LANGUAGES": "en"/g)?.length).toBe(3);
+    expect([...new Set(text.match(/\w*SPOKEN\w*/gi) ?? [])]).toEqual(['EXPO_PUBLIC_SPOKEN_LANGUAGES']);
+    const { build } = eas();
+    const naming = Object.entries(build).filter(([, p]) => p.env && 'EXPO_PUBLIC_SPOKEN_LANGUAGES' in p.env);
+    expect(naming.map(([n]) => n).sort()).toEqual(['preview', 'production', 'testflight']);
+    for (const name of ['development', 'e2e']) expect(build[name].env?.EXPO_PUBLIC_SPOKEN_LANGUAGES, name).toBeUndefined();
+    for (const f of readdirSync(APP).filter((n) => n.startsWith('.env'))) {
+      expect(readFileSync(join(APP, f), 'utf8'), f).not.toMatch(/EXPO_PUBLIC_SPOKEN_LANGUAGES/);
+    }
+  });
+
+  it('the preflight FAILs either alpha build whose profile does not say EXPO_PUBLIC_SPOKEN_LANGUAGES=en', () => {
+    const preflight = readFileSync(join(APP, 'scripts/preflight-testflight.mjs'), 'utf8');
+    const block = preflight.slice(preflight.indexOf('if (prof) {'), preflight.indexOf("check(prof.autoIncrement === true"));
+    expect(block).toMatch(/check\(\s*\(profEnv\.EXPO_PUBLIC_SPOKEN_LANGUAGES \?\? ''\)\.trim\(\)\.toLowerCase\(\) === 'en',/);
   });
 
   it('the preflight FAILs either alpha build whose profile does not say EXPO_PUBLIC_ENGLISH_ONLY=on', () => {

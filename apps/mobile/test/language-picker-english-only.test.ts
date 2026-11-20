@@ -102,9 +102,9 @@ describe('[D-111 item 4] the line under the list', () => {
 });
 
 describe('[D-111 item 4] the picker reads the view, and nothing else reads the switch', () => {
-  it('language-picker.tsx lists, searches and notes through languagePickerView(capabilities.englishOnly)', () => {
+  it('language-picker.tsx lists, searches and notes through languagePickerView(heardLanguagesForBuild())', () => {
     const picker = src('components/language/language-picker.tsx');
-    expect(picker).toMatch(/const view = languagePickerView\(capabilities\.englishOnly\);/);
+    expect(picker).toMatch(/const view = languagePickerView\(heardLanguagesForBuild\(\)\);/);
     expect(picker).toMatch(/searchLanguages\(query, view\.languages\)/);
     expect(picker).toMatch(/\{view\.search \? \(\s*<View[^>]*>\s*<TextField/);
     expect(picker).toMatch(/\{view\.note \? \(\s*<Text[^>]*>\s*\{view\.note\}/);
@@ -118,7 +118,7 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
     expect(src('app/onboarding.tsx')).toMatch(/<LanguagePicker\b/);
   });
 
-  it('only capabilities.ts, the picker, the Spoken language screen, first run\'s language row (SET-06) and the queue\'s language hold (transcription-queue, N2 on #247) mention the switch: no store, sync, rules or pack code reads it', () => {
+  it('only capabilities.ts, the picker, the Spoken language screen, first run\'s language row (SET-06) and the queue\'s language hold (transcription-queue, N2 on #247) mention the switch or the spoken-language list: no store, sync, rules or pack code reads them', () => {
     const files: string[] = [];
     const walk = (dir: string) => {
       for (const n of readdirSync(dir)) {
@@ -128,7 +128,7 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
       }
     };
     walk(SRC);
-    const readers = files.filter((f) => /englishOnly|ENGLISH_ONLY/.test(readFileSync(f, 'utf8'))).map((f) => relative(SRC, f).split('\\').join('/'));
+    const readers = files.filter((f) => /englishOnly|ENGLISH_ONLY|SPOKEN_LANGUAGES|spokenLanguages|heardLanguages/.test(readFileSync(f, 'utf8'))).map((f) => relative(SRC, f).split('\\').join('/'));
     expect(readers.sort()).toEqual([
       // SET-06 (31 Oct 2026): first run hides its language row in an English-only build; screen code, not data.
       'app/onboarding.tsx',
@@ -137,6 +137,8 @@ describe('[D-111 item 4] the picker reads the view, and nothing else reads the s
       'components/language/language-picker.tsx',
       'components/onboarding/language-row.logic.ts',
       'lib/capabilities.ts',
+      // D-125 item 2: the one answer the five readers share (English only, or the spoken-language list).
+      'lib/language/heard-languages.ts',
       'lib/transcription-queue/index.ts',
       'lib/transcription-queue/language-hold.ts',
     ]);
@@ -155,7 +157,7 @@ describe('[D-111 item 4] Settings, Spoken language: nothing to add means no Add 
 
   it('settings/language.tsx follows it, and the chosen language row stays outside it', () => {
     const screen = src('app/settings/language.tsx');
-    expect(screen).toMatch(/const also = alsoSpokenView\(capabilities\.englishOnly, spoken\.others\.length\);/);
+    expect(screen).toMatch(/const also = alsoSpokenView\(heardLanguagesForBuild\(\), spoken\.others\.length\);/);
     expect(screen).toMatch(/\{also\.section \? \(\s*<ListSection title=\{t\.othersTitle\} footer=\{also\.footer \? t\.othersFooter : undefined\}>/);
     expect(screen).toMatch(/\{also\.add \? \(\s*<ListRow title=\{full \? t\.addLanguageFull : t\.addLanguage\}/);
     expect(screen.match(/t\.othersFooter/g)?.length).toBe(1);

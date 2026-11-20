@@ -16,7 +16,7 @@ Pick what fits; each is reversible.
 | Service role key or secret API key leaked | Rotate it now (SECURITY.md 2.5). Then redeploy both functions and update your shell |
 | A function secret leaked (`PURGE_WORKER_SECRET`, Resend, PostHog, Apple key, `TOKEN_KEK`) | Rotate that one (SECURITY.md 2) |
 | A person's session or device compromised | Supabase > Authentication > Users > the person > sign out of all sessions (only by ticket and with their request) |
-| Everyone's sessions suspect | Rotate the JWT signing key: everyone signs in again; recording, reading and export keep working offline |
+| Everyone's sessions suspect | Follow `sign-everyone-out.md` (raise `forceReauthEpoch`; rotating the JWT signing key alone is not proven to end sessions). Recording, reading and export keep working offline |
 | A bug shows data across families | Ship the fix forward; if it is server-side, a migration; if needed, disable the RPC with a one-line `revoke execute ... from authenticated` until fixed |
 | A vendor breached | Read their notice; rotate our keys at that vendor; ask them for affected tenant scope in writing |
 | Purge or deletion must pause (evidence) | Place a legal hold on the affected scope (`legal_holds`, DATA-REQ-035) instead of stopping the worker for everyone |

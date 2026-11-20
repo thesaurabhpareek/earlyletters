@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.6.0",
+  "format": "early-letters-export",
+  "waiting": [
+    {
+      "id": "w1",
+      "child_id": "child-asha-0001",
+      "reason": "held_at_keep",
+      "kind": "letter",
+      "created_at": "2027-03-11T20:00:00.000Z",
+      "occurred_on": null,
+      "occurred_precision": "day",
+      "capture_mode": "spoken",
+      "language": null,
+      "typed_text": null,
+      "raw_transcript": "You fell asleep on my shoulder at the window, um, and I did not move for an hour.",
+      "changed_words": null,
+      "text_file": "waiting/w1.txt",
+      "audio": {
+        "path": "waiting/w1.m4a",
+        "sha256": "696f7c5a0b44305ef8401afa1ce07427aa8272d7a0f3db92ce14cdfa3abde6c9",
+        "bytes": 3000,
+        "duration_ms": 41000,
+        "codec": "aac-lc",
+        "media_type": "audio/mp4",
+        "integrity": "ok",
+        "recorded_sha256": "696f7c5a0b44305ef8401afa1ce07427aa8272d7a0f3db92ce14cdfa3abde6c9"
+      },
+      "audio_missing": null
+    },
+    {
+      "id": "w2",
+      "child_id": "child-asha-0001",
+      "reason": "held_at_keep",
+      "kind": "letter",
+      "created_at": "2027-03-12T20:00:00.000Z",
+      "occurred_on": "2027-03-12",
+      "occurred_precision": "day",
+      "capture_mode": "typed",
+      "language": null,
+      "typed_text": "Today you said ball. Then you said it eleven more times.",
+      "raw_transcript": null,
+      "changed_words": null,
+      "text_file": "waiting/w2.txt",
+      "audio": null,
+      "audio_missing": null
+    },
+    {
+      "id": "w3",
+      "child_id": "child-asha-0001",
+      "reason": "not_read_back",
+      "kind": "letter",
+      "created_at": "2027-03-13T20:00:00.000Z",
+      "occurred_on": null,
+      "occurred_precision": "day",
+      "capture_mode": "spoken",
+      "language": null,
+      "typed_text": null,
+      "raw_transcript": "Asha, the rain stopped just for your walk.",
+      "changed_words": null,
+      "text_file": "waiting/w3.txt",
+      "audio": {
+        "path": "waiting/w3.aac",
+        "sha256": "085a02e1db33accae836e36bf75738e49cc8712c3a9ddbcc85b96b2bf7aa26fe",
+        "bytes": 1700,
+        "duration_ms": 41000,
+        "codec": "aac-lc",
+        "media_type": "audio/aac",
+        "integrity": "ok",
+        "recorded_sha256": "085a02e1db33accae836e36bf75738e49cc8712c3a9ddbcc85b96b2bf7aa26fe"
+      },
+      "audio_missing": null
+    },
+    {
+      "id": "w4",
+      "child_id": "child-asha-0001",
+      "reason": "typed_draft",
+      "kind": "letter",
+      "created_at": "2027-03-14T08:00:00.000Z",
+      "occurred_on": null,
+      "occurred_precision": "day",
+      "capture_mode": "typed",
+      "language": null,
+      "typed_text": "A note for later: the blue hat.",
+      "raw_transcript": null,
+      "changed_words": null,
+      "text_file": "waiting/w4.txt",
+      "audio": null,
+      "audio_missing": null
+    }
+  ]
+}

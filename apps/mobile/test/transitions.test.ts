@@ -7,7 +7,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { tokens } from '@scribe/design-tokens';
 import { describe, expect, it } from 'vitest';
-import { FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows } from '../src/components/motion/excerpt-fade.logic';
+import { endsOnWholeWord, FADE_FRACTION, fadeBox, isRtl, lineHeightFor, overflows, visiblePrefix, wordFadeSpan } from '../src/components/motion/excerpt-fade.logic';
 import { LINE_ART, LINE_ART_NAMES, artHeight, penWidth, strokeProgress } from '../src/components/ui/line-art.data';
 import { ROOT_ROUTE_CONTEXT } from '../src/lib/navigation.logic';
 import {
@@ -81,11 +81,33 @@ describe('routeTransitions: one table for every route (EXPERIENCE_PASS 5.8)', ()
     expect(routeTransitions(true).onboarding).toEqual({ animation: 'none' });
   });
 
-  it('row 7: the letter keeps the platform push until its page mounts CardToPage (P5), so nothing appears without motion', () => {
-    expect(ROUTES['letter/[id]'].move).toBe('push');
-    expect(routeTransitions(false)['letter/[id]']).toEqual({});
-    expect(moveOptions('cardToPage', false)).toEqual({ presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } });
-    expect(moveOptions('cardToPage', true)).toEqual(moveOptions('cardToPage', false)); // CardToPage cross-fades itself
+  it('row 7: a letter opens card to page only: no native slide under the grow, under either setting (build 1 played both)', () => {
+    expect(ROUTES['letter/[id]'].move).toBe('cardToPage');
+    const card = { presentation: 'transparentModal', animation: 'none', headerShown: false, contentStyle: { backgroundColor: 'transparent' } };
+    expect(moveOptions('cardToPage', false)).toEqual(card);
+    expect(moveOptions('cardToPage', true)).toEqual(card); // CardToPage cross-fades itself under Reduce Motion
+    for (const reduced of [false, true]) {
+      const t = routeTransitions(reduced)['letter/[id]'];
+      expect(t, String(reduced)).toEqual(card);
+      expect(t.animation).toBe('none'); // the platform adds no move of its own
+    }
+  });
+
+  it('row 7 (source): the letter page mounts CardToPage because the route is card to page, and the root layout spreads the row last', () => {
+    const page = read('app/letter/[id].tsx');
+    expect(page).toMatch(/const CARD_MODE = \(ROUTES\['letter\/\[id\]'\]\.move as Move\) === 'cardToPage';/);
+    expect(page).toContain('<CardToPage id={entry.id}');
+    const layout = read('app/_layout.tsx');
+    // The row's headerShown: false and animation: 'none' win over the layout's own header options.
+    expect(layout).toMatch(/name="letter\/\[id\]" options=\{\{[^}]*\.\.\.routes\['letter\/\[id\]'\] \}\}/);
+  });
+
+  it("row 7: VoiceOver's escape closes the letter the way Back does (a transparent modal has no native escape)", () => {
+    const src = read('components/motion/card-transition.tsx');
+    expect(src).toMatch(/accessibilityViewIsModal aria-modal onAccessibilityEscape=\{close\}>/);
+    // The same close as Back and the swipe: the words go back into the card, or the page fades.
+    expect(src).toMatch(/const close = useCallback\(/);
+    expect(src).toMatch(/close,\s*opening,/);
   });
 
   it('Reduce Motion (rule 6): our dissolves become one fadeMs cross-fade; native pushes and sheets keep the system transition', () => {
@@ -338,6 +360,32 @@ describe('card to page (MOTION 5f)', () => {
     expect(canCarry(cardText, { ...pageText, lineHeight: lineHeightFor('letterBody', 1, tokens.readingScale.largePrint) })).toBe(false);
     expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 0.823) }, pageText)).toBe(false);
     expect(canCarry({ ...cardText, lineHeight: lineHeightFor('letterBody', 1.2) }, { ...pageText, lineHeight: lineHeightFor('letterBody', 1.2) })).toBe(true);
+  });
+
+  it("a word-boundary excerpt is a prefix of the letter, so the page's opening wraps exactly like the card and the carry holds (BL-659, book-page.md 3)", () => {
+    // The card draws the whole letter clipped to its lines (never a cut copy of it), so its lines are the page's first
+    // lines: the same words in the same column and type break in the same places.
+    const letter = 'You found the spoon today and would not let it go, even in the bath, laughing at the bubbles the whole time.';
+    const breakAt = (text: string, per: number) => (text.match(new RegExp(`.{1,${per}}(\\s+|$)`, 'gu')) ?? []).map((t) => ({ text: t, x: 0, width: t.trimEnd().length * 10 }));
+    const card = breakAt(letter, 33);
+    const page = breakAt(letter, 33);
+    for (const n of [2, 3]) {
+      const shown = visiblePrefix(card, n);
+      expect(letter.startsWith(shown)).toBe(true);
+      expect(endsOnWholeWord(letter, shown)).toBe(true);
+      expect(visiblePrefix(page, n)).toBe(shown);
+    }
+    // The fade over the last word sits inside the carried column, at the end of its last line.
+    const last = card[2]!;
+    const span = wordFadeSpan(last, 40, false);
+    expect(span.left).toBeGreaterThanOrEqual(0);
+    expect(span.left + span.width).toBeCloseTo(last.x + last.width);
+    expect(span.left + span.width).toBeLessThanOrEqual(cardText.width);
+    // Three lines in the same column and type still carry.
+    expect(canCarry({ ...cardText, height: 18 + 10 + 3 * 32 }, pageText)).toBe(true);
+    // And the card hands the excerpt the whole letter, not a prefix it cut itself.
+    expect(read('components/book/letter-card.tsx')).toMatch(/<ExcerptFade text=\{text\} lines=\{lines\}/);
+    expect(read('components/motion/excerpt-fade.tsx')).toMatch(/onTextLayout=\{onTextLayout\} onLayout=\{[^}]*\}>\s*\{text\}/);
   });
 
   /** The standard spring the paper grows on, stepped finely (Reanimated solves the same equation): progress by ms. */
@@ -662,7 +710,7 @@ describe('card to page (MOTION 5f)', () => {
   it('screen readers read the letter once and land on the page (source)', () => {
     const src = read('components/motion/card-transition.tsx');
     // The page is modal, and holds the Book hidden for as long as it is up.
-    expect(src).toMatch(/<View style=\{StyleSheet\.absoluteFill\} accessibilityViewIsModal aria-modal>/);
+    expect(src).toMatch(/<View style=\{StyleSheet\.absoluteFill\} accessibilityViewIsModal aria-modal onAccessibilityEscape=\{close\}>/);
     expect(src).toContain('useEffect(() => cardPages.hold(), []);');
     expect(src).toMatch(/export function useHiddenBehindCardPage\(\)/);
     // Focus moves to the page's own element once it has arrived, carried or faded.

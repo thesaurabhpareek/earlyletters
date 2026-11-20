@@ -8,6 +8,7 @@ import {
   extractIds, bracketedIds, splitRow, parseTables, sectionLines, v2Definitions, v2WorkPackages,
   legacyDefinitions, retiredIds, testTitles, flowTags, collect, summarize, renderTrace, main, cmpId,
   parseCsv, b1ScopeFromCatalog, parseBaseline, ratchet,
+  nsIds, nsBracketed, nsCited, nsDefinitions, collectNs, summarizeNs,
 } from './trace.mjs';
 
 test('extractIds reads full IDs and shorthand after a full ID', () => {
@@ -352,4 +353,89 @@ test('[HV2-012] --scope b1 --check is the ratchet only; duplicate or undefined I
   fs.writeFileSync(path.join(repo, 'docs/BACKLOG.md'), 'Also F77-REQ-123.\n');
   assert.equal(scope(repo, ['--check']), 0);
   assert.equal(main(['--repo', repo, '--no-write', '--check'], () => {}), 1);
+});
+
+// BL-964 (gate G0): NS ids from the locked cards. The fixture card NS-90 is planted, not real.
+test('NS grammar: split, lettered and cross-cutting ids, never a prefix of a longer id', () => {
+  assert.deepEqual(nsBracketed('[NS-01-R9a][NX-39-R2] and [NS-07-C28-13], [X4-R1] [FRAME-SLIP]'), ['NS-01-R9a', 'NX-39-R2', 'NS-07-C28-13', 'X4-R1', 'FRAME-SLIP']);
+  assert.deepEqual(nsBracketed('[NS-07-G11-1a] [NX-30a-R1] [NS-06-A2b]'), ['NS-07-G11-1a', 'NX-30a-R1', 'NS-06-A2b']);
+  assert.deepEqual(nsBracketed('NS-01-R4 unbracketed, [NS-01-R9ab], [NS-1-R2], [XNS-01-R1], [BL-964]'), []);
+  assert.deepEqual(nsIds('NS-07-C28-13 is one id; NS-01-R4-x and NS-07-C28-13b2 are none'), ['NS-07-C28-13']);
+});
+
+test('nsCited reads backlog shorthand and expands ranges only over defined rows', () => {
+  const known = new Set(['NS-01-R37a', 'NS-01-R37b', 'NS-01-R37c', 'NS-02-R1', 'NS-02-R2', 'NS-02-R4', 'NS-07-C28-1', 'NS-07-C28-2', 'NS-07-C28-3', 'NS-07-C5-1']);
+  assert.deepEqual(nsCited('NS-01-R37a, R37b and R37c', known).sort(), ['NS-01-R37a', 'NS-01-R37b', 'NS-01-R37c']);
+  assert.deepEqual(nsCited('NS-01-R37a to R37c', known).sort(), ['NS-01-R37a', 'NS-01-R37b', 'NS-01-R37c']);
+  assert.deepEqual(nsCited('NS-02-R1 to NS-02-R4', known).sort(), ['NS-02-R1', 'NS-02-R2', 'NS-02-R4']);
+  assert.deepEqual(nsCited('NS-07-C28-1 to NS-07-C28-3', known).sort(), ['NS-07-C28-1', 'NS-07-C28-2', 'NS-07-C28-3']);
+  assert.deepEqual(nsCited('NS-02-R1, P0 (a), R2', known), ['NS-02-R1']);
+});
+
+test('nsDefinitions reads acceptance tables only, with priority, device row and journeys', () => {
+  const md = ['| Id | Question | Owner |', '|---|---|---|', '| NS-90-Q1 | not a row | qa |', '',
+    '| Id | Given, When, Then | Priority | Test title |', '|---|---|---|---|',
+    '| NS-90-R1 | Given the device zone (in the device zone), Then J-N9 holds | P0 (a) | `[NS-90-R1] one (device)` |',
+    '| NS-90-R2 | Given two phones, Then it syncs (PROPOSED; device) | P1 | `[NS-90-R2] two` (device row S1-204) |',
+    '| NS-90-A2 | Split into A2a and A2b | n/a | none |'].join('\n');
+  assert.deepEqual(nsDefinitions(md, 'c.md').map((d) => [d.id, d.priority, d.line, d.device, d.journeys.join()]),
+    [['NS-90-R1', 'P0', 7, '', 'J-N9'], ['NS-90-R2', 'P1', 8, 'device row S1-204', ''], ['NS-90-A2', 'n/a', 9, '', '']]);
+});
+
+function nsRepo() {
+  const repo = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-ns-'));
+  const w = (p, t) => { fs.mkdirSync(path.dirname(path.join(repo, p)), { recursive: true }); fs.writeFileSync(path.join(repo, p), t); };
+  const head = '| Id | Given, When, Then | Priority | Test title |\n|---|---|---|---|\n';
+  const r = (id, p, extra = '') => `| ${id} | Given Asha, Then it holds | ${p} | \`[${id}] title\`${extra} |\n`;
+  w('docs/prd/PRD.md', '# PRD\n');
+  w('docs/product/prd/01-demo.md', `# NS-90 Demo\n\n${head}${r('NS-90-R1', 'P0 (a)')}${r('NS-90-R2', 'P0 (a)')}${r('NS-90-R3', 'P0 (a)')}${r('NS-90-R4a', 'P0 (c)')}` +
+    `${r('NS-90-R5', 'P0 (a)', ' (device row S1-204)')}${r('NS-90-R6', 'P0 (a)')}${r('NS-90-R7', 'P1')}| NS-90-A2 | Split | n/a | none |\n${r('NS-90-C28-1', 'P0 (b)')}${r('NS-90-C28-13', 'P0 (b)')}`);
+  w('docs/product/prd/15-review.md', `${head}${r('NS-90-R50', 'P0 (a)')}`);
+  w('docs/product/prd/14-test-plan.md', '# Plan\n\n## 4. Journeys\n\n| Id | Journey | Cards | Priority | Device |\n|---|---|---|---|---|\n| J-N9 | One | NS-90 | P0 (loss) | yes |\n| J-N10 | Two | NS-90 | P1 | no |\n\n' +
+    '## 7. The P0 register\n\n| Card | P0 rows | Reasons |\n|---|---|---|\n| NS-90 | NS-90-R1 to R4a, R5, R7, NS-90-C28-13 | (a) |\n\nCross-cutting: `[X4-R1]` and `[FRAME-SLIP]`.\n\n## 8. After\n');
+  w('docs/BACKLOG.md', '#### BL-100 Demo\n- Satisfies: NS-90-R1 to R3, NS-90-C28-13.\n\n#### BL-101 Other\n- Satisfies: none.\n');
+  w('apps/mobile/test/a.test.ts', ["it('[NS-90-R1][NX-39-R2] found', () => {});", "it.skip('[NS-90-R2] skipped', () => {});",
+    "it('names a row in its body only', () => { /* [NS-90-R3] */ });", "it('[NS-90-R4a][stand-in] stand-in', () => {});",
+    "test('[NS-90-C28-13] found, C28-1 is not', () => {});", "it('[NS-90-R99] typo', () => {});", "it('[X4-R1] second account', () => {});",
+    "it('[NS-90-A2] split parent', () => {});", "it('NS-90-R5 unbracketed', () => {});",
+    "test('[NS-90-C28-1] option form', { skip: true }, () => {});", "it('[NS-90-R7] keeps the .todo list', () => {});"].join('\n'));
+  w('apps/mobile/e2e-web/j09.flow.ts', "test('[J-N9][NS-90-R6] journey', async () => {});\n");
+  return repo;
+}
+
+test('[BL-964] planted card: the NS report finds what is tested and misses nothing untested', () => {
+  const repo = nsRepo();
+  const ns = collectNs({ repo, register: path.join(repo, 'docs/product/prd/14-test-plan.md') });
+  const by = Object.fromEntries([...ns.p0, ...ns.cross].map((r) => [r.id, r]));
+  assert.deepEqual(Object.fromEntries(Object.entries(by).map(([id, r]) => [id, r.status])), {
+    'NS-90-R1': 'tested', 'NS-90-R2': 'untested', 'NS-90-R3': 'untested', 'NS-90-R4a': 'partial', 'NS-90-R5': 'device',
+    'NS-90-R6': 'journey', 'NS-90-C28-1': 'untested', 'NS-90-C28-13': 'tested', 'X4-R1': 'tested', 'FRAME-SLIP': 'untested',
+  });
+  assert.deepEqual(by['NS-90-R1'].tests, ['apps/mobile/test/a.test.ts:1']);
+  assert.deepEqual(by['NS-90-C28-13'].tests, ['apps/mobile/test/a.test.ts:5']);
+  assert.equal(by['NS-90-R5'].device, 'device row S1-204');
+  assert.deepEqual(by['NS-90-R6'].journeys, ['J-N9 apps/mobile/e2e-web/j09.flow.ts:1']);
+  assert.deepEqual(['R1', 'R2', 'R3', 'R4a', 'C28-13'].map((x) => by[`NS-90-${x}`].backlog.join()), ['BL-100', 'BL-100', 'BL-100', '', 'BL-100']);
+  assert.deepEqual([ns.listedNotP0, ns.p0NotListed], [['NS-90-R7'], ['NS-90-R6', 'NS-90-C28-1']]);
+  assert.deepEqual([ns.strays.map((x) => x.id), ns.splitCited.map((x) => x.id), ns.skipped, ns.nxCited], [['NS-90-R99'], ['NS-90-A2'], 2, ['NX-39-R2']]);
+  assert.deepEqual(ns.journeys.map((j) => [j.id, j.priority, j.at.join()]), [['J-N9', 'P0', 'apps/mobile/e2e-web/j09.flow.ts:1'], ['J-N10', 'P1', '']]);
+  const s = summarizeNs(ns);
+  assert.deepEqual([s.cards, s.rows, s.p0, s.tested, s.partial, s.journey, s.device, s.untested, s.p0NoBacklog], [1, 10, 8, 2, 1, 1, 1, 3, 4]);
+});
+
+test('[BL-964] the NS report is report mode: it renders, logs, and never fails --check', () => {
+  const repo = nsRepo();
+  const out = [];
+  assert.equal(main(['--check', '--repo', repo, '--register', 'docs/product/prd/14-test-plan.md', 'docs/prd'], (l) => out.push(l)), 0);
+  assert.match(out.join('\n'), /trace NS \(docs\/product\/prd\/14-test-plan\.md\): 10 acceptance rows in 1 cards, 8 P0: 2 tested, 1 partial, 1 journey, 1 device, 3 untested/);
+  assert.match(out.join('\n'), /NS id defined nowhere: NS-90-R99 \(apps\/mobile\/test\/a\.test\.ts:6\)/);
+  const md = fs.readFileSync(path.join(repo, 'docs/TRACE.md'), 'utf8');
+  assert.match(md, /\| NS-90-R1 \| tested \| `apps\/mobile\/test\/a\.test\.ts:1` \|/);
+  assert.match(md, /\| NS-90-R3 \| untested \|/);
+  assert.throws(() => main(['--no-write', '--repo', repo, '--register', 'docs/product/prd/none.md', 'docs/prd'], () => {}), /no register/);
+  const logged = [];
+  assert.equal(main(['--no-write', '--repo', repo, '--register', 'docs/product/prd', 'docs/prd'], (l) => logged.push(l)), 0);
+  assert.match(logged.join('\n'), /trace NS skipped: EISDIR/);
+  fs.rmSync(path.join(repo, 'docs/product'), { recursive: true });
+  assert.equal(main(['--no-write', '--repo', repo, 'docs/prd'], (l) => out.push(l)), 0);
 });

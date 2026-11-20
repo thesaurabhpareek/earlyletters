@@ -28,6 +28,13 @@ let close: () => void = () => {};
 let seq = 0;
 let asha = '';
 const id1 = '0199a5b0-0000-7000-8000-000000000001';
+// These older tests are about the 30 day cutoff, not the clock guard: purgeSeen stands for a launch that has already
+// seen this time (the stamp is the time itself), so the cutoff is the time minus the shelf days, as before QE-05.
+const purgeSeen = (ms: number, eraser: AudioEraser) => {
+  store.recordLaunch(ms);
+  return store.purgeExpired(ms, eraser);
+};
+
 const id2 = '0199a5b0-0000-7000-8000-000000000002';
 
 beforeEach(() => {
@@ -137,7 +144,7 @@ describe('the shelf', () => {
     expect(rows.entries).toEqual([{ id: id1, audioUri: `file:///Documents/${id1}.m4a`, deleted: true }]);
     expect(planLaunchSweep({ files: [], ...rows, reported: [], activeChildId: asha, skipDraftIds: [] })).toEqual([]);
     // The next launch purge finishes it, and a file that is already gone is not an error.
-    expect(store.purgeExpired(clock, d.eraser)).toBe(1);
+    expect(purgeSeen(clock, d.eraser)).toBe(1);
     expect(store.listDeleted()).toEqual([]);
   });
 });
@@ -147,10 +154,10 @@ describe('the 30 day purge', () => {
     save(id1);
     store.deleteEntry(id1);
     const d = disk([`file:///Documents/${id1}.m4a`]);
-    expect(store.purgeExpired(T0 + 29 * DAY + 23 * 3600_000, d.eraser)).toBe(0);
+    expect(purgeSeen(T0 + 29 * DAY + 23 * 3600_000, d.eraser)).toBe(0);
     expect(store.listDeleted()).toHaveLength(1);
     expect(d.present.size).toBe(1);
-    expect(store.purgeExpired(T0 + 30 * DAY, d.eraser)).toBe(1);
+    expect(purgeSeen(T0 + 30 * DAY, d.eraser)).toBe(1);
     expect(store.listDeleted()).toEqual([]);
     expect(d.present.size).toBe(0);
   });
@@ -161,11 +168,11 @@ describe('the 30 day purge', () => {
     store.deleteEntry(id1);
     clock += 10 * DAY;
     store.deleteEntry(id2);
-    expect(store.purgeExpired(T0 + 31 * DAY, disk().eraser)).toBe(1);
+    expect(purgeSeen(T0 + 31 * DAY, disk().eraser)).toBe(1);
     expect(store.listDeleted().map((e) => e.id)).toEqual([id2]);
     const live = '0199a5b0-0000-7000-8000-000000000003';
     save(live);
-    expect(store.purgeExpired(T0 + 90 * DAY, disk().eraser)).toBe(1); // id2, now old enough
+    expect(purgeSeen(T0 + 90 * DAY, disk().eraser)).toBe(1); // id2, now old enough
     expect(store.getEntry(live)).not.toBeNull();
   });
 
@@ -178,10 +185,60 @@ describe('the 30 day purge', () => {
     expect(store.purgeExpired(T0 + 41 * DAY, disk().eraser)).toBe(1);
   });
 
-  it('the recorded launch never moves backwards', () => {
-    store.recordLaunch(T0 + 10 * DAY);
-    store.recordLaunch(T0 + 5 * DAY);
-    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 10 * DAY).toISOString());
+  // QE-05: what purgeShelfAtLaunch does at each launch (it calls this): purge, then record the launch.
+  const launch = (ms: number, eraser: AudioEraser = disk().eraser) => store.purgeThenRecordLaunch(ms, eraser);
+
+  it('[QE-05] a clock that jumps 30 days or more ahead erases nothing at that launch', () => {
+    save(id1);
+    save(id2);
+    launch(T0);
+    store.deleteEntry(id1);
+    clock += 2 * DAY;
+    store.deleteEntry(id2);
+    launch(T0 + 2 * DAY);
+    // The phone date jumps 40 days ahead (manual change, a wrong network time).
+    expect(launch(T0 + 42 * DAY)).toBe(0);
+    expect(store.listDeleted().map((e) => e.id).sort()).toEqual([id1, id2]);
+  });
+
+  it('[QE-05] a clock corrected after running ahead resumes purging, and keeps what is not yet due', () => {
+    save(id1);
+    save(id2);
+    launch(T0);
+    store.deleteEntry(id1);
+    launch(T0 + 1 * DAY);
+    expect(launch(T0 + 365 * DAY)).toBe(0); // a year ahead: nothing erased
+    // Corrected. The guard skips the first launch on the earlier clock (DL-04), then the purge runs as before.
+    expect(launch(T0 + 3 * DAY)).toBe(0);
+    clock = T0 + 3 * DAY;
+    store.deleteEntry(id2);
+    expect(launch(T0 + 20 * DAY)).toBe(0);
+    expect(launch(T0 + 30 * DAY)).toBe(0); // the previous launch had not seen day 30 yet
+    expect(launch(T0 + 31 * DAY)).toBe(1); // id1, 30 days by both clocks
+    expect(store.listDeleted().map((e) => e.id)).toEqual([id2]);
+    expect(launch(T0 + 33 * DAY)).toBe(0);
+    expect(launch(T0 + 34 * DAY)).toBe(1); // id2, deleted on day 3
+    expect(store.listDeleted()).toEqual([]);
+  });
+
+  it('[QE-05] a clock left ahead is believed only once a second launch agrees with it', () => {
+    save(id1);
+    launch(T0);
+    store.deleteEntry(id1);
+    expect(launch(T0 + 40 * DAY)).toBe(0);
+    expect(launch(T0 + 40 * DAY + 3600_000)).toBe(1);
+  });
+
+  it('[DL-04] a clock moved back purges nothing at that launch; the recorded launch follows it', () => {
+    save(id1);
+    launch(T0);
+    store.deleteEntry(id1);
+    expect(launch(T0 + 29 * DAY)).toBe(0);
+    expect(launch(T0 + 24 * DAY)).toBe(0); // moved back 5 days: guarded
+    expect(store.getSetting(store.LAST_LAUNCH_SETTING)).toBe(new Date(T0 + 24 * DAY).toISOString());
+    expect(launch(T0 + 31 * DAY)).toBe(0); // the launch before saw only day 24
+    expect(store.listDeleted()).toHaveLength(1);
+    expect(launch(T0 + 32 * DAY)).toBe(1);
   });
 
   it('[D-085] with sync on the server owns the clock for a letter it holds: the launch purge leaves it', () => {
@@ -190,7 +247,7 @@ describe('the 30 day purge', () => {
     store.localSqlDb().run("UPDATE entries SET server_version = '100' WHERE id = ?", id1); // the server holds it
     setServerFeaturesForTests(true);
     const d = disk([`file:///Documents/${id1}.m4a`]);
-    expect(store.purgeExpired(T0 + 60 * DAY, d.eraser)).toBe(0);
+    expect(purgeSeen(T0 + 60 * DAY, d.eraser)).toBe(0);
     expect(d.present.size).toBe(1);
     expect(store.listDeleted()).toHaveLength(1);
   });
@@ -214,8 +271,8 @@ describe('the 30 day purge', () => {
     store.localSqlDb().run("INSERT INTO sync_outbox (op_id, lane, type, entity_id, payload, created_at) VALUES ('op-x', 1, 'entry.delete', ?, '{}', ?)", id2, new Date(clock).toISOString());
     setServerFeaturesForTests(true);
     const d = disk([`file:///Documents/${id1}.m4a`, `file:///Documents/${id2}.m4a`]);
-    expect(store.purgeExpired(T0 + 29 * DAY, d.eraser)).toBe(0);
-    expect(store.purgeExpired(T0 + 31 * DAY, d.eraser)).toBe(1);
+    expect(purgeSeen(T0 + 29 * DAY, d.eraser)).toBe(0);
+    expect(purgeSeen(T0 + 31 * DAY, d.eraser)).toBe(1);
     expect(store.listDeleted().map((e) => e.id)).toEqual([id2]); // its delete is still on the way: the server decides
     expect([...d.present]).toEqual([`file:///Documents/${id2}.m4a`]);
   });
@@ -236,7 +293,7 @@ describe('the 30 day purge', () => {
     save(id1);
     store.deleteEntry(id1);
     const d = disk([`file:///Documents/${id1}.m4a`]);
-    store.purgeExpired(T0 + 30 * DAY, d.eraser);
+    purgeSeen(T0 + 30 * DAY, d.eraser);
     const rows = store.audioRows();
     expect(rows.entries).toEqual([]);
     const files = [...d.present].map((uri) => ({ uri, bytes: 100 }));

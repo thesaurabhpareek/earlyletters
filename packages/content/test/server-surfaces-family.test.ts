@@ -42,7 +42,7 @@ const CHANGED: Record<string, string> = {
   // S46 (P6 builds the row; the words are P8's)
   'bookRow.label': 'Write this book together',
   // S58 Invite a co-parent
-  'create.done': 'The invite waits on the Family tab until they join.',
+  'create.done': 'The invite waits until they join.',
   'errors.not_found': 'That link does not open an invite. Check it and try again.',
   'errors.network': 'This phone is offline. Try again once it is back online.',
   'errors.unknown': 'That did not go through. Try again.',
@@ -51,7 +51,7 @@ const CHANGED: Record<string, string> = {
   'accept.title': 'Join a book',
   'accept.signInBody': 'You each write from your own phone, in the same book.',
   'accept.peeking': 'Opening the invite',
-  'accept.needsSync': 'To join, turn on sync and sharing in Settings, Privacy.',
+  'accept.needsSync': 'To join, choose Agree and sync in Settings, Account.',
   'accept.joinedBody': "Your letters and {inviter}'s sit side by side, each signed.",
   'accept.joinedBodyUnknown': 'Your letters and theirs sit side by side, each signed.',
 };

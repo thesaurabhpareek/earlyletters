@@ -1,7 +1,8 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
 # dependencies
-node_modules/
+# No slash: also matches a symlink named node_modules (a worktree link once slipped into #641).
+node_modules
 
 # Expo
 .expo/

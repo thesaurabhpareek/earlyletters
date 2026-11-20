@@ -1,10 +1,10 @@
-import { btn, journey } from './support/app';
+import { agreeBox, btn, journey } from './support/app';
 import { expect, test } from './support/journey';
 
 test('[J02] under 18: the calm stop, the 24 hour wait, the way back', async ({ app, record }) => {
   const step = journey(record, 'J02', 'under-18', 1, 'J01-01');
   await app.getByRole('radio', { name: 'No' }).click();
-  await step('unhappy', 'No is chosen', 'The person says they are under 18. Nothing else is asked, and the room does not change: the same light, the same mark.');
+  await step('unhappy', 'No is chosen', 'The person says they are under 18. The agreement box stays unticked: No goes to the stop whatever it says, and nothing about it is stored. The room does not change: the same light, the same mark.');
   await btn(app, 'Continue').click();
   // S02: one line, a title, where the question was. Nothing else: no thank-you, no note, no way forward yet.
   await expect(app.getByRole('heading', { name: /is currently for adults 18 and over$/ })).toBeVisible();
@@ -31,6 +31,6 @@ test('[J02] under 18: the calm stop, the 24 hour wait, the way back', async ({ a
   await expect(app.getByText('Are you 18 or older?')).toBeVisible();
   await expect(app.getByRole('radio', { name: 'Yes' })).not.toBeChecked();
   await expect(app.getByRole('radio', { name: 'No' })).not.toBeChecked();
-  await expect(btn(app, 'Continue')).toBeDisabled();
+  await expect(agreeBox(app)).not.toBeChecked();
   await step('happy', 'The question again, nothing preselected', 'The age question returns, empty, and the person can answer again.');
 });

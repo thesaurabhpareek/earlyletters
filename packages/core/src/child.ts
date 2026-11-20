@@ -78,6 +78,17 @@ export function checkChildName(raw: string): FieldCheck<'empty' | 'tooLong'> {
   return { ok: true, value };
 }
 
+/**
+ * The first book's name (NX-31-R3): trimmed, 0 to 60 characters. Empty is accepted and stays empty; the fallback
+ * "your child" is shown by the screens and is never stored. Over the limit is reported, never silently cut.
+ * Later books keep `checkChildName` until the founder says otherwise (NX-31-R28).
+ */
+export function checkFirstRunChildName(raw: string): FieldCheck<'tooLong'> {
+  const value = raw.normalize('NFC').trim();
+  if (textLength(value) > CHILD_NAME_MAX) return { ok: false, reason: 'tooLong' };
+  return { ok: true, value };
+}
+
 /** What the child calls the parent ("Papa"): trimmed, 1 to 30 characters. */
 export function checkSignsAs(raw: string): FieldCheck<'empty' | 'tooLong'> {
   const value = raw.normalize('NFC').trim();

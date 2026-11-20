@@ -5,8 +5,13 @@
  * app applies the plan in sweep.ts; tests run it in Node.
  *
  * Rules:
- * - Audio is never deleted here. Every file ends attached to a row, or listed
- *   in Settings > Recordings as a recording without a letter.
+ * - Audio is never deleted here, except the recording of a draft the person
+ *   let go (BL-923). Every other file ends attached to a row, or listed in
+ *   Settings > Recordings as a recording without a letter.
+ * - A draft marked `discarding` means Let it go stopped part way: a kill, or a
+ *   recording that would not delete. It is finished (sweep.ts: its file, then
+ *   its row), never rebased or reported, and its file name stays claimed, so
+ *   its recording is never re-attached, even while it cannot be deleted.
  * - A row keeps the listed file at exactly its stored path. Only when that
  *   path is not listed is it matched by file name: iOS moves the app
  *   container on updates, so a stored file:// path goes stale while the file
@@ -74,7 +79,9 @@ export type SweepAction =
   | { kind: 'rebase-entry'; entryId: string; uri: string }
   | { kind: 'reattach'; uri: string; fileName: string; bytes: number; childId: string }
   | { kind: 'report'; fileName: string; bytes: number }
-  | { kind: 'missing-audio'; ref: 'draft' | 'entry'; id: string };
+  | { kind: 'missing-audio'; ref: 'draft' | 'entry'; id: string }
+  /** Let it go stopped part way (BL-923): its recording, then its row. */
+  | { kind: 'finish-discard'; draftId: string };
 
 /** Every file extension the app counts as a recording (`.aac` is ADR 0027's ADTS). e2e/bin/inspect-container.sh lists the same. */
 export const RECORDING_EXTENSIONS = ['m4a', 'mp4', 'aac', 'caf', 'wav', '3gp', 'webm'] as const;
@@ -142,6 +149,11 @@ export function planLaunchSweep(s: SweepSnapshot): SweepAction[] {
   const skip = new Set(s.skipDraftIds);
 
   for (const d of s.drafts) {
+    if (d.state === 'discarding') {
+      if (d.audioUri) claimed.add(fileNameOf(d.audioUri));
+      if (!skip.has(d.id)) actions.push({ kind: 'finish-discard', draftId: d.id });
+      continue;
+    }
     if (!d.audioUri) {
       if (d.state === 'recording' && !skip.has(d.id)) actions.push({ kind: 'drop-empty-recording', draftId: d.id });
       continue;

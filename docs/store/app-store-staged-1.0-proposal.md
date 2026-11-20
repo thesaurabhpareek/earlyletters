@@ -1,3 +1,5 @@
+> **Superseded (9 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md` (generated from `packages/content/src/store.en.ts` and `packages/brand`), and the store settings are in `apps/mobile/store.config.json`. Three items below are not in the live listing: (1) "You can export everything or delete everything, any time, from Settings" (section 3, Description, the privacy paragraph); (2) screenshot 6, "Private to your family" (section 5); (3) the retired name "Early Letters: Memory Book" and the retired subtitle "Baby journal in your own voice" (section 1, "Unchanged on purpose"), because the live name and subtitle come from `packages/brand` (`storeName`, `subtitle`). This says nothing about the app itself. Section 6 (Notes for Review) was written for the first build of D-121 (on-device only, servers off); check it against the build before using it. The rest of the file stays as the record of the 28 Oct proposal; read it as history, not as copy.
+
 # App Store listing and Notes for Review: the staged first build (proposal for counsel)
 
 Status: **Proposal, 28 Oct 2026; applied 31 Oct 2026** to `packages/content/src/store.en.ts` and the generated `docs/store/app-store.md` (comms validation LNG-33, the co-parent conflict), with the language review's fixes on top: "the baby memory book" descriptor (LNG-36's glossary rule), "We only fix small slips" (LNG-18), no "Notes and letters" section since v1.0 makes no notes (LNG-02), no "Hello." opener and "Terms of Service:" (LNG-34), screenshot 6 "Private by default". Still not approved by counsel: every claim below keeps the question that gates it, and the founder or counsel may reverse the application. Written for D-121 (PR #340): the first store build is on-device only, with server features, backup, status report and analytics off, English only, Plus on. Counsel and Apple sign-off are not delegated; every claim below carries the question that gates it.
@@ -26,10 +28,10 @@ Unchanged on purpose: name `Early Letters: Memory Book` (26 of 30), subtitle `Ba
 
 Keywords repeat no word from the name or subtitle, use no spaces and name no competitor. "Dictation" describes talking to write; check it against the final build's behaviour.
 
-## 3. Description (2557 / 4000)
+## 3. Description (2567 / 4000)
 
 ```text
-Early Letters is a baby memory book you fill by talking.
+Early Letters: letters to your child, in your own words and voice.
 
 Say a few words to your child at the end of the day. A first laugh, a long night, a song you made up in the car. Early Letters keeps it as a letter, in your words and in your voice, and files it by your child's month of age. Over time it becomes a book your child can read, and hear, for years.
 

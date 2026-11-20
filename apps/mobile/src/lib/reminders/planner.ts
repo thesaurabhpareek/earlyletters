@@ -22,12 +22,15 @@
  *   repeats within 8 nudges and no title shows twice in a row (C-REQ-006).
  * - No child name unless the user turned "Names in notifications" on
  *   (D-025). Never any letter text.
+ * - A quieted book adds nothing (F12-REQ-011; NS-13-R12, NS-32-R14): no
+ *   month or birthday note, never named, and while every book is quiet no
+ *   evening nudge either.
  *
  * Not here (P1, later): back-off after unopened nudges (C-REQ-008),
  * `gentleReturn`, plan notices, per-book "pause celebrations".
  */
 import { en } from '@scribe/content';
-import { renderTemplate } from '@scribe/core';
+import { childLabel, fill } from '../copy';
 import { reminderCopy } from './copy';
 import {
   addDays,
@@ -72,6 +75,8 @@ export interface PlannerChild {
   birthday: string | null;
   /** "Include {child} in my reminders" (Child.remindersOn). */
   included: boolean;
+  /** "Quiet this book" is on for this person (Child.quiet): the book adds no notification of any kind. */
+  quiet?: boolean;
 }
 
 export interface PlanInput {
@@ -240,10 +245,6 @@ export function joinNames(names: string[]): string {
   return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }
 
-function fill(text: string, values: Record<string, string | number>): string {
-  return renderTemplate(text, values);
-}
-
 function eveningCopy(variant: number, date: CalendarDate, childName: string | null): { title: string; body: string } {
   const values = { child: childName ?? '', weekday: reminderCopy.weekdays[weekdayOf(date)] };
   const v = childName ? en.notifications.evening[variant] : reminderCopy.neutral.evening[variant];
@@ -257,7 +258,7 @@ interface DayNote {
 }
 
 function monthNoteCopy(note: DayNote, names: boolean): { title: string; body: string } {
-  const childNames = joinNames(note.children.map((c) => c.child.name));
+  const childNames = joinNames(note.children.map((c) => childLabel(c.child.name)));
   const months = note.children[0].months;
   if (note.kind === 'birthday') {
     if (names) return { title: fill(en.notifications.birthday.title, { child: childNames }), body: en.notifications.birthday.body };
@@ -299,7 +300,8 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
   const today: CalendarDate = { y: todayParts.y, m: todayParts.m, d: todayParts.d };
   const lastDay = dayNumber(today) + monthHorizon - 1;
   const eveningLastDay = dayNumber(today) + horizon - 1;
-  const included = input.children.filter((c) => c.included);
+  const awake = input.children.filter((c) => !c.quiet);
+  const included = awake.filter((c) => c.included);
   const out: PlannedNotification[] = [];
 
   // Month and birthday notes, grouped by day and kind.
@@ -341,8 +343,9 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
     });
   }
 
-  // Evening nudges.
-  const weekdays = activeWeekdays(prefs);
+  // Evening nudges. While every book is quiet, none: a nudge would be for a book this person quieted.
+  const allQuiet = input.children.length > 0 && awake.length === 0;
+  const weekdays = allQuiet ? [] : activeWeekdays(prefs);
   if (weekdays.length > 0) {
     const quietUntil = Math.max(
       input.lastSaveAt != null ? input.lastSaveAt + RECENT_SAVE_QUIET_MS : -Infinity,

@@ -16,7 +16,7 @@
  * is here, when the welcome is no longer the step showing (first run went on or left), or at sign-out.
  */
 import { familyCopy } from '@scribe/content';
-import { renderTemplate } from '@scribe/core';
+import { fill } from '@/lib/copy';
 import type { SyncPhase } from '@/lib/sync/types';
 
 export interface JoinWait {
@@ -48,7 +48,7 @@ const NO_WAIT: WelcomeJoinView = { line: null, begin: true, retry: false };
 export function joinWaitLine(name: string | null, state: 'waiting' | 'notYet'): string {
   const a = familyCopy.accept;
   if (!name) return state === 'waiting' ? a.joinedWaitingUnknown : a.joinedNotYetUnknown;
-  return renderTemplate(state === 'waiting' ? a.joinedWaiting : a.joinedNotYet, { child: name });
+  return fill(state === 'waiting' ? a.joinedWaiting : a.joinedNotYet, { child: name });
 }
 
 export function welcomeJoinView(i: {

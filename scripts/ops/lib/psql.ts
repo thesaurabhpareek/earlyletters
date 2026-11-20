@@ -1,8 +1,8 @@
 /**
  * The smoke check's only database contact (RA-07-06): one psql process per
  * statement, inside `begin transaction read only` with a 5 second statement
- * timeout. Connection settings travel as PG* variables (never argv), the
- * parent's environment is not passed on, and psql's own messages are never
+ * timeout (a caller may set 1 to 9999 seconds). Connection settings travel as
+ * PG* variables (never argv), the parent's environment is not passed on, and psql's own messages are never
  * shown: `VERBOSITY=sqlstate` reduces an error to its SQLSTATE, which is all
  * this reads from stderr. A spawn that throws (a bad env value, for example)
  * resolves as an error without its message. Needs the PostgreSQL client (`psql`) on PATH.
@@ -14,15 +14,16 @@ import type { DbTarget } from './target.ts';
 
 const OUT_CAP = 256 * 1024;
 
-export function psqlRunner(db: DbTarget, opts: { timeoutMs?: number; bin?: string } = {}): SqlRunner {
+export function psqlRunner(db: DbTarget, opts: { timeoutMs?: number; bin?: string; appName?: string; statementTimeout?: string } = {}): SqlRunner {
+  const statementTimeout = /^\d{1,4}s$/.test(opts.statementTimeout ?? '') ? opts.statementTimeout : '5s';
   return (sql: string) =>
     new Promise<SqlOutcome>((resolve) => {
       const args = ['-X', '-q', '-A', '-t', '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=sqlstate',
-        '-c', 'begin transaction read only', '-c', "set local statement_timeout = '5s'", '-c', sql, '-c', 'rollback'];
+        '-c', 'begin transaction read only', '-c', `set local statement_timeout = '${statementTimeout}'`, '-c', sql, '-c', 'rollback'];
       let child: ReturnType<typeof spawn>;
       try {
         child = spawn(opts.bin ?? 'psql', args, {
-          env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...db.env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: 'scribe-staging-smoke' },
+          env: { PATH: process.env.PATH ?? '/usr/bin:/bin', ...db.env, PGCONNECT_TIMEOUT: '10', PGAPPNAME: opts.appName ?? 'scribe-staging-smoke' },
           stdio: ['ignore', 'pipe', 'pipe'],
         });
       } catch {

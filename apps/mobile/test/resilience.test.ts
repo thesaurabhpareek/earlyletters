@@ -163,7 +163,7 @@ describe('Export what is readable (J20)', () => {
   });
 });
 
-describe('Go to Tonight from the error screen', () => {
+describe('Go to Home from the error screen', () => {
   it('remounts first, then goes to Tonight when the router is ready, retrying while it is not', () => {
     const order: string[] = [];
     const queue: Array<() => void> = [];

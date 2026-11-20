@@ -10,6 +10,10 @@
  * - Nothing runs while the app is in the background (no background work,
  *   PRD 7.7). A job stopped by backgrounding goes back to the queue without
  *   counting as a failure, and starts again on return.
+ * - Nothing runs while a take is being recorded (BL-572, capture/busy.ts): a
+ *   large model and the microphone together can end the app on a 3 to 4 GB
+ *   phone. A job stopped by a take goes back to the queue the same way and
+ *   starts again when the take is kept or discarded.
  * - A failure retries by itself after 30 s, then after 5 min, then waits
  *   for the next launch or the parent's "Try again". It never loops.
  * - Enqueueing is idempotent: the same recording is never queued twice, and
@@ -43,7 +47,8 @@ export interface Job {
   attempts: number;
   /** When a failed job may run again by itself (ms since epoch); null: only on the next launch or a manual retry. */
   retryAt: number | null;
-  progress: { done: number; total: number } | null;
+  /** Parts done of total; `fraction` (0..1) when the recogniser reports within a part. */
+  progress: { done: number; total: number; fraction?: number } | null;
   outcome?: 'ok' | 'no_speech';
   failure?: JobFailure;
 }
@@ -56,6 +61,8 @@ export interface QueueState {
   /** Languages this build does not hear yet (language-hold.ts): their jobs wait and never run. */
   onHold: SpeechLanguage[];
   foreground: boolean;
+  /** A take is being recorded (BL-572): nothing starts until it ends. */
+  recording: boolean;
 }
 
 export type QueueEvent =
@@ -63,20 +70,21 @@ export type QueueEvent =
   | { type: 'packs'; ready: SpeechLanguage[] }
   | { type: 'onHold'; languages: SpeechLanguage[] }
   | { type: 'start'; id: string }
-  | { type: 'progress'; id: string; done: number; total: number }
+  | { type: 'progress'; id: string; done: number; total: number; fraction?: number }
   | { type: 'finish'; id: string; outcome: 'ok' | 'no_speech' }
   | { type: 'fail'; id: string; failure: JobFailure; now: number }
   | { type: 'interrupt'; id: string }
   | { type: 'retry'; id: string }
   | { type: 'remove'; id: string }
-  | { type: 'foreground'; value: boolean };
+  | { type: 'foreground'; value: boolean }
+  | { type: 'recording'; value: boolean };
 
 export const RETRY_DELAYS_MS: readonly number[] = [30_000, 5 * 60_000];
 /** Automatic attempts per launch; after these, only "Try again" or the next launch. */
 export const MAX_AUTO_ATTEMPTS = RETRY_DELAYS_MS.length + 1;
 
 export function initialQueue(): QueueState {
-  return { jobs: {}, running: null, ready: [], onHold: [], foreground: true };
+  return { jobs: {}, running: null, ready: [], onHold: [], foreground: true, recording: false };
 }
 
 const isReady = (s: QueueState, lang: SpeechLanguage) => s.ready.includes(lang);
@@ -129,14 +137,21 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
       return rephase({ ...s, onHold: [...new Set(e.languages)].sort() });
     case 'start': {
       const j = s.jobs[e.id];
-      // A language on hold is never handed to the recogniser, whoever asks.
-      if (!j || s.running || j.phase === 'done' || j.phase === 'running' || isOnHold(s, j.language)) return s;
+      // A language on hold is never handed to the recogniser, whoever asks; nothing starts while a take records.
+      if (!j || s.running || s.recording || j.phase === 'done' || j.phase === 'running' || isOnHold(s, j.language)) return s;
       return put(s, { ...j, phase: 'running', progress: null, failure: undefined }, e.id);
     }
     case 'progress': {
       const j = s.jobs[e.id];
       if (!j || j.phase !== 'running') return s;
-      return put(s, { ...j, progress: { done: Math.max(0, e.done), total: Math.max(0, e.total) } });
+      const progress: NonNullable<Job['progress']> = { done: Math.max(0, e.done), total: Math.max(0, e.total) };
+      if (e.fraction !== undefined && Number.isFinite(e.fraction)) {
+        // Never moves backwards (a part decoded again, a loop retry): the bar only rises.
+        progress.fraction = Math.max(j.progress?.fraction ?? 0, Math.min(1, Math.max(0, e.fraction)));
+      } else if (j.progress?.fraction !== undefined) {
+        progress.fraction = j.progress.fraction; // a new part's start keeps the share reached so far
+      }
+      return put(s, { ...j, progress });
     }
     case 'finish': {
       const j = s.jobs[e.id];
@@ -175,12 +190,14 @@ export function reduce(s: QueueState, e: QueueEvent): QueueState {
     }
     case 'foreground':
       return { ...s, foreground: e.value };
+    case 'recording':
+      return s.recording === e.value ? s : { ...s, recording: e.value };
   }
 }
 
 /** The job to run now, or null. Drafts first, then oldest recording; ties by id (deterministic). */
 export function nextJob(s: QueueState, now: number): string | null {
-  if (s.running || !s.foreground) return null;
+  if (s.running || !s.foreground || s.recording) return null;
   const runnable = Object.values(s.jobs).filter(
     (j) =>
       canRun(s, j.language) &&

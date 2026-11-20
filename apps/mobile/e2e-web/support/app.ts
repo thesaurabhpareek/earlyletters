@@ -7,9 +7,13 @@ export const SIGNS_AS = 'Mama';
 
 export const btn = (page: Page, name: string | RegExp) => page.getByRole('button', { name });
 
-/** Age gate: Yes, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
+/** The agreement box on Before you begin (F2): a native checkbox named by its sentence. */
+export const agreeBox = (page: Page) => page.getByRole('checkbox', { name: 'I agree to the Terms of Service and Privacy Policy.' });
+
+/** Before you begin: Yes, the agreement box, Continue. The gate's words leave first (exitMs), then the welcome takes the light. */
 export async function passAgeGate(page: Page) {
   await page.getByRole('radio', { name: 'Yes' }).click();
+  await agreeBox(page).click();
   await btn(page, 'Continue').click();
   await expect(btn(page, 'Begin the book')).toBeVisible();
 }
@@ -59,10 +63,10 @@ export function journey(record: Recorder, code: string, name: string, start = 1,
 }
 
 // `.first()`: while a modal is leaving, the tab and a hidden label can both match; the tab comes first.
-export const tab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
+export const tab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name }).or(page.getByText(name, { exact: true }).last()).first();
 
 /** The tab that is selected now: a landing check that fails if the app shows another tab (EXPERIENCE_PASS 5.8 row 5). */
-export const selectedTab = (page: Page, name: 'Tonight' | 'Book' | 'Family') => page.getByRole('tab', { name, selected: true });
+export const selectedTab = (page: Page, name: 'Home' | 'Book' | 'Me') => page.getByRole('tab', { name, selected: true });
 
 /**
  * Type a letter on the Write screen and keep it with one tap (the honest path to a letter on the web, which has no

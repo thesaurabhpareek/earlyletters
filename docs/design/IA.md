@@ -8,9 +8,9 @@ Three builds show different trees. The switches live in `apps/mobile/src/lib/cap
 
 | Build | Profile | Server features | Languages | Family surfaces |
 |---|---|---|---|---|
-| Alpha build 1 (TestFlight) | `testflight` | off | all that passed their gate | Today: "Coming soon" screens. After the D-126 change: hidden |
-| Alpha build 2 | `preview` | on | all that passed their gate | the full co-parent screens |
-| First store build (1.0) | `production` | off | English only (D-121, CR-16) | Today: "Coming soon" screens. After the D-126 change: hidden. If that change is not ready, the screens stay and the Notes for Review describe them (D-126 fallback) |
+| Alpha build 1 (TestFlight) | `testflight` | off | all that passed their gate | none: no tab, no row, no "Coming soon" screen (founder, 11 Nov 2026) |
+| Alpha build 2 | `preview` | on | all that passed their gate | the real co-parent flow on pushed pages (`/invite`, `/family`), never a tab |
+| First store build (1.0) | `production` | off | English only (D-121, CR-16) | none: no tab, no row, no "Coming soon" screen (founder, 11 Nov 2026; supersedes D-126) |
 
 Backup of recordings (`EXPO_PUBLIC_BACKUP`) is off in every profile, so no build shows "Back up my recordings"; the row reads "Kept on this phone" everywhere.
 
@@ -20,11 +20,11 @@ Every tree below is the first store build unless marked.
 
 | Tab | Route | What it is for | Heading | Shown in |
 |---|---|---|---|---|
-| Tonight | `/` | Start today's letter | A greeting, then the prompt | every build |
+| Home | `/` | Start today's letter. The label is Home; the file is `index.tsx` (founder, 11 Nov 2026) | A greeting, then the prompt | every build |
 | Book | `/book` | Read and hear what is kept | "{child}'s book" | every build |
-| Family | `/family` | Build 2: "Who writes to {child}" | | Today: every build (`(tabs)/_layout.tsx:71`), "coming soon" with servers off. After the D-126 change: build 2 and later |
+| Me | `/you` | Settings home and Account, in 1 and 2 taps (NX-30a). The same component as `/settings`, which the Book gear and the deep link still open as a pushed page. The label is Me; the file is `you.tsx` (founder, 11 Nov 2026) | "Settings" | every build |
 
-## Tonight
+## Home
 
 - Prompt, with "Another thought"
 - "Speak" opens Listen; "Type" opens Write
@@ -84,7 +84,7 @@ Build 2 adds Account (sign-in methods, devices, sign out) and Delete account whe
 
 ## Rules for adding a place
 
-- A new tab needs a decision entry. The store build is meant to have two, Tonight and Book, once the D-126 change lands.
+- A new tab needs a decision entry. Every build has three tabs, Home, Book and Me, servers on or off (founder, 11 Nov 2026). Family is never a tab: where a build has co-parent sharing, `/family` is a pushed page reached from a book's Settings, and where it does not there is nothing to show, no row and no coming-soon screen.
 - A new screen gets a route, a visible name from `packages/content`, a row in this file, and an analytics route name (`packages/analytics/src/catalog.ts`) before analytics turn on, unless a view of it could signal a mental state or a loss ("If you are struggling", Hidden books), which are never listed (R-G).
 - Route names and setting keys are contracts: renaming one updates `isCaptureRoute` and `resilience.test.ts` in the same PR (R-L).
 - A Settings row belongs to the section that matches what it changes, not the screen that happens to own the code.

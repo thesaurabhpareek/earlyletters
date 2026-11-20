@@ -1,3 +1,5 @@
+> **Superseded (1 Nov 2026).** Do not paste from this file. The 1.0 listing is `docs/store/app-store.md`, and every other App Store Connect field is in `docs/store/app-store-connect-1.0.md`.
+
 # Export compliance and content rights
 
 ## 1. Export compliance (encryption)

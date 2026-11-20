@@ -32,6 +32,7 @@ import { speechConsentCopy, speechSettingsCopy, wordsCopy } from '@scribe/conten
 import type { StateKind } from '@/components/ui/state-screen.logic';
 import type { LineArtName } from '@/components/ui/line-art.data';
 import { copy, fill } from '@/lib/copy';
+import { downloadingLine } from '@/lib/models/speech-download.logic';
 import { waitingForLanguageNote } from '@/lib/transcription-queue/language-hold';
 import type { Job } from '@/lib/transcription-queue/machine';
 
@@ -40,9 +41,9 @@ export const WAITING_LONG_MS = 8_000;
 /** S14: after this long with no progress the waiting card offers "Read it back later". */
 export const LATER_AFTER_MS = 15_000;
 
-export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'noWords';
+export type WordsStateName = 'writing' | 'ask' | 'downloading' | 'language' | 'failed' | 'unsupported' | 'unreadable' | 'fileMissing' | 'emptyTake' | 'shortTake' | 'noWords';
 
-export type WordsAction = 'retry' | 'keep' | 'type' | 'write' | 'recordAgain' | 'download' | 'cellular' | 'later';
+export type WordsAction = 'retry' | 'keep' | 'type' | 'write' | 'recordAgain' | 'letGo' | 'download' | 'cellular' | 'later';
 
 export type WordsInput = {
   /** The take's file holds no sound: the recorder or the launch sweep stored 0 bytes (see `takeFile`). */
@@ -52,6 +53,11 @@ export type WordsInput = {
    * mid-take). The recording is kept; its words cannot be written down from it (see `takeFile`).
    */
   unreadable?: boolean;
+  /**
+   * BL-379: the take is under about a second (`isShortTake`). When no words came of it, the card says so and offers
+   * Let it go first, instead of the transcription-failed heading.
+   */
+  shortTake?: boolean;
   job: Pick<Job, 'phase' | 'outcome' | 'failure' | 'progress'> | null;
   /** The language download (D-087): whether to ask, its progress (0 to 1) and why it waits. */
   download: {
@@ -102,6 +108,8 @@ export function wordsActionLabel(a: WordsAction, size = ''): string {
       return wordsCopy.waiting.writeButton;
     case 'recordAgain':
       return wordsCopy.noSpeech.recordAgainButton;
+    case 'letGo':
+      return copy.listen.discardButton;
     case 'download':
       return speechConsentCopy.downloadButton;
     case 'cellular':
@@ -123,7 +131,11 @@ function writing(i: WordsInput): WordsCard {
     still: i.playing,
     title: total > 1 ? fill(wordsCopy.listening, { n: part, count: total }) : wordsCopy.preparing,
     body: i.hints.long ? copy.review.waitingLong : undefined,
-    bar: total > 1 ? done / total : undefined,
+    // The recogniser's own progress within each part when it reports it (whisper.rn), else a step per part; no bar
+    // before the first part starts (preparing: reading the recording, finding speech, opening the model).
+    // If the recogniser never reports (no callback), the first part shows its words and no bar, never an empty bar
+    // that looks stuck; later parts step per part.
+    bar: progress?.fraction !== undefined && total > 0 ? progress.fraction : total > 1 && done > 0 ? done / total : undefined,
     primary: null,
     quiet: i.hints.later ? 'later' : null,
   };
@@ -153,7 +165,7 @@ function languageDownload(i: WordsInput): WordsCard {
         : d.hold === 'offline'
           ? speechSettingsCopy.downloadFailures.offline
           : d.progress !== null
-            ? fill(speechSettingsCopy.downloading, { n: Math.floor(d.progress * 100) })
+            ? downloadingLine(d.progress, (n) => fill(speechSettingsCopy.downloading, { n }))
             : undefined;
   return {
     state: 'downloading',
@@ -201,6 +213,21 @@ export function wordsCard(i: WordsInput): WordsCard {
       quiet: 'type',
     };
   }
+  if (i.shortTake && (i.unreadable || i.job?.phase === 'failed' || (i.job?.phase === 'done' && i.job.outcome === 'no_speech'))) {
+    if (!(i.job?.phase === 'failed' && i.job.failure === 'file_missing')) {
+      // The recording is kept unless the person lets it go; Let it go comes first and is confirmed by the screen.
+      return {
+        state: 'shortTake',
+        kind: 'empty',
+        art: 'page',
+        still: true,
+        title: copy.review.shortTake.title,
+        body: copy.review.shortTake.body,
+        primary: 'letGo',
+        quiet: 'keep',
+      };
+    }
+  }
   if (i.unreadable) {
     const t = copy.errors.transcriptionFailed;
     return { state: 'unreadable', kind: 'error', art: 'envelope', still: true, title: t.title, body: t.body, primary: 'keep', quiet: 'type' };
@@ -234,6 +261,13 @@ export function wordsCard(i: WordsInput): WordsCard {
   }
   if (job?.phase === 'waiting_for_pack') return languageDownload(i);
   return writing(i);
+}
+
+/** A take of under about a second (or with no length known to be longer) is a short take (BL-379). */
+export const SHORT_TAKE_MS = 1000;
+
+export function isShortTake(audioDurationMs: number | null | undefined): boolean {
+  return typeof audioDurationMs === 'number' && audioDurationMs >= 0 && audioDurationMs < SHORT_TAKE_MS;
 }
 
 /** Every action the card offers, primary first (for the "at most two controls plus Close" rule, S15). */
