@@ -375,6 +375,48 @@ describe('[NX-31-R12] sync/index.ts releases an empty phone when a session ends'
     });
   });
 
+  describe('[NX-31-R12] a pull of the first account that lands after the second account has signed in (risk 19)', () => {
+    const E1 = '0199a000-0000-7000-8000-0000000000e1';
+    const heldFirstPull = () => {
+      let answer: (r: unknown) => void = () => {};
+      let held = false;
+      spies.rpc.mockImplementation((fn: string, args: Record<string, unknown> = {}) => {
+        if (fn !== 'sync_pull' || held) return okRpc(fn, args);
+        held = true;
+        return new Promise((resolve) => { answer = resolve; });
+      });
+      return { answer: (page: unknown) => answer({ data: page, error: null, status: 200 }), held: () => held };
+    };
+    const tables = () => ({ children: count(raw, 'children'), entries: count(raw, 'entries'), syncBooks: count(raw, 'sync_books') });
+
+    it('A signs out, B is already signed in and owns the phone when A\'s page lands: nothing of A reaches the phone, B stays the owner', async () => {
+      const pull = heldFirstPull();
+      ready(A);
+      await vi.waitFor(() => expect(pull.held()).toBe(true));
+      auth.publishAuth({ status: 'signedOut', error: 'session_expired' });
+      ready(B);
+      await vi.waitFor(() => expect(owner(raw)).toBe(B));
+      await settle();
+      pull.answer(pulledPage(A, [E1])); // A's page, after B has claimed the phone
+      await settle();
+      expect(tables()).toEqual({ children: 0, entries: 0, syncBooks: 0 });
+      expect(owner(raw)).toBe(B);
+      expect(sync.getSyncStatus().phase).not.toBe('account_mismatch');
+    });
+
+    it('B signs in directly over A\'s session (no signed-out state between): A\'s late page is not written either', async () => {
+      const pull = heldFirstPull();
+      ready(A);
+      await vi.waitFor(() => expect(pull.held()).toBe(true));
+      ready(B);
+      await settle();
+      pull.answer(pulledPage(A, [E1]));
+      await settle();
+      expect(tables()).toEqual({ children: 0, entries: 0, syncBooks: 0 });
+      expect(enginesFor().at(-1)).toBe(B);
+    });
+  });
+
   it('a session that was never signed in ending (the launch read) releases nothing and reads nothing', () => {
     raw.run("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)", SYNC_SETTING.owner, A); // an owner left by an earlier build on an empty phone
     auth.publishAuth({ status: 'restoring' });
