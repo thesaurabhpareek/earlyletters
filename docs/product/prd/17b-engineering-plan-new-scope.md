@@ -124,3 +124,4 @@ The three stacks add about 88 PRs. At 4 passes a PR (17 section 4.2) that is abo
 - Brief README statements about heads and sizes other than #894's merge result (re-run here) were not re-run.
 - Whether `scribe-library` is already used in a brief or design other than the one cited; the CL-115 rows individually.
 - Cites to E62 to E82, CL-136 to CL-157, CR-71 and the decisions record were read on develop at `dcbf70fc8`. CR-71's items (1.6) were not each checked against code; every migration it names is applied only by the founder with `approve-migration`.
+- The rows FR-MKT-44 and FR-SEC-36 are named by E75 and E76 as edited in place, but no function file under `docs/product/prd/functions/` on develop contains them (only the errata, GAP-LOG and RESUME do) [U]; NS-08-R21 is in card 08 (line 136).
