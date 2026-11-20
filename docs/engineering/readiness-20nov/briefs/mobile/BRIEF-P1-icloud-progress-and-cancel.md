@@ -1,9 +1,9 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:20 UTC).
-Blocked until: the stack #835 to #840 has merged (same Swift file as BL-953: whichever lands second merges develop); the BL-878 native-module manifest (security design S-4) exists; the PROPOSED key `photos.capture.iCloudProgressA11y` is read by the founder (words); the backlog id is cut: the lock reserves BL-950 and BL-951 for "#832 follow-ups and NS-01-R17 iCloud progress" and the preamble calls this BL-951 (plan 2.1 row 10, section 2.9 P-1). Not written anywhere yet.
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Blocked until: row 33-3 (design-systems) has added `apps/mobile/src/components/ui/progress-bar.tsx`: it does NOT exist on develop [V `ls`], so "use ProgressBar as built" was wrong (11-foundations table row 33-3); the stack #835 to #840 has merged (same Swift file as BL-953: whichever lands second merges develop); the BL-878 native-module manifest (security design S-4) exists; the PROPOSED key `photos.capture.iCloudProgressA11y` is read by the founder (words); the backlog id is cut: the lock reserves BL-950 and BL-951 for "#832 follow-ups and NS-01-R17 iCloud progress" and the preamble calls this BL-951 (plan 2.1 row 10, section 2.9 P-1). Not written anywhere yet.
 
 ```
-BRIEF P-1 (BL-950 or BL-951)                      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:20 UTC
-Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on (Q2)   Wave: 1
+BRIEF P-1 (BL-950 or BL-951)                      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
+Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on (Q2)   Wave: 2 (plan 2.4)
 
 1. GOAL: When a parent picks a picture that lives only in iCloud, a row shows real progress and a 44 pt Cancel that stops the download at once,
    offline ends in one calm line, and the capture continues.
@@ -20,8 +20,8 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on (Q2)   Wave: 1
 
 3. FILES  Touch: apps/mobile/modules/scribe-photo/** (index.ts, ios/ScribePhotoModule.swift), lib/photos/{picker,device,types}.ts, components/photos/** (one progress row),
    lib/photos/copy.ts, tests photos-device and a new photos-progress test; scan in `photos-device.test.ts` (`swiftProblems` at `:315`, applied `:405`, mutants `:517`).
-   Never: any other Swift file; plist keys, entitlements, background modes; lib/find/**; components/ui/** (use `ProgressBar` as built, ask design-systems if missing).
-   Shared file rule: `ScribePhotoModule.swift` is also edited by BL-953 and BL-932 (a): whichever lands second merges develop.
+   Never: any other Swift file; plist keys, entitlements, background modes; lib/find/**; components/ui/** (use `ProgressBar` from row 33-3 (not on develop yet; a dependency)).
+   Shared file rule: `ScribePhotoModule.swift` is also edited by BL-953 and BL-932 (a): whichever lands second merges develop. Swift file order: BL-953, then P-1, then BL-932 (a).
 
 4. READING PACK: Pack 1 items 5, 6; 11-foundations section 8.4; `.claude/skills/expo-native-module/SKILL.md` sections 2 to 5; docs/design/e2e area A A-S03 (iCloudProgress state).
 
@@ -36,7 +36,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on (Q2)   Wave: 1
    Boundary: B1 native; NSC-08; AB-51 and AB-15 (PR #915). Owner of the read: security-architect (native code, required).
    Privacy line: no network call of ours; iCloud download is the system's. No PhotoKit authorisation call (`[NS-01-R2]` scan stays true).
 
-7. LIBRARIES: none (LD-07 AVOID expo-image-picker; LD-08 OWN, PR #919). No plist key, entitlement or background mode: `NSItemProvider` progress is foreground.
+7. LIBRARIES: none (LD-07 OWN the single pick, AVOID expo-image-picker; PR #919). No plist key, entitlement or background mode: `NSItemProvider` progress is foreground.
    Unverified: `fractionCompleted` advancing for iCloud loads, and `cancel()` stopping the download. Prove on a device before claiming it.
 
 8. BUDGETS (PR #928): C-03 thumbnail p95 1,000 ms from picker close for a local picture (progress must not add to it); B-02 no background work: foreground only.
@@ -61,6 +61,6 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on (Q2)   Wave: 1
 
 15. STOP AND ASK: a plist key, entitlement or permission is needed; `cancel()` does not stop the download on a device; the card and the design disagree on the 300 ms floor or 250 ms throttle (both PROPOSED).
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-p1 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-p1 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-p1.md`. Branch feat/mobile-photo-r17b-progress-cancel. Comments start `<!-- agent:mobile -->`.
 ```
