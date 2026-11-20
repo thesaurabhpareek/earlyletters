@@ -2,7 +2,7 @@
 
 The harness that runs the team is called Chakra, an internal name (its meaning is in [HARNESS.md](HARNESS.md)).
 
-Everything about the team (how it is built, how agents are created and run, how they keep context, how spend stays low, and the setup steps) is in **[HARNESS.md](HARNESS.md)**.
+Everything about the team is in [HARNESS.md](HARNESS.md): how it is built, how agents are created and run, how they keep context, how spend stays low, and the setup steps.
 
 | What | Where |
 |---|---|
