@@ -1,0 +1,36 @@
+# Proposed: copy to .github/workflows/label-guard.yml (BL-975, NS-07-G11-5; docs/ops/LABEL_GUARD.md).
+# Runs the privacy label guard on every pull request into develop, and again when the PR body is edited, because the
+# body carries the D-id. A guard error exits 2 and fails the job; nothing here passes silently.
+# The PR body reaches the script only through an environment variable, never through the shell text.
+name: Label guard
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [opened, synchronize, reopened, edited]
+
+concurrency:
+  group: label-guard-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  label-guard:
+    name: label guard
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Privacy label guard (NS-07 G11)
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/release/label-effect.mjs --base "origin/$BASE_REF" --head HEAD
