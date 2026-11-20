@@ -9,7 +9,7 @@ Tags as in TDD 01: Fact (file:line), Assumption, Rec, Risk, OQ (owner, default; 
 2. Two server rules built for two phones meet NS-09 head on: a later edit on another phone wins over a let-go, and a legal hold keeps the row. When the server keeps a let-go row, the draft comes back as keepable (K2). Product must rule.
 3. NS-10's gap (BL-922) closes with a pure held screen for `needsConsent`, not a re-pushed sheet. The screen offers Finish setup, Try another way, Delete account and the export. It needs no network, so R0's 10 s limit holds by construction.
 4. NS-10-R3 fails today. A second account signed in on a phone that holds the first account's book still sees that book: sync stops, but the gate opens the local book for any session. Fixing it (BL-961) puts an account layer next to the app-lock layer in `_layout.tsx`, which is boot wiring. The card's "offer B their own book" cannot work while the phone has one owner (K8).
-5. NS-10-R7 fails today. Each consent answer mints a new idempotency key, so a retry after a lost answer writes a second row. The fix is client-only: one key per answer.
+5. NS-10-R7 is built [Amended 12-A7; was "fails today"]: one idempotency key per consent answer (`lib/auth/consent.ts:88`, `lib/auth/consent-key.logic.ts`); built and titled (`test/consent-retry-one-key.test.ts:79`).
 6. NS-08 readiness is mostly documents (`sync` and others, BL-976). Mobile owns three things: the `[NS-08-R6]` test, which must exist before the Build 13 cut under #847 Q1's default; the R5 retitle; and the R8 line. The existing claims rule would fail an R8 line that names iCloud (K6).
 7. The flip build already has three code facts against it. The crypto module is excluded from autolinking. The object key has no sha256 (K5). Sign-out waits for sync ops only, not backup jobs.
 8. NS-11 (wave 3) reuses the export as it is. It adds one pure slip rule, a settings key and a flag. Risk: the system share sheet may not report whether the copy was saved (R3, R16).
@@ -101,7 +101,7 @@ Dependencies: the founder approves BL-925's words (#847 Q4); `sync` confirms pro
 - Fact (R8): with `serverFeatures` off the gate returns `unchanged` (`gate.logic.ts:110`). With a local book, every session opens that book (`gate.logic.ts:123-125`).
 - Fact (the card's NEEDS EVIDENCE line): the phone never pulls while consent is outstanding, because canSync is false (`gate.logic.ts:186`). That answers the client side. The server side stays with `sync` (BL-987).
 - Fact (R4a): `sync_books` answers before consent (`account-books.logic.ts:11-13`). `request_account_deletion` checks only `require_user()` (`20261005000000_family_cap_language_idempotency.sql:408-456`), so deleting the account needs no agreement on the server side.
-- Fact (R7 gap): `recordConsent` mints a new idempotency key on every call (`lib/auth/consent.ts:117`; `lib/supabase/client.ts:147-148`). The server de-duplicates by that key, with a fingerprint that leaves out client time (`20261005000000...:165-194, 517-519`). A second tap after a lost answer therefore writes a second row (K11).
+- Fact (R7, built [Amended 12-A7; this bullet read "gap", with a key minted per call at `consent.ts:117`]): `recordConsent` holds one key per answer (`lib/auth/consent.ts:88`, `heldAnswers`; `lib/auth/consent-key.logic.ts`). The server de-duplicates by that key, with a fingerprint that leaves out client time (`20261005000000...:165-194, 517-519`). A second tap after a lost answer therefore reuses the key and is one row (K11, built; test `apps/mobile/test/consent-retry-one-key.test.ts:79`, titled `[NS-10-R7]`) [Amended review fix].
 - Fact (R3 gap): with A's book on the phone and B signed in, sync stops on the mismatch (`ownership.ts:49`; `lib/sync/index.ts:180`), but the gate still opens the local book for B (`gate.logic.ts:123-125`).
 - Fact (R11 gap): Try again restarts the 10 s clock (`use-new-phone.ts:58`). An unreadable answer shows No book here yet at once while online (`new-phone.logic.ts:67`), and Start a book is one tap from there.
 
@@ -120,7 +120,7 @@ Dependencies: the founder approves BL-925's words (#847 Q4); `sync` confirms pro
   - Fall back to `noBook` only after the window. Council A's fail-safe direction stands.
 
   Books arrive once because the pull upserts by id.
-- R7 (BL-978a). Rec: `recordConsent` takes the idempotency key as an argument. The sheet makes one key per (step, answer) when the step mounts and reuses it for every retry. No server change.
+- R7 (BL-978a): built and titled (`test/consent-retry-one-key.test.ts:79`) [Amended 12-A7]. Original Rec: `recordConsent` takes the idempotency key as an argument. The sheet makes one key per (step, answer) when the step mounts and reuses it for every retry. No server change.
 - R12 (BL-978a). Rec: the slow, no-book and finishSetup screens carry one PROPOSED line that names the sign-in method, read from `auth.lastMethod` (`session-provider.tsx:113`). Never the email.
 - R9. Assumption: an account deleted on the other phone is only scheduled for deletion, so this phone's session may live through the grace window. This phone then sees either a revoked session (the Welcome with its existing line) or `sync_books` with no book (No book here yet). OQ-6 asks `sync` which. No code until then.
 - R2, R13 (BL-978b). Rec: one Book-level slot driven by a pure `arrivalLine(...)` in `new-phone.logic.ts`. It picks one of three lines:
@@ -161,7 +161,7 @@ Dependencies: the founder approves BL-925's words (#847 Q4); `sync` confirms pro
 | 1 | BL-922a: the held screen (R0, R4a, R4b entry points) | mobile | principal-architect / security-architect | about 350, 9 |
 | 2 | BL-922b: one account reader | mobile | principal-architect / security-architect | about 150, 4 |
 | 3 | BL-961: account layer (`[X4-R1]`, R3, R5) | mobile | principal-architect / security-architect | about 380, 10 |
-| 4 | BL-978a: R7, R11, R12; R8 and R10 titles | mobile | principal-architect / security-architect | about 300, 8 |
+| 4 | BL-978a: R11, R12; R8 and R10 titles [Amended 12-A7: R7 is built and titled, removed] | mobile | principal-architect / security-architect | about 300, 8 |
 | 5 | BL-978b: Book-level line and provenance clause (after BL-965 words) | mobile | principal-architect / design-systems | about 300, 8 |
 | 6 | S1-204 (k), plus two-phone rows R1, R6, R14 (BL-948) | qa | design-systems / principal-architect | docs |
 
@@ -245,7 +245,7 @@ The flip rests on ADR 0024 (still Proposed), the client already in `lib/backup/`
 
 ## 7. Shared files and merge order across the cards
 - `app/settings/where-letters-live.tsx` (P-6c) and `app/settings/storage.tsx` (P-4a): serial if K3 moves the stuck row.
-- `components/onboarding/new-phone-screens.tsx` and `lib/first-run/*`: BL-922a, then BL-922b, then BL-978a.
+- `components/onboarding/new-phone-screens.tsx` and `lib/first-run/*`: BL-922a, then BL-922b, then BL-978a. [Amended 12-A7] NS-41 PR FP-6 goes after BL-922a, BL-922b and BL-978a; FP-2 goes before any other `consent.ts` change.
 - `app/(tabs)/book.tsx`: BL-978b collides with NS-21 (BL-937), NS-22 and #798. It merges after BL-937.
 - `packages/content` keys: BL-925 and BL-965 come first; BL-926, BL-978b and P-6c wait on the founder's approval.
 - Order under #847 Q1's default: P-6a, BL-925, BL-926 and BL-922a/b hold the Build 13 cut; P-4a/b, BL-961, BL-978a/b and P-6b/c follow.
@@ -267,7 +267,7 @@ The flip rests on ADR 0024 (still Proposed), the client already in `lib/backup/`
 - K4: BL-977 satisfies NS-09-R9 to R17, but R6 to R8 have no locked backlog row (P-4 exists only in #847). BL-976 still reads "blocked (PR #622 merged)" although #622 has merged.
 - K7: NS-08-R15's sign-out wait reads the sync outbox only (`auth-store.ts:188-194`). Recorded here for the flip build.
 - K10: 13, section 3, sizes NS-09 as "S (3 changes)". The open rows take 4 PRs, P-4 among them, which #847 sizes M.
-- K11: NS-10-R7 makes the row idempotent "on document, version and client time". The server de-duplicates on the request key, with a fingerprint that leaves out client time (`20261005000000:165-194, 517-519`). Rec: a client key per answer, as in 3.2.
+- K11: NS-10-R7 makes the row idempotent "on document, version and client time". The server de-duplicates on the request key, with a fingerprint that leaves out client time (`20261005000000:165-194, 517-519`). Rec: a client key per answer, as in 3.2 (built, `consent.ts:88`; titled `[NS-10-R7]` at `test/consent-retry-one-key.test.ts:79`).
 
 ## 9. Open questions
 Founder or counsel:
