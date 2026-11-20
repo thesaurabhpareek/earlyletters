@@ -225,7 +225,7 @@ Founder (D-125 legal merges; delegated defaults stay reversible):
 | OQ-F5 | NS-05 Level 1: text only until both X2 reads are on record | Yes |
 | OQ-F6 | X2 scope: our sending features, not the parent's own export | As 1.1 |
 | OQ-F7 | Research and testing data as `data-policy.md` 4.7 | Yes |
-| OQ-F8 | One inventory PR per wave under the paired-PR rule (K-2) | Yes |
+| OQ-F8 | One inventory PR per wave under the paired-PR rule (K-2) | No change until the founder approves: until then each PR that adds a stored key or column carries its own inventory row in the same PR (PRIV-R01, NS-36-R6), and the founder merges that PR |
 | OQ-F9 | Name earlier versions in the Privacy Policy now (F-3) | Yes, in the next policy PR |
 | OQ-F10 | A second account on a phone that holds the first account's book (1.10; `08-keeping.md` OQ-5) | Hide A's book and offer sign-out; fixed and tested before the next store candidate |
 
