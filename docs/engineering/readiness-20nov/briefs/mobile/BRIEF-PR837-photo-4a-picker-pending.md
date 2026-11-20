@@ -21,7 +21,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
    skip deleting the temp copy after read (R52).
 
 3. FILES  Touch: lib/photos/{adopt,device,failures,files,flag,pause,pending,picker,registry,session,types}.ts, tests photos-device,
-   photos-phone, photos-surfaces. Never: modules/scribe-photo Swift (hardening is #842, merged; progress is BL-950), lib/find/**,
+   photos-phone, photos-surfaces. Never: modules/scribe-photo Swift (hardening is #842, merged; progress is P-1), lib/find/**,
    app/**, packages/content. Shared file rule: none outside the stack.
 
 4. READING PACK: Pack 1 items 1, 5, 6, 7; `.claude/skills/expo-native-module/SKILL.md` sections 2 to 5; ADR 0028 D1.
@@ -54,7 +54,7 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 13 dark, 14 on (Q2)   Wa
 
 11. LENSES: A principal-architect, B security-architect. Both PASS WITH NOTES at 404ca293 (14:39 and 14:55 UTC).
 
-12. ORDER: after #836; before #838. Follow-ups, not in this PR: N1 wedge (needs `PickerHost` deinit cancel and `cancel()` on blur: BL-950),
+12. ORDER: after #836; before #838. Follow-ups, not in this PR: N1 wedge (needs `PickerHost` deinit cancel and `cancel()` on blur: P-1),
     N2 comment on the latch, N3 R17b (P-1). Blocked by: founder (size, #854).
 
 13. DEFINITION OF DONE
