@@ -111,9 +111,12 @@ export function lockScreenNamesOn(): boolean {
   return onOff(K.names, LOCK_SCREEN_NAMES_DEFAULT);
 }
 
-/** Visible books, with each child's "Include in my reminders" switch. Hidden books are never reminded. */
+/**
+ * Visible books, with each child's "Include in my reminders" switch and "Quiet this book" (`child_member_prefs.quiet_at`,
+ * read as `Child.quiet`). Hidden books are never reminded; the planner gives a quiet book nothing (planner.ts).
+ */
 export function plannerChildren(): PlannerChild[] {
-  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn }));
+  return listChildren().map((c) => ({ id: c.id, name: c.name, birthday: c.birthday, included: c.remindersOn, quiet: c.quiet === true }));
 }
 
 /** Newest save by this phone's user across visible books (smart quiet, F2). Null when nothing is saved yet. */
