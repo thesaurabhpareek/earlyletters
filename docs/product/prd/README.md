@@ -22,6 +22,19 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 | `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N27, device matrix, store-build gate | for `qa` |
 | `15-council-review.md` | what the council found and how each was answered | record |
 
+## Added 20 Nov 2026: founder direction, errata, from download to first letter, days and Home today
+
+| File | What | Bucket |
+|---|---|---|
+| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E30 ruled after the lock | record |
+| `19-from-download-to-first-letter.md` | NS-38 to NS-45: first run to first letter | A, B |
+| `20-founder-direction-20nov.md` | the founder's direction of 20 Nov (candidates, not conclusions) | input |
+| `21-days-cultural-photos-home.md` | NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first and Journaling Suggestions, NS-50 Home today; final after ten expert reviews (`tools/review/ns46-50/`), with the release cut (drops A, B, C), the founder-items table and the row-by-row drop tags | B, F |
+| `22-final-holistic-spec.md` | one reading of the whole pack for a human: what the product does, where days, background, catalogue, pictures and Home today fit in each tab, what is in 1.0, build 13 and after, the promises, the gates and the master list of founder decisions | overview |
+| `GAP-LOG.md` | design-to-product gap rulings, including K1 to K10, R-IA, N-, CB-, DL-, "Trace conflict rulings K11..K17" and "Review round 20 Nov" (RV-1 to RV-17) | rulings |
+| `BACKLOG-GAPS.md` | every P0 row with no backlog row, grouped into proposed rows for Karma (gate G0, errata E30); regenerate with `tools/review/p0.py` after card 21 changes (its P0 counts for NS-46 to NS-50 are now the Trace table of card 21) | gate G0 |
+| `FUNCTION-TRACE.md`, `functions/` | 23 function reviews traced to the cards; regenerate with `tools/trace-gen/gen.py` then `check.py` | trace |
+
 ### How to read a card (locked shape, 20 Nov 2026)
 
 Every card from NS-01 to NS-37 follows one shape after the round-2 council review. A section may say "n/a because ..." but may not be missing:

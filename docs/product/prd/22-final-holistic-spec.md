@@ -1,0 +1,158 @@
+# 22. The pack in one reading: what the product does, where days, background, reminders, pictures and Home today fit, and what the founder decides
+
+Status: 20 Nov 2026, written by `product` for a human reader (the founder, Karma, a new designer or engineer). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. This file cites; it never changes a requirement. Where it and a card differ, the card wins (and the card's own order of precedence: `GAP-LOG.md` rulings, the founder direction, the function reviews). Nothing is legal advice; every legal or store reading is "counsel must confirm". No dates: cards state order and gates only (ruling T5).
+
+Facts about the screens come from the information architecture audit (`docs/design/e2e/IA-AUDIT.md` on branch `docs/e2e-ux-20nov`, head `ed44fe899`; design judgement and code reading, not observed users). Facts about code come from the ten reviews of NS-46 to NS-50 (`tools/review/ns46-50/`). Anything either could not check is marked UNVERIFIED in the card.
+
+## 1. What the product does now
+
+Early Letters is a baby memory book families fill by talking (public descriptor today: letters to your child, in your own words and voice, BRAND.md). A parent speaks or types about their child; the machine may remove and repair, never add meaning (CLAUDE.md constitution): every edit is verified and reversible, the words as heard are kept, nothing writes, rewrites or summarises a person's words.
+
+Three tabs, one job each (frame, NAV-TAB-ROLES; Family is never a tab and no build shows a "coming soon" surface):
+
+| Tab | The parent's sentence | What lives there |
+|---|---|---|
+| Home (Say) | "I go to Home to say something to {child}." | The one primary action, Say. Dateline, greeting, one prompt with "Another thought", at most one slip, the capture cluster (Speak and Type as 64 pt twins; Start from a photo and Not much today as 44 pt quiet controls), the Plus line when it applies, a book switcher with two books. 5 content elements, 4 actions, 0 to 1 slips (IA-AUDIT 5.1). |
+| Book (Read) | "I go to the Book to read what we kept." | The letters, by month; Photos and Firsts lenses; Find; the letter page; read together; delete with undo. Nothing here starts a letter. |
+| Me (Look after) | "I go to Me to look after my account and books." | About 22 rows in 9 groups (IA-AUDIT 4.1): account and plan, books, writing, reminders, keeping the book safe, privacy, delete, help, about. |
+
+Only Home starts a letter. Everything else adds to a letter that exists or reads kept letters. The shape of the whole product is in `00-product-frame.md`; the first minutes are in `19-from-download-to-first-letter.md`.
+
+## 2. What this scope adds (cards NS-46 to NS-50)
+
+The founder's direction of 20 Nov (`20-founder-direction-20nov.md`) asked for days that matter to a family, an optional cultural background, a catalogue of reminder words, picture-first starts and a Home that has something for today. The five cards in `21-days-cultural-photos-home.md` answer it; this pack adds ways to start a letter, not a second job.
+
+| Card | One line | Free or Plus |
+|---|---|---|
+| NS-46 Days we mark | A library of days the parent ticks (nothing pre-ticked); one Days page with the typed days of NS-18; a ticked day recurs yearly and sends one reminder at 09:00 through the existing planner slot and budget | Free |
+| NS-47 Cultural background | The optional, once-only ask that helps browse traditions; what is kept (only the ticked days, on the phone, L4) and the lock-screen rules | Free |
+| NS-48 Notification catalogue | One pure function that picks the words of a reminder the planner already decided to send; adds no reminder, class or setting | Free |
+| NS-49 Picture-first and Journaling Suggestions | Level 1 (Apple's picker) as a first-class start; level 2 (Apple's suggestions picker) parent-started; level 3 (library reading) closed | Free |
+| NS-50 Home today | One more rank in the single Home slip slot: a day the parent chose, today. Not a strip | Free |
+
+## 3. How each fits in each tab, with no duplicated information
+
+The audit's rule: one owner per fact. Home and Book hold almost no duplicated information; the real duplicates are several doors to one function (Save a copy has six), one fact drawn two ways (the age line) and code computed twice (IA-AUDIT 1). The new scope is placed so it adds none.
+
+| Where | What is there | Owner and rule |
+|---|---|---|
+| Home, slip slot | At most one slip, fixed order: (1) the waiting set, (2) the seal-opened line, (2b) a day the parent chose, today, (3) Save a copy, (3b) the Days ask (once, capped at two showings), (4) one past letter (NS-50-R5; the order is one registry, BL-963). A slip, not a strip: a strip of several things is a feed with a count of things waiting, which the frame forbids (R-IA-3). | The day slip reads the days store; it names a day only when it is today, never lists upcoming days or a count, and a quiet book shows none. |
+| Home, capture cluster | "Start from a photo" is the third, quietest item. Where level 2 exists it opens a two-item menu ("Choose a photo", "Pick from recent days"); elsewhere it opens the picker directly. | NS-49. The picture suggestion is never a slip and never a tile (NS-50-R10). |
+| Home, prompt | An ordinary prompt from the existing catalogue, also after a day reminder (a day reminder leaves no trace in the synced row, NS-47-R5). On a quiet day (Memorial Day, Veterans Day) the quiet line replaces the prompt block (default pending founder). | `entries.prompt_key` never carries a day. |
+| Book | Unchanged. The "on this day" look-back stays with NS-23 and NS-31; a day reminder never says "last year" or shows an earlier letter (NS-46-R22). | NS-23 owns the one past letter on Home. |
+| Me, Days page (C-S24) | One page for the typed days of NS-18 and the ticked days of the library, in two sections ("Days you added", "Days you chose"), one "Add a day" flow, "Browse days" (a sheet), "Clear all", the day-name switch, one plain line that anyone who can open the phone can see the list. Before tree test T1 it is one row under Reminders; after T1 it sits in the regrouped Me group "Days and reminders" (working title, RV-3). | R-IA-2: no second list. NS-47 owns what is kept; NS-46 owns which days exist and when they fire. |
+| Me, Reminders | The evening reminder settings, the names switch (child's name only), one calm line when Reminders is off that chosen days still send a reminder, and one line that Apple's own journal suggestion notifications are separate. | NS-13 owns reminders; NS-48 adds no setting (the preview calls the planner's function). |
+| Me, Erase, sign-out, Delete account | Each clears the days store and its reminders; a line on C-S20 says days chosen stay on the phones and are cleared with the account. | NS-36, NS-45, NS-47-R15 to R17. |
+| Notifications | One budgeted reminder a day (the evening reminder, month, birthday, typed day or library day), 60 pending in total with plan notices first (errata E13). Apple's own journal suggestion notifications (iOS 26) are the system's and outside our budget. | `budget.ts` is the one place the rule lives (it is enforced nowhere today). |
+
+Me regroup proposed by the audit (adopted for design, built only after tree test T1, R-IA-4): Writing; Days and reminders (Reminders, Days, Past letters on Home); Keeping your book (Save a copy, Where your letters live, Recently deleted, Storage); On this phone (App lock, Privacy); an untitled last group (Erase everything, Delete account); Help and legal; About. No row is deleted.
+
+Is Home enough to be the default tab? The audit says it is not thin: one job above the fold, and the weakness is a stale second visit. NS-50 does not claim to fix that: on a day with nothing marked Home is unchanged. A default-tab check with five parents is NS-50-R13.
+
+## 4. What is in 1.0, build 13 and after (the release cut)
+
+The reviews found no one cut in the pack, 87 P0 rows and a long chain of unbuilt prerequisites. The cut in card 21 ("Release line and cut") orders the work; the founder decides it (Q-FD-7). Every row of NS-46 to NS-50 is tagged with its drop there.
+
+| Drop | In it | Needs first | Line |
+|---|---|---|---|
+| A | NS-49 level 1 as the first-class start only if the A-S01 re-draw passes its AX5 test; NS-48 phase 1 (day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage, no key in the payload) | NS-01 on `testflight`; no planner change beyond words | The next build (Build 13 or later) |
+| B | NS-46 seasonal, family and civic days, US only; the plain browse-and-tick list in Me (the fallback with no question, no tradition, no country); NS-47 store rules only; NS-50 rank 2b | BL-966, BL-982, BL-963, BL-985; `budget.ts`; days store registered and Erase-scanned; counsel on any copied table and on the consent line | 1.0 only if every gate closes before freeze, otherwise 1.1 |
+| C | NS-47 ask slip and tradition browse; culture-led days; tradition-member review; the day-name switch; NS-48 recency and last-letter layers; NS-49 level 2 | Counsel CUL-Q5 to Q7 and Q11; the J-CUL-01 device walk; a recorded reviewer per tradition; the NS-13 anchor; the entitlement; a weak-link launch run on iOS 17.0, 17.1, 17.2 and 26 | After 1.0 is approved |
+
+Not in this pack and parked: level 3 (reading the photo library), a Home strip, other countries' days, regional days (Pongal, Onam, Parsi New Year) in the first drop, OPP-02 to OPP-05 before first-run evidence (`12-parked-and-not-built.md`, `functions/feature-opportunities.md`).
+
+Built today, from the reviews' reading of the code: the planner has three kinds (`evening`, `monthAge`, `birthday`); typed days are a design, not shipped; the one-a-day rule is enforced nowhere except evening yielding to month and birthday; `Child.quiet` has no reader (errata E16); there is no Home slip host or registry; no notification category or hidden-preview placeholder exists; level 1 pictures live in the open PR stack and not in this branch. Each is a prerequisite named in the cards.
+
+## 5. The promises that hold, and the file that backs each
+
+| Promise to the parent | Backed by |
+|---|---|
+| Nothing is ticked for you; "Not now" is a full answer of equal weight; the app never says a day is missing, never counts what you ticked | NS-46-R2, R19, NS-47-R25, R30 |
+| Your faith and origin stay on your phone: the store is L4, outside the iPhone backup, cleared at sign-out and Erase, never exported, synced, logged or sent; no request carries a day | NS-47-R1, R4, R6, R8, R15, R16, R34 |
+| Only a family's own words are kept: a day reminder opens an ordinary prompt and leaves no day in the synced row | NS-47-R5 (CB-3) |
+| The lock screen does not name your day by default: one neutral title and body, the day's name only behind its own switch (off, forced off with App lock), only an allowlist of seasonal days may name themselves, never a day beside a child name, no category shows a title with previews hidden | NS-46-R36, NS-47-R12, R13, R36, R38 |
+| Reminders do not multiply: the catalogue only chooses words; one budgeted reminder a day; a quiet or hidden book gets none | NS-48-R2, R21, NS-46-R30 |
+| No guilt or gap language: no count, comparison, "again", "another", age norm or pregnancy word; zero exclamation marks | NS-48-R4, R10, R30, R36 |
+| Quiet days stay quiet: Memorial Day, Veterans Day, Good Friday, Yom Kippur show a name only, no question | NS-46-R16, R37 |
+| A picture you pick, only that picture: no photo-library permission, no PhotoKit call, level 3 closed, one stored copy, no mark of how it started; Apple's suggestion title is yours only if you tap "Use this" | NS-49-R6, R7, R9, R10, R13, R25 |
+| Honest wording: the app receives the suggestion you choose and uses only its picture (not "only the picture reaches the app"); "Only on this phone" holds only while its tests hold | NS-49-R16, NS-47-R22 |
+| Free stays free: no reminder, slip or line names Plus, a price or a Keep step | NS-46-R27 (T2) |
+| Sign-out keeps the book (D1); writing tools are off on letter fields (D2); nothing is donated to the system (D3) | All five cards |
+
+Constitution and voice (CLAUDE.md): no em or en dashes, curly quotes, ellipsis characters or emoji; no fear, guilt or loss language; never imply AI writes anything; `{child}` only; no streaks, points or badges; the fictional family Asha only, and no fixture pairs a real tradition with Asha.
+
+## 6. The gates
+
+Gates G0 to G6 are the release gates in `14-test-plan.md` (compliance's evidence gates are CG0 to CG6, K7).
+
+| Gate | What it needs for this scope |
+|---|---|
+| G0 | The trace reads NS ids; every P0 row has a test and a backlog row. Card 21 now has 182 rows and 87 P0 with no backlog row (`BACKLOG-GAPS.md` lists the earlier count; regenerate after this PR). |
+| G1 | On-device data rules for the L4 store (ADR 0028). |
+| G2 | Counsel reads: source licences (NS-46-R23), CUL-Q5 to Q7 and Q11, the consent line, the recent-days lines, DPLA 3.3.3(H), 5.1.3. |
+| G3 | The founder approves every word (`days.*`, `culture.*`, `ntc.*`, `features.photos.suggestions.*`). |
+| G4 | Every P0 device row passes: the lock-screen walk (J-CUL-01), one week of reminders on a phone (NTC-T24), launch and picker on iOS 17.0, 17.1, 17.2 and 26 and an iPad, blank snapshots, VoiceOver and AX5 on an SE 3. |
+| G5 | The privacy label and claims match the binary; the store listing says the day reminder time truthfully (NS-46-R46). |
+| G6 | No `production` flag is on while its card has an open P0 (`EXPO_PUBLIC_DAYS`, `EXPO_PUBLIC_SUGGESTIONS`). |
+
+Standing rules for a day library: a tradition ships only after a member of that tradition has read its rows (DL-8); no date is written from memory (computed or sourced, DL-3, DL-4); an October review each year; a wrong date is the failure with the highest cost to trust, so a remote pause exists and one report trips a same-day review (NS-46-R28, R44).
+
+## 7. Master list of founder decisions
+
+Defaults hold until answered. A default is a requirement for design and build, never for public text, a counsel answer or a store submission. Full text, rulings and the other readers are in the "Founder items" table of card 21; this is the short list. "Read by" names who else must read the answer first.
+
+| Id | Decision | Default | Read by |
+|---|---|---|---|
+| Q-FD-7 | Which drop ships when | A next build, B only if its gates close before 1.0 freeze, C after approval | all |
+| Q-FD-1 | What "East East" means | No such option; "Add a day" and "Not now"; culture-led days offered without a question | content, privacy |
+| Q-FD-2 | When the Days ask shows | Later sitting, once, "Not now" final for Home; Me only if more than 1 in 5 testers say "too personal" | marketing, design |
+| Q-FD-3 | Mother's, Father's, Memorial, Veterans Day offered, never pre-ticked | Yes; Memorial and Veterans Day quiet | content |
+| Q-FD-4, Q-PHS-7 | Level 2 yes after NS-01 is on `testflight`; level 3 never in 1.x | As stated | security, privacy, counsel |
+| Q-FD-5 | Faith and country only on the phone, only ticked days stored | Yes | privacy, counsel |
+| Q-FD-6 | Reopen `occasion` and "on this day" | `occasion` as a source only; "on this day" stays with NS-23, NS-31; level 3 closed | Karma |
+| Q-FD-8 | More cards from the opportunity list | None before first-run evidence | user-research |
+| Q-FD-9 | Who reviews each tradition, which traditions first | None ships without a recorded reviewer; none announced as "all" | content, regulatory-affairs |
+| Q-FD-10 | Owner of the October review | Founder accountable, `content` reads | content, ops |
+| Q-FD-11, Q-PHS-3 | Journaling Suggestions capability on the App ID; does Apple approve | `mobile` spike step 1; flag off until known | mobile, security |
+| Q-FD-12 | Sign-out and system-ended session clear the store | Clear, with one calm line | privacy |
+| Q-FD-13 | Store out of the iPhone backup; restored phone empty, no re-ask | Exclude and read back | privacy, mobile |
+| Q-FD-14 | Day-name switch separate, on the Days page, cannot return by itself | Yes | privacy, content |
+| Q-FD-15 | Remote pause for the library | One boolean, fail-open; not deliverable servers-off; per-tradition hold later | Karma, ops |
+| Q-FD-16, Q-FD-17 | Countries after the US; regional days | US only, no country list until a second country; regional later | counsel, content |
+| Q-FD-18 | Which days may name themselves on a lock screen | Allowlist of seasonal days; neutral under App lock | privacy, security, regulatory-affairs |
+| Q-FD-19 | Day reminder time | Fixed 09:00; listing words fixed | marketing, legal |
+| Q-FD-20, Q-FD-21 | First tick asks iOS once; day reminders when Reminders is off | Yes once, with a consent line; yes, with one calm line | mobile, legal |
+| Q-FD-22 | Planning horizon | 366 days within the ceiling | mobile |
+| Q-FD-23 | Rank of the Days ask | After Save a copy, capped at two showings | design |
+| Q-FD-24, Q-FD-25 | Quiet-day Home; one way for a day on Home | Quiet line replaces the prompt; one slip | design, mobile |
+| Q-FD-26, Q-FD-27 | Words ("reminder", "Days and reminders", "Days you chose", "Not today", "photo"); playfulness on Friday and Saturday | Yes; `content` words them | content |
+| Q-FD-28 | No marketing that shows a tradition or faith day; the ask is never "a religion question" | Yes | marketing, legal |
+| Q-FD-29 | Last-letter kinds on a lock screen | spoke and typed in the body; picture dropped; first and small only with names on | privacy, content |
+| Q-FD-30 | Apple's suggestion title saved without a tap | No | privacy, security |
+| Q-FD-31 | Picture start becomes a menu where level 2 exists | Yes | design |
+| Q-FD-32, Q-PHS-2 | iOS floor | Keep 17.0, hide below 17.2, until a weak-link launch run passes | mobile, security |
+| Q-FD-33 | Phones for device rows (17.0 or 17.1, 17.2 or later, iPad) | Borrow; waive only what is missing | qa |
+| Q-FD-34 | The word "journal" in the picker line or listing | Keep the BRAND.md ban; store name, listing sentence and Apple's sheet carry it | legal, content |
+| Q-NTC-5, 8, 9 | Do variants reduce turn-off; floor or full set; which age | Untestable in 1.x, no claim; floor at freeze; the age the Book shows | analytics, content |
+| Q-PHS-1, 4, 5, 6 | Level 2 timing; Apple's own notification; label as Apple's text; places read | After NS-01 on `testflight`; second step after a spike; "From your phone"; none read | mobile, privacy |
+| Counsel (through the founder) | CUL-Q5, Q6, Q7, Q11, Q-DAY-6, Q-DAY-11, FR-DAY-23, the consent line, DPLA 3.3.3(H), 5.1.3, Q43, Q45, Q48, Q54, K6 age-rating re-read | Flags stay off until answered; never defaulted | legal |
+
+Karma's items (not founder items, but parent-visible): the conflicts list of card 21, RV-1 to RV-17 and K11 to K17 in `GAP-LOG.md`. The founder alone decides the founder-only list in Karma's skill (what users are promised, public words, analytics, money, one-way doors); of K11 to K17 only K14's seller question and the wording in K12 and K13 reach him.
+
+## 8. Where everything is (every card and function file)
+
+Cards, in `docs/product/prd/`:
+
+- [00 product frame](00-product-frame.md), [01 photo with a letter](01-photo-with-a-letter.md), [02 Find](02-find.md), [03 family hears it pilot](03-family-hears-it-pilot.md), [04 hands-free spike](04-hands-free-capture-spike.md), [05 share one letter](05-share-one-letter.md), [06 Firsts, sealed letter, quick capture](06-firsts-sealed-letter-quick-capture.md), [07 remaining capability rows](07-remaining-capability-rows.md)
+- [08 keeping and trust](08-keeping-and-trust.md), [09 capture](09-capture.md), [10 reading and family](10-reading-and-family.md), [11 foundations](11-foundations.md), [12 parked](12-parked-and-not-built.md)
+- [13 engineering plan](13-engineering-plan.md), [14 test plan](14-test-plan.md), [15 council review](15-council-review.md), [16 council review round 2](16-council-review-round-2.md), [18 errata after lock](18-errata-after-lock.md)
+- [19 from download to first letter](19-from-download-to-first-letter.md), [20 founder direction](20-founder-direction-20nov.md), [21 days, cultural background, catalogue, pictures, Home today](21-days-cultural-photos-home.md)
+- Records: [GAP-LOG](GAP-LOG.md) (rulings, K11..K17, RV-1..RV-17), [FUNCTION-TRACE](FUNCTION-TRACE.md), [BACKLOG-GAPS](BACKLOG-GAPS.md), [README](README.md), [RESUME](RESUME.md)
+
+Function reviews, in `functions/` (the brief is [BRIEF](functions/BRIEF.md)): [support](functions/support.md), [marketing](functions/marketing.md), [operations](functions/operations.md), [finance](functions/finance.md), [data and measurement](functions/data-and-measurement.md), [privacy](functions/privacy.md), [legal](functions/legal.md), [compliance](functions/compliance.md), [risk and security](functions/risk-security.md), [back office](functions/back-office.md), [messaging and entry points](functions/messaging-and-entry-points.md), [languages and localisation](functions/languages-and-localisation.md), [reliability](functions/reliability.md), [AI and speech](functions/ai-and-speech.md), [research and validation](functions/research-validation.md), [quality](functions/quality.md), [lifecycle and platforms](functions/lifecycle-and-platforms.md), [print and fulfilment](functions/print-and-fulfilment.md), [days library](functions/days-library.md), [notification catalogue](functions/notification-catalogue.md), [cultural background data](functions/cultural-background-data.md), [photos and suggestions](functions/photos-and-suggestions.md), [feature opportunities](functions/feature-opportunities.md).
+
+The ten reviews of NS-46 to NS-50 are in `tools/review/ns46-50/`: [analytics](tools/review/ns46-50/analytics.md), [compliance](tools/review/ns46-50/compliance.md), [content](tools/review/ns46-50/content.md), [design systems](tools/review/ns46-50/design-systems.md), [marketing](tools/review/ns46-50/marketing.md), [mobile](tools/review/ns46-50/mobile.md), [privacy](tools/review/ns46-50/privacy.md), [product](tools/review/ns46-50/product.md), [qa](tools/review/ns46-50/qa.md), [security](tools/review/ns46-50/security.md).
+
+## 9. What this file could not verify
+
+I did not run the product, a device, a test or any code; I rely on the cards, the audit and the reviews, each of which marks its own UNVERIFIED items (for example whether Apple's suggestions picker reports cancel or empty, who owns the returned photo file, whether a hidden-preview title shows on Apple Watch, and whether App Review reads an optional faith question as unneeded data). No holiday date, Apple rule or law was verified here.

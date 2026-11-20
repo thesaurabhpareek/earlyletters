@@ -862,11 +862,11 @@ Card titles are read from the cards on disk (NS-46 to NS-50 are the proposed tit
 | NS-43 | NR | M | NR | NR | M | M | NR | NR | C | 34 |
 | NS-44 | NR | M | NR | NR | M | M | NR | NR | C | 29 |
 | NS-45 | NR | M | NR | NR | M | M | NR | NR | M | 45 |
-| NS-46 | - | - | - | - | - | - | - | - | - | 30 |
-| NS-47 | - | - | - | - | - | - | - | - | - | 32 |
-| NS-48 | - | - | - | - | - | - | - | - | - | 22 |
-| NS-49 | - | - | - | - | - | - | - | - | - | 39 |
-| NS-50 | - | - | - | - | - | - | - | - | - | 1 |
+| NS-46 | - | - | - | - | - | - | - | - | - | 32 |
+| NS-47 | - | - | - | - | - | - | - | - | - | 34 |
+| NS-48 | - | - | - | - | - | - | - | - | - | 26 |
+| NS-49 | - | - | - | - | - | - | - | - | - | 42 |
+| NS-50 | - | - | - | - | - | - | - | - | - | 3 |
 
 **Second and third wave (fourteen functions)**
 
@@ -917,11 +917,11 @@ Card titles are read from the cards on disk (NS-46 to NS-50 are the proposed tit
 | NS-43 | - | - | C | P | n/a | - | M | P | - | - | - | - | - | - | 34 |
 | NS-44 | - | - | NR | P | n/a | - | M | P | - | - | - | P | - | - | 29 |
 | NS-45 | - | - | NR | P | n/a | - | M | P | - | - | - | M | - | - | 45 |
-| NS-46 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 30 |
-| NS-47 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 32 |
-| NS-48 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 22 |
-| NS-49 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 39 |
-| NS-50 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 1 |
+| NS-46 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 32 |
+| NS-47 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 34 |
+| NS-48 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 26 |
+| NS-49 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 42 |
+| NS-50 | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 3 |
 
 No per-card verdict table in the file (all cells `-` above): back-office, research, notifications, photos, opportunities. Of these, back-office gives a verdict per back-office area, not per card (its section 2.3); research, photos and opportunities give a coverage check and no verdict; notifications gives a coverage check and the proposed card NS-48.
 
@@ -1024,11 +1024,11 @@ Union of: the Links column (no mark), the requirement text (`~t`), the FR rows n
 | NS-43 Setting up the first book (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t~v; DAT-34~v; PRV-24; PRV-28~v; LEG-02~v; CMP-09; CMP-17~v; SEC-25; LOC-11; LOC-12; REL-02; REL-03~v; REL-54; REL-55~v; REL-56~t; REL-59~v; RSH-04; QAL-01; QAL-05; QAL-06; QAL-15; LCY-05 |
 | NS-44 The first letter and the allowance (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09~v; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25~v; OPS-33~v; OPS-36~v; DAT-33~t~v; DAT-34~v; PRV-10~v; PRV-16~v; PRV-24~v; LEG-02~v; CMP-09; CMP-17~v; REL-02; REL-03~v; REL-55~v; REL-59; RSH-04; QAL-01; QAL-05; LCY-05; LCY-30 |
 | NS-45 Account life after first run (19-from-download-to-first-letter.md) | SUP-02~v; SUP-17~v; SUP-18; MKT-09; MKT-21; MKT-22~v; MKT-33; OPS-10; OPS-11~v; OPS-25; OPS-33~v; OPS-36~v; DAT-33~v; DAT-34~t~v; PRV-14~v; PRV-15~v; PRV-18~v; LEG-02~v; CMP-09; CMP-17~v; SEC-06; SEC-07~v; SEC-12; BKO-01; BKO-02; BKO-04; BKO-07; BKO-26; BKO-27; REL-02; REL-03~v; REL-55~v; REL-59~v; QAL-01; QAL-05; QAL-15; QAL-21; LCY-03; LCY-09; LCY-11; LCY-17; LCY-18; LCY-19; LCY-26; CUL-17 |
-| NS-46 Days we mark (21-days-cultural-photos-home.md) | DAY-01; DAY-02; DAY-03~c; DAY-04; DAY-05; DAY-06; DAY-07~c; DAY-08; DAY-09; DAY-10; DAY-11; DAY-12; DAY-13; DAY-14; DAY-15; DAY-16; DAY-17; DAY-18; DAY-19; DAY-20; DAY-21~c; DAY-22; DAY-23; DAY-24; DAY-25; NTC-08; NTC-09; CUL-04~c; CUL-14~c; CUL-24 |
-| NS-47 Cultural background: the optional ask, what is kept, and the lock-screen rules (21-days-cultural-photos-home.md) | PRV-07~c; PRV-24~c; PRV-34~c; RSH-21~c; NTC-09; CUL-01; CUL-02; CUL-03; CUL-04; CUL-05; CUL-06; CUL-07; CUL-08; CUL-09; CUL-10; CUL-11; CUL-12; CUL-13; CUL-14~c; CUL-15; CUL-16; CUL-17; CUL-18; CUL-19; CUL-20; CUL-21; CUL-22; CUL-23; CUL-24~c; CUL-25~c; CUL-26~c; CUL-27 |
-| NS-48 Notification catalogue and rotation (21-days-cultural-photos-home.md) | NTC-01; NTC-02~c; NTC-03~c; NTC-04~c; NTC-05; NTC-06~c; NTC-07; NTC-08~c; NTC-09~c; NTC-10~c; NTC-11~c; NTC-12~c; NTC-13; NTC-14~c; NTC-15~c; NTC-16~c; NTC-17; NTC-18; NTC-19~c; NTC-20~c; NTC-21~c; PHS-04 |
-| NS-49 Picture-first start and Journaling Suggestions (21-days-cultural-photos-home.md) | LCY-31~c; PHS-01~c; PHS-02~c; PHS-03~c; PHS-04~c; PHS-10~c; PHS-11~c; PHS-12~c; PHS-13~c; PHS-14~c; PHS-15~c; PHS-16~c; PHS-17~c; PHS-18~c; PHS-19~c; PHS-20~c; PHS-21~c; PHS-22~c; PHS-23~c; PHS-24~c; PHS-25~c; PHS-30~c; PHS-31~c; PHS-32~c; PHS-33~c; PHS-34~c; PHS-40~c; PHS-41~c; PHS-42~c; PHS-43~c; PHS-44~c; PHS-50~c; PHS-51~c; PHS-52~c; PHS-53~c; PHS-54~c; PHS-55~c; PHS-56~c; PHS-57~c |
-| NS-50 Home today (21-days-cultural-photos-home.md) | PHS-02 |
+| NS-46 Days we mark (21-days-cultural-photos-home.md) | CMP-01~c; RSH-24~c; QAL-09~c; DAY-01; DAY-02; DAY-03~c; DAY-04; DAY-05; DAY-06; DAY-07~c; DAY-08; DAY-09; DAY-10; DAY-11; DAY-12; DAY-13; DAY-14; DAY-15; DAY-16; DAY-17; DAY-18; DAY-19; DAY-20; DAY-21~c; DAY-22; DAY-23; DAY-24; DAY-25; NTC-08; NTC-09; CUL-04~c; CUL-24 |
+| NS-47 Cultural background: the optional ask, what is kept, and the lock-screen rules (21-days-cultural-photos-home.md) | PRV-07~c; PRV-24~c; PRV-34~c; SEC-22~c; RSH-21~c; LCY-31~c; NTC-09; CUL-01; CUL-02; CUL-03; CUL-04; CUL-05; CUL-06; CUL-07; CUL-08; CUL-09; CUL-10; CUL-11; CUL-12; CUL-13; CUL-14~c; CUL-15; CUL-16; CUL-17; CUL-18; CUL-19; CUL-20; CUL-21; CUL-22; CUL-23; CUL-24~c; CUL-25~c; CUL-26~c; CUL-27 |
+| NS-48 Notification catalogue and rotation (21-days-cultural-photos-home.md) | LOC-10~c; LOC-11~c; REL-32~c; RSH-08~c; NTC-01; NTC-02~c; NTC-03~c; NTC-04~c; NTC-05; NTC-06~c; NTC-07; NTC-08~c; NTC-09~c; NTC-10~c; NTC-11~c; NTC-12~c; NTC-13; NTC-14~c; NTC-15~c; NTC-16~c; NTC-17; NTC-18; NTC-19~c; NTC-20~c; NTC-21~c; PHS-04 |
+| NS-49 Picture-first start and Journaling Suggestions (21-days-cultural-photos-home.md) | PRV-34~c; RSH-03~c; LCY-31~c; PHS-01~c; PHS-02~c; PHS-03~c; PHS-04~c; PHS-10~c; PHS-11~c; PHS-12~c; PHS-13~c; PHS-14~c; PHS-15~c; PHS-16~c; PHS-17~c; PHS-18~c; PHS-19~c; PHS-20~c; PHS-21~c; PHS-22~c; PHS-23~c; PHS-24~c; PHS-25~c; PHS-30~c; PHS-31~c; PHS-32~c; PHS-33~c; PHS-34~c; PHS-40~c; PHS-41~c; PHS-42~c; PHS-43~c; PHS-44~c; PHS-50~c; PHS-51~c; PHS-52~c; PHS-53~c; PHS-54~c; PHS-55~c; PHS-56~c; PHS-57~c; OPP-02~c |
+| NS-50 Home today (21-days-cultural-photos-home.md) | MKT-23~c; MKT-24~c; PHS-02 |
 
 ### 2c. Cards a function split into parts
 
@@ -1241,7 +1241,7 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - cultural-data: CUL C01 (R-079) on NS-18 section 3 "Not in scope" and the direction 3.1 sentence "A chosen day becomes a typed day": Either (a) keep typed days one-off and per phone, and have NS-47 own a separate yearly store that feeds the same planner slot, or (b) change NS-18 to allow suggested and recurring days. I recommend (a). The direction's sentence should read "a chosen day uses the typed day's planner slot and lock-screen rules" Why: NS-18 forbids recurring and suggested days; its deletion rule (the day after delivery) would delete a yearly day
 - cultural-data: CUL C02 (R-100) on NS-32 section 3 classes; direction Q-FD-6: If `occasion` is reopened, name the class `libraryDay`, give it the top priority the direction asks for, one neutral body for every layer, and inherit R12 and R13 Why: FR-CUL-12
 - cultural-data: CUL CUL-Q12: "The yearly store versus NS-18's "no recurring days": rule (a) separate store, or (b) change NS-18 (section 5)?" Default: (a) Owner: Karma none
-- card 21 (NS-46 to NS-50), "Conflicts and open items" item 8: **NS-32-R5 says "no `occasion` class" and lists five classes.** That stays true (N-2). DL-2 needs `libraryDay` as a ranked source inside the `typedDay` group. NS-32-R3 and R5 gain that ranking (changes list below). If Karma prefers a registry row, that is a new class and contradicts N-2.
+- card 21 (NS-46 to NS-50), "Conflicts and open items" item 8: **NS-32-R5 says "no `occasion` class".** Still true (N-2). `libraryDay` is a ranked source of the `typedDay` group (NS-46-R29); NS-32-R3 and R5 gain that ranking. A registry row would be a new class and contradict N-2.
 - Ruled CB-2 (GAP-LOG): a chosen day is NOT a typed day. NS-18 says "Not in scope: recurring days, days the app suggests, syncing typed days" and deletes a typed day after delivery. This amends 20-founder-direction section 3.1: the library uses a separate yearly store that feeds the same planner slot and the same one-a-day budget (`libraryDay` source, not a new class; N-2 stands).
 - Ruled N-2 (GAP-LOG): `occasion` returns only as a source of typed days, never as a new class (Q-FD-6 first half ruled yes). No class is added to the NS-32 registry.
 - Merged rulings: R-079, R-100
@@ -1254,9 +1254,9 @@ Cards NS-43 to NS-45 are on disk now, so proposals marked "(when written)" in th
 - cultural-data: CUL CUL-Q9: "Separate switch for the day's name in a note, default off, forced off by App lock?" Default: Yes. The direction says the faith is named "only when the parent has switched on names in notifications"; a separate switch avoids exposing a faith just because the child's name was switched on Owner: Founder none
 - notifications: FR-NTC-09 (notifications, P0 (b)): Given a family or faith day, or names off, Then the lock-screen title is neutral ("Something for the book today") and the day shows when unlocked; a faith or family day's name appears in a title only with names on
 - notifications: NTC Q-NTC-2: "Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes)" Default: Public only; family and faith need names on Owner: not stated (read as founder)
-- card 21 (NS-46 to NS-50), "Conflicts and open items" item 1: **One names switch or two (CB-5 and DL-10 against N-7 and DAY 5.1).** N-7 keeps "one names switch" and refuses a separate "Show celebration names" switch for the catalogue. CB-5 and DL-10 give library days their own "day's name" switch, default off, forced off with App lock, separate from `notifications.lockScreenNames`. Read together they are compatible (N-7 is about child names in celebration notes; CB-5 is about a day's name), so this file follows CB-5 and DL-10 for library days and N-7 for the catalogue. A parent then sees two name switches in Me, Reminders. If Karma wants one, NS-47-R12 and R14 change and a faith day's name would show whenever a child's name does.
-- card 21 (NS-46 to NS-50), "Conflicts and open items" item 2: **A public day's name in a title (N-3) against "the day's name shows only behind its own switch" (CB-5).** N-3 lets seasonal and civic days name themselves in a lock-screen title with names off. CB-5 reads as all days. This file applies N-3 to seasonal and civic days only (`publicTitleOk`) and CB-5 to family, tradition, culture-led and national days (NS-47-R12, R13). Whether a public title still shows with App lock on is not ruled; default: yes, because a season or a civic day reveals nothing about the family. Karma to confirm.
-- card 21 (NS-46 to NS-50), "Conflicts and open items" item 3: **The same neutral words, three drafts.** Direction, CB-5 and NTC say "Something for the book today". DAY and the area D WORDS use "A day you wanted to remember" for the typed day. G-D19 ruled the hidden-preview body placeholder "Something for the book, whenever you have a minute." This file keeps three different strings for three different jobs (typed-day title; library-day neutral title; hidden-preview body placeholder) and tests that each layer shares one string per field. `content` decides the words.
+- card 21 (NS-46 to NS-50), "Conflicts and open items" item 1: **One names switch or two (CB-5 and DL-10 against N-7 and DAY 5.1).** Compatible: N-7 is about the child's name, CB-5 about a day's name. Resolution (RV-13): the day-name switch lives on the Days page (C-S24) so Reminders keeps one names switch; a typed day's words follow the same switch (RV-8, NS-47-R37, needs an NS-18-R3 errata row). Karma confirms.
+- card 21 (NS-46 to NS-50), "Conflicts and open items" item 2: **A public day's name in a title (N-3) against "the day's name shows only behind its own switch" (CB-5).** Resolution (RV-1): `publicTitleOk` is a hand-listed allowlist and with App lock on every title is neutral (NS-46-R36); default pending founder: Q-FD-18.
+- card 21 (NS-46 to NS-50), "Conflicts and open items" item 3: **The same neutral words, three drafts.** Kept as three strings for three jobs (typed-day title; library-day neutral title; hidden-preview placeholder) plus one neutral body per tone (NS-46-R37); the DAY 5.1 and 5.4 samples are superseded. `content` decides the words.
 - Ruled CB-5 (GAP-LOG): lock screen: every library-day note shares one neutral body; the day's name shows only behind its own switch, default off and forced off while App lock is on, separate from `notifications.lockScreenNames`.
 - Ruled N-3 (GAP-LOG): only public days (seasons, civic) may name themselves in a lock-screen title; family and faith days need "names in notifications" on.
 - Ruled DL-10 (GAP-LOG): a tradition day's name on the lock screen only with its own names switch on (CB-5); privacy and counsel decide beyond that.
@@ -2281,16 +2281,22 @@ Ordered frame first, then the test plan and README, then cards by number. "Handl
 
 ### 3d. Open items card 21 raises for Karma (NS-46 to NS-50)
 
-`21-days-cultural-photos-home.md` ends with 8 items it does not resolve. They are between rulings and cards, not between functions, so only the cross-reference to the conflicts above is added here; the text is the card's.
+`21-days-cultural-photos-home.md` ends with 14 items it does not resolve. They are between rulings and cards, not between functions, so only the cross-reference to the conflicts above is added here; the text is the card's.
 
-- Item 1 (K19): **One names switch or two (CB-5 and DL-10 against N-7 and DAY 5.1).** N-7 keeps "one names switch" and refuses a separate "Show celebration names" switch for the catalogue. CB-5 and DL-10 give library days their own "day's name" switch, default off, forced off with App lock, separate from `notifications.lockScreenNames`. Read together they are compatible (N-7 is about child names in celebration notes; CB-5 is about [cut; see source]
-- Item 2 (K19): **A public day's name in a title (N-3) against "the day's name shows only behind its own switch" (CB-5).** N-3 lets seasonal and civic days name themselves in a lock-screen title with names off. CB-5 reads as all days. This file applies N-3 to seasonal and civic days only (`publicTitleOk`) and CB-5 to family, tradition, culture-led and national days (NS-47-R12, R13). Whether a public title still shows with App lock [cut; see source]
-- Item 3 (K19 (words)): **The same neutral words, three drafts.** Direction, CB-5 and NTC say "Something for the book today". DAY and the area D WORDS use "A day you wanted to remember" for the typed day. G-D19 ruled the hidden-preview body placeholder "Something for the book, whenever you have a minute." This file keeps three different strings for three different jobs (typed-day title; library-day neutral title; hidden-preview body [cut; see source]
-- Item 4 (K18): **A ticked day per account or per book (DAY 3.2 against CB-1 and FR-CUL-01).** This file stores per account and clears at sign-out (CB-4), and lets the landing use the active book's `{child}`. A quiet or hidden book gets none of its own (R-IA-6, NS-32-R14); if every included book is quiet or hidden, no library note is sent.
-- Item 5 (K11 (Home slip versus typed-day line is not a function overlap; ruled by Karma on card 21)): **Library day on Home: a slip (R-IA-3) against the typed-day line, which A W9 ruled "not a slip".** IA-AUDIT asks that the day shows one way whether the parent arrives by notification or by opening the app. This file resolves it: on a notification tap the day shows as the line above the prompt (D-S11, not a slip) and the slip is not drawn that visit; on any other open on that day, with no higher slip, it is rank 2b [cut; see source]
-- Item 6 (K11): **Where the one-a-day budget is enforced is UNVERIFIED (R-IA-6).** IA-AUDIT found no "budget" in `lib/reminders` or `lib/billing`. NS-46 and NS-48 add sources and keys to it, so NS-48-R26 makes confirmation a precondition. Likewise `setChildQuiet` has no reader in the planner (IA-AUDIT X6, INFERENCE); NS-48-R21 and NS-46-R25 depend on BL-985 and test T6.
-- Item 7 (no function conflict (design and test T3 decide)): **Rank of the Days ask slip.** IA-AUDIT proposes (2c), directly after a day we mark. A question about a feature may be better last (below Save a copy and the past letter). Default: (2c) as drawn; design and the slip test T3 decide. Not a contradiction between rulings.
-- Item 8 (K18): **NS-32-R5 says "no `occasion` class" and lists five classes.** That stays true (N-2). DL-2 needs `libraryDay` as a ranked source inside the `typedDay` group. NS-32-R3 and R5 gain that ranking (changes list below). If Karma prefers a registry row, that is a new class and contradicts N-2.
+- Item 1 (K19): **One names switch or two (CB-5 and DL-10 against N-7 and DAY 5.1).** Compatible: N-7 is about the child's name, CB-5 about a day's name. Resolution (RV-13): the day-name switch lives on the Days page (C-S24) so Reminders keeps one names switch; a typed day's words follow the same switch (RV-8, NS-47-R37, needs an NS-18-R3 errata row). Karma confirms.
+- Item 2 (K19): **A public day's name in a title (N-3) against "the day's name shows only behind its own switch" (CB-5).** Resolution (RV-1): `publicTitleOk` is a hand-listed allowlist and with App lock on every title is neutral (NS-46-R36); default pending founder: Q-FD-18.
+- Item 3 (K19 (words)): **The same neutral words, three drafts.** Kept as three strings for three jobs (typed-day title; library-day neutral title; hidden-preview placeholder) plus one neutral body per tone (NS-46-R37); the DAY 5.1 and 5.4 samples are superseded. `content` decides the words.
+- Item 4 (K18): **A ticked day per account or per book.** Per account, cleared at sign-out (CB-4); the landing uses the active book's `{child}`; a quiet or hidden book gets none (R-IA-6); with every included book quiet or hidden no library reminder is sent.
+- Item 5 (K11 (Home slip versus typed-day line is not a function overlap; ruled by Karma on card 21)): **Library day on Home: a slip (R-IA-3) against the typed-day line.** Resolution (RV-6): one way, the slip, however the parent arrives; the D-S11 library-day state is dropped. Karma confirms.
+- Item 6 (K11): **Where the one-a-day budget is enforced.** Answered by `mobile`: nowhere (`planner.ts:320-350`; `plan-reminders.ts` is a second scheduler); `budget.ts` (NS-46-R30) is a hard prerequisite of NS-46 and NS-48, and `setChildQuiet` has no planner reader (errata E16, BL-985).
+- Item 7 (no function conflict (design and test T3 decide)): **Rank of the Days ask slip.** Resolution (RV-5): rank 3b, after Save a copy, retired after two unanswered showings; T3 may move it.
+- Item 8 (K18): **NS-32-R5 says "no `occasion` class".** Still true (N-2). `libraryDay` is a ranked source of the `typedDay` group (NS-46-R29); NS-32-R3 and R5 gain that ranking. A registry row would be a new class and contradict N-2.
+- Item 9 (-): **The remote pause is not deliverable in a servers-off build (RV-10).** One boolean, fail-open, wired outside `mayRun`, a `kill-switches.ts` vocabulary and ADR 0029 change; a per-tradition hold waits for Drop C.
+- Item 10 (-): **Reminders off, and the first permission ask (RV-9).** Day sources get their own gate; ticking the first day makes the one iOS ask after one sentence; Karma confirms this does not break E K-E13.
+- Item 11 (-): **N-4 last-letter kinds (RV-2).** `picture` dropped; `first` and `small` only with names on and App lock off.
+- Item 12 (-): **The Days ask against FR-MKT-24 (no promotional slip).** Accepted as one family question, once per account (NS-50-R16); FR-MKT-24 is reworded.
+- Item 13 (-): **TRACKING_PLAN 6.4 for a parent's chosen days.** Extension proposed (Q-AN-5), Karma decides.
+- Item 14 (-): **BRAND.md bans "journal" in prose while DPLA 3.3.3(H) needs the journaling purpose "clearly evident".** Default keep the ban (Q-FD-34); counsel and the founder decide.
 
 ## 4. Founder and counsel question index
 
