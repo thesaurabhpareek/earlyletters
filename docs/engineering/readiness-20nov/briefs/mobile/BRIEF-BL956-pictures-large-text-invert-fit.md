@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `03704c71`, 20 Nov 19:04 UTC).
-Pin at develop dcbf70fc8, E1 to E82, CL-001 to CL-157 (`docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`): E69 P27 (CL-143): the border is the token `mediaFrame` (dark #716A62), named in NS-01-R41 (a token addition with a pair test, `design-systems`). E69 P36: no reserved height for the slip; an SE 3 device row decides. E69 P31/P35: `expo-battery` and `expo-symbols` are the founder's (E67).
+Pin at develop 55574906c, E1 to E83, CL-001 to CL-158 (`docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`): E69 P27 (CL-143): the border is the token `mediaFrame` (dark #716A62), named in NS-01-R41 (a token addition with a pair test, `design-systems`). E69 P36: no reserved height for the slip; an SE 3 device row decides. E69 P31/P35: `expo-battery` and `expo-symbols` are the founder's (E67).
 Blocked until: BL-931 and BL-932 (PR b needs the list copy). `design-systems` confirms the large-text thumbnail (88 pt from AX3, backlog default) before PR a. The lens radio group (R48) is already built in #840; do not rebuild it. Catalogue B has no title for R42 (fit, never crop): the title below is PROPOSED and product or qa confirms it.
 
 ```
