@@ -90,9 +90,11 @@ describe('[NS-01-R2][NS-01-R22][C5] the only picker is Apple\'s, through scribe-
 
 describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
   const DEST = 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/ImagePicker/0194-a.img';
+  /** The picker's hooks: what it removed, and whether the app lock is up. */
+  const hooks = (gone: string[] = [], locked: () => boolean = () => false) => ({ discard: async (u: string) => void gone.push(u), locked });
   it('[C6] a pick yields the destination it asked for and nothing else; the session keeps only the uri', async () => {
     const asked: string[] = [];
-    const picker = createPhotoPicker({ pickOne: async (d: string) => (asked.push(d), d) }, () => DEST);
+    const picker = createPhotoPicker({ pickOne: async (d: string) => (asked.push(d), d) }, () => DEST, hooks());
     const r = await picker.open({}).done;
     expect(asked).toEqual([DEST]);
     expect(r).toEqual({ status: 'picked', asset: { uri: DEST } });
@@ -103,7 +105,7 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
   it('[C6] a failure crosses as a closed code with no native text', async () => {
     const spies = (['error', 'warn', 'log', 'info', 'debug'] as const).map((m) => vi.spyOn(console, m).mockImplementation(() => {}));
     try {
-      const picker = createPhotoPicker({ pickOne: async () => { throw new Error('CANARY-/private/var/mobile/IMG_4521-Berkeley.HEIC'); } }, () => DEST);
+      const picker = createPhotoPicker({ pickOne: async () => { throw new Error('CANARY-/private/var/mobile/IMG_4521-Berkeley.HEIC'); } }, () => DEST, hooks());
       const r = await picker.open({}).done;
       expect(r).toEqual({ status: 'failed' });
       expect(JSON.stringify(r) + spies.flatMap((s) => s.mock.calls.map((c) => c.map(String).join(' '))).join('')).not.toContain('CANARY');
@@ -112,12 +114,47 @@ describe('[NX-39-R50][C6] the picker port keeps only the uri', () => {
     }
   });
   it('[C6] Cancel, an answer naming another file and a cancel by the app are told apart and keep nothing', async () => {
-    const run = (answer: string | null) => createPhotoPicker({ pickOne: async () => answer }, () => DEST).open({}).done;
+    const run = (answer: string | null) => createPhotoPicker({ pickOne: async () => answer }, () => DEST, hooks()).open({}).done;
     expect(await run(null)).toEqual({ status: 'cancelled' });
     expect(await run('file:///var/mobile/Containers/Data/Application/ASHA/Documents/ExpoAudio/take.m4a')).toEqual({ status: 'failed' });
-    const p = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST).open({});
+    const gone: string[] = [];
+    const p = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone)).open({});
     p.cancel();
     expect(await p.done).toEqual({ status: 'cancelled' });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]); // the copy that landed after the cancel is removed
+  });
+  it('[NS-01-R17][C6] one pick at a time, and Cancel ends the wait at once: a copy that lands later is removed', async () => {
+    let land!: (uri: string | null) => void;
+    const calls: string[] = [];
+    const gone: string[] = [];
+    const picker = createPhotoPicker({ pickOne: (d: string) => (calls.push(d), new Promise<string | null>((r) => (land = r))) }, () => DEST, hooks(gone));
+    const first = picker.open({});
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' }); // a second tap opens nothing
+    expect(calls).toEqual([DEST]);
+    first.cancel(); // an iCloud download still running natively
+    expect(await first.done).toEqual({ status: 'cancelled' });
+    land(DEST);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(gone).toEqual([DEST]);
+    picker.open({}); // free again after the cancel
+    expect(calls).toEqual([DEST, DEST]);
+  });
+  it('[C6] a pick that lands while the app lock is up is not taken: the run answers cancelled and the copy is removed (review B N-B7 on #834)', async () => {
+    const gone: string[] = [];
+    let locked = true;
+    const picker = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => locked));
+    expect(await picker.open({}).done).toEqual({ status: 'cancelled' });
+    expect(gone).toEqual([DEST]);
+    const broken = createPhotoPicker({ pickOne: async (d: string) => d }, () => DEST, hooks(gone, () => { throw new Error('lock'); }));
+    expect(await broken.open({}).done).toEqual({ status: 'cancelled' }); // a lock that cannot be read counts as up
+    locked = false;
+    expect(await picker.open({}).done).toEqual({ status: 'picked', asset: { uri: DEST } });
+    expect(gone).toEqual([DEST, DEST]);
+    // The phone's picker reads the real lock state, and discards through the picker folder's remover.
+    const device = readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'device.ts'), 'utf8');
+    expect(device).toContain('{ discard: (uri) => picked.remove(uri), locked: appLocked }');
+    expect(device).toContain(".getAppLockState().locked;");
   });
   it('[C6] the destination is a new plain file in Caches/ImagePicker, where the reader, the remover and the launch sweep look', () => {
     h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000003'));

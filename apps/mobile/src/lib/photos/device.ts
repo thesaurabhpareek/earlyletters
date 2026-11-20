@@ -60,8 +60,15 @@ export function registerPhotoDevice(): void {
   registered = true;
   const native = nativePhoto();
   if (!native) return;
-  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7())));
+  const picked = pickedFilesPort();
+  registerPhotoPicker(createPhotoPicker(native, () => pickerDestination(uuidv7()), { discard: (uri) => picked.remove(uri), locked: appLocked }));
   registerPending(new PendingPhoto(pickedFilesPort()));
+}
+
+/** The app lock is up. Read only when a pick lands, so this file loads no lock code before then. */
+function appLocked(): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return (require('../app-lock/controller') as typeof import('../app-lock/controller')).getAppLockState().locked;
 }
 
 /** Launch: empties Caches/ImagePicker, removes strays, finishes interrupted purges. Never awaited by launch. */
