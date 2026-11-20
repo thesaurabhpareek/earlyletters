@@ -79,6 +79,7 @@ export type CommitResult =
 /**
  * Make the stripped copy and its row, for a letter that now exists. On any failure 0 files remain and the letter is
  * not touched (NS-01-R17): the caller keeps the letter whatever this returns. A picture with no words writes nothing.
+ * A replaced picture's file is not removed here: it stays for Undo, and goes at the latest at the next launch sweep.
  */
 export async function commitPhoto(
   deps: PhotoDeps,
@@ -130,8 +131,16 @@ export async function commitPhoto(
     deps.store.put(photo);
   } catch {
     await deps.files.remove(path).catch(() => {});
-    if (prior) deps.store.put(prior);
-    else deps.store.remove(input.entryId);
+    // put is one transaction: only a row it wrote before a later step threw is taken back. The restore never throws
+    // (an owner gone meanwhile, a full database): the earlier row and file stay as they are (#836 review A N5).
+    try {
+      if (deps.store.get(input.entryId)?.mediaId === photo.mediaId) {
+        if (prior) deps.store.put(prior);
+        else deps.store.remove(input.entryId);
+      }
+    } catch {
+      // nothing more to undo here; the launch sweep keeps files and rows in step
+    }
     return { status: 'failed' };
   }
   return { status: 'stored', photo };
