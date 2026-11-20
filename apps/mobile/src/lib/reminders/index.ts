@@ -12,6 +12,17 @@ import { reminderCopy } from './copy';
 import type { ReminderPrefs, ReminderTime } from './planner';
 import { readPrefs } from './prefs';
 
+export {
+  addNotificationClass,
+  budgetedSlots,
+  chooseOnePerDay,
+  IOS_PENDING_LIMIT,
+  NOTIFICATION_CLASSES,
+  PLAN_MAX,
+  TOTAL_MAX,
+  type NotificationClass,
+  type NotificationClassId,
+} from './budget';
 export { reminderCopy } from './copy';
 export {
   clampReminderTime,
