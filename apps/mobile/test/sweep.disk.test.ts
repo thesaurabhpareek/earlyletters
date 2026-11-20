@@ -285,7 +285,7 @@ describe('[BL-923] the launch sweep finishes a draft left discarding (F04-REQ-00
     return d.id;
   }
 
-  it('[BL-923] a draft left discarding with its recording: the next launch deletes the file, then the row', async () => {
+  it('[NS-09-R1][BL-923] a draft left discarding with its recording: the next launch deletes the file, then the row', async () => {
     let app = await launch();
     const asha = addAsha(app);
     const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C1.m4a`, 20_000);
@@ -299,7 +299,7 @@ describe('[BL-923] the launch sweep finishes a draft left discarding (F04-REQ-00
     expect(app.store.listDrafts(asha)).toEqual([]);
   });
 
-  it('[BL-923] a recording that still will not delete keeps the row, marked and hidden, with no crash; the next launch finishes it', async () => {
+  it('[NS-09-R2][BL-923] a recording that still will not delete keeps the row, marked and hidden, with no crash; the next launch finishes it', async () => {
     let app = await launch();
     const asha = addAsha(app);
     const uri = put(h.disk, `${recorderDir(h.disk)}/recording-6A7B8C9D-0000-4000-8000-0000000D15C2.m4a`, 20_000);
@@ -413,7 +413,7 @@ describe('[BL-924] Discard on Listen keeps the draft when the recording cannot b
     return { id: take.id, uri: rec.uri!, gone };
   }
 
-  it('[BL-924] a delete that throws keeps the draft row, marked and hidden, with its recording; the next launch finishes both', async () => {
+  it('[NS-09-R3][BL-924] a delete that throws keeps the draft row, marked and hidden, with its recording; the next launch finishes both', async () => {
     let app = await launch();
     const asha = addAsha(app);
     const t = await discardOnListen(app, asha, (uri) => h.disk.undeletable.add(uri));

@@ -1,0 +1,1 @@
+11:45 (20 Nov) qa | done: P-8 read all 296 P0 rows of the locked cards against develop's test titles; 7 rows proven by a single test, tagged in 4 card PRs | next: PR bodies with trace counts; owner list for rows in files open PRs change | blocked/needs: none
