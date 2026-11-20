@@ -54,7 +54,7 @@ ID_RE = re.compile(r"(?<![A-Za-z0-9-])([A-E]-S\d+[a-z]?)(?![A-Za-z0-9])")
 SCREEN_STATE_RE = re.compile(
     r"(?<![A-Za-z0-9-])([A-E]-S\d+[a-z]?)\.([A-Za-z][A-Za-z0-9_-]*)")
 DOT_RE = re.compile(r"`\.([A-Za-z][A-Za-z0-9_-]*)`")
-NS_RE = re.compile(r"NS-\d+(?:-[A-Z]+\d+)?")
+NS_RE = re.compile(r"NS-\d+(?:-[A-Z]+\d+[a-z]?)?")
 T_RE = re.compile(r"\bT-[A-Z]+\b")
 M_RE = re.compile(r"`?\b(m\.[a-z]+(?:\.[a-z]+)*)")
 HEAD_RE = re.compile(r"^(#{1,6})\s+(.*\S)\s*$")
@@ -797,7 +797,7 @@ DIFFS = [
     "5. Motion id schemes differ by area (`MA-nn`, `B-Mnn`, `M-Cnn`, `D-Mnn`, `E-Mnn`). Default: leave them, since every area keys to its own; this index maps them.",
     "6. Area D's MOTION.md now keys T-* and m.* in its section 13.1 as a numeric table (`02, 08` for D-M02 and D-M08); the script expands those, so D has a T-* column. A row there that names a number with no D-M row of its own would still count as an id.",
     "7. Ids for \"If you are struggling\" and \"Lines in other countries\" are E-S30 and E-S31 (not ruled by K9; E DESIGN D-2).",
-    "8. Area D's reminder side of NS-51 keeps its own id D-S27 and states `.photoMomentsOn`, `.photoMomentsOff`, `.photoMomentsLimited`; D-S10 states named `photoMoment`, `photoMoment-plain` and others are written without a leading dot in D DESIGN 16.2, so the script does not count them as D-S10 states (see the unverified list in the run report).",
+    "8. Area D's reminder side of NS-51 keeps its own id D-S27 and states `.photoMomentsOn`, `.photoMomentsOff`, `.photoMomentsLimited`; the lock-screen renderings `photoMoment`, `photoMoment-plain` and the others belong to D-S10 and are written without a leading dot in D DESIGN 16.2 (so the script does not count them as D-S10 states), while the tap landing is one state with one owner: D-S11 `.photoMoment` (D DESIGN 16.2, Tap). Both sections of this index name it that way.",
     "9. Area C 15 X1: the line `culture.delete.line` (days stay on phones) against NS-47-R17 (this phone clears the store at once) and NS-45-R10 (\"just as they were\"). Area D 15 item 3 (NS-47-R14 against R37) and area A 11.3 item 7 (NS-47-R29 wording) flag neighbouring NS-47 rows.",
 ]
 

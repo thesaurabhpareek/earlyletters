@@ -292,7 +292,7 @@ State names below are the reconciled set shared with `WORDS.md` and `MOTION.md` 
 | D-S07 | Time picker (system compact, 07:00 to 21:30, 15-minute steps) | NS-13 | system | `.default` |
 | D-S08 | Add a day sheet (also opened from C-S24) | NS-18, NS-46-R3, NS-47-R37 | D | `.default`, `.filled`, `.showWords` (v2: the preview with the day-names switch on; the sheet has no switch), `.dayNamesOff`, `.appLock` (words stay hidden, with the reason), `.error-typed_day_empty`, `.error-typed_day_past`, `.error-typed_day_too_long`, `.error-schedule_failed`, `.notAllowed`, `.interrupted` (words kept until Save) |
 | D-S09 | A typed day: detail and Delete | NS-18 | D | `.default`, `.confirm` |
-| D-S10 | Lock screen and Notification Centre | NS-32, NS-13, NS-18, NS-46, NS-47, NS-48 | system render | per class `evening`, `monthAge`, `together`, `birthday`, `typedDay`, `plan` (previews shown, defaults); `<class>-hidden` (placeholder; `WORDS.md` groups these as `.hidden`); `evening-named`, `birthday-named`; `typedDay-words`; `oneDay` (plan notice plus one budgeted); `quiet`; `focus`. v2 adds `libraryDay-public`, `libraryDay-neutral`, `libraryDay-named`, `libraryDay-quiet`, `twoDays`, `libraryDay-hidden`, `birthday-neutral` (names off: the neutral title, G-D21 default), `appLock` (every title neutral, App lock on), `summary` |
+| D-S10 | Lock screen and Notification Centre | NS-32, NS-13, NS-18, NS-46, NS-47, NS-48 | system render | per class `evening`, `monthAge`, `together`, `birthday`, `typedDay`, `plan` (previews shown, defaults; the motion file writes them as D-S10.plan, D-S10.typedDay and so on); `<class>-hidden` (placeholder; `WORDS.md` groups these as `.hidden`); `evening-named`, `birthday-named`; `typedDay-words`; `oneDay` (plan notice plus one budgeted); `quiet`; `focus`. v2 adds `libraryDay-public`, `libraryDay-neutral`, `libraryDay-named`, `libraryDay-quiet`, `twoDays`, `libraryDay-hidden`, `birthday-neutral` (names off: the neutral title, G-D21 default), `appLock` (every title neutral, App lock on), `summary` |
 | D-S11 | Notification landing | NS-13, NS-18, NS-35, NS-46-R32, NS-50 | A, B, E | `.home` (evening), `.typedDay` (Home with the words), `.book` (month, birthday), `.plan` (Settings, Plan), `.appLock` (lock first), `.whileCapturing` (stays put). v2: `.libraryDay` is NOT a state (RV-6): a library-day tap opens plain Home, which shows the day slip A-S01.dayToday; `.libraryDay-cleared` (store cleared or stale token: plain Home, no line, no message) |
 | D-S12 | Me, the book's page: "Write this book together" | NS-25 | C (C-S15) | `.store` (absent: store build before the gates or outside the D-162 door rule), `.killswitch` (absent: servers off), `.one-parent`, `.consent-needed`, `.invited`, `.two-parents` |
 | D-S13 | Invite sheet | NS-25 | D | `.default`, `.working`, `.sent` (toast on D-S18), `.full`, `.paused`, `.offline`, `.error-<code>` (rate_limited, not_parent, consent_needed, family_share_consent, retry_new_invite, unknown) |
@@ -1147,6 +1147,23 @@ Every state: interruption level `active`, never time-sensitive, no sound set by 
 - **Tap (D-S11 `.photoMoment`).** Plain Home within 2 s. The invitation to write about the pictures is Home's capture area's (A-S17, proposed), shown only if the moment still exists and no higher slip is due; it is never a slip, a tile or a strip (R-IA-3, NS-50-R10) and shows no count. If the pictures are gone, the library access was removed, or the token no longer resolves, plain Home opens with no line and no message. A tap while Listen, Review or Write is open does not navigate (`.whileCapturing`). With App lock on, the lock first.
 - **VoiceOver and AX5.** The switch reads its state; the footnote wraps; no truncation at AX5 on an SE 3; Voice Control name equals the visible label.
 - **Second account, sign-out, Erase.** Sign-out dismisses every delivered photo-moment reminder, cancels pending ones and clears the nudge setting (as NS-47-R15); account B starts with the nudge off and no access; Erase everything also removes the on-phone moment index (C-S27 owns the deletion; the FR-PRV-34 scan covers it).
+
+### 16.3a Accessibility for every round 2 state (VoiceOver, 44 pt, contrast, AX5)
+
+Rules for all of them: every control is 44 pt or more (the switch row is a 52 pt row, the whole width toggles); Voice Control names equal the visible words; colour is never the only signal (on and off are said in words beside the switch); text uses the existing pairs `text` and `textMuted` on `surface` in light, dark and Increase Contrast, so no new colour needs a pair test; a lock-screen rendering is the system's own and follows the phone's text size and contrast; AX5 wraps every line and stacks buttons, nothing truncates; no state announces a count or describes a picture.
+
+| State | VoiceOver | 44 pt and AX5 | Contrast and signals |
+|---|---|---|---|
+| D-S06.photoMomentsOn | row reads label, "On"; footnote read after it; hint none | 52 pt row; footnote wraps below | value word "On" plus switch |
+| D-S06.photoMomentsOff | label, "Off"; shorter footnote | same | value word "Off" |
+| D-S06.photoMomentsLimited | as On; no extra line read | same | as On |
+| D-S06 absent (no access, flag off) | nothing is read: the row does not exist | n/a | n/a |
+| D-S10 `photoMoment` (plain default) | the system reads title then body; neither names a picture, a count or a place | system sizes | system contrast; the neutral title and body only |
+| D-S10 `photoMoment-hidden` | the system reads the app name and the placeholder | system sizes | system |
+| D-S10 `photoMoment-appLock` | as the plain rendering | system sizes | system |
+| D-S10 `photoMoment-oneDay` | two separate notifications, each read on its own, never merged | system sizes | system |
+| D-S11 `.photoMoment` | focus lands on the Home heading; the invitation (A-S17) is read in its place in the order, once | 44 pt controls, 64 pt twins; AX5 as A-S01 | existing Home pairs |
+| D-S27 in-app artefacts | footnote and switch read as above; the "How it will look" preview reads as one element ("Example", then the neutral lines) | preview card wraps | `surface` card with `line` edge; "Example" is a word, not only a style |
 
 ### 16.4 Journeys
 

@@ -34,7 +34,7 @@ Superseded 11 Nov specs (cards win, BRIEF 1.5): spec 04 B4 put "Open it now" on 
 
 ## 2. Screen and state inventory
 
-Ids are `B-Snn`; states are `B-Snn.<state>`. The common suffixes apply to every screen unless the screen says n/a: `.default`, `.empty`, `.many`, `.offline`, `.failed`, `.killSwitch` (`serverFeaturesEnabled()` off), `.pause` (the card's remote pause), `.planLapsed`, `.signedOut`, `.secondAccount`, `.newPhone`, `.twoBooks`, `.twoParents`, `.ax5`, `.voiceOver`, `.dark`, `.increaseContrast`, `.backgrounded` (every screen that shows letter words, a picture or a fragment draws an opaque blank in the switcher snapshot, whether or not App lock is on; FR-SEC-22, E18).
+Ids are `B-Snn`; states are `B-Snn.<state>`. Named uses the motion file keys: `B-S01.twoParents` (the other parent's letter shown on this phone for the first time). The common suffixes apply to every screen unless the screen says n/a: `.default`, `.empty`, `.many`, `.offline`, `.failed`, `.killSwitch` (`serverFeaturesEnabled()` off), `.pause` (the card's remote pause), `.planLapsed`, `.signedOut`, `.secondAccount`, `.newPhone`, `.twoBooks`, `.twoParents`, `.ax5`, `.voiceOver`, `.dark`, `.increaseContrast`, `.backgrounded` (every screen that shows letter words, a picture or a fragment draws an opaque blank in the switcher snapshot, whether or not App lock is on; FR-SEC-22, E18).
 
 | Id | Screen or surface | Cards | Owner of the route |
 |---|---|---|---|
@@ -573,7 +573,7 @@ Not built: a system action menu (`platform/action-menu`): B-S02 uses a `Sheet` a
 | G-12 | NS-06-B15 | Whether the date picker starts on a day | No day preselected; Hide it disabled until one is chosen |
 | G-13 | NS-21 section 5, COMPONENTS 2.14 | The Book's delete Undo is "by tap, never a timer", while T4 governs other undo windows | Two kinds stay: delete Undo by tap (built), photo and first Undo under T4 |
 
-Rulings since v1 (GAP-LOG round 1 and 2, area B): G-01 ruled CARD (new row NS-06-B27); G-02 DEFAULT held; G-03 ruled CARD (system menu first, sheet only as fallback); G-04 DEFAULT held; G-05, G-06, G-08 to G-11 DEFAULT held; G-07 ruled CARD (facts about what exists may be stated where a parent looks, never on Home, never as progress; year rows carry no subtitle; the Months sheet keeps its built month lines); G-12 ruled DEFAULT with a change here: the seal action is absent until a day is chosen (not disabled); G-13 ruled CARD (two kinds of undo). New card gaps from the final pack are section 14.
+Rulings since v1 (GAP-LOG round 1 and 2, area B): G-01 ruled CARD (a new row, proposed as NS-06-B27; card 06 ends at NS-06-B26 today, so this cite is early and waits for the card edit); G-02 DEFAULT held; G-03 ruled CARD (system menu first, sheet only as fallback); G-04 DEFAULT held; G-05, G-06, G-08 to G-11 DEFAULT held; G-07 ruled CARD (facts about what exists may be stated where a parent looks, never on Home, never as progress; year rows carry no subtitle; the Months sheet keeps its built month lines); G-12 ruled DEFAULT with a change here: the seal action is absent until a day is chosen (not disabled); G-13 ruled CARD (two kinds of undo). New card gaps from the final pack are section 14.
 
 ## 9. Engineering gaps
 

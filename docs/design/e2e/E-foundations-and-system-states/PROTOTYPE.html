@@ -190,7 +190,7 @@ const ART={
  envelope:'<svg class="art" viewBox="0 0 120 90" aria-hidden="true"><rect x="18" y="20" width="84" height="54" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M18 22l42 30 42-30" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
  moon:'<svg class="art breathe" viewBox="0 0 120 90" aria-hidden="true"><path d="M70 14a32 32 0 1 0 22 52A26 26 0 0 1 70 14z" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>',
  window:'<svg class="art" viewBox="0 0 120 90" aria-hidden="true"><rect x="28" y="10" width="64" height="70" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M60 10v70M28 45h64" stroke="currentColor" stroke-width="1.5"/></svg>',
- mark:'<svg width="64" height="40" viewBox="0 0 64 40" aria-label="Early Letters mark" role="img"><path d="M8 30c0-12 6-20 14-22M34 30c0-12 6-20 14-22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
+ mark:'<svg width="64" height="40" viewBox="0 0 64 40" aria-label="{app} mark" role="img"><path d="M8 30c0-12 6-20 14-22M34 30c0-12 6-20 14-22" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>'
 };
 function stateScreen(o){
   const pic=o.glyph?`<div class="glyph muted">${o.glyph}</div>`:(o.art||"");
@@ -228,11 +228,11 @@ const STUBNEXT={};
 /* each: {name, states:{stateName: () => html}} ; state "x" functions may read ctx */
 const S={};
 S["E-S27"]={name:"App Store page and install (system)",states:{
- default:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2" data-vo="1">Early Letters</h2><p class="foot" style="margin:4px 0">Baby book you fill by talking</p><button class="btn primary" style="min-height:36px;width:auto;padding:4px 22px" data-go="E-S27:installing" data-vo="1">Get</button></div></div>
+ default:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2" data-vo="1">{app}</h2><p class="foot" style="margin:4px 0">Baby book you fill by talking</p><button class="btn primary" style="min-height:36px;width:auto;padding:4px 22px" data-go="E-S27:installing" data-vo="1">Get</button></div></div>
  <div class="storeimg" role="img" aria-label="Screenshot placeholder, a drawn shape"></div>
  <p class="foot">Apple's App Store page. Every public line here is a claims row (CCO); no "fast", "accessible to everyone" or "smart reminders" (NS-33, NS-34, NS-32 claims). Privacy label as shipped.</p></div>`,
- installing:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2">Early Letters</h2><p class="foot">Installing</p><button class="btn outline" style="min-height:36px;width:auto" data-go="E-S27:installed" data-vo="1">Open</button></div></div><p class="foot">Download under 40 MB (NS-34). No account is needed to download.</p></div>`,
- installed:()=>`<div class="scroll" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding-top:30px">${"<div style='height:64px;border-radius:16px;background:var(--surface)'></div>".repeat(6)}<button type="button" data-go="E-S01:default" data-vo="1" aria-label="Early Letters" style="border:0;background:none;padding:0;cursor:pointer"><div class="icon-tile" style="width:64px;height:64px;font-size:28px;border-radius:16px">EL</div></button></div><div class="footer"><p class="foot">Home Screen: tap the icon (first launch).</p></div>`
+ installing:()=>`<div class="scroll"><div style="display:flex;gap:14px;margin-top:12px"><div class="icon-tile" role="img" aria-label="App icon">EL</div><div><h2 class="t2">{app}</h2><p class="foot">Installing</p><button class="btn outline" style="min-height:36px;width:auto" data-go="E-S27:installed" data-vo="1">Open</button></div></div><p class="foot">Download under 40 MB (NS-34). No account is needed to download.</p></div>`,
+ installed:()=>`<div class="scroll" style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding-top:30px">${"<div style='height:64px;border-radius:16px;background:var(--surface)'></div>".repeat(6)}<button type="button" data-go="E-S01:default" data-vo="1" aria-label="{app}" style="border:0;background:none;padding:0;cursor:pointer"><div class="icon-tile" style="width:64px;height:64px;font-size:28px;border-radius:16px">EL</div></button></div><div class="footer"><p class="foot">Home Screen: tap the icon (first launch).</p></div>`
 }};
 S["E-S01"]={name:"Launch and boot",states:{
  default:()=>`<div class="lamp center"></div><div class="scroll rel" style="display:flex;align-items:center;justify-content:center;height:100%"><div style="color:var(--accent)">${ART.mark}</div></div><div class="footer"><p class="foot" style="text-align:center">First interactive frame p50 1.2 s on SE 3. Nothing waits on the network.</p>${go("E-S03:default","(continue to the age gate)","quiet")}</div>`,
@@ -247,9 +247,9 @@ S["E-S03"]={name:"Age gate and stop",states:{
  reasonNoAnswer:()=>ageGate(null,false,"Choose Yes or No."),
  reasonNoTick:()=>ageGate("yes",false,"Check the box to continue."),
  ready:()=>ageGate("yes",true,""),
- stop:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">After 24 hours: "I answered by mistake" appears here (D-026).</p></div>`,
- platformMinor:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">E-S03.platformMinor (NS-40-R5): same room and words as the stop; nothing stored, logged or sent. Built later.</p></div>`,
- stopAfter24h:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">Early Letters is currently for adults 18 and over.</p></div></div><div class="footer">${go("E-S03:default","I answered by mistake","quiet")}</div>`
+ stop:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">After 24 hours: "I answered by mistake" appears here (D-026).</p></div>`,
+ platformMinor:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer"><p class="foot">E-S03.platformMinor (NS-40-R5): same room and words as the stop; nothing stored, logged or sent. Built later.</p></div>`,
+ stopAfter24h:()=>`<div class="lamp center"></div><div class="scroll rel"><div class="state"><div style="color:var(--accent)">${ART.mark}</div><p class="body" data-vo="1">{app} is currently for adults 18 and over.</p></div></div><div class="footer">${go("E-S03:default","I answered by mistake","quiet")}</div>`
 }};
 function ageGate(ans,tick,reason){
   return `<div class="lamp center"></div><div class="scroll rel"><div style="padding-top:40px;color:var(--accent)">${ART.mark}</div>
@@ -271,7 +271,7 @@ S["E-S02"]={name:"Welcome",states:{
 }};
 function welcome(o){
   const lamp=`<div class="lamp breathe"></div>`;
-  const head=`<div style="padding-top:60px;text-align:center;color:var(--accent)">${ART.mark}<h1 class="serif" style="font-size:calc(26px*var(--sT1));margin:6px 0;color:var(--text);font-weight:500" data-vo="1">Early Letters</h1></div>
+  const head=`<div style="padding-top:60px;text-align:center;color:var(--accent)">${ART.mark}<h1 class="serif" style="font-size:calc(26px*var(--sT1));margin:6px 0;color:var(--text);font-weight:500" data-vo="1">{app}</h1></div>
   <p class="body" style="text-align:center" data-vo="1">Letters to your child, in your own words and voice.</p>
   <p class="sub muted" style="text-align:center" data-vo="1">Talk for a minute, or type a few lines. Kept for your child to read and hear for years.</p>
   <p class="foot" style="text-align:center" data-vo="1">${o.alpha?"Plus is not part of this test. Every letter is free while you test.":"Your first two letters are free. After that, Plus keeps the book growing. Reading, listening and your copy stay free."}</p>
@@ -288,7 +288,7 @@ S["E-S04"]={name:"Sign in: choose a way",states:{
  errorProvider:()=>signIn("Nothing has changed. That sign-in did not finish. Try again, or try another way."),
  errorNotAvailable:()=>signIn("Nothing has changed. This way of signing in isn't available right now. Try another way."),
  errorNetwork:()=>signIn("Nothing has changed. Sign in once you are back online."),
- refusedRegion:()=>stateScreen({art:ART.envelope,title:"Early Letters can't be set up from here.",body:"If you think this is wrong, contact us.",note:"E-S04.refused-region (NS-40-R9): no map or flag, no Try again, nothing stored. Words PROPOSED.",actions:go("E-S02:default","Terms","quiet")+go("E-S02:default","Contact us","quiet")})
+ refusedRegion:()=>stateScreen({art:ART.envelope,title:"{app} can't be set up from here.",body:"If you think this is wrong, contact us.",note:"E-S04.refused-region (NS-40-R9): no map or flag, no Try again, nothing stored. Words PROPOSED.",actions:go("E-S02:default","Terms","quiet")+go("E-S02:default","Contact us","quiet")})
 }};
 function signIn(err,busy){
   return `${homeBehind()}<div class="scrimlayer"></div><div class="sheet glass"><div class="grab"></div><button class="close" data-go="E-S02:default" data-vo="1" aria-label="Close">Close</button>
@@ -393,7 +393,7 @@ function plan(rows,footer,o){
   o=o||{};
   return `<div class="scroll" style="padding-bottom:110px"><button class="link" data-go="ME:default" data-vo="1">Me</button><h1 class="t1" style="margin:6px 0" data-vo="1">Plan</h1>
   <p class="sechead">Plus</p><div class="list">${rows.map(r=>`<div class="row" data-vo="1">${r[0]?`<span class="body">${esc(r[0])}</span>`:""}<span class="sub muted">${esc(r[1])}</span></div>`).join("")}</div>
-  ${o.notif?sysline("info","Notifications are off for Early Letters, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.",lnk("E-S11:on","Allow notifications")):""}
+  ${o.notif?sysline("info","Notifications are off for {app}, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.",lnk("E-S11:on","Allow notifications")):""}
   ${footer?`<p class="foot" style="margin:6px 4px">${esc(footer)}</p>`:""}
   <p class="sechead">What Plus includes</p><div class="list"><div class="row"><span class="sub">Keep adding letters to every book, as many as you like.</span></div></div>
   <div class="list"><div class="row" data-vo="1"><span class="body">Restore purchases</span><span class="foot">${o.restore?esc(o.restore):"Finds Plus bought with this Apple Account."}</span></div><div class="row" data-vo="1"><span class="body">Redeem a code</span></div></div>
@@ -467,7 +467,7 @@ S["E-S26"]={name:"Home Plus line (rule on A-S01)",states:{on:()=>homeScreen({plu
 S["A-S01"]={name:"Home (area A)",states:{default:()=>homeScreen({}),first:()=>homeScreen({speak:"A-S04P:primer"}),held:()=>homeScreen({slip:`<div class="card" data-vo="1" style="margin-bottom:12px"><span class="chip"><span class="dot"></span>Waiting</span><p class="sub" style="margin:6px 0 0">Waiting to be kept.</p></div>`,plusLine:true}),lapsed:()=>homeScreen({plusLine:true,speak:"A-S04:default"})}};
 S["A-S04P"]={name:"Microphone primer (area A, before the iOS prompt)",states:{primer:()=>stateScreen({glyph:ICON.mic,title:"Your phone will ask about the microphone",body:"(listen.primer.body, area A) Asked only at the first Speak, never at first run.",actions:go("E-S29:prompt","Continue")})}};
 S["E-S29"]={name:"Microphone permission (system, at first Speak only)",states:{
- prompt:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="alert glass" role="alertdialog"><div class="a-body"><b>"Early Letters" Would Like to Access the Microphone</b><p>Early Letters uses the microphone to record the letters you speak to your child.</p></div><div class="a-btns"><button data-go="A-S04:blocked">Don't Allow</button><button data-go="A-S04:default">Allow</button></div></div>`}};
+ prompt:()=>`${homeScreen({})}<div class="scrimlayer"></div><div class="alert glass" role="alertdialog"><div class="a-body"><b>"{app}" Would Like to Access the Microphone</b><p>{app} uses the microphone to record the letters you speak to your child.</p></div><div class="a-btns"><button data-go="A-S04:blocked">Don't Allow</button><button data-go="A-S04:default">Allow</button></div></div>`}};
 S["A-S04"]={name:"Listen (area A)",states:{default:()=>`<div class="scroll"><p class="cap" style="margin-top:14px">A-S04 Listen, Ready (area A)</p><p class="prompt">What did Asha do today that you want to remember?</p></div><div class="footer"><button class="btn primary" style="min-height:64px" data-go="A-S05:recording">Start</button></div>`,
  blocked:()=>stateScreen({glyph:ICON.mic,title:"The microphone is off",body:"Turn it on in Settings to record, or type this one. (existing key, area A)",actions:go("A-S06:default","Type instead")+go("A-S04:default","Open Settings","quiet")})}};
 S["A-S05"]={name:"Recording (area A)",states:{recording:()=>`<div class="scroll"><p class="cap" style="margin-top:14px" data-vo="1">Recording</p><p class="sub">Shown by the word, the shape and the moving bars, never by colour alone (NS-33-R12).</p></div><div class="footer"><button class="btn glass" style="min-height:64px;color:var(--text)" data-go="A-S07:default">Stop</button></div>`}};

@@ -8,12 +8,12 @@ How to read: screen ids `<area>-Snn` and state ids `<area>-Snn.<state>` are from
 
 | Area | Screen ids | of which PROPOSED | State ids | Motion ids | of which PROPOSED | T-* transitions used |
 |---|---|---|---|---|---|---|
-| A A-capture | 18 | 3 | 136 | 66 | 9 | T-ALERT, T-COVER, T-LAUNCH, T-LOCK, T-MENU, T-RESUME, T-SHEET, T-SLIP, T-SYSLINE |
-| B B-book-and-reading | 26 | 2 | 194 | 71 | 12 | T-ALERT, T-COVER, T-KEEP, T-MENU, T-MIN, T-PAGE, T-RESUME, T-SHEET, T-TAB, T-ZOOM |
-| C C-keeping-and-trust | 27 | 1 | 208 | 97 | 6 | T-ALERT, T-INLINE, T-PUSH, T-RESUME, T-SHEET, T-SLIP, T-STEP, T-SYSLINE, T-TAB |
-| D D-family-sharing-reminders | 27 | 1 | 229 | 85 | 6 | T-ALERT, T-LAUNCH, T-LOCK, T-MENU, T-PUSH, T-RESUME, T-SHEET, T-STEP, T-TAB |
+| A A-capture | 18 | 3 | 143 | 66 | 9 | T-ALERT, T-COVER, T-LAUNCH, T-LOCK, T-MENU, T-RESUME, T-SHEET, T-SLIP, T-SYSLINE |
+| B B-book-and-reading | 26 | 2 | 200 | 71 | 12 | T-ALERT, T-COVER, T-KEEP, T-MENU, T-MIN, T-PAGE, T-RESUME, T-SHEET, T-TAB, T-ZOOM |
+| C C-keeping-and-trust | 27 | 1 | 213 | 97 | 6 | T-ALERT, T-INLINE, T-PUSH, T-RESUME, T-SHEET, T-SLIP, T-STEP, T-SYSLINE, T-TAB |
+| D D-family-sharing-reminders | 27 | 1 | 230 | 85 | 6 | T-ALERT, T-LAUNCH, T-LOCK, T-MENU, T-PUSH, T-RESUME, T-SHEET, T-STEP, T-TAB |
 | E E-foundations-and-system-states | 32 | 1 | 223 | 96 | 5 | T-COVER, T-GATE, T-KEEP, T-LAUNCH, T-LOCK, T-MIN, T-PUSH, T-RESUME, T-SHEET, T-STEP, T-SYSLINE, T-TAB |
-| Total | 130 | 8 | 990 | 415 | 38 | T-ALERT, T-COVER, T-GATE, T-INLINE, T-KEEP, T-LAUNCH, T-LOCK, T-MENU, T-MIN, T-PAGE, T-PUSH, T-RESUME, T-SHEET, T-SLIP, T-STEP, T-SYSLINE, T-TAB, T-ZOOM |
+| Total | 130 | 8 | 1009 | 415 | 38 | T-ALERT, T-COVER, T-GATE, T-INLINE, T-KEEP, T-LAUNCH, T-LOCK, T-MENU, T-MIN, T-PAGE, T-PUSH, T-RESUME, T-SHEET, T-SLIP, T-STEP, T-SYSLINE, T-TAB, T-ZOOM |
 | E catalogue | 82 system state ids `E-ST..` (section 3), of which 14 PROPOSED | | | | | |
 
 Per-area detail of what the state count is made of is in the script's `--stdout` header comment, not here. A screen id that is only mentioned in prose, with no inventory row and no heading, is counted and marked so in its name.
@@ -30,7 +30,7 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | A-S04 | Listen at Ready: from a link or doorway (red circle), with a picture (Speak and Type), with "From your phone" beside a [cut] | NS-01, NS-04, NS-06, NS-35, NS-39-R10, NS-49-R9 | busy, default, denied, doorway, fromDoorway, full, iCloudOffline, lowSpace, mediaTray[P], micDenied, openFailed, photo, photoCouldNotOpen, photoFailed, photoOffline, primer, ready, readyPhoto, suggestionLabel, suggestionNoPhoto, withPicture |
 | A-S05 | Listen while recording: listening, still here, paused, finishing | NS-04, NS-06-C9, NS-09 | finishing, interrupted, lowSpace, quietTake, recording, saved |
 | A-S06 | Write (Type) | NS-01, NS-35 | default, forTake, photo, withPhoto |
-| A-S07 | Review: the letter sheet with To, the day and From; words states; picture; another language; Keep; Let it go | NS-01, NS-09, NS-14, NS-15, NS-16, NS-17, NS-19, NS-20 | anotherLanguageOffer, ask, dateline, dateNotSaved, dateSet, default, fileMissing, from, fromOff, fromSet, fromTooLong, interrupted, keepDisabled, language, mediaCard[P], mediaLimit[P], missingFile, noDraft, noSpeech, noWords, otherLanguage, partUnwritten, photo, photoNeedsWords, photoNotStored, photoUndo, putBack, saveFailed, stoppedBy, stoppedEarly, transcribing, twoBooks, typed, videoTooBig[P], videoTooLong[P], voiceOnly, waitingLong, withPhoto, withPicture, wordsWaiting, writing |
+| A-S07 | Review: the letter sheet with To, the day and From; words states; picture; another language; Keep; Let it go | NS-01, NS-09, NS-14, NS-15, NS-16, NS-17, NS-19, NS-20 | anotherLanguageOffer, ask, dateline, dateNotSaved, dateSet, default, fileMissing, firstNote, from, fromOff, fromSet, fromTooLong, interrupted, keepDisabled, keepStillSaving, language, markOpen, mediaCard[P], mediaLimit[P], missingFile, noDraft, noSpeech, noWords, otherLanguage, partUnwritten, photo, photoNeedsWords, photoNotStored, photoUndo, playing, putBack, saveFailed, stoppedBy, stoppedEarly, transcribing, twoBooks, typed, videoTooBig[P], videoTooLong[P], voiceOnly, waitingLong, withPhoto, withPicture, wordsWaiting, writing |
 | A-S08 | Day sheet ("When was this?", A day or A month) | NS-15 | day, default |
 | A-S09 | From sheet (who is speaking: one field, names used on this phone, the instruction line) | NS-16 | default, empty, recent, recentNames, tooLong |
 | A-S10 | Another language: the mark on Review, the words-set-aside state, Type the words yourself | NS-17 | confirm, undo, waiting, withheld, withheldUndo, writeWords |
@@ -40,14 +40,14 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | A-S14 | Doorways outside the app: widget, Control Center control, Action Button, Siri phrase; unlock; App lock | NS-04, NS-06, NS-35 | beforeFirstRun, firstRun, unlock, widget |
 | A-S15 | Hands-free states (hypotheses only; NS-04 findings decide) | NS-04 | hypotheses, map |
 | A-S16 (PROPOSED) | One photo from a suggestion: a sheet that holds each photo of the suggestion the parent picked, so the parent chooses [cut] | NS-49-R8 | none named |
-| A-S17 (PROPOSED) | Moments sheet: the parent's own pictures, grouped by day, as a way to start a letter | see file | limited |
-| A-S18 (PROPOSED) | Photos access: the ask, and every access state | see file | none named |
+| A-S17 (PROPOSED) | Moments sheet: the parent's own pictures, grouped by day, as a way to start a letter (states A-S17.default and [cut] | see file | default, limited |
+| A-S18 (PROPOSED) | Photos access: the ask, and every access state | see file | denied, primer |
 
 ### B. B-book-and-reading
 
 | Screen id | Screen | Card row | States named in the area file |
 |---|---|---|---|
-| B-S01 | The Book (tab) with the calm header bar (cover band and inline bar) | NS-01, NS-02, NS-06, NS-22, NS-37 | arrived, dark, dayToday, default, empty, findOff, firstUse, firstView, hiddenBook, hiddenReadOnly, increaseContrast, killSwitch, lensBoth, lensFirsts, lensPhotos, many, newPhone, offline, photosOff, planLapsed, quieted, ratingMoment, sealedCard, secondAccount, signedOut, twoBooks, undoDelete, undoDeleted |
+| B-S01 | The Book (tab) with the calm header bar (cover band and inline bar) | NS-01, NS-02, NS-06, NS-22, NS-37 | arrived, ax5, backgrounded, dark, dayToday, default, empty, failed, findOff, firstUse, firstView, hiddenBook, hiddenReadOnly, increaseContrast, killSwitch, lensBoth, lensFirsts, lensPhotos, many, newPhone, offline, pause, photosOff, planLapsed, quieted, ratingMoment, sealedCard, secondAccount, signedOut, twoBooks, twoParents, undoDelete, undoDeleted, voiceOver |
 | B-S02 | "More for this book" end menu (system menu; fit-to-contents sheet only where the menu cannot carry it, B G-03) | NS-22-R3 | ax, ax3, default, failed, hiddenReadOnly, printOn, quieted, twoParents |
 | B-S03 | Lens choice: Months, Photos, Firsts, one radio group | NS-01-R10, NS-06-A3, NS-33-R3 | absent, ax5, default, increaseContrast, threeOptions, twoOptions |
 | B-S04 | Photos lens list | NS-01-R11, NS-37 | ax5, backgrounded, dark, default, locked, many, one, thumbMissing, thumbPending |
@@ -61,7 +61,7 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | B-S12 | Mark a first: the toggle row, label sheet, Undo | NS-06 | atLimit, ax5, failed, labelSheet, marked, off, rtl, undo |
 | B-S13 | Hide until a day: date sheet with the honest limits | NS-06 | ax5, dark, daySelected, default, expecting, noDates |
 | B-S14 | Open now confirmation | NS-06-B3 | ax5, confirm, offline |
-| B-S15 | Delete confirmation and the Book's "Letter deleted." Undo | NS-06-B25, NS-21-R7 | confirm, confirmSealed, overHome, undo |
+| B-S15 | Delete confirmation and the Book's "Letter deleted." Undo | NS-06-B25, NS-21-R7a | confirm, confirmSealed, overHome, undo |
 | B-S16 | A hidden (sealed) letter in the Book: the sealed card | NS-06-B2 | afterOpening, ax5, dark, default, increaseContrast |
 | B-S17 | One past letter on Home (slip rank 4, the last) | NS-23, NS-50-R5 | absent, appLockSnapshot, ax5, dark, default, dismissed, flagOff, higherSlip, present, switchOff |
 | B-S18 | Seal-opened line on Home (slip rank 2) | NS-06-B4, NS-50-R5 | absent, ax5, default, present |
@@ -81,10 +81,10 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | C-S01 | Me (Look after), the tab root; .default = groups as built plus the Days row under Reminders (the fallback before tree [cut] | NS-11-R1, NS-22-R3, NS-45-R3, NS-46-R3 | ax5, default, deletedElsewhere, killswitch, local, regrouped, second-account, sessionEnded, signedout, updateRequired |
 | C-S02 | Account (sign-in method, sign out, sign out of other phones) | NS-08-R6, NS-09-R12 | ax5, dark, default, offline, signedout, suspended, vo, waiting |
 | C-S03 | Sign-out sheet (the D1 sheet) | NS-01-R30, NS-08-R6 | appLockOffer, days, default, photos, waiting |
-| C-S04 | Save a copy (the one export screen) | NS-07, NS-10-R4, NS-11, NS-36-R2 | ax5, cancelled, dark, default, empty, error-lowSpace, error-other, error-tooBig, killswitch, lapsed, lowPower, newPhone, nothingHere, parts, ready, running, saved, second-account, shared, signedout, stopped, stopped-by-close, vo |
+| C-S04 | Save a copy (the one export screen) | NS-07, NS-10-R4b, NS-11, NS-36-R2 | ax5, cancelled, dark, default, empty, error-lowSpace, error-other, error-tooBig, killswitch, lapsed, lowPower, newPhone, nothingHere, parts, ready, running, saved, second-account, shared, signedout, stopped, stopped-by-close, vo |
 | C-S05 | Making the printable book (PDF) | NS-07 | error, error-print_pdf_disk_full, error-print_pdf_failed, error-share_failed, error-tooBig, lowPower, making, parts, ready, running |
 | C-S06 | Home slip: Save a copy in the birthday week | NS-11-R2 | ax5, dark, default, dismissed, expecting, flagOff, quiet, second-account, twins, vo |
-| C-S07 | Which book (chooser sheet) | NS-11-R14 | none named |
+| C-S07 | Which book (chooser sheet; state C-S07.default) | NS-11-R14 | default |
 | C-S08 | Where your letters live | NS-08-R7, NS-10 | ax5, dark, default, flip, local, signedout, vo |
 | C-S09 | Letter page: where the recording is (provenance line) | NS-08, NS-10-R1 | arriving, backedUp, notHere, onPhone, otherParent |
 | C-S10 | Opening your book (new phone, returning account) | NS-10-R0 | ax5, dark, deletedElsewhere, held, killswitch, loading, noBook, offline, opening, vo, wrongAccount |
@@ -93,18 +93,18 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | C-S13 | Earlier versions (list) | NS-12-R1 | default, error, error-fetch_failed, loading, offline, offlineNone |
 | C-S14 | An earlier version (read-only, Restore, Remove) | NS-12-R2 | confirmRemove, default |
 | C-S15 | A book in Me (details, Quiet this book, Hide this book, Delete this book) | NS-22-R3 | ax5, dark, default, error, error-quiet_write_failed, local, oneBook, quiet, vo |
-| C-S16 | Hidden books | NS-22 | empty |
-| C-S17 | Recently deleted | NS-06-B25, NS-21-R7, NS-36-R1 | default, error-erase_failed, error-eraseKept, sealed |
-| C-S18 | Storage (languages, space, and one state line when a recording is still being removed; never a list, never a count) | NS-09-R6, NS-11-R20 | lowSpace, media[P], retrying, stuck, stuckAgain |
+| C-S16 | Hidden books (state C-S16.default) | NS-22 | default, empty |
+| C-S17 | Recently deleted | NS-06-B25, NS-21-R7b, NS-36-R1a | default, error-erase_failed, error-eraseKept, sealed |
+| C-S18 | Storage (languages, space, and one state line when a recording is still being removed; never a list, never a count; [cut] | NS-09-R6, NS-11-R20 | default, lowSpace, media[P], retrying, stuck, stuckAgain |
 | C-S19 | Erase everything on this phone | NS-01-R52, NS-36 | confirm, default, erasing, error-failed, ownerCheck, ownerCheckCancelled, signedin, signedoutSynced |
-| C-S20 | Delete account | NS-01-R31, NS-08-R16, NS-10-R4 | cancelled, confirm, default, error-failed, error-offline, executing, loading, notConfigured, scheduled, sending, signedout, what, whatHappens |
+| C-S20 | Delete account | NS-01-R31, NS-08-R16, NS-10-R4a | cancelled, confirm, default, error-failed, error-offline, executing, loading, notConfigured, scheduled, sending, signedout, what, whatHappens |
 | C-S21 | Recording backup (flip-only states; absent today) | NS-08 | absent, consent, escrow, on |
 | C-S22 | Delete this book | NS-36 | confirm, exportFirst |
 | C-S23 | Privacy (Me, Privacy) and its sheet .withdraw ("Stop syncing letters") | see file | consentOff, consentOn, consentWaiting, withdraw |
 | C-S24 | Days (one page: Days you added, Days you chose, Browse days, the day-name switch, Clear all) | NS-18, NS-46-R3, NS-47-R14 | appLock, ax5, backgrounded, clearConfirm, country, dark, dayNames-appLock, dayNames-released, default, empty, fallbackNoQuestion, flagOff, killswitch, noDateNextYear, notificationsDenied, offline, remindersOff, sessionCleared, store-unavailable, typedOnly, vo |
 | C-S25 | Browse days (sheet, with the optional tradition and country pickers and the DoorNote) | NS-46-R20, NS-47-R2 | default, fallbackNoQuestion, hemisphere, noDateNextYear, ticked, traditionPicked, unavailable, whichDate |
 | C-S26 | Day detail (pushed from C-S24 only: date, Move this date, Remove) | NS-46-R14, NS-47-R21 | authorities, backgrounded, default, moving, noDate, removed |
-| C-S27 (PROPOSED) | Photos access | NS-51 (PROPOSED) | albums, consent, denied, full, indexing, limited, lowSpace, off, paused, removed, turnOffConfirm |
+| C-S27 (PROPOSED) | Page heading, DoorNote (full text, read before any control), "Photos access", value "Off", the switch row | see file | albums, changedInSettings, consent, denied, full, indexing, killswitch, limited, lowSpace, off, paused, removed, turnOffConfirm |
 
 ### D. D-family-sharing-reminders
 
@@ -119,7 +119,7 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | D-S07 | Time picker (system compact, 07:00 to 21:30, 15-minute steps) | NS-13 | default |
 | D-S08 | Add a day sheet (also opened from C-S24) | NS-18, NS-46-R3, NS-47-R37 | appLock, dayNamesOff, default, empty, error, error-schedule_failed, error-scheduleFailed, error-typed_day_empty, error-typed_day_past, error-typed_day_too_long, filled, interrupted, notAllowed, showWords, tooLong |
 | D-S09 | A typed day: detail and Delete | NS-18 | confirm, default |
-| D-S10 | Lock screen and Notification Centre | NS-13, NS-18, NS-32, NS-46, NS-47, NS-48 | appLock, birthday, birthday-neutral, evening, hidden, libraryDay-hidden, libraryDay-named, libraryDay-neutral, libraryDay-quiet, monthAge, named, oneDay, summary, together, twoDays, typedDay |
+| D-S10 | Lock screen and Notification Centre | NS-13, NS-18, NS-32, NS-46, NS-47, NS-48 | appLock, birthday, birthday-neutral, evening, hidden, libraryDay-hidden, libraryDay-named, libraryDay-neutral, libraryDay-quiet, monthAge, named, oneDay, plan, summary, together, twoDays, typedDay |
 | D-S11 | Notification landing | NS-13, NS-18, NS-35, NS-46-R32, NS-50 | appLock, birthday, book, evening, home, home-typed-day, libraryDay, libraryDay-cleared, monthAge, photoMoment[P], plan, typedDay, whileCapturing |
 | D-S12 | Me, the book's page: "Write this book together" | NS-25 | absent, consent-needed, invited, killswitch, one-parent, oneParent, store, two-parents, twoParents |
 | D-S13 | Invite sheet | NS-25 | default, full, loading, offline, paused, paused-invites, sent, signed-out, working |
@@ -136,7 +136,7 @@ Per-area detail of what the state count is made of is in the script's `--stdout`
 | D-S24 | Me, Plan: plan date when notifications are not allowed | NS-32-R4 | denied, notificationsOff |
 | D-S25 | Day reminders: the consent line and the visible opt-out (sentences and rules owned here; drawn on C-S25, C-S24 and [cut] | NS-46-R31, NS-47-R29 | beforeFirstTick, clearAll, denied, firstTickAsk, remindersOffLine, stopOne, systemEnded |
 | D-S26 | Reminder catalogue specimens (design artefact, not an app screen): neutral and named renderings, hidden previews, the [cut] | NS-48 | dayPart, expecting, grid, hidden, kind, mockFive, named, recency |
-| D-S27 (PROPOSED) | Nudge's lock-screen and in-app artefacts (named in prose only, no inventory row) | NS-13, NS-32, NS-32-R14, NS-46-R30, NS-46-R31, NS-48-R2 | none named |
+| D-S27 (PROPOSED) | footnote and switch read as above; the "How it will look" preview reads as one element ("Example", then the neutral [cut] | see file | none named |
 
 ### E. E-foundations-and-system-states
 
@@ -454,7 +454,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 | M-C12 | C-S04.ready, C-S04.running, C-S05.making, C-S05.ready | - | m.fade, m.mark |
 | M-C13 | C-S04.cancelled, C-S04.ready, C-S04.saved | - | m.fade |
 | M-C14 | C-S04.running, C-S04.stopped | - | m.fade |
-| M-C15 | C-S04.error-lowSpace, C-S05.error-print | - | m.fade |
+| M-C15 | C-S04.error-lowSpace, C-S05.error-print_pdf_disk_full | - | m.fade |
 | M-C16 | C-S04.running, C-S04.stopped-by-close | - | m.instant |
 | M-C17 | C-S05.making | - | - |
 | M-C18 | C-S04.empty | - | m.instant |
@@ -509,7 +509,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 | M-C67 | C-S01, C-S22 | - | m.toast |
 | M-C68 | C-S01.local | - | m.instant |
 | M-C69 | C-S03, C-S19.confirm | - | - |
-| M-C70 | C-S13.error-fetch | - | m.fade |
+| M-C70 | C-S13.error-fetch_failed | - | m.fade |
 | M-C71 | C-S15.error | - | m.enter |
 | M-C72 | C-S10.killswitch | - | - |
 | M-C73 | C-S01, C-S24, C-S26 | T-PUSH | m.push |
@@ -662,7 +662,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 | E-M23 | E-S06.checking | - | m.fade, m.progress.wait |
 | E-M23o | C-S10.arrived, E-S02.serversOff | - | m.exit |
 | E-M24 | E-S06.refused-other_phone | - | m.swap |
-| E-M25 | E-S07.settingUp | T-STEP | m.fade |
+| E-M25 | E-S07.default, E-S07.loading | T-STEP | m.fade |
 | E-M26 | E-S07.declined | - | m.swap |
 | E-M27 | E-S24.default | T-PUSH | - |
 | E-M28 | E-S24.waiting | - | m.progress.wait, m.swap |
@@ -741,12 +741,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
    - `C-S10.arrived` referenced by E MOTION.md.
    - `C-S10.slow` referenced by E MOTION.md, E WORDS.md.
    - `C-S11.held` referenced by E WORDS.md.
-3. Motion rows that key a state their own area DESIGN.md does not name: 13 keys in 13 rows.
-   - A (4 rows): MA-33 A-S07.markOpen; MA-36 A-S07.playing; MA-61 A-S17.default; MA-62 A-S18.primer
-   - B (1 rows): B-M07 B-S01.twoParents
-   - C (5 rows): M-C15 C-S05.error-print; M-C22 C-S07.default; M-C41 C-S16.default; M-C48 C-S18.default; M-C70 C-S13.error-fetch
-   - D (2 rows): D-M54 D-S10.plan; D-M55 D-S10.plan
-   - E (1 rows): E-M25 E-S07.settingUp
+3. Motion rows that key a state their own area DESIGN.md does not name: 0 keys in 0 rows.
 
 ### 6.2 Contradictions the areas flagged in their own DESIGN.md (copied by the script, cut at 420 characters; the area file wins)
 
@@ -809,7 +804,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 - D 15 item 1. **Per-day show-words switch (GAP-LOG D G-D14, DEFAULT) against RV-8 and NS-47-R37**: one switch for every day's words. This file follows the card and RV-8 (later, wider) and shows the fallback in G-D23. Karma rules the NS-18-R3 errata row.
 - D 15 item 2. **GAP-LOG D W-G7 (typed-day section on Reminders) against NS-46-R3**: the list moves to C-S24. Followed card 21; G-D25.
 - D 15 item 3. **NS-47-R14 (day-name switch "shown only when a day is ticked") against NS-47-R37 (typed words follow it)**: a parent with only typed days would have no switch. G-D24 default.
-- D 15 item 4. **NS-46-R17 (no `{child}` in a names-off lock string) against the content review's neutral body text with `{child}`**: G-D26.
+- D 15 item 4. **NS-46-R17 and NS-47-R38 (no `{child}` in a lock string that names a day) against the content review's neutral body text with `{child}`**: RULED 20 Nov (ruling 3): fixed string, no `{child}`; G-D26 closed.
 - D 15 item 5. **NS-46-R13 and NS-50-R4 (a day is the slip) against NS-18 (a typed day is a line in the prompt block)**: two renderings of "a day" on Home by source, as NS-50 section 3 says (A W9). It departs from IA-AUDIT 5.3 ("same component as the typed-day line"); Karma confirmed per conflict 5. Flagged only.
 - D 15 item 6. **NS-32-R4b (up to 64 total) against errata E13 (60 total)**: errata followed.
 - D 15 item 7. **GAP-LOG D G-D21 default ("Something for the book today" with names off) against WORDS G3 and the built title "A birthday today"**: the ruling is followed in D-S10 `birthday-neutral`; the founder and CPrivO still decide.
@@ -849,7 +844,7 @@ Motion ids with no T-* named in their own row (native, in place, or keyed in pro
 5. Motion id schemes differ by area (`MA-nn`, `B-Mnn`, `M-Cnn`, `D-Mnn`, `E-Mnn`). Default: leave them, since every area keys to its own; this index maps them.
 6. Area D's MOTION.md now keys T-* and m.* in its section 13.1 as a numeric table (`02, 08` for D-M02 and D-M08); the script expands those, so D has a T-* column. A row there that names a number with no D-M row of its own would still count as an id.
 7. Ids for "If you are struggling" and "Lines in other countries" are E-S30 and E-S31 (not ruled by K9; E DESIGN D-2).
-8. Area D's reminder side of NS-51 keeps its own id D-S27 and states `.photoMomentsOn`, `.photoMomentsOff`, `.photoMomentsLimited`; D-S10 states named `photoMoment`, `photoMoment-plain` and others are written without a leading dot in D DESIGN 16.2, so the script does not count them as D-S10 states (see the unverified list in the run report).
+8. Area D's reminder side of NS-51 keeps its own id D-S27 and states `.photoMomentsOn`, `.photoMomentsOff`, `.photoMomentsLimited`; the lock-screen renderings `photoMoment`, `photoMoment-plain` and the others belong to D-S10 and are written without a leading dot in D DESIGN 16.2 (so the script does not count them as D-S10 states), while the tap landing is one state with one owner: D-S11 `.photoMoment` (D DESIGN 16.2, Tap). Both sections of this index name it that way.
 9. Area C 15 X1: the line `culture.delete.line` (days stay on phones) against NS-47-R17 (this phone clears the store at once) and NS-45-R10 ("just as they were"). Area D 15 item 3 (NS-47-R14 against R37) and area A 11.3 item 7 (NS-47-R29 wording) flag neighbouring NS-47 rows.
 
 ## 7. Round 2 ids (photo moments and media; PROPOSED, flagged; key to NS-51 and NS-52 row ids when `27-photo-moments-and-media.md` lands)
@@ -859,13 +854,13 @@ Read from the area files. Every area now has a Round 2 section (A 12, B 15, C 17
 | Proposed id | Area | What | Where defined |
 |---|---|---|---|
 | A-S16 | A | One photo from a suggestion: a sheet that holds each photo of the suggestion the parent picked, so [cut] | A DESIGN.md line 33 (table) |
-| A-S17 | A | Moments sheet: the parent's own pictures, grouped by day, as a way to start a letter | A DESIGN.md line 993 (table) |
+| A-S17 | A | Moments sheet: the parent's own pictures, grouped by day, as a way to start a letter (states [cut] | A DESIGN.md line 993 (table) |
 | A-S18 | A | Photos access: the ask, and every access state | A DESIGN.md line 994 (table) |
 | B-S25 | B | Reading several pictures and videos with a letter (named in prose only, no inventory row) | B DESIGN.md line 821 (mention) |
 | B-S26 | B | Reading several pictures and videos with a letter (named in prose only, no inventory row) | B DESIGN.md line 821 (mention) |
-| C-S27 | C | Photos access | C DESIGN.md line 1012 (heading) |
-| D-S27 | D | Nudge's lock-screen and in-app artefacts (named in prose only, no inventory row) | D DESIGN.md line 1112 (mention) |
-| E-S32 | E | Photos access primer (proposed; screen drawn with area A's moments surface) | E DESIGN.md line 807 (table) |
+| C-S27 | C | Page heading, DoorNote (full text, read before any control), "Photos access", value "Off", the [cut] | C DESIGN.md line 1046 (table) |
+| D-S27 | D | footnote and switch read as above; the "How it will look" preview reads as one element ("Example", [cut] | D DESIGN.md line 1166 (table) |
+| E-S32 | E | Photos access primer (proposed; screen drawn with area A's moments surface) | E DESIGN.md line 824 (table) |
 | A-S04 states `.mediaTray` | A | states named only in a Round 2 section | A DESIGN.md |
 | A-S07 states `.mediaCard`, `.mediaLimit`, `.videoTooBig`, `.videoTooLong` | A | states named only in a Round 2 section | A DESIGN.md |
 | B-S08 states `.lowPowerMode`, `.mediaDownloading`, `.mediaMissing`, `.mediaNotStored`, `.mediaOffline`, `.mediaTooLarge`, `.mediaTooLong`, `.otherParentMedia`, `.reduceMotion`, `.videoOnly`, `.withMedia`, `.withVideo` | B | states named only in a Round 2 section | B DESIGN.md |

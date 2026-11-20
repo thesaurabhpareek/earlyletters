@@ -43,4 +43,17 @@ How to read the table: Owner is who builds or approves. Revert is the smallest s
 
 ## 4. Review fixes from the two counted reviews on PR #935 (should-fix items)
 
-Done in this branch: INDEX row ids with letter suffixes (the script now keeps the suffix), NS-06-B27 cite, the A line that still said "dismissible", the photo-moment tap state owner (D-S11), the public name in prototype copy (a `NAME` constant, set from the brand placeholder pattern; the name itself lives only in `packages/brand/index.ts`), the curly quote entity, the "Picture 1 of 4" position rule, `IA-AUDIT.md` header, round 2 accessibility lines in C and D, and the motion-key mismatches. Not done and still open: see the hand-off report on the PR.
+Done in this branch:
+- INDEX row ids keep their letter suffix (`NS-21-R7a`, `NS-01-R10a`, `NS-36-R1b`): `NS_RE` in `tools/build-index.py` now takes one trailing lowercase letter.
+- `NS-06-B27` is marked as early: card 06 ends at `NS-06-B26`, so the cite waits for the card edit (B DESIGN, rulings line).
+- A DESIGN `DoorNote` list now reads "never dismissible, never behind an info glyph, never glass".
+- Photo-moment tap state has one owner: D-S11 `.photoMoment`; the lock-screen renderings stay D-S10 (INDEX 6.3 item 8 says so).
+- The public name is not typed in prototype copy: A and E `PROTOTYPE.html` use the `{app}` placeholder the WORDS files use (OS-owned lines show the placeholder too).
+- `&rsquo;` in A `PROTOTYPE.html` is now `&#39;` (two lines).
+- A-S16 and A-S17 VoiceOver say "Picture 2", no total; one rule stated in A DESIGN, matching E-ST75.
+- `IA-AUDIT.md` header no longer says "Not committed" or names a worktree.
+- Round 2 accessibility tables (VoiceOver, 44 pt, AX5, contrast and signals) per state: C section 17 (C-S27, C-S18.media) and D section 16.3a.
+- The 11 real motion-key mismatches are fixed (state names added to DESIGN or motion keys renamed to the DESIGN names); the two false positives (`A-S07.markOpen`, `A-S07.playing`) are now written dotted in A DESIGN. INDEX 6.1 item 3 reads 0 keys in 0 rows.
+- INDEX rebuilt; `--check` passes. The family-data guard was mirrored by a hash scan of every tracked file under `docs/design/e2e` (names, ISO dates, paths): 0 hits.
+
+Not done: Review B must-fix 1 (photo-moment default) was already closed in D by NS-51-R11 (plain is the default) and is unchanged here. Review B item 6 (Round 2 states not in the prototypes) stays open: the prototypes were not extended; say so in the PR description. The vitest test itself was not run (no `node_modules`, disk is low).

@@ -35,7 +35,7 @@ Words in quotes below are the strings that exist today (by key) or intent for `c
 | C-S04 | Save a copy (the one export screen) | `app/settings/export.tsx` | NS-11; NS-07 C28-1; NS-10-R4b; NS-36-R2 |
 | C-S05 | Making the printable book (PDF) | none | NS-07 C28 |
 | C-S06 | Home slip: Save a copy in the birthday week | none (slip 3 of the registry) | NS-11-R2 to R4, R7, R8, R13 to R15, R22 |
-| C-S07 | Which book (chooser sheet) | none | NS-11-R14; C28 happy path step 1 |
+| C-S07 | Which book (chooser sheet; state C-S07.default) | none | NS-11-R14; C28 happy path step 1 |
 | C-S08 | Where your letters live | `app/settings/where-letters-live.tsx` | NS-08-R7, R8; NS-10 claims |
 | C-S09 | Letter page: where the recording is (provenance line) | `letter/[id].tsx:436` | NS-08 design inputs, R20; NS-10-R1 |
 | C-S10 | Opening your book (new phone, returning account) | `components/onboarding/new-phone-screens.tsx` (shared with E-S09) | NS-10-R0, R2, R8, R9, R11, R12 |
@@ -44,9 +44,9 @@ Words in quotes below are the strings that exist today (by key) or intent for `c
 | C-S13 | Earlier versions (list) | none | NS-12-R1, R4, R7, R8 |
 | C-S14 | An earlier version (read-only, Restore, Remove) | none | NS-12-R2, R3, R6 |
 | C-S15 | A book in Me (details, Quiet this book, Hide this book, Delete this book) | `app/settings/children/[id].tsx` | NS-22-R3, R7; F12-REQ-011; BL-985 |
-| C-S16 | Hidden books | `app/settings/children/hidden.tsx` | NS-22; F09-REQ-016 |
+| C-S16 | Hidden books (state C-S16.default) | `app/settings/children/hidden.tsx` | NS-22; F09-REQ-016 |
 | C-S17 | Recently deleted | `app/settings/recently-deleted.tsx` | NS-21-R7b; NS-36-R1a to R1c; NS-06-B25 |
-| C-S18 | Storage (languages, space, and one state line when a recording is still being removed; never a list, never a count) | `app/settings/storage.tsx` | NS-09-R6 as ruled by errata E28; NS-11-R20 |
+| C-S18 | Storage (languages, space, and one state line when a recording is still being removed; never a list, never a count; states C-S18.default, .stuck, .retrying, .stuckAgain, .media) | `app/settings/storage.tsx` | NS-09-R6 as ruled by errata E28; NS-11-R20 |
 | C-S19 | Erase everything on this phone | `app/settings/erase.tsx` | D1; NS-36 erase row; NS-01-R52 |
 | C-S20 | Delete account | `app/settings/delete-account.tsx` | D6; NS-01-R31; NS-10-R4a; NS-08-R16 |
 | C-S21 | Recording backup (flip-only states; absent today) | `app/settings/backup.tsx` (flag off) | NS-08 sections 4, 5, 12, 15 |
@@ -1036,6 +1036,26 @@ Integration: NS-51 (pending); Q-PM-1 (limited by default), Q-PM-5 (place names o
 - C-S08 Where your letters live: media added to "On this phone"; with backup off nothing implies a picture or video survives the loss of the phone beyond the phone's own backup and Save a copy (the same truth principle as recordings).
 - C-S09 provenance: a picture or video kept only on this phone says so with the same plain voice as recordings (pending NS-52 and Q-PM-3); no new emotional language.
 - C-S21 (backup at the flip): media is not in recording backup; the screen says nothing about pictures or videos until a card includes them.
+
+### Accessibility for every round 2 state (C-S27 and C-S18.media)
+
+Rules for all of them: every control is 44 pt or more (rows 52 pt, `size.row`; the switch row is one 52 pt row whose whole width toggles); Voice Control names equal the visible words; colour is never the only signal (on and off are said in the row's value words as well as the switch); text uses the existing pairs `text` on `surface` and `textMuted` on `surface` in light and dark and Increase Contrast, so no new colour needs a pair test (`mediaFrame` applies only where a thumbnail shows, ruling 27); the page keeps the tab bar (ruling 32); AX5 wraps every line and stacks every pair of buttons, nothing truncates; Reduce Motion as in M-C92 to M-C97; the page ignores no Smart Invert case because it holds no picture.
+
+| State | VoiceOver, in order | AX5 | Contrast and signals |
+|---|---|---|---|
+| C-S27.off | Page heading, DoorNote (full text, read before any control), "Photos access", value "Off", the switch row | DoorNote first, rows stack | value word "Off" beside the switch, not only its position |
+| C-S27.consent | DoorNote, then the system alert (the system's own reading); "Not now" has equal weight to the allow button | two equal buttons stacked | the two buttons share one style and size |
+| C-S27.limited | heading, value "Selected photos", the choice group with the selected option said as "selected", "Choose more" row | choice group stacks one per line | the selected option has a check glyph as well as colour |
+| C-S27.full | as `.limited` with "All photos" selected | same | same |
+| C-S27.paused | heading, the switch row said as "Paused" or "Moments" with its on or off value | one column | value word, not colour |
+| C-S27.indexing | one static line, read once when it appears (a polite announcement), no progress read out | wraps | static text, no bar or count |
+| C-S27.albums | heading, one row per album each with its on or off value, then the turn-off row | rows stack | check glyph plus value word per row |
+| C-S27.turnOffConfirm | the F6 sheet takes focus; title, body, the safe button first, then the destructive text button; Close | buttons stack, the sheet scrolls | destructive text uses `destructive` on `surface` (existing pair); wording says what happens, not colour |
+| C-S27.removed | one calm line announced once ("The list is removed from this phone."), focus stays on the row | wraps | static text |
+| C-S27.denied | the D-S06 `.denied` pattern: one line, then "Open Settings" as a button | stacks | plain text on `surface` |
+| C-S27.changedInSettings | one line announced once when the page regains focus, then the rows as `.limited` or `.full` | wraps | static text |
+| C-S27.killswitch | the page is absent from Me; if a parent is already on it, one line and Back; no control left active | wraps | static text |
+| C-S18.media | group heading "Pictures and videos", each row as "label, size", "Photo moments list, size, Remove" as a button | rows stack | sizes are words (for example "12 MB"); no bar, no count |
 
 ### Motion for round 2 (also in MOTION.md as M-C92 to M-C97)
 

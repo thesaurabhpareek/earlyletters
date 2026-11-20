@@ -1,6 +1,6 @@
 # Information architecture audit: Home, Book, Me, and one owner per fact
 
-Status: DRAFT for Karma and the founder, 20 Nov 2026 (UTC). Author: `design-systems`. Brief: `docs/product/prd/tools/review/wave3-briefs.md` item 4, answering `docs/product/prd/20-founder-direction-20nov.md` section 5 (which names candidates to test, not conclusions). Branch `docs/e2e-ux-20nov`, worktree `/home/claude/wt/E`, HEAD `ed44fe899`. Not committed. Changes no card, no token, no code.
+Status: DRAFT for Karma and the founder, 20 Nov 2026 (UTC). Author: `design-systems`. Brief: `docs/product/prd/tools/review/wave3-briefs.md` item 4, answering `docs/product/prd/20-founder-direction-20nov.md` section 5 (which names candidates to test, not conclusions). Branch `docs/e2e-ux-20nov-scoped` (draft PR #978). Changes no card, no token, no code.
 
 Tags: EVIDENCE = read in this worktree this session (file and line). INFERENCE = my reading of evidence, not run. UNVERIFIED = not checked. Nothing here was run on a device or in the simulator; no test was executed.
 
