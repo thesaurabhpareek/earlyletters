@@ -65,6 +65,7 @@ Part of RD-F (mobile, 20 Nov 2026). Index: `LIBRARY-DECISIONS.md`. Part A: `LIBR
 - `whisper.rn ~0.7.4`, MIT, registry mod 2026-11-09 [V]. Models are never in the app; they download as packs, with Whisper large-v3-turbo q5_0 as the shared multilingual model (`apps/mobile/src/lib/models/catalog.ts:2-26` [V]); size rule in `APP_SIZE.md:3` [V].
 - `sherpa-onnx 2.0.2`, Apache-2.0, 2026-11-19 [V registry]: a second engine, new native code, no gap that whisper.rn leaves open is documented. AVOID until a language needs it.
 - Apple `SFSpeechRecognizer`: sends audio to Apple unless the language supports on-device; adds a speech usage string and a label line (G11-3). A child's voice must not leave the phone without the X2 note. AVOID. Owner of any change: F and C.
+- A model download is a network request: the host and file name reveal which language pack the family chose, even though no words leave. The pack consent screen and the data-map row must say so (`lib/models/speech-consent.logic.ts`, `speech-download.logic.ts`) [E: from the request shape, not traced].
 - Decision: USE; no new engine. Owner: K.
 
 ## LD-26 Testing the database: USE PGlite and the existing `test:db`; AVOID pg-mem
@@ -73,7 +74,7 @@ Part of RD-F (mobile, 20 Nov 2026). Index: `LIBRARY-DECISIONS.md`. Part A: `LIBR
 - Decision: USE as is. Owner: K (database steward).
 
 ## LD-27 Unit, component and accessibility tests: USE vitest; ADOPT jest-expo and RNTL for L2 after a spike
-- **Today [V].** `apps/mobile` tests run on `vitest ^3.2.7` (279 files in `apps/mobile/test`, `package.json` script `test: vitest run`). Logic is in `*.logic.ts` and tested in Node; accessibility logic has `lib/a11y.logic.test.ts`. No component renderer is installed.
+- **Today [V].** `apps/mobile` tests run on `vitest ^3.2.7` (274 `*.test.*` files in `apps/mobile/test`; 279 is the count of top-level entries, `package.json` script `test: vitest run`). Logic is in `*.logic.ts` and tested in Node; accessibility logic has `lib/a11y.logic.test.ts`. No component renderer is installed.
 - **Plan on paper.** L2 component tests with `@testing-library/react-native` under `jest-expo`, to prove AX5 rendering, labels, 44 pt targets and sheet focus (`docs/tdd/07-quality-test-strategy.md:30,426,650` BL-Q08 [V]). Registry [V]: `jest-expo 57.0.6` (SDK pin; latest 58.0.15), MIT, peers `@react-native/jest-preset ^0.86.3`; `@testing-library/react-native 14.1.0`, MIT, 2026-10-08, peers `jest >=29`, `react >=19`, `react-native >=0.78`, `test-renderer ^1.0.0`.
 - **Wrinkle.** RNTL's peer is Jest, so L2 adds a second runner next to vitest, and `npm test` must run both (CI 8-minute rule, `07:16`). Spike first: does RNTL 14 run under vitest with the Expo preset? If not, scope Jest to `apps/mobile/test-ui/` only.
 - **Axe-like linting.** `eslint-plugin-react-native-a11y 3.5.1` last release 2024-11-04 (over 12 months) fails the dependency rule at `06-security-engineering.md:105`: AVOID. Use scan tests in vitest that read `accessibilityLabel`, `accessibilityRole`, `hitSlop` and 44 pt from source, as the existing a11y tests do.

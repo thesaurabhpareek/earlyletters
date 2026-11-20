@@ -72,7 +72,7 @@ devDependencies: `@playwright/test`, `@types/react`, `ajv`, `typescript`, `vites
 
 ## 5. Test and tooling you already have [V]
 
-- Unit: vitest in each workspace; `npm test` at the repo root; 279 files in `apps/mobile/test`. `cd apps/mobile && npx tsc --noEmit` before every push.
+- Unit: vitest in each workspace; `npm test` at the repo root; 274 `*.test.*` files in `apps/mobile/test` (279 top-level entries). `cd apps/mobile && npx tsc --noEmit` before every push.
 - Database: PGlite (`npm run test:db`, 32 files per CLAUDE.md). Edge Functions: `npm run test:functions`.
 - Phone journeys: Maestro, 20 files under `apps/mobile/e2e/flows`. Web journeys: Playwright (`e2e-web`).
 - Guards: label guard, licence verify (`apps/mobile/test/licences.test.ts`), size script, content rules (`packages/content/test/rules.test.ts`), no-real-family-data test.
