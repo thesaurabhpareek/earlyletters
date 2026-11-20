@@ -54,7 +54,7 @@ A new area needs a CPO ruling and an erratum (placeholder E-INSTR-3; real number
 
 | Name | When | Closed properties |
 |---|---|---|
-| `screen.<screen_id>.viewed` | A screen or sheet is shown (route template or sheet name, never a resolved path) | `from_screen` (enum of screen_id or `none`), `build_kind` (enum, section 6) |
+| `screen.<screen_id>.viewed` | A screen or sheet is shown (route template or sheet name, never a resolved path) | `from_screen` (enum of screen_id or `none`) |
 | `ui.<control_id>.tapped` | A control is activated (tap, or VoiceOver activate; keyboard for iPad later) | `screen` (enum of screen_id) |
 | `ui.<element_id>.impressed` | A surface that offers something is on screen (slip, prompt, card, sheet body, banner, empty state, reminder delivered, in-app message) at least half visible for 1 second (PROPOSED thresholds, take a baseline), at most once per element per foreground session (one dedupe rule for every surface; a foreground session starts at cold start or when the app returns after 30 minutes or more away, the same rule as `app_opened`; a session counter lives in memory only) | `screen` (enum of screen_id), `rank` optional int 1 to 9 |
 | `perf.<metric>.measured` | A performance measure completes | `ms_bucket` (enum, section 6), `ok` (bool). These two are the only perf properties; PM names `bucket`, `duration_bucket`, `value_ms_bucket` become `ms_bucket` |
@@ -83,11 +83,11 @@ Id registry (`packages/analytics` `ids.ts`, generated into `docs/analytics/instr
 - Counts are bucketed by the shared sets in `catalog.ts` (`LETTERS_BUCKET`, `AUDIO_BUCKET`, `SESSION_BUCKET`, ...). Shared set for time: `ms_bucket` = `lt_100ms, 100_300ms, 300ms_1s, 1_3s, 3_10s, gt_10s` (PROPOSED; align to NFR-BUDGETS ids when ops lands). Values that start with a digit are valid: the enum shape in `validate.ts` is `^[a-z0-9]+(?:_[a-z0-9]+)*$` [V], and V6 uses the same shape. `build_kind` = `store, testflight, preview, dev`.
 - Never a property: entry text, transcript, audio, file name, path, child name or nickname, any date of birth or due date, email, person, book, letter, media or device id, Find query, typed day word, picture words or place, media count, size or duration of one item (NS-52-R43), religion, ethnicity, region or family background, health or assistive-technology detail. `lang` only on `languages` events (TRACKING_PLAN 6.2).
 - Classification: every property is L2 (schema.ts); L3 and L4 are not representable.
-- Global properties (client adds, nothing else may): `schema_version`, `child_count_bucket` optional, `sample_pct` optional (TRACKING_PLAN 3.2), plus the FIVE SDK fields kept at source: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type` (TRACKING_PLAN 3.2 [V]). The SDK's own internal fields are exactly these five and no others: `$lib`, `$lib_version`, `$session_id`, `$process_person_profile`, `$geoip_disable` (the `$exception` fields of `posthog-standard.md` section 4 are a separate, error-only list). They pass `before_send` but are not properties of ours and are not in any registry row. The `$` ban applies to registry property names; the five SDK fields above plus these five internals are the only `$` keys that may leave the phone for a normal event, and a test (V6) pins this exact list of ten, so adding one is a PR to this file. `$session_id` is a random value the SDK makes for one foreground session; it is an identifier, so it is allowed only because it is not stable across sessions, is not derived from the consent id and cannot be joined to an account, which keeps the consent id the only identifier that lasts. Whether it survives that reading is for `privacy` to confirm; if not, `before_send` strips it and the funnel window `session` is computed from `app_opened` instead. A real payload from a throwaway project, not this file, is the proof of what the SDK sends [UNVERIFIED until the QA step in `posthog-standard.md` section 6].
+- Global properties (client adds, nothing else may): `schema_version`, `build_kind` (moved here from the screen basics row; enum, see above), `is_internal` (bool, true on the founder's and testers' phones, so PostHog can filter them out; `posthog-standard.md` section 3.2), `child_count_bucket` optional, `sample_pct` optional (TRACKING_PLAN 3.2), plus the FIVE SDK fields kept at source: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type` (TRACKING_PLAN 3.2 [V]). The SDK's own internal fields are exactly these five and no others: `$lib`, `$lib_version`, `$session_id`, `$process_person_profile`, `$geoip_disable` (the `$exception` fields of `posthog-standard.md` section 4 are a separate, error-only list). They pass `before_send` but are not properties of ours and are not in any registry row. The `$` ban applies to registry property names; the five SDK fields above plus these five internals are the only `$` keys that may leave the phone for a normal event, and a test (V6) pins this exact list of ten, so adding one is a PR to this file. `$session_id` is a random value the SDK makes for one foreground session; it is an identifier, so it is allowed only because it is not stable across sessions, is not derived from the consent id and cannot be joined to an account, which keeps the consent id the only identifier that lasts. Whether it survives that reading is for `privacy` to confirm; if not, `before_send` strips it and the funnel window `session` is computed from `app_opened` instead. A real payload from a throwaway project, not this file, is the proof of what the SDK sends [UNVERIFIED until the QA step in `posthog-standard.md` section 6].
 
 ## 7. Registry row (the one definition)
 
-One row per event, in `packages/analytics/src/catalog.ts` (code) and rendered into `docs/analytics/instrumentation/registry.md` by the existing `npm run plan` generator (TRACKING_PLAN 3.1 is generated the same way). Fields, all required:
+One row per event, in `packages/analytics/src/catalog.ts` (code) and rendered into `docs/analytics/instrumentation/registry.md` by the existing `npm run plan` generator (TRACKING_PLAN 3.1 is generated the same way). Fields, all required (`posthog-standard.md` section 6.1 adds `decision`, `source`, `supersedes` and `sampling`):
 
 | Field | Rule |
 |---|---|
@@ -117,7 +117,7 @@ One row per event, in `packages/analytics/src/catalog.ts` (code) and rendered in
 
 ## 10. Validator rules (tests that block a bad event)
 
-All run in `packages/analytics/test` in the existing `unit` job; each has a positive and a negative self-test. V1 to V10 are static (registry vs code vs docs). V11 to V13 are runtime checks that run on every payload and fail closed. V14 to V17 are tests (canary, consent behaviour, caps, SDK options). `posthog-standard.md` section 2.9 restates V1 to V3 for the colon grammar and adds checks; this table keeps the numbers.
+All run in `packages/analytics/test` in the existing `unit` job; each has a positive and a negative self-test. V1 to V10 are static (registry vs code vs docs). V11 to V13 are runtime checks that run on every payload and fail closed. V14 to V18 are tests (canary, consent behaviour, caps, SDK options, one module). `posthog-standard.md` section 2.9 restates V1 to V3 for the colon grammar and adds checks; this table keeps the numbers.
 
 | Id | Rule | Fails when |
 |---|---|---|
@@ -137,7 +137,8 @@ All run in `packages/analytics/test` in the existing `unit` job; each has a posi
 | V14 | Canary: the Asha strings (child name, date of birth, a letter sentence, a Find query, a file name) pushed through every typed helper and the PostHog `before_send` never appear in any outgoing payload | any canary hit |
 | V15 | No event before consent: `track()` returns `dropped_no_consent`; no SDK constructed; nothing queued or written | the SDK is constructed, or any byte is queued, written or sent, before a yes (existing; plus the production-only build flag test, `analytics.md` section 1a) |
 | V16 | Cardinality guard, one rule per kind. An id registry kind (`screen`, `control`, `element`, `metric`, `experiment`, `arm`) may hold at most 300 ids, and id-ref enums are limited only by that cap. Every other enum (a literal value list) holds at most 64 values | a cap exceeded |
-| V17 | SDK options pinned: a test on `REQUIRED_POSTHOG_OPTIONS` (the full list is `posthog-standard.md` section 3.4) | replay, autocapture, surveys, logs, remote flags, lifecycle events or flag events switched on, or a pinned option missing |
+| V17 | SDK options pinned: a test on `REQUIRED_POSTHOG_OPTIONS` (the full list is `posthog-standard.md` sections 3.4 and 4.2) | replay, autocapture, surveys, logs, remote flags, lifecycle events or flag events switched on, error `console` not empty, or a pinned option missing |
+| V18 | One module: only `packages/analytics/src/posthog.ts` imports the PostHog SDK or calls capture, identify, screen, captureException or log APIs; no `PostHogProvider` | any other file does (`posthog-standard.md` section 2.10) |
 
 ## 11. Identity and consent (applies to every event)
 
@@ -156,7 +157,7 @@ All run in `packages/analytics/test` in the existing `unit` job; each has a posi
 4. Dynamic lists are one element id, not one per row.
 5. `side` and `consent_gate` fields clarify rule 5 for store and support sources.
 6. Deprecation window 90 days (PROPOSED).
-7. Validator rules written out (V1 to V17); the baseline had only "reject names and properties not in the registry".
+7. Validator rules written out (V1 to V18); the baseline had only "reject names and properties not in the registry".
 8. PostHog alignment (20 Nov, Karma ruling): wire names follow PostHog's `category:object_action` convention; see `posthog-standard.md` section 2. Section 2 here keeps the registry rules (areas, closed verbs, no dynamic names).
 9. Review A and B fixes (20 Nov): id-ref enums exempt from the 64 cap, action list extended, area rule for server events, V7 token match, one `$` number, schema version said once, no fresh id per send, one impression dedupe rule, flags off with our own exposure event.
 

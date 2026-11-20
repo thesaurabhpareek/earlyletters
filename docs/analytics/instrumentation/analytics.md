@@ -20,7 +20,7 @@ The beta rules held because nothing was sent (FR-DAT-01: no event, counter or pa
 | Subprocessors and data map | none | `docs/legal/subprocessors.md` row for the host; data-map row (LEGAL-REQ-027); data-policy section 4 and the privacy policy text; a further row for every crash tool host (Sentry cloud or GlitchTip) if `ops` proceeds | counsel | rows drafted by `data-steward` |
 | Errata | D-095, D-124 item 3, FR-DAT-01 stand | one erratum supersedes D-095, D-124 item 3 and FR-DAT-01 for the production release, and rewrites FR-DAT-01 as "analytics only behind consent" (placeholder E-INSTR-1; real numbers from E84 are assigned when ruled; E83 is taken by #1051) | founder; CPO | as stated |
 | Build tests | a test fails if any 1.0.x profile sets `EXPO_PUBLIC_ANALYTICS` on | a test fails if any profile other than `production` sets it on, if the PostHog client is constructed before consent, or if anything is queued or written before consent (V15) | `analytics`, `qa` | as stated |
-| Release gate | OG-1 to OG-10 in #1044: "no analytics SDK in a store bundle" | rewritten to "analytics only behind consent": the SDK may be in the bundle; the gate checks the consent test, the allowlist and canary tests (V1 to V16), the label and subprocessor files match the build, and no `ee`, replay or autocapture option is on | founder (CPO informed); `ops` and `analytics` draft it | as stated |
+| Release gate | OG-1 to OG-10 in #1044: "no analytics SDK in a store bundle" | rewritten to "analytics only behind consent": the SDK may be in the bundle; the gate checks the consent test, the allowlist and canary tests (V1 to V18), the label and subprocessor files match the build, and no `ee`, replay or autocapture option is on | founder (CPO informed); `ops` and `analytics` draft it | as stated |
 | Label guard | `TRACKING_SDK` list in `scripts/release/label-effect.mjs` blocks an analytics SDK in a PR | a founder-approved exception for `posthog-react-native`, with the label change in the same PR (ADOPTION-RULES section 3, label step) | founder | as stated |
 
 Unchanged: opt-in only, off until the parent says yes, closed allowlist, no content or names, no child data, no person id, session replay off, nothing from the sensitive list in the standard section 6.
@@ -68,7 +68,7 @@ None of these is chosen. All are options if the founder prefers a different host
 | Funnels, retention, cohorts, dashboards | PostHog insights | none (queries are saved in PostHog; section 8 lists the first five) |
 | Closed allowlist, registry, id list | none sells this | `catalog.ts`, new `ids.ts` |
 | Consent gate, random id | none | `consent.ts` (built) |
-| Content-free validators and tests | none | `validate.ts`, V1 to V16 |
+| Content-free validators and tests | none | `validate.ts`, V1 to V18 |
 | Screen, tap, impression hooks | PostHog autocapture is OFF and stays off (`captureScreens: false`, `captureTouches: false`, `posthog.ts` [V]): its screen names carry params and its touches carry labels | one router hook (exists for `screen_view`), one `useImpression(element_id)` hook and one `tap(control_id)` helper, each taking a registered id and sending a registered name |
 | Server aggregates | Supabase views | none new |
 
@@ -138,7 +138,7 @@ New dependencies proposed: none. `posthog-react-native` already present. Any cra
 | IN-01 | 1 | Event standard review and merge (this file set) | analytics, CPO | S | none | no |
 | IN-02 | 1 | `ids.ts` and generated registry doc (M1, M2) | analytics engineer | M | IN-01 | no |
 | IN-03 | 1 | Rename catalogue and full rename table (M3) | analytics engineer | M | IN-02 | no |
-| IN-04 | 1 | Validators V1 to V16 as tests (M4) | analytics engineer | M | IN-02 | no |
+| IN-04 | 1 | Validators V1 to V18 as tests (M4) | analytics engineer | M | IN-02 | no |
 | IN-05 | 2 | Hooks and screen wiring (M5), 29 routes first | mobile | M | IN-03 | no |
 | IN-06 | 2 | Controls and elements wiring per area from PM tables | mobile, pairs | L | IN-05 | no |
 | IN-07 | 2 | Five funnels saved in PostHog; weekly read-out inputs | analytics, decision-science | S | IN-05 | account creation: yes |

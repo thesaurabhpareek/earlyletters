@@ -380,3 +380,184 @@ Apple's crash reports, from people who share diagnostics with developers, arrive
 
 Crash and performance data move the App Store privacy label from usage data alone to usage data plus diagnostics (`analytics.md` section 1a). The consent sheet must name crashes in its Shown line (`data-steward.md` section 6; PRIV-R21 lines Shown, Records, Never, Decline). One switch covers usage and crash (FD-3 default). Wording, label and counsel are the founder's.
 
+## 5. How NOT to use it
+
+Sources are PostHog's own pages unless marked. The two outside references are search results whose pages I did not open, so they carry their headlines only [UNVERIFIED beyond the title]: Princeton CITP, "No boundaries: Exfiltration of personal data by session-replay scripts" (blog.citp.princeton.edu, 15 Nov 2017) and AppleInsider, "Popular iOS apps use Glassbox SDK to record user screens without permission" (6 Feb 2019).
+
+| # | Common mistake | Source | Our rule |
+|---|---|---|---|
+| 1 | Rely on autocapture alone and hope the right things get recorded | best-practices: track growth events explicitly, not only autocapture [V] | Autocapture off; every event is a registry row (V1 to V12) |
+| 2 | Build event or property names from variables (`opened_letter_<id>`) | best-practices: static names; many unique property names get rate limited [V] | V3, V6; ids go in a closed enum or nowhere |
+| 3 | Name events freely ("Clicked Button 2") with no convention | best-practices, handbook [V] | Section 2 grammar, V1 and V2 |
+| 4 | Rename an event that has history | handbook: never rename; version and join with an action [V] | Section 2.6; the one-time rename is allowed only because nothing was ever sent |
+| 5 | Catch-all distinct ids for server events (`system`, `backend`) | best-practices [V] | Servers send nothing; counts live in Supabase |
+| 6 | Different id formats across platforms (`user-456` vs `USER-456`) | best-practices [V] | One id format: the consent uuid, lowercase |
+| 7 | `identify` with an email or account id, so every event is a known person | anonymous-vs-identified-events (identify links earlier anonymous events to a user) [V] | Never identify; random consent id; `reset()` on withdrawal |
+| 8 | Reuse a deleted or old distinct id | data-storage [V] | A later yes gets a new id (`consent.ts`) |
+| 9 | Leave SDK defaults on: lifecycle events, flag events, preloaded flags, geoip | react-native page defaults [V] | Section 3.4, pinned by V17 |
+| 10 | Session replay or surveys "just to try" | enableSessionReplay is a switch [V]; replay of screens is the harm in the CITP and Glassbox stories [UNVERIFIED beyond the titles] | Never on; V17 |
+| 11 | Capture console output as errors | installation page offers `console` levels [V] | `console: []` (4.2) |
+| 12 | Send exception messages and stack contents as they come | installation page describes no redaction [V] | Rebuild `$exception` from an allowlist, drop message text (4.4) |
+| 13 | `captureException(new Error(\`failed for ${name}\`))` | same | No helper takes a string; `reportFault(code)` only |
+| 14 | Message text with a child's date in it | our own finding (age.ts:15, child.ts:28 and 33) [from `analytics.md` risk 5] | Fix first (IN-09) |
+| 15 | A crash loop eats the whole exception quota | 100,000 free exceptions a month [V pricing] | Client cap per session and per class (4.4) |
+| 16 | Ship source maps nowhere, so stack traces are unreadable; or forget that EAS Update does not upload them | upload-source-maps page [V] | Build step in 4.5; run the upload after every `eas update` |
+| 17 | Treat a 202 on deletion as "deleted" | data-storage: 202 means accepted; check `deletion_errors` [V] | Wording "within about a month"; IN-DS-03 and IN-DS-06 |
+| 18 | Assume anonymous events can be deleted by person | data-storage [V] | F-2; the drill decides |
+| 19 | Use event counts as exact business numbers | best-practices: backend and database numbers are more reliable [V] | Account, plan and family counts come from Supabase views (k = 10) and App Store Connect, never from PostHog |
+| 20 | Assume events arrive in order | best-practices [V] | 3.6 |
+| 21 | Let test and internal traffic into dashboards | best-practices: filter internal and test users [V] | `is_internal` and the project filter (3.2) |
+| 22 | Blow the free cap with no alert, so data is silently lost | pricing and billing pages: over-limit data lost, alerts at 80 and 100 percent [V billing page] | Budget (6.5), the 80 percent email, sampling |
+| 23 | Call the SDK from everywhere | handbook: one module and a lint rule [V] | V18 |
+| 24 | No tracking line on a pull request, so events drift from the plan | handbook: a Tracking section and a CI check [V] | 6.2 |
+| 25 | Ads-blocker or network blocks silently lose events | best-practices: use a reverse proxy [V] | 3.7 |
+| 26 | Treat the schema-management feature as settled | schema-management page: experimental, typed property groups, enforced in code [V per the brief; page not re-read, UNVERIFIED] | Not used; our registry and V6 are the schema |
+| 27 | Mix the fix for crash and analytics consent | `data-steward.md` FD-3 | One switch, one gate, one module |
+
+## 6. Operating the standard
+
+### 6.1 The registry row (template)
+
+One row per event in `packages/analytics/src/catalog.ts`, rendered to `docs/analytics/instrumentation/registry.md` by `npm run plan`. All fields required unless marked.
+
+| Field | Rule |
+|---|---|
+| name | wire name, section 2 |
+| area | one of nine; equals the category without `_vN` |
+| decision | one sentence: the decision this event informs and who reads it ("whether people keep the first letter", read by the founder weekly). No decision, no event |
+| owner | role from `agents/roster.json` |
+| trigger | one line: when it fires; never describes content; never fires at a birthday, due date or seal time (FR-DAT-27, TRACKING_PLAN 6.4) |
+| properties | per property: name, type (enum, bool or bounded int), closed values or range, required or optional; at most 12 |
+| class | L1 or L2; sensitivity flag `none` |
+| side | `phone` (a wire event) or `server`, `store`, `support` (never sent to PostHog) |
+| consent_gate | `analytics_consent` for `phone`; `none_server_aggregate` for `server`; `n/a` otherwise |
+| source | requirement ids (FR, NS, PRD) and the PM file section |
+| v | integer, starts at 1 |
+| supersedes | old name when this is a version (`capture_v2:letter_save` supersedes `capture:letter_save`), else `none` |
+| funnels | funnel ids using it, or `none` |
+| sampling | `always`, `first_to_sample` or a percent (TRACKING_PLAN 5.3) |
+| status | `proposed`, `approved`, `built`, `deprecated` (with date) |
+
+### 6.2 The PR tracking line and the CI check
+
+Every pull request description has exactly one of these lines (PostHog's handbook: three lines, keep one, CI fails if the description has none or more than one [V]):
+
+```
+Tracking: none
+Tracking: events added or changed: <wire names>; registry rows are in this PR
+Tracking: not needed, because <one reason>
+```
+
+CI check (a small script in the `unit` job, not yet written):
+- Fails if the body has zero or more than one line starting `Tracking:`.
+- With `Tracking: none` or `not needed`, fails if the diff touches `catalog.ts`, `ids.ts`, `registry.md` or any file that imports the module.
+- With `events added or changed`, fails if a named event is not in the registry diff, or the registry diff has an event not named.
+The PR template and the script are a backlog row (IN-10, `analytics engineer`). Who may edit `.github` I did not check [UNVERIFIED]; if it is the founder's, it is a hand-off.
+
+### 6.3 Per-event QA checklist (one tick each, in the PR)
+
+1. The decision it informs is written, with the insight that answers it.
+2. Name passes V1 to V3; verb on the list or a Proposed change box exists.
+3. Properties are closed (V6), no banned token (V7), at most 12.
+4. Checked against the never lists: FR-DAT-27, FR-DAT-36, FR-DAT-38, TRACKING_PLAN 6.4 timing, and `00` section 6.
+5. Consent: with no consent nothing is queued, written or sent (V15 test names this event).
+6. Canary: the Asha strings through this helper and `before_send` leave nothing (V14).
+7. On a dev build pointed at the throwaway project: the event arrives under the wire name, with exactly the registry properties and the ten `$` keys, nothing else.
+8. The insight or funnel it was built for exists and renders (colon names included, 2.8).
+9. Volume per parent per month added to the budget (6.5).
+10. Sampling class set; offline behaviour noted if it matters.
+11. A version change names `supersedes` and the joining Action.
+12. The PR tracking line is present; the launch dashboard has one tile for it, and old tiles are retired (the handbook's "one dashboard for launches, rotate it" [V]).
+
+One-time QA before IN-08 (each is an open UNVERIFIED above): colon names in trends, funnel, retention and HogQL (2.8); retention on anonymous events (3.3); offline queue and retry (3.6); the real `$exception` payload and the allowlist built from it (4.4); a deliberate crash on a test build, symbolicated, and matched to its maps (4.5); withdrawal then yes gives a new id and no events between; the deletion drill IN-DS-06.
+
+### 6.4 One launch dashboard
+
+One PostHog dashboard per launch, rotated: tiles for the five funnels (`analytics.md` section 8), the crash count, the budget gauge. Everything else is a saved insight with an owner. Dashboards read Actions, not raw names, wherever a version exists.
+
+### 6.5 Event budget against the 1,000,000 cap [E: all inputs are estimates]
+
+| Input | Value | Basis |
+|---|---|---|
+| Catalogue events per consenting parent per month | 190 | TRACKING_PLAN 5.1 [V, via `analytics.md` section 8] |
+| Taps | 60 | `analytics.md` section 8, no baseline [E] |
+| Impressions | 50 | same [E] |
+| Total, low case | 190 + 60 + 50 = 300 | |
+| Total, high case | 400 | #1052 assumption (data-architect), read by line, [E] |
+| Consent rate | 80 percent | `analytics.md` section 8 (1,000 families, about 800 consenting) [E] |
+| Cap | 1,000,000 a month | pricing [V] |
+
+Arithmetic:
+- Consenting parents at the cap: 1,000,000 / 300 = 3,333 (low); 1,000,000 / 400 = 2,500 (high).
+- Families at the cap: 3,333 / 0.8 = 4,167 (low); 2,500 / 0.8 = 3,125 (high).
+- Today's beta, 25 families, all consenting: 25 x 300 = 7,500 a month, 0.75 percent of the cap.
+- 1,000 families: 800 x 300 = 240,000 (24 percent); 800 x 400 = 320,000 (32 percent).
+- Defaults left on would add lifecycle events: say 2 per foreground session over about 30 sessions = 60 per parent, which is 60 / 300 = 20 percent more, before any flag events [E: both numbers are my guesses]. That is why section 3.4 switches them off.
+- If screen views and impressions are sampled at 50 percent (110 of the 300 are basics): 190 + 55 = 245 per parent, so 1,000,000 / 245 = 4,082 parents.
+- Exceptions are separate, 100,000 a month free [V]. Worst case with the 4.4 cap of 5 a session and 30 sessions: 800 x 5 x 30 = 120,000, over the cap; the real number is far lower because a crash is rare [E], and the per-class cap makes the worst case unreachable in practice. The 80 percent email on either meter is the alarm.
+- Our review line: at 600,000 events (60 percent) `decision-science` and `ops` decide on sampling before PostHog's 80 percent email [E: my proposal].
+
+## 7. Alignment checklist for every file and requirement
+
+Owners fix their own files in their next edit; none of this PR edits a PM file. "Wire names" below means replace the dotted names by the table in 2.9. Where I read only part of a file I say so.
+
+| File | State | What to change |
+|---|---|---|
+| `00-event-standard.md` (#1042, merged) | edited in this PR | Banner on the grammar (done); section 6 globals gain `build_kind`, `is_internal`; V17 and V18 rows; examples stay dotted until IN-02 |
+| `analytics.md` (#1042, merged) | edited in this PR | Host wording, release gate owner, deletion paragraph, IN-08 dependencies, IN-09 (done); section 2a and the Sentry and GlitchTip rows are history, not live choices |
+| `data-steward.md` (merged) | edited in this PR | Data-map row with the five `$` fields; FD-1 decided. Its section 3.2 shapes (`screen_view{screen}`, `control_tap`, `surface_shown`, `perf{marker,bucket}`) are superseded by 2.9; the owner removes them |
+| `decision-science.md` (merged) | not edited | Read by grep only [UNVERIFIED beyond the lines I cite]. Funnels and metrics use the old catalogue names; re-key to wire names. Its PostHog-flag arm option is replaced by our exposure event (3.10). Retention on anonymous events needs the 3.3 test |
+| `02-book-reading-find-photos.md` (merged) | not edited | Wire names. Search events: never the query or its length (FR-DAT-27). `book.share.*` carries no destination (FR-DAT-27) |
+| `04-family-reminders-days-lifecycle.md` (merged) | not edited | `family.invite.peeked` and `family.second_voice.reached` are server counters (it says so, and #1052 agrees): not wire events. `notifications.reminder.delivered` conflicts with 05 line 128 ("no delivered event"): `product` decides, evening class only if kept |
+| `05-plus-growth-foundations.md` (merged) | not edited | Perf properties `budget_band` and `device_tier` versus the standard's only `ms_bucket` and `is_ok`: reconcile (the README of the PM files lists them too). `system.diagnostic.received` meaning unclear (2.9). `system.app.opened`, `system.session.ended` stand in for PostHog's lifecycle events, which are off |
+| `01-capture-and-first-run.md` (#1040, open; head c2729656) | not edited | `system.consent.granted` duplicates `analytics_opted_in`: one event. `me.language.changed` must not carry the language (TRACKING_PLAN 6.2). `speak_tap_to_mic` becomes `speak_to_mic` (`00` section 4) |
+| `03-keeping-and-trust.md` (#1041, open; head 03defdc6) | not edited | `keeping.consent.declined` cannot exist (nothing is sent after a no; V15). `keeping.export.shared` and `keeping.slip.shown` are denied by its own list; keep them denied. Its denied-names list must be rewritten in wire names so V1 to V3 reject them |
+| `ops.md` (#1044, open; head 8a4f0d96) | not edited | `system.crash.reported` is replaced by PostHog `$exception` (4.4); the crash-tool evaluation (Sentry, GlitchTip) is closed by the founder's decision; the `error_class` closed list becomes the allowed `type` values; `app_version` and `os_major` are already `$app_version` and `$os_version`; `perf.cold_start` and `perf.warm_start` become `launch_cold` and `launch_warm`. The release gate OG-1 rewrite is the founder's (`analytics.md` section 1a) |
+| `data-architect.md` (#1052, open; head 0a414cbb) | not edited | I read only the lines I cite (volume assumption, server counters, `withdrawal` forget reason). Server counters stay in Supabase and out of PostHog. Its 400 events a month feeds 6.5 |
+| FR-DAT-01 | needs erratum | Production flip, E-INSTR-1 (founder). Not edited |
+| FR-DAT-27, 36, 38 | stand | Checks in V7 and the QA list; names that would break them are denied by the registry |
+| FR-DAT-28 | stands | Server aggregates not read in 1.0 unless the founder rules |
+| PRIV-R21, FR-DAT-04 | stand | Consent sheet and its Shown, Records, Never, Decline lines: wording is the founder's and counsel's, adds crashes |
+| LEGAL-REQ-014, LEGAL-REQ-027 | stand | No content in any event, log or crash report; data-map row (done for the `$` fields; the rest is IN-DS-01) |
+
+## 8. Unverified items (read before relying on this file)
+
+1. Colon event names in funnels, retention, trends and HogQL: PostHog's handbook uses them; no page confirms the UI (2.8).
+2. Retention insight on anonymous events: the page does not say (3.3).
+3. How to build the "all versions" Action in the UI (2.6).
+4. React Native SDK offline retry and queue overflow behaviour (3.6).
+5. Whether the free plan lets us set a billing limit without a card, and what happens to events over 1,000,000 with none set (3.8).
+6. Where the "discard client IP data" project setting is and its exact name (3.7); whether the managed proxy forwards the IP (3.7).
+7. `PostHogProvider` autocapture option names (3.4): not in the options table I read; I do not use the provider.
+8. Expo statement "session replay and native crash capture need a development build": not on the page I read (3.4).
+9. The exact `$exception` property names, and anything else PostHog adds to an exception (4.4).
+10. How a build is matched to its source maps and symbols; where EAS keeps the personal API key (4.5).
+11. Whether `$session_id` is stable enough to keep, and whether `privacy` accepts it (`00` section 6).
+12. The date-bearing throws at `age.ts:15`, `child.ts:28`, `child.ts:33`: carried from another file, not read in code.
+13. Contents of the #1040, #1041, #1044, #1052 files beyond the names, lines and statements cited; `decision-science.md` beyond grep.
+14. Who may edit `.github` (PR template, CI) and what PostHog's `schema-management` page now says (5 row 26).
+15. The two outside incident references in section 5 (titles only).
+16. What the client IP, Cloudflare and proxy mean for the App Store label and counsel's view of the subprocessor list.
+
+## 9. Open decisions
+
+Founder:
+- Approve `@posthog/react-native-plugin` for native crash capture (4.3). Default: no, Apple baseline only.
+- Use PostHog's managed reverse proxy and put a DNS record on our domain (3.7). Default: yes.
+- Add a hidden internal-tester switch for `is_internal` (3.2). Default: yes.
+- Hold a personal API key for symbol and source map upload in the build service (4.5).
+- US or EU region (3.4). Default: counsel advises.
+- If the deletion drill fails: accept an identified consent id (up to about 4x event cost above the free million) or accept that anonymous events cannot be deleted by person (3.3).
+- Consent sheet wording naming crashes, App Store label (usage plus diagnostics), erratum E-INSTR-1, release gate rewrite, the PostHog subprocessor and data-map rows: all founder or counsel, as in `analytics.md` section 1a.
+
+Counsel:
+- Whether a phone-held random id with 20 retired ids is "linked" for the label.
+- Cloudflare in the proxy path and PostHog as processor.
+- The wording "within about a month" for deletion, against the 14 days in the deletion spec (F-4).
+
+CPO and others:
+- New verbs (2.5) and any new area (E-INSTR-3).
+- `product` to settle `notifications.reminder.delivered` between 04 and 05.
+- `ops` to drop `system.crash.reported` and the Sentry and GlitchTip evaluation.
+
+Signed: `analytics`, 20 Nov 2026.
