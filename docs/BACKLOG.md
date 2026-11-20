@@ -4019,59 +4019,37 @@ Written 20 Nov 2026 by Karma. Mode pair: these run in an interactive session (ag
 - Scope: `docs/product/prd/19-from-download-to-first-letter.md` in the locked card shape, built from F01, F02, F03, F12, F17, F21, the built code and the two inputs `docs/product/prd/inputs/first-run-compliance.md` (regulatory-affairs) and `first-run-auth-security.md` (security).
 - Done when: Karma rules the open items and the cards are locked; area E design draws every state.
 
-#### BL-995 Function review of the requirements: legal (LEG)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: legal. Milestone: M15. Size: M.
+#### BL-995 Function review of the requirements: legal and compliance (LEG, CMP)
+- Status: in-progress (interactive session; agents start as session slots free). Mode: pair. Owner: legal. Milestone: M15. Size: M.
 - Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for legal: coverage per card NS-01 to NS-45, missing requirements as `FR-LEG-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
+- Scope: `docs/product/prd/functions/` legal.md and compliance.md: coverage per card NS-01 to NS-45, missing requirements as `FR-<code>-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
-#### BL-996 Function review of the requirements: compliance (CMP)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: legal. Milestone: M15. Size: M.
+#### BL-996 Function review of the requirements: privacy (PRV)
+- Status: in-progress (interactive session; agents start as session slots free). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: M.
 - Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for compliance: coverage per card NS-01 to NS-45, missing requirements as `FR-CMP-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
+- Scope: `docs/product/prd/functions/` privacy.md: coverage per card NS-01 to NS-45, missing requirements as `FR-<code>-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
-#### BL-997 Function review of the requirements: privacy (PRV)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: privacy engineer. Milestone: M15. Size: M.
+#### BL-997 Function review of the requirements: customer support and policy (SUP, POL)
+- Status: in-progress (interactive session; agents start as session slots free). Mode: pair. Owner: content. Milestone: M15. Size: M.
 - Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for privacy: coverage per card NS-01 to NS-45, missing requirements as `FR-PRV-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
+- Scope: `docs/product/prd/functions/` support.md (with policy: trust and safety, acceptable use): coverage per card NS-01 to NS-45, missing requirements as `FR-<code>-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
-#### BL-998 Function review of the requirements: support and policy (SUP, POL)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: content. Milestone: M15. Size: M.
+#### BL-998 Function review of the requirements: marketing (MKT)
+- Status: in-progress (interactive session; agents start as session slots free). Mode: pair. Owner: content. Milestone: M15. Size: M.
 - Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for support and policy: coverage per card NS-01 to NS-45, missing requirements as `FR-SUP-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
+- Scope: `docs/product/prd/functions/` marketing.md: coverage per card NS-01 to NS-45, missing requirements as `FR-<code>-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
-#### BL-999 Function review of the requirements: marketing (MKT)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: content. Milestone: M15. Size: M.
+#### BL-999 Function review of the requirements: operations, risk and security, data and measurement, finance (OPS, RSK, SEC, DAT, FIN)
+- Status: in-progress (interactive session; agents start as session slots free). Mode: pair. Owner: platform, security engineer, analytics engineer. Milestone: M15. Size: M.
 - Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for marketing: coverage per card NS-01 to NS-45, missing requirements as `FR-MKT-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
+- Scope: `docs/product/prd/functions/` operations.md, risk-security.md, data-and-measurement.md, finance.md: coverage per card NS-01 to NS-45, missing requirements as `FR-<code>-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
 - Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
 
-#### BL-1000 Function review of the requirements: operations (OPS)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: platform. Milestone: M15. Size: M.
-- Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for operations: coverage per card NS-01 to NS-45, missing requirements as `FR-OPS-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
-- Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
-
-#### BL-1001 Function review of the requirements: risk and security (RSK, SEC)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: security engineer. Milestone: M15. Size: M.
-- Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for risk and security: coverage per card NS-01 to NS-45, missing requirements as `FR-RSK-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
-- Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
-
-#### BL-1002 Function review of the requirements: data and measurement (DAT)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: analytics engineer. Milestone: M15. Size: M.
-- Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for data and measurement: coverage per card NS-01 to NS-45, missing requirements as `FR-DAT-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
-- Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
-
-#### BL-1003 Function review of the requirements: finance (FIN)
-- Status: in-progress (interactive session; queued behind the agent limit). Mode: pair. Owner: content. Milestone: M15. Size: M.
-- Satisfies: the founder's 20 Nov instruction; `docs/product/prd/functions/BRIEF.md`.
-- Scope: `docs/product/prd/functions/` file for finance: coverage per card NS-01 to NS-45, missing requirements as `FR-FIN-nn` linked to card rows, e2e screen ids and backlog rows, design needs, card changes proposed, engineering needs, founder and counsel questions with defaults.
-- Done when: Karma has ruled the card changes in GAP-LOG.md, linked the function requirements from the cards, and handed design needs to the e2e leads.
+Note: `scripts/agents/lib.mjs` parses only three-digit ids (`BL-\d{3}`), so the next id after BL-999 is invisible to the dispatcher; the five function rows above are grouped to stay inside BL-999. The id format change is an engineering row.
 
 ## Appendix: TDD proposal to BL mapping
 
