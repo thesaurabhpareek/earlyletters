@@ -1203,11 +1203,27 @@ function ViewControl({ view, onChange }: { view: ReviewView; onChange: (v: Revie
   );
 }
 
-/** One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. */
+/**
+ * One fix as a row: what happened, then what it was. 48 pt tall, a chevron, the VoiceOver path to the marks. Below
+ * accessibility sizes the detail is a one-line preview (the whole of it is in the row's label). At accessibility sizes
+ * the row stacks: the label and the chevron, then the detail in full with no line limit, so the parent's words are
+ * never cut (NS-33-R4). The button, its label, hint and expanded state are the same at every size.
+ */
 function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnType<typeof rowShows>; open: boolean; onPress: () => void }) {
   const { c } = useTheme();
+  const stacked = useIsAccessibilitySize();
   const detail =
     shows.kind === 'change' ? fill(copy.review.rowChange, { a: shows.from, b: shows.to }) : shows.kind === 'mark' ? '' : shows.text;
+  const chevron = <CaretRightIcon size={16} color={c.textMuted} weight="bold" />;
+  const words = (
+    <Text
+      variant="footnote"
+      className={stacked ? undefined : 'flex-1'}
+      numberOfLines={stacked ? undefined : 1}
+      style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
+      {detail}
+    </Text>
+  );
   return (
     <Pressable
       onPress={onPress}
@@ -1216,16 +1232,24 @@ function FixRow({ label, shows, open, onPress }: { label: string; shows: ReturnT
       accessibilityHint={pendingCopy.review.editA11yHint}
       accessibilityState={{ expanded: open }}
       testID="review.fixRow"
-      className="min-h-12 flex-row items-center gap-3 py-1">
-      <Text variant="labelSmall">{label}</Text>
-      <Text
-        variant="footnote"
-        className="flex-1"
-        numberOfLines={1}
-        style={shows.kind === 'struck' ? { textDecorationLine: 'line-through' } : undefined}>
-        {detail}
-      </Text>
-      <CaretRightIcon size={16} color={c.textMuted} weight="bold" />
+      className={stacked ? 'min-h-12 justify-center gap-1 py-1' : 'min-h-12 flex-row items-center gap-3 py-1'}>
+      {stacked ? (
+        <>
+          <View className="flex-row items-center gap-3">
+            <Text variant="labelSmall" className="flex-1">
+              {label}
+            </Text>
+            {chevron}
+          </View>
+          {detail ? words : null}
+        </>
+      ) : (
+        <>
+          <Text variant="labelSmall">{label}</Text>
+          {words}
+          {chevron}
+        </>
+      )}
     </Pressable>
   );
 }
