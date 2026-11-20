@@ -82,7 +82,7 @@ One schedule. Periods are the ones in force or proposed in `data-policy.md` sect
 | Invites and return-link hashes | L3 | 90 days after expiry, use or revocation | delete | `purge_due` [V `20261108020000:208`] |
 | `audit_events` | L3 | 24 months | delete, actor nulled at account deletion | `purge_due` under `app.retention_purge` [V `:211-214`] |
 | `ops.audit_log`, security events | L3 | 12 months | delete | `ops_retention` [V `20261004200000:363-371`] |
-| `escrow_unwraps` | L3 | 24 months, pseudonymised at deletion | delete | purge job; period open (Q51) |
+| `escrow_unwraps` | L3 | 24 months as built; Rec 12 to match D-021 (section 14.1) | delete | purge job; period open (Q51), "as built, not approved" |
 | `deletion_requests`, receipts | L3/L2 | 3 years after completion | delete | `purge_due` [V `:209-210`] |
 | `policy_acceptances` | L3 | account life, then pseudonymised, then 3 years | delete | `purge_due` [V `:213`] |
 | `subscription_consents` | L3 | 3 years after pseudonymisation | delete | `20261016001000:133-148` [V] |
@@ -192,7 +192,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 |---|---|---|---|
 | C06-1 | `data-policy.md:211` vs `reliability.md:43` and FR-PRV-08 | Policy: Pro daily backups, 7 days. Production: Free plan, no Supabase backups, nightly dump 7 days | `legal`, `ops` |
 | C06-2 | `data-policy.md:223` vs code | `support_access` audit event is not written (finding 1) | `legal`, `data-architect` |
-| C06-3 | D-021 (12 months for key-unwrap logs) vs DC 4.3.1 (24 months) | open as COUNSEL_PACKET Q51 | counsel |
+| C06-3 | D-021 (12 months for key-unwrap logs) vs DC 4.3.1 (24 months) | open as COUNSEL_PACKET Q51; Rec 12 months, section 14.1 | counsel |
 | C06-4 | `subprocessors.md` vs FR-PRV-08 | GitHub holds an encrypted dump; not named (PQ-3) | `legal` |
 | C06-5 | chapter 08 DSR-R09 says `SCPRG` is `pending PR #32`; no file in `supabase/` mentions it | the purged-id guard is not in the repo; finding 9 | `data-architect`, `compliance-engineer` |
 | C06-6 | `DELETION_AND_EXPORT_SPEC.md` 2.6.3 (steps `powersync_verify` and `appstore_mapping` retired) vs `log.ts:67-73` and chapter 08 open question 6 | `STEP_NAMES` still lists `revenuecat` and `powersync_verify`; the `deletion_request_steps.step` check still lists `revenuecat` | `data-architect` |
@@ -213,3 +213,86 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 ## 13. How I checked this file
 
 Cites sampled: 24 (read this session). Held: 22. Two did not hold as written in their source: the 7-day Pro backup sentence against production (C06-1) and the `SCPRG` guard that chapter 08 names (C06-5). Sampled: `20261108020000:128-218`; `20261004200000:363-400`; `20261016001000:133-148`; `supabase/migrations/20261023060000_explicit_grants.sql:49-56`; `posthog.ts:163-171`; `log.ts:67-73, 141-198`; `runbook.ts:1-29`; `APPLY.md:48`; `privacy-policy.md:72, 82-84`; `data-policy.md:147-160, 175-232`; `DELETION_AND_EXPORT_SPEC.md` DATA-REQ-035, -050 to -056, 2.6.3; `ENGINEERING_REQUIREMENTS.md:168-173, 479-483`; `docs/ops/runbooks/data-requests-by-email.md` section 0; `subprocessors.md`; DC 1, 2, 4.1 to 4.9; chapter 08 rules and matrix; chapter 10 OBS rules; FR-BKO-02, -04, -05, -16, FR-PRV-03, -05, -08, -12, -26, -31, FR-DAT-01, -05, -28, FR-REL-26 text rows. Not verified: any live vendor console; Deno and database test runs; the `preflight-production` check for FR-PRV-31; whether the underage runbook says what I summarised beyond its existence.
+
+## 14. Council amendments (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013) ids; council returns by CPrivO/CCO/CLO, CDO/CISO, and CMO/CFO/CBO/CAIO (not yet on `develop`; cited by their item id). Gates: G13 = before the Build 13 cut; GF = before the first outside family signs in; G10 = before 1.0. Gate letters marked [E] are my proposal; the decisions record names only those it names. Nothing here is a date, a legal reading, or a parent-facing word.
+
+### 14.1 B7: retention, holds, processors (COUNSEL)
+
+- Q51 (B7a): Rec build the key-unwrap log (`escrow_unwraps`) at 12 months to match D-021 before any apply, so the build never contradicts a decision silently. Counsel (CQ2) says if a longer clock is needed; the founder then amends D-021. Lengthening later is one-way, shortening now is cheap (nothing runs live: `APPLY.md:48` [V]).
+- Every period in section 4 stays "as built, not approved". No period appears in the privacy policy, the store listing or the app until counsel and the founder answer. Gate for publishing any period: G10 [E]; for the Q51 change in code: before the apply (A2), so GF.
+- Unconfirmed sign-up rows have no purge job (FR-PRV-05, not built; finding 7) [V].
+- The 14 counsel questions are in appendix A with their exact wording.
+
+### 14.2 B2: cloud AI for a child's voice, picture or letter text
+
+Forbidden until X2 (security read and counsel read, `00-product-frame.md` line 91) and, for letter text, a founder decision (B2, AGREED). CAIO conditions, all three before X2 can close, none a gate for 1.0 because nothing leaves the phone today:
+1. Consent design written by the Chief Privacy Officer seat, shown before any send (PRIV-R21 lines Shown, Records, Never, Decline).
+2. A named processor with a no-training term in writing (counsel reads it; CQ14 is pre-staged).
+3. A test that no outbound host outside the allow-list is reachable in the production profile. Rec: a preflight check beside `preflight-production`; G13 [E], because it also proves "nothing leaves the phone" for the first store build.
+
+### 14.3 A3: the consent gate (RULED)
+
+`app.consent_fields_required` (`20261108000000_consent_record_fields.sql:33, 77`) [V] stays the founder's setting. "Zero null `app_build` sheet acts for 14 days" is trivially true with one family testing, so the gate is all of: (a) at least N consent acts, N set by `data-architect` and written here before the setting is touched (no number is invented in this file); (b) acts from more than one device and from at least the minimum build, or the update line, that writes `rendered_sha256` and `locale`; (c) zero nulls for 14 days over (a) and (b). Then the founder turns the setting on and records the date. Gate GF [E].
+
+### 14.4 E5: public claims gaps (COUNSEL; the founder merges)
+
+Owners `legal` and `privacy`. Rule: nothing about server backups goes public until A1 (Supabase Pro) closes. A claims registry (D-123, LEGAL-REQ-044) is a founder call. Gates are [E].
+
+| # | Gap | What the code says | Owner | Gate |
+|---|---|---|---|---|
+| 1 | "No analytics": absolute wording turns false the day A4 is reversed | `packages/analytics`, the consent sheet, `analytics-forget` and the `posthog` deletion step ship dormant behind a flag; say "in this version"; policy, label and site change in the same release as any switch-on | `legal`, `privacy` | G13 |
+| 2 | Backups: "and in your iPhone's own backup" is true and also means data sits in iCloud (B4); any server-backup sentence is unproven on Free | hold every server-backup sentence until A1 | `legal`, `privacy` | GF; nothing public before A1 |
+| 3 | Deletion time: store notes say 30 days; chain is 31 live, 38 backups, 45 processors, Resend about day 60, and up to 24 hours of deletions can return after a restore on Free | counsel decides where the longer windows and the 24 hours are said (CQ12) | `legal` | G13 for the store line; GF for the policy |
+| 4 | No public page says how to delete app data; no deletion route in `apps/web`; check the live listing does not carry the build 2 "Delete account" text | in-app deletion exists only with accounts | `legal`, `privacy` | GF |
+| 5 | Site says "never used to train AI"; names AI, "never" is a practice not code | Rec "Never used to train machine learning models"; founder and counsel (CQ14 context) | `legal` | G13 |
+| 6 | "Exactly as you said it" live on site and welcome email, held from the store (D-125 item 9) | site follows the store hold; founder merges to `main` | `legal` | G13 |
+
+Also: "kept on the phone that made them" is true only without device backup; add "and your iPhone backup if you use one".
+
+### 14.5 `data-policy.md:211` Free-plan conflict (C06-1, restated)
+
+`data-policy.md:211` reads "7 days (Pro daily backups)" [V]; production is on Free with a 7-day encrypted nightly dump and no Supabase backups (`reliability.md:43`; FR-PRV-08). The sentence is false until A1 closes and must not be published; `docs/legal/**` is the founder's, so I do not edit it. If Pro or PITR is bought, its window (7, 14 or 28 days) replaces 7 in every promise before the policy is updated (the row's own rule). `data-policy.md:223` (`support_access`) stays unpublished until a writer exists (C06-2). Owner `legal`; gate GF.
+
+### 14.6 Live system versus what we say (CLO G1)
+
+- `safety_events` is created in file 1 (`20260930000000_scribe_core.sql:178`) [V] and dropped only in `20261002020000_data_governance.sql:277` [V]. `APPLY.md:48` says only files 1 and 2 are applied on `early-letters` [V], so the hosted project can still hold the table that CLAUDE.md says must not exist (safety tiers stay on the phone). I cannot see the live project: this needs a live query (does `public.safety_events` exist, row count) by the founder with `data-architect`, recorded with a date. Until then the claim "the safety tier has no server table" is true of the repo only. If it exists and holds rows, drop after a dump (CDO A2 snapshot rule). Gate GF.
+- Same limit for retention jobs, audit guards and deletion: none runs in production until the apply (finding 2).
+- After the apply: run the access matrix and grants tests against the live project and record the date.
+
+### 14.7 Gates per item
+
+| Item | G13 | GF | G10 |
+|---|---|---|---|
+| B8 allowlist and own-rows export (05 3.2a) | | build | |
+| B7 Q51 in code at 12 | | before apply | |
+| B7 any period published | | | counsel and founder answered |
+| B2 no-unlisted-host preflight test | build | | |
+| B2 cloud AI itself | forbidden until X2 | forbidden | forbidden |
+| A3 consent floor | | rule in place before the setting is turned on | |
+| E5 gaps 1, 3 (store line), 5, 6 | fix or hold | | |
+| E5 gaps 2, 3 (policy), 4 | | fix or hold | |
+| `data-policy.md:211` | | not published; correct after A1 | |
+| `safety_events` live check | | query recorded | |
+
+### Appendix A. The 14 counsel questions (exact wording, CPrivO/CCO/CLO return section 9)
+
+Counsel must confirm every reading; we are Claude roles, not lawyers. CCO could not read the FTC page in the session ([U]).
+
+CQ1 Entity and 5.1.1(ix). "Apple guideline 5.1.1(ix) says apps that 'require sensitive user information should be submitted by a legal entity'. We are an individual publisher, our label declares Sensitive Info (the due date) and letters may hold health details. Does the app fall under 5.1.1(ix), and should the founder form an entity before submission or by D-004's 27 Nov date?" (packet Q1)
+CQ2 Q51. "For a log of every opening of a family's recovery key, is 12 months or 24 months the right retention period, and does a dispute or access request need the longer one?"
+CQ3 PQ-3. "Is GitHub a processor for an age-encrypted nightly dump it cannot decrypt, and what must we say in the subprocessor list and the policy?"
+CQ4 PQ-5. "Does an access or portability request reach our audit and deletion rows about the requester, and is answering through the Save a copy export enough?"
+CQ5 PQ-1. "When a person withdraws sensitive-data consent, what must happen to letters and child data already on our servers (delete, hold, or keep until they delete)?"
+CQ6 Q57(e). "Is a sign-up country check that fails open on lookup error acceptable given the blocked-country list and the Terms confirmation, or must it fail closed?"
+CQ7 Notices. "(a) Does Apple guideline 4.5.4 apply to local notifications as well as push? (b) Are our security alerts and the single deletion-completion email 'transactional' for CAN-SPAM, so no unsubscribe is needed? (c) May the completion email go after the account is deleted?" (CCO could not read the FTC page this session: [U].)
+CQ8 Label. "Does a salted, per-account, app-made device hash stored for new-device alerts make us declare 'Device ID' (linked) in the App Privacy answers? And does Apple's 'collect' cover a copy of app data in a person's own iPhone backup?" (packet Q7)
+CQ9 Legal holds and requests. "What must we do on a hold's release, what may we say about staff reading held data, and what is the minimum process for a subpoena or custody-dispute request for letters before a preservation tool exists?" (packet Q27)
+CQ10 Notice at collection. "Do the two sentences at sign-up (NS-42-R18) satisfy notice duties together with the policy and the Consumer Health Data notice under Washington and Connecticut law, and may the consumer health notice be linked from them?" (packet Q2, Q3, Q20)
+CQ11 Q17 and the device backup. "May we say recordings 'stay on this phone' when a person's own iPhone backup can hold a copy, and what is the least misleading wording?"
+CQ12 Free-plan restore. "Where should we state that up to 24 hours of deletions can return after a restore from the nightly dump (privacy policy, or only the incident notice), and does that affect the 31 and 38 day deletion promises?" (PQ-10)
+CQ13 Inactive accounts. "Is keeping an inactive account and its letters indefinitely, with no automatic deletion, acceptable if the policy says so, or must a period be set?" (OQ-11, Q26)
+CQ14 Pre-staged only if the founder ever opens cloud AI: "Is sending letter text to a zero-retention processor 'sharing' of consumer health data under the state laws in the register, and what consent does it need besides Apple 5.1.2(i)?"
+
+Amendment cites re-read on `origin/develop`: `data-policy.md:211, 223`; `20261108000000:33, 77`; `scribe_core.sql:178`; `data_governance.sql:277`; `APPLY.md:48`: 6 of 6 held. Not verified: any live project state (safety_events, plan, applied files), FTC and Supabase pages, counsel readings, and the council returns themselves (not on `develop`).
