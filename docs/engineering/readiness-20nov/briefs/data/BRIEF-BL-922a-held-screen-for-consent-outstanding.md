@@ -12,10 +12,11 @@ Blocked until: the founder approves the held screen's PROPOSED lines (BL-965, #8
      [NS-10-R4a] deletion works without agreeing                 mutant: require Terms before the delete route mounts
      [NS-10-R4b] export reachable after declining                mutant: hide export behind the Terms gate
      [NS-10-R8] kill switch at sign-in shows the local book      (retitle only; mutant: check the switch after the held-screen decision)
+   Test level and file: R4a and R4b are route-mount tests, not screen tests. New file apps/mobile/test/held-screen-routes.test.ts (level U/I, runs in the sandbox): from the finishSetup view model assert the Delete account row targets /settings/delete-account and the export row /settings/export, then run the route guard function (lib/first-run/route.logic.ts) for each with Terms outstanding and assert it lets both through (mutants live there: require Terms before the delete route mounts; hide export behind the Terms gate). If no such guard exists today, the test pins that none is added. The real mount is a device row.
    Red on develop: gate.logic.ts answers `childStep` for a session with no book (:129) and heldNewPhoneView returns undefined for needsConsent (:194-199).
 
 3. FILES: TOUCH / DO NOT TOUCH
-   Touch:  apps/mobile/src/lib/first-run/{gate.logic.ts,new-phone.logic.ts,welcome.logic.ts,use-first-run-route.ts}, apps/mobile/src/components/onboarding/new-phone-screens.tsx, apps/mobile/test/first-run-*.test.ts (rewrite the pins at first-run-new-account.test.ts), docs/agents/checkins/mobile-bl-922a.md
+   Touch:  apps/mobile/src/lib/first-run/{gate.logic.ts,new-phone.logic.ts,welcome.logic.ts,use-first-run-route.ts,route.logic.ts} (route.logic.ts only for the guard the R4a/R4b mutants name), apps/mobile/test/held-screen-routes.test.ts (new); read apps/mobile/src/app/settings/delete-account.tsx and export.tsx, edit them only if a Terms gate is found there, apps/mobile/src/components/onboarding/new-phone-screens.tsx, apps/mobile/test/first-run-*.test.ts (rewrite the pins at first-run-new-account.test.ts), docs/agents/checkins/mobile-bl-922a.md
    Never:  app/_layout.tsx (BL-961 owns the account cover), lib/auth/consent.ts (BL-978a), supabase/**, words in packages/content except PROPOSED keys, charters, memory, roster, workflows, BACKLOG, BOARD.
    Shared file rule: new-phone-screens.tsx and lib/first-run/* order is BL-922a, then BL-978a (design section 7); BL-961 #871 touches first-run too, so whichever lands second merges develop.
 
