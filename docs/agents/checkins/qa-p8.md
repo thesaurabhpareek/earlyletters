@@ -1,0 +1,2 @@
+11:45 (20 Nov) qa | done: P-8 read all 296 P0 rows of the locked cards against develop's test titles; rows tagged where one test, or a stated set (ruling T1), proves the row; 4 card PRs | next: PR bodies with trace counts; owner list for rows in files open PRs change | blocked/needs: none
+12:27 (20 Nov) qa | done: review A on #888 to #891 applied: NS-09-R3 cited as a set (ruling T1), NS-13-R31 and NS-35-R7 dropped to partial, NS-25-R3 listed as blocked on #26 and #32 | next: re-run the trace, update bodies | blocked/needs: none
