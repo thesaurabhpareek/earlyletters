@@ -10,9 +10,9 @@ import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
 import { erasePictureOf, photoDeps, sweepPhotosAtLaunch } from '../src/lib/photos/device';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
-import { expoPhotoFiles, photosDirectory } from '../src/lib/photos/files';
+import { expoPhotoFiles, photosDirectory, storedPhotoFile } from '../src/lib/photos/files';
 import type { StoredPhoto } from '../src/lib/photos/types';
-import { createDisk, iosContainer, type Disk } from './helpers/expo-fs-standin';
+import { createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk, db: null as unknown as SqlDb, changes: 0, ids: 0 }));
@@ -111,6 +111,17 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
     expect(rows(db)).toEqual(['m3']);
     erasePictureOf('e1'); // safe to repeat
     expect(rows(db)).toEqual(['m3']);
+  });
+
+  it('[NS-01-R16] the eraser goes through the stored-name guard: a row whose id climbs out of photos/ loses its row, and the file it names stays (review N3 on #841)', () => {
+    const db = phone('0013');
+    const elsewhere = put(h.disk, `${h.disk.documents}notes.jpg`, 1);
+    entryMediaStore(db).put(row('e1', '../../../Documents/notes'));
+    erasePictureOf('e1');
+    expect(h.disk.files.has(elsewhere)).toBe(true);
+    expect(rows(db)).toEqual([]);
+    expect(storedPhotoFile('../../../Documents/notes')).toBeNull();
+    expect(storedPhotoFile('m1')?.uri).toBe(`${photosDirectory().uri}m1.jpg`);
   });
 
   it('[NS-01-R16] the one audio eraser calls it, so Erase now, the 30 day purge and a letter erased on another phone all take the picture', () => {

@@ -13,7 +13,7 @@
  */
 import { Directory, File, Paths } from 'expo-file-system';
 import type { BakedFiles } from './baker';
-import type { PhotoFiles, PickedFiles } from './types';
+import { isStoredName, photoPath, type PhotoFiles, type PickedFiles } from './types';
 
 export const PHOTOS_FOLDER = 'photos';
 export const PICKER_CACHE_FOLDER = 'ImagePicker';
@@ -37,8 +37,6 @@ const bakedDir = (): Directory => new Directory(Paths.cache, BAKED_CACHE_FOLDER)
 
 /** A plain file name: letters, digits and dashes, one dot, a short extension. No separator, no `.` or `..`. */
 const PLAIN_NAME = /^[0-9A-Za-z-]{1,64}\.[0-9A-Za-z]{1,8}$/;
-/** The one name a stored picture has: `<media_id>.jpg` (photoPath). Nothing else is written or removed in photos/. */
-const STORED_NAME = /^[0-9A-Za-z-]{1,64}\.jpg$/;
 
 /**
  * True when `uri` is a plain file directly inside the folder `folderUri`, judged on the decoded name, so `%2E%2E`,
@@ -58,7 +56,17 @@ export function withinFolder(uri: string, folderUri: string): boolean {
 }
 
 /** Only the stored shape; `.`, `..`, `.jpg`, a separator or another extension is refused, so no name reaches the folder itself (review M1). */
-const safeName = (path: string): boolean => STORED_NAME.test(path);
+const safeName = isStoredName;
+
+/**
+ * The file of the stored picture `mediaId`, through the same guard as write and remove; null when the id cannot make a
+ * stored name, so no such file can exist. Every caller outside this port that touches a stored picture uses this
+ * (review N3 on #841).
+ */
+export function storedPhotoFile(mediaId: string): File | null {
+  const name = photoPath({ mediaId, ext: 'jpg' });
+  return safeName(name) ? new File(photosDir(), name) : null;
+}
 
 /** A new name for a temporary file; the id is the caller's (a UUIDv7 on the phone). */
 function freshName(id: string, ext: string): string {
