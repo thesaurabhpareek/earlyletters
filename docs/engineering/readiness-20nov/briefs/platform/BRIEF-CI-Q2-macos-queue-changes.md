@@ -1,4 +1,4 @@
-# BRIEF CI-Q2: cut the macOS launch time and starts: queue options Q2, Q3, Q4 and Q6 (no spend); Q5 is the founder's spend
+# BRIEF CI-Q2: cut the macOS launch time and starts: queue options Q2, Q3 and Q4 (no spend); Q6 is NOT briefed; Q5 is the founder's spend
 
 Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U].
 
@@ -15,7 +15,7 @@ Agent: ops   Lane: Pack 10   Build: none (CI speed)   Wave: 2
    Measured proof per option: before and after minutes on three runs each, in docs/ops/ci-queue-results.md.
 
 3. FILES
-   Touch: docs/ops/proposed/workflows/ios-compile-q2.patch, -q3.patch, -q4.patch (one file per option, each applies alone), scripts/ci/ (Q6 helper, see below), apps/mobile/test/ios-compile-workflow.test.ts (new), docs/ops/ci-queue-results.md, docs/agents/checkins/ops-rd-h3-q2.md
+   Touch: docs/ops/proposed/workflows/ios-compile-q2.patch, -q3.patch, -q4.patch (one file per option, each applies alone), apps/mobile/test/ios-compile-workflow.test.ts (new), docs/ops/ci-queue-results.md, docs/agents/checkins/ops-rd-h3-q2.md
    Never: .github/workflows/**; the `compile` (Debug) job's checks; removing the 20 s launch or the Release bundle step; branch protection.
    Shared file: BRIEF CI-PIN edits no line here (ios-compile.yml is already pinned).
 
@@ -33,18 +33,18 @@ Agent: ops   Lane: Pack 10   Build: none (CI speed)   Wave: 2
    Cached artifacts are not secrets, but a cache written by a PR is readable only by that PR (header :20-23) so a PR cannot poison develop's cache [V per the header; GitHub docs not fetched: U]. Boundary: CI integrity (security-architect).
 
 7. LIBRARIES: none new (`@expo/fingerprint` is already installed).
-8. BUDGETS: T-01 CI path under 10 minutes; per-option targets from MEASUREMENT-PLAN 6: Q2 xcodebuild 16 to under 6 minutes [E, unproven]; Q3 22 to about 8 [E]; Q4 and Q6 cut starts, not time [E, unknown share].
+8. BUDGETS: T-01 CI path under 10 minutes; per-option targets from MEASUREMENT-PLAN 6: Q2 xcodebuild 16 to under 6 minutes [E, unproven]; Q3 22 to about 8 [E]; Q4 and Q6 not briefed; Q4 cuts starts, not time [E, unknown share].
 
 9. ACCEPTANCE (in order of Rec): Q2 save the Release DerivedData from `launch` on develop (needs a `push: branches: [develop]` trigger or a scheduled dispatch, plus restore+save `actions/cache@` and no `--clean` when an exact hit exists);
    Q3 build the Release `.app` once per native fingerprint on develop, then on a PR with the same fingerprint only bundle the JS and swap it in; Q4 skip drafts: run `launch` on `ready_for_review` and on label, keep cancel-in-progress (the founder's rule stays: green on the head sha at merge);
-   Q6 reuse the previous head's result when `git range-diff` is empty (a stack rebased only because its parent merged): a small `scripts/ci/same-diff.mjs` with a test `[T-02] an empty range-diff reuses the result`.
-   Done also means each patch alone applies with `git apply --check` and the YAML test stays green; the results file has 3 runs before and after.
+   Q6 (reuse a result when `git range-diff` is empty) is dropped: review B found it needs a wider token than `contents: read` and cuts against the founder's rule, green on the head sha at merge. It returns only on his explicit request, with a design that still runs a check on the new head.
+
 
 10. PR BREAKDOWN: one PR per chosen option (~80 to 140 lines each) | base develop | nothing runs until the founder pastes.
 
 11. LENSES: A security-architect, B principal-architect.
 
-12. ORDER: after BRIEF CI-Q1. Q2 before Q3 (Q3 builds on a saved cache). Q4 and Q6 are independent. Blocked by the founder for choice and paste.
+12. ORDER: after BRIEF CI-Q1. Q2 before Q3 (Q3 builds on a saved cache). Q4 is independent. Blocked by the founder for choice and paste.
 
 13. DONE: [ ] `npx vitest run apps/mobile/test/ios-compile-workflow.test.ts`; [ ] `npm test` baseline; [ ] ASCII; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
