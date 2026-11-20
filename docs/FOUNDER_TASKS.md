@@ -3,6 +3,10 @@
 > SUPERSEDED-BY docs/product/prd/23-dependency-map-and-plan.md (parts only, see its section 8: the FT list of 3 Oct (1 of 57 ticked on 30 Oct); anything open is in 23 section 4) | 20 Nov 2026 | Rest of this file is unchanged | Registry: docs/product/prd/REGISTRY.md
 
 Owner: backlog-consolidation PM for the coordinator. Version 1, 3 Oct 2026. Starts **Mon 5 Oct 2026**.
+
+**This file is a list of steps, not a live status.** For where things stand now, run `npm run release:ready` (it reads the setup steps live and changes nothing; see the top of `docs/release/FOUNDER_QUEUE.md`). If this file and the output of `release:ready` disagree, `release:ready` wins.
+
+Last verified: the step text is from 3 Oct 2026 and has not been re-read as a whole. The only later edits to a box were FT-01 (Apple enrolment, 30 Oct) and FT-48 (closed by D-134, 31 Oct); 2 of 57 boxes are ticked as of that edit. Every other box and every "Status:" line below stands as last written and is unverified today. The newer dated order of steps is `docs/release/FOUNDER_QUEUE.md`.
 This is the one list. It collects every founder step from `docs/ops/*`, `supabase/APPLY.md`, `docs/analytics/INSIGHTS_LOOP.md` section 4, ADR 0013 to 0017, `docs/DECISIONS.md`, `docs/agents/DEBATES.md`, the five future-backlog files and the agents' reports. Engineering tasks that wait on these are in `docs/BACKLOG.md` (BL-###); dates come from `docs/ROADMAP.md` 2.1.
 
 How to use it:
