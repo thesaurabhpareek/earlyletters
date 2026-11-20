@@ -298,7 +298,7 @@ Signed: security-architect (Claude role; not an auditor, penetration tester or l
 
 ## Addendum 20 Nov 2026: photo moments and pictures and videos
 
-Status: draft for Karma. Source: `../26-founder-direction-photos-library-and-media.md`. Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (card file 27 not on disk; row ids pending). Claude security role, not an auditor or lawyer. Read 20 Nov: Supabase signed URLs, https://supabase.com/docs/guides/storage/serving/downloads (private buckets need a signed URL or authenticated GET; "You can't revoke individual signed URLs"; to revoke delete, move or rename the object, or rotate the URL signing key); Supabase limits, https://supabase.com/docs/guides/storage/uploads/file-limits (Free projects: global file size limit cannot exceed 50 MB; per-bucket limit and type restrictions exist); Apple PhotoKit article (see `privacy.md` addendum). Not read: Apple docs on video metadata, ImageIO or AVFoundation hardening, Supabase RLS for storage beyond the above. Variants A and B are those of `privacy.md` PQ-13 (A: media stay on the phone; B: media sync).
+Status: draft for Karma; card 27 now locked, row ids mapped in A2 below (20 Nov 2026). Source: `../26-founder-direction-photos-library-and-media.md`. Cards NS-51 Photo moments and NS-52 Pictures and videos with a letter (card file `../27-photo-moments-and-media.md`, rows `NS-51-Rn` and `NS-52-Rn`). Claude security role, not an auditor or lawyer. Read 20 Nov: Supabase signed URLs, https://supabase.com/docs/guides/storage/serving/downloads (private buckets need a signed URL or authenticated GET; "You can't revoke individual signed URLs"; to revoke delete, move or rename the object, or rotate the URL signing key); Supabase limits, https://supabase.com/docs/guides/storage/uploads/file-limits (Free projects: global file size limit cannot exceed 50 MB; per-bucket limit and type restrictions exist); Apple PhotoKit article (see `privacy.md` addendum). Not read: Apple docs on video metadata, ImageIO or AVFoundation hardening, Supabase RLS for storage beyond the above. Variants A and B are those of `privacy.md` PQ-13 (A: media stay on the phone; B: media sync).
 
 ### A. New requirements
 
@@ -345,3 +345,158 @@ New bucket, storage access rules and tests (BL ids by Karma), Edge Function for 
 
 ### G. Cannot assess yet
 Which metadata a phone video holds; behaviour of iCloud-only originals under limited access; real decoder attack surface on current iOS; whether Supabase storage rules can express the sealed-letter condition without a function (not read). Not run: no test, no phone, no service.
+
+### A2. Card row map for FR-SEC-27 to 36 and FR-RSK-07 (added 20 Nov 2026)
+
+The cards are locked; this table points at their rows and changes none. Rows read at `55574906c` from `docs/product/prd/27-photo-moments-and-media.md` (NS-51-R1 to R42, NS-52-R1 to R44). A "gap" cell is a proposed card change (CC-9 onward, section 11 below), not a ruling.
+
+| FR id | Card rows that carry it | What the rows do not say (gap) |
+|---|---|---|
+| FR-SEC-27 (private bucket, access cells) | NS-52-R21 (access matrix: non-member, left member, second account), NS-52-R22 (purge), NS-52-R25 (other parent, private letters skipped), NS-52-R19 (Variant A: nothing uploads) | R21 names three deny cells. It does not name the sealed-letter cell (author-only until the day, NS-06 B) or the path shape; those stay in FR-SEC-27 only. CC-10 |
+| FR-SEC-28 (signed URL, revoke by deleting or moving the object) | NS-52-R21 ("short-lived signed URLs bound to a book member"), NS-52-R22 | The card gives no life in minutes (Q-S8 closed at 5 minutes, CL-072) and R22 lists delete, Let it go, Delete account and legal hold, not leave or removal of a member. CC-10 |
+| FR-SEC-29 (size caps, magic bytes) | NS-52-R1 (limits in one constants file), NS-52-R8 (type from the bytes, bounded parser), NS-52-R24 (server rejects or re-strips, caps bytes per family), NS-52-R10 (free space) | none |
+| FR-SEC-30 (metadata) | NS-52-R5 (video: re-encode, every metadata atom removed, 0 of 10 fixtures carry a tag), NS-52-R4 (pictures through the NS-01 pipeline), NS-52-R17, NS-52-R18 (Save a copy and export, no metadata), NS-52-R24 | R5 chooses the re-encode path. That narrows the "either" in FR-SEC-30 and the Q-S9 default (refuse in share and print) to: re-encode, and video never shares (NS-52-R25, R37) or prints (NS-52-R26). The API for removing every atom is UNVERIFIED in the card |
+| FR-SEC-31 (malformed media) | NS-52-R8, NS-52-R38 (no third-party media code), NS-52-R39 (synthetic fixtures, device rows), NS-49-R19 | none |
+| FR-SEC-32 (no server processing) | NS-52-R19, NS-52-R24 ("never transcodes server-side by default"), NS-52-R33 (transcode in the foreground), NS-52-R38 | none |
+| FR-SEC-33 (index and thumbnails) | NS-51-R6 (index: L4, own file, backup excluded, never synced), NS-51-R9 (sheet), NS-51-R11 (neutral nudge), NS-51-R17 (clear), NS-51-R25 (opaque box, locked sheet), NS-52-R30 (no frame in the switcher) | FR-SEC-33 says thumbnails are written only under `Caches`; card section 10 says "transient thumbnails in memory only"; no acceptance row states either. CC-11 |
+| FR-SEC-34 (`[X4-R1]` enumeration) | NS-51-R24 (opt-in and index per account), NS-51-R17, NS-51-R23 (restore), NS-52-R21 (Variant B second account), NS-52-R16 (erase scan), NS-52-R40 | The card's threat table has "Account B reads A's media" under R21 only, which is Variant B. Variant A is the default and has no second-account row for attached files and poster frames. CC-9 |
+| FR-SEC-35 (Save a copy, share) | NS-52-R17, NS-52-R18, NS-52-R25, NS-52-R37 (share stays one picture, X2 reads), NS-51-R26 (nothing leaves the phone) | none |
+| FR-SEC-36 (account security emails) | NS-45-R3, NS-08-R21 (card 19 and card 08, unchanged; not card 27) | none |
+| FR-RSK-07 (cost abuse, Variant B) | NS-52-R24 (bytes per family), NS-52-R20 (upload queue), NS-52-R31 (Storage shows size) | No row names an 80 percent usage alert; it stays an ops duty |
+
+Note on FR-SEC-03, 22, 34 and RSK-01 (not edited): since the section 5 text was written, the account reader landed on `develop`: `apps/mobile/src/lib/auth/account-scope.logic.ts` and `apps/mobile/test/account-scope.test.ts` carry `[X4-R1]` (grep, 20 Nov). I did not read them, so whether they cover every surface in FR-SEC-03, the days file and the moments index is UNVERIFIED. Section 5's line "grep for X4-R1 under apps ... 0 files" is out of date; Section 5 of this file is left as written until `mobile` or `qa` confirms coverage.
+
+## Addendum 20 Nov 2026 (2): days, cultural background, notifications, picture-first start, Home today (NS-46 to NS-50)
+
+Status: draft for Karma. Owner: `security-architect` (a Claude role, not an auditor, penetration tester or lawyer). Written because the register had no row for NS-46 Days we mark, NS-47 Cultural background, NS-48 Notification catalogue and rotation, NS-49 Picture-first start and Journaling Suggestions, or NS-50 Home today, although card 21 carries 87 P0 rows for them and each card's section 13 lists threats with no likelihood, impact or score. Legal readings below are engineering readings: counsel must confirm.
+
+### 1. What I read for this addendum
+
+Read 20 Nov 2026 at `develop` `55574906c`:
+- `docs/product/prd/21-days-cultural-photos-home.md`: section 13 of NS-46, NS-47, NS-48, NS-49, NS-50, and the acceptance rows NS-46-R1, R2, R14, R20, R23, R24, R28, R30, R32, R36, R37, R48, R49; NS-47-R1 to R38; NS-49-R1 to R37; NS-50-R8, R9. Rows of NS-46 not listed, NS-48 rows and NS-50 rows other than R8 and R9: not read (UNVERIFIED).
+- `docs/product/prd/27-photo-moments-and-media.md`: sections 10 and 13 and the acceptance rows named in A2.
+- `docs/adr/0030`, `0032`, `0033` (all Proposed); `docs/agents/cto/RULINGS.md` CR-69 and CR-71; `docs/product/prd/18-errata-after-lock.md` (highest E83 on `develop`).
+- Code, by grep only: `apps/mobile/src/lib/reminders/` (no `budget.ts`; `planner.ts` still caps at `maxNotifications ?? 60`, now line 323), no `previewPlaceholder`, `setNotificationCategoryAsync`, `chooseOnePerDay`, `notifications.dayNames`, `culture.asked` or `libraryDay` in `apps/mobile/src`; no migration or CI lint for tradition or faith names in `supabase`, `scripts` (the only grep hit for "tradition" is the unrelated `han_traditional` script value in `20261015030000_v1_wire_contract_columns.sql:80`). I did not open the planner, scheduler or prefs code beyond those greps.
+- Open draft PRs, read for ids only: #1056 (FR-CMP-22 to 42), #1057 (counsel packet draft numbers Q109 to Q122), #1058 (CR-140 to 143, LEGAL-REQ-065 to 068), #1059 (leak register P-3 to P-16 and conflicts C-11 to C-13). None is merged; every cross-reference to them is "pending" and may be renumbered.
+
+Outside source read 20 Nov 2026: CJEU judgment of 1 August 2022, C-184/20: data that reveal a sensitive detail only indirectly are covered by GDPR Article 9 (summary page: https://www.thomashelbing.com/en/wissen/dsgvo-hub/rechtsprechung/1.4.15-eugh-vyriausioji; I read a secondary summary, not the judgment; counsel must confirm how it applies to data that never leaves a phone).
+
+### 2. How I scored (read this before the numbers)
+
+- Same scale as section 4: likelihood (L) and impact (I) 1 to 5, score = L x I. No score here is a measurement. Every L and I is a judgement (J). Where an L rests on a fact I could check by grep, the row says so; the I is always J.
+- Likelihood anchors I used (mine, not the pack's): 1 = needs two independent failures; 2 = one failure of a control that is designed and has a named test; 3 = the control is designed but unbuilt or untested, or rests on a platform behaviour nobody has observed; 4 = the gap is in the cards as written or in today's code; 5 = happens in ordinary use today. Nothing in NS-46 to NS-52 is built, so "designed" means "in a card or an ADR (Proposed)".
+- Impact anchors added for faith and origin rows: 5 also means a family's faith or origin shown, without a parent's act, to someone outside the household (NS-47 section 13 calls this a safety matter for some people); 4 means the same shown to someone who already holds the unlocked phone or its backup.
+- A row scored 12 or more joins the gate record (FR-RSK-01); 16 or more with no control in place blocks a release candidate unless the founder signs the residual. No candidate carries these features yet, so no row blocks anything today.
+- Rows merged on purpose: lock screen, Notification Center, Watch mirror, CarPlay, Focus summary and "to a partner or colleague" are one outing risk on one control family (RSK-33); a day-specific prompt key and the day list on the server are two different data paths (RSK-35, RSK-36).
+
+### 3. Coverage verdict per card (security lens, NS-46 to NS-52)
+
+| Card | Verdict | Why |
+|---|---|---|
+| NS-46 Days we mark | partly | Section 13 has no scores. The one-a-day rule (R30) rests on `budget.ts`, which does not exist (grep); R23 (tradition review, source right) is a release checklist, not a test; R48 (fetch does not vary with ticks) is a strong P0 (a) row. RSK-33, 34, 39, 40, 41, 42 |
+| NS-47 Cultural background | partly | Strong rows (R4 to R7, R11, R12, R15, R21, R26, R36, R38). Open: the R4 lint contradicts the card's own key (RSK-38); `notifications.dayNames` has no sign-out rule (RSK-37); no row bars copies in Keychain, an app group or a widget (FR-SEC-40) |
+| NS-48 Notification catalogue and rotation | covered | One neutral title and body per tone; no name or faith on a lock screen (R9, R11 as the card cites them); no new boundary. Its volume risk is RSK-41. Rows R9 and R11 read only through the section 13 table |
+| NS-49 levels 1 and 2 | covered, one condition | R6, R10, R19, R21, R24, R25 are scans and canaries with no permission asked. Condition: the plist and entitlement delta read before any `production` build (R15), and FR-CMP-40 (pending #1056) holds the resolved plist per EAS profile. RSK-44, 45 |
+| NS-50 Home today | partly | Adds no data. R9 (no day name in the snapshot) is P1 while NS-47-R26 states the same behaviour as P0 (a): CC-12. RSK-34 |
+| NS-51 Photo moments (level 3) | covered, spike first | One module (R29), dates and identifiers only (R5), per account (R24), off until a tap (R1). RSK-45 |
+| NS-52 Pictures and videos | covered for Variant B, partly for A | See A2: no Variant A second-account row (CC-9). RSK-27 to 32 above stand |
+
+### 4. New function requirements (FR-SEC-37 to 41)
+
+Priority: P0 only with an RR-4 reason. Same columns as section 3. None of these changes a card row.
+
+| Id | Requirement | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-SEC-37 | Given every value that a phone holds about days (the days file, `notifications.dayNames`, `days.clearedNote`, `culture.asked`, any dismissed-on or pause value), Then each has a stated scope (per account, or cleared at sign-out and at Erase) in the FR-PRV-14 list, and a test seeds account A with the day-name switch on, a ticked day and a typed day, signs A out, signs B in, and asserts B sees: the switch off, no day name on any lock-screen title or body, no ticked or typed day, and that turning App lock on and then off does not turn the switch on. The test passes under either fix (per account, or cleared); which fix is the call of `data-architect` and `privacy`, not this row | NS-47-R12, R15, R37; FR-PRV-14; ADR 0033 item 4; `[X4-R1]`; errata proposal in #1059 (item 2); RSK-37 | P0 (a) | mobile, data-architect, qa | NS-47-R12 clears the stored value only when App lock turns on; NS-47-R15 and FR-PRV-14 do not list `notifications.dayNames`; `days.clearedNote` scope unstated (#1059 C-13) |
+| FR-SEC-38 | Given the NS-47-R4 name lint, Then its scope is written once (migrations, views, RPC arguments, synced fields, analytics names; and which phone-only keys, if any, are exempt), it passes on the card's own phone-only key, it still fails a faith, tradition, country, origin or culture stem anywhere server-side, and any exemption is one named line reviewed by `security-architect`, never an inline ignore comment. The lint is built in the PR that adds the first day key | NS-47-R4, R11; ADR 0032 item 8; RSK-38; #1059 C-11 | P1 | data-architect, security | No such lint exists on `develop` (grep of `supabase` and `scripts`, 20 Nov); `culture.asked` is the card's key |
+| FR-SEC-39 | Given a build with `EXPO_PUBLIC_DAYS` on, Then two checks pass before a candidate carries it: (a) a unit test reads every notification category's options and fails on `hiddenPreviewsShowTitle`, on a missing `previewPlaceholder`, and on any key beyond `{ source, kind }` in `data`; (b) the J-CUL-01 walk is run with the synthetic day name `zz-test-tradition` and the result is recorded in the gate record with device, iOS version and, for each of lock screen, Notification Center, Apple Watch mirror, CarPlay (if a head unit is available), Focus summary and Show Previews Never or When Unlocked, "name seen" or "not seen". A "seen" on any surface keeps the flag off in that profile | NS-47-R12, R13, R36, R38; NS-46-R32; ADR 0033 items 1 to 3; FR-CMP-30, FR-CMP-38 (pending #1056); RSK-33 | P0 (a) | mobile, qa | Leak register P-5 to P-8 say UNKNOWN until J-CUL-01 (#1059, pending); no category exists in code today (grep) |
+| FR-SEC-40 | Given the days file and the moments index (and any key or token used to open them), Then no copy of them, of a day id, of a tradition or of an asset identifier is written to the Keychain, an app-group container, a widget or App Intents target's storage, iCloud key-value storage, the pasteboard or a spotlight or donation index; a source scan fails on each; and a device row on a restored phone and on a device-to-device transfer records whether the exclusion held | NS-47-R6, R7, R11, R28; NS-51-R6, R23; ADR 0032; FR-SEC-21; FR-SEC-14; RSK-36 | P0 (a) | mobile, security | Card rows name Application Support and the backup exclusion; none names the Keychain or a shared container (grep of card 21 for "Keychain", 20 Nov, no match). Ruling D3 (nothing donated) is the NS-49 case; this row extends it to the stores |
+| FR-SEC-41 | Given any EAS profile, Then `EXPO_PUBLIC_DAYS` cannot be on unless `apps/mobile/src/lib/reminders/budget.ts` exists and its property test (no local date with two budgeted notes, with two books, a birthday and a month note on one date) is in the required checks, and a release profile that enables the flag early fails a config test (the NS-51-R32 pattern) | NS-46-R28, R30; ADR 0030; CR-69 A1; RSK-43 | P0 (a) | mobile, qa | `budget.ts` does not exist; `planner.ts:323` still caps at 60 and `plan-reminders.logic.ts` is a second scheduler (ADR 0030 Context). One birthday lost to a day note is a promise broken (a) |
+
+Already covered, not repeated here: tradition review record and source right as gate evidence (FR-CMP-31, FR-CMP-32, pending #1056); Notes for Review and the 4.5.4 treatment (FR-CMP-29, FR-CMP-39, pending #1056); plist and entitlement evidence per EAS profile (FR-CMP-40, pending #1056); the fetch that must not vary with ticks (NS-46-R48, a P0 (a) row with a test).
+
+### 5. Register entries (ids continue RSK-32)
+
+Format as section 4. Basis for every row: I is J; L is J unless the row says "L from grep".
+
+| Id | Kind | Risk | L | I | Score | Owner | Control (status) | NS ids and card rows |
+|---|---|---|---|---|---|---|---|---|
+| RSK-33 | Privacy, safety | A family's faith or origin shows on a notification surface the parent did not think of: lock screen, Notification Center, Apple Watch mirror, CarPlay, Focus summary, or with Show Previews set to Never or When Unlocked, where a partner, relative, colleague or stranger can read it (J-CUL-01) | 3 | 5 | 15 | mobile | Designed: one neutral title and body, a category with a placeholder, no `hiddenPreviewsShowTitle`, no day name beside a child name (NS-47-R12, R13, R36, R38); FR-SEC-39 adds the test and the device walk. Not built: no category in code (grep). L is 3 not 2 because five surfaces rest on iOS behaviour nobody has observed; it falls to 2 when the walk passes on a device | NS-46, NS-47, NS-48; NS-47-R12, R13, R36, R38; NS-46-R32, R36, R37; leak register P-3, P-5 to P-9 (#1059) |
+| RSK-34 | Privacy, safety | The same facts read on an unlocked phone with App lock off: the Days page, Browse, a day slip on Home, the ask slip, or the app-switcher snapshot, by someone who holds the phone or looks over a shoulder | 3 | 4 | 12 | mobile | NS-47-R26 (blank snapshot with or without App lock, Home names a day only when it is today), NS-47-R21 (untick, Clear all), NS-50-R9 (same snapshot rule, P1: CC-12). Like RSK-02 the only control against someone already holding the unlocked phone is App lock; the card says so in its call-out (NS-47-R22) | NS-47-R21, R22, R26; NS-50-R9; NS-46 section 13; P-16 (#1059) |
+| RSK-35 | Privacy | A letter written from a day note carries the day in a synced field (`entries.prompt_key`, `prompt_library_version`), so our server holds a faith or origin inference per letter | 2 | 4 | 8 | data-architect | Designed: a tap opens an ordinary prompt; a test saves a letter from each library day and compares every synced field to a control letter (NS-47-R5, P0 (a)); the test does not exist yet. `entries.prompt_key` is L2 and synced (NS-47 section 13) | NS-47-R5, R4; NS-46-R32; P-14 (#1059) |
+| RSK-36 | Privacy, safety | The days file or the moments index leaves the protected file: in the iPhone backup or a restore, in the Keychain or a shared container, on a device-to-device transfer, or readable by a second account on the phone | 3 | 4 | 12 | mobile, data-architect | Designed: Application Support file, exclusion set and read back, write refused if false, cleared first at sign-out and Erase, owner key fails closed (ADR 0032, Proposed; NS-47-R6, R7, R15, R28; NS-51-R6, R23, R24). FR-SEC-40 closes the Keychain and shared-container paths the card is silent on. The account reader landed (see A2 note); whether it enumerates these files: UNVERIFIED. Device transfer behaviour: UNKNOWN until J-CUL-01 | NS-47-R6, R7, R15, R28; NS-51-R6, R23, R24; P-15 (#1059) |
+| RSK-37 | Privacy, safety | B signs in on A's phone and inherits A's day-name switch (`notifications.dayNames`) set to on, so day names show on B's lock screen without B's choice; the same open question for `days.clearedNote` and `culture.asked` | 4 | 4 | 16 | mobile, data-architect | Score is for the cards as written: L from the cards (4 = the gap is on paper): NS-47-R12 resets the stored value only when App lock turns on, NS-47-R15 and FR-PRV-14 do not list the key. Errata proposed in #1059 (pending); FR-SEC-37 is the test. I do not decide the fix. With the fix agreed and the test written the row falls to 2 x 4 = 8. Nothing is built, so the FR-RSK-01 block at 16 has no candidate to stop | NS-47-R12, R15, R37; FR-PRV-14; ADR 0033 item 4; #1059 C-12, C-13 |
+| RSK-38 | Security (control erosion) | The NS-47-R4 lint forbids setting keys named like culture, but the card's own key is `culture.asked` (NS-47-R11, ADR 0032 item 8); the quick fix is an inline exception or a narrower lint, which would let a faith-named key into a migration, view, RPC argument or synced field | 3 | 3 | 9 | data-architect | FR-SEC-38 (scope written once, one named exemption); #1059 C-11 (pending). L from grep: no such lint exists today | NS-47-R4, R11; ADR 0032 item 8 |
+| RSK-39 | Store rejection | App Review reads a day note, or the library, as marketing (4.5.4) or a faith question as unneeded data (5.1.1(iii)); this is an engineering reading, counsel must confirm | 2 | 3 | 6 | compliance | Notes for Review and the 4.5.4 treatment (NS-47-R23; FR-CMP-29, FR-CMP-35, FR-CMP-39, pending #1056); the fallback list with no question (NS-47 section 13); counsel Q112 (draft number, #1057). Apple's wording not re-read this session: UNVERIFIED | NS-46-R27, R35, R36; NS-47-R23 |
+| RSK-40 | Trust, reputational | A day's content is wrong, offensive or a stereotype, or a tradition ships that no member of it has read | 3 | 3 | 9 | content, regulatory-affairs | NS-46-R23 (review on record before a tradition ships; a release checklist, not a test), NS-46-R2 and R20 (nothing ticked; alphabetical), NS-46-R14, R24; FR-CMP-32 (pending #1056) makes the record a gate item; counsel Q114 (draft). Reviewers for the first traditions are unnamed (Q-FD-9, closed: none ships without a record) | NS-46-R2, R14, R20, R23, R24; NS-47-R20; DL-8 |
+| RSK-41 | Legal, IP | A source table (dates copied from a site, a moon-sighting or lunisolar table) is used without a right to use it | 3 | 3 | 9 | regulatory-affairs, legal | NS-46-R23 (counsel confirms each source; rule dates computed, not copied), NS-46-R1 (every table row carries an `authority`; that checks the field, not the right); FR-CMP-31 (pending #1056); counsel Q113 (draft). I read no source's terms | NS-46-R1, R12, R23; FR-DAY-23 |
+| RSK-42 | Privacy | A library fetch varies with what the parent ticked or browsed, so a request, header or path tells our host or a CDN which days a family keeps | 2 | 4 | 8 | mobile | NS-46-R48 (P0 (a): one file for every phone; a test compares the fetch with an empty store and with every day ticked, byte for byte); default is bundled, refreshed by an app update (no fetch at all); NS-47-R4. The test does not exist yet | NS-46-R48; NS-47-R4; P-11 (#1059) |
+| RSK-43 | Operational, trust | The one-a-day rule is enforced nowhere, so days, birthdays, months and evening notes land on one date: notification fatigue, notifications turned off, and a birthday displaced by a day note | 4 | 3 | 12 | mobile | L from grep: no `budget.ts`, no `chooseOnePerDay` (20 Nov); `planner.ts:323` caps at 60 and `plan-reminders.logic.ts` adds up to 4. Designed: NS-46-R30 (one pure function, property test), ranks typed day 1, birthday 2, library day 3 (ADR 0030, CR-69 A1); FR-SEC-41 makes it a prerequisite of the flag | NS-46-R28, R30; NS-48-R2; ADR 0030 |
+| RSK-44 | Privacy | Level 2 (Apple's Journaling suggestions picker) hands the app more than a picture, and the app keeps, logs or acts on it (a place, a workout, a contact, a title) | 2 | 4 | 8 | mobile | NS-49-R10 (content read only for Photo and LivePhoto; a source scan fails any other suggestion type), R13, R21, R24 (canary), R34; no permission string, no PhotoKit call (R6, R25); entitlement `com.apple.developer.journal.allow` reviewed before `production` (R15). Not built | NS-49-R6, R10, R13, R15, R21, R24, R25 |
+| RSK-45 | Privacy, store | A level 2 build or a later change adds a library read, a usage string or a PhotoKit call that NS-49 says is absent; or NS-51 asks for library access before its own tap, or reads more than a date and an identifier; App Review 5.1.1(iii) (permission for data the feature does not need) is an engineering reading, UNVERIFIED | 2 | 4 | 8 | mobile, security | NS-49-R25 (binary strings read; no usage string, no PhotoKit authorisation), NS-51-R1 (off until a tap), R2 (string only where the flag is on), R5 (dates and identifiers only), R29 (one module, `scribe-library`), R32 (flag off in every EAS profile; a test fails a profile that turns it on); FR-SEC-14 (native module is its own PR); FR-CMP-23, FR-CMP-40 (pending #1056) | NS-49-R6, R25; NS-51-R1, R2, R5, R29, R32 |
+| RSK-46 | Legal | Ticked days (or a day list with a picture index) are read by a regulator or court as data that reveals religion or another special category (GDPR Article 9 reaches data that reveals it indirectly, C-184/20; some US state rules differ); counsel must confirm whether device-only data we never receive is in scope at all | 2 | 4 | 8 | legal | Design keeps the list on the phone, optional, withdrawable and never received: NS-47-R4, R9, R10, R21; label stays "not collected" only while R4 holds (NS-47-R23). Counsel Q109 and Q115 (draft numbers, #1057). If the list ever reached our server the impact would be higher; NS-47-R4 is the control that blocks that | NS-47-R1, R4, R9, R10, R21, R23; NS-51-R6, R7 |
+
+### 6. Pointers added to rows above (cells unchanged)
+
+- RSK-03 (child name on a lock screen): add NS-48-R9, R11 and NS-46-R37; the day-name switch is separate from the child-name switch (NS-47-R12).
+- RSK-15 (label out of step): add NS-47-R23, NS-49-R27, NS-51-R30.
+- RSK-16 (review finds a hidden feature): add FR-CMP-39 (Notes for Review per flag, pending #1056).
+- RSK-18 (child's picture or other adult's words): add NS-49-R23, NS-51-R37.
+- RSK-31 (moment thumbnails reveal what pictures show): NS-51-R25 and NS-52-R30; thumbnail location gap: CC-11.
+- RSK-01 and RSK-36: see the A2 note on the account reader.
+
+### 7. Highest scores after this addendum
+
+RSK-37 (16), RSK-01 (15), RSK-29 (15), RSK-33 (15), then 12: RSK-02, 07, 21, 26, 31, 34, 36, 43. The five rows about features that are not built yet (RSK-33, 34, 36, 37, 43) fall when a named FR-SEC test exists and passes; none of them can be cleared by a card edit alone.
+
+### 8. Design needs
+
+| Screen or state | Need | For |
+|---|---|---|
+| Days page (C-S24), day detail, ask slip | `.backgrounded` state drawn blank; the day-name switch shown off and disabled with App lock on, with its reason | FR-SEC-37, 39; NS-47-R12, R26 |
+| Sign-out sheet (C-S03) | One line that day names and ticked days on this phone are cleared at sign-out (wording is `content`'s and the founder's; PROPOSED intent only) | FR-SEC-37; NS-47-R15 |
+
+### 9. Engineering needs (backlog; no BL id invented)
+
+| Change | Owner |
+|---|---|
+| Account-scope test for the days file, `notifications.dayNames`, `days.clearedNote`, the moments index and album picks (FR-SEC-37, FR-SEC-34); add to the BL-961 test list | mobile, qa |
+| Category-options test and J-CUL-01 recorded result (FR-SEC-39), with the synthetic day name | mobile, qa |
+| Source scans for Keychain, app group, iCloud key-value, pasteboard, donation index (FR-SEC-40) in `scripts/guards/` | security |
+| `budget.ts` and its property test before the flag (FR-SEC-41; NS-46 stack, BL-966) | mobile |
+| Name-lint with a written scope (FR-SEC-38) | data-architect, security |
+
+### 10. Questions
+
+| # | Question | Recommended default | Route |
+|---|---|---|---|
+| Q-S11 | May a candidate carry `EXPO_PUBLIC_DAYS` on before the J-CUL-01 device walk has recorded what Notification Center, the Apple Watch mirror, Focus summary and Show Previews do with a day note? | No. The flag stays off in that profile until the walk is recorded (FR-SEC-39). The walk needs a phone and a Watch; it is the founder's hands or `qa` on a device | founder (hands) |
+| Q-S12 | Is the scope of `notifications.dayNames`, `days.clearedNote` and `culture.asked` per account, or cleared at sign-out? | No default from me: both pass FR-SEC-37. `data-architect` and `privacy` propose, `product` rules (errata proposal in #1059) | product, privacy, data-architect |
+| Q-S13 | Counsel on whether data that stays on the phone and is never received reaches GDPR Article 9 and US state rules, and on the 4.5.4 reading of a day note | Counsel Q109, Q112, Q115 (draft numbers in #1057, pending); the default in the cards stands: optional, local, withdrawable | counsel through the founder |
+
+### 11. Card changes proposed (for Karma to rule; cards not edited)
+
+Numbered on from CC-8. The PR body lists the same as proposed errata for `product`.
+
+| # | Card row | Change | Why |
+|---|---|---|---|
+| CC-9 | NS-52 section 7 and section 13 | Add a row for the default Variant A: a second account on the phone sees no picture, video, poster frame or thumbnail of the first; and add attached files, poster frames and thumbnails to the `[X4-R1]` list | FR-SEC-34; today only R21 (Variant B) names a second account |
+| CC-10 | NS-52-R21, R22 | R21 gains the sealed-letter cell (author-only until the day) and R22 gains leave and removal of a member (object deleted or moved) | FR-SEC-27, 28; a signed URL cannot be revoked (RSK-27) |
+| CC-11 | NS-51-R9 or R25 | State where a library thumbnail may live: in memory only (card section 10), or `Caches`, and that it is cleared on sign-out, Pause and Turn off | FR-SEC-33 and section 10 disagree |
+| CC-12 | NS-50-R9, NS-47-R37 | Raise NS-50-R9 from P1 to P0 (a) or point it at NS-47-R26; raise NS-47-R37 (typed-day words follow the day-name switch) from P1 to P0 (a), as typed words carry the same outing risk as NS-47-R12 | RSK-33, 34 |
+| CC-13 | NS-46-R28 or R30 | Add: the flag cannot be on in any EAS profile before `budget.ts` and its property test exist | FR-SEC-41 |
+| CC-14 | NS-47-R6 or R11 | Add: no copy of the days file, a day id or a tradition in the Keychain, an app group, a widget, iCloud key-value storage or the pasteboard | FR-SEC-40 |
+| CC-15 | Section 13 of NS-46 to NS-52 | Each table gains one line: "Scored in `functions/risk-security.md` as RSK-nn" (ids above), so no card's threat table stands without a level | The cards' own tables carry no L, I or score |
+
+Not repeated here, because #1059 already proposes them: NS-47-R4 against NS-47-R11 (`culture.asked`), `notifications.dayNames` missing from NS-47-R15 and FR-PRV-14, and `days.clearedNote` scope.
+
+### 12. What this review did not check
+
+- No phone, simulator, Watch, CarPlay unit or live service was used. Every statement about what iOS shows on Notification Center, the Watch mirror, CarPlay, Focus summary, Show Previews, backup, restore or device transfer is UNKNOWN until J-CUL-01 and a restore run.
+- No test was run. "Not built" and "no lint" come from grep of `apps/mobile/src`, `supabase` and `scripts` on `develop` at `55574906c` only; I did not read the planner, scheduler, prefs or account-reader code.
+- I read the sections and rows named in part 1 of this addendum, not all of cards 21 and 27, and none of the design or engineering designs for them (`docs/tdd/new-scope`, the e2e design files).
+- No Apple, Supabase or legal source was re-read except the one CJEU summary above. Apple App Review wording (4.5.4, 5.1.1(iii)) and the PhotoKit and Journaling APIs are as the cards quote them: UNVERIFIED. No licence or terms of any day-source site was read.
+- The four open PRs (#1056 to #1059) were read for ids and headlines only; their rows may change or renumber.
+- All scores are my judgement. A different reader could put several rows one step either way; the anchors in part 2 are there so that the reader can disagree row by row.
+
+Signed: security-architect (Claude role; not an auditor, penetration tester or lawyer).
