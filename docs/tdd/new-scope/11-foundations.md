@@ -10,7 +10,7 @@ Status: Proposed, 20 Nov 2026. Author: `design-systems`, for Karma, who assemble
 
 | Card | Wave | Depth here | State |
 |---|---|---|---|
-| NS-32 notification budget | 1 | full | Not built. #758 is a draft with an `occasion` class; P0 row R14 (quiet book) is unmet on develop |
+| NS-32 notification budget | 1 | full | Not built. #758 is a draft with an `occasion` class; P0 row R14 (quiet book) was unmet [Amended 17-A13: closed on develop, `planner.ts:303`] |
 | NS-33 accessibility floor | 1 | full | Partly built; letter page heading, Me title, Smart Invert, Bold Text, lens control and the audit harness are missing |
 | NS-34 speed baseline | 1 | full (a run sheet, no code) | No sheet, no `perf` profile, no marker harness, no 1,000-letter phone fixture |
 | NS-35 one start | done | record | Built in #828 (`5f5dfaf4`); R6 checks wait for modules |
@@ -23,9 +23,9 @@ Status: Proposed, 20 Nov 2026. Author: `design-systems`, for Karma, who assemble
 The decisions that matter most:
 1. **The lens control is `ChoiceGroup` with `layout="segmented"`**, not Buttons in a `tablist` (NS-33-R3, NS-01-R48; eval B s1.3 agrees). On Fabric iOS `tablist` maps to no trait at all; `radio` adds "radio button" and the checked state (8.2).
 2. **One undo clock: the toast's own dismissal.** Action toasts keep never timing out, and no feature keeps a second deadline. That makes NS-01-R38b true by construction and needs no Switch Control read. Eval B s4.3 designs a timed window instead (Conflict E1).
-3. **NS-32-R14 is a one-line fix with a P0 test**: `prefs.ts:116` ignores `quiet` (eval B s2.6 item 3 and s8 item 8 found the same). It must land before the Quiet control (BL-985).
-4. **The budget keeps the total at 60**: plan notices first, budgeted notes fill what they leave, through one `allocate()` both schedulers call (eval B s2.6, s7.2 item 8). That satisfies NS-32-R4b and R7 and NS-13 3a item 7 (Conflict P1).
-5. **NS-37's copies are written in place by `scribe-photo`**, because expo-file-system 57.0.7 has no backup-exclusion API. The sweep and the eraser learn the copy names in the same slice (NS-37-R5, P0). Names follow eval B s1.3: `makeCopy`, `derivatives.logic.ts`, `regen.ts`.
+3. **NS-32-R14 is a one-line fix with a P0 test**: `prefs.ts:116` ignores `quiet` (eval B s2.6 item 3 and s8 item 8 found the same). It must land before the Quiet control (BL-985). [Amended 17-A13, by extension; verified: the planner drops quiet books at `planner.ts:303` and `prefs.ts:127` passes `quiet`; `test/reminders-quiet-books.test.ts` exists. The R14 gap is closed on develop; keep the test as a guard.]
+4. **The budget keeps the total at 60**: plan notices first, budgeted notes fill what they leave, through one `chooseOnePerDay(candidates, planPending)` both schedulers call (eval B s2.6, s7.2 item 8; [Amended 17-A5] `allocate` is superseded, CR-69 A1). That satisfies NS-32-R4b and R7 and NS-13 3a item 7 (Conflict P1).
+5. **NS-37's copies are written in place by `scribe-photo`**, because expo-file-system 57.0.7 has no backup-exclusion API (`ScribeFiles.setExcludedFromBackup` does, `modules/scribe-files/index.ts:10-11`, so `makeCopy` may call it instead of writing in place [Amended 16-A-5]). The sweep and the eraser learn the copy names in the same slice (NS-37-R5, P0). Names follow eval B s1.3: `makeCopy`, `derivatives.logic.ts`, `regen.ts`.
 6. **NS-01-R17b needs `scribe-photo` to keep the `Progress` it discards** (`ScribePhotoModule.swift:167`), send it as an event, and add a native `cancelPick`. Eval B does not cover it.
 7. **The account layer is designed once, in eval B s2.8**, and BL-961 owns its PR. These cards only consume the scope (6.1).
 8. **NS-34 says what one person can measure by hand.** Rows that need markers say "not measured" until the `perf` profile exists, and a missed or unmeasured row names the flag it holds.
@@ -47,7 +47,7 @@ The decisions that matter most:
 - (b) The progress fill-on-track pair joins `NON_TEXT_PAIRS` at 3:1.
 - (c) The Bold Text face map (3.2).
 
-**1.4 Picture work waits for the take.** Fact: `lib/capture/busy.ts` already gives `captureBusy()` and `onCaptureBusy()` (`:20, 25`), true from the recording session until the take ends, paused included. Copy-making, regeneration and any early bake wait on it (eval B s2.3 item 5). Nothing new goes into `speech-gate.ts`.
+**1.4 Picture work waits for the take.** Fact: `lib/capture/busy.ts` already gives `captureBusy()` and `onCaptureBusy()` (`:20, 25`), true from the recording session until the take ends, paused included. Copy-making, regeneration and any early bake wait on it (eval B s2.3 item 5). Nothing new goes into `speech-gate.ts`. [Amended 16-A-6: a video encode also waits on `captureBusy()` and restarts after the take.]
 
 **1.5 Source scans** (Node, CI, titled with the row). No `tablist` role in `apps/mobile/src` (NS-33-R3). `numberOfLines` on Home, Review, the Book and the letter page needs a large-text guard or a listed reason (R4; today `review.tsx` 2, `components/tonight/draft-card.tsx` 1). Every pan or swipe has a button twin (R10). Every `PhotoFrame` and the BookCover symbol set `accessibilityIgnoresInvertColors` (R11). The Book list and lens never read a stored-copy path (NS-37-R8). Voice Control label tests are BL-984 (c) (eval B s5.2).
 
@@ -58,11 +58,12 @@ The decisions that matter most:
 **Facts.** Notes are keyed `${kind}:${date}` (`lib/reminders/planner.ts:313`). The evening is skipped only on note days (`:350`); the horizon is 21 days (`:288`) and the cap 60 (`:290, :371`). `included: c.remindersOn` (`prefs.ts:116`). `listChildren` drops hidden books, not quiet ones (`lib/db/repos/children.ts:54-55`), and nothing in `lib/reminders` reads `quiet`, though `lib/store.ts:388` says the planner does (Conflict K5). Plan notices: at most 4, prefix `plan.` (`lib/billing/plan-reminders.logic.ts:48, 50`); each scheduler cancels only its own ids (`plan-reminders.ts:77`; `scheduler.ts:146-153`). No category or interruption level is set anywhere. `lastSignature` is module memory (`scheduler.ts:45`). expo-notifications 57.0.21 types have `previewPlaceholder` (`NotificationCategoriesModule.types.d.ts:6`) and `interruptionLevel` (`Notifications.types.d.ts:580`).
 
 **Design (adopts eval B s2.6).**
-- `lib/reminders/budget.ts`, from #758, holds rows `{ id, group, priority, owner, status }`: `plan` (outside the budget, owner `payments`), then `typedDay` (`planned`, behind NS-18's flag), `birthday`, `monthAge`, `evening` (owner `mobile`). There is no `occasion` row. It keeps #758's `addNotificationClass` (R15), and `allocate({ planPending, budgeted })` cuts the budgeted list so the total stays at 60 (R4b, R7).
+- `lib/reminders/budget.ts`, from #758, holds rows `{ id, group, priority, owner, status }`: `plan` (outside the budget, owner `payments`), then `typedDay` (`planned`, behind NS-18's flag), `libraryDay` (group `typedDay`, rank 3), `birthday`, `monthAge`, `evening` (owner `mobile`). There is no `occasion` row. It keeps #758's `addNotificationClass` (R15), and `chooseOnePerDay(candidates, planPending)` (`TOTAL_MAX = 60`; rows gain `rank` and `backoff`) cuts the budgeted list so the total stays at 60 with plan notices first (R4b, R7; E13, CL-115, CR-69 A1) [Amended 17-A5; was `allocate({ planPending, budgeted })`, now its second step, not a public path].
 - The planner keys by local date, and a pure pick keeps the highest-priority candidate per date. Same-kind notes stay grouped (`monthNoteCopy`); a birthday beats a month note.
-- `prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`.
+- `prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`. (Stale, see item 3 of section 0: the filter is in the planner.)
 - The back-off and the 35-day horizon are NS-13's (BL-943). R8's test lands here as a guard: it passes on the 21-day horizon and must keep passing after BL-943.
 - The scheduler uses category `reminder` (eval B s2.6 item 7). `payments`' module registers category `plan`. Each has a `previewPlaceholder` from PROPOSED keys `reminders.previewPlaceholder` and `planReminders.previewPlaceholder` (BL-965).
+- Day notes use the same category `reminder`; no category sets `hiddenPreviewsShowTitle` (NS-47-R36) [Amended 17-A6].
 - Both schedulers set `categoryIdentifier` and `interruptionLevel: 'active'` on every request.
 - The first launch after an update re-plans, keyed by `app.lastPlannedVersion` (eval B s2.1; R16).
 
@@ -72,14 +73,14 @@ The decisions that matter most:
 
 **Performance.** Under 50 ms for 3 children, by Node timing on the fixture (eval B s4.1).
 
-**Tests for each P0 row** (`reminders-budget.test.ts`, eval B s6.1). R1: a 92-day property test (prefs, 1 to 3 children, 2 books). R1b: a birthday in book A and a month-day in book B give 1 (fails today). R4, R4b: a full budget with 4 plan notices due still plans all 4, and the total is 60 or fewer. R8: an injected clock gives no `evening` after day 35. R11: a scan shows bodies come from content imports. R12: with names off over Asha, no name; a plan notice has no digit run or currency. R14: a quiet book gives 0 (fails today). Device: J-N4 (spot), J-N24 and J-N27 (BL-948).
+**Tests for each P0 row** (`reminders-budget.test.ts`, eval B s6.1). R1: a 92-day property test (prefs, 1 to 3 children, 2 books). R1b: a birthday in book A and a month-day in book B give 1 (fails today). R4, R4b: a full budget with 4 plan notices due still plans all 4, and the total is 60 or fewer, plan notices first [Amended 17-A5]. R8: an injected clock gives no `evening` after day 35. R11: a scan shows bodies come from content imports. R12: with names off over Asha, no name; a plan notice has no digit run or currency. R14: a quiet book gives 0 (passes on develop today, [Amended 17-A13]; kept as a guard). Device: J-N4 (spot), J-N24 and J-N27 (BL-948).
 
 **PRs** (BL-966 slices as eval B s5.2; owner `mobile`; lenses `principal-architect` / `compliance-engineer`):
-- (a) `budget.ts` and `allocate`, superseding #758; about 250 lines.
-- (b) The planner: one a day, priority, ceiling, quiet; about 350 lines, 4 files.
+- (a) `budget.ts` and `chooseOnePerDay`, superseding #758; about 300 lines, 3 files [Amended 17-A5; was `allocate`, about 250].
+- (b) The planner: one a day, priority, ceiling, quiet; about 350 lines, 4 files, because it lowers the total to 60 (today 60 plus 4 is 64).
 - (c) Categories, placeholder, interruption level, version re-plan; about 150 lines.
 
-**Order and gates.** Before BL-943, BL-982 and BL-985. Counsel Q41 gates the plan windows of a store build, not this code. **Risk:** iOS behaviour above 64 pending is Unverified; 60 total avoids it. **Way back:** revert.
+**Order and gates.** Before BL-943, BL-982 and BL-985. Counsel Q41 gates the plan windows of a store build, not this code. **Risk:** iOS behaviour above 64 pending is Unverified; 60 total avoids it (still true, [Amended 17-A5] now naming E13 and CL-115). **Way back:** revert.
 
 **OQs.** `typedDay` against `birthday` (CPO; default `typedDay` first). The cap number (#847 Q8; founder; default 1 a day per the locked card; Conflict K1).
 
@@ -144,7 +145,7 @@ The decisions that matter most:
 | Row | Target (source) | Method now | Holds |
 |---|---|---|---|
 | 1 Speak to microphone live, cold and warm | p95 500 ms (F04-REQ-023) | Slow-motion video, 200 taps | Any store build (core loop) |
-| 2 Cold start, online and airplane | p50 1.2 s, p90 2.0 s (A-NFR-001) | Video as S1-03; Instruments App Launch | Any store build |
+| 2 Cold start, online and airplane | p50 1.2 s, p90 2.0 s (A-NFR-001; NS-39-R7 on SE 3 is this row, [Amended 12-A10] no second row) | Video as S1-03; Instruments App Launch | Any store build |
 | 3 Warm start | p50 400 ms | Video | Any store build |
 | 4 Screen change starts; controls usable | 100 ms; 350 ms | Video | That screen's motion change |
 | 5 Hand-offs: Home to Listen, Listen to Review, Review to Book, card to page | 900 ms each | Video | That screen's motion change |
@@ -157,7 +158,7 @@ The decisions that matter most:
 | 12 Memory recording; idle after first run | Under 40 MB above idle; under 150 MB | Allocations | Any store build |
 | 13 Download; caches | Under 40 MB; 50 MB or less | ASC report; iPhone Storage | Any store build |
 | 14 Thermal | No take refused at `serious` | Observed state | none (watched) |
-| 15 Spot runs: under 1 GB free; Low Power Mode | As row 1 | Video, 20 taps | As row 1 |
+| 15 Spot runs: under 1 GB free; Low Power Mode | As row 1; under 1 GB the free-room line shows with no byte figure and Speak starts; under 50 MB a take is refused (`lib/capture/free-space.ts`, `MIN_FREE_BYTES_TO_RECORD`) [Amended 12-A10] | Video, 20 taps | As row 1 |
 | 16 iPad smoke | Capture, Keep, read | By hand | Any store build |
 
 **Rules.** A row is met, missed, or not measured with its reason. A missed or unmeasured row holds its feature until it is fixed or the founder changes the target in writing (R2). Markers (R6) do not exist; when they land, a marker is an event name and a number only, tested by `perf-markers.test.ts` (eval B s6.1).
@@ -187,11 +188,11 @@ The decisions that matter most:
 - Export is 1.6.0 (`lib/export/schema.ts:90`), `photo: null` (`:140`).
 
 **Design and tests, by rule.**
-- **Rules 1 and 3, pictures (R1a to R1c; P-5).** #835's erasers hide by join and purge file, then row, then index (ADR 0028 D5). Tests in one file, `data-follows-letter.test.ts` (eval B s6.1), titled with the NS-36 ids, also covering NS-37's copies.
+- **Rules 1 and 3, pictures (R1a to R1c; P-5).** #835's erasers hide by join and purge file, then row, then index (ADR 0028 D5). Tests in one file, `data-follows-letter.test.ts` (eval B s6.1), titled with the NS-36 ids, also covering NS-37's copies. [Amended 16-A-4, NS-52: per item, derived copies, poster, primary file, row; `media/` joins the Erase list.]
 - **Rule 3, Find (R8).** One definition: the view's WHERE becomes `visibilitySql('find')` from `packages/core/src/visibility.ts` (eval B s1.2, s2.4). It reads the instant (ADR 0028 D4), so a time zone change changes nothing. `reindexLetter` runs in the letter's transaction. Test `[NS-36-R8]` in BL-952.
 - **Rule 2, export (R2, R5, R7).** BL-868 must be in a PR for the founder before BL-933 merges (CR-62 item 3). Minors go in merge order: 1.7.0 photos, then Firsts, then seals (eval A s3; Conflict P2).
 - **Rule 4 (R6).** BL-960 (`privacy` with `data-architect`; the founder merges `docs/legal/**`) adds the rows for the stored and smaller copies, photo words, place, the Find index, Firsts and seals.
-- **Rule 5 (R10).** Server: `classification.test.mjs`, which eval A s5 extends. Phone, new: `apps/mobile/test/local-classification.test.ts` parses each local migration's column comments from 11 on (#835's form `//   <col>  L<n>`; the DB-R25 rule, eval A s1) and fails on a column with no level or an id below L3. R4 is the acceptance record: ADR merged; X10 remains.
+- **Rule 5 (R10).** Server: `classification.test.mjs`, which eval A s5 extends. Phone, new: `apps/mobile/test/local-classification.test.ts` parses each local migration's column comments from 11 on (#835's form `//   <col>  L<n>`; the DB-R25 rule, eval A s1) and fails on a column with no level or an id below L3. [Amended 16-A-4: it also parses `moments.schema.ts`.] R4 is the acceptance record: ADR merged; X10 remains.
 - **Rules 6 and 7 (R12).** The J-N18 harness (`test/canary.test.ts`, eval B s6.5) gains photo words, place, a file name and a query.
 - **Rule 8 (R11).** New `supabase/tests/entries_content_columns.test.mjs`. Every `entries` column the push accepts must be in the tuple of `pg_get_functiondef('public.entries_family_rules')` and in `book_entries`, or be listed with a reason `data-steward` reviewed. A new unlisted column fails (F12). This generic guard adds to eval A, which covers R11 per migration.
 - **R1d (BL-870, ADR 0028 D6; eval A s4 S1).** Drop the author insert and update policies. Add trigger `entries_15_photo_closed`, whose function is revoked from public roles, so there is no `grants.mjs` row. Test `photo_bucket_closed.test.mjs`. `sync` narrows `photo_path` to null in `packages/api`.
@@ -217,6 +218,7 @@ The decisions that matter most:
 | 36-4 | `data-architect` | `data-steward` / `security-architect` | R11 guard test |
 | 36-5 | `qa` | `principal-architect` / `data-steward` | R10 phone classification test |
 | 36-6 (BL-870) | `sync` | `data-steward` / `security-architect` | Write-deny; `red-team` for `supabase/**` (D-041); founder's `approve-migration` |
+| 36-7 [Amended 16-A-4] | `mobile` | `data-steward` / `compliance-engineer` | Media tests in `data-follows-letter.test.ts` (NS-52) |
 | BL-933 | `mobile` | `data-steward` / `compliance-engineer` | Export 1.7.0 (8.3) |
 
 **Outline for seals and Firsts (waves 4, 5).** One visibility clause list (eval B s1.2). Their columns enter the tuple and `book_entries` in their own migrations (eval A s4 S2, S4). Seal publication is option (b), the pull clause (eval A s2.3; eval B s7.2 item 4), which closes this card's OQ (Conflict P6). R3 is a two-phone device row with the seal build.
@@ -227,10 +229,10 @@ The decisions that matter most:
 
 **Behaviour:** NS-37-R1 to R8. P0: R2, R4, R5.
 
-**Facts.** The lens draws the stored copy at 72 pt in a plain `ScrollView` (#840), while Months is a virtualised `AnimatedSectionList` over chapter sections (`app/(tabs)/book.tsx:78, 433`). `PhotoFrame` is React Native `Image` with `resizeMode="cover"` (#838). `scribe-photo` reads only `Caches/ImagePicker` (`ScribePhotoModule.swift:186`) and caps at 4,096 px and 0.9 (`:50-51`). expo-file-system 57.0.7 has no backup-exclusion API (none in its types or Swift), and pictures stay in the backup (`lib/photos/files.ts:3-4`). #835's sweep ignores a "name of another shape". No Low Power Mode read exists, and `expo-battery` is not installed.
+**Facts.** The lens draws the stored copy at 72 pt in a plain `ScrollView` (#840), while Months is a virtualised `AnimatedSectionList` over chapter sections (`app/(tabs)/book.tsx:78, 433`). `PhotoFrame` is React Native `Image` with `resizeMode="cover"` (#838). `scribe-photo` reads only `Caches/ImagePicker` (`ScribePhotoModule.swift:186`) and caps at 4,096 px and 0.9 (`:50-51`). expo-file-system 57.0.7 has no backup-exclusion API (none in its types or Swift), but `ScribeFiles.setExcludedFromBackup` does (`modules/scribe-files/index.ts:10-11`) [Amended 16-A-5], and pictures stay in the backup (`lib/photos/files.ts:3-4`). #835's sweep ignores a "name of another shape". No Low Power Mode read exists, and `expo-battery` is not installed.
 
 **Design (names and slices adopt eval B s1.3, s2.3, s5.2).**
-- **Native.** `makeCopy(source, destination, maxSide)` in `scribe-photo` uses the same ImageIO path, with one constraint added here: both names must be inside `Library/Application Support/photos/` (`<id>.jpg` in, `<id>-512.jpg` or `<id>-1280.jpg` out, checked natively). It writes through a temporary name and a rename in that folder, and sets `isExcludedFromBackup` on the result itself, because JavaScript cannot (R4). Quality 0.85 (PROPOSED); no source properties. No plist key, entitlement or network; BL-878's checklist applies.
+- **Native.** `makeCopy(source, destination, maxSide)` in `scribe-photo` uses the same ImageIO path, with one constraint added here: both names must be inside `Library/Application Support/photos/` (`<id>.jpg` in, `<id>-512.jpg` or `<id>-1280.jpg` out, checked natively). It writes through a temporary name and a rename in that folder, and sets `isExcludedFromBackup` on the result itself, because JavaScript cannot (R4; `makeCopy` may instead call `ScribeFiles.setExcludedFromBackup`; a video's poster adds `<id>-p512.jpg`; the lens keys on the first item by `position` [Amended 16-A-5, NS-52]). Quality 0.85 (PROPOSED); no source properties. No plist key, entitlement or network; BL-878's checklist applies.
 - **Which copy each surface reads.** `lib/photos/derivatives.logic.ts` holds the paths and the rule; only `lib/photos/export.ts` reads the stored copy (R8).
 - **Regeneration.** `lib/photos/regen.ts` makes a missing copy at idle and after a backup restore (R3). It waits on `captureBusy()` (1.4; R2) and on normal power. The Low Power Mode read is `useLowPowerMode` in `lib/motion.ts` (eval B s7.2 item 9), backed by one native read in eval B's `scribe-system`, not a second module.
 - **Erasing.** The sweep learns that `<id>-(512|1280).jpg` belongs to `<id>`. The eraser removes the copies, then the stored copy, then the row (R5). Storage counts copies with their picture.
@@ -253,7 +255,7 @@ The decisions that matter most:
 
 ## 8. NS-01 Photo with a letter (in review; record plus open rows)
 
-**8.1 Built, and where (merge order).** Merged: #834 `scribe-photo` (`76a4a5d7`) and #841 file layer (`1513b265`). Open: #842 hardening (now on develop); #835 migration 11, `entry_media`, sweep; #836 stored copy; #837 picker port; #838 photo start; #839 Review and letter page; #840 lens. Rows met and not met are as the card's section 10; data is ADR 0028 D1, D2, D5, D6. Eval B s5.2 proposes re-cutting #835 to #839 where no counted review exists. The Debug simulator link failure is `ops`'s.
+**8.1 Built, and where (merge order).** [Amended 16-A-7: `PhotoStore` becomes list-shaped in NS-52 (`get` to `list`); the sweep's missing-file rule is under Conflict C-3 of `14-media-library-video.md`.] Merged: #834 `scribe-photo` (`76a4a5d7`) and #841 file layer (`1513b265`). Open: #842 hardening (now on develop); #835 migration 11, `entry_media`, sweep; #836 stored copy; #837 picker port; #838 photo start; #839 Review and letter page; #840 lens. Rows met and not met are as the card's section 10; data is ADR 0028 D1, D2, D5, D6. Eval B s5.2 proposes re-cutting #835 to #839 where no counted review exists. The Debug simulator link failure is `ops`'s.
 
 ### 8.2 The lens control (NS-01-R48, NS-33-R3; P0 through R3)
 **Fact.** `LensRow` (#840) is two `Button`s with `accessibilityState.selected` inside `accessibilityRole="tablist"`. On Fabric iOS, `tabbar` maps to the TabBar trait and `tablist` to none (`react-native/ReactCommon/.../accessibilityPropsConversions.h:100-102`), so VoiceOver hears two buttons, one "selected", and no single choice. `radio` adds "radio button" and "checked" or "unchecked" (`RCTViewComponentView.mm:1523-1538`).
@@ -265,6 +267,7 @@ Not `ChipGroup`: its container has no group role (`:203-208`), and a `Chip` is 3
 Best inside #840 before its first review (0 reviews at `cc94d0d3`), else BL-956 (b) (eval B s5.2). Tests `[NS-33-R3]` and `[NS-01-R48]`: one `radiogroup`, two `radio`s, exactly one checked; plus the 1.5 scan.
 
 ### 8.3 Export 1.7.0 (BL-933; NS-01-R14, NS-36-R2, R5, R7; held for the founder's BL-868 merge)
+[Amended 16-A-6: videos and several pictures take the next free minor, which adds `media` (`15-media-ingest-lifecycle.md` part 2 section 3); `pack.ts` needs chunked reads before it can carry a video.]
 **Files.**
 - `lib/export/schema.ts`: `EXPORT_SCHEMA_VERSION = '1.7.0'`, an `ExportPhoto` type, JSON schema `photo: oneOf [null, object]` with `additionalProperties: false`, and a 1.7.0 entry in its versioning comment.
 - `build.logic.ts`: `entry_media` becomes `photo`; `counts.photos` counts files written and excludes Recently deleted.
@@ -335,12 +338,12 @@ The parked rows need no design.
 2. NS-34's latency rows cannot reach the card's sample counts by hand, and an unmeasured row holds its feature. Way back: a founder-accepted stand-in count per row, or the `perf` profile first.
 3. If #839 merges with its own Undo deadline, a dead Undo stays on screen (NS-01-R38b, P0), so G6 holds `EXPO_PUBLIC_PHOTOS`. Way back: 33-3 or BL-954 straight after.
 4. NS-37's copies change a native module merged today, and the sweep and eraser must learn the names in the same slice (R5, P0). Way back: flag off; Erase everything lists the folder.
-5. NS-32-R14 is unmet; a Quiet control (BL-985) shipped first would notify about a quieted book. Way back: hold BL-985 until BL-966 (b).
+5. NS-32-R14 is unmet [stale, see item 3 of section 0]; a Quiet control (BL-985) shipped first would notify about a quieted book. Way back: hold BL-985 until BL-966 (b).
 
 **Open questions for the founder or counsel, with defaults.** Founder: which accessibility features to declare (none until the walk passes); who runs NS-34 (the founder, on the Asha install); which phones he holds (he says so before the first sheet; buying is his); the notification cap (1 a day); stand-in sample counts (Speak 200; others 20, marked stand-in, until markers); the CI cost of the R16 audit (nightly only); the BL-868 merge, which gates BL-933; proof-book spend and page size (no spend; 8.5 by 8.5, provisional); Tiro under Bold Text (the system Devanagari face under Bold Text only). Counsel: Q41, the plan windows. CLO: font embedding. CCO: re-read Apple 4.5.4 before submission.
 
 **Conflicts for product (card gaps).**
-- P1: NS-32-R4b and R7 (60 plus 4) against NS-13 3a item 7 (60 total). The design keeps 60 total; reword R4b's Given (eval B s8 item 1 agrees).
+- P1: NS-32-R4b and R7 (60 plus 4) against NS-13 3a item 7 (60 total). CLOSED by E13 and CL-115 [Amended 17-A5]. The design keeps 60 total; reword R4b's Given (eval B s8 item 1 agrees).
 - P2: NS-36-R5 and ADR 0028 D2 put seals at 1.8.0, and BL-968 puts Firsts at 1.8.0. Use merge order (eval A s3).
 - P3: NS-01-R41's "line colour" is 1.40:1 in dark mode. Use `mediaFrame`.
 - P4: NS-33-R14: Tiro has only Regular (eval B s8 item 9 agrees).
@@ -362,6 +365,6 @@ The parked rows need no design.
 - E3: `FlatList` against `SectionList` for the lens (7).
 - E4: the Bold Text hook path. Eval B s1.3 puts it in a new `lib/a11y/bold-text.ts`, while `lib/a11y.ts` exists and `@/lib/a11y` resolves to it; a folder beside the file splits one module. Rec: add the hook to `lib/a11y.ts`.
 
-**Adopted from eval B:** `allocate()`, category `reminder` and `app.lastPlannedVersion` (s2.6, s2.1); `makeCopy`, `derivatives.logic.ts` and `regen.ts`, and the BL-932, BL-933, BL-928, BL-984 and BL-974 slices (s1.3, s5.2); `captureBusy()` (s2.3); `visibilitySql` for Find (s1.2, s2.4); the account scope, with BL-961 as owner (s2.8); the seeding profile (s6.4); the test file names (s6.1); the local flags (s3.1); `useLowPowerMode` (s7.2).
+**Adopted from eval B:** `allocate()` (superseded by `chooseOnePerDay`, CR-69 A1 [Amended 17-A5]), category `reminder` and `app.lastPlannedVersion` (s2.6, s2.1); `makeCopy`, `derivatives.logic.ts` and `regen.ts`, and the BL-932, BL-933, BL-928, BL-984 and BL-974 slices (s1.3, s5.2); `captureBusy()` (s2.3); `visibilitySql` for Find (s1.2, s2.4); the account scope, with BL-961 as owner (s2.8); the seeding profile (s6.4); the test file names (s6.1); the local flags (s3.1); `useLowPowerMode` (s7.2).
 
 **Unverified:** that `active` needs no entitlement; iOS behaviour beyond 64 pending; that `previewPlaceholder` maps to `hiddenPreviewsBodyPlaceholder`; heading levels through React Native; React Native `Image` decode and cache; `Progress.fractionCompleted` and `cancel()` for iCloud loads; Instruments on TestFlight builds; the microphone indicator as a timing proxy; `XCUIApplication` by bundle id, and the content-size argument; a heavier Tiro, and the iOS 17 system Devanagari face; VoiceOver reading a `radiogroup` label on Fabric. Nothing was run on a phone.
