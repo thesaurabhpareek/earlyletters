@@ -1,6 +1,6 @@
 # Area D: Family, sharing and reminders. Words
 
-Status: draft, reconciled with `DESIGN.md` section 3 state ids (content lead, area D, 20 Nov 2026). Every new or changed string is PROPOSED; the founder approves words before any build outside his family shows them (BRIEF section 2).
+Status: draft v2, reconciled with `DESIGN.md` section 3 state ids and the final product pack (section 18 and 19 are new: final wording rules, D-S06 to D-S11 and D-S25 changes, round 2). Content lead, area D, 20 Nov 2026. Every new or changed string is PROPOSED; the founder approves words before any build outside his family shows them (BRIEF section 2).
 
 Keyed to `DESIGN.md` screen ids D-S01 to D-S24 and its state names (`D-Snn.<state>`). Where `DESIGN.md` wrote an intent line, this file gives the final words and says so in section 14 (what `DESIGN.md` and `MOTION.md` should pick up).
 
@@ -727,3 +727,78 @@ State ids above are `DESIGN.md` section 3's. Words in `DESIGN.md` that should ch
 - Area A (Home A-S01): the typed-day line (D-S11.typedDay) and the quiet-day words (D-S21) are A's layout with these words.
 - `legal`: Q43 on `whereItGoes`, `privacyLine`, `namesHelpOff`; Q48 on `whatTheyRead` and `agreementLine`; OQ-6 on the verb.
 - Founder: approve every PROPOSED and CHANGE line before any build outside his family shows it.
+
+## 18. Final-pack words (v2): reminder not note, days, consent line, lock screen
+
+Everything here is PROPOSED intent for `content` (the founder approves words before any build outside his family shows them). Rules applied to every string: "reminder", never "note", for what the app sends (RV-3); no exclamation mark in any notification (zero, N-5); no em or en dash, curly quote, ellipsis character or emoji; no fear, guilt, gap, count, "again", "another", "still", "yet", "already", "by now", "should"; no "story", "memory", "moment"; no Plus, price or Keep in any day or photo reminder (NS-46-R27); no child name beside a day name; `{child}` only. Titles at most 40 characters and bodies at most 110.
+
+### 18.1 Changes to rows above (supersedes them where they differ)
+
+| Where | Was | Now |
+|---|---|---|
+| Section 2, G1 and the placeholders | "A note for tonight" was already replaced | Confirmed: one neutral line for every budgeted category, "Something for the book, whenever you have a minute."; plan "A reminder about your plan." No "note", no "tonight" |
+| D-S10.birthday, `reminderCopy.neutral.birthday` title; G3 | Keep "A birthday today" for v1.0 | GAP-LOG D G-D21 default: with names off the title is "Something for the book today"; "A birthday today" only when names are on. Founder and CPrivO decide. The body "The book is here whenever you want to read it together." stays |
+| D-S06 `reminderCopy.typedDay.sectionTitle`, `addButton`, `sectionHelp`, `remindersOffNote` | Days to remember section on D-S06 | The typed-day list is on the Days page C-S24 ("Days you added"). D-S06 carries one row `Days` and, with Reminders off, the line below. `sectionHelp` and `addButton` move to C-S24's wording (area C) |
+| D-S06 `settings.privacy.lockScreenLabel` help (`namesHelpOff`) | No names on the lock screen, except in your own words if you choose to show them. | No names on the lock screen. This is for your child's name; days have their own choice in Days. (NS-47-R14; the typed-day clause leaves because the one day-names switch covers typed words) |
+| D-S08 `showWordsLabel`, `showWordsHelpOff`, `showWordsHelpOn`, D-S09 `detailWordsOn`, `detailWordsOff` | A per-day switch and its help lines | Retired pending the ruling on RV-8 against G-D14. Replacements below. If Karma keeps G-D14 the lines return unchanged |
+| D-S11 `.libraryDay` rows (days review) | A landing line for a ticked day | None: the day slip on Home is the one way (RV-6) |
+| "35 days" wherever a help line says it | A platform limit | Never said to a parent; it is NS-13's policy (RV-4) |
+
+### 18.2 D-S06, D-S08, D-S09
+
+| Key | Status | Text | Where | VoiceOver | Voice Control | Card row |
+|---|---|---|---|---|---|---|
+| `reminderCopy.settings.daysRow` | PROPOSED | Days | D-S06.daysRow | "Days" / "Opens your days." | Days | NS-46-R3 |
+| `reminderCopy.settings.daysRemindersOffLine` | PROPOSED | Days you added or chose still send a reminder when Reminders is off. You can stop them in Days. | D-S06.daysRemindersOff, shown only when Reminders is off and a day exists | read as text | n/a | NS-46-R35; compliance C-01 |
+| `reminderCopy.settings.previewExample` | PROPOSED | Example | D-S06.preview, VoiceOver prefix | "Example. {title}. {body}" | n/a | NS-48-R39 |
+| `features.photos.suggestions.journalNote` | PROPOSED, `content` owns | Reminders your iPhone makes by itself are separate. You manage them in Settings. | D-S06.journalNote, level 2 only | read as text | n/a | NS-49 (D-S06 journalNote); BRAND ban on "journal" in prose |
+| `reminderCopy.typedDay.lockLine` | PROPOSED | The lock screen shows this unless you choose otherwise in Days. | D-S08 footnote under the preview | read as text | n/a | NS-47-R37 |
+| `reminderCopy.typedDay.appLockReason` | PROPOSED | Words stay hidden while App lock is on. | D-S08.appLock, D-S09 | read as text | n/a | NS-47-R12 (the built `.appLock` pattern) |
+| `reminderCopy.typedDay.detailLock` | PROPOSED | On the lock screen: A day you wanted to remember. (or "your words", as the one switch says) | D-S09.default | read as text | n/a | R3 |
+
+### 18.3 Day reminders: the consent line and the visible opt-out (D-S25)
+
+| Key | Status | Text (intent) | Where | VoiceOver | Voice Control | Card row |
+|---|---|---|---|---|---|---|
+| `days.door.line` | PROPOSED | Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me. | D-S25.beforeFirstTick, first `DoorNote` | read as text, first | n/a | NS-47-R29; not final until `mobile` confirms the backup exclusion |
+| `days.door.reminderLine` | PROPOSED | A day you tick sends one reminder that morning. Untick it, or choose Clear all, and it stops. | D-S25.beforeFirstTick, second `DoorNote` | read as text | n/a | NS-46-R35 |
+| `days.firstTick.askLine` | PROPOSED | Your iPhone will ask if {app} can send reminders. | D-S25.firstTickAsk | read as text | n/a | NS-46-R31 |
+| `days.systemEnded.line` | PROPOSED | Your days were cleared when you were signed out. You can choose days again any time. | D-S25.systemEnded, once, on C-S24 | read as text | n/a | NS-47-R15; Q-FD-12 |
+| `reminderCopy.settings.deniedTitle`, `deniedBody`, `openSettingsButton` | EXISTING | Notifications are off / Turn them on in Settings to get these reminders. / Open Settings | D-S25.denied (the D-S06 card reused) | as D-S06 | Open Settings | NS-46 section 5 |
+| `notifications.dayNames.label` | PROPOSED (area C draws it) | Show day names in notifications | C-S24 under the list | "Show day names in notifications, off" | Show day names in notifications | NS-47-R14 |
+| `notifications.dayNames.help` | PROPOSED | Anyone who sees your lock screen can read it. | C-S24 | read as text | n/a | NS-47-R14 |
+| `notifications.dayNames.appLockReason` | PROPOSED | Day names stay hidden while App lock is on. | C-S24 disabled state | read as text | n/a | NS-47-R12 |
+
+Never in these lines: "private", "secure", "invisible", "nobody can tell", "undetectable", "you pick the time", a feature name, "new", a count, a price (NS-47-R22, NS-46-R46).
+
+### 18.4 D-S10 and D-S11 for ticked days
+
+| Key | Status | Title | Body | Shown when |
+|---|---|---|---|---|
+| `days.lock.title.neutral` | PROPOSED | Something for the book today | | `libraryDay-neutral`, `twoDays`, every day with the switch off or App lock on |
+| `days.lock.body.neutral` | PROPOSED | | A day you chose to mark. A few words for {child}, if you like. | rendered neutral by the NS-48-R13 rule ({child} becomes "your little one"); a `{child}` literal never reaches a names-off lock string (G-D26) |
+| `days.lock.body.quiet` | PROPOSED | | The book is open if you want it. | `libraryDay-quiet`; no question mark (NS-46-R37) |
+| `days.name.<id>` | PROPOSED | the day's own name | the neutral body | `libraryDay-public` (allowlist only), `libraryDay-named` (switch on, App lock off) |
+| `notifications.placeholder.libraryDay` | PROPOSED | | Something for the book, whenever you have a minute. | `libraryDay-hidden` |
+| `days.landing.*` | PROPOSED, `content` owns | | the day slip's own line, on Home | never on a lock screen |
+
+`days.lock.title.twoDays` is listed in card 21's key family but NS-46-R39 says the lock title for any number of days is the one neutral title; this file draws the neutral title and flags the extra key (nothing to ship).
+
+### 18.5 Review of the section 2 evening extension against NS-48
+
+NS-48 (R30, R37, R12, R15) makes `content` own the catalogue as `ntc.*` keys, 6 variants per grid cell, the built eight as the floor. Rows `[8]` to `[30]` above are inventory candidates, not final. Against the new rules: `[16]` and `[18]` use "lately" (banned, R37); `[6]` uses "just" as a closer (banned, R37; also names "Before you sleep"); `[19]` "At this age" needs a read for expectation (R30). Evening-worded lines (tonight, evening, before you sleep, the house is quiet or settling: built `[1]`, `[3]`, `[6]`, `[15]`, `[23]`, `[28]`) must be tagged `evening` and are never picked before 17:00 (R12); the floor keeps five day-neutral built variants and the three evening-worded ones only from 17:00 (R15; `content` confirms which). Not drawn as final strings in this file.
+
+## 19. Round 2 (second founder direction, 20 Nov): the photo-moment nudge words
+
+Keyed by name to NS-51 (photo moments) and NS-52 because file 27 does not exist yet; every key is PROPOSED and flagged. The card wording (direction section 2) is "Some pictures from the weekend are here". The glossary question: Q-FD-26 asks for one word, "photo"; direction 26 says "pictures". These lines use "photos" and flag the difference.
+
+| Key | Status | Text (intent) | Where | VoiceOver | Voice Control | Row |
+|---|---|---|---|---|---|---|
+| `ntc.photoMoment.title` | PROPOSED | Some photos are here | D-S10.photoMoment, names off or on (no name in any state) | notification | n/a | NS-51 (name) |
+| `ntc.photoMoment.body` | PROPOSED | From {daypart}. A few words about them, if you like. | D-S10.photoMoment. `{daypart}` is one of "the weekend", "this week", "yesterday", from dates only; a new placeholder for the rules-test allowlist | notification | n/a | NS-51 |
+| `ntc.photoMoment.plain.title`, `.body` | PROPOSED | Something for the book today / A few words for {child}, if you like. (neutral rendering) | D-S10.photoMoment-plain, `-appLock` | notification | n/a | G-D30 |
+| `notifications.placeholder.photoMoment` | PROPOSED | Something for the book, whenever you have a minute. | D-S10.photoMoment-hidden | notification | n/a | NS-47-R36 pattern |
+| `reminderCopy.settings.photoMomentsLabel` | PROPOSED | Reminders about photos | D-S06 switch | "Reminders about photos, off" | Reminders about photos | NS-51 (name) |
+| `reminderCopy.settings.photoMomentsHelp` | PROPOSED | Uses the same one reminder a day. Notifications show only neutral words. | D-S06.photoMomentsOn footnote | read as text | n/a | NS-32-R1 |
+
+Never: a number of photos, "memories", "moments", "story", "album", "best", "we found", "AI", "smart", "suggested for you", "journal", any word that says the app looked at or understood a picture, "waiting", "again", "another", an exclamation mark, a place or person name. The opt-in line (A-S18) is area A's and needs the NS-47-R29 `DoorNote` pattern.

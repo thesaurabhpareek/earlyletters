@@ -277,9 +277,14 @@ S["D-S06"]={t:"Me, Reminders",states:{
   "quietDelivery":"Deliver Quietly or Provisional: one footnote.",
   "lateClamp":"A late stored time clamped: 'Late nights stay quiet.'","noBirthDate":"No included book has a birth date yet.",
   "backedOff":"After day 35 with no letter: no Next line at all (no line about absence).",
-  "typedDays-empty":"Typed days flag on, none added."},
+  "typedDays-empty":"v2: typed days live on the Days page (C-S24); this page has one row Days.",
+  "daysRemindersOff":"v2: Reminders off and a day exists: one calm line that chosen days still send a reminder, and where to stop them (compliance C-01).",
+  "journalNote":"v2: static footnote, level 2 only: the phone's own suggestion reminders are separate.",
+  "photoMomentsOn":"Round 2 (PROPOSED, NS-51 by name): switch on; one footnote; neutral words only.",
+  "photoMomentsOff":"Round 2: switch off (default). Present only when library access is granted.",
+  "photoMomentsLimited":"Round 2: limited library access: same switch, no extra line."},
   r:function(st){
-    var on=["off","typedDays-remindersOff"].indexOf(st)<0;
+    var on=["off","typedDays-remindersOff","daysRemindersOff"].indexOf(st)<0;
     var named=st==="named";
     var h=nav("Me","Reminders")+'<div style="padding-bottom:120px">';
     h+=sec("",row("Reminders","",sw(on,"Reminders",false,["D-S06",on?"off":"on"])),"Notifications never show what you write. Names stay off the lock screen unless you turn them on. Only in the evenings you pick, and never late at night.");
@@ -293,12 +298,15 @@ S["D-S06"]={t:"Me, Reminders",states:{
       h+='<div class="sec"><div class="hd t-cap">Which evenings</div><div class="list"><div class="chips">'+["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].map(function(d){return '<span class="chip'+(d==="Tue"||d==="Sat"?' sel':'')+'" role="checkbox">'+d+'</span>'}).join("")+'</div></div></div>';
       h+=sec("Time",row("Reminder time","",'<span class="chip" role="button" onclick="go(\'D-S07\',\'default\')">8:30 PM</span>')+(st==="lateClamp"?'<div class="row t-foot">Late nights stay quiet.</div>':''),"Reminders come between 7 AM and 9:30 PM, and stay quiet on a day you have already written.");
       h+=sec("",row("Month and birthday messages",st==="noBirthDate"?"Starts once a birth date is added.":"A short message on the day a new month begins in each book, and on birthdays.",sw(true,"Month and birthday messages"))+
-        row("Names in notifications",st==="appLock"?"Names stay hidden while App lock is on.":(named?"Notifications can show names on the lock screen.":'Notifications say "your little one" and show no names on the lock screen.'),sw(named,"Names in notifications",st==="appLock",["D-S06",named?"on":"named"])));
+        row("Names in notifications",st==="appLock"?"Names stay hidden while App lock is on.":(named?"Notifications can show names on the lock screen.":'No names on the lock screen. This is for your child\'s name; days have their own choice in Days.'),sw(named,"Names in notifications",st==="appLock",["D-S06",named?"on":"named"])));
+      h+="";
     }
-    if(st!=="off"){
-      var days=st==="typedDays-empty"?"":row("Saturday 14 March","Nursery starts","<span class='chev'></span>",["D-S09","default"]);
-      h+=sec("Days to remember",days+row('<span style="color:var(--accent)">+ Add a day</span>',"","<span class='chev'></span>",["D-S08","default"]),"A day you add gets one message on that day. Your words stay on this phone.");
+    if(on&&["photoMomentsOn","photoMomentsOff","photoMomentsLimited"].indexOf(st)>=0){
+      var pm=st==="photoMomentsOn";
+      h+=sec("",row("Reminders about photos","",sw(pm,"Reminders about photos",false,["D-S06",pm?"photoMomentsOff":"photoMomentsOn"])),pm?"Uses the same one reminder a day. Notifications show only neutral words.":"");
     }
+    h+=sec("",row("Days","","<span class='chev'></span>",["D-S25","stopOne"]),on?"":"Days you added or chose still send a reminder when Reminders is off. You can stop them in Days.");
+    if(st==="journalNote")h+='<div class="t-foot" style="margin:6px 16px">Reminders your iPhone makes by itself are separate. You manage them in Settings.</div>';
     return h+'</div>'+tabbar("Me");
   }};
 S["D-S07"]={t:"Time picker (system compact)",states:{"default":"System picker, 15-minute steps, 7:00 AM to 9:30 PM. AX5: label above the time."},
@@ -307,7 +315,7 @@ S["D-S07"]={t:"Time picker (system compact)",states:{"default":"System picker, 1
 S["D-S08"]={t:"Add a day",states:{
   "default":"Date from today (today only while its reminder time is ahead); words field (writing tools off).","error-typed_day_empty":"Save present and not ready (outline, muted label, VoiceOver dimmed) with the hint shown; system COMPONENTS 1.2.",
   "filled":"Words typed; preview shows the fixed line (words hidden by default).",
-  "showWords":"Switch on: preview shows the parent's words unchanged.",
+  "showWords":"v2: the one day-names switch (Days page) is on and App lock is off: the preview shows the parent's words unchanged. The sheet has no switch (RV-8; G-D23).","dayNamesOff":"v2: default; fixed line.","appLock":"v2: App lock on: words stay hidden, with the reason.",
   "error-typed_day_too_long":"Over 80 (a paste): every character kept; Save waits; one line, no counter.","error-typed_day_past":"The day has passed (or today after its time): one line.",
   "notAllowed":"Notifications not allowed: saving still works; one line says when it will be sent.",
   "error-schedule_failed":"iOS refused: built failure line, Try again."},
@@ -317,8 +325,8 @@ S["D-S08"]={t:"Add a day",states:{
       '<div class="t-cap" style="margin-top:16px">Date</div><div class="card t-body" role="button">Saturday 14 March 2026</div>'+
       '<div class="t-cap" style="margin-top:16px">Your words</div><div class="card t-body" style="min-height:52px;border-color:var(--control)" role="textbox" aria-label="Your words">'+(filled?(st==="error-typed_day_too_long"?"Nursery starts, and Nani arrives on the early train with the blue suitcase.":"Nursery starts"):'<span class="muted">Nursery starts</span>')+'</div>'+
       (st==="error-typed_day_too_long"?warn("That is longer than fits here. A short line works best."):st==="error-typed_day_empty"?'<p class="t-foot">Add a few words about the day.</p>':st==="error-typed_day_past"?warn("Choose a day that is still to come."):'')+
-      '<div class="list" style="margin-top:16px">'+row("Show my words in the notification","",sw(st==="showWords","Show my words in the notification",false,["D-S08",st==="showWords"?"filled":"showWords"]))+'</div>'+
-      '<div class="t-cap" style="margin-top:16px">How it will look</div><div class="card"><div class="t-sub">'+(st==="showWords"?"Nursery starts":"A day you wanted to remember")+'</div></div>'+
+      '<div class="t-cap" style="margin-top:16px">How it will look</div><div class="card" role="group" aria-label="Example"><div class="t-sub">'+(st==="showWords"?"Nursery starts":"A day you wanted to remember")+'</div></div>'+
+      '<div class="t-foot" style="margin-top:6px">'+(st==="appLock"?"Words stay hidden while App lock is on.":"The lock screen shows this unless you choose otherwise in Days.")+'</div>'+
       (st==="notAllowed"?'<p style="margin-top:12px">'+warn("Notifications are off. This day is saved and will be sent once they are allowed.")+'</p>':'')+
       (st==="error-schedule_failed"?'<p style="margin-top:12px">'+warn("Could not set reminders just now.")+'</p>':'');
     var nr=(st==="default"||st==="error-typed_day_empty");var foot=btn(st==="error-schedule_failed"?"Try again":"Save",nr?"notready":"primary",nr?["D-S08","error-typed_day_empty"]:["D-S06","on"],nr?'aria-disabled="true" title="Add a few words about the day."':"");
@@ -334,12 +342,19 @@ var CLS={
   together:{t:"A new month begins",b:"A new month is open in each book.",n:"A new month is open for Asha.",to:["D-S11","book"]},
   birthday:{t:"A birthday today",b:"A year of letters. Want to read them together today?",n:"Asha's birthday today. A year of letters. Want to read them together today?",to:["D-S11","book"]},
   typedDay:{t:"",b:"A day you wanted to remember",w:"Nursery starts",to:["D-S11","typedDay"]},
+  libraryDay:{t:"Something for the book today",b:"A day you chose to mark. A few words for your little one, if you like.",to:["D-S11","home"]},
+  libraryPublic:{t:"Thanksgiving",b:"A day you chose to mark. A few words for your little one, if you like.",to:["D-S11","home"]},
+  libraryNamed:{t:"{day name}",b:"A day you chose to mark. A few words for your little one, if you like.",to:["D-S11","home"]},
+  libraryQuiet:{t:"Something for the book today",b:"The book is open if you want it.",to:["D-S11","home"]},
+  birthdayNeutral:{t:"Something for the book today",b:"The book is here whenever you want to read it together.",to:["D-S11","book"]},
+  photoMoment:{t:"Some photos are here",b:"From the weekend. A few words about them, if you like.",to:["D-S11","photoMoment"]},
   plan:{t:"Plus",b:"Plus is free until 21 March, then it renews unless you cancel. You can change this in Settings, Plan.",to:["D-S11","plan"]}
 };
 function notif(c,mode,when){
   var x=CLS[c],tt=x.t,bd=x.b;
   if(mode==="named"&&x.n)bd=x.n;
   if(mode==="words"&&x.w)bd=x.w;
+  if(mode==="plain"){tt="Something for the book today";bd="A few words for your little one, if you like.";}
   if(mode==="hidden"){tt="";bd=(c==="plan"?"A reminder about your plan.":"Something for the book, whenever you have a minute.");}
   return '<div class="notif" role="button" onclick="go(\''+x.to[0]+'\',\''+x.to[1]+'\')"><div class="hdr"><span class="ico"></span><span>{app}</span><span style="margin-left:auto">'+(when||"now")+'</span></div>'+(tt?'<div class="tt">'+tt+'</div>':'')+'<div class="bd">'+esc(bd)+'</div></div>';
 }
@@ -351,12 +366,29 @@ var LS={};
 LS["evening-named"]="Names in notifications on (opt-in): named variant. Forced off while App lock is on.";
 LS["birthday-named"]="Names on: the birthday copy names the child.";
 LS["typedDay-words"]="Show my words on: the parent's words unchanged. Hidden again when previews are hidden.";
+LS["libraryDay-public"]="v2: an allowlisted seasonal day (publicTitleOk), App lock off, previews Always: the day's own name; neutral body. Never a family, tradition or commemorative day.";
+LS["libraryDay-neutral"]="v2: every other day, and every day with the day-names switch off or App lock on: one neutral title and body. No day, tradition or child name.";
+LS["libraryDay-named"]="v2: day-names switch on, App lock off, a family or tradition day: its name in the title; never a child name in the same string.";
+LS["libraryDay-quiet"]="v2: a quiet-tone day: neutral title, quiet body, no question mark, no invitation to write.";
+LS["twoDays"]="v2: two or more ticked days on one date: the one neutral title and body; names only after the tap.";
+LS["libraryDay-hidden"]="v2: previews hidden: app name and the category placeholder only.";
+LS["birthday-neutral"]="v2 (G-D21 default): names off, the neutral title; the birthday title only with names on.";
+LS["appLock"]="v2: App lock on: every title neutral; names and typed words hidden.";
+LS["summary"]="v2: Apple Intelligence or Scheduled Summary may restate our words (outside our control; G-D18).";
+LS["photoMoment"]="Round 2 (PROPOSED, NS-51 by name): neutral nudge, no count, no picture described, no name, no exclamation mark.";
+LS["photoMoment-plain"]="Round 2: the plain fallback with no mention of photos (G-D30).";
+LS["photoMoment-hidden"]="Round 2: previews hidden: placeholder only.";
+LS["photoMoment-appLock"]="Round 2: App lock on: plain rendering, forced.";
+LS["photoMoment-oneDay"]="Round 2: a photo moment and a plan notice: the only allowed two. Against a birthday or a ticked day only the higher shows.";
 LS["oneDay"]="14 March: a trial notice at 10:00 (outside the budget) and the typed day at 8:30 PM. At most two in a day (NS-32).";
 LS["quiet"]="Deliver Quietly or Provisional: nothing on the lock screen; Notification Centre only.";
 LS["focus"]="A Focus is on: held (no class is time-sensitive).";
 S["D-S10"]={t:"Lock screen: every class",states:LS,r:function(st){
   var h='<div class="lock"><div class="day">Saturday 14 March</div><div class="clock">'+(st==="oneDay"?"20:31":"20:30")+'</div>';
-  if(st==="oneDay")h+=notif("typedDay","shown","now")+notif("plan","shown","10:00");
+  var V={"libraryDay-public":[["libraryPublic","shown"]],"libraryDay-neutral":[["libraryDay","shown"]],"libraryDay-named":[["libraryNamed","shown"]],"libraryDay-quiet":[["libraryQuiet","shown"]],"twoDays":[["libraryDay","shown"]],"libraryDay-hidden":[["libraryDay","hidden"]],"birthday-neutral":[["birthdayNeutral","shown"]],"appLock":[["evening","shown"],["libraryDay","shown"],["photoMoment","plain"]],"photoMoment":[["photoMoment","shown"]],"photoMoment-plain":[["photoMoment","plain"]],"photoMoment-hidden":[["photoMoment","hidden"]],"photoMoment-appLock":[["photoMoment","plain"]],"summary":[["evening","shown"]]};
+  if(V[st])V[st].forEach(function(x){h+=notif(x[0],x[1])});
+  else if(st==="photoMoment-oneDay")h+=notif("photoMoment","shown","now")+notif("plan","shown","10:00");
+  else if(st==="oneDay")h+=notif("typedDay","shown","now")+notif("plan","shown","10:00");
   else if(st==="quiet"||st==="focus")h+='<p style="text-align:center;opacity:.7;margin-top:60px">'+(st==="quiet"?"Nothing here. In Notification Centre only.":"Focus: Sleep. Notifications held.")+'</p>';
   else{var p=st.split("-");var mode=p[1]||"shown";h+=notif(p[0],mode);}
   return h+'<p style="position:absolute;bottom:30px;left:0;right:0;text-align:center;font-size:12px;opacity:.7">System rendering. Tap a notification to see where it lands.</p></div>';}};
@@ -364,10 +396,14 @@ S["D-S11"]={t:"Notification landing",states:{
   "home":"Home with its current prompt. One more tap on Speak starts a letter; the tap never started recording (NS-35-R3).",
   "typedDay":"Home with the parent's words above the prompt (TypedDayLine). Not a slip. Shown all that local day.",
   "book":"The Book (month and birthday notes).",
-  "plan":"Settings, Plan, where the plan note waits (E-S11)."},
+  "plan":"Settings, Plan, where the plan reminder waits (E-S11).",
+  "libraryDay-cleared":"v2: a ticked-day tap with the store cleared or the token unresolved: plain Home, no day line, no message. There is no libraryDay landing state: one way for a day on Home (RV-6).",
+  "dayToday-preview":"v2: area A's A-S01.dayToday, drawn here so the walk reaches it: the day slip above the prompt (non-interactive element, own 44 pt Not today button).",
+  "photoMoment":"Round 2 (PROPOSED): plain Home; the invitation (area A, A-S17 proposed) shows only if the moment still exists; no count, never a slip or tile."},
   r:function(st){
     if(st==="book")return bookBg();
     if(st==="plan")return nav("Me","Plan")+sec("",row("Plus Annual","Plus is free until 21 March.")+row("Manage subscription","","<span class='chev'></span>"),"A reminder about Plus. Cancel by 20 March and you pay nothing.")+tabbar("Me");
+    if(st==="dayToday-preview")return homeBg('<div class="card" style="margin-top:16px" role="group" aria-label="Thanksgiving. Anything you would like Asha to hear about today?"><div class="t-callout">Thanksgiving. Anything you would like Asha to hear about today?</div><button class="btn quiet sm" style="padding-left:0">Not today</button></div>');
     return homeBg(st==="typedDay"?'<div class="t-callout muted" style="margin-top:16px">Nursery starts</div>':'');
   }};
 S["D-S12"]={t:"Me, book page: Write this book together",states:{
@@ -476,6 +512,72 @@ S["D-S23"]={t:"Pilot artefacts (not in the app)",states:{recruit:"Recruit messag
 S["D-S24"]={t:"Me, Plan: plan date line",states:{"denied":"Built line and Allow notifications."},
   r:function(){return nav("Me","Plan")+sec("",row("Plus Annual","Plus renews on 2 January 2027."),"")+'<div class="sec card gap" style="background:var(--surface)"><div class="t-sub">Notifications are off for {app}, so this iPhone cannot send its reminders before Plus renews. The dates are always here in Settings, Plan.</div><button class="btn sm">Allow notifications</button></div>'+tabbar("Me")}};
 
+
+function notifCard(t,b,cap){return '<div class="card" style="margin:8px 0"><div class="t-cap">'+esc(cap)+'</div>'+(t?'<div class="t-headline">'+esc(t)+'</div>':'')+'<div class="t-sub">'+esc(b)+'</div></div>'}
+function doorNote(t){return '<div class="card t-callout" role="note" style="border-color:var(--control)">'+t+'</div>'}
+function browseSheet(extra,ticked){
+  var body='<div style="display:flex;justify-content:space-between;align-items:center"><h2 class="t-title2">Browse days</h2><button class="btn quiet sm">Done</button></div>'+
+    doorNote("Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me.")+
+    doorNote("A day you tick sends one reminder that morning. Untick it, or choose Clear all, and it stops.")+(extra||"")+
+    '<div class="t-cap" style="margin-top:16px" role="heading">Seasons and shared days</div><div class="list">'+
+    row("Thanksgiving","around 26 November",'<span role="checkbox" aria-checked="'+(ticked?'true':'false')+'" aria-label="Thanksgiving, ticked">'+(ticked?'&#10003;':'&#9633;')+'</span>')+
+    row("First day of spring","around 20 March",'<span role="checkbox" aria-checked="false">&#9633;</span>')+'</div>';
+  return S["D-S06"].r("on")+sheet(body,"",{});
+}
+S["D-S25"]={t:"Day reminders: consent line and visible opt-out (v2)",states:{
+  "beforeFirstTick":"Two static DoorNotes first in reading order: privacy line, then the reminder consent line. Nothing ticked. Never collapsed, never glass.",
+  "firstTickAsk":"First tick, permission undetermined: the tick stays; one line names the iOS ask; iOS asks once.",
+  "denied":"iOS refused: the D-S06 denied card reused; the tick stays; no second ask.",
+  "remindersOffLine":"Reminders off and a day exists: the same promise, visible on the Reminders page.",
+  "stopOne":"The Days page (C-S24, mock): two sections; the one day-names switch lives here; Remove in one tap.",
+  "clearAll":"Clear all: explained sheet, safe choice default.",
+  "systemEnded":"After a system-ended session: one calm line, once."},
+  r:function(st){
+    if(st==="beforeFirstTick")return browseSheet("",false);
+    if(st==="firstTickAsk")return browseSheet('<p class="t-sub" role="status">Your iPhone will ask if {app} can send reminders.</p>',true);
+    if(st==="denied")return browseSheet('<div class="card" style="background:var(--surface)">'+warn("<b>Notifications are off</b>")+'<div class="t-sub">Turn them on in Settings to get these reminders.</div><button class="btn sm">Open Settings</button></div>',true);
+    if(st==="remindersOffLine")return S["D-S06"].r("daysRemindersOff");
+    var days=nav("Me","Days")+'<div style="padding-bottom:120px">'+
+      (st==="systemEnded"?'<p class="t-sub" style="margin:8px 16px">Your days were cleared when you were signed out. You can choose days again any time.</p>':
+      sec("Days you added",row("Saturday 14 March","Nursery starts","<span class='chev'></span>",["D-S09","default"])+row('<span style="color:var(--accent)">+ Add a day</span>',"","<span class='chev'></span>",["D-S08","default"]))+
+      sec("Days you chose",row("Thanksgiving","around 26 November","<span class='chev'></span>"))+
+      sec("",row("Show day names in notifications","Anyone who sees your lock screen can read it.",sw(false,"Show day names in notifications",false,["D-S25","stopOne"])))+
+      sec("",row('<span style="color:var(--destructive)">Clear all</span>',"","",["D-S25","clearAll"])))+'</div>'+tabbar("Me");
+    if(st==="clearAll")return days+sheet('<div class="t-headline">Clear all days?</div><p class="t-body">Every day you chose stops. Days you added stay.</p>','<div class="stack">'+btn("Keep them","primary",["D-S25","stopOne"])+btn("Clear all","destructive",["D-S25","stopOne"])+'</div>');
+    return days;
+  }};
+S["D-S26"]={t:"Catalogue specimens (design artefact, not an app screen)",states:{
+  "grid":"Weekday tone by recency band: same cadence, different words (NS-48-R4, R6).",
+  "dayPart":"07:00 against 20:30: no evening words before 17:00 (NS-48-R12).",
+  "recency":"r1 to r4, flagged: after the NS-13 anchor (unbuilt).",
+  "kind":"Kind shapes a body only, never a title (NS-48-R5, R29).",
+  "named":"One text, two renderings (NS-48-R13).",
+  "hidden":"Previews hidden: placeholder only.",
+  "expecting":"Due date, no birth date: neutral evening line on the lock screen; before-birth lines only in the unlocked preview (NS-48-R36).",
+  "mockFive":"Five mock reminders for the reading test (FR-RSH-08): Asha, no child name."},
+  r:function(st){
+    var P="Something for the book, whenever you have a minute.";
+    var rows={
+     grid:[["A minute to write?","One thing about today is plenty. A sentence will do.","Tuesday, r1 (small)"],["A page for Saturday","Something from today for the book?","Saturday, r2 (lighter)"]],
+     dayPart:[["A minute to write?","One thing about today is plenty. A sentence will do.","Reminder time 7:00 AM (a day-neutral line)"],["A letter tonight?","What made you smile today? Say it out loud and keep it.","Reminder time 8:30 PM (evening-tagged)"]],
+     recency:[["One thing today?","What did the day hold?","r3, after a longer gap: shorter and more open (illustrative)"]],
+     kind:[["A minute for today?","What was the last thing you said out loud to your little one?","After a spoken letter: body only (illustrative)"]],
+     named:[["A minute to write?","One thing about today is plenty. A sentence will do.","Neutral (default)"],["A minute for Asha?","Tell Asha one thing about today. A sentence is plenty.","Names on, App lock off"]],
+     hidden:[["",P,"Previews hidden: placeholder"]],
+     expecting:[["A minute to write?","One thing about today is plenty. A sentence will do.","Lock screen"]],
+     mockFive:[["A minute to write?","One thing about today is plenty. A sentence will do.","1"],["One thing today?","What did the day hold?","2"],["Something to say?","A few words about today, if you like.","3"],["The book is open","Whenever you have a minute.","4"],["A page for Sunday","Something from today for the book?","5"]]};
+    return '<div class="pad" style="padding-top:20px"><div class="t-title2">Specimens: '+st+'</div>'+rows[st].map(function(r){return notifCard(r[0],r[1],r[2])}).join("")+'<p class="t-foot">Illustrative lines; content owns the final keys. Zero exclamation marks.</p></div>';
+  }};
+S["D-S27"]={t:"Round 2 (PROPOSED): photo-moment nudge artefacts, by name NS-51",states:{
+  "lockScreen":"See D-S10 photoMoment, -plain, -hidden, -appLock, -oneDay.",
+  "reminders":"See D-S06 photoMomentsOn, photoMomentsOff, photoMomentsLimited.",
+  "tap":"See D-S11 photoMoment: plain Home; invitation is area A's."},
+  r:function(st){
+    if(st==="lockScreen")return S["D-S10"].r("photoMoment");
+    if(st==="reminders")return S["D-S06"].r("photoMomentsOn");
+    return S["D-S11"].r("photoMoment");
+  }};
+
 /* ---------- journeys ---------- */
 var J=[
  ["J-D01 Share, words only",[["D-S01","default","Open own kept letter."],["D-S02","wordsOnly","Tap Share: preview names what leaves."],["D-S03","text","Continue: system share sheet."],["D-S03","completed","Completed: back on the page. No toast."]]],
@@ -489,9 +591,17 @@ var J=[
  ["J-D13 Change reminders",[["D-S06","on","Me, Reminders."],["D-S07","default","Time picker."],["D-S06","lateClamp","Clamp line."],["D-S06","named","Names on."],["D-S06","appLock","App lock forces names off."]]],
  ["J-D14 Not allowed",[["D-S06","denied","Open Settings."],["D-S24","denied","Plan date in Settings, Plan."]]],
  ["J-D15 Schedule refused",[["D-S06","error-schedule_failed","Try again."],["D-S06","on","Recovered."]]],
- ["J-D20 Typed day",[["D-S06","typedDays-empty","Days to remember."],["D-S08","default","Add a day."],["D-S08","filled","Words hidden by default."],["D-S08","showWords","Or shown."],["D-S06","on","Saved."],["D-S10","typedDay","On the day: fixed line."],["D-S11","typedDay","Home shows the words."]]],
+ ["J-D20 Typed day",[["D-S25","stopOne","Me, Days (C-S24): days you added and days you chose."],["D-S08","default","Add a day."],["D-S08","filled","Words hidden by default."],["D-S08","showWords","Or shown."],["D-S06","on","Saved."],["D-S10","typedDay","On the day: fixed line."],["D-S11","typedDay","Home shows the words."]]],
  ["J-D21 Typed day edges",[["D-S08","error-typed_day_too_long","A paste over 80."],["D-S08","error-typed_day_empty","No words yet."],["D-S08","notAllowed","Saves anyway."],["D-S06","typedDays-remindersOff","Reminders off, days stay."],["D-S09","default","Delete."],["D-S09","confirm",""]]],
  ["J-D22 Lock screen walk (J-N24, J-N27)",[["D-S10","evening",""],["D-S10","evening-hidden",""],["D-S10","evening-named",""],["D-S10","monthAge",""],["D-S10","together",""],["D-S10","birthday",""],["D-S10","birthday-named",""],["D-S10","typedDay",""],["D-S10","typedDay-words",""],["D-S10","typedDay-hidden",""],["D-S10","plan",""],["D-S10","plan-hidden",""],["D-S10","oneDay","At most two in one day."],["D-S10","quiet",""],["D-S10","focus",""]]],
+ ["J-D60 Tick a day, agree to its reminder",[["D-S25","beforeFirstTick","C-S25: two DoorNotes first."],["D-S25","firstTickAsk","First tick: one sentence, then iOS."],["D-S05","shown","iOS asks once."],["D-S25","denied","Or not allowed: tick stays."],["D-S10","libraryDay-neutral","09:00 that day."],["D-S11","dayToday-preview","Home: the day slip."],["D-S25","stopOne","Stop: Remove or Clear all."]]],
+ ["J-D61 Reminders off, days still come",[["D-S06","daysRemindersOff","The opt-out is visible here."],["D-S25","remindersOffLine","And on Days."]]],
+ ["J-D63 One date, several things",[["D-S10","twoDays","Two days: one neutral reminder."],["D-S10","birthday-neutral","Birthday beats a day."],["D-S10","oneDay","Plan notice plus one."]]],
+ ["J-D64 Quiet-tone day",[["D-S10","libraryDay-quiet","Quiet body, no question."],["D-S11","dayToday-preview","Home shows the day; quiet tone replaces the prompt (area A)."]]],
+ ["J-D65 What a lock screen may say about a day",[["D-S10","libraryDay-public","Allowlisted seasonal day."],["D-S10","libraryDay-neutral","Every other day."],["D-S10","libraryDay-named","Switch on, App lock off."],["D-S10","appLock","App lock on: all neutral."]]],
+ ["J-D68 Catalogue",[["D-S26","grid",""],["D-S26","dayPart",""],["D-S26","named",""],["D-S26","hidden",""],["D-S26","mockFive","Reading test."]]],
+ ["J-D69 Hidden previews walk",[["D-S10","libraryDay-hidden",""],["D-S10","evening-hidden",""],["D-S10","summary",""]]],
+ ["J-D71 Photo reminder, Round 2 (PROPOSED)",[["D-S06","photoMomentsOff","Switch off by default."],["D-S06","photoMomentsOn","Turn on."],["D-S10","photoMoment","Neutral nudge."],["D-S10","photoMoment-hidden","Previews hidden."],["D-S10","photoMoment-oneDay","One a day, plus a plan notice."],["D-S11","photoMoment","Plain Home."]]],
  ["J-D30 Invite (P1)",[["D-S12","one-parent","Me, the book's page."],["D-S13","default","Scope line before sending."],["D-S13","working",""],["D-S13","sent","Waiting for them."]]],
  ["J-D31 Join (P2)",[["D-S14","iphone","Link page."],["D-S15","signed-out","Sign in first."],["D-S15","loading",""],["D-S15","default","Sign-off and role only."],["D-S16","default","Agreement, same sheet."],["D-S17","arriving",""],["D-S17","joined","Open the book."]]],
  ["J-D32 Invite and join, unhappy",[["D-S14","other-device",""],["D-S15","error-expired",""],["D-S15","error-revoked",""],["D-S15","error-used",""],["D-S16","error-already_member",""],["D-S16","error-book_full","Third adult."],["D-S13","full",""],["D-S15","paused",""],["D-S13","offline",""],["D-S16","offline","Nothing half-joins."],["D-S16","error-join_failed",""],["D-S16","needs-sync",""],["D-S15","error-not_found",""]]],

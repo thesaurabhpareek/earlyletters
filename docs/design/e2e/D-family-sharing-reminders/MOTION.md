@@ -1,6 +1,6 @@
 # Area D: Family, sharing and reminders. Motion
 
-Status: v1.1, 20 Nov 2026, reconciled. Motion lead, area D. Keyed to the screen ids and state names in `DESIGN.md` section 3 (D-S01 to D-S24, for example `D-S02.pictureOn`). Section 12 lists the reconciliation with `DESIGN.md` and the one difference left open. Motion ids (D-Mnn) are stable; new ones are appended.
+Status: v2, 20 Nov 2026, reconciled to the final product pack and keyed to the system primitives (`docs/design/system/MOTION.md`: `m.*`, `T-*`, `H-*`); sections 13 and 14 are new (section 13: every D-M row mapped, new D-M68 to D-M79; section 14: round 2, the photo-moment nudge). v1.1 text below is kept; where it disagrees with a ruling, section 13 says so. Motion lead, area D. Keyed to the screen ids and state names in `DESIGN.md` section 3 (D-S01 to D-S24, for example `D-S02.pictureOn`). Section 12 lists the reconciliation with `DESIGN.md` and the one difference left open. Motion ids (D-Mnn) are stable; new ones are appended.
 
 Companion: `MOTION-PROTOTYPE.html` in this folder plays every item below on demand, with a Reduce Motion toggle, light and dark, and a slow-motion switch.
 
@@ -84,7 +84,7 @@ All of this exists only where the door rule shows it (alpha and servers on, D-16
 | D-M14 | D-S13.sent -> D-S18.pending (or the book's page that opened it) | Share sheet reports the link went | Our sheet closes (platform); the page under it shows its toast `family.create.done` (D-M24); the pending invite row enters on the family page (D-M21) | Platform close; toast and row as their own items | Platform; fades | None |
 | D-M15 | D-S15.loading -> D-S15.default | Invite link opens the app; the `invite` sheet rises | Sheet: platform rise. The first view adds no entrance. `family.accept.peeking` with the system activity indicator (iOS's own spin; no count, no bar of ours) | Platform | Platform (the system indicator follows iOS) | None |
 | D-M16 | Every change inside the one join sheet: D-S15.signed-out, .loading, .default, each `.error-<code>`, .paused, .offline; D-S16.joining, .needs-sync, each `.error-<code>` | A step or state change | The new view fades in over the last, in place; the sheet does not move or resize with a spring (built `JoinStep`: `fadeMs`). "Join the book" becoming `family.accept.joining` is a label swap (`swapMs`) in a button that keeps its size | `fadeMs` 200 linear; label `swapMs` | Same fade (already the reduced form); label instant | None. Errors are lines in the view: no shake, no red flash, no sound |
-| D-M17 | D-S16.joining -> D-S17.arriving | Join succeeds (one membership, NS-25-R10) | 1. Haptic and, only if Paper sounds is on, `invite_accepted`, on the commit, before anything moves (house principle 3). 2. The arrival view fades in (`fadeMs`). 3. The book cover (132 x 176) fades in with the child's name (`fadeMs`), holds `cover.holdMs` 300, then the front cross-fades to the flyleaf with an 8 pt (`cover.dx`) shift on `standard` (built `JoinedCover`, as S08). This is the first frame the child's name shows on this phone (R2) | About 800 ms in all, under `sequenceMaxMs` 900. Over 300 ms: section 6 | The cover is shown open at once; the view arrives in one `fadeMs` fade; no hold, no shift | `success` (`notificationAsync(Success)`); sound `invite_accepted` (700 ms) only with Paper sounds on, never on the inviter's phone, never twice per invite (SOUND 4) |
+| D-M17 (v2: SUPERSEDED by GAP-LOG D-motion 1, see section 13; kept for history) | D-S16.joining -> D-S17.arriving | Join succeeds (one membership, NS-25-R10) | 1. Haptic and, only if Paper sounds is on, `invite_accepted`, on the commit, before anything moves (house principle 3). 2. The arrival view fades in (`fadeMs`). 3. The book cover (132 x 176) fades in with the child's name (`fadeMs`), holds `cover.holdMs` 300, then the front cross-fades to the flyleaf with an 8 pt (`cover.dx`) shift on `standard` (built `JoinedCover`, as S08). This is the first frame the child's name shows on this phone (R2) | About 800 ms in all, under `sequenceMaxMs` 900. Over 300 ms: section 6 | The cover is shown open at once; the view arrives in one `fadeMs` fade; no hold, no shift | `success` (`notificationAsync(Success)`); sound `invite_accepted` (700 ms) only with Paper sounds on, never on the inviter's phone, never twice per invite (SOUND 4) |
 | D-M18 | D-S17.arriving and D-S17.slow (sync brings the book) | Joined, and the book is still arriving | A thin bar (3 pt, `line` track) with an `accent` segment a third of its width sweeps slowly back and forth. No number, no percent, no count (no counters, ever). Hidden from VoiceOver; the waiting line is announced once instead | One sweep 1400 ms, ease in-out, repeating while waiting. Over 300 ms and a loop: listed in section 6 | The segment rests still at the start. Also still under Low Power Mode once the guard exists (section 8, E10) | None |
 | D-M19 | D-S17.joined -> Book (first view for this parent) | "Open the book" (after the sign-off field, which is still: no entrance) | The join sheet closes (platform). The Book is the tab under it; its lamp arrives from 0 to 0.6 over `lamp.arriveMs` (house 5l row 12: the second parent's first Book). The Book's cards are in place; nothing enters but the light | Sheet: platform. Lamp: 1200 ms, M3 easing. Over 300 ms: section 6 | The lamp is at 0.6 at once; the sheet follows the system's reduced close | None (the joined moment already had its haptic) |
 | D-M20 | D-S18 (family page) open | From the book's page in Me (D-S12, two parents or an open invite) | Native push (house row 9). The family page shares the tabs' light (`persistKey` "tabs"): it never re-arrives; its still `family` scene settles to 0.4 over `returnMs` | Push: iOS. Lamp: 280 ms | Push: iOS reduced. Lamp: at 0.4 at once | None |
@@ -279,3 +279,95 @@ Open differences (for Karma):
 1. **Haptic on Continue in the share preview.** `DESIGN.md` D-S02 says "Haptic: `tap` on Continue only", carried from the 11 Nov spec. This file says none (D-M06): house policy is that a haptic marks an outcome and Continue is a step, and NS-05-R22 asks for nothing that reads as "sent". Haptics are the motion file's to own (brief section 4); I recommend `DESIGN.md` drops the line.
 2. **State names differ between the other two files.** `WORDS.md` uses a few names `DESIGN.md` section 3 does not (`D-S04.yes-failed`, `.no`, `.picking`; `D-S18.twoParents-undoable`; `D-S21.error-save`; `D-S11.evening`; `D-S17.ready`), and `DESIGN.md` section 5.1 itself says `D-S11.evening` where its section 3 says `.home`. This file follows `DESIGN.md` section 3 throughout; whichever set Karma fixes, a rename here is mechanical.
 3. **Exceptions 5 and 6 (section 6)** need a ruling: the joined cover's 800 ms opening and the 1400 ms waiting sweep.
+
+## 13. Final-pack reconciliation (v2): `m.*`, `T-*`, `H-*` keys and the new rows
+
+Rule from `docs/design/system/MOTION.md`: every area row keys to its primitive (`m.*`), navigation transition (`T-*`) and haptic (`H-*`); where an area row and the system file disagree, the system file wins. GAP-LOG "Area D motion rulings (20 Nov)" are applied: D-motion 1 (no cover opening on joining: D-M17 becomes a plain arrival `m.fade` with `cover.dissolveMs`; the 800 ms move is dropped; section 6 item 5 closes); D-motion 2 (the waiting bar stays as `m.progress.wait`, token `progress.sweepMs`, off under Reduce Motion and Low Power Mode; section 6 item 6 and E4 close with that token name); D-motion 3 (no haptic on Continue; invite link sent none; Cancel invite `H-warning`; quiet-day Undo `H-select`; "No reminders" matches "Yes"); D-motion 5 (engineering rows E1, E2, E3, E7 stay).
+
+### 13.1 Every existing row, keyed
+
+| D-M | Primitive (`m.*`) | Transition (`T-*`) | Haptic (`H-*`) |
+|---|---|---|---|
+| 01 | `m.tap` | none | none |
+| 02, 08 | `m.sheet` (our sheet where one remains: `m.sheet.own`) | `T-SHEET` | none |
+| 03, 04 | `m.select` (native switch) | none | native |
+| 05 | `m.swap` | none | none |
+| 06 | `m.sheet` out, system share sheet in | `T-SHEET` hand-off | none |
+| 07, 10 | none | `T-RESUME` (blank snapshot is `m.instant`) | none |
+| 09 | platform scroll | none | none |
+| 11, 20 | `m.tap`, `m.push` | `T-PUSH` | none |
+| 12, 15, 25 | `m.sheet` | `T-SHEET` | none |
+| 13 | `m.swap` | system share sheet | none |
+| 14, 24 | `m.toast` | none | none |
+| 16 | `m.fade` | `T-STEP` | none |
+| 17 | `m.fade` (`cover.dissolveMs`), no cover opening | `T-SHEET` | `H-success`, `invite_accepted` sound (Paper sounds on) |
+| 18 | `m.progress.wait` (`progress.sweepMs`) | none | none |
+| 19 | lamp arrival (system `T-LAUNCH` family, `lamp.arriveMs`) | `T-TAB` | none |
+| 21 | `m.list.insert` | none | none |
+| 22 | `m.mark` | none | none |
+| 23, 26 | `m.list.remove`, `m.toast` | T-ALERT then none | `H-warning` |
+| 27 | `m.enter` | none | none |
+| 28 | wait for arrival, no primitive | none | none |
+| 29 | `m.sheet.own` (`dismissible` false) | `T-SHEET` | none |
+| 30 | `m.swap`, `m.move` | none | none |
+| 31, 33 | `m.sheet` out | `T-SHEET`, then `T-ALERT` (system) | `H-select`, equal for both answers |
+| 32 | `m.toast` | none | none |
+| 34 | `m.push` | `T-PUSH` | none |
+| 35 | `m.fade` | none | native |
+| 36, 38 | `m.exit` | none | none |
+| 37, 64 | `m.swap` | none | `H-select` on a chip or choice |
+| 39 | none | `T-RESUME` | none |
+| 40, 46 | system | none | none |
+| 41 | `m.sheet` | `T-SHEET` | none |
+| 42 | `m.list.insert` | `T-SHEET` out | `H-select` |
+| 43 | `m.swap` | none | none |
+| 44 | `m.sheet`, `m.list.remove` | `T-ALERT` | `H-warning` |
+| 45 | none (back-off is invisible) | none | none |
+| 47, 49 | lamp settle | `T-TAB`, `T-RESUME` | none |
+| 48, 50, 52, 55 | `m.enter.group`, lamp arrival | `T-LAUNCH` | none |
+| 51 | `m.enter`, `m.move` | `T-RESUME` | none |
+| 53 | none | none | none |
+| 54 | none | `T-TAB` then `T-PUSH` | none |
+| 56, 58 | `m.fade` hand-off (opacity only) | none | `H-soft`; Undo `H-select` |
+| 57 | lamp dim | none | none |
+| 59 to 61 | none | none | none |
+| 62, 63 | none | none | none |
+| 65 | `m.fade` (unlock) | `T-LOCK` | none |
+| 66 | system menu, `m.list.remove` | `T-MENU` | `H-soft` |
+| 67 | `m.swap` | none | none |
+
+### 13.2 New rows for the new and changed states (v2)
+
+Nothing here implies a streak, a count or progress. Every state change is opacity or an instant change; nothing travels; nothing animates a number.
+
+| Id | Screen, state | Trigger | What moves | `m.*` and `T-*` | Reduce Motion | Haptic |
+|---|---|---|---|---|---|---|
+| D-M68 | D-S06 -> C-S24 (the row "Days") | Tap the row | Native push; the page is in place | `m.push`, `T-PUSH` | system reduced | none |
+| D-M69 | D-S06.daysRemindersOff appears or leaves | Reminders switched off or on with a day present | The calm line fades in or out in place; rows below close up | `m.enter` / `m.exit`, `m.move` | fade over `fadeMs`, layout instant | none |
+| D-M70 | D-S06.journalNote | Page open | Nothing: a static footnote | none | none | none |
+| D-M71 | D-S06 preview "Example" and Next | A change of cadence, time, names or a day | Words cross-fade in place; at 07:00 the preview never briefly shows an evening line | `m.swap` | instant | none |
+| D-M72 | D-S25.beforeFirstTick on C-S25 | The sheet opens | Both `DoorNote` blocks are in place on the first frame: never faded in, never collapsed, never animated; they scroll with the sheet | none (content is static; the sheet is `m.sheet`, `T-SHEET`) | none | none |
+| D-M73 | D-S25.firstTickAsk | First tick, permission undetermined | The tick shows its row change only; the sentence replaces its slot in place; then iOS's alert | `m.select`, `m.swap`, `T-ALERT` (system) | instant swap | `H-select` (tick), none for the alert |
+| D-M74 | D-S25.denied | iOS refuses | The denied card fades in once under the sentence; no shake, no red flash | `m.enter` | fade `fadeMs` | none |
+| D-M75 | D-S25.stopOne, .clearAll | Untick; Clear all confirmed | A tick change is the receipt (`m.select`); Clear all: the confirm sheet exits and the rows leave together as one `m.list.remove`; no toast, no count | `m.select`, `m.list.remove`, `T-ALERT` | rows fade, gap closes next frame | `H-select`; `H-warning` on Clear all confirmed |
+| D-M76 | D-S11 tap on a day reminder, then the day slip | Tap | The app opens as D-M47 or D-M48; Home's content does not re-enter; the day slip is in place if it was due (a tap changes nothing about what Home shows, NS-50-R4); on a cold start it joins the entrance as one item before the prompt | `T-TAB`/`T-LAUNCH`, `m.enter.group` | one `m.fade` | none |
+| D-M77 | Day slip "Not today" | Tap | The slip leaves, the gap closes up; the next slip waits for the next Home visit; a day change removes it with no animation | `m.list.remove` | fade then jump | none (NS-50-R7) |
+| D-M78 | D-S08 preview line | Words typed or the switch on C-S24 changed while the sheet is open | The preview words cross-fade in place; the typed words never animate per letter | `m.swap` | instant | none |
+| D-M79 | D-S10 `libraryDay-*`, `twoDays`, `birthday-neutral`, `appLock` | A reminder is delivered | iOS draws it; ours: silent, no badge, `active`. Nothing of ours moves | system | system | none |
+
+The only loop in the area is still `m.progress.wait`. No row uses `m.signal`, `m.keep`, `m.zoom`, `m.draw`, `m.mark` (except D-M22), a confetti, a sparkle or a counter.
+
+## 14. Round 2 additions (20 Nov, second founder direction): the photo-moment nudge
+
+Keyed by name to NS-51 (photo moments) and NS-52, which are being written in file 27; ids are PROPOSED and flagged (see `DESIGN.md` section 16). Same rules: nothing implies the app looked at or understood a picture, nothing counts, nothing celebrates.
+
+| Id | Screen, state | Trigger | What moves | `m.*` and `T-*` | Reduce Motion | Haptic |
+|---|---|---|---|---|---|---|
+| D-M80 | D-S06.photoMomentsOff -> .photoMomentsOn | The switch "Reminders about pictures" turns on | The native switch moves; the footnote swaps in place; nothing scans, shimmers, sparkles or counts | `m.select`, `m.swap` | instant swap | native |
+| D-M81 | D-S06.photoMomentsOn -> .photoMomentsOff | Switch off | The footnote swaps; pending nudges are removed at the next re-plan, invisibly | `m.swap` | instant | native |
+| D-M82 | D-S06 switch appears or disappears | Library access granted or removed (in Me or iOS Settings) | On return to the page the row is simply present or absent: no entrance, no exit, no line (T-RESUME: nothing re-enters). If the page is open while it changes, `m.enter` or `m.exit` at most | `T-RESUME`, `m.enter` / `m.exit` | fade or jump | none |
+| D-M83 | D-S10 `photoMoment`, `-plain`, `-hidden`, `-appLock`, `-oneDay` | Delivered | iOS's own; ours silent, no badge, no rich media, no picture attachment | system | system | none |
+| D-M84 | D-S11 `.photoMoment` (tap) | Tap | As D-M47 (warm) or D-M48 (cold): plain Home; the capture area's invitation (area A, proposed A-S17) is in place if it was due, or enters once with the cold-launch group; never an animation of pictures arriving, never a count | `T-TAB` / `T-LAUNCH`, `m.enter.group` | one `m.fade` | none |
+| D-M85 | A-S18 opt-in (area A) hand-off | Allow or Not now | Equal answers get equal feedback; the iOS permission alert is the system's (`T-ALERT`); no motion of ours over it | `T-SHEET`, `T-ALERT` | system reduced | `H-select` for both answers |
+
+Never animated in this feature: a pictures-found reveal, a count, a counter on the app icon, a badge, a preview of the pictures on the notification, a pulsing invitation, a "new" mark, a progress bar for indexing the library (indexing is silent and unannounced, or if a line is ever needed it is a static `SystemLine` owned by C-S27).

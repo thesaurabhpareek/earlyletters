@@ -849,20 +849,19 @@ demo("g-quiet", {
 /* Appended items (v1.1)                                               */
 /* ------------------------------------------------------------------ */
 demo("g-remind", {
-  title: "Add a day: show my words in the notification", ids: "D-M64 | D-S08.default <-> D-S08.showWords",
-  what: "The native switch moves; the preview's words cross-fade in place between the fixed line and the parent's words, unchanged.",
+  title: "Add a day: the preview follows the one switch", ids: "D-M64, D-M78 | D-S08 preview (v2: no switch in the sheet; the one day-names switch is on C-S24)",
+  what: "The sheet has no switch. When the day-names switch on the Days page is on and App lock is off, the preview's words cross-fade in place between the fixed line and the parent's words, unchanged; the words never animate per letter.",
   rm: "instant swap.",
   scene: function () {
-    var w = wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days to remember</div></div>' + tabbar("Me") +
-      '<div class="scrim" style="opacity:1"></div><div class="sheet" style="transform:none"><div class="grab"></div><div class="title2">Add a day</div><div class="listrow" style="border-radius:14px;margin:12px 0"><span>Date</span><span class="chip">Mon 30 Nov</span></div><div class="card" style="background:var(--surface);box-shadow:none">Nursery starts</div>' +
-      '<div class="row" style="justify-content:space-between;align-items:center;min-height:44px;margin-top:10px"><span class="small">Show my words in the notification</span><span class="switch" id="sw2"></span></div>' +
-      '<div class="small muted" style="margin-top:6px">How it will look</div><div class="card"><div id="pv" style="font-size:16px">A day you wanted to remember</div></div><div class="btn" style="margin-top:14px">Save</div></div>');
+    var w = wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 14px">Days</div></div>' + tabbar("Me") +
+      '<div class="scrim" style="opacity:1"></div><div class="sheet" style="transform:none"><div class="grab"></div><div class="title2">Add a day</div><div class="listrow" style="border-radius:14px;margin:12px 0"><span>Date</span><span class="chip">Mon 30 Nov</span></div>' +
+      '<div class="small muted" style="margin-top:6px">How it will look</div><div class="card"><div id="pv" style="font-size:16px">A day you wanted to remember</div></div><div class="small muted" style="margin-top:6px">The lock screen shows this unless you choose otherwise in Days.</div><div class="btn" style="margin-top:14px">Save</div></div>');
     return w;
   },
   play: function (c) {
-    c.log("switch on (native switch's own haptic); preview words swap (swapMs)"); c.q("#sw2").classList.add("on");
+    c.log("the day-names switch (area C) is turned on elsewhere; preview words swap (swapMs)");
     return swapText(c.q("#pv"), "Nursery starts").then(function () { return c.wait(900); }).then(function () {
-      c.log("switch off; swap back"); c.q("#sw2").classList.remove("on"); return swapText(c.q("#pv"), "A day you wanted to remember");
+      c.log("switched off, or App lock on; swap back"); return swapText(c.q("#pv"), "A day you wanted to remember");
     });
   }
 });
@@ -875,6 +874,48 @@ demo("g-land", {
     return openFromLock(c).then(function () { c.log("App lock shown first; landing waits"); return c.wait(900); })
       .then(function () { c.log("unlocked (stand-in fade)"); c.q("#under").innerHTML = homeScreen({ lamp: 0.6 }); return fade(c.q("#applock"), 1, 0, T.fadeMs); })
       .then(function () { set(c.q("#applock"), { display: "none" }); c.log("warm landing: tab swap, lamp settles over returnMs; no content entrance"); return lampTo(c.q("#lamp"), 0.6, 1, T.lamp.returnMs); });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* v2 items (final pack) and round 2 (PROPOSED)                         */
+/* ------------------------------------------------------------------ */
+demo("g-remind", {
+  title: "Days reminders: the calm line, the DoorNotes, the first tick", ids: "D-M69, D-M72, D-M73, D-M74, D-M75 | D-S06.daysRemindersOff; D-S25",
+  what: "Reminders off with a day present: one calm line fades in in place. In Browse the two DoorNotes are there on the first frame and never move. A first tick changes only its row; one sentence swaps in; then iOS asks. Untick or Clear all: rows leave together, no toast, no count.",
+  rm: "fades only; layout instant.",
+  scene: function () {
+    return wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 10px">Reminders</div><div class="listrow"><span>Days</span><span class="muted">&gt;</span></div><div class="small muted" id="cl" style="margin:8px 4px;opacity:0">Days you added or chose still send a reminder when Reminders is off. You can stop them in Days.</div>' +
+      '<div class="card" style="margin-top:12px"><div class="small">Only on this phone. Used for one thing: finding days for you to pick. Change or clear any time in Me.</div></div><div class="card" style="margin-top:8px"><div class="small">A day you tick sends one reminder that morning. Untick it, or choose Clear all, and it stops.</div></div>' +
+      '<div class="listrow" id="tk" style="margin-top:10px"><span>Thanksgiving</span><span id="tkm">&#9633;</span></div><div class="small muted" id="ask" style="margin:8px 4px;min-height:20px"></div></div>' + tabbar("Me"));
+  },
+  plays: [
+    { label: "Calm line", fn: function (c) { c.log("Reminders switched off: the line enters in place (m.enter)"); return enterEl(c.q("#cl")).then(function () { set(c.q("#cl"), { opacity: "1" }); return c.wait(600); }); } },
+    { label: "First tick", fn: function (c) {
+      c.log("tick: the row changes (m.select), H-select; DoorNotes do not move");
+      c.q("#tkm").innerHTML = "&#10003;";
+      return swapText(c.q("#ask"), "Your iPhone will ask if {app} can send reminders.").then(function () { c.log("then iOS asks once (system)"); return c.wait(700); });
+    } },
+    { label: "Untick", fn: function (c) { c.log("untick: row change only; no toast, no count"); c.q("#tkm").innerHTML = "&#9633;"; return swapText(c.q("#ask"), ""); } }
+  ]
+});
+demo("g-land", {
+  title: "A day reminder is tapped: Home and the day slip", ids: "D-M76, D-M77 | D-S11 (no libraryDay state), A-S01.dayToday",
+  what: "The app opens as for any landing; Home does not re-enter. The day slip is in place (a tap changes nothing about what Home shows). Not today: the slip leaves, the gap closes up, no haptic.",
+  rm: "one fade; fade then jump.",
+  scene: function () { return wrap(homeScreen({ lamp: 0.6 }).replace('<div class="promptHero"', '<div class="card" id="dslip" style="margin:0 0 10px"><div class="small">Thanksgiving. Anything you would like Asha to hear about today?</div><div class="small muted" style="margin-top:6px" id="nt">Not today</div></div><div class="promptHero"'));  },
+  play: function (c) { c.log("landing: slip already in place"); return c.wait(900).then(function () { c.log("Not today: m.list.remove, no haptic"); return exitEl(c.q("#dslip")).then(function () { return collapse(c.q("#dslip")); }); }); }
+});
+demo("g-land", {
+  title: "Round 2 (PROPOSED): the photo reminder switch and its tap", ids: "D-M80, D-M81, D-M84 | D-S06.photoMoments*, D-S11.photoMoment",
+  what: "The native switch moves; the footnote swaps in place. Nothing scans, shimmers, sparkles or counts. A tap lands on plain Home; the invitation, if any, is area A's and never a slip or tile.",
+  rm: "instant swap.",
+  scene: function () { return wrap(STATUS + '<div class="content"><div class="title1" style="margin:44px 0 10px">Reminders</div><div class="listrow"><span>Reminders about photos</span><span class="switch" id="psw"></span></div><div class="small muted" id="pf" style="margin:8px 4px;min-height:36px"></div></div>' + tabbar("Me")); },
+  play: function (c) {
+    c.log("switch on (native haptic); footnote swaps in place"); c.q("#psw").classList.add("on");
+    return swapText(c.q("#pf"), "Uses the same one reminder a day. Notifications show only neutral words.").then(function () { return c.wait(900); }).then(function () {
+      c.log("switch off; footnote swaps out"); c.q("#psw").classList.remove("on"); return swapText(c.q("#pf"), "");
+    });
   }
 });
 demo("g-quiet", {
