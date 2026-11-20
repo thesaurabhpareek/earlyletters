@@ -590,3 +590,13 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
   6. ADR Q4: whether the owner backup carries pictures (`privacy` with the founder). The ADR's default: no in Build 13. Needed by the Build 13 freeze.
   7. Whether pictures stay in the iPhone backup: the founder's NX-39 F9 default is yes, and #796 builds it that way (D1). It is his to change, not this ruling's.
 - ADR status: 0028 merges with its status as Proposed, as 0025 and 0026 did on `develop`; this entry is its acceptance record. Numbered CR-62 because CR-61 is the highest ruling in this log and in `docs/` on `develop`, and `node scripts/agents/id-collisions.mjs` (19 Nov 2026) finds no open PR adding CR-62. Karma
+
+### CR-63 "PASS WITH NOTES" is a counted pass; merge-queue.mjs counts it (Fri 20 Nov 2026, Karma (session earlyletters-61), from ai-eng-lead's readiness report)
+- Question: `scripts/agents/merge-queue.mjs` (HV2-B32, #705) counts a lens as met only when the first line of the review says exactly `PASS`, and lists `PASS WITH NOTES` as blocking. Every merge under D-132 since then (#764, #826, #828, #829, #831, #832, #834, #797, #827) went in on reviews whose first line said `PASS WITH NOTES`, and DECISIONS.md:878 records #306 merging on two of them. The tool and the practice disagree, so either the tool or the practice is wrong.
+- Tier and type: T1 (process; one script and its test); clear.
+- Options considered: keep the tool strict and make reviewers write `PASS` with notes below (reviewers would drop notes to avoid a round); keep the tool strict and require one more round to clear notes (doubles review load for nothing that blocks); count `PASS WITH NOTES` as a pass and keep notes as non-blocking follow-ups.
+- Ruling: a counted review's first line is `## Review A|B at <40-char sha>: <verdict>`, and the verdict `PASS` or `PASS WITH NOTES` meets the lens. `CHANGES`, `FAIL`, `BLOCKED` and any other word do not, and a later blocking verdict at the same head undoes an earlier pass. Notes never block a merge; the author answers them in one line and carries the right ones into the next push that already touches the files, or into a backlog row. `merge-queue.mjs` and its test change in the same PR as this entry.
+- Why: the gate exists to stop a merge with a known blocking defect at the head. A reviewer who writes `PASS WITH NOTES` is saying there is none. Making notes cost a round teaches reviewers to hide them.
+- Door: two-way: the tool's `PASSING` list is one line.
+- Way back: set `PASSING` to `["PASS"]` and restore the test's strict case.
+- Revisit when: a merge on `PASS WITH NOTES` ships a defect that a note had named. Karma

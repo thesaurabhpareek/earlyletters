@@ -18,7 +18,8 @@
 //
 // Rules it applies:
 // - A review counts only if the FIRST LINE of a PR comment is exactly
-//   `## Review A at <40 hex>: PASS` (or `Review B`). The sha must equal the PR head, all
+//   `## Review A at <40 hex>: PASS` or `...: PASS WITH NOTES` (or `Review B`); notes never
+//   block (Karma's ruling CR-63, 20 Nov 2026). The sha must equal the PR head, all
 //   40 characters. Later lines are never read, so words like failure or until in the body
 //   cannot change the result.
 // - Only comments by OWNER, MEMBER or COLLABORATOR (author_association) count; the repo is
@@ -47,8 +48,8 @@
 // Verdicts, first match wins:
 //   DIRTY          mergeable_state is dirty (conflicts)
 //   OTHER-BASE     (--all-bases) PR is not into the listed base; never gets a Merge ask
-//   BLOCKED-REVIEW the newest trusted verdict at head for a lens is not exactly PASS
-//                  (BLOCKED, CHANGES, PASS WITH NOTES, ...); a later PASS clears it
+//   BLOCKED-REVIEW the newest trusted verdict at head for a lens is not exactly PASS or
+//                  PASS WITH NOTES (BLOCKED, CHANGES, FAIL, ...); a later pass clears it
 //   NEEDS-REVIEW   a counted PASS is missing and no older-sha review exists
 //   STALE-REVIEW   a counted PASS is missing at head, and one exists at an older sha
 //   CI-FAIL        a required context concluded with something other than success
@@ -69,7 +70,10 @@ export const FALLBACK_REQUIRED = ["applied migrations unchanged", "required", "c
 export const MACOS_CHECKS = [/^iOS simulator build/, /^store-profile Release launch/];
 export const NATIVE_PATHS = [/^apps\/mobile\/ios\//, /^apps\/mobile\/modules\//, /^apps\/mobile\/app\.config\./, /^apps\/mobile\/eas\.json$/, /^package-lock\.json$/];
 export const touchesNative = (files) => files.some((f) => [f.filename ?? f, f.previous_filename].some((n) => typeof n === "string" && NATIVE_PATHS.some((re) => re.test(n))));
-const REVIEW_RE = /^## Review ([AB]) at ([0-9a-f]{40}): PASS[ \t]*$/;
+const REVIEW_RE = /^## Review ([AB]) at ([0-9a-f]{40}): PASS( WITH NOTES)?[ \t]*$/;
+/** The two verdict words that meet a lens (CR-63). Exact match: "PASS.", "pass" and the rest do not. */
+export const PASSING = Object.freeze(["PASS", "PASS WITH NOTES"]);
+const passes = (word) => PASSING.includes(word);
 
 /** Strip ANSI escape sequences and control characters from anything printed. */
 export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
@@ -77,7 +81,7 @@ export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~
 /**
  * First line only, strict: `## Review A|B at <40 lowercase hex>: <verdict words>`.
  * Returns { lens, sha, word } (word is the trimmed verdict, e.g. PASS, BLOCKED, CHANGES,
- * "PASS WITH NOTES") or null. Only the exact word PASS satisfies a lens.
+ * "PASS WITH NOTES") or null. Only the exact words PASS or PASS WITH NOTES satisfy a lens.
  */
 export function parseReview(body) {
   const first = String(body ?? "").split("\n", 1)[0].replace(/\r$/, "");
@@ -89,13 +93,13 @@ export const TRUSTED_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR"];
 
 /**
  * Per lens at the current head, the NEWEST trusted verdict decides (PASS, then BLOCKED =
- * not met; BLOCKED, then PASS = met). Only the exact word PASS meets a lens; "PASS WITH
- * NOTES", "PASS." and every other word do not (chosen: the gate is two clean PASSes).
+ * not met; BLOCKED, then PASS = met). Only the exact words PASS and PASS WITH NOTES meet a
+ * lens; "PASS.", "pass" and every other word do not (CR-63: notes never block a merge).
  * Comments are ordered by created_at then id; with neither, by array order.
  * The repo is public: only OWNER, MEMBER or COLLABORATOR comments count. A matching
  * verdict at head from anyone else is listed in `untrusted` (lenses not otherwise decided).
  * `staleLenses`: PASS at an older sha with no trusted verdict at head.
- * `blocked`: lens -> newest non-PASS word at head.
+ * `blocked`: lens -> newest non-passing word at head.
  */
 export function reviewState(comments, head) {
   const order = comments
@@ -112,13 +116,13 @@ export function reviewState(comments, head) {
       continue;
     }
     if (r.sha === head) latest[r.lens] = r.word;
-    else if (r.word === "PASS") stale.add(r.lens);
+    else if (passes(r.word)) stale.add(r.lens);
   }
   const blocked = {};
-  for (const [lens, word] of Object.entries(latest)) if (word !== "PASS") blocked[lens] = word;
+  for (const [lens, word] of Object.entries(latest)) if (!passes(word)) blocked[lens] = word;
   return {
-    A: latest.A === "PASS",
-    B: latest.B === "PASS",
+    A: passes(latest.A),
+    B: passes(latest.B),
     blocked,
     staleLenses: [...stale].filter((l) => !(l in latest)),
     untrusted: [...ignored].filter((l) => !(l in latest)),

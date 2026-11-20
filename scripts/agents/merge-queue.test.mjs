@@ -191,9 +191,16 @@ test("veto: newest trusted verdict per lens at head decides", async () => {
   assert.equal((await verdict({ comments: [review("A", HEAD), review("B", HEAD), { body: `## Review A at ${HEAD}: BLOCKED`, author_association: "OWNER" }] })).verdict, "BLOCKED-REVIEW");
 });
 
-test("PASS WITH NOTES and PASS. are not met (chosen: only the exact word PASS)", async () => {
-  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS", 2)] })).verdict, "BLOCKED-REVIEW");
-  assert.equal(reviewState([v("A", "PASS.", 1)], HEAD).A, false);
+test("PASS WITH NOTES meets a lens (CR-63); PASS. and near misses do not", async () => {
+  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS", 2)] })).verdict, "READY");
+  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS WITH NOTES", 2)] })).verdict, "READY");
+  for (const word of ["PASS.", "pass", "PASS WITH NOTE", "pass with notes", "PASS WITH NOTES.", "PASSWITH NOTES"]) {
+    assert.equal(reviewState([v("A", word, 1)], HEAD).A, false, word);
+  }
+  // a later CHANGES at head still blocks a lens that had PASS WITH NOTES
+  assert.equal((await verdict({ comments: [v("A", "PASS WITH NOTES", 1), v("B", "PASS", 2), v("A", "CHANGES", 3)] })).verdict, "BLOCKED-REVIEW");
+  // PASS WITH NOTES at an older sha is stale, not a pass
+  assert.deepEqual(reviewState([{ ...review("A", OLD), body: `## Review A at ${OLD}: PASS WITH NOTES`, ...at(1) }], HEAD).staleLenses, ["A"]);
 });
 
 test("an untrusted BLOCKED does not veto a trusted PASS", async () => {
