@@ -1,0 +1,1 @@
+05:49 (20 Nov) privacy | done: read design s4, #854, #799, develop migrations; journal stub posted | next: data-policy s4 current facts (backup tables, entry-audio, D-159 nightly dump, held_drafts), then card rows in both files | blocked/needs: none

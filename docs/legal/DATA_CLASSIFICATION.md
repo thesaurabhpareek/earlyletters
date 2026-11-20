@@ -1,11 +1,14 @@
 ---
 title: Data classification
 product: "{brand.name} (codename scribe)"
-version: 1.5.0
+version: 1.6.0
 status: draft-for-counsel
 owner: founder (data governance lead role)
 companion: data-policy.md (retention, ownership), DELETION_AND_EXPORT_SPEC.md (DATA-REQ), ENGINEERING_REQUIREMENTS.md (LEGAL-REQ), PRD.md section 7.10
 changelog:
+  - version: 1.6.0
+    date: 2026-11-20
+    summary: Brought to develop and the new-scope cards (BL-960, NS-36-R6). 4.1 says which server tables are newer than its 3 Oct generation. 4.3 gains the planned columns of the cards (Firsts, seals, the withheld flag, version fields). 4.3.1 and 4.4 point at the backup migration on develop (pending apply, empty while backup is off). 4.5 moves from local schema version 4 to 10 (11 with #835 and #836): the columns of versions 5 to 10, `child_member_prefs`, `agreements`, the Find index of #798, the settings keys on develop it lacked, and the planned local columns and keys, each with its card and BL row. 4.6 adds the recovery export ZIP, the backup state file and Keychain items, and the planned smaller picture copies, share file and PDF. `find.secureDelete` is L2, not L1. Includes the `entry_media` rows of #854. Minor.
   - version: 1.5.0
     date: 2026-10-16
     summary: Option B (founder, 15 Oct 2026). New section 4.3.1 classifies every table of the unapplied migration 20261015230000_backup_server.sql (branch feat/backup-server, first at commit 7a0f45d, re-read at ad222eb on 16 Oct: escrow_rotation_notices gains id and attempts and is deleted 90 days after sent_at; pending audio_blobs rows are swept after 24 hours), including escrow_rotation_notices, with the levels of its column comments and the retention PRD V2 F08 section 8 and F17 section 8.4 set. The `entry-audio` bucket (4.4) moves to v1.0. The planned `audio_blobs` and escrow rows of 4.3 are replaced by 4.3.1. Nothing else re-read in this pass.
@@ -85,6 +88,8 @@ Every L3 and L4 row tied to a child is readable only by that child's members (PR
 ### 4.1 Postgres (generated from the column comments)
 
 Generated on 3 Oct 2026 by loading every migration through `20261004300000_insights_aggregates.sql` into the test database and reading `col_description` for schemas `public`, `ops` and `insights` (internal underscore views omitted). If this table disagrees with a migration, the migration wins and this table must be regenerated. Status: pending live apply (see `supabase/APPLY.md`).
+
+**Not regenerated since 3 Oct (re-read 20 Nov 2026).** Tables added on develop after `20261004300000` carry their levels only in their migrations' column comments (`supabase/tests/classification.test.mjs` checks that every `public` column has one): `held_drafts`, `held_drafts_gone`, `sync_private.entry_erasures` (`20261016000000_sync_v1_server.sql:2107-2152`), `idempotency_keys` (`20261005000000_family_cap_language_idempotency.sql:1209-1212`), `subscription_salts`, `subscription_status`, `subscription_consents`, `subscription_report_rates` (`20261016001000_subscription_status.sql:90-182`), and the backup tables (4.3.1). Columns added to `entries` and `sync_op_receipts` since (for example `entries.text_xid`, `words_reviewed_at`) are in those comments too. data-policy 4.1 has a row for each table. Regenerating this section is owed.
 
 Removed on 3 Oct 2026 (migration `20261004000000_plus_on_device_only.sql`, founder decision 3): `store_subscriptions`, `store_notifications` and `app_account_tokens`. No server table holds purchases; Plus is checked on the device with StoreKit (ADR 0013).
 
@@ -556,14 +561,22 @@ Each must get column comments in the migration that creates it; the CI gate enfo
 | Table or column | Planned level of the sensitive columns |
 |---|---|
 | `profile_settings` (languages, Hindi script, goals, reminder cadence) | Languages and goals L4 (PRD 7.10); cadence and reading size L2 |
-| `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language) |
+| `public.entries.language` (spoken-letter language of a letter; feeds `insights.language_mix`) | L4 (a person's language). Built: `20261005000000_family_cap_language_idempotency.sql:1207` |
+| `entries.first_mark`; `entries.first_label` (NS-06 Part A, BL-968) | L3 (the mark says something about the child that is not content); L4 (free text, rule 1.1.3; can be a health fact) |
+| `entries.seal_opens_at`, `seal_opens_on`, `seal_cleared_at` (NS-06 Part B, ADR 0028 D3a, BL-969) | L4 (CR-62; a chosen day can state a birthday; the instant states the sealing zone's offset). Author row only, never in `book_entries` |
+| The withheld-words flag on `held_drafts` (NS-17; named `words_withheld` or `language_withheld`, whichever lands; no BL row at the lock) | L4: it states the take was in another language (rule 1.1.2: not reduced) |
+| `entry_versions.edit_level`; `entry_versions.author_edits`, `locked_spans` (NS-12, BL-979, if its design extends the table) | L2; L4 (derived from the words, rule 1.1.2) |
+
+The migrations that add `first_label` and the seal columns also add them to `mustBeL4` in `supabase/tests/classification.test.mjs:24`.
 | `member_return_links` (hashed bearer token) | Hash L3 |
 | `child_key_grants` (family members hearing each other's recordings; v1.1 shared voice) | L4 |
 | `waitlist` (web) | Email L3 |
 
 `ops_audit_log` (LEGAL-REQ-025) is built as `ops.audit_log` (4.1.2).
 
-### 4.3.1 Recording backup tables (migration `20261015230000_backup_server.sql`, branch `feat/backup-server` at ad222eb; not yet applied)
+### 4.3.1 Recording backup tables (migration `20261023000000_backup_server.sql` on develop, pending apply)
+
+Re-read on develop on 20 Nov 2026: the file is the one drafted as `20261015230000` on `feat/backup-server` and renamed on 23 Oct (its header, lines 3-7); `supabase/APPLY.md:25` lists it as Pending. Every column comment (`:380-469`) matches the table below. No phone writes a row while `EXPO_PUBLIC_BACKUP` is off, and it is off in every build profile (`apps/mobile/eas.json:16, 34, 48, 62, 78`). The paragraph below is from 16 Oct.
 
 Levels are the ones the migration's column comments set; every column has one. All tables have RLS on; clients read only their own rows, and only where the "Client access" column says so. Retention follows PRD V2 F08 section 8 and the F17 section 8.4 deletion matrix; the purge steps are in `backup_svc_sweep` (run daily by the purge worker). Re-read at ad222eb on 16 Oct 2026: only `escrow_rotation_notices` and the pending sweep changed since 7a0f45d. When the migration is applied, 4.1 is regenerated from its comments and these rows move there.
 
@@ -586,17 +599,17 @@ Registry in code: `supabase/functions/purge-worker/lib/buckets.ts` (every bucket
 
 | Bucket | Path | Content | Level | Status |
 |---|---|---|---|---|
-| `entry-photos` | `{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}` (enforced by `entries_photo_path_scoped`) | Photos with letters | L4 (path itself L3) | Live, private |
+| `entry-photos` | `{child_id}/{author_id}/{entry_id}.{jpg,jpeg,heic,png}` (enforced by `entries_photo_path_scoped`) | Photos with letters | L4 (path itself L3) | Live, private, empty: pictures kept with letters never leave the phone (NS-01-R15; 4.6). Planned: client insert and update dropped (NS-01-R61, ADR 0028 D6, BL-870) |
 | `child-photos` | `{child_id}/{uuid}.{ext}` (`children_photo_path_scoped`) | Child profile photo | L4 | v1.0, private |
 | `ops-ledger` | `purges/YYYY-MM-DD.jsonl` | Ids of purged letters, books, people and objects, so a restore can replay deletions (DATA-REQ-030). No content | L3 | Created by migration 20261004200000; service role only (no policies); 60 days; excluded from the purge's own residue scans |
-| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of the owner's recordings (PRD V2 F08 6.5; ADR 0006 amendment pending) | L4 | v1.0 (option B): private bucket, 20 MB objects, `application/octet-stream`, owner-only policies, created by `20261015230000_backup_server.sql` on `feat/backup-server` (not yet applied). `purge-worker/lib/buckets.ts` still says `since: 'v1.1'`; that branch updates it |
+| `entry-audio` | `{child}/{author}/{entry}.m4a.enc` | AES-256-GCM ciphertext of the owner's recordings (PRD V2 F08 6.5; ADR 0006 amendment pending) | L4 | On develop: private bucket, 20 MB objects, `application/octet-stream`, owner-only policies, created by `20261023000000_backup_server.sql:677` (pending apply); `purge-worker/lib/buckets.ts:39` registers it `since: 'v1.0'`. Empty while `EXPO_PUBLIC_BACKUP` is off (4.3.1) |
 | `inbox` | `{child_id}/{contributor}/{entry_id}.enc` | Web contributor audio, encrypted in the browser | L4 | v1.1 |
 | `avatars` | `{profile_id}/{uuid}.{ext}` | Member photo | L3 | P1 |
 | `exports` | `{profile_id}/{export_id}.zip` | Server-built exports, 7 days | L4 | P1 (v1.0 exports are made on the phone) |
 
-### 4.5 Device: local SQLite (`apps/mobile/src/lib/store.ts`, `scribe.db`, schema `src/lib/db/migrations.ts` version 4)
+### 4.5 Device: local SQLite (`apps/mobile/src/lib/store.ts`, `scribe.db`, schema `src/lib/db/migrations.ts` version 10 on develop; 11 adds `entry_media` in #835 and #836)
 
-Protection floor for the whole file: iOS Data Protection at least "complete until first user authentication" (LEGAL-REQ-022(b)); SQLCipher decision pending (LEGAL-REQ-022(d)). The highest level in the file is L4, so the file is handled as L4.
+File paths cited in this section are under `apps/mobile/src/`. Protection floor for the whole file: iOS Data Protection at least "complete until first user authentication" (LEGAL-REQ-022(b)); SQLCipher decision pending (LEGAL-REQ-022(d)). The highest level in the file is L4, so the file is handled as L4.
 
 **`entries`**
 
@@ -618,6 +631,9 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `server_version`, `server_updated_at`, `server_epoch` | L2 | Sync state of the server copy (version, time, restore epoch) |
 | `sync_state` | L2 | Enum: local, pending, synced, rejected, held, gone |
 | `approval` | L2 | Family review state from the server |
+| `occurred_precision`, `base_direction` | L2 | Day or month; ltr or rtl (version 6) |
+| `language` | L4 | The letter's language (version 6, G-26); syncs as field group `language`, own letters only |
+| `held_v` | L2 | Server version of a waiting letter's held row (version 8) |
 
 **`children`**
 
@@ -631,6 +647,8 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `reminders_on`, `family_can_read` | L2 | Settings |
 | `server_state` | L2 | Enum: local, pending, synced, refused, left, deleted |
 | `created_at`, `updated_at`, `hidden_at` | L2 | Timestamps |
+| `created_by` | L3 | Account that started the book (version 7) |
+| `first_run_batch` | L2 | The op that sent a first-run book (version 7) |
 
 **`drafts`** (capture in progress)
 
@@ -646,6 +664,27 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `audio_sha256` | L4 | As on `entries` |
 | `audio_bytes` | L2 | File size |
 | `recovered_at` | L2 | Time the launch sweep rescued the take |
+| `kind`, `occurred_precision`, `base_direction` | L2 | Enums (version 6) |
+| `occurred_on` | L3 | The day the parent chose (version 6) |
+| `language` | L4 | Language of the take (version 6) |
+| `held_kind`, `in_book_choice`, `held_v` | L2 | Held-draft state (version 8) |
+| `held_typed` | L4 | The typed words as the server last had them (version 8) |
+| `review_put_back`, `review_text`, `review_base` | L4 | Review choices kept until Keep or Let it go (version 9): fixes put back, the person's own words, a hash of the words they were made on. Never synced, not in the app's export; in the recovery export and the device backup |
+| `review_view` | L2 | fixes or exact (version 9) |
+
+**`child_member_prefs`** (version 7; this person's choices for each book on this phone)
+
+| Column | Level | Note |
+|---|---|---|
+| `child_id` | L3 | Book id |
+| `signs_as` | L3 | What this child calls the user |
+| `reminders_on`, `hidden_at`, `quiet_at`, `updated_at` | L2 | Settings and times |
+
+**`agreements`** (version 10; the Terms and Privacy accept made on this phone)
+
+| Column | Level | Note |
+|---|---|---|
+| `id`, `document`, `version`, `action`, `surface`, `recorded_at`, `app_version`, `rendered_sha256`, `uploaded_at`, `server_act_id` | L2 | No age column, ever (D-026). `rendered_sha256` hashes the agreement sentence shown, not a person's words |
 
 **`orphan_audio`** (recordings found with no draft or letter while no book exists; reported in Settings, never deleted)
 
@@ -667,6 +706,24 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `sha256` | L4 | Of the stripped copy (rule 1.1.2) |
 | `photo_text` | L4 | The parent's own words about the picture, at most 140 |
 | `place` | L4 | Typed by the parent, at most 60; never read from the picture |
+
+**`letter_search`** (FTS5) and **`letter_search_rows`**: the Find index (NS-02, ADR 0028 D4; in PR #798, behind `EXPO_PUBLIC_BOOK_SEARCH`). Not a migration: made at launch while Find is on, dropped at launch with Find off and by Erase everything (`lib/find/lifecycle.ts`). The view `searchable_letters` holds no data. Never synced; in the device backup and the recovery export with the file.
+
+| Column | Level | Note |
+|---|---|---|
+| `letter_search.body` | L4 | The letter's words as kept (rule 1.1.2) |
+| `letter_search.extra` | L4 | Parent-typed Firsts label, photo words and place |
+| `letter_search_rows.entry_id` | L3 | Letter id (rule 1.1.5) |
+| `letter_search_rows.row_id` | L2 | FTS row number |
+
+**Planned local columns** (no code yet; levels set now so each build PR only changes its status)
+
+| Column | Level | Card and BL row |
+|---|---|---|
+| `drafts.author_signs_as` | L3 | NS-16, BL-980: may hold a non-user's name, capped (rule 1.1.3) |
+| `entries.first_mark`, `drafts.first_mark`; `entries.first_label`, `drafts.first_label` | L3; L4 | NS-06 Part A, BL-968 |
+| `entries` and `drafts` seal pair (`seal_opens_at`, `seal_opens_on`); `entries.seal_cleared_at` | L4 | NS-06 Part B, BL-969, BL-970 (CR-62) |
+| The withheld flag on `drafts` and `entries`; the `withheld_words` table, every column | L4 | NS-17 (no BL row at the lock); names as the build lands them |
 
 **`sync_outbox`** (ordered upload queue)
 
@@ -702,7 +759,7 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `state` | L2 | Enum: live and the end states |
 | `want_ids` | L2 | Flag: ask the server for the full id list on the next pull |
 
-**`settings`** (key, value). Values are short strings; keys never hold content.
+**`settings`** (key, value). Values are short strings; keys never hold content. Exceptions are classed L4 below: `child.bornCardHidden.<child id>` holds a due date, and the planned `typedDay.<yyyy-mm-dd>` will hold the parent's own words under a date.
 
 | Key | Level | Note |
 |---|---|---|
@@ -731,9 +788,26 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `scribe.analytics.consent_offers` | L2 | Count of unanswered consent sheet showings (at most 2) |
 | `ageGate.passed` (after Yes), `ageGate.stoppedAt` (after No only) | L2 | 18+ entry gate state (PRD-REQ-019, D-026). `ageAttested` and `ageAttestedAt` are retired; the server records `age_attested: true` in the `terms` acceptance context |
 | `preview.draftId` | L3 | Development builds only (web preview harness) |
+| `auth.reauth_epoch_seen` | L2 | Last forced sign-out number acted on (`lib/auth/reauth.logic.ts:19`) |
+| `book.deletedAt.<child id>`, `book.erasing.<child id>` | L3 | A time under a key holding a book id (`lib/db/repos/wipe.ts:9-12`) |
+| `erase.everything.pending` | L2 | Erase everything began; a relaunch finishes it |
+| `book.seenFromOthers`, `words.readItBack` | L3 | Letter ids only, never words: the other parent's letters shown; letters whose words arrived later and are not read back yet (`app/(tabs)/book.tsx:84`, `lib/read-it-back.ts:9`) |
+| `family.seenCoParents.<child id>` | L3 | The co-parents this phone last showed: ids and sign-offs (`lib/family/members.logic.ts:55`) |
+| `child.bornCardHidden.<child id>` | L4 | Holds the due date the card was hidden for (rule 1.1.7) (`components/child/child-settings.logic.ts:42`) |
+| `db.secureDeleteVacuumAt`, `lastLaunchAt`, `lastExportedAt` | L2 | Times (`lib/store.ts:192, 789`; `app/settings/export.tsx:39`) |
+| `letters.keptEver` | L2 | Count of letters ever kept, a number only (D-082) |
+| `newPhone.arrival`, `review.defaultView`, `plus.notesSeen`, `plus.statusReport` | L2 | No name, date, text or id (`lib/first-run/new-phone.logic.ts:86`, `components/capture/review-view.logic.ts:16`, `lib/billing/plan-notice.tsx:30`, `lib/billing/status-report.logic.ts:51`) |
+| `e2eKillDrill.owned` | L2 | Development and test builds only (`dev/kill-drill.logic.ts:66`) |
+| `find.dirtyAt`, `find.secureDelete` | L2 | In PR #798. A time; a flag. The code comment at `lib/find/lifecycle.ts:38` says L1: flags about this phone's database are L2 (section 1) |
+| Planned: `discard.failures.<draft id>` (NS-09, BL-977); `copySlip.<child id>.<year>` (NS-11, BL-942) | L3 key, L2 value | A retry count; a shown mark |
+| Planned: `newPhoneLine.dismissed` (NS-10, BL-978); `reminders.onSince` (NS-13, BL-943); `home.pastLetters`, `home.pastLetter.dismissedOn` (NS-23, BL-946); `typedDay.showWords` (NS-18, BL-982); `seal_watermark` per book (NS-06 Part B, BL-970) | L2 | Settings and times |
+| Planned: `typedDay.<yyyy-mm-dd>` (NS-18, BL-982) | L4 | The parent's words for a day's reminder; the date in the key can be a birthday (rule 1.1.6) |
+| Planned: `signAs.recent` (NS-16, BL-980) | L3 | Names used to sign letters, at most 20, cleared at the end of the session |
 | `family` (legacy, migrated away on open) | L4 | Contained child name and birthday |
 
 ### 4.6 Device: files and secure storage
+
+File paths cited in this section are under `apps/mobile/src/`.
 
 | Element | Level | Note |
 |---|---|---|
@@ -742,13 +816,20 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | Synced photos (planned), cached book audio of other members | L4 | Deleted on purge sync or removal. Not the pictures kept with letters (next row), which never come from the server |
 | Pictures: `Library/Application Support/photos/<media_id>.jpg` (iOS; the stripped copy, no metadata) | L4 | Kept with a letter or a draft (`entry_media`, ADR 0028 D1); in the device backup (NX-39 F9 default; the founder's to change, CR-62 item 7); never uploaded (NS-01-R15); erased with the letter, its book, a let-go draft, or Erase everything. A replaced picture's file stays for Undo, and goes at the latest at the next launch |
 | Picker originals `Caches/ImagePicker/<id>.img`, re-encode copies `Caches/ScribePhoto/<id>.jpg` | L4 | A pick in flight only. The original carries its location; it is read once and removed, and both folders are emptied at every launch and by Erase everything |
+| Smaller picture copies `photos/<media_id>-512.jpg`, `-1280.jpg` | L4 | Planned (NS-37-R1, R2, BL-932): made from the stored copy; each file excluded from the device backup; erased with the stored copy and by Erase everything; never uploaded or exported |
 | Export ZIPs in app temp | L4 | Deleted after the share sheet closes; plaintext by design |
+| Recovery export ZIP (`Caches/recovery-export`) | L4 | On develop: the recordings and the `scribe.db` files as they sit (`lib/resilience/recovery-export.logic.ts:1-4, 34`), so every local table, including `entry_media` and, once built, the Find index, seals and withheld output; no picture file. Removed after the share sheet (`lib/resilience/recovery-export.ts:64-65, 88`) |
+| Backup state file `backup-<profile id>.db` | L4 | On develop; opened only with `EXPO_PUBLIC_BACKUP` on (`lib/backup/gate.ts:20`), so never today. Upload jobs with the recording hash and the wrapped file key (L4); the file name holds a person id (L3). Not in the recovery export |
+| Picture share file; printable book PDF | L4 | Planned: the picture share (NS-05, BL-939) waits for both X2 reads and counsel Q45, and Level 1 writes no file; the PDF (NS-07, BL-973). Cache or temp, complete file protection, swept at launch and by Erase everything |
 | Installed packs: `Application Support/packs/installed/<pack id>/<version>/` with `pack.json` and the pack file; `staging/` for partial downloads | L1 | Text-rule packs (rules, filler and negation tables, punctuation, phonetic tables, prompt text) and speech models: public data checked against the signed manifest (SHA-256). Excluded from backup. Which packs are installed reveals which languages the author picked, so the **list** of installed packs is handled as L4 on the device and never leaves it except as the `pack_download` analytics event after a yes (TRACKING_PLAN 6.2) |
 | Remote document cache (`Application Support/remote`: signed remote config, pack manifest, content blocks) | L1 | Public server documents |
 | Secure storage (Keychain/Keystore): `scribe.auth` (Supabase session) | L4 | Secret |
 | Secure storage: `scribe.auth.appleUser` | L3 | Apple user identifier for credential-state checks |
 | Secure storage: `scribe.auth.pendingName` | L3 | Name Apple returned at first sign-in, until it is saved to the profile |
 | Secure storage: `scribe.family.pendingInvite` | L4 | Invite token waiting for sign-in (secret) |
+| Secure storage: `scribe.auth.pendingEmailRequest` | L2 | The time this phone last asked for a sign-in email; never the address (`lib/auth/pending.ts:1-18`) |
+| Keychain: `earlyletters.letters.keptEver` | L2 | Count of letters ever kept (D-082). Survives deleting the app on that phone (not guaranteed by Apple); cleared by Erase everything (`lib/billing/letter-ledger.ts:118-128`) |
+| Keychain service `scribe.backup` | L4 | Backup book keys (`lib/backup/runtime.ts:67`); used only with `EXPO_PUBLIC_BACKUP` on |
 | Keychain/Keystore: child content key, X25519 private key | L4 | ADR 0006, A-NFR-008 (v1.1 shared voice) |
 | PostHog SDK state (after a yes only) | L2 | In memory only (`persistence: 'memory'`): queue, ids and flags never touch disk |
 | Safety tiers (local only, PRD K-06) | L4 | Never leave the device; no server table exists |
@@ -766,6 +847,8 @@ Changes on 3 Oct 2026 (catalogue `SCHEMA_VERSION` 2):
 - `pack` is a short analytics id derived from the manifest pack id; the manifest id, file name and URL are never sent.
 - `machine_edit_rejected` carries the verifier reason (including `not_vetted_for_language`), edit type, source and a count; never text or offsets.
 - SDK fields kept: `$app_version`, `$app_build`, `$os_name`, `$os_version`, `$device_type`, `$lib`, `$lib_version`, `$session_id`; dropped at the source and again in `before_send`: device name and model, locale, timezone, screen size, person properties.
+
+New-scope cards (20 Nov 2026): no event or property is added in the 1.0 line, because in-app analytics stays off (D-124; `apps/mobile/test/analytics-off-v1.test.ts`). The events the cards name (`media_added`, `book_search_used`, `letter_share_started`, `capture_started`) may come only after the 1.0 line, with a parent's opt-in, and come here with their properties when they are added to the catalogue.
 
 Sentry crash events (not in the v1.0 app): L2 after scrubbing (`sendDefaultPii: false`, `beforeSend` strips bodies, query strings and fields named like `text|transcript|name|note|letter`, ADR 0008); same consent switch as analytics.
 
