@@ -89,3 +89,5 @@ Sampled about 60 file:line cites across the briefs against develop `16e61549` an
 | #931, #932, #933 | `agent/principal-architect/readiness-inputs`, `-pack-delta-b`, `-pack-delta-c` | `inputs/PACK-DELTA*.md`, `RESYNC-LIST.md` |
 
 Notes after review A: BL-957 reuses `splitsCluster` in `packages/core/src/text.ts` and adds an export (CR-69 A8 "Grapheme counting"); no second copy. In #958, brief 894 adds the `bookSearch` key only; the CR-69 A5 PR owns `packages/api/README.md` "Eight keys" and `KILL_SWITCH_FLAG`. Each table row's PR: #835 to #837 are in #953; #838 to #840 in #954; P-1, BL-953, BL-957 in #955; P-5, BL-954, BL-955 in #956; BL-932, BL-956, BL-933 in #957; #894, #895, BL-952-8 in #958; #871, #879, BL-922 in #959; HO-911, BL-978a/b in #960; BL-966 a to c in #961; HO-908, HO-910, BL-943 in #962.
+
+B5 (council, CR-71): `BRIEF-B5-backup-file-exclusion-and-erase.md`, account lane with the photo lane's file rules, four PRs, lenses security-architect / privacy; PR 4 is the ops claim BL-958; blocked on the `/stop` page and the escrow key ceremony only for PR 4.
