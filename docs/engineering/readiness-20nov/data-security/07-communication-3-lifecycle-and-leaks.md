@@ -18,7 +18,7 @@ For each stage: what may be sent or shown, by which channel, what is forbidden, 
 | S7 | Quiet or lapsed | Nothing after day 35 of no made letter (back-off). The plan notice still fires if a plan runs | "We miss you", "It has been a while", any win-back email, any gap count | None | NS-32-R8; `CATALOG.md:158` |
 | S8 | New phone, restore, second account | I4 update line; the claim and "belongs to another sign-in" lines (FR-LCY-09, 10); the book reads signed out as normal | A scary "you lost your letters" line; a count of what is missing | Reminder settings do not sync: a new phone starts with none (NS-32 section 6) | `lifecycle-and-platforms.md` FR-LCY-09, 10 |
 | S9 | Policy change | E10 `policy-update` by email, at least 30 days before it takes effect, plus an in-app card until accepted | Silent change; marketing text inside it | Acceptance stored (hashed, `policy_acceptances`) | `CATALOG.md:120` |
-| S10 | Security events | A1 to A9 (07.2) | Anything in 07.2 section 3 "never says" | Alert rows hold kind and time only | 07.2 |
+| S10 | Security events | A1 to A9 (07.2); A1 before the first outside family, A3 and A6 after the BL-598 runbook (D1, founder approved 20 Nov; product confirms); no A2 email (D2, D3) | Anything in 07.2 section 3 "never says" | Alert rows hold kind and time only | 07.2 |
 | S11 | Deletion requested (30 days) | A4 receipt 1; in-app status I6; the other phone shows its line on next contact (FR-LCY-19) | Pressure to stay; an "are you sure" email after the first | Reminders and pending notifications cancelled on this phone at sign-out; the days store and moments index file deleted first (CR-69 A4) | `CATALOG.md:110-112`; FR-LCY-19 |
 | S12 | Deletion cancelled | A4 receipt 2; in-app line | A win-back tone | None | `CATALOG.md:111` |
 | S13 | Deletion executed | A4 receipt 3, sent before the sign-in user is removed; it is the last email to that address; it repeats how to cancel with Apple | Any later email, including billing, policy, or a survey; an alert to the former members except `coparent-left` once | Address removed from any send list; Resend suppression kept only as a hash if needed [U: vendor behaviour] | `CATALOG.md:112`; DATA-REQ-025 |
@@ -31,9 +31,9 @@ Each rule is testable. Test ids are proposals for 07.4. "Proves" says what the f
 
 | # | Rule | Applies to | Why (level) | Test that proves it |
 |---|---|---|---|---|
-| LR-01 | A lock-screen title and body contain no child name unless the parent turned names on and App lock is off. Default off (`prefs.ts:41`). With App lock on, names are off whatever the stored choice | L1 to L7 | Child name is L4 (rule 6, `DATA_CLASSIFICATION.md`) | T-01: render every key both ways with names off; scan for the Asha child name and any `{child}` residue |
-| LR-02 | A title never carries `{child}` or a day's family or faith name; the neutral title is "Something for the book today" family | L3, L4, L5, L6 | Birthday and faith are L4 facts; Apple lists religious belief as sensitive (`GAP-LOG.md:476`) | T-02: every title is name-free; neutral birthday title when names off (blocked on C4) |
-| LR-03 | A category sets a neutral hidden-preview body placeholder; iOS Show Previews "Never" then shows no words | L1 to L7 | NS-32-R13; today not built (07.1 C5) | T-03: scheduler test asserts every scheduled request has a category with a placeholder |
+| LR-01 | A lock-screen title and body contain no child name unless the parent turned names on and App lock is off. Default off (`prefs.ts:41`). With App lock on, names are off whatever the stored choice (D4) | L1 to L7 | Child name is L4 (rule 6, `DATA_CLASSIFICATION.md`) | T-01: render every key both ways with names off; scan for the Asha child name and any `{child}` residue |
+| LR-02 | A title never carries `{child}` or a day's family or faith name; the neutral title is "Something for the book today" family | L3, L4, L5, L6 | Birthday and faith are L4 facts; Apple lists religious belief as sensitive (`GAP-LOG.md:476`) | T-02: every title is name-free; neutral birthday title when names off (C4 closed in direction by D4; words PROPOSED) |
+| LR-03 | A category sets a neutral hidden-preview body placeholder; iOS Show Previews "Never" then shows no words | L1 to L7 | NS-32-R13; today not built (07.1 C5); D4 adds it, words row 18 option A of #870 PROPOSED; NTC-T24 | T-03: scheduler test asserts every scheduled request has a category with a placeholder |
 | LR-04 | Tap payload is `{ source, kind }` and nothing else: no asset id, date list, count, album, child id, book id | All local | Ids are L3 | T-04: the payload schema is strict and a fixture with a child id fails |
 | LR-05 | Notification identifiers are `<prefix>.<kind>.<date>` only; no child or book id | All local | Book and child ids are L3 (rule 5) | T-05: id regex test over a plan of three children |
 | LR-06 | No notification, plan notice or email carries a count of letters, a gap, a streak, a price (lock screen), a due date, or "tonight" before 17:00 | L1 to L7, E | Guardrail (a); FR-NTC-12 | T-06: content rules on every key (`rules.test.ts`) plus a time-of-day filter test |
@@ -51,6 +51,7 @@ Each rule is testable. Test ids are proposals for 07.4. "Proves" says what the f
 | LR-18 | Words authored for a message are written by a person, linted by `rules.test.ts`, and marked PROPOSED until the founder approves them | All | CLAUDE.md: the machine never writes or shapes words | T-18: the content PR gate |
 | LR-19 | The photo library is never read to decide a message: no notification is chosen by what a picture shows, where or when it was taken | L6 | Constitution; NS-51; FR-NTC-25 | T-19: the planner input type has a boolean per date and nothing more |
 | LR-20 | An email to a person outside the book says nothing about the book beyond its existence on the invite path. No invite email is sent at all in v1 | E12 | CL-063 | T-20: no sender calls `coparent-invite` |
+| LR-21 | With names off, no lock-screen title or body carries a month number or "A year of letters." | L2, L3 | Age is derived from the birth date (L4) (D4) | T-30: render `monthOpen` and the birthday keys with names off, scan for digits and "year" |
 
 ## 3. Who may read a message's inputs
 
@@ -61,6 +62,7 @@ Each rule is testable. Test ids are proposals for 07.4. "Proves" says what the f
 | Account address | Supabase Auth (L3) | Auth, `purge-worker`, `escrow`, the alert function | The app after sign-in beyond display in Me, Account; logs |
 | Plan dates | Phone plan record (L3); status report to server (D-080) | `plan-reminders.logic.ts`; the status function | Child-linked data; marketing |
 | Event time and device class for alerts | Database row (L2 and L3) | The alert function only | Support tools beyond the audit-logged lookup |
+| Device-seen hash for A1 | Database table (new; L3 with the account) | The alert function only (service role) | Logs, email bodies, support tools; not built until the CPrivO label read is done (D1) |
 
 ## 4. What changes if the founder decides remote push
 
