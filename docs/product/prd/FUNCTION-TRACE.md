@@ -3899,7 +3899,7 @@ Conflicts in section 3a that touch this area: K2 (the Home Plus line sits on A-S
 | days | A-S01 slip rank (R-IA-3, R-IA-5) | Ask card on Home / "Would you like a note on days that matter to your family?" with Choose and Not now; shown once; pending Q-FD-2 | (none cited in the row) |
 | days | A-S01 | A-S01 Home on a ticked day: one slot, the day's landing, Start from a picture stays in its usual place; a state with a moment present and a state on a `quiet` day (new states needed). | (none cited in the row) |
 | cultural-data | A-S01 Home (state `daysAsk`, proposed) | One card, used once, in the slot where the Home slips already rise. Words: the question, "Choose days", "Not now". Equal weight for both buttons. No count, no badge. Gone after either answer / FR-CUL-19, 26 | CUL-19, CUL-26 |
-| cultural-data | A-S01 Home strip (today strip, NS-50) | A day we mark today shows its name; nothing for tomorrow; never a list / FR-CUL-13 | CUL-13 |
+| cultural-data | A-S01 Home slip (day slip, NS-50) | A day we mark today shows its name; nothing for tomorrow; never a list / FR-CUL-13 | CUL-13 |
 | cultural-data | A-S13 After Keep | No change: the ask never rises here; keep the Keep gate and reminder ask as the only hand-offs / FR-CUL-19 | CUL-19 |
 | photos | new screen needed (Home, A-S04 family; NS-01 section 15 states extend) | Home: the picture start with a "Pick from recent days" choice inside it (light, dark, AX5 on SE 3), absent on 17.0 and 17.1 | (none cited in the row) |
 | opportunities | A-S01 | A version of Home with picture-first as an equal start, tested against the SE 3 at AX5 / FR-OPP-02 | OPP-02 |

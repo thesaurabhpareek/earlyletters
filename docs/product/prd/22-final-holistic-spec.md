@@ -153,7 +153,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E33); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E42); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).
@@ -164,6 +164,6 @@ Remains execution-side (nothing here is a requirement question):
 - Devices: every P0 device row, J-CUL-01, NTC-T24, phones to borrow.
 - Counsel: the F6 batch; accountant for tax and payment points.
 - Accounts: the founder hands list in section 7.
-- Build gates: G0 (a backlog row for every P0 row, `BACKLOG-GAPS.md`) to G6; code-side items (`kill-switches.ts`, ADR 0029, `WORDS.md`, `budget.ts`).
+- Build gates: G0 (a backlog row for every P0 row, `BACKLOG-GAPS.md`) to G6; code-side items (`kill-switches.ts`, proposed ADR 0029 (no file yet), `WORDS.md`, `budget.ts`).
 - Informing the harness and the engineering architecture leads: not done by this edit pass; the coordinator relays it.
 

@@ -2,7 +2,7 @@
 
 Status: CURRENT (LOCKED rev 2) | 20 Nov 2026 | Owner: `product` (PM role, with the CPO role) | Replaces: none | Load when: building or testing sign-up, consent, first letter or account life (NS-38 to NS-45).
 
-Status detail: Locked v1.0 candidate, 20 Nov 2026 (needs Karma's ruling on open items). Changes after lock need a PR that lists every changed id.
+Status detail: LOCKED rev 2, 20 Nov 2026, inside the lock (PR #934); open items stay founder or counsel items with their defaults. Changes after lock need a PR that lists every changed id.
 
 Author: `product` (PM role, with the CPO role; a Claude session, not a scheduled `product` run), for Karma (CTO). Backlog row: see section 22. Docs only: nothing here is built by this file, no string is live, no decision is recorded in `DECISIONS.md`. Founder request of 20 Nov 2026 (relayed by Karma): the PRD covers everything from app download and the first interaction through sign-up and sign-in, risk checks, required validation, information collection and verification, so design can draw the whole path end to end.
 

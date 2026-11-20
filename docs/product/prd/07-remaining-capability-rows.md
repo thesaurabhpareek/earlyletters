@@ -45,7 +45,7 @@ This file holds three specified cards (C5, C28, G11), each with the full card sh
 | C31 to C36, C38 to C42 | Account, lock, privacy, delete, safety, languages, dictionary, reminders, appearance, analytics | Cited | F02, NX-31, NX-32, F17, NX-08, F20, F07, F13, NX-35, F18 |
 | C37 | Help, support, legal | Cited (branch) | F20; NX-16; UNVERIFIED content |
 | C43 | App-interface localisation | Parked | section 6.3 |
-| C44, C45, C46 | First run, store and web, alerts and switches | Cited | F01, F03, NX-31, NX-40, F21, NX-24, NX-17, F19 |
+| C44, C45, C46 | First run, store and web, alerts and switches | Cited | F01, F03, NX-31, NX-40, F21, NX-24, NX-17, F19; the unbuilt first-run parts (Declared Age Range, region check, step-up, update reader) are card 19's, NS-38 to NS-45 |
 | Share one letter | (new row, NAV-TAB-ROLES G-3) | Specified | NS-05 |
 | Sealed letter | PRD F41; research gap G5 | Specified | NS-06 Part B |
 | Quick capture | Research gap G6 | Specified (conditional) | NS-04, NS-06 Part C |

@@ -19,7 +19,7 @@ Photo with a letter, Find, Share one letter, the pilot, Firsts and sealed letter
 - **Never (rulings D2, D3).** No letter text, child name, picture or prompt is donated to Core Spotlight, `NSUserActivity` search, Siri suggestions or an App Intents entity (test `[X6-R1]`). System writing tools (rewrite, proofread) are off on every field whose text becomes a letter's words; `mobile` checks whether React Native exposes the switch, and if it cannot, that is a finding, not a silent pass.
 - **Free or Plus (ruling T2).** Every capability that ships free in the 1.0.x line falls under principle 6 and never moves behind Plus. Plus holds one paid act: keeping letters beyond the allowance (D-082, D-103). Each card here raises the value of a kept letter. Public copy says nothing either way.
 - **Hand-sent measures (ruling D5).** Analytics is off through the 1.0 line (D-124). Testers send numbers only; the founder keeps them in a private sheet, never in the repo or a Claude session, and deletes them 90 days after the round. Results are reported as "x of n", never as a percentage when n is under 20. Each round asks at most 5 questions with fixed wording, versioned in `docs/research/`.
-- **Home slips, one fixed order (ruled 20 Nov, Karma, council round 2).** Home shows at most one slip, in this order: (1) the existing waiting cards, in their existing order; (2) the seal-opened line on its day (NS-06-B4); (3) Save a copy in the birthday week (NS-11); (4) one past letter (NS-23, replacing "A month ago"). The reminder ask sheet and the Plus line are not slips. The photo start is part of the capture cluster, never a slip. A registry test fails when an unregistered slip renders (`[FRAME-SLIP]`).
+- **Home slips, one fixed order (ruled 20 Nov, Karma, council round 2).** Home shows at most one slip, in this order: (1) the existing waiting cards, in their existing order; (2) the seal-opened line on its day (NS-06-B4); (2b) a day the parent chose, today (NS-50-R5); (3) Save a copy in the birthday week (NS-11); (3b) the Days ask (NS-50-R5); (4) one past letter (NS-23, replacing "A month ago"). Ranks 2b and 3b are empty until the Days ship, so until then the order is the four (E36). The reminder ask sheet and the Plus line are not slips. The photo start is part of the capture cluster, never a slip. A registry test fails when an unregistered slip renders (`[FRAME-SLIP]`).
 - **Traceability.** Test titles start with the row id in square brackets. `scripts/trace.mjs` does not yet match NS ids (finding F1; an open draft partly addresses it), so no card here claims trace coverage until that lands.
 - **Counsel numbers** are from `COUNSEL_PACKET.md` 1.5.0 (old Q2 is Q48, Q29 is Q49, Q27 is Q50, Q1 is Q47, Q7 is Q54).
 
@@ -369,7 +369,7 @@ P1 opening Home to speak tonight, finding a letter they said a year ago today, o
 - What goes wrong [A]: a window that slides daily makes "a year ago today", the moment parents talk about, impossible; a daily rotation through the whole book reads as the app choosing for the parent. One rule by date, stated plainly, is easier to trust.
 
 ### 3. What, and Not in scope
-**What.** At most one past letter at a time on Home, as slip 4 in the fixed order (rules block above). It is a letter whose about-day falls on today's day of the month in an earlier month, or on today's day and month in an earlier year. It appears only when no higher slip is due. Tapping it opens the letter. The card shows the letter's own date and an opening fragment; it never says how long ago in numbers beyond the date and never says "you have not written since". A switch in Me turns past letters off.
+**What.** At most one past letter at a time on Home, as the last slip in the fixed order (rank 4, rules block above). It is a letter whose about-day falls on today's day of the month in an earlier month, or on today's day and month in an earlier year. It appears only when no higher slip is due. Tapping it opens the letter. The card shows the letter's own date and an opening fragment; it never says how long ago in numbers beyond the date and never says "you have not written since". A switch in Me turns past letters off.
 
 Choice rule (PROPOSED, R12): first, the same day and month in an earlier year, the most recent such year; otherwise, the same day in an earlier month, the most recent. Ties: later `captured_at`, then id. The same letter shows all day and moves on at local midnight.
 
@@ -440,7 +440,7 @@ Reconciliation with the open draft (R16): its eligibility (kept letter, in the b
 | NS-23-R3 | Given a tap, Then the letter opens; Back returns to Home | P1 | `[NS-23-R3] opens the letter` |
 | NS-23-R4 | Given the switch in Me is off, Then no past letter appears on Home | P1 | `[NS-23-R4] switch off hides it` |
 | NS-23-R5 | Given a sealed, hidden, private or recently deleted letter, Then it is never chosen | P0 (a: private and sealed letters stay so) | `[NS-23-R5] never a private or sealed letter` |
-| NS-23-R6 | Given a higher slip is due (a waiting card, the seal-opened line, Save a copy), Then the past letter does not show | P1 | `[NS-23-R6] slip order` |
+| NS-23-R6 | Given a higher slip is due (a waiting card, the seal-opened line, a day the parent chose, Save a copy, the Days ask), Then the past letter does not show | P1 | `[NS-23-R6] slip order` |
 | NS-23-R7 | Given VoiceOver, Then the card is one element read as the date then the fragment, with the fragment in the letter's language | P1 | `[NS-23-R7] one element for VoiceOver` |
 | NS-23-R8 | Given a quieted or hidden book, Then no letter from it is chosen | P0 (a: a parent's hard-day tool holds) | `[NS-23-R8] quiet book never resurfaces` |
 | NS-23-R9a | Given a letter on day 29, 30 or 31, When today is the last day of a shorter month, Then it matches | P1 | `[NS-23-R9a] month-end match` |
@@ -540,7 +540,7 @@ The slip registry and `[FRAME-SLIP]`; #721 (reconcile or supersede); NS-06-B4 (s
 ### 23. Open questions
 | Question | Owner | Default if unanswered |
 |---|---|---|
-| 1. The day-zero card in #721 is not one of the four registered slips. Does it ship? | CPO with design | It leaves #721 and waits for a PR that adds it to the registry and lists every changed id |
+| 1. The day-zero card in #721 is not one of the registered slips (four today, six when the Days ship, E36). Does it ship? | CPO with design | It leaves #721 and waits for a PR that adds it to the registry and lists every changed id |
 | 2. Default of the Me switch | founder (r1 recommended on) | On, with Quiet this book as the hard-day path |
 | 3. Fragment lines at accessibility sizes: 4 (r1) or 2 (#721) | design | 4 |
 

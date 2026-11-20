@@ -592,7 +592,7 @@ Export exists and is free (F15), and while our backup is off it is the one secon
 **What.** One row in Me for the existing export, named by `content` so Me never has two entries for the same file ("Take the book with you" or "Save a copy"), and one Home slip in the birthday week that leads to it. The copy is the existing export (schema 1.6.0 today; pictures as stored copies when NS-01 is on, NS-36). No notification. No new file format.
 **Not in scope.** Automatic export. Any cloud of ours. A repeating reminder. Any line that mentions losing anything.
 
-**Home slip order (ruled 20 Nov, Karma, council round 2).** Home shows at most one slip, in this fixed order: (1) the existing waiting cards in their existing order; (2) the seal-opened line on its day; (3) Save a copy in the birthday week; (4) one past letter (replacing "A month ago"). The reminder ask sheet and the Plus line are not slips. A registry test fails when an unregistered slip renders.
+**Home slip order (ruled 20 Nov, Karma, council round 2).** Home shows at most one slip, in this fixed order: (1) the existing waiting cards in their existing order; (2) the seal-opened line on its day; (2b) a day the parent chose, today (NS-50-R5); (3) Save a copy in the birthday week; (3b) the Days ask (NS-50-R5); (4) one past letter (replacing "A month ago"). Ranks 2b and 3b are empty until the Days ship (E36). The reminder ask sheet and the Plus line are not slips. A registry test fails when an unregistered slip renders.
 
 ### 4. Happy path
 1. In the birthday week, when no higher slip is due, the Home slip appears.
