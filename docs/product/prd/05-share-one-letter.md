@@ -103,7 +103,7 @@ Recommendation: no, not at Level 1.
 - The closed decision is Home | Book | Me, and a fourth tab ships only when share-one-letter exists and passes the job-clarity checklist (N2).
 - NAV-TAB-ROLES gives the test for a new tab: a verb no other tab has, material no other tab holds, and a day-one state that is not empty or mostly a promise. Level 1 gives a verb (Give) but no material that only a Share tab holds: Export already sits in Me, and sharing starts from a letter page. A Share tab at Level 1 would hold one quiet row on day one.
 - Revisit the tab only when all three hold: Level 2 or 3 is live; Export, "share one letter" and people with access are three outputs a parent actually uses (measured in a study, not in telemetry); the job-clarity checklist passes with five parents. Until then Level 1 is a button on the letter page and Export stays in Me. This agrees with design spec 03 section 8 (the Share tab test).
-- Co-parent "coming soon" is one small caption line in Me; since the founder's 11 Nov amendment of N1 (relayed by Karma; original not read) the line is tappable and opens one on-device sheet, still with no row, badge or chevron (design spec 07). It is not a Share surface.
+- No build shows a co-parent "coming soon" surface (founder answer of 19 Nov; D-161 as drafted in #827). The earlier tappable-caption amendment of N1 is withdrawn. It was never a Share surface.
 
 ## 11. Metrics (content-free)
 
