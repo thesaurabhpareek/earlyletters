@@ -40,7 +40,7 @@ Agent: ops (config), principal-architect reviews   Lane: Pack 10   Build: any   
    `eqeqeq`, `no-restricted-syntax` for template-literal Error in packages/core. Done also means red on a mutant per rule (add the forbidden line to a fixture) and 49 stale disables removed or justified.
 
 10. PR BREAKDOWN: PR 1 config + rules + fixes for the first findings ~300 lines (config 60, test 60, cleanup 180) | PR 2 workflow proposal + ENFORCEMENT row ~70 lines | base develop | the job is advisory until the founder makes it required.
-    If findings exceed 400 lines: land rules as warnings with a baseline file that only shrinks (docs/ops/lint-baseline.json), then raise them. The "only shrinks" compare against the base branch follows the one rule in BRIEF CI-PIN section 10 (per event, switch file `docs/ops/ratchet-base-fetch.txt`); until the founder's fetch step exists the reviewer runs the compare by hand.
+    If findings exceed 400 lines: land rules as warnings with a baseline file that only shrinks (docs/ops/lint-baseline.json), then raise them. The "only shrinks" compare against the base branch follows the one rule in BRIEF CI-PIN section 10 (per event; enforced when the founder sets `RATCHET_BASE_REQUIRED=1` in the `unit` job env, otherwise printed NOT ENFORCED); until the founder's fetch step exists the reviewer runs the compare by hand.
 
 11. LENSES: A principal-architect, B security-architect (dependency); mobile reads (the 49 disables and the test sit under apps/mobile/** and packages).
 
