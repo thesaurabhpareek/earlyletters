@@ -112,4 +112,4 @@ Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, un
 - Q-b3: AGREED (B1). "Not in 1.0", not "never"; never for security alerts. If it is ever decided, the first PR is a rule file allowing no L3 or L4 field in a payload, before any entitlement, key or table. [V] P-1 holds: the entitlement is stripped and nothing asks for a token.
 - Q-b4: AGREE (CDO return). Ask Supabase in writing for encryption at rest; [U] until the founder has the reply.
 - B-4 and B-5 (hosted backups, `ops-ledger`): the purged-id guard (G-23, 01a 8.2) is a new copy of a deleted letter's id in hashed form only; it is not a list and is never joined to a person or book (C5).
-- A1 (Supabase Pro) is the founder's. `data-policy.md:211` says Pro daily backups while production is on Free [V per the record]; nothing public about server backups until A1 closes.
+- A1 (Supabase Pro) is the founder's. `docs/legal/data-policy.md` lines 185 and 212 say Pro daily backups while production is on Free [V per the record]; nothing public about server backups until A1 closes.
