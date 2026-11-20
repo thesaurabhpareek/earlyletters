@@ -1,10 +1,10 @@
 # Pack delta 6: errata E23 to E30, the end-to-end design and design system v2, the handoff's conflicts, and code that moved
 
-Status: v1, 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. Sources: `18-errata-after-lock.md` (`5b1bd17b`), `docs/design/e2e/**` at `9e78eecd` and `docs/design/system/**` at `31269da0` on `docs/e2e-ux-20nov`, `GAP-LOG.md` "Engineering gaps routed (round 2)" (`GAP-LOG.md:257-345`), `24-engineering-handoff.md` section 3, develop `16e61549`. None of the branches is merged. [V] verified, [E] estimate, [U] not verified.
+Status: v2 (re-based), 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. Sources: `18-errata-after-lock.md` at `a3806f74` (43 lines, E1 to E33, status "CURRENT (LOCKED rev 2)"), `docs/design/e2e/**` at `7e684984` (PR #935 open; v1 read `9e78eecd`; the only change since is `7e684984`, "mark council closures 20 Nov on area A..E open questions; rebuild INDEX", 6 files, 121 insertions), `docs/design/system/**` at `31269da0`, `GAP-LOG.md` "Engineering gaps routed (round 2)" (`GAP-LOG.md:257-345` @bee01360) and closures CL-104 to CL-113, `24-engineering-handoff.md` section 3, develop `16e61549`. None of the branches is merged. [V] verified, [E] estimate, [U] not verified.
 
 ## 1. Errata E23 to E30 against our designs
 
-E1 to E22 were ruled before our designs were merged and the designs follow them (E11, E13, E16, E18, E20, E21 are cited in our files; I did not re-check each, [U]). E23 to E30 arrived after (`18:` rows E23 to E30, added `558e5eb6` and `5b1bd17b`).
+E1 to E22 were ruled before our designs were merged and the designs follow them (E11, E13, E16, E18, E20, E21 are cited in our files; I did not re-check each, [U]). E23 to E30 arrived after (`18:` rows E23 to E30, added `558e5eb6` and `5b1bd17b`); E31 to E33 arrived with rev 2.
 
 | Erratum | What it says | Our design file | Verdict |
 |---|---|---|---|
@@ -15,11 +15,16 @@ E1 to E22 were ruled before our designs were merged and the designs follow them 
 | E27 | NS-10-R3 and R5 fail on develop (second account sees the first's book); BL-961 (#869, #871, #879) is a dependency; "only BL-922 remains" is struck | `08-keeping.md` section 3, README row 34 (`README.md:34`), `security.md` NSC-03, `architecture.md` AX-12 (`:169`) | HOLDS (our designs already name BL-961 as hard dependency) |
 | E28 | NS-09-R6 Storage line "A recording is still being removed" plus Remove now, never a list or count; `storage.tsx:24-28` rule amended; new row | `08-keeping.md` 2.2 (P-4 row) | HOLDS; confirm the amended wording lands with BL-977 [U] |
 | E29 | Builders read the latest definition by searching `supabase/migrations`, never an old line number: the consent trigger and the `book_entries` view moved (`20261015030000`, `20261108000000`) | `data-and-sync.md` cites migrations by line in places [U: I grepped for `20261003000000:444`, `20261002020000:210` and `sync_v1_server.sql:1589` in our eight files and found none] | HOLDS for those three; other line cites into migrations may exist [U] |
-| E30 | G0 cannot pass until each P0 row names a backlog row; about 70 rows lack one | `11-foundations.md` section 11 merge order; plan #847 | The count is now 588 of 850 P0 rows without a row-level backlog row (`BACKLOG-GAPS.md:7`; the audit said 565 at `25:13`, an earlier count) and the proposed rows use ids below BL-099 (see `PACK-DELTA.md` item on dispatcher) |
+| E30 | G0 cannot pass until each P0 row names a backlog row; the errata said about 70 rows lack one | `11-foundations.md` section 11 merge order; plan #847 | Figure at `a3806f74`: 781 of 1,048 P0 rows have no row-level backlog row (`BACKLOG-GAPS.md:9` @a3806f74; definition: not named by a backlog block's row id or range, and the row's own text cites no existing BL id). Earlier figures in the same file: 588 of 850 (first run), 728 of 993 (`bee01360`); superseded. The 38 proposed rows use ids from free-list holes and are status `proposed` |
+| E31 | NS-49 level 1 is tagged drop A and "independent of the rest" (card 21 release line, `22` section 4, `23` D04, `24` step 1.4) | It depends on NS-01, which Build 13 keeps dark | Council closure CL-015: NS-49 level 1 moves to drop B; drop A is NS-48 phase 1 only; P0 by drop A 6, B 55, B+C 2, C 24. Our designs put the picture start after the photo stack (`11-foundations.md` section 8): HOLDS |
+| E32 | Card 21 Q-FD-4 and Q-PHS-7 ("level 3 closed"), `22` section 7 old text | Overtaken by founder direction 26 | Level 3 is NS-51 (card 27): spike only in Build 13 on `exp/photos` behind a flag, ship in 1.1 after the spike, the counsel read and device rows. Our `security.md` 3.1 scans stay as they are until the module ships; rewrite when it does: HOLDS until then |
+| E33 | NS-05-R10a to R10c and NS-05 data rows name `tmp/share` | The platform gives no such folder (plan M33; CR-67 AX-9) | Read it as the share feature's own folder inside Caches, named once in its module, swept at launch and by Erase everything. This is our own recommendation (`architecture.md:166` AX-9; `10-reading-and-family.md:197` C8); `security.md:57` NSC-08 still lists `tmp/share` by name: HOLDS, wording amend only |
 
 New backlog rows E7, E9 and E16 asked for are still named in `18:` and the "New backlog rows these need" line; E16's planner half is already merged (INPUTS section 4).
 
 ## 2. End-to-end design (areas A to E) and design system v2
+
+Rev 2 status: #935's body calls the pack "the locked requirements rev 2" and `22:153` locks "the design areas A to E". Closures that touch design (@a3806f74): CL-104 to CL-106 (areas A to C defaults stand; Q-B15 resolved by Variant A), CL-107 (cards win; X2 no block screen), CL-108 (area D; Q-D-4 neutral lock title), CL-109 (the label guard gets the photos string only when NS-51 ships behind its flag; E-S28 stays until then), CL-110 (area E follows the cards; first Keep haptic per system MOTION; refused-region is a StateScreen; name optional), CL-111 (mobile adds `libraryDays` and `signIn`). INDEX section 6 lists the contradictions flagged and not resolved (`INDEX.md` @7e684984) [U: not read in full].
 
 Counts, machine-built (`docs/design/e2e/INDEX.md` section 1 [V]): 130 screens (8 PROPOSED), 990 states, 415 motion ids (38 PROPOSED), 82 system state ids `E-ST..` (14 PROPOSED). The INDEX is explicit that the counts are not reviews and "nothing was viewed in a browser or on a device". Area B and E files are "as on disk" while A, C and D were re-keyed at 17:19 to 17:20.
 
@@ -51,7 +56,7 @@ Our designs against this material:
 - C-3 (level 3 and draft #754) hits `security.md` source scans (3.1) and `architecture.md` AB rows.
 - C-4 (single vs several pictures, `#835`) hits `data-and-sync.md` L11 (`:39`), `11-foundations.md` section 8 (`:254-258`), `privacy.md:26` (the NS-01 inventory row says "One picked picture per letter") and `privacy.md:131` (label wording).
 - C-6 (pause pattern) hits `architecture.md` AX-4 (`:161`) and AC-11 (`:112`).
-- C-7 (ADR 0029 does not exist) hits `architecture.md:21` and every design line that cites ADR 0029 to 0039 as if filed.
+- C-7 (ADR 0029 does not exist) hits `architecture.md:21` and every design line that cites ADR 0029 to 0039 as if filed. CL-111 now assigns ADR 0029 to mobile with `libraryDays` and `signIn`; it still does not exist.
 - C-11 (`docs/tdd/new-scope/` does not exist) is now false: the directory is on develop (`git log origin/develop -- docs/tdd/new-scope`, 8 files). The handoff was written against an older tree (`24:13`, `24:293`).
 - C-12 (four-tab PRs #789 to #791): not ours; Karma's to close.
 - C-17 (podspec 16.4 vs app 17.0) is a code fact, still true.
