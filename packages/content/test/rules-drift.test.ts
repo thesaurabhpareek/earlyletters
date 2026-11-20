@@ -50,11 +50,15 @@ function reachable(entry: string): Set<string> {
 /** The text of rules.test.ts that builds the surfaces the rules read, without the import list. */
 const WIRED = RULES.split('\n').filter((l) => !/^import |^\} from |^  [\w]+,$/.test(l)).join('\n');
 
-/** Exports that are not in `ALL`, with the test that reads them instead. A new entry needs a reason. */
 /** Exports built only from other exports; each source must be wired. */
 const DERIVED: Record<string, string[]> = {
   emailsById: ['authEmails', 'lifecycleEmails', 'familyEmails', 'billingEmails', 'accountEmails', 'backupEmails'],
 };
+
+/** Exports that are not in `ALL`, with the test that reads them instead. A new entry needs a reason. */
+/** Screen families that mention reminders or notifications but are shown in the app, not on the lock screen. */
+const SCREEN_FAMILIES =
+  /^(?:en\.(?:onboarding\.reminder|settings|settingsMore|settingsHome|children\.settings)\b|features\.(?:reminders\.(?!neutral\.|together\.)|billing\.(?:plan|confirmation)|family\.soon\.notify))/;
 
 const EXEMPT: Record<string, string> = {
   testflightCopy: 'testflight.test.ts',
@@ -92,7 +96,8 @@ describe('content rules drift', () => {
     for (const [name, where] of Object.entries(EXEMPT)) {
       expect(name in content, `${name} is no longer exported`).toBe(true);
       const file = join(__dirname, where.split(' ')[0]);
-      expect(readFileSync(file, 'utf8'), `${where} does not mention ${name}`).toMatch(new RegExp(`\\b${name}\\b`));
+      const body = readFileSync(file, 'utf8').split('\n').filter((l) => !/^import |^\} from |^  [\w]+,$/.test(l)).join('\n');
+      expect(body, `${where} does not use ${name} outside its imports`).toMatch(new RegExp(`\\b${name}\\b`));
     }
   });
 
@@ -110,10 +115,11 @@ describe('content rules drift', () => {
     const lines = [...leaves(en, 'en'), ...leaves(features, 'features')];
     const scoped = lines.filter((l) => NOTIFICATION_PATH.test(l.path));
     expect(scoped.length).toBeGreaterThan(30);
-    // Lock-screen lines are the title and body keys under the notification families. Settings, onboarding and
-    // billing screens that mention reminders are screens, not notifications, and are left out.
-    const looksLikeLockScreen = lines.filter((l) => /(^|\.)(notifications|neutral|together)\./.test(l.path));
-    expect(looksLikeLockScreen.filter((l) => !NOTIFICATION_PATH.test(l.path)).map((l) => l.path)).toEqual([]);
+    // A path that looks like a notification family must be in scope, unless it is a screen family listed in
+    // SCREEN_FAMILIES. A future features.days.*, culture.* or ntc.* family cannot stay green unchecked.
+    const lookalike = /(^|\.)(notifications?|neutral|together|reminders?|days|culture|ntc|dayNames|suggestions)(\.|\[)/;
+    const unchecked = lines.filter((l) => lookalike.test(l.path) && !NOTIFICATION_PATH.test(l.path) && !SCREEN_FAMILIES.test(l.path));
+    expect(unchecked.map((l) => l.path)).toEqual([]);
   });
 
   it('[NS-48-R28] notification lines fit a lock screen: 40 for a title, 110 for a body, wherever the key lives', () => {
@@ -129,6 +135,8 @@ describe('content rules drift', () => {
     expect(voice).toMatch(/exclamation mark per month across all notifications/);
     const scoped = [...leaves(en, 'en'), ...leaves(features, 'features')].filter((l) => NOTIFICATION_PATH.test(l.path));
     expect(scoped.filter((l) => l.text.includes('!')).map((l) => `${l.path}: ${l.text}`)).toEqual([]);
+    // Approving a monthly exclamation mark means editing VOICE.md line 70 and both places that hold zero:
+    // this test and the `notifications` budget in rules.test.ts, together.
     expect(RULES).toMatch(/notifications: 0,/);
   });
 });
