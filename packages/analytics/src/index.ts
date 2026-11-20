@@ -15,3 +15,4 @@ export * from './plan-doc';
 export * from './observe';
 // The insights engine (src/insights) is deliberately not exported here: it is
 // for scripts/insights only and must never be bundled into the app.
+export * from './first-party';

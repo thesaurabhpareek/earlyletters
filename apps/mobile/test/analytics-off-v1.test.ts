@@ -9,7 +9,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { analyticsEnabled, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
+import { analyticsEnabled, analyticsEndpointForBuild, capabilities, postHogKeyForBuild, setAnalyticsForTests, setServerFeaturesForTests } from '../src/lib/capabilities';
 
 const APP = join(__dirname, '..');
 const read = (p: string) => readFileSync(join(APP, p), 'utf8');
@@ -38,6 +38,20 @@ describe('[D-088] analytics switch: off unless a build says on', () => {
     expect(postHogKeyForBuild(false, undefined)).toBe('');
     expect(postHogKeyForBuild(true, ' phc_test_key ')).toBe('phc_test_key');
     expect(postHogKeyForBuild(true, undefined)).toBe('');
+  });
+
+  it('gives the first-party sink no endpoint while off, and only an https one when on', () => {
+    expect(analyticsEndpointForBuild(false, 'https://x.supabase.co/functions/v1/analytics-ingest/v1')).toBe('');
+    expect(analyticsEndpointForBuild(true, undefined)).toBe('');
+    expect(analyticsEndpointForBuild(true, 'http://x.example/ingest')).toBe('');
+    expect(analyticsEndpointForBuild(true, ' https://x.supabase.co/f ')).toBe('https://x.supabase.co/f');
+  });
+
+  it('the provider takes its endpoint only through analyticsEndpointForBuild and no profile sets one', () => {
+    const src = read('src/lib/analytics/index.ts');
+    expect(src).toMatch(/analyticsEndpointForBuild\(analyticsEnabled\(\), process\.env\.EXPO_PUBLIC_ANALYTICS_ENDPOINT\)/);
+    expect(src.match(/EXPO_PUBLIC_ANALYTICS_ENDPOINT/g)?.length).toBe(1);
+    expect(read('eas.json')).not.toContain('EXPO_PUBLIC_ANALYTICS_ENDPOINT');
   });
 
   it('the override is for tests only', () => {
