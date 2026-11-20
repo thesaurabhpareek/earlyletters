@@ -1,14 +1,15 @@
 # 02g Schema reference: the phone database (scribe.db)
 
-Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: develop `4d33978f` (cited code and migration paths unchanged at `12c55d66`). The ten tables below are what `migrate()` builds at schema version 10 (`apps/mobile/src/lib/db/migrations.ts:57-470`); I ran every migration against `node:sqlite` and read `PRAGMA table_info` for the types, null and defaults [V]. Levels for v1 to v3 columns are `docs/legal/DATA_CLASSIFICATION.md` 4.5; levels for v4 to v10 are the comments in `migrations.ts`. Part of 02 (legend in 02a; roles do not apply on the phone).
+Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: develop `4d33978f` (cited code and migration paths unchanged at `12c55d66`). The ten tables below are what `migrate()` builds at schema version 10 (`apps/mobile/src/lib/db/migrations.ts:57-470`); I ran every migration against `node:sqlite` and read `PRAGMA table_info` for the types, null and defaults [V]. Levels for v1 to v3 columns are `docs/legal/DATA_CLASSIFICATION.md` 4.5; levels for v4 to v10 are the comments in `migrations.ts` and are PROPOSED until `privacy` rules them. Part of 02 (legend in 02a; roles do not apply on the phone).
 
 ## The file
 
 - One SQLite file `scribe.db`, opened by `openNativeDb` (`lib/db/repos/open-native.ts:16-23`) with `journal_mode = WAL`, `synchronous = FULL`, `secure_delete = ON` (`lib/db/expo-adapter.ts:31`) [V]. The highest level inside is L4, so the whole file is handled as L4.
-- Protection: iOS Data Protection "complete until first user authentication" is the floor (LEGAL-REQ-022(b)); SQLCipher is undecided (LEGAL-REQ-022(d)) [U: not re-read on a device]. No exclusion from the iOS device backup is set on this file (a grep for the exclusion call finds only packs, models and the listening copy: `packs/app-support.ts:39`, `model-files.ts:41`, `ScribeAudioModule.swift:94`) [V].
+- Protection: iOS Data Protection "complete until first user authentication" is the floor (LEGAL-REQ-022(b)); SQLCipher is undecided (LEGAL-REQ-022(d)) [U: not re-read on a device]. No exclusion from the iOS device backup is set on this file. The exclusion calls are in `packs/app-support.ts:39`, `model-files.ts:41`, `ScribeAudioModule.swift:94, 476`, `ScribeKeysModule.swift:94` and the generic `ScribeFilesModule.swift:20-35`; none names `scribe.db` [V grep].
 - Version 10 is the newest on develop. Migrations are append-only and run one transaction each with the version bump (`migrations.ts:432-470`). A newer file than the build is left untouched. `entry_media` (L11) is designed, not merged: see 02i.
 - Indexes: `entries_occurred`, `entries_child`, `entries_sync`, `sync_outbox_entity`, `agreements_once` (unique on document, version, action) [V].
 - Level counts at v10: 21 L4 columns, 23 L3, 76 L2 (the settings table's two columns carry mixed levels by key).
+- `sync_outbox.payload`, `rejected_writes.payload` (full op text) and `entries.language` are L4 and ride in the iPhone backup and in the recovery export, which keeps `scribe.db` and its `-wal`, `-shm`, `-journal` files (`resilience/recovery-export.logic.ts:33-42`).
 - Not a column: nothing in this file is ever sent to analytics, logs or crash reports (CLAUDE.md privacy rules; 01b lists the code that enforces it).
 
 ## Tables
@@ -249,7 +250,7 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 
 - G-1b `DATA_CLASSIFICATION.md` 4.5 states schema version 4. It has no rows for `child_member_prefs` (v7), `agreements` (v10) or the columns added in v5 to v9 (for example `drafts.review_put_back`, `drafts.held_typed`, `entries.language`). The levels above come from the comments in `migrations.ts`, which say the doc needs a row (`migrations.ts:16`). BL-960 carries the update; the founder merges `docs/legal`.
 - G-19 `children.signs_as` and `children.reminders_on` stay as mirrors until a later schema version (`migrations.ts:290-300`); both are read by the app only from `child_member_prefs`. A second copy of L3 data; removal is a future migration.
-- G-20 `rejected_writes` and `agreements` have no age sweep on the phone [U: not found; the repos were not read in full].
+- G-20 `rejected_writes` rows are deleted when their entity resolves (`sync/merge.ts:406, 554, 570`, `sync/outbox.ts:602, 892`, `db/repos/entries.ts:396`) and at book erase (`wipe.ts:110`); a refused op that never resolves is never aged out. `agreements` has no sweep found [U]. Owner `mobile`.
 
 ## Questions for the council
 
