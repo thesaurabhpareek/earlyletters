@@ -23,6 +23,7 @@ Every public privacy statement Early Letters makes maps to code and a test, and 
 - `CLAUDE.md` (privacy rules, constitution), `docs/agents/BRIEF-2026-10-03.md` decisions 11 and 12.
 - Your two chapters, then `docs/legal/DELETION_AND_EXPORT_SPEC.md` sections 2 to 4 and `docs/legal/ENGINEERING_REQUIREMENTS.md` sections 1, 2, 4, 6 and 10 (search by id; do not read whole).
 - `docs/legal/DATA_CLASSIFICATION.md` section 0, `docs/legal/subprocessors.md` section 5.
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 2 (privacy and data inventory, with `privacy`), NS-36 (`docs/product/prd/11-foundations.md`), the label-effect guard owed with `security-architect` before Build 14 freezes (`docs/product/prd/07-remaining-capability-rows.md` OQ-2), and BL-933 with CR-62 item 3 (export carries the stripped photo copy only). Skill: `review-gate`. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 None: you work from reviews, handoffs and standing duties.

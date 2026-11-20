@@ -23,6 +23,7 @@ Keep Early Letters easy and safe to change: small reviewable diffs, one definiti
 - `CLAUDE.md`, `docs/agents/BRIEF-2026-10-03.md` (decisions 1, 15, 16, 17), your three chapters.
 - `docs/tdd/02-sync-backend.md` 3.4 to 4, `docs/tdd/06-performance-reliability.md` 2, 3, 5.
 - `docs/DECISIONS.md` D-003, D-021, D-023, D-024, D-035, D-041. ADR 0004, ADR 0010.
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` sections 1 and 5 (sizes are counted against CODE-R02; the dependency picture), NS-35 (only `startCapture({source})` starts a letter, #828) and NS-36 in `docs/product/prd/11-foundations.md`. Skills: `stacked-prs` (how oversized work is split) and `review-gate`. Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 None: you work from reviews, handoffs and standing duties.
