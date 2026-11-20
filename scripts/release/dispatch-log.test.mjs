@@ -116,7 +116,7 @@ test("main: add, refuse second add, list --open, close, check, on a temp copy", 
 
 test("actor is a short handle: letters, digits, hyphen, underscore, 1 to 40", () => {
   addDispatch(EMPTY, d({ actor: "a-".repeat(20) }), NOW);
-  for (const actor of ["a-".repeat(20) + "b", "", "Jane Doe", "jane.doe", "jane@x", "café"]) {
+  for (const actor of ["a-".repeat(20) + "b", "", "Jane Doe", "jane.doe", "jane@x", "caf\u00e9"]) {
     assert.throws(() => addDispatch(EMPTY, d({ actor }), NOW), /actor/, JSON.stringify(actor));
   }
   const one = addDispatch(EMPTY, d(), NOW);
