@@ -4,8 +4,8 @@
 // second open dispatch for the same build. It writes that one file and starts nothing.
 //
 // Usage:
-//   node scripts/release/dispatch-log.mjs add --build <id> --workflow <file.yml> --sha <40 hex> --actor <name> [--time <ISO UTC>] [--note <text>] [--verify-sha] [--repo owner/name]
-//   node scripts/release/dispatch-log.mjs close --build <id> --outcome success|failed|cancelled|superseded --actor <name> [--time <ISO UTC>] [--note <text>]
+//   node scripts/release/dispatch-log.mjs add --build <id> --workflow <file.yml> --sha <40 hex> --actor <handle> [--time <ISO UTC>] [--note <text>] [--verify-sha] [--repo owner/name]
+//   node scripts/release/dispatch-log.mjs close --build <id> --outcome success|failed|cancelled|superseded --actor <handle> [--time <ISO UTC>] [--note <text>]
 //   node scripts/release/dispatch-log.mjs list [--open] [--build <id>]
 //   node scripts/release/dispatch-log.mjs check
 //
@@ -26,6 +26,11 @@ const SHA_RE = /^[0-9a-f]{40}$/;
 const ID_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const WORKFLOW_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*\.ya?ml$/;
 const ASCII_CELL = /^[\x20-\x7e]*$/;
+// The log is append-only and cannot be corrected, so free text is kept narrow (HV2-B34 review B).
+const ACTOR_RE = /^[A-Za-z0-9_-]{1,40}$/;
+export const NOTE_MAX = 120;
+const TOKEN_RUN = /[A-Za-z0-9+/]{32,}/;
+const TOKEN_PREFIX = /(^|[^A-Za-z0-9])(ghp_|github_pat_|sk-|xox)/;
 
 const fail = (m) => { throw new Error(m); };
 
@@ -75,6 +80,8 @@ function cell(name, v, re) {
   const s = String(v ?? "");
   if (!ASCII_CELL.test(s) || s.includes("|")) fail(`${name} must be printable ASCII with no pipe`);
   if (re && !re.test(s)) fail(`${name} is not valid: ${s || "(empty)"}`);
+  if ((name === "actor" || name === "note") && (TOKEN_RUN.test(s) || TOKEN_PREFIX.test(s))) fail(`${name} looks like a token or key and cannot be written to a log that cannot be corrected`);
+  if (name === "note" && s.length > NOTE_MAX) fail(`note is ${s.length} characters, the limit is ${NOTE_MAX}`);
   return s;
 }
 
@@ -99,7 +106,7 @@ export function addDispatch(text, { build, workflow, sha, actor, time, note = ""
     seq: rows.length + 1, build, event: "dispatch",
     workflow: cell("workflow", workflow, WORKFLOW_RE),
     sha: cell("sha", sha, SHA_RE),
-    actor: cell("actor", actor, ID_RE),
+    actor: cell("actor", actor, ACTOR_RE),
     time: cell("time", time ?? nowIso(now), TIME_RE),
     note: cell("note", note),
   };
@@ -115,7 +122,7 @@ export function closeDispatch(text, { build, outcome, actor, time, note = "" }, 
   if (!o) fail(`build ${build} has no open dispatch to close`);
   const row = {
     seq: rows.length + 1, build, event: `close-${outcome}`, workflow: o.workflow, sha: o.sha,
-    actor: cell("actor", actor, ID_RE), time: cell("time", time ?? nowIso(now), TIME_RE), note: cell("note", note),
+    actor: cell("actor", actor, ACTOR_RE), time: cell("time", time ?? nowIso(now), TIME_RE), note: cell("note", note),
   };
   return appendRow(text, row);
 }

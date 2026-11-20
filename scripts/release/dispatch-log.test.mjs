@@ -113,3 +113,48 @@ test("main: add, refuse second add, list --open, close, check, on a temp copy", 
   await assert.rejects(main(["add", "--build", "b5", "--workflow", "t.yml", "--sha", SHA2, "--actor", "a", "--verify-sha"], { file: f, now: NOW, api: async () => { throw new Error("403"); } }), /could not be read/);
   assert.equal(readFileSync(f, "utf8"), text, "a refused add writes nothing");
 });
+
+test("actor is a short handle: letters, digits, hyphen, underscore, 1 to 40", () => {
+  addDispatch(EMPTY, d({ actor: "a-".repeat(20) }), NOW);
+  for (const actor of ["a-".repeat(20) + "b", "", "Jane Doe", "jane.doe", "jane@x", "café"]) {
+    assert.throws(() => addDispatch(EMPTY, d({ actor }), NOW), /actor/, JSON.stringify(actor));
+  }
+  const one = addDispatch(EMPTY, d(), NOW);
+  assert.throws(() => closeDispatch(one, { build: "build-3", outcome: "success", actor: "Jane Doe" }, NOW), /actor/);
+});
+
+test("note is capped at 120 characters", () => {
+  addDispatch(EMPTY, d({ note: "n ".repeat(60).trim() }), NOW);
+  addDispatch(EMPTY, d({ note: "x".repeat(31) + " " + "y ".repeat(44).trim() }), NOW);
+  assert.throws(() => addDispatch(EMPTY, d({ note: "a b ".repeat(31) }), NOW), /limit is 120/);
+  const one = addDispatch(EMPTY, d(), NOW);
+  assert.throws(() => closeDispatch(one, { build: "build-3", outcome: "success", actor: "x", note: "a b ".repeat(31) }, NOW), /limit is 120/);
+});
+
+test("note and actor refuse anything that looks like a token", () => {
+  const hex = "0123456789abcdef".repeat(2);
+  const b64 = "Zm9vYmFyYmF6cXV4" + "Zm9vYmFyYmF6cXV4";
+  for (const note of [`key ${hex}`, `key ${b64}`, "ghp_abc", "use github_pat_abc", "sk-abc", "xoxb-1", "see ghp_x"]) {
+    assert.throws(() => addDispatch(EMPTY, d({ note }), NOW), /looks like a token/, note);
+  }
+  assert.throws(() => addDispatch(EMPTY, d({ actor: hex }), NOW), /looks like a token/);
+  assert.throws(() => addDispatch(EMPTY, d({ actor: "sk-ops" }), NOW), /looks like a token/);
+  addDispatch(EMPTY, d({ note: "task-1 retry after 31 chars " + "a".repeat(31) }), NOW);
+});
+
+test("main refuses a bad actor or note and writes nothing", async () => {
+  const f = join(mkdtempSync(join(tmpdir(), "dl-")), "log.md");
+  copyFileSync(LOG_FILE, f);
+  const before = readFileSync(f, "utf8");
+  await assert.rejects(main(["add", "--build", "b1", "--workflow", "t.yml", "--sha", SHA1, "--actor", "Jane Doe"], { file: f, now: NOW }), /actor/);
+  await assert.rejects(main(["add", "--build", "b1", "--workflow", "t.yml", "--sha", SHA1, "--actor", "ops", "--note", "ghp_x"], { file: f, now: NOW }), /token/);
+  assert.equal(readFileSync(f, "utf8"), before);
+});
+
+test("the shipped doc states the empty start, the late entry rule and the field rules", () => {
+  assert.match(EMPTY, /Starts empty on 20 Nov 2026/);
+  assert.match(EMPTY, /not backfilled/);
+  assert.match(EMPTY, /late entry/);
+  assert.match(EMPTY, /at most 120 characters/);
+  assert.match(EMPTY, /ghp_, github_pat_, sk- and xox/);
+});
