@@ -73,7 +73,7 @@ For every new table, view, sequence, function or bucket, in its own migration, n
 
 ## 8. Deep links, URL schemes and entry points
 
-- [ ] A link, widget, notification tap, Siri phrase or shortcut never starts recording, never opens a review screen, never carries a secret in a custom scheme; unknown routes land on Home (SEC-R17). Check: `apps/mobile/test/deep-link.allowlist.test.ts` [V]; add your route to the allowlist test with a hostile sample.
+- [ ] A link, widget, notification tap, Siri phrase or shortcut never starts recording, never opens a review screen, never carries a secret in a custom scheme; unknown routes land on not-found (SEC-R17). SEC-R17 is `not yet: WS-11` (`+native-intent.tsx`, `links.logic.ts` test) [V], and `apps/mobile/test/deep-link.allowlist.test.ts` only covers link classification [V: not routing], so write the route test yourself with a hostile sample.
 - [ ] Tokens (sign-in, invite, return link) are 256-bit, stored hashed, single use, expiring, and travel only in the URL fragment over https universal links (IAM-R09, IAM-R18). Check: `auth-links.test.ts`, `invite-link.test.ts` [V].
 - [ ] A page that carries a token loads no third-party script, font or image and sends no referrer (FR-MSG-36). Check: web test.
 - [ ] A library-day or moment notification tap routes to Home with `{source, kind}` only; a tap on a later date or with a cleared store opens plain Home (NS-46-R32).
