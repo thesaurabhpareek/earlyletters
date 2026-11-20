@@ -10,7 +10,8 @@
  * about a photo and the place the parent typed for it. Out, by construction (the view never names them):
  * `raw_transcript`, audio and anything read from audio, a date or place read from a picture, the child's name, any
  * machine tag.
- * Not findable (R17): a quiet-day mark, a spoken letter still waiting for its words, a letter with no words, a letter
+ * Not findable (R17, R33): a quiet-day mark, a spoken letter still waiting for its words, machine words the author
+ * has not kept from Review yet ('unreviewed', M17), a letter with no words, a letter
  * of a deleted, left or hidden book, a letter another person made private, a deleted letter.
  *
  * Extra sources plug in here. A source whose tables are not on this phone yet (photos arrive with migration 11 of
@@ -91,7 +92,7 @@ export function searchableViewSql(sources: FindExtraSource[]): string {
   LEFT JOIN child_member_prefs p ON p.child_id = c.id
   WHERE e.deleted_at IS NULL
     AND e.kind IN ('letter', 'note')
-    AND e.transcript_status IS NOT 'waiting'
+    AND e.transcript_status IS NOT 'waiting' AND e.transcript_status IS NOT 'unreviewed'
     AND trim(e.final_text) <> ''
     AND (e.in_book = 1 OR e.author_id IS NULL OR e.author_id = COALESCE((SELECT value FROM settings WHERE key = '${OWNER_KEY}'), ''))
     AND c.server_state NOT IN ('left', 'deleted')
