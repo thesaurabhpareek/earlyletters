@@ -59,3 +59,5 @@ Agent: ops   Lane: Pack 10   Build: 13 (guard on before photo flags turn on in 1
 
 16. HARNESS: journal #22; marker `<!-- journal run:sess-20261120-ops-975 agent:ops -->`; branch chore/ops-bl-975-label-guard-activation; labels agent:ops, from:agent, needs:founder.
 ```
+
+Note (review A 4): the workflow test reads `docs/ops/proposed/workflows/label-guard.yml`; when the founder copies the file to `.github/workflows/`, the test then reads `.github/workflows/label-guard.yml` (one path constant, changed in the founder's paste).

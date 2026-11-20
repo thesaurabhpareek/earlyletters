@@ -55,3 +55,5 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (before Build 14: the first bu
 
 16. HARNESS: journal #22; marker `<!-- journal run:sess-20261120-ops-secret agent:ops -->`; branch chore/ops-secret-scan; labels agent:ops, from:agent, needs:founder.
 ```
+
+Note (review B 2): the scanner's own test keeps its planted patterns built at run time in that test file, and the repo scan excludes `scripts/packs/secret-scan.test.ts` by path, so the scan does not flag itself.
