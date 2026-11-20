@@ -77,12 +77,13 @@ export function fts5Available(db: SqlDb): boolean {
   return s.fts5;
 }
 
-/** Whether the index table is on this phone and trusted (a failed write in this process makes it untrusted). */
+/** Whether the index is there and trusted for queries and writes in this process (R19, R44). */
 export function searchIndexExists(db: SqlDb): boolean {
   const s = stateOf(db);
   if (s.degraded || s.building) return false;
-  if (s.ready === null) s.ready = tableExists(db);
-  return s.ready;
+  // Trusted only once a catch-up has finished in this process: a rebuild killed partway leaves a partial table on the
+  // phone, and the next process must not read it (review A on #885). Until then writes skip it and the scan answers.
+  return s.ready === true;
 }
 
 const tableExists = (db: SqlDb): boolean => db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name = '${SEARCH_TABLE}'`) !== null;
