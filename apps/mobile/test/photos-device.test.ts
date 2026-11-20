@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
 import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
-import { androidContainer, createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
+import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { makeJpeg } from './photos-helpers';
 
 const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
@@ -80,6 +80,34 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
       expect(folder.exists, bad).toBe(true);
       expect(await files.list(), bad).toEqual(['0194-abc.jpg']);
     }
+  });
+  it('[C9] remove() refuses every name but <id>.jpg: a name that climbs to the database or a recording, and a stray file of another shape, are all left on the phone (review M1, the remove half)', async () => {
+    layOutApp(h.disk);
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    const folder = photosDirectory();
+    const db = `${h.disk.documents}SQLite/scribe.db`;
+    const take = put(h.disk, `${recorderDir(h.disk)}/recording-0194.m4a`, 10);
+    const stray = put(h.disk, `${folder.uri}x.png`, 10);
+    // From photos/, three levels up is the container: these names would reach Documents if remove() trusted them.
+    for (const bad of ['../../../Documents/SQLite/scribe.db', '../../../Documents/ExpoAudio/recording-0194.m4a', 'x.png', '.', '..', '']) {
+      await files.remove(bad);
+    }
+    expect(h.disk.files.has(db), 'database').toBe(true);
+    expect(h.disk.files.has(take), 'recording').toBe(true);
+    expect(h.disk.files.has(stray), 'stray file').toBe(true);
+    expect(folder.exists).toBe(true);
+    expect(namesIn(h.disk, folder.uri)).toEqual(['0194-abc.jpg', 'x.png']);
+  });
+  it('[C9] the launch sweep empties the two cache folders and never touches a stored picture (review N2 on #841)', async () => {
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    put(h.disk, `${h.disk.caches}ImagePicker/a.img`, 10);
+    put(h.disk, `${h.disk.caches}ScribePhoto/b.jpg`, 10);
+    await expoPickedFiles().sweep();
+    expect(await files.list()).toEqual(['0194-abc.jpg']);
+    expect(namesIn(h.disk, `${h.disk.caches}ImagePicker`)).toEqual([]);
+    expect(namesIn(h.disk, `${h.disk.caches}ScribePhoto`)).toEqual([]);
   });
 });
 
