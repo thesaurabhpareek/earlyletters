@@ -2,7 +2,7 @@
 
 - **Status:** Proposed, 20 Nov 2026. Decision lines marked [CR-69] are ruled in `docs/agents/cto/RULINGS.md` CR-69 A1 and `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`; marked [E] they are ruled in errata E13 (`docs/product/prd/18-errata-after-lock.md`). Docs only.
 - **Author:** `mobile` (BL-966, the NS-46 stack), with `payments` for the plan-notice hook. Reviewers asked: `principal-architect`, `security-architect`, `privacy`.
-- **Number:** the next free id on 20 Nov 2026 (`next-id.mjs`). Input C section 1.4 reserved 0032 for this subject and the design pack cites "eval C ADR 0032"; this file is that record, under the id `next-id.mjs` gave (CR-69 A11). Read "eval C ADR 0032" as 0030.
+- **Number:** the next free id on 20 Nov 2026 (`next-id.mjs`). Input C section 1.4 reserved 0032 for this subject and the design pack cites "eval C ADR 0032"; this file is that record, under the id `next-id.mjs` gave (CR-69 A11). Full table: `docs/adr/CROSSWALK-new-scope.md`. Read "eval C ADR 0032" as 0030.
 - **Supersedes:** the 64 reading in earlier design text and briefs, and BL-966's wording that plan notices sit "outside" a 60 budget.
 
 ## Context
@@ -14,11 +14,11 @@
 ## Decision
 
 1. **`TOTAL_MAX = 60`, plan notices first, then the chooser.** The planner change lowers today's 60 plus 4. A test is written from this rule. [CR-69] A1, [E] E13.
-2. **`budget.ts` is one file** (`apps/mobile/src/lib/reminders/budget.ts`, a new file) that holds the class registry and a pure `chooseOnePerDay(candidates, planNoticeCount)`. It is the only place the one-a-day rule and its order live. No React Native import (CODE-R10). [CR-69] A1.
+2. **`budget.ts` is one file** (`apps/mobile/src/lib/reminders/budget.ts`, a new file) that holds the class registry and a pure `chooseOnePerDay(candidates, planNoticeCount)`. [CR-69] A1 rules the one file, the class registry and the `chooseOnePerDay` name. That it is pure, is the only place the rule and its order live, and has no React Native import (CODE-R10) is [proposal: handoff draft A2].
 3. **Ranks:** typed day 1, birthday 2, `libraryDay` 3 (inside the `typedDay` group, so no new class), month 4, evening 5. [CR-69] A1.
 4. **`PlannedKind` gains a `group` field** so priority is data. [CR-69] A12 (handoff Q-E2 default: a group field, not a new class).
 5. **The plan-notice scheduler gets a one-line re-plan hook**; owner `payments`. The two schedulers are not merged in this scope. [CR-69] A1.
-6. **Notification payload stays `{ source, kind }` only** (`apps/mobile/src/lib/reminders/scheduler.ts:159`); ids are opaque. The day-name and privacy rules are ADR 0033.
+6. **Notification payload stays `{ source, kind }` only** (existing code, `apps/mobile/src/lib/reminders/scheduler.ts:159`). [Proposal: ids are opaque; handoff draft A2, NS-46-R32.] The day-name and privacy rules are ADR 0033.
 7. **Not ruled in CR-69, carried from the handoff and cards as proposals:** the opaque identifier shape `el.day.<isoDate>`, a day-only gate beside `prefs.enabled`, and re-plan on `subscribeDays` (card NS-46-R29 to R33; handoff draft A2). Q-E1 (rework #758 into `budget.ts`) takes its default under CR-69 A12.
 
 ## Consequences

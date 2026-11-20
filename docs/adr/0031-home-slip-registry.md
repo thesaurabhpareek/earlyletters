@@ -2,7 +2,7 @@
 
 - **Status:** Proposed, 20 Nov 2026. [E] marks a decision ruled in errata E36 (`docs/product/prd/18-errata-after-lock.md`); [CR-69] marks one ruled in `docs/agents/cto/RULINGS.md` CR-69 A12 (Q-E11 follows E36). The rest is a proposal from the cards (NS-50-R5) and `docs/product/prd/24-engineering-handoff.md` draft A3. Docs only.
 - **Author:** `mobile` with `design-systems` (BL-963). Reviewers asked: `principal-architect`, `security-architect`, `privacy`.
-- **Number:** the next free id on 20 Nov 2026. Input C section 1.4 reserved 0033 for this subject and the design pack cites "eval C ADR 0033"; this file is that record, under the id `next-id.mjs` gave (CR-69 A11). Read "eval C ADR 0033" as 0031. Warning: the design pack also cites "eval C ADR 0031" for "one phone, two accounts" (`[X4-R1]`). That is a different subject, is not filed here, and is not this file.
+- **Number:** the next free id on 20 Nov 2026. Input C section 1.4 reserved 0033 for this subject and the design pack cites "eval C ADR 0033"; this file is that record, under the id `next-id.mjs` gave (CR-69 A11). Full table: `docs/adr/CROSSWALK-new-scope.md`. Read "eval C ADR 0033" as 0031. Warning: the design pack also cites "eval C ADR 0031" for "one phone, two accounts" (`[X4-R1]`). That is a different subject, is not filed here, and is not this file.
 
 ## Context
 

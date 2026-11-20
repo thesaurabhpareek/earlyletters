@@ -2,7 +2,7 @@
 
 - **Status:** Proposed, 20 Nov 2026. CR-69 (`docs/agents/cto/RULINGS.md`) has no line on this subject. The decision is the card's: NS-48-R1 and NS-48-R2 and review item RV-14 (`docs/product/prd/GAP-LOG.md`), which win over engineering text (CR-66). Anything marked [proposal] is from `docs/product/prd/24-engineering-handoff.md` section 1.4. Docs only.
 - **Author:** `mobile` with `content`. Reviewers asked: `principal-architect`, `security-architect`, `privacy`.
-- **Number:** the next free id on 20 Nov 2026 (`next-id.mjs`).
+- **Number:** the next free id on 20 Nov 2026 (`next-id.mjs`). Warning: older design documents and CR-67 cite this number for another subject; read them through `docs/adr/CROSSWALK-new-scope.md`.
 
 ## Context
 
@@ -19,5 +19,6 @@
 
 ## Consequences
 
+- `selectNotificationKey` takes only the cell and the ordinal. No child name, entry text or other words enter key choice, so a later "last letter" layer cannot pass words in. [Proposal, privacy rule]
 - Tests: determinism, every key exists, no orphan key, the set of (id, date, time, class) is identical with the catalogue on or off.
 - Content rules coverage for the new key families is a separate change (`packages/content` is CODEOWNERS-owned).

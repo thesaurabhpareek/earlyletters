@@ -13,13 +13,13 @@
 
 ## Decision
 
-1. **Two flag families.** Server-gated features keep `mayRun`. Phone-only features use a local `EXPO_PUBLIC_*` flag read directly (exact string `on`), plus a remote pause read outside `mayRun` through an injected `RemoteConfigReader`. [E] E20.
-2. **A pause only hides.** A switch can hide a feature, never turn one on, and never stops export (LEGAL-REQ-040). Unreadable or older config counts as not paused (fail-open for the person's own words). The `kill-switches.ts` header is rewritten to say so. [E] E21.
+1. **Two flag families.** Server-gated features keep `mayRun`. Phone-only features use a local `EXPO_PUBLIC_*` flag read directly (exact string `on`). [E] E20. A remote pause on a phone-only feature exists only where its card adds one, and `photos` and `bookSearch` stay as built ([CR-67] AX-4, `docs/agents/cto/RULINGS.md:655`); it is read outside `mayRun` through an injected `RemoteConfigReader`. [Proposal: the reader shape, from handoff draft A1.]
+2. **A pause only hides.** A switch can hide a feature, never turn one on, and never stops export (LEGAL-REQ-040). The `kill-switches.ts` header is rewritten to say so. [E] E21, [CR-67] AX-4. Unreadable or older config counts as not paused (fail-open for the person's own words). [Proposal: handoff draft A1.]
 3. **One flag set for the new scope.** `EXPO_PUBLIC_PHOTO_MOMENTS`, `EXPO_PUBLIC_VIDEO`, and the kill switches `photoMoments`, `videos`, `signIn`, `libraryDays`. `EXPO_PUBLIC_MEDIA_ATTACH` and the handoff names are retired. `killSwitches.mediaSync` and `EXPO_PUBLIC_MEDIA_SYNC` exist for variant B only (pictures leave the phone), which is the founder's choice and is not chosen here. [CR-69] A5.
-4. **One PR adds the new keys with the drift test:** `remote-config.test.ts`, `contract-drift.test.ts`, the "Eight keys" line in `packages/api/README.md`, `KILL_SWITCH_FLAG`, and the older-signed-config rule. Whichever of the days and first-run stacks merges second rebases. Keys are additive only (API-R11): an older config parses a missing key as off. [CR-69] A5.
+4. **One PR adds the new keys with the drift test:** `remote-config.test.ts`, `contract-drift.test.ts`, the "Eight keys" line in `packages/api/README.md`, `KILL_SWITCH_FLAG`, and the older-signed-config rule. Whichever of the days and first-run stacks merges second rebases. The older-signed-config rule is [CR-69] A5. Keys are additive only: an older config parses a missing key as off (API-R11, `docs/engineering/02-api-and-contracts.md:55`). [Proposal beyond A5.]
 5. **The scheduler re-plans when remote config changes**, through `remoteConfigDoc.subscribe` (`apps/mobile/src/lib/remote/index.ts:132`), inside the existing debounce. [CR-69] A12 (handoff Q-E4 default).
 6. **The preflight list names every flag** with its hidden state, so the gate record shows which flags a build ships on. [Handoff draft A1 and C-6; not separately ruled, so a proposal of this ADR.]
-7. The remote `flags.lockScreenNamesDefault` (`packages/api/src/remote-config.ts`) never becomes a path to turn on day names (NS-47-R12); see ADR 0033.
+7. [Proposal] The remote `flags.lockScreenNamesDefault` (`packages/api/src/remote-config.ts`) never becomes a path to turn on day names (NS-47-R12); see ADR 0033.
 
 ## Consequences
 
