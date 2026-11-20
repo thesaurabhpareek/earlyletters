@@ -655,19 +655,6 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `bytes` | L2 | File size |
 | `found_at` | L2 | Timestamp |
 
-**`entry_media`** (the one picture kept with a letter or a draft; local migration 11, ADR 0028 D1). Never synced or pulled (NS-01-R15), not in the owner backup. Levels as `privacy` confirmed in the review of #835; the two flagged rows wait for `privacy`.
-
-| Column | Level | Note |
-|---|---|---|
-| `id` | L2 | Media id (UUIDv7 made on the phone); also the picture's file name |
-| `entry_id`, `draft_id` | L2 | The owning letter or draft, one of the two. Flagged for `privacy`: migration 11 and the review give L2, while this section has `entries.id` and `drafts.id` at L3 |
-| `kind`, `ext` | L1 | `photo` and `jpg` only |
-| `bytes` | L2 | Size of the stripped copy. Flagged for `privacy`: the review gives L2 (as `audio_bytes`); migration 11's comment says L1 |
-| `width`, `height`, `added_at` | L2 | |
-| `sha256` | L4 | Of the stripped copy (rule 1.1.2) |
-| `photo_text` | L4 | The parent's own words about the picture, at most 140 |
-| `place` | L4 | Typed by the parent, at most 60; never read from the picture |
-
 **`sync_outbox`** (ordered upload queue)
 
 | Column | Level | Note |
@@ -740,8 +727,6 @@ Protection floor for the whole file: iOS Data Protection at least "complete unti
 | `audio/<entry_id>.m4a` | L4 | Free plan: the only copy |
 | Listening copies (cleaner playback copy, decision 8) | L4 | Derived from the recording; the original is never altered |
 | Photos, cached book audio of other members | L4 | Deleted on purge sync or removal |
-| Pictures: `Library/Application Support/photos/<media_id>.jpg` (iOS; the stripped copy, no metadata) | L4 | Kept with a letter or a draft (`entry_media`, ADR 0028 D1); in the device backup (NX-39 F9); never uploaded (NS-01-R15); erased with the letter, its book, a let-go draft, or Erase everything |
-| Picker originals `Caches/ImagePicker/<id>.img`, re-encode copies `Caches/ScribePhoto/<id>.jpg` | L4 | A pick in flight only. The original carries its location; it is read once and removed, and both folders are emptied at every launch and by Erase everything |
 | Export ZIPs in app temp | L4 | Deleted after the share sheet closes; plaintext by design |
 | Installed packs: `Application Support/packs/installed/<pack id>/<version>/` with `pack.json` and the pack file; `staging/` for partial downloads | L1 | Text-rule packs (rules, filler and negation tables, punctuation, phonetic tables, prompt text) and speech models: public data checked against the signed manifest (SHA-256). Excluded from backup. Which packs are installed reveals which languages the author picked, so the **list** of installed packs is handled as L4 on the device and never leaves it except as the `pack_download` analytics event after a yes (TRACKING_PLAN 6.2) |
 | Remote document cache (`Application Support/remote`: signed remote config, pack manifest, content blocks) | L1 | Public server documents |

@@ -126,21 +126,41 @@ export function stripJpeg(input: Uint8Array): StripResult {
   return { ok: true, bytes, orientation, width, height };
 }
 
+const SIGNATURES = ['Exif\0\0', 'http://ns.adobe.com/xap', 'Photoshop 3.0', '8BIM', 'MPF\0'];
+const signed = (b: Uint8Array, from: number, to: number): boolean => {
+  for (let at = from; at < to; at++) for (const s of SIGNATURES) if (b[at] === s.charCodeAt(0) && at + s.length <= to && ascii(b, at, s)) return true;
+  return false;
+};
+
 /**
- * Independent check used by the tests (and any guard): true when the bytes carry an Exif, XMP or IPTC segment, by
- * walking the segments and again by searching the whole file for the signatures.
+ * Independent check, the last guard before a copy is stored (session.ts) and the tests' judge: true when the bytes
+ * carry an Exif, XMP, IPTC or comment segment, or any marker segment, or anything after the end marker, holds one of
+ * their signatures. Only marker segments (in the headers and between scans) and the tail are searched, never the
+ * compressed picture data, so a clean picture is never refused by chance (#836 review A N2).
  */
 export function carriesMetadata(b: Uint8Array): boolean {
-  const sigs = ['Exif\0\0', 'http://ns.adobe.com/xap', 'Photoshop 3.0', '8BIM', 'MPF\0'];
-  for (let at = 0; at < b.length; at++) for (const s of sigs) if (b[at] === s.charCodeAt(0) && ascii(b, at, s)) return true;
+  if (b.length < 4 || b[0] !== 0xff || b[1] !== 0xd8) return signed(b, 0, b.length);
   let i = 2;
-  while (i + 4 <= b.length && b[0] === 0xff && b[1] === 0xd8) {
-    if (b[i] !== 0xff) break;
+  while (i + 1 < b.length) {
+    if (b[i] !== 0xff) return signed(b, i, b.length); // not a marker where one must be: judge the rest as it is
     const m = b[i + 1];
-    if (m === 0xda || m === 0xd9) break;
-    const len = (b[i + 2] << 8) | b[i + 3];
-    if (m === 0xe1 || m === 0xed || m === 0xfe) return true;
-    i += 2 + len;
+    if (m === 0xff) {
+      i += 1; // fill byte
+      continue;
+    }
+    if (m === 0xd9) return signed(b, i + 2, b.length); // whatever follows the end marker
+    if (m === 0x01 || (m >= 0xd0 && m <= 0xd7)) {
+      i += 2;
+      continue;
+    }
+    if (i + 4 > b.length) return false;
+    const end = Math.min(b.length, i + 2 + ((b[i + 2] << 8) | b[i + 3]));
+    if (m === 0xe1 || m === 0xed || m === 0xfe || signed(b, i + 4, end)) return true;
+    i = end;
+    if (m === 0xda) {
+      // The scan's compressed data runs to the next marker that is neither a stuffed byte nor a restart.
+      while (i + 1 < b.length && !(b[i] === 0xff && b[i + 1] !== 0x00 && !(b[i + 1] >= 0xd0 && b[i + 1] <= 0xd7))) i++;
+    }
   }
   return false;
 }
