@@ -606,3 +606,23 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way: `PASSING` and the two patterns are three lines.
 - Way back: set `PASSING` to `["PASS"]` and restore the test's strict case.
 - Revisit when: a merge on `PASS WITH NOTES` ships a defect that a note had named. Karma
+
+### CR-64 Local migration 11 (entry_media) ships with or without EXPO_PUBLIC_PHOTOS (Fri 20 Nov 2026, Karma (session earlyletters-61), on PR #835)
+- Question: the photo stack's slice 3a (#835) adds local SQLite migration 11, the phone-only `entry_media` table and its three indexes (ADR 0028 D1). Should the migration run only when `EXPO_PUBLIC_PHOTOS` is on?
+- Tier and type: T2 (a local schema change on every phone); clear.
+- Options considered: gate the whole migration list on the switch; gate only the CREATE and add a lazy create on first use, with guards on every eraser and on Keep; ship migration 11 unconditionally.
+- Ruling: migration 11 runs on every phone, switch on or off. With the switch off, a phone gains one empty table and `user_version` 11, and nothing else: no row, no file, no folder, nothing queued for sync.
+- Why: (1) gating only the CREATE leaves a phone that later runs a switched-off build without the table, so every eraser and Keep would need guards and a second, lazy create, which is more code on the data-rights path; (2) ADR 0028 D1 and CR-62 ship migration 11 with photos, and NS-01-R19 says the data rights work with the switch off; (3) an empty table costs nothing a parent can notice. An earlier statement of this ruling, in #835's body, also said that gating the list would stop a phone at launch on a newer database file. That was wrong: a newer file does not stop the app, which keeps running (`launch.logic.ts:12-17`, found by #835's Review A), so it is not a reason.
+- Door: two-way with cost.
+- Way back: a later local migration drops the empty table, and a step in the same release deletes the photos folder (`Library/Application Support/photos`) and both picture caches, because an older build erasing on a phone that had photos on leaves files only a newer build's sweep removes (#835 Review A note 6).
+- Revisit when: photos are dropped from the product, or a second local migration needs the same choice. Karma
+
+### CR-65 The photo picker is Apple's PHPicker inside the in-house scribe-photo module; no expo-image-picker (Fri 20 Nov 2026, Karma (session earlyletters-61), first recorded as a comment on PR #833, comment 7026600796)
+- Question: slice 1 of the photo stack (#833) added `expo-image-picker` 57.0.20 with its photo-library and camera purpose strings deleted. Keep the package, or present the system picker from our own module?
+- Tier and type: T2 (a native dependency in every build, and what App Store processing sees); complicated.
+- Options considered: keep the package and add the purpose strings (puts lines in the plist that NS-01-R22 and NX-39-R4 rule out, and a later App Review question about unused capabilities); keep the package without them and prove it with a TestFlight upload (needs a build cycle and the founder's go, and the risk sits in every build meanwhile); present `PHPickerViewController` from `scribe-photo`, with no photo library and images only.
+- Ruling: the picker is `PHPickerViewController` presented by `scribe-photo` (#834, merged as 76a4a5d7), configured with no photo library, images only and one item. `expo-image-picker` and `expo-image-loader` are not dependencies. #833 is closed and its branch kept.
+- Why: both reviews of #833 found the package's iOS code calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` and is linked into every build whatever the switch says. With the purpose strings removed, App Store processing can return ITMS-90683 (Apple developer forum thread 744965; Expo forum reports of rejections); whether it would block our upload or only warn was not verified. PHPicker needs no permission and no purpose string (NS-01-R22). It also removes a third-party native dependency, and review A of #833 found `expo-image-loader` was listed as shipping on iOS when it is Android-only.
+- Door: two-way with cost.
+- Way back: add the package back with real purpose strings, as a founder decision, if the camera is ever wanted.
+- Revisit when: the first TestFlight upload's processing email (the final proof that no ITMS-90683 comes back); or the founder asks for the camera. Note: expo-file-system's Legacy module already references Photos (`PHAsset`, `PHImageManager`, `authorizationStatus`) without requesting access, as #834's Review B recorded; that first email shows whether it matters. Karma
