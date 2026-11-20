@@ -57,6 +57,8 @@ vi.mock('@/lib/store', () => ({
     h.listChildrenCalls += 1;
     return h.books;
   },
+  // BL-961: no owner yet, so every session here is this phone's own (test/account-route.test.ts covers another account).
+  currentUserId: () => null,
 }));
 vi.mock('../src/lib/first-run/account-books', () => ({
   readAccountBooks: () =>
