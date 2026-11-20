@@ -294,7 +294,7 @@ describe('no daily rhythm, streaks or gap counts', () => {
   // no rhythm for the parent. Everything the product says about itself is in scope.
   const RHYTHM_CHECKED = EVERY.filter((l) => !l.path.startsWith('prompt.'));
   // Anything that reminds, notifies or celebrates.
-  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path));
+  const RHYTHM_SCOPE = IN_APP.filter((l) => /^en\.(notifications|moments)\./.test(l.path) || /remind/i.test(l.path) || NOTIFICATION_PATH.test(l.path));
   const GAP = /\b(in a row|missed|miss(?:es|ing)? (?:a|one|any)|since (?:your|the) last|streaks?|(?:days?|nights?|weeks?) since|(?:days?|nights?) (?:off|away))\b/i;
   // "one day" is left out on purpose: it means "someday", which VOICE.md's legacy rule asks for.
   const DAY_COUNT = /(?:\b\d+|\{\w+\}|\b(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fourteen|thirty))\s+(?:days?|nights?)\b/i;
