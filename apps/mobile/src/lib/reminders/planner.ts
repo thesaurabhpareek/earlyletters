@@ -242,6 +242,9 @@ const ALL_VARIANTS: readonly number[] = Array.from({ length: VARIANTS }, (_, i) 
  * How many name-bearing nudges come before this one. Children are named in
  * turn by this count, so a variant without a name ("Tonight's letter") never
  * makes one child come up twice in a row or less often (PRD C F1, K-12).
+ * DEVIATES from NS-48-R20 as written (erratum to be filed): R20 says ordinal
+ * modulo the books, whatever the pool. This counts name-bearing nudges over the
+ * eligible pool; from 17:00 that is the built rotation (R23), so it stays.
  */
 export function namedSlotIndex(ordinal: number, pool: readonly number[] = ALL_VARIANTS): number {
   const named = pool.filter((v) => NAMES_CHILD[v]).length;
@@ -302,7 +305,8 @@ function inQuietHours(fireAt: number, timeZone: string, window: ReminderWindow):
 function chooseKey(select: KeySelector, slot: number, minutesOfDay: number): string {
   try {
     const key = select({ slotOrdinal: slot, minutesOfDay });
-    if (floorIndexOfKey(key) !== null) return key;
+    const index = floorIndexOfKey(key); // eligible now only: no evening-worded key before 17:00 (NS-48-R12)
+    if (index !== null && eligibleFloorIndexes(minutesOfDay).includes(index)) return key;
   } catch {
     // fall through to the floor
   }
@@ -385,12 +389,8 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       const minutesOfDay = time.hour * 60 + time.minute;
       const key = chooseKey(select, ordinal, minutesOfDay);
       const variant = floorIndexOfKey(key) ?? 0;
-      // Names go round the included books by the count of name-bearing nudges in the eligible pool (NS-48-R20).
-      const pool = eligibleFloorIndexes(minutesOfDay);
-      const named =
-        prefs.namesOnLockScreen && included.length > 0
-          ? included[namedSlotIndex(ordinal, pool) % included.length].name
-          : null;
+      const nameIdx = namedSlotIndex(ordinal, eligibleFloorIndexes(minutesOfDay));
+      const named = prefs.namesOnLockScreen && included.length > 0 ? included[nameIdx % included.length].name : null;
       const c = eveningCopy(variant, date, named);
       out.push({
         id: `${ID_PREFIX}evening.${isoDate(date)}`,

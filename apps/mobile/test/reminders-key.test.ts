@@ -13,6 +13,7 @@ import {
   type PlannerChild,
   type ReminderPrefs,
 } from '../src/lib/reminders/planner';
+import { REMINDER_SOURCE, reminderContent } from '../src/lib/reminders/payload';
 import { parseIsoDate, zonedToEpoch } from '../src/lib/reminders/tz';
 
 const LA = 'America/Los_Angeles';
@@ -113,12 +114,27 @@ describe('NS-48 phase 1: the planner seam and the built 8, re-keyed', () => {
     for (let i = 1; i < list.length; i++) expect(list[i].title).not.toBe(list[i - 1].title);
   });
 
-  it('[NS-48-R20] two books are named in turn in the morning too, each as often as the other', () => {
+  it('[NS-48-R20] two books are named in turn in the morning: they alternate and neither is named more than once more than the other', () => {
+    // Proves the built alternation only. R20 as written (ordinal modulo books, whatever the pool) is not what the code does; see namedSlotIndex.
     const list = plan({ children: [asha, dev], prefs: { cadence: 'everyEvening', namesOnLockScreen: true, time: { hour: 7, minute: 0 } } }).filter((n) => n.kind === 'evening');
     const who = list.map((n) => (`${n.title} ${n.body}`.includes('Asha') ? 'Asha' : 'Dev'));
     const asha_ = who.filter((w) => w === 'Asha').length;
     expect(Math.abs(asha_ - (who.length - asha_))).toBeLessThanOrEqual(1);
     for (let i = 1; i < who.length; i++) expect(who[i]).not.toBe(who[i - 1]);
+  });
+
+  it('[NS-48-R12] an injected selector that returns an evening-worded key at 07:00 is overruled by the floor', () => {
+    for (const index of [1, 3, 6]) {
+      const list = plan({ prefs: { cadence: 'everyEvening', time: { hour: 7, minute: 0 } }, select: () => FLOOR_KEYS[index] }).filter((n) => n.kind === 'evening');
+      expect(list.length).toBeGreaterThan(5);
+      for (const n of list) {
+        expect([1, 3, 6]).not.toContain(n.variant);
+        expect(`${n.title} ${n.body}`).not.toMatch(EVENING_WORDS);
+      }
+    }
+    // From 17:00 the same selector is honoured.
+    const late = plan({ prefs: { cadence: 'everyEvening' }, select: () => FLOOR_KEYS[3] }).filter((n) => n.kind === 'evening');
+    expect(late.every((n) => n.key === FLOOR_KEYS[3])).toBe(true);
   });
 
   it('[NS-48-R15] a selector that returns an unknown key, or throws, never leaves a note without words', () => {
@@ -145,9 +161,18 @@ describe('NS-48 phase 1: the planner seam and the built 8, re-keyed', () => {
     expect(planSignature(plan({ prefs: { namesOnLockScreen: false } }))).not.toBe(planSignature(once));
   });
 
-  it('[NS-48-R31] the scheduled payload holds only source and kind: no key, variant or day', () => {
-    const source = readFileSync(new URL('../src/lib/reminders/scheduler.ts', import.meta.url), 'utf8');
-    expect(source).toMatch(/data: \{ source: REMINDER_SOURCE, kind: p\.kind \}/);
-    expect(source).not.toMatch(/p\.key|p\.variant|categoryIdentifier|threadIdentifier/);
+  it('[NS-48-R31] the content the scheduler builds holds only source and kind in its payload: no key, variant or day', () => {
+    const list = plan({ children: [asha], prefs: { cadence: 'everyEvening', monthNotes: true, namesOnLockScreen: true }, horizonDays: 120 });
+    expect(new Set(list.map((n) => n.kind)).size).toBeGreaterThan(1);
+    for (const n of list) {
+      expect(n.key === undefined || typeof n.key === 'string').toBe(true);
+      const content = reminderContent(n);
+      expect(content.data).toEqual({ source: REMINDER_SOURCE, kind: n.kind });
+      expect(Object.keys(content).sort()).toEqual(['body', 'data', 'sound', 'title']);
+      expect(JSON.stringify(content.data)).not.toMatch(/floor|variant|key/);
+    }
+    // The scheduler schedules exactly this builder's output.
+    const scheduler = readFileSync(new URL('../src/lib/reminders/scheduler.ts', import.meta.url), 'utf8');
+    expect(scheduler).toMatch(/content: reminderContent\(p\)/);
   });
 });
