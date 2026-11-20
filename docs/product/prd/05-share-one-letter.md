@@ -277,11 +277,11 @@ Study pass line (PROPOSED): 4 of 5 parents send one letter in under 60 seconds w
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | When does Level 1 ship? | Founder | After NS-01 is in TestFlight and the Q45 read is on record; order only, the roadmap holds the date (T5). The NS-03 read-out is not a gate for Level 1 |
-| OQ-2 | Footer or brand name in the shared text | Closed (Karma, 11 Nov) | None (R16b) |
-| OQ-3 | Which version goes in the text? | Closed 20 Nov (council round 2) | The version the Book shows, named in the preview (R19) |
-| OQ-4 | Picture on or off by default | Closed | Off (R5b) |
-| OQ-5 | Share tab | Founder | No tab (section 3.1) |
-| OQ-6 | The verb and the letter-page label | `content`, `legal` | "Share this letter" until they decide |
+| OQ-1 | When does Level 1 ship? | Founder | After NS-01 is in TestFlight and the Q45 read is on record; order only, the roadmap holds the date (T5). The NS-03 read-out is not a gate for Level 1 CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
+| OQ-2 | Footer or brand name in the shared text | Closed (Karma, 11 Nov) | None (R16b) CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
+| OQ-3 | Which version goes in the text? | Closed 20 Nov (council round 2) | The version the Book shows, named in the preview (R19) CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
+| OQ-4 | Picture on or off by default | Closed | Off (R5b) CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
+| OQ-5 | Share tab | Founder | No tab (section 3.1) CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
+| OQ-6 | The verb and the letter-page label | `content`, `legal` | "Share this letter" until they decide CLOSED 20 Nov, see GAP-LOG Closures CL-007 |
 
 Not fully testable: R11, R13a, R13b and R23 need devices; how each app (Messages, Mail, WhatsApp) receives text and one image together is UNVERIFIED until the 20-fixture run.

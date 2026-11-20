@@ -243,20 +243,20 @@ Counsel numbers are packet 1.5.0. A question with no number "needs a number from
 
 | Id | Question | Recommended default | To |
 |---|---|---|---|
-| Q-SUP-1 | Privacy 3 says we read letters "only if you ask us for help". May support refuse to read letters even when a parent asks, and should that phrase be removed? | Support never reads. Remove "if you ask us for help" from Privacy 3, or narrow it to "if you ask us in writing to look at a specific letter". Counsel must confirm | counsel, Q43 (claims) |
-| Q-SUP-2 | Do we state a response time for ordinary support (not data requests)? | No public time. Data requests keep Privacy 10's 45 days | founder |
-| Q-SUP-3 | Support in languages other than English? | English only at 1.0. The help centre says so once | founder |
-| Q-SUP-4 | How long do we keep support emails, and emails that arrived with letter content? | Correspondence: 12 months after the ticket closes. A message carrying content: delete the content and attachments when the request closes, and keep only the log row | counsel, Q51 |
-| Q-SUP-5 | Does support ever call emergency services for someone who writes in danger? | No. Support gives the emergency number and the helplines (M6) and the founder reads it the same day. Counsel and the BL-105 clinician must confirm | counsel (needs a number from legal), BL-105 |
-| Q-SUP-6 | What evidence lets us limit a co-parent's access (Terms 4.4)? | A verified court order, or a counsel decision case by case, using the counsel-led runbook | counsel, Q50 |
-| Q-SUP-7 | Is the two-parent book "user-generated content" under Guideline 1.2? | Treat it as not, while it stays capped at two parents who invite each other. Treat anything hosted for a third person as 1.2 | counsel and the founder (needs a number from legal) |
-| Q-SUP-8 | A person with no account whose words are in another parent's letter asks for removal. What do we owe them? | We tell them we cannot see or change the letter, and suggest they ask the author. NS-16 waits on the answer | counsel, Q48 |
-| Q-SUP-9 | If a printed book (NS-30) ever ships, who handles refunds and delivery problems? | Decide before NS-30 reopens. It is not Apple | founder |
-| Q-SUP-10 | Executors and guardians after a death | No clause and no action. Write the runbook before C1 | counsel, Q49 |
-| Q-SUP-11 | After a loss, may billing notices stop while Apple still bills? | They continue (packet default). Support explains how to cancel through Apple | counsel, Q52 |
-| Q-SUP-12 | May the Help mail subject carry the app version and build (not an id), to save a question? | No. Ask for the version in the reply (M20) | founder, `privacy` |
-| Q-SUP-13 | Keep "I answered by mistake" on the age stop in store builds? | Keep it (LEGAL-REQ-002 neutrality). Support never acts on an age answer it cannot see | counsel, Q46 (area E CG14) |
-| Q-SUP-14 | Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept? | No. Change the sentences first, or build BL-551 first (CR-60) | founder |
+| Q-SUP-1 | Privacy 3 says we read letters "only if you ask us for help". May support refuse to read letters even when a parent asks, and should that phrase be removed? | Support never reads. Remove "if you ask us for help" from Privacy 3, or narrow it to "if you ask us in writing to look at a specific letter". Counsel must confirm | counsel, Q43 (claims) CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-2 | Do we state a response time for ordinary support (not data requests)? | No public time. Data requests keep Privacy 10's 45 days | founder CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-3 | Support in languages other than English? | English only at 1.0. The help centre says so once | founder CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-4 | How long do we keep support emails, and emails that arrived with letter content? | Correspondence: 12 months after the ticket closes. A message carrying content: delete the content and attachments when the request closes, and keep only the log row | counsel, Q51 CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-5 | Does support ever call emergency services for someone who writes in danger? | No. Support gives the emergency number and the helplines (M6) and the founder reads it the same day. Counsel and the BL-105 clinician must confirm | counsel (needs a number from legal), BL-105 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-6 | What evidence lets us limit a co-parent's access (Terms 4.4)? | A verified court order, or a counsel decision case by case, using the counsel-led runbook | counsel, Q50 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-7 | Is the two-parent book "user-generated content" under Guideline 1.2? | Treat it as not, while it stays capped at two parents who invite each other. Treat anything hosted for a third person as 1.2 | counsel and the founder (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-8 | A person with no account whose words are in another parent's letter asks for removal. What do we owe them? | We tell them we cannot see or change the letter, and suggest they ask the author. NS-16 waits on the answer | counsel, Q48 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-9 | If a printed book (NS-30) ever ships, who handles refunds and delivery problems? | Decide before NS-30 reopens. It is not Apple | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-10 | Executors and guardians after a death | No clause and no action. Write the runbook before C1 | counsel, Q49 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-11 | After a loss, may billing notices stop while Apple still bills? | They continue (packet default). Support explains how to cancel through Apple | counsel, Q52 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-12 | May the Help mail subject carry the app version and build (not an id), to save a question? | No. Ask for the version in the reply (M20) | founder, `privacy` CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-13 | Keep "I answered by mistake" on the age stop in store builds? | Keep it (LEGAL-REQ-002 neutrality). Support never acts on an age answer it cannot see | counsel, Q46 (area E CG14) FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-14 | Can the 0.9.0 pages go live while their by-hand promises (Route 1, "we offer to delete what was synced") cannot be kept? | No. Change the sentences first, or build BL-551 first (CR-60) | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
 
 ---
 
@@ -297,10 +297,10 @@ NS-51, NS-52, NS-36, NS-33; FR-SUP-04, 05, 07, 08, 09, 10, 11, 14, 15, 19, 21, 2
 ### Questions (default, who)
 | Id | Question | Default | Who |
 |---|---|---|---|
-| Q-SUP-15 | Do we hold a copy of pictures and videos (Q-PM-3)? Support wording depends on it | Both variants written, phone-only published first | Founder, counsel |
-| Q-SUP-16 | Can support ever restore a deleted picture or video if they sync? | No | Founder, privacy |
-| Q-SUP-17 | Retention of a support email that arrives with media | As Q-SUP-4: content deleted when the request closes, log row kept | Counsel, Q51 |
-| Q-SUP-18 | Duty and detection for hosted media (FR-POL-14) | Needs a number from legal; not triggered if phone-only | Counsel |
+| Q-SUP-15 | Do we hold a copy of pictures and videos (Q-PM-3)? Support wording depends on it | Both variants written, phone-only published first | Founder, counsel FOUNDER-ANSWERED 20 Nov, default accepted (CL-048, default as stated in the row and in GAP-LOG Closures) |
+| Q-SUP-16 | Can support ever restore a deleted picture or video if they sync? | No | Founder, privacy CLOSED 20 Nov, see GAP-LOG Closures CL-099 |
+| Q-SUP-17 | Retention of a support email that arrives with media | As Q-SUP-4: content deleted when the request closes, log row kept | Counsel, Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-SUP-18 | Duty and detection for hosted media (FR-POL-14) | Needs a number from legal; not triggered if phone-only | Counsel FOUNDER-ANSWERED 20 Nov, default accepted (CL-100, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
 
 ### Cannot assess yet
 - What the app does when an original is deleted from Photos or limited access is narrowed (copy kept or reference); M-MED-1 and M-MED-2 wording depends on NS-52's design.

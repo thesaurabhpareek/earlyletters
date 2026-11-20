@@ -287,9 +287,9 @@ Order and gates only (ruling T5).
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | Search across all books for a family with two children? | Founder | No. Active book only (R4, R46). |
-| OQ-2 | Search `raw_transcript` too? | closed 20 Nov | No (R5). A restored small fix is searchable (R16a). |
-| OQ-3 | A result count for accessibility? | `design-systems` | None (R11). |
-| OQ-4 | Does the 3-character floor stay for Hindi and Arabic? | Native reviewers, `speech` | Yes, until a pack passes its gate and a reviewer says otherwise. |
+| OQ-1 | Search across all books for a family with two children? | Founder | No. Active book only (R4, R46). CLOSED 20 Nov, see GAP-LOG Closures CL-001 |
+| OQ-2 | Search `raw_transcript` too? | closed 20 Nov | No (R5). A restored small fix is searchable (R16a). CLOSED 20 Nov, see GAP-LOG Closures CL-001 |
+| OQ-3 | A result count for accessibility? | `design-systems` | None (R11). CLOSED 20 Nov, see GAP-LOG Closures CL-001 |
+| OQ-4 | Does the 3-character floor stay for Hindi and Arabic? | Native reviewers, `speech` | Yes, until a pack passes its gate and a reviewer says otherwise. CLOSED 20 Nov, see GAP-LOG Closures CL-001 |
 | O-1 | A debounce on typing if R2 misses on the SE 3? | `mobile` | 150 ms, counted inside the 300 ms. |
 | O-2 | Index the typed "From" name of NS-16? | Founder (raised in r1 NS-16) | Not indexed. |

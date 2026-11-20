@@ -222,7 +222,7 @@ Step 0: records and units that block the rest (no code to production).
 - 0.3 File ADRs A1, A2, A3, B, C, D, E (section 2) as Proposed. Blocked on: engineering.
 - 0.4 Rule on #835 (amend migration 11 for several pictures and video before merge, Q-E12) [Integration].
 
-Step 1: independent of NS-46 and NS-47 (Drop A).
+Step 1: independent of NS-46 and NS-47 (Drop A; step 1.4 is Drop B since 20 Nov, CL-015).
 - 1.1 Content rules drift test: every key family under `ALL`, notification scope paths, `VOICE.md` line 70 [Content rules]. Needs `content`. Unblocks every words PR (NS-48-R28).
 - 1.2 NS-48 phase 1: pure key function in `packages/core`, planner `select` seam, `slotOrdinal`-based variant, built 8 re-keyed with the day-part filter, `planSignature` stable [Unit, Integration]. No new setting. No dependency on BL-966.
 - 1.3 Analytics tests: stems, enum values, event names, four never-reported kinds, `variant_id` range [Unit]. Needs `analytics`.

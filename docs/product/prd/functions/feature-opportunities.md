@@ -264,12 +264,12 @@ All "new row needed", in the style of `docs/BACKLOG.md` (Status, Mode, Owner, Mi
 
 | # | Question | Recommended default |
 |---|---|---|
-| OQ-1 | Founder: which two of the five go to a card first? | OPP-01 (already NS-49) and OPP-03 (cheapest); decide OPP-02 after the NS-04 result |
-| OQ-2 | Founder: may the lock-screen doorway study run before the spike? | Yes, the demand question only (section 6.3 b); no build |
-| OQ-3 | Founder: is OPP-04 wanted, given the parent holds the phone and the child is not a user? | Yes, as a prompt set only; no child screen |
-| OQ-4 | Counsel: a child's voice and a third party's voice in a letter | Needs a number from legal (Q45, Q48); default: parked until read |
-| OQ-5 | Founder: is OPP-09 (a next step after Keep) wanted at all? | No, hold |
-| OQ-6 | Karma: does OPP-03 reopen NS-23's slot rule? | No; separate rule, same one-slip limit |
+| OQ-1 | Founder: which two of the five go to a card first? | OPP-01 (already NS-49) and OPP-03 (cheapest); decide OPP-02 after the NS-04 result CLOSED 20 Nov, see GAP-LOG Closures CL-058: OPP-01 and OPP-03; OPP-02 after NS-04 result |
+| OQ-2 | Founder: may the lock-screen doorway study run before the spike? | Yes, the demand question only (section 6.3 b); no build CLOSED 20 Nov, see GAP-LOG Closures CL-059 |
+| OQ-3 | Founder: is OPP-04 wanted, given the parent holds the phone and the child is not a user? | Yes, as a prompt set only; no child screen CLOSED 20 Nov, see GAP-LOG Closures CL-059 |
+| OQ-4 | Counsel: a child's voice and a third party's voice in a letter | Needs a number from legal (Q45, Q48); default: parked until read FOUNDER-ANSWERED 20 Nov, default accepted (CL-060): Counsel Q45 and Q48; parked until read. Decision made, action pending founder hands: counsel engagement |
+| OQ-5 | Founder: is OPP-09 (a next step after Keep) wanted at all? | No, hold CLOSED 20 Nov, see GAP-LOG Closures CL-059 |
+| OQ-6 | Karma: does OPP-03 reopen NS-23's slot rule? | No; separate rule, same one-slip limit CLOSED 20 Nov, see GAP-LOG Closures CL-059 |
 
 ---
 
@@ -340,9 +340,9 @@ NS-23, NS-24, NS-07 C28, NS-49, NS-51, NS-52; OPP-01, 03, 06, 16; FR-OPP-01, 03,
 ### Questions (default, who)
 | Id | Question | Default | Who |
 |---|---|---|---|
-| OQ-7 | Which of OPP-20, 23, 24 go to cards first | OPP-20 (cheap) and OPP-23 as row changes; OPP-24 with NS-52 | Karma, founder |
-| OQ-8 | Keep OPP-21 and OPP-22 parked | Yes | Founder |
-| OQ-9 | Is a year-in-pictures file (OPP-23) a printed-book decision (NS-30) | No; the file only, print stays parked | Founder |
+| OQ-7 | Which of OPP-20, 23, 24 go to cards first | OPP-20 (cheap) and OPP-23 as row changes; OPP-24 with NS-52 | Karma, founder CLOSED 20 Nov, see GAP-LOG Closures CL-061 |
+| OQ-8 | Keep OPP-21 and OPP-22 parked | Yes | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-061 |
+| OQ-9 | Is a year-in-pictures file (OPP-23) a printed-book decision (NS-30) | No; the file only, print stays parked | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-061 |
 
 ### Cannot assess yet
 - Any competitor's pictures or video behaviour beyond the two pages named above; Tinybeans, Dearest, Storyworth, Qeepsake and Day One are UNVERIFIED for this topic.

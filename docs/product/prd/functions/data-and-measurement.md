@@ -176,7 +176,7 @@ Each line is PROPOSED unless the source column says it is on record. The founder
 | Measure | Read when | Line | Then | Decides | Source |
 |---|---|---|---|---|---|
 | Any zero-target guardrail (FR-DAT-09), Q-FID-1 yes, FR-DAT-14 | On arrival | 1 report | Severity 1. Pause the card's flag or remote pause if it has one; the build does not go to the next cohort until the cause is known | Founder | Frame guardrails |
-| Q-NS-1 | Last full week of C1 | Under 10 families yes | Extend C1 | Founder | 07 A1, on record |
+| Q-NS-1 | Last full week of C1 | Under 10 families yes | Extend C1 | Founder | 07 A1, on record CLOSED 20 Nov, see GAP-LOG Closures CL-101 |
 | NS-01 study | Before NS-01's flag leaves the founder's family | Under 4 of 5 start from a picture unaided, or 1 or more say Photos felt like a second start | Design change to A-S01 or B-S04, then rerun once | Product | NS-01 section 21 |
 | NS-02 study | Same | Under 4 of 5 find the letter in 20 s, or 1 or more read the no-match line as a reproach | B-S06 change; rerun once | Product | NS-02 section 21 |
 | NS-05 study | Same | Under 4 of 5 can say the recording does not go | D-S02 wording changes before any send speed work; the comprehension line outranks the 60-second line | Product, privacy | NS-05 section 20 |
@@ -333,9 +333,9 @@ New rows needed: (1) `catalog.test.ts` case for FR-DAT-36 (a deny-list of proper
 ### A6. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-DAT-P1 | May an opt-in analytics event ever carry the Photos permission state (full, limited, denied)? | No, never (FR-DAT-36); permission state is read by a tester question only | Founder with privacy; counsel must confirm that the state is not itself sensitive |
-| Q-DAT-P2 | Do tester rounds ask "did the picture suggestion feel like being watched"? | Yes, one fixed question, stop line (FR-DAT-41) | Karma with `user-research` |
-| Q-DAT-P3 | Does the founder want hosted-media cost totals in a monthly read-out if media syncs? | Totals only, via ops (FR-DAT-44) | Founder |
+| Q-DAT-P1 | May an opt-in analytics event ever carry the Photos permission state (full, limited, denied)? | No, never (FR-DAT-36); permission state is read by a tester question only | Founder with privacy; counsel must confirm that the state is not itself sensitive CLOSED 20 Nov, see GAP-LOG Closures CL-101 |
+| Q-DAT-P2 | Do tester rounds ask "did the picture suggestion feel like being watched"? | Yes, one fixed question, stop line (FR-DAT-41) | Karma with `user-research` CLOSED 20 Nov, see GAP-LOG Closures CL-101 |
+| Q-DAT-P3 | Does the founder want hosted-media cost totals in a monthly read-out if media syncs? | Totals only, via ops (FR-DAT-44) | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-101 |
 
 ### A7. Cannot assess yet
 - Whether moments are useful, liked or disliked: no card text for NS-51 or NS-52 was available to me, no prototype, no users; every line above is a stop line or a guardrail, not a forecast.

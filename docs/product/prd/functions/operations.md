@@ -252,9 +252,9 @@ New rows needed: (1) `free-limits.ts` media bucket totals (shared with FR-FIN-28
 ### O5. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-OPS-P1 | Media backup beyond the object (FR-OPS-40) | None; hosted media does not ship until decided | Founder with security |
-| Q-OPS-P2 | Is a per-key pause drill required before the flag leaves the founder? | Yes, once per key (FR-OPS-39) | Karma |
-| Q-OPS-P3 | Does a provider-side reporting duty apply to hosted pictures of children? | Unknown; blocks hosted media | Counsel (needs a number from legal) |
+| Q-OPS-P1 | Media backup beyond the object (FR-OPS-40) | None; hosted media does not ship until decided | Founder with security CLOSED 20 Nov, see GAP-LOG Closures CL-102 |
+| Q-OPS-P2 | Is a per-key pause drill required before the flag leaves the founder? | Yes, once per key (FR-OPS-39) | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-102 |
+| Q-OPS-P3 | Does a provider-side reporting duty apply to hosted pictures of children? | Unknown; blocks hosted media | Counsel (needs a number from legal) CLOSED 20 Nov, see GAP-LOG Closures CL-102 |
 
 ### O6. Cannot assess yet
 - Real upload sizes, failure rates and egress: no usage; all sizing is in `finance.md` [A].

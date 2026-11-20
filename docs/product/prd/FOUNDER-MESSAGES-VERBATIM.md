@@ -113,6 +113,9 @@ Yes. Make sure you are looking end to end in product spec, work design + animati
 ### Turn 874
 Make sure you read some inputs I gave on what new features we are not thinking of and product agents enhance their requirement doc to include that thinking specially Apple journal like access to photos folder and using that data to find what letter someone should write & attach pictures or videos to the letter. And make sure all other agents have updated their requirement for all enhancements in product spec.
 
+### Turn after 874 (relayed by the coordinator on 20 Nov; the chat turn number is not in this export)
+Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture
+
 ## Part 2. Human turns with no text in the export
 
 Turns 724, 726, 729, 732, 734, 736, 738, 740, 744. Each shows "Human:" followed by nothing. They fall between agent reports during the scope round (phase 1 and phase 2 papers) and are probably notification carriers, not founder messages. No instruction is taken from them.
@@ -153,5 +156,6 @@ Every distinct instruction or constraint, one line each, with the turn numbers t
 30. Do all reviews and generate the final holistic specs. (858)
 31. Look end to end across the product spec, the design, animation and transition team work, the executive feedback and all domain SME requirements; update the project plan and dependency mapping; partner with the ongoing engineering architecture work so it uses the latest requirements; work closely with the harness to avoid duplication and cover all instructions; verify all of it, fill pending gaps, then tell me when all end-to-end requirements are ready to kick off the development cycle. (872)
 32. Make sure the earlier inputs on new features not yet considered are read; product agents enhance their requirement doc to include them, especially Apple Journal-like access to the Photos folder and using that data to find which letter someone should write, and attaching pictures or videos to the letter; make sure all other agents update their requirements for all enhancements in the product spec. (874) Restates the photo part of item 28 and extends it to videos; items 28 and 32 should be read together.
+33. Go with all default answers; customer experience wins where two defaults conflict; lock all requirements; then inform the harness and the engineering leads working on architecture. (relayed 20 Nov, after 874) Effect: every FOUNDER row (F1..F8 and the founder-only groups in `GAP-LOG.md` "Closures 20 Nov") is FOUNDER-ANSWERED: default accepted. Where a default needs his hands, the decision is made and the action is pending (22 section "Founder hands").
 
 Standing rules in force across the whole list (from the founder's messages above, not from agent output): customer first and the why and the what before tactics (7, 9); requirements must be exhaustive, with no word limit (12); the PRD is the single source of truth and only the latest PRD is used (16, 17); everything must be tracked and documented through the harness (22, 31); save work often (26).

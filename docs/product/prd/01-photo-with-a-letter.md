@@ -353,10 +353,10 @@ Order and gates only (ruling T5).
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | Does the first photo release take NX-39 P1 (a date chip read from the file)? | Founder | No. The date chip waits for spike BL-843 and a parent-confirmed pick. |
-| OQ-2 | What a second phone shows where a picture was. | closed 20 Nov | Nothing; R28. |
-| OQ-3 | Does the photo start show before any picture exists? | closed 20 Nov | Yes, as built in #838. |
-| OQ-4 | Where the lens choice sits. | closed 20 Nov | Above the chapters, under the cover band, as built in #840. |
+| OQ-1 | Does the first photo release take NX-39 P1 (a date chip read from the file)? | Founder | No. The date chip waits for spike BL-843 and a parent-confirmed pick. CLOSED 20 Nov, see GAP-LOG Closures CL-003: No; waits for BL-843 spike |
+| OQ-2 | What a second phone shows where a picture was. | closed 20 Nov | Nothing; R28. CLOSED 20 Nov, see GAP-LOG Closures CL-004 |
+| OQ-3 | Does the photo start show before any picture exists? | closed 20 Nov | Yes, as built in #838. CLOSED 20 Nov, see GAP-LOG Closures CL-004 |
+| OQ-4 | Where the lens choice sits. | closed 20 Nov | Above the chapters, under the cover band, as built in #840. CLOSED 20 Nov, see GAP-LOG Closures CL-004 |
 | O-1 | Ruling T3 says "JPEG quality 0.85". May an upright JPEG within 4,032 px keep its own encoded pixels with segments stripped (no re-encode, no generation loss), or must every stored copy be re-encoded at 0.85? | Karma with `data-architect` | Keep its own pixels (R37c as written); every re-encode uses 0.85. |
 | O-2 | Does React Native expose a switch for iOS writing tools on a text field? | `mobile` | If not, R50 stays open as a finding and the fields ship with the finding named in the PR. |
 | O-3 | Store a picture with the draft as soon as a draft row exists (during recording), so a kill before Review keeps it? | `mobile`, `design-systems` | Yes, as an improvement after the stack lands; until then R43 as written. |

@@ -289,15 +289,15 @@ Each row is a device row on the run sheet; the expected result is the requiremen
 
 | # | Question | Default | Who |
 |---|---|---|---|
-| Q-REL-1 | Accept that a lost project means days, not hours, until FR-REL-08 is done, and say nothing public about recovery time? | Yes. Read the Supabase custom-domain option on the day Pro is considered | founder |
-| Q-REL-2 | Second copy of the backup outside GitHub (FR-REL-11)? | Yes, monthly, to one place the founder controls; name it in the policy's backup sentence if counsel asks | founder; counsel PQ-3 |
-| Q-REL-3 | Who may open the key and the "if I cannot act" sheet? | One trusted adult holds the sealed sheet; opening it gives the key, not family data access without a second step. Counsel must confirm any access consequence | founder; needs a number from legal |
-| Q-REL-4 | Host the status page off Vercel (FR-REL-05)? | Yes, a plain static page on a second provider | founder |
-| Q-REL-5 | Second contact route on another domain (FR-REL-21)? | Yes | founder |
-| Q-REL-6 | Buy or borrow a 3 GB class phone for the Tier B spot run? | Borrow if possible; otherwise a waiver line, never for a lost letter | founder |
-| Q-REL-7 | May the founder tell families that deleted items might reappear after a restore? | Yes, in the incident message only, not in the policy (`privacy.md` PQ-10); counsel must confirm | counsel Q51 |
-| Q-REL-8 | Is Vercel Hobby acceptable for a commercial site? | UNVERIFIED (the page read does not say). Confirm the plan; finance assumes Pro ($20) | founder; counsel must confirm |
-| Q-REL-9 | Is the age stop's clock a compliance issue? | Ask compliance to read FR-REL-58 | counsel; needs a number from legal |
+| Q-REL-1 | Accept that a lost project means days, not hours, until FR-REL-08 is done, and say nothing public about recovery time? | Yes. Read the Supabase custom-domain option on the day Pro is considered | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone |
+| Q-REL-2 | Second copy of the backup outside GitHub (FR-REL-11)? | Yes, monthly, to one place the founder controls; name it in the policy's backup sentence if counsel asks | founder; counsel PQ-3 FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone |
+| Q-REL-3 | Who may open the key and the "if I cannot act" sheet? | One trusted adult holds the sealed sheet; opening it gives the key, not family data access without a second step. Counsel must confirm any access consequence | founder; needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement |
+| Q-REL-4 | Host the status page off Vercel (FR-REL-05)? | Yes, a plain static page on a second provider | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone |
+| Q-REL-5 | Second contact route on another domain (FR-REL-21)? | Yes | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone |
+| Q-REL-6 | Buy or borrow a 3 GB class phone for the Tier B spot run? | Borrow if possible; otherwise a waiver line, never for a lost letter | founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-090, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: monthly second backup copy, second-provider status page, second contact route, borrow a phone |
+| Q-REL-7 | May the founder tell families that deleted items might reappear after a restore? | Yes, in the incident message only, not in the policy (`privacy.md` PQ-10); counsel must confirm | counsel Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement |
+| Q-REL-8 | Is Vercel Hobby acceptable for a commercial site? | UNVERIFIED (the page read does not say). Confirm the plan; finance assumes Pro ($20) | founder; counsel must confirm FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement |
+| Q-REL-9 | Is the age stop's clock a compliance issue? | Ask compliance to read FR-REL-58 | counsel; needs a number from legal FOUNDER-ANSWERED 20 Nov, default accepted (CL-091, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: sealed key sheet holder, Vercel plan check, counsel engagement |
 
 ## 8. Totals
 
@@ -346,10 +346,10 @@ New rows needed: (1) a spike file for FR-REL-63, 64 and 65 on the device matrix 
 ### R5. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-REL-P1 | Video codec and size cap | H.264 (reach), the cap from Q-PM-2 and the spike | Karma with `mobile`, founder confirms the cap |
-| Q-REL-P2 | Store the motion part of a Live Photo | No, still only | Founder |
-| Q-REL-P3 | Add a background mode so scans and uploads continue | No | Founder with Karma (review and battery cost) |
-| Q-REL-P4 | Upload media over cellular | No unless the parent allows | Founder with design |
+| Q-REL-P1 | Video codec and size cap | H.264 (reach), the cap from Q-PM-2 and the spike | Karma with `mobile`, founder confirms the cap CLOSED 20 Nov, see GAP-LOG Closures CL-092 |
+| Q-REL-P2 | Store the motion part of a Live Photo | No, still only | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-092 |
+| Q-REL-P3 | Add a background mode so scans and uploads continue | No | Founder with Karma (review and battery cost) CLOSED 20 Nov, see GAP-LOG Closures CL-053 |
+| Q-REL-P4 | Upload media over cellular | No unless the parent allows | Founder with design CLOSED 20 Nov, see GAP-LOG Closures CL-092 |
 
 ### R6. Cannot assess yet
 - Every Apple behaviour named (picker modes, network download of originals, export presets, Live Photo handling, background transfer): Apple's documentation pages were not readable this session; spike on devices.

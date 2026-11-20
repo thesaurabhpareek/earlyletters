@@ -323,17 +323,17 @@ Where data lives: the founder's private store; the repo keeps counts only; no ag
 
 | # | Question | Recommended default |
 |---|---|---|
-| RQ-1 | Founder: how do we reach parents the founder does not know? | A friend's introduction or a parent group he already belongs to; no paid recruiting tool; no recruiting in the app. If unanswered, S2 and S-B1 to S-B3 run with the founder's list only and every read-out says the group is friendly (FR-DAT-29) |
-| RQ-2 | Founder: any incentive? | None beyond a thank-you message, as NS-03 OQ-3. My recommendation to consider: a small fixed thank-you for people he does not know. Any spend is his decision |
-| RQ-3 | Founder and counsel: may a session be audio or video recorded? | No. Notes by code only. Needs a number from legal if ever asked (a baby may be audible; Q45) |
-| RQ-4 | Founder and counsel: may a relative or co-parent take part directly? | Relay through the parent by default; direct only with the parent's introduction and the relative's own consent (FR-RSH-19). Counsel Q48 for another adult, Q22 for a recipient abroad |
-| RQ-5 | Counsel: tester and study texts, and retention | Q44 and Q51 as the pilot uses; default D4 (12 months for consent records) and the clocks of FR-RSH-22 |
-| RQ-6 | Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care? | Needs a number from legal. Default: yes or no only, nothing kept, FR-RSH-23. I did not verify Apple's or any regulator's treatment of pregnancy information; the privacy review reports Apple lists it as sensitive info (privacy.md line 40, second-hand) |
-| RQ-7 | Counsel and tax adviser: any duty from a thank-you payment | Needs a number from legal. Default: none given until answered; UNVERIFIED |
-| RQ-8 | Karma: does Review's marking of small fixes make it "a feature that writes" for research purposes? | Yes, excluded from every study; only Q-FID-1 is asked (FR-RSH-16). Karma rules |
-| RQ-9 | Founder: the sequence in F1 | Moderated on a founder-owned phone, Asha only, until G0; parents' own builds only after G0 and green P0 tests |
-| RQ-10 | Founder: C1 composition. Should at least a third of C1 be people he did not know before? | Yes, if the list allows; otherwise label every number "friendly group" and treat stranger evidence from stage 7 as the first unbiased read |
-| RQ-11 | Founder: who runs sessions? | The founder or a human researcher he names, from my guide; I never speak to participants |
+| RQ-1 | Founder: how do we reach parents the founder does not know? | A friend's introduction or a parent group he already belongs to; no paid recruiting tool; no recruiting in the app. If unanswered, S2 and S-B1 to S-B3 run with the founder's list only and every read-out says the group is friendly (FR-DAT-29) CLOSED 20 Nov, see GAP-LOG Closures CL-073 |
+| RQ-2 | Founder: any incentive? | None beyond a thank-you message, as NS-03 OQ-3. My recommendation to consider: a small fixed thank-you for people he does not know. Any spend is his decision FOUNDER-ANSWERED 20 Nov, default accepted (CL-074, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel and accountant engagement |
+| RQ-3 | Founder and counsel: may a session be audio or video recorded? | No. Notes by code only. Needs a number from legal if ever asked (a baby may be audible; Q45) FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-4 | Founder and counsel: may a relative or co-parent take part directly? | Relay through the parent by default; direct only with the parent's introduction and the relative's own consent (FR-RSH-19). Counsel Q48 for another adult, Q22 for a recipient abroad FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-5 | Counsel: tester and study texts, and retention | Q44 and Q51 as the pilot uses; default D4 (12 months for consent records) and the clocks of FR-RSH-22 FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-6 | Counsel: does asking an expecting parent to take part, even by yes or no, touch information that needs more care? | Needs a number from legal. Default: yes or no only, nothing kept, FR-RSH-23. I did not verify Apple's or any regulator's treatment of pregnancy information; the privacy review reports Apple lists it as sensitive info (privacy.md line 40, second-hand) FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-7 | Counsel and tax adviser: any duty from a thank-you payment | Needs a number from legal. Default: none given until answered; UNVERIFIED FOUNDER-ANSWERED 20 Nov, default accepted (CL-074, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel and accountant engagement |
+| RQ-8 | Karma: does Review's marking of small fixes make it "a feature that writes" for research purposes? | Yes, excluded from every study; only Q-FID-1 is asked (FR-RSH-16). Karma rules CLOSED 20 Nov, see GAP-LOG Closures CL-076 |
+| RQ-9 | Founder: the sequence in F1 | Moderated on a founder-owned phone, Asha only, until G0; parents' own builds only after G0 and green P0 tests CLOSED 20 Nov, see GAP-LOG Closures CL-073 |
+| RQ-10 | Founder: C1 composition. Should at least a third of C1 be people he did not know before? | Yes, if the list allows; otherwise label every number "friendly group" and treat stranger evidence from stage 7 as the first unbiased read CLOSED 20 Nov, see GAP-LOG Closures CL-073 |
+| RQ-11 | Founder: who runs sessions? | The founder or a human researcher he names, from my guide; I never speak to participants CLOSED 20 Nov, see GAP-LOG Closures CL-073 |
 
 ---
 
@@ -418,10 +418,10 @@ Stated intent overstates behaviour (FR-RSH-09 reading): past behaviour and diary
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| RQ-12 | May the post-G0 diary use parents' own libraries on their phones? | Founder, counsel (needs a number from legal) | Only after G0 and green P0 tests, only the founder's family and warm list first, answers by yes or no only |
-| RQ-13 | May the founder use his own library for a device walk? | Founder | His choice; pass or fail recorded, nothing committed |
-| RQ-14 | Is a consent text for "app looks at dates of pictures on the phone" distinct enough to need its own counsel read? | Counsel (needs a number from legal) | Yes: counsel reads it before any contact |
-| RQ-15 | Is a generated image library acceptable as stand-in or does a licensed set exist? | Founder | Generated or illustrated, licence allows test use (counsel must confirm) |
+| RQ-12 | May the post-G0 diary use parents' own libraries on their phones? | Founder, counsel (needs a number from legal) | Only after G0 and green P0 tests, only the founder's family and warm list first, answers by yes or no only FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-13 | May the founder use his own library for a device walk? | Founder | His choice; pass or fail recorded, nothing committed CLOSED 20 Nov, see GAP-LOG Closures CL-076 |
+| RQ-14 | Is a consent text for "app looks at dates of pictures on the phone" distinct enough to need its own counsel read? | Counsel (needs a number from legal) | Yes: counsel reads it before any contact FOUNDER-ANSWERED 20 Nov, default accepted (CL-075, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| RQ-15 | Is a generated image library acceptable as stand-in or does a licensed set exist? | Founder | Generated or illustrated, licence allows test use (counsel must confirm) CLOSED 20 Nov, see GAP-LOG Closures CL-076 |
 
 ### B.8 Cannot assess yet
 

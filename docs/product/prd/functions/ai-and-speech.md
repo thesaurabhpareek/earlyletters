@@ -301,17 +301,17 @@ Counsel numbers come from `docs/legal/COUNSEL_PACKET.md` 1.5.0; new ones are "ne
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| AQ-1 | Do we accept the F05 bars (English, Spanish, French, Portuguese, Mandarin 10%; Hindi 15%; Arabic 20% per dialect group; names 95%; zero phantom words) as the pass line for v1.0, to be re-ruled after the first real run? | Founder | Yes, as proposals; re-rule after the first run (FR-AIS-22). F05 Q2 |
-| AQ-2 | Which languages are promised for 1.0: English only, or more? A language needs a recorded gate, a native sign-off, a hosted model and a licence record | Founder | English only until another passes all four; one language at a time (FR-AIS-11, 23, finance FR-FIN-20) |
-| AQ-3 | Should a whispered take that the detector drops be a hard stop on shipping a language? | Founder | Not a numeric bar until the first measurement; the failure must be visible and recoverable (FR-AIS-25) |
-| AQ-4 | May `speech` add the "Check this" mark (FR-AIS-31) on Review? It adds a surface; the constitution allows it (it marks, never changes) | Founder | No for 1.0. Park as P2; build after the first gate shows what the real doubtful-word rate is |
-| AQ-5 | Counsel Q9: the training-data terms of the Hindi small model (S2: GramVaani, ULCA, Shrutilipi, FLEURS) and of Whisper large-v3-turbo; is shipping them in a paid app acceptable? | Counsel (Q9) | Counsel must confirm before Hindi ships; until then English only |
-| AQ-6 | Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)? | Counsel | Needs a number from legal; reading in FR-AIS-46; do not publish an EU statement until answered |
-| AQ-7 | Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count? | Counsel | Needs a number from legal; meanwhile no voiceprint, no speaker identification, no diarization (FR-AIS-45) |
-| AQ-8 | Counsel Q45 and the child's voice: may a test set contain a child speaking, and with what consent text? | Counsel (Q45) | No child in any test set until counsel answers; adult actors and scripted clips only (FR-AIS-26, 37) |
-| AQ-9 | Counsel: advertising law on any accuracy claim (FR-AIS-48) | Counsel | Needs a number from legal; no accuracy claim until answered |
-| AQ-10 | Is a server transcription path ever wanted (older phones, a re-run)? | Founder, security-architect, counsel | No for 1.0 (X2); revisit only with a measured need and the full Shown, Records, Never and Decline set |
-| AQ-11 | Mirror the model files on our own host before the store build, at what storage cost (`finance` FR-FIN-08)? | Founder | Yes: one extra model copy (574,041,195 bytes) is far inside the free tier the finance row reads; confirm with FR-FIN-08 |
+| AQ-1 | Do we accept the F05 bars (English, Spanish, French, Portuguese, Mandarin 10%; Hindi 15%; Arabic 20% per dialect group; names 95%; zero phantom words) as the pass line for v1.0, to be re-ruled after the first real run? | Founder | Yes, as proposals; re-rule after the first run (FR-AIS-22). F05 Q2 CLOSED 20 Nov, see GAP-LOG Closures CL-093 |
+| AQ-2 | Which languages are promised for 1.0: English only, or more? A language needs a recorded gate, a native sign-off, a hosted model and a licence record | Founder | English only until another passes all four; one language at a time (FR-AIS-11, 23, finance FR-FIN-20) CLOSED 20 Nov, see GAP-LOG Closures CL-094 |
+| AQ-3 | Should a whispered take that the detector drops be a hard stop on shipping a language? | Founder | Not a numeric bar until the first measurement; the failure must be visible and recoverable (FR-AIS-25) CLOSED 20 Nov, see GAP-LOG Closures CL-093 |
+| AQ-4 | May `speech` add the "Check this" mark (FR-AIS-31) on Review? It adds a surface; the constitution allows it (it marks, never changes) | Founder | No for 1.0. Park as P2; build after the first gate shows what the real doubtful-word rate is CLOSED 20 Nov, see GAP-LOG Closures CL-093 |
+| AQ-5 | Counsel Q9: the training-data terms of the Hindi small model (S2: GramVaani, ULCA, Shrutilipi, FLEURS) and of Whisper large-v3-turbo; is shipping them in a paid app acceptable? | Counsel (Q9) | Counsel must confirm before Hindi ships; until then English only FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-6 | Counsel: does the EU AI Act reach this app, and is a transcription that never adds words outside Article 50's marking duty (S3 carve-out for assistive standard editing)? | Counsel | Needs a number from legal; reading in FR-AIS-46; do not publish an EU statement until answered FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-7 | Counsel: do biometric laws (BIPA, Texas, Washington) or CCPA reach a pipeline that turns a voice into text and keeps no voice template, and does a speech model's temporary embedding count? | Counsel | Needs a number from legal; meanwhile no voiceprint, no speaker identification, no diarization (FR-AIS-45) FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-8 | Counsel Q45 and the child's voice: may a test set contain a child speaking, and with what consent text? | Counsel (Q45) | No child in any test set until counsel answers; adult actors and scripted clips only (FR-AIS-26, 37) FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-9 | Counsel: advertising law on any accuracy claim (FR-AIS-48) | Counsel | Needs a number from legal; no accuracy claim until answered FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-10 | Is a server transcription path ever wanted (older phones, a re-run)? | Founder, security-architect, counsel | No for 1.0 (X2); revisit only with a measured need and the full Shown, Records, Never and Decline set CLOSED 20 Nov, see GAP-LOG Closures CL-094 |
+| AQ-11 | Mirror the model files on our own host before the store build, at what storage cost (`finance` FR-FIN-08)? | Founder | Yes: one extra model copy (574,041,195 bytes) is far inside the free tier the finance row reads; confirm with FR-FIN-08 CLOSED 20 Nov, see GAP-LOG Closures CL-094 |
 
 ## Findings in one place
 
@@ -396,11 +396,11 @@ Aligned: NS-51-R5 (dates and an identifier only), R10 (nothing describes a pictu
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| AQ-12 | Q-PM-6: any on-device image analysis beyond metadata? | Founder (the direction's question; speech advises) | No. Date and count for clustering only; never content, faces, scenes, places |
-| AQ-13 | Q-PM-4: transcribe a video's sound? | Founder, counsel for other voices | No in 1.x; FR-AIS-63 lists the gates if ever opened |
-| AQ-14 | Q-PM-5: place names in moment wording? | Founder, privacy | Off. A place is content-derived and can name a home |
-| AQ-15 | Does reading Apple's people or face groupings engage biometric law? | Counsel (needs a number from legal) | Not read, recommended not built (FR-AIS-65) |
-| AQ-16 | Is the moment label "around a birthday" a calendar fact or a description? | Founder, content | A calendar fact (from the child's date); wording by `content`, tested by RT-10 |
+| AQ-12 | Q-PM-6: any on-device image analysis beyond metadata? | Founder (the direction's question; speech advises) | No. Date and count for clustering only; never content, faces, scenes, places CLOSED 20 Nov, see GAP-LOG Closures CL-051 |
+| AQ-13 | Q-PM-4: transcribe a video's sound? | Founder, counsel for other voices | No in 1.x; FR-AIS-63 lists the gates if ever opened CLOSED 20 Nov, see GAP-LOG Closures CL-049 |
+| AQ-14 | Q-PM-5: place names in moment wording? | Founder, privacy | Off. A place is content-derived and can name a home CLOSED 20 Nov, see GAP-LOG Closures CL-050 |
+| AQ-15 | Does reading Apple's people or face groupings engage biometric law? | Counsel (needs a number from legal) | Not read, recommended not built (FR-AIS-65) FOUNDER-ANSWERED 20 Nov, default accepted (CL-095, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| AQ-16 | Is the moment label "around a birthday" a calendar fact or a description? | Founder, content | A calendar fact (from the child's date); wording by `content`, tested by RT-10 CLOSED 20 Nov, see GAP-LOG Closures CL-096: Calendar fact, wording by content, tested by RT-10 |
 
 ### A.7 Cannot assess yet (honest list)
 

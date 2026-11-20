@@ -328,15 +328,15 @@ No counsel question is raised by this file on its own; the religion on the lock 
 
 | Id | Question | Default |
 |---|---|---|
-| Q-NTC-1 | Variants per grid cell: the founder's 8 to 12, or 6 | 6; revisit after the first tester sheet |
-| Q-NTC-2 | Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes) | Public only; family and faith need names on |
-| Q-NTC-3 | May a visible body mention the kind of the last letter ("a picture with it?") | Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on Superseded by NS-48-R5 on 20 Nov: no "a picture with it?" body. |
-| Q-NTC-4 | Mixed-age siblings with names off | No age questions; the grid runs |
-| Q-NTC-5 | Do more variants reduce turn-off? | Hypothesis, test with the tester sheet; ship the floor, measure, then fill |
-| Q-NTC-6 | Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch | One names switch (fewer settings); mine the 87 rows for wording |
-| Q-NTC-7 | Exclamation marks in notifications | Zero; correct `VOICE.md:70` |
-| Q-NTC-8 | Ship the full set at freeze, or the floor at freeze and the rest in a content drop | Floor at freeze, rest as a content drop (Design B already planned this, `NOTIFICATIONS.md:59`) |
-| Q-NTC-9 | Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages) | Use the age the Book shows; a corrected-age family is a separate ruling |
+| Q-NTC-1 | Variants per grid cell: the founder's 8 to 12, or 6 | 6; revisit after the first tester sheet CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-2 | Which days may name themselves in a lock-screen title: public only, or family days too (Mother's Day on a lock screen reveals little but may hurt in some homes) | Public only; family and faith need names on CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-3 | May a visible body mention the kind of the last letter ("a picture with it?") | Yes in the body, never in the title; kind is not a name or a faith. Karma may rule it off when names are off, in which case the last-letter layer runs only with names on Superseded by NS-48-R5 on 20 Nov: no "a picture with it?" body. CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-4 | Mixed-age siblings with names off | No age questions; the grid runs CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-5 | Do more variants reduce turn-off? | Hypothesis, test with the tester sheet; ship the floor, measure, then fill CLOSED 20 Nov, see GAP-LOG Closures CL-041 |
+| Q-NTC-6 | Reuse Design B's 87 rows and the "Show celebration names" separate switch (`COPY_INVENTORY.md` recommendation 3) or the direction's single names switch | One names switch (fewer settings); mine the 87 rows for wording CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-7 | Exclamation marks in notifications | Zero; correct `VOICE.md:70` CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-8 | Ship the full set at freeze, or the floor at freeze and the rest in a content drop | Floor at freeze, rest as a content drop (Design B already planned this, `NOTIFICATIONS.md:59`) CLOSED 20 Nov, see GAP-LOG Closures CL-041 |
+| Q-NTC-9 | Age band edges for preterm and corrected age (`NOTIFICATIONS.md` line 57 says a preterm switch is needed for month messages) | Use the age the Book shows; a corrected-age family is a separate ruling CLOSED 20 Nov, see GAP-LOG Closures CL-041 |
 
 ## 14. What I did not verify
 
@@ -390,10 +390,10 @@ NS-32, NS-13, NS-48, NS-49, NS-51, NS-52; FR-NTC-01, 02, 03, 08, 09, 10, 11, 16,
 ### Questions (default, who)
 | Id | Question | Default | Who |
 |---|---|---|---|
-| Q-NTC-10 | Which existing class carries the moment nudge? | `evening` variant pool, lowest priority | Karma |
-| Q-NTC-11 | Cap on moment nudges | One in 7 days | Founder, Karma |
-| Q-NTC-12 | May a body say "pictures" at all on a lock screen with names off? | Yes, generic only; if privacy objects, use the neutral title with a body that does not say it | Privacy, counsel (needs a number from legal) |
-| Q-NTC-13 | May a moment nudge be allowed after day 35? | No | Karma |
+| Q-NTC-10 | Which existing class carries the moment nudge? | `evening` variant pool, lowest priority | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-11 | Cap on moment nudges | One in 7 days | Founder, Karma CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
+| Q-NTC-12 | May a body say "pictures" at all on a lock screen with names off? | Yes, generic only; if privacy objects, use the neutral title with a body that does not say it | Privacy, counsel (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-054, default as stated in the row and in GAP-LOG Closures) |
+| Q-NTC-13 | May a moment nudge be allowed after day 35? | No | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-040 |
 
 ### Cannot assess yet
 - Whether any background mechanism is allowed (changes FR-NTC-30 entirely); not read.

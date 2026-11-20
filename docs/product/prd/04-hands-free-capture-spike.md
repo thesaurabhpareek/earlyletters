@@ -235,8 +235,8 @@ Risks:
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | Which engineer and which 5 days? | Founder (start), `mobile` | `mobile`; the founder sets the start; the roadmap holds the date |
-| OQ-2 | Which phones? | Founder, `qa` | A lab test phone and an SE 3 on iOS 17, both signed in to an Asha-only test account (D13); never the founder's own phone with the family book |
-| OQ-3 | Is a plist or entitlement change ever acceptable? | Founder with `security-architect` | No. A change is listed and the trigger is not built |
+| OQ-1 | Which engineer and which 5 days? | Founder (start), `mobile` | `mobile`; the founder sets the start; the roadmap holds the date CLOSED 20 Nov, see GAP-LOG Closures CL-002 |
+| OQ-2 | Which phones? | Founder, `qa` | A lab test phone and an SE 3 on iOS 17, both signed in to an Asha-only test account (D13); never the founder's own phone with the family book CLOSED 20 Nov, see GAP-LOG Closures CL-002 |
+| OQ-3 | Is a plist or entitlement change ever acceptable? | Founder with `security-architect` | No. A change is listed and the trigger is not built CLOSED 20 Nov, see GAP-LOG Closures CL-002 |
 
 Not fully testable: every EX line needs a real iPhone; Q2 to Q5, Q8 and Q11 to Q15 are UNVERIFIED until the spike runs; the 3-second line is a proposal.

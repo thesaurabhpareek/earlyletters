@@ -260,18 +260,18 @@ Counsel numbers are from `COUNSEL_PACKET.md` 1.5.0 where one exists; "needs a nu
 
 | # | Question | To | Recommended default | Number |
 |---|---|---|---|---|
-| LQ-1 | The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy? | founder | Alpha families stay on the alpha app until each says otherwise; the store app starts clean for them; staging is kept until each family has a Save a copy and a dated notice, then retired; the decision is recorded in `DECISIONS.md` | needs a number from legal for any duty to them as users |
-| LQ-2 | Build "Bring a copy in" (import of a Save a copy file)? | founder, `product` | Not for the first store release. Reopen if a family cannot move a book any other way, or the closing runbook needs it. If built, verbatim restore only, through `verifyEdits` | none |
-| LQ-3 | Export split above 2 GB: before pictures are on in production, or later? | founder, `product` | Before pictures are on in production (it also removes the 3.9 GB ceiling) | none |
-| LQ-4 | Stay iPhone-only with iPad as a compatibility smoke row, portrait only? | founder | Yes through the 1.0.x line; no "works on iPad" claim | none |
-| LQ-5 | Keep iOS 17 as the floor through 1.0.x? | founder | Yes | D-040 |
-| LQ-6 | Server support window for old builds | founder, `ops` | The current and previous wire version, and any build installable in the last 12 months; additive changes first | none |
-| LQ-7 | Alpha testers with more kept letters than the allowance: give them anything? | founder, counsel | Tell them before the build; change nothing in the ledger; a Plus offer code is a founder gift decision, outside the app | Q40 |
-| LQ-8 | Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}? | founder, counsel | Yes | needs a number from legal; with L-2 and Q45 |
-| LQ-9 | Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one? | counsel | No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names | Q49, support Q-SUP-10 |
-| LQ-10 | Inactive accounts: confirm "no automatic deletion in v1" against storage limits | counsel | Keep as is; revisit at the first real inactive account | data policy OQ-11, Q51 |
-| LQ-11 | If `.aac` does not play in a browser, may the export carry a lossless rewrap beside the original? | Karma, founder | Keep the original byte for byte; add a rewrap only if the browser test fails, and only as an extra file | none |
-| LQ-12 | Should an account made only with Apple be able to add an email sign-in so it can ever be used on another platform? | `security`, founder | Ask `security` to review before C-39 reopens; not now | none |
+| LQ-1 | The alpha families used builds that are a different app from the store app. Do they keep the alpha app (updated in place, data stays), or move to the store app (starting empty, books on staging not carried)? What happens to their books on staging when the alpha ends: moved to production, or deleted after a notice and a Save a copy? | founder | Alpha families stay on the alpha app until each says otherwise; the store app starts clean for them; staging is kept until each family has a Save a copy and a dated notice, then retired; the decision is recorded in `DECISIONS.md` | needs a number from legal for any duty to them as users FOUNDER-ANSWERED 20 Nov, default accepted (CL-077): Default: tell them before build; founder gift decision. Decision made, action pending founder hands: tell the alpha families, gift decision |
+| LQ-2 | Build "Bring a copy in" (import of a Save a copy file)? | founder, `product` | Not for the first store release. Reopen if a family cannot move a book any other way, or the closing runbook needs it. If built, verbatim restore only, through `verifyEdits` | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-3 | Export split above 2 GB: before pictures are on in production, or later? | founder, `product` | Before pictures are on in production (it also removes the 3.9 GB ceiling) | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-4 | Stay iPhone-only with iPad as a compatibility smoke row, portrait only? | founder | Yes through the 1.0.x line; no "works on iPad" claim | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-5 | Keep iOS 17 as the floor through 1.0.x? | founder | Yes | D-040 CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-6 | Server support window for old builds | founder, `ops` | The current and previous wire version, and any build installable in the last 12 months; additive changes first | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-7 | Alpha testers with more kept letters than the allowance: give them anything? | founder, counsel | Tell them before the build; change nothing in the ledger; a Plus offer code is a founder gift decision, outside the app | Q40 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| LQ-8 | Ordinary hand-on: is "Save a copy, given on" enough for a grown child, with no delivery by us, no age trigger and no account for {child}? | founder, counsel | Yes | needs a number from legal; with L-2 and Q45 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| LQ-9 | Death or inability to act: a clause, or a runbook only? Who may receive one export of a sole parent's book, on what documents, and what do we say to the family on day one? | counsel | No clause; a counsel-read runbook before outside families sign in; one export, never an account takeover, only after documents counsel names | Q49, support Q-SUP-10 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| LQ-10 | Inactive accounts: confirm "no automatic deletion in v1" against storage limits | counsel | Keep as is; revisit at the first real inactive account | data policy OQ-11, Q51 FOUNDER-ANSWERED 20 Nov, default accepted (CL-079, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| LQ-11 | If `.aac` does not play in a browser, may the export carry a lossless rewrap beside the original? | Karma, founder | Keep the original byte for byte; add a rewrap only if the browser test fails, and only as an extra file | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-12 | Should an account made only with Apple be able to add an email sign-in so it can ever be used on another platform? | `security`, founder | Ask `security` to review before C-39 reopens; not now | none CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
 
 ---
 
@@ -329,11 +329,11 @@ Media migration fixture and test; export schema minor and cold-read test; deleti
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| LQ-13 | Q-PM-3: do pictures and videos sync to our servers or stay on the phone? | Founder with counsel (X2), finance | Stay on the phone; the rows above hold for both answers |
-| LQ-14 | Export: keep videos byte for byte, or add a playable rewrap? | Karma, founder | Byte for byte, rewrap only if the browser test fails (LQ-11 shape) |
-| LQ-15 | When the other parent is removed, do pictures attached to shared letters stay visible to them? | Founder, counsel (Q48) | No in-app access after removal; their saved copy stays theirs |
-| LQ-16 | Are videos excluded from the iPhone backup to save space? | Founder (see quality Q9) | Not excluded until measured; the line is true either way |
-| LQ-17 | Allow moments on iPad, Mac or Vision runs? | Founder, `mobile` | Absent until a device row passes |
+| LQ-13 | Q-PM-3: do pictures and videos sync to our servers or stay on the phone? | Founder with counsel (X2), finance | Stay on the phone; the rows above hold for both answers FOUNDER-ANSWERED 20 Nov, default accepted (CL-048, default as stated in the row and in GAP-LOG Closures) |
+| LQ-14 | Export: keep videos byte for byte, or add a playable rewrap? | Karma, founder | Byte for byte, rewrap only if the browser test fails (LQ-11 shape) CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-15 | When the other parent is removed, do pictures attached to shared letters stay visible to them? | Founder, counsel (Q48) | No in-app access after removal; their saved copy stays theirs FOUNDER-ANSWERED 20 Nov, default accepted (CL-080): No in-app access after removal; counsel Q48. Decision made, action pending founder hands: counsel engagement |
+| LQ-16 | Are videos excluded from the iPhone backup to save space? | Founder (see quality Q9) | Not excluded until measured; the line is true either way CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
+| LQ-17 | Allow moments on iPad, Mac or Vision runs? | Founder, `mobile` | Absent until a device row passes CLOSED 20 Nov, see GAP-LOG Closures CL-078 |
 
 ### E.6 Cannot assess yet
 

@@ -60,14 +60,14 @@ Card 19 sets no drop. The path is one chain, so I treat it as one release unit f
 
 ### 1c. Days, cultural background, catalogue, pictures, Home today (card 21)
 
-P0 rows by drop (from the card 21 table, intersected with `p0.py`): NS-46 22 (B 19, B+C 2, C 1); NS-47 27 (B 26, C 1); NS-48 13 (A 6, B 3, C 4); NS-49 21 (A 3, C 18); NS-50 4 (B 4). Total 87: A 9, B 52, B+C 2, C 24. None has a backlog row (86 gap, 1 cite: NS-46-R25 cites BL-985). Groups G18 to G21.
+P0 rows by drop (from the card 21 table, intersected with `p0.py`): NS-46 22 (B 19, B+C 2, C 1); NS-47 27 (B 26, C 1); NS-48 13 (A 6, B 3, C 4); NS-49 21 (B 3, C 18, level 1 moved from A, CL-015); NS-50 4 (B 4). Total 87: A 6, B 55, B+C 2, C 24. None has a backlog row (86 gap, 1 cite: NS-46-R25 cites BL-985). Groups G18 to G21.
 
 | Id | Workstream | Owner | Drop | Gate | Depends on | Size | Status |
 |---|---|---|---|---|---|---|---|
 | D01 | NS-46 Days we mark: the library, Days page, planner source | `mobile`, `content` | B (C part: R14, R20) | G1 (L4 store), G2 counsel on tables, G3, G6 flag `EXPO_PUBLIC_DAYS` | P03, P04, P08, P05, P06, P07; NS-47 (one release unit) | L | no row; not built |
 | D02 | NS-47 Cultural background: store rules (B), ask slip and tradition browse (C) | `privacy`, `mobile` | B store rules; C the rest | G1, G2 CUL-Q5 to Q7, Q11; G4 J-CUL-01 | D01, P07, P05, BL-975 (merged) | L | no row; not built |
 | D03 | NS-48 Notification catalogue: phase 1 words (A), layers after | `content`, `mobile` | A phase 1; B R8, R9, R19, R21, R26; C recency and last-letter | G3 words; G4 NTC-T24 one week of reminders | A: none. B: P03, P05, P08. C: P09, NS-06 flag | M | no row; the built 8 are the base |
-| D04 | NS-49 Picture-first: level 1 first-class start (A), level 2 (C) | `mobile`, `privacy`, `security` | A level 1; C level 2 | A: NS-01 on `testflight`, A-S01 AX5 test. C: entitlement, Q-FD-11, weak-link run on iOS 17.0, 17.1, 17.2, 26, G2 | A: BL-931 stack. C: P07, Apple capability (founder) | M (A), L (C) | no row. Level 1 sits on the photo stack in 1d |
+| D04 | NS-49 Picture-first: level 1 first-class start (B, moved from A on 20 Nov, CL-015), level 2 (C) | `mobile`, `privacy`, `security` | B level 1; C level 2 | B: NS-01 on `testflight`, A-S01 AX5 test. C: entitlement, Q-FD-11, weak-link run on iOS 17.0, 17.1, 17.2, 26, G2 | A: BL-931 stack. C: P07, Apple capability (founder) | M (B), L (C) | no row. Level 1 sits on the photo stack in 1d |
 | D05 | NS-50 Home today (rank 2b) | `mobile`, `design-systems` | B | G4 | P06, P05, D01 | S | no row |
 | D06 | FR-DAY, FR-CUL, FR-NTC, FR-PHS, FR-OPP gap rows (7 + 15 + 9 + 23 + 4 = 58 gap rows, counted inside G18 to G21) | as D01 to D05 | as card | as card | as card | in D01 to D05 | folded into G18 to G21 |
 
@@ -143,7 +143,7 @@ flowchart TD
   P11["words approved (G3)"] -.-> F44
   P03 --> M01
   P05 --> M01
-  L01["BL-931 photo stack"] --> D04A["NS-49 level 1 (drop A)"]
+  L01["BL-931 photo stack"] --> D04A["NS-49 level 1 (drop B)"]
   L01 --> D04C
   D04A --> M01["NS-51 photo moments"]
   M01 -.-> M02["NS-52 pictures and videos"]

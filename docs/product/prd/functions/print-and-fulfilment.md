@@ -339,19 +339,19 @@ Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists (
 
 | Id | Question | Recommended default | Who | Counsel number |
 |---|---|---|---|---|
-| Q-PRT-1 | Build the printed book at all, or stay with the free file? | Ship the free file in 1.0; decide at the go/no-go on evidence; do not build ordering before FR-PRT-34 is true | founder | none |
-| Q-PRT-2 | Who is the seller: the founder as an individual (D-004), or an entity formed first (BK-14 recommends the entity before the first order)? | Entity first; selling physical goods as an individual carries personal liability; accountant and counsel to confirm | founder, counsel, accountant | Q47 |
-| Q-PRT-3 | Which partner, and may the CBO role request a written quote (a contact, which the CBO role may not do)? | No contact until the founder says so; shortlist Lulu first, Gelato second, from public pages only | founder | Q11 for the DPA |
-| Q-PRT-4 | Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R]) | Do not fix any price until a real wholesale quote and card fee are in section 3.4; price shown all-in with tax visible | founder, CFO | needs a number from legal (SB 478, UNVERIFIED) |
-| Q-PRT-5 | Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say? | Assume it applies; build to its notice and refund timing | counsel | needs a number from legal |
-| Q-PRT-6 | Sales tax: which states, who collects, which tool, and does an individual seller change the answer? | Pilot only where the accountant has settled; use a tax tool (S6 lists one) | accountant, counsel | CR-120; FR-FIN-24; finance A7 |
-| Q-PRT-7 | Is the other parent asked before their in-book letters are printed in a book the first parent buys? | Notice, not approval (FR-PRT-37) | founder, counsel | Q30 (printed books row); Terms 7.1 |
-| Q-PRT-8 | Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)? | Counsel to answer; assume none until told | counsel | needs a number from legal |
-| Q-PRT-9 | Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print? | Blank with a choice to change the letter themselves; no automatic substitution | founder, content | needs a number from legal for the face licence |
-| Q-PRT-10 | Where is the line between a defect (we pay) and the parent's own content (they pay)? And a goodwill allowance? | FR-PRT-29 as written; a founder-set goodwill reprint allowance, 1 per 20 orders [A] | founder | none |
-| Q-PRT-11 | Are page order and the Year One range (FR-PRT-05, -06) as recommended? | Oldest first; Before You plus months 0 to 11 | founder, product | none |
-| Q-PRT-12 | Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)? | Processor, with deletion after shipping; if the partner will not accept that, it is not the partner | counsel, CLO | Q11 |
-| Q-PRT-13 | Pilot limit: 50 orders a month and a holiday cutoff? | Yes | founder | none |
+| Q-PRT-1 | Build the printed book at all, or stay with the free file? | Ship the free file in 1.0; decide at the go/no-go on evidence; do not build ordering before FR-PRT-34 is true | founder | none CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-2 | Who is the seller: the founder as an individual (D-004), or an entity formed first (BK-14 recommends the entity before the first order)? | Entity first; selling physical goods as an individual carries personal liability; accountant and counsel to confirm | founder, counsel, accountant | Q47 CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-3 | Which partner, and may the CBO role request a written quote (a contact, which the CBO role may not do)? | No contact until the founder says so; shortlist Lulu first, Gelato second, from public pages only | founder | Q11 for the DPA CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-4 | Price and shipping: $59 first copy with US shipping, $39 each extra (BK-14 [R]) | Do not fix any price until a real wholesale quote and card fee are in section 3.4; price shown all-in with tax visible | founder, CFO | needs a number from legal (SB 478, UNVERIFIED) CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-5 | Is the FTC Mail Order Rule (S2) applicable to a personalised book; what must the Print Terms and delay notices say? | Assume it applies; build to its notice and refund timing | counsel | needs a number from legal CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-6 | Sales tax: which states, who collects, which tool, and does an individual seller change the answer? | Pilot only where the accountant has settled; use a tax tool (S6 lists one) | accountant, counsel | CR-120; FR-FIN-24; finance A7 CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-7 | Is the other parent asked before their in-book letters are printed in a book the first parent buys? | Notice, not approval (FR-PRT-37) | founder, counsel | Q30 (printed books row); Terms 7.1 CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-8 | Does a printed book named for a baby bring any children's-product or labelling rules (CPSIA, ink and materials); and is the PCI level SAQ A with a hosted page (CR-054)? | Counsel to answer; assume none until told | counsel | needs a number from legal CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-9 | Emoji and unusual characters in letters: print a blank, or bundle an OFL emoji face for print? | Blank with a choice to change the letter themselves; no automatic substitution | founder, content | needs a number from legal for the face licence CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-10 | Where is the line between a defect (we pay) and the parent's own content (they pay)? And a goodwill allowance? | FR-PRT-29 as written; a founder-set goodwill reprint allowance, 1 per 20 orders [A] | founder | none CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-11 | Are page order and the Year One range (FR-PRT-05, -06) as recommended? | Oldest first; Before You plus months 0 to 11 | founder, product | none CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-12 | Where does the partner keep and delete our file, who at the partner can see it, and is the partner a processor or an independent controller (data-policy line 170)? | Processor, with deletion after shipping; if the partner will not accept that, it is not the partner | counsel, CLO | Q11 CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-13 | Pilot limit: 50 orders a month and a holiday cutoff? | Yes | founder | none CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
 
 ---
 
@@ -400,10 +400,10 @@ New rows needed: (1) layout engine support for several pictures per letter with 
 ### P5. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-PRT-P1 | QR to a video in the printed book | No; counsel, finance and the print partner each answer in writing before it is scoped (FR-PRT-51) | Founder, with counsel (needs a number from legal) |
-| Q-PRT-P2 | Maximum pictures per printed book and per page | The partner's limit; 6 per letter as in NS-52; layout by FR-PRT-48 | Founder, print, design |
-| Q-PRT-P3 | Can a parent choose a still from a video for print? | Yes, parent-chosen frame only | Founder with design |
-| Q-PRT-P4 | Does a printed picture carry the parent's picture words and place? | Yes, exactly as written, only if the parent wrote them | Founder with design and content |
+| Q-PRT-P1 | QR to a video in the printed book | No; counsel, finance and the print partner each answer in writing before it is scoped (FR-PRT-51) | Founder, with counsel (needs a number from legal) CLOSED 20 Nov, see GAP-LOG Closures CL-055 |
+| Q-PRT-P2 | Maximum pictures per printed book and per page | The partner's limit; 6 per letter as in NS-52; layout by FR-PRT-48 | Founder, print, design CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
+| Q-PRT-P3 | Can a parent choose a still from a video for print? | Yes, parent-chosen frame only | Founder with design CLOSED 20 Nov, see GAP-LOG Closures CL-056 |
+| Q-PRT-P4 | Does a printed picture carry the parent's picture words and place? | Yes, exactly as written, only if the parent wrote them | Founder with design and content CLOSED 20 Nov, see GAP-LOG Closures CL-097 |
 
 ### P6. Cannot assess yet
 - Partner requirements (colour profile, bleed, maximum pages and file size, minimum image resolution): the partner pages read (S4, S5) do not state them; nothing contacted.

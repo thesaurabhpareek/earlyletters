@@ -254,13 +254,13 @@ Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists; 
 
 | Id | Question | Recommended default |
 |---|---|---|
-| Q-LOC-1 | Which language unlocks second, third and so on? | Spanish, Portuguese, French, Mandarin, Hindi, Arabic, one at a time (FR-LOC-06). The founder may put his own families first; the order is never promised to a parent. |
-| Q-LOC-2 | Hindi script default (D-031, listed Open): Devanagari, Roman or automatic | Devanagari for Hindi words and Latin for English words, per author, never transliterated (the gate already checks this); the founder rules after the 14-recording experiment results. |
-| Q-LOC-3 | Prompts: which language do they show in when a second language is chosen? | English until a reviewed set exists; then the author's primary spoken language, never a machine translation (FR-LOC-20). |
-| Q-LOC-4 | Should the Book's frame (dateline, labels, cover) follow the spoken language? | No at 1.0; English frame with an honest line; a later row with its own reviewer (FR-LOC-13). |
-| Q-LOC-5 | When do interface languages open, and which first? | Not before the second speech language ships; Hindi first if opened (BL-321); each its own reviewer and decision. |
-| Q-LOC-6 | Who are the native reviewers and what is the budget? | One native parent-reviewer per language for tables, prompts, listing and rules; founder names a role, not a person, in the evidence file; the [E] $1,000 to $1,500 stands until a quote exists. |
-| Q-LOC-7 | Is the distress-pattern clinician review (BL-105) a gate for every language, or only English? | A gate for each language before any line implies noticing; "If you are struggling" stays for all. |
+| Q-LOC-1 | Which language unlocks second, third and so on? | Spanish, Portuguese, French, Mandarin, Hindi, Arabic, one at a time (FR-LOC-06). The founder may put his own families first; the order is never promised to a parent. CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-2 | Hindi script default (D-031, listed Open): Devanagari, Roman or automatic | Devanagari for Hindi words and Latin for English words, per author, never transliterated (the gate already checks this); the founder rules after the 14-recording experiment results. CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-3 | Prompts: which language do they show in when a second language is chosen? | English until a reviewed set exists; then the author's primary spoken language, never a machine translation (FR-LOC-20). CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-4 | Should the Book's frame (dateline, labels, cover) follow the spoken language? | No at 1.0; English frame with an honest line; a later row with its own reviewer (FR-LOC-13). CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-5 | When do interface languages open, and which first? | Not before the second speech language ships; Hindi first if opened (BL-321); each its own reviewer and decision. CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-6 | Who are the native reviewers and what is the budget? | One native parent-reviewer per language for tables, prompts, listing and rules; founder names a role, not a person, in the evidence file; the [E] $1,000 to $1,500 stands until a quote exists. CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-7 | Is the distress-pattern clinician review (BL-105) a gate for every language, or only English? | A gate for each language before any line implies noticing; "If you are struggling" stays for all. CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
 | C-LOC-1 | Is an English-only consent, privacy policy and subscription notice enough for a parent in the US storefront who speaks another language? | Needs a number from legal. Default: English only at 1.0 (US storefront only, LEGAL-REQ-058), with the question asked before any non-English listing or interface. Counsel must confirm. |
 | C-LOC-2 | Who may translate Terms, Privacy and consents, and what makes a translation valid alongside "English controls"? | Needs a number from legal. Default: no translation until counsel provides or approves it; per-locale hash and the English version number. Counsel must confirm. |
 | C-LOC-3 | Training-data terms for each speech model (Hindi small, any model for Mandarin or Arabic) | Packet Q9, Q12, live. Default: no language ships until Q9 is answered for its model (FR-LEG-13). Counsel must confirm. |
@@ -319,9 +319,9 @@ What does not change: the interface is English at 1.0.x (FR-LOC-10); other langu
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| Q-LOC-8 | Should the Photos permission string be localised once the interface is, or stay English? | Founder, counsel (needs a number from legal) | English at 1.0.x; localised with the interface by a native reviewer, counsel reading each |
-| Q-LOC-9 | Do we show the Gregorian date only in moment lines even where a parent's phone uses another calendar? | `content`, Karma | Yes (FR-LOC-11); a help line explains |
-| Q-LOC-10 | Any place name in any script? | Founder (Q-PM-5), privacy | No; album names only in the choice sheet (NS-51-R14) |
+| Q-LOC-8 | Should the Photos permission string be localised once the interface is, or stay English? | Founder, counsel (needs a number from legal) | English at 1.0.x; localised with the interface by a native reviewer, counsel reading each CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-9 | Do we show the Gregorian date only in moment lines even where a parent's phone uses another calendar? | `content`, Karma | Yes (FR-LOC-11); a help line explains CLOSED 20 Nov, see GAP-LOG Closures CL-098 |
+| Q-LOC-10 | Any place name in any script? | Founder (Q-PM-5), privacy | No; album names only in the choice sheet (NS-51-R14) CLOSED 20 Nov, see GAP-LOG Closures CL-050 |
 
 ### D.6 Cannot assess yet
 

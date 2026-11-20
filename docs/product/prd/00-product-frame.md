@@ -2,7 +2,9 @@
 
 Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need the principles, the three-tab IA, or the index of every card (NS-01 to NS-52).
 
-Status: Locked v1.0, 20 Nov 2026 (council round 2). Changes after lock need a PR that lists every changed id. Author: Karma with the Chief Product Officer role; reviewed by all twelve council roles in two rounds (section 10). Approved by the founder on 19 Nov 2026: "I approve all requirements." Docs only.
+Status: LOCKED 20 Nov 2026, requirements rev 2 (council round 2 and the founder's "Go with all default answers", 20 Nov). Changes after lock need an errata row (next free E number in `18-errata-after-lock.md`) that lists every changed id. Author: Karma with the Chief Product Officer role; reviewed by all twelve council roles in two rounds (section 10). Approved by the founder on 19 Nov 2026: "I approve all requirements." Docs only.
+
+Two layers (founder items 9 and 15 in `FOUNDER-MESSAGES-VERBATIM.md`): the product layer (this folder's cards, `VISION.md`, the one-reading spec) is written from the customer's need and does not depend on BL or PR ids; the execution layer (backlog, `FUNCTION-TRACE.md`, `13-engineering-plan.md`, `23`, `24`) carries BL and PR ids and maps back to NS and R ids. Ids are not stripped from product files by script; they are removed card by card in the next edit of that card (council Part 1 item 8, 20 Nov).
 
 Read in this order: `docs/product/VISION.md` (why and for whom), this file (how we choose and what we optimise), the cards in `docs/product/prd/` (what to build), `13-engineering-plan.md` (size, skills, order), `14-test-plan.md` (how we prove it). Added 20 Nov: card 19 (NS-38 to NS-45), card 21 (NS-46 to NS-50), the one-reading spec `22-final-holistic-spec.md`, and (being written) `23-dependency-map-and-plan.md` and `24-engineering-handoff.md`; cards NS-51 and NS-52 are being written from `26-founder-direction-photos-library-and-media.md`.
 

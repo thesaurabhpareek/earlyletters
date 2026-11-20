@@ -347,11 +347,11 @@ New rows needed: (1) `free-limits.ts` Storage and egress reading (FR-OPS-12) ext
 ### F8. Questions, with defaults
 | Id | Question | Default | Who answers |
 |---|---|---|---|
-| Q-FIN-P1 | Q-PM-3 as money: host pictures and videos or not? | Not hosted; $0 | Founder, with counsel (X2) |
-| Q-FIN-P2 | If hosted: option A to D and the allowance N | Option A until the sizing note and counsel gate close | Founder |
-| Q-FIN-P3 | Spend cap behaviour at the cap on Pro | Cap on; uploads wait, nothing lost | Founder |
-| Q-FIN-P4 | Tell parents that videos grow their own iCloud backup? | Yes, one plain line on the attach surface if videos are allowed | Founder with design and content |
-| Q-FIN-P5 | Accountant addition A10 timing | Before any storage-linked Plus change (FR-FIN-32) | Founder |
+| Q-FIN-P1 | Q-PM-3 as money: host pictures and videos or not? | Not hosted; $0 | Founder, with counsel (X2) FOUNDER-ANSWERED 20 Nov, default accepted (CL-048, default as stated in the row and in GAP-LOG Closures) |
+| Q-FIN-P2 | If hosted: option A to D and the allowance N | Option A until the sizing note and counsel gate close | Founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-048, default as stated in the row and in GAP-LOG Closures) |
+| Q-FIN-P3 | Spend cap behaviour at the cap on Pro | Cap on; uploads wait, nothing lost | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-103 |
+| Q-FIN-P4 | Tell parents that videos grow their own iCloud backup? | Yes, one plain line on the attach surface if videos are allowed | Founder with design and content CLOSED 20 Nov, see GAP-LOG Closures CL-103 |
+| Q-FIN-P5 | Accountant addition A10 timing | Before any storage-linked Plus change (FR-FIN-32) | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-103 |
 
 ### F9. Cannot assess yet
 - Actual picture and video sizes, letters per year and share of letters with media: all [A]; no data, no prototype.

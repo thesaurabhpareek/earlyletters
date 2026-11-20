@@ -594,18 +594,18 @@ Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists; 
 
 | Id | Question | Recommended default | Who |
 |---|---|---|---|
-| Q-DAY-1 | Do the library's two tones (bright, quiet) and the neutral lock-screen rule in 5.1 stand? | Yes | Karma, founder |
-| Q-DAY-2 | R-FD-3: are Memorial Day and Veterans Day offered? | Offer both with the `quiet` tone and the name only; never pre-ticked. If the founder prefers, offer Veterans Day only and leave Memorial Day to a typed day | Karma, founder |
-| Q-DAY-3 | Time of day for a library day | 09:00 local, the birthday time | Founder |
-| Q-DAY-4 | Which countries' national days and country-specific dates ship, and when | US only in the first release; India, Mexico, China, Japan, South Korea, Singapore, Indonesia and Sri Lanka lists (section 4.5) in a later drop, each after its authority is read | Founder |
-| Q-DAY-5 | A birthday and a library day on the same date | The birthday is sent; the library day yields | Karma |
-| Q-DAY-6 | May a tradition day's name show on the lock screen when "Names in notifications" is on? Does it need a second, plain line? | One switch, one plain line: "This can also show the name of a day your family keeps." | Privacy, counsel (needs a number from legal) |
-| Q-DAY-7 | Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1) | 4 per day and 3 per season; 8 to 12 only for the evening grid | Karma |
-| Q-DAY-8 | Is a regional or sub-community day (Pongal, Onam, Parsi New Year, Norooz) in the first release? | Yes if its list was read and the parent can move it; no if not | Content |
-| Q-DAY-9 | May the library offer days of a religion without a member of that community reviewing them? | No: a reviewer from each of the six biggest groups reads the tradition's rows and names before ship; costs a small fee or a volunteer; a family can always add their own | Founder, counsel |
-| Q-DAY-10 | Licence of the sources (FR-DAY-23) | Compute rule-based dates; license or cite each table; counsel confirms | Counsel (needs a number from legal) |
-| Q-DAY-11 | Is the ticked-days list "special category" data by inference, wherever it is stored (GDPR Article 9 and similar laws)? | Counsel must confirm. Keep it on the phone only and out of analytics, logs, crash reports and the exported copy until counsel answers (see `functions/cultural-background-data.md`) | Counsel (needs a number from legal) |
-| Q-DAY-12 | Q-FD-1 "East East": if the founder meant "East Asian", that is a culture or origin group, not a religion, and its days (Lunar New Year, Lantern, Mid-Autumn, Chuseok, Dragon Boat) are in the culture-led group above and need no religion answer | Treat "East Asian" as a region choice only if the founder confirms; otherwise stay with "Prefer not to say" | Founder |
+| Q-DAY-1 | Do the library's two tones (bright, quiet) and the neutral lock-screen rule in 5.1 stand? | Yes | Karma, founder CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
+| Q-DAY-2 | R-FD-3: are Memorial Day and Veterans Day offered? | Offer both with the `quiet` tone and the name only; never pre-ticked. If the founder prefers, offer Veterans Day only and leave Memorial Day to a typed day | Karma, founder CLOSED 20 Nov, see GAP-LOG Closures CL-086: Offer both quiet, never pre-ticked |
+| Q-DAY-3 | Time of day for a library day | 09:00 local, the birthday time | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-025 |
+| Q-DAY-4 | Which countries' national days and country-specific dates ship, and when | US only in the first release; India, Mexico, China, Japan, South Korea, Singapore, Indonesia and Sri Lanka lists (section 4.5) in a later drop, each after its authority is read | Founder CLOSED 20 Nov, see GAP-LOG Closures CL-022 |
+| Q-DAY-5 | A birthday and a library day on the same date | The birthday is sent; the library day yields | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
+| Q-DAY-6 | May a tradition day's name show on the lock screen when "Names in notifications" is on? Does it need a second, plain line? | One switch, one plain line: "This can also show the name of a day your family keeps." | Privacy, counsel (needs a number from legal) CLOSED 20 Nov, see GAP-LOG Closures CL-087 |
+| Q-DAY-7 | Variants per day: 4 and 3 (direction 4.3) against 8 to 12 (N-1) | 4 per day and 3 per season; 8 to 12 only for the evening grid | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
+| Q-DAY-8 | Is a regional or sub-community day (Pongal, Onam, Parsi New Year, Norooz) in the first release? | Yes if its list was read and the parent can move it; no if not | Content CLOSED 20 Nov, see GAP-LOG Closures CL-023 |
+| Q-DAY-9 | May the library offer days of a religion without a member of that community reviewing them? | No: a reviewer from each of the six biggest groups reads the tradition's rows and names before ship; costs a small fee or a volunteer; a family can always add their own | Founder, counsel CLOSED 20 Nov, see GAP-LOG Closures CL-087 |
+| Q-DAY-10 | Licence of the sources (FR-DAY-23) | Compute rule-based dates; license or cite each table; counsel confirms | Counsel (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-DAY-11 | Is the ticked-days list "special category" data by inference, wherever it is stored (GDPR Article 9 and similar laws)? | Counsel must confirm. Keep it on the phone only and out of analytics, logs, crash reports and the exported copy until counsel answers (see `functions/cultural-background-data.md`) | Counsel (needs a number from legal) FOUNDER-ANSWERED 20 Nov, default accepted (CL-088, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-DAY-12 | Q-FD-1 "East East": if the founder meant "East Asian", that is a culture or origin group, not a religion, and its days (Lunar New Year, Lantern, Mid-Autumn, Chuseok, Dragon Boat) are in the culture-led group above and need no religion answer | Treat "East Asian" as a region choice only if the founder confirms; otherwise stay with "Prefer not to say" | Founder FOUNDER-ANSWERED 20 Nov, default accepted (CL-089): Culture group not religion; same plain-words ask as Q-FD-1 |
 
 ---
 
@@ -686,8 +686,8 @@ NS-46, NS-50, NS-32, NS-51, NS-52; FR-DAY-02, 03, 07, 09, 11, 16, 17, 20.
 ### Questions (default, who)
 | Id | Question | Default | Who |
 |---|---|---|---|
-| Q-DAY-13 | On a ticked day with pictures, may the capture area show a quiet line "pictures from today are here"? | No line; the parent's own Start from a picture is enough | Karma, design |
-| Q-DAY-14 | May a moment cluster be labelled "Thanksgiving" because the parent ticked it? | No; date label only | Karma, privacy |
+| Q-DAY-13 | On a ticked day with pictures, may the capture area show a quiet line "pictures from today are here"? | No line; the parent's own Start from a picture is enough | Karma, design CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
+| Q-DAY-14 | May a moment cluster be labelled "Thanksgiving" because the parent ticked it? | No; date label only | Karma, privacy CLOSED 20 Nov, see GAP-LOG Closures CL-085 |
 
 ### Cannot assess yet
 - How moments are clustered (date, count, time of day) and whether a day's pictures can sit across midnight or time zones; the NS-51 spike decides.

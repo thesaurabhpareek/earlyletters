@@ -280,13 +280,13 @@ All strings above are intent only; `content` writes the words and the founder ap
 
 | # | Question | Recommended default | Route |
 |---|---|---|---|
-| Q-S1 | When ADR 0031 hides A's book and A can no longer sign in, may the phone owner (device passcode) open a hidden book only to Save a copy? | Yes, only Save a copy, after the owner check and a line naming the risk. It is no weaker than D1, which already lets anyone read a signed-out book, and it keeps the only copy of a voice from being stranded | founder |
-| Q-S2 | Should Save a copy and the printable book ask for the owner check when App lock is off? | No. Keep as built (ask only with App lock) and add the FR-SEC-08 line. Export is never gated (LEGAL-REQ-040), and an owner check is not a gate, but it adds a step where none is required. Erase and Delete do get the check (FR-SEC-06) | founder; counsel to confirm the step does not conflict with LEGAL-REQ-040 |
-| Q-S3 | Fund an independent penetration test before the first person outside the family stores letters on the server? | Yes, scoped to sign-in, invite links and codes, Edge Functions, RLS and the iOS build; Asha data only. Without it, say plainly that the R-17 review is self-assessed | founder (spend) |
-| Q-S4 | Bot check on email send (card O-7) | Agree with O-7: Turnstile before the public TestFlight link, subprocessor page first, Apple unaffected | founder |
-| Q-S5 | Breach notice: do letters, a child's details, voice recordings or pictures held by this app count as personal information or a personal health record under California Civil Code 1798.82 and the FTC HBNR, and on which clock? | Treat as covered for readiness (packet Q28 default). Counsel must confirm | counsel Q28 |
-| Q-S6 | Is a join by the wrong adult through a forwarded invite link a security incident needing notice, or a support case? | Support case with the 72-hour undo, logged as a security event; counsel must confirm | counsel Q23, Q50 |
-| Q-S7 | May a co-parent be removed for safety after 72 hours? | Keep the Terms (72 hours only) until counsel answers | counsel Q50, Q53 |
+| Q-S1 | When ADR 0031 hides A's book and A can no longer sign in, may the phone owner (device passcode) open a hidden book only to Save a copy? | Yes, only Save a copy, after the owner check and a line naming the risk. It is no weaker than D1, which already lets anyone read a signed-out book, and it keeps the only copy of a voice from being stranded | founder CLOSED 20 Nov, see GAP-LOG Closures CL-068 |
+| Q-S2 | Should Save a copy and the printable book ask for the owner check when App lock is off? | No. Keep as built (ask only with App lock) and add the FR-SEC-08 line. Export is never gated (LEGAL-REQ-040), and an owner check is not a gate, but it adds a step where none is required. Erase and Delete do get the check (FR-SEC-06) | founder; counsel to confirm the step does not conflict with LEGAL-REQ-040 CLOSED 20 Nov, see GAP-LOG Closures CL-068 |
+| Q-S3 | Fund an independent penetration test before the first person outside the family stores letters on the server? | Yes, scoped to sign-in, invite links and codes, Edge Functions, RLS and the iOS build; Asha data only. Without it, say plainly that the R-17 review is self-assessed | founder (spend) FOUNDER-ANSWERED 20 Nov, default accepted (CL-069, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: pen test spend |
+| Q-S4 | Bot check on email send (card O-7) | Agree with O-7: Turnstile before the public TestFlight link, subprocessor page first, Apple unaffected | founder CLOSED 20 Nov, see GAP-LOG Closures CL-070: Turnstile before public TestFlight link |
+| Q-S5 | Breach notice: do letters, a child's details, voice recordings or pictures held by this app count as personal information or a personal health record under California Civil Code 1798.82 and the FTC HBNR, and on which clock? | Treat as covered for readiness (packet Q28 default). Counsel must confirm | counsel Q28 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-S6 | Is a join by the wrong adult through a forwarded invite link a security incident needing notice, or a support case? | Support case with the 72-hour undo, logged as a security event; counsel must confirm | counsel Q23, Q50 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-S7 | May a co-parent be removed for safety after 72 hours? | Keep the Terms (72 hours only) until counsel answers | counsel Q50, Q53 FOUNDER-ANSWERED 20 Nov, default accepted (CL-071, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
 
 ---
 
@@ -336,9 +336,9 @@ New bucket, storage access rules and tests (BL ids by Karma), Edge Function for 
 ### F. Questions
 | # | Question | Default | Route |
 |---|---|---|---|
-| Q-S8 | Signed URL life | 5 minutes | Karma |
-| Q-S9 | Strip video metadata by re-encode, or refuse video in share and print | Refuse in share and print until the spike lists the fields | founder after spike |
-| Q-S10 | Independent test (Q-S3) covers storage rules and media decoding if Variant B ships | Yes | founder (spend) |
+| Q-S8 | Signed URL life | 5 minutes | Karma CLOSED 20 Nov, see GAP-LOG Closures CL-072 |
+| Q-S9 | Strip video metadata by re-encode, or refuse video in share and print | Refuse in share and print until the spike lists the fields | founder after spike CLOSED 20 Nov, see GAP-LOG Closures CL-072 |
+| Q-S10 | Independent test (Q-S3) covers storage rules and media decoding if Variant B ships | Yes | founder (spend) FOUNDER-ANSWERED 20 Nov, default accepted (CL-069, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: pen test spend |
 
 ### G. Cannot assess yet
 Which metadata a phone video holds; behaviour of iCloud-only originals under limited access; real decoder attack surface on current iOS; whether Supabase storage rules can express the sealed-letter condition without a function (not read). Not run: no test, no phone, no service.

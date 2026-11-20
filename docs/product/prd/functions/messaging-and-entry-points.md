@@ -246,16 +246,16 @@ Counsel numbers follow `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists (I 
 
 | # | Question | Who | Default |
 |---|---|---|---|
-| Q-MSG-1 | Is the live DMARC record still `p=none` with reports to `hello@`, and do we move reports to a `dmarc@` inbox now (C-4)? | founder | Yes: `dmarc@`, stage 1, move on by the clean-report rule |
-| Q-MSG-2 | How does the founder reply from `hello@` (which provider), so DMARC and the Apple relay both pass (SECURITY Q4)? | founder | Reply through a provider that signs with a registered domain, or send replies through Resend; register whatever is chosen |
-| Q-MSG-3 | Do we send any invite email (C-2)? | founder; counsel must confirm provider and consent effect (needs a number from legal) | No. The parent shares the link from their own messages |
-| Q-MSG-4 | Is the one billing push dropped for v1 (C-1)? | founder, Karma | Yes. Local plan notice only; push waits for BL-546 |
-| Q-MSG-5 | Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)? | founder, counsel must confirm (needs a number from legal) | Build the page: it is where a person who lost the phone and the `deletion-confirm` email land; the in-app route stays primary |
-| Q-MSG-6 | What reply time do we promise at `hello@`? | founder | "Within 2 working days", only if a person reads it each working day |
-| Q-MSG-7 | Is a Marketing URL set in App Store Connect, and is it the home page? | founder | Set it to the home page only when the claims are checked (marketing) |
-| Q-MSG-8 | Does the email font set stay off (EMAIL_IDENTITY 4.5) and the logo stay inline? | founder | Yes, keep both off to preserve "no request tells us it was opened" |
-| Q-MSG-9 | Time Sensitive interruption level for a restore request, when push is reopened | founder, sync | Do not ask for it until NS-08 is live and Apple's rule is read |
-| Q-MSG-10 | Is clipboard paste after an invite install acceptable in the invite sheet's words, given iOS shows its own paste prompt (UNVERIFIED)? | founder, privacy | Yes, only on the person's tap, with one line before it |
+| Q-MSG-1 | Is the live DMARC record still `p=none` with reports to `hello@`, and do we move reports to a `dmarc@` inbox now (C-4)? | founder | Yes: `dmarc@`, stage 1, move on by the clean-report rule FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes |
+| Q-MSG-2 | How does the founder reply from `hello@` (which provider), so DMARC and the Apple relay both pass (SECURITY Q4)? | founder | Reply through a provider that signs with a registered domain, or send replies through Resend; register whatever is chosen FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes |
+| Q-MSG-3 | Do we send any invite email (C-2)? | founder; counsel must confirm provider and consent effect (needs a number from legal) | No. The parent shares the link from their own messages FOUNDER-ANSWERED 20 Nov, default accepted (CL-063, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-MSG-4 | Is the one billing push dropped for v1 (C-1)? | founder, Karma | Yes. Local plan notice only; push waits for BL-546 CLOSED 20 Nov, see GAP-LOG Closures CL-064 |
+| Q-MSG-5 | Deletion page: build `/delete-account` from counsel's draft, or keep the content inside the Privacy Policy (C-3)? | founder, counsel must confirm (needs a number from legal) | Build the page: it is where a person who lost the phone and the `deletion-confirm` email land; the in-app route stays primary FOUNDER-ANSWERED 20 Nov, default accepted (CL-063, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: counsel engagement |
+| Q-MSG-6 | What reply time do we promise at `hello@`? | founder | "Within 2 working days", only if a person reads it each working day FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures) |
+| Q-MSG-7 | Is a Marketing URL set in App Store Connect, and is it the home page? | founder | Set it to the home page only when the claims are checked (marketing) FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures) |
+| Q-MSG-8 | Does the email font set stay off (EMAIL_IDENTITY 4.5) and the logo stay inline? | founder | Yes, keep both off to preserve "no request tells us it was opened" FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes |
+| Q-MSG-9 | Time Sensitive interruption level for a restore request, when push is reopened | founder, sync | Do not ask for it until NS-08 is live and Apple's rule is read FOUNDER-ANSWERED 20 Nov, default accepted (CL-062, default as stated in the row and in GAP-LOG Closures). Decision made, action pending founder hands: DMARC record and hello@ and dmarc@ mailboxes |
+| Q-MSG-10 | Is clipboard paste after an invite install acceptable in the invite sheet's words, given iOS shows its own paste prompt (UNVERIFIED)? | founder, privacy | Yes, only on the person's tap, with one line before it FOUNDER-ANSWERED 20 Nov, default accepted (CL-065, default as stated in the row and in GAP-LOG Closures) |
 
 ---
 
@@ -324,10 +324,10 @@ Closed-list test update; Photos-then-notification sequencing test with an inject
 
 | Id | Question | To | Recommended default |
 |---|---|---|---|
-| Q-MSG-11 | The card's Q-PM-9: may a lock-screen line mention pictures? | Founder, privacy, counsel | No; neutral line only; revisit with App lock off and names on |
-| Q-MSG-12 | Does a moment get a Home slip at all? | Founder, Karma | No (NS-51-R40); if yes: after the trust slips and the Days ask, never above Save a copy, two showings |
-| Q-MSG-13 | The card's Q-PM-8: reopen a background mode for a timely nudge? | Founder, `security` | No in 1.x; moments appear when the app opens |
-| Q-MSG-14 | A "send to the book" share extension? | Founder | No |
+| Q-MSG-11 | The card's Q-PM-9: may a lock-screen line mention pictures? | Founder, privacy, counsel | No; neutral line only; revisit with App lock off and names on FOUNDER-ANSWERED 20 Nov, default accepted (CL-054, default as stated in the row and in GAP-LOG Closures) |
+| Q-MSG-12 | Does a moment get a Home slip at all? | Founder, Karma | No (NS-51-R40); if yes: after the trust slips and the Days ask, never above Save a copy, two showings CLOSED 20 Nov, see GAP-LOG Closures CL-064 |
+| Q-MSG-13 | The card's Q-PM-8: reopen a background mode for a timely nudge? | Founder, `security` | No in 1.x; moments appear when the app opens CLOSED 20 Nov, see GAP-LOG Closures CL-053 |
+| Q-MSG-14 | A "send to the book" share extension? | Founder | No CLOSED 20 Nov, see GAP-LOG Closures CL-064 |
 
 ### F.7 Cannot assess yet
 

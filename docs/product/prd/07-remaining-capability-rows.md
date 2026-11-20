@@ -581,9 +581,9 @@ See section 7 (OQ-2).
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | Spend the proof-book amount in the exec record on two proof books? | Founder | No spend; C28's final layout numbers stay open |
-| OQ-2 | Who writes the label guard, and when? | `security-architect`, `compliance-engineer` | Built (size S) and running in CI before the first build that turns on any NS card whose label effect is not "None"; until it merges, G11-1a is a PR-checklist line and the row is "partly built" (RR-8) |
-| OQ-3 | Re-check of branch-only cites | `product` | The next backlog PR replaces "branch" with the merged path for each |
-| OQ-4 | Page size before proof books | Founder | 8.5 x 8.5 inches, marked provisional (C28-16) |
+| OQ-1 | Spend the proof-book amount in the exec record on two proof books? | Founder | No spend; C28's final layout numbers stay open FOUNDER-ANSWERED 20 Nov, default accepted (CL-005, default as stated in the row and in GAP-LOG Closures) |
+| OQ-2 | Who writes the label guard, and when? | `security-architect`, `compliance-engineer` | Built (size S) and running in CI before the first build that turns on any NS card whose label effect is not "None"; until it merges, G11-1a is a PR-checklist line and the row is "partly built" (RR-8) FOUNDER-ANSWERED 20 Nov, default accepted (CL-005, default as stated in the row and in GAP-LOG Closures) |
+| OQ-3 | Re-check of branch-only cites | `product` | The next backlog PR replaces "branch" with the merged path for each FOUNDER-ANSWERED 20 Nov, default accepted (CL-005, default as stated in the row and in GAP-LOG Closures) |
+| OQ-4 | Page size before proof books | Founder | 8.5 x 8.5 inches, marked provisional (C28-16) CLOSED 20 Nov, see GAP-LOG Closures CL-006: 8.5 x 8.5 in, marked provisional |
 
 Not fully testable: C28 layout (trim, bleed) until proof books exist; every "Cited" row's content is UNVERIFIED where marked; parked rows have no acceptance criteria by design.

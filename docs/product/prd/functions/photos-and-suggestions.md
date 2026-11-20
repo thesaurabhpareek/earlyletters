@@ -223,13 +223,13 @@ All data are fictional Asha pictures; no real family picture anywhere (D13; `no-
 
 | Id | Question | Default |
 |---|---|---|
-| Q-PHS-1 | Do we want level 2 in the first photo release or after NS-01 reaches `testflight`? | After NS-01 on `testflight`; the picture flow is proved first |
-| Q-PHS-2 | Raise `IOS_DEPLOYMENT_TARGET` from 17.0 to 17.2, or hide the suggestions start on 17.0 and 17.1? | Hide it (keep 17.0). Raising drops phones; no figure read |
-| Q-PHS-3 | Does the Journaling Suggestions entitlement need an Apple request? | `mobile` enables it on the test App ID in step 1 of the spike and reports; if it needs approval, `founder` files it |
-| Q-PHS-4 | Apple's notifications (iOS 26 and later) open our app: yes, in a second step, or never in 1.x? | Second step, after the spike; not in the first level 2 build |
-| Q-PHS-5 | May the suggestion's `title` appear as an editable label above the picture? | Yes, as Apple's text, editable and clearable, never prefilled into the letter's words (FR-PHS-14) |
-| Q-PHS-6 | Do we ever read a place, workout or other item from a suggestion? | No in 1.x |
-| Q-PHS-7 | Level 3 spike: run it at all? | No now. If yes, section 6 only; Q-FD-4's default stands |
+| Q-PHS-1 | Do we want level 2 in the first photo release or after NS-01 reaches `testflight`? | After NS-01 on `testflight`; the picture flow is proved first CLOSED 20 Nov, see GAP-LOG Closures CL-037 |
+| Q-PHS-2 | Raise `IOS_DEPLOYMENT_TARGET` from 17.0 to 17.2, or hide the suggestions start on 17.0 and 17.1? | Hide it (keep 17.0). Raising drops phones; no figure read CLOSED 20 Nov, see GAP-LOG Closures CL-037 |
+| Q-PHS-3 | Does the Journaling Suggestions entitlement need an Apple request? | `mobile` enables it on the test App ID in step 1 of the spike and reports; if it needs approval, `founder` files it FOUNDER-ANSWERED 20 Nov, default accepted (CL-042): Same as Q-FD-11. Decision made, action pending founder hands: Apple entitlement request if the portal needs one |
+| Q-PHS-4 | Apple's notifications (iOS 26 and later) open our app: yes, in a second step, or never in 1.x? | Second step, after the spike; not in the first level 2 build CLOSED 20 Nov, see GAP-LOG Closures CL-043 |
+| Q-PHS-5 | May the suggestion's `title` appear as an editable label above the picture? | Yes, as Apple's text, editable and clearable, never prefilled into the letter's words (FR-PHS-14) CLOSED 20 Nov, see GAP-LOG Closures CL-035 |
+| Q-PHS-6 | Do we ever read a place, workout or other item from a suggestion? | No in 1.x CLOSED 20 Nov, see GAP-LOG Closures CL-043 |
+| Q-PHS-7 | Level 3 spike: run it at all? | No now. If yes, section 6 only; Q-FD-4's default stands CLOSED 20 Nov, see GAP-LOG Closures CL-043 |
 | Counsel (new, needs a number from legal) | (a) The Developer Program License Agreement duties on suggestion data (A2 links to it; not read). (b) Whether using the picker changes the Apple privacy label or App Review notes (5.1.1(iii)). (c) Whether the wording above the picker counts as a notice under any law the packet lists. (d) Level 3: a library permission for a child's pictures (COPPA-style readings; the privacy review's S5 says a child's image is personal information when collected online; we collect nothing today) | Counsel must confirm; defaults as above |
 | Existing numbers | Q43 (label line and where-it-lives), Q45 (child's image), Q48 (picture of another adult), Q54 (Photos or Videos become collected if pictures sync) | Unchanged |
 
@@ -331,10 +331,10 @@ Native module additions to `scribe-photo` (read, copy, strip, poster frame) in t
 ### 7. Questions (who answers; default)
 | Id | Question | Who | Default |
 |---|---|---|---|
-| Q-PHS-8 | Q-PM-1: limited library or full read by default | Founder | Limited-first; full only if the parent picks it; works with limited |
-| Q-PHS-9 | Is a Live Photo attached as a still only | Founder | Yes |
-| Q-PHS-10 | Does cellular download of iCloud originals need a setting | Karma | Follow the phone's own setting; decide after the spike |
-| Q-PHS-11 | Do screenshots count toward a moment | Founder | Not filtered (no subtype read) |
+| Q-PHS-8 | Q-PM-1: limited library or full read by default | Founder | Limited-first; full only if the parent picks it; works with limited CLOSED 20 Nov, see GAP-LOG Closures CL-044 |
+| Q-PHS-9 | Is a Live Photo attached as a still only | Founder | Yes CLOSED 20 Nov, see GAP-LOG Closures CL-044 |
+| Q-PHS-10 | Does cellular download of iCloud originals need a setting | Karma | Follow the phone's own setting; decide after the spike CLOSED 20 Nov, see GAP-LOG Closures CL-044 |
+| Q-PHS-11 | Do screenshots count toward a moment | Founder | Not filtered (no subtype read) CLOSED 20 Nov, see GAP-LOG Closures CL-044 |
 
 ### 8. Cannot assess yet
 Everything marked UNVERIFIED: picker options for types and limits; the representation the picker returns for video and Live Photo; how iCloud-only originals and download progress are exposed; creation-date and time-zone semantics; whether a re-encode is needed to cap video size; the real battery and time cost of a library query; whether the limited-library callback is reliable enough for moments. Not run: no device, no Photos library, no spike.

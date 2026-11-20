@@ -333,9 +333,9 @@ Source: the scripts in section 7, answered by message or call. Reporting rule: e
 
 | Id | Question | Owner | Default if unanswered |
 |---|---|---|---|
-| OQ-1 | Does the founder accept the principle (hosted copy only after the pilot, security and counsel reads) and the success lines? | Founder | Yes, as written. If unanswered by end of the day it is due (Pacific), the default applies and is recorded in the exec rulings file; a later answer reverses it, and every step in section 5 moves by the same number of days |
-| OQ-2 | Are the reads done before recruiting? | `security-architect`, counsel | The pilot does not start until the consent and scripts are read; Arm W only until the voice reads are done |
-| OQ-3 | Any thank-you for participants? | Founder | A thank-you message only. No money, no gift, no code before the read-out |
-| OQ-4 | Retention of raw notes | Founder | 30 days after the read-out (consent records: 12 months, ruling D4) |
+| OQ-1 | Does the founder accept the principle (hosted copy only after the pilot, security and counsel reads) and the success lines? | Founder | Yes, as written. If unanswered by end of the day it is due (Pacific), the default applies and is recorded in the exec rulings file; a later answer reverses it, and every step in section 5 moves by the same number of days CLOSED 20 Nov, see GAP-LOG Closures CL-008 |
+| OQ-2 | Are the reads done before recruiting? | `security-architect`, counsel | The pilot does not start until the consent and scripts are read; Arm W only until the voice reads are done CLOSED 20 Nov, see GAP-LOG Closures CL-008 |
+| OQ-3 | Any thank-you for participants? | Founder | A thank-you message only. No money, no gift, no code before the read-out CLOSED 20 Nov, see GAP-LOG Closures CL-008 |
+| OQ-4 | Retention of raw notes | Founder | 30 days after the read-out (consent records: 12 months, ruling D4) CLOSED 20 Nov, see GAP-LOG Closures CL-008 |
 
 Not fully testable: SC-2 depends on a relayed answer; the success numbers and stop rules are proposals; the HYPOTHESIS that this group predicts the wider market is untested.

@@ -1,6 +1,6 @@
 # New-scope product requirements (11 Nov 2026)
 
-Author: `product`. Status: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
+Author: `product`. Status: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E32); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Earlier: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
 
 Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 07, head at time of writing `0a8499ab`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
@@ -74,7 +74,13 @@ Cards for items further down the rank are shorter on purpose: they record the de
 
 Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced. Flag names are proposals; `capabilities.ts` sets the final names. Dates are not in this folder.
 
+## Two layers
+
+Two layers (founder items 9 and 15 in `FOUNDER-MESSAGES-VERBATIM.md`): the product layer (this folder's cards, `VISION.md`, the one-reading spec) is written from the customer's need and does not depend on BL or PR ids; the execution layer (backlog, `FUNCTION-TRACE.md`, `13-engineering-plan.md`, `23`, `24`) carries BL and PR ids and maps back to NS and R ids. Ids are not stripped from product files by script; they are removed card by card in the next edit of that card (council Part 1 item 8, 20 Nov).
+
 ## What the founder is asked, with defaults
+
+All answered 20 Nov: the founder accepted every default ("Go with all default answers"); the table records what was taken. The eight residue items and the founder hands list are in `22-final-holistic-spec.md` section 7.
 
 Every open question in every file has a default. On 20 Nov every default below was taken under the founder's 19 Nov delegation ("Consult with exec team and make all decisions."); each stays reversible by the founder. Timing words in the defaults are superseded by the roadmap (ruling T5).
 

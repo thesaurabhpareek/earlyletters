@@ -1,6 +1,6 @@
 # 22. The pack in one reading: what the product does, where days, background, reminders, pictures and Home today fit, and what the founder decides
 
-Status: 20 Nov 2026, written by `product` for a human reader (the founder, Karma, a new designer or engineer). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. This file cites; it never changes a requirement. Where it and a card differ, the card wins (and the card's own order of precedence: `GAP-LOG.md` rulings, the founder direction, the function reviews). Nothing is legal advice; every legal or store reading is "counsel must confirm". No dates: cards state order and gates only (ruling T5).
+Status: LOCKED 20 Nov 2026 (requirements rev 2; see section 10). Written by `product` for a human reader (the founder, Karma, a new designer or engineer). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. This file cites; it never changes a requirement. Where it and a card differ, the card wins (and the card's own order of precedence: `GAP-LOG.md` rulings, the founder direction, the function reviews). Nothing is legal advice; every legal or store reading is "counsel must confirm". No dates: cards state order and gates only (ruling T5).
 
 Facts about the screens come from the information architecture audit (`docs/design/e2e/IA-AUDIT.md` on branch `docs/e2e-ux-20nov`, head `ed44fe899`; design judgement and code reading, not observed users). Facts about code come from the ten reviews of NS-46 to NS-50 (`tools/review/ns46-50/`). Anything either could not check is marked UNVERIFIED in the card.
 
@@ -58,8 +58,8 @@ The reviews found no one cut in the pack, 87 P0 rows and a long chain of unbuilt
 
 | Drop | In it | Needs first | Line |
 |---|---|---|---|
-| A | NS-49 level 1 as the first-class start only if the A-S01 re-draw passes its AX5 test; NS-48 phase 1 (day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage, no key in the payload) | NS-01 on `testflight`; no planner change beyond words | The next build (Build 13 or later) |
-| B | NS-46 seasonal, family and civic days, US only; the plain browse-and-tick list in Me (the fallback with no question, no tradition, no country); NS-47 store rules only; NS-50 rank 2b | BL-966, BL-982, BL-963, BL-985; `budget.ts`; days store registered and Erase-scanned; counsel on any copied table and on the consent line | 1.0 only if every gate closes before freeze, otherwise 1.1 |
+| A | NS-48 phase 1 (day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage, no key in the payload) | No planner change beyond words | The next build (Build 13 or later) |
+| B | NS-46 seasonal, family and civic days, US only; the plain browse-and-tick list in Me (the fallback with no question, no tradition, no country); NS-47 store rules only; NS-50 rank 2b; NS-49 level 1 (moved from A on 20 Nov, CL-015: it needs NS-01, which stays dark; only if the A-S01 re-draw passes its AX5 test) | NS-01 on `testflight`; BL-966, BL-982, BL-963, BL-985; `budget.ts`; days store registered and Erase-scanned; counsel on any copied table and on the consent line | 1.0 only if every gate closes before freeze, otherwise 1.1 |
 | C | NS-47 ask slip and tradition browse; culture-led days; tradition-member review; the day-name switch; NS-48 recency and last-letter layers; NS-49 level 2; NS-51 photo moments (spike first); NS-52 pictures and videos (Variant A) | Counsel CUL-Q5 to Q7 and Q11; the J-CUL-01 device walk; a recorded reviewer per tradition; the NS-13 anchor; the entitlement; a weak-link launch run on iOS 17.0, 17.1, 17.2 and 26 | After 1.0 is approved |
 
 Not in this pack and parked: a Home strip, other countries' days, regional days (Pongal, Onam, Parsi New Year) in the first drop, OPP-02 to OPP-05 before first-run evidence (`12-parked-and-not-built.md`, `functions/feature-opportunities.md`).
@@ -100,48 +100,33 @@ Gates G0 to G6 are the release gates in `14-test-plan.md` (compliance's evidence
 
 Standing rules for a day library: a tradition ships only after a member of that tradition has read its rows (DL-8); no date is written from memory (computed or sourced, DL-3, DL-4); an October review each year; a wrong date is the failure with the highest cost to trust, so a remote pause exists and one report trips a same-day review (NS-46-R28, R44).
 
-## 7. Master list of founder decisions
+## 7. Founder decisions: answered 20 Nov (the eight residue items)
 
-Defaults hold until answered. A default is a requirement for design and build, never for public text, a counsel answer or a store submission. Full text, rulings and the other readers are in the "Founder items" table of card 21; this is the short list. "Read by" names who else must read the answer first.
+Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture" (`FOUNDER-MESSAGES-VERBATIM.md` item 33). Every default below is accepted. Where two defaults conflict, customer experience wins. The earlier long master list is closed: the founder-only groups and the 79 ruled groups (113 closure rows) are one line each, by id, in `GAP-LOG.md` "Closures 20 Nov" (CL-001 to CL-113); the source is Project doc `infra/exec-rulings-2026-11-20-pre-kickoff-debate.md`. Nothing is copied here.
 
-| Id | Decision | Default | Read by |
+| Id | Decision | Answer (default accepted) | Closure ids |
 |---|---|---|---|
-| Q-FD-7 | Which drop ships when | A next build, B only if its gates close before 1.0 freeze, C after approval | all |
-| Q-FD-1 | What "East East" means | No such option; "Add a day" and "Not now"; culture-led days offered without a question | content, privacy |
-| Q-FD-2 | When the Days ask shows | Later sitting, once, "Not now" final for Home; Me only if more than 1 in 5 testers say "too personal" | marketing, design |
-| Q-FD-3 | Mother's, Father's, Memorial, Veterans Day offered, never pre-ticked | Yes; Memorial and Veterans Day quiet | content |
-| Q-PM-1 to Q-PM-12 | Library access, video limits, sync of media (Q-PM-3 is the largest cost and counsel decision), video sound, place names, image analysis, drop, background refresh, lock-screen wording, QR, trim, pause | Defaults in `27-photo-moments-and-media.md` (limited or full both accepted; 6 pictures and 2 videos; phone only; no transcription; no places; no analysis; drop C; no background refresh; neutral lock-screen words; no QR; no trim; pause empties the index) | security, privacy, counsel, finance |
-| Q-FD-4, Q-PHS-7 | Level 2 yes after NS-01 is on `testflight`; level 3 is now NS-51, drop C, spike first (RV-18, Q-PM-1, Q-PM-7) | As stated for level 2 | security, privacy, counsel |
-| Q-FD-5 | Faith and country only on the phone, only ticked days stored | Yes | privacy, counsel |
-| Q-FD-6 | Reopen `occasion` and "on this day" | `occasion` as a source only; "on this day" stays with NS-23, NS-31; level 3 is NS-51, not an `occasion` class | Karma |
-| Q-FD-8 | More cards from the opportunity list | None before first-run evidence | user-research |
-| Q-FD-9 | Who reviews each tradition, which traditions first | None ships without a recorded reviewer; none announced as "all" | content, regulatory-affairs |
-| Q-FD-10 | Owner of the October review | Founder accountable, `content` reads | content, ops |
-| Q-FD-11, Q-PHS-3 | Journaling Suggestions capability on the App ID; does Apple approve | `mobile` spike step 1; flag off until known | mobile, security |
-| Q-FD-12 | Sign-out and system-ended session clear the store | Clear, with one calm line | privacy |
-| Q-FD-13 | Store out of the iPhone backup; restored phone empty, no re-ask | Exclude and read back | privacy, mobile |
-| Q-FD-14 | Day-name switch separate, on the Days page, cannot return by itself | Yes | privacy, content |
-| Q-FD-15 | Remote pause for the library | One boolean, fail-open; not deliverable servers-off; per-tradition hold later | Karma, ops |
-| Q-FD-16, Q-FD-17 | Countries after the US; regional days | US only, no country list until a second country; regional later | counsel, content |
-| Q-FD-18 | Which days may name themselves on a lock screen | Allowlist of seasonal days; neutral under App lock | privacy, security, regulatory-affairs |
-| Q-FD-19 | Day reminder time | Fixed 09:00; listing words fixed | marketing, legal |
-| Q-FD-20, Q-FD-21 | First tick asks iOS once; day reminders when Reminders is off | Yes once, with a consent line; yes, with one calm line | mobile, legal |
-| Q-FD-22 | Planning horizon | 366 days within the ceiling | mobile |
-| Q-FD-23 | Rank of the Days ask | After Save a copy, capped at two showings | design |
-| Q-FD-24, Q-FD-25 | Quiet-day Home; one way for a day on Home | Quiet line replaces the prompt; one slip | design, mobile |
-| Q-FD-26, Q-FD-27 | Words ("reminder", "Days and reminders", "Days you chose", "Not today", "photo"); playfulness on Friday and Saturday | Yes; `content` words them | content |
-| Q-FD-28 | No marketing that shows a tradition or faith day; the ask is never "a religion question" | Yes | marketing, legal |
-| Q-FD-29 | Last-letter kinds on a lock screen | spoke and typed in the body; picture dropped; first and small only with names on | privacy, content |
-| Q-FD-30 | Apple's suggestion title saved without a tap | No | privacy, security |
-| Q-FD-31 | Picture start becomes a menu where level 2 exists | Yes | design |
-| Q-FD-32, Q-PHS-2 | iOS floor | Keep 17.0, hide below 17.2, until a weak-link launch run passes | mobile, security |
-| Q-FD-33 | Phones for device rows (17.0 or 17.1, 17.2 or later, iPad) | Borrow; waive only what is missing | qa |
-| Q-FD-34 | The word "journal" in the picker line or listing | Keep the BRAND.md ban; store name, listing sentence and Apple's sheet carry it | legal, content |
-| Q-NTC-5, 8, 9 | Do variants reduce turn-off; floor or full set; which age | Untestable in 1.x, no claim; floor at freeze; the age the Book shows | analytics, content |
-| Q-PHS-1, 4, 5, 6 | Level 2 timing; Apple's own notification; label as Apple's text; places read | After NS-01 on `testflight`; second step after a spike; "From your phone"; none read | mobile, privacy |
-| Counsel (through the founder) | CUL-Q5, Q6, Q7, Q11, Q-DAY-6, Q-DAY-11, FR-DAY-23, the consent line, DPLA 3.3.3(H), 5.1.3, Q43, Q45, Q48, Q54, K6 age-rating re-read | Flags stay off until answered; never defaulted | legal |
+| F1 | Level 3 photos library read | Spike only in Build 13 on `exp/photos` behind a flag; ship in 1.1 after the spike, the counsel read and the device rows (errata E32) | CL-012, CL-046, CL-052 |
+| F2 | Pictures and videos: phone only (Variant A) for 1.0 | Yes; label unchanged; the other parent does not see pictures; hosted (B) only after the security read and the counsel read | CL-048 |
+| F3 | Lock screen for photo moments | Neutral line that names no content, not the founder's example; revisit with App lock off and names on | CL-054 |
+| F4 | Caps and pen test | Caps free for all while phone-only (6 pictures, 2 videos, 60 s, 100 MB); pen test spend yes before any non-family person stores letters on the server | CL-047, CL-069 |
+| F5 | The four 842 departures | Accepted: Days ask after first letter; no "East East" option; only ticked days stored; religion and native country optional with opt-out | CL-009, CL-010, CL-013, CL-089 |
+| F6 | Counsel batch | One engagement for every "counsel must confirm" row (Q45, Q48, X2 naming wording, ticked days, breach law, RQ and PQ points); engage before any non-family user. Flags stay off until answered; a counsel answer is never defaulted | the FOUNDER rows in `GAP-LOG.md` Closures |
+| F7 | Account hands | Decision made, action pending (list below) | CL-019, CL-038, CL-042, CL-062, CL-066, CL-090, CL-091 |
+| F8 | Alpha families | Tell them before the build; the founder decides any gift | CL-077 |
 
-Karma's items (not founder items, but parent-visible): the conflicts list of card 21, RV-1 to RV-17 and K11 to K17 in `GAP-LOG.md`. The founder alone decides the founder-only list in Karma's skill (what users are promised, public words, analytics, money, one-way doors); of K11 to K17 only K14's seller question and the wording in K12 and K13 reach him.
+Drops (Q-FD-7, CL-015): A with the next build (NS-48 phase 1), B only if its gates close before 1.0 freeze (now including NS-49 level 1), C after 1.0 is approved.
+
+Founder hands (decisions made; these are actions pending his hands, not questions):
+- Apple: request the Journaling Suggestions capability on the App ID if the portal says a request is needed (approval UNVERIFIED).
+- DNS and mailboxes: `dmarc@` and `hello@` provider, `abuse@` alias.
+- Backup and key custody: monthly second backup copy, two offline key copies, one adult holds the sealed key sheet, a status page on a second provider, a second contact route.
+- Vercel: confirm the plan (UNVERIFIED).
+- Borrowed phones: iOS 17.0 or 17.1, iOS 17.2 or later, an iPad.
+- Money: counsel engagement, accountant for tax and payment points, the pen test.
+- People: tell the alpha families first.
+
+Karma's items (parent-visible, not founder items): the conflicts list of card 21, RV-1 to RV-24 and K11 to K17 in `GAP-LOG.md`. K12 and K14 to K17 are ruled but not yet carried into a card (CL-112).
 
 ## 8. Where everything is (every card and function file)
 
@@ -160,3 +145,22 @@ The ten reviews of NS-46 to NS-50 are in `tools/review/ns46-50/`: [analytics](to
 ## 9. What this file could not verify
 
 I did not run the product, a device, a test or any code; I rely on the cards, the audit and the reviews, each of which marks its own UNVERIFIED items (for example whether Apple's suggestions picker reports cancel or empty, who owns the returned photo file, whether a hidden-preview title shows on Apple Watch, and whether App Review reads an optional faith question as unneeded data). No holiday date, Apple rule or law was verified here.
+
+## 10. Lock
+
+Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
+
+What locked means:
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E32); the row names every changed id.
+- No duplicate copies: one home per fact; link by id. Anything new carries a status header.
+- Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
+- Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).
+
+Remains execution-side (nothing here is a requirement question):
+- Spikes: hands-free (NS-04, five days), date chip (BL-843), level 3 on `exp/photos`, Journaling Suggestions entitlement step 1, pictures and videos (transcode, metadata, iCloud), weak-link launch run.
+- Devices: every P0 device row, J-CUL-01, NTC-T24, phones to borrow.
+- Counsel: the F6 batch; accountant for tax and payment points.
+- Accounts: the founder hands list in section 7.
+- Build gates: G0 (a backlog row for every P0 row, `BACKLOG-GAPS.md`) to G6; propagation of K12 and K14 to K17 into cards; code-side items (`kill-switches.ts`, ADR 0029, `WORDS.md`, `budget.ts`).
+- Informing the harness and the engineering architecture leads: not done by this edit pass; the coordinator relays it.
+
