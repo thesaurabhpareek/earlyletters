@@ -1,29 +1,27 @@
 /**
- * The ONE file that imports expo-image-picker (NX-39-R52 review of 57.0.20, conditions C5 and C6). Apple's system
- * photo picker (PHPicker) through the package, and nothing else:
- * - the only call is `launchImageLibraryAsync` with fixed options: images, one, no editing, no Exif, no base64.
- *   `allowsEditing: true` would switch the package to its old picker, which reads the photo library and needs
- *   permission; so it is fixed to false and a test pins it;
- * - no permission function, no camera, no media library is ever named in the app (an AST scan pins that);
- * - the result is cut down to `{ uri }`. `assetId`, `fileName`, `exif`, `base64`, `width`, `height`, `fileSize`,
- *   `mimeType` and a Live Photo's `pairedVideoUri` are never read, kept, logged or stored;
- * - a failure crosses as the closed code `failed`. The package's error text can hold file paths, so it is dropped.
- * The package has no progress callback and no cancel for an iCloud-only photo (review section 6, Q4): `onProgress` is
- * never called and `cancel` only stops the app waiting; Apple's own sheet shows the wait.
+ * The system picker port (types.ts PhotoPicker) over scribe-photo's pickOne: Apple's PHPickerViewController made with no
+ * photo library, so no permission is asked and nothing is read but the one picture the parent chose (NS-01-R2, R22).
+ * No picker package is used: this is the one file that calls pickOne:
+ * - the native side copies the picked still into the destination built here (Caches/ImagePicker), and the result is
+ *   cut down to `{ uri }`;
+ * - Cancel is `cancelled`; a failure crosses as the closed code `failed` and the native error text is dropped;
+ * - an answer naming any file but that destination is a failure, never read.
+ * A Live Photo gives its still. An iCloud-only picture downloads inside Apple's own sheet, which shows the wait, so
+ * `onProgress` is never called and `cancel` only stops the app waiting.
  */
-import * as ImagePicker from 'expo-image-picker';
+import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import type { PhotoPicker, PickOutcome } from './types';
 
-export function createPhotoPicker(api: Pick<typeof ImagePicker, 'launchImageLibraryAsync'> = ImagePicker): PhotoPicker {
+export function createPhotoPicker(native: Pick<ScribePhotoNative, 'pickOne'>, destination: () => string): PhotoPicker {
   return {
     open() {
       let stopped = false;
       const done = (async (): Promise<PickOutcome> => {
         try {
-          const r = await api.launchImageLibraryAsync({ mediaTypes: ['images'], allowsMultipleSelection: false, allowsEditing: false, exif: false, base64: false });
-          if (stopped || r.canceled) return { status: 'cancelled' };
-          const uri = r.assets?.[0]?.uri;
-          return typeof uri === 'string' && uri.length > 0 ? { status: 'picked', asset: { uri } } : { status: 'failed' };
+          const out = destination();
+          const uri = await native.pickOne(out);
+          if (stopped || uri === null) return { status: 'cancelled' };
+          return uri === out ? { status: 'picked', asset: { uri } } : { status: 'failed' };
         } catch {
           return { status: 'failed' };
         }

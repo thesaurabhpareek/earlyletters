@@ -1,14 +1,18 @@
 /**
- * The phone's files for Photo with a letter (expo-file-system 57). Two folders:
- * - `Application Support/photos/<media_id>.jpg` on iOS (security review T5: not in Documents, which a Files-app setting
- *   could expose; NOT excluded from the iPhone backup, NX-39 F9). The name is an opaque id, never an original name;
- *   no entry id is in it. (ADR 0028 D1 proposed Documents/photos; the data architect is told it changes.) A file is written whole and the row is made after it, so a kill between the
- *   two leaves a file with no row, which the launch sweep deletes (`sweepPhotos`).
- * - `Caches/ImagePicker`: where the picker package leaves a copy of the ORIGINAL, location and all, and never deletes
- *   it (security review C7). The app reads it once and removes it; `sweep()` empties the folder at launch.
+ * The phone's files for Photo with a letter (expo-file-system 57). Three folders:
+ * - `Library/Application Support/photos/<media_id>.jpg` on iOS (security review T5: not in Documents, which a Files-app
+ *   setting could expose; NOT excluded from the iPhone backup, NX-39 F9; ADR 0028 D1 as accepted in CR-62). The name
+ *   is an opaque id, never an original name; no entry id is in it, and only that shape is ever written or removed. A
+ *   file is written whole and the row is made after it, so a kill between the two leaves a file with no row, which the
+ *   launch sweep deletes (`sweepPhotos`).
+ * - `Caches/ImagePicker`: where scribe-photo's picker copies the ORIGINAL the parent picked, location and all (security
+ *   review C7). The app reads it once and removes it; `sweep()` empties the folder at launch.
+ * - `Caches/ScribePhoto`: the native re-encode's temporary JPEG, read once and removed at once, swept at launch.
+ * Both temporary files get a name built here, so the file JavaScript reads is the one the native side wrote.
  * Pure parts (`withinFolder`) are tested in Node; the rest runs against the expo-file-system stand-in.
  */
 import { Directory, File, Paths } from 'expo-file-system';
+import type { BakedFiles } from './baker';
 import type { PhotoFiles, PickedFiles } from './types';
 
 export const PHOTOS_FOLDER = 'photos';
@@ -17,28 +21,54 @@ export const PICKER_CACHE_FOLDER = 'ImagePicker';
 export const BAKED_CACHE_FOLDER = 'ScribePhoto';
 
 /**
- * iOS: `<container>/Library/Application Support/photos`, beside Documents. Elsewhere (Android, later): the app's files
- * folder. Detected from the Documents uri so this file imports no React Native.
+ * iOS: `<container>/Library/Application Support/photos`, beside Documents. Android (later): `<files>/photos`. Detected
+ * from the Documents uri so this file imports no React Native. Any other layout fails closed: no picture is ever put in
+ * Documents or anywhere else unknown (review N10).
  */
 export function photosDirectory(): Directory {
   const doc = Paths.document.uri;
   if (/\/Documents\/?$/.test(doc)) return new Directory(doc.replace(/Documents\/?$/, ''), 'Library', 'Application Support', PHOTOS_FOLDER);
-  return new Directory(Paths.document, PHOTOS_FOLDER);
+  if (/\/files\/?$/.test(doc)) return new Directory(Paths.document, PHOTOS_FOLDER);
+  throw new Error('photos_folder_unknown');
 }
 const photosDir = photosDirectory;
 const pickerDir = (): Directory => new Directory(Paths.cache, PICKER_CACHE_FOLDER);
 const bakedDir = (): Directory => new Directory(Paths.cache, BAKED_CACHE_FOLDER);
 
-/** True when `uri` is a file directly inside the folder `folderUri`. The picker's remover touches nothing else. */
+/** A plain file name: letters, digits and dashes, one dot, a short extension. No separator, no `.` or `..`. */
+const PLAIN_NAME = /^[0-9A-Za-z-]{1,64}\.[0-9A-Za-z]{1,8}$/;
+/** The one name a stored picture has: `<media_id>.jpg` (photoPath). Nothing else is written or removed in photos/. */
+const STORED_NAME = /^[0-9A-Za-z-]{1,64}\.jpg$/;
+
+/**
+ * True when `uri` is a plain file directly inside the folder `folderUri`, judged on the decoded name, so `%2E%2E`,
+ * `.%2E` or an encoded separator cannot reach the parent (review N5). The temporary-file readers and removers touch
+ * nothing else.
+ */
 export function withinFolder(uri: string, folderUri: string): boolean {
   const base = folderUri.endsWith('/') ? folderUri : `${folderUri}/`;
   if (!uri.startsWith(base)) return false;
-  const rest = uri.slice(base.length);
-  return rest.length > 0 && !rest.includes('/') && !rest.includes('..') && !rest.includes('%2F') && !rest.includes('%2f');
+  let rest: string;
+  try {
+    rest = decodeURIComponent(uri.slice(base.length));
+  } catch {
+    return false;
+  }
+  return PLAIN_NAME.test(rest);
 }
 
-/** Folder names only; a path with a separator or a dot-dot is refused, so a bad id can never leave the folder. */
-const safeName = (path: string): boolean => /^[A-Za-z0-9._-]+$/.test(path) && !path.includes('..');
+/** Only the stored shape; `.`, `..`, `.jpg`, a separator or another extension is refused, so no name reaches the folder itself (review M1). */
+const safeName = (path: string): boolean => STORED_NAME.test(path);
+
+/** A new name for a temporary file; the id is the caller's (a UUIDv7 on the phone). */
+function freshName(id: string, ext: string): string {
+  const name = `${id}.${ext}`;
+  if (!PLAIN_NAME.test(name)) throw new Error('photo_temp_name_refused');
+  return name;
+}
+
+/** Where scribe-photo's picker copies the next picked original: a new file in Caches/ImagePicker. */
+export const pickerDestination = (id: string): string => new File(pickerDir(), freshName(id, 'img')).uri;
 
 export function expoPhotoFiles(): PhotoFiles {
   return {
@@ -100,9 +130,11 @@ export function expoPickedFiles(): PickedFiles {
   };
 }
 
-/** The native step's temporary output: only files directly inside Caches/ScribePhoto can be read or removed. */
-export function expoBakedFiles(): { read(uri: string): Promise<Uint8Array>; remove(uri: string): Promise<void> } {
+/** The native step's files: it reads only a picked original, and writes only a new name in Caches/ScribePhoto. */
+export function expoBakedFiles(newId: () => string): BakedFiles {
   return {
+    isPicked: (uri) => withinFolder(uri, pickerDir().uri),
+    destination: () => new File(bakedDir(), freshName(newId(), 'jpg')).uri,
     async read(uri) {
       if (!withinFolder(uri, bakedDir().uri)) throw new Error('baked_file_outside_folder');
       return await new File(uri).bytes();
