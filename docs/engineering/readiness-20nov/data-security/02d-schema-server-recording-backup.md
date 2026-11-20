@@ -5,8 +5,8 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 ## How to read a table block
 
 - Levels are the names in `docs/legal/DATA_CLASSIFICATION.md` section 1: L1 Public, L2 Internal, L3 Confidential (PII), L4 Restricted. The L cell is the first token of the column comment in the migration; `-` means no comment (a gap).
-- Roles: `au` is a signed-in, non-anonymous person (every table carries a restrictive policy that refuses anonymous sessions); `anon` is signed out; `svc` is `service_role`. `fn` means no direct grant: the column is reached only through the security definer functions named in Written by and Read by. `svc` holds no table grant on any table here (`supabase/tests/grants.mjs:5-11`), so it acts only through the functions in 02e.
-- Read `au` and Write `au:I`, `au:U`, `au:IU` are column privileges (INSERT, UPDATE) read from the catalog; the rows a person can reach are in the Row scope line.
+- Roles: `au` is a signed-in, non-anonymous person (every table carries a restrictive policy that refuses anonymous sessions); `anon` is signed out; `svc` is `service_role`. `fn` means no direct grant: the column is reached only through the security definer functions named in Written by and Read by. `svc` holds no table grant in `public`, `ops` or `sync_private` (`supabase/tests/grants.mjs:5-11`), so it acts only through the functions in 02e; it has SELECT on the six published `insights` views (shown as `svc` in Read).
+- Read `au` and Write `au:I`, `au:U`, `au:IU` are column privileges (INSERT, UPDATE) read from the catalog; the rows a person can reach are in the Row scope line. Write is the privilege only: triggers (`entries_guard_immutable`, `client_content_gate`, `entries_family_rules`, `entries_set_sync_xid`, `touch_updated_at`) decide what a client can truly set, and the Note marks columns a trigger or generation sets (server-set).
 - Retention, Deletion path and Tests are per table and apply to every column unless the Note or the Deletion path names the column (for example "set null at deletion").
 - Written by and Read by are found by searching the final function bodies for insert, update, delete, from and join on the table [V, automated; dynamic SQL would be missed].
 - Tests are the files in `supabase/tests` that name the table. A name is not proof of an allow case and a deny case for each policy (Gap G-7 in 01a).
@@ -18,7 +18,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.audio_blobs (table, 13 columns)
 
-- What: One row per encrypted recording backup (the file is in the entry-audio bucket). wrapped_file_key is L4.
+- What: One row per encrypted recording backup (the file is in the entry-audio bucket). wrapped_file_key is L4. Created at `20261023000000:277`.
 - Levels: L2 x7, L3 x5, L4 x1. RLS: on. Owner agent: sync, security-architect.
 - Table grants: anon none; au SELECT; svc none. Row scope for au: owner (audio_blobs_own); authenticated holds SELECT on all 13 columns including wrapped_file_key (explicit_grants).
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; audio_blobs_own select [authenticated] (author_id = auth.uid()).
@@ -26,7 +26,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 - Keys: (entry_id); FK (author_id) -> profiles(id) del cascade; (child_id, author_id, key_version) -> child_keys(child_id, profile_id, key_version) del cascade; (child_id) -> children(id) del cascade. Indexes: audio_blobs_author_idx, audio_blobs_child_idx, audio_blobs_key_idx, audio_blobs_object_path_key (unique).
 - Retention: Until the letter is purged, the held letter discarded, the backup deleted or the account deleted; pending rows 24 hours; orphan rows 30 days (backup_svc_sweep, 20261023000000:1580-1590).
 - Deletion path: backup_discard, backup_delete_all, backup_forget_entry trigger, sweep; each enqueues the object path.
-- Tests (files that name it): access_matrix, audio_backup, audio_backup_purge, former_member_purge, grants*, purge_legal_holds, sync_v1_server +1.
+- Tests (files that name it): access_matrix, audio_backup, audio_backup_purge, former_member_purge, grants*, purge_legal_holds, sync_v1_server, v1_wire_contract.
 
 | Column | Type | Null | Default | L | Read | Write | Note |
 |---|---|---|---|---|---|---|---|
@@ -41,12 +41,12 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 | format_version | smallint | no | 1 | L2 | au | fn | object format version |
 | state | text | no | 'pending' | L2 | au | fn | pending or confirmed |
 | created_at | timestamptz | no | now() | L2 | au | fn | created |
-| updated_at | timestamptz | no | now() | L2 | au | fn | updated |
+| updated_at | timestamptz | no | now() | L2 | au | fn | [server-set: a trigger or generation decides] updated |
 | confirmed_at | timestamptz | yes |  | L2 | au | fn | confirmed |
 
 ### public.backup_devices (table, 8 columns)
 
-- What: Phones enrolled for recording backup restore; public key only.
+- What: Phones enrolled for recording backup restore; public key only. Created at `20261023000000:250`.
 - Levels: L2 x5, L3 x3. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: owner, but authenticated has no grant so reads go through functions.
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; backup_devices_own select [authenticated] (profile_id = auth.uid()).
@@ -69,7 +69,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.backup_usage (table, 6 columns)
 
-- What: Quota and call counters for backup.
+- What: Quota and call counters for backup. Created at `20261023000000:299`.
 - Levels: L2 x5, L3 x1. RLS: on. Owner agent: sync.
 - Table grants: anon none; au none; svc none. Row scope for au: owner, inert (no grant).
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; backup_usage_own select [authenticated] (profile_id = auth.uid()).
@@ -86,19 +86,19 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 | used_bytes | bigint | no | 0 | L2 | fn | fn | bytes of pending and confirmed objects |
 | begin_window_start | timestamptz | no | now() | L2 | fn | fn | start of the current hour window |
 | begin_window_hits | integer | no | 0 | L2 | fn | fn | backup_begin calls that made a row in the window |
-| updated_at | timestamptz | no | now() | L2 | fn | fn | updated |
+| updated_at | timestamptz | no | now() | L2 | fn | fn | [server-set: a trigger or generation decides] updated |
 
 ### public.child_keys (table, 8 columns)
 
-- What: Per-book key material. escrow_wrap is the book key sealed to the escrow public key (L4); the phone cannot select it.
+- What: Per-book key material. escrow_wrap is the book key sealed to the escrow public key (L4); the phone cannot select it. Created at `20261023000000:263`.
 - Levels: L2 x4, L3 x3, L4 x1. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none at table level, column SELECT on 7 of 8; svc none. Row scope for au: owner (child_keys_own); column grant leaves out escrow_wrap (grants.mjs COLUMNS).
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; child_keys_own select [authenticated] (profile_id = auth.uid()).
-- Written by: purge_book_keep_authors, backup_delete_all, backup_store_key, escrow_rewrap_key. Read by: backup_begin, ops_incident_scope, escrow_open_request, prepare_account_purge, book_purge_held, escrow_load_wraps, escrow_record_unwraps, escrow_request_context, escrow_rotation_batch and 1 more.
+- Written by: purge_book_keep_authors, backup_delete_all, backup_store_key, escrow_rewrap_key. Read by: backup_begin, ops_incident_scope, escrow_open_request, prepare_account_purge, book_purge_held, escrow_load_wraps, escrow_record_unwraps, escrow_request_context, escrow_rotation_batch, escrow_rotation_failed.
 - Keys: (child_id, profile_id, key_version); FK (child_id) -> children(id) del cascade; (profile_id) -> profiles(id) del cascade. Indexes: child_keys_escrow_version_idx, child_keys_profile_idx.
 - Retention: Until account deletion or the book's purge.
 - Deletion path: cascade from profile or book; backup_delete_all.
-- Tests (files that name it): access_matrix, audio_backup, audio_backup_escrow, audio_backup_purge, former_member_purge, grants*, ops_deletion_worker +2.
+- Tests (files that name it): access_matrix, audio_backup, audio_backup_escrow, audio_backup_purge, former_member_purge, grants*, ops_deletion_worker, purge_legal_holds, sync_v1_server.
 
 | Column | Type | Null | Default | L | Read | Write | Note |
 |---|---|---|---|---|---|---|---|
@@ -113,11 +113,11 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.restore_requests (table, 17 columns)
 
-- What: A request to restore recordings to a new phone; held for a waiting period.
+- What: A request to restore recordings to a new phone; held for a waiting period. Created at `20261023000000:308`.
 - Levels: L2 x12, L3 x5. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: owner, inert (no grant); functions return it.
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; restore_requests_own select [authenticated] (profile_id = auth.uid()).
-- Written by: deletion_requests_backup_cancel, escrow_open_request, backup_svc_sweep, backup_svc_stop, backup_approve_request, backup_cancel_request, backup_delete_all, backup_revoke_device, escrow_load_wraps and 1 more. Read by: backup_pending_requests, escrow_record_unwraps, escrow_request_context.
+- Written by: deletion_requests_backup_cancel, escrow_open_request, backup_svc_sweep, backup_svc_stop, backup_approve_request, backup_cancel_request, backup_delete_all, backup_revoke_device, escrow_load_wraps, escrow_set_request_state. Read by: backup_pending_requests, escrow_record_unwraps, escrow_request_context.
 - Keys: (id); FK (approved_by_device) -> backup_devices(device_id) del set null; (device_id) -> backup_devices(device_id) del cascade; (profile_id) -> profiles(id) del cascade. Indexes: restore_requests_one_open_per_device (unique), restore_requests_profile_idx, restore_requests_stop_token_hash_key (unique).
 - Retention: 90 days after a final state (backup_svc_sweep).
 - Deletion path: cascade from profile.
@@ -145,7 +145,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.restore_approvals (table, 6 columns)
 
-- What: A sealed one-time code for one enrolled device to approve a restore.
+- What: A sealed one-time code for one enrolled device to approve a restore. Created at `20261023000000:334`.
 - Levels: L2 x2, L3 x4. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: owner via request, inert (no grant).
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; restore_approvals_own select [authenticated] (EXISTS ( SELECT 1 FROM restore_requests r WHERE ((r.id = restore_approvals.request_id) AND (r.profile_id = au.
@@ -166,13 +166,13 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.escrow_unwraps (table, 12 columns)
 
-- What: Append-only log of every key unwrap; ids, reason, outcome, times; no key bytes.
+- What: Append-only log of every key unwrap; ids, reason, outcome, times; no key bytes. Created at `20261023000000:345`.
 - Levels: L2 x7, L3 x5. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: owner (escrow_unwraps_own), inert (no grant).
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au; escrow_unwraps_own select [authenticated] (profile_id = auth.uid()).
 - Written by: profiles_pseudonymise_escrow_unwraps, backup_svc_sweep, escrow_record_unwraps, escrow_rewrap_key, escrow_rotation_failed. Read by: backup_svc_unwraps_between, escrow_load_wraps, escrow_set_request_state.
 - Keys: (id); FK (profile_id) -> profiles(id). Indexes: escrow_unwraps_occurred_idx, escrow_unwraps_profile_idx, escrow_unwraps_request_idx.
-- Retention: 24 months (backup_svc_sweep); daily copy in ops-ledger/escrow 60 days.
+- Retention: 24 months (backup_svc_sweep), as built; D-021 says 12, open with counsel (default 24); daily copy in ops-ledger/escrow 60 days.
 - Deletion path: profile_id set null and subject_hash set at account deletion (trigger profiles_pseudonymise_escrow_unwraps).
 - Tests (files that name it): access_matrix, audio_backup, audio_backup_escrow, audio_backup_purge.
 
@@ -193,7 +193,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### public.escrow_rotation_notices (table, 6 columns)
 
-- What: One email to send per account per escrow key rotation.
+- What: One email to send per account per escrow key rotation. Created at `20261023000000:367`.
 - Levels: L2 x5, L3 x1. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: no role; table privileges revoked.
 - Policies: restrictive no_anonymous (NOT is_anonymous()) for au.
@@ -214,7 +214,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### ops.audit_log (table, 10 columns)
 
-- What: Operator runbook access log (who looked at what, why). Append-only (ops.audit_log_guard).
+- What: Operator runbook access log (who looked at what, why). Append-only (ops.audit_log_guard). Created at `20261004200000:33`.
 - Levels: L2 x6, L3 x4. RLS: on. Owner agent: ops, security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: no role; service functions only (ops_audit_write).
 - Written by: ops_retention, ops_audit_write. Read by: no function.
@@ -238,7 +238,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### ops.alert_state (table, 3 columns)
 
-- What: Cooldown for operator alert emails.
+- What: Cooldown for operator alert emails. Created at `20261004200000:62`.
 - Levels: L1 x1, L2 x2. RLS: on. Owner agent: ops.
 - Table grants: anon none; au none; svc none. Row scope for au: no role.
 - Written by: ops_alert_claim, ops_alert_reset. Read by: no function.
@@ -255,7 +255,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### ops.apple_tokens (table, 6 columns)
 
-- What: Encrypted Apple refresh token, kept only to revoke Sign in with Apple at deletion. AAD is the profile id.
+- What: Encrypted Apple refresh token, kept only to revoke Sign in with Apple at deletion. AAD is the profile id. Created at `20261004200000:75`.
 - Levels: L1 x1, L2 x3, L3 x1, L4 x1. RLS: on. Owner agent: security-architect.
 - Table grants: anon none; au none; svc none. Row scope for au: no role; ops_apple_token_get returns it to the worker only.
 - Written by: ops_apple_token_delete, ops_apple_token_put. Read by: ops_apple_token_get.
@@ -271,11 +271,11 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 | key_version | integer | no |  | L2 | fn | fn | key version |
 | client_id | text | no |  | L1 | fn | fn | Apple client id the token was issued to (bundle id or Services ID) |
 | created_at | timestamptz | no | now() | L2 | fn | fn | system timestamp |
-| updated_at | timestamptz | no | now() | L2 | fn | fn | system timestamp |
+| updated_at | timestamptz | no | now() | L2 | fn | fn | [server-set: a trigger or generation decides] system timestamp |
 
 ### ops.forget_quota (table, 3 columns)
 
-- What: Daily call count per person to analytics-forget.
+- What: Daily call count per person to analytics-forget. Created at `20261004200000:68`.
 - Levels: L2 x2, L3 x1. RLS: on. Owner agent: ops.
 - Table grants: anon none; au none; svc none. Row scope for au: no role.
 - Written by: ops_consume_forget_quota, ops_retention. Read by: no function.
@@ -293,8 +293,10 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ## Gaps found in this file
 
+- G-22 `audio_blobs.wrapped_file_key` (L4) is SELECTable by au on all 13 columns (`explicit_grants`), where `child_keys.escrow_wrap` is left out. Flagged, not decided: the key is wrapped by the book key and the policy limits rows to the owner. `security-architect` decides whether to narrow the grant.
+- The backup feature flag (`EXPO_PUBLIC_BACKUP`) is off in the shipped build, so no row of the eight backup tables exists in production use today.
 - G-16 `escrow_unwraps` keeps rows 24 months; D-021 says 12 months for key-unwrap logs (open, COUNSEL_PACKET Q51, `DATA_CLASSIFICATION.md` 4.3.1). The daily copy `ops-ledger/escrow/` is made from the table before pseudonymising, so person ids stay in that file up to 60 days after an account is deleted (`backup_svc_unwraps_between` returns `profile`, `subject`, `device`, `child`: `20261023000000:1611`).
-- G-8 Inert policies: `backup_devices_own`, `backup_usage_own`, `escrow_unwraps_own`, `restore_requests_own`, `restore_approvals_own` (no grant; reads go through functions).
+- G-8 (14 across the pack) Inert policies: `backup_devices_own`, `backup_usage_own`, `escrow_unwraps_own`, `restore_requests_own`, `restore_approvals_own` (no grant; reads go through functions).
 
 ## Questions for the council
 
