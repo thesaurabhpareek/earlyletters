@@ -1,15 +1,15 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `4879ff5c`, 20 Nov 20:00 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `4879ff5c`, 20 Nov 19:04 UTC).
 Blocked until: the founder reads the PROPOSED held-screen words (`needs:founder`): `apps/mobile/src/components/account/copy.ts` ships them in app code, outside `packages/content`, so merging before approval puts unapproved words in front of a parent (review B note 4). Device row 4 (cold-start frames before the Keychain read) goes on the Build 13 sheet. Product ruling wanted: the design names the one action "Use another account (sign out)" (`08-keeping.md:132`), the PR uses the approved word "Sign out" (review A note 3). Nothing else blocks: base develop, `mergeable_state` clean, +385 lines net (390 added, 5 removed), 11 files [V].
 
 ```
-BRIEF PR-871 (BL-961 part 2 of 3: the cover)      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:00 UTC
+BRIEF PR-871 (BL-961 part 2 of 3: the cover)      Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13, holds the cut (Q1 recommendation)   Wave: 1
 
 1. GOAL: When account B signs in on a phone that holds account A's book, a cover sits over every route and deep link from B's first moment, shows nothing of A's and no email of B's,
    and offers one action: Sign out. Nothing is deleted, moved or uploaded.
 
 2. CARD ROWS and TEST TITLES
-   Rows: [X4-R1] (cover half, CR-67 AX-12), NS-10-R3, NS-10-R12 (no email on a shared screen). Card 08 at 450bcb4a (R3 around line 479).
+   Rows: [X4-R1] (cover half, CR-67 AX-12), NS-10-R3, NS-10-R12's no-email rule is asserted on the cover only; the title `[NS-10-R12]` and the method-name line belong to BL-978a. Card 08 at 450bcb4a (R3 around line 479).
    Titles (catalogue A, PR #925; the PR's own titles are in `account-gate`, `account-layer`, `account-route` tests):
      [NS-10-R3] a second account never sees the first
      [X4-R1] sign out keeps the book; a second account never sees, claims or uploads it

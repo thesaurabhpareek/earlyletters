@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:08 UTC).
-Blocked until: #871 merged (it edits the same two gate files: `gate.logic.ts` and `welcome.logic.ts`); the founder approves the held screen's words (PROPOSED keys, `finishSetup` screen and the `exportElsewhere` line; BL-965 words, #870). Plan correction for Karma: plan 2.3 says "922b is #869". It is not: #869 is `bookVisibleTo` (BL-961 part 1). BL-922's second half, "the consent sheet stops calling `readAccountBooks`", is NOT built: `app/(auth)/sign-in/consent.tsx:134` and `:151` still call it, and `first-run-new-account.test.ts:152-156` pins two calls [V at 16e61549]. No open PR names BL-922 [V `gh api pulls`].
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Blocked until: #871 AND #879 merged (#871 edits the same two gate files: `gate.logic.ts` and `welcome.logic.ts`); the founder approves the held screen's words (two homes, one each: #871's cover words live in app code `components/account/copy.ts`; this brief's `finishSetup` and `exportElsewhere` lines are PROPOSED keys in packages/content; `content` later moves #871's) (PROPOSED keys, `finishSetup` screen and the `exportElsewhere` line; BL-965 words, #870). Plan correction for Karma: plan 2.3 says "922b is #869". It is not: #869 is `bookVisibleTo` (BL-961 part 1). BL-922's second half, "the consent sheet stops calling `readAccountBooks`", is NOT built: `app/(auth)/sign-in/consent.tsx:134` and `:151` still call it, and `first-run-new-account.test.ts:152-156` pins two calls [V at 16e61549]. No open PR names BL-922 [V `gh api pulls`].
 
 ```
-BRIEF BL-922 (held screen and one account reader)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:08 UTC
+BRIEF BL-922 (held screen and one account reader)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13, holds the cut (Q1 recommendation)   Wave: 1
 
 1. GOAL: When a returning account with no local book has consent outstanding, the app shows the consent sheet or a held screen with a way forward within 10 seconds, never the child step;
@@ -48,7 +48,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13, holds the cut (Q
    Test cases above. Done also means: red on old code and on mutants; `sync_books` read once per launch (a count assertion).
 
 10. PR BREAKDOWN
-    PR 922a: the held screen (new step `finishSetup`, `OpeningView` `consent`) | about 350 lines, 9 files | base develop after #871 | flag-off proof: none needed (no flag; with a book nothing changes)
+    PR 922a: the held screen (cut line if it passes 400 lines: (i) gate step, `OpeningView` and welcome mapping with tests; (ii) the screen, its links and the S1-204 text) (new step `finishSetup`, `OpeningView` `consent`) | about 350 lines, 9 files | base develop after #871 | flag-off proof: none needed (no flag; with a book nothing changes)
     PR 922b: the consent sheet stops reading books when the route will ask | about 150, 4 | base develop (rewrite the pins at `first-run-new-account.test.ts:152-156`)
 
 11. LENSES: A principal-architect, B security-architect (plan 2.3). `design-systems` reads the screen.

@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `e27d104e`, 20 Nov 20:03 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `e27d104e`, 20 Nov 19:04 UTC).
 Blocked until: #871 merged (base is `fix/mobile-bl-961-account-cover`; retarget to develop and rebuild per `stacked-prs` section 5 when it does). No founder item of its own; the held-screen words are #871's. Everything here is code, 341 added, 24 removed, 9 files [V].
 
 ```
-BRIEF PR-879 (BL-961 part 3 of 3: store reads)    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:03 UTC
+BRIEF PR-879 (BL-961 part 3 of 3: store reads)    Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 3 (Account and consent)   Build: 13, holds the cut (Q1 recommendation)   Wave: 1
 
 1. GOAL: When account B signs in on a phone that holds account A's book, every list the app reads (books, letters, drafts, deleted, hidden) is empty for B, and nothing is deleted, moved or uploaded.
