@@ -11,7 +11,7 @@ Written 20 Nov 2026 after the founder's directive of the same day, quoted verbat
 3. Product triages in this order: A answer from record, F needs evidence (cheapest check first), E founder-only, C cross-lens, D exec ruling, B clarify in place. Section 3 has the rule.
 4. Nothing waits in a line. Lens reviews (design, policy, security, QA, engineering) run at the same time. A fact check runs while they do.
 5. Only three things are gates: the founder-only list (Karma, section 3), the X2 security and counsel read, and the merge gates (D-132: two counted reviews at the full 40-char head sha, green CI).
-6. Changing a locked statement needs an errata row (next free E number, now E74) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
+6. Changing a locked statement needs an errata row (next free E number, now E81) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
 7. Apply the change to the card in the same PR as the errata row. Tell engineering the same day by handoff, with the plan delta.
 8. Silence past the target time means the stated default stands, except founder-only and counsel items, which wait with their safe default in force and nothing irreversible done.
 9. Only class E reaches the founder: batched, one digest line a day, each with a default and a deadline. Never one at a time.
@@ -199,7 +199,7 @@ The harness learns which questions are worth asking by looking at what it asked.
 5. Prune (see "Keeping context small").
 6. Post a short retro entry in the harness lessons file (below). Karma reads it.
 
-**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 73 errata rows (E1 to E73) after the lock, and 147 closure rows (CL-001 to CL-147; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
+**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 80 errata rows (E1 to E80) after the lock, and 154 closure rows (CL-001 to CL-154; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
 
 | Metric | How to count it | What a bad trend means |
 |---|---|---|
@@ -267,6 +267,6 @@ Owners are the harness owner (Karma, under D-132) for `scripts/agents/`, the ros
 - I did not run `scripts/agents/handoff.mjs`, `dispatch.mjs` or `ledger.mjs`. Their behaviour here comes from `AGENT-COMMS.md`, `OPERATING_MODEL.md` and a read of label handling in `scripts/agents/lib.mjs`. A `req-question` kind does not exist yet; until it does, use kind `question` and the comment tag.
 - I did not check whether the digest or board already carry a requirements field.
 - I did not verify any law, Apple rule or vendor term. This file makes no legal claim.
-- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E73 and the closures CL-001 to CL-147 and check that each lands in a sensible class.
+- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E80 and the closures CL-001 to CL-154 and check that each lands in a sensible class.
 
 Sources read this session: `docs/agents/COORDINATION.md`, `AGENT-COMMS.md`, `OPERATING_MODEL.md`, `HARNESS.md` (headings and board and digest references only), `.claude/skills/early-letters-cto/SKILL.md` sections 1, 3, 10, 10a, `docs/agents/exec/COUNCIL.md`, `18-errata-after-lock.md`, `22-final-holistic-spec.md` sections 9 and 10, `GAP-LOG.md` "Closures 20 Nov", `FOUNDER-MESSAGES-VERBATIM.md`, `README.md` of this folder.

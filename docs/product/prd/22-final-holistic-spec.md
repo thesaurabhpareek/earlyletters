@@ -140,6 +140,8 @@ Founder digest: defaults that stand (added 20 Nov, one line each, default and de
 | E47 (CL-121, CL-146, E72) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
 | E56 (CL-130) | A No at the age step sends nothing and writes no server row (the phone keeps a local stop flag, NS-40-R3); Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
 | E59 (CL-133) | The free allowance is per phone, not per account | Per phone, as built | `18` E59 |
+| E75 (CL-149) | Marketing email: people who sign up in the app get transactional mail only (codes, account and security notices, receipts, legal); no newsletter, product news or Plus offer, and the waitlist is never joined to accounts. Whether the waitlist's own "tell me when it is ready" mail is commercial is counsel's (Q34) | No marketing email to app addresses at 1.0; any later one needs his yes and a separate opt-in off by default | `18` E75; FR-MKT-44 |
+| E78 (CL-152) | The new-device sign-in email is not built for 1.0 (backup, escrow and restore stay off) and is a hard gate before you are asked to turn the backup on | Not built for 1.0; built, tested and read by security before the backup flip (NS-08-R21) | `18` E78; NS-08-R21 |
 | E67 (F-1) | Writing tools on letter fields (SOQ F-1): accept the recorded finding, or fund the small native setting (NSC-05)? Until decided, the production profile keeps the photos flag off and the Firsts label waits | OFF on letter fields (brief D2); not shown in a production profile without the native setting | `18` E67; SOQ F-1 |
 | E67 (F-9) | The G1 server gate (block others' rows at once on a newer Terms version, or after a grace window)? | Grace window as `BRIEF-G1-sync-pull-consent-gate.md` line 14 says (numbers not re-read); the age attestation is never graced | `18` E67; SOQ F-9 |
 | E67 (F-12) | A secret scan in CI and `docs/ops/SECRETS.md` | Yes, both (neither exists today); the CI workflow is still to be written, and it goes under `docs/ops/proposed` until he copies it | `18` E67; SOQ F-12 |
@@ -183,7 +185,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E73); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E80); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).

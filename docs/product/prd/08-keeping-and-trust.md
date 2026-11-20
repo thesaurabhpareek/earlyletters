@@ -133,6 +133,7 @@ Today (backup off): steps 1 to 4 do not exist. What exists and this card guards:
 | NS-08-R18 | (Flip build) Given the storage quota is reached on our side, Then capture and Keep still work and no charge or block is shown | P0 (c) at flip | `[NS-08-R18] quota never blocks a letter` |
 | NS-08-R19 | (Flip build) Given the parent stops backup, Then uploads stop at once and server copies are deleted on the published clock (ruling D12) | P0 (b) at flip | `[NS-08-R19] withdrawing consent deletes server copies` |
 | NS-08-R20 | (Flip build) Given each of the four provenance states, Then it has its own text and its own VoiceOver phrase, wraps at AX5, and is never told by colour or icon alone | P1 | `[NS-08-R20] provenance states are spoken and wrap` |
+| NS-08-R21 | (Flip build) Given the flip is proposed, When the founder is asked to turn `EXPO_PUBLIC_BACKUP` on, Then the new-device sign-in email is built and tested first (it fires once for a session on a device the account has not used, never for the first device, never from the client, email only; its "Not you?" link opens a page that acts only on a button press and signs that session out; the line "We will sign that device out" is shown only once that lever and page exist), and a `security-architect` read of it is on record (E78) | P0 (b) at flip | `[NS-08-R21] new-device email before the flip` |
 
 ### 8. Non-functional budgets
 Inherits 06-nfr. Differences:
