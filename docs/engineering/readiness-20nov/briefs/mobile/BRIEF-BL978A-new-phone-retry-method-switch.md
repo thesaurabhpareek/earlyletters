@@ -1,4 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Already stale in the design: `consent.ts:117` minted a new key per call; #903 fixed it (R7 done; `consent.ts:113` now holds an answer).
+Pin at develop 4d33978f (errata E1 to E73, CL-001 to CL-147; E74 to E82 and CL-148 to CL-157 NOT yet applied; `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`): E49 (CL-123): B sees nothing of A; the D1 line is for A at sign-out only. E58 (CL-132): the update-required line in Me; a newer version that is not required shows nothing. E59 (CL-133, founder's promise, default stands): the free allowance is per phone, no account id.
 Blocked until: BL-922 merged (this builds on it, backlog line 3908); the PROPOSED method line for R12 read by the founder. Open for `sync` (not mine): whether `sync_pull` serves rows while consent is outstanding (G1, issue #909) and OQ-6 (what the other phone sees after a deletion elsewhere, R9: no code until `sync` answers). The R7 half of this design PR is done and merged as #903 [V].
 
 ```

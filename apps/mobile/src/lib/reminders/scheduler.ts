@@ -28,9 +28,10 @@ import { subscribe } from '../store';
 import { reminderCopy } from './copy';
 import { ID_PREFIX, planReminders, planSignature, type Cadence, type PlannedNotification } from './planner';
 import { lastOwnSaveAt, plannerChildren, readPrefs, writePrefs } from './prefs';
+import { REMINDER_SOURCE, reminderContent } from './payload';
 
-/** Marks our notifications in `content.data`, so we never cancel anyone else's. */
-export const REMINDER_SOURCE = 'scribe.reminders';
+/** Marks our notifications in `content.data`, so we never cancel anyone else's (defined in payload.ts). */
+export { REMINDER_SOURCE };
 const ANDROID_CHANNEL = 'reminders';
 const STORE_DEBOUNCE_MS = 1200;
 
@@ -152,14 +153,7 @@ async function apply(): Promise<void> {
   for (const p of plan) {
     await Notifications.scheduleNotificationAsync({
       identifier: p.id,
-      content: {
-        title: p.title,
-        body: p.body,
-        // Enums only. No names, no text, nothing about a letter.
-        data: { source: REMINDER_SOURCE, kind: p.kind },
-        // Silent: the evening nudge often lands near a sleeping baby.
-        sound: false,
-      },
+      content: reminderContent(p),
       trigger: triggerFor(p),
     });
   }

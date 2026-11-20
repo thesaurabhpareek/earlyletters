@@ -18,8 +18,9 @@
  *   until they are born.
  * - At most one note a day: a month or birthday note replaces that day's
  *   evening nudge (F2 "not the birthday"; C-REQ-002 counts them apart).
- * - Copy rotates through the 8 evening variants by slot order, so no variant
- *   repeats within 8 nudges and no title shows twice in a row (C-REQ-006).
+ * - Copy rotates through the built evening variants by slot order (NS-48
+ *   phase 1: `select`, `@scribe/core` notification-key; evening-worded ones
+ *   only from 17:00), so no variant repeats within the pool and no title shows twice in a row (C-REQ-006).
  * - No child name unless the user turned "Names in notifications" on
  *   (D-025). Never any letter text.
  * - A quieted book adds nothing (F12-REQ-011; NS-13-R12, NS-32-R14): no
@@ -30,6 +31,7 @@
  * `gentleReturn`, plan notices, per-book "pause celebrations".
  */
 import { en } from '@scribe/content';
+import { eligibleFloorIndexes, floorIndexOfKey, selectNotificationKey, type KeySelector } from '@scribe/core';
 import { childLabel, fill } from '../copy';
 import { reminderCopy } from './copy';
 import {
@@ -100,6 +102,13 @@ export interface PlanInput {
    * falls back to the default.
    */
   window?: ReminderWindow;
+  /**
+   * Picks the catalogue key for each evening nudge (NS-48-R2): the planner
+   * has already decided the note, this only chooses its words. Tests inject
+   * another selector to prove volume does not depend on it; an unknown key
+   * or a throw falls back to the floor (NS-48-R15).
+   */
+  select?: KeySelector;
 }
 
 /** Local minutes of the day, inclusive: reminders fire only between `earliest` and `latest`. */
@@ -122,6 +131,8 @@ export interface PlannedNotification {
   fireAt: number;
   title: string;
   body: string;
+  /** Catalogue key of the words (NS-48). Never sent in the payload (NS-48-R31). */
+  key?: string;
   /** Index into the evening variants. */
   variant?: number;
   /** Month of age for month notes; years for birthdays. */
@@ -225,18 +236,22 @@ export function slotOrdinal(date: CalendarDate, weekdays: number[]): number {
 }
 
 const NAMES_CHILD = en.notifications.evening.map((v) => /\{child\}/.test(`${v.title} ${v.body}`));
-const NAMED_PER_CYCLE = NAMES_CHILD.filter(Boolean).length;
+const ALL_VARIANTS: readonly number[] = Array.from({ length: VARIANTS }, (_, i) => i);
 
 /**
  * How many name-bearing nudges come before this one. Children are named in
  * turn by this count, so a variant without a name ("Tonight's letter") never
  * makes one child come up twice in a row or less often (PRD C F1, K-12).
+ * DEVIATES from NS-48-R20 as written (erratum to be filed): R20 says ordinal
+ * modulo the books, whatever the pool. This counts name-bearing nudges over the
+ * eligible pool; from 17:00 that is the built rotation (R23), so it stays.
  */
-export function namedSlotIndex(ordinal: number): number {
-  const cycle = Math.floor(ordinal / VARIANTS);
+export function namedSlotIndex(ordinal: number, pool: readonly number[] = ALL_VARIANTS): number {
+  const named = pool.filter((v) => NAMES_CHILD[v]).length;
+  const cycle = Math.floor(ordinal / pool.length);
   let before = 0;
-  for (let v = 0; v < ordinal % VARIANTS; v++) if (NAMES_CHILD[v]) before++;
-  return cycle * NAMED_PER_CYCLE + before;
+  for (let p = 0; p < ordinal % pool.length; p++) if (NAMES_CHILD[pool[p]]) before++;
+  return cycle * named + before;
 }
 
 /** "Asha", "Asha and Dev", "Asha, Dev and Nina". */
@@ -286,8 +301,21 @@ function inQuietHours(fireAt: number, timeZone: string, window: ReminderWindow):
   return isQuietTime(p.hh, p.mm, window);
 }
 
+/** The injected selector's key if it is one of ours; otherwise the floor, so a note is never without words. */
+function chooseKey(select: KeySelector, slot: number, minutesOfDay: number): string {
+  try {
+    const key = select({ slotOrdinal: slot, minutesOfDay });
+    const index = floorIndexOfKey(key); // eligible now only: no evening-worded key before 17:00 (NS-48-R12)
+    if (index !== null && eligibleFloorIndexes(minutesOfDay).includes(index)) return key;
+  } catch {
+    // fall through to the floor
+  }
+  return selectNotificationKey({ slotOrdinal: slot, minutesOfDay });
+}
+
 export function planReminders(input: PlanInput): PlannedNotification[] {
   const { now, timeZone, prefs } = input;
+  const select = input.select ?? selectNotificationKey;
   if (!prefs.enabled || prefs.paused) return [];
 
   const horizon = Math.max(1, input.horizonDays ?? 21);
@@ -358,8 +386,11 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
       const fireAt = at(date, time, timeZone);
       if (fireAt <= now + MIN_LEAD_MS || fireAt < quietUntil || inQuietHours(fireAt, timeZone, window)) continue;
       const ordinal = slotOrdinal(date, weekdays);
-      const variant = ordinal % VARIANTS;
-      const named = prefs.namesOnLockScreen && included.length > 0 ? included[namedSlotIndex(ordinal) % included.length].name : null;
+      const minutesOfDay = time.hour * 60 + time.minute;
+      const key = chooseKey(select, ordinal, minutesOfDay);
+      const variant = floorIndexOfKey(key) ?? 0;
+      const nameIdx = namedSlotIndex(ordinal, eligibleFloorIndexes(minutesOfDay));
+      const named = prefs.namesOnLockScreen && included.length > 0 ? included[nameIdx % included.length].name : null;
       const c = eveningCopy(variant, date, named);
       out.push({
         id: `${ID_PREFIX}evening.${isoDate(date)}`,
@@ -370,6 +401,7 @@ export function planReminders(input: PlanInput): PlannedNotification[] {
         fireAt,
         title: c.title,
         body: c.body,
+        key,
         variant,
       });
     }

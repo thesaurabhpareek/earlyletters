@@ -94,3 +94,11 @@ Three buckets are created by migrations [V: `storage.buckets` after all 31 files
 
 - Q-f1 (CISO, CPO) Ship S1 (close the photo write path) before any build with `EXPO_PUBLIC_PHOTOS` on in production? Default: yes, as `data-and-sync.md` S1 and NS-01-R61 say; it needs the founder's `approve-migration`.
 - Q-f2 (CDO) Create `child-photos` now or remove its references? Default: neither; keep the references (the worker skips a missing bucket) and decide with the child-photo card.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-f1: RULED (C4), and the timing is firmer than the default: S1 ships before the first outside family (GF) and together with photo slices #835 to #840, not only before `EXPO_PUBLIC_PHOTOS` goes on, because the write path exists in every build, flag or not. Applying it is the founder's step (`approve-migration`). B3 ("not built") is not yet true while the two policies are live [V: `20261028000000:88-99`]. Gap G-9.
+- S1 must be tested on a database built from all files and on the A2 path: on a project that holds only files 1 and 2 the live policies are the original, weaker ones. Whether Supabase allows a trigger on the `storage` schema is [U]; confirm before writing it (CDO return). Delete stays (own folder); a removed member can still delete objects in their own folder; low harm, recorded.
+- Q-f2: AGREE neither. Correct `DATA_CLASSIFICATION.md` 4.4 (it says "v1.0, private" for a bucket no migration creates; founder merge) and add a test that the purge worker skips a missing bucket (G-10).

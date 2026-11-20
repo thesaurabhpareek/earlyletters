@@ -1,4 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `e27d104e`, 20 Nov 19:04 UTC).
+Pin at develop 4d33978f (errata E1 to E73, CL-001 to CL-147; E74 to E82 and CL-148 to CL-157 NOT yet applied; `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`): E49 (CL-123): B sees nothing of A on any list; the D1 sign-out line is for A only. The second-account test lists every surface from a registry (NSC-03), so a new store fails by default.
 Blocked until: #871 merged (base is `fix/mobile-bl-961-account-cover`; retarget to develop and rebuild per `stacked-prs` section 5 when it does). No founder item of its own; the held-screen words are #871's. Everything here is code, 341 added, 24 removed, 9 files [V].
 
 ```

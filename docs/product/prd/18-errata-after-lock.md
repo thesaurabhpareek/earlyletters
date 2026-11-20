@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E82) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E83) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E82 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E83 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-157 in `GAP-LOG.md`, one per row E43 to E82 in order, plus CL-155 for CR-71 D1, which is E78 confirmed (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-158 in `GAP-LOG.md`, one per row E43 to E83 in order, plus CL-155 for CR-71 D1, which is E78 confirmed (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74, CL-158 is E83).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -133,6 +133,7 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E80 | none; the dictionary stays on the phone, the server table stays unreachable | `functions/ai-and-speech.md` FR-AIS-34 | mobile, data-architect |
 | E81 | none for 1.0 (no alert sender is built); the alert cap binds NS-08-R21 and any later sender | `functions/risk-security.md` FR-SEC-36 | sync, security-architect |
 | E82 | BL-966 and the reminder copy PR add the names-off test; content swaps the birthday body when names are off | NS-13-R24, NS-32-R12 | mobile, content, design-systems |
+| E83 | the new-device sign-in email is built and read before the first outside family signs in (it also still gates the backup flip); the E78 proposed row changes its gate | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content, mobile |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
@@ -292,11 +293,11 @@ Ruling: no to all three. "Sign out other devices" stays as built and sends no em
 
 Edited in place: FR-SEC-36. Plan delta: none; sync, mobile, security-architect.
 
-### E78: the new-device sign-in email (20 Nov, Karma with product; F02-REQ-017, PT-19; FOUNDER default)
+### E78: the new-device sign-in email (20 Nov, Karma with product; F02-REQ-017, PT-19; FOUNDER default; the timing is changed by E83)
 
 Question (#1003, `F02-REQ-017`): P0 at 1.0, or later?
 
-Ruling: not built for 1.0, and a hard gate before the backup flip. At 1.0 recording backup, escrow and restore to a new phone stay off (NS-08-R5), and "Sign out other devices" is built. The catalogue says 1.0 but names no sender, and Supabase has no template for it, so it needs a new server sender, a device table and a "Not you?" page that is not in `apps/web` yet. Building that for launch adds data (device ids) and a new send path; not building it sends less. The gate is the other half of the old P0: new row NS-08-R21 says the email is built, tested and read by `security-architect` before anyone asks him to turn the backup on. The line "We will sign that device out" (`packages/content/src/emails/auth.en.ts:199`) is not shown to a parent until a server lever for one session and the stop page both exist. The email fires once for a device the account has not used, never for the first device, never from the client, email only. This changes what a user is told about their account safety, so it is a founder line with this default, not closed for good.
+Ruling (timing changed by E83): not built for 1.0, and a hard gate before the backup flip. At 1.0 recording backup, escrow and restore to a new phone stay off (NS-08-R5), and "Sign out other devices" is built. The catalogue says 1.0 but names no sender, and Supabase has no template for it, so it needs a new server sender, a device table and a "Not you?" page that is not in `apps/web` yet. Building that for launch adds data (device ids) and a new send path; not building it sends less. The gate is the other half of the old P0: new row NS-08-R21 says the email is built, tested and read by `security-architect` before anyone asks him to turn the backup on. The line "We will sign that device out" (`packages/content/src/emails/auth.en.ts:199`) is not shown to a parent until a server lever for one session and the stop page both exist. The email fires once for a device the account has not used, never for the first device, never from the client, email only. This changes what a user is told about their account safety, so it is a founder line with this default, not closed for good.
 
 Edited in place: new row NS-08-R21 (card 08), FR-SEC-36. Plan delta: NS-08-R21 is a new P0 row and joins gap group G03 (the flip rows, BL-976, waits for the flip decision); one proposed row, no BL id until #912 merges (E60): build the new-device sender, the device table, the stop page and the one-session sign-out lever, gated before the flip; new row; sync, security-architect, content.
 
@@ -336,4 +337,14 @@ Ruling: no. With names off (the default), and whenever App lock is on, no notifi
 
 Edited in place: NS-13-R24 (09-capture.md), NS-32-R12 (11-foundations.md). Plan delta: BL-966 and the reminder copy PR add the names-off test (no digit and no "year" in any lock-screen string); `content` swaps the birthday body for the neutral line when names are off; mobile, content, design-systems.
 
-Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E78 is also CR-71 D1, confirmed unchanged (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
+## Sixth round, E83 (20 Nov, Karma with product, from the founder's own answer)
+
+### E83: the new-device sign-in email comes before the first outside family (20 Nov, Karma with product; NS-08-R21, FR-SEC-36, F02-REQ-017; founder's word)
+
+Question: E78 made the new-device sign-in email a gate before the backup flip and not built for 1.0. Engineering asked for it before the first outside family signs in. The founder answered in chat on 20 Nov, recorded in `docs/engineering/readiness-20nov/DECISIONS-20nov.md` section 8, item 7: the email comes before the first outside family. Which holds?
+
+Ruling: the founder's answer holds, and it replaces the timing in E78 and CL-155. The new-device sign-in email is built, tested and read by `security-architect` before the first family outside the founder's own signs in. It stays an email only, with no push and no action link; it carries the in-app path (Me, Account, Sign out other devices) and tells the parent to secure their email account, because sign-in is by emailed code and link. "No action link" means no link in the email that does anything by being opened: the "Not you?" link opens a confirm page that signs that session out only when the parent presses its button, so a mail scanner opening the link changes nothing. It fires once for a session on a device the account has not used, never for the first device, never from the client. The privacy read of the device table comes first (NS-08-R21 now names it with the security-architect read); the device hash has no retention, class or label decision yet, and the read decides them. The line "We will sign that device out" is still shown only once the one-session lever and the stop page exist (E78). The gate before the backup flip stays as well, so NS-08-R21 now has two gates, the earlier one first. This sends one more email than E78 did and stores one more table (a device hash), and the reason is his: sign-in codes and links are the only sign-in, and a second phone can already sign in on the same account at 1.0 (NS-13-R22, R25).
+
+Edited in place: NS-08-R21 (08-keeping-and-trust.md), FR-SEC-36 (functions/risk-security.md), the E78 line of the founder digest (22-final-holistic-spec.md section 7). Plan delta: the sender, the device table, the stop page and the one-session sign-out lever move from "gated before the flip" to "gated before the first outside family"; the one proposed backlog row from E78 changes its gate; any scheduling is engineering's and the dates are the founder's; sync, security-architect, content, mobile.
+
+Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E83 changes the timing of the E78 line to the founder's own answer (CL-158); E78 was also CR-71 D1 (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.

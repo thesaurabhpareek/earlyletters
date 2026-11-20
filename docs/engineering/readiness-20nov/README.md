@@ -61,7 +61,7 @@ Source: plan 17 and 17b, the three brief READMEs (`briefs/*/README.md`). Waves a
 
 | Item | Recommendation |
 |---|---|
-| Size exceptions: plan 17 (858 lines) and 17b; photo stack #835 to #840 (783, 1015, 732, 629, 603 and growing); H1 | Accept the plan; accept the photo slices as they are one concern each; refuse #798 whole |
+| Size exceptions: plan 17 (859 lines) and 17b; photo stack #835 to #840 (783, 1015, 732, 629, 603 and growing); H1 | Accept the plan; accept the photo slices as they are one concern each; refuse #798 whole |
 | New dev dependencies (jest-expo, React Native Testing Library) and runtime `expo-video` after 1.0 | Approve the test pair; defer `expo-video` to after 1.0 (CR-69 A8) |
 | Workflow pastes: ratchet fetch step then `RATCHET_BASE_REQUIRED=1`, merge-queue `skipped` rule and `eas.json` in the `changes` match, two-job deploy (F4) | Paste in that order, fetch step before the variable |
 | Applying `20261108000000` and the other hosted migrations; setting `app.consent_fields_required` | Apply first, set last (CR-69 A6) |
@@ -71,6 +71,8 @@ Source: plan 17 and 17b, the three brief READMEs (`briefs/*/README.md`). Waves a
 | Drop lines and 1.1 for NS-51 | Keep the defaults in the cards |
 
 ## 6. Follow-ups already known
+
+- Data, security and lifecycle pack: `data-security/00-README.md`; executive-aligned decisions: `DECISIONS-20nov.md` (what you decide is its section 8).
 
 - Deferred amendments (13): ADR 0028 edits (16-A-1 to A-3); AUTH_SETUP.md (12-A11); chapters 05 and 07 (12-A14, 16-A-15); `supabase/APPLY.md` (12-A15); quality catalogue (12-A12); BOARD.md (12-A13); the kill-switch PR (16-A-12); cards (17-A14, 16-A-14); 12-A16 pending the CF-1 ruling.
 - For `qa`: catalogue A row NS-32-R7 and `CHECKS-AND-BALANCES.md:176` still say 64; the fact is 60 in total (E13, CL-115, CR-69 A1).

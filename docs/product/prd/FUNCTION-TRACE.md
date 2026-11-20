@@ -420,7 +420,7 @@ Card cell: `NS-nn` with the row ids the author named; `(from text)` means the Li
 | FR-SEC-33 | security | P0 (a) | NS-51 | - | none named | needs Karma ruling |
 | FR-SEC-34 | security | P0 (a) | (from text) NS-51, NS-52 | - | BL-961 (text) | needs Karma ruling |
 | FR-SEC-35 | security | P0 (a) | NS-05; NS-11 | - | none named | needs Karma ruling |
-| FR-SEC-36 | security | P1 (b) | NS-08 R21; NS-45 R3 | - | none named | locked row; ruling also E76, E77, E78, E81 |
+| FR-SEC-36 | security | P1 (b) | NS-08 R21; NS-45 R3 | - | none named | locked row; ruling also E76, E77, E78, E81, E83 |
 | FR-RSK-07 | risk | P1 | NO CARD LINK | - | none named | needs Karma ruling |
 | FR-BKO-01 | back-office | P0 (a) | NS-45 | - | new row needed (NR-60) | needs Karma ruling |
 | FR-BKO-02 | back-office | P1 (a) * | NS-36; NS-45 | - | new row needed (NR-57) | needs Karma ruling |
