@@ -15,7 +15,7 @@ Agent: ops   Lane: Pack 10   Build: 13 path   Wave: 1   (plan 2.9 row P-7; data-
    Rows: release gate G8 (FOUNDER_QUEUE.md:62). No NS row. Tests: the existing guard, no new test file.
    The proof is `node .github/scripts/migration-guard.mjs origin/develop` passing on the PR (exit 0), and failing on a
    mutant: delete one new line from the list -> the guard says a line was removed (`migration-guard.mjs:45`) [V].
-   Red today: the file lists 2 of 31 files, so the guard protects 2 [V].
+   Red today: the file lists 2 of 31 files, so the guard protects 2 [V]. The number to add is whatever the production run applied: 31 minus 2 is arithmetic, not a read of production [U]; APPLY.md:11 says file 2 was applied under another name.
 
 3. FILES
    Touch: .github/migrations-applied.txt (add lines only), supabase/APPLY.md (the State column for the applied rows only),

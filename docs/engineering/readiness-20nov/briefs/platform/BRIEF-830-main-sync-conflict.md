@@ -35,12 +35,10 @@ Agent: ops   Lane: Pack 10   Build: 13 path   Wave: 1
    adds 41 lines in 7 more files from main that develop lacks: `(tabs)/_layout.tsx`, `settings/children/[id].tsx`,
    `test/draft-card.test.ts`, `test/preflight-production.test.ts`, `apps/web/test/copy-rules.test.ts`,
    `docs/store/compliance/privacy-labels-apple.md`, `scripts/release/with-review-contact.ts`. Each of these must be read and
-   either kept (it is a real main-only fix) or reverted to develop's (a stale squash leftover). Do not accept them blind.
+   either kept (it is a real main-only fix) or reverted to develop's (a stale squash leftover). Do not accept them blind. And this list is NOT enough: `-X ours` also drops main-only hunks inside conflicting regions silently, and `git diff --stat origin/develop <branch>` shows only non-conflicting lines. Main's 3 commits touch 656 files (4 of them migrations; also preflight scripts and functions) [V `git diff --name-only <merge-base> origin/main`]. The PR must carry a per-hunk review of main's three commits (`git show <commit>` hunk by hunk, each marked kept or already in develop), not only the stat.
    .github differs between main and develop in 4 workflows (ios-compile, kill-harness, release-ios, testflight): take develop's.
 
-6. DATA AND SECURITY: no data class. Risk: `-X ours` silently drops a main-only fix. Mitigation: the diff in section 2(b) is
-   the full list and each line is justified in the PR. Read: security-architect (.github), data-steward (supabase). The merge
-   also carries 29 unapplied migrations to main; main does not apply them (DEPLOY.md: only a `db-v*` tag does) [V #830 body].
+6. DATA AND SECURITY: no data class. Risk: `-X ours` silently drops a main-only fix. Mitigation: a per-hunk review of main's 3 commits (not the stat of section 2(b), which is incomplete), each hunk justified in the PR. Read: security-architect (.github), data-steward (supabase). Main and develop hold the same 31 migration files [V ls-tree], so this merge adds no migration; main applies none anyway (DEPLOY.md: only a `db-v*` tag does).
 
 7. LIBRARIES: none.
 8. BUDGETS: none.
