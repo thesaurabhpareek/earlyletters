@@ -22,7 +22,7 @@ Counsel read before ANY arm (Karma, red team 11 Nov): counsel reads the consent 
 
 - Parents: 8 to 10 adults aged 18 or over, each with a child under 5 and at least 3 kept letters in {brand.name} (TestFlight or alpha), recruited by the founder from his invited friends and family list. HYPOTHESIS: this group is warm toward the product, so results lean positive; the success lines in section 8 are set with that in mind.
 - The moment: a parent has kept a letter a grandparent would love, and today they would screenshot it or forward a voice memo. We hand them nothing new and watch what happens when they send it with what they already have.
-- Recipients: one relative per parent, an adult the parent picks (a grandparent, aunt, uncle or close friend). At least 2 of the 10 live in another country, if the founder's list allows. At least 2 parents with a non-English letter if any exist on the list; Build 12 transcribes English only, so this may be 0 (UNVERIFIED, owner `user-research`, at recruiting).
+- Recipients: one relative per parent, an adult the parent picks (a grandparent, aunt, uncle or close friend). At least 2 of the 10 live in another country, if the founder's list allows. At least 2 parents with a non-English letter if any exist on the list; the current store build transcribes English only (D-121), so this may be 0 (UNVERIFIED, owner `user-research`, at recruiting).
 - Not recruited: anyone under 18, anyone the founder pays, any App Store reviewer, any competitor's staff, anyone outside the US storefront's launch geography without counsel's Q22 answer covering them as a recipient (recipients abroad receive a message; they are not participants).
 
 ## 2. Why
