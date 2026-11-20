@@ -261,7 +261,7 @@ export function markWordsReviewed(ctx: RepoContext, id: string): boolean {
     `UPDATE entries SET transcript_status = NULL, updated_at = ? WHERE id = ? AND transcript_status = '${WORDS_UNREVIEWED}' AND deleted_at IS NULL`,
     ctx.now(), id,
   );
-  return changes(ctx.db) === 1;
+  return moved(ctx, id); // kept now, so findable now (NS-02-R33)
 }
 
 /** Letters whose machine-written words wait for the author's review, oldest first (S11's Review step reads this). */

@@ -42,7 +42,7 @@ const mapRows = () => f.db.all<{ entry_id: string }>(`SELECT entry_id FROM ${SEA
 const ftsCount = () => f.db.get<{ n: number }>(`SELECT COUNT(*) AS n FROM ${SEARCH_TABLE}`)!.n;
 
 describe('[NS-02-R16a] the repos move the index with the letter', () => {
-  it('[NS-02-R16a] Keep adds; a Review edit and an Undo change the words; delete and restore; words that arrive later; own private stays', () => {
+  it('[NS-02-R16a][NS-02-R33] Keep adds; a Review edit and an Undo change the words; delete and restore; later words only once kept; own private stays', () => {
     f = findFixture();
     const id = f.add({ text: 'The ducks were loud.' });
     expect(find('ducks')).toEqual([id]);
@@ -60,7 +60,10 @@ describe('[NS-02-R16a] the repos move the index with the letter', () => {
     entries.setWordsOnce(f.ctx, waiting, { rawTranscript: 'the harbour', machineEdits: [], finalText: 'The harbour.', editLevel: 'clean', engineVersion: 5 });
     const silent = f.add({ text: '', transcriptStatus: 'waiting', captureMode: 'spoken', rawTranscript: '' });
     entries.setTypedWordsOnce(f.ctx, silent, 'Typed beside the window.');
-    expect([find('harbour'), find('window')]).toEqual([[waiting], [silent]]);
+    expect([find('harbour'), find('window')]).toEqual([[], []]); // not kept from Review yet (R33)
+    entries.markWordsReviewed(f.ctx, waiting);
+    entries.markWordsReviewed(f.ctx, silent);
+    expect([find('harbour'), find('window'), mapRows().length]).toEqual([[waiting], [silent], 3]); // in the index at once
   });
 
   it('[NS-02-R16d] a purged letter never returns: erasing the row leaves nothing in the index or the map', () => {
