@@ -113,7 +113,7 @@ describe('[NS-13-R6a] the notification pool is name-free', () => {
     expect(DEFAULT_PREFS.namesOnLockScreen).toBe(false);
     const plans = everyPlan(false);
     expect(plans.length).toBeGreaterThan(100);
-    const titles = new Set([
+    const titles = new Set<string>([
       ...reminderCopy.neutral.evening.map((v) => v.title),
       reminderCopy.neutral.birthday.title,
       reminderCopy.neutral.birthdays.title,
