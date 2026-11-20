@@ -198,7 +198,7 @@ Priority reasons: (a) a promise, (b) a legal or store duty, (c) the core loop. Q
 | FR-QAL-04 | Given one test proves several rows, When its title lists them, Then every id is in brackets (`[NS-41-R6][FR-SEC-01][FR-PRV-14][X4-R1]`) and trace counts each id; a test that runs against a stand-in says so in its title and its row stays "partly built" (14 s2) | all; none; new row needed | P1 | `qa` | 14 s2 (stand-in rule); 3d above |
 | FR-QAL-05 | Given card 19, When the journeys of `14` section 4 are extended, Then J-N28 to J-N36 exist: J-N28 first launch to first kept letter on a fresh install (E-S01 to A-S13); J-N29 age answer No, 24 h stop, "I answered by mistake" with an injected clock (NS-40); J-N30 sign-in kinds in place, one assertion per `AuthErrorKind` row of J-E08 (NS-41); J-N31 sign-in unreachable and offline, local start, later claim (J-E03, J-E04, E-S24); J-N32 consent outstanding at relaunch (J-E06, NS-10-R0); J-N33 second account on one phone (J-E17, `[X4-R1]`); J-N34 kill at every first-run step, no half-written book (J-E18); J-N35 third Keep gate and plan lapse, past letters unaffected (J-E10, J-E11); J-N36 sign out, delete account, forced sign-out, app update (NS-45, J-E21, J-E15) | NS-38 to NS-45; E-S01 to E-S10, E-S14, E-S24, E-S26; J-E01 to J-E25; new row needed | P0 (c) | `qa` with `mobile` | 14 s4 has no card 19 journey; area E drew J-E01 to J-E25 |
 | FR-QAL-06 | Given the canary strings of J-N18, When the new first-run fields are filled (email, code, age answer, child name, date, "what the child calls you", region refusal), Then no canary appears in a log line, crash report, URL, analytics value, notification or the support mailto (extends J-N18 and FR-PRV-10, FR-PRV-27) | NS-39 to NS-43; J-N18; E-S05, E-S06, E-S08; new row needed | P0 (a) | `qa`, `privacy` | 14 J-N18; FR-PRV-10, -26, -27 (pointers, not restated) |
-| FR-QAL-07 | Given a store candidate, When G4 is run, Then the device matrix of Annex B is walked in its eight passes, each pass names phone model, iOS version, build and the settings on, and the evidence file is `docs/qa/evidence/<date>-<build>-<phone>.md`; a pass with no suitable phone is "not run", never "pass" | G4; NS-34-R1 to R7, NS-33-R4 to R10; E-S23; BL-929 | P0 (b): store gate | `qa`, founder runs | 14 s5 (five lines, holdings unknown); `DEVICE_TEST_PLAN.md:40-54` |
+| FR-QAL-07 | Given a store candidate, When G4 is run, Then the device matrix of Annex B is walked in its eight passes, each pass names phone model, iOS version, build and the settings on, and the evidence file is `docs/qa/evidence/<date>-<build>-<phone>.md`; a pass with no suitable phone is "not run", never "pass" | G4; NS-34-R1 to R7, NS-33-R4 to R10; E-S23; BL-929 | P0 (b): store gate | `qa`, founder runs | 14 s5 (five lines, holdings unknown); `DEVICE_TEST_PLAN.md:40-54` Extended by FR-QAL-26 on 20 Nov. |
 | FR-QAL-08 | Given a glass surface (design 3a rule: "Reduce Transparency or iOS before 26: each glass surface becomes a solid `surfaceRaised` with a 1 pt `line` hairline"), When the source scan runs, Then every glass use has a solid fallback of the same shape and size, no screen shows more than three glass surfaces, and glass appears only on the navigation and control layer; on a phone, passes 4 and 5 of Annex B compare the glass and fallback states by eye | A-S01 to A-S07, B-S01 to B-S15, C-S01; `docs/design/system/BRIEF.md` s3 (cited by A 3a); new row needed | P1 | `qa`, `mobile` | `A-capture/DESIGN.md:506` (read) |
 | FR-QAL-09 | Given the accessibility plan of Annex C, When a store candidate is cut, Then every screen in its screen set passes the per-screen checklist in the passes that apply, with the XCUITest audit (NS-33-R16) run on each screen at AX5, and a failure is a defect under Annex I, never an exception | NS-33-R1 to R16; E-S23; all A to E screens named in Annex C; BL-929 | P0 (b): WCAG 2.2 AA is LEGAL-REQ-051 per `compliance.md` FR-CMP-07 | `qa`, `mobile` | 14 s8: no device walk on record for the letter page, Me or the Book header |
 | FR-QAL-10 | Given a macOS runner, When the XCUITest audit is added, Then it runs nightly and on a candidate, not on every PR, so the PR budget of 10 minutes holds; the workflow change is a patch in `docs/ops/proposed/` for the founder | NS-33-R16; none; new row needed | P1 | `qa` | `kill-harness.yml:128` and `ios-compile.yml:60` already use `macos-26` (grep); whether an XCUITest target exists is UNVERIFIED |
@@ -714,3 +714,87 @@ Rules.
 - QAL requirements: 24 (16 P0, 8 P1).
 - Annex A proof kinds: 92 rows with a CI part, 19 with a device part, 46 record or process only (rows can be counted twice).
 - Design needs: 7. Card changes: 12. Engineering needs: 10. Questions: 8.
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md`. Cards NS-51 "Photo moments" and NS-52 "Pictures and videos with a letter" are now in `27-photo-moments-and-media.md` (NS-51-R1 to R42; I read it after drafting, so rows are aligned to it where an "Aligned" note says so), so rows are named by class and the exact `NS-51-Rn` and `NS-52-Rn` ids are for `qa` to bind when the cards land. Existing coverage is cited by id and not repeated: NS-01 (R6, R8, R13a, R13b, R16a to c, R17a to c, R27, R29, R36, R45, R46, R51, R56, R62), NS-49 (R5, R6, R10, R13, R19, R25, R28, R31), FR-QAL-02, 03, 07, 12, 13, 15, 19, Annex B, E.3. Nothing was run; no outside source read; Apple behaviour named below is UNVERIFIED. I am a Claude role.
+
+### C.1 P0 register additions (classes; each new P0 row of the two cards needs a "How proven" key per FR-QAL-01)
+
+| Class | Proof key | Notes |
+|---|---|---|
+| No library read before the parent opts in; no read at first run; no read with the flag off | C + S | Extends NS-49-R25, which today forbids any usage string and any library call in the 1.x line: NS-51-R2 and R32 already say the string exists exactly when the flag is on and a release profile fails if it enables the flag early; the NS-49-R25 wording should point to them |
+| Nothing leaves the phone: network fake sees 0 requests for scanning, moments, attach and view; a picture or video leaves only by the parent's own share or sync decision (X2, E23) | C | Pattern NS-49-R33 |
+| No machine words about media (strings, keys, logs, VoiceOver) | S | FR-AIS-57 to 61 |
+| Words byte-identical after any media change | C | FR-AIS-64; NS-01-R8 extended to video and several items |
+| Metadata stripped on every stored copy and every share, video included | C + D | NS-01-R6 covers still images; video container metadata (location, creation time, device) is new and UNVERIFIED how the platform exposes it |
+| Erase, delete, Recently deleted and let-go handle every media file, file first then row, no orphan | C | NS-01-R16a to c, R36 extended; add video and "several per letter" |
+| Second account never sees the first account's media or moments (X4-R1) | C + D | NS-01-R29 extended |
+| App lock and switcher: no picture, no video poster frame, no player visible | D | NS-01-R13a, R13b extended; video player and poster are new surfaces |
+| Log canary: a canary filename, album, place and date through the module leave 0 hits in logs, crash payloads, analytics, URLs | C | NS-49-R24 pattern |
+| Limited library works exactly as full for every P0 path; a denied or restricted state prompts nothing and nags nothing | C + D | NS-49-R25 pattern (library authorisation states are a device fact) |
+| A video or picture that fails to attach, decode, transcode or download leaves the letter whole | C + D | NS-01-R17a pattern |
+| Backup: stored media files are not excluded from the iPhone backup, unless the founder rules otherwise (Q9 below) | D | NS-01-R27 |
+| Entitlement or plist: permission strings present only where the flag is on; exact text counsel read | S + E | NS-49-R15 pattern |
+| Where-it-lives and privacy-label lines true of the build | E | G5; FR-PRV rows |
+
+### C.2 Requirements (continue FR-QAL-25 onward)
+
+| Id | Requirement (Given, When, Then) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-QAL-25 | Given NS-51 and NS-52 are locked, When `14-test-plan.md` section 7 is regenerated, Then every P0 row of the two cards carries a "How proven" key and an owner, the classes of C.1 each map to at least one row or the card says why not, and the new P0 count is printed (do not publish a stale total, K16) | NS-51; NS-52; FR-QAL-01; none; new row needed | P0 (a) | `qa` | C.1 |
+| FR-QAL-26 | Given a store candidate with the moments or media flags on, When G4 runs, Then the device matrix of Annex B gains the passes in C.3, each naming phone, iOS, build and settings, and a pass with no phone is "not run" and G4 does not pass for that feature (its flag stays off) | NS-51; NS-52; FR-QAL-07, 23; NS-49-R28 | P0 (c): launch crash or media loss | `qa`; founder owns phones | C.3 |
+| FR-QAL-27 | Given the content and code rules, When CI runs, Then: (a) keys under the moments and media families are in the content-rules scope and the notification scope where they can reach a lock screen (the drift test of ns46-50 qa F-01 covers them); (b) a scan fails on a picture-derived word in any parent-facing string by template: the invitation renders only from allowed slots (day word, date, `{child}` when names are on); (c) code scans fail on Vision, VisionKit, Core ML, OCR, face, scene, speech-recognition on media, audio-track extraction, reads of filename, album title, place and caption fields, and on a module named `suggest`, `classif`, `caption`; (d) each regex has a positive and a negative self-test (rules.test.ts pattern); (e) the red-team cases RT-1 to RT-10 of the AI addendum run as tests | NS-51; NS-52; FR-AIS-57 to 61, 66; NS-48-R28 (proposed) | P0 (a) | `qa`; `content`; `speech` | ai-and-speech A.2 |
+| FR-QAL-28 | Given media tests, Then fixtures are generated and shared by one module: an Asha media library (illustrated or generated images, generated videos with a tone, seeded dates), never copied from a phone and never a real or photoreal face (no real child). Catalogue entries (C.4) join Annex E.2. Tests through a stand-in boundary say `(stand-in)` in the title and the row stays "partly built" until a device row passes (NS-49-R31 rule) | NS-51; NS-52; FR-QAL-12; FR-RSH-31 | P0 (a): no real family data | `qa`; `mobile` | Annex E.1 to E.3 |
+| FR-QAL-29 | Given the P0 rows that lose or leak media (delete, erase, backup, restore, second account, share leaving the phone, a video or picture seen while locked), Then they are non-waivable at G4 (extends FR-QAL-23) | NS-51; NS-52; FR-QAL-23 | P0 (a) | `qa`; founder | FR-QAL-23 list |
+| FR-QAL-30 | Given the 10 minute PR budget (FR-QAL-19), Then video encode, large-file and 1,000-letter media tests run on the candidate job and nightly, not every PR; the pure logic (moments function, validators, scans) runs on every PR | NS-52; FR-QAL-19 | P1 | `qa`; `ops` | FR-QAL-10 pattern |
+| FR-QAL-31 | Given exploratory charters (Annex G), Then add: "my pictures are missing" (delete, restore, new phone, backup off, optimised storage), "wrong person" (second account, shared device, a picture on the other parent's phone), "a moment I did not want" (a day I would rather not see), and "a very large video" | NS-51; NS-52; FR-QAL-18; support macros | P1 | `qa`; `support` | Annex G |
+
+### C.3 Device matrix additions (extends Annex B; passes continue P9)
+
+| Pass | Phone and settings | What it proves |
+|---|---|---|
+| P9 library states | se3 and cur26. Library authorisation: not determined, full, limited, denied, restricted (parental controls or management; UNVERIFIED how to set on a test phone). Change the limited selection in Settings while the app runs and while it is closed | Moments and attach behave the same for limited and full; denied shows no nag; changes picked up |
+| P10 oldest system | old17 on iOS 17.0, 17.1, 17.2 and a 26 phone (NS-49-R28 pattern) | Launch and core loop with the media modules present; any iOS-gated API absent, not greyed. 17.0 and 17.1 are separate rows because behaviour may differ (UNVERIFIED) |
+| P11 iCloud originals | se3 with Optimise Storage on, originals in iCloud, then offline, then slow network | Attach triggers a download with progress and Cancel (NS-01-R17b pattern); offline ends calmly (R46); a moment's pictures not local do not hang the list |
+| P12 large and odd media | se3, Low Power Mode, low storage, thermal: a video at the largest size and length the cap allows; HEVC, HDR, slow motion, cinematic, Live Photo, HEIC, burst, panorama, screenshot, a shared-album item; rotation metadata; no audio track | No jank, no kill, no orphan; storage line, not a crash (NS-01-R45); memory peak recorded; kill harness at each step (FR-QAL-15) |
+| P13 interruptions | Call, alarm, app switch, kill mid-attach and mid-encode, update mid-attach | No partial file; draft keeps media (NS-01-R43, R44, R57 extended) |
+| P14 other destinations | iPhone app on an iPad, on an Apple silicon Mac if one exists (else "not run"), on Apple Vision if one exists | Moments and attach are absent or work; no dead button (NS-49-R18 pattern); the library on those devices may be a different library, so the default is absent until a row passes |
+| P15 two phones | se3 plus second, with sync on if Q-PM-3 is yes, off otherwise | A letter with media reads whole on the second phone with no broken slot (NS-01-R28 extended); if sync is yes, upload, resume, interrupted upload, delete everywhere |
+
+Simulator limits: seeding a Simulator photo library is possible but limited-library and iCloud-optimised states are not reproducible there (UNVERIFIED); every such row is a device row (Annex B, sim).
+
+### C.4 Catalogue additions for Annex E.2
+
+| Fixture | Content | Used by |
+|---|---|---|
+| asha-media | A generated library: 400 images across 60 dates, 3 clusters of bursts, screenshots and illustrations, 6 videos (silent, tone, 60 s, over cap), a Live Photo pair, a HEIC, a zero byte file, a truncated video, a file with trailing bytes, a video with rotation metadata | NS-51, NS-52, FR-AIS-60 |
+| asha-media-names | The same assets with hostile names, captions and album titles (long, right to left controls, an instruction sentence) | RT-1, RT-2 |
+| asha-moments-clock | A seeded clock and zones including DST end on Sun 1 Nov 2026 (my arithmetic, check before use, E.5) | NS-51 date clustering |
+| asha-library-states | Stand-in for authorisation states (full, limited, denied) | P9 stand-in tests |
+
+### C.5 Design needs, card changes, engineering needs
+
+- Design: states for limited, denied and restricted library on the explainer; video poster and player states with App lock and Reduce Motion; storage and iCloud download states; limit lines. Areas A, C, E: "Function needs accounted for: FR-QAL-26".
+- Card changes (for Karma): `14` s5 gains P9 to P15; `14` s4 gains journeys J-N40 to J-N43 (moment to kept letter; attach several and a video; media after restore; media after deletion), ids for Karma to confirm after the card 19 and ns46-50 numbering (J-N37 to J-N39 are proposed in the ns46-50 qa review F-14); Annex E.3 changes "Pictures: licensed or illustrated images only" to include generated videos with a tone.
+- Engineering (new rows needed, none above BL-999 invented): media fixture library (`qa`, `mobile`); the library boundary stand-in with the five authorisation states; binary strings read per candidate for library and speech APIs (extends ns46-50 qa F-08); video encode test on the candidate job; rules-test drift extension (F-01).
+
+### C.6 Questions, each with a default (who answers)
+
+| Id | Question | To | Recommended default |
+|---|---|---|---|
+| Q9 | Do stored videos stay in the iPhone backup (NS-01-R27 says pictures do)? | Founder, `mobile`, finance for iCloud effects | Follow the pictures (included) until backup size is measured; the where-it-lives line states it. If excluded, say so once (frame section 7 honesty) |
+| Q10 | Is there a phone on iOS 17.0 or 17.1 for P10? | Founder | Borrow one; else "not run" and the flags stay off |
+| Q11 | Is an Apple silicon Mac or an Apple Vision available for P14? | Founder | Not bought for this; row "not run"; the feature stays absent there |
+| Q12 | Which video limit (length and size) do we test at? | Founder (Q-PM-2) | Test at the proposed 60 seconds with 2 videos per letter and above it (the over cap fixture), whatever number is ruled |
+
+### C.7 Cannot assess yet
+
+- Memory, time, heat, storage and encode cost of video on an SE 3: no measurement exists; the cap is a proposal (26 section 2).
+- Whether any Apple API available to a third party can set or read library authorisation states on a test phone for P9: UNVERIFIED.
+- Whether restricted-library states and shared-library or shared-album items behave as listed: UNVERIFIED.
+- How video container metadata is exposed and stripped: UNVERIFIED; needs a spike.
+- The P0 count of the two cards: they do not exist yet.
+- Whether the Simulator can run any of the library flow: not read, treat as device rows.
+
+Totals for this addendum: 7 requirements (FR-QAL-25 to 31): P0 5, P1 2; 7 passes (P9 to P15); 4 catalogue entries; 4 questions (Q9 to Q12). The Totals section above counts the earlier 24 rows only.

@@ -137,7 +137,7 @@ Priority follows RR-4: P0 with reason (a) a promise, (b) a legal or store duty, 
 
 | Id | Requirement | Links | Priority | Owner lane | Evidence or source |
 |---|---|---|---|---|---|
-| FR-LOC-10 | Given any build through 1.0.x, Then the interface is English and the spoken language is a separate setting; choosing Hindi to speak never changes a button, heading or error into Hindi. Each language is shown in its own name first with the English name under it. Interface languages are a separate decision with their own reviewer and are not unlocked by a speech language | NS-17 section 3 (not in scope); C-S01 "Spoken language"; BL-321 | P0 (a) | `content`, `mobile` | `language.en.ts:7-10`; `localisation.md:5`; D-056 |
+| FR-LOC-10 | Given any build through 1.0.x, Then the interface is English and the spoken language is a separate setting; choosing Hindi to speak never changes a button, heading or error into Hindi. Each language is shown in its own name first with the English name under it. Interface languages are a separate decision with their own reviewer and are not unlocked by a speech language | NS-17 section 3 (not in scope); C-S01 "Spoken language"; BL-321 | P0 (a) | `content`, `mobile` | `language.en.ts:7-10`; `localisation.md:5`; D-056 Extended by FR-LOC-30 on 20 Nov. |
 | FR-LOC-11 | Given a device whose locale or calendar setting is not Gregorian (for example an English phone set to a Buddhist or Islamic calendar), When any date shows (dateline, birthday, Months, year labels), Then it shows the Gregorian date in Western digits: `dates.ts` pins `calendar: 'gregory'` and the Latin numbering system, with a test over locale tags such as `en-u-ca-buddhist` and `en-u-ca-islamic`. The date a parent entered is stored as ISO Gregorian (YYYY-MM-DD) and never converted | NS-24; NS-15; NS-43; A-S08; BL new | P1 (P0 (c) if the test shows a shifted year) | `mobile`, `qa` | `dates.ts:25-43` (locale tag passed through); MDN `calendar` option and `ca` key read 20 Nov; Hermes behaviour UNVERIFIED |
 | FR-LOC-12 | Given age math, Then the age of {child} is counted in Gregorian calendar months and weeks (`ageOn`) in every language and every calendar; no card converts a birthday to a lunar, Hijri, Hebrew or Hindu date. A family that keeps another calendar is told, in a help article, that the book counts in the calendar the phone uses for ordinary dates, and that the letter's own words may carry any date they like | NS-15; NS-43-R4; BL new (help article) | P1 | `content`, `support` | `age.ts:1-4,28-49` |
 | FR-LOC-13 | Given a book whose letters are in a language other than English, When it is read, exported or printed, Then the frame (dateline, age sentence, "exactly as heard" labels, signature words, cover and index) is in English at 1.0 and the letters' words are untouched, in their own script and direction. The help article and the listing say "the app is in English" in plain words. Making the frame follow the spoken language is a later, separately reviewed row | NS-11; NS-07 C28; NS-05; B-S08; Q-LOC-4 | P0 (a) for the honest line; P2 for the later row | `content`, founder | `age.ts:60-79`; `build.logic.ts:293,425` |
@@ -274,3 +274,60 @@ Counsel numbers are from `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists; 
 - Requirements written: 29 (FR-LOC-01 to 29). P0 or part-P0: 20 (reason (a) on 16, reason (b) on FR-LOC-15, 22, 24, with FR-LOC-26 both). P1 only: 8 (06, 07, 11, 12, 14, 16, 25, 27). P2 only: 1 (FR-LOC-09); FR-LOC-13 has a P2 later part.
 - Card changes proposed: 8 (CC-LOC-1 to 8). Backlog: 8 new rows, 3 changed. Founder questions 7, counsel questions 5.
 - Outside facts read: 2 (Apple metadata localisations, MDN `Intl.DateTimeFormat` calendar). UNVERIFIED items are listed in section 1.
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md`. Cards NS-51 "Photo moments" and NS-52 "Pictures and videos with a letter" are now in `27-photo-moments-and-media.md` (NS-51-R1 to R42; I read it after drafting, so rows are aligned to it where an "Aligned" note says so). Read this session: `packages/content/src/permissions.en.ts` (holds only `microphone` and `faceId` today, with the rule "never speech recognition"; `app.config.ts` shows no `CFBundleLocalizations` or InfoPlist localisation hit). No outside source read; how iOS chooses the language of a permission string for an app with one localisation is UNVERIFIED. I am a Claude role, not a translator or counsel.
+
+What does not change: the interface is English at 1.0.x (FR-LOC-10); other languages are spoken-language only; the text-rule packs under `packs/text-rules` are speech rules and are not touched by this feature (no machine edit applies to media words, FR-AIS-64).
+
+### D.1 Requirements (continue FR-LOC-30 onward)
+
+| Id | Requirement (Given, When, Then) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-LOC-30 | Given the Photos permission string (a library read string, plus a string for writing to the library only if a feature ever saves into it; none is proposed) and any other new purpose string, Then each lives in `permissions.en.ts` beside `microphone` and `faceId` (the file's own rule is updated in the same PR: it now names Photos), uses `{app}` from `packages/brand`, passes the content rules, is true whatever the parent's access choice, says dates only and on the phone, and is read by counsel before it enters any plist (FR-LEG, privacy). Present only in profiles where the flag is on (quality C.1). At 1.0.x it is English on every phone; whether iOS shows an English string to a parent whose phone is in another language is UNVERIFIED and recorded in the dossier of any later language | NS-51; NS-52; FR-LOC-10; BL-321; quality FR-QAL-27 | P0 (b): store duty, purpose string | `content`; `mobile`; counsel | `permissions.en.ts:1-9`; FR-PRV rows on purpose strings (not re-read) |
+| FR-LOC-31 | Given every new parent-facing key for moments and media (invitation, slip line, permission explainer, limited-access explainer, pause and off, albums that count, remove what the app remembers, attach and limit lines, video limit, "not on this phone any more" for media), Then each is a key with slots, not a sentence built in code (FR-NTC-21 pattern), is English at 1.0.x, passes `rules.test.ts` and has a row in the language dossier as "to translate" with a native-reviewer note that it describes no picture content | NS-51; NS-52; FR-LOC-10, 19, 20; FR-NTC-21 | P1 | `content` | FR-LOC-19 (per-language rules file) |
+| FR-LOC-32 | Given a moment label or date line, Then dates are Gregorian, in Western digits, from `dates.ts` (FR-LOC-11), on any phone calendar; a weekday or month name never comes from the platform's localisation inside an English sentence (the F9 finding of the NS-46 to 50 content review); a moment is named by a calendar fact the family can check, in the same slots as the days library | NS-51; FR-LOC-11, 12; ns46-50 content F9 | P1 | `content`; `mobile` | `dates.ts:25-43` |
+| FR-LOC-33 | Given limits shown to a parent ("up to 6 pictures and 2 videos", sizes, seconds), Then they are slots with numbers from the same constants the code enforces, plurals through the locale's rules when a language opens (no hard-coded "s"), and no counts of what the parent has are shown (no "3 days with pictures") | NS-52; FR-LOC-10; NS-01-R11 | P1 | `content`; `mobile` | CLDR plural note in section 7 of this file |
+| FR-LOC-34 | Given text that comes with media in any script (the parent's words about a picture, alt text, a place the parent types), Then it is shown as given with `dir="auto"` and in the letter's font stack, never translated or transliterated, within the grapheme limits of NS-01-R54, with writing tools off; the export keeps it in its script (FR-LOC-13 pattern); places are not read at all (Q-PM-5) and album names show only in the parent's album-choice sheet as the phone gives them (NS-51-R14), never translated | NS-52; NS-01-R21a, R54; FR-LOC-13, 16, 17; FR-AIS-66, 68 | P0 (a) | `mobile`; `content` | `build.logic.ts:376,425,433` as cited in section 2 |
+| FR-LOC-35 | Given a language that unlocks later, Then no prompt, moment wording or invitation is drawn from a picture in that language either: prompts remain written by a native parent-reviewer (FR-LOC-20) and chosen from age and history only; the dossier (FR-LOC-26) lists the new keys and states that no speech gate covers video sound (FR-AIS-62) | NS-51; FR-LOC-20, 26 | P0 (a) | `content`; `speech` | FR-AIS-59 |
+| FR-LOC-36 | Given a right-to-left or Devanagari parent, Then the moment invitation, the permission explainer, the limit lines, the picture and video tiles with parent words and the video player controls are on the RTL state list of FR-LOC-17 (new states), with mirrored order, no mirrored pictures or video, and playback controls that keep their universal order if the platform does | NS-51; NS-52; FR-LOC-17 | P1 | `mobile`; design | FR-LOC-17 state list |
+| FR-LOC-37 | Given store metadata and public copy, Then no keyword or line says "photos", "journal", "memories", "moments", "best", "AI" or names a language for the feature (NS-49-R37 pattern, FR-AIS-48), and a language page names only languages that passed their gate | NS-38; FR-LOC-22; marketing FR ids | P0 (a)(b) | `marketing`; `content` | NS-49-R37 |
+
+### D.2 Design needs
+
+| Where | Need |
+|---|---|
+| New explainer, limit lines, attach states (areas A, C) | Longest-string and AX5 states in English at 1.0.x; a layout that does not depend on English line length; RTL states drawn (FR-LOC-36) |
+| Review and letter page media tiles (A-S07, B-S08) | Parent-words field with Devanagari and Arabic examples; no truncation at AX5 |
+| Video player (new, area B) | Controls and captions area: no caption we generate; a parent's words only |
+
+### D.3 Card changes proposed
+
+| Card row | Change | Why |
+|---|---|---|
+| NS-51 and NS-52 section 16 (content inputs) | Name the key families and point to `permissions.en.ts` for the Photos string; say all keys are English at 1.0.x | FR-LOC-30, 31 |
+| NS-49-R25 | Reword so the "no usage string" rule is per EAS profile and per flag (NS-51-R2 already says the string exists exactly when the flag is on) | A level 3 build must carry the string; the row would block it |
+| `permissions.en.ts` header | Update "Microphone, and Face ID ..." to include Photos when the card is locked | FR-LOC-30 |
+
+### D.4 Engineering needs (new rows; none above BL-999 invented)
+
+- Photos purpose string in `permissions.en.ts` with the plist reading it and the existing rule test that fails if `permission-copy.ts` differs, extended to Photos (owner `content` with `mobile`).
+- Locale-ready key structure for the new families (extends the "locale-ready string structure" row in section 7).
+
+### D.5 Questions, each with a default (who answers)
+
+| Id | Question | To | Recommended default |
+|---|---|---|---|
+| Q-LOC-8 | Should the Photos permission string be localised once the interface is, or stay English? | Founder, counsel (needs a number from legal) | English at 1.0.x; localised with the interface by a native reviewer, counsel reading each |
+| Q-LOC-9 | Do we show the Gregorian date only in moment lines even where a parent's phone uses another calendar? | `content`, Karma | Yes (FR-LOC-11); a help line explains |
+| Q-LOC-10 | Any place name in any script? | Founder (Q-PM-5), privacy | No; album names only in the choice sheet (NS-51-R14) |
+
+### D.6 Cannot assess yet
+
+- What language iOS shows a permission string in for this app on a non-English phone (single localisation): UNVERIFIED.
+- Whether Hindi, Arabic and Chinese video file names, captions and alt text survive the export and the PDF without missing glyphs: no fixture exists; FR-LOC-15 and FR-LOC-17 evidence is not on disk.
+- Whether the media cards will carry numeric limits: they are proposals (26 section 2).
+- Native reviewers do not exist yet (Q-LOC-6); no string here has been read by one.
+
+Totals for this addendum: 8 requirements (FR-LOC-30 to 37): P0 4 (30, 34, 35, 37), P1 4; 3 card changes; 3 questions (Q-LOC-8 to 10).

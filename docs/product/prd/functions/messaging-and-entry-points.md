@@ -149,8 +149,8 @@ Priority key: P0 needs an RR-4 reason, (a) promise, (b) legal or store, (c) core
 |---|---|---|---|---|---|
 | FR-MSG-16 | Given any v1 build, Then it carries no `aps-environment` entitlement, asks for no push token, and no listing, help text or in-app line says a push can arrive; reminders are described as on this phone | NS-13, NS-32, NS-26; D-S04, E-S28; BL-546 | P0 (b: no dormant surface) | mobile | `app.config.ts:92-103`; BL-546 ("Until this is ruled in, no other task adds the entitlement"); frame line 113. Guideline 2.5.19 is cited by the repo, not re-read |
 | FR-MSG-17 | Given the day NS-26 or BL-546 is reopened, Then these are true before any build carries the entitlement: an APNs key with a named owner and rotation (FR-SEC-17), a consent text and an opt-out in the app, a privacy-label row (Q54(d)), payloads limited to a kind and fixed copy with no child name, signature, letter text or id (`push.ts` as written), interruption level passive for letters, the time-sensitive level and its entitlement ruled separately for restore requests, quiet hours matching the local window, a token that is deleted on sign-out and on a dead-token answer from APNs, and the one-per-day budget of NS-32 | NS-26, NS-32-R4b; D-S10, D-S04, E-S28; BL-546 | P1 (gate list, parked) | sync, mobile, privacy | `push.ts:1-30`; Guideline 4.5.4 (verified). APNs token errors, the time-sensitive entitlement and its review rule: UNVERIFIED, not read |
-| FR-MSG-18 | Given any notification the product shows, local or later remote, Then it never carries a child name, letter words, a count, a streak, a due-date count or a sealed letter's existence unless the parent has chosen it (typed days, NS-18-R3), the lock-screen default is the placeholder, and the app switcher and lock screen follow E18's one rule | NS-13, NS-18-R3, NS-32; D-S10 (`-hidden` states), D-S11; J-N24, J-N26 | P0 (a) | mobile | `14-test-plan.md:73-75`; `D-S10` row; Guideline 4.5.4 (no sensitive information in push, verified). The email rule is the same (`EMAIL_IDENTITY.md:31`, `CATALOG.md:22`) |
-| FR-MSG-19 | Given a fresh install, When the person finishes first run, Then no notification permission has been asked; it is asked once, at the person's own act (the reminder ask D-S04 after a kept letter, or the Plus confirmed screen's ask when never asked), after our sentence, and a "No" or a system "Don't Allow" is never asked again by us | NS-39-R2, NS-13, NS-32; D-S04, D-S05, E-S12.withAsk, E-S28 | P0 (c) | mobile | NS-39-R2 (`19-...md:282`); D-S04 states |
+| FR-MSG-18 | Given any notification the product shows, local or later remote, Then it never carries a child name, letter words, a count, a streak, a due-date count or a sealed letter's existence unless the parent has chosen it (typed days, NS-18-R3), the lock-screen default is the placeholder, and the app switcher and lock screen follow E18's one rule | NS-13, NS-18-R3, NS-32; D-S10 (`-hidden` states), D-S11; J-N24, J-N26 | P0 (a) | mobile | `14-test-plan.md:73-75`; `D-S10` row; Guideline 4.5.4 (no sensitive information in push, verified). The email rule is the same (`EMAIL_IDENTITY.md:31`, `CATALOG.md:22`) Extended by FR-MSG-41 on 20 Nov. |
+| FR-MSG-19 | Given a fresh install, When the person finishes first run, Then no notification permission has been asked; it is asked once, at the person's own act (the reminder ask D-S04 after a kept letter, or the Plus confirmed screen's ask when never asked), after our sentence, and a "No" or a system "Don't Allow" is never asked again by us | NS-39-R2, NS-13, NS-32; D-S04, D-S05, E-S12.withAsk, E-S28 | P0 (c) | mobile | NS-39-R2 (`19-...md:282`); D-S04 states Extended by FR-MSG-40 on 20 Nov. |
 | FR-MSG-20 | Given the permission was refused or later turned off in iOS Settings, When the person opens Me, Reminders, Then one plain line says reminders are off and how to turn them on, nothing nags, the plan date is shown in the app (D-S24) and scheduling that fails is told once (`error-schedule_failed`) | NS-13, NS-32-R4; D-S06.denied, D-S06.error-schedule_failed, D-S24 | P1 | mobile | D-S06, D-S24 in the screen table. The iOS limit on pending local notifications is UNVERIFIED here; NS-13 and E13 use 60 |
 | FR-MSG-21 | Given quiet hours, Then local reminders are clamped to 07:00 to 21:30, no email other than sign-in mail and a notice whose legal window would close is sent in 21:30 to 07:00 in the person's time zone, and a time zone change re-plans the schedule | NS-13, NS-32; D-S06.lateClamp, D-S07 | P1 | mobile, ops | `CATALOG.md` section 10 rule 3; NS-13 rows. Time zone fallback US Pacific is the catalog's default |
 | FR-MSG-22 | Given any push or email that could count as promotion or direct marketing, Then none is sent in v1; any future marketing message needs explicit opt-in wording in the app and an in-app opt-out, and goes from a separate subdomain | NS-32; E-S28; marketing FR ids | P0 (b) | marketing, content | Guideline 4.5.4 (verified); `CATALOG.md` section 12; `EMAIL_IDENTITY.md:27` |
@@ -262,3 +262,79 @@ Counsel numbers follow `docs/legal/COUNSEL_PACKET.md` 1.5.0 where one exists (I 
 ## 9. What I did not do
 
 I did not verify the live state of DNS, Resend, Vercel variables, Apple relay registration or the App Store listing; no file other than this one was changed; I did not run `npm test`, because nothing executable changed. The figures "38 requirements, 23 P0" are my count of the tables above.
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md`. Cards NS-51 "Photo moments" and NS-52 "Pictures and videos with a letter" are now in `27-photo-moments-and-media.md` (NS-51-R1 to R42; I read it after drafting, so rows are aligned to it where an "Aligned" note says so). Existing rows are cited, not repeated: NS-01-R22, R23b; NS-32 (one-a-day budget); NS-35 closed start list; NS-48-R5 and RV-2 (kinds kept off the lock screen); NS-49-R1, R2, R4, R20 to R22; NS-50 (one slip slot; R-IA-3 no strip; RV-5, RV-6); FR-MSG-16, 18, 19, 22; FR-NTC-05, 09, 11. No outside source read; Apple limits on notifications and extensions are UNVERIFIED. I am a Claude role.
+
+Principle: add no new class of message and no new place that starts a letter. Every invitation is one more rank in a place that already exists.
+
+### F.1 The map: where the invitation and the nudge appear
+
+| Surface | Moments (NS-51) | Media (NS-52) | Existing home of the rule |
+|---|---|---|---|
+| Capture cluster, "Start from a photo" (A-S01) | Yes, the newest moment only, as a menu item inside the start (NS-51-R8, R9, R40), no list, no count. Words by `content`; no new Home tile or strip | Attach starts here and on Review | NS-49-R1, R4; NS-50 R-IA-3 |
+| Home slip slot (NS-50) | None by default: NS-51-R40 creates no new Home element and R8 offers only the newest moment inside the start menu. A slip rank is an option only if the founder asks (FR-MSG-42) | none | NS-50-R5; NS-51-R8, R40; RV-5, RV-6 |
+| Review and letter page (A-S07, B-S08) | none | Add, change, remove media | NS-01 |
+| Reminder, lock screen | Existing evening note, existing class and budget; no photo-conditioned note (F.3) | none | NS-32; NS-48-R5; RV-2 |
+| Book Photos lens | Never starts anything | Reads only | NS-01-R23b |
+| Apple's own suggestion notification | Separate, not ours | none | NS-49-R20 to R22 |
+| Widget, share extension, Siri or App Intents, Action Button | Not built in this drop; no donation of any pictures or moments | none | D3; NS-01-R49; NS-04 |
+| Email, push | None (no promotional message, no push token) | none | FR-MSG-16, 22 |
+| Web pages (invite page, `/open`, AASA) | No change; no media on any page | No media on any link preview | FR-MSG-23 to 30 |
+
+### F.2 Requirements (continue FR-MSG-39 onward)
+
+| Id | Requirement (Given, When, Then) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-MSG-39 | Given the closed list of start paths (NS-35 test), When NS-51 and NS-52 are added, Then the list gains no new start: a moment opens the same capture flow through `startCapture({ source })` with a source value only if the card adds it to the closed list in the same PR, and the navigation test stays green; the Book never starts a letter | NS-51; NS-52; NS-35-R5; NS-49-R2, R4; BL-new (NS-35 test row) | P1 | `mobile` | NS-49-R2 |
+| FR-MSG-40 | Given the Photos permission and the notification permission, Then they are never asked in the same sitting, never at first run, never beside the Keep gate or a rating request; the Photos ask follows the parent's own tap on "Show me" with our one sentence before it, "Not now" is final for Home (Me stays), a denied or limited result is never asked again, and limited access counts as success with no nag. The notification ask rule (FR-MSG-19) is unchanged | NS-51; FR-MSG-19, 20; Q-FD-2 pattern; D-S04; new screen needed | P0 (c)(a) | `mobile`; `content` | FR-MSG-19 |
+| FR-MSG-41 | Given any reminder or lock-screen text, Then it never states, implies or conditions on the existence, number, content or date of the parent's pictures or videos, and a moment note is planned only at foreground as NS-51-R11 states (an `evening` class source, inside the one a day, skipped for a quiet or hidden book), using the one neutral title and body. The founder's example wording ("Some pictures from the weekend are here") would tell a passer-by that the library holds pictures: this is the card's Q-PM-9; default neutral, and a body that names pictures needs the founder's ruling, counsel's and privacy's read, App lock off and names on, as RV-2 treated last-letter kinds. A note already planned for a date cannot know what the library will hold on that date | NS-51-R11, R12, R25; NS-32; NS-48-R5; RV-2; FR-MSG-18; FR-NTC-05, 09; Q-PM-9 | P0 (a): promise and privacy | `content`; `mobile`; privacy | RV-2; `26-...md` section 2 (nudge never describes pictures) |
+| FR-MSG-42 | Given the founder asks for a Home slip for a moment (the card gives none, NS-51-R40), Then there is still exactly one slip on Home among a library day (NS-46), a birthday and the Save a copy slip, and Karma rules the order with these constraints: trust slips first (RV-5), a moment never above Save a copy, at most two showings per moment, a dismissed moment is never shown again, no count, no "unwritten" wording, no thumbnail in the slip, and the slip is gone when the parent has written or spoken any letter that day. Where the app opens, the moment is computed on the phone from dates only (FR-AIS-58) | NS-51; NS-50-R4, R5; RV-5, RV-6; FR-AIS-58, 59 | P1 (P0 (a) for no count, no thumbnail) | `design-systems`; `mobile` | NS-50 |
+| FR-MSG-43 | Given the 1.x line forbids a background mode (NS-49-R25) and the app cannot observe the library while closed, Then the moment is evaluated only when the app is open; no background fetch, no processing task, no silent push, no library change observer running in the background is added for NS-51 unless a founder ruling reopens NS-49-R25 with a `security` read, a battery measurement and the App Review reading of the background mode (UNVERIFIED); if reopened, the reminder still carries only neutral words (FR-MSG-41) | NS-51; NS-49-R25; FR-MSG-16; FR-PHS-40 | P0 (b) | `mobile`; `security` | NS-49-R25; PHS section 2 (background tasks run when the system decides, A11 as read there) |
+| FR-MSG-44 | Given a proposal for a widget, a share extension (send a picture from the Photos app to the book), Siri or Shortcuts, or a Photos app extension, Then none is built under these cards: each needs its own card with Shown, Records, Never and Decline lines, a data-flow table (a share extension is a second binary that receives a child's picture outside the app), a `security` read and a counsel read; the founder default is no | NS-51; NS-52; NS-04; D3; NS-01-R22, R49 | P0 (b): no dormant surface (2.5.19 as the cards cite it) | Karma; `security` | NS-01-R22 |
+| FR-MSG-45 | Given a share of a letter that carries media (NS-05 levels), a link preview, the invite page or any email, Then no picture, video, poster frame, filename or media count appears in the preview, page, email subject or body; what leaves the phone is the parent's own act under X2 and E23, with its own reads; a share of media is never a side effect of attach | NS-05; NS-52; FR-MSG-27 to 30; E23 | P0 (a)(b) | `mobile`; `security`; counsel | Direction section 1 |
+| FR-MSG-46 | Given the account-deletion receipt and other transactional mail, Then any line about what was removed names pictures and videos in the parent's words, never a file name, and never says media was removed from places we cannot reach (NS-01-R31); no email is sent about moments, attach or missing media | FR-MSG-09; NS-45; NS-01-R31; FR-LCY-41 | P1 | `content`; `ops` | NS-01-R31 |
+
+### F.3 Design needs
+
+| Where | Need |
+|---|---|
+| Capture cluster sheet (A-S01 area, new states) | Moments entry inside "Start from a photo"; Photos explainer; limited-access state; denied state silent |
+| Home slip (A-S01 slip states) | Moment rank, words only; no thumbnail; "Not now" |
+| Me, Reminders (D-S06) | Line that moments do not send reminders; the existing reminder setting unchanged |
+| New settings screen in Me (area C) | Moments on, pause, albums that count, remove what the app remembers (shared with the AI addendum) |
+
+### F.4 Card changes proposed (for Karma to rule)
+
+| Card row | Change | Why |
+|---|---|---|
+| NS-50 section 3 | State that the moment has no Home slip rank (NS-51-R40); add one only on a founder ruling with the constraints of FR-MSG-42 | R-IA-3 conflict (below) |
+| NS-48 | Add: no photo-conditioned variant; the `picture` kind stays off the lock screen (RV-2) | FR-MSG-41 |
+| NS-32 | Add: moments are not a notification class; the budget counts what it counted | Direction section 2 |
+| NS-35 | Add NS-51 and NS-52 to the closed-list test | FR-MSG-39 |
+
+Conflict to rule: the direction wants moments shown "in the capture area"; R-IA-3 refuses a Home strip as a feed. Aligned default (NS-51-R8, R40): inside the start menu only, no strip, no slip; Karma rules.
+
+### F.5 Engineering needs (new rows; none above BL-999 invented)
+
+Closed-list test update; Photos-then-notification sequencing test with an injected state; scan that no notification content takes any library input; moment slip registry entry and showings cap tests; no-background-mode config scan (extends NS-49-R25).
+
+### F.6 Questions, each with a default (who answers)
+
+| Id | Question | To | Recommended default |
+|---|---|---|---|
+| Q-MSG-11 | The card's Q-PM-9: may a lock-screen line mention pictures? | Founder, privacy, counsel | No; neutral line only; revisit with App lock off and names on |
+| Q-MSG-12 | Does a moment get a Home slip at all? | Founder, Karma | No (NS-51-R40); if yes: after the trust slips and the Days ask, never above Save a copy, two showings |
+| Q-MSG-13 | The card's Q-PM-8: reopen a background mode for a timely nudge? | Founder, `security` | No in 1.x; moments appear when the app opens |
+| Q-MSG-14 | A "send to the book" share extension? | Founder | No |
+
+### F.7 Cannot assess yet
+
+- Whether a library-derived nudge can be timely at all without background work: I did not run it; under the rules above it cannot.
+- Whether App Review accepts a note that depends on library content (4.5.4, 5.1.x as the cards cite): not re-read.
+- iOS limits on local notification count and timing for this feature: UNVERIFIED (FR-MSG-20 has the same gap).
+- Whether the system picker, a share extension or a widget could carry moments with no library permission: not researched; the default is none are built.
+- How often a moment would show on a real library: unmeasured.
+
+Totals for this addendum: 8 requirements (FR-MSG-39 to 46): P0 5 (40, 41, 43, 44, 45), P1 3 (39, 42, 46); 4 card changes; 4 questions (Q-MSG-11 to 14).

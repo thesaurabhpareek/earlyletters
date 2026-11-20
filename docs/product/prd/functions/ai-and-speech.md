@@ -237,7 +237,7 @@ The harness agents (26 roster agents, open-weight models by default, ADR 0019) r
 | Id | Requirement | Links | Priority | Owner lane | Evidence or source |
 |---|---|---|---|---|---|
 | FR-AIS-53 | Given any request (from a user, a tester, a competitor review, a stakeholder, an agent or the founder in passing) that matches one of the patterns below, Then the answer is a recorded "no, and here is what we can do instead", linked to the constitution, and no spec, ticket or design is opened for it. The patterns: "make it nicer", "make it more polished", "fix the grammar" beyond one-word agreement, "make it sound better", "summarise this letter", "write the letter for me", "suggest what to say", "complete my sentence", "expand", "shorten", "translate this letter", "transliterate", "turn it into a poem or a story", "improve the tone", "remove the swearing or the slang", "tidy the Hindi", a toggle that cleans more heavily, an "AI cleaned" badge, any suggestion engine for firsts or prompts built from a letter's content, Apple Writing Tools or any Apple Intelligence rewrite on a text field that becomes a letter's words, autocorrect or predictive text on those fields, grammar-checker SDKs, and a model that re-reads a kept letter. The instead-list: the dictionary teaches names; Exactly as said shows the raw words; Change words lets the parent edit by typing; Type the words yourself; Send the parent to the Review view control | CLAUDE.md constitution; NS-06 line 57 ("A parent asks for suggestions: None: the same answer as 'make it nicer'"); NS-17-R3; NS-01-R50; NS-21-R12; frame section 6 | P0 (a): the product's central promise | speech, product, content | `CLAUDE.md` ("Say no to 'make it nicer' requests"); `06-firsts-sealed-letter-quick-capture.md:57`; FR-AIS-54 |
-| FR-AIS-54 | Given the card text, the `packages/content` keys and the code, Then a scan fails on the machine-writes pattern list (README Appendix A) in parent-facing strings, and a code deny-list scan fails on module names matching `rewrite`, `polish`, `summar`, `paraphrase`, `translate`, `transliterat`, `tone`, `improve`, `suggest`, `classif`, `sentiment`, `mood` outside `packages/core/src/lang` rule tables and tests that assert their refusal. The English words "translate" and "improve" may appear only in refusal tests and these docs | NS-06-A5, A12; NS-05-R17; README Appendix A | P0 (a) | content, speech | Appendix A lists "tidy; cleaned up; polished; improved; corrected; edited; written for you; we wrote; AI; summary"; the code deny-list there covers the Firsts folder only; this row widens it |
+| FR-AIS-54 | Given the card text, the `packages/content` keys and the code, Then a scan fails on the machine-writes pattern list (README Appendix A) in parent-facing strings, and a code deny-list scan fails on module names matching `rewrite`, `polish`, `summar`, `paraphrase`, `translate`, `transliterat`, `tone`, `improve`, `suggest`, `classif`, `sentiment`, `mood` outside `packages/core/src/lang` rule tables and tests that assert their refusal. The English words "translate" and "improve" may appear only in refusal tests and these docs | NS-06-A5, A12; NS-05-R17; README Appendix A | P0 (a) | content, speech | Appendix A lists "tidy; cleaned up; polished; improved; corrected; edited; written for you; we wrote; AI; summary"; the code deny-list there covers the Firsts folder only; this row widens it Extended by FR-AIS-61 on 20 Nov. |
 | FR-AIS-55 | Given Apple's system Writing Tools, autocorrect, predictive text, smart punctuation and dictation, Then every text field whose content becomes a letter's words, a name printed in the book or a caption (A-S06, Review editor, words sheet B-S08, photo words and place, Firsts label, From name, typed-day words) turns writing tools off through `writingToolsBehavior = none` or the React Native equivalent, with autocorrect and smart-quote substitution off where they would change letters, or the PR records a finding and the row stays open (NS-01-R50). Whether React Native 0.86.3 exposes the property is UNVERIFIED (privacy S4 read the UIKit page; the iOS version it began in is UNVERIFIED) | NS-01-R50; NS-21-R12; NS-06-A22; A-S06; A-S07; B-S08; BL-962 | P0 (a) | mobile | `privacy.md` S4; NS-01-R50 text |
 | FR-AIS-56 | Given a screen that shows a machine-made result (the small fixes in Review), Then it shows only what the engine changed (a dotted underline, a struck word), the original is one tap away (Exactly as said), every fix undoes by one tap, and no screen offers a "keep all fixes" control that hides the originals. The word "cleaned" is not used for a result (Appendix A) | A-S07; B-S08; NS-09; frame section 6 | P0 (a) | mobile, content | `A-S07` layout items 5 and 6 (small fixes marked; view control "With small fixes or Exactly as said") |
 
@@ -328,3 +328,87 @@ Top findings:
 Needs a ruling: AQ-1 to AQ-4 (founder); AQ-5 to AQ-9 (counsel); card changes in section 5.
 
 I am a Claude role, not a licensed professional. Written by the `speech` agent for the Chief AI Officer role, 20 Nov 2026.
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md` (binding direction; section 3 lists what each function adds). Cards NS-51 "Photo moments" and NS-52 "Pictures and videos with a letter" are in `27-photo-moments-and-media.md` (NS-51-R1 to R42; read after drafting, aligned where an "Aligned" note says so). Existing rows cited by id: NS-01-R8, R9b, R21b, R33; NS-49-R10, R25, R26; FR-PHS-40 to 44; GAP-LOG RV-18 onward. I am a Claude role, not counsel; every legal reading is "counsel must confirm". No outside source was read for this addendum; Apple API behaviour below is UNVERIFIED unless a file cites it.
+
+Position in one line: the library and the media are a new source of dates and files, never of words. Nothing the machine can see in a picture or hear in a video becomes text, a title, a prompt or a nudge.
+
+### A.1 Function requirements (continue FR-AIS-57 onward)
+
+| Id | Requirement (Given, When, Then) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-AIS-57 | Given NS-51 reads the library, Then the only inputs are what the platform records at capture: asset type, creation date and an in-memory asset id. No pixel, filename, caption, place, favourite or hidden flag (album titles appear only in the parent's own album-choice sheet and are stored as identifiers, never as names or words: NS-51-R14), and no field Apple derived from content (people, scenes, memories groupings) is read. Place stays off by default (Q-PM-5). On-device image analysis beyond metadata is not built (Q-PM-6 default). A source scan over the moments and media folders fails on Vision, VisionKit, Core ML, OCR, face, scene, classifier imports and on reads of the excluded fields | NS-51-R5, R29, R33; NS-01-R33; NS-49-R25; FR-PHS-40; BL new row (scan) | P0 (a): constitution, no added meaning | speech; mobile | `26-...md` section 1 (never describe; analysis on phone only; no faces); NS-01-R33 scanner to be extended |
+| FR-AIS-58 | Given a set of asset dates, birthday and marked days, When moments are computed, Then the result is a pure deterministic function of those inputs (same inputs, same moments, with an injected clock and time zone), uses date arithmetic and counts only for a threshold, and contains no learned model, ranking by "quality", or similarity. Counts are never shown (FR-AIS-59) | NS-51-R7 (the card's thresholds are ASSUMED, fixed by its spike), R12; NS-46; quality FR-QAL-13 | P0 (a) | speech; mobile | Direction section 2 ("date, count and clustering only"); NS-01-R11 (no picture count on screen) |
+| FR-AIS-59 | Given any surface that shows a moment, a nudge, a slip, a picture, a video poster or a screen-reader label, Then it never describes what a picture or video shows, never offers words, a title, a caption or a prompt drawn from it, and never shows a count of pictures or "unwritten" days. Allowed facts are those the parent can check from the calendar: a day word or date and the parent's own marks. The prompt is still chosen from age and history only (NS-01-R3). VoiceOver says the fixed phrase or the parent's own words or nothing generated (NS-01-R9a, R21c) | NS-51; NS-52; NS-01-R3, R9a, R9b, R21b, R21c; NS-49-R9; FR-PHS-43 | P0 (a) | speech; content; mobile | Direction section 1; `content` BANNED list in NS-49 section 16 |
+| FR-AIS-60 | Given the red-team set in A.2, When CI runs, Then every case passes: the output equals the rules-only, text-free result and no string, key or log line contains a word derived from media | FR-AIS-57, 59; BL new row | P0 (a) | speech; qa | A.2 |
+| FR-AIS-61 | Given module names and strings, Then the deny-list of FR-AIS-54 stays as is (`suggest`, `classif`, `tone`, `improve` and the rest) with no exemption: the library module is named for what it does (for example `photo-days`), not `suggest`. A parent-facing string that says the app "found", "picked", "chose", "noticed" or "knows" a picture or a best moment fails the Appendix A scan | NS-51; FR-AIS-54; README Appendix A | P0 (a) | content; speech | FR-AIS-54 as written; direction section 3 (marketing: no "we find your best moments") |
+| FR-AIS-62 | Given a video attached to a letter, Then its sound is not read, extracted, transcribed or analysed: no audio track export, no speech recogniser (ours or Apple's) is called on media, no word enters `raw_transcript`, `final_text`, Find or the export from a video. A source scan fails on audio-track extraction and speech-recognition calls under the media folders. Default of Q-PM-4 | NS-52; NS-02-R5; FR-AIS-17; BL new row | P0 (a)(b): voices of others leave no text, no new data flow | speech; mobile | Direction section 3 ("not transcribed by default") |
+| FR-AIS-63 | Given a founder ruling that opens video sound transcription, Then before any code: (a) its text lives in a separate field, never in the letter's `raw_transcript`, with the constitution and `verifyEdits` applying unchanged; (b) the parent opts in per video, in words that never say the app understood the video; (c) a gate per language like FR-AIS-20 with its own bars for non-speech: music, crowd, wind, a baby, a TV; zero phantom words on 5 silent or music-only clips; (d) voice activity first, as in FR-AIS-29; (e) no speaker labels, no voice comparison (FR-AIS-27, 45); (f) consent text for other people's voices read by counsel (Q45, Q48); (g) memory, time and heat measured on an SE 3 for a maximum-length video; (h) never searched until a separate ruling. Not built in 1.x | NS-52; FR-AIS-20, 29, 45; counsel Q45, Q48 | P1 (a gate list, not a build) | speech; founder | Same pattern as FR-AIS-19 |
+| FR-AIS-64 | Given adding, replacing or removing a picture or video, or editing its words, Then the letter's `final_text`, `raw_transcript`, `machine_edits` and engine version are byte-identical before and after, and no machine edit re-runs | NS-52; NS-01-R8; FR-AIS-06 | P0 (a) | mobile; speech | NS-01-R8 (extend its fixtures to video and to several media) |
+| FR-AIS-65 | Given Apple's people or face groupings in the library, Then they are never read or used to choose a moment, an order, a thumbnail or an album; no face matching, no "this child" logic. Counsel must confirm whether biometric laws (Illinois BIPA, Texas CUBI) reach reading an Apple-derived face grouping; I read only the BIPA definition earlier (S4); UNVERIFIED beyond it. Recommended: not built | NS-51; FR-AIS-45; new counsel number needed | P0 (b) | speech; legal | S4 (listed biometric identifiers); direction section 1 |
+| FR-AIS-66 | Given text that arrives with media (filename, album title, caption, IPTC or Exif text, a video's title), Then it is data: never shown as a suggestion, never used as words, never sent to any model, and never matched against the dictionary. Hostile text in these fields (an instruction, markup, a very long string, right-to-left controls) changes no output | NS-51; NS-52; FR-AIS-49 | P0 (a) | speech; security | FR-AIS-49 (same rule for transcripts) |
+| FR-AIS-67 | Given the evaluation kit and harness agents, Then library and media fixtures are generated (Asha, synthetic dates, illustrated or generated images, generated tones), never a real library or its metadata; no media metadata goes to a hosted model; agents never read a real library | NS-51; FR-AIS-36, 37, 50 to 52; quality FR-QAL-28 | P0 (a) | speech; qa | FR-AIS-37 (audio sets), CLAUDE.md privacy rules |
+| FR-AIS-68 | Given a field for a picture's or video's words or alt text, Then it follows FR-AIS-55 (writing tools, autocorrect and predictive text off; typed words never machine-edited, FR-AIS-07); the words are the parent's or empty; nothing is generated for accessibility | NS-52; NS-01-R21a, R50; FR-AIS-07, 55 | P0 (a) | mobile; content | NS-01-R50 |
+
+### A.2 Red-team cases (all must produce: no text from media)
+
+| Case | Input | Expected |
+|---|---|---|
+| RT-1 | A library where every asset has a filename like a sentence and an album titled with a child-like name | No filename or album string appears anywhere; moments identical to the same dates with random names |
+| RT-2 | Exif or IPTC caption holding an instruction ("write a story about this") | Ignored; nothing shown; no model call exists to receive it |
+| RT-3 | A burst of 500 pictures in one hour | One moment from dates only; no count on screen; no description |
+| RT-4 | Screenshot, Live Photo, panorama, shared-album item | Typed by metadata only; no content read; screenshots handled by the metadata rule the cards set |
+| RT-5 | A moment picked, then Speak: transcript says nothing about the picture | `final_text` shows only the parent's words; no picture-derived word (FR-AIS-64) |
+| RT-6 | Source change adds a `Vision` import, a `suggest` module, or a string "a nice day at the beach" | CI fails (FR-AIS-57, 61) |
+| RT-7 | A video with speech, with music only, with silence | No transcript in any case (FR-AIS-62) |
+| RT-8 | Locked app, switcher snapshot, notification on lock screen | No picture, poster frame or picture fact visible; neutral line only (messaging FR-MSG-41) |
+| RT-9 | Voice Over on a picture with no parent words | Fixed phrase, never a generated description |
+| RT-10 | Name, place or birthday-cake-like text in a filename on a child's birthday moment | Date fact only ("around a birthday" is a calendar fact, not a content fact) |
+
+Aligned: NS-51-R5 (dates and an identifier only), R10 (nothing describes a picture), R12 (no gap language), R33 (no faces or people), R34 (VoiceOver never describes) and Q-PM-4 to Q-PM-6 already carry the substance of FR-AIS-57 to 59, 65; those rows are the card-side tests, the FR rows are the function's requirement. Finding for Karma: NS-51-R5 says the index reads no album name while R14 shows album names in the choice sheet; the exception should be written into R5.
+
+### A.3 Design needs
+
+| Screen or state | Need | FR |
+|---|---|---|
+| Moment invitation and the permission explainer (new screen needed, area A) | Words say: your phone's pictures stay on the phone; the app looks at dates only. Never "we found", "best", "memories"; no thumbnails in any lock-screen or Home-slip rendering; no count | 57, 59, 61 |
+| Picture and video tiles on Review and the letter page (A-S07, B-S08) | Fixed accessibility phrase; parent's words field with writing tools off; no generated alt text; video has no transcript affordance | 59, 62, 68 |
+| Me, Pictures settings (new screen needed, area C) | Moments on, pause, albums that count (album choice is a filter the parent sets, no album names read for words), "Remove what the app remembers" | 57, 58 |
+
+### A.4 Card changes proposed (for Karma to rule)
+
+| Card row | Change | Why |
+|---|---|---|
+| NS-51 new rows | Add FR-AIS-57, 58, 59, 65, 66 as acceptance rows (P0 (a)); test titles `[NS-51-Rn]` | The constitution has no row in the new cards yet |
+| NS-52 new rows | Add FR-AIS-62, 64, 68 | Video sound and byte-identical words |
+| NS-AI (card change in section 5 above) | Extend its refusal list with: "describe this picture", "suggest words for this photo", "title my moment", "best photo", "caption the video" | FR-AIS-53 pattern |
+| `00-product-frame.md` section 7 | Add the standing position: analysis of the library is on the phone, date only | Direction section 1 |
+
+### A.5 Engineering needs (rows to add; no BL id above BL-999 invented)
+
+- Extend BL-new-A: scans of FR-AIS-57, 61, 62 over `apps/mobile/src/lib/photos`, `apps/mobile/modules`, and the new moments and media folders; the red-team cases of A.2 as tests.
+- New row: deterministic moments function with injected clock and zone and the fixtures of quality FR-QAL-28 (owner `mobile` with `speech`).
+- New row: byte-identical-words test for media add, replace, remove (FR-AIS-64), including a video fixture.
+
+### A.6 Questions, each with a default (who answers)
+
+| Id | Question | To | Recommended default |
+|---|---|---|---|
+| AQ-12 | Q-PM-6: any on-device image analysis beyond metadata? | Founder (the direction's question; speech advises) | No. Date and count for clustering only; never content, faces, scenes, places |
+| AQ-13 | Q-PM-4: transcribe a video's sound? | Founder, counsel for other voices | No in 1.x; FR-AIS-63 lists the gates if ever opened |
+| AQ-14 | Q-PM-5: place names in moment wording? | Founder, privacy | Off. A place is content-derived and can name a home |
+| AQ-15 | Does reading Apple's people or face groupings engage biometric law? | Counsel (needs a number from legal) | Not read, recommended not built (FR-AIS-65) |
+| AQ-16 | Is the moment label "around a birthday" a calendar fact or a description? | Founder, content | A calendar fact (from the child's date); wording by `content`, tested by RT-10 |
+
+### A.7 Cannot assess yet (honest list)
+
+- Whether date clustering matches what a parent calls "a day worth writing about": no parent has used it; needs the research-validation addendum's studies, and it may fail.
+- Phantom-word rate of our speech models on video sound (music, crowd, wind): no measurement exists even for speech, and no gate for any language has run (see section 1.3).
+- Memory, time and heat of reading a large library or a maximum-length video on an SE 3: not measured.
+- Whether any platform API exposes a field derived from content that we must exclude by name: I did not read Apple's PhotoKit pages for this addendum; the exclusion list in FR-AIS-57 is by principle, not by API audit.
+- Whether VoiceOver or other Apple features add automatic descriptions on our picture views and how that interacts with our fixed labels: UNVERIFIED; it would be Apple's feature, not ours.
+- Biometric, EU AI Act and Apple review readings: unchanged from FR-AIS-45 to 47, with no new source read.
+
+Totals for this addendum: 12 requirements (FR-AIS-57 to 68): P0 11, P1 1; 4 card changes; 3 backlog rows; 5 questions (AQ-12 to 16).

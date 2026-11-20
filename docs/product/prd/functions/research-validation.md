@@ -191,7 +191,7 @@ Priority: P0 with RR-4 reason (a) a promise, (b) a legal or store duty, (c) the 
 |---|---|---|---|---|---|
 | FR-RSH-13 | Given any study, When a person is screened, Then only adults take part, by a single yes or no ("are you 18 or over") with no birth date kept; anyone under 18 is never recruited, interviewed, observed or recorded; a participant found to be under 18 ends the session and the notes are deleted the same day | NS-03 section 1 and stop rule 4; NS-40 (age as a boolean, D-026 per card 19 line 47) | P0 (b): children's privacy (counsel packet Q45; counsel must confirm) | `user-research`, founder | NS-03 lines 26, 173; charter ("never interview or record a child") |
 | FR-RSH-14 | Given any session, Then no child takes part or is addressed; a child in the room is not recorded, named or described in notes; no audio or video of a session is made unless the founder rules otherwise with counsel (default: notes by code only); no session asks a parent to play, show or send a recording of a child's voice | NS-03 section 3 and Arm V gate; Q45; BL-981 | P0 (b), counsel must confirm | `user-research`, founder, counsel | NS-03 sections 0 and 3; frame line 89 |
-| FR-RSH-15 | Given any prototype, build or device used in a study, Then it holds the fictional Asha book only; no participant creates, types, speaks or imports their own letter, picture, child name or voice; if a participant starts to, the researcher stops it and writes nothing about it; the `no-real-family-data` test runs on every PR that adds a plan, guide or findings | 14-test-plan line 90; NS-03-R3; PROTOTYPE.html in areas A to E; new row needed (prototype participant mode, design-systems) | P0 (a): CLAUDE.md privacy rules | `user-research`, `design-systems`, `qa` | CLAUDE.md; 14-test-plan line 90 |
+| FR-RSH-15 | Given any prototype, build or device used in a study, Then it holds the fictional Asha book only; no participant creates, types, speaks or imports their own letter, picture, child name or voice; if a participant starts to, the researcher stops it and writes nothing about it; the `no-real-family-data` test runs on every PR that adds a plan, guide or findings | 14-test-plan line 90; NS-03-R3; PROTOTYPE.html in areas A to E; new row needed (prototype participant mode, design-systems) | P0 (a): CLAUDE.md privacy rules | `user-research`, `design-systems`, `qa` | CLAUDE.md; 14-test-plan line 90 Superseded in part by FR-RSH-30 on 20 Nov (post-G0 own-phone field test only). |
 | FR-RSH-16 | Given the constitution, Then no study tests, tunes or scores a feature that writes, rewrites, summarises or shapes a person's words, and no task asks a parent to judge the machine's small fixes; the only word-fidelity question allowed is the guardrail Q-FID-1 ("Did the app ever show a word you did not say?"), which tests nothing and reads one yes as an incident | NS-17, A-S07 (words states); FR-DAT-32; BL-962 | P0 (a): the constitution | `user-research`, Karma | Charter ("never test a feature that writes"); CLAUDE.md. Whether Review's marked fixes count as "writing" is for Karma to rule (finding F5) |
 | FR-RSH-17 | Given a study, When a person agrees, Then they see the study's consent text before agreeing, in words that pass the content rules, with these four lines. **Shown:** what the study is, how long, that they may skip anything or stop at any time, that we never see their real letters, voices, pictures or child's name, and what we keep. **Records:** code, the word Yes or No, the consent text version (hash), the date, the method (message or call), in the founder's private store (L3 and L2); never in the repo, an agent session or a Project doc. **Never:** a letter, recording, picture, child's name, recipient's name or contact, a screenshot, a location, a device identifier, anything said by a child, payment conditioned on the answers. **Decline and withdraw:** No thanks ends it with no follow-up; withdrawal at any time by message; notes deleted within 2 working days; no effect on the app, book or allowance | NS-03 section 15 (the pattern); PRIV-R21 does not apply (not an app agreement); Q44, Q51 | P0 (b): counsel Q44, Q51; counsel must confirm | `user-research`, counsel, founder | NS-03 lines 259 to 273; COORDINATION section 10 (not read; cited via NS-03 line 257) |
 | FR-RSH-18 | Given recruiting, Then the founder recruits by his own messages from a list he already holds, plus a small number of people he does not know (at least 3 of 5 in S2, and in each study at least 2 of 5 where the list allows) reached by a method the founder rules; nothing recruits inside the app, on the store page, or in any notification; no one is recruited who is paid by us, works for a competitor, reviews for the App Store, or is under 18; at least 2 of 5 per study are not first-time parents of a newborn where the list allows (second children, older babies) | `USER_RESEARCH.md` 1.4 (second children, fathers, co-parents); persona P1 to P5 (frame line 9); FR-DAT-02, FR-DAT-29 | P1 | founder, `user-research` | NS-03 line 26 (not recruited); frame line 9. The channel for strangers is a founder decision (section 9) |
@@ -346,3 +346,89 @@ Where data lives: the founder's private store; the repo keeps counts only; no ag
 - Not verified: every outside fact (none read), the area D screen ids, cards 01 to 13 and 21 to 37 in full, NS-39 to NS-45, the roadmap, and whether `docs/research/studies/` exists.
 
 Signed: `user-research` (Claude role, not a licensed researcher or lawyer).
+
+## Addendum 20 Nov 2026: photo moments and pictures and videos
+
+Source: `26-founder-direction-photos-library-and-media.md`. Cards NS-51 "Photo moments" and NS-52 "Pictures and videos with a letter" are now in `27-photo-moments-and-media.md` (NS-51-R1 to R42; I read it after drafting, so rows are aligned to it where an "Aligned" note says so); I cite them by name and cite NS-49 section 21, FR-RSH-03, 11, 13 to 17, 24 and section 5 of this file instead of repeating them. I am a Claude role; I do not run sessions. No outside source read; consent and tax readings are UNVERIFIED and "counsel must confirm". Nothing here is observed data.
+
+The core difficulty, stated plainly: the value of NS-51 depends on a parent's real library, and FR-RSH-14 and FR-RSH-15 forbid the team from seeing or creating real pictures, children or voices. So some questions can be tested on fictional material and some cannot be tested by us at all before a build runs on a parent's own phone.
+
+### B.1 Assumptions added (continue RA-19)
+
+| Id | Assumption | P0 and where it bites | Evidence today | Cheapest study | Decision it changes |
+|---|---|---|---|---|---|
+| RA-19 | Parents have pictures from days they meant to write about and did not | NS-51 value; direction section 2 | None. NS-49 s21(a) asks the same past-behaviour question for level 2 | Reuse that question in S1 sessions (no new study); add "what did you do with pictures from a day you wanted to remember" | Whether NS-51 is worth a spike |
+| RA-20 | A date-only invitation ("pictures from the weekend are here") reads as "my pictures, my words", not "the app is watching" | Stop line carried over from NS-49 s21 ("0 of 5 say it felt like the app reading their photos") | None | S12 comprehension on prototype with a fictional library | Wording; whether the permission ask is shown before or after the first moment |
+| RA-21 | Limited access (a parent picks which pictures the app may see) is understood and accepted, and the moments list still feels useful with few pictures | Q-PM-1 | None | S12 with the limited-access states drawn | Default access level |
+| RA-22 | A parent who sees a moment starts a letter from it more often than from a blank page, and the words stay theirs | Core loop (c) | None | Field yes or no question after G4 (B.3), 5 to 10 parents | Whether moments stay on Home |
+| RA-23 | Parents want several pictures and a short video in the book, and not as a way to skip the words | NS-52; Q-PM-2 | Desk research only | S13 past-behaviour interview: what they already do with video of the child | Limits; whether video ships |
+| RA-24 | No invitation reads as a count of what the parent has not written | Constitution (celebrate what exists, never count gaps) | None | S12: "did this make you feel you had missed something?" with a printed mock-up; any yes is a stop for that line | Wording and rank |
+| RA-25 | Parents understand where a picture or video lives (on the phone, in the iPhone backup; on our servers only if Q-PM-3 is answered yes) | NS-52; label | None | S9 trust comprehension row for the new where-it-lives lines | Final words, G3 |
+
+### B.2 Testing without real family photos
+
+- Fixtures (FR-RSH-15 holds): a fictional Asha library inside the prototype's participant mode: illustrated or generated images, generated timestamps, one generated video; no real face, even synthetic photoreal faces are avoided (a generated face can read as a real child). Built once and shared with `qa` (quality FR-QAL-28), not made twice.
+- What fixtures can test: comprehension of the invitation, the permission explainer and the limited-access states; where-it-lives lines; reading order; whether an invitation feels like counting; the attach flow on Review. All on a founder-owned phone or prototype, Asha only (FR-RSH-03).
+- What fixtures cannot test: whether the moments the date rule finds match the days a real parent cares about; whether a real library's mess (screenshots, receipts, burst photos, other people's pictures) makes the list noisy; real performance. Only a parent's own library can answer these.
+- Founder device walk (NS-49 s21(b) pattern): the founder runs it on his own phone and records pass or fail of the card's rows and of "was the list sensible: yes, no, with a reason in words not shown to anyone". Not a tester session. Whether the founder's library may be used is his call; nothing from it is committed or sent.
+
+### B.3 Parent diary study with consent (design)
+
+Applies only after G0, the card's P0 tests green and the flag on in a build the parent holds (FR-RSH-03, stage 5 of section 7). It is the only way to learn B.2's "cannot test" items.
+
+- Who: 8 to 10 adult parents, at least 3 not known to the founder where the list allows (FR-RSH-18); not in the same week as the pilot.
+- What the parent does: uses the build for 2 weeks on their own phone and library. We see no pictures, no screenshots, no library data and no child's name. The app sends nothing (analytics off, FR-DAT-02).
+- Questions, sent by the founder in his own message, optional, fixed list, 3 per evening at most: "Did you open a moment from your pictures today (yes or no)? Did you write or say a letter from it (yes or no)? What got in the way (a fixed list: not the right day, too many pictures, too few, did not want the app near my pictures, did not understand, nothing)". A missed day is never followed up or counted (FR-RSH-05).
+- Day 15 call (by choice, 20 minutes): was a moment ever wrong or uncomfortable; what did they think the app could see. No questions about pictures' content, people in them, or any child.
+- Consent (four lines, FR-RSH-17): Shown: what the app can see (dates only, on the phone, access the parent chose), that we never see pictures, and that they may stop; Records: code, Yes or No, text hash, date; Never: pictures, screenshots, filenames, places, names, library counts; Decline and withdraw: no effect on the app; notes deleted within 2 working days. Counsel reads it first (Q44, Q51).
+- Report: "x of n" per day and for the period; no percentage under 20; the biases of the group first (FR-RSH-24; section 5 of this file for what 5, 10 and 20 can tell).
+- Stop lines: any parent says a moment showed something that upset them (an ex-partner, a loss) goes to the founder the same day and pauses the study (FR-RSH-21, FR-RSH-27); any report of a picture or video shown to someone it should not be; 1 or more says the invitation felt like pressure.
+
+### B.4 Hypotheses and tests (PROPOSED lines; the founder fixes them before day 0)
+
+| Id | Hypothesis | Test | Pass | Hold | Stop |
+|---|---|---|---|---|---|
+| H-MOM-1 | The invitation reads as an offer, not a count | S12 reading of 3 printed mock-ups | 4 of 5 say "an offer" or equivalent | 2 or more say "I should have written more" | Any "this made me feel I was failing" for that line |
+| H-MOM-2 | The permission explainer is understood | S12: "what can the app see after you choose Limited?" | 4 of 5 answer in line with the real behaviour | 2 or more think it reads or uploads pictures | Any belief that pictures leave the phone when they do not (or the reverse) |
+| H-MOM-3 | A moment starts letters | Field question (B.3), after G4 | Report x of n; no pass number until 10 | none | Any report of a letter changed or words suggested |
+| H-ATT-1 | Attaching several pictures and a video on Review is possible unaided | S1 task set on the prototype | 4 of 5 finish unaided | 2 or more fail at the limit lines | Any report of a lost picture |
+| H-ATT-2 | Where-it-lives lines match behaviour | S9 | 4 of 5 match | any mismatch goes to `content` the same day | A belief that a video survives a lost phone when it does not |
+| H-VID-1 | Parents want video at all | S13 past behaviour | x of 5 have kept a video of the child as a keepsake | none | none (this tests desire, never a price) |
+
+Stated intent overstates behaviour (FR-RSH-09 reading): past behaviour and diary yes or no outrank opinions.
+
+### B.5 Function requirements (continue FR-RSH-30 onward)
+
+| Id | Requirement (Given, When, Then) | Links | Priority | Owner lane | Evidence or source |
+|---|---|---|---|---|---|
+| FR-RSH-30 | Given a study of moments or media, Then sessions the team observes use the fictional Asha library only (FR-RSH-15); the post-G0 own-phone diary may use the parent's own library because it is theirs and nothing leaves the phone, but the team sees only the yes or no answers; no pictures, screenshots or screen recordings are made or shared by either side. Counsel must confirm | NS-51; NS-52; FR-RSH-03, 14, 15 | P0 (b): children's images (counsel Q45) | `user-research`; counsel | Direction section 1 |
+| FR-RSH-31 | Given a fictional library for studies, Then it is one fixture shared with `qa` (FR-QAL-28), illustrated or generated, with no real or photoreal face, no real child, and the `no-real-family-data` test covers it | NS-51; NS-52; FR-RSH-15 | P0 (a) | `user-research`; `qa` | Quality Annex E.3 (illustrated images only) |
+| FR-RSH-32 | Given S12 (invitation and permission comprehension), When it runs, Then it uses H-MOM-1 and H-MOM-2 with the lines in B.4, 5 parents, prototype only, and counts the stop events | NS-51; A new screens; BL-981 gains S12 | P1 | `user-research` | B.4 |
+| FR-RSH-33 | Given the diary of B.3, When it runs, Then it follows FR-RSH-05, 17, 21, 22, 24 and 27, plus the library-specific stop lines; no question asks what is in a picture | NS-51; FR-RSH-05 | P1 (P0 (a) for the stop lines) | `user-research`; founder | B.3 |
+| FR-RSH-34 | Given S13 (video past-behaviour) and RA-23, When read out, Then it asks about what parents already do, shows no price, makes no promise of print or QR, and the read-out says it tests desire, not willingness to pay | NS-52; FR-RSH-09 | P2 | `user-research` | FR-DAT-20 |
+| FR-RSH-35 | Given the moments feature, Then no study score, tuning or "moment quality" rating is made: a study never asks a parent to rate how good the app's choice of day was in a way that would be used to tune a ranking by picture content (there is none). Only "sensible, not sensible" on dates, by the parent, in words not stored | NS-51; FR-RSH-16 | P0 (a) | `user-research`; Karma | Constitution |
+
+### B.6 Design needs, card changes, engineering
+
+- Design (areas A, C): prototype participant mode with a fictional library; permission explainer and limited-access states drawn for S12; mock-up images of the invitation in Home slip, in the capture cluster and as a lock-screen line (neutral only); where-it-lives lines as read-aloud cards (FR-RSH-10 pattern).
+- Card changes (for Karma): README studies table gains S12 and S13 (the S2 to S11 additions from C-1 stand); NS-51 section 21 and NS-52 section 21 reference B.3 and B.4 and state "no pass number before 10"; FR-RSH-15 carries the pointer above.
+- Engineering: BL-981 gains S12 and S13; new row (`design-systems`, S) fictional library fixture; new row (`qa`) confirm `no-real-family-data` covers `docs/research/studies/**` (already asked in section 12).
+
+### B.7 Questions, each with a default (who answers)
+
+| Id | Question | To | Recommended default |
+|---|---|---|---|
+| RQ-12 | May the post-G0 diary use parents' own libraries on their phones? | Founder, counsel (needs a number from legal) | Only after G0 and green P0 tests, only the founder's family and warm list first, answers by yes or no only |
+| RQ-13 | May the founder use his own library for a device walk? | Founder | His choice; pass or fail recorded, nothing committed |
+| RQ-14 | Is a consent text for "app looks at dates of pictures on the phone" distinct enough to need its own counsel read? | Counsel (needs a number from legal) | Yes: counsel reads it before any contact |
+| RQ-15 | Is a generated image library acceptable as stand-in or does a licensed set exist? | Founder | Generated or illustrated, licence allows test use (counsel must confirm) |
+
+### B.8 Cannot assess yet
+
+- Whether moments are valuable: no parent has seen one; every claim here is an assumption (RA-19 to 25).
+- Moments quality on a real, messy library: not testable without real libraries; the diary is the only route and starts late.
+- The effect of different access levels (limited versus full) on usefulness: unmeasured; depends on Q-PM-1.
+- Any rate: n is 5 to 10; see section 5 of this file.
+- Whether parents will accept a Photos permission ask at all in a baby-memory app: no evidence; S12 tests comprehension, not behaviour.
+
+Totals for this addendum: 7 assumptions (RA-19 to 25), 2 new studies (S12, S13), 6 hypotheses, 6 requirements (FR-RSH-30 to 35): P0 3, P1 2, P2 1 (first token of the Priority cell); 4 questions (RQ-12 to 15).
