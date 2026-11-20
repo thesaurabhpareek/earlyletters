@@ -73,7 +73,7 @@ Five rules. R1 to R3 are static, R4 and R5 are canary tests. All but R1's workfl
 1. Any new `catch`, `log`, `track`, `mark`, `throw` or `console` in a diff: read the argument. A value from a person, a child, a file or a database row is a block.
 2. Any new error code: is it in a closed union, and does its name carry no value? (`video_too_long` yes; `video_too_long_62s` no.)
 3. Any new marker or analytics event: closed name, number only, row id in the PR (NS-34-R6 or the catalogue rule).
-4. Any new native module that logs (`os_log`, `NSLog`, `print`): use `privacy: .private` or no value at all; a Swift `print` of a path is a block (`scribe-photo` and the future `scribe-photo-library`; NS-51-R28).
+4. Any new native module that logs (`os_log`, `NSLog`, `print`): use `privacy: .private` or no value at all; a Swift `print` of a path is a block (`scribe-photo` and the future `scribe-library` (name per errata E38); NS-51-R28).
 5. Any test or fixture with a name, a place or a date that looks real: stop and use Asha.
 6. If a gate in section 5 does not exist yet, write `unenforced: OBS-G` in the review so the gap is counted.
 
