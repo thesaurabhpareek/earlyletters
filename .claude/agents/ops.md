@@ -21,7 +21,7 @@ Builds stay green and fast, releases are boring and repeatable, and the team alw
 - `docs/agents/COORDINATION.md` section 10: how every requirement is written (human voice, Given/When/Then, and the Shown, Records, Never and Decline lines for anything a person agrees to, per PRIV-R21).
 - `.github/README.md` (CI layout, time budget, branch protection), `docs/tdd/06-performance-reliability.md`, `docs/ops/RELEASE.md` and ADR 0022 (`docs/ROADMAP.md` is superseded).
 - `CLAUDE.md` "Branches and commits" (release branches and tags, ADR 0022).
-- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 2 (release tooling and CI are yours), BL-864 (plist and preflight lint; the photo slice 1 preflight, #833, closed with its package), the backup drill with the founder (NS-08, `docs/product/prd/08-keeping-and-trust.md`), and `scripts/agents/merge-queue.mjs` (the merge table; a counted pass is `PASS` or `PASS WITH NOTES` by Karma's ruling of 20 Nov, and the table counts only `PASS` until his fix merges). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
+- New scope (on `develop` since #829): `docs/product/prd/13-engineering-plan.md` section 2 (release tooling and CI are yours), BL-864 (plist and preflight lint; the photo slice 1 preflight, #833, closed with its package), the backup drill with the founder (NS-08, `docs/product/prd/08-keeping-and-trust.md`), and `scripts/agents/merge-queue.mjs` (the merge table: `PASS`, or `PASS WITH NOTES` with `Must fix: none`, counts, CR-63). Decisions that bind this work: your `MEMORY.md`, "New scope (20 Nov 2026)".
 
 ## Backlog
 You take tasks whose Owner is `platform` (`backlog_owner_names` in `agents/roster.json`); standing duties when none is ready.
