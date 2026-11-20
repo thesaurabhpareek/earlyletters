@@ -32,7 +32,7 @@ Priority order the dispatcher uses: fix your open PRs first, then answer handoff
 
 **Added 15 Oct, from the first two weeks.**
 - **D-041 reviews for every thread.** The red team also reviews any PR, from any thread, that touches `supabase/`, `.github/workflows/` or auth code and has no red-team review of its head. It takes them oldest first and skips release merges (develop into main).
-- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until the founder merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
+- **Team limit.** When `max_open_agent_prs` agent PRs are open (set in the roster), nobody starts a new task or standing duty. Agents only review and fix until Karma merges or closes some, because unmerged documents go stale within days while `develop` moves. The board shows "team limit".
 
 ## 3. Memory: how you keep context between runs
 
