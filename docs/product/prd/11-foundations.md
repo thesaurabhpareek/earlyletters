@@ -56,7 +56,7 @@ P1, whose phone already buzzes too often, at any hour; and the founder, whose pl
 | The parent travels across time zones | Each budgeted notification fires at its wall-clock time on its calendar date; no date gets two; plan notices keep their absolute windows |
 | A quieted book | Contributes no class (F12-REQ-011) |
 | The parent never opens the app | The pre-scheduled plan holds: back-off ends evening nudges after day 35; plan notices still fire in their windows |
-| Pending at the ceiling | The budgeted group holds at most 60; plan holds its 4; the total is at most 64 |
+| Pending at the ceiling | At most 60 pending in total; the 4 plan notices are kept first within the 60 (E13) |
 | A class not in the registry | The test fails the build |
 | "Show Previews" set to Never or When Unlocked | The system shows the category placeholder; the app cannot change this user setting (research note 3) |
 | Focus mode or Scheduled Summary | Applies, because no class is `time-sensitive` |
@@ -97,10 +97,10 @@ P1, whose phone already buzzes too often, at any hour; and the founder, whose pl
 | NS-32-R2 | Given a class not in the registry, Then the build fails its test | P1 | `[NS-32-R2] unregistered class fails` |
 | NS-32-R3 | Given two budgeted classes due the same day, Then only the higher priority is delivered | P1 | `[NS-32-R3] priority decides` |
 | NS-32-R4 | Given a plan notice and any other notification due the same day, When notifications are allowed, Then the plan notice is delivered inside its window; when they are not, Settings, Plan shows the date (F14-REQ-NEW-A) | P0 (b: plan notices, Q41) | `[NS-32-R4] plan notice on time` |
-| NS-32-R4b | Given the budgeted group holds 60 pending, Then all due plan notices (up to 4) are still scheduled, and the total pending is at most 64 | P0 (b: plan notices) | `[NS-32-R4b] plan notices at the iOS ceiling` |
+| NS-32-R4b | Given the pending notes would pass 60 in total, Then all due plan notices (up to 4) are still scheduled first, the budgeted notes give way, and the total pending is at most 60 (E13, applied) | P0 (b: plan notices) | `[NS-32-R4b] plan notices at the iOS ceiling` |
 | NS-32-R5 | Given the registry, Then it lists at least `plan` (outside the budget, first), `typedDay`, `birthday`, `monthAge`, `evening`, each with a group, a priority and an owner, and no `occasion` class | P1 | `[NS-32-R5] registry rows` |
 | NS-32-R6 | Given a time zone change, Then no local calendar date delivers 2 budgeted notifications | P1 | `[NS-32-R6] time zone change` |
-| NS-32-R7 | Given every class, Then the budgeted group never holds more than 60 pending and the plan group never more than 4 | P1 | `[NS-32-R7] pending ceilings` |
+| NS-32-R7 | Given every class, Then the total pending never exceeds 60 and the plan notices within it never exceed 4 (E13, applied) | P1 | `[NS-32-R7] pending ceilings` |
 | NS-32-R8 | Given a plan made on day 0, no letter made and the app never opened, Then no `evening` notification is scheduled after day 35 | P0 (a: no nagging) | `[NS-32-R8] back-off pre-scheduled` |
 | NS-32-R9 | Given a typed day, Then back-off never removes it | P1 | `[NS-32-R9] typed day survives back-off` |
 | NS-32-R10 | Given any scheduled notification, Then its interruption level is `active`, never `time-sensitive` | P1 | `[NS-32-R10] interruption level` |
@@ -226,7 +226,7 @@ A VoiceOver user recording at 2 a.m.; a grandparent at the largest text size; a 
 | Switch Control on | Undo stays until the parent moves on (T4) |
 | A picture under Smart Invert | Not inverted |
 | The recording state with colour filters on | Shown by text and shape, never by terracotta alone |
-| Bold Text on | The three custom fonts render heavier |
+| Bold Text on | Every text role has a Bold Text face; Tiro stays Regular where no heavier cut exists (E17) |
 | Increase Contrast | Text holds 4.5:1; bars go solid |
 | A playing voice | Nothing is announced over it (06-nfr section 8) |
 
@@ -274,9 +274,9 @@ A VoiceOver user recording at 2 a.m.; a grandparent at the largest text size; a 
 | NS-33-R11 | Given Smart Invert, Then pictures and the brand mark are not inverted | P1 | `[NS-33-R11] Smart Invert ignores pictures` |
 | NS-33-R12 | Given the recording state, Then it is shown by text and shape, never by terracotta alone | P0 (b: WCAG 1.4.1) | `[NS-33-R12] recording state not colour alone` |
 | NS-33-R13 | Given AX sizes, Then tab bar items show the Large Content Viewer (built; regression row) | P1 | `[NS-33-R13] tab bar large content` |
-| NS-33-R14 | Given Bold Text, Then Mukta, Literata and Tiro render at a heavier weight (device; NEEDS EVIDENCE today) | P1 | `[NS-33-R14] Bold Text on custom fonts` |
+| NS-33-R14 | Given Bold Text, Then every text role has a Bold Text face: Mukta and Literata render heavier, and Tiro stays Regular where no heavier cut exists (E17, applied; device; NEEDS EVIDENCE today) | P1 | `[NS-33-R14] Bold Text on custom fonts` |
 | NS-33-R15 | Given any undo window, Then it stays open for its seconds or until VoiceOver has finished reading the undo line plus those seconds, whichever is later; with Switch Control on, until the parent moves on (T4) | P0 (b: WCAG 2.2.1) | `[NS-33-R15] undo windows wait for VoiceOver` |
-| NS-33-R16 | Given an automated audit (XCUITest `performAccessibilityAudit()`) at AX5 on each screen named, Then zero critical violations | P0 (b) | `[NS-33-R16] automated audit` |
+| NS-33-R16 | Given an automated audit (XCUITest `performAccessibilityAudit()`) at AX5 on each screen named, Then zero critical violations | P0 (b) | `[NS-33-R16] automated audit` (test layer today: device, by hand with Accessibility Inspector, recorded `[stand-in]`; it becomes CI only when an XCUITest audit target exists, which it does not today, BL-162 PROPOSED; until then the row is not claimed green) |
 
 ### 8. Non-functional budgets
 | Budget | Value |
@@ -296,7 +296,7 @@ n/a because the card touches no sync, account or notification.
 ### 10. Data and engineering
 - **Fields.** None. **Migrations.** None. **Export.** None.
 - **Modules.** `lib/a11y*`, `components/ui/*`, `app/letter/[id].tsx` (heading), `app/(tabs)/_layout.tsx` (Me heading), #840's lens control, the recording state in `app/listen.tsx`, picture views (NS-01) for `accessibilityIgnoresInvertColors`, the font tokens for Bold Text.
-- **Tests.** Component label tests; XCUITest audit at AX5; manual scripts V1 to V6 (07-quality-bar section 2.11) on the SE 3 under D13.
+- **Tests.** Component label tests; XCUITest audit at AX5 (depends on an XCUITest target that does not exist yet: BL-162 PROPOSED; R16 is a hand run until it lands); manual scripts V1 to V6 (07-quality-bar section 2.11) on the SE 3 under D13.
 
 ### 11. Data inventory
 No data.
@@ -677,9 +677,9 @@ Every parent, the day they delete, hide, restore, seal or export a letter that c
 | NS-36-R1d | Given any letter, Then the `entry-photos` bucket holds 0 objects for it (ADR 0028 D6 write-deny) | P0 (a: pictures stay on the phone) | `[NS-36-R1d] no picture on the server` |
 | NS-36-R2 | Given the export of such a letter, Then every part is in it | P0 (b: LEGAL-REQ-034) | `[NS-36-R2] export holds every part` |
 | NS-36-R3 | Given a sealed letter, Then it opens at the same instant on two of the author's own phones set to different time zones (device) | P0 (a) | `[NS-36-R3] seal instant on two phones` |
-| NS-36-R4 | Given ADR 0028, Then it is merged on `develop` after its counted reviews, with the X10 classification fix (`entry_media.entry_id`, `draft_id` and `letter_search_rows.entry_id` at L3), before any picture, first or seal is written on a store build | P0 (b) | the acceptance record |
+| NS-36-R4 | Given ADR 0028, Then it is merged on `develop` after its counted reviews, with the X10 classification fix (`entry_media.entry_id`, `draft_id` and `letter_search_rows.entry_id` at L3), before any picture, first or seal is written on a store build | P0 (b) | acceptance record `[NS-36-R4] ADR 0028 merged with the L3 fix before any write` |
 | NS-36-R5 | Given export 1.7.0, Then it carries each picture at `photos/<entry_id>/<media_id>.jpg` with the ADR's `photo` object, and a 1.6.0 file still reads; seal fields arrive in 1.8.0 with the seal build, firsts fields in their own minor; the about-day and the signature need no change (exported since 1.5.0 and before) | P0 (b) | `[NS-36-R5] export 1.7.0 golden` |
-| NS-36-R6 | Given each new field, Then the same PR adds its row to `docs/legal/data-policy.md` section 4 and to `DATA_CLASSIFICATION.md`; before the first row lands, `privacy` with `data-architect` brings data-policy section 4 to current facts, or the PR names `DATA_CLASSIFICATION.md` as the interim inventory | P0 (b) | inventory check |
+| NS-36-R6 | Given each new field, Then the same PR adds its row to `docs/legal/data-policy.md` section 4 and to `DATA_CLASSIFICATION.md`; before the first row lands, `privacy` with `data-architect` brings data-policy section 4 to current facts, or the PR names `DATA_CLASSIFICATION.md` as the interim inventory | P0 (b) | inventory check `[NS-36-R6] each new field has its inventory row` |
 | NS-36-R7 | Given an export at 1.7.0, Then the 1.6.0 schema rejects it and the 1.7.0 schema it carries reads it | P0 (b) | `[NS-36-R7] export versions one way` |
 | NS-36-R8 | Given a letter's Find index row, Then it is deleted, hidden and restored with the letter (ties NS-02-R16) | P0 (a: private) | `[NS-36-R8] Find row follows the letter` |
 | NS-36-R9 | Given typed days (NS-18), Then they are settings, not letter data, and follow NS-18-R6 | P1 | `[NS-36-R9] typed days are settings` |

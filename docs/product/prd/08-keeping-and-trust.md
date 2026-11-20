@@ -303,7 +303,7 @@ P1, a second after deciding a take was not worth keeping, or was something they 
 | NS-09-R2 | Given a `discarding` draft whose delete throws, When the sweep runs, Then the row remains marked and no error reaches the screen | P0 (a) | `[NS-09-R2] a failed delete waits for the next launch` |
 | NS-09-R3 | Given Discard on Listen and a delete that throws, Then the draft row remains, marked `discarding` | P0 (a) | `[NS-09-R3] Listen never removes a row whose file is still there` |
 | NS-09-R4a | Given Let it go in Review and a delete that fails, Then the line is shown once for that take, on that Review visit | P0 (a) | `[NS-09-R4a] the line shows once per take` |
-| NS-09-R4b | Given the line is shown, Then VoiceOver announces it after the screen settles | P0 (a) | `[NS-09-R4] Review says when a recording is not gone yet` |
+| NS-09-R4b | Given the line is shown, Then VoiceOver announces it after the screen settles | P0 (a) | `[NS-09-R4b] Review says when a recording is not gone yet` |
 | NS-09-R5 | Given 0 `discarding` drafts, Then the sweep adds under 5 ms to launch on an iPhone SE 3 (PROPOSED; device) | P1 | `[NS-09-R5] an empty sweep costs nothing` (BL-929 run sheet row) |
 | NS-09-R6 | Given a delete that has failed on 3 launches, Then Storage in Me shows the line and Remove now, and Remove now retries once | P1 | `[NS-09-R6] a stuck recording is visible in Storage` |
 | NS-09-R7 | Given a let-go of a synced held draft, Then the discard is queued and stays queued until the server acknowledges it | P0 (a) | `[NS-09-R7] the discard reaches the server` |
