@@ -776,7 +776,7 @@ One line each; the table with owner, revert path and screens is in `RULINGS-20no
 - 29 heading: ship the heading trait and reading order, assert the trait in a unit test, record the level from a VoiceOver rotor read on a device marked [stand-in]. NS-33-R1 stays partial until that read. This area's accessibility walk (section 9) uses the same wording.
 - 30 fallback: `glassFallback` `#282421`, `line` high-contrast edge, 1 pt hairline; pair tests decide.
 - 31 lamp: kept as the one named ambient exception (opacity only; off under Reduce Motion, Reduce Transparency, Increase Contrast and Low Power Mode). `Breathe` retired in waiting states: they are still. First-run lamp changes (E-M09, E-M10, E-M13) settle over `lamp.returnMs` 280.
-- 32 tab bar: stays visible. The T-MIN device spike decides minimising.
+- 32 tab bar: no change from today (the letter page is a pushed route and hides it as built). The T-MIN device spike decides minimising.
 - 33 haptic: trimmed to MOTION section 9's call sites, with a test that lists them. The first Keep keeps its single success (NS-44-R12). No success on the book opening, Plus on, lock offer, Show again or cancel deletion.
 - 34 Home glyph: `moon.stars` kept behind one mapping-table entry; first-run testing re-checks that people find Home.
 - 35 icons: chrome only; content keeps its own marks; Phosphor stays as the fallback behind the `Icon` wrapper.
@@ -785,7 +785,7 @@ One line each; the table with owner, revert path and screens is in `RULINGS-20no
 
 ## 15. Liquid Glass policy check for every new surface (`system/BRIEF.md` section 3)
 
-Rules applied: at most three glass surfaces on a screen; never glass on glass; information and state lines are content; sheets and bars are the system's glass; Reduce Transparency, Increase Contrast and iOS before 26 fall back to the solid twin (`surfaceRaised` fill, 1 pt `line` hairline, same shape and size).
+Rules applied: at most three glass surfaces on a screen; never glass on glass; information and state lines are content; sheets and bars are the system's glass; Reduce Transparency, Increase Contrast and iOS before 26 fall back to the solid twin (`glassFallback` #282421 fill, 1 pt `line` hairline, same shape and size).
 | New surface | Layer | Check |
 |---|---|---|
 | E-S04.refused-region, E-S03.platformMinor | content (StateScreen) | no glass; passes |

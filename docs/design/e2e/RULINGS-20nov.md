@@ -57,3 +57,8 @@ Done in this branch:
 - INDEX rebuilt; `--check` passes. The family-data guard was mirrored by a hash scan of every tracked file under `docs/design/e2e` (names, ISO dates, paths): 0 hits.
 
 Not done: Review B must-fix 1 (photo-moment default) was already closed in D by NS-51-R11 (plain is the default) and is unchanged here. Review B item 6 (Round 2 states not in the prototypes) stays open: the prototypes were not extended; say so in the PR description. The vitest test itself was not run (no `node_modules`, disk is low).
+
+
+## Prototypes and the glass fallback (added after the second review)
+
+The HTML prototypes draw their own fallback colours (surfaceRaised, raised, glassSolid, #2B2722, #201D1A) and still use radii 14 and 20. They are layout references only (ruling 37). Ruling 30 is the token source: `glassFallback` dark #282421, light keeps `surfaceRaised`, 1 pt `line` hairline, `controlBorder` under Increase Contrast. Only the DESIGN files follow it. The prototypes get refreshed when the v2 tokens land (DS2-01).

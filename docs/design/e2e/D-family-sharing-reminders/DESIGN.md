@@ -1013,7 +1013,7 @@ Read `MOTION.md` (v1) and `WORDS.md` in this folder after both were written. Scr
 | lock screen | S1 previews shown, previews hidden, typed day | D-S10 |
 | switcher blank snapshot | S2 Lock-screen privacy snapshot | D-S02.switcher |
 | `AppNote` | content text (no system component; FOUNDATIONS paper tokens) | D-S02 lines, D-S20, D-S22 |
-| solid fallback | `material.solid`: `glassFallback` (light #FFFFFF, dark #282421) with 1 pt `glassBorder` | every glass surface under Reduce Transparency (prototype toggle) |
+| solid fallback | `material.solid`: `glassFallback` (dark #282421; light keeps `surfaceRaised`) with a 1 pt `line` hairline | every glass surface under Reduce Transparency (prototype toggle) |
 | dateline | C6 Dateline | D-S02 preview card, D-S18 |
 
 Conflicts with the system files (card wins, CR-66), for Karma:

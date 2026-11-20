@@ -722,7 +722,7 @@ Source: `docs/design/system/BRIEF.md` section 3 (decided by Karma with the Chief
 | InlineNote C-S12, provenance line C-S09, FailureCard, StateScreen C-S10, error pages | content | paper and ink tokens; no material |
 | Progress bars, letter words in C-S14, Recently deleted cards | content | tokens only |
 
-Rules held on every screen here: at most three glass surfaces at once (nav bar, tab bar or toolbar, one sheet or toast); no glass inside glass (a sheet's buttons are plain sheet buttons, not glass capsules on glass); under Reduce Transparency or iOS earlier than 26 each glass surface becomes the solid token surface (`surfaceRaised`) with a `line` hairline, same shape and size; Increase Contrast steps borders and labels to their high-contrast tokens. The prototype renders glass this way (backdrop blur plus translucent token fill, solid with hairline under its Reduce Transparency toggle).
+Rules held on every screen here: at most three glass surfaces at once (nav bar, tab bar or toolbar, one sheet or toast); no glass inside glass (a sheet's buttons are plain sheet buttons, not glass capsules on glass); under Reduce Transparency or iOS earlier than 26 each glass surface becomes the solid fallback (`glassFallback`, #282421) with a `line` hairline, same shape and size; Increase Contrast steps borders and labels to their high-contrast tokens. The prototype renders glass this way (backdrop blur plus translucent token fill, solid with hairline under its Reduce Transparency toggle).
 
 ## 7. Accessibility walk (area C, NS-33)
 
