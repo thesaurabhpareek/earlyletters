@@ -780,3 +780,16 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way with cost until a migration is applied.
 - Way back: a new ruling supersedes this one; each implementing PR reverts by `git revert`.
 - Revisit when: the hosted project is read, the Pro plan is decided (the founder said later on 20 Nov), or counsel answers. Karma
+
+### CR-72 Development starts: the founder delegates technical calls and code merges to the CTO (Fri 20 Nov 2026, Karma, on the founder's words)
+- Question: the founder said in chat on 20 Nov: "It's CTO call and not mine. Work with CTO for this and such tech questions moving forward. And start work when we can. Let's execute the project plan. ... Keep merging the code do not ask me for approval. Ask Ceo for approval." What does that change?
+- Tier and type: T1 process ruling; the founder's own delegation, recorded.
+- Ruling:
+  - Wave 1 of the plan starts now: lanes and owners are in `docs/engineering/readiness-20nov/PROGRESS.md`. Each agent works from its brief, the cards, the designs and `BUILD-BRIEF.md`-style rules (CLAUDE.md, PRINCIPLES.md, the chapters).
+  - Technical questions are the CTO's. Size growth over the sizes accepted in F1 (plan 17 by 7 lines, 17b by 31 lines) is accepted; the photo slices #835 to #840 and the H1 refactor are accepted at their stated sizes (CODE-R02), each a single concern.
+  - Code merges without asking the founder once D-132 holds (two counted reviews at the exact head, green `required`, macOS store-profile launch for app code), as CR-70 says.
+  - Questions are routed to the owning seat (product, design, compliance, privacy, security) through the feedback loop, and the answer is recorded in an erratum, a ruling or the decision record. Nobody guesses.
+  - What this does not change (the founder's own words earlier stand): no store build or TestFlight build without his explicit go; no hosted migration applied by an agent; no secret, account or money decision; legal text and `docs/DECISIONS.md` merge by him; no PROPOSED word shipped as approved; no dates.
+- Why: the founder asked for it in plain words and the list above is what the CTO skill reserves to him.
+- Door: two-way. Way back: one line from the founder narrows or revokes this, as for CR-70.
+- Revisit when: the first store build is proposed, or the founder changes it. Karma
