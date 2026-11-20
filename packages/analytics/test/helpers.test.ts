@@ -24,6 +24,7 @@ import {
   wordsBucket,
   type AnalyticsAskState,
 } from '../src';
+import { intentRecorder } from './support';
 
 async function granted() {
   const provider = recordingProvider();
@@ -31,11 +32,12 @@ async function granted() {
   const analytics = createAnalytics({ provider, randomId: () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`, flushIntervalMs: 0 });
   await analytics.init();
   await analytics.grant();
+  const rec = intentRecorder(analytics);
   const sent = async () => {
     await analytics.flush();
-    return provider.captured();
+    return rec.intents.map(([event, properties]) => ({ event, properties: { ...properties, schema_version: SCHEMA_VERSION } as Record<string, string | number | boolean> }));
   };
-  return { analytics, provider, sent };
+  return { analytics: rec.analytics, provider, sent };
 }
 
 describe('buckets', () => {

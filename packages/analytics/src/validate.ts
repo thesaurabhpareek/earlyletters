@@ -114,12 +114,24 @@ export function isKnownEvent(name: string): name is RegistryName {
  * Returns the cleaned props, or null when the event must not be sent.
  */
 export function sanitizeEvent(name: string, input: unknown): SanitizeResult {
+  return sanitizeWith(REGISTRY, name, input);
+}
+
+/**
+ * The same checks against any table of rows. The send path only ever calls `sanitizeEvent` (registry rows); this
+ * exists so a test can check the typed-but-held catalogue shapes (catalog.ts `EVENTS`) with the identical rules.
+ */
+export function sanitizeWith(
+  table: Readonly<Record<string, { props: Readonly<Record<string, PropSpec>> }>>,
+  name: string,
+  input: unknown,
+): SanitizeResult {
   const violations: Violation[] = [];
-  if (!isKnownEvent(name)) {
+  if (!Object.prototype.hasOwnProperty.call(table, name)) {
     violations.push({ kind: 'unknown_event', event: safeEvent(name) });
     return { props: null, violations };
   }
-  const specs: Record<string, PropSpec> = { ...REGISTRY[name].props, ...GLOBAL_PROPS };
+  const specs: Record<string, PropSpec> = { ...table[name].props, ...GLOBAL_PROPS };
   const out: Props = {};
   const record = input && typeof input === 'object' ? (input as Record<string, unknown>) : {};
   let invalidRequired = false;

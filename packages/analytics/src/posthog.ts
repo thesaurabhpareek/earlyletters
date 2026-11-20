@@ -20,11 +20,17 @@ import type { AnalyticsProvider } from './provider';
 import { sanitizeOutgoing, type OutgoingEvent, type Violation } from './validate';
 
 /** The SDK version the options below were checked against. */
+/**
+ * Re-verified 20 Nov 2026 against the published packages `posthog-react-native` 4.87.1 and `@posthog/core`
+ * 1.69.2 (both MIT; optional native plugin `@posthog/react-native-plugin` 2.13.3, MIT): option names, the
+ * `errorTracking.autocapture` keys (`uncaughtExceptions`, `unhandledRejections`, `console`, `nativeCrashes`), the
+ * `$exception_list` event shape and `persistence: 'memory' | 'file'`.
+ */
 export const POSTHOG_SDK = {
   package: 'posthog-react-native',
-  verifiedVersion: '4.78.4',
-  core: '@posthog/core 1.55.3',
-  verifiedOn: '2026-10-03',
+  verifiedVersion: '4.87.1',
+  core: '@posthog/core 1.69.2',
+  verifiedOn: '2026-11-20',
 } as const;
 
 /** The subset of the PostHog React Native client this adapter uses. */
