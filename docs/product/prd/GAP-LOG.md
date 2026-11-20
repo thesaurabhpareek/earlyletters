@@ -397,3 +397,17 @@ Karma
 - Engineering rows: E2 spinners not stopped by Reduce Motion (account.tsx:264, delete-account.tsx:115; BL-984), E1 undo helper reads VoiceOver finish and Switch Control (BL-954, native read to be spiked), E5 Book keeps the reader's place while letters arrive (BL-978), E6 warning haptic after the choice, not on open (erase.tsx:78, recently-deleted.tsx:82 and :104).
 
 Karma
+
+## Function conflict rulings K1 to K10 (20 Nov, from FUNCTION-TRACE section 3a)
+- K1: child name, birthday, due date, letter languages, first letter are L4 (DATA_CLASSIFICATION.md). The compliance input rows 13, 14, 16, 18 are corrected.
+- K2: one Plus line string reusing the pinned "Reading, listening and your copy stay free"; the design WORDS "Recording, reading and export stay free" is withdrawn (not on the Terms 8.2 list).
+- K3: pricing allowance rule fires at 500 first-time downloads with the 95% interval shown (D-125); F14 6.9's 1,000 is superseded.
+- K4: deletion texts: legal's scope (four texts and a build-truth rule), privacy's retained-list on C-S20, support's Me-first entry; one key family in `packages/content`. The Free-plan restore line is ruled by counsel Q-note; default: say it plainly in Privacy 7.
+- K5: store nothing on the Texas age signal until counsel Q46 answers (FR-CMP-15 over FR-PRV-25).
+- K6: re-read the age rating at NS-05 Level 1 (cheap check), full re-answer at NS-25 and NS-05 Levels 2 and 3.
+- K7: gate names: G0 to G6 stay the release gates (ops list); compliance evidence gates are renamed CG0 to CG6.
+- K8: paid-tier triggers: ask the founder at 60% of a limit, move at 80%.
+- K9: support's E-S27 and E-S28 are taken; use C-S23 and E-ST47.
+- K10: country counts: privacy's storage rule is the source (daily count, 2 years); data's weekly k=10 view reads from it.
+- FR-SEC-13 has no row: the security author fills or retires it in the next pass.
+Karma
