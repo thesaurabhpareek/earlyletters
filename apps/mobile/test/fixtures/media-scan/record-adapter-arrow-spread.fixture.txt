@@ -1,0 +1,5 @@
+// fixture: record-adapter-arrow-spread. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/library-adapter.ts
+// expect: record-spread
+type AssetRecord = { opaqueId: string };
+export const toAssetRecord = (raw: { id: string }): AssetRecord => ({ ...raw, opaqueId: raw.id }) as AssetRecord;

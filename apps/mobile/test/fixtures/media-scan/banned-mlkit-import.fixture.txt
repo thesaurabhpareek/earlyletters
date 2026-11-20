@@ -1,0 +1,5 @@
+// fixture: banned-mlkit-import. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: banned-module
+import { label } from '@react-native-ml-kit/image-labeling';
+export const ashaTrip = (uri: string) => label(uri);

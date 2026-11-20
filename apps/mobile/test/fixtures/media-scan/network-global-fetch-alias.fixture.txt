@@ -1,0 +1,5 @@
+// fixture: network-global-fetch-alias. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: network
+const f = globalThis.fetch;
+export const send = (url: string) => f(url);

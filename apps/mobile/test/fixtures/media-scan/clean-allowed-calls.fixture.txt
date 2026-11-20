@@ -1,0 +1,16 @@
+// fixture: clean-allowed-calls. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: none
+import { getPermissionsAsync, requestPermissionsAsync } from 'expo-media-library';
+import { launchImageLibraryAsync } from 'expo-image-picker';
+import { toNativeErrorCode } from './native-error';
+
+export async function ashaAccess(ask: boolean) {
+  try {
+    const status = ask ? await requestPermissionsAsync() : await getPermissionsAsync();
+    return status.granted;
+  } catch (e) {
+    return toNativeErrorCode(e);
+  }
+}
+export const pickOne = () => launchImageLibraryAsync({ allowsMultipleSelection: false });

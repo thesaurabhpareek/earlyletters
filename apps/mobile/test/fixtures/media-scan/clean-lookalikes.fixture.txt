@@ -1,0 +1,13 @@
+// fixture: clean-lookalikes. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: none
+// Words that contain banned words as parts, and a library object that is not ours.
+interface AshaSurface { readonly interfaceName: string; readonly surfaces: number }
+const scenery = ['hills', 'lake'];
+const facebookless = 'surface';
+const personal = ['Asha'];
+const placeKey = 'asha-town';
+export const lookalikes = (s: AshaSurface) => [s.interfaceName, s.surfaces, scenery, facebookless, personal, placeKey];
+const list = [1, 2, 3];
+export const second = (i: number) => list[i];
+export const first = list[0];

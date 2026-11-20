@@ -1,0 +1,4 @@
+// fixture: computed-fetch-concat. Fictional family Asha; not compiled, read by test/media-ast-scan.test.ts as text.
+// as: apps/mobile/src/lib/media/fixture.ts
+// expect: computed-access
+export const send = (url: string) => (globalThis as any)['fe' + 'tch'](url);
