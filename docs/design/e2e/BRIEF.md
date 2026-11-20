@@ -57,3 +57,11 @@ Content lead:
 - Design changes no engineering plan. Where a screen needs something the engineering plan or backlog does not have, list it under "Engineering gaps" with the backlog row it belongs to.
 - Write only inside your area folder. Do not commit, push, open PRs or post anywhere; Karma collects, reconciles and commits.
 - ASCII only in every file (the content rules apply to docs too).
+
+## 6. The gap loop with product (added 20 Nov on the founder's instruction)
+
+Design and product work together while design runs, so the requirements improve wherever design finds a gap.
+- Every lead keeps a "Card gaps" table (id, card row, what is missing or unclear, proposed default) and an "Engineering gaps" table (gap, file, backlog row). Write gaps as soon as you find them, not only at the end.
+- Karma (product side) collects them into `docs/product/prd/GAP-LOG.md` on branch `docs/locked-pack-inputs-20nov`, with one ruling per gap: card change (applied through `18-errata-after-lock.md` or the new card file), founder question (with a default), engineering gap (sent to the engineering thread), or no change (with the reason).
+- Until a gap is ruled, design uses its own proposed default and marks the screen state "pending ruling G-xx". After a ruling, the leads re-key to it in their reconciliation pass.
+- The journey from App Store download to the first kept letter is now carded separately (`docs/product/prd/19-from-download-to-first-letter.md`, NS-38 onward). Area E designs it end to end; gaps there come back the same way.
