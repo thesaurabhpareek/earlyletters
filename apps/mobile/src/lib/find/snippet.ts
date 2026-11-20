@@ -20,7 +20,7 @@ export interface Excerpt {
 
 /** Sentence ends, in Latin, Devanagari (danda), Arabic and CJK script. */
 const SENTENCE_END = /[.!?\u0964\u0965\u061f\u06d4\u3002\uff01\uff1f]+["')\]\u00bb]*(?:\s+|$)|\n+/gu;
-/** The longest slice shown, in UTF-16 units. A sentence longer than this is cut on whole words around the match. */
+/** The longest slice shown, in UTF-16 units, never exceeded (R9). A longer sentence is cut on whole words around the match. */
 export const EXCERPT_MAX = 180;
 
 /** Offsets of every match in `text` for this query. */
@@ -44,6 +44,21 @@ export function matchRanges(q: PreparedQuery, text: string): { start: number; en
     }
   }
   return out;
+}
+
+const isRegional = (cp: number | undefined) => cp !== undefined && cp >= 0x1f1e6 && cp <= 0x1f1ff;
+
+/** A cut at `i` keeps every character whole: not in a surrogate pair, before a mark, joiner, selector, skin tone or tag, after a joiner, or between flag letters. */
+export function cleanCut(text: string, i: number): boolean {
+  if (i <= 0 || i >= text.length) return true;
+  const unit = text.charCodeAt(i);
+  if (unit >= 0xdc00 && unit <= 0xdfff) return false;
+  if (text.charCodeAt(i - 1) === 0x200d) return false;
+  const cp = text.codePointAt(i) ?? 0;
+  if (/[\p{M}\u200d\ufe00-\ufe0f]/u.test(String.fromCodePoint(cp))) return false;
+  if ((cp >= 0x1f3fb && cp <= 0x1f3ff) || (cp >= 0xe0020 && cp <= 0xe007f)) return false;
+  const before = text.codePointAt(/[\uDC00-\uDFFF]/.test(text[i - 1]) ? i - 2 : i - 1);
+  return !(isRegional(cp) && isRegional(before));
 }
 
 /** The slice of `text` that holds the first match. With no match (should not happen) the start of the text. */
@@ -71,10 +86,10 @@ export function excerpt(q: PreparedQuery, text: string, max: number = EXCERPT_MA
     let b = Math.min(e, a + max);
     if (a > s) while (a < first && !ws(a - 1)) a++; // start at a word start
     if (b < e) while (b > first && !ws(b)) b--; // end at a word end
-    if (b <= first) b = Math.min(e, first + max); // one very long word (CJK has no breaks): cut where the budget ends
-    // never split a surrogate pair
-    if (a > 0 && /[\uDC00-\uDFFF]/.test(text[a] ?? '')) a--;
-    if (b < text.length && /[\uDC00-\uDFFF]/.test(text[b] ?? '')) b++;
+    if (b <= first) b = Math.min(e, a + max); // one very long word (CJK has no breaks): cut where the budget ends
+    // Never split a surrogate pair or a grapheme: the ends only move inwards, so the slice stays within `max`.
+    while (b > a && !cleanCut(text, b)) b--;
+    while (a < b && !cleanCut(text, a)) a++;
     s = a;
     e = b;
   }
