@@ -261,7 +261,7 @@ Also: "kept on the phone that made them" is true only without device backup. PRO
 - Same limit for retention jobs, audit guards and deletion: none runs in production until the apply (finding 2).
 - After the apply: run the access matrix and grants tests against the live project and record the date.
 
-### 14.6a Product rulings E74 to E82 applied to this file (20 Nov; `docs/product/prd/18-errata-after-lock.md:127-135, 263-335`; closures CL-148 to CL-157 in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 4)
+### 14.6a Product rulings E74 to E83 applied to this file (20 Nov; `docs/product/prd/18-errata-after-lock.md:127-135, 263-335`; closures CL-148 to CL-158 in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 4)
 
 Where product ruled, the ruling id replaces my earlier "proposed default". Retention periods stay "as built, not approved" and the 12 versus 24 months question (Q51, CQ2) stays with counsel and the founder; none of these rulings sets a period.
 
