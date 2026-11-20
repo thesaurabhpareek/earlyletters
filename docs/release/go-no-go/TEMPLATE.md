@@ -16,7 +16,7 @@ Marks, one per row:
 Status words are the ones in docs/qa/ALPHA_GO_NO_GO.md: pass, open, fail, n/a (n/a needs a reason in the note).
 Ruling id: a CR-, D- or role id (CLO-3) that exists in docs/agents/cto/RULINGS.md, docs/agents/exec/RULINGS.md or
 docs/DECISIONS.md on this checkout; "-" when none. Legal, Compliance and Finance read pass only with a CLO-, CCO-
-or CFO- ruling id, and that id must also appear in the Source cell (for example docs/agents/exec/RULINGS.md#CLO-3). The council roles are Claude roles, not counsel, and a row is not legal, tax or accounting advice.
+or CFO- ruling id, and that id must also be its own item in the Source cell, as "docs/legal/COUNSEL_PACKET.md; CLO-3" or docs/agents/exec/RULINGS.md#CLO-3 (an id inside another file name or anchor does not count). The council roles are Claude roles, not counsel, and a row is not legal, tax or accounting advice.
 
 Read-only commands for the facts:
   git rev-parse <tag or branch the build is cut from>          (the Commit line, 40 characters)

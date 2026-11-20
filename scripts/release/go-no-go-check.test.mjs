@@ -120,39 +120,70 @@ test("ruling ids load from the three logs, and a missing log is reported", () =>
   assert.ok(has(run(page({ QA: { ruling: "CR-44" } }), { root: empty, rulings: undefined }), "cannot check ruling ids"));
 });
 
-test("ship-call guard catches decision phrasing in any case and any layout", () => {
-  const calls = ["Go: yes", "go: YES", "Decision - go", "Decision -- go", "Recommendation: ship", "We recommend ship", "Recommend a go", "**Overall:** go", "- Ship: yes", "Release: approved", "Approved", "GO", "No-go.", "Verdict = no go", "Result: pass", "Approve: yes", "Ship yes"];
-  for (const l of calls) {
-    assert.ok(isShipCall(l), l);
-    assert.ok(has(run(page({}, l)), "ship-call line"), `page: ${l}`);
+// Table-driven: [label, text, verdict]. Each reject case runs as prose, as a bullet, as a bare table cell
+// (through isShipCall) and as the Note cell of a real page (through checkPage). Each accept case runs the same four ways.
+const GUARD_CASES = [
+  ["reject", "Go: yes"], ["reject", "go: YES"], ["reject", "Go: yes."], ["reject", "Decision - go"], ["reject", "Decision -- go"],
+  ["reject", "Decision: go"], ["reject", "Verdict = no go"], ["reject", "Recommendation: ship"], ["reject", "We recommend shipping"],
+  ["reject", "We recommend ship"], ["reject", "Recommend ship"], ["reject", "Recommend a go"], ["reject", "Ship it"], ["reject", "SHIP IT!"],
+  ["reject", "Ship"], ["reject", "Go"], ["reject", "No-go"], ["reject", "NO-GO"], ["reject", "No go"], ["reject", "**Go**"],
+  ["reject", "**Overall:** go"], ["reject", "Overall: no-go"], ["reject", "Result: pass"], ["reject", "Release: approved"], ["reject", "Approved"],
+  ["reject", "Approve: yes"], ["reject", "Ship yes"], ["reject", "Shipping: yes"], ["reject", "release-approved"], ["reject", "My ship call is yes"],
+  ["accept", "Overall: 3 of 9 devices read"], ["accept", "Result: 3 devices failed"], ["accept", "Goal reached"], ["accept", "Tango"],
+  ["accept", "ingot"], ["accept", "gone"], ["accept", "Where to go: docs/qa"], ["accept", "Release: 1.2.0"], ["accept", "Release notes were read on 2026-11-19."],
+  ["accept", "We recommend reading docs/qa/ALPHA_GO_NO_GO.md"], ["accept", "Build record: none"], ["accept", "Source: docs/release/go-no-go/2026-11-20-build-12.md"],
+  ["accept", "The go-no-go page lists nine rows."], ["accept", "Ruling id: CLO-3"], ["accept", "Shipment tracking is out of scope"], ["accept", "Approval flow read in docs/qa"],
+  ["accept", "3 devices read, 6 not read"], ["accept", NO_SHIP_CALL_SENTENCE],
+];
+
+test("ship-call guard table: at least 25 labelled cases, each in prose, bullet, table cell and a real page", () => {
+  assert.ok(GUARD_CASES.length >= 25);
+  assert.ok(GUARD_CASES.filter(([v]) => v === "reject").length >= 12 && GUARD_CASES.filter(([v]) => v === "accept").length >= 12);
+  for (const [verdict, text] of GUARD_CASES) {
+    // The template sentence is exempt only through checkPage, which strips it once; isShipCall alone sees the raw text.
+    const viaFn = text === NO_SHIP_CALL_SENTENCE ? [false, false, false] : [isShipCall(text), isShipCall(`- ${text}`), isShipCall(`| a | b | ${text} |`)];
+    const viaPage = [has(run(page({}, text)), "ship-call line"), has(run(page({}, `- ${text}`)), "ship-call line"), has(run(page({ QA: { note: text } })), "ship-call line")];
+    for (const hit of [...viaFn, ...viaPage]) assert.equal(hit, verdict === "reject", `${verdict}: ${text}`);
   }
-  // inside a table note it is caught too
-  assert.ok(has(run(page({ QA: { note: "Go: yes" } })), "ship-call line"));
 });
 
-test("ship-call guard leaves ordinary text and paths alone", () => {
-  for (const l of ["Build record: none", "Source: docs/release/go-no-go/2026-11-20-build-12.md", "Release notes were read on 2026-11-19.", "The go-no-go page lists nine rows.", "Filled by: a session", "Ruling id: CLO-3"]) {
-    assert.ok(!isShipCall(l), l);
-  }
-  assert.deepEqual(run(page({ QA: { source: "docs/qa/ALPHA_GO_NO_GO.md", note: "release build checked" } })), []);
-});
-
-test("the template's own no-ship-call sentence is the one exemption, and only that sentence", () => {
+test("the exemption: the template sentence passes once, only that sentence, and removing the rule is caught", () => {
   assert.ok(NO_SHIP_CALL_SENTENCE.includes("no ship call"));
+  // Without the exemption this sentence is itself a ship-call line, so the exemption does real work.
+  assert.equal(isShipCall(NO_SHIP_CALL_SENTENCE), true);
   assert.deepEqual(run(page({}, NO_SHIP_CALL_SENTENCE)), []);
+  // Exempt once: the second copy fails, and it fails because it is a copy, not because of other text.
+  const twice = run(page({}, `${NO_SHIP_CALL_SENTENCE}\n${NO_SHIP_CALL_SENTENCE}`)).filter((m) => m.includes("ship-call line"));
+  assert.equal(twice.length, 1);
   assert.ok(has(run(page({}, `${NO_SHIP_CALL_SENTENCE} Go: yes`)), "ship-call line"));
-  assert.ok(has(run(page({}, `${NO_SHIP_CALL_SENTENCE}\n${NO_SHIP_CALL_SENTENCE}\nShip: yes`)), "ship-call line"));
   const here = dirname(fileURLToPath(import.meta.url));
   const tpl = readFileSync(join(here, "../../docs/release/go-no-go/TEMPLATE.md"), "utf8");
   assert.ok(tpl.includes(NO_SHIP_CALL_SENTENCE), "the template carries the exempt sentence");
 });
 
-test("a Legal, Compliance or Finance pass must cite the ruling id in the Source cell, not only the Ruling id cell", () => {
-  const noCite = run(page({ Legal: { status: "pass", ruling: "CLO-3" } }));
-  assert.ok(has(noCite, "to appear in the Source cell"), "id only in the ruling column");
-  assert.ok(has(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md" } })), "Source cell"));
-  assert.ok(has(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md#CLO-33" } })), "Source cell"), "CLO-33 is not CLO-3");
-  assert.deepEqual(run(page({ Legal: { status: "pass", ruling: "CLO-3", source: "docs/legal/COUNSEL_PACKET.md; CLO-3" } })), []);
+const SRC_CASES = [
+  ["accept", "docs/legal/COUNSEL_PACKET.md; CLO-3", "CLO-3"],
+  ["accept", "CLO-3", "CLO-3"],
+  ["accept", "docs/agents/exec/RULINGS.md#CLO-3", "CLO-3"],
+  ["accept", "docs/legal/COUNSEL_PACKET.md, CLO-3", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md#CLO-33", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md#CLO-3", "CLO-3"],
+  ["reject", "docs/qa/ALPHA_GO_NO_GO.md#CLO-3", "CLO-3"],
+  ["reject", "docs/legal/XCLO-3.md; docs/qa/ALPHA_GO_NO_GO.md", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md; xCLO-3", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md; clo-3", "CLO-3"],
+  ["reject", "docs/legal/COUNSEL_PACKET.md; CLO-3x", "CLO-3"],
+  ["reject", "docs/legal/CLO-3/COUNSEL_PACKET.md", "CLO-3"],
+];
+
+test("a Legal pass cites the ruling id as its own item in the Source cell: table of cases", () => {
+  for (const [verdict, source, ruling] of SRC_CASES) {
+    const msgs = run(page({ Legal: { status: "pass", ruling, source } }));
+    const bad = has(msgs, "as its own item in the Source cell");
+    assert.equal(bad, verdict === "reject", `${verdict}: ${source}`);
+  }
   assert.deepEqual(run(page({ Compliance: { status: "pass", ruling: "CCO-1", source: "docs/agents/exec/RULINGS.md#CCO-1" } })), []);
+  assert.ok(has(run(page({ Finance: { status: "pass", ruling: "CFO-2", source: "docs/legal/COUNSEL_PACKET.md" } })), "CFO-n"), "CFO-2 is not in the logs");
   assert.deepEqual(run(page({ Legal: { status: "open", ruling: "CLO-3" } })), [], "open needs no source cite");
 });

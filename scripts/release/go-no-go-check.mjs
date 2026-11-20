@@ -11,7 +11,7 @@
 // and it cannot tell whether a source says what the row claims. A person reads the page.
 //
 // The page never holds the ship call. The founder makes it in chat. Any line that states a decision
-// ("Decision:", "Go: yes", "Decision - go", "Recommendation: ship", "Approved") is an error; see isShipCall.
+// ("Decision:", "Go: yes", "Decision - go", "Recommendation: ship", "We recommend shipping", "Ship it", "Approved") is an error; see isShipCall.
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,23 +29,47 @@ export const MAX_WORDS = 900;
 export const MAX_LINES = 60;
 
 const ID = /^(?:(?:CTO|CPO|CDesO|CMO|CBO|CFO|CLO|CCO|CPrivO|CISO|CDO|CAIO)-\d+|CR-\d+|D-\d+)$/;
-// A line that states a decision: a decision word followed by a colon or a spaced dash ("Go: yes",
-// "Decision - go", "**Overall:** go", "Recommendation: ship"), a decision word then yes or no at the
-// end of the line, a bare "Go" or "Ship" line, or "recommend" next to a decision word. Case-insensitive.
-// It runs on every line of the body, table rows included. The page's own explanatory sentence is the one exemption.
-const DW = "(?:decision|verdict|overall|result|go\\/no-go|no-go|no\\s+go|go|ship|approv(?:e|ed|al)|release|recommend(?:ation|ed|s)?)";
-const SHIP_CALLS = [
-  new RegExp(`\\b${DW}\\b[\\s*_]*(?::|=|\\s-{1,2}\\s)`, "i"),
-  new RegExp(`\\b${DW}\\b[\\s*_]+(?:yes|no)[\\s*_]*[.!]?\\s*$`, "i"),
-  /^[\s>*_#-]*(?:go|no-go|no go|ship|approved?)[\s*_]*[.!]?\s*$/i,
-  /\brecommend(?:ation|ed|s)?\b[^|\n]{0,20}\b(?:go|no-go|ship|approve|release)\b/i,
+// A ship call is a decision stated on the page. The guard runs on every line of the body, and on a table row
+// it also runs on every cell on its own, so "| ... | No-go |" is caught the same as "No-go." in prose.
+// Text is lower-cased by the flag, and * _ and backticks are dropped first, so "**Overall:** go" reads "Overall: go".
+// All matches use word boundaries or a start anchor, so "Tango", "ingot", "gone" and "Goal reached" pass.
+// Decision verbs: go, no-go, ship (ship, shipping, shipped), release-approved, approve (approve, approved, approval), recommend.
+const VERB = "(?:go|no-go|no\\s+go|go\\/no-go|ship(?:ping|ped)?|approv(?:e|ed|al)|release-approved|recommend(?:ation|ed|s)?)";
+const LABEL = "(?:decision|verdict|" + VERB + ")"; // a label that is itself a decision
+const SEP = "(?:\\s*[:=]|\\s-{1,2}\\s)"; // colon, equals, or a spaced dash
+const VALUE = "(?:go|no-go|no\\s+go|ship(?:ping|ped)?|approved?|release-approved|yes|no|pass|fail|ready)"; // a decision value
+const CELL_CALLS = [
+  new RegExp(`^${LABEL}${SEP}`, "i"), // "Go: yes", "Decision - go", "Recommendation: ship", "Verdict = no go"
+  new RegExp(`^(?:overall|result|release)${SEP}\\s*${VALUE}[\\s.!]*$`, "i"), // "Overall: go" but not "Overall: 3 of 9 devices read"
+  new RegExp(`^(?:decision|verdict|overall|result|${VERB})\\s+(?:yes|no)[\\s.!]*$`, "i"), // "Ship yes", "Decision no"
+  new RegExp(`^(?:go|no-go|no\\s+go|ship(?:ping)?|ship\\s+it|approved?|release-approved)[\\s.!]*$`, "i"), // the whole cell or line is the call
 ];
-export const isShipCall = (line) => SHIP_CALLS.some((re) => re.test(line));
+const LINE_CALLS = [
+  /\bship\s+it\b/i,
+  /\bship\s+call\b/i, // "My ship call is yes"; the template's own sentence is the exempt one
+  /\brelease-approved\b/i,
+  new RegExp(`\\brecommend(?:ation|ed|s|ing)?\\b[\\s:=-]*(?:(?:we|you|a|an|the|to|that|is|are)\\s+)*(?:(?:go|no-go|no\\s+go|ship(?:ping|ped)?|approv(?:e|ed|al)|release-approved)\\b|release\\s*[.!]?\\s*$)`, "i"),
+];
+const clean = (s) => s.replace(/[*_`]/g, "").replace(/^[\s>#|-]+/, "").replace(/^\d+[.)]\s+/, "").trim();
+export function isShipCall(line) {
+  const text = line.replace(/[*_`]/g, "");
+  if (LINE_CALLS.some((re) => re.test(text))) return true;
+  const segments = [line];
+  if (/^\s*\|/.test(line)) segments.push(...line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|"));
+  return segments.some((seg) => { const c = clean(seg); return CELL_CALLS.some((re) => re.test(c)); });
+}
 // The one sentence the template uses to say the page makes no ship call. It is removed (once) before the guard runs,
 // so quoting it is safe and nothing else around it is: "Go: yes" on the same line still fails.
 export const NO_SHIP_CALL_SENTENCE = "This page holds no ship call. The founder makes it in chat.";
 const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(`${s}T00:00:00Z`)) && new Date(`${s}T00:00:00Z`).toISOString().startsWith(s);
 const placeholder = (s) => /<[^>]*>/.test(s) || s === "";
+
+// The id must be its own item in the Source cell (items split on ; , or spaces), or the anchor of a ruling log
+// (docs/agents/exec/RULINGS.md#CLO-3). An id inside a longer word, id or any other file's anchor does not count.
+const LOG_FILES = ["docs/agents/exec/RULINGS.md", "docs/agents/cto/RULINGS.md", "docs/DECISIONS.md"];
+export function sourceCitesId(source, id) {
+  return source.split(/[;,\s]+/).map((p) => p.replace(/^`|`$/g, "")).some((p) => p === id || LOG_FILES.some((f) => p === `${f}#${id}`));
+}
 
 /** Ids of the three logs on this checkout: exec rulings, CTO rulings, founder decisions. */
 export function loadRulingIds(root) {
@@ -175,8 +199,8 @@ export function checkPage(text, opts = {}) {
     if (need && status === "pass") {
       const ofRole = idsCited.filter((id) => id.startsWith(need));
       if (ofRole.length === 0) err(r.line, `${fn}: pass needs a ${need}n ruling id (a Claude role's reading of a source is not counsel's advice)`);
-      else if (!ofRole.some((id) => new RegExp(`(^|[^A-Za-z0-9-])${id}($|[^0-9])`).test(source))) {
-        err(r.line, `${fn}: pass needs the ${need}n id to appear in the Source cell too (for example docs/agents/exec/RULINGS.md#${ofRole[0]}), so the row cites the ruling it relies on`);
+      else if (!ofRole.some((id) => sourceCitesId(source, id))) {
+        err(r.line, `${fn}: pass needs the ${need}n id as its own item in the Source cell (for example "docs/legal/COUNSEL_PACKET.md; ${ofRole[0]}" or docs/agents/exec/RULINGS.md#${ofRole[0]}), so the row cites the ruling it relies on`);
       }
     }
   }
