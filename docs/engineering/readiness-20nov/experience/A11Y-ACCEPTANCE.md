@@ -21,8 +21,8 @@ Standing facts: the WCAG and Apple floor is LEGAL-REQ-051 and A-NFR-005 to 007; 
 | R11 Smart Invert ignores pictures | `accessibilityIgnoresInvertColors` | S + D | Not built: 0 hits in `apps/mobile/src` [V grep] | PhotoFrame both branches, BookCover symbol, lockup (mobile) |
 | R12 recording not colour alone | each Listen phase has a text element naming it | S + D | Text exists (A-S05 line "Listening."); no test | BL-984 (b) |
 | R13 tab bar Large Content Viewer | built, regression | S | Built (`(tabs)/_layout.tsx:57` `LARGE_CONTENT(title)` [V]); `button.tsx:192` LCV props [V] | native tabs must keep it (DS2-10) |
-| R14 Bold Text on custom fonts | heavier face | D | Not built: no code reads Bold Text (TDD 11 3.2 R14 [V]) | Conflict D-08: Tiro has no heavier cut |
-| R15 undo waits for VoiceOver | T4 | U + D | Action toast never times out so true by construction (`toast.tsx:10` [V]); timed windows N | Conflict D-04 |
+| R14 Bold Text on custom fonts | heavier face | D | Not built: no code reads Bold Text (TDD 11 3.2 R14 [V]) | Conflict C-05: Tiro has no heavier cut |
+| R15 undo waits for VoiceOver | T4; NS-01-R38a (10 s, or VoiceOver read plus 10 s, whichever is later), R38b (no Undo control outlives its window), R38c (Switch Control until the parent moves on) | U + D | N. `toast.tsx:10` [V] says an action toast never times out; the card names exactly that as the unmet defect (R38b: a toast with an action never times out while `undoPhotoChange` refuses after `expiresAt`, #839 `attach.ts`). Needs a timed window helper (the card's seconds, VoiceOver-finish aware, Switch Control aware) and a test that the Undo control and its accessibility node leave in the same frame as the window closes | Conflict C-02: our TDD 11 decision 2 builds the opposite; the card wins |
 | R16 automated audit at AX5, zero critical | XCUITest `performAccessibilityAudit()` | D | No XCUITest target; Maestro only (TDD 11 R16 [V]) | `apps/mobile/a11y-audit/` project (mobile, [E] 2 to 3 days: new native test target) |
 
 ## 2. VoiceOver reading order, per screen
@@ -55,7 +55,7 @@ Cross-screen rules: one element per row or card with a composed label; no separa
 | Tab bar | labels do not scale; Large Content Viewer shows them | D | B |
 | With Bold Text | repeat the walk (R7) | D | N |
 | Walk list | Home waiting state; Review fixes; Book top and inline bar; letter page with player and Aa Large print; sheets (Change the date, Delete) (spec 5.5 [V]) | D | not run |
-| **v2 changes the numbers** | v2 scales each token on Apple's own curve (body 56 pt at AX5, today 64; `FOUNDATIONS.md:286-300` [V]). My width checks in the NS-33 spec used today's uniform 3.571 scale; they must be redone after DS2-04 | U + D | Conflict D-02 |
+| **v2 changes the numbers** | v2 scales each token on Apple's own curve (body 56 pt at AX5, today 64; `FOUNDATIONS.md:286-300` [V]). My width checks in the NS-33 spec used today's uniform 3.571 scale; they must be redone after DS2-04 | U + D | Conflict AM-06 |
 
 Test fixture (Rec): the per-token AX table from FOUNDATIONS 4.3 as `packages/design-tokens/test/type-scale.test.ts` (DS2-04 "done when").
 
@@ -100,11 +100,11 @@ Rows reading as icon-only on today's screens: Find, More for this book, IconButt
 | Row | Acceptance | Level | State |
 |---|---|---|---|
 | Increase Contrast | every role takes its HC value; text 7:1 for muted and accent on bg, surface, surfaceRaised, accentSoft; control edges 4.5:1; bars go solid | U + D | B for current roles (`tokens.test.ts:107` [V]); v2 adds `glassLabel`, `glassBorder`, `mediaSolid`, `onMedia` (DS2-01) |
-| Reading the setting | `isDarkerSystemColorsEnabled` is read on develop (`a11y.ts:129` [V]), so DS2-08's premise ("a small module if RN has no query") is already met (Delta 12) | U | B |
+| Reading the setting | `isDarkerSystemColorsEnabled` is read on develop (`a11y.ts:129` [V]), so DS2-08's premise ("a small module if RN has no query") is already met (AM-07) | U | B |
 | Smart Invert | pictures, thumbnails, viewer, brand lockup, BookCover symbol ignore it; text does not | S + D | N |
 | Differentiate Without Colour | selected = fill + 1.5 pt edge + check; recording = shape + word; errors = glyph + words; Waiting chip = text + shape | S + D | P |
 | Dark mode | both palettes pass the same pair tests; photos at 92 percent brightness (FOUNDATIONS 11 [V]); hairline frame on pictures; screenshot every state in `ax5`, `dark` | U + D | P: palette tests built; photo brightness N |
-| Colour change under v2 | `success` #3F7A55 to #3B724F and `caution` #94661A to #895E18 in light (`tokens.ts:30-31` vs `tokens.v2.json` [V]); re-run pair tests | U | Delta 8 |
+| Colour change under v2 | `success` #3F7A55 to #3B724F and `caution` #94661A to #895E18 in light (`tokens.ts:30-31` vs `tokens.v2.json` [V]); re-run pair tests | U | AM-08 |
 | Bold Text | face map swaps one step (Mukta 400 to 500, Literata 400 to Medium 500 opsz 30); stage 2 adds cuts (DS2-05) | D | N |
 
 ## 8. RTL and Devanagari
@@ -116,7 +116,7 @@ Rows reading as icon-only on today's screens: Find, More for this book, IconButt
 | Text direction per run | a letter or label in Arabic sets `writingDirection` and aligns right (`language-row.tsx:105` sets `writingDirection` [V]) | S + D | P |
 | Spoken language | letter words carry `accessibilityLanguage` (`language-picker.tsx:177`, `language-row.tsx:105` [V]); the Book and letter page must do the same (NS-33 s6 "Multilingual" [V]) | S | P: not on the letter page [U] |
 | Devanagari faces | Mukta covers Latin and Devanagari for UI; Tiro Devanagari Hindi Regular only for letter runs (`FOUNDATIONS.md:271-277` [V]); `fonts.test.ts` checks faces exist | U | B |
-| Devanagari at AX5 and Bold | line height 1.5 clears Literata (1.485 em) but Tiro's own metrics are not checked [U]; Bold Text has no heavier Tiro (FOUNDATIONS 4.4 Q3 [V]) | D | open; Conflict D-08 |
+| Devanagari at AX5 and Bold | line height 1.5 clears Literata (1.485 em) but Tiro's own metrics are not checked [U]; Bold Text has no heavier Tiro (FOUNDATIONS 4.4 Q3 [V]) | D | open; Conflict C-05 |
 | NS-34 scroll run | the Book scroll run includes Devanagari, Arabic, Chinese letters (NS-34 s6 [V]) | D | not run |
 
 ## 9. Test-level summary (what each level proves, what only a phone proves)
