@@ -20,8 +20,10 @@
 // - A review counts only if the FIRST LINE of a PR comment is exactly
 //   `## Review A at <40 hex>: PASS` or `...: PASS WITH NOTES` (or `Review B`); notes never
 //   block (Karma's ruling CR-63, 20 Nov 2026). The sha must equal the PR head, all
-//   40 characters. Later lines are never read, so words like failure or until in the body
-//   cannot change the result.
+//   40 characters. Later lines are read for one thing only, the "Must fix:" line, and only to
+//   take a pass away, never to make one: a `PASS WITH NOTES` counts only with a line
+//   `Must fix: none`, and any verdict with a `Must fix:` line naming something is not a pass.
+//   Other words in the body (failure, until) cannot change the result.
 // - Only comments by OWNER, MEMBER or COLLABORATOR (author_association) count; the repo is
 //   public. An ignored PASS prints a note under the table.
 // - Reviews at an older 40-char sha are shown as stale, never as passes.
@@ -74,19 +76,32 @@ const REVIEW_RE = /^## Review ([AB]) at ([0-9a-f]{40}): PASS( WITH NOTES)?[ \t]*
 /** The two verdict words that meet a lens (CR-63). Exact match: "PASS.", "pass" and the rest do not. */
 export const PASSING = Object.freeze(["PASS", "PASS WITH NOTES"]);
 const passes = (word) => PASSING.includes(word);
+/** A "Must fix:" line anywhere in the body (bold, a bullet or a heading mark allowed before it). */
+const MUST_FIX_LINE = /^[ \t>*_#-]*must[ -]fix(?:es)?[ \t*_]*:[ \t*_]*(.*)$/gim;
+/** Other ways reviews here have said "Must fix: none" (survey of 20 Nov: "No Must.", "There is no must-fix.", "Nothing must be fixed before merge."). */
+const NO_MUST_FIX = /\b(no\s+musts?\b|there\s+is\s+no\s+must[ -]?fix|no\s+must[ -]?fix(es)?\b|nothing\s+(must|has\s+to)\s+be\s+fixed)/i;
+/** CR-63: a pass stays a pass only if no "Must fix:" line names anything, and a PASS WITH NOTES also says it has no must-fix. */
+export function effectiveVerdict(word, body) {
+  if (!passes(word)) return word;
+  const rests = [...String(body ?? "").replace(/\r/g, "").matchAll(MUST_FIX_LINE)].map((m) => m[1].trim());
+  if (rests.some((r) => !/^none\b/i.test(r))) return `${word} (open Must fix)`;
+  if (word === "PASS WITH NOTES" && rests.length === 0 && !NO_MUST_FIX.test(String(body ?? ""))) return `${word} (no "Must fix: none" line)`;
+  return word;
+}
 
 /** Strip ANSI escape sequences and control characters from anything printed. */
 export const clean = (v) => String(v ?? "").replace(/\u001b\[[0-9;?]*[ -\/]*[@-~]/g, "").replace(/[\u0000-\u001f\u007f-\u009f]/g, "");
 
 /**
- * First line only, strict: `## Review A|B at <40 lowercase hex>: <verdict words>`.
- * Returns { lens, sha, word } (word is the trimmed verdict, e.g. PASS, BLOCKED, CHANGES,
- * "PASS WITH NOTES") or null. Only the exact words PASS or PASS WITH NOTES satisfy a lens.
+ * Strict first line: `## Review A|B at <40 lowercase hex>: <verdict words>`.
+ * Returns { lens, sha, word, stated } or null. `stated` is the trimmed verdict on the first line
+ * (PASS, BLOCKED, CHANGES, "PASS WITH NOTES", ...); `word` is the verdict after the CR-63 Must fix
+ * check (effectiveVerdict). Only `word` equal to PASS or PASS WITH NOTES satisfies a lens.
  */
 export function parseReview(body) {
   const first = String(body ?? "").split("\n", 1)[0].replace(/\r$/, "");
   const m = /^## Review ([AB]) at ([0-9a-f]{40}): (\S.*?)[ \t]*$/.exec(first);
-  return m ? { lens: m[1], sha: m[2], word: m[3] } : null;
+  return m ? { lens: m[1], sha: m[2], word: effectiveVerdict(m[3], body), stated: m[3] } : null;
 }
 
 export const TRUSTED_ASSOCIATIONS = ["OWNER", "MEMBER", "COLLABORATOR"];
