@@ -1,7 +1,10 @@
 /**
  * Drafts: captures in progress. Written when recording starts, so a crash
  * or a closed sheet loses nothing (TDD 01 3.4). Rows only: audio files are
- * deleted by the explicit Discard in Listen, never here.
+ * deleted by a confirmed Let it go (Review, Listen), the launch sweep
+ * finishing one (capture/let-it-go.logic.ts, sweep.ts), erasing a deleted
+ * book (store.ts eraseBook) and Erase everything (eraseEverythingLocal),
+ * never here.
  */
 import { changes, type RepoContext } from './context';
 import type { BaseDirection, CaptureMode, Draft, DraftKind, DraftState, OccurredPrecision } from './types';

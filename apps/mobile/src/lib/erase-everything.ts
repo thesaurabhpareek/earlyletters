@@ -60,9 +60,14 @@ export function eraseDeviceFiles(): void {
   for (const f of listRecordingFiles()) if (f.exists) f.delete();
   removeWholeFrameCopies(0);
   sweepListeningCopies(); // copies with no draft or letter row: run again after the rows go (finish)
-  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says.
-  const pictures = photosDirectory();
-  if (pictures.exists) pictures.delete();
+  // Pictures kept with letters (NS-01-R16, NX-39-R31): the whole folder, whatever the photos switch says. A container
+  // layout photosDirectory does not know means no picture was ever written (it fails closed for writes too).
+  try {
+    const pictures = photosDirectory();
+    if (pictures.exists) pictures.delete();
+  } catch (e) {
+    if (!(e instanceof Error && e.message === 'photos_folder_unknown')) throw e;
+  }
   for (const name of CACHE_COPIES) {
     try {
       const dir = new Directory(Paths.cache, name);
