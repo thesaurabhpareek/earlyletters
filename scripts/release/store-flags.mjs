@@ -49,6 +49,9 @@ export function storeProfiles(eas) {
  * Every store profile and flag where the flag is not off and the table does not allow it on. Off means not written,
  * or written "off". Any other value is a problem: only "on" turns the feature on (lib/photos/flag.ts and
  * lib/find/flag.ts trim and lower-case it), and a store profile should say plainly what it ships.
+ *
+ * @param {unknown} eas apps/mobile/eas.json, parsed
+ * @param {ReadonlyArray<{ env: string, card: string, allowedOn: ReadonlyArray<string> }>} [flags]
  */
 export function storeFlagProblems(eas, flags = STORE_FLAGS) {
   const build = eas?.build && typeof eas.build === 'object' ? eas.build : {};
