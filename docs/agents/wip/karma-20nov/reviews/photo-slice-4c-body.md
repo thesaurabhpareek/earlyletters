@@ -20,6 +20,10 @@
   - A picture file that will not go keeps the draft marked for the launch sweep, as a recording does (BL-924). A draft not marked for Let it go loses nothing.
   - Before, Review's Let it go left the picture on the phone, and in the iPhone backup, until the next cold launch. Listen's separate `dropDraftPicture` call, and the helper, are gone.
   - Test (`erase-all.test.ts`): the Let it go steps and `deleteDraft` take the picture at once. It fails with the eraser not handed in.
+- **The words fields count characters a person sees** (2d3994e7, BL-957).
+  - The letter page's words and place fields lose `maxLength`, which counted UTF-16 units: it stopped a Devanagari or emoji writer well short of 140 characters and could cut one in half.
+  - `editPhotoWords` keeps 140 and 60 characters through 3b's cap, which is now the one limit.
+  - Test: the page has no `maxLength`, and 141 Devanagari "ki" and 61 emoji families are kept as 140 and 60. It fails on the old page.
 - **One guard** (c0e4e1af and 4df391c0, review N3 on #841). `photoUri` now goes through 3a's `storedPhotoFile`. An id that cannot make a stored name gives no uri, and the frame shows the picture as missing. Its test fails on the old `photoUri`.
 
 ### Words
@@ -60,7 +64,7 @@ Eight stacked PRs from #796, as reworked after Karma's ruling of 20 Nov 2026. Sl
 - Everything is behind `EXPO_PUBLIC_PHOTOS`, which is off in every profile.
 
 ### Size (CODE-R02)
-Size exception: 523 changed lines in 17 files against the 400-line, 20-file limit, not counting the lockfile and the generated `licences.json`. 355 lines are code and 168 are tests. The tests are the requirement-row proofs and the flag-off proof, each of which fails on the old code; splitting them from the code would leave the code unproven. Same shape as #828. The founder accepts or refuses this exception; the merge waits for that.
+Size exception: 533 changed lines in 17 files against the 400-line, 20-file limit, not counting the lockfile and the generated `licences.json`. 355 lines are code and 178 are tests.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

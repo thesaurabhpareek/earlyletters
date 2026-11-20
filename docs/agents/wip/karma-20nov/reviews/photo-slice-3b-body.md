@@ -1,4 +1,24 @@
+Agent: mobile
+Mode: task BL-931
+Satisfies: NS-01-R2, R4 to R6, R15, R17, R21; BL-957 (the app limit half)
+Data classes touched: C (the parent's words and place about a picture, the stored copy), phone only
+
 ## Photo with a letter, slice 3b: the stored copy (BL-931)
+
+**Both reviews must be redone at the final head.** This round changes how the words and place are capped and merges 3a's new head (with develop).
+
+### This round: the caps count characters a person sees (BL-957)
+- `text.ts` caps the parent's words at 140 and the place at 60 grapheme clusters, keeping whole clusters only. It uses Intl.Segmenter where the engine has one, and on Hermes, which has none (ADR 0014), the small fallback rule: a base character with its marks and skin tones, joined across a ZWJ or an Indic virama, and a flag's pair.
+- Migration 11's CHECKs (3a) are ceilings of 8 code points per character. A character can be longer (a family with skin tones is 11), so the cut also stops before the ceiling: the store never refuses what the app kept.
+- This replaces last round's code-point cap. That cap fitted the old 140 and 60 CHECKs, but it was not the product limit.
+- Kept small on purpose: BL-957 (wave 2) moves one grapheme helper into `packages/core`, and this one goes then.
+
+### This round: room for a picture is its size plus 50 MB (NS-01-R45, 293a8006)
+- `commitPhoto` stores a copy only when the phone has free the copy's size plus 50 MB (`PHOTO_FREE_MARGIN_BYTES`, 50 x 1024 x 1024), as the locked card's R45 asks. The old check was twice the size.
+- Below that, nothing is written, the letter is kept, and the result is `no_space`.
+- Handoff #900 from ops.
+- Test `[NS-01-R45] a picture needs room plus 50 MB`: one byte short gives `no_space` with 0 files and 0 rows, and exactly enough is stored. It fails on the old check.
+- Test (`photos-device.test.ts`): at the limit and one over, for a Devanagari conjunct, Devanagari "ki", a decomposed accent, an emoji ZWJ family and a flag, with Intl.Segmenter and with it removed. Every kept value goes through the real SQLite store and its CHECK, and 140 skin-toned families stop at the ceiling. The test fails on the old code-point cap.
 
 **Base:** `feat/mobile-photo-3-store`. **Branch:** `feat/mobile-photo-3b-stored-copy`. Split from #796 (8a026397).
 
@@ -23,11 +43,7 @@
 - **The inventory moved out** (f84924a7, then e34e696b). This slice first added the data-policy 4.4 and DATA_CLASSIFICATION 4.5 rows. `docs/legal/**` is the founder's merge (D-125, D-132; #836 review B note 3), so they now live on `docs/photo-inventory-rows`, a founder PR with both #836 reviews' corrections, and this slice is code-only again.
 
 ### From #836's reviews at 4596b3c1 (both pass with notes; Karma: in this slice)
-- **The caps fit the column** (dbdf1943; review A N1, review B note 7).
-  - text.ts caps the parent's words (140) and place (60) in code points, which is what migration 11's CHECK counts, keeping whole characters only.
-  - Without Intl.Segmenter (Hermes, ADR 0014), a character keeps its marks, skin tones and ZWJ or virama joins, and a flag keeps its pair, so the cut never splits a code point or a character a person sees.
-  - Before, Node counted graphemes, which the CHECK then refused (`failed`), and the phone could split one.
-  - Test: Devanagari, a conjunct, decomposed accents and family emoji through the real store, with and without Intl.Segmenter.
+- **The caps** (dbdf1943): first counted in code points to fit the old CHECKs; superseded this round by grapheme counting under BL-957 (above).
 - **The guard reads metadata, not pictures** (dbdf1943; review A N2).
   - `carriesMetadata` searches only marker segments (in the headers and between scans) and anything after the end marker, never the compressed data, so a clean picture is never refused by chance.
   - An Exif signature in any kept segment still refuses it.
@@ -75,7 +91,7 @@ Eight stacked PRs from #796, as reworked after Karma's ruling of 20 Nov 2026. Sl
 - Everything is behind `EXPO_PUBLIC_PHOTOS`, which is off in every profile.
 
 ### Size (CODE-R02)
-Size exception: 995 changed lines in 16 files against the 400-line, 20-file limit, not counting the lockfile and the generated `licences.json`. 401 lines are code and 594 are tests: #835's and #836's rounds added about 290, mostly tests that each fail on the old code. The legal rows are no longer here. The tests are the requirement-row proofs and the flag-off proof, each of which fails on the old code; splitting them from the code would leave the code unproven. Same shape as #828. The founder accepts or refuses this exception; the merge waits for that.
+Size exception: 1018 changed lines in 17 files against the 400-line, 20-file limit, not counting the lockfile and the generated `licences.json`. 413 lines are code and 605 are tests: the review rounds added about 310, mostly tests that each fail on the old code. The legal rows are no longer here.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

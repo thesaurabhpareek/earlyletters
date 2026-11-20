@@ -1,28 +1,25 @@
-## Review A at c181291ed63515339a55e0515f0a2164c0e0f177: PASS WITH NOTES
+## Review A at 67447167830f3a24c12e5c298d8e4c5fc9452387: PASS WITH NOTES
 <!-- agent:principal-architect -->
 Must fix: none.
 
-Lens A (principal-architect): code shape, contracts, buildability. File `docs/tdd/new-scope/10-reading-and-family.md`, 227 lines, ASCII only, TDD 01 tags, no card text copied.
+Confirm review, lens A (principal-architect: code shape, contracts, buildability). The head moved from `c181291e` to `67447167`. The diff adds 2 lines to `docs/tdd/new-scope/10-reading-and-family.md` and changes nothing else.
+- In 1.3, Conflict C12: NS-21-R4 asks for heading levels, but React Native 0.86.3 on iOS sets only the header trait. The build ships the trait and the order, and levels are proven on web, until product or `compliance-engineer` rules.
+- In section 6, the matching C12 line.
 
 ## What I checked
-- Facts: I sampled 45 cites against `develop` `d5d12178`, the named PR heads and the installed `node_modules`. All 45 hold. Examples: `toggleInBook` ignores the boolean `setEntryInBook` returns (`app/letter/[id].tsx:346-352`; `lib/store.ts:717`); the other parent's letter has no list (`own &&`, `:458`); `ListSection` draws its title with `asHeading` (`components/ui/list-row.tsx:34-38`) and rows are `min-h-11` (`:113`); "A month ago" takes no quiet input (`draft-card.logic.ts:190-206`; `index.tsx:200`); Hide needs two books (`app/settings/children/[id].tsx:187`); the quiet column is `child_member_prefs.quiet_at` (`migrations.ts:299, 316`); RN shares message then URL and resolves only when completed or with no activity (`RCTActionSheetManager.mm:258-260, 289-295`); `shareAsync(url, options)` takes no text (`expo-sharing/build/Sharing.d.ts:12`); the app protection class (`app.config.ts:93`).
-- Card rows: NS-21 P0 rows R4, R9, R11, R12 and R13 each have a test in 1.10. NS-22 P0 (R2, R3), NS-23 P0 (R5, R8, R11, R15, R17) and NS-05 P0 lists match `14-test-plan.md` section 7. NS-21-R12's ratchet is allowed by the card's own wording ("or the build carries a recorded finding").
-- Boundaries: no founder or counsel question is decided. The NS-05 picture waits for the X2 note (a `security-architect` read and counsel's Q45 on record); seals are not built until Q6 (CR-62); co-parent stays alpha-only (D-162). Words are PROPOSED keys, and PR 3 waits for the founder's approval of PR 2.
-- Buildability, wave 2 (NS-21): 1.11 gives four PRs plus D1 in merge order, each with an owner, two lenses and a size under the limit. One pure row model (`components/book/letter-list.logic.ts`, `LETTER_ROWS`) so later cards add a predicate, not a block in a 670-line screen, is the right shape. So is one slip registry (`home-slips.ts`) and one `bookHeader` model.
+- The diff: only those two lines. The rest is the text I reviewed at `c181291e`, so that review's fact sample (45 cites, all hold) and notes still apply.
+- C12 is the Conflict line CR-66 asks for. A card row (P0, LEGAL-REQ-051) meets a platform limit, and the file builds the trait plus order without silently dropping the row. It cites `11-foundations.md` P7, which records the same limit for NS-33-R1, and it keeps OQ-21b with `compliance-engineer`. No founder or counsel question is decided.
+- R4's test design in 1.10 (a source scan, the web level assertion and the device rotor walk) matches C12.
+- Format: ASCII only, 229 lines, TDD 01 tags.
 
 ## Findings (none blocks)
-1. CR-67 AX-8: `[X6-R1]` is one test, the existing `apps/mobile/test/no-system-indexing.test.ts`, retitled and extended (BL-962). PR 1 here adds "`[X6-R1]` scan" and 1.10 R13 describes a new scan; section 6 names `mobile` as its owner. Cite and extend the existing test, with no second scan.
-2. CR-67 AX-1: section 6's default ("the finding; NS-06-A22 goes to the founder") is replaced by "build one native setting under ADR 0039; flags for new word fields stay off in production until it lands". When it lands, the R12 ratchet must flip from "cites the finding" to "requires the prop". Write that into the ratchet's title or comment, so trace never counts a finding as the behaviour.
-3. Section 5, NS-06 B: the opening rule written once in `packages/core` (`isOpen`), with a parity test against the SQL form, is the right call. `11-foundations.md` section 6 names the Find form `visibilitySql('find')` (eval B). Make sure the two designs mean one module (`packages/core/src/visibility.ts`), not two.
-4. Section 4, NS-05 PR 3: `ScribeFiles.setProtection` is a Swift change. It needs the NSC-01 route (`security-architect` as lens B) and the line on why the installed module needs extending, which the file gives. Name `security-architect` as lens B of PR 3, not only as an extra lens.
-5. Section 3, `[FRAME-SLIP]`: a source scan that fails when `index.tsx` renders a card outside `SLIP_VIEWS` can be fooled by a component imported under another name. Pair it with a render test over the registry (every rendered slip id is in `HOME_SLIPS`).
+1. The five notes from my review at `c181291e` stand.
+2. The platform fact stays Unverified in this file ("whether UIKit offers any public heading level", section 8). Keep C12 phrased as "React Native exposes no level", which is checked against the installed RN, not "iOS has no level".
 
 ## CI
-All checks green at the head, including tests and content rules. The head was older than 10 minutes when I finalised.
+Nine checks green at the head (committed 11:15:50 UTC). Read at 11:26 UTC, more than 10 minutes later.
 
 ## Not verified
-- That the web preview reaches `/letter/[id]` with the Asha seed (the R4 web journey assumption).
-- iOS share-sheet behaviour after a cancel inside a chosen app.
-- `@expo/ui` `Menu` under VoiceOver and AX5.
+As in my review at `c181291e`.
 
 Reviewer: independent of the author (CR-44).

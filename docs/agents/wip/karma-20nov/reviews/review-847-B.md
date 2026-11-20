@@ -2,7 +2,7 @@
 
 Lens B, round 5 (confirm): governance and founder boundaries, wave and dependency logic, and the Q1 readings. Reviewer role: product manager and queue keeper. Read-only; nothing posted.
 
-Head verified with `gh api .../pulls/847 --jq .head.sha` = 774d3e13, at the start and again before writing (HEAD_CHECK_PLACEHOLDER).
+Head verified with `gh api .../pulls/847 --jq .head.sha` = 774d3e13, at the start and again before writing (last at 11:10:48 UTC).
 - One commit since e42fb07c: 774d3e13, committed 06:04:47 UTC, +9 -8 in file 17. I waited until the head was more than 10 minutes old.
 - Base e9dca86c; develop is 20553b18.
 - The whole PR is 3 files, +771/-0 (768 in file 17, 2 in 13, 1 in README).
@@ -50,7 +50,7 @@ Must fix: none.
 ### Size, ASCII, CI
 - Added lines against develop are ASCII only (0 non-ASCII bytes).
 - The size is +771 (768 + 2 + 1). The body's size line is stale (N1).
-- CI at 774d3e13: CI_PLACEHOLDER
+- CI at 774d3e13, read at 11:10:48 UTC: all 9 check runs succeeded, including the required `required`, `compliance-fence` and `applied migrations unchanged`. mergeable_state is clean.
 
 ### For the founder
 1. Under Q1's default, Build 13 also waits for P-4's NS-09-R6, the Storage line for a recording that could not be let go. Its placement touches your decision 15 (Storage never shows letters or recordings). Product will rule within decision 15, or ask you.

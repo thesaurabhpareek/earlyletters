@@ -5,7 +5,7 @@ Lens A: accuracy against the repo and GitHub. Round 5. Earlier rounds: ce7a5245 
 - **Head:** PR #847 at 774d3e13, confirmed from the API. Committed 06:04:47 UTC, one commit on e42fb07c (+9 -8).
 - **Size:** 3 files, +771 -0: 768 lines in file 17, 2 in 13 and 1 in README.
 - **Merge and text:** merges cleanly with develop 20553b18. Added lines are ASCII only.
-- **CI:** __CI__
+- **CI:** read at 06:14:51 UTC, with the head 10 minutes old. Every check passed, including `required` (06:09:20), `compliance-fence` and `applied migrations unchanged`. Mergeable: clean.
 
 Line numbers below are file 17 at the head.
 

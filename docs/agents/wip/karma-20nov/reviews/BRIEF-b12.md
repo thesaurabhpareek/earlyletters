@@ -1,0 +1,24 @@
+# Addendum to BRIEF.md for the servers-on build (the repo's "Build 12"; the founder calls it build 13)
+
+Read /tmp/claude-0/-home-user-earlyletters/9c7d4e54-75ea-5024-8f40-e18f5142ba43/scratchpad/reviews/BRIEF.md first and follow it (setup, ground rules, output format). This file changes its context. Where the two disagree, this file wins. Ignore BRIEF.md's "TestFlight build for family testers tonight (servers off)" line.
+
+## What the build is
+The first public App Store build: production profile, server features ON (D-157), sign-in REQUIRED (D-160: Sign in with Apple or an email code; signup must work), co-parent surfaces may show "coming soon" instead of working. The same code also ships as the servers-off TestFlight alpha and as the fallback binary, so with `EXPO_PUBLIC_SERVER_FEATURES` off every one of these PRs must change nothing a person can see or any data on disk. Check that explicitly.
+
+The work is a stack of DRAFT pull requests, in this order: #700 (merged), #701 (merged), #720 three tabs, #722 sign-in-first gate (logic), #724 Welcome and sign in plus outage and offline screens, #728 code screen, consent hand-off and optional child name, #737 new account to the child step and claim into an account that has a book, #738 the You tab states, #764 S17 "Opening your book on a new phone" (stacked on #738); alongside them #716 nameless child surfaces, #703 and #735 words, #699 the You tab. A new head on a predecessor voids reviews of its successors. Specs: docs/roadmap/next/03-requirements/NX-31 and NX-40-first-run-and-sign-in.md, docs/design/specs/ (S17-NEW-PHONE-SPEC-10nov.md, YOU-TAB-STATES-9nov.md, FIRST-RUN-WORDS-10nov.md), docs/qa/FIRST-RUN-TEST-PLAN-10nov.md. Read the PR body first: it lists what the author did and did not do and what is UNVERIFIED.
+
+## What a PASS means here
+A PASS means: merge-ready once CI is green at this exact head. These are drafts: do not fail a PR for being a draft, but anything the PR body says is missing or "dead end alone" is a must-fix only if the PR as it will be merged to develop would break develop or a servers-off build; say clearly if a piece is only safe because a successor lands.
+
+## What to look for beyond BRIEF.md (most important first)
+1. A person's letters or recordings lost, overwritten, orphaned or deleted: first-run merge-back, claim into an account, sign-out, sign-in on a phone that already has a book, a failed upload, a kill at any moment. The phone's book is never deleted by sign-in. Recordings never leave the phone.
+2. Privacy: no entry text, transcript, audio, child name or email address in any log, analytics event, crash report or URL. Consent before upload. Tokens and the session only in secure storage.
+3. Sign-in correctness and abuse: Apple and email-code paths, expired or wrong codes, 429 and rate limits, offline, outage, double taps, back navigation, a session that expires mid-flow, the 10 s timeout. No path where a signed-in person is shown the signed-out screen or loses their place.
+4. Servers-off no-op (above), and the server-features switch is read in one place, not scattered.
+5. The constitution: nothing writes, rewrites or shapes a person's words. Content rules in CLAUDE.md: no em or en dashes, curly quotes, ellipsis characters or emoji; never gender the child; button labels 22 characters or fewer; registered strings stay byte-identical; copy lives in packages/content (or the feature-local copy files the repo already uses). Any user-facing word that is new needs founder approval: list every new string you find and say whether the PR body lists it.
+6. Accessibility: VoiceOver order and labels, focus on arrival, Dynamic Type to AX5, Reduce Motion, 44 pt targets.
+7. App Review risk: Sign in with Apple offered alongside any other sign-in (guideline 4.8), the "coming soon" placeholder (2.1), the local-start bypass (2.5.19 note), account deletion reachable (5.1.1(v)). Say which are UNVERIFIED rather than guessing.
+8. Tests: do the new tests fail on the old code (revert only the source files to the merge-base, keep the new tests)? Any vacuous or source-pattern-only test that cannot fail for the behaviour it names? Say which device row (docs/qa/DEVICE_TEST_PLAN.md or FIRST-RUN-TEST-PLAN-10nov.md) a human must run.
+
+## Output
+As BRIEF.md, one file per PR: $SCR/reviews/review-<PR>-<LENS>.md, first line exactly `## Review <LENS> at <40-char sha>: <PASS|PASS WITH NOTES|CHANGES|FAIL>`. Rank findings; each must-fix has file:line and a concrete failing scenario. If you review more than one PR, write one file each and keep them independent. Do not post to GitHub, push, or edit the PR branch. Remove your worktree when done. Return to the lead: per PR the verdict, the must-fix list in one line each, and the file path. If you hit the GitHub rate limit, say so and stop reading from GitHub for a while; use `git` and your worktree for code.

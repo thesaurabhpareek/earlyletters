@@ -1,6 +1,19 @@
+Agent: mobile
+Mode: task BL-931
+Satisfies: NS-01-R15, R16, R21; ADR 0028 D1, D5; BL-957 (the database ceiling half)
+Data classes touched: C (entry_media rows and picture files, phone only), L2 and L3 ids
+
 ## Photo with a letter, slice 3a: local migration 11, the entry_media store and the photo sweep (BL-931)
 
-**Base:** `feat/mobile-photo-2c-module-hardening` (2c, new). **Branch:** `feat/mobile-photo-3-store`. Split from #796 (8a026397). After ADR 0028 (CR-62).
+**Base:** `develop` (retargeted after #842 merged; this branch merged develop with #842 squashed as ea31f09d). **Branch:** `feat/mobile-photo-3-store`. Split from #796 (8a026397). After ADR 0028 (CR-62).
+
+**Both reviews must be redone at the final head.** This round changes migration 11's SQL (3b1df635) and merges 2c and develop (af7397df, 447611c2), so the PASS WITH NOTES at f55be7b8 no longer counts.
+
+### This round: the word checks are ceilings, not the limit (BL-957, 3b1df635)
+- Migration 11's CHECKs are now `length(photo_text) <= 1120` and `length(place) <= 480` (`migrations.ts:462-463`).
+- The app's limit is 140 and 60 characters a person sees (grapheme clusters), counted in #836. The database counts code points, as a safety net against unbounded rows: 8 per character, so it admits every value the app keeps. A Devanagari conjunct or an emoji family is several code points, which the old 140 and 60 refused.
+- Migration 11 has not shipped to any phone (no TestFlight build carries version 11), so it may still change.
+- Test: `photos-device.test.ts` asserts the ceilings (1120 and 480 pass, one code point more fails). It fails on the old SQL.
 
 ### What and why
 - **Migration 11.** It adds the phone-only `entry_media` table and its three indexes, as ADR 0028 D1 specifies. No row changes, nothing is queued for sync, and the comment now reads `Library/Application Support/photos/<id>.jpg`.
@@ -66,7 +79,7 @@ Eight stacked PRs from #796, as reworked after Karma's ruling of 20 Nov 2026. Sl
 - Everything is behind `EXPO_PUBLIC_PHOTOS`, which is off in every profile.
 
 ### Size (CODE-R02)
-Size exception: 680 changed lines in 14 files against the 400-line, 20-file limit (now measured against 2c), not counting the lockfile and the generated `licences.json`. 329 lines are code and 351 are tests. The tests are the requirement-row proofs and the flag-off proof, each of which fails on the old code; splitting them from the code would leave the code unproven. Same shape as #828. The founder accepts or refuses this exception; the merge waits for that.
+Size exception: 684 changed lines in 14 files against develop (measured from the merge base, ea31f09d), not counting the lockfile and the generated `licences.json`. 331 lines are code and 353 are tests.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

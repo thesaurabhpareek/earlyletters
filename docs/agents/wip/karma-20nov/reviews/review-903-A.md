@@ -1,0 +1,36 @@
+## Review A at 388dbf01be102af8c845f2bdff0b580a0d8b7f19: PASS WITH NOTES
+<!-- agent:principal-architect -->
+
+Lens A: correctness, tests that fail on the old code, code shape.
+
+Must fix: none.
+
+### What I checked
+- Size and concern (CODE-R01, R02): 285 added, 5 removed, 4 files, 3 commits. One concern: one idempotency key per consent answer. I read e277e93f first, then the new head 388dbf01 (pushed 12:29 UTC, "a new consent answer ends an earlier hold").
+- The new test on develop: I copied the head's `apps/mobile/test/consent-retry-one-key.test.ts` into a worktree of `origin/develop` (6813ab2f or later; develop moved during the review). 4 of 11 fail there: the Terms retry, the sensitive-data retry, and both `heldAnswers` unit tests (no module). The 7 guards pass on develop too, which is expected: develop mints a fresh key every call, so it never replays. At the head all 11 pass.
+- Full apps/mobile suite at the head: 8 files and 73 tests fail, the sandbox baseline (the same 8 files as on #901). Nothing else fails. `tsc --noEmit`: the 5 known errors only. (At e277e93f the suite was also at baseline.)
+- Cites in the body: 14 sampled, 10 hold exactly. Develop `consent.ts:117` mints a key per call; `client.ts:147-148` is `uuidv7()`; `20261005000000...sql:136-157` (`request_idempotency_key` reads the `idempotency-key` header and requires a UUID) and `:165-194` (`idempotency_claim`); `20261108000000...sql:152-158` (the fingerprint); head `consent.ts:102, 110`; `session-provider.tsx:496, 519`; `HEADER_IDEMPOTENCY_KEY = 'idempotency-key'` (`packages/api/src/envelope.ts:23`). Four are 2 lines stale after the new commit: `consent.ts:111, 123, 126, 128` are now `:113, 125, 128, 130`.
+- Key reused until confirmed. `answers.hold(group, answerId)` returns the same key and first client time for the same answer until the server confirms, until another answer from the same person to the same document, or for 23 hours (`HOLD_MS`). `confirmed` runs only after a call with no error (`consent.ts:129-130`). A lost reply and any server error keep the key.
+- Key shape against the server, no server change. The latest `record_policy_act` is `20261108000000_consent_record_fields.sql` (no later migration redefines it). Its fingerprint is document, version, action, method, surface, app version, platform, locale, rendered hash and context; client time is not in it. The answer id holds user, document, version, accepted, step and context; step fixes method and surface, and app version, platform and locale do not change inside one process. So one answer id always sends one fingerprint, and the server's 22023 ("key reused for a different request") cannot fire on a retry. A failed call rolls back its claim (claim and write commit together), so a retry after a server error is a fresh claim with the same key. A concurrent double tap waits on the key and replays. Keys are per profile and the user id is in the answer id and the group.
+- The new commit fixes a real fault in e277e93f. There, a lost Agree that the server did commit, then Decline, then Agree again, replayed the first Agree's key: the server returned the old row, wrote nothing, and the parent's last act on record stayed Decline. Now any other answer in the group drops the hold, so the second Agree is its own row with its own time. The new test pins it: I ran the head's test file against e277e93f, and "lost Agree, then a decline, then Agree again" fails there (as do the Terms-group test and the two `heldAnswers` tests, whose signature changed). `HOLD_MS` (23 hours) ends a hold before the server's 24-hour key window, so a late retry cannot slip past the window with a stale time.
+- NS-10-R7 (08-keeping-and-trust, 450bcb4a): one acceptance row after a lost answer, "idempotent on document, version and client time". The retry resends the first tap's client time, so both readings hold.
+- Merge checks: clean against develop and against #904 (both edit `session-provider.tsx`, different hunks: 903 at the two `recordConsentAct` calls, 904 at the new effect near line 196).
+- All five together: I merged #901, #902, #903 (388dbf01), #904 (24c0f28d) and #905 onto `origin/develop` in a scratch worktree. They merge with no conflict (git auto-merged `session-provider.tsx` and `prefs.ts`); the reminder tests, `month-ago-quiet`, `draft-card` and `consent-retry-one-key` pass (10 files, 167 tests), and `tsc` shows the 5 known errors only. All five also merge cleanly with develop at 627ac311.
+
+### Findings, most serious first
+1. Note (the body is behind the head). The body still describes e277e93f: 8 tests, `hold(answerId)`, and the old line numbers. It says nothing about the group rule or `HOLD_MS`. Please update it so the founder reads the rule that ships: a different answer to the same document ends the hold.
+2. Note (the group spans the Terms and age steps; safe). Both steps record document `terms`, so an age answer drops a held Terms answer. That cannot cost a row: `consentSteps` offers the age sheet only when Terms are already current (`machine.logic.ts:103-108`), so a Terms answer is never still owed when age is asked. A one-line comment at the group would save the next reader this check.
+3. Note (a weak check). The key-shape test matches `f.sent[0].key` against the server's UUID pattern, but the key comes from the mocked `idempotencyKey`, so it proves the mock's shape, not the app's. Assert the pattern against the real `uuidv7()` instead.
+4. Note (stand-in server). The fake replays any seen key and never raises 22023 for the same key with other arguments. The "new version gets its own key" test counts keys rather than showing the trap is avoided. A fake that hashes the fingerprint and throws 22023 on a mismatch would pin the real rule.
+5. Note (module state in tests). The held map is module state (`consent.ts:88`) shared by every test in the file. Today each test ends with its group confirmed, so nothing leaks between tests. A future test that ends on a lost answer would leak into the next one; give each test its own user id.
+6. Note (design departure, accepted). `08-keeping` 3.2 recommends one key per (step, answer) minted when the sheet mounts. The PR holds keys in `lib/auth` per answer. That covers Turn on sync and a sheet reopened after "Not now", and avoids `consent.tsx`, which three open PRs edit. The design should record the change at its next touch.
+7. Note (follow-up, outside this row). `lib/backup/runtime.ts:303-316` records the backup consent through `record_policy_act` with a fresh `uuidv7()` per call, the same K11 pattern. Worth a handoff to `mobile`.
+8. Note (stale comment, not this PR). `lib/supabase/client.ts:140-145` says "Today's SQL functions do not read it yet". They do since 20261005000000.
+
+### Not verified
+- A real lost reply on a phone (flight mode right after Agree). The stand-in reproduces the logic, not the network (BL-948).
+
+### CI
+All required checks passed: install, typecheck, tests and content rules, database rules, edge functions and ops scripts, applied migrations unchanged, B-8 seam check, native files changed, compliance-fence and required. The iOS simulator build was skipped (no native change). "store-profile Release launch" was still queued at 12:57 UTC. The head (12:29 UTC) is older than 10 minutes.
+
+Reviewer: independent of the author (CR-44).

@@ -1,14 +1,15 @@
-## Review B at 5a6ba2f32b6dfa5d581ec4cbc42a9d69e211b062: PASS WITH NOTES
+## Review B at 4aee3dae522ca10f8498c0e0b012acaecd97b3d7: PASS WITH NOTES
 <!-- agent:red-team -->
 
-Lens B: governance and founder boundaries. Confirm review of round 2. `docs/agents/cto/RULINGS.md`, +8 -6 against my review at 26f5913c (commit 5a6ba2f3, 06:00:20Z).
+Lens B: governance and founder boundaries. Confirm review at 4aee3dae (11:14:49Z). Round 2 (5a6ba2f3, +8 -6 against my review at 26f5913c) plus one line in round 3: CR-67 AX-13.
 
-CI at the head (read 06:08Z and again before finalising): all 10 checks completed, success.
+CI at the head (read 11:26Z, head 11 minutes old): all 10 checks completed, success.
 
 Must fix: none.
 
 ### What I checked
-- The word diff 26f5913c..5a6ba2f3 and the two entries in full at the head.
+- The word diffs 26f5913c..5a6ba2f3 and 5a6ba2f3..4aee3dae, and the two entries in full at the head.
+- Round 3 (AX-13) holds. The line now reads: eval A's ids (L11 to L15, S1 to S5), plus H1, the hooks refactor, `data-and-sync.md`'s own id. Eval A has no H1 (`A-data-and-sync.md` on `docs/eng-eval-20nov`, searched). `data-and-sync.md` defines it (`:14`, `:56` at #860 ae358257).
 - Must-fix 1 (AX-4) is closed. AX-4 now says the header of `packages/api/src/kill-switches.ts:1-5` is amended in its own small PR (owner `principal-architect`, a real agent: `.claude/agents/principal-architect.md`, `agents/roster.json`). The header will allow a pause for a phone-only feature whose card adds one. The `photos` comment changes to its new meaning, and the never-list stays.
   - The quoted header text matches `develop` (`kill-switches.ts:3`).
   - It now agrees with the code: #798's `bookSearch` and #840's `lib/photos/pause.ts:1-6`.

@@ -16,6 +16,14 @@
 ### Words
 `book.lens.months` and `book.lens.photos`, marked TODO(founder).
 
+
+### This round: the lens is one radio group (NS-33-R3, 9a57d613)
+- `LensRow` is now `ChoiceGroup layout="segmented"`: one radiogroup with a label, two radios, exactly one checked, which VoiceOver reads as "radio button" and "checked".
+- Before, it was two Buttons marked `selected` inside a `tablist`. iOS gives a tablist no trait, so the choice was heard as two plain buttons.
+- The ids stay: `book.lens`, `book.lens.months` and `book.lens.photos`. The options take the shared selected look: fill, edge and check.
+- New content key `book.lens.label`, "Show letters by", marked TODO(founder): PROPOSED, needs word approval.
+- Test: `LensRow` is a labelled segmented ChoiceGroup with no tablist, Button or selected state, and ChoiceGroup gives radiogroup, radio and checked. It fails on the old row.
+- Spec: #867, NS-33-ACCESSIBILITY-FLOOR-20nov.md section 6.
 ### Rows
 NS-01-R9, R10, R11, R12, R19, R23.
 
@@ -41,7 +49,7 @@ Eight stacked PRs from #796, as reworked after Karma's ruling of 20 Nov 2026. Sl
 - Everything is behind `EXPO_PUBLIC_PHOTOS`, which is off in every profile.
 
 ### Size (CODE-R02)
-11 files, 269 changed lines (185 code, 84 tests), not counting the lockfile and the generated `licences.json`. Within the limit.
+11 files, 300 changed lines (199 code, 101 tests), not counting the lockfile and the generated `licences.json`. Within the limit.
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 

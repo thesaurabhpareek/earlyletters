@@ -1,10 +1,10 @@
-## Review B at 190d0f6647020d9240e46c15c9098d0164369967: CHANGES
+## Review B at 0f253840029aa8562a1f22c0a3ad194932b33b30: CHANGES
 <!-- agent:design-systems -->
 
 Lens B (design systems and accessibility): VoiceOver labels, traits, order and announcements; Dynamic Type to AX5; 44 pt targets; Reduce Motion; dark mode and contrast through tokens; Voice Control names; every word a content key; the picture never leading a person's words.
-PR #838, photo slice 4b (BL-931, NS-01). Head 190d0f66 confirmed from the API, pushed 05:20 UTC. Base feat/mobile-photo-4a-pending at 7122da97.
-Diff reviewed: `git diff 7122da97...190d0f66` (25 files, +561 -12).
-Head movement: the last three commits (7af57d9b, 09b7082a, 190d0f66) are merges of 4a, which carry 3b's caption-length fix (dbdf1943) up the stack. Against the previous head 09b7082a this PR's own delta is unchanged apart from hunk offsets and one merged import line in lib/photos/text.ts. Merges only.
+PR #838, photo slice 4b (BL-931, NS-01). Head 0f253840 confirmed from the API, pushed 12:21 UTC. Base feat/mobile-photo-4a-pending at d0a04fe1.
+Diff reviewed: `git diff d0a04fe1...0f253840` (25 files, +561 -12).
+Head movement (caption-ceiling round): my first pass was at 190d0f66. The two commits since, e67fba42 and 0f253840, are merges of 4a only (they carry #835's ceilings, #836's grapheme caps and the size-plus-50-MB check up the stack). This slice's own diff is unchanged: every added and removed line of `git diff d0a04fe1 0f253840` equals that of `git diff 7122da97 190d0f66`, outside the board line. The findings below were re-checked at 0f253840; line numbers are unchanged.
 
 ### What I read
 - The PR body, and the whole diff: app/(tabs)/index.tsx, app/listen.tsx, app/review.tsx, app/write.tsx, components/photos/{photo-start,pending-photo-thumb,photo-frame}.tsx, lib/photos/{copy,hooks,surface,text,use-photo-pick,use-photo-start}.ts, lib/capture/start-capture{,.logic}.ts, features/photos.en.ts, and the five test files.
@@ -16,9 +16,10 @@ Head movement: the last three commits (7af57d9b, 09b7082a, 190d0f66) are merges 
 - Read-only context: the product thread's drafts on docs/e2e-ux-20nov at 38a614ac (A-capture/DESIGN.md A-J03, A-S04; A-capture/WORDS.md section 7). Not relied on as requirements.
 
 ### What I ran
-In a scratch worktree at the #840 head f811c9a6 (it contains this slice), node_modules hard-linked from the main checkout:
-- apps/mobile: photos-surfaces, photos-capture, navigation-one-entry, start-capture: 69 tests; 68 pass, 1 fails on time only (note N9). With `--testTimeout=30000` photos-surfaces passes 19 of 19.
-- packages/content: photos-copy and rules: 140 of 140 pass.
+In scratch worktrees with node_modules hard-linked from the main checkout:
+- At f811c9a6 (the first pass): apps/mobile photos-surfaces, photos-capture, navigation-one-entry, start-capture: 69 tests; 68 pass, 1 fails on time only (note N9). With `--testTimeout=30000` photos-surfaces passes 19 of 19.
+- At the #840 head 9a57d613 (contains this slice at 0f253840), with `--testTimeout=30000`: the same four files, 72 of 72 pass.
+- packages/content photos-copy and rules: 140 of 140 at both.
 - No device run.
 
 ### Findings

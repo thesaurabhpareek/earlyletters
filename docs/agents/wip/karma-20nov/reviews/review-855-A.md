@@ -1,45 +1,58 @@
-## Review A at cd5a02c001ee26e8f3d66be63c450f9c4a0f772a: PASS WITH NOTES
+## Review A at 2bd764656482512bc900586f2ae98278134a5d0c: PASS WITH NOTES
 
-Lens A: correctness and accuracy. At this sha: one row added to `docs/agents/BOARD.md` (:11), 1 file, +1 -0.
+Delta since my PASS WITH NOTES at 16d2b21e: one line, row 20 (qa). It drops `docs/prd/v2/06-nfr.md` and says product edits rows 42 and 216 for BL-930. That matches BL-930 on the lock branch ("an interactive session as `product` writes it"). No other line changed. The head was read live at 11:40 UTC; it was committed at 11:30:21 UTC. CI at the head: 10 of 10 success. The review of 16d2b21e follows and still holds.
 
-Head moved. The PR head is now 25495d0bff4d6b0a72acb9ad969d451a8200fd72 (commit "wave 1 claim rows", 05:41 UTC), which adds 13 more rows (+13 -0). This verdict is for cd5a02c0 as asked, so it does not count at the current head (review-gate section 5). The row reviewed here is unchanged at 25495d0b (the delta deletes nothing). The 13 new rows are not reviewed here.
-
-### Read
-- PR body (gh api pulls/855, now with "Round 2"). The diff `origin/develop...cd5a02c0`.
-- `docs/agents/BOARD.md` at cd5a02c0: :1-11 (header, "append-only except for your own claim line", the column header `| Agent | Area | Files (globs) | Since (UTC) | Status |`), every row of Active claims (:10-101). `docs/agents/COORDINATION.md` section 2 (:14-26).
-- PR #846: open, head 450bcb4a9efb4bf73991ee134d91662658de2426. PR #847: open, files include `docs/product/prd/17-engineering-project-plan.md`.
-- Branch `docs/eng-eval-20nov` at 6c011919: `docs/engineering/eval-20nov/README.md:1-9` and the first lines of A, B and C; eval C section 1.4 (:83-104).
-- `docs/adr/` on develop 20553b18; `RULINGS.md` on develop (CR-64 and CR-65 present).
+Lens A: correctness and accuracy. This re-review covers the delta since my CHANGES at b13d2da0: c6a86942 (board fixes), then 16d2b21e (develop merged in).
+- PR diff against develop 1400718b: `docs/agents/BOARD.md` only, +25 -11.
+- The 11 deletions are status changes on 11 older rows. The develop merge brings only develop's own files; this PR's diff stays on BOARD.md.
+- Head read live at 11:29 UTC; committed 11:19:26 UTC. CI at the head: 10 of 10 success.
 
 ### Ran
-- `node scripts/agents/next-id.mjs`: `"ADR":"0029"` (develop and every open PR counted).
-- `node scripts/agents/id-collisions.mjs`: no ADR line in its output (it reports old BL and D collisions only).
-- Scanned all 172 open PRs' file lists (two pages) for `docs/adr/`: none adds an ADR file.
-- Parsed the row: 5 cells, the same 5 columns as the header; ASCII only; no `|` inside a cell.
-- Check-runs at cd5a02c0: all completed, success.
+- `git diff b13d2da0 c6a86942` and `git diff origin/develop...16d2b21e`.
+- Every row of Active claims parsed: 5 cells each.
+- gh api on every PR cited as evidence in the released rows.
+- File lists of #798 and of the five stack branches `feat/mobile-bl-952-{1-query,2-view,3-index,4-search,5-rebuild}`.
 
-### Facts in the row, checked
-- "#846 at 450bcb4a": matches #846's head.
-- "the task plan #847" and `docs/product/prd/17-engineering-project-plan.md (#847)`: #847 adds that file.
-- "docs/tdd/new-scope/** (new)": `docs/tdd/` exists on develop, `new-scope/` does not. Correct.
-- "RULINGS.md (CR-64 on)": CR-64 and CR-65 are on develop. No live claim on CR-64 on: row 93 claims "CR-37 only".
-- "docs/engineering/eval-20nov/A to C, branch docs/eng-eval-20nov": the three files and a README are on that branch.
-- "input to these designs ..., not a second design": the README says so in its first line, "Inputs to the engineering thread's designs in `docs/tdd/new-scope/` and plan #847, not a parallel design" (README.md:3). The PR body's "the product thread's own README ... says the same" is accurate.
-- "ADR 0029 to 0039 ... as eval C s1.4 proposes": eval C section 1.4 lists eleven ADRs, 0029 to 0039 (:87-99), and says 0029 is the next free number (:85). develop's ADRs run to 0028, then 0101; next-id.mjs agrees, 0029.
-- Since 2026-11-20, status active: format matches the other rows.
+### Must-fix 1 (live claims): closed
+Each released row's evidence matches GitHub:
+- Row 36 S17: #163 merged d182e929 (1 Nov). #136 closed unmerged 31 Oct; #81 and #82 closed unmerged 28 Oct.
+- Row 37 S19: #176 merged 5a1f5c4d and #123 merged 34ea292e (16 Oct). #143 closed unmerged.
+- Row 38 S20: #145 merged dae722dd and #144 merged e187f8e2 (23 Oct). #205 merged 218955d7. #134 closed unmerged. The claim stays only on #30 (`.github/**`, open) and #105 (`apps/web/**`, open). No wave-1 row claims those files.
+- Row 39: #109 merged 35fa82ea (31 Oct). #110 closed unmerged (1 Nov). #112 is still open but outside every wave-1 glob.
+- Rows 61 and 63: released, with reasons. #81 and #82 are closed.
+- Row 66: #481 merged c922a8b9, #483 merged f5f82879, #494 merged 150e3137. Its later `lib/reminders/**` claim is released to the BL-967 row.
+- Rows 110, 112, 113 and 114: #828 merged 5f5dfaf4, #832 merged 5dc025d3, #834 merged 76a4a5d7, #841 merged 1513b265.
 
-### Findings, most serious first
-1. Info, process. The head moved after this sha (above). Karma needs a new Review A at 25495d0b, or the 13 rows split out.
-2. Low. The three eval files do not call themselves input. Their titles say "engineering design" (A:1 "Data and sync engineering design", B:1 "Mobile client engineering design", C:1 "... delivery design", C:5 "Status: design proposal"). Only the README frames them as input. The row is a claim of how they will be used, so it is not wrong; when the branch lands, the titles could say "evaluation" to match. The branch has no open PR, so the row points at a branch that can be deleted.
-3. Low. The reservation of ADR 0029 to 0039 lives only in this board row. `next-id.mjs` and `id-collisions.mjs` read develop and open PRs, not BOARD rows, so they still hand out 0029 to anyone. Stubs in `docs/adr/` (or a line the tools read) would make the reservation real.
-4. Info. Placement: the row is the second row of the table, while the 19 and 20 Nov claims were added at its end (:97-101). COORDINATION.md section 2 sets no position and BOARD.md:3 forbids only editing other lines, so this follows the rules; the 10 Nov design-systems row sits at the top too.
-5. Info. Globs overlap no live claim. Row 56 claims `docs/agents/**` but was narrowed on 28 Oct to #112's files; row 98 (docs/product/prd) is done; "docs/agents/BOARD.md (this row)" is the pattern other rows use.
+### Must-fix 2 (one owner per file): closed
+- Row 13 (photo stack) is now the only owner of `(tabs)/book.tsx`, `features/index.ts` and `copy-surfaces.ts`. Row 12 names them as not its own, and row 23 points to row 13.
+- `store.ts` is a declared share by function across rows 12, 13 and 14, with the second lander merging develop. This follows the row 78 precedent.
+- `docs/qa/DEVICE_TEST_PLAN.md` is split: row S1-205 goes to Find, Part 4 to the build 9 row.
+
+### Must-fix 3 (Find row globs): closed
+- `app/find*` is gone.
+- Every file #798 changes is in row 12, except these, which are named or acceptable:
+  - the three files row 13 owns, stated in the row with a wait-or-hand-over rule;
+  - `docs/agents/BOARD.md`;
+  - `docs/agents/checkins/mobile.md`, the old shared check-in.
+- Every file on the five stack branches matches row 12. `test/find-fixture.ts` falls under `test/find-*`.
+
+### My notes from b13d2da0: taken
+- BL-967 now names only NS-13-R14. The quiet-books and consent-key work carries no BL id.
+- Row 21 (BL-958) claims `eas.json`, `preflight-production.mjs` and `release-config.test.ts`.
+- Row 22 (BL-927) narrows to `toast.tsx` and `toast.logic.ts`.
+- Row 20 (BL-930): `docs/prd/v2/06-nfr.md` is left to product, after Review B.
+- Row 24 (legal) excludes #53's `QUESTION_PACK.md`.
+
+### Notes (none blocking)
+1. Row 65 (coverage agent, 15 Oct, still active) claims "new test files only under apps/mobile/test and packages/*/test". Wave-1 rows add new tests there: `find-*`, `consent-*`, `store-flags.test.ts`, `toast-large-text.test.ts` and `ns09-copy.test.ts`. Release row 65 or narrow it next time the board is touched.
+2. #798 also edits `docs/agents/checkins/mobile.md`, which row 12 does not list. Harmless, since check-ins are per agent.
+3. #740 and #780 (open, no board row) still change `lib/first-run/**`, and #758 changes `lib/reminders/**`. Row 14 and row 15 owners should know before they edit.
 
 Must fix: none.
 
 ### Not verified
-- The 13 rows added at 25495d0b.
-- That no unpublished branch (outside an open PR) has taken ADR 0029.
+- Work in flight off GitHub for any released row.
+- Branches with no open PR, other than the five Find stack branches.
 
-This PASS WITH NOTES holds at this exact sha, which is no longer the PR head. Re-read at the new head.
+This PASS WITH NOTES holds at this exact head. Re-read if the head moves.
 Reviewer: independent of the author (CR-44).

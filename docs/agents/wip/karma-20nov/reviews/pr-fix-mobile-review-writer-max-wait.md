@@ -1,0 +1,55 @@
+## What and why
+
+BL-816. Review's writer for the person's own words (`reviewWriter().text()` in `apps/mobile/src/lib/capture/review-persist.logic.ts`, used by Change words) was a pure debounce: every change moved the 300 ms timer, so a kill, a crash or a power loss in an unbroken burst of editing lost the whole burst. F06-REQ-036 (P0: any change in Review is on the draft within 500 ms; 100 of 100 kills reopen with the same text) was not met in a burst. This is the same shape Write had before #725 (e5cc7ecd), and the same fix.
+
+Serves F06-REQ-036, F04-REQ-011, RT-REV-02, RT-REV-07.
+
+**Defect 1, no maximum wait.** The first change after a write now arms one timer; later changes do not move it; when it fires it writes the newest words, not the words it was armed with. So a kill loses at most the last 300 ms of editing, however long the burst. A change after a write arms the next one. Words a timer already wrote are not written twice.
+
+**Defect 2, the retry.** `flush` cleared the waiting words before it wrote, and a throw was swallowed, so a write that threw was retried only by a later change; the comment said Done and Close retried it, and they did not. Now the words stop waiting only once the store has answered. A throw leaves them waiting and leaves no timer: they are written again at the next change, Done, Close, the unmount, the app leaving the foreground and Keep (all `flush`), and only there. Nothing retries on a timer, so a draft that is gone or a full disk cannot loop. `setDraftReview` returning false is a refusal (draft recording or discarding, missing draft, empty base), not a failure: the writer does not look at the return value, the words stop waiting, and nothing is retried.
+
+**Nothing visible changes.** The callback in `review.tsx` is untouched and still only calls `setDraftReview`; Review gains no status line, no announcement and no render. Every existing flush path (foreground exit, unmount, Done, Close, Keep) writes first, as before, and `review-persist.wiring.test.ts` passes unchanged. `review.tsx` has two comment lines changed (the writer comment and the "debounced" comment, both now false); no code.
+
+**One timer, not two (a decision to review).** The brief said Write's shape "plus the old pause timer". Write needs the pause timer to show its autosave line and announcement after a real pause. Review has no such line and must add none. Here the throttle timer is armed by the first change after the last write, so it can never fire later than a pause timer (armed by the last change) would, and a pause timer could therefore never find anything to write except words left by a failed write, which is exactly the timer retry the brief forbids. So there is one timer; a real pause is still found where it was, at 300 ms after the first unwritten change at the latest (tests: "one change and a pause", "a burst and then a pause"). `cancel` clears it and `flush` leaves none.
+
+**Two places where this differs from the BL-816 row (both for the reviewers to rule on).** (1) The row says "the quiet-window timer stays" (two timers); this PR has one, for the reason above. (2) The row says RT-REV-02 and RT-REV-07 "stay `gap` until the step is walked"; this PR sets them to `partial`. The catalog legend in `scripts/qa/release-catalog.rows.mjs` defines `partial` as "part of it is written" and `gap` as "no case anywhere", a Node test and a written device step now exist, and #725 set RT-WRT-05 to `partial` on the same footing. The phone check stays open either way: BL-816's Status is not touched here, and S1-166 says the row's phone check closes when it is walked. If a reviewer reads the row literally, the fix is two words in the catalog.
+
+**Why 300 ms and not 500 (the owner's call, BL-816 asks for the reason).** 300 is the existing value, and the bound is the maximum wait. 500 is the P0 ceiling itself ("within 500 ms"), and a timer armed for 500 ms fires after 500 ms plus whatever the JS thread is busy with, so 500 would have no margin under the ceiling; 300 leaves 200 ms. The cost of a write every 300 ms in a burst is small: a Review write is one UPDATE of one row of `drafts` through `setDraftReview`, which emits nothing, so Tonight and the Book do not re-read the store for it (unlike Write's saves, which #725 had to measure for that reason). Measured in Node over `node:sqlite` on a file database with the phone's pragmas (WAL, `synchronous = FULL`), 300 writes each: text of 200 / 2,000 / 10,000 characters took a median of 0.46 / 0.48 / 0.52 ms and a p95 of 1.0 / 1.0 / 1.2 ms per write (with `synchronous = OFF`, 0.02 to 0.03 ms). At 3.3 writes a second that is about 0.2 percent of one thread in this harness. **NOT MEASURED ON A DEVICE**: this is a Linux sandbox disk, not an iPhone SE 3's flash; S1-166 (d) asks for the feel on the SE 3. Changing to 500 is the one constant `TYPED_WRITE_DEBOUNCE_MS` if the founder prefers it; its name is kept (tests and comments cite it) and its comment says it is now the maximum wait.
+
+## How it was checked
+
+- [ ] `npm test` passes: **the root command was not run**; `apps/mobile` was. The whole related group was run: `review-persist.replay`, `review-persist.wiring`, `review-writer-autosave` (new), `store.review-v9`, `qa-release-catalog`, `write-autosave`, `export-waiting`: 7 files, 100 tests, all pass. The full `apps/mobile` suite: 236 files, 4,438 tests; 228 files and 4,366 tests pass; the other 8 files (72 tests: `config`, `privacy-manifest`, `store-sign-in-capabilities`, `capabilities`, `hosting-ios17`, `licences`, `preflight-production`, `app-lock-wiring`) fail the same way on a clean `origin/develop` worktree (ae15dc93) in this environment, because `expo-local-authentication` and `expo-clipboard` are not installed here (the Expo config plugin cannot resolve) and `licences.json` is stale for it. Not caused by this change; CI's install has them.
+- [ ] `npm run test:db` passes: not run (no database change).
+- [ ] `npm run typecheck` passes, including `apps/mobile`: only `cd apps/mobile && npx tsc --noEmit` was run; it is clean apart from the same five environment errors (`expo-clipboard`, `expo-local-authentication` and the three in `app-lock/controller.ts` that follow from it), identical on clean develop. `node scripts/qa/release-catalog.mjs --check` passes.
+- [x] New or changed tests name the requirement: `review-writer-autosave.test.ts` (new, 24 tests, titles name F06-REQ-036, F04-REQ-011, RT-REV-02, RT-REV-07), the replay test (SR-C-06, RT-REV-02, RT-REV-07, F06-REQ-036). No test deleted or skipped.
+
+**Mutation (only `review-persist.logic.ts` reverted to develop, tests kept):** 9 of the 24 new tests fail (the 3 s burst written every 300 ms; a kill at every 10 ms of a burst; what a reopened Review shows; each write holds the newest words; the 30 s burst; a burst then a pause writes once at 300 ms; Done/Close/unmount retry; a flush that throws keeps the words; the next change after a throw writes again), and the replay test fails at seed 40. The other 15 pass on both: they pin behaviour that must not change (one change and a pause, flush and cancel leave no timer, refusals are not retried, the source pin that the callback only calls `setDraftReview`, no loop on a full disk). With the model's own expectation removed, the replay's independent bound (the reopened words are not older than the last 300 ms of editing) also fails at seed 40 on the old logic. With the fix restored: 25 of 25 in the two files pass; the wiring test (7) and `store.review-v9` (13) pass on both.
+
+**Replay model (`review-persist.replay.test.ts`).** Its `durableText` moved only after 300 ms of quiet, so it counted a whole burst as lost and passed on the old logic. It now moves 300 ms after the first unwritten change (the timer is not moved by later changes), and the test adds an assertion that does not use the model: the reopened words equal the newest version made at least 300 ms before the kill, or a later one. All 100 seeded runs pass.
+
+**Catalog and device step.** `S1-166` (Review: a hard stop inside a burst of Change words; Needs, Steps (a) to (e), Expected, Record, Update; names that VoiceOver and Reduce Motion change nothing here) is added in `docs/qa/DEVICE_TEST_PLAN.md` just before S1-82 (one insertion). The id is on neither `origin/develop`, nor in the patches of the 157 open PRs listed on 10 Nov (a patch GitHub omits for size would not show), nor in any `DEVICE_TEST_PLAN.md` on any of the 1,352 remote refs, nor in a sibling builder's worktree; S1-170 to S1-177 are #730's and S1-180, 183, 186 are draft #707's. RT-REV-02 and RT-REV-07 move from `gap` to **`partial`**, citing the replay test, the new test, F06-REQ-036 and S1-166, and say what the Node model does not cover (a simulator kill run; for RT-REV-07, kind, date and child). `docs/qa/release-test-catalog.csv` regenerated with `node scripts/qa/release-catalog.mjs`.
+
+**Open PRs that touch the same files:** `review.tsx`: #670 (its nearest hunk starts at line 329; my two comment edits are at lines 301 and 321) and #744 (hunks at lines 120 and 629), plus #167 and #168 (old, no hunks). `DEVICE_TEST_PLAN.md`: #603, #635, #653, #665, #670, #680, #699, #720 (their hunks sit around S1-36 and S1-82 to S1-150; mine is one insertion before S1-82's heading, merged cleanly with develop at c1f7cec5). `release-catalog.rows.mjs` and the CSV: #603 (rows 112 and 294 onward; mine are rows 94 and 99).
+
+**Not touched, on purpose:** the BL-816 row's Status (the legend lets the product agent move it when the fix merges; the phone check stays open until S1-166 is walked), `docs/prd` (the F04-REQ-011 rewording is the CPO's proposal), BL-377's stale status.
+
+**Not verified here (only a phone can show):** that a force restart in the middle of a burst reopens with all but the last 300 ms (S1-166 (a), (b)); the cost of a write every 300 ms on an SE 3 and whether typing feels slower (S1-166 (d)); that the ways out still write the last keys on a real lock or Home Screen (S1-166 (e)). The Node tests drop in-memory state at a chosen moment; they do not model iOS flash.
+
+## The constitution and our rules
+
+- [x] No machine edit bypasses `verifyEdits`; nothing writes, rewrites, summarizes or "shapes" a person's words. This change only decides when the person's own typed words are stored; the words written, `base` and `drafts.review_*` are unchanged; `raw_transcript` and `typed_text` are never read for writing.
+- [ ] `ENGINE_VERSION`: n/a, cleaning behaviour unchanged.
+- [ ] Gates: n/a.
+- [x] Copy: no new user-facing words, none in `packages/content`. The device step is documentation for testers, in plain words with ASCII only.
+- [x] No entry text, transcript, audio or child name in analytics, logs or crash reports: none added; the writer logs nothing.
+- [x] Tests and fixtures use the fictional family "Asha" only.
+- [ ] Database changes: n/a, none.
+- [ ] Product name: n/a.
+
+## Screenshots
+
+n/a. Nothing visible changes.
+
+Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_01NBzZMdFrvcifyquTUAekLF
