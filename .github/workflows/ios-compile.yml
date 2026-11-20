@@ -181,6 +181,11 @@ jobs:
             -IDEBuildingContinueBuildingAfterErrors=YES \
             build > "$log" 2>&1
           status=$?
+          # Linker and other non-compiler errors first, with their context: the list below is capped at 400 lines and
+          # the Pods' warnings alone can fill it, which hid a Debug link failure's own message (photo PRs, 20 Nov).
+          linker="$RUNNER_TEMP/linker-errors.txt"
+          grep -n -E -B 2 -A 30 'Undefined symbols|duplicate symbol|^ld: |^clang: error|linker command failed|^error: ' "$log" | head -300 > "$linker" || true
+          if [ -s "$linker" ]; then echo "Linker and tool errors:"; cat "$linker"; fi
           grep -E '(error|warning): |\*\* BUILD (SUCCEEDED|FAILED) \*\*|^The following build commands failed' "$log" | grep -v '/Pods/' | head -400 || true
           # Every compile error as an annotation on its file and line, and a list in the summary.
           root="$GITHUB_WORKSPACE/"
@@ -204,7 +209,8 @@ jobs:
             sed -e 's/^/- `/' -e 's/: \(fatal \)\{0,1\}error: /`: /' "$errors" >> "$GITHUB_STEP_SUMMARY"
           elif [ $status -ne 0 ]; then
             # Failed without a compiler error (a script phase, the linker, a missing file): annotate the failure section.
-            { grep -E -A 20 '^The following build commands failed' "$log"; echo '...'; tail -60 "$log"; } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$RUNNER_TEMP/fail.txt"
+            { grep -E -A 20 '^The following build commands failed' "$log"; echo '...'; head -80 "$linker"; echo '...'; tail -60 "$log"; } | sed -e 's/%/%25/g' | awk 'BEGIN{ORS="%0A"} {print}' > "$RUNNER_TEMP/fail.txt"
+            { echo; echo '#### Linker and tool errors'; echo; echo '```'; head -120 "$linker"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
             echo "::error title=xcodebuild failed (exit ${status}) without a compiler error::$(cat "$RUNNER_TEMP/fail.txt")"
           else
             echo "::notice title=iOS compile succeeded::Xcode ${XCODE_VERSION}, scheme ${SCHEME}, $(grep -c ': warning: ' "$log" || true) warnings in total"
