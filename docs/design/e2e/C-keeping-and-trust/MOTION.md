@@ -19,7 +19,7 @@ Keeping is where a parent trusts us with the only copy of a voice. The motion he
 2. **Serious things are still.** Erase, delete account, delete a book, remove a version, Erase now: a native action sheet or our confirmation sheet, the platform's own entrance, nothing of ours. No shake, red flash, pulse, glow, hold-to-confirm ring, crumple, shred, bin or fade-to-black.
 3. **No countdown pressure.** No time remaining, no ticking, no shrinking bar on an Undo, no rolling percentage, no "x of y letters". Progress is a quiet bar and a sentence.
 4. **Calm and quick.** Every move we draw here is at or under 300 ms (v2 `motion.capMs`). The only longer things in the area are the system's own (push, sheet, action sheet, share sheet) and, on the Book's first view of a session, `m.enter.group` (430 ms, a v2 named exception).
-5. **Still, not looping.** Area C has no loop at all, with or without Reduce Motion: no breathing drawing (v2 retires `Breathe`, MP-17), no sweep, no spinner in a block. The only activity indicator v2 allows here is the system one inside a busy button, and area C uses a static busy label instead (DESIGN C-S20.sending).
+5. **Still, not looping.** Area C has no loop at all, with or without Reduce Motion: no breathing drawing (`Breathe` is retired, MP-17, ruling 31), no sweep, no spinner in a block. The only activity indicator v2 allows here is the system one inside a busy button, and area C uses a static busy label instead (DESIGN C-S20.sending).
 6. **Controls never animate in.** Stop, Share, Try again, Undo, Remove now and every confirmation choice are hittable from their first frame, even inside a block that fades.
 7. **The platform's chrome is the platform's.** Area C is mostly pushed pages in Me: `m.push`, native action sheets (F6 `simple`), system sheets (F6 `explained` and `typed`, N7), the share sheet. We add opacity where a block of ours is replaced, and one list collapse.
 
@@ -81,7 +81,7 @@ Columns: **Id** (stable; new items take the next number), **Screen.state** (DESI
 
 | Id | Screen.state | Trigger | What moves | Primitive and timing | Reduce Motion | Haptic | Notes |
 |---|---|---|---|---|---|---|---|
-| M-C01 | C-S01.default | Tab change to Me | Nothing of ours (T-TAB). If the lamp is kept (v2 section 10, pending) and Me is unlit (card gap 7), the tabs lamp leaves under it | system; lamp `leaveMs` 160 ms | lamp at 0 at once | none | Content never re-enters on a return (T-RESUME) |
+| M-C01 | C-S01.default | Tab change to Me | Nothing of ours (T-TAB). The lamp is kept (ruling 31); if Me is unlit (card gap 7), the tabs lamp leaves under it | system; lamp `leaveMs` 160 ms | lamp at 0 at once | none | Content never re-enters on a return (T-RESUME) |
 | M-C02 | C-S01 to C-S02, C-S04, C-S08, C-S15 to C-S20, C-S22 | Tap a row | T-PUSH; the row's own highlight | `m.push` (system) | system reduced | none | Arriving page content is in place on its first frame: no entrance, no stagger |
 | M-C03 | C-S01.default after a book was hidden or deleted | Return to Me | Nothing: the row is already gone | `m.instant` | same | none | The collapse plays once, where the act ended (M-C40, M-C67) |
 | M-C68 | C-S01.local, .killswitch, .second-account, .signedout | Those states | Nothing animates a state of Me; the signed-out card is in place when Me is shown | `m.instant` | same | none | After sign-out the arrival is M-C05 |
@@ -194,7 +194,7 @@ Key moment: quiet and serious, never dramatic.
 | M-C50 | C-S19.default, .signedin, .signedoutSynced | Open | Nothing: a still page. The destructive button never pulses, glows or shakes | `m.push` then still | system | none | |
 | M-C51 | C-S19.confirm (F6 `explained`) | Tap Erase everything | The confirmation sheet: "Keep everything" first and the default, "Erase" destructive | `m.sheet` (system); `m.sheet.own` while `ui/sheet.tsx` remains | system reduced; fade 200 ms | none at the ask; H-warning after "Erase" | Built uses `Alert.alert` and plays `warning` when it opens (`erase.tsx:78`): E6 |
 | M-C52 | C-S19.erasing | Erase confirmed | The sheet leaves; the C8 `loading` block ("Erasing") replaces the page; drawing still. No bar, no count, nothing disappearing item by item | sheet system; `m.fade` 200 ms | same | none (H-warning already played) | Back, swipe and Android back held (built). VoiceOver focus to the Erasing line. Built drawing breathes: E7 |
-| M-C53 | C-S19.erasing to the age question (E area) | The erase ends | Whole-screen hand-off to the age question, which replaces every screen by itself (built). If the lamp is kept, it comes up as a return, never the 1.2 s arrival | `m.fade` 200 ms; lamp `returnMs` 280 ms (house proposal H1) | one 200 ms fade; lamp at level | none | `announce(doneA11y)` (built). No dawn, no "fresh start". If the erase ends in under 200 ms, the Erasing block still completes its fade before the hand-off: no flash |
+| M-C53 | C-S19.erasing to the age question (E area) | The erase ends | Whole-screen hand-off to the age question, which replaces every screen by itself (built). The lamp (kept, ruling 31) comes up as a return, never the 1.2 s arrival | `m.fade` 200 ms; lamp `returnMs` 280 ms (house proposal H1) | one 200 ms fade; lamp at level | none | `announce(doneA11y)` (built). No dawn, no "fresh start". If the erase ends in under 200 ms, the Erasing block still completes its fade before the hand-off: no flash |
 | M-C54 | C-S19.error-failed | The erase did not finish | The page returns at its top with the one failure line first | `m.fade` 200 ms | same | none | No shake, no red flash; the line is first in VoiceOver order (built) |
 
 ### C-S20 Delete account (ruling D6, NS-10-R4a, NS-08-R16)
@@ -241,7 +241,7 @@ Ids are those of this file's v1 (DESIGN.md already keys to some of them) and are
 
 ## 6. Reduce Motion summary
 
-Every row has its alternative. In one line: nothing we draw travels; entrances and exits become opacity (200 ms in, 160 ms out); `m.move` and `m.list.remove` close the gap on the next frame; progress jumps to each value; the lamp (if kept) is at its level at once; native pushes, sheets, action sheets and the share sheet follow the system's reduced transition. Area C has no loop to stop (NS-33-R5 is met by construction once E2 and E7 land).
+Every row has its alternative. In one line: nothing we draw travels; entrances and exits become opacity (200 ms in, 160 ms out); `m.move` and `m.list.remove` close the gap on the next frame; progress jumps to each value; the lamp is at its level at once; native pushes, sheets, action sheets and the share sheet follow the system's reduced transition. Area C has no loop to stop (NS-33-R5 is met by construction once E2 and E7 land).
 
 ## 7. VoiceOver and focus with motion
 
@@ -259,9 +259,9 @@ Every row has its alternative. In one line: nothing we draw travels; entrances a
 | 4 | NS-12 section 4 | Whether Restore offers Undo | No (agrees with DESIGN G11) |
 | 5 | NS-09 table, "Remove now fails again" | No feedback that the tap landed | VoiceOver re-reads the line; `content` may propose a short in-place line (WORDS) |
 | 6 | NS-10 sections 4 and 6 | How letters that arrive while the parent reads appear | In place, no entrance, no tint, scroll anchored, no count |
-| 7 | Frame section 4 (Me, Look after) | Whether Me is a lit room | Unlit (pages on paper): the tabs lamp, if kept, leaves under it over 160 ms |
+| 7 | Frame section 4 (Me, Look after) | Whether Me is a lit room | Unlit (pages on paper): the tabs lamp leaves under it over 160 ms |
 | 8 | NS-11 VoiceOver row | "Progress announced at start" has no line | A start line from `content`, announced once |
-| 9 | NS-10 Reduce Motion row ("the indicator is static") | Implies a moving indicator otherwise | No moving indicator at all on C-S10 (v2 retires `Breathe`); the row is met with or without Reduce Motion |
+| 9 | NS-10 Reduce Motion row ("the indicator is static") | Implies a moving indicator otherwise | No moving indicator at all on C-S10 (`Breathe` is retired, ruling 31); the row is met with or without Reduce Motion |
 
 ## 9. Engineering gaps (the engineering plan is not changed)
 
@@ -270,15 +270,15 @@ Every row has its alternative. In one line: nothing we draw travels; entrances a
 | E1 | The undo helper needs the time VoiceOver finished a line (`announcementFinished`, iOS) and whether Switch Control runs (no React Native API; a small native read of `UIAccessibility.isSwitchControlRunning` and its notification; UNVERIFIED on React Native 0.86). The toast and its action expire in the same frame | BL-954 (COMPONENTS F1, its row R2) |
 | E2 | Remove loops Reduce Motion does not stop and that area C does not want: `ActivityIndicator` in `account.tsx:264` (sign-out waiting) and `delete-account.tsx:115` (page load), and `Button` `loading` on Delete account. Static line or label with `accessibilityState.busy` | BL-984 (NS-33-R5); BL-927 for the audit note |
 | E3 | Save a copy and the printable book: announce at start; F3 `linear` with `m.progress` and a 250 ms reading throttle; one component for both | BL-942, BL-973 (COMPONENTS F3 `components/ui/progress.tsx`) |
-| E4 | Me as a tab root: the lamp leaving under an unlit Me, if the lamp is kept | v2 ENG-M rows for the lamp (MOTION v2 section 10); BL-928 for Me |
+| E4 | Me as a tab root: the lamp leaving under an unlit Me | v2 ENG-M rows for the lamp (MOTION v2 section 10); BL-928 for Me |
 | E5 | The Book keeps the reader's place while letters arrive (`maintainVisibleContentPosition` or equivalent) and gives synced-in letters on a new phone no tint (today the other parent's first-seen letters wash once, `book.tsx:157`) | BL-978 |
 | E6 | H-warning after the destructive choice, never when the confirmation opens: `erase.tsx:78`, `recently-deleted.tsx:82` and `:104` | v2 ENG-M10 (haptic call sites) |
-| E7 | `StateScreen` loading drawing still (v2 retires `Breathe`): C-S10.opening and C-S19.erasing | v2 ENG-M rows (MOTION v2 section 13) |
+| E7 | `StateScreen` loading drawing still (`Breathe` is retired, ruling 31): C-S10.opening and C-S19.erasing | v2 ENG-M rows (MOTION v2 section 13) |
 | E8 | Remove `success` on Show again (`hidden.tsx:37`), cancel deletion (`delete-account.tsx:155`) and `press` on export start (`export.tsx:110`) | v2 ENG-M10 |
 
 ## 10. House motion proposals (for the design system v2 MOTION.md)
 
-- H1. After Erase everything, the lamp (if kept) returns over `returnMs`, never arrives over `arriveMs` (M-C53).
+- H1. After Erase everything, the lamp (kept, ruling 31) returns over `returnMs`, never arrives over `arriveMs` (M-C53).
 - H2. `m.progress` gets a reading throttle (250 ms) so a fast export does not ripple (M-C09).
 - H3. Area C uses the Reduce Motion form of `m.progress.wait` at all times (static busy words). Proposed for every keeping, deletion and account surface in v2: a busy indicator next to the word "Delete" reads as hurry.
 

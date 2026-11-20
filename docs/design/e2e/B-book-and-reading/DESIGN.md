@@ -23,7 +23,7 @@ Superseded 11 Nov specs (cards win, BRIEF 1.5): spec 04 B4 put "Open it now" on 
 7. Sign-out keeps the book (D1): `.signedOut` reads every local letter. A second account sees none of the first account's letters, pictures, marks, seals or index (`[X4-R1]`).
 8. Writing tools off (D2) on the three letter-adjacent fields this area owns: the words sheet on the letter page, the Firsts label, photo words and place. If React Native cannot switch them off, the field ships with the recorded finding (BL-962), never silently.
 9. Nothing donated to Spotlight, Siri or App Intents (D3). No screen here registers an `NSUserActivity`.
-10. Pictures ignore Smart Invert and carry a 1 pt hairline frame in `line` in dark and Increase Contrast (NS-01-R40, R41). Every picture blanks to an opaque box when the app goes inactive (NS-01-R13a).
+10. Pictures ignore Smart Invert and carry a 1 pt hairline frame in the semantic token `mediaFrame` (dark `#716A62`, 3:1 or better; light keeps `line`) in dark and Increase Contrast (NS-01-R40, R41; ruling 27). Every picture blanks to an opaque box when the app goes inactive (NS-01-R13a).
 11. AX5 with Bold Text on an iPhone SE 3 (375 x 667 pt): one column, nothing truncates, every target at least 44 pt, letter-page rows at least 56 pt.
 12. A day is told one way and only on Home (NS-46, NS-50-R4, RV-6): the Book, the letter page, Find, the lenses, Read together and the past letter never name, mark, filter or link a day the parent ticked or typed (section 12). The Book is a record of what the parent said, not of the calendar the parent chose.
 13. A picture letter is a letter with a picture, however it began (NS-49-R2, R13): nothing in this area shows or implies that a picture came from Apple's suggestions, a photo start or Apple's title (section 12b).
@@ -219,7 +219,7 @@ States:
 - `.ratingMoment` (FR-MKT-23, P1 (b), not built): not a screen of ours. It is the one state where code may call Apple's rating request, on the Book after a letter the parent kept by their own act (A-S13 saved), never the first kept letter. Apple draws its own sheet; we draw nothing, add no message, unlock nothing. Every exclusion is a row of the table in section 13 (Read together, a seal-opened day, the Keep gate, errors and the rest). It adds no control, no count and no motion to the Book.
 - `.offline`, `.killSwitch`, `.planLapsed`, `.signedOut`: identical to `.default`.
 - `.secondAccount`: only account B's books; no lens built from A's letters.
-- `.dark`, `.increaseContrast`: the band is solid under Increase Contrast and Reduce Transparency (built); hairline frames on thumbnails.
+- `.dark`, `.increaseContrast`: the band is solid under Increase Contrast and Reduce Transparency (built); hairline frames on thumbnails in `mediaFrame` (ruling 27).
 
 Components: existing `CoverBand` (gains a Find slot and a menu slot, loses the gear), `IconButton`, `Button`, `ChildSwitcher`, `ChoiceGroup`, `MonthOpener`, `LetterCard` (+ `photo` prop from #840; + `sealed` variant, see section 5), `QuietDayRow`, `BookCover`, `EmptyState`, `BlurSurface`, `Lamp`, `Toast`.
 
@@ -261,7 +261,7 @@ Integration: NS-01-R10a to R10c, R12, R48; NS-06-A3; NS-33-R3; BL-956; flags as 
 ### B-S04 Photos lens
 
 Purpose: the letters that have a picture (NS-01-R11). Reads only.
-Layout, default: the Book's own month openers and `LetterCard`s with a 72 pt list-copy thumbnail on the left (fit, uncropped, `radius.sm`, hairline frame in dark), newest first by the letter's date. No add control, no count, no empty state.
+Layout, default: the Book's own month openers and `LetterCard`s with a 72 pt list-copy thumbnail on the left (fit, uncropped, `radius.sm`, hairline frame in `mediaFrame` in dark), newest first by the letter's date. No add control, no count, no empty state.
 Layout, AX5: the thumbnail stacks above the words (as #840), at the card's width up to 160 pt tall; words wrap; nothing truncates.
 VoiceOver: each card one element: the date, the opening words, "Photo with this letter" (fixed phrase, or the parent's photo words when present, R21c), "Opens the letter."
 States: `.default`, `.one`, `.many` (300 pictures, virtualised, list copies only, R53, NS-37-R1), `.thumbMissing` (card without thumbnail; no error; NS-37-R3), `.ax5`, `.dark`, `.backgrounded` (every picture an opaque `surface` box, R13a), `.locked` (no picture draws before App lock is passed, R13b).
@@ -322,8 +322,8 @@ Integration: NS-22 (Go to a month), NS-24-R1, R4 to R7; BL-947 (extend: R4 to R1
 Purpose: read one letter, and look after it, in one place (NS-21).
 Layout, default (top to bottom, the card's text column, no lamp):
 1. Top bar (built): Back, "Aa".
-2. Dateline (`letterDateline`), now a level 1 heading (NS-21-R4, NS-33-R1).
-3. The picture when present, above the words (NS-01 section 3 row 3): page copy, fit, `radius.md`, hairline frame in dark, ignores Smart Invert; VoiceOver label the parent's photo words, else "Photo with this letter" (R9a, R21c); the photo words and place (if typed) in `footnote` under it.
+2. Dateline (`letterDateline`), now a level 1 heading (NS-21-R4, NS-33-R1). Ruling 29: the build ships the heading trait and this reading order and asserts the trait in a unit test; React Native cannot assert the level on iOS, so the level is recorded from a VoiceOver rotor read on a device, marked [stand-in]. NS-33-R1 stays partial until that read.
+3. The picture when present, above the words (NS-01 section 3 row 3): page copy, fit, `radius.md`, hairline frame in `mediaFrame` in dark, ignores Smart Invert; VoiceOver label the parent's photo words, else "Photo with this letter" (R9a, R21c); the photo words and place (if typed) in `footnote` under it.
 4. The words (`letterBody`, Reading Size applies), signature.
 5. Play (`AudioPlayer`, built) for a spoken letter whose recording is on this phone (R6b).
 6. Built cards when they apply: words waiting (WaitingCard), Read it back.
@@ -490,7 +490,7 @@ Applied 20 Nov on the coordinator's instruction. Glass is the control and naviga
 | B-S19 Read together: Close in the top bar, Back one and Next letter at the foot | glass | regular, one container for the two turn buttons | the page is content; dusk lamp stays behind the content, never through glass |
 | B-S21 Me row | content | system grouped list | |
 
-Budget check (at most three glass surfaces visible): Book = tab bar, header cluster, toast. Find open = tab bar, Find bar. Letter page = top bar, toast (tab bar hidden on the pushed page as built). A sheet open = the sheet (the rest dimmed). Read together = top bar, turn container.
+Budget check (at most three glass surfaces visible): Book = tab bar, header cluster, toast. Find open = tab bar, Find bar. Letter page = top bar, toast (the tab bar stays visible by design, ruling 32: no screen in this area hides it and no bottom toolbar is drawn; the letter page is a pushed route above the tabs as built today, and the T-MIN device spike decides minimising). A sheet open = the sheet (the rest dimmed). Read together = top bar, turn container.
 Fallback: Reduce Transparency or iOS earlier than 26: each glass surface draws `surfaceRaised` with a 1 pt `controlBorder` edge, same shape and size (the prototype's Reduce Transparency toggle shows it). Increase Contrast: borders and labels step to `tokens.highContrast`.
 
 ## 5. Components
@@ -820,7 +820,7 @@ What this area owns: reading and playing the media of a letter, the Photos lens,
 
 ### 15a. Reading several pictures and videos with a letter (PROPOSED B-S25, B-S26)
 
-The letter page (B-S08) is still one list. Layout, default: where a letter holds media, they show above the words in the order the parent added them, one `PhotoFrame` per item in a single vertical stack at the page's width (fit, uncropped, `radius.md`, hairline frame in dark, Smart Invert ignored; NS-01-R40, R41). There is no carousel, grid, collage, slideshow or "highlight": a parent reads a letter top to bottom. A video shows its poster frame (a still of the file) with a Play button of 44 pt or more and the system player's own controls once started; it never autoplays and never loops, with or without Reduce Motion. Photo words and place (typed by the parent) sit in `footnote` under the item they belong to, verbatim.
+The letter page (B-S08) is still one list. Layout, default: where a letter holds media, they show above the words in the order the parent added them, one `PhotoFrame` per item in a single vertical stack at the page's width (fit, uncropped, `radius.md`, hairline frame in `mediaFrame` in dark, Smart Invert ignored; NS-01-R40, R41; ruling 27). There is no carousel, grid, collage, slideshow or "highlight": a parent reads a letter top to bottom. A video shows its poster frame (a still of the file) with a Play button of 44 pt or more and the system player's own controls once started; it never autoplays and never loops, with or without Reduce Motion. Photo words and place (typed by the parent) sit in `footnote` under the item they belong to, verbatim.
 - Layout, AX5 with Bold Text on an SE 3: the same single column; each item fits the width up to 60 percent of the screen height; the Play button stacks under the poster only if it cannot sit on it with a 44 pt target; nothing truncates.
 - VoiceOver order: dateline (heading 1), each item in added order (a picture: the parent's photo words if any, else the fixed phrase "Photo with this letter"; a video: the parent's words if any, else "Video with this letter"), the words, Play for the recording, Share, "This letter" (heading 2), rows, Delete. Position inside one letter ("Photo 2 of 4") is a position, not a total; it is the same kind of line as Read together's "Letter n of m" and needs Karma to extend rule 3 to it (section 15f, Q-B11). Nothing is ever described from the picture: no scene, person, place or mood words (constitution; FR-AIS-53).
 - One audio at a time: starting a video pauses the letter's recording and the reverse. A video's sound plays only after a tap; the silent switch is the system's.

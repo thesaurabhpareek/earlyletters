@@ -14,7 +14,7 @@ Nothing here was run on a phone. Device truth comes from BL-929's run sheet and 
 2. **Recording state is instant** (v2 section 5; A3). Ready to recording, recording to paused and back, Still here, interrupted, stopped: the record control, its label, its colour, the line and the elapsed time change on the frame the recorder reports the state (`m.instant`, glass `animate: false`). Only the aura eases, because it follows the voice.
 3. **Controls never animate in.** Speak, Type, Start from a photo, the record control, Pause, Let it go, Keep, Undo: opaque and hittable from their first frame.
 4. **Commit first, then the receipt.** Keep commits, then `H-success`, then `m.keep`. Let it go deletes, then `H-warning`, then the room leaves.
-5. **Quick.** Every move we draw is 300 ms or less, except v2's named exceptions used here: `m.enter.group` (430), `m.keep` (600 to the Book), `m.mark` (1600), `m.signal` (continuous), and the lamp's cold-launch arrival if the lamp is kept (1200).
+5. **Quick.** Every move we draw is 300 ms or less, except v2's named exceptions used here: `m.enter.group` (430), `m.keep` (600 to the Book), `m.mark` (1600), `m.signal` (continuous), and the lamp's cold-launch arrival (1200, once; the lamp is kept as the one named ambient exception, ruling 31: opacity only, off under Reduce Motion, Reduce Transparency, Increase Contrast and Low Power Mode).
 6. **Interruptible.** A tap during any move lands on its end state.
 7. **No celebration, no ceremony, no counters** (v2 section 11). Keep and Let it go are plain.
 8. **Reduce Motion** (v2 section 8; NS-01-R20d; NS-33-R5): nothing travels or scales, no loop runs, every move is a fade of 200 ms or less, the aura is a static ring.
@@ -26,7 +26,7 @@ Nothing here was run on a phone. Device truth comes from BL-929's run sheet and 
 | v2 name | Value | Today | Used here for |
 |---|---|---|---|
 | `spring.snappy` | 0.28 s, 1.0 (520, 46, 1) | `snappy` | `m.tap`, `m.select`, the toast's rise |
-| `spring.standard` | 0.30 s, 0.92 (439, 38.5, 1) | `standard` 0.40 s (260, 30): v2 retunes | `m.move` |
+| `spring.standard` | 0.30 s, 0.92 (439, 38.5, 1) | `standard` 0.40 s (260, 30): RULED 0.30 s (ruling 26; timeline tests re-run, one device clip of the card-to-page carry; revert is one constant) | `m.move` |
 | `easing.standard`, `easing.exit` | (0.2, 0, 0, 1); (0.3, 0, 1, 1) | `easing`; exit is new in v2 (its value UNVERIFIED there) | timed enters; exits |
 | `fadeMs`, `exitMs`, `swapMs` | 200, 160, 150 | same | `m.fade`, `m.exit`, `m.swap` |
 | `enter` | dy 8, 280 ms, stagger 30, first 6 | same | `m.enter`, `m.enter.group` |
@@ -36,7 +36,7 @@ Nothing here was run on a phone. Device truth comes from BL-929's run sheet and 
 | `signal.*` | dbFloor -55, dbCeil -10, gamma 0.6, attack 80, release 400, scaleMax 0.18, opacity 0.18 to 0.40, idleAfter 600, idleMs 7500, idleScale 0.05 (this file proposes 0, P-1) | `breath.*`, `breathIdleMs` | `m.signal` |
 | `tap` | 0.97 controls, 0.98 cards; RM opacity 0.9 over 90 ms | `press` | `m.tap` |
 | `glass.styleS` | 0.25 s | new | `m.glass`, `m.toast` |
-| `lamp.leaveMs`, `lamp.returnMs`, `lamp.arriveMs` | 160, 280, 1200 | same; pending FOUNDATIONS (v2 section 10) | Home's light under Listen and Review |
+| `lamp.leaveMs`, `lamp.returnMs`, `lamp.arriveMs` | 160, 280, 1200 | same; the lamp is kept as the one named ambient exception (ruling 31) | Home's light under Listen and Review |
 
 ## 3. Moments, by screen
 
@@ -48,12 +48,12 @@ Paper sounds (SOUND.md) are off by default and not bundled; section 6 says where
 
 | Id | Where | Trigger | v2 | What moves | Reduce Motion | Haptic | Proto |
 |---|---|---|---|---|---|---|---|
-| MA-01 | A-S01.default, A-S01.waiting, A-S01.typedDay (cold launch, or recovery to Home after a kill, E-S19) | First frame | T-LAUNCH, `m.enter.group` | Dateline, greeting, the slip (the one slot, directly above the prompt block, NS-50-R4), the typed-day line (part of the prompt block), prompt, then nothing below (waiting cards now sit in the slot): 8 pt rise and fade, 280 ms, 30 ms apart, first 6 only (430 ms to the last). The capture cluster (A2), Not much today and the Plus line are there from frame 1. Lamp, if kept: arrives over 1200 ms once | One 200 ms fade, no stagger; lamp at its level | none | yes |
-| MA-02 | A-S01.* (return) | Back from Listen, Review, Write, the picker, a sheet; a tab switch; a warm resume | T-RESUME | Nothing re-enters. Lamp, if kept, returns over 280 | Lamp at its level | none | yes (in MA-12, MA-40) |
+| MA-01 | A-S01.default, A-S01.waiting, A-S01.typedDay (cold launch, or recovery to Home after a kill, E-S19) | First frame | T-LAUNCH, `m.enter.group` | Dateline, greeting, the slip (the one slot, directly above the prompt block, NS-50-R4), the typed-day line (part of the prompt block), prompt, then nothing below (waiting cards now sit in the slot): 8 pt rise and fade, 280 ms, 30 ms apart, first 6 only (430 ms to the last). The capture cluster (A2), Not much today and the Plus line are there from frame 1. Lamp: arrives over 1200 ms once | One 200 ms fade, no stagger; lamp at its level | none | yes |
+| MA-02 | A-S01.* (return) | Back from Listen, Review, Write, the picker, a sheet; a tab switch; a warm resume | T-RESUME | Nothing re-enters. Lamp, returns over 280 | Lamp at its level | none | yes (in MA-12, MA-40) |
 | MA-03 | A-S01.default | Another thought | `m.swap` | The prompt is replaced in place: a 150 ms cross-fade in the same box; the box takes its new height at the end (`m.move`). Built today: exit 160 then enter from 80 (360 ms in all), retired (EG-7) | Same cross-fade; height at once | tap (as built; P-4) | yes |
-| MA-04 | A-S01.default to A-S01.quietKept | Not much today | `m.swap` | Within 100 ms (NS-07 C5 3.4): the link's place swaps to "A quiet day, kept." with its Undo, 150 ms cross-fade. Speak and Type never move. Lamp, if kept, evening only: dims to 0.7 over 280 (P-3; built 1200) | Same swap; lamp at its level | soft | yes |
+| MA-04 | A-S01.default to A-S01.quietKept | Not much today | `m.swap` | Within 100 ms (NS-07 C5 3.4): the link's place swaps to "A quiet day, kept." with its Undo, 150 ms cross-fade. Speak and Type never move. Lamp, evening only: dims to 0.7 over 280 (P-3; built 1200) | Same swap; lamp at its level | soft | yes |
 | MA-05 | A-S01.quietKept to A-S01.default | Undo on the quiet line | `m.swap` | The line swaps back to the link; the lamp returns. This Undo has no stated seconds (NS-07 C5 3.6: it stays while Home stays), so it never closes on a timer (CG-9) | Same | tap | yes |
-| MA-06 | A-S01.twoBooks to A-S02.default | "For Asha" (NS-14) | T-SHEET, `m.sheet` | The system sheet rises (native `formSheet`, glass by iOS). Home keeps its state; the lamp's breath, if kept, pauses | System reduced transition | none (opening is navigation) | yes (stand-in) |
+| MA-06 | A-S01.twoBooks to A-S02.default | "For Asha" (NS-14) | T-SHEET, `m.sheet` | The system sheet rises (native `formSheet`, glass by iOS). Home keeps its state; the lamp's breath pauses | System reduced transition | none (opening is navigation) | yes (stand-in) |
 | MA-07 | A-S02.default to A-S01.twoBooks | A child chosen | `m.select`, `m.sheet`, `m.swap`, `m.fade` | The radio mark moves to the choice; the sheet goes down (system). On Home, in place: the switcher label, the dateline and the prompt cross-fade (`m.swap`, 150); the waiting cards' block hands off (`m.fade`, 200, linear: words). No stagger, no slide; the capture cluster never moves. VoiceOver focus returns to the switcher, which reads the new name | Mark jumps; the same fades | tap | yes |
 | MA-08 | A-S01 slip | A slip dismissed (slips of areas B and C sit on Home; the day slip and the Days ask are MA-48 and MA-50) | `m.list.remove` | Slip `m.exit` (opacity only), then the space closes (`m.move`) | Fade; space closes at once | none | no |
 | MA-09 | A-S01 with E-S15 or E-S17 | Offline, remote pause, low storage line appears or clears | T-SYSLINE | Line `m.enter`, content below `m.move`; leaving: `m.exit` then `m.move`. Never pulses | Line fades; layout at once | none | no |
@@ -70,7 +70,7 @@ Paper sounds (SOUND.md) are off by default and not bundled; section 6 says where
 
 | Id | Where | Trigger | v2 | What moves | Reduce Motion | Haptic | Proto |
 |---|---|---|---|---|---|---|---|
-| MA-12 | A-S01 to A-S05.recording (Speak) | Speak | T-COVER, `m.cover`, `m.tap.glass` | The glass capsule's own press (system). Listen dissolves in over 280; the record control is in its place from frame 1; the heading block arrives with the dissolve (no separate entrance). Home's lamp, if kept, leaves over 160. Never a morph from the Home cluster into the record control (A2; P-5) | `m.fade` 200 | press on Speak (the take's one start tick, `start-tick.logic`) | yes |
+| MA-12 | A-S01 to A-S05.recording (Speak) | Speak | T-COVER, `m.cover`, `m.tap.glass` | The glass capsule's own press (system). Listen dissolves in over 280; the record control is in its place from frame 1; the heading block arrives with the dissolve (no separate entrance). Home's lamp, leaves over 160. Never a morph from the Home cluster into the record control (A2; P-5) | `m.fade` 200 | press on Speak (the take's one start tick, `start-tick.logic`) | yes |
 | MA-13 | A-S14 to A-S04.doorway | A doorway (widget, control, Action Button, Siri), after unlock | T-LAUNCH (cold) or T-COVER (warm) | Cold: Ready complete on its first frame (`m.instant`), no stagger, no lamp. Warm: the 280 dissolve. VoiceOver focus on the heading (NS-06 C6) | Cold: nothing; warm: 200 | none (arrival is navigation, NS-35) | yes |
 | MA-14p | A-S03 to A-S04.readyPhoto | A picture picked (NS-01 happy path 3) | T-COVER, `m.fade` | Listen dissolves in (280). The photo thumbnail (C3, `ready` variant) holds its box from the first frame: at most 160 pt tall, 88 pt from AX3 (NS-01-R39), fit not crop (R42), so Speak, Type and Change photo never move. When the picture is decoded (p95 1,000 ms from picker close) it fades into the box (`m.fade`, 200). The take cannot start until it is decoded or has failed (v2 section 12 rule 7) | 200 dissolve, 200 fade (allowed, NS-01-R20d) | none | yes |
 | MA-14c | A-S04.readyPhoto | Change photo (before speaking) | `m.fade` | After the picker, the new picture cross-fades over the old inside the same box (200); the box keeps its height | Same | none | yes |
@@ -150,7 +150,7 @@ Reduce Motion: the ring goes with the 200 ms fade.
 | commit | Local transaction (p95 200 ms). Then `H-success`, once. Paper sounds on only: `sealed`, never while the mini-player plays |
 | 0 | The line "Kept in Month 7" (or "Kept just for you.") enters (`m.enter`); the letter card is hidden from VoiceOver and the one sentence is announced |
 | 120 | The card moves down 24 pt and leaves (`m.exit`, 160, `easing.exit`) |
-| 400 | Review leaves (`m.fade`, 200) over the Book, which is already on the new letter (`arrived=<id>`); the Book's lamp, if kept, returns over 280 |
+| 400 | Review leaves (`m.fade`, 200) over the Book, which is already on the new letter (`arrived=<id>`); the Book's lamp, returns over 280 |
 | 600 | On the Book: the letter in its place, no `m.list.insert`; `m.mark` starts (1600, area B draws it). No tab badge |
 | any time | A tap anywhere lands on the Book at once |
 
@@ -237,7 +237,7 @@ v2 section 11 in full, and in this area specifically:
 
 | Loop or continuous motion on an area A screen | Normal | Reduce Motion | Low Power Mode |
 |---|---|---|---|
-| Home lamp breath (9 s) | v2 proposes to retire it (v2 section 10); if kept, only on Home in front, paused under sheets and the picker | Off | Must stop (NS-34); not read today (EG-4) |
+| Home lamp breath (9 s) | KEPT as the one named ambient exception (ruling 31): opacity only, only on Home in front, paused under sheets and the picker | Off | Must stop (NS-34); not read today (EG-4) |
 | Listening aura, voice-driven (MA-19) | Only while recording | Static ring, stepped opacity | Voice-driven part stays (it is the signal) |
 | Listening idle breath | Opacity only (proposed, P-1) | Off | Must stop (EG-4) |
 | Aura release after Stop | 400 ms decay, once | Off | Same |

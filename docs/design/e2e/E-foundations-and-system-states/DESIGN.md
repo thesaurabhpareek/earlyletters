@@ -561,7 +561,7 @@ Run per release candidate on SE 3 (iOS 17 and latest), Asha install only (D13). 
 
 | Row | Check | E screens where it bites | Design answer |
 |---|---|---|---|
-| NS-33-R1 | letter page dateline is a level 1 heading | n/a (B) | B |
+| NS-33-R1 | letter page dateline is a level 1 heading | n/a (B) | B; ruling 29: trait asserted in a unit test, level from a device rotor read [stand-in], row partial until then |
 | NS-33-R2 | Me heading equals tab label | C-S01 | "Me" (today "Settings") |
 | NS-33-R4, R7 | AX5 plus Bold Text: no control under 44, no truncation | E-S02, E-S03, E-S08, E-S10, E-S14 | actions stack and pin; drawings hide above AX2; content scrolls |
 | NS-33-R5 | no moving loop under Reduce Motion | E-S01 migrating, E-S02 lamp breath, loading states | breath off; still drawing |
@@ -765,6 +765,23 @@ Paste into COMPONENTS C9 (replaces the Anatomy and States bullets; the order is 
 | Selected-state shape on pills and the agreement box | E-S03 | check glyph and weight in addition to colour; `m.select` on change |
 | No new colour, type token or motion primitive | all of the above | uses `text`, `textMuted`, `surface`, `surfaceRaised`, `callout`, `footnote`, `m.select`, `m.enter.group`, `m.list.remove`, `m.fade`, `m.swap`, H-select |
 `destructive` equals `recording` (TDD 09 Q1) is unchanged and no new E state needs a destructive colour.
+
+## 14a. Rulings of 20 Nov applied (rulings 25 to 37, `../RULINGS-20nov.md`)
+
+One line each; the table with owner, revert path and screens is in `RULINGS-20nov.md`.
+- 25 radii: v2 radii approved, one token PR with before and after screenshots (first run, light and dark, is in the set). The prototype's 14 and 20 are layout only.
+- 26 spring: `spring.standard` is 0.30 s (439 / 38.5). Timeline tests re-run; one device clip of the card-to-page carry.
+- 27 frame: semantic token `mediaFrame` (dark `#716A62`, light `line`), 3:1 or better, with pair tests. Every picture frame in areas A, B and D names it.
+- 28 glass dim: `GlassSurface` takes the dim as a token at 35 percent; DS2-12 measures on the Asha set and the CDesO picks 35 or 45.
+- 29 heading: ship the heading trait and reading order, assert the trait in a unit test, record the level from a VoiceOver rotor read on a device marked [stand-in]. NS-33-R1 stays partial until that read. This area's accessibility walk (section 9) uses the same wording.
+- 30 fallback: `glassFallback` `#282421`, `line` high-contrast edge, 1 pt hairline; pair tests decide.
+- 31 lamp: kept as the one named ambient exception (opacity only; off under Reduce Motion, Reduce Transparency, Increase Contrast and Low Power Mode). `Breathe` retired in waiting states: they are still. First-run lamp changes (E-M09, E-M10, E-M13) settle over `lamp.returnMs` 280.
+- 32 tab bar: stays visible. The T-MIN device spike decides minimising.
+- 33 haptic: trimmed to MOTION section 9's call sites, with a test that lists them. The first Keep keeps its single success (NS-44-R12). No success on the book opening, Plus on, lock offer, Show again or cancel deletion.
+- 34 Home glyph: `moon.stars` kept behind one mapping-table entry; first-run testing re-checks that people find Home.
+- 35 icons: chrome only; content keeps its own marks; Phosphor stays as the fallback behind the `Icon` wrapper.
+- 36 slip height: no reserved height; `m.enter.group`; an iPhone SE 3 device row decides (A-S01.dayToday).
+- 37 timing source: `docs/design/system/MOTION.md` and `tokens.v2.json` only. Prototypes here are layout references; the 9000 ms lamp loop and 800 ms spinner in `PROTOTYPE.html` here are stand-ins, not specs.
 
 ## 15. Liquid Glass policy check for every new surface (`system/BRIEF.md` section 3)
 

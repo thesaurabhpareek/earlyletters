@@ -19,7 +19,7 @@ Sources, in order (BRIEF section 1): the locked cards (mainly `11-foundations.md
 
 From MOTION.md sections 2 and 5l and DESIGN.md section 2, restated as the rules every area signs up to:
 
-1. **Calm and quick.** No single move longer than 300 ms (v2 `motion.capMs`). The named exceptions are the system file's section 5 list, and only those (v2 replaces this file's v1 list): among them the lamp arrival 1200 once per cold launch (if the lamp is kept), `m.mark` 1600, `m.draw` 1200 in first run only, `m.keep` 600 to the Book. A sequence settles within `sequenceMaxMs` (v2: 600, was 900). In-room lamp changes of 1200 (E-M09, E-M10, E-M13) are not on the v2 list: see 4z.
+1. **Calm and quick.** No single move longer than 300 ms (v2 `motion.capMs`). The named exceptions are the system file's section 5 list, and only those (v2 replaces this file's v1 list): among them the lamp arrival 1200 once per cold launch (the lamp is kept, ruling 31), `m.mark` 1600, `m.draw` 1200 in first run only, `m.keep` 600 to the Book. A sequence settles within `sequenceMaxMs` (v2: 600, was 900). In-room lamp changes of 1200 (E-M09, E-M10, E-M13) are not on the v2 list: see 4z.
 2. **Controls never animate in.** Buttons, fields and links are opaque and hittable from the first frame of every screen, sheet and state. Only content (words, drawings, cards) enters. One exception, as built (`lock-offer.tsx`): controls that can only exist after an async answer arrive by MP-06 into a slot reserved from frame 1 (E-M08b, E-M21).
 3. **Commit first, then the receipt.** No save, sign-in, purchase or retry waits on an animation.
 4. **Interruptible.** A tap during any move lands on its end state. Springs start from where the value is.
@@ -61,8 +61,8 @@ This table records what the built code does today (file and line) and what area 
 | MP-13 | `m.move` | `spring.standard` 0.30 s (439, 38.5), was 0.40 s |
 | MP-14 | `m.fade` | none |
 | MP-15 | cover on `m.instant`; unlock `m.fade` (T-LOCK) | none |
-| MP-16 | lamp, system section 10 | pending FOUNDATIONS; breath retired (proposal) |
-| MP-17 | RETIRED (`Breathe`) (proposal, system open question 1) | waiting states become still; conflicts with DESIGN rule 5's "breathing state" (section 11) |
+| MP-16 | lamp, system section 10 | KEPT as the one named ambient exception (ruling 31: opacity only; off under RM, RT, IC and LPM); `Breathe` retired |
+| MP-17 | RETIRED (`Breathe`) (ruling 31, 20 Nov) | waiting states become still; conflicts with DESIGN rule 5's "breathing state" (section 11) |
 | MP-18 | `m.progress.wait` in a button, with `m.swap` for the busy words | RM off: system indicator plus busy words; RM: static busy words |
 | MP-19 | placeholder: `m.fade` after `loading.placeholderAfterMs` | never a loop |
 | MP-20 | `m.mark` | token `markMs` |
@@ -453,7 +453,7 @@ Reasons: `placeholderAfterMs` and `heldAfterMs` are DESIGN rule 5's numbers (350
 - House MOTION.md 5k, "Low Power Mode is not read": the card wins (NS-34 section 3); G-EM1.
 - House MOTION.md 6 lists `success` for a saved letter only; the code plays it for three more outcomes (MP-H, K-EM3).
 - SOUND.md `gentle_error`: not used in area E (MP-S).
-- By the design system v2 (`docs/design/system/MOTION.md`, sections 5, 9, 10 and 13; proposals there marked so): `Breathe` and the lamp breath retired (MP-17, E-M02, E-M20o, E-M23); the book-cover opening retired (E-M09, `cover.*`); the Book's first-view settle retired (E-M82, `gentle`); `success` trimmed (E-M09, E-M33, E-M75); `spring.standard` 0.30 s; `sequenceMaxMs` 600; the Keep sheet, sign-in and our sheets become native sheets (T-SHEET); JS tabs become native tabs (T-TAB).
+- By the design system v2 (`docs/design/system/MOTION.md`, sections 5, 9, 10 and 13; proposals there marked so): `Breathe` retired and the lamp kept as the one named ambient exception, ruling 31 (MP-17, E-M02, E-M20o, E-M23); the book-cover opening retired (E-M09, `cover.*`); the Book's first-view settle retired (E-M82, `gentle`); `success` trimmed (E-M09, E-M33, E-M75); `spring.standard` 0.30 s; `sequenceMaxMs` 600; the Keep sheet, sign-in and our sheets become native sheets (T-SHEET); JS tabs become native tabs (T-TAB).
 - This file's v1 draft: an "update required" blocking screen and a low-storage sheet are withdrawn to match DESIGN.md (E-S16 is a line in Me; under 50 MB is Listen's StateScreen state); the Opening your book rows moved to C-S10 states; the 4 s slow line became the 10 s held state.
 
 ## 9. Card gaps
@@ -495,7 +495,7 @@ DESIGN.md uses `G-E01` onward; motion gaps are `G-EM`. The system file cites thi
 - With area D: D-S24 (plan date line) sits in E-S11; no motion beyond E-M37 and E-M39.
 - With WORDS.md: busy words (MP-18: "Trying again", "Opening the App Store", "Sending", "Restoring", "Keeping"), the held-state title (E-M21) and every SystemLine sentence are the content lead's keys; this file times them only. Quoted words here are DESIGN's or placeholders.
 - With `docs/design/system/MOTION.md` (read 20 Nov): keyed (2b, 4z). Three points for Karma and the two leads to settle:
-  1. **Waiting states.** DESIGN rule 5 asks for "a breathing state" from 350 ms to 10 s; the system file proposes retiring `Breathe` (its open question 1). Either the DESIGN rule changes to "a still state" or `Breathe` stays as a named loop. Recommendation: still (no signal behind the loop); a waiting state then reads by its words and the 10 s way forward, which is what NS-10 and NS-34 ask for.
+  1. **Waiting states.** DESIGN rule 5 asks for "a breathing state" from 350 ms to 10 s; RULED (ruling 31, 20 Nov): `Breathe` is retired in waiting states. The DESIGN rule reads "a still state". Reason: still (no signal behind the loop); a waiting state then reads by its words and the 10 s way forward, which is what NS-10 and NS-34 ask for.
   2. **Busy buttons.** DESIGN rule 5 says "no spinner"; the system's `m.progress.wait` keeps the system activity indicator inside a button when RM is off. Recommendation: busy words at every setting, indicator dropped, because the words already answer the tap and one rule is easier to test; if the indicator stays, it is the system's and stops under RM and LPM.
-  3. **In-room lamp changes.** The v2 named-exception list has the lamp arrival only; first run's welcome-to-form dim and form-to-finish rise run 1200 today. Recommendation: settle them over `lamp.returnMs` 280 (within the cap), or name them in system section 5 if the lamp is kept.
-- The prototype (`MOTION-PROTOTYPE.html`) plays today's tokens, with a switch for the v2 `spring.standard`; retired moves (cover opening, `Breathe`) are labelled as today's build.
+  3. **In-room lamp changes.** The v2 named-exception list has the lamp arrival only; first run's welcome-to-form dim and form-to-finish rise run 1200 today. Recommendation: settle them over `lamp.returnMs` 280 (within the cap), or name them in system section 5 (the lamp is kept, ruling 31).
+- The prototype (`MOTION-PROTOTYPE.html`) plays today's tokens, with a switch for the ruled `spring.standard` 0.30 s (ruling 26); it is a layout reference, never a timing source (ruling 37); retired moves (cover opening, `Breathe`) are labelled as today's build.

@@ -23,7 +23,7 @@ Status: DRAFT v2, 20 Nov 2026 (v1 the same day, re-keyed after DESIGN.md v1 and 
 | Name (v2) | Today (`tokens.ts`) | v2 (section 13a) | Used here for |
 |---|---|---|---|
 | `spring.snappy` | k 520, c 46 (response 0.28 s, ratio 1.0) | same | `m.tap`, `m.select` indicator, swipe settle-back, `m.toast` rise |
-| `spring.standard` | k 260, c 30 (0.40 s, 0.92) | k 439, c 38.5 (0.30 s, 0.92) | `m.zoom` growth, `m.move`, `m.pageTurn` arrival, `m.sheet.own` |
+| `spring.standard` | k 260, c 30 (0.40 s, 0.92) | k 439, c 38.5 (0.30 s, 0.92), RULED 20 Nov (ruling 26) | `m.zoom` growth, `m.move`, `m.pageTurn` arrival, `m.sheet.own` |
 | `spring.gentle` | k 90, c 18 | retired | not used (the Book header settle is retired) |
 | `easing.standard` | `[0.2, 0, 0, 1]` | same | `m.enter`, `m.swap`, timed fades that are not screens of words |
 | `easing.exit` | none | `[0.3, 0, 1, 1]` (UNVERIFIED in v2) | `m.exit` |
@@ -158,7 +158,7 @@ No `H-success` in this area: it belongs to Keep (area A). No haptic while a lett
 |---|---|---|---|
 | P1 | `m.list.swap`: replace a whole list in place: the list `m.fade`s out over half of `fadeMs`, is replaced and repositioned with `m.instant`, and fades in over the other half (linear). RM: the same (opacity only) | The Book replaces its list for a month jump (built `runJump`) and for a lens; a single list cannot cross-fade with itself, and `m.fade`'s hand-off assumes two screens | v2 section 4; built in `book.tsx` `jumpTo`; row E1 below |
 | P2 | The picture viewer (B-S11.viewer, v2 C4) is a T-COVER row: `m.cover` in and out, its clear-glass controls part of the room | v2 section 6 has no row for it; a zoom from the thumbnail would scale a photograph, which v2 section 11 forbids | v2 section 6 |
-| P3 | If the lamp is kept, Read together's dusk pool comes up with the room over `lamp.returnMs` (280), and dims to half at the end over the same; not v0.2's 1200 ms `arrive` per opening | v2 section 10 names only one 1200 ms arrive, once per cold launch; Karma's ruling put first-run lamp changes on `returnMs`; this keeps Read together under the cap | v2 section 10 and FOUNDATIONS (lamp) |
+| P3 | The lamp is kept (ruling 31); Read together's dusk pool comes up with the room over `lamp.returnMs` (280), and dims to half at the end over the same; not v0.2's 1200 ms `arrive` per opening | v2 section 10 names only one 1200 ms arrive, once per cold launch; Karma's ruling put first-run lamp changes on `returnMs`; this keeps Read together under the cap | v2 section 10 and FOUNDATIONS (lamp) |
 | P4 | `m.mark`'s condition widens to "a letter from the other parent, the first time this phone shows it" | Built (`book.tsx` `firstSeen`) and harmless; v2 section 5 lists only kept or restored letters, so as written it would be a defect | v2 section 5 |
 | P5 | The Book's inline bar shows by a threshold (`m.glass` at the scroll offset where the band's control cluster passes under the bar), not a scroll-linked fade | The built bar fades its opacity with scroll; on glass that is forbidden (v2 section 7 rule 1); a threshold keeps "never two clusters" | v2 section 7; row E3 below |
 
@@ -174,7 +174,7 @@ No `H-success` in this area: it belongs to Keep (area A). No haptic while a lett
 - B-M29: matches DESIGN B-S12: turning the toggle on opens the label sheet; the label arrives as the row's second line.
 - B-M30: the picture enters with `m.enter`; the viewer (B-M49) is new.
 - B-M43, B-M46: the moon is drawn complete; the dusk pool follows P3.
-- B-M24: the page's rest arrives with `m.enter` from 60 percent (v2 T-ZOOM); on v2's `spring.standard` (0.30 s) once ENG-M1 lands.
+- B-M24: the page's rest arrives with `m.enter` from 60 percent (v2 T-ZOOM); on `spring.standard` 0.30 s (RULED, ruling 26; built with ENG-M1).
 
 ## 13. Card gaps (card row, what is missing, proposed default)
 
