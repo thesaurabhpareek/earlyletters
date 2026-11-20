@@ -297,7 +297,7 @@ check('[B-REQ-016] B leaves the book: own letters removed, membership gone',
   (await one(B, `select public.request_book_deletion($1, 'ios') r`, [CHILD])).r === 'left_and_removed_own_letters');
 r = await pull(B, bHead);
 const g = r.gone.find((x) => x.id === CHILD);
-check('a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
+check('[NS-25-R4] a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
   && g.rows.some((x) => x.id === b1 && x.deleted_at !== null && x.own === true) && g.rows.every((x) => x.own === true) && !r.books.some((x) => x.id === CHILD));
 r = await pull(A, { epoch: 1, books: { [SIB]: { cursor: null } } });
 check('a deleted book is reported gone as deleted', r.gone.find((x) => x.id === SIB)?.reason === 'deleted');
