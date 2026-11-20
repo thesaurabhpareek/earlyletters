@@ -1,6 +1,6 @@
 # 04. Secrets, keys and endpoints
 
-Owner: `security-architect`. Status: draft for the council review (20 Nov 2026). Pack: data and security foundation (files 01 to 07). Read with `docs/engineering/06-security-engineering.md` (SEC), `docs/ops/SECURITY.md` (the founder's secret list and rotation steps) and `docs/security/SECRETS_REVIEW.md` (CI secrets by environment). This file does not repeat their step lists; it is the single map of what exists, who holds it, what a client may see, and what each endpoint exposes. Base: `develop` at `b1e4cf88`.
+Owner: `security-architect`. Status: amended 20 Nov 2026 after the council (CDO and CISO seats; D-20nov = `docs/engineering/readiness-20nov/DECISIONS-20nov.md`, PR #1013). Section 13 lists each change. Pack: data and security foundation (files 01 to 07). Read with `docs/engineering/06-security-engineering.md` (SEC), `docs/ops/SECURITY.md` (the founder's secret list and rotation steps) and `docs/security/SECRETS_REVIEW.md` (CI secrets by environment). This file does not repeat their step lists; it is the single map of what exists, who holds it, what a client may see, and what each endpoint exposes. Base: `develop` at `b1e4cf88`.
 
 Tags: **[V]** verified by grep or by reading the file named. **[E]** estimate, basis given. **[U]** not verified. **Rec** is my recommendation, not a decision. Data levels use `docs/legal/DATA_CLASSIFICATION.md:44-49`: L1 Public, L2 Internal, L3 Confidential (PII), L4 Restricted. No value of any secret appears here or may appear in any PR, test, log or bundle.
 
@@ -75,7 +75,7 @@ Escrow design check: the escrow project holds the private key but has no main-da
 
 | Key | Class | Private half | Public half | Cite |
 |---|---|---|---|---|
-| Packs and config signing key `el-2026-11` and cold backup `el-2026-11-backup` | K | founder's password manager and signing shell, never repo, CI or server | `packages/api/src/keys.ts:21-22` (P) | `keys.ts:11-15` [V] |
+| Packs and config signing key `el-2026-11` and cold backup `el-2026-11-backup` (two public keys are on `develop`, added by #512; any text saying the list is empty is stale) | K | founder's password manager and signing shell, never repo, CI or server | `packages/api/src/keys.ts:21-22` (P) | `keys.ts:11-15` [V] |
 | Escrow public keys | P | in the escrow project only | `supabase/functions/escrow/public-keys.ts` (empty), `apps/mobile/src/lib/backup/escrow-keys.ts` `BUNDLED_ESCROW_KEYS` (empty, TODO) | [V] both empty |
 | Backup (database dump) age key | K | founder's Mac and paper copy | recipient key in the private backup repository | `SECRETS_REVIEW.md:197-205` [V doc] |
 
@@ -278,12 +278,12 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 
 | Id | Gap | Where | Severity | Owner |
 |---|---|---|---|---|
-| G-04-01 | No secret scanning in CI: SEC-R03 says a gitleaks job is "pending PR #30"; `.github/` has no `security.yml`, no `dependabot.yml`, no `audit-ignore.json` (`ls`; `grep -rl gitleaks .github` finds `CODEOWNERS` only). SEC-R08 and SEC-R09 are therefore also not enforced. | `.github/workflows/` (absent files) | High: the repository is public and agents commit every 30 minutes | security, qa |
-| G-04-02 | The "Stop this and sign out" link in the restore email goes to `https://earlyletters.com/stop`, which is not built: no `stop` route in `apps/web/src/app`, and nothing calls `backup_svc_stop` (grep). The only control a person has against a hostile recovery request, besides Settings, is a dead link. Dormant while backup is off. | `packages/content/src/emails/backup.en.ts:17,43`; `supabase/functions/escrow/restore.ts:100`; `apps/web/src/app/` | High before backup ships | web, ops |
+| G-04-01 | **Ruled (D-20nov A5), see section 13.** No secret scanning in CI: SEC-R03 says a gitleaks job is "pending PR #30"; `.github/` has no `security.yml`, no `dependabot.yml`, no `audit-ignore.json` (`ls`; `grep -rl gitleaks .github` finds `CODEOWNERS` only). SEC-R08 and SEC-R09 are therefore also not enforced. | `.github/workflows/` (absent files) | High: the repository is public and agents commit every 30 minutes | security, qa |
+| G-04-02 | **Ruled (D-20nov C7, B5), see section 13.** The "Stop this and sign out" link in the restore email goes to `https://earlyletters.com/stop`, which is not built: no `stop` route in `apps/web/src/app`, and nothing calls `backup_svc_stop` (grep). The only control a person has against a hostile recovery request, besides Settings, is a dead link. Dormant while backup is off. | `packages/content/src/emails/backup.en.ts:17,43`; `supabase/functions/escrow/restore.ts:100`; `apps/web/src/app/` | High before backup ships | web, ops |
 | G-04-03 | Both public-key lists are empty: `BUNDLED_ESCROW_KEYS` (TODO) and `PINNED_PUBLIC_KEYS`. So backup cannot be turned on until the key ceremony; right and safe, but a release checklist item. | `apps/mobile/src/lib/backup/escrow-keys.ts:12-14`; `escrow/public-keys.ts:19-21` | Info | founder, ops |
-| G-04-04 | 17 workflow steps use mutable tags (`actions/checkout@v4`, `setup-node@v4`, `cache@v4`, `upload-artifact@v4`) in `ci.yml` (7), `web.yml` (3), `web-e2e.yml` (5), `migration-guard.yml` (2). SEC-R10 requires full SHAs; chapter 06 says `agents.yml` is the unpinned one, and it is now pinned (stale). | `.github/workflows/ci.yml:31,32,38,55,70,81,92`; `migration-guard.yml:20,23`; `web.yml:52,54,61`; `web-e2e.yml:43,45,50,61,77` | Medium | qa, ops |
-| G-04-05 | No security event store or alert: SEC-R24 (`security_events`) is not built; wrong sign-in codes, a tripped global invite pause and new-device sign-ins leave nothing we can see or send. | no table in `supabase/migrations` (grep `security_events`) | Medium | data-architect, sync |
-| G-04-06 | One secret key per project, shared by four functions. The most exposed function (`invite-redeem`, internet-facing and doing a service RPC) and the destructive one (`purge-worker`) share it. | `_shared/keys/keys.ts:31-33` | Medium | ops, [U] platform support |
+| G-04-04 | **Ruled (D-20nov A5): pins first.** 17 workflow steps use mutable tags (`actions/checkout@v4`, `setup-node@v4`, `cache@v4`, `upload-artifact@v4`) in `ci.yml` (7), `web.yml` (3), `web-e2e.yml` (5), `migration-guard.yml` (2). SEC-R10 requires full SHAs; chapter 06 says `agents.yml` is the unpinned one, and it is now pinned (stale). | `.github/workflows/ci.yml:31,32,38,55,70,81,92`; `migration-guard.yml:20,23`; `web.yml:52,54,61`; `web-e2e.yml:43,45,50,61,77` | Medium | qa, ops |
+| G-04-05 | **Ruled (D-20nov C3), see section 13.** No security event store or alert: SEC-R24 (`security_events`) is not built; wrong sign-in codes, a tripped global invite pause and new-device sign-ins leave nothing we can see or send. | no table in `supabase/migrations` (grep `security_events`) | Medium | data-architect, sync |
+| G-04-06 | **Ruled (D-20nov C2): a database role per function, not a platform key.** One secret key per project, shared by four functions. The most exposed function (`invite-redeem`, internet-facing and doing a service RPC) and the destructive one (`purge-worker`) share it. | `_shared/keys/keys.ts:31-33` | Medium | ops, [U] platform support |
 | G-04-07 | The website launch-list form relies on in-memory limits that Vercel instances do not share; the real limit is a WAF rule nobody has confirmed. | `apps/web/src/lib/notify/rate-limit.ts:1-10` | Medium | ops (founder console) |
 | G-04-08 | Rules point to files that do not exist: `docs/ops/SECRETS.md` (SEC-R02), `docs/security/threat-model.md` (SEC-R01), `SECURITY.md` at the root and `docs/ops/INCIDENT.md` (SEC-R23). `docs/ops/SECURITY.md` and the runbooks cover part of it. | `docs/engineering/06-security-engineering.md:29,33,85` | Low | security, ops |
 | G-04-09 | Hosted Data API exposed-schema list, `pg_graphql` and Realtime state, and Auth rate limits are only checklists in `SECURITY.md:123-136`; `config.toml` has no `[api]` block and applies to the local stack only. | `supabase/config.toml:1-12`; `SECURITY.md:123-136` | Medium until read back in the dashboard | ops |
@@ -301,12 +301,12 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 ## 11. Questions for the council (each with a default)
 
 1. Founder: remote push, ever? Default: no for v1.0; if yes, only NS-26 co-parent push, fixed words, never a security alert.
-2. CISO: create a distinct secret key per function if the platform allows? Default: yes for `purge-worker`; ask Supabase support (unverified).
-3. CISO: build `security_events` (content-free, 12 months, SEC-R24) before launch? Default: yes, minimal: wrong-code bursts and global invite pause, no ids in clear.
+2. CISO: distinct secret key per function? CLOSED by D-20nov C2: no wait for the platform; a database role per function, `purge-worker` keeps the key alone.
+3. CISO: build `security_events`? CLOSED by D-20nov C3: yes, its own service-only store, 12 months, named reader (section 13).
 4. CCO and counsel: is a new-device email required or only offered? Default: offered at v1.0 (matches `README.md:50`); counsel decides if it is a duty.
 5. CPO: S-07 email to the other parent when a co-parent leaves? Default: in-app line only.
-6. CTO: land `security.yml` (gitleaks, audit) and SHA pins in one PR to `develop`? Default: yes, two PRs (pins; scanning), `qa` implements.
-7. Founder: the stop page is on the website; build before backup, or keep backup off until it exists? Default: backup stays off until the page and the key ceremony exist.
+6. CTO: `security.yml` and SHA pins? CLOSED by D-20nov A5: two PRs, pins first, then scanning; PR #30 is not revived whole.
+7. Founder: the stop page? CLOSED by D-20nov C7: backup stays off, and a preflight check enforces it (section 13).
 
 ## 12. What I could not verify
 
@@ -316,3 +316,25 @@ Rules for every signal: content-free (no letter, child name, family detail, tran
 - The scope of the website's Resend key and of `SUPABASE_ACCESS_TOKEN_STAGING`.
 - Whether any receiver exists for App Store server notifications (`store_notifications` table has no writer I found).
 - External pages (Apple push, Supabase keys) were not fetched today; the Supabase API-keys claim is as checked 3 Oct 2026 in chapter 06.
+
+## 13. Council amendments (20 Nov 2026)
+
+Gates: G13 before the Build 13 cut, GF before the first outside family signs in, G10 before 1.0. Checked on `develop` 20 Nov: `TRUSTED_SIGNING_KEYS` lists two keys, `el-2026-11` and `el-2026-11-backup` (`packages/api/src/keys.ts:21-22`) [V]; four functions read the one secret key through `secretKeyOf` [V]; 17 mutable-tag action steps [V, count taken from G-04-04]; `EXPO_PUBLIC_BACKUP` is checked "off" by `apps/mobile/scripts/preflight-production.mjs:179-186` [V].
+
+| Item | Decision | Change | Gate | Enforced by, status |
+|---|---|---|---|---|
+| C2 | role per function | Section 2.2 and G-04-06: `invite-redeem` first, then `apple-token`, `analytics-forget`, each on a login role with EXECUTE on one function and a connection-string secret (founder sets each); `purge-worker` keeps the secret key alone. Add the roles to the secrets inventory when built | GF | not yet |
+| C3b | `security_events` | Own store, service-only, 12 months, keyed-hash subject, closed kinds (list in file 03 section 16). Reader named: `ops`, one alert email to the founder, threshold in the PR. A new sender function is a new endpoint and needs a threat-model row first (D-20nov D1) | GF | not yet |
+| C7, B5 | backup preflight | Extend `preflight-production.mjs` (today it only requires "off") so a build with `EXPO_PUBLIC_BACKUP` on fails unless: `BUNDLED_ESCROW_KEYS` and the function's pinned list are non-empty, `GET /stop` returns 200 (route absent today, G-04-02), and B5 is done: `backup-<id>.db` excluded from device backup, deleted on Erase and on sign-out, `upload_token` moved to the Keychain, with a test that fails if the file is created without the flag | GF; backup stays off until all hold | not yet |
+| A5 | pipeline | Two proposals, the founder pastes (workflow writes are his): (1) pins: the same-major SHAs of BRIEF-CI-PIN (resolve `upload-artifact` with `git ls-remote` and paste the output, never from memory) plus a test that fails on any tag-pinned action; (2) scanning: gitleaks over full history, `npm audit` with an `audit-ignore.json` whose every entry has a reason and an expiry, `docs/ops/proposed/dependabot.yml`. Pins first; scanning second. PR #30 is not revived whole | pins G13, scanning GF | not yet |
+| A5 deploy | two-job deploy | Job 1 (dry run) reads the production owner-role URL (`SUPABASE_DB_URL_PROD`) with no reviewers. It runs only from a trusted ref (a `db-v*` tag on a commit on `main`, never a pull request or a fork), and the secret sits in an environment the pull-request path cannot reach. If that cannot be shown, keep environment protection on both jobs and accept two approvals. Proposal in BRIEF-F4; the founder pastes | GF | not yet |
+| C9 | insights grant | Drop `insights_reader` to `authenticator` (file 03 section 16) | GF | not yet |
+| F3 | label guard | A guard is a control only once a PR cannot merge without it passing: needs a required check; the 31 Oct read is stale, ask for a fresh read-back | GF | [U] |
+
+New gaps:
+
+- **N-1 Which project is production.** `APPLY.md:3` `early-letters`; `DEPLOY.md:35-36` `scribe-staging` and `scribe-prod` (both "does not exist yet"); `PRODUCTION_VARIABLES.md:5` `scribe-prod` for Build 12. The secrets inventory above (2.1, 2.6) names `SUPABASE_DB_URL_PROD` and `PROD_*` by purpose and cannot say which project they open until the founder names it (D-20nov A2, question 2). Founder, one line.
+- **N-2 Detection owner.** Proposal as in file 03 N-2: `ops` reads `security_events` on a schedule the founder sets; founder confirms. Also unread, so [U]: Auth rate limits, exposed-schema list, Vercel WAF rule, secret presence. One founder sitting from the `SECURITY.md:123-136` checklist, recorded in the repo (D-20nov D3).
+- **N-3 Purged-id guard.** The keyed-hash design needs one more function secret (the HMAC key): name it by purpose, holder Edge Function and database setting, never rotated without a re-hash plan; the retention promise is in file 03 N-3.
+
+Not verified: anything on a hosted project; whether Supabase allows a per-function login role through its pooler [U]; the current GitHub required-check settings [U, last read 31 Oct].
