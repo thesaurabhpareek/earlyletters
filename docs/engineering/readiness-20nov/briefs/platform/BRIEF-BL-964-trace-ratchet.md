@@ -36,6 +36,7 @@ Agent: qa (owner of scripts/trace.mjs)   Lane: Pack 10 (+ qa)   Build: 13 (G0 is
 7. LIBRARIES: none (Node built-ins).
 8. BUDGETS: under 5 seconds (today about 1 s [V in MEASUREMENT-PLAN]).
 
+9a. REVIEW B FIX: "only shrinks" must be enforced, not promised: the author of a PR can edit `docs/ops/trace-baseline.json` in the same PR. So `--check` compares the baseline with the BASE branch's copy (`git show origin/<base>:docs/ops/trace-baseline.json`) and fails when any id was added. Mutant test: `[G0] a PR that adds an id to the baseline fails --check` (red if the base comparison is removed).
 9. ACCEPTANCE: the four rules (a) to (d) of CHECKS-AND-BALANCES section 6 with `--json` for CI; the baseline file; exit codes 0, 1, 2; the report names the P0 rows with no backlog row (39 today). Done also means red on mutant: flip the comparison (`>` to `>=`) in the untested-count rule and the "only reports" test goes red.
 
 10. PR BREAKDOWN: PR 1 retarget and `--json` (read the locked cards by `--register` path) ~150 lines, 2 files; PR 2 ratchet + baseline ~200 lines, 3 files | base develop | `--check` not used by CI yet (flag-off proof: `npm test` output unchanged).
