@@ -14,7 +14,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
    [B5-4] Erase everything deletes every backup-*.db file inside `eraseDeviceFiles()` (a synchronous call, so no await can precede it)               mutant: skip the delete (today: none)
    [B5-5] sign-out closes the backup handle, then deletes the file; the book stays (D1)         mutant: delete before closing the handle; or delete the book
    [B5-6] an upload token is in the Keychain and the column holds none; Erase and sign-out remove the item   mutant: write the token back to the column
-   [B5-7] the backup gate check fails `EXPO_PUBLIC_BACKUP=on` unless B5 exists, escrow keys are non-empty and the `/stop` route exists and answers 200 in its unit test   mutant: drop one of the three. STATIC only: no network call in preflight; the live 200 is an ops release step
+   [B5-7] the backup gate check fails `EXPO_PUBLIC_BACKUP=on` unless B5 exists, escrow keys are non-empty and the `/stop` route file exists and its unit test answers 200   mutant: drop one of the three. STATIC only: no network call in preflight; the live 200 is an ops release step
    [B5-8] the recovery export still copies scribe.db* only (X-2 unchanged)                      mutant: widen the `DB_FILE` pattern
    B5-1 to B5-7 arrange a real failing state first (an existing excluded=false file; a Keychain with a seeded token) and are red on develop at e95733b0 (no guard, no delete, token in the column). B5-8 and the "never scribe.db" half of B5-2 are GUARD tests: they pass on develop (`DB_FILE` already excludes backup-*.db) and their only proof is their named mutant.
    [B5-9] (PROPOSED) existing token rows move to the Keychain once at open, the column is nulled, a second open changes nothing   mutant: skip the null-out. Plan: `backup_meta` (an existing key/value table in local-db.ts) holds a `tokens_in_keychain` marker; one transaction per open, no schema bump (the column stays, nullable).
@@ -54,12 +54,12 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
 10. PR BREAKDOWN (each at most 400 lines)
     PR 1: `files.ts`, launch exclusion with read-back, gate test allow-list | about 200 lines | base develop | flag-off proof: runs with the flag off (existing installs may hold a file)
     PR 2: delete on Erase and on sign-out | about 200 | base PR 1
-    PR 3: upload token to Keychain, existing rows moved once at open | about 250 | base PR 2
-    PR 4: the gate check as a NEW pure file `apps/mobile/scripts/lib/backup-gate-check.mjs` plus `apps/mobile/test/backup-gate-check.test.ts` (reads `eas.json`, `escrow-keys.ts` and the `apps/web/src/app/stop` route file; no network) | about 150 | base develop; `ops` wires it into `preflight-*.mjs` (BL-958), mobile does not edit those files
+    PR 3: upload token to Keychain, existing rows moved once at open | about 250 | base PR 2 | flag-off phone: YES, it does the move at launch, because an install that once opened the file (a TestFlight build with the flag on) may hold tokens already; the move runs from `files.ts`'s launch step, not from the backup runtime
+    PR 4: the gate check as a NEW pure file `apps/mobile/scripts/lib/backup-gate-check.mjs` (the folder `apps/mobile/scripts/lib/` does not exist yet; PR 4 creates it) plus `apps/mobile/test/backup-gate-check.test.ts` (reads `eas.json`, `escrow-keys.ts` and the `apps/web/src/app/stop` route file; no network) | about 150 | base develop; `ops` wires it into `preflight-*.mjs` (BL-958), mobile does not edit those files
 
 11. LENSES: A security-architect, B privacy. Native: no Swift change planned; if `ScribeFiles` needs one, stop and ask.
 
-12. ORDER: PRs 1 to 3 any time; PR 4 before `EXPO_PUBLIC_BACKUP` can go on. Blocked by: PR 4 on `ops` (BL-958) and the `/stop` route; the escrow key list is the founder's offline ceremony (runbook K1 to K7, S05).
+12. ORDER: PRs 1 to 3 after #1018 and #1013 are on develop (line 2); PR 4 before `EXPO_PUBLIC_BACKUP` can go on. Blocked by: PR 4 on `ops` (BL-958) and the `/stop` route; the escrow key list is the founder's offline ceremony (runbook K1 to K7, S05).
 
 13. DEFINITION OF DONE
     [ ] tests red on old code and mutants; `npm test -w apps/mobile`: only the 8 baseline files red; `npx tsc --noEmit` apps/mobile: only the 5 known errors

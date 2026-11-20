@@ -36,6 +36,7 @@ import {
 } from '../src';
 import { alternateStories } from '../src/stories.en';
 import { ADDED, CHANGED, get, P0_WE_ALLOWED, SURFACE_OPT_OUT, SURFACES, TOUCHED } from './support/copy-surfaces';
+import { NOTIFICATION_PATH } from './support/notification-scope';
 
 type Leaf = { path: string; text: string };
 
@@ -158,7 +159,7 @@ describe('characters', () => {
   // again and again, and VOICE.md allows at most one exclamation mark a month across all notifications.
   it('uses at most 3 exclamation marks across all product copy, within a budget per surface', () => {
     const count = (items: Leaf[]) => items.reduce((n, l) => n + (l.text.match(/!/g)?.length ?? 0), 0);
-    const isNotification = (l: Leaf) => /^(en\.notifications|features\.reminders\.(neutral|together))\./.test(l.path);
+    const isNotification = (l: Leaf) => NOTIFICATION_PATH.test(l.path);
     const surfaces = {
       notifications: IN_APP.filter(isNotification),
       inApp: IN_APP.filter((l) => !isNotification(l)),

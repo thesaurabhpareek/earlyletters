@@ -105,7 +105,7 @@ P1, whose phone already buzzes too often, at any hour; and the founder, whose pl
 | NS-32-R9 | Given a typed day, Then back-off never removes it | P1 | `[NS-32-R9] typed day survives back-off` |
 | NS-32-R10 | Given any scheduled notification, Then its interruption level is `active`, never `time-sensitive` | P1 | `[NS-32-R10] interruption level` |
 | NS-32-R11 | Given any notification body, Then it is a `packages/content` key, never generated text | P0 (a: the machine never adds words) | `[NS-32-R11] bodies from content keys` |
-| NS-32-R12 | Given any notification, Then it carries no letter words and no child name unless the parent turned names on (D-025); a plan notice never carries a child name, a count or a price (D-083) | P0 (a: zero child names on a lock screen by default) | `[NS-32-R12] lock screen stays plain` |
+| NS-32-R12 | Given any notification, Then it carries no letter words and no child name unless the parent turned names on (D-025), and with names off or App lock on it carries no month number, age or "A year of letters." (E82); a plan notice never carries a child name, a count or a price (D-083) | P0 (a: zero child names on a lock screen by default) | `[NS-32-R12] lock screen stays plain` |
 | NS-32-R13 | Given each category, Then it sets a neutral `hiddenPreviewsBodyPlaceholder` | P1 | `[NS-32-R13] preview placeholder` |
 | NS-32-R14 | Given a quieted book, Then it contributes no budgeted class | P0 (a: a hard-day tool holds) | `[NS-32-R14] quiet book adds nothing` |
 | NS-32-R15 | Given a class added to a group, Then the group's pending ceiling does not rise (as #758's `addNotificationClass`) | P1 | `[NS-32-R15] a class cannot raise the total` |
