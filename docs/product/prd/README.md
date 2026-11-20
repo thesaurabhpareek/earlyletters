@@ -2,7 +2,7 @@
 
 Status: CURRENT (index) | 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: you need the pack index and card shape.
 
-Author: `product`. Status: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E73); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Earlier: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
+Author: `product`. Status: LOCKED 20 Nov 2026, requirements rev 2 (cards 00 to 27, function files, design areas A to E). Founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture." Changes only by an errata row (next free E number in `18-errata-after-lock.md`, highest E80); no duplicate copies; rulings by id in `GAP-LOG.md` "Closures 20 Nov"; what remains is execution-side (`22-final-holistic-spec.md` section 10). Earlier: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
 
 Questions, feedback and review comments on any requirement follow `FEEDBACK-LOOP.md` (intake, triage class, parallel lens reviews, errata with a plan delta, weekly learning).
 
@@ -30,7 +30,7 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 
 | File | What | Bucket |
 |---|---|---|
-| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E73 ruled after the lock (highest E73) | record |
+| `16-council-review-round-2.md`, `18-errata-after-lock.md` | council round 2 record; errata E1 to E80 ruled after the lock (highest E80) | record |
 | `19-from-download-to-first-letter.md` | NS-38 to NS-45: first run to first letter | A, B |
 | `20-founder-direction-20nov.md` | the founder's direction of 20 Nov (candidates, not conclusions) | input |
 | `21-days-cultural-photos-home.md` | NS-46 days we mark, NS-47 cultural background, NS-48 notification catalogue, NS-49 picture-first and Journaling Suggestions, NS-50 Home today; final after ten expert reviews (`tools/review/ns46-50/`), with the release cut (drops A, B, C), the founder-items table and the row-by-row drop tags | B, F |

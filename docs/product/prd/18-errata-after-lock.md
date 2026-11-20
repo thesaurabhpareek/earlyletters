@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E73) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E80) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E73 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E80 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Six are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, and E67 (its lines). E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-147 in `GAP-LOG.md`, one per row E43 to E73 in order (CL-117 is E43, CL-136 is E62, CL-143 is E69).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-154 in `GAP-LOG.md`, one per row E43 to E80 in order (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -124,10 +124,17 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E71 | none; the one clean-up row stays as E63 says | card 19 NS-40-R7, FR-PRV-25, BL-577; first-run design CF-1 | data-architect, mobile |
 | E72 | none; default as E47; one proposed sub-question for counsel | NS-40-R9; COUNSEL_PACKET Q57 (proposal only) | security-architect, regulatory-affairs |
 | E73 | none; the claim step is the only adoption | card 21 NS-47-R7; CR-69 A4 | mobile |
+| E74 | none; the export reads the person's own rows through a definer function, no screen | `functions/privacy.md` FR-PRV-03, PQ-5; engineering question on #999 | mobile, data-architect, privacy |
+| E75 | new P0 row FR-MKT-44 joins gap group G32, no new BL id; the purge worker already sends only transactional mail; one content test (class per template) as `LEGAL-REQ-053` says | `functions/marketing.md` FR-MKT-44; engineering question on #1000 | privacy, content, marketing |
+| E76 | none (engineering's defaults taken); two catalogue lines for `content` | `functions/risk-security.md` FR-SEC-36; `docs/emails/CATALOG.md` 10.3 | sync, content, security-architect |
+| E77 | none; no new control, no new email | FR-SEC-36; card 19 NS-45-R3 | sync, mobile, security-architect |
+| E78 | new P0 row NS-08-R21 joins gap group G03; one proposed row (no BL id until #912 merges): the new-device email, built before the backup flip; nothing for 1.0 | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content |
+| E79 | none; no APNs key, token table or push entitlement in 1.0 | card 10 NS-26 | mobile, security-architect |
+| E80 | none; the dictionary stays on the phone, the server table stays unreachable | `functions/ai-and-speech.md` FR-AIS-34 | mobile, data-architect |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
-One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), E67 (eleven digest lines: writing tools, G1 grace, secret scan, label-guard copy, K3, plan Q3 to Q7, dependencies), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
+One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), E75 (no marketing email to app addresses, a promise to a user), E78 (no new-device email for 1.0, gated before the backup flip), E67 (eleven digest lines: writing tools, G1 grace, secret scan, label-guard copy, K3, plan Q3 to Q7, dependencies), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
 
 ### E61: NS-49-R9 and the constitution (20 Nov, Karma with the Chief AI Officer lens)
 
@@ -246,3 +253,65 @@ Ruling: no. A local days file is adopted only at the claim step (E-S24) by the s
 Edited in place: none. Plan delta: none; the A4 text only; `mobile`.
 
 Founder note: E69 to E73 add no item to the founder's own list. E72 keeps the E47 line (counsel-only) in the digest and adds one proposed sub-question for counsel, merged only by him.
+
+## Fourth round, E74 to E80 (20 Nov, Karma with product, from engineering's data and security pack questions)
+
+Source: the eleven `req-question` comments on the data and security pack PRs (#999, #1000, #1001 with six, #1003 with two, #1004), read against the record one by one (the table is in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 5). Nothing on #1002 or #1005 to #1011, and nothing new on #934 or #935. Same rule: show less, store less, send less, undoable. Two of the seven rulings (E75, E78) carry a founder line in the digest with a default; none is closed for good. The closure rows are CL-148 to CL-154, one per row E74 to E80 in order (CL-148 is E74).
+
+### E74: does a parent see their own audit rows (20 Nov, Karma with product; FR-PRV-03, PQ-5)
+
+Question (#999, `FR-PRV-03-audit-rows`): on a screen, or only in Save a copy?
+
+Ruling: only in Save a copy. No screen lists what was done to an account. PQ-5 is already answered (CL-081): the person's own `audit_events` and `deletion_requests` rows go in `account.json`. "Own" means rows where the person is the actor or the account owner. Another member in a row shows as "another member", with no name, email or id. The rows hold no letter words, no recording, no child name, and a test on the export file checks that. The server reads them through a definer function that returns only the caller's rows (`data-architect`); no API role gets a grant on the table. It shows less and stores nothing new.
+
+Edited in place: FR-PRV-03. Plan delta: `functions/privacy.md` FR-PRV-03 export PR (`ACT_COLUMNS` plus the two row sets) and the definer function; none (re-size no, engineering's default); mobile, data-architect, privacy.
+
+### E75: marketing email to an app sign-up (20 Nov, Karma with product; FOUNDER default)
+
+Question (#1000, `FR-MKT-app-user-email`; engineering cited FR-MKT-01, which is the claims row, so the rule gets its own row): may a person who signed up in the app ever get a marketing or product-news email?
+
+Ruling: no, at 1.0. An address given in the app gets transactional mail only (the list in `LEGAL-REQ-053`: sign-in codes, account and security notices, deletion receipts, legal notices). No newsletter, product news, tip, re-engagement or Plus offer, and no opt-in for one in the app. The waitlist stays its own list at the mail vendor, is never joined to accounts and never used to look one up. The one welcome email stays as the catalogue has it (once, no promotion inside). Any later commercial email needs its own row, a separate opt-in that is off by default, a one-click unsubscribe, hashed suppression, and his yes. This is a promise to a user, so it is a founder line with this default, not closed for good. Whether the waitlist's "tell me when it is ready" mail is commercial is counsel's (Q34) and is not decided here; FR-MKT-06 already holds that email until it is.
+
+Edited in place: new row FR-MKT-44. Plan delta: `purge-worker` already sends only transactional mail; the one content test is `LEGAL-REQ-053`'s class check; FR-MKT-44 is a new P0 row and joins gap group G32 in `BACKLOG-GAPS.md` (the marketing rows, BL-965 and BL-958), no new BL id; none otherwise; privacy, content, marketing.
+
+### E76: which account security emails exist at 1.0 (20 Nov, Karma with product; Q-COM-1, Q-COM-3, Q-COM-4, Q-COM-6)
+
+Question (#1001): the set, quiet hours, the new address in the email-changed notice, and an in-app echo.
+
+Ruling: (1) Nothing new is built for launch. Only the notices already built or sent by the sign-in service are sent, each email only, no push (the new-device email is E78). (2) A security alert is not held by quiet hours, as sign-in mail is not; it is email, so nothing sounds on a lock screen. (3) The notice to the old address shows the new address masked: first letter, three stars, the domain (`a***@example.com`); the full address goes only to the new address. If the sender cannot mask it, the notice names no address at all. (4) No screen echoes a sent alert; the email is the record. The in-app lines that exist (I5, I6, `session_expired`) stay. Karma's note on #1001 cites an "A6 rule" for the alert after Sign out other devices; CR-69 A6 on develop is the consent rollout order, so it is not relied on (E77).
+
+Edited in place: new row FR-SEC-36. Plan delta: `content` adds the quiet-hours exemption line to `docs/emails/CATALOG.md` 10.3 and the masked line to the email-changed copy; none for build; sync, content, security-architect.
+
+### E77: sign-out control and wrong-code email (20 Nov, Karma with product; Q-COM-2, Q-COM-5)
+
+Question (#1001, with Karma's two corrections): should "Sign out other devices", which is built, send an alert email, and should a sign-out-everywhere control exist; should repeated wrong codes email the owner?
+
+Ruling: no to all three. "Sign out other devices" stays as built and sends no email (the person just did it on a phone in their hand; the other phones show `session_expired` once, NS-45-R3). Me, Account gets no sign-out-everywhere control. Repeated wrong codes: the phone pauses after 5 in 15 minutes and says so in the app; no email goes out, because an email an attacker can trigger is an inbox-bombing path (`docs/emails/SECURITY.md` 3.9). Whether a server-side count or a paging job should exist is not a parent-facing requirement; it is `security-architect` and ops, not ruled here (Karma gives it an A-number in CR-69 if it wants one). If one is built it sends the owner nothing.
+
+Edited in place: FR-SEC-36. Plan delta: none; sync, mobile, security-architect.
+
+### E78: the new-device sign-in email (20 Nov, Karma with product; F02-REQ-017, PT-19; FOUNDER default)
+
+Question (#1003, `F02-REQ-017`): P0 at 1.0, or later?
+
+Ruling: not built for 1.0, and a hard gate before the backup flip. At 1.0 recording backup, escrow and restore to a new phone stay off (NS-08-R5), and "Sign out other devices" is built. The catalogue says 1.0 but names no sender, and Supabase has no template for it, so it needs a new server sender, a device table and a "Not you?" page that is not in `apps/web` yet. Building that for launch adds data (device ids) and a new send path; not building it sends less. The gate is the other half of the old P0: new row NS-08-R21 says the email is built, tested and read by `security-architect` before anyone asks him to turn the backup on. The line "We will sign that device out" (`packages/content/src/emails/auth.en.ts:199`) is not shown to a parent until a server lever for one session and the stop page both exist. The email fires once for a device the account has not used, never for the first device, never from the client, email only. This changes what a user is told about their account safety, so it is a founder line with this default, not closed for good.
+
+Edited in place: new row NS-08-R21 (card 08), FR-SEC-36. Plan delta: NS-08-R21 is a new P0 row and joins gap group G03 (the flip rows, BL-976, waits for the flip decision); one proposed row, no BL id until #912 merges (E60): build the new-device sender, the device table, the stop page and the one-session sign-out lever, gated before the flip; new row; sync, security-architect, content.
+
+### E79: any remote push in 1.0 (20 Nov, Karma with product; NS-26)
+
+Question (#1003, `NS-26`): does any 1.0 row need a server-sent push?
+
+Ruling: no. NS-26 stays parked (frame row 41; card 10 section NS-26). No APNs key, no token table, no push entitlement. Where a row seems to want one (the other parent wrote, a restore request, a security alert) it is an in-app line on next open, a local reminder inside NS-32's budget, or an email. The config strip of `aps-environment` and its test stay. Adding a push is the founder's call (scope, the store label Q54(d), counsel), taken only by the card's own reopen test; nothing is open for him today, so no digest line.
+
+Edited in place: NS-26 (one "1.0 rule" line). Plan delta: none; no APNs work in any wave; mobile, security-architect.
+
+### E80: does the dictionary go to the server (20 Nov, Karma with product; FR-AIS-34)
+
+Question (#1004, `FR-AIS-34`): does a family's taught-names dictionary live on the phone only, or sync?
+
+Ruling: phone only. It is never synced, copied to the server or put in the server export. It follows the other phone stores of the book (E49: a second account sees nothing of it; Erase everything removes it), and a new phone starts with it empty, so the parent teaches the names again. Names a family teaches can include a child's name (L4), so storing less is the safe side. The server table `public.dictionary_terms` stays built and unreachable: no grant, no writer, no reader, until a card names a synced dictionary (that card would need a privacy read, export and deletion rows, and a label check). Whether to drop the unreachable table, and where on the phone the dictionary is stored (schema 10 has no table for it), are engineering's (`data-architect`, `mobile`) and are not ruled here.
+
+Edited in place: FR-AIS-34. Plan delta: none; mobile, data-architect.
+
+Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79 adds none. Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
