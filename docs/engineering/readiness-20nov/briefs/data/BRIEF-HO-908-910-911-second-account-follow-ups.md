@@ -10,7 +10,7 @@ Blocked until: #879 (BL-961 3 of 3, head e27d104e, base #871's branch) and #871 
    Tests (titles from PR #925 catalogue A and C; add the NS id in brackets first):
      [NS-32-R12] lock screen stays plain        add a case: book owned by A, B signed in, currentPlan() returns [] (mutant: remove the guard line)
      [NS-13-R13] a second account starts with none   add: account-gone path calls endReminderSession(); upgrade-path rule if chosen (mutant: skip the call)
-     [X4-R1] ... (the #879 title)               add: B's refresh() never calls recordStatus for A's note (mutant: remove the bookVisibleNow guard in use-account-deletion)
+     [X4-R1] Delete account under a second account never touches the owner's deletion note   NEW title (the #879 titles are not on develop; do not reuse one). Arrange: Asha-A owns the book with a deletion note, Asha-B signed in with status none; act: refresh(); assert the note is unchanged and recordStatus was not called with A's note. Mutant: remove ONLY the bookVisibleNow guard line in refresh (a second guard such as ownersNote must not hide the red: the test must go red with that one line removed, so state in the PR which guards exist and run the mutant alone).
    Red on develop: scheduler.ts:135 currentPlan has no account check; listVisible has no account filter (lib/store/repos/children.ts:26-27 per #908; re-open).
 
 3. FILES: TOUCH / DO NOT TOUCH
