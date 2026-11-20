@@ -26,13 +26,13 @@ Drop D ships after wave 1 and Drop A, and before any family outside the founder'
 - Not in the FP count (`12-first-run-5.md:62`): DA-1 (File 28 re-stamp and apply path, fail open per the card), DA-2 (purge of never-confirmed `auth.users` rows after 7 days, O-12), DA-3 (`withdraw_sensitive_data`), NSC-01 and NSC-02 (security-architect), the SystemLine component and the words.
 - Added by errata: FP-19 (NS-42-R17, the sensitive-data withdrawal control in Me, E46; row needs DA-3) and FP-20 (Turnstile bot check on email send, owner `mobile`, L; the Turnstile and Supabase CAPTCHA switch is the founder's). A content PR for the plain notice at collection NS-42-R18 (E51; the words wait for the founder; FP-2 or FP-3 carries the keys). One migration for the `age_signal` leftovers and two docs PRs (E63, #993; no BL id until #912 merges, E60).
 - E62 (#993): Send answers "check your email" for a new and an existing address alike; the refused-region screen shows only after the code step (FP-6 maps `region_refused` after it). E47: the region hook fails open and the hook is off until counsel reads it. E56: a No at the age step sends nothing.
-- A7 (CR-69): FP-9 builds the foreground `getCredentialStateAsync` check and the JavaScript `addRevokeListener`; no new native code. CR-69 names owner `sync`; the design's FP-9 row says `mobile`. Karma to reconcile before dispatch [U which].
+- A7 (CR-69): FP-9 builds the foreground `getCredentialStateAsync` check and the JavaScript `addRevokeListener`; no new native code. Owner ruled by Karma (T1, reversible): `mobile` builds FP-9, because the foreground `getCredentialStateAsync` check and the `addRevokeListener` are JavaScript in `apps/mobile/src/lib/auth/apple.ts` and need no new native code (A7); `sync` is the lens A reviewer. Recorded in this plan until the next RULINGS pass.
 
 Consent rollout order (A6, `RULINGS.md:703`; `12-first-run-5.md:74`), four steps, in order:
 1. The founder applies migration `20261108000000` first (backward compatible).
 2. The FP-2 builder ships, and its release is blocked until the APPLY.md file 29 check (`pg_get_function_identity_arguments` ends in `p_app_build text, p_os_major integer`) is shown as run on the hosted project; the PR states it. Its test calls `record_policy_act` with both the old and the new argument list.
 3. Ops runs a measured gate: no sheet acts with `app_build` null for 14 days (an engineering default, not a card number), plus a minimum-build or update-line condition. The PR states what an old build shows on error 23502.
-4. Only then does the founder set `app.consent_fields_required`. Owners: `sync`, ops. FP-15 (the update-line reader) is a courtesy, not the gate.
+4. Only then does the founder set `app.consent_fields_required`. Owners: `sync`, ops; `ops` owns the step 3 gate, including the minimum-build or update-line condition (CR-69 A6, owner "sync, ops"), and `sync` owns the FP-2 builder side. FP-15 (the update-line reader) is a courtesy, not the gate.
 
 ### 1.2 Days stack (NS-46 to NS-50)
 
@@ -92,5 +92,5 @@ The three stacks add about 88 PRs. At 4 passes a PR (17 section 4.2) that is abo
 
 - No id diff of cards between `450bcb4a` and `88f3a975` (100 files changed under `docs/product/prd`; counted, not read id by id). The new-scope sizes are the designs' sums.
 - Brief README statements about heads and sizes other than #894's merge result (re-run here) were not re-run.
-- Whether `scribe-library` is already used in a brief or design other than the one cited; the FP-9 owner conflict; the CL-115 rows individually.
+- Whether `scribe-library` is already used in a brief or design other than the one cited; the CL-115 rows individually.
 - #993 is open: E62 to E68 and CL-136 to CL-142 may change before it merges.
