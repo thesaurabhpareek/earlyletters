@@ -8,11 +8,13 @@ Blocked until: NS-47 is UNLOCKED (card 21, branch docs/locked-pack-inputs-20nov,
 2. CARD ROWS and TEST TITLES
    Rows: NS-47-R1, R4, R6, R7, R10, R11, R15, R16, R17, R28 (card 21 lines 483-510 on the inputs branch).
    Tests (exact titles from the card): [NS-47-R1] the whole store is L4 and registered; [NS-47-R4] no request carries a day key (includes the migration lint, which is mine); [NS-47-R6] the store is out of the backup and fails closed; [NS-47-R7] claim and new phone move nothing; [NS-47-R10] the export holds none of it; [NS-47-R11] one reader; [NS-47-R15] sign-out clears and B sees nothing; [NS-47-R16] erase scan finds nothing; [NS-47-R17] delete account line and clear; [NS-47-R28] the store file is protected, versioned and fails closed.
+   Positive controls (required): [NS-47-R16] erase scan: first write a synthetic store file and flag, assert the scan FINDS them, then erase and assert it finds nothing; mutant: skip the store in the erase list. [NS-47-R4] request scan: first make the network fake record a request carrying `zz-test-day`, assert the scan flags it, then run the real flow and assert none; mutant: put a day key in a header.
+   Lint banned-word list (in the test as an array, matched case-insensitively on column, view, RPC argument and settings-key names): tradition, religion, religious, faith, country, origin, culture, cultural, ethnic, heritage. Positive control: a scratch migration text with a column named `tradition` must fail; one named `trade_in` must pass (whole-token match, not substring).
    Mine to write: the NR-162 lint as supabase/tests/no-tradition-names.test.mjs (mutant: add a column named `tradition` in a scratch migration); the ADR; the registry and erase-scan rows. Mobile writes the store and the other tests.
    Red on develop: no store, no lint (checked: no such file).
 
 3. FILES: TOUCH / DO NOT TOUCH
-   Touch:  docs/adr/<next-id from next-id.mjs>-days-store.md (new ADR; ids from `node scripts/agents/next-id.mjs`, ADR 0029 on 20 Nov), supabase/tests/no-tradition-names.test.mjs (new), the rows for docs/legal/DATA_CLASSIFICATION.md 4.6 are PROPOSED in the PR body for `privacy` (the founder merges docs/legal), docs/agents/checkins/data-architect-ns-47.md
+   Touch:  docs/adr/<id>-days-store.md (new ADR; take the id from `node scripts/agents/next-id.mjs`, never a guess), supabase/tests/no-tradition-names.test.mjs (new), the rows for docs/legal/DATA_CLASSIFICATION.md 4.6 are PROPOSED in the PR body for `privacy` (the founder merges docs/legal), docs/agents/checkins/data-architect-ns-47.md
    Never:  docs/legal/** directly, the store code (mobile), scribe.db migrations (the store is not a table), the planner (BL-966 lane), charters, memory, roster, workflows, BACKLOG, BOARD.
    Shared file rule: erase list in data-and-sync.md section 2.5 and the Erase scan (apps/mobile/test/erase-all.test.ts) gain one store each: mobile edits those.
 

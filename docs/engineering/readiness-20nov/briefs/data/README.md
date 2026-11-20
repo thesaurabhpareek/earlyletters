@@ -13,7 +13,7 @@ Size is the brief's own estimate [E]. Lens A and B are from the plan's reviewer 
 | 1 | `BRIEF-T1-synced-column-drift-guard.md` | sync | data and sync | 1 | S | principal-architect / data-steward | none | nobody: start now |
 | 2 | `BRIEF-T3-phone-class-label-check.md` | qa | data and sync | 1 | S | data-steward / principal-architect | none | nobody: start now |
 | 3 | `BRIEF-BL-959-adr-0028-amendment-and-keeping-server-tests.md` | data-architect | data and sync | 1 | S x3 | data-steward / security-architect | #797, #865 (merged) | nobody: start now |
-| 4 | `BRIEF-BL-870-s1-photo-bucket-write-deny.md` | data-architect | data and sync | 2 | S (280 lines) | red-team / security-architect | none | founder: `approve-migration`, Q8 count; product: a row for NS-01-R61 (CP6) |
+| 4 | `BRIEF-BL-870-s1-photo-bucket-write-deny.md` | data-architect | data and sync | 2 | S for the migration (280 lines) plus at least 9 test cells rewritten in at least 7 files; may need 2 PRs | red-team / security-architect | none | founder: `approve-migration`, Q8 count; product: a row for NS-01-R61 (CP6) |
 | 5 | `BRIEF-P-7-f4-migration-checklist-and-record.md` | ops | data and sync | 1 | S x2 | data-steward / security-architect | PR 1 none; PR 2 the founder's apply | founder (F4 is open); product numbers P-7 |
 | 6 | `BRIEF-BL-926-review-says-when-a-recording-is-not-gone.md` | mobile | keeping | 1 | S | principal-architect / design-systems | BL-925 (#866) | founder: words |
 | 7 | `BRIEF-P-4-stuck-recording-and-let-go-tests.md` | mobile | keeping | 1 | M (2 PRs) | principal-architect / data-steward | BL-925; BL-926 first | founder: words; product: where R6's row lives (K3, E28) |
@@ -69,7 +69,7 @@ Size is the brief's own estimate [E]. Lens A and B are from the plan's reviewer 
 1. The three SQL functions every synced column restates are about 354 and 358 lines; without H1, Firsts and the seal each ask a size exception (brief 15, 19, 20).
 2. Seal publication (option b) loses an opening if the pull window uses `statement_timestamp()` while the view reads `now()` (CK10). Brief 20 makes that boundary a named test.
 3. `sync_pull` serves other members' letters on `require_user()` alone (`20261016000000_sync_v1_server.sql:1306`); only the phone's `canSync` gates consent today (G1, brief 14).
-4. S1 turns red three existing cells that insert into `entry-photos` as the author (`access_matrix.test.mjs:56, 395`, `data_governance.test.mjs:114, 121`); brief 4 lists them.
+4. S1 turns red at least 9 existing cells across at least 7 test files that insert into `entry-photos` as the author (Review A on #940; brief 4 lists them), so its PR is larger than 280 lines. The new trigger `entries_15_photo_closed` fires first among the before-triggers (name order, DB-R04).
 5. Several design cites had already moved by the afternoon (see below); the briefs say "re-open every file:line" for that reason.
 
 ## Cites checked
