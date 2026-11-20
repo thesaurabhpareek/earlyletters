@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `39cf30d3`, 20 Nov 19:47 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `39cf30d3`, 20 Nov 19:04 UTC).
 Blocked until: #835 merged (the files and the sweep it tests). No backlog id yet: the plan lists it as P-5 "missing at the lock" and says product numbers it (plan 2.9); Karma assigns one. The pictures' retention wording (the data inventory rows, #854 and BL-960) is the founder's merge; this brief writes tests only.
 
 ```
-BRIEF P-5 (NS-36 titles for pictures)             Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:47 UTC
+BRIEF P-5 (NS-36 titles for pictures)             Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: before 14 on   Wave: 2
 
 1. GOAL: When a letter with a picture is deleted, restored, purged, exported or erased, the picture and its copies follow in one step, and a test titled with the NS-36 row says so.
@@ -55,6 +55,6 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: before 14 on   Wave: 2
 
 15. STOP AND ASK: a test finds a real bug in `src/` (write a Conflict line to the owner; do not fix); the title would need a row id the card does not have.
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-p5 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-p5 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-p5.md`. Branch test/mobile-p5-pictures-follow-letter. Comments start `<!-- agent:mobile -->`.
 ```

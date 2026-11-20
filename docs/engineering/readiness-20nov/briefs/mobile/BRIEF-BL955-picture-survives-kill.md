@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:38 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
 Blocked until: BL-931 done (#835 to #840). Conflict E2 (11-foundations section 8.5) is open and is Karma's and design-systems' to settle, not mine: eval B writes the stored copy as soon as the draft row exists, and Listen creates that row on Speak, so a HEIC or rotated picture would be re-encoded DURING the take, which breaks NS-37-R2 (P0, no decode while recording). Recommendation in the design: bake at Ready before Speak, or once `captureBusy()` is false; never during. Build to that recommendation only after Karma says so.
 
 ```
-BRIEF BL-955 (a picked picture survives a kill)   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:38 UTC
+BRIEF BL-955 (a picked picture survives a kill)   Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 1. GOAL: When the app is killed after a picture is picked but before Review, nothing is kept; once Review is open, a kill keeps the draft with its picture;
@@ -55,6 +55,6 @@ Agent: mobile   Lane: Pack 1 (Photo and media)   Build: 14 on   Wave: 2
 
 15. STOP AND ASK: E2 is ruled "write at Speak"; the card and the backlog timing disagree; the kill harness needs a workflow patch (the founder's).
 
-16. HARNESS: claim row held by Karma. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl955 agent:mobile -->`.
+16. HARNESS: claim row: NONE yet for this brief; Karma adds it before the agent starts. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-bl955 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-bl955.md`. Comments start `<!-- agent:mobile -->`.
 ```
