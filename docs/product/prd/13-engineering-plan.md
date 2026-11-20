@@ -1,5 +1,7 @@
 # Engineering plan: size, skills, order and dependencies (Karma, 19 Nov 2026)
 
+Task-level plan (one row per backlog row and open PR, critical paths, capacity, device batches): `17-engineering-project-plan.md`.
+
 Status: CURRENT | Updated: 20 Nov 2026 | Load when: you need sizes, skills, order or dependencies for NS-01 to NS-52 (cards 19, 21 and 27: section 3H).
 
 > SUPERSEDED-BY 23-dependency-map-and-plan.md sections 2 and 2.1 (parts only: section 4 Order and section 5 Dependencies in one picture; sizes in section 3 stay CURRENT) | 20 Nov 2026 | Source: 23 section 8 | Registry: REGISTRY.md
