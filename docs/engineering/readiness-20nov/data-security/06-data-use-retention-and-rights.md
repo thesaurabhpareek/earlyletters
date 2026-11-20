@@ -176,7 +176,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 
 ## 10. Findings (gaps and risks, with file and line)
 
-1. Policy text and code disagree about holds: `data-policy.md:223` says staff read held data only with a logged `support_access` event; no code writes that action (`05` finding 1) [V].
+1. Policy text and code disagree about holds: `data-policy.md:224` says staff read held data only with a logged `support_access` event; no code writes that action (`05` finding 1) [V].
 2. Production deletion is not running: only migration files 1 and 2 are applied and the worker is not deployed (`APPLY.md:48`; chapter 08 DSR-R06) [V]. Any parent-facing deletion promise is ahead of the system until D-041.
 3. Backups under Free are a 7-day encrypted dump in a private repo, not Supabase backups; `data-policy.md:212` still describes Pro daily backups [V `reliability.md:43`, FR-PRV-08]. The 38-day promise holds only while the dump stays 7 days.
 4. No reader for `audit_events` (`05` finding 3): an access request that includes it needs a definer function (PQ-5).
@@ -191,7 +191,7 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 | Id | Where | Conflict | Sent to |
 |---|---|---|---|
 | C06-1 | `data-policy.md:212` vs `reliability.md:43` and FR-PRV-08 | Policy: Pro daily backups, 7 days. Production: Free plan, no Supabase backups, nightly dump 7 days | `legal`, `ops` |
-| C06-2 | `data-policy.md:223` vs code | `support_access` audit event is not written (finding 1) | `legal`, `data-architect` |
+| C06-2 | `data-policy.md:224` vs code | `support_access` audit event is not written (finding 1) | `legal`, `data-architect` |
 | C06-3 | D-021 (12 months for key-unwrap logs) vs DC 4.3.1 (24 months) | open as COUNSEL_PACKET Q51; Rec 12 months, section 14.1 | counsel |
 | C06-4 | `subprocessors.md` vs FR-PRV-08 | GitHub holds an encrypted dump; not named (PQ-3) | `legal` |
 | C06-5 | chapter 08 DSR-R09 says `SCPRG` is `pending PR #32`; no file in `supabase/` mentions it | the purged-id guard is not in the repo; finding 9 | `data-architect`, `compliance-engineer` |
