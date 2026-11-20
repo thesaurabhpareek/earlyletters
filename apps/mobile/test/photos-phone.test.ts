@@ -3,14 +3,14 @@
 // stand-in: the deps every picture write runs against, the one eraser every letter purge calls, the launch sweep, and
 // the switch that decides whether anything registers. Fictional family Asha.
 import { createHash } from 'node:crypto';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { migrate, MIGRATIONS } from '../src/lib/db/migrations';
 import type { SqlDb } from '../src/lib/db/sql';
-import { erasePictureOf, photoDeps, registerPhotoDevice, sweepPhotosAtLaunch } from '../src/lib/photos/device';
+import { erasePictureOf, photoDeps, registerPhotoDevice, resetPhotoDeviceForTest, sweepPhotosAtLaunch } from '../src/lib/photos/device';
 import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { expoPhotoFiles, photosDirectory, storedPhotoFile } from '../src/lib/photos/files';
 import { setPhotosForTest } from '../src/lib/photos/flag';
-import { getPending, getPhotoPicker } from '../src/lib/photos/registry';
+import { getPending, getPhotoPicker, registerPending, registerPhotoPicker } from '../src/lib/photos/registry';
 import type { StoredPhoto } from '../src/lib/photos/types';
 import { createDisk, iosContainer, put, type Disk } from './helpers/expo-fs-standin';
 import { nodeDb } from './helpers/node-db';
@@ -127,21 +127,40 @@ describe('[NS-01-R16] delete, restore and purge treat letter and picture as one'
 });
 
 describe('[NS-01-R19][NX-39-R37] the switch decides what registers, never the data rights', () => {
-  it('[NS-01-R19] with EXPO_PUBLIC_PHOTOS unset nothing registers: no picker and no pending picture, so no photo start can draw', () => {
-    expect(process.env.EXPO_PUBLIC_PHOTOS).toBeUndefined();
-    registerPhotoDevice();
-    expect(getPhotoPicker()).toBeNull();
-    expect(getPending()).toBeNull();
+  // A stand-in for the scribe-photo module: Node never has the native one, so without it every case looks the same.
+  const native = { pickOne: async () => null, reencodeUpright: async (_s: string, d: string) => d };
+  const fresh = (module: typeof native | null) => {
+    resetPhotoDeviceForTest(module);
+    registerPhotoPicker(null);
+    registerPending(null);
+  };
+  afterEach(() => {
+    resetPhotoDeviceForTest(undefined);
+    setPhotosForTest(null);
+    registerPhotoPicker(null);
+    registerPending(null);
   });
 
-  it('[NS-01-R19] with the switch on, a build without the native picker (Node here, Expo Go, web) still registers nothing', () => {
+  it('[NS-01-R19] with the switch off, a build that has the native picker registers nothing: no picker and no pending picture, so no photo start can draw', () => {
+    expect(process.env.EXPO_PUBLIC_PHOTOS).toBeUndefined();
+    fresh(native);
+    registerPhotoDevice();
+    expect([getPhotoPicker(), getPending()]).toEqual([null, null]);
+  });
+
+  it('[NS-01-R19] with the switch on and the native picker, the picker and the pending picture register', () => {
+    fresh(native);
     setPhotosForTest(true);
-    try {
-      registerPhotoDevice();
-      expect(getPhotoPicker()).toBeNull();
-      expect(getPending()).toBeNull();
-    } finally {
-      setPhotosForTest(null);
-    }
+    registerPhotoDevice();
+    expect(getPhotoPicker()).not.toBeNull();
+    expect(getPending()).not.toBeNull();
+  });
+
+  it('[NS-01-R19] with the switch on, a build without the native picker (Expo Go, web) still registers nothing', () => {
+    fresh(null);
+    setPhotosForTest(true);
+    registerPhotoDevice();
+    expect([getPhotoPicker(), getPending()]).toEqual([null, null]);
   });
 });
+
