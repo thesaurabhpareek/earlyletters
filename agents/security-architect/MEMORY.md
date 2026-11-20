@@ -6,7 +6,7 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 
 ## Current focus
 - Chapters 05 (IAM) and 06 (SEC) drafted 2026-10-03. Biggest gaps: branch protection off (CI-01), agent write connectors (PINF-01), no member removal or role change (PSEC-01), DB-01 view writes fixed only in PR #32.
-- (20 Nov) Native-module review of `scribe-photo` (#834, #841, #842) per BL-931 and `13-engineering-plan.md` section 2; the roster does not route `apps/mobile/modules/**` to you. The NS-03 pilot security read (sections 3, 4, 6) is due Fri 27 Nov (`docs/product/prd/03-family-hears-it-pilot.md` line 65).
+- (20 Nov) Native-module review of `scribe-photo` (#834 merged as 76a4a5d7; #841 and #842 open) per BL-931 and `13-engineering-plan.md` section 2; the roster does not route `apps/mobile/modules/**` to you. The NS-03 pilot security read (sections 3, 4, 6) is due Fri 27 Nov (`docs/product/prd/03-family-hears-it-pilot.md` line 65).
 
 ## New scope (20 Nov 2026)
 Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
