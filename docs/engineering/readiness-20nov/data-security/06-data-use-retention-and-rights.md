@@ -42,7 +42,7 @@ The product column for M7 to M9 means the person's own phone and the paths the c
 | C4 | (FR-BKO-02 is a spec, not built code.) The person's own request, a ticket reference, and the narrow summary function (sign-in provider, created and last sign-in date, consent current, book count and role, deletion status, hold flag, open invites). No email, no book name, no child name, no letter text, no path in the summary. Reached only through an `ops.audit_log` row written first. | FR-BKO-02 (new row; not built) [V row text]; LEGAL-REQ-025 |
 | C5 | Incident or abuse handling only: by request id, time window and SQLSTATE first; a person id only through an audited runbook; the finding is counts and codes. | OBS-R14; `scripts/ops/lib/runbook.ts:1-29` [V] |
 | C6 | Only through an audited runbook and a ticket; the finding is written as codes and counts; never pasted into a ticket, chat, log or PR. | OBS-R14; `docs/ops/runbooks/data-requests-by-email.md` section 0 [V] |
-| C7 | Only an address the person gave for that purpose and has not withdrawn (the website waitlist). It sits at Resend, is never joined to an account, and is deleted on request. App users get transactional mail only until counsel and the founder decide otherwise. | `subprocessors.md` (Resend row); `data-policy.md:187`; LEGAL-REQ-053 [V]; question Q5 |
+| C7 | Only an address the person gave for that purpose and has not withdrawn (the website waitlist). It sits at Resend, is never joined to an account, and is deleted on request. App users get transactional mail only at 1.0 (E75, CL-149); the waitlist class is counsel's (Q34) and a promise to a user is the founder's. | `subprocessors.md` (Resend row); `data-policy.md:187`; LEGAL-REQ-053 [V]; question Q5 |
 | C8 | Counsel has validated the request and named the scope. Engineering only preserves (hold, or the preservation script when built). Engineering never searches, reads, discloses or notifies on its own judgment. | chapter 08 DSR-R10, R11, "Never"; LEGAL-REQ-057 [V] |
 | C9 | A vendor may hold an IP address in its own log (Supabase Auth, Vercel, Cloudflare). We copy none into our tables. The country check uses the address in memory and drops it; only daily counts by outcome and jurisdiction code remain, 2 years. | FR-PRV-26; D-131, D-136 [V row text] |
 | C10 | **X2 first.** A child's voice or picture leaving the phone needs a security read and a counsel read first (X2; ruling 3; `docs/product/prd/00-product-frame.md:92`; E23 in `18-errata-after-lock.md:31` extends the same two reads to a picture sent to another person). So the AI-features cells for audio and photos (M8) are F-X2: forbidden until both reads are done. This pack also recommends, and X2 does not say, that letter text and child data (M7, M9) stay forbidden for cloud AI until a founder decision; the cells say F-X2 for the same reason. This is a ceiling for a decision not taken. On the person's own device for 1.0 (on-device speech and the faithful-edit engine) it is allowed. If the reads are done and the founder decides yes, a provider also needs: the person's AI-processing consent, the minimum content, identifiers stripped, zero retention, no training, a signed processing agreement, a data-map row. No feature writes, rewrites, summarises or shapes a person's words, whatever the provider. | CLAUDE.md constitution; LEGAL-REQ-020 [V `ENGINEERING_REQUIREMENTS.md:168-173`]; DC section 2 "Processors"; FR-AIS-01, -02 |
@@ -133,7 +133,7 @@ Not live yet [V chapter 08 DSR-R06, `APPLY.md:48`]: the worker is built and test
 | Before a deletion | Export is the primary action on the step before Confirm | DATA-REQ-053 |
 | Without the phone | server-built export (P1): text only, a signed link for 7 days, object deleted after 7 days, an `export_created` audit row with counts and a manifest hash | DATA-REQ-054; the audit action exists but nothing writes it (`05` finding 1) |
 | An access request by email | answered by pointing to Save a copy or the server export, never by staff reading or sending letters; no attachment of content from our side | DSR-R14; `docs/ops/runbooks/data-requests-by-email.md` section 0 [V] |
-| Server-held rows about the person (`audit_events`, `deletion_requests`) | counsel decides if an access request reaches them (PQ-5); default yes, in `account.json` | FR-PRV-03; PQ-5 |
+| Server-held rows about the person (`audit_events`, `deletion_requests`) | RULED E74 (CL-148) and CL-081: own rows go in `account.json`, no screen; whether an access request must include them is counsel's (CQ4) | FR-PRV-03; PQ-5 |
 | Correction | the person edits their own letters and profile; `raw_transcript` never changes; the From name is insert-only today (PQ-4) | chapter 08 matrix; FR-PRV-22 |
 | Deadlines | acknowledge within 10 business days, answer within 45 days from receipt, one extension of 45 with reason before day 45 (engineering reading, counsel to confirm) | DSR-R12; privacy policy "Your rights" section |
 | Who may not | anyone but the author for raw transcripts; a co-parent for the other's letters | DATA-REQ-003, -012, -015 |
@@ -201,11 +201,11 @@ The AI-provider row is a ceiling for a founder decision not yet taken, and is fo
 
 | Id | To | Question | Default |
 |---|---|---|---|
-| Q1 | counsel | May a parent's own audit and deletion rows be part of an access answer (PQ-5)? | Yes, in `account.json` |
+| Q1 | counsel | May a parent's own audit and deletion rows be part of an access answer (PQ-5)? | RULED E74: yes in `account.json`; counsel confirms the access-request reading (CQ4) |
 | Q2 | counsel, founder | What happens to server rows when sensitive-data consent is withdrawn (PQ-1)? | Writes stop at once; nothing is deleted by withdrawal alone; the person can delete |
 | Q3 | counsel | Does an encrypted nightly dump at GitHub make GitHub a processor (PQ-3)? | Name it in the providers page anyway |
 | Q4 | founder | Pro plan (7-day backup, 7-day logs) before the first store build? | No change until the founder decides; decide with Q1 of `05` |
-| Q5 | CMO, counsel | May app users ever get marketing email? | No. Transactional only; waitlist list kept apart |
+| Q5 | CMO, counsel | May app users ever get marketing email? | RULED E75 (CL-149): no, at 1.0. Transactional only to app addresses; the waitlist is never joined to accounts; whether the waitlist "tell me when it is ready" mail is commercial is counsel's Q34; a promise to a user stays a founder line |
 | Q6 | CLO | Who writes the legal-request intake wording and the appeal path (no repo text says how an appeal is handled)? | `legal`; engineering supplies the facts in section 7 |
 | Q7 | CDO | Which period for inactive accounts (OQ-11)? | None in v1 (a keepsake is opened years later) |
 | Q8 | CPrivO | Is a count of "families with a language" at k = 10 acceptable as L2 (DC open issue 2)? | Yes, as built; counsel confirms |
@@ -260,6 +260,21 @@ Also: "kept on the phone that made them" is true only without device backup. PRO
 - `safety_events` is created in file 1 (`20260930000000_scribe_core.sql:178`) [V] and dropped only in `20261002020000_data_governance.sql:277` [V]. `APPLY.md:48` says only files 1 and 2 are applied on `early-letters` [V], so the hosted project can still hold the table that CLAUDE.md says must not exist (safety tiers stay on the phone). I cannot see the live project: this needs a live query (does `public.safety_events` exist, row count) by the founder with `data-architect`, recorded with a date. Until then the claim "the safety tier has no server table" is true of the repo only. If it exists and holds rows, drop after a dump (CDO A2 snapshot rule). Gate GF.
 - Same limit for retention jobs, audit guards and deletion: none runs in production until the apply (finding 2).
 - After the apply: run the access matrix and grants tests against the live project and record the date.
+
+### 14.6a Product rulings E74 to E82 applied to this file (20 Nov; `docs/product/prd/18-errata-after-lock.md:127-135, 263-335`; closures CL-148 to CL-157 in `ENGINEERING-QUESTIONS-CLOSED-20nov.md` section 4)
+
+Where product ruled, the ruling id replaces my earlier "proposed default". Retention periods stay "as built, not approved" and the 12 versus 24 months question (Q51, CQ2) stays with counsel and the founder; none of these rulings sets a period.
+
+| Ruling | What it fixes | Effect here |
+|---|---|---|
+| E74 (CL-148) | own audit rows only in Save a copy; no screen | section 6 export row, Q1, `05` section 3.2a and Q2 |
+| E75 (CL-149) | transactional email only to app addresses at 1.0; one welcome email; waitlist its own list, never joined to accounts; waitlist class is counsel's Q34; a promise to a user is the founder's, not closed for good | matrix condition C7, Q5; `purge-worker` already sends only transactional mail; the one test is the class-per-template check of LEGAL-REQ-053 |
+| E79 (CL-153) | no remote push in 1.0: no APNs key, token table or push entitlement | section 8 vendors: no APNs row and none to be added; label question Q54(d) stays the founder's if he reopens it |
+| E80 (CL-154) | the family dictionary is on the phone only, never synced, copied to the server or put in the server export; a new phone starts empty; names a family teaches can be a child's name (L4) | M9 and the books retention row: `public.dictionary_terms` stays built (`20260930000000_scribe_core.sql:165`) and unreachable: granted to nobody (`20261023060000_explicit_grants.sql:49-50`, `access_matrix.test.mjs:57`) [V], no writer, no reader; no server export row for it. Dropping it, and where the phone keeps it, are `data-architect` and `mobile` choices, not ruled |
+| E81 (CL-156) | alert cap (5 an hour, then one summary, 20 a day), binds any sender after 1.0 | `05` section 3.2b: what may be logged |
+| E82 (CL-157) | no age on a lock screen with names off or App lock on | `05` section 3.2b; no notification text in any log or event |
+
+The purged-id guard stays as in finding 9 and `02i` S8 (#1021): design only, error code `SCPRG`, PROPOSED table `purged_letter_fingerprints`, nothing built.
 
 ### 14.7 Gates per item
 
