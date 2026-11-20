@@ -1,0 +1,1 @@
+05:54 (20 Nov) mobile | done: read rules, 08-keeping NS-10, 11-foundations 6.1, eval B s2.8, AX-12 ruling; PR 1 the pure reader bookVisibleTo with tests | next: PR 2 gate held step and the screen cover; PR 3 store reads | blocked/needs: none
