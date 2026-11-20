@@ -105,7 +105,7 @@ G-5 to G-21 are in 01a section 7. New in this file: none. The register adds evid
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, cited as "CDO return").
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, cited as "CDO return").
 
 - Q-b1: RULED (B5). Both parts: exclude `backup-<id>.db` from the device backup and delete it on Erase and on sign-out of that account. Add: `upload_token` to the Keychain (this-device-only class) or stop persisting it; a test that fails if the file is created without the exclusion flag; the preflight gate of 01a 8.5 so `EXPO_PUBLIC_BACKUP` cannot go on first (C7). `mobile` builds it. [V] none of this exists today: `setExcludedFromBackup` is called for packs and models only (`packs/app-support.ts:38`, `model-files.ts:43`).
 - Q-b2: AGREE (CDO return). Vendor-log gap L-5 goes in the vendor table of 06.

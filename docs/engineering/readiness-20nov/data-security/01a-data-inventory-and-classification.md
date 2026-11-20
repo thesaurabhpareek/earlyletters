@@ -96,7 +96,7 @@ G-1 inventory stale (C-1). G-2 `insights._letters`, `_book_family` 10 columns wi
 
 ## 8. Council amendments (20 Nov 2026)
 
-Source of every change below: the executive alignment record `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`; ids A1 to F3) and the CDO and CISO return (`cdo-ciso.md`, a working file of the run, not in the repo; cited as "CDO return" with its item id). Where a change comes from the CDO return only, the line says so. Gates are the record's: G13 before the Build 13 cut, GF before the first family outside the founder's signs in, G10 before 1.0. A gate marked [E] is mine, because the record names none for that item; Karma or the founder may move it. Nothing here is applied to any hosted project.
+Source of every change below: the executive alignment record `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges; ids A1 to F3; re-pin the cite at merge) and the CDO and CISO return (`cdo-ciso.md`, a working file of the run, not in the repo; cited as "CDO return" with its item id). Where a change comes from the CDO return only, the line says so. Gates are the record's: G13 before the Build 13 cut, GF before the first family outside the founder's signs in, G10 before 1.0. A gate marked [E] is mine, because the record names none for that item; Karma or the founder may move it. Nothing here is applied to any hosted project.
 
 ### 8.1 Numbered gaps with owner and gate
 
@@ -113,7 +113,7 @@ Existing ids keep their numbers (G-1 to G-21 above; G-12 and G-14 are not used i
 | G-9 | `entry_photos_author_insert` and `_update` live; closed by S1 (02i). Applying S1 is the founder's step | data-architect (migration), founder (apply) | GF, and merged together with photo slices #835 to #840 | C4, B3 |
 | G-11 | `backup-<profile id>.db`: classify (L4, PROPOSED, `privacy` rules), exclude from device backup, delete on Erase and on sign-out of that account, `upload_token` to the Keychain, test red without each, preflight gate (8.5) | `mobile` (code), `sync` (token), data-architect (class) | before `EXPO_PUBLIC_BACKUP` goes on, and GF at the latest [E for GF] | B5, C7 |
 | G-13 | `audit_events.detail`, `deletion_requests.receipt`, `policy_acceptances.context` bounded by size only. Key allowlist first (`privacy` lists the keys), then the migration | `privacy` (keys), data-architect (migration) | before audit rows enter any export; GF [E] | B8 |
-| G-23 | No permanent purged-id guard after day 60 (`SCPRG` absent: `grep` of `supabase/` finds none). From day 61 a stale phone can re-insert a deleted letter, because `entries_not_purged` reads `purge_ledger` only (`20261004100000:116-126`) and housekeeping deletes ledger rows older than 60 days (`20261108020000:217`). Design in 8.2 | data-architect | migration written now, not applied until counsel and the privacy chief approve the retention wording; GF [E] | C5 |
+| G-23 | No permanent purged-id guard after day 60 (`SCPRG` absent: `grep` of `supabase/` finds none). From day 61 a stale phone can re-insert a deleted letter, because `entries_not_purged` reads `purge_ledger` only (`20261004100000:116-126`) and housekeeping deletes ledger rows older than 60 days (`20261108020000:217`). Design in 8.2 | data-architect | design only; written after the founder says start; not applied until counsel and the privacy chief approve the retention wording; GF [E] | C5 |
 | G-24 | `security_events` store absent; four audit actions are allowed by the check at `20261002020000:315-320` but no function writes them. Both are in 02i (S6, S7) | data-architect | GF | C3 |
 | G-25 | The data map is hand-kept; `docs/legal/DATA_CLASSIFICATION.md` is a year behind (G-1). Generate, do not revive PR #37 (8.6) | data-architect (generator), `privacy` (levels) | G10 [E] | CDO return, 01a Q-1 |
 | G-26 | `insights_reader` is granted to `authenticator` (`20261004300000:35-37`); only `service_role` runs the weekly report. Drop it in the next migration pack (02i S9) | data-architect | GF [E] | C9 |
@@ -122,7 +122,7 @@ The two sweeps (G-3, G-5) are not built; each has its default in the table.
 
 ### 8.2 G-23: the purged-id guard (C5)
 
-Direction is ruled (C5): a keyed hash of the id, never a raw list. Counsel and the privacy chief read the retention wording before any apply; engineering may write the migration now.
+Direction is ruled (C5): a keyed hash of the id, never a raw list. Counsel and the privacy chief read the retention wording before any apply; this is design only: the migration is written after the founder says start, and applied only by the founder.
 
 - Why a hash: a permanent table of deleted letter ids outlives the account. It is a retention promise that D-111 (erasure records kept until the book or account is deleted) does not cover, and device ids are UUIDv7, so a raw id carries a creation time [CDO return, C5; the UUIDv7 point is [E], not re-read in code here].
 - Shape (PROPOSED, in 02i S8): one table, one column of 16 bytes (HMAC of the id under a function secret, held by the purge function only), no person id, no book id, never joined to another table, no role holds a grant. `entries_not_purged` and the book purge check consult it as well as `purge_ledger`.

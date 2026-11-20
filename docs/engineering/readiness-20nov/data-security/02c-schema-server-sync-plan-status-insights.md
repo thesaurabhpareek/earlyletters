@@ -366,7 +366,7 @@ Sync bookkeeping, the plan status the phone reports, and the aggregate schema `i
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-c1: AGREE, as built and labelled L3; conflict C-2 goes to `privacy` and counsel.
 - Q-c2: AGREE, rows live with the account; give `subscription_report_rates` windows an age sweep (G-6, G10 [E]).

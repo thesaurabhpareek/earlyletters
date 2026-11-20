@@ -305,7 +305,7 @@ Tables behind the encrypted recording backup (migration `20261023000000_backup_s
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-d1: B7 COUNSEL, periods stay "as built, not approved". CDO return: keep 24 months as built (a shortened log is evidence gone for good); the record recommends building the unwrap log at 12 months to match D-021 before apply. These two differ; Karma routes it, and I do not choose. Conflict C-7 stands.
 - Q-d2: AGREE (CDO return): list the 60-day ops-ledger copy in 06 as a named exception to "deleted with the account".

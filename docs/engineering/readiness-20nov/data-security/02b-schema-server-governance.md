@@ -267,7 +267,7 @@ Tables that record what happened, delete what must go, hold what must stay, and 
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-b1: COUNSEL (B7). Default stands: released holds are kept until counsel names a period (G-5).
 - Q-b2: AGREED, no audit screen (B8). Correct the sentence in `DATA_CLASSIFICATION.md` section 2 (founder merge); add no grant. Rows enter the export only after the `detail` key allowlist ships and only the requester's own rows (a removal row names another person).

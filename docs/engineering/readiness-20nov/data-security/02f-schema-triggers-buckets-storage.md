@@ -97,7 +97,7 @@ Three buckets are created by migrations [V: `storage.buckets` after all 31 files
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-f1: RULED (C4), and the timing is firmer than the default: S1 ships before the first outside family (GF) and together with photo slices #835 to #840, not only before `EXPO_PUBLIC_PHOTOS` goes on, because the write path exists in every build, flag or not. Applying it is the founder's step (`approve-migration`). B3 ("not built") is not yet true while the two policies are live [V: `20261028000000:88-99`]. Gap G-9.
 - S1 must be tested on a database built from all files and on the A2 path: on a project that holds only files 1 and 2 the live policies are the original, weaker ones. Whether Supabase allows a trigger on the `storage` schema is [U]; confirm before writing it (CDO return). Delete stays (own folder); a removed member can still delete objects in their own folder; low harm, recorded.

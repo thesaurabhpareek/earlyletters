@@ -222,7 +222,7 @@ The 44 functions in `supabase/tests/grants.mjs:18-33` (`SERVICE_ROLE_FUNCTIONS`)
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-e1: AGREE (CDO and CISO returns). `AUTHENTICATED_FUNCTIONS` in `supabase/tests/grants.mjs`, owner `qa`. Every new function in 02i (S6 to S8) carries its grant in `grants.mjs`, per CLAUDE.md.
 - Q-e2: AGREE. `sync_push` stays invoker.

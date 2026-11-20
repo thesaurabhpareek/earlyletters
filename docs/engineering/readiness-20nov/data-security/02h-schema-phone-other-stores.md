@@ -111,7 +111,7 @@ Retention: jobs until confirmed and the letter is gone, restore items until done
 
 ### Council answers (20 Nov 2026)
 
-Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
 
 - Q-h1: RULED (B5): `upload_token` moves to the Keychain (this-device-only class); `sync` and `security-architect` confirm the item class. [V] it is a plain column today (`backup/local-db.ts:79`).
 - Q-h2: RULED (B5): exclude `backup-<id>.db` from the device backup (on existing installs too), delete it on Erase and on sign-out of that account, add a test that fails if the file is created without the flag, and the preflight gate (01a 8.5, G-11). Recovery export does not copy it [V, `recovery-export.logic.ts:33-42`]. Classification stays PROPOSED L4 until `privacy` rules.
