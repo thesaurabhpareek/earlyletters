@@ -92,6 +92,17 @@ Escrow design check: the escrow project holds the private key but has no main-da
 
 `EXPO_TOKEN` (robot users per lane), App Store Connect keys per lane (`ASC_API_KEY_*`), `ASC_REVIEW_CONTACT_JSON` (personal data, not a credential), `PACKS_S3_*` (R2 token, one bucket), `BACKUP_DB_URL` and the age recipient (private backup repository), `PUBLIC_REPO_ISSUES_TOKEN`. Agents: `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `AGENTS_APP_PRIVATE_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`. Names found in `.github/workflows` by `grep secrets\.`: 12 distinct (`SUPABASE_*` 6, `EXPO_TOKEN`, `ANTHROPIC_API_KEY`, `OPENROUTER_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, `AGENTS_APP_PRIVATE_KEY`, `ASC_REVIEW_CONTACT_JSON`). [V] No workflow reads a Supabase secret key, a Resend key, an APNs key or a PostHog key.
 
+Founder-shell variables for `scripts/ops` (exported for one session, never in a dotfile in the repo; `SECURITY.md:62-67`). Values never appear anywhere:
+| Name | Class | Purpose | Holder and reader | Cite |
+|---|---|---|---|---|
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | P, S | the one project an ops script acts on (the secret key, same as 2.1) | founder shell; `scripts/ops/verify-deletion.ts`, `enumerate-affected.ts`, `restore-drill.ts` | `SECURITY.md:64` |
+| `PROD_SUPABASE_URL` | P | production project URL, restore drill read side | founder shell; `restore-drill` | `SECURITY.md:66` |
+| `PROD_SERVICE_ROLE_KEY` | S | production secret key for the restore drill, read side only | founder shell; `scripts/ops/restore-drill.ts` | `SECURITY.md:66` |
+| `LIMITS_DB_URL` | S | session-pooler URL for the least-privilege backup role `scribe_backup` for the free-tier limits check | founder shell, or the private backup repository's CI | `scripts/ops/free-limits.ts:5` |
+| `RESTORED_DB_URL` | S | connection to a restored copy (local, `sslmode=disable` is allowed only for localhost) used by the restore check; the copy holds real data, so treat it as L4 | founder's Mac only | `scripts/ops/restore-check.ts:5` |
+| `OPS_OPERATOR` | I | staff handle written to `ops.audit_log` for each run | founder shell | `SECURITY.md:65` |
+Rules: these point at production data or the production secret key, so they never go in CI, a script default or an agent session; a run without `--project-ref`, `--ticket` and an audit row is refused (`SECURITY.md:115`).
+
 ### 2.7 Held only by the founder
 
 Apple Sign in `.p8`; Apple Developer and App Store Connect; Supabase organisation; Vercel, Porkbun, Resend, PostHog, GitHub, Expo, Google Cloud accounts; the password manager; the escrow ceremony paper bags. All with two-factor and offline recovery codes; founder the only member (`SECURITY.md:117,139`). [V doc]. Second-person recovery is open (SEC question 4, `back-office.md:189`).
@@ -177,6 +188,8 @@ Exposed schemas are `public` only (`SECURITY.md:124`); `ops`, `insights`, `sync_
 
 ### 5.3 Website `earlyletters.com` (Vercel, Next.js)
 
+Every route under `apps/web/src/app` is listed (checked by `find`, 20 Nov); the lab pages `/lab/*` are in the last row.
+
 | Route | Caller | Auth | Limits | Notes |
 |---|---|---|---|---|
 | `POST /api/notify` | visitors | none | 5 per client per 10 minutes and 60 provider calls a minute per instance (in memory, a backstop); honeypot; time on page at least 1.5 s; JSON only; same-origin | stores one address in a Resend segment (L3). The real control is a Vercel WAF rule, **not verified** (`rate-limit.ts:1-10`, G-04-07) |
@@ -184,6 +197,11 @@ Exposed schemas are `public` only (`SECURITY.md:124`); `ops`, `insights`, `sync_
 | `/auth/callback`, `/auth/confirm`, `/j` (and `/a`, `/i`, `/r`, which `next.config.ts:57` lists but `apps/web/src/app` does not contain) | people with a link | the secret is in the URL fragment | `Referrer-Policy: no-referrer` on those paths (`next.config.ts:111-113`) | `additional_redirect_urls` allows exactly one URL, no wildcard (`config.toml:39`) |
 | `/.well-known/apple-app-site-association` | Apple, apps | none | primary domain only | public |
 | Headers on every page | n/a | n/a | CSP with `frame-ancestors 'none'`, HSTS 2 years, `nosniff`, `X-Frame-Options DENY`, camera, microphone, geolocation off (`next.config.ts:29-52`) | CSP allows `'unsafe-inline'` scripts; documented reason `:20-25` |
+| `/` (landing), `/signup/thanks`, `/signup/already`, `/signup/sorry` | visitors | none | static pages; `/signup` disallowed to crawlers (`robots.ts:8`) | marketing copy and the result of the form; no address echoed |
+| `/open` | people following an email link | none | no token, no analytics, no request on load, never indexed (`open/page.tsx:1-9`) | fallback page: "Open the app" link, App Store link only in launch mode |
+| `/privacy`, `/terms`, `/support` | anyone | none | static, indexable | L1 legal and help text |
+| `/legal/[doc]/0.9.0` and `/legal/[doc]/0.9.0.md` | anyone, the app, the deploy smoke | none | `force-static`, `dynamicParams = false` (only known docs and version) | published text; the raw bytes match `policy_versions.content_sha256` (`0.9.0.md/route.ts:1-4`) |
+| `/favicon.ico`, `/apple-icon`, `/robots.txt`, `/sitemap.xml` | browsers, crawlers | none | static | L1; robots disallows `/lab`, `/api`, `/unsubscribe`, `/signup` (`robots.ts:8`) |
 | `/lab` | founder | none | 404 in production unless `ENABLE_LAB=1` at build | `next.config.ts:18` |
 
 ### 5.4 Outbound paths (what leaves our servers, and to whom)
