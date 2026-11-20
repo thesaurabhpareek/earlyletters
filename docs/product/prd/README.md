@@ -25,6 +25,7 @@ Start with `docs/product/VISION.md`, then `00-product-frame.md` (how we choose, 
 | `13-engineering-plan.md` | sizes, skills, order, dependencies (Karma) | for the harness |
 | `14-test-plan.md` | priorities, levels, journeys J-N1 to J-N27, device matrix, store-build gate | for `qa` |
 | `15-council-review.md` | what the council found and how each was answered | record |
+| `17-engineering-project-plan.md` | task-level plan: one row per backlog row and open PR, dependency graph, critical paths to Builds 13 to 15, capacity, device batches, risks, mismatches (Karma, 20 Nov) | for the harness |
 
 ## Added 20 Nov 2026: founder direction, errata, from download to first letter, days and Home today
 
