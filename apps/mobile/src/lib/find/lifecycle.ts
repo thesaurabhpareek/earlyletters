@@ -48,11 +48,13 @@ interface State {
   ready: boolean | null;
   /** A write to the index failed in this process: queries use the scan until the next catch-up rebuilds it. */
   degraded: boolean;
+  /** A rebuild is under way (rebuild.ts, R35): queries use the scan until it finishes. */
+  building: boolean;
 }
 const states = new WeakMap<SqlDb, State>();
 const stateOf = (db: SqlDb): State => {
   let s = states.get(db);
-  if (!s) states.set(db, (s = { fts5: null, ready: null, degraded: false }));
+  if (!s) states.set(db, (s = { fts5: null, ready: null, degraded: false, building: false }));
   return s;
 };
 
@@ -75,13 +77,16 @@ export function fts5Available(db: SqlDb): boolean {
   return s.fts5;
 }
 
-/** Whether the index table is on this phone and trusted (a failed write in this process makes it untrusted). */
+/** Whether the index is there and trusted for queries and writes in this process (R19, R44). */
 export function searchIndexExists(db: SqlDb): boolean {
   const s = stateOf(db);
-  if (s.degraded) return false;
-  if (s.ready === null) s.ready = db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name = '${SEARCH_TABLE}'`) !== null;
-  return s.ready;
+  if (s.degraded || s.building) return false;
+  // Trusted only once a catch-up has finished in this process: a rebuild killed partway leaves a partial table on the
+  // phone, and the next process must not read it (review A on #885). Until then writes skip it and the scan answers.
+  return s.ready === true;
 }
+
+const tableExists = (db: SqlDb): boolean => db.get<{ n: number }>(`SELECT 1 AS n FROM sqlite_master WHERE name = '${SEARCH_TABLE}'`) !== null;
 
 function markDirty(db: SqlDb): void {
   db.run('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)', FIND_DIRTY_SETTING, new Date().toISOString());
@@ -141,13 +146,21 @@ export function reconcileSearch(db: SqlDb): number {
   }
 }
 
-function reconcileStrict(db: SqlDb): number {
+/** At most `limit` letters (all with -1) brought in line; each pass re-reads what differs, so it can run in batches. */
+function reconcileStrict(db: SqlDb, limit = -1): number {
   const w = indexableWhere(db);
-  const gone = db.all<{ id: string }>(
+  let left = limit;
+  const take = <T>(sql: string, ...args: string[]): T[] => {
+    if (left === 0) return [];
+    const rows = db.all<T>(`${sql} LIMIT ?`, ...args, left);
+    if (left > 0) left -= rows.length;
+    return rows;
+  };
+  const gone = take<{ id: string }>(
     `SELECT m.entry_id AS id FROM ${SEARCH_ROWS_TABLE} m LEFT JOIN ${SEARCH_VIEW} v ON v.id = m.entry_id AND ${w.sql} WHERE v.id IS NULL`,
     ...w.args,
   );
-  const todo = db.all<{ id: string }>(
+  const todo = take<{ id: string }>(
     `SELECT v.id AS id FROM ${SEARCH_VIEW} v
        LEFT JOIN ${SEARCH_ROWS_TABLE} m ON m.entry_id = v.id
        LEFT JOIN ${SEARCH_TABLE} f ON f.rowid = m.row_id
@@ -157,7 +170,7 @@ function reconcileStrict(db: SqlDb): number {
   for (const r of gone) reindexOne(db, r.id, w);
   for (const r of todo) reindexOne(db, r.id, w);
   // Index rows that no map row points at (a kill part way through an older build): remove them.
-  const orphans = db.all<{ rowid: number }>(`SELECT rowid FROM ${SEARCH_TABLE} WHERE rowid NOT IN (SELECT row_id FROM ${SEARCH_ROWS_TABLE})`);
+  const orphans = take<{ rowid: number }>(`SELECT rowid FROM ${SEARCH_TABLE} WHERE rowid NOT IN (SELECT row_id FROM ${SEARCH_ROWS_TABLE})`);
   for (const o of orphans) db.run(`DELETE FROM ${SEARCH_TABLE} WHERE rowid = ?`, o.rowid);
   if (orphans.length > 0) markDirty(db);
   return gone.length + todo.length + orphans.length;
@@ -190,35 +203,66 @@ function integrityOk(db: SqlDb): boolean {
 export type EnsureResult = 'ready' | 'unavailable';
 
 /**
- * Creates the index when it is missing, checks it, and catches it up with the letters. Not a migration: it is
- * recreated empty after Erase everything, must never stop the app opening, and may be absent with Find off. Never
- * throws: where FTS5 is missing or the index cannot be made it returns 'unavailable' and the scan serves (R19).
+ * Rebuild, step 1: makes the index when it is missing, failed its check or is untrusted, and marks it unusable for
+ * queries until `finishRebuild`, so the scan answers meanwhile (R19). False where FTS5 is missing or the index cannot be
+ * made. Never throws. Not a migration: it is recreated empty after Erase everything and may be absent with Find off.
  */
-export function ensureSearchIndex(db: SqlDb): EnsureResult {
+export function startRebuild(db: SqlDb): boolean {
   const s = stateOf(db);
-  if (!fts5Available(db)) return 'unavailable';
+  if (!fts5Available(db)) return false;
   try {
     ensureSearchView(db);
     const trusted = !s.degraded;
     s.degraded = false;
-    if (!searchIndexExists(db) || !trusted || !integrityOk(db)) {
-      // A missing, failed or untrusted index is dropped whole and made again; the catch-up below fills it.
+    s.building = true;
+    if (!tableExists(db) || !trusted || !integrityOk(db)) {
       db.exec(`DROP TABLE IF EXISTS ${SEARCH_TABLE}`);
       db.exec(`DROP TABLE IF EXISTS ${SEARCH_ROWS_TABLE}`);
       db.transaction(() => {
         create(db);
         db.run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', FIND_SECURE_SETTING, enableSecureDelete(db) ? '1' : '0');
       });
-      s.ready = true;
     }
-    db.transaction(() => {
-      reconcileStrict(db);
-    });
+    return true;
+  } catch {
+    abandonRebuild(db);
+    return false;
+  }
+}
+
+/** Rebuild, step 2: brings at most `limit` letters in line in one transaction (-1: all). Returns how many moved; 0 is done. */
+export function rebuildStep(db: SqlDb, limit: number): number {
+  let moved = 0;
+  db.transaction(() => {
+    moved = reconcileStrict(db, limit);
+  });
+  return moved;
+}
+
+/** Rebuild, step 3: queries may use the index again. */
+export function finishRebuild(db: SqlDb): void {
+  const s = stateOf(db);
+  s.building = false;
+  s.ready = true;
+}
+
+/** A rebuild that failed: the scan keeps answering and the next catch-up tries again. Nothing here may stop the app. */
+export function abandonRebuild(db: SqlDb): void {
+  const s = stateOf(db);
+  s.building = false;
+  s.ready = null;
+  s.degraded = true;
+}
+
+/** The whole rebuild in one transaction: tests and small books. The app uses rebuildSearchIndex (rebuild.ts, R35). */
+export function ensureSearchIndex(db: SqlDb): EnsureResult {
+  if (!startRebuild(db)) return 'unavailable';
+  try {
+    rebuildStep(db, -1);
+    finishRebuild(db);
     return 'ready';
   } catch {
-    // Nothing here may stop the app. The scan still answers, and the next launch tries again.
-    s.ready = null;
-    s.degraded = true;
+    abandonRebuild(db);
     return 'unavailable';
   }
 }
