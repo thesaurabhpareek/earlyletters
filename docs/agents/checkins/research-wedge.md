@@ -1,0 +1,1 @@
+21:50 (10 Nov) research-wedge | done: FEATURE-GAP-AND-WEDGE-10nov.md (12 competitors read, feature table, NX-42 gaps, 5 wedges, recommendation) | next: draft PR, founder questions | blocked/needs: none
