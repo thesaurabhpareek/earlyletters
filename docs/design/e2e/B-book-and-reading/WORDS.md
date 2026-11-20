@@ -497,3 +497,23 @@ Lines that make a promise to a parent, and the card Claims section (or ruling) t
 | `en.readTogether.endOfBook` "That is every letter in the book." | Read together read them all | true of what it reads (in-book letters with words); private, sealed and waiting letters are not in the book's reading (NS-24-R3) |
 
 Nothing here promises a backup of pictures, "safe forever", "free forever", a count, or that the app understands a picture or a letter.
+
+## 25. v2 additions from the final pack (20 Nov; all PROPOSED, intent for `content`, founder approves)
+
+Words rules: "reminder" for anything the app sends, never "note"; "slip", never "strip"; no exclamation mark; no count; no "journal", "memory", "moment", "on this day". Strings below are intent, not final copy.
+
+| Key (PROPOSED) | Intent | Where | Row |
+|---|---|---|---|
+| `en.book.more.printRow` | "A book to hold" | B-S02.printOn (absent when the print flag is off) | FR-PRT-16 |
+| `en.book.fromName.fixed` | One plain line: the name on this letter cannot be changed here; the letter can be deleted | B-S08.fromNameFixed | FR-PRV-22 |
+| `en.book.fromName.changeTitle` | A short title for the name sheet | B-S08.fromNameChange | FR-PRV-22 |
+| `en.seal.limitNever` | It is never sent to anyone while it is hidden | B-S13, fourth footnote line; counsel reads | FR-LEG-06 |
+| `en.book.media.add` | "Add a photo or video" | B-S08 media row (round 2) | direction 26 |
+| `en.book.media.atLimit` | One calm line, no number | B-S08 where the row was | direction 26 |
+| `en.book.media.video` | "Video with this letter" (VoiceOver fallback) | B-S08, B-S04 | direction 26 |
+| `en.book.media.deleteLine` | Its pictures and videos wait in Recently deleted with the letter | B-S15.confirm | direction 26 |
+| `en.book.media.downloading` | "Getting it from iCloud." | B-S08.mediaDownloading | direction 26 |
+
+No string exists for a day in the Book, because the Book shows none (DESIGN section 12a). No string describes a picture (constitution). The slip words for a day are Home's (`days.landing.*`, area A and NS-46).
+
+Claims check: nothing here makes a public promise beyond the card's; "never sent to anyone while it is hidden" is a promise and stays inside NS-06-B12 once counsel has read it (FR-LEG-06).

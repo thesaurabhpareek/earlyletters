@@ -212,3 +212,55 @@ No `H-success` in this area: it belongs to Keep (area A). No haptic while a lett
 | E12 | BL-947 or the Read together owner; v2 ENG-M13 | `EndOfBook` draws the moon complete (`LineArt animate={false}`); the dusk pool on `lamp.returnMs` (P3) |
 | E13 | v2 ENG-M13 | Retire the Book `Settle` (B-M01) |
 | E14 | BL-954 or BL-957 (picture on the letter page) | The viewer as a `fullScreenModal` with `m.cover` (P2) |
+
+---
+
+## 15. Final-pack reconciliation (v3, 20 Nov): new and changed states
+
+Re-keyed to DESIGN.md v2 (sections 11 to 14). New moments are B-M50 and up; every one names its `m.*` primitive, its `T-*` row, its Reduce Motion behaviour and what must never move. Nothing here implies a streak, a count or a ceremony. The design-system v2 names are those of section 4 and 6 of `docs/design/system/MOTION.md`.
+
+| Id | Design ids | Trigger | v2 | What moves | Timing | Reduce Motion | Haptic | Never |
+|---|---|---|---|---|---|---|---|---|
+| B-M50 | B-S17.higherSlip; B-S17.default | Home opens and a higher rank (1, 2, 2b, 3, 3b) is due, so the past letter is absent; or the higher slip is dismissed and the past letter would now be next | `m.instant` | Nothing. The past letter is not drawn and no space is kept; after a dismissal the next slip is chosen at the next Home visit (a render cause), never under the eye | 0 | same | none | No swap of one slip for another while Home is on screen; no "next up" cue; nothing that implies a queue or a count of slips |
+| B-M51 | B-S01.dayToday | A day the parent chose is today | none | Nothing in the Book. The day exists on Home only (DESIGN section 12a) | 0 | same | none | No tint, badge, glow or label on any card or opener for a day |
+| B-M52 | B-S08.fromNameChange | The author taps the From name | T-SHEET, `m.sheet`; `m.swap` | A fit-to-contents sheet rises; on Done the dateline's name changes with `m.swap` (cross-fade of the value only) | system; swap 200 | sheet system reduced; swap `m.fade` 200 | none (a setting, v2 section 9) | The letter's words never move or flash |
+| B-M53 | B-S08.fromNameFixed | The page opens for an author's letter with a fixed name | `m.instant` | The footnote is there from the first frame | 0 | same | none | No fade-in of a caution; it is information, not an alert |
+| B-M54 | B-S02.printOn | "More for this book" opens with the print flag on | T-MENU (target) or `m.sheet.own` (interim) | The third row is there when the menu opens; nothing is staggered. Tapping it opens PRT-S01 as a sheet (T-SHEET) over the closing menu in one hand-off | menu system; sheet system | menu and sheet system reduced | none | No pulse, badge or "new" on the row |
+| B-M55 | B-S01.ratingMoment | Apple's rating request is shown | none of ours | Apple's own sheet, entirely the system's | system | system | none from us | Nothing of ours animates before, with or after it; no thank-you, no confetti |
+| B-M56 | B-S13.default to `.daySelected` | A day is chosen in the picker | `m.instant` | The "Hide it" button is present at full strength from its first frame once a day is chosen (absent before, B G-12); the system picker moves itself | 0 | same | none | The button never fades or springs in; no ceremony on choosing |
+| B-M57 | B-S18 "Not now" | The seal-opened line is dismissed | `m.list.remove` | As B-M39: the card fades with `m.exit`, what sits below closes up with `m.move` | exit 160; move `spring.standard` | exit 160; close-up at once | none | No reveal, farewell or "you can find it in the Book" cue |
+| B-M58 | B-S08.withPicture (a picture letter however it began) | The page opens | as B-M24, B-M30 | Exactly what any picture letter does; a picture that began from Apple's suggestions is not told apart by motion | as B-M30 | as B-M30 | none | No difference in motion, label or timing between a photo start, a suggestion start and an added photo |
+| B-M59 | Any screen of this area, `.backgrounded` | The app goes inactive | `m.instant` (privacy) | Letter words, pictures and fragments are covered by an opaque blank in one frame; on return the content is already there | 0 | same | none | Never a fade that would let the snapshot catch a half-covered letter (FR-SEC-22) |
+
+Added to section 9 (what never animates): a ticked or typed day anywhere in the Book (B-M51); the choice of one slip over another (B-M50); the rating request (B-M55); the origin of a picture (B-M58).
+
+Haptics added to section 8: none. B-M52 and B-M56 take none (settings and navigation).
+
+Reduce Motion check for the new rows: every row above is either `m.instant`, system, or a 200 ms fade; none depends on travel.
+
+Gaps: MOTION-PROTOTYPE.html is not updated in this pass (the new moments are `m.instant` or system, so there is nothing to play beyond the existing scenes); a scene for B-M57 would reuse B-M39. Engineering: BL-963 must make the slip swap happen at a render cause only (B-M50).
+
+---
+
+## 16. Round 2 additions (20 Nov, founder direction 26): several pictures and videos, moments
+
+Keyed to DESIGN.md section 15. Ids B-M60 and up, PROPOSED, flagged: the cards NS-51 and NS-52 (`27-photo-moments-and-media.md`) did not exist when this was written, so rows are keyed by card name. Reading is still: nothing autoplays, loops, slides or counts.
+
+| Id | Design ids | Trigger | v2 | What moves | Timing | Reduce Motion | Haptic | Never |
+|---|---|---|---|---|---|---|---|---|
+| B-M60 | B-S08.withMedia, `.withVideo` | The page opens | as B-M24, B-M30 | The page's items arrive with the rest of the page (`m.enter` from 60 percent); a picture decoded before mount shows at once; a poster arrives in its reserved box with `m.fade` only if it decodes after mount | 200 | shows at once | none | No stagger per item, no shimmer, no blur-up, no count |
+| B-M61 | B-S08 video, Play | The parent taps Play on a poster | system player | The system player takes over in place; the poster is replaced by the player's first frame without a cross-fade of ours | system | system | none | No autoplay, no loop, no preview on scroll, no sound until the tap |
+| B-M62 | B-S08 video and recording | One audio starts while the other plays | `m.instant` | The first pauses; no visual cue beyond its control's state | 0 | same | none | No ducking animation |
+| B-M63 | B-S26 viewer open and close | Tap an item; Close | T-COVER, `m.cover`, `m.glass` (as B-M49) | As B-M49 for the first item | 280 | `m.fade` 200 | none | No zoom of the words; the picture's scale is not animated |
+| B-M64 | B-S26 between items | Swipe, Back, Next | system paging | The system's own; the 35 percent dim stays | system | system reduced (a fade) | none | No parallax, Ken Burns or counter animation |
+| B-M65 | B-S08 add an item, take off one, Undo | The row result | `m.enter`, `m.list.remove`, `m.list.insert` | An added item enters with `m.enter`; a removed item leaves with `m.exit` then the rest close up with `m.move`; Undo re-inserts it where it was | 160 to 280 | fades only, close-up at once | none (v2 section 9: media changes take none) | No "added" celebration, count or progress fill |
+| B-M66 | B-S08.mediaDownloading | An iCloud-only item is opened | `m.instant` | One still line and a Cancel; when the file arrives the item is shown at the next render with `m.fade` 200 | 0, 200 | at once | none | No spinner loop, no determinate fill, no percentage |
+| B-M67 | B-S08 at the media limit | The last allowed item is added | `m.instant` | The add row is absent at the next render; the calm line is there from its first frame | 0 | same | none | No disabled state, no shake |
+| B-M68 | B-S04 Photos lens, a video card | The lens shows a video letter | `m.instant` | The Play glyph is part of the card from its first frame | 0 | same | none | No overlay animation, no duration counter |
+| B-M69 | Photo moments (NS-51) in the Book | A moment exists on Home | none | Nothing in the Book (DESIGN section 15d) | 0 | same | none | No tint, mark, lens or message in the Book for a moment |
+| B-M70 | B-S15.confirm with media; delete | Delete a letter that holds media | T-ALERT, `m.list.remove` | As B-M34: the confirm is the system's; the card leaves the Book with `m.list.remove`; its media leave with it, not one by one | system; 160 | fade, close-up at once | `H-warning` at the commit (as B-M34), once | No per-item fly-away, no count of what was removed |
+| B-M71 | Any screen here, `.backgrounded` with video | The app goes inactive | `m.instant` | A playing video pauses; posters and pictures are blanked in one frame | 0 | same | none | No fade that lets a snapshot catch a frame |
+
+Added to section 9 (what never animates): autoplay or looping of any video; a slideshow, carousel or Ken Burns of a letter's media; a download or upload progress fill; a count of media; a moment in the Book. Haptics: none added except the existing `H-warning` on a confirmed delete (B-M70).
+
+Engineering gaps: BL-954 (the Undo helper for per-item media), BL-931 and its media successor (a `VideoPoster` with the system player; one audio session rule); no row exists yet for the media limit footnote. MOTION-PROTOTYPE.html is not updated for round 2 (no scene is needed: every row is `m.instant`, a 200 ms fade or the system's).
