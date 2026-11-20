@@ -199,7 +199,7 @@ The harness learns which questions are worth asking by looking at what it asked.
 5. Prune (see "Keeping context small").
 6. Post a short retro entry in the harness lessons file (below). Karma reads it.
 
-**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 82 errata rows (E1 to E82) after the lock, and 157 closure rows (CL-001 to CL-157; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
+**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 83 errata rows (E1 to E83) after the lock, and 158 closure rows (CL-001 to CL-158; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
 
 | Metric | How to count it | What a bad trend means |
 |---|---|---|
@@ -267,6 +267,6 @@ Owners are the harness owner (Karma, under D-132) for `scripts/agents/`, the ros
 - I did not run `scripts/agents/handoff.mjs`, `dispatch.mjs` or `ledger.mjs`. Their behaviour here comes from `AGENT-COMMS.md`, `OPERATING_MODEL.md` and a read of label handling in `scripts/agents/lib.mjs`. A `req-question` kind does not exist yet; until it does, use kind `question` and the comment tag.
 - I did not check whether the digest or board already carry a requirements field.
 - I did not verify any law, Apple rule or vendor term. This file makes no legal claim.
-- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E82 and the closures CL-001 to CL-157 and check that each lands in a sensible class.
+- The class rule is untested on live questions. The first retro should replay it on the errata rows E1 to E83 and the closures CL-001 to CL-158 and check that each lands in a sensible class.
 
 Sources read this session: `docs/agents/COORDINATION.md`, `AGENT-COMMS.md`, `OPERATING_MODEL.md`, `HARNESS.md` (headings and board and digest references only), `.claude/skills/early-letters-cto/SKILL.md` sections 1, 3, 10, 10a, `docs/agents/exec/COUNCIL.md`, `18-errata-after-lock.md`, `22-final-holistic-spec.md` sections 9 and 10, `GAP-LOG.md` "Closures 20 Nov", `FOUNDER-MESSAGES-VERBATIM.md`, `README.md` of this folder.
