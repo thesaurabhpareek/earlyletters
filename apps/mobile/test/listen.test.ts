@@ -344,7 +344,7 @@ describe('a long take does not grow memory (#480)', () => {
 });
 
 describe('[BL-924] Discard on Listen runs Let it go, as Review does', () => {
-  it('[BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
+  it('[NS-09-R3][BL-924] the confirmed Discard calls letItGo with the steps the disk test runs, and nothing else in Listen deletes a file or a draft', () => {
     const c = code(listen);
     const onConfirm = c.slice(c.indexOf('const discard = () =>'), c.indexOf('const typeInstead ='));
     // Behaviour of these exact steps (a delete that throws, a file already gone): test/sweep.disk.test.ts [BL-924].
