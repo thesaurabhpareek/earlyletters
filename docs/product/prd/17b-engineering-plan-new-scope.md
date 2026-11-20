@@ -108,4 +108,4 @@ The three stacks add about 88 PRs. At 4 passes a PR (17 section 4.2) that is abo
 - No id diff of cards between `450bcb4a` and `88f3a975` (100 files changed under `docs/product/prd`; counted, not read id by id). The new-scope sizes are the designs' sums.
 - Brief README statements about heads and sizes other than #894's merge result (re-run here) were not re-run.
 - Whether `scribe-library` is already used in a brief or design other than the one cited; the CL-115 rows individually.
-- CR-71 (#1018) and the decisions record (#1013) are open and were not read; E74 to E80 and CL-148 to CL-154 (develop `e95733b0`) are not applied. Cites to E62 to E73 were read in `18-errata-after-lock.md` and `GAP-LOG.md` on develop.
+- CR-71 (#1018) and the decisions record (#1013) are open and were not read; E74 to E82 and CL-148 to CL-157 (develop at `e68541dd`) are not applied; the next re-sync pins to product's freeze sha. Cites to E62 to E73 were read in `18-errata-after-lock.md` and `GAP-LOG.md` on develop.
