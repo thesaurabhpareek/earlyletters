@@ -170,6 +170,8 @@ Chief Legal Officer (Claude role, not a lawyer)
 
 ## 8. Sources read this session (20 Nov 2026)
 
+Numbering is shared with `compliance.md` section 8; S4 and S6 to S8 are listed there.
+
 | # | Source | What it was used for |
 |---|---|---|
 | S1 | Apple App Review Guidelines, https://developer.apple.com/app-store/review/guidelines/ (no last-updated date shown on the fetched text) | 5.1.1(i), (iii), (v); 2.5.19; 2.3.8 quoted in `compliance.md` |
