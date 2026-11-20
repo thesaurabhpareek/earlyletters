@@ -9,7 +9,7 @@ Tags: [V] verified in code or a doc at the cited line, [E] estimate with basis, 
 | # | Rule | Source |
 |---|---|---|
 | R1 | Nothing in this register carries letter words, a transcript, audio, a picture description, a child name (unless the parent turned names on, local only), a due date, a count of letters or gaps, or a streak | CLAUDE.md privacy rules; NS-32-R11, R12; `DATA_CLASSIFICATION.md:69` (L4 never in an email subject or push payload) |
-| R2 | Local notifications are the only reminders. No remote push exists in v1: no `aps-environment`, no token request | `apps/mobile/app.config.ts:98-103` [V]; FR-MSG-16; CL-064 |
+| R2 | Local notifications are the only reminders. No remote push exists in v1: no `aps-environment`, no token request | `apps/mobile/app.config.ts:103-106` [V]; FR-MSG-16; CL-064 |
 | R3 | One budgeted notification a day, 60 pending in total, plan notices first inside the 60 | NS-32-R1; E13; CR-69 A1; CL-115 |
 | R4 | Email is for what a person needs to know or keep: receipts of a data act, sign-in, a legal notice. No drips, no win-back, no countdowns, no marketing in v1 | `docs/emails/CATALOG.md:10, 14` (principles 1 and 5), `:153-174` (never list); FR-MSG-22 |
 | R5 | Every send has an idempotency key (event, subject id, period) and is never re-sent because it was not opened; we do not know if it was opened (no tracking pixel, no click tracking) | `CATALOG.md` principle 2; `packages/emails/README.md:3` [V] |
@@ -36,7 +36,7 @@ Dormant keys that exist and are not sent: `en.notifications.gentleReturn` (plann
 
 ## 3. Push (remote, from our server)
 
-There is no remote push in v1 [V: entitlement stripped `app.config.ts:98-103`; no token request in `apps/mobile/src`, grep 20 Nov]. The shapes exist only as contracts.
+There is no remote push in v1 [V: entitlement stripped `app.config.ts:103-106`; no token request in `apps/mobile/src`, grep 20 Nov]. The shapes exist only as contracts.
 
 | ID | Message | Status | Trigger | Data in the payload | Consent | Budget | Notes |
 |---|---|---|---|---|---|---|---|
@@ -48,7 +48,7 @@ If remote push is ever decided (the founder's call, not made here; BL-546, NS-26
 
 ## 4. Email (from our servers, Resend, and Supabase Auth)
 
-Sender is always `Early Letters <hello@earlyletters.com>` and never `no-reply@` (`CATALOG.md:16`). Three senders exist as code today [V by grep of `renderForResend`, `supabase/functions`, 20 Nov]: Supabase Auth (six templates, `supabase/templates/`), `purge-worker` (three deletion receipts, `purge-worker/emails.ts:50, 58, 63`) and `escrow` (three recovery key emails, `escrow/restore.ts`, `rotate.ts`). Of the 43 template files in `packages/emails/src/templates`, only these 12 have a sender; the rest have none yet [V].
+Sender is always `Early Letters <hello@earlyletters.com>` and never `no-reply@` (`CATALOG.md:16`). Three senders exist as code today [V by reading `supabase/functions`: `renderForResend` appears only in `purge-worker/emails.ts`; `escrow` mails through its own `mail.ts`, 20 Nov]: Supabase Auth (six templates, `supabase/templates/`), `purge-worker` (three deletion receipts, `purge-worker/emails.ts:50, 58, 63`) and `escrow` (three recovery key emails, `escrow/restore.ts`, `rotate.ts`). Of the 43 template files in `packages/emails/src/templates`, only these 12 have a sender; the rest have none yet [V].
 
 | ID | Message (template id) | Sender and status | Trigger | Data used (level) | Consent and opt-out | Frequency and cap | Quiet hours | Test |
 |---|---|---|---|---|---|---|---|---|
@@ -92,7 +92,7 @@ Global rules (`CATALOG.md:133-139`): at most one non-auth email per address a da
 | Plan notices | 4 pending, 1 message a day | `plan-reminders.logic.ts:48` |
 | Email, non-required | 1 per address per day | `CATALOG.md:135` (no enforcement code found [U]) |
 | Email, sign-in | 1 per address per 60 s, 100 an hour for the project | `supabase/config.toml:54, 70` |
-| Push | 0 | `app.config.ts:98-103` |
+| Push | 0 | `app.config.ts:103-106` |
 
 ## 7. Conflicts found (routed in 07.4 section 4)
 

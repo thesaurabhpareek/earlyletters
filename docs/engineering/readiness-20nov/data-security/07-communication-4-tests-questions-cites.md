@@ -21,7 +21,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | T-01 to T-20 | The twenty tests named in the last column of 07.3 section 2 (LR-01 to LR-20) | LR-01 to LR-20 |
 | T-21 | Given an alert kind and an event, When the sender is called twice with the same key, Then Resend receives one send and the second call returns the first result | 07.2 rule 5; R5 |
 | T-22 | Given Resend times out, When the job retries, Then the key is reused and at most one mail arrives; given a 4xx, Then no retry and an `alert_failed` kind is recorded with no address | 07.2 rule 5 |
-| T-23 | Given 6 alerts to one account in 24 hours, Then 5 send and one summary is queued for the next day; A4 and A7 are never held | 07.2 rule 6 |
+| T-23 | Given 6 low-risk alerts (A2, A7, A8, A9) to one account in 24 hours, Then 5 send and one summary is queued for the next day; given 5 of them already sent, Then a new A1, A3 or A6 still sends at once and is never in a summary; A4 and A5 are never held | 07.2 rule 6 |
 | T-24 | Given any alert render with the Asha fixture, Then the subject has no placeholder and equals the content key, and the body has no IP, place, user agent, token or link that signs in | 07.2 rules 1 to 3 |
 | T-25 | Given a client token (anon or user) calls the alert function URL, Then it answers 401 and writes nothing | 07.2 rule 7 |
 | T-26 | Given a new device id at sign-in for an account that has one earlier device, Then exactly one A1 row is queued; for the first device none; the same device again none | A1 |
@@ -38,7 +38,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Alert: event to queued row | p95 under 200 ms inside the same database call that caused it | Rec [E]: same bar as the local save commit (DATA-REQ-048) because it rides the same transaction; no network call in it |
 | Alert: queued row to provider accepted | p95 under 60 s, p99 under 10 min; a miss pages `ops` | Rec [E]: a takeover warning is only useful soon; the purge worker already runs every 15 minutes (`purge-worker/alerts.ts` header), so alerts get their own 1-minute drain or a database webhook |
 | Sign-in mail | p90 under 30 s | `docs/emails/SECURITY.md` finding on `A-NFR-004` (as read in 3.4) |
-| Rate limits | 5 alert mails per account per 24 h; sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
+| Rate limits | 5 low-risk alert mails per account per 24 h (A1, A3, A4 to A7 exempt); sign-in 1 per 60 s per address, 100 an hour for the project | 07.2 rule 6; `config.toml:54, 70` |
 
 ## 3. What could not be verified
 
@@ -72,7 +72,7 @@ Status: PROPOSED engineering reference | 20 Nov 2026 | Owner: `sync` | Part 4 of
 | Q-COM-2 | Does a parent get a control to sign out every device, and does it sit in Me, Account? | No new control in v1. Support and the founder use the runbook lever; I5 tells each phone |
 | Q-COM-3 | Are security alerts sent between 21:30 and 07:00? | Yes (exempt), like sign-in mail |
 | Q-COM-4 | In the email-changed notice to the old address, is the new address shown in full or masked? | Masked (first letter and domain) |
-| Q-COM-5 | Does anyone get an email after repeated wrong codes (A2)? | No email. The phone shows the pause line; `ops` is paged by the server count |
+| Q-COM-5 | Does anyone get an email after repeated wrong codes (A2)? | No email. The phone pause line only. A server count per address and a paging job stay an open question for `security-architect` until it is confirmed what Supabase gives (07.2 section 5, gap 2) |
 | Q-COM-6 | Is there an in-app place that echoes an alert after the fact (I9), or is email the only record? | No new screen in v1. The email is the record; I5 and I6 are the only in-app lines |
 
 ### 5.2 Questions for the council (each with a default)

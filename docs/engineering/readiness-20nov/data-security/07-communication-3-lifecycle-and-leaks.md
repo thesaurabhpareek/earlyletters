@@ -22,8 +22,8 @@ For each stage: what may be sent or shown, by which channel, what is forbidden, 
 | S11 | Deletion requested (30 days) | A4 receipt 1; in-app status I6; the other phone shows its line on next contact (FR-LCY-19) | Pressure to stay; an "are you sure" email after the first | Reminders and pending notifications cancelled on this phone at sign-out; the days store and moments index file deleted first (CR-69 A4) | `CATALOG.md:110-112`; FR-LCY-19 |
 | S12 | Deletion cancelled | A4 receipt 2; in-app line | A win-back tone | None | `CATALOG.md:111` |
 | S13 | Deletion executed | A4 receipt 3, sent before the sign-in user is removed; it is the last email to that address; it repeats how to cancel with Apple | Any later email, including billing, policy, or a survey; an alert to the former members except `coparent-left` once | Address removed from any send list; Resend suppression kept only as a hash if needed [U: vendor behaviour] | `CATALOG.md:112`; DATA-REQ-025 |
-| S14 | Service closes | 90 days' notice by email and an in-app line; a final build that still saves a copy | Deleting data before the notice ends | Closing runbook (FR-LCY-24) | `lifecycle-and-platforms.md` FR-LCY-24 |
-| S15 | After the person dies or cannot act | A human reply only; no automated mail | Any promise about access we cannot keep; any automated "memory" mail | None | FR-LCY-27 |
+| S14 | Service closes (input only, unlocked function file FR-LCY-24; not a rule) | 90 days' notice by email and an in-app line; a final build that still saves a copy | Deleting data before the notice ends | Closing runbook (FR-LCY-24) | `lifecycle-and-platforms.md` FR-LCY-24 |
+| S15 | After the person dies or cannot act (input only, FR-LCY-27; not a rule) | A human reply only; no automated mail | Any promise about access we cannot keep; any automated "memory" mail | None | FR-LCY-27 |
 
 ## 2. Leak rules: a message never carries child or family data
 
