@@ -220,13 +220,16 @@ describe('[NX-39-R53][C7] no temporary original survives an interrupted attach',
     expect(files.left()).toEqual([]);
     expect(stored.disk.size).toBe(0);
   });
-  it('[C7] a read that fails also ends with the original removed', async () => {
-    const files = pickedMemory({});
+  it('[C7] a read that fails while the original is still there also ends with the original removed and nothing stored', async () => {
+    const files = pickedMemory({ [URI]: makeJpeg({ exif: true }) });
+    files.read = async () => {
+      throw new Error('io'); // the file is there, but it cannot be read
+    };
     const p = new PendingPhoto(files);
     await p.set({ uri: URI });
-    const { d } = deps();
+    const { d, files: stored, store } = deps();
     expect((await p.commit(d, { entryId: 'e1', finalText: WORDS }))?.status).toBe('failed');
-    expect(files.left()).toEqual([]);
+    expect([files.left(), stored.disk.size, store.all().length, p.source]).toEqual([[], 0, 0, null]);
   });
   it('[C7] a cancel (discard) removes the original, and so does a replace after the Undo window and a take-off after it', async () => {
     let t = 0;
