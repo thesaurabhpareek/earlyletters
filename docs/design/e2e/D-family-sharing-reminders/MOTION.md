@@ -257,3 +257,25 @@ House policy: a haptic marks an outcome, never a navigation. Paper sounds are of
 - Reduce Transparency and Increase Contrast: the lamp is plain paper, so D-M19, D-M48, D-M50, D-M57 and D-M58's light changes do nothing.
 - Smart Invert: the share preview's picture is exempt; nothing in the motion depends on colour.
 - Switch Control: every step change leaves the scan on the first control of the new step; nothing moves while the scanner is on a control.
+
+## 12. Reconciliation with DESIGN.md and WORDS.md
+
+Done against `DESIGN.md` section 3 (state names) and sections 4, 9, 10, and `WORDS.md` section 14, as they stood at the end of this run.
+
+| Topic | Settled as | Where |
+|---|---|---|
+| State names | `DESIGN.md` section 3 is the set this file uses (`D-S02.pictureOff`, `.pictureOn`, `.error-share_temp_write_failed`; `D-S04.default`, `.pickTime`, `.after-yes`, `.after-yes-denied`, `.after-yes-failed`, `.after-no`; `D-S11.home`, `.typedDay`, `.book`, `.plan`, `.appLock`; `D-S17.arriving`, `.slow`, `.joined`; `D-S21.default`, `.kept`, `.error-save_failed`; `D-S22.menu`, `.removed`). My working names from v1 are gone | Section 4 |
+| Share hand-off | The preview fades out (opacity, `exitMs`) as iOS presents its share sheet from the letter page; on any completion the parent is back on the unchanged letter page, focus on Share (`DESIGN.md` G-D01, D-S03) | D-M06, D-M07, G2, E8 |
+| Picture could not be added | Stays on the preview; the line replaces the thumbnail; the toggle returns to off; the next Continue sends words (`DESIGN.md` G-D03) | D-M05 |
+| Reminder ask | Over the Book; two equal answers plus "Change the time" (a control); no "Set reminder"; the picker opens in place (`DESIGN.md` D-S04, G-D04) | D-M28 to D-M33 |
+| Time picker | The system compact picker, not a sheet of ours (`DESIGN.md` D-S07) | D-M40 |
+| Join | Peek and agreement are one sheet, no Continue step; the sign-off field is in `D-S17.joined` (`DESIGN.md` D-S15, D-S16) | D-M15 to D-M17, D-M19 |
+| After an undo, the other parent's phone | One `AppNote` line, once, then absent (`DESIGN.md` D-S20) | D-M27 |
+| Typed-day line | Belongs to the local day, shows whenever Home opens that day (`DESIGN.md` D-S11) | D-M51, G5 |
+| Words | Every message this file names is a `WORDS.md` key; no announcement here carries its own words | Section 4 |
+
+Open differences (for Karma):
+
+1. **Haptic on Continue in the share preview.** `DESIGN.md` D-S02 says "Haptic: `tap` on Continue only", carried from the 11 Nov spec. This file says none (D-M06): house policy is that a haptic marks an outcome and Continue is a step, and NS-05-R22 asks for nothing that reads as "sent". Haptics are the motion file's to own (brief section 4); I recommend `DESIGN.md` drops the line.
+2. **State names differ between the other two files.** `WORDS.md` uses a few names `DESIGN.md` section 3 does not (`D-S04.yes-failed`, `.no`, `.picking`; `D-S18.twoParents-undoable`; `D-S21.error-save`; `D-S11.evening`; `D-S17.ready`), and `DESIGN.md` section 5.1 itself says `D-S11.evening` where its section 3 says `.home`. This file follows `DESIGN.md` section 3 throughout; whichever set Karma fixes, a rename here is mechanical.
+3. **Exceptions 5 and 6 (section 6)** need a ruling: the joined cover's 800 ms opening and the 1400 ms waiting sweep.

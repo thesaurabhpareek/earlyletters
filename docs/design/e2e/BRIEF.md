@@ -65,3 +65,7 @@ Design and product work together while design runs, so the requirements improve 
 - Karma (product side) collects them into `docs/product/prd/GAP-LOG.md` on branch `docs/locked-pack-inputs-20nov`, with one ruling per gap: card change (applied through `18-errata-after-lock.md` or the new card file), founder question (with a default), engineering gap (sent to the engineering thread), or no change (with the reason).
 - Until a gap is ruled, design uses its own proposed default and marks the screen state "pending ruling G-xx". After a ruling, the leads re-key to it in their reconciliation pass.
 - The journey from App Store download to the first kept letter is now carded separately (`docs/product/prd/19-from-download-to-first-letter.md`, NS-38 onward). Area E designs it end to end; gaps there come back the same way.
+
+## 7. Function requirements (added 20 Nov on the founder's instruction)
+
+Legal, compliance, privacy, support and policy, marketing, operations, risk and security, data and measurement, and finance are reviewing the requirements and writing the ones they need (`docs/product/prd/functions/*.md` on `docs/locked-pack-inputs-20nov`, ids `FR-<CODE>-nn`). Each has a "Design needs" section keyed to your screen ids. After the reviews land, each area runs one reconciliation pass and adds a section "Function needs accounted for": FR id, screen and state, what changed (screen, state, string, flow) or why nothing changed. Linked in `docs/product/prd/FUNCTION-TRACE.md`.
