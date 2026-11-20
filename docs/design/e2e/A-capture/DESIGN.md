@@ -613,7 +613,7 @@ Integration: NS-49-R8, R17, R30; backlog row needed (suggestions module, NS-49 s
 
 ## 3a. Material layer per screen (design system v2, `docs/design/system/BRIEF.md` section 3)
 
-Rule applied: glass (regular) only on the navigation and control layer; clear glass with a 35 percent dim only for a control floating over a picture; everything that is a letter, a list, a card, an empty or error screen stays content layer (paper and ink tokens). One glass container per cluster, never glass inside glass, at most three glass surfaces visible. Reduce Transparency or iOS before 26: each glass surface becomes a solid `surfaceRaised` with a 1 pt `line` hairline, same shape and size. Increase Contrast: hairline and labels step to the high-contrast tokens.
+Rule applied: glass (regular) only on the navigation and control layer; clear glass with a 35 percent dim only for a control floating over a picture; everything that is a letter, a list, a card, an empty or error screen stays content layer (paper and ink tokens). One glass container per cluster, never glass inside glass, at most three glass surfaces visible. Reduce Transparency or iOS before 26: each glass surface becomes a solid `glassFallback` (#282421) with a 1 pt `line` hairline, same shape and size. Increase Contrast: hairline and labels step to the high-contrast tokens.
 
 | Screen | Glass (regular) | Clear glass, 35 percent dim | Content layer | Glass surfaces visible (max 3) |
 |---|---|---|---|---|
