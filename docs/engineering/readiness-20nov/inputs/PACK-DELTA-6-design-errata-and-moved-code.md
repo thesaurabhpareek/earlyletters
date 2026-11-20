@@ -1,0 +1,62 @@
+# Pack delta 6: errata E23 to E30, the end-to-end design and design system v2, the handoff's conflicts, and code that moved
+
+Status: v1, 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. Sources: `18-errata-after-lock.md` (`5b1bd17b`), `docs/design/e2e/**` at `9e78eecd` and `docs/design/system/**` at `31269da0` on `docs/e2e-ux-20nov`, `GAP-LOG.md` "Engineering gaps routed (round 2)" (`GAP-LOG.md:257-345`), `24-engineering-handoff.md` section 3, develop `16e61549`. None of the branches is merged. [V] verified, [E] estimate, [U] not verified.
+
+## 1. Errata E23 to E30 against our designs
+
+E1 to E22 were ruled before our designs were merged and the designs follow them (E11, E13, E16, E18, E20, E21 are cited in our files; I did not re-check each, [U]). E23 to E30 arrived after (`18:` rows E23 to E30, added `558e5eb6` and `5b1bd17b`).
+
+| Erratum | What it says | Our design file | Verdict |
+|---|---|---|---|
+| E23 | A picture sent to another person is an X2 path: NS-05 Level 1 and NS-03 Arm W need the `security-architect` read as well as counsel Q45; "engineering's security.md section 3.3 already treats the Share picture as an X2 path"; no own-share-sheet exception is written | `security.md` 3.3 (`:108`) and 3.5 (`:151`), `privacy.md` 1.1 (`:46`), `1.7` | DESIGN HOLDS (the erratum cites our file). Extend 3.5 for media (delta 3) |
+| E24 | E7's constitution reading for NS-17 is the founder's, held by CR-67 AX-5 | `data-and-sync.md` CP rows; `09-capture.md` section 7 NS-17 paragraph | HOLDS if our files call the reading "Karma's recommendation, founder's decision" [U: not re-read] |
+| E25 | BL-933 merges only after the founder has merged the legal edit (CR-62) | `11-foundations.md` 8.3 heading "held for the founder's BL-868 merge" (`:267`) | HOLDS |
+| E26 | D1 to D13, T1 to T5 defaults are to be one delegated D-entry in `docs/DECISIONS.md` | not a design matter | none; process |
+| E27 | NS-10-R3 and R5 fail on develop (second account sees the first's book); BL-961 (#869, #871, #879) is a dependency; "only BL-922 remains" is struck | `08-keeping.md` section 3, README row 34 (`README.md:34`), `security.md` NSC-03, `architecture.md` AX-12 (`:169`) | HOLDS (our designs already name BL-961 as hard dependency) |
+| E28 | NS-09-R6 Storage line "A recording is still being removed" plus Remove now, never a list or count; `storage.tsx:24-28` rule amended; new row | `08-keeping.md` 2.2 (P-4 row) | HOLDS; confirm the amended wording lands with BL-977 [U] |
+| E29 | Builders read the latest definition by searching `supabase/migrations`, never an old line number: the consent trigger and the `book_entries` view moved (`20261015030000`, `20261108000000`) | `data-and-sync.md` cites migrations by line in places [U: I grepped for `20261003000000:444`, `20261002020000:210` and `sync_v1_server.sql:1589` in our eight files and found none] | HOLDS for those three; other line cites into migrations may exist [U] |
+| E30 | G0 cannot pass until each P0 row names a backlog row; about 70 rows lack one | `11-foundations.md` section 11 merge order; plan #847 | The count is now 588 of 850 P0 rows without a row-level backlog row (`BACKLOG-GAPS.md:7`; the audit said 565 at `25:13`, an earlier count) and the proposed rows use ids below BL-099 (see `PACK-DELTA.md` item on dispatcher) |
+
+New backlog rows E7, E9 and E16 asked for are still named in `18:` and the "New backlog rows these need" line; E16's planner half is already merged (INPUTS section 4).
+
+## 2. End-to-end design (areas A to E) and design system v2
+
+Counts, machine-built (`docs/design/e2e/INDEX.md` section 1 [V]): 130 screens (8 PROPOSED), 990 states, 415 motion ids (38 PROPOSED), 82 system state ids `E-ST..` (14 PROPOSED). The INDEX is explicit that the counts are not reviews and "nothing was viewed in a browser or on a device". Area B and E files are "as on disk" while A, C and D were re-keyed at 17:19 to 17:20.
+
+What engineering is asked to build (rows, not decisions):
+- Design system v2 build rows: `FOUNDATIONS.md` DS2-01 to DS2-15 (`FOUNDATIONS.md:610-624` [V]), `MOTION.md` ENG-M1 to ENG-M15 (`MOTION.md:364-378`; ENG-M1 to M12 read), `COMPONENTS.md` R1 to R13 (R5 at `COMPONENTS.md:471`), `AUDIT.md` ES-A1 to A15. They overlap: DS2-10 = ENG-M3 = R1 = ES-A3 (native tabs); GAP-LOG asks product to fold the four lists into one set (`GAP-LOG.md:344`). Plan rows: none exist; BL-988 to BL-993 are the harness rows for the design itself (`25-instruction-coverage-audit.md` item 1d).
+- Native tabs: `app/(tabs)/_layout.tsx` imports `expo-router/js-tabs` today [V: `git show origin/develop:'apps/mobile/src/app/(tabs)/_layout.tsx'` line 1]; ENG-M3 and DS2-10 replace it with `expo-router/unstable-native-tabs`, props UNVERIFIED (`FOUNDATIONS.md:27`). Device spike first.
+- Glass: `GlassSurface` wrapper over `expo-glass-effect` (installed, `~57.0.4` [V]), solid fallback, Reduce Transparency read; never animate a glass view's opacity below 1; at most three glass surfaces (ENG-M4, ENG-M7); lint rule banning `expo-glass-effect` outside `components/platform/` (COMPONENTS R5, `COMPONENTS.md:471`) [E: a CODE-R10-style import rule; owner `qa`].
+- Icons: Phosphor to SF Symbols on iOS through `expo-symbols` (`FOUNDATIONS.md:460`, DS2-09); `expo-symbols` is NOT a dependency today [V: package.json grep]. New dependency: licence, size, privacy manifest, SBOM and the SDK denylist check (BL-117).
+- Motion: all animation in Reanimated 4 worklets (installed, `4.5.1` [V]); a lint rule bans `withSpring`, `withTiming` and `FadeIn*` outside `lib/motion.ts` (ENG-M2); no Lottie, Rive or Skia (`system/MOTION.md:270`); `useLowPowerMode()` needs `expo-battery`, a dependency decision for Karma (D-065; ENG-M8); haptics trimmed to a closed list and ENG-M10 removes `success` from four settings call sites; frame budget runs on an SE 3 (ENG-M11); recording quiet period, nothing decodes during recording (ENG-M12, rule 7 at `MOTION.md:269`).
+- Tokens: `tokens.v2.json` (3,101 lines, `$extensions.scribe.status = proposal`) retires `type.numeral`, `elevation[3]`, `radius.xl` as the sheet radius, the uniform Dynamic Type multiplier, two light colours and `motion.emptyBreathMs` (`tokens.v2.json` `retired.items`); adds `glass*` colours, `layout.*`, `size.control.*`, `target.md`, `iconSize.*`, a `timer` type token; `motion.rules`: waiting states are still, busy controls show busy words at every Reduce Motion setting, never a spinner (ruling, Karma 20 Nov).
+- Fonts: DS2-05 cuts Literata SemiBold (opsz 16), Bold (opsz 30), SemiBold Italic (opsz 16) and adds Mukta Bold; Bold Text face map in `Text`. This is the "E17" answer for NS-33-R14 and affects bundle size (budget rows in `11-foundations.md:157-158`).
+- Images: `COMPONENTS.md:203` assumes `expo-image` for list copies; `expo-image` is not a dependency today [V]. Decide against the current `Image` use in NS-37 (`11-foundations.md:230-244`).
+- Engineering gaps routed by product (round 2), about 90 rows: `GAP-LOG.md:257-345`. They land in existing rows (BL-926, BL-931, BL-937, BL-938, BL-941, BL-942, BL-943, BL-945, BL-946, BL-947, BL-952, BL-954, BL-956, BL-958, BL-961, BL-962, BL-963, BL-965, BL-966, BL-968, BL-969, BL-970, BL-971, BL-973, BL-974, BL-977, BL-978, BL-979, BL-980, BL-982, BL-983, BL-984, BL-985, BL-987) or in "new row needed" lines (NS-17 phone side; busy-microphone error code; NS-01-R17b progress; motion fixes; hidden-books list; SlipCard, SystemLine, StateScreen note slot, Progress and Dateline components; Per-surface rule row for `backupCopy` at the flip; `minSupportedVersion` consumer; under-1-GB line; small fresh-install crash bodies; design system v2 rows).
+- IA audit (`IA-AUDIT.md`, `45b9d42b`): Me regroup is "adopted for design, built only after tree test T1" (`22:51`). Code-hygiene findings engineering owns (CODE-R13, duplicated domain facts), all [V] by the audit's own reading and unverified by me except where stated: X1 month-of-age arithmetic exists in `packages/core/src/age.ts` and twice outside core (`chapters.ts:174-186`, `lib/reminders/tz.ts:109-136`); X2 two functions named `monthDay` with different meanings (`shelf.logic.ts:35`, `tz.ts:131`); X3 plan state computed inline in `index.tsx:199` and `write.tsx:335`; X4 `STEP_MINUTES = 15` declared twice; X5 time zone read at four sites; X7 "days since the last letter" has three definitions; X9 age text has four wrappers. ADR E in the handoff (one age function in core, `24:175`) answers X1.
+
+Our designs against this material:
+| Our file | What the design system and e2e files change | Verdict |
+|---|---|---|
+| `11-foundations.md` NS-33 section (`:86-130`) and NS-34 (`:131-172`) | Bold Text face map (E17), AX5 floors, frame budgets, glass material rules, hit targets (`target.md`) | AMEND (read DS2-04 to DS2-08 against NS-33-R3, R14 rows) |
+| `architecture.md` layers (`:26-41`) and AP rows | New `components/platform/` layer with a lint ban; `lib/motion.ts`, `lib/material.ts`; one icon wrapper; a SwiftUI-hosting question for the suggestions picker | AMEND |
+| `09-capture.md`, `10-reading-and-family.md` | Screen ids (A-S01 to A-S18), slip host `SlipCard` (COMPONENTS C9), Home slip slot and capture cluster rules, Plus line; `[FRAME-SLIP]` | AMEND where they define Home (10 section 3 NS-23, 09 section 1.3 reminders) |
+| `08-keeping.md` | First-run lamp motion token `motion.lamp.returnMs`; C-series screens; E-S16 update line | HOLDS (design-led, no engineering contradiction found) [U] |
+| `security.md`, `privacy.md`, `data-and-sync.md` | None from design, except `privacy-cover.tsx` snapshot rule (NS-50-R9) and "no store build co-parent surface" (D-161) | HOLDS |
+
+## 3. The handoff's 24 conflicts against our files
+
+`24:184-211` lists C-1 to C-24. Those that name a file of ours:
+- C-1 (`budget.ts` two shapes) hits `11-foundations.md` section 2 (`:61`). C-2 (60 plus 4 vs 60) is settled by E13 and our design keeps plan notices first (`11-foundations.md:61`).
+- C-3 (level 3 and draft #754) hits `security.md` source scans (3.1) and `architecture.md` AB rows.
+- C-4 (single vs several pictures, `#835`) hits `data-and-sync.md` L11 (`:39`), `11-foundations.md` section 8 (`:254-258`), `privacy.md:26` (the NS-01 inventory row says "One picked picture per letter") and `privacy.md:131` (label wording).
+- C-6 (pause pattern) hits `architecture.md` AX-4 (`:161`) and AC-11 (`:112`).
+- C-7 (ADR 0029 does not exist) hits `architecture.md:21` and every design line that cites ADR 0029 to 0039 as if filed.
+- C-11 (`docs/tdd/new-scope/` does not exist) is now false: the directory is on develop (`git log origin/develop -- docs/tdd/new-scope`, 8 files). The handoff was written against an older tree (`24:13`, `24:293`).
+- C-12 (four-tab PRs #789 to #791): not ours; Karma's to close.
+- C-17 (podspec 16.4 vs app 17.0) is a code fact, still true.
+- C-20 (typed-day store) hits `09-capture.md:165`.
+
+## 4. Code that moved after our designs were written (develop `16e61549`)
+
+Our designs were merged 11:12 to 13:00 UTC; 27 commits landed after 12:00 (INPUTS section 4). Merged since and relevant to designs [V: `git log origin/develop --since=2026-11-20T12:00 --format='%h %s'`]: #869 BL-961 part 1 (`bookVisibleTo`); #874 and #875 BL-976 (keep-safe preflight, backup off in every store profile); #888, #889, #890 P-8 test retitles; #892, #893, #877 BL-927 and BL-928 (NS-33 heading and AX5 rows); #896 BL-958 (photo and Find flags off in every store profile); #897, #898, #906 BL-975 (privacy label guard); #901, #902 (planner and "A month ago" skip a quieted book); #903 NS-10-R7 (one consent answer, one key); #904 BL-967 (sign-out ends reminders); #905 NS-13-R5, R6a, R6b (reminder never-list); #868 BL-962 ([X6-R1] nothing donated, writing tools finding); Find 1 to 5 of 8 (#881 to #885). Statements in our designs that these overtake (to re-check at RESYNC, not edited here): `11-foundations.md:58` "nothing in `lib/reminders` reads `quiet`" (now false: `planner.ts:78-79`); `09-capture.md:55` session end (BL-967 merged); `08-keeping.md` R-rows for NS-10-R7; `11-foundations.md` NS-33 R1 and R2 (BL-928 merged). The new designs for NS-38 to NS-52 should be written against develop at the time, not against these files' facts.
