@@ -205,6 +205,23 @@ describe('[NS-01-R22] the system picker is the only source', () => {
   });
 });
 
+describe('[NS-01-R10][NS-33-R3] the lens is one radio group of two radios, exactly one checked', () => {
+  it('[NS-33-R3] LensRow is a segmented ChoiceGroup labelled for VoiceOver, never a tablist of buttons, and the group gives radiogroup, radio and checked', () => {
+    const lens = readFileSync(join(SRC, 'components', 'photos', 'photos-lens.tsx'), 'utf8');
+    const row = lens.slice(lens.indexOf('export function LensRow'), lens.indexOf('\n}\n', lens.indexOf('export function LensRow')));
+    expect(row).toMatch(/<ChoiceGroup\s+layout="segmented"\s+label=\{photos\.book\.lens\.label\}/);
+    expect(row).toMatch(/\{ value: 'months', label: photos\.book\.lens\.months \},\s*\{ value: 'photos', label: photos\.book\.lens\.photos \}/);
+    expect(row).toMatch(/value=\{mode\}\s+onChange=\{onChange\}\s+testID="book\.lens"/);
+    expect(lens).not.toMatch(/tablist|<Button\b|accessibilityState=\{\{ selected/);
+    // The group's own roles: one radiogroup with the label, each option a radio whose checked is its value === value.
+    const group = readFileSync(join(SRC, 'components', 'ui', 'choice-group.tsx'), 'utf8');
+    expect(group).toMatch(/accessibilityRole="radiogroup"\s+accessibilityLabel=\{label\}\s+testID=\{testID\}/);
+    expect(group).toMatch(/<SegmentChoice key=\{o\.value\} option=\{o\} checked=\{o\.value === value\}/);
+    expect(group).toMatch(/accessibilityRole="radio"\s+accessibilityState=\{\{ checked \}\}/);
+    expect(photos.book.lens.label.length).toBeGreaterThan(0);
+  });
+});
+
 describe('[NS-01-R23] the Book empty button only moves to Home; the lens cannot start a letter', () => {
   it('[NS-01-R23] book.empty.bookCta switches to the Home tab and calls no capture function', () => {
     const f = join(SRC, 'app', '(tabs)', 'book.tsx');

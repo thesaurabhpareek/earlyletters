@@ -29,6 +29,9 @@ export const photosCopy = {
   },
   book: {
     lens: {
+      // What VoiceOver reads for the Months / Photos choice (one radio group, NS-33-R3).
+      // TODO(founder): PROPOSED, needs word approval
+      label: 'Show letters by',
       // TODO(founder): PROPOSED, needs word approval
       months: 'Months',
       // TODO(founder): PROPOSED, needs word approval

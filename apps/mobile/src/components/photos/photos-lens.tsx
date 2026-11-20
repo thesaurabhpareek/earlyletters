@@ -8,8 +8,7 @@ import { View } from 'react-native';
 import { openerOf, type Chapter } from '@/components/book/chapters';
 import { BookRow, LetterCard } from '@/components/book/letter-card';
 import { MonthOpener } from '@/components/book/month-opener';
-import { Button } from '@/components/ui/button';
-import { useIsAccessibilitySize } from '@/lib/a11y';
+import { ChoiceGroup } from '@/components/ui/choice-group';
 import { photos } from '@/lib/photos/copy';
 import { photoUri } from '@/lib/photos/device';
 import { photoA11yLabel } from '@/lib/photos/text';
@@ -19,13 +18,25 @@ import { PhotoFrame } from './photo-frame';
 
 export type LensMode = 'months' | 'photos';
 
+/**
+ * The Months / Photos choice: one radio group of two radios, exactly one checked, which VoiceOver reads as "radio
+ * button" and "checked". The earlier row of selected buttons got no group trait on iOS, so it was heard as two
+ * buttons (NS-33-R3). The options keep their ids, book.lens.months and book.lens.photos; ChoiceGroup stacks them at
+ * large text sizes.
+ */
 export function LensRow({ mode, onChange }: { mode: LensMode; onChange: (m: LensMode) => void }) {
-  const large = useIsAccessibilitySize();
   return (
-    <View className={large ? 'flex-row flex-wrap gap-2' : 'flex-row gap-2'} accessibilityRole="tablist" testID="book.lens">
-      <Button variant={mode === 'months' ? 'default' : 'quiet'} size="md" label={photos.book.lens.months} onPress={() => onChange('months')} accessibilityState={{ selected: mode === 'months' }} testID="book.lens.months" />
-      <Button variant={mode === 'photos' ? 'default' : 'quiet'} size="md" label={photos.book.lens.photos} onPress={() => onChange('photos')} accessibilityState={{ selected: mode === 'photos' }} testID="book.lens.photos" />
-    </View>
+    <ChoiceGroup
+      layout="segmented"
+      label={photos.book.lens.label}
+      options={[
+        { value: 'months', label: photos.book.lens.months },
+        { value: 'photos', label: photos.book.lens.photos },
+      ]}
+      value={mode}
+      onChange={onChange}
+      testID="book.lens"
+    />
   );
 }
 
