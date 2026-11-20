@@ -29,7 +29,9 @@ const NETWORK = /\bfetch\s*\(|\bXMLHttpRequest\b|\bnew\s+WebSocket\s*\(|\bsendBe
 /** Server objects, read in supabase/migrations only (the app's local SQLite migrations are not a server). */
 const SERVER = /\bcreate\s+(?:unlogged\s+)?table\b|\badd\s+column\b|\bcreate\s+(?:or\s+replace\s+)?function\b|\bstorage\s*\.\s*buckets\b/i;
 /** Letter text, a recording, a picture or a child name, by the L4 column, bucket and field names (DATA_CLASSIFICATION.md). */
-const CONTENT = /transcript|final_?text|typed_?text|letter_?text|machine_?edits|author_?edits|stt_?meta|audio|recording|photo|picture|child_?name|nickname|public\.children\b/i;
+const CONTENT = /transcript|final_?text|typed_?text|letter_?text|machine_?edits|author_?edits|stt_?meta|audio|recording|photo|picture|child_?name|nickname/i;
+/** The children table itself, with a column that names or dates the child (a foreign key to it is not data for them). */
+const CHILD_TABLE = /\b(?:create|alter)\s+table\s+(?:if\s+(?:not\s+)?exists\s+)?(?:only\s+)?(?:public\.)?children\b[\s\S]*?\b(?:name|nickname|date_of_birth|due_date)\b/i;
 /** Analytics, crash-reporting and ads SDKs, by package name. */
 const TRACKING_SDK = /posthog|sentry|bugsnag|crashlytics|firebase|amplitude|mixpanel|^@segment\/|^@rudderstack\/|appsflyer|^react-native-adjust$|^@adjustcom\/|^react-native-branch$|^@datadog\/|newrelic|instabug|^@embrace-io\/|^@heap\/|appcenter|mobile-ads|admob|fbsdk|fbads|^expo-facebook$|applovin|unity-ads|ironsource|singular|kochava|clarity|tracking-transparency|^expo-insights$/i;
 /** An entitlement set as a key in app.config.ts, or an Expo key that writes one. */
@@ -43,7 +45,10 @@ export function parseDiff(text) {
   let line = 0;
   for (const raw of String(text ?? '').split('\n')) {
     if (raw.startsWith('diff --git ')) {
-      cur = { path: /^diff --git a\/.* b\/(.*)$/.exec(raw)?.[1] ?? null, blocks: [], removed: [], inHunk: false };
+      const path = /^diff --git a\/.* b\/(.*)$/.exec(raw)?.[1];
+      // Git quotes a path holding a double quote, a tab or a newline; a file the guard cannot name is never skipped.
+      if (!path || raw.includes('"')) throw new Error(`a diff header the guard cannot read: ${JSON.stringify(raw.slice(0, 200))}`);
+      cur = { path, blocks: [], removed: [], inHunk: false };
       files.push(cur);
       continue;
     }
@@ -59,17 +64,18 @@ export function parseDiff(text) {
     } else if (raw.startsWith('-')) cur.removed.push(raw.slice(1));
     else if (raw.startsWith(' ')) [block, line] = [null, line + 1];
   }
-  return files.filter((f) => f.path);
+  return files;
 }
 
 const code = (lines) => lines.filter((l) => !COMMENT.test(l.text));
 
-/** Added SQL lines as statements: the first line, and the text outside dollar-quoted bodies (a function counts by its signature). */
+/** Added SQL lines as statements: the first non-blank line, and the text outside dollar-quoted bodies. */
 export function sqlStatements(lines) {
   const out = [];
   let cur = null;
   let quote = null;
   for (const l of code(lines)) {
+    if (!cur && !l.text.trim()) continue;
     cur ??= { line: l.line, head: '' };
     let rest = l.text;
     while (rest) {
@@ -102,7 +108,11 @@ export function labelTriggers(files) {
       const near = 'next to letter text, a recording, a picture or a child name';
       for (const b of f.blocks) {
         if (f.path.startsWith('supabase/migrations/')) {
-          for (const st of sqlStatements(b)) if (SERVER.test(st.head) && CONTENT.test(st.head)) out.push({ check: 'G11-1a', path: f.path, line: st.line, what: `adds a server table, column, bucket or function ${near}` });
+          for (const st of sqlStatements(b)) {
+            // A function is for them when it takes or returns them: its arguments and return type count, its name does not.
+            const head = st.head.replace(/(\bfunction\s+)[\w."]+/gi, '$1');
+            if (SERVER.test(head) && (CONTENT.test(head) || CHILD_TABLE.test(head))) out.push({ check: 'G11-1a', path: f.path, line: st.line, what: `adds a server table, column, bucket or function ${near}` });
+          }
           continue;
         }
         const lines = code(b);
@@ -123,7 +133,9 @@ export function labelTriggers(files) {
         const keys = [...l.text.matchAll(f.path.endsWith('.entitlements') ? /<key>([^<]+)<\/key>/g : ENTITLEMENT)].map((m) => m[1]);
         for (const name of fresh(keys, removedText)) out.push({ check: 'G11-3', path: f.path, line: l.line, what: `adds the entitlement ${name}` });
         if (f.path.endsWith('app.config.ts')) {
-          for (const name of fresh(permissionNames(l.text), removedText)) out.push({ check: 'G11-3', path: f.path, line: l.line, what: `adds the usage string ${name}` });
+          // `photosPermission: false` tells a plugin to leave its usage string out, so it adds none.
+          const set = permissionNames(l.text).filter((n) => !new RegExp(`\\b${n}['"]?\\s*:\\s*false\\b`).test(l.text));
+          for (const name of fresh(set, removedText)) out.push({ check: 'G11-3', path: f.path, line: l.line, what: `adds the usage string ${name}` });
         }
       }
     }
@@ -182,7 +194,8 @@ function main(argv) {
     }
   };
   const body = arg('--body-file') ? readFileSync(arg('--body-file'), 'utf8') : (process.env.PR_BODY ?? '');
-  const diffText = git('diff', '--no-color', '--no-ext-diff', '-M', '--unified=0', '--src-prefix=a/', '--dst-prefix=b/', `${base}...${head}`);
+  // --no-renames: a file moved into shipped code reads as all added, so add-then-move cannot pass unseen.
+  const diffText = git('-c', 'core.quotePath=false', 'diff', '--no-color', '--no-ext-diff', '--no-renames', '--unified=0', '--src-prefix=a/', '--dst-prefix=b/', `${base}...${head}`);
   const { lines, failed } = runGuard({ diffText, body, decisionsBase: show(base, 'docs/DECISIONS.md') });
   for (const l of lines) console.log(l);
   console.log(failed ? 'Label guard: FAIL (each line names what is missing).' : 'Label guard: pass.');
