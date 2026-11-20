@@ -606,3 +606,17 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way: `PASSING` and the two patterns are three lines.
 - Way back: set `PASSING` to `["PASS"]` and restore the test's strict case.
 - Revisit when: a merge on `PASS WITH NOTES` ships a defect that a note had named. Karma
+
+### CR-66 The locked requirements pack is the source of truth for what we build and why; engineering design and the plan follow it (Fri 20 Nov 2026, Karma (session of the requirements lock), on the founder's instruction)
+- Question: the founder approved the requirements on 19 Nov ("I approve all requirements.") and on 20 Nov asked that the harness and the CTO take the locked pack as the source of truth and start engineering design, a project plan and a detailed work mapping and sequence. What does "source of truth" bind, and in what order do documents win when they disagree?
+- Tier and type: T1 (process); clear.
+- Ruling:
+  - For product scope, behaviour and acceptance, the locked cards in `docs/product/prd/01` to `12` win, under the frame `00-product-frame.md`. Then `14-test-plan.md` (gates G0 to G6, the P0 register), then `13-engineering-plan.md` and the engineering design under `docs/engineering/plans/`, then `docs/BACKLOG.md` rows. Where a lower document disagrees with a card, the card wins and the lower document is fixed in the next docs PR.
+  - The constitution (`CLAUDE.md`), `docs/DECISIONS.md` and the CTO and exec rulings still sit above the cards; a card that contradicts one of them is a defect to raise, not an instruction to follow.
+  - An agent that finds a card wrong against the code says so on the card's PR or in a docs PR with the evidence (file and line); it does not build the other way. Karma rules within two working days; a change to what a parent sees, a promise, or the label goes to the founder.
+  - Engineering design for the pack lives in `docs/tdd/new-scope/` (one file per card group, plus data-and-sync and security-and-privacy), owned by the engineering agents; the task-level plan and sequence is `docs/product/prd/17-engineering-project-plan.md` (PR #847). `docs/engineering/plans/locked-pack-plan.md` and the PDF sources in `docs/product/pack-pdf/` are inputs to them, not a second plan. Design changes no card: a gap found in design goes back to product as a mismatch. The harness picks only backlog rows that cite card rows; a PR names the card rows it satisfies and the test titles that prove them.
+  - The superseded pre-lock texts (PRD V2 rows the cards replace, the 11 Nov design specs where a card differs) stay for history; the card says which it supersedes.
+- Why: the pack was debated by every council role in two rounds and checked against the code; one ranked source stops agents building two versions of the same feature, and an explicit precedence order settles a disagreement without a meeting.
+- Door: two-way; the order is a paragraph.
+- Way back: a new ruling.
+- Revisit when: the first store build that carries locked-pack features is cut, or when two agents cite different documents for the same behaviour. Karma
