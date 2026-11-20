@@ -2,7 +2,7 @@
 
 Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#846, unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
 
-**Blocked until: the founder copies `docs/ops/proposed/workflows/label-guard.yml` to `.github/workflows/label-guard.yml` (D-124: agents cannot edit workflows). Scripts and tests of BL-975 merged on 20 Nov (#897, #898, #906); only the activation and two follow-ups remain.** Founder-only: the copy, adding the job to branch protection if he wants it required, the label decision itself (counsel Q54 decides the label; the guard never does).
+**Blocked until: the founder copies `docs/ops/proposed/workflows/label-guard.yml` to `.github/workflows/label-guard.yml` (agents cannot edit `.github/workflows/`: `docs/agents/OPERATING_MODEL.md:95`). Scripts and tests of BL-975 merged on 20 Nov (#897, #898, #906); only the activation and two follow-ups remain.** Founder-only: the copy, adding the job to branch protection if he wants it required, the label decision itself (counsel Q54 decides the label; the guard never does).
 
 ```
 BRIEF BL-975-ACT                                  Filled by: ops (RD-H3) 20 Nov 2026 18:50 UTC
