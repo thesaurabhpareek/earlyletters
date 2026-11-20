@@ -508,3 +508,555 @@ NS-46; the registry and erase scan (FR-PRV-07, 34; NS-36); BL-961; errata E18; c
 - Conflicts 1 and 2 above.
 
 ---
+
+## NS-48. Notification catalogue and rotation (candidate C-xx; kind Attractive; area B Capture; no screen of its own)
+
+### 1. Who and when
+A parent three weeks in who has seen the same eight lines and has begun to ignore them, and a parent who has not opened the app for ten days and must not be made to feel it. The words of a note the planner has already decided to send.
+
+### 2. Why
+The only repeatable problem that variety solves is notification blindness (NS-13 section 2: a reminder that repeats itself teaches the parent to turn notifications off for good). Evidence is a hypothesis: no parent evidence yet that more variants reduce turn-off (NOTIFICATIONS.md line 55 says the same). The test is the tester sheet, section 21. "Fun and engaging" is voice, not volume (direction 4.1).
+
+### 3. What, and Not in scope
+**What.**
+1. One pure function `selectNotificationKey` in `packages/core` (PROPOSED `packages/core/src/notification-key.ts`) picks a catalogue key for a note the planner has already decided to send. It cannot add, remove or move a note, so volume is unchanged by construction.
+2. Inputs, all known at plan time (N-6): the weekday tone; `daysFromAnchor`, the days between the fire date and the newest made letter (the NS-13 anchor, not hours); the kind of the last letter (spoke, typed, picture, first, small, none); the child's age band on the fire date; a chosen day or ticked season (NS-46); the day part of the reminder time (filter only); whether names are shown.
+3. Resolution with fallbacks: chosen day, then the last-letter layer (recency bands r1 and r2 only), then the weekday by recency grid, then the built 8 evening variants as the floor.
+4. Size (N-1): 6 variants per grid cell (5 weekday tones by 4 recency bands = 20 cells, 120 lines); the founder's 8 to 12 applies to the day, season and last-letter layers (DL-5 sets 4 per day and 3 per season); launch floor about 128 variants, the rest in content drops. Content mines the existing 87 rows and 174 variants (`docs/design/NOTIFICATIONS.md`, `docs/design/notifications/COPY_INVENTORY.md`) first (N-7).
+5. One text per variant with a `{child}` slot and a fixed neutral rendering; no second parallel set (N-7).
+6. A day-part filter: evening-worded variants are dropped before 17:00, including the built 8 (N-8).
+**Not in scope.** More notifications; push; the photo-suggestion nudge (NS-49 holds Apple's, which is not ours); the days data (NS-46); the religion and country store (NS-47); month and birthday copy (they keep `en.notifications.monthOpen`, `birthday` and the `together` set); translation; any new setting (variety is not a setting); a new class in the registry (N-2).
+
+### 4. Happy path
+Default settings, Tuesday and Saturday at 8:30 PM. After a spoken letter on Monday, Tuesday's note is a question about the child's age, a day later. Saturday carries a Saturday tone. A week later the words differ and none repeat. After day 35 with no letter, there is silence (NS-13-R4, NS-32-R8).
+
+### 5. Unhappy paths and edge cases
+
+| Case | What happens |
+|---|---|
+| Reminder time 07:00 | No variant with "tonight", "evening" or "before you sleep" is chosen, including the built 8 (NS-48-R12) |
+| Two books with names off | Age bands are not used; the grid runs (Q-NTC-4 default) |
+| A chosen day on a date | The chosen day takes the one slot and ignores recency (NS-48-R8) |
+| A family or tradition day with names off | The neutral title and body of NS-47-R12 and R13 |
+| A parent turns reminders off | Nothing is chosen; the function is not called |
+| A parent never opens the app | The plan holds; day 35 ends it |
+| A letter made today | The anchor moves; every future key is recomputed at the next re-plan; a date in the new r1 band never takes a key from the old r4 pool (NS-48-R3) |
+| The last letter was a picture or a first | Until NS-01 and NS-06 supply flags those kinds read as `none` and the layer falls back to the grid (NS-48-R27) |
+| A quiet or hidden book, or "Include in my reminders" off | It contributes no name, age band or kind (NS-48-R21) |
+| The pool for a cell is thin or empty | The floor returns a built variant; never an error or an empty key (NS-48-R15) |
+| The preview in Me, Reminders | It calls the same function as the planner (NS-48-R22) |
+| Apple's journal suggestion notification (iOS 26) the same day | Not ours, outside the budget; no sentence promises "one a day" covers it (NS-32 note; NS-49-R22) |
+
+### 6. Scenario coverage
+
+| Scenario | Behaviour |
+|---|---|
+| First use | The reminder ask is NS-13's; the first plan uses the grid and floor |
+| Empty, normal, many | A pool of n variants gives n distinct keys in n consecutive slots |
+| Offline | All local |
+| Slow, Failed | Pure function; a failure returns the floor |
+| Interrupted, killed mid-flow, updated mid-flow | After an update every pending note is re-planned; the migrated 8 keep their built wording (NS-48-R23) |
+| Low storage, Low Power Mode | n/a |
+| Kill switch `serverFeaturesEnabled()` off | No effect (NS-13-R26) |
+| Remote pause | n/a because the catalogue only chooses words and adds no surface; reminders already have their own behaviour (NS-13-R26) |
+| Outage | n/a |
+| Plan lapsed | No effect; no Plus, price or Keep step in any key (NS-13-R11) |
+| Signed out | Reminders are removed at sign-out (NS-13-R14); the last chosen key is a phone-only setting cleared with them |
+| Second account on the same phone | B starts with reminders off (NS-13-R13) |
+| New phone | Settings do not sync (NS-13-R22) |
+| Two books, two parents, expecting | Name rotation by ordinal over included books, not by the number of name-bearing variants; an expecting-only plan uses lines tagged "before birth: yes" (D W-G5) |
+| VoiceOver, AX5 | Not a screen; the preview on D-S06 follows that page's rows |
+| Devanagari, RTL | Keys with slots, not built sentences, so a language pack can supply them (NS-48-R25) |
+| Every error code | None; the function never throws |
+
+### 7. Acceptance criteria
+
+| Id | Given, When, Then | Priority | Test title |
+|---|---|---|---|
+| NS-48-R1 | Given any planned evening or day note, When the planner asks for its words, Then a pure function in `packages/core` returns a catalogue key, the same inputs always give the same key, and every key it can return exists in `packages/content` and no content key is an orphan | P0 (a) | `[NS-48-R1] same inputs same key; every key exists` |
+| NS-48-R2 | Given the catalogue on or off and the same plan inputs across cadences, books and time zones, Then the set of (id, date, time, class) is identical, so the catalogue never raises volume | P0 (a) | `[NS-48-R2] volume is unchanged` |
+| NS-48-R3 | Given a plan for any future date, Then every input is computable at plan time: recency is the fire date minus the anchor date in days (r1 the next day, r2 days 2 to 6, r3 days 7 to 14, r4 days 15 to 35), never a clock read at delivery; a letter made today moves the anchor and the next re-plan recomputes every future key | P0 (a) | `[NS-48-R3] recency is computed at plan time` |
+| NS-48-R4 | Given recency r1 to r4, Then the copy is a question or an invitation that is shorter and more open as the gap grows, and never mentions the gap, a count, a comparison or a judgement | P0 (a) | `[NS-48-R4] no gap in the words` |
+| NS-48-R5 | Given a last letter within 6 days, Then the question follows from its kind and never summarises it or repeats the parent's words; the app does not read the letter's text for this; a visible body may mention the kind ("a picture with it?") and a title never does (N-4) | P0 (a) | `[NS-48-R5] the kind may shape the body, never the title` |
+| NS-48-R6 | Given the weekday, Then it changes tone only (lighter Friday, slower Sunday, small Monday) and never the number or timing of notes | P1 | `[NS-48-R6] weekday is tone only` |
+| NS-48-R7 | Given a child's age band on the fire date (newborn 0 to 2 months, baby 3 to 11, toddler 12 to 35, child 36 and over; bands PROPOSED, using the age the Book shows, R-IA-1), Then it changes only the subject of the question; with names off and two or more included books the last-letter layer is skipped and the grid runs | P1 | `[NS-48-R7] age band is the subject only` |
+| NS-48-R8 | Given a ticked day or season on a date (source `libraryDay`), Then it takes the one budgeted slot, takes its words from the occasion layer whatever the recency, survives the back-off (it is not an evening note), and the function never infers a day or season the parent did not tick | P0 (c) | `[NS-48-R8] a chosen day takes the slot and ignores recency` |
+| NS-48-R9 | Given a family, tradition, culture-led or national day, or names off, Then the lock-screen title and body are the neutral ones of NS-47-R12 and R13 and contain neither the day name nor a faith word; the catalogue never overrides them | P0 (a) | `[NS-48-R9] the catalogue honours the lock-screen rules` |
+| NS-48-R10 | Given any variant in either rendering, Then the title is at most 40 characters and the body at most 110, and there is no emoji, dash, curly quote, ellipsis character, exclamation mark, day count, gap word, "daily" form, machine-writing word, "story" or "note" for an app message, or gendered word; zero exclamation marks (N-5) and `VOICE.md` line 70 is corrected to match line 160 | P0 (a) | `[NS-48-R10] every variant passes the rules test` |
+| NS-48-R11 | Given names off (the default) or App lock on, Then no title or body contains a child name; a title never carries a `{child}` slot at all | P0 (a) | `[NS-48-R11] no child name by default` |
+| NS-48-R12 | Given a reminder time before 17:00, Then no variant that names the evening or "tonight" is chosen (day-part filter, N-8), including the migrated 8 | P1 | `[NS-48-R12] no evening words in the morning` |
+| NS-48-R13 | Given a variant authored once with a `{child}` slot, Then the renderer produces a named and a neutral version by one fixed rule (`{child}'s` becomes "the", `{child}` becomes "your little one"; an author may add an explicit override), and a test renders and lints both | P1 | `[NS-48-R13] one text, two renderings, both linted` |
+| NS-48-R14 | Given a pool, Then no key repeats within the pool's length, no title repeats back to back, and the same shape (question, invitation, observation, tiny task, quote-a-line) is never used three times in a row over 365 consecutive slots for each cadence | P1 | `[NS-48-R14] rotation without repeats` |
+| NS-48-R15 | Given a thin or empty pool, Then the function falls back through the layers to the built 8 and never throws or returns an empty key | P1 | `[NS-48-R15] the floor always answers` |
+| NS-48-R16 | Given any note built from a key, Then its interruption level is `active`, never `time-sensitive`, and its category keeps the neutral hidden-preview placeholder | P1 | `[NS-48-R16] interruption level and placeholder` |
+| NS-48-R17 | Given a variant that testers turn reminders off within a day of seeing, Then it is retired by removing its key from content, the fallback chain covers a thinned pool, and the measure is the tester sheet with no analytics event | P1 | `[NS-48-R17] retirement by tester sheet` |
+| NS-48-R18 | Given the launch floor (about 128 variants) or the full set, Then the fallback chain keeps every cell safe, 6 variants per grid cell is the full size (N-1), and the Design B inventory (87 rows, 174 variants) was mined and reconciled with the rules before new lines were written | P1 | `[NS-48-R18] floor and full set are safe` |
+| NS-48-R19 | Given a month or birthday note, Then it keeps its own copy and is outside the catalogue; on a day that is also a chosen day the chosen day wins by the NS-46-R7 order | P1 | `[NS-48-R19] month and birthday stay as built` |
+| NS-48-R20 | Given several included books, Then name rotation picks the subject child by ordinal modulo the included books, independent of how many name-bearing variants a pool holds | P1 | `[NS-48-R20] name rotation is independent of the pool` |
+| NS-48-R21 | Given a quieted or hidden book, or one with "Include in my reminders" off, Then it contributes no age band, name or kind to any key (NS-32-R14, R-IA-6) | P0 (a) | `[NS-48-R21] a quiet book adds nothing to a key` |
+| NS-48-R22 | Given Me, Reminders "How it will look" and "Next", Then both call the same selection function as the planner, so the preview equals what arrives; there is no new switch for the catalogue | P1 | `[NS-48-R22] the preview calls the planner's function` |
+| NS-48-R23 | Given an app update, Then the first plan re-plans every pending note (NS-32-R16) and the migrated 8 floor variants still produce their built titles and bodies | P1 | `[NS-48-R23] update re-plans; the built 8 are unchanged` |
+| NS-48-R24 | Given the NS-32 registry after this card, Then no class is added and no pending ceiling rises; the evening class keeps its group, priority and ceiling | P1 | `[NS-48-R24] no new class` |
+| NS-48-R25 | Given any variant, Then it is a key with slots (`{child}`, `{day}`, `{weekday}`), not a sentence built in code; weekday and day names come from the platform's localisation | P2 | `[NS-48-R25] variants are keys with slots` |
+| NS-48-R26 | Given the planner, When NS-46 and NS-48 add sources and keys, Then a test proves that no local date holds two budgeted notes across all sources (NS-32-R1) and records where the budget is enforced; the answer to IA-AUDIT's "where is the one-a-day rule enforced" is on record before either ships | P0 (a) | `[NS-48-R26] the one-a-day budget has one enforced place` |
+| NS-48-R27 | Given `lastMadeLetter()` returns spoke, typed or small (from `EntryKind` and `CaptureMode`), Then those kinds are used; Given picture or first kinds have no flag yet (NS-01 and NS-06 not built), Then they read as `none` and the layer falls back to the grid | P1 | `[NS-48-R27] unbuilt kinds fall back to the grid` |
+
+### 8. Non-functional budgets
+- Latency: the function is pure and runs inside the planner's existing run; no extra I/O (ASSUMED; `mobile` confirms).
+- Memory, on-device storage: a content file of about 264 variants; trivial.
+- Battery: n/a. Offline: all local.
+- Accessibility: not a screen; the D-S06 preview follows that page.
+- Localisation: keys with slots (NS-48-R25).
+- Privacy (log canary): the last letter's kind and age band are read on the phone only; nothing new is stored except the last chosen key (phone-only setting).
+
+### 9. State space (RR-5)
+
+| Case | Expected | Test |
+|---|---|---|
+| Kill switch `serverFeaturesEnabled()` off | No effect | `[NS-13-R26]` |
+| Card's remote pause | n/a, no surface | n/a |
+| Plan lapse | No effect | `[NS-46-R27]` |
+| Second account on the same phone | B starts with nothing pending | `[NS-13-R13]` |
+| Reminders off or paused | The function is not called; nothing pending | `[NS-48-R2]` |
+| Notifications not allowed | Nothing scheduled | `[NS-13-R16]` |
+| Quiet or hidden book | None | `[NS-48-R21]` |
+
+### 10. Data and engineering
+- Fields: the last chosen key (phone-only setting, so the first key of the next plan does not repeat the previous one). No other.
+- Migrations: none. Sync: none. Export: none.
+- Modules: `packages/core/src/notification-key.ts` (PROPOSED) and tests; `packages/content` new `notifications.catalogue.en.ts` (the `{day}` slot joins the allowlist in `rules.test.ts`; `reminders.en.ts` `neutral.evening` and `en.notifications.evening` become the floor); `apps/mobile/src/lib/reminders/planner.ts` (`PlannedNotification` gains `key`, `variant` goes after the migration test passes; `VARIANTS` and `namedSlotIndex` untied from the 8; new `PlanInput` fields `lastLetter`, the NS-13 anchor, `chosenDays`, `dayPart`); `prefs.ts` (`lastMadeLetter()` returning date and kind, reusing `lastOwnSaveAt` per IA-AUDIT X7); `scheduler.ts:159` (tap payload may carry `key` for debugging).
+- Flags and pause keys: none (variety is not a setting).
+- Error codes: none.
+- Rollout and rollback: the floor ships first; rollback is the migrated 8 as the only pool.
+- Backlog: new rows needed (no id invented): core function and tests; content catalogue file and rules additions; planner change; `lastMadeLetter()`; day-part filter and the migration of the 8; tester-sheet row. Prerequisite rows: BL-537 (back-off), NS-13-R18, R19, R27 (anchor), BL-982 (typed-day key shape), BL-985 (quiet enforcement, X6).
+- Built today: 8 evening variants rotated by `slotOrdinal(date, weekdays) % 8` (`planner.ts:139, 212, 353 to 356`); named and neutral are two parallel sets; the planner gets only `lastSaveAt`. The built "A letter tonight?" and "Before you sleep" ignore the reminder hour.
+
+### 11. Information collected
+n/a because nothing new is collected. The last chosen key is a phone-only setting (L3), cleared at sign-out with the other reminder settings.
+
+### 12. Door lines
+n/a because the parent agrees to nothing here. Reminders are NS-13's door.
+
+### 13. Threats and risk checks
+
+| Asset | Threat | Control | Test |
+|---|---|---|---|
+| Trust | A note reads as a judgement of absence | R4, copy review | `[NS-48-R4]` |
+| Privacy | A name or a faith on a lock screen | R9, R11 | `[NS-48-R9]`, `[NS-48-R11]` |
+| Volume | Variety turns into more notes | R2, R24 | `[NS-48-R2]` |
+| Constitution | A note appears to write about the parent's letter | R5; the app does not read the text | `[NS-48-R5]` |
+| Quiet book | A hard-day tool is ignored | R21 | `[NS-48-R21]` |
+
+Risk checks:
+
+| Check | When | Who | On fail |
+|---|---|---|---|
+| Every variant through the rules test | Every PR touching the catalogue | `content`, rules test | Test red |
+| One week on a real phone: no name on the lock screen, Sunday slower than Friday, an r3 note mentions no absence (NTC-T24) | Before the floor ships | founder device check | Wording fixed |
+| Reading by a native editor of the VOICE.md voice | Before ship | `content` | Variant dropped |
+
+### 14. Never
+- Never a count, a comparison or a judgement; never "missed", "waiting", "still", "again" after a long pause, "keep your streak", "the app will help you write", "story", "tonight" outside evening-only variants, an exclamation mark.
+- Never a variant that implies the app wrote or read anything.
+- Ruling D3: nothing is donated to the system. Ruling D2: n/a because no field.
+
+### 15. Design inputs
+No new screen. D-S06's "How it will look" preview shows one sample variant for the next planned note and calls the same function as the planner (NS-48-R22). No new switch in Me, Reminders.
+
+### 16. Content inputs
+`notifications.catalogue.en.ts` (PROPOSED): keys `ntc.grid.<tone>.<band>.<nn>`, `ntc.kind.<kind>.<ageBand>.<nn>`, `ntc.occ.public.<nn>`, `ntc.occ.family.<nn>`, `ntc.occ.neutral.<nn>`, `ntc.season.<name>.<nn>`; each tagged with a shape and, where it names the evening, an `evening` tag; each with a `{child}` slot rendering. The 40 samples in NTC section 6 are intent and passed only a scratch lint, not the repo suite. Launch floor and full size as in section 3. The parent's own words: none.
+
+### 17. Legal, privacy and compliance inputs
+No counsel question of its own; the religion-on-the-lock-screen question belongs to NS-47 (counsel must confirm). Apple's behaviour that a local notification's title shows when its body is hidden is how NS-32-R13 reads it and was not re-read (UNVERIFIED).
+
+### 18. Label effect
+None. All local; nothing new leaves the phone.
+
+### 19. Claims enabled and forbidden
+Enables: nothing new. Forbids: "smart reminders", "personalised", "we know when you are free", any claim about fewer or more notes.
+
+### 20. Free or Plus
+Free (T2).
+
+### 21. Measures with analytics off
+A tester sheet: for each variant, whether reminders were turned off within a day of seeing it (retire the variant); did a Sunday read slower than a Friday; did anyone feel an r3 note mentioned absence. Pass: 0 of 5 report a note that felt like a judgement. No telemetry.
+
+### 22. Dependencies and gates
+NS-13 anchor, back-off and drafts counting (R18, R19, R27; BL-537), NS-32 registry and budget (NS-48-R26), BL-982, BL-985 for the quiet rule, NS-46 for the occasion layer (the grid and last-letter layers ship without it), content mined from Design B, founder word approval, the device check NTC-T24. The kind-aware layer degrades without NS-01 and NS-06 flags.
+
+### 23. Open questions
+- Q-NTC-1 ruled by N-1. Q-NTC-5, Q-NTC-8, Q-NTC-9: see "Founder items".
+- Does Karma want the NS-48 last-letter layer when names are off? Owner: Karma. Default: yes in the body for the kind, never in the title (N-4).
+- Conflicts 1 to 3 and 6.
+
+---
+
+## NS-49. Picture-first start and Journaling Suggestions (candidate C-xx; kind Attractive; area A Capture; extends NS-01)
+
+### 1. Who and when
+A parent with a picture of {child} on the phone, or who does not know what to say and would like to see recent days the phone itself lists, then choose one. Job: "I start from what happened, not from a blank page, and the words stay mine."
+
+### 2. Why
+Pictures are what parents already take, and the founder asked for the Apple Journal flow (pick a picture, then tell the story). Level 2 uses Apple's system picker, which needs no library permission and hands the app only what the parent picks (Apple pages read in the PHS review). The words stay the parent's; we never write, caption or start the entry. Evidence: the founder's direction; the OPP review ranks it first by a judgement of value, not data. A study test is in section 21.
+
+### 3. What, and Not in scope
+**What.**
+1. **Level 1, Pick (built, NS-01).** "Start from a photo" is a first-class start on Home inside the capture cluster, one of the equal starts next to Speak and Type (A G-11, FR-PHS-01), never larger than Speak. Home's one primary action stays Say. No strip, no tile (R-IA-3).
+2. **Level 2, Journaling Suggestions (parent-initiated).** Inside the picture start, a "Pick from recent days" choice (words by `content`) opens Apple's system picker on iOS 17.2 and later. The phone lists recent moments; the parent picks one; the app receives only the chosen suggestion. Only a photo or Live Photo still is read, and it goes through the NS-01 stored-copy path. The suggestion's title and date may show as an editable label that is marked as the phone's, never written into the letter.
+3. **Level 3, library read access: closed in 1.x.** No permission, no PhotoKit read, no nudge built from the library. A spike only on `exp/photos-library-nudge`, only if the founder asks (Q-FD-4).
+4. **Apple's own suggestion notification (iOS 26 and later) opening the app** is a second step behind a spike, P2 (NS-49-R20 to R22). It is Apple's notification, not ours.
+**Not in scope.** Any picture the parent did not pick; places, workouts, contacts, music, mood, steps, event posters or reflections from a suggestion; video; several pictures per letter; any caption, title or summary we write; any count of pictures; any nudge from pictures; Android; Share of the picture; a Home strip tile (overridden by R-IA-3); a fourth start button.
+
+### 4. Happy path
+1. Home. The parent taps "Start from a photo", then "Pick from recent days" (on iOS 17.2 and later with the flag on).
+2. Apple's sheet opens in its own process (first time: Apple's one-time consent sheet, which we never explain or pre-prompt). The parent chooses one suggestion and, if it holds several photos, chooses one.
+3. Ready appears with the picture and, if the suggestion had one, an editable label marked as from the phone. The parent speaks or types.
+4. Review, then Keep. The letter holds one stored copy and no mark of how it started.
+
+### 5. Unhappy paths and edge cases
+
+| Case | What happens |
+|---|---|
+| Cancel, or the first-use Apple sheet declined | Home as before: same props, no draft, 0 files; no message and no retry prompt (NS-49-R11) |
+| Journaling Suggestions off or types restricted in Settings, or an empty list | Handled as Cancel plus a "Pick a photo instead" path to level 1 in the same sheet; never an error (NS-49-R11) |
+| A suggestion with no photo item | Capture starts with no picture, one calm line from `content`; nothing about the other items is kept, shown or logged (NS-49-R10) |
+| A suggestion with several photos | The app takes none by default; the parent chooses one (A-S16) |
+| iOS 17.0 or 17.1 (our floor is 17.0), Android, Expo Go, flag off | The "Pick from recent days" choice is absent, not greyed (NS-49-R5) |
+| App lock raised or the app goes inactive during the pick | A result that returns while locked is discarded with 0 files; no picture in the switcher snapshot (NS-49-R12) |
+| iCloud-only suggestion photo | Whether the file is local is UNVERIFIED; NS-01's iCloud lines apply (R17b) |
+| Live Photo | The still only; whether a still is provided is UNVERIFIED |
+| Full phone | NS-01's low-storage behaviour |
+| iPad (App Review runs the iPhone app there) or Mac Catalyst | The start works or is absent; never a dead button (NS-49-R18) |
+| A picture of another adult or a child | Nothing differs from level 1; no face, scene or person detection (NS-49-R23) |
+| Library access limited or denied | No screen of ours mentions it; levels 1 and 2 work identically (NS-49-R25) |
+
+### 6. Scenario coverage
+
+| Scenario | Behaviour |
+|---|---|
+| First use | Level 1 is available at once; level 2 only on iOS 17.2 and later; Apple's consent sheet is Apple's |
+| Empty, normal, many | Empty list: "Pick a photo instead". Many suggestions: Apple's own scrolling list |
+| Offline | The picker is on the phone; an iCloud-only photo follows NS-01 |
+| Slow | NS-01 states; the stored-copy path is the same |
+| Failed | NS-01's failed-picture rows; a failed picture is silent (A-motion 4) |
+| Interrupted, killed mid-flow | The temporary copy in `Caches` is swept at launch (NS-01-R52) |
+| Updated mid-flow | As killed |
+| Low storage, Low Power Mode | NS-01 |
+| Kill switch `serverFeaturesEnabled()` off | No effect |
+| Remote pause `killSwitches.photos` (existing, NS-01-R19) | The picture start and the suggestions start are absent; Erase, sweep and Export still handle every picture |
+| Outage | n/a |
+| Plan lapsed | No effect; free |
+| Signed out | No effect; the stored copy is per book |
+| Second account on the same phone | Each account's pictures follow NS-01 |
+| New phone | NS-01 |
+| Two books, two parents, expecting | The letter goes to the active book as today |
+| VoiceOver, AX5 plus Bold Text on SE 3 | NS-49-R17; the system picker follows system settings |
+| Devanagari, RTL | The label is the phone's text, shown as given |
+| Every error code | NS-01's picture codes; this card adds none |
+
+### 7. Acceptance criteria
+
+| Id | Given, When, Then | Priority | Test title |
+|---|---|---|---|
+| NS-49-R1 | Given Home with photos on, When it renders, Then "Start from a photo" is one of the equal starts in the capture cluster, no larger than Speak, Home's one primary action stays Say, and the picture start count is exactly 1 on Home and 0 elsewhere; Home holds no strip, tile or second picture entry | P1 | `[NS-49-R1] one picture start, in the capture cluster` |
+| NS-49-R2 | Given any start, Then it goes through `startCapture({ source })` whose closed list gains `suggestion` beside `photo` (NS-35-R5), and Given a kept letter, Then no column, flag or file name records how it started; the source is in memory only and dropped at Keep | P1 | `[NS-49-R2] the start source is not stored` |
+| NS-49-R3 | Given a letter that began from a picture, When Home next shows a reminder note or a slip, Then neither mentions the picture, its subject or its place; the app does not read them for this, nor photo words the parent typed | P0 (a) | `[NS-49-R3] no note about the picture` |
+| NS-49-R4 | Given the closed list of Home entries (NS-35 navigation test), Then adding the suggestions choice leaves N3 and N6 green and creates no new start path | P1 | `[NS-49-R4] navigation test still passes` |
+| NS-49-R5 | Given iOS 17.2 or later, the module present and the flag on, Then "Pick from recent days" shows inside the picture start; on iOS 17.0 and 17.1, on Android, in Expo Go and with the flag off it is absent, not greyed (native `isAvailable()` checks the OS version; the NS-01-R59 pattern; a "what Android would do" line, FR-LCY-31) | P1 | `[NS-49-R5] the choice is absent where it cannot work` |
+| NS-49-R6 | Given the parent taps the suggestions start, Then the system picker opens in Apple's process, the app asks no permission, no photo or location usage string exists in the plist, and the compiled app calls no PhotoKit authorisation function (NS-01-R2 extended to this module) | P0 (a) | `[NS-49-R6] no permission, no library call` |
+| NS-49-R7 | Given a picked suggestion with at least one photo or Live Photo, Then the first still is copied from its file URL into `Caches`, stripped and stored by the NS-01 pipeline (R6, R34, R37), the Apple-provided copy is deleted once read, and the letter starts at Ready with the picture exactly as level 1 | P0 (a) | `[NS-49-R7] a suggestion becomes one stored picture` |
+| NS-49-R8 | Given a picked suggestion with several photos, Then the app takes none by default and shows each as a choice of one; no photo is stored until the parent chooses | P1 | `[NS-49-R8] several photos, parent chooses one` |
+| NS-49-R9 | Given a suggestion with a `title` or `date` range, Then they show only as a label above the picture that the parent can edit or clear and that is marked in the design as from the phone; they are stored only if the parent keeps the letter, held in the existing editable fields (`photo_text` and the letter date), never prefilled into the letter's words, never used for a prompt, a nudge or Find ranking; a date chip from `date` is parent-confirmed only (NS-01 OQ-1) | P0 (a) | `[NS-49-R9] the label is the phone's, editable, never in the words` |
+| NS-49-R10 | Given a suggestion that holds a location, workout, contact, song, podcast, media, steps, state of mind, event poster, reflection, video or any item not named, Then v1 reads none: `content(forType:)` is called only for Photo and LivePhoto, and a source scan fails the build if any other `JournalingSuggestion.*` type is referenced in app code; Given a suggestion with no photo item, Then capture starts with no picture and one calm line, and nothing else is kept, shown or logged | P0 (a) | `[NS-49-R10] only photos are read; the rest is ignored` |
+| NS-49-R11 | Given the parent cancels or dismisses the picker, declines Apple's first-use sheet, has Journaling Suggestions off, or the list is empty, Then Home is as before (no draft, 0 files), no message or retry prompt shows, the app never explains or pre-prompts Apple's sheet, and a "Pick a photo instead" path to level 1 is offered in the same sheet | P0 (a) | `[NS-49-R11] cancel and empty write nothing` |
+| NS-49-R12 | Given App lock is up or the app goes inactive during the picker, Then a result that returns while locked is discarded with 0 files (NS-01-R47) and no picture shows in the switcher snapshot (R13a) | P0 (a) | `[NS-49-R12] a locked return is discarded` |
+| NS-49-R13 | Given a letter kept from the suggestions path, Then it holds one stored copy and no suggestion identifier, title, coordinates, workout or contact detail, the export (1.7.0) is byte-identical to a level 1 letter with the same words and picture, and a level 1 and a level 2 picture of the same input differ in no byte but pixels | P0 (a) | `[NS-49-R13] a suggestion leaves no mark` |
+| NS-49-R14 | Given `EXPO_PUBLIC_PHOTOS` off or `killSwitches.photos` true, Then the suggestions choice is absent and Erase everything, sweep and Export still handle every picture; `EXPO_PUBLIC_SUGGESTIONS` (PROPOSED) may gate level 2 inside level 1's flag and can only narrow it | P1 | `[NS-49-R14] flags only narrow` |
+| NS-49-R15 | Given the entitlement `com.apple.developer.journal.allow`, Then it is added in the Expo config's one entitlements block, appears in a signed build only when the suggestions flag is on for that profile, and `security` reviews the plist and entitlement delta before any `production` build (the NS-04 and NS-35-R7 bar) | P0 (b) | `[NS-49-R15] entitlement only when the flag is on; security read` |
+| NS-49-R16 | Given level 2 ships, Then the where-it-lives lines and the privacy policy say in plain words that the parent may choose a picture from the phone's recent-days list, that the phone makes the list, and that only the chosen picture reaches the app; counsel reads them before the flag turns on in `production` | P0 (b) | `[NS-49-R16] the recent-days lines are read by counsel` |
+| NS-49-R17 | Given AX5 and VoiceOver, Voice Control and Switch Control, Then the suggestions choice and the one-photo sheet are 44 pt or more, labelled with their visible words and reachable | P1 | `[NS-49-R17] assistive settings work` |
+| NS-49-R18 | Given an iPad or Mac Catalyst, Then the picker works or the start is absent; no dead button renders on any platform where the module reports unavailable | P1 | `[NS-49-R18] no dead button on iPad or Catalyst` |
+| NS-49-R19 | Given the Apple file URL, Then the app accepts it only if it is a regular file readable in the location Apple provided, with a type from the NS-01 allowlist (JPEG, HEIC, HEIF, PNG), under the canvas cap, and refuses symlinks and paths outside the returned container; it does not trust the file's name or extension | P0 (a) | `[NS-49-R19] the suggestion file is validated` |
+| NS-49-R20 | Given the founder wants Apple's suggestion notifications to open the app, When the spike passes on a real iOS 26 phone, Then the app adds `JSNotificationURLFormat` with a universal link on the brand domain (from `packages/brand`, never typed), a route that parses the id (empty for a general reminder) and opens the picker prefilled with the token; Given a build with no associated domain, Then the key is not added and a build never ships a key whose link the website does not serve | P2 | `[NS-49-R20] Apple's notification opens the picker` (spike) |
+| NS-49-R21 | Given the suggestion id on the notification path, Then the handler never logs or stores it and drops it after the picker returns; the id counts as L3 for log purposes | P0 (a) | `[NS-49-R21] the suggestion id is never kept` |
+| NS-49-R22 | Given our reminder and an Apple suggestion notification may land the same day, Then our NS-32 budget counts only ours, Me, Reminders says in one calm line that the phone's own journal suggestions are separate and can be turned off in Settings (if the app is the chosen app), no sentence states "one notification a day" as covering Apple's, and nothing claims we send them | P1 | `[NS-49-R22] Apple's notifications are not ours` |
+| NS-49-R23 | Given a child's picture or a picture showing another adult arrives through level 2, Then nothing differs from level 1 (counsel Q45, Q48) and no face, scene or person detection exists (the NS-01-R33 scan covers the suggestions module) | P0 (a) | `[NS-49-R23] no detection of faces or scenes` |
+| NS-49-R24 | Given a canary suggestion title, place name and workout name through the module, Then 0 hits in logs, breadcrumbs, crash payloads, analytics and URLs (NS-01-R51 pattern) | P0 (a) | `[NS-49-R24] canary finds nothing` |
+| NS-49-R25 | Given any production, preview or testflight build in the 1.x line, Then there is no photo-library usage string, no PhotoKit authorisation call, no `PHPhotoLibrary` fetch or observer, no background mode for fetch or processing, no MediaLibrary or camera package, and a parent whose library access is limited or denied sees no prompt, "grant access" nag or error from us; the NS-01-R22 and R33 scans stay green and cover new folders | P0 (a) | `[NS-49-R25] level 3 stays closed` |
+| NS-49-R26 | Given a level 3 spike is asked for, Then it runs only on `exp/photos-library-nudge`, on a development build, against fictional Asha pictures with the flag off in every EAS profile and a test that fails any release profile that enables it; its output is a decision record and no nudge text is written until an ADR is accepted; any future library-derived nudge carries only facts the parent can verify, never faces, scenes, places or people, never a count of "missing" days, never a comparison | P0 (a) | `[NS-49-R26] a spike produces a decision, not a feature` |
+| NS-49-R27 | Given the privacy label, Then its effect for level 2 is "no change while only the chosen picture reaches the app and it never leaves the phone", re-read if the entitlement changes the label questions; the Notes for Review name the entitlement, say the picker is Apple's and returns only the chosen picture, say no photo-library permission is requested, and give a reviewer path; counsel reads the Developer Program License Agreement section on suggestion data before the flag turns on | P0 (b) | `[NS-49-R27] label, review notes and the license read` (release checklist) |
+
+### 8. Non-functional budgets
+- Latency: opening the picker under 500 ms on an SE 3 (ASSUMED; the system process owns the rest); Ready with the picture inherits NS-01's budget.
+- Memory: the copy is processed under NS-01's cap; the Apple file is deleted once read.
+- On-device storage: as NS-01 (one stored copy).
+- Battery: n/a; no background work (NS-49-R25).
+- Offline: the picker is on the phone; iCloud-only photos follow NS-01.
+- Accessibility: NS-49-R17.
+- Localisation: the choice's words are `content`'s; the label is the phone's text.
+- Privacy (log canary): NS-49-R24.
+
+### 9. State space (RR-5)
+
+| Case | Expected | Test |
+|---|---|---|
+| Kill switch `serverFeaturesEnabled()` off | No effect | n/a |
+| Card's remote pause `killSwitches.photos` (existing) | Start absent; Erase, sweep, Export intact | `[NS-49-R14]` |
+| Plan lapse | No effect | n/a |
+| Second account on the same phone | NS-01 | n/a |
+| App lock mid-pick | Discarded | `[NS-49-R12]` |
+| OS below 17.2 | Choice absent | `[NS-49-R5]` |
+| Notification path (iOS 26) | Spike only; P2 | `[NS-49-R20]` |
+
+### 10. Data and engineering
+- Fields: three transient rows and no persistent one (PHS 4.5): the suggestion file copy in `Caches` (L4, deleted once read, swept at launch, deleted by Erase, never logged, never synced, not in export); the in-memory `title` and `date` (L3 if it names a place or event; memory only until the parent keeps them as `photo_text` or the letter date, already L4 and L2); the in-memory suggestion id on the notification path (L3).
+- Migrations, sync, export: none beyond NS-01's; a level 2 letter exports as a level 1 letter.
+- Modules: `apps/mobile/modules/scribe-photo` (a SwiftUI picker in a hosting controller beside `pickOne`; `isAvailable()` by OS version; `pickSuggestion()` returning one photo URL copy, label title and date; no other item type read; no third-party picker package, NS-01-R22); `app.config.ts` entitlements block (`:250-262`) and `IOS_DEPLOYMENT_TARGET = '17.0'` (`:44`); `start-capture.logic.ts` closed source list; source-scan tests extending NS-01-R22 and R33; the log canary.
+- Flags and pause keys: `EXPO_PUBLIC_PHOTOS` and `killSwitches.photos` (existing); `EXPO_PUBLIC_SUGGESTIONS` (PROPOSED, narrows only).
+- Error codes: NS-01's.
+- Rollout and rollback: after NS-01 is on `testflight` (Q-PHS-1); `preview` first; rollback is the flag; nothing persistent exists.
+- Backlog: new rows needed (no id invented): the suggestions module; entitlement and plist review; source scan; canary; `startCapture` source list; spike SP-PHS-1 and an ADR "Library-derived nudges" (`architect`); privacy, claims and review-notes rows. No planner change.
+- Built today: Level 1 is built in the open stack (#834 to #840), not read here; the `scribe-photo` module and `pickOne` exist per NS-01.
+
+### 11. Information collected
+
+| Field | Why | Required or optional | Validation | Class | Store | Retention | Export |
+|---|---|---|---|---|---|---|---|
+| The chosen picture | The letter's one picture | Optional | NS-01's | L4 | Phone, per NS-01 | As the letter | As NS-01 |
+| Suggestion title and date | An editable label | Optional, parent confirms | Length as NS-01's photo words | L3 in memory; L4 once kept as `photo_text` | Memory, then the existing field | As the letter | As the letter's field |
+| The suggestion file copy | Read once | n/a | R19 | L4 | `Caches`, transient | Deleted once read; swept at launch | No |
+| The suggestion id (iOS 26 path) | Prefill the picker | n/a | n/a | L3 | Memory | Dropped after the picker returns | No |
+
+### 12. Door lines
+Picking is an act, not an agreement.
+- **Shown:** Apple's own picker and Apple's one-time consent sheet; above the start, at most one sentence from `content` once counsel clears it (the phone chooses which recent days to list; only the one you pick comes to the app).
+- **Records:** nothing about the act. The stored copy is as NS-01.
+- **Never:** reading any suggestion the parent did not pick; reading places, workouts, contacts, music, mood or steps; the photo library; location; faces or scenes; background reads; upload; a donation to Spotlight, Siri or App Intents (D3); writing a caption or an entry start from a suggestion.
+- **Decline:** Cancel in Apple's sheet, or "Not now" on Apple's consent sheet. Level 1 stays.
+
+### 13. Threats and risk checks
+
+| Asset | Threat | Control | Test |
+|---|---|---|---|
+| A child's picture | The app reads a picture the parent did not pick | R6, R10, R25 | `[NS-49-R6]`, `[NS-49-R25]` |
+| A person's mood, contacts, route | Apple hands more than a photo | R10 scan | `[NS-49-R10]` |
+| Files | A crafted or odd file | R19 | `[NS-49-R19]` |
+| Trust | A nudge made from pictures | R3, R26 | `[NS-49-R3]`, `[NS-49-R26]` |
+| Privacy | A title or place in a log | R24 | `[NS-49-R24]` |
+| Store | Entitlement or label surprise | R15, R27 | `[NS-49-R15]`, `[NS-49-R27]` |
+| Notifications | Apple's note read as ours | R22 | `[NS-49-R22]` |
+
+Risk checks:
+
+| Check | When | Who | On fail |
+|---|---|---|---|
+| Whether the entitlement needs an Apple request (UNVERIFIED) | The spike's step 1 | `mobile`; founder files if needed | The flag stays off; level 1 alone |
+| Plist and entitlement delta | Before any `production` build | `security` | Build held |
+| Counsel on the label line, the recent-days lines and the license | Before the flag turns on in `production` | `legal` through the founder | Flag off |
+| Device runs on iOS 17.1, 17.2 and 26 | Before ship | `qa` | Flag off |
+
+### 14. Never
+As section 12, plus: no system-intelligence donation (D3); writing tools off on the label field, photo words and place (D2, BL-962); no sound or haptic on a failed picture (A-motion 4).
+
+### 15. Design inputs
+New ids (PROPOSED): **A-S16** One photo from a suggestion (a choice sheet when a suggestion holds several). New states of existing screens: A-S01 capture cluster with "Pick from recent days" inside the picture start (light, dark, AX5 on SE 3; absent on 17.0 and 17.1); A-S03 states `suggestions.empty` (offers "Pick a photo instead") and `suggestions.noPhoto` (one calm line, then a picture-less letter); A-S04 state `suggestionLabel` (Ready with an editable, clearable label that reads as the phone's text); D-S06 `journalNote` (the one calm line that the phone's own journal suggestions are separate). There is no Home strip tile (R-IA-3).
+
+### 16. Content inputs
+Intent for `content`; none implies the app finds, chooses, writes or understands a picture; banned: memory, moment, album, best, caption, AI, smart, suggested for you. Keys (PROPOSED, `features.photos.suggestions.*`): `start` ("Pick from recent days", the words are `content`'s), `door` (the one sentence once counsel clears it), `choose.title` ("Choose one picture"), `noPhoto` (one calm line), `pickInstead` ("Pick a photo instead"), `label.fromPhone` (marks the text as the phone's), `journalNote` (the Reminders line). The NS-48 picture-kind copy says "pick", never that the app saw a photo (NTC section 6).
+
+### 17. Legal, privacy and compliance inputs
+App Review 2.5.19 and 5.1.1(iii) (counsel must confirm the out-of-process picker reading); Developer Program License Agreement section on suggestion data (not read; counsel); counsel Q43 (label line), Q45 (a child's image), Q48 (another adult's picture), Q54 (Photos or Videos become collected if pictures sync). New counsel items need numbers from legal: the DPLA duties; whether the picker changes the label or Notes for Review; whether the wording above the picker is a notice; a library permission for a child's pictures (level 3, not for 1.x).
+
+### 18. Label effect
+None while only the chosen picture reaches the app and stays on the phone (NS-49-R27; counsel must confirm). Level 3 would change it and is closed.
+
+### 19. Claims enabled and forbidden
+Enables: "Pick a picture from your recent days, then say what you want to say." Forbids: "we find your best moments", "we suggest", "smart", "AI", "memories", "your photos, organised", any count, any sentence that the app reads your photos.
+
+### 20. Free or Plus
+Free and ungated, as NS-01 (T2).
+
+### 21. Measures with analytics off
+As NS-01 section 21: tester sheet, five parents, "x of n". New fixed question: "Did you start a letter from the recent-days list this week? (yes or no)". Pass (PROPOSED): 3 of 5 try it without help and 0 of 5 say it felt like the app reading their photos. Two past-behaviour questions ride in the planned photo study (OPP-01): "The last time you took a picture of {child} that you wanted to remember, what did you do with it?" and "Did you ever want to say something about it and not?"; pass 4 of 5 name a picture they wanted to say something about and did not; stop if a parent reads a suggestion list as the app watching.
+
+### 22. Dependencies and gates
+NS-01 shipped on `preview` and on `testflight` (Q-PHS-1); NS-35 (`suggestion` on the closed list); NS-32 note on Apple's notifications; the entitlement enabled on the App ID; `security` plist and entitlement review; counsel on the label line and the license; founder word approval; device runs on iOS 17.1, 17.2 and 26. NS-50 is not a dependency (no tile).
+
+### 23. Open questions
+- Q-FD-4, Q-FD-6 (R27 kept closed for level 3, narrow exception for the picker), Q-PHS-1 to Q-PHS-7: see "Founder items".
+- Is "picture-first" ranked before Type in the cluster? Owner: design lead area A. Default: Speak and Type stay the equal twins; the picture start is the third item, as NS-01 draws it, until a study says otherwise (FR-PHS-01 asks design to show it).
+- Raise the iOS floor to 17.2 or hide on 17.0 and 17.1? Owner: Karma. Default: hide (Q-PHS-2).
+
+---
+
+## NS-50. Home today (candidate C-xx; kind Attractive; area A Capture; one more rank in the Home slip slot)
+
+### 1. Who and when
+A parent opening Home on a day they marked. Today Home holds one job and does it above the fold; its weakness is a stale second visit (only the prompt and greeting change). This card gives Home one real, parent-chosen thing on the days that have one, without a second job.
+
+### 2. Why
+IA-AUDIT found Home is not thin (5 content elements, 4 actions, 0 to 1 slips) and that the direction's "strip" of up to four things would be a feed with a count of things waiting, which the frame forbids. R-IA-3 rules slip, not strip. A day the parent chose outranks any suggestion, and it is one line of the parent's own choice. Evidence: IA-AUDIT sections 5.2 and 5.3 (design judgement, not observed; test T3 below).
+
+### 3. What, and Not in scope
+**What.** One more rank in the single Home slip slot (COMPONENTS C9, `[FRAME-SLIP]`): rank (2b), "a day we mark, today". Rank (2c) is the one-time Days ask of NS-47. Proposed order: (1) the waiting set, (2) the seal-opened line, (2b) a day we mark today, (2c) the Days ask, (3) Save a copy, (4) one past letter. At most one slip shows. The reminder ask is a sheet over the Book and the Plus line is not a slip (frame). The typed-day line stays in the prompt block and is not a slip (A W9).
+**Not in scope.** A strip or a second list; a count of anything; upcoming days; a picture suggestion tile (it lives in the capture cluster, NS-49-R1); a "past letter" change (NS-23 is locked); new notification behaviour (NS-46); the Days ask's rules (NS-47-R19).
+
+### 4. Happy path
+1. The parent ticked Thanksgiving. On the day they open Home with no waiting card and no seal opening.
+2. Home shows one slip: the day's name and one line (the NS-46 landing words), with "Not now". Speak and Type are as always.
+3. The parent taps Speak. Or they tap "Not now" and the slip leaves until tomorrow's date, with the next slip, if any, waiting for the next Home visit (C M-3).
+4. A parent who arrived by tapping the 09:00 note sees the same day as the line above the prompt (D-S11) and no slip that visit.
+
+### 5. Unhappy paths and edge cases
+
+| Case | What happens |
+|---|---|
+| A waiting card or the seal-opened line is due | It shows; the day slip does not (one slip at a time; A G-13: while slip 1 shows, no other slip shows) |
+| Two ticked days on one date | One slip naming both |
+| A quiet-tone day | The name and "The book is open if you want it." and no prompt line |
+| A birthday the same date | The day yields (NS-46-R7); no day slip |
+| The parent moved the date | The slip shows on their date |
+| A quieted or hidden book | No slip (R-IA-6) |
+| App lock on, app backgrounded | The app-switcher snapshot of Home is blank where the slip would show (E18) |
+| Reduce Motion | The slip renders complete, 200 ms fade at most (C9) |
+| Second visit the same day | The slip stays until "Not now" or the local day ends; it then leaves the next day with no exit animation (D G5) |
+| The remote pause is on | The slip is absent at the next focus (NS-46-R28) |
+| Typed day today | Its line shows in the prompt block as built; no library slip unless a library day also falls today and no typed day does (a day the parent typed ranks first) |
+
+### 6. Scenario coverage
+
+| Scenario | Behaviour |
+|---|---|
+| First use | No day is ticked, so no slip; the ask slip is NS-47's |
+| Empty, normal, many | A day with nothing ticked: no slip. Never a list |
+| Offline | All local |
+| Slow, Failed | n/a; the slip reads the store; if it cannot, no slip and no message |
+| Interrupted, killed mid-flow | The slip re-evaluates at the next Home focus |
+| Updated mid-flow | Same |
+| Low storage, Low Power Mode | n/a |
+| Kill switch `serverFeaturesEnabled()` off | No effect |
+| Remote pause | NS-46's `killSwitches.libraryDays` (PROPOSED) |
+| Outage, Plan lapsed | No effect |
+| Signed out | The store was cleared; no slip |
+| Second account on the same phone | B sees nothing of A's days |
+| New phone | Empty |
+| Two books, two parents, expecting | The active book's `{child}` where the words use it; a quiet or hidden active book shows none; each phone its own |
+| VoiceOver, AX5 plus Bold Text | The slip is one element, name then line, with a "Not now" button; at AX sizes the button has its own row (B G-06) |
+| Devanagari, RTL | The day's name as given |
+| Every error code | None; no slip on failure |
+
+### 7. Acceptance criteria
+
+| Id | Given, When, Then | Priority | Test title |
+|---|---|---|---|
+| NS-50-R1 | Given the Home slip registry, Then a day we mark today is a registered rank (2b), an unregistered slip type fails the test (`[FRAME-SLIP]`), and at most 1 slip renders at a time | P1 | `[NS-50-R1] one slip slot, one more rank` |
+| NS-50-R2 | Given a ticked day whose date is today, Then Home shows its name and one line; Given any other date, Then it shows nothing about days: never an upcoming day, a list, a count of ticked days or "no days today" | P0 (a) | `[NS-50-R2] only today, never a list or a count` |
+| NS-50-R3 | Given the slip, Then its words are the NS-46 landing words (`days.landing.*`) and a `quiet` day shows the name and "The book is open if you want it." with no question; two ticked days name both | P0 (a) | `[NS-50-R3] the slip uses the landing words` |
+| NS-50-R4 | Given the parent arrived by tapping a library-day note, Then Home shows the day as the line above the prompt (D-S11) and the slip is not drawn that visit; Given any other open that day with no higher slip, Then the slip shows | P1 | `[NS-50-R4] a day shows one way per visit` |
+| NS-50-R5 | Given the registry, Then the order is (1) waiting set, (2) seal-opened, (2b) a day we mark today, (2c) the Days ask, (3) Save a copy, (4) past letter; the higher rank shows and the others do not (NS-23-R6); the order lives in one registry (BL-963) | P1 | `[NS-50-R5] the slip order is one registry` |
+| NS-50-R6 | Given the Days ask (NS-47-R19) is due, When no higher slip is due, Then it shows once as rank (2c) and the NS-47 rules decide whether it is due; Given a slip was dismissed, Then the next slip in the order shows at the next Home visit, never in the same visit (C M-3) | P1 | `[NS-50-R6] the ask is a slip and waits its turn` |
+| NS-50-R7 | Given the slip, Then it has a "Not now" button (`en.common.notNowButton`) for gesture-free use; Given a tap, Then it leaves until the next local day with no haptic; "Not now" is not an answer to anything | P1 | `[NS-50-R7] not now dismisses until tomorrow` |
+| NS-50-R8 | Given a quieted or hidden active book, or "Include in my reminders" off, Then no day slip shows for it (R-IA-6, NS-32-R14) | P0 (a) | `[NS-50-R8] a quiet book shows no day slip` |
+| NS-50-R9 | Given App lock on and the app going to the background, Then the switcher snapshot of Home shows no day name (errata E18) | P1 | `[NS-50-R9] snapshot has no day name` |
+| NS-50-R10 | Given Home, Then a picture suggestion is never a slip or a tile: the picture entry is the capture cluster's alone (NS-49-R1) and the slip registry holds no picture rank | P1 | `[NS-50-R10] no picture slip` |
+| NS-50-R11 | Given Home on any day, Then the count of slip-like items is at most 1 and no screen shows a count of things waiting; a strip is not built before test T3 shows it adds no time to Speak or Type and no parent says "waiting" | P0 (a) | `[NS-50-R11] Home is not a feed` |
+| NS-50-R12 | Given Reduce Motion, Then the slip renders complete with at most a 200 ms fade; Given VoiceOver, Then it is one element read as the name then the line, then the button | P2 | `[NS-50-R12] slip with Reduce Motion and VoiceOver` |
+
+### 8. Non-functional budgets
+- Latency: the slip is chosen inside Home's existing render; no extra read beyond the days module's lazy read (ASSUMED); Home first frame budgets of NS-34 hold.
+- Memory, storage, battery: n/a.
+- Offline: all local.
+- Accessibility: NS-50-R12 and NS-47-R25.
+- Localisation: as NS-46.
+- Privacy (log canary): the day name is never logged (NS-47-R8).
+
+### 9. State space (RR-5)
+
+| Case | Expected | Test |
+|---|---|---|
+| Kill switch `serverFeaturesEnabled()` off | No effect | n/a |
+| Card's remote pause | Absent at next focus | `[NS-46-R28]` |
+| Plan lapse | No effect | n/a |
+| Second account on the same phone | B sees nothing | `[NS-47-R15]` |
+| Higher slip due | Day slip hidden | `[NS-50-R5]` |
+| Quiet or hidden book | None | `[NS-50-R8]` |
+
+### 10. Data and engineering
+- Fields: none new.
+- Migrations, sync, export: none.
+- Modules: the Home slip registry and host (COMPONENTS C9; BL-963; the registry file named in `[FRAME-SLIP]`), `app/(tabs)/index.tsx`, the days module (read-only), the shared line component of D-S11.
+- Flags and pause keys: NS-46's.
+- Error codes: none.
+- Rollout and rollback: ships with NS-46; rollback is the pause.
+- Backlog: new row needed (design-systems and mobile) for ranks 2b and 2c in the registry (IA-AUDIT C8); BL-963 is the registry row; the Home slip host and SlipCard are COMPONENTS R11's row.
+- Built today: Home holds waiting cards, the seal-opened line, Save a copy and one past letter as slips (frame); 2b and 2c do not exist.
+
+### 11. Information collected
+n/a because nothing is collected; it reads NS-46's store.
+
+### 12. Door lines
+n/a because the slip is shown, not agreed to; the Days ask has its door lines in NS-47.
+
+### 13. Threats and risk checks
+
+| Asset | Threat | Control | Test |
+|---|---|---|---|
+| Trust | Home becomes a feed | R2, R11 | `[NS-50-R11]` |
+| A family's faith | A day name visible to a shoulder-surfer or in the switcher | R9; the day shows only when it is today | `[NS-50-R9]` |
+| Hard days | A day slip in a quiet book | R8 | `[NS-50-R8]` |
+
+Risk checks:
+
+| Check | When | Who | On fail |
+|---|---|---|---|
+| Slip vs strip prototype test T3 (5 parents each, area A `PROTOTYPE.html`) | Before any strip is considered | `user-research`, area A lead | The single slip stands |
+| SE 3 at AX5 | Before ship | `qa` | Layout fixed |
+
+### 14. Never
+- Never a strip, a list, a count, an upcoming day or a "complete your days" prompt.
+- Never a picture suggestion as a slip.
+- Never a streak or anything that says what the parent has not done.
+- Ruling D3: nothing donated. Ruling D2: n/a because no field.
+
+### 15. Design inputs
+A-S01 states `dayToday` and `daysAsk` (PROPOSED), drawn with the C9 slip host and, for the day line, the same component as D-S11's typed-day line; "Not now" at the card's foot, its own row at AX sizes (B G-06); D-S11 `libraryDay` (NS-46). Home with the slip against the SE 3 at AX5. Tree test T1 and slip test T3 per IA-AUDIT section 10.
+
+### 16. Content inputs
+Reuses NS-46's `days.landing.*` and `en.common.notNowButton`. No new words.
+
+### 17. Legal, privacy and compliance inputs
+NS-47's: a day name on an unlocked Home shows to whoever holds the phone; that is the parent's choice, and the snapshot rule covers the switcher. Counsel must confirm anything touching a protected class (NS-47).
+
+### 18. Label effect
+None.
+
+### 19. Claims enabled and forbidden
+Enables: nothing new. Forbids: "your day", "don't forget", any count or "waiting".
+
+### 20. Free or Plus
+Free (T2).
+
+### 21. Measures with analytics off
+Slip test T3: time to Speak or Type with and without the slip, and "did anything on Home feel like it was waiting for you?" Pass: no added time and no parent says "waiting". Tester sheet; "x of n"; no telemetry.
+
+### 22. Dependencies and gates
+NS-46 (the data and the store), BL-963 (slip registry), COMPONENTS R11 (SlipCard, SystemLine, Dateline), NS-47 for rank 2c, errata E18, the design of A-S01.dayToday and A-S01.daysAsk.
+
+### 23. Open questions
+- R-IA-3 ruled slip not strip. Test T3 remains in the research plan; default: the slip stands.
+- Rank of (2c): conflict 7. Owner: design lead area A. Default: (2c).
+- Conflict 5 (slip against the typed-day line).
+
+---
+
+## Trace: what each card carries
+
+| Card | Acceptance rows | P0 | P1 | P2 | FR rows it draws from |
+|---|---|---|---|---|---|
+| NS-46 | R1 to R28 | 14 | 13 | 1 | FR-DAY-01 to 25 |
+| NS-47 | R1 to R27 | 17 | 9 | 1 | FR-CUL-01 to 27 |
+| NS-48 | R1 to R27 | 11 | 15 | 1 | FR-NTC-01 to 21, N-1 to N-8 |
+| NS-49 | R1 to R27 | 17 | 9 | 1 | FR-PHS-01 to 57 (folded) |
+| NS-50 | R1 to R12 | 4 | 7 | 1 | R-IA-3, R-IA-5, IA-AUDIT 5.3 |
+
+product (for Karma)
