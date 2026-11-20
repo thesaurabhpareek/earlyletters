@@ -199,7 +199,7 @@ The harness learns which questions are worth asking by looking at what it asked.
 5. Prune (see "Keeping context small").
 6. Post a short retro entry in the harness lessons file (below). Karma reads it.
 
-**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 82 errata rows (E1 to E82) after the lock, and 157 closure rows (CL-001 to CL-154; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
+**Metrics (proposed targets are not set; take a baseline for four weeks first).** Baseline facts on record on 20 Nov 2026: 82 errata rows (E1 to E82) after the lock, and 157 closure rows (CL-001 to CL-157; CL-001 to CL-113 are the 113 grouped rows: 79 RULED, 32 FOUNDER, 2 EVIDENCE) in `GAP-LOG.md`.
 
 | Metric | How to count it | What a bad trend means |
 |---|---|---|
