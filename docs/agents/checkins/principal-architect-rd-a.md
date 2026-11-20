@@ -1,0 +1,2 @@
+18:43 (20 Nov) principal-architect | done: read both briefs, fetched all heads, INPUTS register, PACK-DELTA index and files 1 to 6 drafted, 62 of 62 scripted line cites held | next: RESYNC-LIST, three PRs, journal | blocked/needs: nothing
+18:59 (20 Nov) principal-architect | done: re-based INPUTS, PACK-DELTA and delta 1 on a3806f74 (rev 2), fixed 7 review cites | next: deltas 2 to 4, then 5, 6, RESYNC | blocked/needs: nothing
