@@ -451,11 +451,11 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     expect(() => ins('m4', 'e2', 'd2')).toThrow(); // and only one
     expect(() => ins('m5', 'e3', null, { kind: 'video' })).toThrow();
     expect(() => ins('m6', 'e3', null, { ext: 'png' })).toThrow();
-    // The CHECKs are ceilings in code points, 8 per character a person sees, never the product limit (BL-957): they
+    // The CHECKs are ceilings in code points, 16 per character a person sees, never the product limit (BL-957): they
     // admit the longest words and place the app keeps, and refuse one code point more.
-    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(1121) })).toThrow();
-    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(481) })).toThrow();
-    ins('m9', 'e4', null, { text: 'x'.repeat(1120), place: 'y'.repeat(480) });
+    expect(() => ins('m7', 'e3', null, { text: 'x'.repeat(2241) })).toThrow();
+    expect(() => ins('m8', 'e3', null, { place: 'x'.repeat(961) })).toThrow();
+    ins('m9', 'e4', null, { text: 'x'.repeat(2240), place: 'y'.repeat(960) });
   });
   it('[D1] the store: put replaces the letter\'s row, and deletedAt is derived from the letter, never written', () => {
     const { db } = nodeDb();
@@ -498,11 +498,19 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
           expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(141), place: g.repeat(61) })).status, at).toBe('stored');
           expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], at).toEqual([g.repeat(140), g.repeat(60)]);
         }
-        // A character longer than 8 code points (a family with skin tones, 11): the cut stops at the column's ceiling,
-        // so the store never refuses what the app kept.
-        const big = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
-        expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: big.repeat(140), place: big.repeat(60) })).status, engine).toBe('stored');
-        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([big.repeat(101), big.repeat(43)]);
+        // RGI emoji of 10 and 11 code points (a kiss with two skin tones, a family with skin tones) are kept whole, 140
+        // and 60 of them, through the CHECK (card 01 R54; 16 code points per character).
+        const kiss = '\u{1F9D1}\u{1F3FB}\u200D\u2764\uFE0F\u200D\u{1F48B}\u200D\u{1F9D1}\u{1F3FC}';
+        const family = '\u{1F468}\u{1F3FD}\u200D\u{1F469}\u{1F3FD}\u200D\u{1F467}\u{1F3FD}\u200D\u{1F466}\u{1F3FD}';
+        for (const g of [kiss, family]) {
+          expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: g.repeat(140), place: g.repeat(60) })).status, engine).toBe('stored');
+          expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([g.repeat(140), g.repeat(60)]);
+        }
+        // A character longer than 16 code points (a letter under 20 marks): the cut stops at the column's ceiling, so the
+        // store never refuses what the app kept.
+        const stack = 'a' + '\u0301'.repeat(20);
+        expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: stack.repeat(140), place: stack.repeat(60) })).status, engine).toBe('stored');
+        expect([entryMediaStore(db).get('e1')?.text, entryMediaStore(db).get('e1')?.place], engine).toEqual([stack.repeat(106), stack.repeat(45)]);
       } finally {
         intl.Segmenter = seg;
       }
@@ -525,6 +533,25 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
     const racing = { ...d, store: { ...store, put: (p: Parameters<typeof store.put>[0]) => (db.run("DELETE FROM drafts WHERE id = 'd1'"), store.put(p)) } };
     await expect(commitPhoto(racing, { entryId: 'd1', finalText: '', bytes: makeJpeg({ seed: 3 }), text: null, requireWords: false })).resolves.toEqual({ status: 'failed' });
     expect([...files.disk.keys()]).toEqual(['m1.jpg']);
+  });
+  it('[NS-01-R17] a row committed and then failed after is taken back: the earlier picture comes back, or none stays, and the commit never throws (#836 review B)', async () => {
+    const { db } = nodeDb();
+    migrate(db, ctx);
+    letter(db, 'e1');
+    letter(db, 'e2');
+    let fail = false;
+    // The row is committed by put's own transaction; the change notice after it throws, as a later step would.
+    const store = entryMediaStore(db, () => {
+      if (fail) throw new Error('after the row');
+    });
+    const files = memoryFiles();
+    const d = { ...deps({ files }).d, store };
+    expect((await commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg(), text: 'First' })).status).toBe('stored');
+    fail = true;
+    await expect(commitPhoto(d, { entryId: 'e1', finalText: 'Words.', bytes: makeJpeg({ seed: 2 }), text: 'Second' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e1')?.text, [...files.disk.keys()]]).toEqual(['First', ['m1.jpg']]);
+    await expect(commitPhoto(d, { entryId: 'e2', finalText: 'Words.', bytes: makeJpeg({ seed: 3 }), text: 'Only' })).resolves.toEqual({ status: 'failed' });
+    expect([store.get('e2'), [...files.disk.keys()]]).toEqual([null, ['m1.jpg']]);
   });
   it('[D1] put refuses an owner that is neither a letter nor a draft, with a typed error, and writes nothing (DQ-R07)', () => {
     const { db } = nodeDb();

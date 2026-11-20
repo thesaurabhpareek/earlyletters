@@ -6,13 +6,17 @@ import ts from 'typescript';
 import { selectPrompt } from '@scribe/core';
 import { PROMPTS } from '@scribe/content';
 import { tonightPromptInput } from '../src/components/tonight/prompt.logic';
-import { entrySnapshot, type LocalEntryRow } from '../src/lib/sync/outbox';
+import { applyPullPage } from '../src/lib/sync/merge';
+import { entrySnapshot, SYNC_SETTING, writeSetting, type LocalEntryRow } from '../src/lib/sync/outbox';
+import type { PullResponse } from '../src/lib/sync/types';
 import { tokens } from '@scribe/design-tokens';
 import { adoptPending } from '../src/lib/photos/adopt';
+import { entryMediaStore } from '../src/lib/photos/entry-media';
 import { parsePhotosFlag, photoSurfaces, photosPaused } from '../src/lib/photos/flag';
 import { pictureHidden, THUMB_MAX_HEIGHT_PT } from '../src/lib/photos/surface';
 import { commitPhoto, PhotoSession } from '../src/lib/photos/session';
 import { photos } from '../src/lib/photos/copy';
+import { fixture, insertBook } from './helpers/store-fixture';
 import { deps, makeJpeg } from './photos-helpers';
 
 const ROOT = join(__dirname, '..');
@@ -76,7 +80,7 @@ describe('[NS-01-R1] only Home registers a photo start', () => {
     while (!ts.isJsxElement(parent) && !ts.isJsxFragment(parent)) parent = parent.parent;
     const siblings = parent.children.map(jsxName).filter(Boolean);
     expect(siblings).toContain('ButtonRow'); // the Speak and Type row is in the same cluster
-  });
+  }, 30_000); // parses the whole src tree: 7 to 9 s on a loaded runner
   it('[NS-01-R1] the Book, Me and every other route have 0 controls that start a letter from a picture', () => {
     for (const f of APP.filter((f) => f !== HOME)) {
       const sf = parse(f);
@@ -144,6 +148,44 @@ describe('[NS-01-R15][NX-39-R33] sync carries no picture', () => {
     expect(Object.keys(snap).filter((k) => /library|local_id|asset|place|geohash|moment|occasion|taken_at|media|photo/i.test(k))).toEqual([]);
     expect(JSON.stringify(snap)).not.toContain('Asha on the swing');
   });
+  it('[NS-01-R15] a pull never creates, changes or deletes an entry_media row: not for a letter it rewrites, one the server no longer holds, a new one, or a draft (#836 review B)', () => {
+    const ME = '11111111-1111-1111-1111-111111111111';
+    const NOW = '2026-10-03T09:00:00.000Z';
+    const db = fixture().db;
+    insertBook(db, { id: 'c1', name: 'Asha', signsAs: 'Mama', serverState: 'synced' });
+    writeSetting(db, SYNC_SETTING.owner, ME);
+    writeSetting(db, SYNC_SETTING.epoch, '1');
+    for (const id of ['e1', 'e2']) {
+      db.run(
+        `INSERT INTO entries (id, kind, occurred_on, captured_at, capture_mode, edit_level, engine_version, raw_transcript, machine_edits, final_text,
+           in_book, updated_at, child_id, author_id, server_version, server_updated_at, server_epoch, sync_state)
+         VALUES (?, 'letter', '2026-10-01', ?, 'typed', 'verbatim', 5, 'Hi.', '[]', 'Hi.', 1, ?, 'c1', ?, '100', ?, 1, 'synced')`,
+        id, NOW, NOW, ME, NOW,
+      );
+    }
+    db.run("INSERT INTO drafts (id, child_id, capture_mode, created_at) VALUES ('d1', 'c1', 'typed', ?)", NOW);
+    const store = entryMediaStore(db);
+    const pic = (owner: string, media: string) =>
+      store.put({ entryId: owner, mediaId: media, ext: 'jpg', bytes: 3, sha256: 'ab', width: 4, height: 4, text: 'Rain boots', place: 'the back step', addedAt: NOW, deletedAt: null });
+    pic('e1', 'm1');
+    pic('e2', 'm2');
+    pic('d1', 'm3');
+    const media = () => db.all('SELECT * FROM entry_media ORDER BY id');
+    const before = media();
+    const row = (id: string, words: string) => ({
+      id, child_id: 'c1', author_id: ME, author_signs_as: 'Mama', kind: 'letter', occurred_on: '2026-10-01', captured_at: NOW,
+      capture_mode: 'typed', edit_level: 'verbatim', prompt_key: null, engine_version: 5, raw_transcript: 'Hi.', machine_edits: [],
+      final_text: words, in_book: true, sounds_like_me: null, approval: null, created_at: NOW, updated_at: NOW, deleted_at: null, own: true, v: '120',
+    });
+    // e1 rewritten by the server, e2 no longer held there (it goes to Recently deleted here), e3 new from another phone.
+    const page = {
+      reset: false, epoch: 1, epoch_started_at: NOW, gone: [], more: false,
+      books: [{ id: 'c1', access: 'parent', repull: false, meta_hash: 'x', cursor: '900:00000000-0000-0000-0000-000000000000', more: false, rows: [row('e1', 'Hi, Asha.'), row('e3', 'New.')], ids: ['e1', 'e3'] }],
+    } as unknown as PullResponse;
+    db.transaction(() => applyPullPage(db, page, NOW));
+    expect(db.get<{ final_text: string }>("SELECT final_text FROM entries WHERE id = 'e1'")?.final_text).toBe('Hi, Asha.'); // the pull did run
+    expect(media()).toEqual(before);
+  });
   it('[NS-01-R15] the photo code never imports the sync layer or the network', () => {
     for (const f of walk(join(SRC, 'lib', 'photos'))) {
       expect(importsOf(parse(f)).filter((m) => /sync|supabase|fetch|api/.test(m)), rel(f)).toEqual([]);
@@ -204,6 +246,24 @@ describe('[NS-01-R20] new controls', () => {
     // Reading order on Ready: thumbnail, prompt, then the red circle (Speak) and "or type instead" (Type) below it.
     const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
     expect(listen.indexOf('<PendingPhotoThumb />')).toBeLessThan(listen.indexOf('testID="listen.prompt"'));
+  });
+  it('[NS-01-R20b] Ready with a picture offers Type after Speak (Type keeps the picture), in the order thumbnail, prompt, Speak, Type (#838 review B)', () => {
+    const listen = readFileSync(join(SRC, 'app', 'listen.tsx'), 'utf8');
+    expect(listen).toMatch(/\{room\.startControl && withPhoto \? \(\s*<Button variant="quiet" size="md" label=\{copy\.errors\.micDenied\.typeButton\} onPress=\{typeInstead\} testID="listen\.photo\.type" \/>/);
+    expect(listen).toMatch(/const withPhoto = phase === 'ready' && !!pendingPhoto\?\.source;/);
+    const at = ['<PendingPhotoThumb />', 'testID="listen.prompt"', 'testID="listen.start"', 'testID="listen.photo.type"'].map((m) => listen.indexOf(m));
+    expect(at.every((i, n) => i > -1 && (n === 0 || i > at[n - 1])), String(at)).toBe(true);
+  });
+  it('[NS-01-R17][NS-33] "That photo could not be opened" is said aloud: both places use ErrorLine, which announces it and is a live region (#838 review B)', () => {
+    for (const f of ['photo-start.tsx', 'pending-photo-thumb.tsx']) {
+      const src = readFileSync(join(SRC, 'components', 'photos', f), 'utf8');
+      expect(src, f).toMatch(/<ErrorLine message=\{\w+(\.failed)? \? photos\.capture\.openFailed : null\} \/>/);
+      expect(src, f).not.toMatch(/>\{photos\.capture\.openFailed\}</);
+    }
+    const line = readFileSync(join(SRC, 'lib', 'auth', 'ui.tsx'), 'utf8');
+    const body = line.slice(line.indexOf('export function ErrorLine'), line.indexOf('\n}\n', line.indexOf('export function ErrorLine')));
+    expect(body).toMatch(/if \(message\) announce\(message\);/);
+    expect(body).toMatch(/accessibilityLiveRegion="polite"/);
   });
   it('[NS-01-R20] the Home start is a quiet text button (44 pt minimum comes from Button) with its own words and a hint', () => {
     const src = readFileSync(join(SRC, 'components', 'photos', 'photo-start.tsx'), 'utf8');

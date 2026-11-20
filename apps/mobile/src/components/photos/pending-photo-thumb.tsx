@@ -1,13 +1,14 @@
 /**
  * Ready with a picture (NS-01-R3, R20; design spec 3.2): the thumbnail above the prompt, at most 160 pt tall, with
- * a quiet 44 pt "Change". Reading order: thumbnail, prompt, Speak, Type. It
- * scales to the screen width at accessibility sizes. Absent when nothing was picked or the switch is off. The line under
+ * a quiet 44 pt "Change" under it (card section 4 step 4). Reading order today: thumbnail, Change, prompt, Speak, Type;
+ * R20b asks Change last, which needs a reading-order override (flagged on #838). It scales to the screen width at
+ * accessibility sizes. Absent when nothing was picked or the switch is off. The line under
  * it never names what is in the picture.
  */
 import { useWindowDimensions, View } from 'react-native';
 import { Button } from '@/components/ui/button';
 import { PhotoFrame } from './photo-frame';
-import { Text } from '@/components/ui/text';
+import { ErrorLine } from '@/lib/auth/ui';
 import { useIsAccessibilitySize } from '@/lib/a11y';
 import { photos } from '@/lib/photos/copy';
 import { usePendingPhoto } from '@/lib/photos/hooks';
@@ -29,7 +30,8 @@ export function PendingPhotoThumb() {
     <View className="items-center gap-1" testID="ready.photo">
       <PhotoFrame uri={source.uri} label={label} width={w} height={large ? undefined : THUMB_MAX_HEIGHT_PT} aspectRatio={large ? 4 / 3 : undefined} />
       <Button variant="quiet" size="md" label={photos.capture.change} onPress={pick.pick} disabled={pick.busy} testID="ready.photo.change" />
-      {pick.failed ? <Text variant="footnote" tone="muted" className="text-center">{photos.capture.openFailed}</Text> : null}
+      {/* Said aloud when it appears, and a polite live region (WCAG 4.1.3; spec 01 section 6 names ErrorLine). */}
+      <ErrorLine message={pick.failed ? photos.capture.openFailed : null} />
     </View>
   );
 }
