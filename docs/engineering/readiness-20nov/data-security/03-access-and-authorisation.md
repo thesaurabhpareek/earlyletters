@@ -223,7 +223,7 @@ Sign people out. There is no admin lever by user id: Supabase's admin `signOut` 
 ## 13. Questions for the council (each with a default)
 
 1. CISO: add a step-up (recent sign-in, same rule as backup) to `request_account_deletion` and `request_book_deletion`? Default: yes, for account deletion, using the reauthentication email code already templated.
-2. CISO and founder: name a second break-glass person? Default: none until one exists; the founder holds sealed recovery in a bank deposit, no second person.
+2. CISO and founder: is a second break-glass person named, and how is recovery of founder accounts held if the founder cannot act? Open (Q-BKO-6, `back-office.md:296`; PINF-06). Default: none named and no custody arrangement assumed until the founder answers; nothing in the repository says how recovery is held.
 3. CPO and counsel: tell a family when staff looked at their data? Default: yes, within the law's notice rules, via the incident runbook. Counsel decides.
 4. CDO: should `support_access` be written by the ops script as well as `ops.audit_log`? Default: yes, one row in each, content-free.
 5. CISO: drop the `insights_reader` grant to `authenticator`? Default: keep, since only `service_role` runs the weekly report today; revisit when a dashboard exists.
