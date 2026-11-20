@@ -217,7 +217,7 @@ describe('[ADR 0028 D1] entry_media: local migration 11', () => {
 });
 
 describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe to repeat', () => {
-  it('[D5] a stray file, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays', async () => {
+  it('[D5] a stray picture, a purged letter\'s picture, a row with no file and the picker\'s originals are all cleaned; a live picture stays, and a name of another shape is neither removed nor counted (review A note 8 on #841)', async () => {
     const { db } = nodeDb();
     migrate(db, ctx);
     letter(db, 'live');
@@ -232,9 +232,9 @@ describe('[ADR 0028 D1][D5] the sweep keeps files and rows in step and is safe t
     for (const n of ['mLive.jpg', 'mShelf.jpg', 'mGone.jpg', 'stray.jpg', 'half.jpg.part']) await files.write(n, Uint8Array.of(1));
     const picked = pickedMemory({ 'file:///c/ImagePicker/a.jpg': Uint8Array.of(1) });
     const counts = await sweepPhotos(db, files, picked);
-    expect([...files.disk.keys()].sort()).toEqual(['mLive.jpg', 'mShelf.jpg']);
+    expect([...files.disk.keys()].sort()).toEqual(['half.jpg.part', 'mLive.jpg', 'mShelf.jpg']);
     expect(db.all<{ id: string }>('SELECT id FROM entry_media ORDER BY id').map((r) => r.id)).toEqual(['mLive', 'mShelf']);
-    expect(counts).toEqual({ orphanFiles: 2, orphanRows: 1, missingFileRows: 1 });
+    expect(counts).toEqual({ orphanFiles: 1, orphanRows: 1, missingFileRows: 1 });
     expect(picked.left()).toEqual([]);
     expect(await sweepPhotos(db, files, picked)).toEqual({ orphanFiles: 0, orphanRows: 0, missingFileRows: 0 }); // repeat
   });

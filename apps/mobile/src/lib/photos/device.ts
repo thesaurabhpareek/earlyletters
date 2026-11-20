@@ -4,14 +4,13 @@
  * Erase everything) work with the switch off (NS-01-R19).
  */
 import * as Crypto from 'expo-crypto';
-import { File } from 'expo-file-system';
 import type { ScribePhotoNative } from '../../../modules/scribe-photo';
 import { localSqlDb, notifyStoreChanged, uuidv7 } from '../store';
 import { createOrientationBaker } from './baker';
 import { entryMediaStore } from './entry-media';
-import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, photosDirectory } from './files';
+import { expoBakedFiles, expoPhotoFiles, expoPickedFiles, storedPhotoFile } from './files';
 import { sweepPhotos } from './housekeeping';
-import { photoPath, type PhotoDeps, type PickedFiles } from './types';
+import type { PhotoDeps, PickedFiles } from './types';
 
 const hex = (b: ArrayBuffer): string => Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join('');
 
@@ -63,8 +62,8 @@ export function erasePictureOf(entryId: string): void {
   const db = localSqlDb();
   const rows = db.all<{ id: string }>('SELECT id FROM entry_media WHERE COALESCE(entry_id, draft_id) = ?', entryId);
   for (const r of rows) {
-    const f = new File(photosDirectory(), photoPath({ mediaId: r.id, ext: 'jpg' }));
-    if (f.exists) f.delete();
+    const f = storedPhotoFile(r.id); // null: no stored picture can have that name
+    if (f?.exists) f.delete();
     db.run('DELETE FROM entry_media WHERE id = ?', r.id);
   }
 }

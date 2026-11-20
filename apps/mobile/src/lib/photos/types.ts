@@ -45,6 +45,8 @@ export interface PhotoFiles {
 }
 
 export const photoPath = (p: Pick<StoredPhoto, 'mediaId' | 'ext'>): string => `${p.mediaId}.${p.ext}`;
+/** The one name a stored picture has: `<media_id>.jpg`. Nothing else is written, removed or counted in photos/. */
+export const isStoredName = (name: string): boolean => /^[0-9A-Za-z-]{1,64}\.jpg$/.test(name);
 
 /**
  * The native re-encode that turns a picture's pixels upright (ImageIO). Exif is dropped from the stored copy, so a
