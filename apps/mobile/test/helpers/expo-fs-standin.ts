@@ -9,6 +9,9 @@
  * - list() returns the folder's direct children only (iOS contentsOfDirectory), as File and Directory
  *   instances, and throws when the folder does not exist;
  * - a File for a missing path says exists false; delete() of a missing file throws;
+ * - dot segments resolve as Paths.join does (a URL path, then path.join): `new File(dir, '.')` is the folder itself,
+ *   `..` its parent, and `%2E` counts as a dot (WHATWG URL); create({ overwrite: true }) on a folder's path removes the
+ *   folder and everything in it, as FileSystemFile.swift's removeItem does;
  * - a folder in `unreadable` exists but its list() throws, as a read error would on iOS; one in
  *   `listsAsEmpty` lists as empty, as an unreadable folder does on Android; a file in `undeletable` stays
  *   when delete() throws.
@@ -70,7 +73,24 @@ function joinParts(parts: (string | { uri: string })[]): string {
   for (const r of rest) {
     for (const seg of r.split('/').filter(Boolean)) out += `/${encodeURIComponent(seg)}`;
   }
-  return out;
+  return resolveDots(out);
+}
+
+/** `.` and `..` segments, literal or percent-encoded, resolved as expo-file-system 57's Paths.join resolves them. */
+function resolveDots(uri: string): string {
+  const m = /^(file:\/\/)(.*)$/.exec(uri);
+  if (!m) return uri;
+  const out: string[] = [];
+  for (const seg of m[2].split('/')) {
+    const s = seg.toLowerCase();
+    if (s === '.' || s === '%2e') continue;
+    if (s === '..' || s === '.%2e' || s === '%2e.' || s === '%2e%2e') {
+      if (out.length > 1) out.pop();
+      continue;
+    }
+    out.push(seg);
+  }
+  return strip(m[1] + out.join('/'));
 }
 
 export function createDisk(c: Container): Disk {
@@ -181,8 +201,15 @@ export function expoFileSystem(current: () => Disk) {
       return f.data.slice();
     }
     create(opts: { overwrite?: boolean } = {}): void {
+      const disk = current();
+      if (disk.dirs.has(this.uri)) {
+        if (!opts.overwrite) throw new Error('ERR_FILE_EXISTS');
+        // FileSystemFile.swift create(overwrite:) removes whatever is at the path first, a folder with its contents too.
+        for (const u of [...disk.files.keys()]) if (u.startsWith(`${this.uri}/`)) disk.files.delete(u);
+        for (const u of [...disk.dirs]) if (u === this.uri || u.startsWith(`${this.uri}/`)) disk.dirs.delete(u);
+      }
       if (this.exists && !opts.overwrite) throw new Error('ERR_FILE_EXISTS');
-      put(current(), this.uri, new Uint8Array(0), Date.now());
+      put(disk, this.uri, new Uint8Array(0), Date.now());
     }
     write(content: string | Uint8Array): void {
       const disk = current();

@@ -4,9 +4,129 @@
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { BAKE_TIMEOUT_MS, createOrientationBaker, type BakedFiles } from '../src/lib/photos/baker';
+import { expoBakedFiles, expoPickedFiles, expoPhotoFiles, photosDirectory, withinFolder } from '../src/lib/photos/files';
+import { androidContainer, createDisk, iosContainer, layOutApp, namesIn, put, recorderDir, type Disk } from './helpers/expo-fs-standin';
 import { makeJpeg } from './photos-helpers';
+
+const h = vi.hoisted(() => ({ disk: null as unknown as Disk }));
+vi.mock('expo-file-system', async () => (await import('./helpers/expo-fs-standin')).expoFileSystem(() => h.disk));
+
+describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuses to touch anything else', () => {
+  beforeEach(() => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000001'));
+  });
+  it('[C7] 0 files remain in the picker folder after the sweep; other folders and files are untouched', async () => {
+    const cache = h.disk.caches;
+    put(h.disk, `${cache}ImagePicker/a.jpg`, 100);
+    put(h.disk, `${cache}ImagePicker/b.heic`, 100);
+    put(h.disk, `${cache}other/keep.bin`, 10);
+    put(h.disk, `${h.disk.documents}ExpoAudio/take.m4a`, 10);
+    await expoPickedFiles().sweep();
+    expect([...h.disk.files.keys()].filter((u) => u.includes('/ImagePicker/'))).toEqual([]);
+    expect([...h.disk.files.keys()].length).toBe(2);
+  });
+  it('[C9] on a phone with no picture, listing, removing and sweeping make no file and no folder', async () => {
+    const files = [...h.disk.files.keys()];
+    const dirs = [...h.disk.dirs].sort();
+    expect(await expoPhotoFiles().list()).toEqual([]);
+    await expoPhotoFiles().remove('m1.jpg');
+    await expoPickedFiles().sweep();
+    expect([...h.disk.files.keys()]).toEqual(files);
+    expect([...h.disk.dirs].sort()).toEqual(dirs);
+  });
+  it('[C7] remove() only removes a file directly inside the picker folder', async () => {
+    const cache = h.disk.caches;
+    const inside = put(h.disk, `${cache}ImagePicker/a.jpg`, 10);
+    const other = put(h.disk, `${h.disk.documents}ExpoAudio/take.m4a`, 10);
+    const traversal = put(h.disk, `${cache}ImagePicker/../x.bin`, 10);
+    const f = expoPickedFiles();
+    await f.remove(other);
+    await f.remove(traversal);
+    expect(h.disk.files.has(other)).toBe(true);
+    await f.remove(inside);
+    expect(h.disk.files.has(inside)).toBe(false);
+    await expect(f.read(other)).rejects.toThrow();
+    expect(withinFolder(`${cache}ImagePicker/a.jpg`, `${cache}ImagePicker/`)).toBe(true);
+    expect(withinFolder(`${cache}ImagePicker/sub/a.jpg`, `${cache}ImagePicker/`)).toBe(false);
+    expect(withinFolder(`${cache}ImagePicker/..%2Fx`, `${cache}ImagePicker/`)).toBe(false);
+    // judged on the decoded name (review N5): encoded dots and separators, and a malformed escape, never pass
+    for (const rest of ['%2E%2E', '.%2E', '%2e%2e', '%2E', 'a%2Fb.img', 'a%5Cb.img', '%E0%A4%A', '.img', 'a.b.img', '']) {
+      expect(withinFolder(`${cache}ImagePicker/${rest}`, `${cache}ImagePicker/`), rest).toBe(false);
+    }
+    expect(withinFolder(`${cache}ImagePicker/0194-ab.img`, `${cache}ImagePicker/`)).toBe(true);
+  });
+  it('[C9] the stored copy is <media_id>.jpg in Application Support/photos (not Documents): opaque name, refuses any path with a separator', async () => {
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    const support = h.disk.documents.replace(/Documents\/$/, 'Library/Application%20Support/');
+    expect([...h.disk.files.keys()]).toEqual([`${support}photos/0194-abc.jpg`]);
+    expect([...h.disk.files.keys()].some((u) => u.startsWith(h.disk.documents))).toBe(false);
+    expect(await files.list()).toEqual(['0194-abc.jpg']);
+    await expect(files.write('../x.jpg', Uint8Array.of(1))).rejects.toThrow();
+    await expect(files.write('e1/m1.jpg', Uint8Array.of(1))).rejects.toThrow();
+    await files.remove('0194-abc.jpg');
+    expect(await files.list()).toEqual([]);
+  });
+  it('[C9] only the stored shape <id>.jpg is written or removed: ".", "..", ".jpg", a separator or another extension is refused, and the folder and its pictures survive (review M1)', async () => {
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    const folder = photosDirectory();
+    // The stand-in joins as expo-file-system 57 does: `.` is the folder itself, and create({ overwrite }) would remove it.
+    expect(new (await import('expo-file-system')).File(folder, '.').uri).toBe(folder.uri.replace(/\/$/, ''));
+    for (const bad of ['.', '..', '.jpg', 'x.jpg.part', 'x.png', 'x.JPG', 'a/b.jpg', '%2E', '', `${'x'.repeat(65)}.jpg`]) {
+      await expect(files.write(bad, Uint8Array.of(9)), bad).rejects.toThrow('photo_path_refused');
+      await files.remove(bad);
+      expect(folder.exists, bad).toBe(true);
+      expect(await files.list(), bad).toEqual(['0194-abc.jpg']);
+    }
+  });
+  it('[C9] remove() refuses every name but <id>.jpg: a name that climbs to the database or a recording, and a stray file of another shape, are all left on the phone (review M1, the remove half)', async () => {
+    layOutApp(h.disk);
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    const folder = photosDirectory();
+    const db = `${h.disk.documents}SQLite/scribe.db`;
+    const take = put(h.disk, `${recorderDir(h.disk)}/recording-0194.m4a`, 10);
+    const stray = put(h.disk, `${folder.uri}x.png`, 10);
+    // From photos/, three levels up is the container: these names would reach Documents if remove() trusted them.
+    for (const bad of ['../../../Documents/SQLite/scribe.db', '../../../Documents/ExpoAudio/recording-0194.m4a', 'x.png', '.', '..', '']) {
+      await files.remove(bad);
+    }
+    expect(h.disk.files.has(db), 'database').toBe(true);
+    expect(h.disk.files.has(take), 'recording').toBe(true);
+    expect(h.disk.files.has(stray), 'stray file').toBe(true);
+    expect(folder.exists).toBe(true);
+    expect(namesIn(h.disk, folder.uri)).toEqual(['0194-abc.jpg', 'x.png']);
+  });
+  it('[C9] the launch sweep empties the two cache folders and never touches a stored picture (review N2 on #841)', async () => {
+    const files = expoPhotoFiles();
+    await files.write('0194-abc.jpg', Uint8Array.of(1, 2, 3));
+    put(h.disk, `${h.disk.caches}ImagePicker/a.img`, 10);
+    put(h.disk, `${h.disk.caches}ScribePhoto/b.jpg`, 10);
+    await expoPickedFiles().sweep();
+    expect(await files.list()).toEqual(['0194-abc.jpg']);
+    expect(namesIn(h.disk, `${h.disk.caches}ImagePicker`)).toEqual([]);
+    expect(namesIn(h.disk, `${h.disk.caches}ScribePhoto`)).toEqual([]);
+  });
+});
+
+
+// ---- Application Support folder, the native step's temporary files ------------------------------------------------
+
+describe('[C9] where the stored copy lives', () => {
+  it('[C9] iOS: <container>/Library/Application Support/photos, beside Documents; Android: the files folder', () => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000009'));
+    expect(photosDirectory().uri).toBe(`${h.disk.documents.replace(/Documents\/$/, '')}Library/Application%20Support/photos/`);
+    h.disk = createDisk(androidContainer());
+    expect(photosDirectory().uri).toBe(`${h.disk.documents}photos/`);
+  });
+  it('[C9] any other container layout fails closed: no picture goes to Documents or anywhere unknown (review N10)', () => {
+    h.disk = createDisk({ documents: 'file:///var/mobile/Containers/Data/Application/ASHA/Docs/', caches: 'file:///var/mobile/Containers/Data/Application/ASHA/Library/Caches/', os: 'ios' });
+    expect(() => photosDirectory()).toThrow('photos_folder_unknown');
+  });
+});
 
 /** An in-memory BakedFiles: what the baker may hand over and where the native step writes (the phone's folders are tested below). */
 function memoryBaked(): BakedFiles & { disk: Map<string, Uint8Array> } {
@@ -26,6 +146,9 @@ function memoryBaked(): BakedFiles & { disk: Map<string, Uint8Array> } {
 }
 
 describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and removed', () => {
+  beforeEach(() => {
+    h.disk = createDisk(iosContainer('B81D7E44-NEW0-4A7F-8C21-ASHA00000002'));
+  });
   const PICKED = 'file:///c/ImagePicker/0194-a.img';
   it('[C7] the baker hands a picked original to the native step with a destination it built, reads that file once and removes it', async () => {
     const files = memoryBaked();
@@ -68,6 +191,29 @@ describe('[NX-39-R53][C7] the native step\'s temporary JPEG is read once and rem
     } finally {
       for (const s of spies) s.mockRestore();
     }
+  });
+  it('[C7] on the phone: only a plain file in Caches/ImagePicker counts as picked; the destination is a new name in Caches/ScribePhoto, the only folder read or emptied', async () => {
+    const cache = h.disk.caches;
+    const files = expoBakedFiles(() => '0194-out');
+    expect(files.isPicked(`${cache}ImagePicker/0194-a.img`)).toBe(true);
+    for (const uri of [`${h.disk.documents}ExpoAudio/take.m4a`, `${cache}ImagePicker/../x.img`, `${cache}ImagePicker/%2E%2E`, `${cache}ScribePhoto/0194-a.jpg`, `${cache}ImagePicker/sub/a.img`]) {
+      expect(files.isPicked(uri), uri).toBe(false);
+    }
+    expect(files.destination()).toBe(`${cache}ScribePhoto/0194-out.jpg`);
+    const out = put(h.disk, `${cache}ScribePhoto/0194-out.jpg`, makeJpeg());
+    const other = put(h.disk, `${h.disk.documents}ExpoAudio/take.m4a`, 10);
+    expect((await files.read(out)).length).toBeGreaterThan(10);
+    await expect(files.read(other)).rejects.toThrow();
+    await files.remove(other);
+    await files.remove(out);
+    expect([...h.disk.files.keys()]).toEqual([other]);
+    expect(() => expoBakedFiles(() => '../x').destination()).toThrow();
+  });
+  it('[C7] the launch sweep empties Caches/ScribePhoto too', async () => {
+    put(h.disk, `${h.disk.caches}ScribePhoto/left.jpg`, 10);
+    put(h.disk, `${h.disk.caches}ImagePicker/left.jpg`, 10);
+    await expoPickedFiles().sweep();
+    expect([...h.disk.files.keys()].filter((u) => /ScribePhoto|ImagePicker/.test(u))).toEqual([]);
   });
 });
 
