@@ -6,7 +6,7 @@ Owner: `qa` (Quality Engineer), second-wave review. Written 20 Nov 2026 (UTC) un
 
 Fictional family Asha only. Words quoted from the product are intent for `content`, never final copy.
 
-Why this file exists. `14-test-plan.md` section 7 is the P0 register (296 rows, cards 01 to 12). It predates card 19 (NS-38 to NS-45, 123 acceptance rows, 96 of them P0) and the nine function reviews (143 P0 function rows). Gate G0 says every P0 row has a test and a backlog row before any NS flag turns on outside the founder's family. A register that stops at 296 cannot be that gate. This file extends it, then adds what sits above the rows: the device matrix, the accessibility plan, unhappy-path lists, test data, who runs what, exploratory charters, gate evidence and a severity scheme.
+Why this file exists. `14-test-plan.md` section 7 is the P0 register (296 rows, cards 01 to 12). It predates card 19 (NS-38 to NS-45, 123 acceptance rows, 96 of them P0 when written; card 19 now has 125 and 98 after E46 and E51) and the nine function reviews (143 P0 function rows). Gate G0 says every P0 row has a test and a backlog row before any NS flag turns on outside the founder's family. A register that stops at 296 cannot be that gate. This file extends it, then adds what sits above the rows: the device matrix, the accessibility plan, unhappy-path lists, test data, who runs what, exploratory charters, gate evidence and a severity scheme.
 
 ---
 

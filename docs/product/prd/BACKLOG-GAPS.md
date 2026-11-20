@@ -2,7 +2,7 @@
 
 Status: CURRENT (generated lists; LOCKED rev 2 inputs) | 20 Nov 2026 | Owner: `qa` (script `tools/review/p0.py`) | Replaces: none | Load when: closing gate G0 (a backlog row for every P0 row) or looking up which proposed backlog row takes a P0 row; grep by row id, never load whole (over 1,100 lines).
 
-Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a backlog row) and errata E30 (`18-errata-after-lock.md`). Docs only. The groups below are filed as 38 `proposed` rows in `docs/BACKLOG.md` (section "Locked pack: P0 rows with no backlog row"; 5.1 maps group to id, and `docs/BACKLOG.md` wins if the two differ); Karma or the founder sets them to `ready`. The list is generated: `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps | --md | --groups | --json` (script header explains the rules). Re-run it after every backlog edit; the numbers below are for this branch (`docs/locked-pack-inputs-20nov`). Counts refreshed 20 Nov 2026 by running `p0.py` at head f8eead016: 850 P0 rows, 588 with no row-level backlog row (first version: 826 and 565).
+Written by `qa` for gate G0 (`14-test-plan.md`: every P0 row has a test and a backlog row) and errata E30 (`18-errata-after-lock.md`). Docs only. The groups below are filed as 38 `proposed` rows in `docs/BACKLOG.md` (section "Locked pack: P0 rows with no backlog row"; 5.1 maps group to id, and `docs/BACKLOG.md` wins if the two differ); Karma or the founder sets them to `ready`. The list is generated: `python3 -I docs/product/prd/tools/review/p0.py <repo-root> --gaps | --md | --groups | --json` (script header explains the rules). Re-run it after every backlog edit; the numbers below are for this branch (`docs/locked-pack-inputs-20nov`). Counts refreshed 20 Nov 2026 by running `p0.py` at head f8eead016: 1,050 P0 rows, 771 with no row-level backlog row at the 20 Nov run (earlier runs: 850 and 588, 826 and 565; superseded).
 
 ## 1. Result in one paragraph
 
@@ -213,12 +213,12 @@ Check: 580 rows in G01 to G35 (the `Rows` column is the current `p0.py --groups`
 
 | Coarse row | Contains | Rows | Size |
 |---|---|---|---|
-| C1 (BL-826) Locked-card residue, cards 01 to 37 | G01 to G09 | 139 | L |
+| C1 (BL-826) Locked-card residue, cards 01 to 37 | G01 to G09 | 131 | L |
 | C2 (BL-827) First run, sign-in, consent, first Keep, sign out and store gate (NS-38 to NS-45, FR-CMP) | G10 to G17 | 109 | L |
 | C3 (BL-828) Days, cultural background, notifications, suggestions (NS-46 to NS-50 and their FR rows) | G18 to G21 | 144 | L |
 | C4 (BL-829) Function-review rows without a card (AIS, ops, reliability, security, privacy, legal, marketing, support, research, messaging, data) | G22 to G35 | 196 | L |
 
-Check: 139 + 109 + 144 + 196 = 588. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
+Check: 131 + 109 + 144 + 196 = 580. A single row of 100 to 190 P0 rows cannot be reviewed in one pass; each carries a "Done when: every listed row has a test title and passes" and would have to be split in `Scope` into the G-groups above. The fine plan is better for gate G0; the coarse plan is the fallback E30 allows ("or cover several P0 rows each").
 
 ## 7. Full gap list (771 rows)
 

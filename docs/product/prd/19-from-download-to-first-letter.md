@@ -1728,11 +1728,11 @@ Rulings here are product's proposals for Karma; GAP-LOG takes them once ruled.
 | NS-39 | First launch and the first interaction | NS-39-R1 to R14 | 10 | E-S01, E-S02, E-S14, E-S08.open | E, A (primer) |
 | NS-40 | Age and region checks | NS-40-R1 to R14 | 11 | E-S03, E-S04.refused-region (new) | E |
 | NS-41 | Sign up and sign in | NS-41-R1 to R25 | 18 | E-S02, E-S04, E-S05, E-S06, E-S14, E-S24, E-S18; C-S10, C-S11 | E, C |
-| NS-42 | Agreements and notices at collection | NS-42-R1 to R16 | 13 | E-S03, E-S02 footer, E-S07 | E, C (Privacy) |
+| NS-42 | Agreements and notices at collection | NS-42-R1 to R18 | 15 | E-S03, E-S02 footer, E-S07 | E, C (Privacy) |
 | NS-43 | Setting up the first book | NS-43-R1 to R14 | 11 | E-S08 | E |
 | NS-44 | The first letter and the allowance | NS-44-R1 to R13 | 10 | A-S01 to A-S13, E-S10, E-S26 | A, E |
 | NS-45 | Account life after first run | NS-45-R1 to R18 | 15 | C-S02, C-S03, C-S19, C-S20, E-S16 | C, E |
-| | Total | 123 | 96 | | |
+| | Total | 125 | 98 | | |
 
 New design states named by this file: E-S04.refused-region, E-S05.reason-empty, E-S06.reason-short, E-S24.method-only, the re-consent change-summary state of E-S07. New PROPOSED content keys: `authCopy.code.digits` (replaces `sixDigits`), a relay-address method line, `system.region.*` moved from HOLD, a bot-check line (if O-7), the D1 sign-out line, deletion picture and seal lines, a typed-word reason line, a re-consent summary key. New PROPOSED error kind: `region_refused`.
 
