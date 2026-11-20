@@ -23,6 +23,9 @@ import {
   EntryStateSchema,
   ESCROW_ERROR_DETAILS,
   FIELD_GROUPS,
+  FIELD_GROUP_COLUMNS,
+  INSERT_ONLY_COLUMNS,
+  SHARED_GROUP_COLUMNS,
   HELD_DRAFT_DATA_KEYS,
   HELD_GONE_KINDS,
   INVITE_UNUSABLE_DETAILS,
@@ -53,6 +56,7 @@ import {
   type UndoJoinArgs,
 } from '../server';
 import { KILL_SWITCH_KEYS } from '../src/kill-switches';
+import { contentTupleColumns, latestFunction, latestView, viewColumns } from './migration-latest';
 
 const MIGRATIONS = fileURLToPath(new URL('../../../supabase/migrations', import.meta.url));
 const files = readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort();
@@ -610,5 +614,79 @@ describe('[ADR-0017] every live RPC is called with a parameter list one of its l
     const built = spec!.args.filter((a) => !(spec!.planned ?? []).includes(a));
     const wanted = [[...built].sort().join(','), [...spec!.args].sort().join(',')];
     expect(have.some((h) => wanted.includes(h)), `${fn}(${built.join(', ')}) is not a live overload; it has ${have.map((h) => `(${h})`).join(' ')}`).toBe(true);
+  });
+});
+
+/**
+ * [NS-36-R11] A column added to the sync contract must reach the consent tuple
+ * (entries_family_rules) and, unless author-only, the book_entries view. Both
+ * are read from the LATEST definition in supabase/migrations, never a line number.
+ */
+describe('[NS-36-R11] a synced column reaches the consent tuple and the book view', () => {
+  /** Each exemption has its reason. Anything else missing from the tuple or the view fails the test. */
+  const TUPLE_EXEMPT: Readonly<Record<string, string>> = {
+    in_book: 'own clause in the rules function: only putting a letter into the book needs consent (20261015030000)',
+    language: 'own guard (20261005000000); OQ-P3 (privacy) decides whether it joins the tuple',
+    words_reviewed_at: 'review mark, author-only; OQ-P3 (privacy) decides whether it joins the tuple',
+  };
+  /** `id` is the row key, not content; it is never a consent question. */
+  const synced = (): string[] => [
+    ...new Set([
+      ...Object.values(FIELD_GROUP_COLUMNS).flat(),
+      ...Object.keys(SHARED_GROUP_COLUMNS),
+      ...INSERT_ONLY_COLUMNS.filter((c) => c !== 'id'),
+    ]),
+  ];
+
+  /** The check itself, over any migration texts, so a synthetic one can prove the parser. */
+  function drift(files: { f: string; text: string }[], columns: readonly string[], authorOnly: readonly string[]) {
+    const tuple = contentTupleColumns(latestFunction(files, 'entries_family_rules'));
+    const view = viewColumns(latestView(files, 'book_entries'));
+    return {
+      tuple,
+      view,
+      notInTuple: columns.filter((c) => !(c in TUPLE_EXEMPT) && !tuple.includes(c)),
+      notInView: columns.filter((c) => !authorOnly.includes(c) && !view.includes(c)),
+    };
+  }
+
+  it('every synced column is in the latest consent tuple and (unless author-only) the latest book_entries view', () => {
+    const r = drift(sql, synced(), AUTHOR_ONLY_COLUMNS);
+    expect(r.tuple.length, 'the parser found no tuple').toBeGreaterThan(5);
+    expect(r.view.length, 'the parser found no view columns').toBeGreaterThan(5);
+    expect(r.notInTuple, 'in the sync contract but not in entries_family_rules').toEqual([]);
+    expect(r.notInView, 'in the sync contract, not author-only, but not in book_entries').toEqual([]);
+  });
+
+  it('every exemption names a real synced column (a stale exemption fails)', () => {
+    for (const c of Object.keys(TUPLE_EXEMPT)) expect(synced(), c).toContain(c);
+  });
+
+  it('positive control: a synthetic migration whose tuple and view lack a column is reported; one that holds it passes', () => {
+    const mig = (tupleCol: string, viewCol: string) => [{
+      f: 'x.sql',
+      text: `create or replace function public.entries_family_rules()
+returns trigger language plpgsql as $$
+begin
+  v_content := (new.final_text, new.kind${tupleCol}) is distinct from (old.final_text, old.kind${tupleCol.replace(/new\./g, 'old.')});
+end;
+$$;
+create or replace view public.book_entries as
+select e.id, e.final_text, e.kind${viewCol} from public.entries e;`,
+    }];
+    const missing = drift(mig('', ''), ['final_text', 'kind', 'new_col'], []);
+    expect(missing.notInTuple).toEqual(['new_col']);
+    expect(missing.notInView).toEqual(['new_col']);
+    const held = drift(mig(', new.new_col', ', e.new_col'), ['final_text', 'kind', 'new_col'], []);
+    expect(held.notInTuple).toEqual([]);
+    expect(held.notInView).toEqual([]);
+    // Author-only columns may be absent from the view.
+    expect(drift(mig(', new.new_col', ''), ['new_col'], ['new_col']).notInView).toEqual([]);
+  });
+
+  it('the latest definition is the last one in sort order (a restated function wins)', () => {
+    const older = { f: '1.sql', text: 'create or replace function public.f()\nreturns int as $$ select 1 $$\n$$;' };
+    const newer = { f: '2.sql', text: 'create or replace function public.f()\nreturns int as $$ select 2 $$\n$$;' };
+    expect(latestFunction([older, newer], 'f')).toContain('select 2');
   });
 });
