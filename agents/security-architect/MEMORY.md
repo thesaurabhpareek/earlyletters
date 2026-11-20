@@ -6,6 +6,17 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 
 ## Current focus
 - Chapters 05 (IAM) and 06 (SEC) drafted 2026-10-03. Biggest gaps: branch protection off (CI-01), agent write connectors (PINF-01), no member removal or role change (PSEC-01), DB-01 view writes fixed only in PR #32.
+- (20 Nov) Native-module review of `scribe-photo` (#834, #841, #842) per BL-931 and `13-engineering-plan.md` section 2; the roster does not route `apps/mobile/modules/**` to you. The NS-03 pilot security read (sections 3, 4, 6) is due Fri 27 Nov (`docs/product/prd/03-family-hears-it-pilot.md` line 65).
+
+## New scope (20 Nov 2026)
+Decisions and facts that bind Build 13 work; re-check each against `develop` before you act on it.
+- The new-scope pack is on `develop` at 697233d3 (#829): `docs/product/VISION.md`, `docs/product/prd/` 00 to 15 (cards NS-01 to NS-37), plan 13, test plan 14, the rank (`docs/roadmap/next/20-final-stack-rank-and-sizing-19nov.md`), rows BL-923 to BL-949; #843 (open) releases the rows held for the founder's approval (verified 2026-11-20).
+- No autonomous lane runs: `agents.yml` is `disabled_manually` with 0 runs (Actions API) and every run is an interactive Claude session using the charter as a subagent (`docs/agents/HARNESS.md` line 11); `AGENTS_ENABLED` not verified (verified 2026-11-20).
+- The photo picker is `PHPickerViewController` presented by our `scribe-photo` module, never `expo-image-picker`, which calls `AVCaptureDevice.requestAccess` and `PHPhotoLibrary.requestAuthorization` in every build; with no purpose strings App Store processing can return ITMS-90683 (Karma's ruling of 20 Nov on #833; BL-931) (verified 2026-11-20).
+- A copy of a child's voice leaving the phone needs a `security-architect` read and a counsel read first (closed X2, `docs/product/prd/README.md` ground rules) (verified 2026-11-20).
+- ADR 0028 is accepted under CR-62 (`docs/agents/cto/RULINGS.md:570`): D1 a picture is `Library/Application Support/photos/<media_id>.jpg` with an `entry_media` row (local migration 11); D3a the seal clock is `seal_opens_at` plus `seal_opens_on`, written once, and `seal_cleared_at`, all L4; D4 Find reads the instant. The ADR file is only on #797's branch (verified 2026-11-20).
+- Pictures sit in the iPhone backup and no policy or in-app line says so yet; whether the owner backup carries pictures is open, default no in Build 13 (CR-62 open items 4, 6, 7) (verified 2026-11-20).
+- A review counts toward a merge only if its line 1 is `## Review A|B at <40-hex head sha>: PASS` (`scripts/agents/merge-queue.mjs:72`); Karma merges (D-132); `review-gate` skill (verified 2026-11-20).
 
 ## Facts about this codebase (with paths)
 - Roles: `child_members.role in ('parent','contributor')`, default 'parent' in `supabase/migrations/20260930000000_scribe_core.sql:48-54` (applied file; the default is a trap).
@@ -26,7 +37,7 @@ Seeded 2026-10-03 from the compendium drafting run. Lines marked (15 Oct) were r
 - Missing on 3 Oct: `docs/security/threat-model.md`, `security_events` table, `book_access` table. (15 Oct) `SECURITY.md` and `docs/ops/SECRETS.md` arrive with PR #35.
 
 ## Decisions and constraints I must respect
-- D-044: v1.0 sign-in is Apple plus email link and code; Google in v1.1 (BRIEF decision 4 lists Google; open question to founder).
+- D-054 (founder) supersedes D-044: sign-in is Apple, Google and email link; passkeys after sign-in; no passwords (`docs/DECISIONS.md:346`, verified 2026-11-20).
 - D-041: `supabase/**` and auth PRs need independent review plus founder's `approve-migration` label.
 - D-039: contributors never see due date or birth year. D-026: no adult age stored. D-020: invite hash 90-day retention.
 - BRIEF decision 17: user JWTs only; no service keys in the app.
