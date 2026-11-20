@@ -138,13 +138,24 @@ That also replaces the solid accent fill on the selected lens with the shared se
 
 ## 7. Found on the way (not BL-928 rows)
 
-- **F-1.** COMPONENTS 2.3 said `asHeading` sets `role="header"` and listed caps the code does not use. Fixed in this PR.
-- **F-2.** COMPONENTS 2.9 described a native segmented control that was never built. Marked in this PR.
+- **F-1.** COMPONENTS 2.3 says `asHeading` sets `role="header"`, lists a `weight` prop the code does not have, and lists caps (2.0, 1.5, 1.3) the code does not use. Proposed fix in section 8.
+- **F-2.** COMPONENTS 2.9 describes a native segmented control that was never built (`components/platform/` holds `blur-surface` and `toggle` only). Proposed fix in section 8.
 - **F-3.** The Me bar title at AX5. The bar title scales with Dynamic Type (`HeaderTitle.js:10`; `headerTitleAllowFontScaling` is unset), and the bar has a fixed height (`Header.js:201`; 44 pt on iOS from `getDefaultHeaderHeight.js`). At AX5 a title of about 61 pt ("Me" is 81 pt wide) sits in a 44 pt bar. This is already true today with "Settings". Me is not one of R4's four screens, so it does not hold BL-928. Check it in V2. If the title spills out of the bar, `design-systems` specifies the fix for BL-984 under D-027: capped chrome shows the Large Content Viewer.
 - **F-4.** R16's audit reads frames. Review's removed-words mark (32 by 24 pt, 44 pt through `hitSlop`) is the one control on the four screens that the audit may flag. For `qa` (33-6).
 - **F-5.** The Book's gear opens this screen titled "Settings", while the tab calls it "Me". There are two names for one screen until BL-938 removes the gear (NS-22-R3).
 
-## 8. Not verified
+## 8. Proposed for `docs/design/COMPONENTS.md` (not applied)
+
+The claim for BL-927 (#855) keeps this run to new files, so these lines wait for whoever holds `COMPONENTS.md` (or its successor on `docs/e2e-ux-20nov`, `docs/design/system/COMPONENTS.md`). Each one is what the code does today, or what BL-928 makes true.
+- **0.1 Roles:** `heading` (the iOS Header trait, through `Text asHeading`), not `header`; add `radiogroup` and `radio` (ChoiceGroup); `tab` only inside the tab bar; a choice of views on one screen is a `radiogroup` of `radio`s, never a `tablist` of Buttons (NS-33-R3).
+- **0.1 Headings (new line):** one level 1 heading per screen, and it is the first heading: the screen's title, or on the letter page its dateline (R1). A tab root's heading is its tab label (R2). iOS reads no heading level through React Native; `aria-level` reaches the web build only.
+- **0.1 Dynamic Type:** the caps are hero and display 1.6, title1 and promptHero 1.8, title2 2.0, letterDateline 2.4, numeral 1.4 (`packages/design-tokens/src/tokens.ts:218-255`). On the four screens nothing truncates at accessibility sizes, as section 2 defines it.
+- **0.1 Targets:** the touch area counts `hitSlop`; an automated audit reads the drawn frame (F-4).
+- **2.3 Text:** props as built (`components/ui/text.tsx:95-108`): `tone` adds destructive, onDestructive, recording and inverse; `caps` replaces `weight`; `asHeading?: boolean | 1 | 2 | 3`. Caps come from the token's `maxScale`. On the four screens a preview drops its line limit at accessibility sizes (BL-928 (c) adds the scan).
+- **2.9 SegmentedControl:** "Not built. The single choice is `ChoiceGroup layout="segmented"`: a `radiogroup` of `radio`s with `checked`, at least 48 pt, stacking from xxxLarge, selected shown by fill, edge and check. Use it for the Book's lens."
+- **2.14 Toast:** "At accessibility sizes the words take the full width and Undo and Close sit under them, at the end" (section 5.4).
+
+## 9. Not verified
 
 - That VoiceOver on iOS 17 and iOS 26 speaks no level for a React Native heading. This comes from reading React Native's source; nobody listened on a phone.
 - Every width in 5.1. They are advance widths from the font files, without kerning, line breaking or Bold Text, so iOS may differ by a few points.
@@ -152,6 +163,6 @@ That also replaces the solid accent fill on the selected lens with the shared se
 - That the inline bar's measured height feeds the scroll offset with no other change (5.3).
 - Whether `performAccessibilityAudit()`'s hit-region check counts `hitSlop`.
 
-## 9. The way back
+## 10. The way back
 
 Each slice reverts on its own: (a) one prop, (b) one line plus one test assertion, (c) one row component, (d) one layout branch, and the toast one layout branch. No data, no flags and no words are involved.
