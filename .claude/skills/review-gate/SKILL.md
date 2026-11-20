@@ -12,7 +12,7 @@ Load this before you review a pull request whose merge needs two counted reviews
 | What | Where |
 |---|---|
 | Who merges, and the gate | `docs/DECISIONS.md` D-132 (Karma merges after two independent counted reviews on the current head and green CI); `docs/agents/COORDINATION.md` section 6 |
-| What counts as a pass | CR-63 in `docs/agents/cto/RULINGS.md`; `.claude/skills/early-letters-cto/SKILL.md` section 4; `scripts/agents/merge-queue.mjs` (lines 19 to 24 and 72) |
+| What counts as a pass | CR-63 in `docs/agents/cto/RULINGS.md`; `.claude/skills/early-letters-cto/SKILL.md` section 4; `scripts/agents/merge-queue.mjs` (lines 19 to 26 and 75 to 90) |
 | What a reviewer checks, in order | `docs/agents/OPERATING_MODEL.md` section 6; your charter; chapters by rule id (`docs/engineering/PRINCIPLES.md`) |
 | Size | CODE-R02 in `docs/engineering/01-code-and-change.md`: 400 lines and 20 files, or a `Size exception:` line for the founder to accept |
 | Merge readiness, live | `node scripts/agents/merge-queue.mjs` (read-only; REST through `gh api`) |
@@ -23,9 +23,9 @@ Load this before you review a pull request whose merge needs two counted reviews
 
 - `PASS`, or `PASS WITH NOTES` with `Must fix: none` in the body, counts (CR-63). `CHANGES`, `FAIL`, `BLOCKED` and any other word do not, and any `Must fix:` line that names something takes a pass away. The newest verdict at the head decides a lens.
 - Any must-fix: write `CHANGES`. No must-fix: `PASS`, or `PASS WITH NOTES` with the notes below and the line `Must fix: none.`
-- The merge queue reads the verdict from line 1 only. It needs the full 40-character lowercase sha of the current head, and counts only comments whose author association is OWNER, MEMBER or COLLABORATOR.
+- The merge queue reads the header and verdict only from line 1, and reads the body only for a `Must fix:` line, which can take a pass away (CR-63; `scripts/agents/merge-queue.mjs:80-90`). It needs the full 40-character lowercase sha of the current head, and counts only comments whose author association is OWNER, MEMBER or COLLABORATOR.
 - Get the head from the API (`gh api repos/<repo>/pulls/<n> --jq .head.sha`), never from a local branch. Start only when CI is settled and the head has been quiet 10 minutes; the review binds to the full sha (CR-44 as recorded in `docs/agents/harness-v2/LESSONS-2026-11-08.md` line 10; `merge-queue.mjs` WAIT-QUIET).
-- Posted by an agent, a lens review carries the agent marker `<!-- agent:<handle> -->` on line 2, right under the header. Line 1 stays the header, because the merge queue reads only line 1. `OPERATING_MODEL.md` section 4 asks for the marker on line 1; that conflict is with the founder (handoff #851, AIE-R05).
+- Posted by an agent, a lens review carries the agent marker `<!-- agent:<handle> -->` on line 2, right under the header. Line 1 stays the header, because the merge queue reads the header and verdict only from line 1; a marker line is not a `Must fix:` line, so it does not change the verdict. `OPERATING_MODEL.md` section 4 asks for the marker on line 1; that conflict is with the founder (handoff #851, AIE-R05).
 - `isFounderComment` (`scripts/agents/lib.mjs:250-254`) treats an owner-account comment as the founder's own words unless its first text is a machine marker. So it reads a lens review, which starts with the header, as a founder instruction, and the dispatcher would hand that text to the author agent. No lane may run until `isFounderComment` also skips counted review headers (Karma's code fix, its own PR; #851).
 
 ## 3. Before you run anything

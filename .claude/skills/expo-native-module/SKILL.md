@@ -43,7 +43,7 @@ Load this before you add or change anything under `apps/mobile/modules/**`, add 
 
 1. Focused tests, then `npm test -w apps/mobile`, then `npx tsc --noEmit` in `apps/mobile`.
 2. The scan tests fail when you remove the guard they protect (try it, then restore it).
-3. `ios-compile.yml` is green at the head, or the PR says it is red and why. A red macOS check still holds the merge (`merge-queue.mjs` WATCH-RED, line 55). A green compile is the first proof the Swift builds at all.
+3. `ios-compile.yml` is green at the head, or the PR says it is red and why. A red macOS check still holds the merge (`merge-queue.mjs` WATCH-RED, line 58). A green compile is the first proof the Swift builds at all.
 4. The PR names the device rows still owed, and asks `security-architect` for the native read.
 
 ## 6. Evidence this is repeated know-how

@@ -52,13 +52,13 @@ cd <scratchpad>/rebuild && git apply --3way <scratchpad>/own.patch   # resolve e
 
 Before anything is pushed:
 1. Run the focused tests, then the workspace, then `tsc`, in the worktree; its files are now the rebuilt tree (`OPERATING_MODEL.md` section 4; AIE-R14). Stop here if anything is red.
-2. Make the commit: `git add -A && TREE=$(git write-tree) && NEW=$(git commit-tree "$TREE" -p "$BASE" -p "$OLD" -F <scratchpad>/msg.txt)`. The message says what moved, that the old head is kept as a parent, each conflict and how it was resolved, and "no content change against the reviewed head" only if that is true.
+2. Stage only the files your delta touches: `git apply --3way` has already staged what applied cleanly; add each file you resolved by name, never `git add -A`, and check that `git status --short` lists nothing else. Then make the commit: `TREE=$(git write-tree) && NEW=$(git commit-tree "$TREE" -p "$BASE" -p "$OLD" -F <scratchpad>/msg.txt)`. The message says what moved, that the old head is kept as a parent, each conflict and how it was resolved, and "no content change against the reviewed head" only if that is true.
 3. Check: `git diff "$BASE" "$NEW" --stat` is your delta and nothing else; `git diff "$OLD" "$NEW"` is the base's changes plus the conflicts you resolved.
 
 Then push, `git push origin "$NEW":refs/heads/<branch>` (a fast-forward, because `OLD` is a parent; never `--force` or a `+` refspec), remove the worktree, and ask for reviews at the new head, pointing reviewers at `git diff "$OLD" "$NEW"`.
 
 ## 6. Evidence this is repeated know-how
 
-- Rebuild commits with the new base as first parent and the old head as second. 8494c6b2 (#764: be1c1142, a `develop` commit, and d22dcb20) and 68294bc6 (#798: 09a104da on `develop`, and 6ff39d75) rebuilt onto `develop`. 8a026397 (#796: a80648d4 and 39efe1ac) rebuilt onto an unmerged base: a80648d4 is #828's head, `develop` 09a104da plus #828, which was not yet merged.
+- Rebuild commits with the new base as first parent and the old head as second. 8494c6b2 (#764: be1c1142, a `develop` commit, and d22dcb20) and 68294bc6 (#798: 09a104da on `develop`, and 6ff39d75) rebuilt onto `develop`. 8a026397 (#796: a80648d4 and 39efe1ac) has the same shape but was built on #828's branch head a80648d4, which is never on `develop`; #828 had already squash-merged as 5f5dfaf4 six minutes before, so it is not an example of the unmerged-base case. No rebuild onto an unmerged base is on record yet.
 - The photo stack: #796 (64 files, 3,747 added lines) split into slices #834, #841, #842 and #835 to #840, each targeting the slice below (BL-931; #835 body, "Stack and merge").
 - `docs/product/prd/13-engineering-plan.md` section 3 E lists "Split the oversized photo change into five" as engineering work.
