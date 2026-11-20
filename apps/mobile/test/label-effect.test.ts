@@ -4,11 +4,11 @@
  * fixtures are written inline; the CLI runs once on a throwaway git repository. Decisions D-900 and D-901 are fictional.
  */
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LABEL_FILE, labelTriggers, parseDiff, runGuard } from '../../../scripts/release/label-effect.mjs';
+import { labelEffectProblems, LABEL_FILE, labelTriggers, parseDiff, runGuard } from '../../../scripts/release/label-effect.mjs';
 
 const REPO = join(__dirname, '..', '..', '..');
 const GUARD = join(REPO, 'scripts', 'release', 'label-effect.mjs');
@@ -24,7 +24,8 @@ const DECISIONS = [
   '### D-901 Colours (fictional)',
   '- **Decision:** the accent colour changes.',
 ].join('\n');
-const guard = (diffText: string, body = '') => runGuard({ diffText, body, decisionsBase: DECISIONS });
+const CARD_OK = { name: '99-fixture.md', text: '# NS-99: A fixture card\n\n**Label effect.** None.\n' };
+const guard = (diffText: string, body = '', cardFiles = [CARD_OK]) => runGuard({ diffText, body, decisionsBase: DECISIONS, cardFiles });
 
 const LEAVING = {
   'a network call with a transcript': diff('apps/mobile/src/lib/sync/push.ts', ['const res = await fetch(url, {', '  body: JSON.stringify({ raw_transcript: entry.rawTranscript }),', '});']),
@@ -112,6 +113,51 @@ describe('[NS-07-G11-3] a new SDK, entitlement or usage string', () => {
     const other = diff('apps/mobile/package.json', ['    "expo-image": "~3.0.0",']);
     const entitlement = diff('apps/mobile/app.config.ts', ["      'com.apple.developer.healthkit': true,"], ["      'com.apple.developer.healthkit': false,"]);
     expect(guard([bump, reword, other, entitlement].join('\n'))).toEqual({ lines: [], failed: false });
+  });
+});
+
+describe('[NS-07-G11-2] every card states its label effect', () => {
+  const problems = (text: string) => labelEffectProblems([{ name: 'x.md', text }]).map((p: { line: number; what: string }) => `${p.line} ${p.what}`);
+
+  it('[NS-07-G11-2] every card states its label effect', () => {
+    expect(problems('# NS-01: One\n\n**Label effect.** None.\n')).toEqual([]);
+    expect(problems('# NS-01: One\n\nLabel effect: none.\n')).toEqual([]);
+    expect(problems('# NS-01: One\n\nText. **Label effect.** mid-line does not count.\n')).toEqual(['1 NS-01 has no "**Label effect.**" line before the next card']);
+    expect(problems('# NS-01: One\n```\n**Label effect.** in a code block\n```\n')).toHaveLength(1);
+  });
+
+  it('[NS-07-G11-2] a range title is not a card; each card under it needs its own line', () => {
+    const text = '# NS-08 to NS-12: Keeping\n## NS-08. Backup\n**Label effect.** None.\n## NS-09. Let it go\n## 1. Not a card\n**Label effect.** None.\n## NS-10. New phone\n';
+    expect(problems(text)).toEqual(['7 NS-10 has no "**Label effect.**" line before the next card']);
+  });
+
+  it('[NS-07-G11-2] each Part needs its own line, and the title is carried by its Parts', () => {
+    const text = '# NS-06: Three things\n## Part A. Firsts\n**Label effect.** None.\n## Part B. Sealed\n## 3. Rows\n## Part C. Quick\n**Label effect.** None.\n';
+    expect(problems(text)).toEqual(['4 NS-06 Part B has no "**Label effect.**" line before the next card']);
+    expect(problems('## Part A. Not inside a card file\n')).toEqual([]);
+  });
+
+  it('[NS-07-G11-2] a missing line fails the run and names the card file', () => {
+    const r = guard('', '', [CARD_OK, { name: '98-bad.md', text: '# NS-98: No line\n' }]);
+    expect(r).toEqual({ lines: ['FAIL G11-2 docs/product/prd/98-bad.md:1 NS-98 has no "**Label effect.**" line before the next card'], failed: true });
+  });
+});
+
+describe('[NS-07-G11-4] [NS-07-G11-5] the README and the CI job', () => {
+  it('[NS-07-G11-4] the guard states its residual risk', () => {
+    const readme = readFileSync(join(REPO, 'docs', 'ops', 'LABEL_GUARD.md'), 'utf8');
+    expect(readme).toMatch(/a session can still record a matching decision on the base branch before the PR/i);
+    expect(readme).toMatch(/The founder's merge remains the real gate/);
+  });
+
+  it('[NS-07-G11-5] the guard runs on every PR: the proposed job', () => {
+    const job = readFileSync(join(REPO, 'docs', 'ops', 'proposed', 'workflows', 'label-guard.yml'), 'utf8');
+    expect(job).toMatch(/pull_request:\n\s+branches: \[develop\]\n\s+types: \[opened, synchronize, reopened, edited\]/);
+    expect(job).toMatch(/PR_BODY: \$\{\{ github\.event\.pull_request\.body \}\}/);
+    expect(job).toMatch(/run: git worktree add --detach "\$RUNNER_TEMP\/base" "origin\/\$BASE_REF"$/m);
+    expect(job).toMatch(/run: node "\$RUNNER_TEMP\/base\/scripts\/release\/label-effect\.mjs" --base "origin\/\$BASE_REF" --head HEAD$/m);
+    expect(job).not.toMatch(/uses: [^\n]*@v\d|ubuntu-latest/);
+
   });
 });
 
