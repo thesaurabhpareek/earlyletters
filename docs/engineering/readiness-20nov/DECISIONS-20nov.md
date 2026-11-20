@@ -2,6 +2,8 @@
 
 Status: the eleven executive seats (CPO, CDesO, CDO, CISO, CPrivO, CCO, CLO, CMO, CFO, CBO, CAIO) were each given the open-decision list and answered in writing. Their files are in `data-security/council/`. They are Claude roles, not licensed professionals; legal and tax points are "counsel must confirm". Nothing outside the repo was read for money or law unless a file says so ([U] = unverified). Facts marked [V] were reproduced by a reviewer against code.
 
+Update: product finished the requirements pack at `4d33978f` (errata E1 to E73, closures CL-001 to CL-147) and answered all 37 engineering questions in `docs/product/prd/ENGINEERING-QUESTIONS-CLOSED-20nov.md`. CF-1 (E71) and CF-8 (E70) are closed; Q57 stays counsel-only with its default (E72). Plan #847 is merged; pin the plan and briefs to `4d33978f` once.
+
 Status words: RULED = Karma decided (engineering, reversible, T1 or T2 with the way back named); AGREED = the seats concur with the default; PRODUCT = product answers; COUNSEL = counsel must confirm; FOUNDER = founder only. Nothing here sets a date.
 
 Gates: G13 = before the Build 13 cut; GF = before the first family outside the founder's signs in; G10 = before 1.0. Whether Build 13 has servers off (D-121 as of 31 Oct, [U] now) while plan 3a puts the database deploy before it is open (question 1, section 8).
@@ -21,7 +23,7 @@ Gates: G13 = before the Build 13 cut; GF = before the first family outside the f
 - B3 Variant B (`mediaSync`): AGREED, not chosen. "Not built" is not yet true while the `entry_photos_author_insert/update` policies are live [V]; closed by C4.
 - B4 Device backup of `scribe.db`, recordings and pictures: COUNSEL and FOUNDER. Recommend accept for 1.0. Open: are the safety tiers inside `scribe.db`; counsel reads "stays on this phone" (Q17) and the label.
 - B5 Backup file `backup-<profile id>.db` (upload URL, token, wrapped key): RULED. Apply the backup exclusion on existing installs, delete on Erase, move the token to Keychain, add tests, and add a preflight gate so `EXPO_PUBLIC_BACKUP` cannot go on until B5, escrow keys and the stop page exist [V: none of these today]. Recovery export does not copy it [V].
-- B6 Region hook: AGREED, fail open until counsel answers (Q57); count and alert on lookup failures.
+- B6 Region hook: AGREED, fail open until counsel answers (Q57, E47, E72); count and alert on lookup failures. Product adds sub-question (g) for the counsel packet; the founder merges it. CF-8 is closed (E70): same wait screen for every address, the phone holds a refusal in memory and shows the refused screen at the code step.
 - B7 Retention, holds, processors: COUNSEL (14 questions, exact wording in `council/privacy-cco-clo.md`). Recommend building the key-unwrap log at 12 months to match D-021 before apply. Periods stay "as built, not approved"; nothing is published until counsel and founder answer. Unconfirmed sign-up rows have no purge job [V].
 - B8 Audit rows in the export: AGREED, no screen. RULED conditions: key allowlist on `audit_events.detail`; export only the requester's own rows (removal rows name other people).
 
@@ -48,7 +50,7 @@ Gates: G13 = before the Build 13 cut; GF = before the first family outside the f
 ## 5. Product scope and words
 - E1 Release cut and drops: AGREED plan 3a as a recommendation; founder confirms. Photo and Find ship dark in Build 13; NS-51 in 1.1 (E32). No dates.
 - E2 Words a parent reads: FOUNDER, one sitting, Build 13 words first. CDesO changes: held-screen row 7 drop "yet"; share verb "Send this letter"; `find.fieldHint` "Type a word, or part of one, to start looking." Counsel reads rows 7, 10, 15 to 17, 62 and the let-it-go confirmation. NS-42-R18 has no draft text (E51); alert keys do not exist yet.
-- E3 Open requirement questions: AGREED, engineering defaults on all 24 product and 11 design rows. FOUNDER: NS-44-O13 (allowance per phone, E59) against D-082 (per account).
+- E3 Open requirement questions: CLOSED by product (E43 to E59, E69 to E73). Still FOUNDER: NS-44-O13, allowance per phone (E59 default) against D-082 (per account); it is a promise to a user.
 - E4 FP-9 owner: RULED `mobile` builds, `sync` reviews.
 - E5 Public claims (COUNSEL, founder merges): six gaps listed in `council/cmo-cfo-cbo-caio.md` (analytics wording, backups, deletion time, no deletion page, an AI mention, "exactly as you said it"). Owner `legal` and `privacy`; nothing about server backups goes public until A1 closes. A claims registry (D-123 deferred) is a founder call.
 
@@ -66,7 +68,7 @@ Amendments to the merged pack (docs only, one PR per file group) are listed in `
 3. Buy the Supabase Pro plan before the first outside family (A1)? Default: yes.
 4. Recovery custody (C6). Default: none named.
 5. SQLCipher (C8). Default: no, before 1.0.
-6. NS-44-O13: allowance per phone (card) or per account (D-082)? Default: per phone.
+6. NS-44-O13 (E59): allowance per phone (card, default) or per account (D-082)?
 7. New-device sign-in email before the first outside family (D1)? Default: yes.
 8. Apple Small Business Program and an accountant (A6); publisher type (A7).
 9. Approve size exceptions, the test dependencies and the workflow pastes (F1 to F3).
