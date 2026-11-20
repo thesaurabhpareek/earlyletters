@@ -1,6 +1,8 @@
 # Pack delta 3: founder round 2, photo library moments (NS-51) and pictures and videos with a letter (NS-52)
 
-Status: v1, 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. This is the largest change for engineering. Sources: `26-founder-direction-photos-library-and-media.md` (`f8eead01`, 47 lines), `27-photo-moments-and-media.md` (`bf195d36`, 483 lines; NS-51 at `27:68`, NS-52 at `27:271`), GAP-LOG RV-18 to RV-24 (`GAP-LOG.md:493-501`), `24-engineering-handoff.md` sections 1.13 and 1.14 (written before card 27 existed: `24:11`, `24:107`, `24:125`), function addenda (see `PACK-DELTA-5`). All on branch `docs/locked-pack-inputs-20nov`, not merged, not in #846. [V] verified, [E] estimate, [U] not verified.
+Status: v2 (re-based), 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. This is the largest change for engineering. Sources at `a3806f74` unless marked: `26-founder-direction-photos-library-and-media.md` (47 lines; REGISTRY: WORKING-INPUT), `27-photo-moments-and-media.md` (483 lines; NS-51 at `27:68`, NS-52 at `27:271`; "Status: CURRENT", inside the lock by `22:153`), GAP-LOG RV-18 to RV-24 and closures CL-046 to CL-057, errata E32, `24-engineering-handoff.md` sections 1.13 and 1.14 (written before card 27 existed: `24:11`), function addenda (see PACK-DELTA-5). PR #934 open, not merged. Function-file line cites are at `bee01360`; find each by FR id. [V] verified, [E] estimate, [U] not verified.
+
+What rev 2 changed here (re-base): the founder accepted the defaults. Decided: limited library first, full only if the parent picks it (CL-046); caps 6 pictures, 2 videos, 60 s, 100 MB, all free while phone-only (CL-047); Variant A, phone only, Variant B only after the X2 security read plus counsel read, the other parent sees no pictures (CL-048); video sound never transcribed (CL-049); no place names (CL-050); no image analysis beyond date and count (CL-051); drop C with a spike first (CL-052); no background refresh (CL-053); lock-screen words neutral, revisit with App lock off and names on (CL-054); no QR (CL-055); no trim in 1.x (CL-056); pause empties the index (CL-057); H.264 with a cap from CL-047 (CL-092); a signed URL lives 5 minutes and video is refused in share and print until the spike lists metadata fields (CL-072); the label guard gets the photos string only when NS-51 ships behind its flag (CL-109). E32: level 3 is spike-only in Build 13 on `exp/photos` behind a flag, shipping in 1.1 after the spike, the counsel read and the device rows. Not decided by any closure: the migration number (11 or 12), the module and flag names, and applying card 27's overrides to the rows of NS-01 and NS-49 in place. No verdict below became DESIGN HOLDS.
 
 ## 1. What the founder changed
 
@@ -8,7 +10,7 @@ Three locked positions are reversed (`26:11-15`, RV-18 to RV-20 [V]):
 
 | Locked position | Where it is written | Now |
 |---|---|---|
-| Level 3, reading the Photos library, is closed in 1.x | `20-founder-direction-20nov.md` 6.1; NS-49 not-in-scope; NS-49-R25 and R26; NS-01 never-line; frame section 7 | NS-51, flag off, drop C, spike first |
+| Level 3, reading the Photos library, is closed in 1.x | `20-founder-direction-20nov.md` 6.1; NS-49 not-in-scope; NS-49-R25 and R26; NS-01 never-line; frame section 7 | NS-51, flag off, drop C, spike first (E32: spike only in Build 13) |
 | No video | NS-01-R22; OPP-16 "not recommended" (`functions/feature-opportunities.md:107`) | NS-52 |
 | One picture per letter | NS-01-R21a, sections 3 and 4; ADR 0028 D1 | Up to 6 pictures and 2 videos per letter (proposed defaults, Q-PM-2) |
 
@@ -36,7 +38,7 @@ NS-49-R6 and R25 (no PhotoKit, no photo-library usage string, no background mode
 | `11-foundations.md` section 2 NS-32 | `photoMoment` ranked source (no new class) | AMEND (same as delta 2) |
 | `data-and-sync.md` | No server change for Variant A | HOLDS |
 
-Size L (native module, new store, permission string, label, counsel, spike) [E]. Wave 5, after BL-961 (hard dependency, `24:114`; BL-045 depends on BL-931, BL-961, BL-985, `BACKLOG.md` block BL-045 [V]). Gates: reversal ruling, counsel (App Review 5.1.1, label, Q43, Q45, Q54), F (Q-PM-1, 7, 9), D (device with a 20,000 item library, limited library, iCloud-only item, revoked access).
+Size L (native module, new store, permission string, label, counsel, spike) [E]. Wave 5, after BL-961 (hard dependency, `24:114`; BL-045 depends on BL-931, BL-961, BL-985, `BACKLOG.md` block BL-045 [V]). Gates: the in-place edit of NS-49-R6, R25, R26 and NS-01-R22 (the founder's answers exist, CL-046 to CL-057, but the rows are unchanged), counsel (App Review 5.1.1, label, Q43, Q45, Q54), D (device with a 20,000 item library, limited library, iCloud-only item, revoked access).
 
 ## 3. NS-52 Pictures and videos with a letter (44 row ids, 26 P0)
 
@@ -51,7 +53,7 @@ Size L (native module, new store, permission string, label, counsel, spike) [E].
 
 | Item | Today (source) | What NS-52 does | Verdict |
 |---|---|---|---|
-| NS-01-R15, R22, R21a, R32; "one picture per letter" | One picture, no video, no multi-select (`27:"Changes to locked cards"`) | R15 holds for Variant A and is replaced for media only under B; R22 narrows to "the system picker is the only source"; R21a limits become NS-52's | CONFLICT WITH LOCKED PACK (listed by product itself; not yet applied in #846) |
+| NS-01-R15, R22, R21a, R32; "one picture per letter" | One picture, no video, no multi-select (`27:"Changes to locked cards"`) | R15 holds for Variant A and is replaced for media only under B; R22 narrows to "the system picker is the only source"; R21a limits become NS-52's | CONFLICT WITH LOCKED PACK, card-to-card: card 27 lists the override but NS-01-R15, R21a, R22 read the old way at `a3806f74` (`01:133, 147, 150`) |
 | NS-36 (R1a to R1d delete, restore, purge; R2 export; R4 classes; R5 minors; R7) | `11-foundations.md` section 6 (`:179`) and `data-and-sync.md` 3.1 cover one picture per letter | Every rule applies per item; video adds purge and sweep of `Application Support/media/`; a new class row for `duration_ms`, `poster_path`, `order` (L2 by rule 5; X10 still open, `privacy.md:259`) | AMEND 11 section 6, DATA 3.1, PRIV 4.1 |
 | NS-37 (Book stays fast; copies) | One stored copy, one 512 px list copy, lens at 72 pt in a plain ScrollView (`11-foundations.md:230-235`); 40-row window of 512 px copies about 32 MB decoded (`:244`, Assumption) | Several pictures per letter and poster frames multiply copies; FR-REL-66: Book with 1,000 letters, 300 pictures and 100 videos on an SE 3, memory under 150 MB (PROPOSED in NS-37), no frame over 16.7 ms (`reliability.md:332`) | AMEND 11 section 7 (NS-37) |
 | ADR 0028 D1 `entry_media` | Migration 11, `CHECK (kind = 'photo')`, `CHECK (ext = 'jpg')`, unique index `entry_media_one_photo_idx` (`0028:37, 38, 48`). The ADR says the one-photo rule is "the unique index, not the table shape ... drops that one index in its own migration (no table rebuild)" (`0028:56`) | The index drop is cheap, but `kind` gains 'video' and `ext` gains video containers: a CHECK change on SQLite is a table rebuild [E: SQLite cannot alter a CHECK in place]. Handoff 24 therefore asks to amend migration 11 in #835 before it merges (Q-E12, `24:129`); card 27 says a local migration 12 (`27:"Data and engineering"` NS-52, RV-20). The two disagree | AMEND ADR 0028 and `data-and-sync.md` L11 (`data-and-sync.md:39`); decide before #835 merges (`39cf30d3` open) |
@@ -68,13 +70,13 @@ From `24:149-158` and the addenda: a server `entry_media` table (every column cl
 ## 4. Sizes, order and what to do first
 
 NS-52 Variant A: L, wave 5, after NS-01 on `testflight`, NS-11, NS-36 erase registry, BL-961 (`27:"Dependencies and gates"` NS-52 section 22). Rough PR count [E]: multi-select pick and limits file (1), video validate and transcode in `scribe-photo` plus metadata-stripped container test (2 to 3), `entry_media` change (1), reading view and poster (2), Save a copy, export minor, erase and sweep, Storage line (3), tests and fixtures (1). About 10 to 12 PRs at 400 lines.
-Order that avoids rework [E, Rec]: (1) product ruling RV-18 to RV-20 recorded and card 27 text applied; (2) Karma rules Q-E12 before #835 merges; (3) native spike for transcode, metadata and iCloud video (card Q-PM open items); (4) NS-52 Variant A; (5) NS-51 spike, then module; (6) Variant B only after X2, counsel, threat model, red-team and the founder's money decision.
+Order that avoids rework [E, Rec]: (1) product applies card 27's "Changes to locked cards" to the rows in place and records an errata row (the founder's answers are CL-046 to CL-057, E32); (2) Karma rules Q-E12 before #835 merges; (3) native spike for transcode, metadata and iCloud video (card Q-PM open items); (4) NS-52 Variant A; (5) NS-51 spike, then module; (6) Variant B only after X2, counsel, threat model, red-team and the founder's money decision.
 
 ## 5. Conflicts and questions (to product unless stated)
 
-1. NS-51-R6 "in the phone database" against "excluded from the iPhone backup" (R6, R23). To product.
+1. Card-internal: NS-51-R6 "in the phone database" against "excluded from the iPhone backup" (R6, R23); unchanged at `a3806f74` (`27:139`). To product.
 2. Module and flag names differ between card 27 (`scribe-photo-library`, `EXPO_PUBLIC_PHOTO_MOMENTS`, `EXPO_PUBLIC_VIDEO`, `killSwitches.videos`) and handoff 24 (`scribe-library`, `killSwitches.media`, `EXPO_PUBLIC_MEDIA_SYNC`). Cards win; Karma to fix the handoff. To Karma.
-3. Migration 11 amended before merge (handoff) or migration 12 (card). To Karma (Q-E12) with `data-architect`.
-4. NS-01-R22, NS-49-R6, R25, R26 still read "closed" in the locked pack; 27 lists the edits but they are not applied. To product (errata PR).
-5. Founder: Q-PM-1 to Q-PM-12 (`27` table). Defaults are design inputs only.
+3. Migration 11 amended before merge (handoff) or migration 12 (card, `27:35, 408` @a3806f74), still open. To Karma (Q-E12) with `data-architect`.
+4. Card-to-card: NS-01-R15, R21a, R22 and NS-49-R6, R25, R26 still read "closed" or "one picture" in rev 2 (`01:133, 147, 150`, `21:889, 908, 909` @a3806f74); card 27 lists the edits but they are not applied and no errata row (highest E33) records them. To product.
+5. Founder: Q-PM-1 to Q-PM-12 are answered by acceptance of defaults (CL-046 to CL-057). What remains are founder hands: Apple entitlement request if the portal needs one, phones to borrow for device rows, counsel engagement (CL-019, CL-038, CL-084). Q-PM-3 Variant B money stays closed behind X2 (CL-048).
 6. Counsel: a child's video leaving the phone (Q54), App Review 5.1.1 for a library permission, label wording, FR-LEG-23 child's picture and video, BIPA and similar (nothing built, so no read needed, NS-51-R33).

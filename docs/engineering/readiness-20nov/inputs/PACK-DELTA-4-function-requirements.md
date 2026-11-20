@@ -1,45 +1,49 @@
 # Pack delta 4: the 741 function requirements, grouped by function file, and the engineering work that no card carries
 
-Status: v1, 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. Source: `docs/product/prd/functions/*.md` (23 files, BRIEF excluded) and `FUNCTION-TRACE.md` at `cfeca754` on `docs/locked-pack-inputs-20nov`. The authors are "Claude roles, not licensed professionals"; every legal reading says "counsel must confirm" (`FUNCTION-TRACE.md:3`). Nothing here accepts a function requirement; the status of each is product's and Karma's. [V] verified, [E] estimate, [U] not verified.
+Status: v2 (re-based), 20 Nov 2026, `principal-architect`, RD-A. Part of `PACK-DELTA.md`. Source: `docs/product/prd/functions/*.md` (23 files, BRIEF excluded) and `FUNCTION-TRACE.md` at `a3806f74` (PR #934 open, "LOCKED rev 2" per `22:153`). The authors are "Claude roles, not licensed professionals"; every legal reading says "counsel must confirm". Nothing here accepts a function requirement. Function-file line cites below are at `bee01360` (the files changed by 2 to 38 lines each since; find each by FR id). [V] verified, [E] estimate, [U] not verified.
+
+What changed since v1: the trace was rebuilt at `40c6eb4a` and now counts the 206 addendum rows: 947 FRs, 514 P0 (v1 counted 741 and 371 at `cfeca754` and added the 206 by hand). Engineering rows are NR-01 to NR-178 (one new row, NR-160, a moment pool under `evening`, shifted later handles by one). By my definition below, 368 FRs (175 P0) create work no card carries; at `cfeca754` the same count was 340 (154 P0). The 22 FRs added by closures and rewrites are in the 947. Trace statuses were not refreshed after the 113 closures: 671 of 947 still read "needs Karma ruling" although many are answered (CL-001 to CL-113); treat the status column as stale.
 
 ## 1. Method, and what the counts mean
 
-I parsed the forward table of `FUNCTION-TRACE.md` (lines 60 to 807): 741 rows, 371 P0, and the totals match section 0.1 of that file [V: script count 741 and 371]. For each FR I took four columns: Priority, Card(s), Backlog rows, Status.
-"Creates engineering work not already in a card" is my definition [E]: the FR's Card cell says `NO CARD LINK`, or its Backlog cell says `new row needed (NR-nn)`, and its Status is not `locked row`. By that definition 340 of 741 FRs (154 of the 371 P0) create engineering work no card already carries. 176 FRs rest on a locked card row. 513 of 741 have status "needs Karma ruling" in some form (with founder or counsel), 22 are `ruled`, 26 are `founder` only, 4 are `counsel` (alone or with founder). 179 FRs name no card at all. 352 FRs ask for a new engineering row.
-A second tranche exists that the trace does not count: the "Addendum 20 Nov" sections added 17:19 to 17:20 define 206 more FR rows, 143 of them P0 (script count of ids in addendum sections that are not in the trace [V]). BL-047 lumps 140 of them as one proposed row (`BACKLOG.md` block BL-047 [V]). So the working total is 947 FRs, not 741, and the trace is already stale (it was built at 16:56 and the addenda landed after).
+I parsed the forward table of `FUNCTION-TRACE.md` (947 rows; script count equals section 0.1 totals of 947 and 514 [V]). For each FR I took four columns: Priority, Card(s), Backlog rows, Status.
+"Creates engineering work not already in a card" is my definition [E]: the Card cell says `NO CARD LINK`, or the Backlog cell says `new row needed (NR-nn)`, and the Status is not `locked row`. By it, 368 of 947 FRs (175 of 514 P0) create work no card carries. Status mix at `a3806f74`: 223 `locked row`, 671 `needs Karma ruling` (alone or with founder or counsel), 22 `ruled`, 27 `founder` only, 4 other. 195 FRs name no card; 373 ask for a new engineering row.
+BL-047 lumps 140 addendum P0 rows as one proposed row (`BACKLOG.md` block BL-047). `BACKLOG-GAPS.md` @a3806f74: 1,048 P0 rows over cards and functions, 781 with no row-level backlog row (definition in PACK-DELTA.md section 3 item 5).
 
-## 2. Table by function file
+## 2. Table by function file (at `a3806f74`)
 
-Columns: FRs and P0 in the trace; locked = status "locked row"; NewRow = FRs asking for a new row; NoCard = FRs with no card; Work = FRs creating engineering work not in a card by my definition (P0 of those); Add = addendum FRs not in the trace (P0); NR handles = the trace section 5.1 handles (`FUNCTION-TRACE.md:3403-3586`).
+Columns: FRs and P0 in the trace; locked = status "locked row"; NewRow = FRs asking for a new row; NoCard = FRs with no card; Work = FRs creating engineering work not in a card by my definition (P0 of those); NR handles = `FUNCTION-TRACE.md` section 5.1 (starts at line 3616 @a3806f74; was 3403).
 
-| Function file | FRs | P0 | locked | NewRow | NoCard | Work (P0) | Add (P0) | NR handles |
-|---|---|---|---|---|---|---|---|---|
-| support.md (SUP, POL) | 36 | 23 | 0 | 6 | 18 | 20 (12) | 9 (6) | NR-01 to 08 |
-| marketing.md | 34 | 20 | 4 | 3 | 6 | 7 (4) | 9 (6) | NR-09 to 15 |
-| operations.md | 36 | 15 | 4 | 13 | 7 | 15 (3) | 8 (4) | NR-16 to 22 |
-| finance.md | 24 | 6 | 3 | 8 | 6 | 13 (3) | 10 (2) | NR-23 to 27 |
-| data-and-measurement.md | 35 | 11 | 2 | 8 | 3 | 9 (2) | 9 (5) | NR-28 to 31 |
-| privacy.md | 35 | 22 | 3 | 11 | 14 | 20 (14) | 13 (13) | NR-32 to 39 |
-| legal.md | 20 | 15 | 3 | 7 | 1 | 8 (7) | 7 (6) | NR-40 to 45 |
-| compliance.md | 21 | 16 | 3 | 7 | 3 | 8 (6) | 7 (7) | NR-46 to 50 |
-| risk-security.md (SEC, RSK) | 31 | 15 | 5 | 7 | 10 | 15 (7) | 10 (7) | NR-51 to 56 |
-| back-office.md | 27 | 11 | 1 | 22 | 18 | 24 (10) | 9 (6) | NR-57 to 64 |
-| messaging-and-entry-points.md | 38 | 23 | 12 | 20 | 0 | 15 (9) | 8 (5) | NR-65 to 74 |
-| languages-and-localisation.md | 29 | 20 | 8 | 11 | 1 | 8 (6) | 8 (4) | NR-75 to 82 |
-| reliability.md | 61 | 15 | 13 | 35 | 19 | 35 (10) | 11 (9) | NR-83 to 91 |
-| ai-and-speech.md | 56 | 43 | 16 | 33 | 12 | 27 (21) | 12 (11) | NR-92 to 103 |
-| research-validation.md | 29 | 14 | 4 | 7 | 3 | 7 (2) | 6 (3) | NR-104 to 107 |
-| quality.md | 24 | 16 | 3 | 11 | 10 | 16 (10) | 7 (5) | NR-108 to 115 |
-| lifecycle-and-platforms.md | 34 | 18 | 8 | 31 | 8 | 25 (12) | 9 (6) | NR-116 to 127 |
-| print-and-fulfilment.md | 48 | 4 | 11 | 28 | 31 | 34 (1) | 8 (4) | NR-128 to 138 |
-| days-library.md | 25 | 12 | 19 | 21 | 1 | 3 (1) | 8 (6) | NR-139 to 144 |
-| notification-catalogue.md | 21 | 9 | 12 | 15 | 1 | 7 (1) | 10 (8) | NR-145 to 159 |
-| cultural-background-data.md | 27 | 16 | 15 | 15 | 0 | 5 (4) | 9 (7) | NR-160 to 166 |
-| photos-and-suggestions.md | 38 | 23 | 24 | 26 | 4 | 10 (6) | 14 (12) | NR-167 to 172 |
-| feature-opportunities.md | 12 | 4 | 3 | 7 | 3 | 9 (3) | 5 (1) | NR-173 to 177 |
-| Total | 741 | 371 | 176 | 352 | 179 | 340 (154) | 206 (143) | NR-01 to 177 |
+| Function file | FRs | P0 | locked | NewRow | NoCard | Work (P0) | NR handles |
+|---|---|---|---|---|---|---|---|
+| support.md (SUP, POL) | 45 | 29 | 0 | 8 | 18 | 22 (14) | NR-01 to 08 |
+| marketing.md | 43 | 26 | 5 | 6 | 7 | 11 (7) | NR-09 to 15 |
+| operations.md | 44 | 19 | 4 | 14 | 7 | 16 (3) | NR-16 to 22 |
+| finance.md | 34 | 8 | 3 | 9 | 7 | 15 (4) | NR-23 to 27 |
+| data-and-measurement.md | 44 | 16 | 2 | 9 | 3 | 10 (3) | NR-28 to 31 |
+| privacy.md | 48 | 35 | 6 | 11 | 17 | 23 (17) | NR-32 to 39 |
+| legal.md | 27 | 21 | 3 | 7 | 1 | 8 (7) | NR-40 to 45 |
+| compliance.md | 28 | 23 | 4 | 7 | 5 | 10 (8) | NR-46 to 50 |
+| risk-security.md (SEC, RSK) | 41 | 22 | 7 | 7 | 11 | 16 (7) | NR-51 to 56 |
+| back-office.md | 36 | 17 | 1 | 23 | 18 | 25 (11) | NR-57 to 64 |
+| messaging-and-entry-points.md | 46 | 28 | 18 | 20 | 0 | 15 (9) | NR-65 to 74 |
+| languages-and-localisation.md | 37 | 24 | 10 | 11 | 1 | 8 (6) | NR-75 to 82 |
+| reliability.md | 72 | 24 | 17 | 35 | 19 | 35 (10) | NR-83 to 91 |
+| ai-and-speech.md | 68 | 54 | 22 | 36 | 13 | 28 (22) | NR-92 to 103 |
+| research-validation.md | 35 | 17 | 4 | 7 | 3 | 7 (2) | NR-104 to 107 |
+| quality.md | 31 | 21 | 4 | 12 | 10 | 17 (11) | NR-108 to 115 |
+| lifecycle-and-platforms.md | 43 | 24 | 13 | 36 | 8 | 27 (14) | NR-116 to 127 |
+| print-and-fulfilment.md | 56 | 8 | 11 | 28 | 31 | 34 (1) | NR-128 to 138 |
+| days-library.md | 33 | 18 | 23 | 21 | 2 | 4 (2) | NR-139 to 144 |
+| notification-catalogue.md | 31 | 17 | 20 | 18 | 2 | 8 (1) | NR-145 to 160 |
+| cultural-background-data.md | 36 | 23 | 15 | 15 | 4 | 9 (7) | NR-161 to 167 |
+| photos-and-suggestions.md | 52 | 35 | 27 | 26 | 4 | 10 (6) | NR-168 to 173 |
+| feature-opportunities.md | 17 | 5 | 4 | 7 | 4 | 10 (3) | NR-174 to 178 |
+| Total | 947 | 514 | 223 | 373 | 195 | 368 (175) | NR-01 to 178 |
 
-Notes. "locked" is per the trace's own status. The `Work` column is my arithmetic over its columns, not a product ruling [E]. Quality's file also lists 143 existing FR ids in a P0 register (section 3c) that the trace does not count as FR definitions (`FUNCTION-TRACE.md:49`).
+The v1 table at `cfeca754` (741 FRs, 340 work, 154 P0) is superseded; the 206 addendum rows are now inside the 947. "Locked" is the trace's own status, not a product ruling. The `Work` column is my arithmetic [E]; two independent reviewers reproduced the v1 figures exactly and the 368 (175) figure of this version. Quality's file also lists existing FR ids in a P0 register that the trace does not count as FR definitions.
+
+Where the one-line text of an NR row lives: `FUNCTION-TRACE.md` section 5.1. No NR handle is a backlog id (Karma allocates; none may exceed BL-999 until the dispatcher reads four digits). NR rows carry no test id. The quality catalogues in PRs #924 to #927 (`docs/engineering/readiness-20nov/quality/`) cover NS-01 to NS-37 and contain no `NS-38` to `NS-52` row id [V: `git grep` on the four branches, 0 hits]; where an FR row carries its own `[FR-xxx-nn]` test title in its function file, that title is the test id until a catalogue row exists.
 
 ## 3. Engineering work that no card carries, by function file
 
@@ -64,17 +68,17 @@ Each bullet is an engineering row the function asks for (trace section 5.1). "La
 - **lifecycle (NR-116 to 127).** Local upgrade fixtures for every shipped `user_version` and an additive-only scan of `MIGRATIONS` (NR-116); an older build on a newer file never rewrites unknown columns, round-trip test (NR-117); contract test of every shipped outbox op type against the current client and server (NR-118, sync); `minSupportedVersion` consumer with `SCVER` and `p_api_version` (NR-119); claim after a deleted account (NR-120, sync and security read); device-restore state test with files present and Keychain empty (NR-121); export split by child and year above 2 GB, each part complete, and remove the dead-end `tooBig` path (NR-122); public export format page and a sample archive from the CDN (NR-124); support window and previous-build contract test in `packages/api` (NR-127, sync).
 - **print and fulfilment (NR-128 to 138).** Flag and pause key, order-file builder, preview screens, order service, partner integration, hosted checkout, emails, support tooling, fonts, metrics, account deletion. 28 FRs ask for rows and 31 name no card; only 4 FRs are P0. Print is not in any locked card (NS-11 is Save a copy). Treat as parked until a founder ruling; do not design.
 - **days (NR-139 to 144).** `days` data and calendar tests (NR-139); planner kind that resolves a ticked day (NR-140); storage for ticked ids and overrides, phone-only, per account and book, erased by Erase (NR-141); astronomical instant to local date and hemisphere names (NR-142); table refresh route (NR-143, bundle in the app and refresh each year with an update, recommended); annual October review task (NR-144). These are the engineering half of NS-46.
-- **notification catalogue (NR-145 to 159).** Replace the numeric variant with a key (NR-145); break the tie between name rotation and the 8 variants (NR-146); new `PlanInput` fields `lastLetter`, an anchor, `chosenDays` (NR-147); reader for the last letter's kind (NR-148); age band per fire date (NR-149); day-part filter (NR-150); tap payload (NR-151); core function and tests (NR-152, NR-154); catalogue file and rules-test additions with a `{day}` slot (NR-155); `lastMadeLetter()` reader (NR-157).
-- **cultural background (NR-160 to 166).** The days module with one store, backup-excluded, per account, sign-out and Erase hooks (NR-160); import-boundary test (one reader) and route and error scans gain the name list (NR-161); migration lint: no column, view or RPC argument named like tradition, religion, faith, country, origin or culture (NR-162, data-architect); planner `libraryDay` slot with one neutral body (NR-163); analytics negative test (NR-164); Home `daysAsk` card state and Me, Days we mark (NR-165); device walk J-CUL-01 (NR-166).
-- **photos and suggestions (NR-167 to 172).** `scribe-photo` suggestions module with a SwiftUI picker in a hosting controller, `isAvailable()` by OS version and `pickSuggestion()` (NR-167); the `com.apple.developer.journal.allow` entitlement behind `EXPO_PUBLIC_SUGGESTIONS` with a security plist review (NR-168); source scan banning any `JournalingSuggestion.*` type other than Photo and LivePhoto and any PhotoKit authorisation (NR-169, which NS-51 must rewrite, see delta 3); `startCapture` source list gains `suggestion` (NR-170); spike SP-PHS-1 and an ADR (NR-171).
-- **feature opportunities (NR-173 to 177).** Notes only (prompt-by-date rule, Lock Screen control behind a flag, bring-in start); none is scheduled; Q-FD-8 says none before first-run evidence (`22:117`).
+- **notification catalogue (NR-145 to 160).** Replace the numeric variant with a key (NR-145); break the tie between name rotation and the 8 variants (NR-146); new `PlanInput` fields `lastLetter`, an anchor, `chosenDays` (NR-147); reader for the last letter's kind (NR-148); age band per fire date (NR-149); day-part filter (NR-150); tap payload (NR-151); core function and tests (NR-152, NR-154); catalogue file and rules-test additions with a `{day}` slot (NR-155); `lastMadeLetter()` reader (NR-157); a moment pool `ntc.pm.*` under `evening` and a planner input for moments known (NR-160, new at `40c6eb4a`).
+- **cultural background (NR-161 to 167).** The days module with one store, backup-excluded, per account, sign-out and Erase hooks (NR-161); import-boundary test (one reader) and route and error scans gain the name list (NR-162); migration lint: no column, view or RPC argument named like tradition, religion, faith, country, origin or culture (NR-163, data-architect); planner `libraryDay` slot with one neutral body (NR-164); analytics negative test (NR-165); Home `daysAsk` card state and Me, Days we mark (NR-166); device walk J-CUL-01 (NR-167).
+- **photos and suggestions (NR-168 to 173).** `scribe-photo` suggestions module with a SwiftUI picker in a hosting controller, `isAvailable()` by OS version and `pickSuggestion()` (NR-168); the `com.apple.developer.journal.allow` entitlement behind `EXPO_PUBLIC_SUGGESTIONS` with a security plist review (NR-169); source scan banning any `JournalingSuggestion.*` type other than Photo and LivePhoto and any PhotoKit authorisation (NR-170, which NS-51 must rewrite, see delta 3); `startCapture` source list gains `suggestion` (NR-171); spike SP-PHS-1 and an ADR (NR-172).
+- **feature opportunities (NR-174 to 178).** Notes only (prompt-by-date rule, Lock Screen control behind a flag, bring-in start); none is scheduled; Q-FD-8 says none before first-run evidence (`22:117`).
 
 ## 4. Existing backlog rows these functions ask to change (34)
 
-`FUNCTION-TRACE.md:3587-3628`. The ones that move engineering order: BL-961 (size M to L; scope adds `hasLocalBook` filtered by owner, hidden-book surfaces, four split test ids; FR-SEC-01 to 03); BL-966 (days asks the NS-32 registry tests); BL-958 and BL-988 (every card flag, gate record, unknown-flag allowlist, FR-OPS-22 and 23); BL-962 (full writing-tools field list, FR-AIS-55); BL-975 (check d, "derived off-device"); BL-577 and BL-579 (undefer); BL-978 (restore-epoch and clone cases); BL-981 (research scope) and BL-994 (privacy reviews NS-42 to NS-45 against FR-PRV-02, 04, 14, 15, 18, 24 to 28, 35).
+`FUNCTION-TRACE.md` section 5.2 (lines near 3800 @a3806f74). The ones that move engineering order: BL-961 (size M to L; scope adds `hasLocalBook` filtered by owner, hidden-book surfaces, four split test ids; FR-SEC-01 to 03); BL-966 (days asks the NS-32 registry tests); BL-958 and BL-988 (every card flag, gate record, unknown-flag allowlist, FR-OPS-22 and 23); BL-962 (full writing-tools field list, FR-AIS-55); BL-975 (check d, "derived off-device"); BL-577 and BL-579 (undefer); BL-978 (restore-epoch and clone cases); BL-981 (research scope) and BL-994 (privacy reviews NS-42 to NS-45 against FR-PRV-02, 04, 14, 15, 18, 24 to 28, 35).
 
 ## 5. What this means for the plan
 
-- The readiness plan cannot treat the 741 FRs as covered by the cards: 340 create work no card carries. Most are tests, scans, runbooks and small modules, but at least a dozen are schema, server function or native work (NR-06, 19, 56 to 59, 66, 120, 162, 167, 168) and need a design file or an ADR first [E: counted by title in section 3].
-- 105 of the 154 P0 "work" FRs sit in nine functions: AI and speech 21, privacy 14, support 12, lifecycle 12, quality 10, back office 10, reliability 10, messaging 9, security 7 (my column arithmetic from section 2; the exact filter is in section 1 so a reader can recompute) [E].
-- Do not start any NR row for print (NR-128 to 138): the pack has no locked print card and the FRs are 4 P0 of 48.
+- The readiness plan cannot treat the 947 FRs as covered by the cards: 368 create work no card carries (175 of them P0). Most are tests, scans, runbooks and small modules, but at least a dozen are schema, server function or native work (NR-06, 19, 56 to 59, 66, 120, 163, 168, 169) and need a design file or an ADR first [E: counted by title in section 3].
+- 116 of the 175 P0 "work" FRs sit in nine functions: AI and speech 22, privacy 17, support 14, lifecycle 14, quality 11, back office 11, reliability 10, messaging 9, compliance 8 (and security 7, legal 7, marketing 7, cultural 7, languages 6, photos 6 follow) (my column arithmetic from section 2; the exact filter is in section 1 so a reader can recompute) [E].
+- Do not start any NR row for print (NR-128 to 138): the pack has no locked print card and the FRs are 8 P0 of 56 (1 of them creating new work).
