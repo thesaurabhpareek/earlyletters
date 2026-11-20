@@ -1,0 +1,3101 @@
+{
+  "$description": "Design system v2 token proposal (W3C design-tokens-like). Default $value is the light mode; $extensions.scribe.modes gives light, dark, lightHC (Increase Contrast, light) and darkHC. $extensions.scribe.current maps to today's packages/design-tokens/src/tokens.ts name (null or 'new' = no current token). Rationale and contrast method: docs/design/system/FOUNDATIONS.md. Proposal only: tokens.ts stays the source of truth until rows DS2-01 to DS2-06 land.",
+  "$extensions": {
+    "scribe": {
+      "status": "proposal",
+      "date": "2026-11-20",
+      "modes": [
+        "light",
+        "dark",
+        "lightHC",
+        "darkHC"
+      ],
+      "owner": "design-systems",
+      "contrastMethod": "WCAG 2.x relative luminance, alpha composited"
+    }
+  },
+  "color": {
+    "bg": {
+      "$type": "color",
+      "$value": "#FBF8F3",
+      "$description": "Paper. Screen background, content layer.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FBF8F3",
+            "dark": "#161412",
+            "lightHC": "#FBF8F3",
+            "darkHC": "#161412"
+          },
+          "current": {
+            "light": "tokens.light.bg",
+            "dark": "tokens.dark.bg",
+            "lightHC": "tokens.light.bg",
+            "darkHC": "tokens.dark.bg"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "surface": {
+      "$type": "color",
+      "$value": "#F5EFE7",
+      "$description": "Grouped paper: inset areas, review tray.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#F5EFE7",
+            "dark": "#1B1917",
+            "lightHC": "#F5EFE7",
+            "darkHC": "#1B1917"
+          },
+          "current": {
+            "light": "tokens.light.surface",
+            "dark": "tokens.dark.surface",
+            "lightHC": "tokens.light.surface",
+            "darkHC": "tokens.dark.surface"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "surfaceRaised": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Raised paper: cards, letter page sheet, book cover.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FFFFFF",
+            "dark": "#201D1A",
+            "lightHC": "#FFFFFF",
+            "darkHC": "#201D1A"
+          },
+          "current": {
+            "light": "tokens.light.surfaceRaised",
+            "dark": "tokens.dark.surfaceRaised",
+            "lightHC": "tokens.light.surfaceRaised",
+            "darkHC": "tokens.dark.surfaceRaised"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "accentSoft": {
+      "$type": "color",
+      "$value": "#F1E6DC",
+      "$description": "Selected wash; never the only signal; no status text on it.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#F1E6DC",
+            "dark": "#3A2E25",
+            "lightHC": "#F1E6DC",
+            "darkHC": "#3A2E25"
+          },
+          "current": {
+            "light": "tokens.light.accentSoft",
+            "dark": "tokens.dark.accentSoft",
+            "lightHC": "tokens.light.accentSoft",
+            "darkHC": "tokens.dark.accentSoft"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "text": {
+      "$type": "color",
+      "$value": "#2B2722",
+      "$description": "Ink. Primary text.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#2B2722",
+            "dark": "#F2ECE4",
+            "lightHC": "#1F1B17",
+            "darkHC": "#FAF6F1"
+          },
+          "current": {
+            "light": "tokens.light.text",
+            "dark": "tokens.dark.text",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 14.0,
+              "surface": 12.98,
+              "surfaceRaised": 14.83,
+              "accentSoft": 12.07,
+              "glassFallback": 14.83
+            },
+            "dark": {
+              "bg": 15.66,
+              "surface": 14.94,
+              "surfaceRaised": 14.29,
+              "accentSoft": 11.2,
+              "glassFallback": 13.11
+            },
+            "lightHC": {
+              "bg": 16.15,
+              "surface": 14.98,
+              "surfaceRaised": 17.11,
+              "accentSoft": 13.93,
+              "glassFallback": 17.11
+            },
+            "darkHC": {
+              "bg": 17.08,
+              "surface": 16.29,
+              "surfaceRaised": 15.59,
+              "accentSoft": 12.22,
+              "glassFallback": 14.3
+            }
+          }
+        }
+      }
+    },
+    "textMuted": {
+      "$type": "color",
+      "$value": "#6B645B",
+      "$description": "Muted ink: datelines, metadata, placeholders. Not on glass or materials.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#6B645B",
+            "dark": "#B3AA9E",
+            "lightHC": "#4F4942",
+            "darkHC": "#D6CEC3"
+          },
+          "current": {
+            "light": "tokens.light.textMuted",
+            "dark": "tokens.dark.textMuted",
+            "lightHC": "tokens.highContrast.light.textMuted",
+            "darkHC": "tokens.highContrast.dark.textMuted"
+          },
+          "change": "light Increase Contrast refined from #524B43",
+          "contrast": {
+            "light": {
+              "bg": 5.51,
+              "surface": 5.11,
+              "surfaceRaised": 5.83,
+              "accentSoft": 4.75,
+              "glassFallback": 5.83
+            },
+            "dark": {
+              "bg": 8.01,
+              "surface": 7.65,
+              "surfaceRaised": 7.32,
+              "accentSoft": 5.73,
+              "glassFallback": 6.71
+            },
+            "lightHC": {
+              "bg": 8.38,
+              "surface": 7.78,
+              "surfaceRaised": 8.88,
+              "accentSoft": 7.23,
+              "glassFallback": 8.88
+            },
+            "darkHC": {
+              "bg": 11.79,
+              "surface": 11.25,
+              "surfaceRaised": 10.76,
+              "accentSoft": 8.44,
+              "glassFallback": 9.88
+            }
+          }
+        }
+      }
+    },
+    "accent": {
+      "$type": "color",
+      "$value": "#8A5A3B",
+      "$description": "Links, tint, selected tab, primary fill.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#8A5A3B",
+            "dark": "#D9A47E",
+            "lightHC": "#67432C",
+            "darkHC": "#E8BC9A"
+          },
+          "current": {
+            "light": "tokens.light.accent",
+            "dark": "tokens.dark.accent",
+            "lightHC": "tokens.highContrast.light.accent",
+            "darkHC": "tokens.highContrast.dark.accent"
+          },
+          "change": "light Increase Contrast refined from #6E4529",
+          "contrast": {
+            "light": {
+              "bg": 5.5,
+              "surface": 5.1,
+              "surfaceRaised": 5.82,
+              "accentSoft": 4.74,
+              "glassFallback": 5.82
+            },
+            "dark": {
+              "bg": 8.37,
+              "surface": 7.98,
+              "surfaceRaised": 7.64,
+              "accentSoft": 5.99,
+              "glassFallback": 7.01
+            },
+            "lightHC": {
+              "bg": 8.21,
+              "surface": 7.61,
+              "surfaceRaised": 8.69,
+              "accentSoft": 7.07,
+              "glassFallback": 8.69
+            },
+            "darkHC": {
+              "bg": 10.58,
+              "surface": 10.09,
+              "surfaceRaised": 9.66,
+              "accentSoft": 7.57,
+              "glassFallback": 8.86
+            }
+          }
+        }
+      }
+    },
+    "accentDeep": {
+      "$type": "color",
+      "$value": "#7F4F30",
+      "$description": "Single-colour brand fills only.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#7F4F30",
+            "dark": "#D9A47E",
+            "lightHC": "#7F4F30",
+            "darkHC": "#D9A47E"
+          },
+          "current": {
+            "light": "tokens.light.accentDeep",
+            "dark": "tokens.dark.accentDeep",
+            "lightHC": "tokens.light.accentDeep",
+            "darkHC": "tokens.dark.accentDeep"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "onAccent": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Labels on accent fills and on prominent (accent-tinted) glass.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FFFFFF",
+            "dark": "#1E1612",
+            "lightHC": "#FFFFFF",
+            "darkHC": "#1E1612"
+          },
+          "current": {
+            "light": "tokens.light.onAccent",
+            "dark": "tokens.dark.onAccent",
+            "lightHC": "tokens.light.onAccent",
+            "darkHC": "tokens.dark.onAccent"
+          },
+          "change": "kept",
+          "contrast": {
+            "light": {
+              "accent": 5.82
+            },
+            "dark": {
+              "accent": 8.11
+            },
+            "lightHC": {
+              "accent": 8.69
+            },
+            "darkHC": {
+              "accent": 10.26
+            }
+          }
+        }
+      }
+    },
+    "line": {
+      "$type": "color",
+      "$value": "#E6DED3",
+      "$description": "Decorative hairline; never a control's only boundary.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#E6DED3",
+            "dark": "#33302C",
+            "lightHC": "#6B645B",
+            "darkHC": "#B3AA9E"
+          },
+          "current": {
+            "light": "tokens.light.line",
+            "dark": "tokens.dark.line",
+            "lightHC": "tokens.highContrast.light.line",
+            "darkHC": "tokens.highContrast.dark.line"
+          },
+          "change": "kept",
+          "contrast": {
+            "light": {
+              "bg": 1.26,
+              "surface": 1.17,
+              "surfaceRaised": 1.33,
+              "accentSoft": 1.08,
+              "glassFallback": 1.33
+            },
+            "dark": {
+              "bg": 1.4,
+              "surface": 1.34,
+              "surfaceRaised": 1.28,
+              "accentSoft": 1.0,
+              "glassFallback": 1.17
+            },
+            "lightHC": {
+              "bg": 5.51,
+              "surface": 5.11,
+              "surfaceRaised": 5.83,
+              "accentSoft": 4.75,
+              "glassFallback": 5.83
+            },
+            "darkHC": {
+              "bg": 8.01,
+              "surface": 7.65,
+              "surfaceRaised": 7.32,
+              "accentSoft": 5.73,
+              "glassFallback": 6.71
+            }
+          }
+        }
+      }
+    },
+    "controlBorder": {
+      "$type": "color",
+      "$value": "#8A8175",
+      "$description": "Control edge, 3:1 non-text.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#8A8175",
+            "dark": "#857C70",
+            "lightHC": "#2B2722",
+            "darkHC": "#F2ECE4"
+          },
+          "current": {
+            "light": "tokens.light.controlBorder",
+            "dark": "tokens.dark.controlBorder",
+            "lightHC": "tokens.highContrast.light.controlBorder",
+            "darkHC": "tokens.highContrast.dark.controlBorder"
+          },
+          "change": "kept",
+          "contrast": {
+            "light": {
+              "bg": 3.62,
+              "surface": 3.36,
+              "surfaceRaised": 3.83,
+              "accentSoft": 3.12,
+              "glassFallback": 3.83
+            },
+            "dark": {
+              "bg": 4.47,
+              "surface": 4.27,
+              "surfaceRaised": 4.08,
+              "accentSoft": 3.2,
+              "glassFallback": 3.75
+            },
+            "lightHC": {
+              "bg": 14.0,
+              "surface": 12.98,
+              "surfaceRaised": 14.83,
+              "accentSoft": 12.07,
+              "glassFallback": 14.83
+            },
+            "darkHC": {
+              "bg": 15.66,
+              "surface": 14.94,
+              "surfaceRaised": 14.29,
+              "accentSoft": 11.2,
+              "glassFallback": 13.11
+            }
+          }
+        }
+      }
+    },
+    "focus": {
+      "$type": "color",
+      "$value": "#2F6F8F",
+      "$description": "Focus ring.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#2F6F8F",
+            "dark": "#8CC4DE",
+            "lightHC": "#225068",
+            "darkHC": "#AED6EA"
+          },
+          "current": {
+            "light": "tokens.light.focus",
+            "dark": "tokens.dark.focus",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 5.23,
+              "surface": 4.85,
+              "surfaceRaised": 5.54,
+              "accentSoft": 4.51,
+              "glassFallback": 5.54
+            },
+            "dark": {
+              "bg": 9.68,
+              "surface": 9.24,
+              "surfaceRaised": 8.84,
+              "accentSoft": 6.93,
+              "glassFallback": 8.11
+            },
+            "lightHC": {
+              "bg": 8.21,
+              "surface": 7.61,
+              "surfaceRaised": 8.69,
+              "accentSoft": 7.08,
+              "glassFallback": 8.69
+            },
+            "darkHC": {
+              "bg": 11.91,
+              "surface": 11.36,
+              "surfaceRaised": 10.87,
+              "accentSoft": 8.52,
+              "glassFallback": 9.97
+            }
+          }
+        }
+      }
+    },
+    "recording": {
+      "$type": "color",
+      "$value": "#B5473A",
+      "$description": "Listening state only; never error.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#B5473A",
+            "dark": "#F08C7C",
+            "lightHC": "#813329",
+            "darkHC": "#F7B0A4"
+          },
+          "current": {
+            "light": "tokens.light.recording",
+            "dark": "tokens.dark.recording",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 5.05,
+              "surface": 4.68,
+              "surfaceRaised": 5.35,
+              "accentSoft": 4.35,
+              "glassFallback": 5.35
+            },
+            "dark": {
+              "bg": 7.65,
+              "surface": 7.3,
+              "surfaceRaised": 6.99,
+              "accentSoft": 5.48,
+              "glassFallback": 6.41
+            },
+            "lightHC": {
+              "bg": 8.13,
+              "surface": 7.54,
+              "surfaceRaised": 8.61,
+              "accentSoft": 7.01,
+              "glassFallback": 8.61
+            },
+            "darkHC": {
+              "bg": 10.24,
+              "surface": 9.77,
+              "surfaceRaised": 9.35,
+              "accentSoft": 7.32,
+              "glassFallback": 8.58
+            }
+          }
+        }
+      }
+    },
+    "destructive": {
+      "$type": "color",
+      "$value": "#B5473A",
+      "$description": "Deletion actions, always icon plus words.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#B5473A",
+            "dark": "#F08C7C",
+            "lightHC": "#813329",
+            "darkHC": "#F7B0A4"
+          },
+          "current": {
+            "light": "tokens.light.destructive",
+            "dark": "tokens.dark.destructive",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 5.05,
+              "surface": 4.68,
+              "surfaceRaised": 5.35,
+              "accentSoft": 4.35,
+              "glassFallback": 5.35
+            },
+            "dark": {
+              "bg": 7.65,
+              "surface": 7.3,
+              "surfaceRaised": 6.99,
+              "accentSoft": 5.48,
+              "glassFallback": 6.41
+            },
+            "lightHC": {
+              "bg": 8.13,
+              "surface": 7.54,
+              "surfaceRaised": 8.61,
+              "accentSoft": 7.01,
+              "glassFallback": 8.61
+            },
+            "darkHC": {
+              "bg": 10.24,
+              "surface": 9.77,
+              "surfaceRaised": 9.35,
+              "accentSoft": 7.32,
+              "glassFallback": 8.58
+            }
+          }
+        }
+      }
+    },
+    "onDestructive": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Label on destructive fill.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FFFFFF",
+            "dark": "#1E1612",
+            "lightHC": "#FFFFFF",
+            "darkHC": "#1E1612"
+          },
+          "current": {
+            "light": "tokens.light.onDestructive",
+            "dark": "tokens.dark.onDestructive",
+            "lightHC": "tokens.light.onDestructive",
+            "darkHC": "tokens.dark.onDestructive"
+          },
+          "change": "kept",
+          "contrast": {
+            "light": {
+              "destructive": 5.35
+            },
+            "dark": {
+              "destructive": 7.42
+            },
+            "lightHC": {
+              "destructive": 8.61
+            },
+            "darkHC": {
+              "destructive": 9.93
+            }
+          }
+        }
+      }
+    },
+    "success": {
+      "$type": "color",
+      "$value": "#3B724F",
+      "$description": "Kept, saved, delivered (icon plus words).",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#3B724F",
+            "dark": "#8CC9A0",
+            "lightHC": "#2B543B",
+            "darkHC": "#A9DDBA"
+          },
+          "current": {
+            "light": "tokens.light.success",
+            "dark": "tokens.dark.success",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light value refined from #3F7A55 (failed 4.5:1 on surface); light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 5.35,
+              "surface": 4.96,
+              "surfaceRaised": 5.67,
+              "accentSoft": 4.61,
+              "glassFallback": 5.67
+            },
+            "dark": {
+              "bg": 9.6,
+              "surface": 9.16,
+              "surfaceRaised": 8.77,
+              "accentSoft": 6.87,
+              "glassFallback": 8.04
+            },
+            "lightHC": {
+              "bg": 8.14,
+              "surface": 7.55,
+              "surfaceRaised": 8.63,
+              "accentSoft": 7.02,
+              "glassFallback": 8.63
+            },
+            "darkHC": {
+              "bg": 12.02,
+              "surface": 11.47,
+              "surfaceRaised": 10.97,
+              "accentSoft": 8.6,
+              "glassFallback": 10.07
+            }
+          }
+        }
+      }
+    },
+    "caution": {
+      "$type": "color",
+      "$value": "#895E18",
+      "$description": "Recoverable errors and warnings (icon plus words).",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#895E18",
+            "dark": "#E3B866",
+            "lightHC": "#654612",
+            "darkHC": "#EDCB8A"
+          },
+          "current": {
+            "light": "tokens.light.caution",
+            "dark": "tokens.dark.caution",
+            "lightHC": "new",
+            "darkHC": "new"
+          },
+          "change": "light value refined from #94661A (failed 4.5:1 on surface); light Increase Contrast value added; dark Increase Contrast value added",
+          "contrast": {
+            "light": {
+              "bg": 5.39,
+              "surface": 5.0,
+              "surfaceRaised": 5.71,
+              "accentSoft": 4.65,
+              "glassFallback": 5.71
+            },
+            "dark": {
+              "bg": 9.9,
+              "surface": 9.44,
+              "surfaceRaised": 9.04,
+              "accentSoft": 7.08,
+              "glassFallback": 8.29
+            },
+            "lightHC": {
+              "bg": 8.13,
+              "surface": 7.54,
+              "surfaceRaised": 8.61,
+              "accentSoft": 7.01,
+              "glassFallback": 8.61
+            },
+            "darkHC": {
+              "bg": 11.82,
+              "surface": 11.28,
+              "surfaceRaised": 10.79,
+              "accentSoft": 8.46,
+              "glassFallback": 9.9
+            }
+          }
+        }
+      }
+    },
+    "editMark": {
+      "$type": "color",
+      "$value": "#8A5A3B",
+      "$description": "Dotted underline under machine-edited words, full strength.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#8A5A3B",
+            "dark": "#D9A47E",
+            "lightHC": "#67432C",
+            "darkHC": "#E8BC9A"
+          },
+          "current": {
+            "light": "tokens.light.editMark",
+            "dark": "tokens.dark.editMark",
+            "lightHC": "tokens.highContrast.light.editMark",
+            "darkHC": "tokens.highContrast.dark.editMark"
+          },
+          "change": "light Increase Contrast refined from #6E4529",
+          "contrast": {
+            "light": {
+              "bg": 5.5,
+              "surface": 5.1,
+              "surfaceRaised": 5.82,
+              "accentSoft": 4.74,
+              "glassFallback": 5.82
+            },
+            "dark": {
+              "bg": 8.37,
+              "surface": 7.98,
+              "surfaceRaised": 7.64,
+              "accentSoft": 5.99,
+              "glassFallback": 7.01
+            },
+            "lightHC": {
+              "bg": 8.21,
+              "surface": 7.61,
+              "surfaceRaised": 8.69,
+              "accentSoft": 7.07,
+              "glassFallback": 8.69
+            },
+            "darkHC": {
+              "bg": 10.58,
+              "surface": 10.09,
+              "surfaceRaised": 9.66,
+              "accentSoft": 7.57,
+              "glassFallback": 8.86
+            }
+          }
+        }
+      }
+    },
+    "scrim": {
+      "$type": "color",
+      "$value": "#2B272252",
+      "$description": "Dim behind custom (non-system) sheets and dialogs in the content layer.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#2B272252",
+            "dark": "#0000008C",
+            "lightHC": "#2B272252",
+            "darkHC": "#0000008C"
+          },
+          "current": {
+            "light": "tokens.light.scrim",
+            "dark": "tokens.dark.scrim",
+            "lightHC": "tokens.light.scrim",
+            "darkHC": "tokens.dark.scrim"
+          },
+          "change": "kept"
+        }
+      }
+    },
+    "glassLabel": {
+      "$type": "color",
+      "$value": "#2B2722",
+      "$description": "Primary text and symbols on regular glass and on material.solid.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#2B2722",
+            "dark": "#F2ECE4",
+            "lightHC": "#1F1B17",
+            "darkHC": "#FAF6F1"
+          },
+          "current": "new",
+          "change": "new",
+          "contrast": {
+            "light": {
+              "bg": 14.0,
+              "surface": 12.98,
+              "surfaceRaised": 14.83,
+              "accentSoft": 12.07,
+              "glassFallback": 14.83
+            },
+            "dark": {
+              "bg": 15.66,
+              "surface": 14.94,
+              "surfaceRaised": 14.29,
+              "accentSoft": 11.2,
+              "glassFallback": 13.11
+            },
+            "lightHC": {
+              "bg": 16.15,
+              "surface": 14.98,
+              "surfaceRaised": 17.11,
+              "accentSoft": 13.93,
+              "glassFallback": 17.11
+            },
+            "darkHC": {
+              "bg": 17.08,
+              "surface": 16.29,
+              "surfaceRaised": 15.59,
+              "accentSoft": 12.22,
+              "glassFallback": 14.3
+            }
+          }
+        }
+      }
+    },
+    "glassLabelSecondary": {
+      "$type": "color",
+      "$value": "#524B43",
+      "$description": "Secondary text on glass or on a standard material (Increase Contrast strength of textMuted by default).",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#524B43",
+            "dark": "#D6CEC3",
+            "lightHC": "#3F3A34",
+            "darkHC": "#E6DFD6"
+          },
+          "current": "new",
+          "change": "new",
+          "contrast": {
+            "light": {
+              "bg": 8.1,
+              "surface": 7.51,
+              "surfaceRaised": 8.58,
+              "accentSoft": 6.99,
+              "glassFallback": 8.58
+            },
+            "dark": {
+              "bg": 11.79,
+              "surface": 11.25,
+              "surfaceRaised": 10.76,
+              "accentSoft": 8.44,
+              "glassFallback": 9.88
+            },
+            "lightHC": {
+              "bg": 10.62,
+              "surface": 9.85,
+              "surfaceRaised": 11.25,
+              "accentSoft": 9.16,
+              "glassFallback": 11.25
+            },
+            "darkHC": {
+              "bg": 13.9,
+              "surface": 13.26,
+              "surfaceRaised": 12.69,
+              "accentSoft": 9.95,
+              "glassFallback": 11.65
+            }
+          }
+        }
+      }
+    },
+    "glassFallback": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Fill of material.solid: every glass surface under Reduce Transparency, below iOS 26, Android, web.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FFFFFF",
+            "dark": "#282421",
+            "lightHC": "#FFFFFF",
+            "darkHC": "#282421"
+          },
+          "current": "new",
+          "change": "new"
+        }
+      }
+    },
+    "glassBorder": {
+      "$type": "color",
+      "$value": "#E6DED3",
+      "$description": "1 pt edge of material.solid; steps to its HC value under Increase Contrast.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#E6DED3",
+            "dark": "#33302C",
+            "lightHC": "#6B645B",
+            "darkHC": "#B3AA9E"
+          },
+          "current": "new",
+          "change": "new"
+        }
+      }
+    },
+    "glassDim": {
+      "$type": "color",
+      "$value": "#00000059",
+      "$description": "material.glass.dim: black at 35 percent, local to clear-glass controls over a picture.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#00000059",
+            "dark": "#00000059",
+            "lightHC": "#00000059",
+            "darkHC": "#00000059"
+          },
+          "current": "new",
+          "change": "new"
+        }
+      }
+    },
+    "mediaSolid": {
+      "$type": "color",
+      "$value": "#2B2722",
+      "$description": "Solid disc or capsule for controls over a picture when clear glass is off (RT, IC, pre-26); caption plates.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#2B2722",
+            "dark": "#2B2722",
+            "lightHC": "#2B2722",
+            "darkHC": "#2B2722"
+          },
+          "current": "new",
+          "change": "new"
+        }
+      }
+    },
+    "onMedia": {
+      "$type": "color",
+      "$value": "#FFFFFF",
+      "$description": "Symbols on clear glass; text on mediaSolid.",
+      "$extensions": {
+        "scribe": {
+          "modes": {
+            "light": "#FFFFFF",
+            "dark": "#FFFFFF",
+            "lightHC": "#FFFFFF",
+            "darkHC": "#FFFFFF"
+          },
+          "current": "new",
+          "change": "new",
+          "contrast": {
+            "mediaSolid": 14.83,
+            "glassDim over pure white picture": 2.43,
+            "glassDim over #B4B4B4": 4.61,
+            "max picture grey for 3:1": "#E4E4E4",
+            "max picture grey for 4.5:1": "#B6B6B6"
+          }
+        }
+      }
+    }
+  },
+  "material": {
+    "glass": {
+      "regular": {
+        "$type": "material",
+        "$value": {
+          "kind": "liquidGlass",
+          "glassEffectStyle": "regular",
+          "tintColor": null
+        },
+        "$description": "Functional layer: tab bar (system), toolbar and navigation buttons (system), capture cluster, Find bar, Book header controls, undo toast, recording control while recording, menus and popovers (system). Labels: glassLabel, glassLabelSecondary. Custom GlassView pins colorScheme to the app scheme.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{material.solid}",
+            "requires": "iOS 26 and isLiquidGlassAvailable() and not isReduceTransparencyEnabled()"
+          }
+        }
+      },
+      "clear": {
+        "$type": "material",
+        "$value": {
+          "kind": "liquidGlass",
+          "glassEffectStyle": "clear",
+          "dim": "{material.glass.dim}"
+        },
+        "$description": "Controls over a picture only (Review photo, letter page photo, Photos lens viewer). Symbol-only controls, Semibold, onMedia.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{color.mediaSolid}"
+          }
+        }
+      },
+      "dim": {
+        "$type": "color",
+        "$value": "{color.glassDim}",
+        "$description": "Black at 35 percent between the picture and clear-glass controls, local to the controls (HIG Materials).",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new"
+          }
+        }
+      },
+      "tint": {
+        "accent": {
+          "$type": "color",
+          "$value": "{color.accent}",
+          "$description": "Prominent glass tint: at most one prominent glass element per screen (the Home capture cluster counts as one). Label onAccent.",
+          "$extensions": {
+            "scribe": {
+              "current": null,
+              "change": "new",
+              "fallback": "solid color.accent with onAccent"
+            }
+          }
+        }
+      },
+      "mergeDistance": {
+        "$type": "dimension",
+        "$value": "12pt",
+        "$description": "GlassContainer spacing; equals layout.controlGap. Tune on device.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "unverified": true
+          }
+        }
+      },
+      "maxVisible": {
+        "$type": "number",
+        "$value": 3,
+        "$description": "At most three glass surfaces visible on any screen (BRIEF 3); the tab bar counts as one.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new"
+          }
+        }
+      }
+    },
+    "solid": {
+      "$type": "material",
+      "$value": {
+        "kind": "solid",
+        "fill": "{color.glassFallback}",
+        "border": "{color.glassBorder}",
+        "borderWidth": "1pt",
+        "shadow": null
+      },
+      "$description": "Fallback for every glass surface: Reduce Transparency, iOS below 26, Android, web. Same shape and size as the glass it replaces.",
+      "$extensions": {
+        "scribe": {
+          "current": "platform/blur-surface (chrome uses only)",
+          "change": "new"
+        }
+      }
+    },
+    "content": {
+      "ultraThin": {
+        "$type": "material",
+        "$value": {
+          "kind": "standardMaterial",
+          "expoBlurTint": "systemUltraThinMaterial"
+        },
+        "$description": "Content layer standard material. Use: none by default. Secondary text on it uses glassLabelSecondary.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{color.bg}",
+            "unverified": "expo-blur tint name in SDK 57"
+          }
+        }
+      },
+      "thin": {
+        "$type": "material",
+        "$value": {
+          "kind": "standardMaterial",
+          "expoBlurTint": "systemThinMaterial"
+        },
+        "$description": "Content layer standard material. Use: sticky in-content header; drawn notification preview. Secondary text on it uses glassLabelSecondary.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{color.bg}",
+            "unverified": "expo-blur tint name in SDK 57"
+          }
+        }
+      },
+      "regular": {
+        "$type": "material",
+        "$value": {
+          "kind": "standardMaterial",
+          "expoBlurTint": "systemMaterial"
+        },
+        "$description": "Content layer standard material. Use: panel over mixed content, never over a face or a letter's words. Secondary text on it uses glassLabelSecondary.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{color.surface}",
+            "unverified": "expo-blur tint name in SDK 57"
+          }
+        }
+      },
+      "thick": {
+        "$type": "material",
+        "$value": {
+          "kind": "standardMaterial",
+          "expoBlurTint": "systemThickMaterial"
+        },
+        "$description": "Content layer standard material. Use: fine text over a busy picture. Secondary text on it uses glassLabelSecondary.",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "fallback": "{color.surfaceRaised}",
+            "unverified": "expo-blur tint name in SDK 57"
+          }
+        }
+      }
+    }
+  },
+  "typography": {
+    "fontFamily": {
+      "sans": {
+        "$type": "fontFamily",
+        "$value": "Mukta-Regular",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.sans",
+            "change": "kept"
+          }
+        }
+      },
+      "sansMedium": {
+        "$type": "fontFamily",
+        "$value": "Mukta-Medium",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.sansMedium",
+            "change": "kept"
+          }
+        }
+      },
+      "sansSemiBold": {
+        "$type": "fontFamily",
+        "$value": "Mukta-SemiBold",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.sansSemiBold",
+            "change": "kept"
+          }
+        }
+      },
+      "serif": {
+        "$type": "fontFamily",
+        "$value": "Literata-Regular",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.serif",
+            "change": "kept"
+          }
+        }
+      },
+      "serifMedium": {
+        "$type": "fontFamily",
+        "$value": "Literata-Medium",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.serifMedium",
+            "change": "kept"
+          }
+        }
+      },
+      "serifItalic": {
+        "$type": "fontFamily",
+        "$value": "Literata-Italic",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.serifItalic",
+            "change": "kept"
+          }
+        }
+      },
+      "serifDevanagari": {
+        "$type": "fontFamily",
+        "$value": "TiroDevanagariHindi-Regular",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.fontFamily.serifDevanagari",
+            "change": "kept"
+          }
+        }
+      },
+      "sansBold": {
+        "$type": "fontFamily",
+        "$value": "Mukta-Bold",
+        "$description": "Bold Text stage 2 face, weight 700; file not bundled yet (DS2-05).",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new, proposed file"
+          }
+        }
+      },
+      "serifSemiBold": {
+        "$type": "fontFamily",
+        "$value": "Literata-SemiBold",
+        "$description": "Bold Text stage 2 face, weight 600; file not bundled yet (DS2-05).",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new, proposed file"
+          }
+        }
+      },
+      "serifBold": {
+        "$type": "fontFamily",
+        "$value": "Literata-Bold",
+        "$description": "Bold Text stage 2 face, weight 700; file not bundled yet (DS2-05).",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new, proposed file"
+          }
+        }
+      },
+      "serifSemiBoldItalic": {
+        "$type": "fontFamily",
+        "$value": "Literata-SemiBoldItalic",
+        "$description": "Bold Text stage 2 face, weight 600; file not bundled yet (DS2-05).",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new, proposed file"
+          }
+        }
+      }
+    },
+    "style": {
+      "hero": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifMedium}",
+          "fontSize": "44pt",
+          "lineHeight": "50pt",
+          "fontWeight": "500",
+          "letterSpacing": "-0.4pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.hero",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "largeTitle",
+            "maxScale": 1.6,
+            "sizeAt": {
+              "L": 44,
+              "xL": 47,
+              "xxxL": 52,
+              "AX1": 57,
+              "AX3": 67,
+              "AX5": 70
+            }
+          }
+        }
+      },
+      "display": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifMedium}",
+          "fontSize": "34pt",
+          "lineHeight": "41pt",
+          "fontWeight": "500",
+          "letterSpacing": "-0.2pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.display",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "largeTitle",
+            "maxScale": 1.6,
+            "sizeAt": {
+              "L": 34,
+              "xL": 36,
+              "xxxL": 40,
+              "AX1": 44,
+              "AX3": 52,
+              "AX5": 54
+            }
+          }
+        }
+      },
+      "title1": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifMedium}",
+          "fontSize": "28pt",
+          "lineHeight": "34pt",
+          "fontWeight": "500",
+          "letterSpacing": "-0.1pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.title1",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "title1",
+            "maxScale": 1.8,
+            "sizeAt": {
+              "L": 28,
+              "xL": 30,
+              "xxxL": 34,
+              "AX1": 38,
+              "AX3": 48,
+              "AX5": 50
+            }
+          }
+        }
+      },
+      "title2": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifMedium}",
+          "fontSize": "22pt",
+          "lineHeight": "28pt",
+          "fontWeight": "500",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.title2",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "title2",
+            "maxScale": 2.0,
+            "sizeAt": {
+              "L": 22,
+              "xL": 24,
+              "xxxL": 28,
+              "AX1": 34,
+              "AX3": 44,
+              "AX5": 44
+            }
+          }
+        }
+      },
+      "headline": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansSemiBold}",
+          "fontSize": "18pt",
+          "lineHeight": "23pt",
+          "fontWeight": "600",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.headline",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "headline",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 18,
+              "xL": 20,
+              "xxxL": 24,
+              "AX1": 30,
+              "AX3": 42,
+              "AX5": 56
+            }
+          }
+        }
+      },
+      "body": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sans}",
+          "fontSize": "18pt",
+          "lineHeight": "24pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.body",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "body",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 18,
+              "xL": 20,
+              "xxxL": 24,
+              "AX1": 30,
+              "AX3": 42,
+              "AX5": 56
+            }
+          }
+        }
+      },
+      "callout": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sans}",
+          "fontSize": "17pt",
+          "lineHeight": "22pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.callout",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "callout",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 17,
+              "xL": 19,
+              "xxxL": 23,
+              "AX1": 28,
+              "AX3": 40,
+              "AX5": 54
+            }
+          }
+        }
+      },
+      "subhead": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sans}",
+          "fontSize": "16pt",
+          "lineHeight": "21pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.subhead",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "subheadline",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 16,
+              "xL": 18,
+              "xxxL": 22,
+              "AX1": 27,
+              "AX3": 38,
+              "AX5": 52
+            }
+          }
+        }
+      },
+      "footnote": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sans}",
+          "fontSize": "14pt",
+          "lineHeight": "19pt",
+          "fontWeight": "400",
+          "letterSpacing": "0.1pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.footnote",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "footnote",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 14,
+              "xL": 16,
+              "xxxL": 20,
+              "AX1": 25,
+              "AX3": 36,
+              "AX5": 47
+            }
+          }
+        }
+      },
+      "caption": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansMedium}",
+          "fontSize": "13pt",
+          "lineHeight": "17pt",
+          "fontWeight": "500",
+          "letterSpacing": "0.2pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.caption",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "caption1",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 13,
+              "xL": 15,
+              "xxxL": 20,
+              "AX1": 24,
+              "AX3": 35,
+              "AX5": 47
+            }
+          }
+        }
+      },
+      "label": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansMedium}",
+          "fontSize": "18pt",
+          "lineHeight": "22pt",
+          "fontWeight": "500",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.label",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "body",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 18,
+              "xL": 20,
+              "xxxL": 24,
+              "AX1": 30,
+              "AX3": 42,
+              "AX5": 56
+            }
+          }
+        }
+      },
+      "labelSmall": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansMedium}",
+          "fontSize": "16pt",
+          "lineHeight": "20pt",
+          "fontWeight": "500",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.labelSmall",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "subheadline",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 16,
+              "xL": 18,
+              "xxxL": 22,
+              "AX1": 27,
+              "AX3": 38,
+              "AX5": 52
+            }
+          }
+        }
+      },
+      "timer": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansMedium}",
+          "fontSize": "18pt",
+          "lineHeight": "23pt",
+          "fontWeight": "500",
+          "letterSpacing": "0pt",
+          "fontVariant": [
+            "tabular-nums"
+          ]
+        },
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new",
+            "dynamicTypeStyle": "headline",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 18,
+              "xL": 20,
+              "xxxL": 24,
+              "AX1": 30,
+              "AX3": 42,
+              "AX5": 56
+            }
+          }
+        }
+      },
+      "letterBody": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serif}",
+          "fontSize": "20pt",
+          "lineHeight": "32pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.letterBody",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "body",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 20,
+              "xL": 22,
+              "xxxL": 27,
+              "AX1": 33,
+              "AX3": 47,
+              "AX5": 62
+            },
+            "lineHeightRatio": {
+              "toXxxL": 1.6,
+              "AX1andAbove": 1.5
+            },
+            "readingScaleCapPt": 62
+          }
+        }
+      },
+      "signature": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifItalic}",
+          "fontSize": "20pt",
+          "lineHeight": "32pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.signature",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "body",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 20,
+              "xL": 22,
+              "xxxL": 27,
+              "AX1": 33,
+              "AX3": 47,
+              "AX5": 62
+            },
+            "lineHeightRatio": {
+              "toXxxL": 1.6,
+              "AX1andAbove": 1.5
+            },
+            "readingScaleCapPt": 62
+          }
+        }
+      },
+      "letterDateline": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.sansMedium}",
+          "fontSize": "14pt",
+          "lineHeight": "18pt",
+          "fontWeight": "500",
+          "letterSpacing": "0.6pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.letterDateline",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "footnote",
+            "maxScale": 2.4,
+            "sizeAt": {
+              "L": 14,
+              "xL": 16,
+              "xxxL": 20,
+              "AX1": 25,
+              "AX3": 34,
+              "AX5": 34
+            }
+          }
+        }
+      },
+      "nameField": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serif}",
+          "fontSize": "22pt",
+          "lineHeight": "28pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.nameField",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "title2",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 22,
+              "xL": 24,
+              "xxxL": 28,
+              "AX1": 34,
+              "AX3": 44,
+              "AX5": 56
+            }
+          }
+        }
+      },
+      "prompt": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serif}",
+          "fontSize": "24pt",
+          "lineHeight": "32pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.prompt",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "title3",
+            "maxScale": null,
+            "sizeAt": {
+              "L": 24,
+              "xL": 26,
+              "xxxL": 31,
+              "AX1": 37,
+              "AX3": 52,
+              "AX5": 66
+            }
+          }
+        }
+      },
+      "promptHero": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serif}",
+          "fontSize": "28pt",
+          "lineHeight": "36pt",
+          "fontWeight": "400",
+          "letterSpacing": "0pt"
+        },
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.promptHero",
+            "change": "kept values; scaling moves to the Apple per-style curve",
+            "dynamicTypeStyle": "title1",
+            "maxScale": 1.8,
+            "sizeAt": {
+              "L": 28,
+              "xL": 30,
+              "xxxL": 34,
+              "AX1": 38,
+              "AX3": 48,
+              "AX5": 50
+            }
+          }
+        }
+      },
+      "numeral": {
+        "$type": "typography",
+        "$value": {
+          "fontFamily": "{typography.fontFamily.serifMedium}",
+          "fontSize": "64pt",
+          "lineHeight": "96pt",
+          "fontWeight": "500",
+          "letterSpacing": "1pt"
+        },
+        "$description": "RETIRED: unused since PR #674.",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.type.numeral",
+            "change": "retired"
+          }
+        }
+      }
+    },
+    "boldText": {
+      "$description": "Bold Text face swap in Text; never synthesise a weight.",
+      "stage1": {
+        "Mukta-Regular": "Mukta-Medium",
+        "Mukta-Medium": "Mukta-SemiBold",
+        "Mukta-SemiBold": "Mukta-SemiBold",
+        "Literata-Regular": "Literata-Medium",
+        "Literata-Medium": "Literata-Medium",
+        "Literata-Italic": "Literata-Italic",
+        "TiroDevanagariHindi-Regular": "TiroDevanagariHindi-Regular"
+      },
+      "stage2": {
+        "Mukta-Regular": "Mukta-SemiBold",
+        "Mukta-Medium": "Mukta-Bold",
+        "Mukta-SemiBold": "Mukta-Bold",
+        "Literata-Regular": "Literata-SemiBold",
+        "Literata-Medium": "Literata-Bold",
+        "Literata-Italic": "Literata-SemiBoldItalic",
+        "TiroDevanagariHindi-Regular": "open question Q3"
+      },
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "minFontSize": {
+      "$type": "dimension",
+      "$value": "13pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.minFontSize",
+          "change": "kept"
+        }
+      }
+    },
+    "readingScale": {
+      "$type": "number",
+      "$value": {
+        "standard": 1,
+        "large": 1.2,
+        "largePrint": 1.45
+      },
+      "$description": "Multiplies letterBody and signature only; product with Dynamic Type capped at 62 pt.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.readingScale",
+          "change": "kept, plus the 62 pt combined cap"
+        }
+      }
+    },
+    "measure": {
+      "$type": "dimension",
+      "$value": {
+        "reading": "34em",
+        "ui": "40em"
+      },
+      "$extensions": {
+        "scribe": {
+          "current": "DESIGN_LANGUAGE 3 (34em)",
+          "change": "ui measure new"
+        }
+      }
+    }
+  },
+  "space": {
+    "0": {
+      "$type": "dimension",
+      "$value": "0pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[0]",
+          "change": "kept"
+        }
+      }
+    },
+    "1": {
+      "$type": "dimension",
+      "$value": "4pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[1]",
+          "change": "kept"
+        }
+      }
+    },
+    "2": {
+      "$type": "dimension",
+      "$value": "8pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[2]",
+          "change": "kept"
+        }
+      }
+    },
+    "3": {
+      "$type": "dimension",
+      "$value": "12pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[3]",
+          "change": "kept"
+        }
+      }
+    },
+    "4": {
+      "$type": "dimension",
+      "$value": "16pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[4]",
+          "change": "kept"
+        }
+      }
+    },
+    "5": {
+      "$type": "dimension",
+      "$value": "20pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[5]",
+          "change": "kept"
+        }
+      }
+    },
+    "6": {
+      "$type": "dimension",
+      "$value": "24pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[6]",
+          "change": "kept"
+        }
+      }
+    },
+    "7": {
+      "$type": "dimension",
+      "$value": "28pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[7]",
+          "change": "kept"
+        }
+      }
+    },
+    "8": {
+      "$type": "dimension",
+      "$value": "32pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[8]",
+          "change": "kept"
+        }
+      }
+    },
+    "9": {
+      "$type": "dimension",
+      "$value": "40pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[9]",
+          "change": "kept"
+        }
+      }
+    },
+    "10": {
+      "$type": "dimension",
+      "$value": "48pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[10]",
+          "change": "kept"
+        }
+      }
+    },
+    "11": {
+      "$type": "dimension",
+      "$value": "56pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[11]",
+          "change": "kept"
+        }
+      }
+    },
+    "12": {
+      "$type": "dimension",
+      "$value": "64pt",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[12]",
+          "change": "kept"
+        }
+      }
+    }
+  },
+  "layout": {
+    "gutter": {
+      "$type": "dimension",
+      "$value": {
+        "below390": "16pt",
+        "from390": "20pt"
+      },
+      "$description": "Screen side margin for UI.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "readingGutter": {
+      "$type": "dimension",
+      "$value": {
+        "below390": "20pt",
+        "from390": "24pt",
+        "AX3andAbove": "16pt"
+      },
+      "$description": "Letter page, Read together, Write.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[5]",
+          "change": "new"
+        }
+      }
+    },
+    "cardPadding": {
+      "$type": "dimension",
+      "$value": "16pt",
+      "$description": "Inside cards.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[4]",
+          "change": "new"
+        }
+      }
+    },
+    "stackGap": {
+      "$type": "dimension",
+      "$value": "12pt",
+      "$description": "Between cards.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.space[3]",
+          "change": "new"
+        }
+      }
+    },
+    "controlGap": {
+      "$type": "dimension",
+      "$value": "12pt",
+      "$description": "Between bezelled controls.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "sectionGap": {
+      "$type": "dimension",
+      "$value": {
+        "default": "40pt",
+        "bookMonths": "48pt"
+      },
+      "$description": "Between sections.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "glassClusterGap": {
+      "$type": "dimension",
+      "$value": "8pt",
+      "$description": "Floating glass cluster to tab bar or home indicator safe area.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "glassSideInset": {
+      "$type": "dimension",
+      "$value": "measure on device",
+      "$description": "Side inset of floating glass, equal to the system tab bar's.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new",
+          "unverified": true
+        }
+      }
+    },
+    "scrollEdgeFade": {
+      "$type": "dimension",
+      "$value": "32pt",
+      "$description": "Paper fade under a floating cluster where the system scroll edge effect is unavailable.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "maxContent": {
+      "$type": "dimension",
+      "$value": "600pt",
+      "$description": "Max UI column width on iPad and web.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "twoUpMinColumn": {
+      "$type": "dimension",
+      "$value": "160pt",
+      "$description": "Two-up grids become one-up below this column width or at AX1 and above.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "size": {
+    "control": {
+      "sm": {
+        "$type": "dimension",
+        "$value": "44pt",
+        "$description": "Toolbar buttons, chips, small glass buttons",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.target.min",
+            "change": "new"
+          }
+        }
+      },
+      "md": {
+        "$type": "dimension",
+        "$value": "48pt",
+        "$description": "Text fields, Find field, secondary buttons",
+        "$extensions": {
+          "scribe": {
+            "current": null,
+            "change": "new"
+          }
+        }
+      },
+      "lg": {
+        "$type": "dimension",
+        "$value": "56pt",
+        "$description": "Primary buttons, Keep",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.target.primary",
+            "change": "new"
+          }
+        }
+      },
+      "xl": {
+        "$type": "dimension",
+        "$value": "64pt",
+        "$description": "Speak, Type, recording control (extra-large)",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.target.capture",
+            "change": "new"
+          }
+        }
+      }
+    },
+    "row": {
+      "$type": "dimension",
+      "$value": "52pt",
+      "$description": "List row minimum height at Large.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "target": {
+    "min": {
+      "$type": "dimension",
+      "$value": "44pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.target.min",
+          "change": "kept"
+        }
+      }
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "48pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "primary": {
+      "$type": "dimension",
+      "$value": "56pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.target.primary",
+          "change": "kept"
+        }
+      }
+    },
+    "capture": {
+      "$type": "dimension",
+      "$value": "64pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.target.capture",
+          "change": "kept"
+        }
+      }
+    },
+    "web": {
+      "$type": "dimension",
+      "$value": "48px",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.target.web",
+          "change": "kept"
+        }
+      }
+    }
+  },
+  "radius": {
+    "xs": {
+      "$type": "dimension",
+      "$value": "4pt",
+      "$description": "Word highlight wash, edit wash, image inside card padding",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "sm": {
+      "$type": "dimension",
+      "$value": "8pt",
+      "$description": "Small thumbnails, badges",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.radius.sm",
+          "change": "kept"
+        }
+      }
+    },
+    "control": {
+      "$type": "dimension",
+      "$value": "12pt",
+      "$description": "Text fields, Find field fallback",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "md": {
+      "$type": "dimension",
+      "$value": "16pt",
+      "$description": "Card: letter cards, prompt card, inline states",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.radius.md",
+          "change": "changed from 14"
+        }
+      }
+    },
+    "lg": {
+      "$type": "dimension",
+      "$value": "24pt",
+      "$description": "Feature: chapter covers, photo frame in the flow; own ListSection",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.radius.lg",
+          "change": "changed from 20"
+        }
+      }
+    },
+    "xl": {
+      "$type": "dimension",
+      "$value": "32pt",
+      "$description": "Container: capture surface, web and Android sheets",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.radius.xl",
+          "change": "changed from 28"
+        }
+      }
+    },
+    "pill": {
+      "$type": "dimension",
+      "$value": "9999pt",
+      "$description": "Capsule: buttons, chips, every glass control, toast, Find bar",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.radius.pill",
+          "change": "kept"
+        }
+      }
+    },
+    "cover": {
+      "$type": "dimension",
+      "$value": "14pt",
+      "$description": "The book cover only",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "sheet": {
+      "$type": "dimension",
+      "$value": "system",
+      "$description": "System sheets draw their own display-concentric radius; never set on iOS.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "listSection": {
+      "$type": "dimension",
+      "$value": {
+        "system": "system",
+        "ours": "24pt"
+      },
+      "$description": "Match the system grouped list section radius within 2 pt (measure).",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new",
+          "unverified": true
+        }
+      }
+    },
+    "cluster": {
+      "$type": "dimension",
+      "$value": "{radius.pill}",
+      "$description": "Floating capture cluster: capsule.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "$description": "Concentric rule: inner = outer - inset near a corner (within 24 pt); 4 pt floor (xs)."
+  },
+  "elevation": {
+    "0": {
+      "$type": "shadow",
+      "$value": {
+        "shadowColor": "#2B2722",
+        "shadowOpacity": 0,
+        "shadowRadius": 0,
+        "offsetY": 0,
+        "elevation": 0,
+        "web": "none",
+        "darkBorder": false
+      },
+      "$description": "Flat: lists, reading.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.elevation[0]",
+          "change": "kept"
+        }
+      }
+    },
+    "1": {
+      "$type": "shadow",
+      "$value": {
+        "shadowColor": "#2B2722",
+        "shadowOpacity": 0.06,
+        "shadowRadius": 6,
+        "offsetY": 2,
+        "elevation": 1,
+        "web": "0 2px 6px rgba(43,39,34,0.06)",
+        "darkBorder": true
+      },
+      "$description": "Resting cards (light); dark uses surfaceRaised plus a line border.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.elevation[1]",
+          "change": "kept"
+        }
+      }
+    },
+    "2": {
+      "$type": "shadow",
+      "$value": {
+        "shadowColor": "#2B2722",
+        "shadowOpacity": 0.1,
+        "shadowRadius": 16,
+        "offsetY": 6,
+        "elevation": 4,
+        "web": "0 6px 16px rgba(43,39,34,0.10)",
+        "darkBorder": true
+      },
+      "$description": "AudioPlayer pill; a card lifted by long press or drag. Never on glass.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.elevation[2]",
+          "change": "kept, narrowed"
+        }
+      }
+    },
+    "3": {
+      "$type": "shadow",
+      "$value": {
+        "shadowColor": "#2B2722",
+        "shadowOpacity": 0.16,
+        "shadowRadius": 32,
+        "offsetY": 12,
+        "elevation": 12,
+        "web": "0 12px 32px rgba(43,39,34,0.16)",
+        "darkBorder": true
+      },
+      "$description": "RETIRED: sheets are system glass.",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.elevation[3]",
+          "change": "retired"
+        }
+      }
+    },
+    "glass": {
+      "$type": "shadow",
+      "$value": null,
+      "$description": "Glass has no shadow, border or background of its own.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new rule"
+        }
+      }
+    }
+  },
+  "stroke": {
+    "hairline": {
+      "$type": "dimension",
+      "$value": "0.5pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.stroke.hairline",
+          "change": "kept"
+        }
+      }
+    },
+    "control": {
+      "$type": "dimension",
+      "$value": "1pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.stroke.control",
+          "change": "kept"
+        }
+      }
+    },
+    "selected": {
+      "$type": "dimension",
+      "$value": "1.5pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.stroke.selected",
+          "change": "kept"
+        }
+      }
+    },
+    "focus": {
+      "$type": "dimension",
+      "$value": "2pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.stroke.focus",
+          "change": "kept"
+        }
+      }
+    },
+    "editMark": {
+      "$type": "dimension",
+      "$value": "1.5pt",
+      "$description": "",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.stroke.editMark",
+          "change": "kept"
+        }
+      }
+    },
+    "glassBorder": {
+      "$type": "dimension",
+      "$value": "1pt",
+      "$description": "Edge of material.solid.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "focusRing": {
+    "$type": "dimension",
+    "$value": {
+      "width": "2pt",
+      "offset": "2pt"
+    },
+    "$extensions": {
+      "scribe": {
+        "current": "tokens.focusRing",
+        "change": "kept"
+      }
+    }
+  },
+  "iconSize": {
+    "inline": {
+      "$type": "dimension",
+      "$value": "16pt",
+      "$description": "Fixed glyphs (check in a choice box). Inline-with-text symbols take the text size instead.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "row": {
+      "$type": "dimension",
+      "$value": "20pt",
+      "$description": "List row leading icon, Regular, scales with row text, cap 1.5x",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "glass": {
+      "$type": "dimension",
+      "$value": "22pt",
+      "$description": "Custom glass controls, Medium (Semibold on clear glass), cap 1.5x",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "default": {
+      "$type": "dimension",
+      "$value": "24pt",
+      "$description": "Standalone",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "capture": {
+      "$type": "dimension",
+      "$value": "28pt",
+      "$description": "Speak and Type, Medium, cap 1.4x",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "record": {
+      "$type": "dimension",
+      "$value": "32pt",
+      "$description": "Recording control, Semibold, cap 1.4x",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    },
+    "state": {
+      "$type": "dimension",
+      "$value": "44pt",
+      "$description": "Empty and error states, Light, hierarchical, not scaled",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "symbol": {
+    "$description": "SF Symbols on iOS via SymbolView and native tabs; Phosphor glyph as Android and web fallback. Every name is in SF Symbols 5.0 or earlier (iOS 17 target).",
+    "map": [
+      {
+        "phosphor": "MoonStars",
+        "sf": "moon.stars",
+        "alt": "moon.stars.fill",
+        "use": "Home tab"
+      },
+      {
+        "phosphor": "BookOpen",
+        "sf": "book",
+        "alt": "book.fill",
+        "use": "Book tab; book rows"
+      },
+      {
+        "phosphor": "User",
+        "sf": "person",
+        "alt": "person.fill",
+        "use": "Me tab"
+      },
+      {
+        "phosphor": "Microphone",
+        "sf": "mic",
+        "alt": "mic.fill",
+        "use": "Speak, Listen, provenance"
+      },
+      {
+        "phosphor": "MicrophoneSlash",
+        "sf": "mic.slash",
+        "alt": null,
+        "use": "Microphone denied"
+      },
+      {
+        "phosphor": "PencilSimple",
+        "sf": "pencil",
+        "alt": null,
+        "use": "Type"
+      },
+      {
+        "phosphor": "PencilSimpleLine",
+        "sf": "pencil.line",
+        "alt": null,
+        "use": "Edit text"
+      },
+      {
+        "phosphor": "ArrowsClockwise",
+        "sf": "arrow.clockwise",
+        "alt": null,
+        "use": "Another thought, Try again"
+      },
+      {
+        "phosphor": "BellSimple",
+        "sf": "bell",
+        "alt": "bell.slash",
+        "use": "Reminders"
+      },
+      {
+        "phosphor": "LockSimple",
+        "sf": "lock",
+        "alt": null,
+        "use": "Private, kept on this phone"
+      },
+      {
+        "phosphor": "Check",
+        "sf": "checkmark",
+        "alt": null,
+        "use": "Selected, Done"
+      },
+      {
+        "phosphor": "CheckCircle",
+        "sf": "checkmark.circle",
+        "alt": null,
+        "use": "Saved, export finished"
+      },
+      {
+        "phosphor": "WarningCircle",
+        "sf": "exclamationmark.circle",
+        "alt": null,
+        "use": "Errors with caution and words"
+      },
+      {
+        "phosphor": "X",
+        "sf": "xmark",
+        "alt": null,
+        "use": "Close"
+      },
+      {
+        "phosphor": "Trash",
+        "sf": "trash",
+        "alt": null,
+        "use": "Delete with words"
+      },
+      {
+        "phosphor": "CaretRight",
+        "sf": "chevron.right",
+        "alt": null,
+        "use": "Disclosure"
+      },
+      {
+        "phosphor": "CaretLeft",
+        "sf": "chevron.left",
+        "alt": null,
+        "use": "Back (system back preferred)"
+      },
+      {
+        "phosphor": "CaretDown",
+        "sf": "chevron.down",
+        "alt": null,
+        "use": "Child switcher, expanders"
+      },
+      {
+        "phosphor": "Plus",
+        "sf": "plus",
+        "alt": null,
+        "use": "Add"
+      },
+      {
+        "phosphor": "Play",
+        "sf": "play.fill",
+        "alt": null,
+        "use": "Play"
+      },
+      {
+        "phosphor": "Pause",
+        "sf": "pause.fill",
+        "alt": null,
+        "use": "Pause"
+      },
+      {
+        "phosphor": "GearSix",
+        "sf": "gearshape",
+        "alt": null,
+        "use": "Settings entry"
+      },
+      {
+        "phosphor": "MagnifyingGlass",
+        "sf": "magnifyingglass",
+        "alt": null,
+        "use": "Search, Find"
+      },
+      {
+        "phosphor": "Fingerprint",
+        "sf": "faceid",
+        "alt": null,
+        "use": "Unlock (touchid on Touch ID devices)"
+      },
+      {
+        "phosphor": "EnvelopeSimple",
+        "sf": "envelope",
+        "alt": null,
+        "use": "Email sign-in"
+      },
+      {
+        "phosphor": "AppleLogo",
+        "sf": null,
+        "alt": null,
+        "use": "Use the system Sign in with Apple button"
+      },
+      {
+        "phosphor": "Database",
+        "sf": "cylinder.split.1x2",
+        "alt": null,
+        "use": "Export your data"
+      },
+      {
+        "phosphor": "CreditCard",
+        "sf": "creditcard",
+        "alt": null,
+        "use": "Billing"
+      },
+      {
+        "phosphor": "CloudSlash",
+        "sf": "cloud",
+        "alt": null,
+        "use": "Outage (not icloud.*)"
+      },
+      {
+        "phosphor": "WifiSlash",
+        "sf": "wifi.slash",
+        "alt": null,
+        "use": "Offline"
+      },
+      {
+        "phosphor": "CalendarBlank",
+        "sf": "calendar",
+        "alt": null,
+        "use": "Letter date"
+      },
+      {
+        "phosphor": "Waveform",
+        "sf": "waveform",
+        "alt": null,
+        "use": "Has a recording"
+      },
+      {
+        "phosphor": "UserPlus",
+        "sf": "person.badge.plus",
+        "alt": null,
+        "use": "Invite"
+      },
+      {
+        "phosphor": "ShareNetwork",
+        "sf": "square.and.arrow.up",
+        "alt": null,
+        "use": "Share"
+      },
+      {
+        "phosphor": "Moon",
+        "sf": "moon",
+        "alt": null,
+        "use": "Quiet day"
+      },
+      {
+        "phosphor": "BookOpenText",
+        "sf": "book.closed",
+        "alt": null,
+        "use": "Cover band"
+      },
+      {
+        "phosphor": "FileText",
+        "sf": "doc.text",
+        "alt": null,
+        "use": "PDF and data documents"
+      },
+      {
+        "phosphor": null,
+        "sf": "textformat.size",
+        "alt": null,
+        "use": "Reading Size"
+      },
+      {
+        "phosphor": null,
+        "sf": "photo",
+        "alt": "photo.badge.plus",
+        "use": "Photo, Add a photo"
+      },
+      {
+        "phosphor": null,
+        "sf": "photo.on.rectangle",
+        "alt": null,
+        "use": "Photos lens"
+      },
+      {
+        "phosphor": null,
+        "sf": "ellipsis.circle",
+        "alt": null,
+        "use": "More menu"
+      },
+      {
+        "phosphor": null,
+        "sf": "gobackward.10",
+        "alt": null,
+        "use": "Back 10 s"
+      },
+      {
+        "phosphor": null,
+        "sf": "backward.end.fill",
+        "alt": "forward.end.fill",
+        "use": "Previous and next letter"
+      },
+      {
+        "phosphor": null,
+        "sf": "stop.fill",
+        "alt": null,
+        "use": "Finish recording glyph"
+      },
+      {
+        "phosphor": null,
+        "sf": "arrow.uturn.backward",
+        "alt": null,
+        "use": "Undo"
+      },
+      {
+        "phosphor": null,
+        "sf": "person.2",
+        "alt": null,
+        "use": "Family"
+      },
+      {
+        "phosphor": null,
+        "sf": "globe",
+        "alt": null,
+        "use": "Language"
+      },
+      {
+        "phosphor": null,
+        "sf": "hand.raised",
+        "alt": null,
+        "use": "Privacy"
+      }
+    ],
+    "$extensions": {
+      "scribe": {
+        "current": "DESIGN_LANGUAGE 7 (Phosphor)",
+        "change": "new"
+      }
+    }
+  },
+  "icon": {
+    "tileTop": {
+      "$type": "color",
+      "$value": "#9A613C",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.tileTop",
+          "change": "kept"
+        }
+      }
+    },
+    "tileBottom": {
+      "$type": "color",
+      "$value": "#7F4F30",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.tileBottom",
+          "change": "kept"
+        }
+      }
+    },
+    "mark": {
+      "$type": "color",
+      "$value": "#FBF8F3",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.mark",
+          "change": "kept"
+        }
+      }
+    },
+    "darkTileTop": {
+      "$type": "color",
+      "$value": "#2C2926",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.darkTileTop",
+          "change": "kept"
+        }
+      }
+    },
+    "darkTileBottom": {
+      "$type": "color",
+      "$value": "#1F1B18",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.darkTileBottom",
+          "change": "kept"
+        }
+      }
+    },
+    "darkMark": {
+      "$type": "color",
+      "$value": "#D9A47E",
+      "$extensions": {
+        "scribe": {
+          "current": "tokens.icon.darkMark",
+          "change": "kept"
+        }
+      }
+    }
+  },
+  "appIcon": {
+    "$description": "Icon Composer layers; square unmasked 1024 px; no text, border or baked corners.",
+    "background": {
+      "default": {
+        "gradient": [
+          "{icon.tileTop}",
+          "{icon.tileBottom}"
+        ],
+        "direction": "vertical"
+      },
+      "dark": {
+        "gradient": [
+          "{icon.darkTileTop}",
+          "{icon.darkTileBottom}"
+        ],
+        "direction": "vertical"
+      },
+      "mono": "system"
+    },
+    "foreground": [
+      {
+        "layer": "quoteLarge",
+        "default": "{icon.mark}",
+        "dark": "{icon.darkMark}",
+        "mono": "#FFFFFF",
+        "source": "packages/brand/assets/logo/primary/symbol.svg (large mark)"
+      },
+      {
+        "layer": "quoteSmall",
+        "default": "{icon.mark}",
+        "dark": "{icon.darkMark}",
+        "mono": "#FFFFFF",
+        "source": "symbol.svg (small mark, 0.62, 14 degrees)"
+      }
+    ],
+    "appearances": [
+      "default",
+      "dark",
+      "clear light",
+      "clear dark",
+      "tinted light",
+      "tinted dark"
+    ],
+    "$extensions": {
+      "scribe": {
+        "current": "tokens.icon and app.config.ts ios.icon PNGs",
+        "change": "new layered file; PNGs kept for iOS below 26 and the store"
+      }
+    }
+  },
+  "atmosphere": {
+    "$description": "Unchanged: content-layer lamp. Values stay in tokens.atmosphere; off under Reduce Transparency and Increase Contrast; glass sits above it.",
+    "$extensions": {
+      "scribe": {
+        "current": "tokens.atmosphere",
+        "change": "kept (scene.family naming per AUDIT 2.3 is a separate fix)"
+      }
+    }
+  },
+  "motion": {
+    "$description": "Owned by docs/design/system/MOTION.md (v2); only the coordinator rulings of 20 Nov that tokens must carry are restated here.",
+    "$extensions": {
+      "scribe": {
+        "current": "tokens.motion",
+        "change": "see MOTION.md"
+      }
+    },
+    "lamp": {
+      "returnMs": {
+        "$type": "duration",
+        "$value": "280ms",
+        "$description": "Also every first-run lamp change (ruling, Karma 20 Nov).",
+        "$extensions": {
+          "scribe": {
+            "current": "tokens.motion.lamp.returnMs",
+            "change": "kept; scope widened to first-run lamp changes"
+          }
+        }
+      }
+    },
+    "rules": {
+      "$description": "Rulings (Karma, 20 Nov): waiting states are still, never breathing; busy controls show busy words at every Reduce Motion setting, never a spinner; first-run lamp changes use motion.lamp.returnMs.",
+      "waitingStatesStill": true,
+      "busyShowsWords": true,
+      "spinner": false,
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "loading": {
+    "heldAfterMs": {
+      "$type": "duration",
+      "$value": "10000ms",
+      "$description": "After this long a waiting state shows its held line (area E DESIGN rule 5, NS-10-R0). Replaces any slowLineAfterMs 4000 proposal.",
+      "$extensions": {
+        "scribe": {
+          "current": null,
+          "change": "new"
+        }
+      }
+    }
+  },
+  "retired": {
+    "$description": "Retired by this proposal.",
+    "items": [
+      "type.numeral (unused since PR #674)",
+      "fontMetrics[Literata-Medium] (only numeral used it)",
+      "elevation[3] (sheets are system glass)",
+      "radius.xl as the iOS sheet radius",
+      "Phosphor as the iOS icon set (fallback only)",
+      "uniform Dynamic Type multiplier",
+      "light.success #3F7A55",
+      "light.caution #94661A",
+      "highContrast.light.textMuted #524B43",
+      "highContrast.light.accent #6E4529",
+      "motion.emptyBreathMs and the Breathe component (waiting states are still; ruling 20 Nov)",
+      "loading.slowLineAfterMs 4000 (never adopted; loading.heldAfterMs 10000 instead)"
+    ]
+  }
+}

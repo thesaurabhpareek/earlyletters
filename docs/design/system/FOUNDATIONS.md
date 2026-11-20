@@ -556,6 +556,8 @@ Notes:
 
 The vocabulary does not change in Foundations: a haptic marks an outcome, never a navigation; five intents (record start and stop light impact, success on Keep, warning on a confirmed discard, selection for picks and Reading Size, soft for long press); nothing during recording or playback. Owner and full map: `docs/design/system/MOTION.md` (v2), which supersedes `docs/design/MOTION.md` section 6. Glass controls with `isInteractive` get the system's touch response; we add no haptic to it.
 
+Coordinator rulings carried into `tokens.v2.json` (Karma, 20 Nov), detail in v2 `MOTION.md`: waiting states are still, never breathing (the `Breathe` component and `motion.emptyBreathMs` retire); a busy control shows busy words at every Reduce Motion setting and never a spinner; every first-run lamp change uses `motion.lamp.returnMs` (280 ms); a waiting state shows its held line after `loading.heldAfterMs` 10000 ms (area E DESIGN rule 5, NS-10-R0).
+
 ## 11. Accessibility settings, one table
 
 | Setting | Materials | Colour | Type | Other |
@@ -628,6 +630,7 @@ Proposed backlog rows. Owner lanes: DS = `design-systems`, MOB = `mobile`. Sizes
 | Phosphor as the iOS icon set | DESIGN_LANGUAGE 7 | SF Symbols (section 8); Phosphor stays only as the Android and web fallback |
 | "Paper bar with a hairline (not Liquid Glass yet)" for the tab bar | BENCHMARK 9, COMPONENT_LIBRARY 0.1 | Native tabs, system glass (DS2-10) |
 | `elevation.2` on the toast and `elevation.3` on the sheet | `ui/toast.tsx:114`, `ui/sheet.tsx:185` | Glass capsule toast and the system sheet, no shadow (AudioPlayer keeps `elevation.2`) |
+| The `Breathe` component and `motion.emptyBreathMs` (empty and waiting states breathing) | `components/motion/breathe.tsx`, `tokens.motion` | Still waiting states (ruling, Karma 20 Nov) |
 | `type.numeral` and the `serifMedium` `fontMetrics` entry | `tokens.type`, `tokens.fontMetrics` | Nothing (unused since PR #674; AUDIT 2.3) |
 | `elevation.3` (sheets) | `tokens.elevation[3]`, DESIGN_LANGUAGE 6 | System sheets |
 | `radius.xl` as the sheet radius on iOS | DESIGN_LANGUAGE 5 | System sheet radius; `xl` is containers and web or Android sheets |
