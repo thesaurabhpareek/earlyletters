@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:25 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
 Blocked until: Karma rules Q-E1 (two shapes for one file: PACK-DELTA-2 row NS-46-R30 in PR #932 says `budget.ts` is a pure chooser `chooseOnePerDay(candidates, planNoticeCount)` with the order typed day, birthday, library day, month-age, evening; our design `11-foundations.md` section 2 says a class registry with `allocate({ planPending, budgeted })` and `addNotificationClass`). The tests below hold under either shape; only the module's exports wait. Founder Q8 (the cap): default is one a day (locked card). Open conflict for product: NS-32-R4b wants plan notices at the iOS ceiling of 64; the design keeps 60 in total (Conflict P1, "confirm with product before building"; catalogue A marks R4b GAP). Do not build R4b until product answers.
 
 ```
-BRIEF BL-966a (budget.ts and allocate)            Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:25 UTC
+BRIEF BL-966a (budget.ts and allocate)            Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R12 tested before the cut; Q1)   Wave: 1
 
 1. GOAL: When any number of notification classes want a slot, one shared registry and one `allocate` decide, so the total stays at 60 budgeted plus plan notices outside the budget,
@@ -10,7 +10,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R1
 
 2. CARD ROWS and TEST TITLES
    Rows: NS-32-R2, R3, R5, R7, R15 (R4b see above). Card 11 (NS-32) at 450bcb4a.
-   Titles (catalogue A, PR #925, exact):
+   Shape-neutral titles first (hold under both shapes): R3, R7, and R1 and R1b through the chooser. R2, R5 and R15 only make sense for the REGISTRY shape: they wait for Q-E1 (if the chooser wins they are re-titled by qa and product). Titles (catalogue A, PR #925, exact):
      [NS-32-R2] unregistered class fails        [NS-32-R3] priority decides
      [NS-32-R5] registry rows                   [NS-32-R7] pending ceilings
      [NS-32-R15] a class cannot raise the total
@@ -35,7 +35,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (NS-32-R1
 
 7. LIBRARIES: none. `expo-notifications ~57.0.21` as installed (LD-20 USE; iOS keeps 64 pending, we plan 60; PR #920).
 
-8. BUDGETS (PR #928): B-03 at most 60 pending local notifications in total, one a day, quiet book 0 (property test over 92 days, BLOCK); L-09 planner under 50 ms for 3 children, median of 5 on the Asha 1,000-letter fixture,
+8. BUDGETS (PR #928): B-03 at most 60 budgeted notifications plus up to 4 plan notices, 64 in all (NS-32-R4b, PR #928), one a day, quiet book 0 (property test over 92 days, BLOCK); L-09 planner under 50 ms for 3 children, median of 5 on the Asha 1,000-letter fixture,
    BLOCK at 3x (CI jitter), WATCH between 1x and 3x. Checked: B-03 and L-09 by Node tests here.
 
 9. ACCEPTANCE  Experience: D-S06 Me, Reminders (backedOff, lateClamp states; PR #921). Test cases above. Done also means: red on old code and on each mutant; the rows hold under both Q-E1 shapes.

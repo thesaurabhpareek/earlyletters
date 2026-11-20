@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:28 UTC). Stale in the design: it says "`prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`" and that nothing reads `quiet`. On develop #901 fixed it: `plannerChildren` is at `prefs.ts:127` and passes `quiet`, and `planner.ts:25-26,78-79` honour it; NS-32-R14 has tests (`reminders-quiet-books.test.ts:75`).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Stale in the design: it says "`prefs.ts:116` becomes `included: c.remindersOn && !c.quiet`" and that nothing reads `quiet`. On develop #901 fixed it: `plannerChildren` is at `prefs.ts:127` and passes `quiet`, and `planner.ts:25-26,78-79` honour it; NS-32-R14 has tests (`reminders-quiet-books.test.ts:75`).
 Blocked until: BL-966 (a) merged; Karma's Q-E1 ruling; product's answer on R4b (64 against 60); founder Q8 (the cap). NS-32-R1b still fails today (two notifications can land on one day).
 
 ```
-BRIEF BL-966b (planner: one a day, priority, ceiling) Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:28 UTC
+BRIEF BL-966b (planner: one a day, priority, ceiling) Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 (R1b fixed before the cut, or shipped as a known defect by written decision, Q1)   Wave: 1
 
 1. GOAL: When two books have a birthday and a month note on the same local day, exactly one notification is scheduled, the highest priority wins, and no plan ever holds more than 60 budgeted notes.

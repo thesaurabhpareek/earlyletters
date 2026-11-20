@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 20:32 UTC). Moved: the design puts the preflight entitlement check "beside `preflight-testflight.mjs:636`"; the entitlement checks are now at `:644-646`.
-Blocked until: BL-966 (b) merged; the PROPOSED placeholder words read by the founder (BL-965). Two designs name the key differently: `docs/tdd/new-scope/09-capture.md` section 1.3 says `notifications.previewPlaceholder`, `11-foundations.md` section 2 says `reminders.previewPlaceholder` and `planReminders.previewPlaceholder`. Karma and `content` pick the name; this brief uses the placeholder `<key>`. The plan category `plan` is `payments`' code (hand off, do not edit `lib/billing/**`). Overlap to settle: `09-capture.md` section 1.9 PR 5 (BL-943) lists category, level and the cold-start landing; `11-foundations.md` section 2 PR (c) (BL-966) lists the category. This brief owns category, level and version re-plan; BL-943's PR 3 owns only the landing (NS-13-R9).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC). Moved: the design puts the preflight entitlement check "beside `preflight-testflight.mjs:636`"; the entitlement checks are now at `:644-646`.
+Blocked until: BL-966 (b) merged; the PROPOSED placeholder words read by the founder (BL-965). Two designs name the key differently: `docs/tdd/new-scope/09-capture.md` section 1.3 says `notifications.previewPlaceholder`, `11-foundations.md` section 2 says `reminders.previewPlaceholder` and `planReminders.previewPlaceholder`. Karma and `content` pick the name; this brief uses the placeholder `<key>`. The plan category `plan` is `payments`' code (hand off, do not edit `lib/billing/**`). Overlap to settle: `09-capture.md` section 1.9 PR 5 (BL-943) lists category, level and the cold-start landing; `11-foundations.md` section 2 PR (c) (BL-966) lists the category. This brief owns category, level and version re-plan; BL-943's PR 5 owns only the landing (NS-13-R9).
 
 ```
-BRIEF BL-966c (categories, placeholder, interruption level, version re-plan)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 20:32 UTC
+BRIEF BL-966c (categories, placeholder, interruption level, version re-plan)  Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 for the NS-32-R12 test; rest 14   Wave: 1
 
 1. GOAL: When a reminder is shown on a locked phone with previews hidden, the only text is one neutral placeholder; every request carries the `reminder` category and level `active`;
@@ -23,7 +23,7 @@ Agent: mobile (reminders owner)   Lane: Pack 4 (Reminders)   Build: 13 for the N
 3. FILES  Touch: lib/reminders/{scheduler,index}.ts (category registration in `startReminders`, fields on each request), settings key `app.lastPlannedVersion` (L1) in lib/reminders/prefs.ts,
    apps/mobile/scripts/preflight-testflight.mjs (one check: no `com.apple.developer.usernotifications.time-sensitive`), tests reminders-planner or a new `reminders-categories.test.ts`; one PROPOSED key via `content`.
    Never: lib/billing/** (the `plan` category and its placeholder are `payments`'), app/_layout.tsx, lib/store.ts, planner logic (966b).
-   Shared file rule: `scheduler.ts` with BL-943 PR 3 and BRIEF-HO908: whichever lands second merges develop.
+   Shared file rule: `apps/mobile/scripts/preflight-testflight.mjs` is claimed by the ops row (BL-958): add the one check only with Karma's ok or hand it to `ops`; whichever lands second merges develop. `scheduler.ts` with BL-943 PR 3 and BRIEF-HO908: whichever lands second merges develop.
 
 4. READING PACK: Pack 4 items 2, 3, 5, 7; `09-capture.md` (design) section 1.3 "Category, interruption level, cold-start landing"; `expo-native-module` skill section 4 (entitlements, plist, background modes: none here).
 
