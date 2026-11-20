@@ -360,3 +360,12 @@ Accepted as drafted, including the two changes to round 1 (K-1 busy words at eve
 - COMPONENTS rulings: keep ChoiceGroup for the lens (radio semantics, stacks at AX sizes; NS-33-R3); confirmation split approved (native action sheet for simple, sheet for sign-out/erase and typed confirms); token names: target.md exists (48), layout.rowMin = size.row (52) in tokens.v2.json; components use size.row.
 
 Karma
+
+## Area D motion rulings (20 Nov)
+- D-motion 1: no cover opening on joining a book. The system MOTION retires cover openings; use `cover.dissolveMs` and the plain arrival. The 800 ms move is dropped.
+- D-motion 2: the waiting bar sweep (1400 ms) stays as the named `m.progress.wait` loop, off under Reduce Motion and Low Power Mode. The token is `progress.sweepMs`, not `motion.waitSweepMs`. Waiting states otherwise stay still.
+- D-motion 3: no haptic on Continue in the share preview (outcome haptics only; NS-05-R22). D DESIGN D-S02 drops the `tap` line. Invite link sent: no haptic. Cancel invite: `warning`. Quiet-day Undo: `tap`. "No reminders" matches "Yes" (`tap`).
+- D-motion 4: state names follow D DESIGN.md section 3; WORDS.md is renamed to match (mechanical).
+- D-motion 5: engineering rows for BL-943 (reminder ask into `ui/sheet.tsx`, cold-start notification response), BL-966 (plan notice cold start, tap while Listen/Review/Write open), BL-974 (quiet-day timing readable by 100 ms), `progress.sweepMs` token.
+
+Karma
