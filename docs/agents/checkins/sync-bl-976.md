@@ -1,0 +1,1 @@
+06:00 (20 Nov) sync | done: [NS-08-R5] store-profile case and [NS-08-R6] sign-out test (disk stand-in, source pins, it.fails for the D1 sheet line), mutation-checked | next: PR, then BL-987 facts | blocked/needs: R6 sheet line waits on BL-965 words; preflight-testflight.mjs left to ops (BL-958)
