@@ -29,7 +29,7 @@ All rows NS-13-R1 to R33 (card section 7); back-off exactly as card section 3a; 
 ### 1.2 What is built (only what the design changes)
 - **Fact** The planner has no back-off (`planner.ts:26-27`); evening horizon 21 days, notes 92 (`planner.ts:86-89, 288-289`); notes keyed `${kind}:${date}` (`planner.ts:313`), so two kinds on one date are two notes.
 - **Fact** Smart quiet reads only own entries' `captured_at` (`prefs.ts:120-131`); drafts never count. `not_much` marks do count (they are entries; `quiet-day.logic.ts:13, 19`).
-- **Fact** `plannerChildren` maps only `remindersOn` (`prefs.ts:115-117`). `Child.quiet` exists (`db/repos/children.ts:47`) and `store.ts:386-389` says "The planner reads `Child.quiet`"; nothing in `lib/reminders` reads it (grep). A quieted book still gets month and birthday notes: NS-32-R14 (P0) and J-N19 fail today.
+- **Fact** `plannerChildren` maps only `remindersOn` (`prefs.ts:115-117`). `Child.quiet` exists (`db/repos/children.ts:47`) and `store.ts:386-389` says "The planner reads `Child.quiet`"; nothing in `lib/reminders` reads it (grep). A quieted book still gets month and birthday notes: NS-32-R14 (P0) and J-N19 fail today. [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]: the planner drops quiet books and `test/reminders-quiet-books.test.ts` exists, so read this Fact as history.
 - **Fact** Sign-out never calls `forgetReminders`; only Erase everything does (`erase-everything.ts:84`). The session ends on three paths: local finish (`session-provider.tsx:293-308`), the under-18 stop (`:311-326`), and a Supabase `SIGNED_OUT` (`:218-222`). Account deletion on the phone ends in `auth.signOut` (`use-account-deletion.ts:118`).
 - **Fact** Scheduled content sets no `categoryIdentifier` and no `interruptionLevel` (`scheduler.ts:153-164`). expo-notifications 57.0.21 (`apps/mobile/package.json:40`) types both (`node_modules/expo-notifications/build/Notifications.types.d.ts:580, 694`) and `getLastNotificationResponse` (`NotificationsEmitter.d.ts:83`).
 - **Fact** A tap on a month or birthday note on a cold start lands on Home, not the Book (`scheduler.ts:256-260`, "the app opens on Tonight anyway"). NS-13-R9 wants the Book.
@@ -40,7 +40,7 @@ All rows NS-13-R1 to R33 (card section 7); back-off exactly as card section 3a; 
 - `anchorDay({ lastMadeAt, onSince, timeZone })`: the later of the local date of `lastMadeAt` and `onSince` (card 3a). `null` only when both are absent; the planner then uses today.
 - `eveningDates(anchor, today, weekdays)`: days 1 to 7 after the anchor on the chosen weekdays; in each block 8-14, 15-21, 22-28, 29-35 the first chosen weekday only; nothing after day 35 (card 3a items 1 to 3). No evening nudge on day 0 (card 3a item 1; Conflict P4).
 - `noteWindow(anchor)`: month and birthday notes only on days 0 to 35 (card 3a item 4), replacing the 92-day horizon for these classes.
-- `BACKOFF_CLASSES = ['evening', 'monthAge', 'birthday']`, read from the NS-32 registry, so `typedDay` (NS-18) and `plan` are never stopped (NS-13-R29, NS-32-R9).
+- `BACKOFF_CLASSES = ['evening', 'monthAge', 'birthday']`, read from the NS-32 registry, so `typedDay` (NS-18) and `plan` are never stopped (NS-13-R29, NS-32-R9). [Amended 17-A2: `BACKOFF_CLASSES` is derived from the `backoff` column of the `budget.ts` registry (`13`/`14` section 1.2), not a literal; `libraryDay` and `typedDay` are never backed off.]
 
 **Planner changes (`planner.ts`).** `PlanInput` gains `lastMadeAt` (replaces `lastSaveAt`, same instant for the 20 h smart quiet) and `onSince`. The evening loop (`planner.ts:347-368`) walks `eveningDates` instead of every day to the horizon; note days, smart quiet and quiet hours are unchanged. Notes outside `noteWindow` are skipped. Copy rotation stays `slotOrdinal` (`planner.ts:212-220, 353-354`) plus a post-pass that bumps a variant equal to the previous planned evening's variant, so two consecutive nudges never match after a skipped block (NS-13-R2; folds #680). The 60 ceiling and latest-first drop stay (`planner.ts:371`; NS-13-R23).
 
@@ -50,7 +50,7 @@ All rows NS-13-R1 to R33 (card section 7); back-off exactly as card section 3a; 
 
 **`reminders.onSince`.** `turnOnReminders()` (`scheduler.ts:293-310`) writes today's local date with `enabled`. Upgrade: an install with reminders on and no key gets one once at `startReminders` per OQ-13.4.
 
-**Quiet books (NS-13-R12, NS-32-R14).** `included: c.remindersOn && !c.quiet` in `plannerChildren`. Hidden books are already absent (`listChildren` is `listVisible`, `store.ts:311-313`).
+**Quiet books (NS-13-R12, NS-32-R14).** `included: c.remindersOn && !c.quiet` in `plannerChildren`. Hidden books are already absent (`listChildren` is `listVisible`, `store.ts:311-313`). [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]; the filter is in the planner, keep the test as a guard.
 
 **The session ends, reminders end (NS-13-R13, R14, R15).** New `lib/reminders/session.ts` `endReminderSession()`: deletes `reminders.*`, `reminders.onSince` and `notifications.lockScreenNames` (`prefs.ts:42-51`; `deleteSetting`, `store.ts:281`), and a list of setting prefixes that NS-18 (`typedDay.`) and NS-16 (`signAs.recent`) extend when they land; then awaits `forgetReminders()` (`scheduler.ts:322-348`, which also dismisses presented notes). Settings go first so a debounced re-plan plans nothing. One effect in `session-provider.tsx` fires when the signed-in user id goes from a value to none, so all three paths and the deletion sign-out are covered; a phone that never signed in is untouched. It does not touch `activeChildId` (NS-14 state table: kept at sign-out, D1) or plan notices (`plan.` ids, `plan-reminders.logic.ts:50`). **Unverified** that a purged account's session ends with `SIGNED_OUT` on a phone that never taps Sign out; Rec: the first-run gate's "account gone" branch also calls `endReminderSession()`.
 
@@ -84,7 +84,7 @@ Nothing leaves the phone (local notifications, `scheduler.ts:1-4`); X2 n/a. Noti
 | R12 | planner test: `remindersOn` off, `quiet` on, hidden book | unit | J-N19 (device) |
 | R13, R14, R15 | `test/reminders-session.test.ts`: mocked expo-notifications as in `test/reminders-erase.test.ts`; each of the three session-end paths and the deletion sign-out | integration | device row |
 | R19 | P-3 test with the NS-13 title | unit | none (CI only) |
-| R23 | backoff test: 3 children, `everyEvening`, typed days filling, plus the 4 plan notices: budgeted at most 60, total at most 64 | unit | none |
+| R23 | backoff test: 3 children, `everyEvening`, typed days filling, plus the 4 plan notices: pending at most 60 in total, plan notices first (E13, CL-115, CR-69 A1) [Amended 17-A1; was "budgeted at most 60, total at most 64"; the planner PR lowers today's 60 plus 4 (`planner.ts:95-96, 295`, `lib/billing/plan-reminders.logic.ts:48`)] | unit | none |
 | R27 | `test/reminders-anchor.test.ts`: store on `node:sqlite` with own entry, other author's entry, ready, held, discarding and recording drafts | integration | none |
 | R30 | existing clamp tests in `test/reminders-planner.test.ts` retitled, plus picker bounds | unit | J-N5 |
 | R31 | `test/next-ask.test.ts` (MAX_REMINDER_PRIMES) retitled | unit | none |
@@ -96,7 +96,7 @@ P1 device rows (R1, R7, R9, R16, R25, the daylight-saving row, a date-line row):
 | # | PR | Rows | Main files | Est. | Owner | Reviews |
 |---|---|---|---|---|---|---|
 | 1 | test: the reminder never-list | R5, R6a, R6b, R10, R11, R24; retitles R30, R31 | 3 test files | 180 lines, 3 files | mobile | compliance-engineer / qa |
-| 2 | fix: reminders end with the session; quiet books get none | R13, R14, R15, R12; NS-32-R14 | `session.ts`, `session-provider.tsx`, `prefs.ts`, `index.ts`, 2 tests | 220, 6 | mobile | security-architect / compliance-engineer |
+| 2 | fix: reminders end with the session; quiet books get none (the quiet half is built, `planner.ts:303`) | R13, R14, R15, R12; NS-32-R14 | `session.ts`, `session-provider.tsx`, `prefs.ts`, `index.ts`, 2 tests | 220, 6 | mobile | security-architect / compliance-engineer |
 | P-3 | NS-32 one a day (designed with NS-32) | NS-32-R1, R1b, R3, R4; NS-13-R19, R28 titles | `budget.ts`, `planner.ts` | S | mobile | principal-architect / compliance-engineer |
 | 3 | feat: the anchor counts a made letter | R27, R8 | `repos/entries.ts`, `repos/drafts.ts`, `store.ts`, `prefs.ts`, `scheduler.ts`, inventory row, test | 260, 7 | mobile | data-steward / principal-architect |
 | 4 | feat: pre-scheduled back-off | R3, R4, R18, R32, R23, R2 (fold #680) | `backoff.ts`, `planner.ts`, test | 330, 3 | mobile | principal-architect / compliance-engineer |
@@ -164,7 +164,7 @@ NS-32 (#758 rebased plus P-3; founder Q8, the cap, #847 17:500). `[X4-R1]` scopi
 
 ## 5. NS-18 Typed days (wave 4, paragraph)
 
-Rests on the NS-32 registry class `typedDay` (P-3) and the section 1.3 planner (typed days rank first, never backed off). Settings keys `typedDay.<yyyy-mm-dd>` (words, L4) and `typedDay.showWords` (L2), no local or server migration, nothing synced or exported (card section 10); flag `EXPO_PUBLIC_TYPED_DAYS`, off by default, following `capabilities.ts` without tying a local feature to `serverFeaturesEnabled()` (`capabilities.ts:186-187`). The notification `data` stays `{ source, kind }`; after the tap Home reads that day's key, so the words never ride in a payload. Keys are deleted at the first re-plan after the date, and by `endReminderSession()` (section 1.3). Decided first: the Home placement of the words (Conflict P2, CPO); typed days with reminders off (card section 5 PROPOSED, CPO); `typedDay` before `birthday` (NS-32 OQ, CPO, default typed day first); export of typed days (CPrivO with counsel, Q51, default not exported); founder Q8 (the cap). The words field needs writing tools off (Finding K3). P0 rows R3, R6, R8 (J-N18 canary) are unit and source tests.
+Rests on the NS-32 registry class `typedDay` (P-3) and the section 1.3 planner (typed days rank first, never backed off). Settings keys `typedDay.<yyyy-mm-dd>` (words, L4) and `typedDay.showWords` (L2), no local or server migration, nothing synced or exported (card section 10); flag `EXPO_PUBLIC_TYPED_DAYS`, off by default, following `capabilities.ts` without tying a local feature to `serverFeaturesEnabled()` (`capabilities.ts:186-187`). The notification `data` stays `{ source, kind }`; after the tap Home reads that day's key, so the words never ride in a payload. Keys are deleted at the first re-plan after the date, and by `endReminderSession()` (section 1.3). [Amended 17-A3: typed days and the days store are two stores read by one Days page (C-S24); typed-day words show on a lock screen only behind `notifications.dayNames` (NS-47-R37); a typed day shares the `el.day.<date>` identifier; typed days are a source of group `typedDay`, rank 1 (CR-69 A1).] Decided first: the Home placement of the words (Conflict P2, CPO); typed days with reminders off (card section 5 PROPOSED, CPO); `typedDay` before `birthday` (NS-32 OQ, CPO, default typed day first); export of typed days (CPrivO with counsel, Q51, default not exported); founder Q8 (the cap). The words field needs writing tools off (Finding K3). P0 rows R3, R6, R8 (J-N18 canary) are unit and source tests.
 
 ## 6. NS-16 Someone else speaks (wave 5, gated; paragraph and contract names)
 
@@ -194,7 +194,7 @@ For product (card gaps):
 - **P4** NS-13 3a item 1 starts nudges on day 1; the built planner can nudge the evening reminders are turned on.
 - **P5** NS-32 section 3 counts the back-off "from the last made letter"; NS-13 3a adds `reminders.onSince`. Default: NS-13 (more specific).
 - **P6** The same placeholder is NS-13-R33 (P2) and NS-32-R13 (P1).
-- **P7** NS-13-R12 names hidden books and "Include in my reminders"; NS-32-R14 and J-N19 also name a quieted book, which the code ignores (`prefs.ts:115-117` against `store.ts:386-389`).
+- **P7** NS-13-R12 names hidden books and "Include in my reminders"; NS-32-R14 and J-N19 also name a quieted book, which the code ignores (`prefs.ts:115-117` against `store.ts:386-389`). [Amended 17-A13, by extension: closed on develop, `planner.ts:303`, `prefs.ts:127`]: no longer true, the planner honours it.
 - **P8** NS-17-R8 wants no words on the server after the next push; `held_drafts.raw_transcript` is immutable once non-empty (`sync.ts:294`).
 
 For Karma (engineering):
