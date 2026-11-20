@@ -25,7 +25,9 @@
 
 - **Consent lines (PRIV-R21, COORDINATION section 10).** Day names on the lock screen are something a person agrees to, so the PR that adds `notifications.dayNames` carries Shown, Records, Never and Decline lines. Records is a local setting only: nothing goes to analytics, a log, a crash report or a push payload.
 - **Erase everything dismisses delivered day notes too,** by the same `getPresentedNotificationsAsync` pattern as sign-out (`scheduler.ts:338-340`), after the days file is deleted (ADR 0032 item 3).
-- **The allowlist test is named in the first PR that schedules a day note.** It checks `identifier`, `threadIdentifier`, `categoryIdentifier` and `data` for the day, typed-day, birthday and month sources (E45(b): typed-day words follow `notifications.dayNames`), and has a positive control: a note carrying a day name must fail it (CHECKS-AND-BALANCES C-09; C-06 is the seed-before-erase rule for the Erase test; both binding under CR-69 A10).
+- **The allowlist test is named in the first PR that schedules a day note.** It checks `identifier`, `threadIdentifier`, `categoryIdentifier` and `data` for the day, typed-day, birthday and month sources (E45(b): typed-day words follow `notifications.dayNames`). [Proposal, no errata row rules it] For the typed-day source it also checks `title` and `body`, with the day-names switch off and with App lock on. The positive control: a note carrying a day name must fail it, and so must a typed-day note carrying typed words (CHECKS-AND-BALANCES C-09; C-06 is the seed-before-erase rule for the Erase test; both binding under CR-69 A10).
+
+- **A paused family gets no day notes** (errata E57(b); NS-46-R25 reads it next to R49). It sends fewer notifications.
 
 ## Open notes
 
@@ -33,6 +35,6 @@
 
 ## Consequences
 
-- Tests: category present on every note; the allowlist test above; switch forced off under App lock and the stored value cleared; Erase dismisses delivered day notes (seeded first, per C-06); no `{child}` appears in any lock-screen string in any switch state, and the R38 test stays P0 (E45(a)).
+- Tests: category present on every note; the allowlist test above; switch forced off under App lock and the stored value cleared; Erase dismisses delivered day notes (seeded first, per C-06); the NS-47-R38 test stays P0 at its ruled scope (E45(a)): in any switch state no lock-screen title or body holds both a day name and a child name, and the neutral day-name body has no `{child}`. The existing `notifications.lockScreenNames` switch (`apps/mobile/src/lib/reminders/prefs.ts:15,51,117`) still shows the child's name in the evening note, and this test does not forbid that.
 - The neutral body wording is not written here: E45(a) fixes its shape (one fixed string, no `{child}`) and `content` writes it.
 - `docs/legal/app-store-privacy-labels.md` and `docs/legal/DATA_CLASSIFICATION.md` change with the build, by the founder.
