@@ -120,7 +120,7 @@ export const exportCopy = {
     'YOUR CHOICES ON THIS PHONE',
     '',
     'account.json says whether you answered yes to "Are you 18 or older?" on this phone,',
-    'and your choice about sharing usage and crash reports ("not_answered" if you have',
+    'and your choice about sharing usage ("not_answered" if you have',
     'not answered). These are the answers kept on this phone.',
     '',
     'YOUR CONSENT HISTORY',
