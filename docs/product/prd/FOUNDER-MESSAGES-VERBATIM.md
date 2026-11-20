@@ -188,5 +188,20 @@ Every distinct instruction or constraint, one line each (items 34 to 38 are the 
 37. Update the harness accordingly and inform the harness thread: complete these backlog enhancements and run as a smart, self-healing harness with a strong feedback and self-improvement loop. (37; Part 1b)
 38. Align the harness backlog for CTO review, take CTO feedback and improve, execute after CTO approval, and inform all agents of what changed and their new operating style. (38; Part 1b)
 39. Merge the product and design packs (#934, #935); he approves; lock all requirements; tell engineering to lock their plans now. (39; Part 1b)
+40. Answers to the close list: 1 approved, merge and close, 2 to 5 go with the executive team recommendation. (40; Part 1b)
+
+### Item 40
+
+> 1 approved
+>
+> 2. Merge and close
+>
+> 3. Go with executive team recommendation.
+>
+> 4. Same as above
+>
+> 5: same as above
+
+Context: his reply, 20 Nov 2026 (UTC), to the coordinator's five-point close list: (1) approve the final #934 head (no sha was named by him; the merge owner reads the head sha and the counted reviews right before merging), (2) merge #934 and close #846, (3) the defaults that stand in the founder digest (22 section 7), (4) the NS-49-R9 constitution reading, (5) the founder-hands list. Read as: 1 approved; 2 merge #934 and close #846 (superseded, branch kept); 3 digest defaults accepted as the executive team recommends; 4 the reading is ruled by the executive team (E61); 5 the hands list proceeds on the executive team recommendation (steps on his accounts stay his hands).
 
 Standing rules in force across the whole list (from the founder's messages above, not from agent output): customer first and the why and the what before tactics (7, 9); requirements must be exhaustive, with no word limit (12); the PRD is the single source of truth and only the latest PRD is used (16, 17); everything must be tracked and documented through the harness (22, 31); save work often (26).

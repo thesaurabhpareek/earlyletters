@@ -105,7 +105,7 @@ Standing rules for a day library: a tradition ships only after a member of that 
 
 ## 7. Founder decisions: answered 20 Nov (the eight residue items)
 
-Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture" (`FOUNDER-MESSAGES-VERBATIM.md` item 33). Every default below is accepted. Where two defaults conflict, customer experience wins. The earlier long master list is closed: the founder-only groups and the 79 ruled groups (113 closure rows) are one line each, by id, in `GAP-LOG.md` "Closures 20 Nov" (CL-001 to CL-134; CL-001 to CL-113 are the 113 grouped rows); the source is Project doc `infra/exec-rulings-2026-11-20-pre-kickoff-debate.md`. Nothing is copied here.
+Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture" (`FOUNDER-MESSAGES-VERBATIM.md` item 33). Every default below is accepted. Where two defaults conflict, customer experience wins. The earlier long master list is closed: the founder-only groups and the 79 ruled groups (113 closure rows) are one line each, by id, in `GAP-LOG.md` "Closures 20 Nov" (CL-001 to CL-135; CL-001 to CL-113 are the 113 grouped rows); the source is Project doc `infra/exec-rulings-2026-11-20-pre-kickoff-debate.md`. Nothing is copied here.
 
 | Id | Decision | Answer (default accepted) | Closure ids |
 |---|---|---|---|
@@ -128,6 +128,8 @@ Founder hands (decisions made; these are actions pending his hands, not question
 - Borrowed phones: iOS 17.0 or 17.1, iOS 17.2 or later, an iPad.
 - Money: counsel engagement, accountant for tax and payment points, the pen test.
 - People: tell the alpha families first.
+
+Founder answered 20 Nov (item 40, `FOUNDER-MESSAGES-VERBATIM.md`): every row below is accepted as the executive team recommends. The rows stay as written; a later no on any line reopens it.
 
 Founder digest: defaults that stand (added 20 Nov, one line each, default and deadline). These are founder-only or counsel-only. The default is the working position, not his decision, and nothing irreversible is done on it. Deadline for all: Mon 23 Nov 2026, his to change; a "no" on any line reopens it. The one counsel list is `docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md` (PR #915).
 

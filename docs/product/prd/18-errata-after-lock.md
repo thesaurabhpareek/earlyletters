@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E60) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E61) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -111,7 +111,18 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E58 | none; two test titles | NS-45-R13, R14, R17 | mobile, ops |
 | E59 | none | NS-44 O-13, FR-LCY-13 | mobile, finance |
 | E60 | no new BL id until the dispatcher fix merges | `23` 6.3 | principal-architect, chief-of-staff |
+| E61 | NS-49-R9 constitution reading | `21` | Karma, chief AI officer lens |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
 One home: `22-final-holistic-spec.md` section 7 ("Founder digest"). Ids here only: E43 (Drop D, release content), E46 (withdrawal control, counsel-adjacent), E47 (region hook fails open, counsel only), E56 (a No at the age step, legal text), E59 (allowance per phone, a promise to a user), and CL-008, CL-015, CL-052, CL-097, CL-099, CL-103 (acceptance lines).
+
+### E61: NS-49-R9 and the constitution (20 Nov, Karma with the Chief AI Officer lens)
+
+Question (counted review B on #934): "Use this" copies Apple's own title for a photo (the event name from the phone) into the parent's photo words. Does that add meaning?
+
+Ruling: no, on three conditions. (1) Only the parent's tap on "Use this" copies it; nothing is pre-filled and nothing is chosen for them. (2) The text is Apple's own words, copied exactly, never reworded, shortened or combined, and it shows first as "From your phone: {title}" so it is clear whose words they are. (3) Once copied it is the parent's text: editable, removable, and Clear leaves the field empty. The machine only moves words that already exist on the phone; it writes none. A title that is not shown verbatim, or a copy without a tap, would break the constitution and is not allowed.
+
+Edited in place: NS-49-R9 in card 21 gains the three conditions as test titles. Plan delta: one test title per condition on the NS-49 level 1 PR; no flag, no migration.
+
+Founder note: item 40 hands this reading to the executive team; this is that reading.

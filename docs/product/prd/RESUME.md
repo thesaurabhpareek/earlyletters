@@ -9,7 +9,7 @@ If a usage limit or outage stops any session, restart at 03:01 Pacific (founder,
 ## Where the pack stands (20 Nov 2026)
 
 Done, in place on this branch:
-- Cards 00 to 27, errata E1 to E60 and the function files (23 reviews and the brief in `functions/`) are locked at rev 2; the eight founder answers are in `22-final-holistic-spec.md` section 7.
+- Cards 00 to 27, errata E1 to E61 and the function files (23 reviews and the brief in `functions/`) are locked at rev 2; the eight founder answers are in `22-final-holistic-spec.md` section 7.
 - Wave 3 (days library, notification catalogue, cultural data, IA audit, photos, feature opportunities) is written and folded into cards 21 and 27.
 - Reviews: council rounds 1 and 2 (`15`, `16`), the ten NS-46 to NS-50 reviews and the engineering evaluations (`tools/review/`) are answered in the cards and `GAP-LOG.md`.
 - Closures: `GAP-LOG.md` "Closures 20 Nov" is applied in place. K12, K14, K15, K16 and K17 are carried into the cards (K12 in NS-48-R34, K14 in NS-30, K15 after NS-45-R18 and NS-10-R14, K16 in `14-test-plan.md` section 7, K17 as NS-17-R11 and R12); no errata row was needed.
@@ -25,7 +25,7 @@ Still to do:
 ## Evening pass, 20 Nov (rulings 1 to 24 on engineering's questions, reviews A and B)
 
 Done on this branch, by `product` for Karma:
-- Errata E43 to E60 (`18-errata-after-lock.md`), one per ruling or tight group, each ending "Plan delta:"; closures CL-117 to CL-134 in `GAP-LOG.md` (CL-001 to CL-134 now). E30 to E32 got Plan delta lines; E23's line cites are corrected.
+- Errata E43 to E60 (`18-errata-after-lock.md`), one per ruling or tight group, each ending "Plan delta:"; closures CL-117 to CL-135 in `GAP-LOG.md` (CL-001 to CL-135 now). E30 to E32 got Plan delta lines; E23's line cites are corrected.
 - Card edits in place: 01 (R36, R61), 05 (picture gated by Q45 and the security read), 08 and frame (X4-R1), 09 (NS-18-R3), 11 (NS-34, NS-37), 19 (NS-40-R8, R9, NS-42-R17, R18, NS-45 R13 to R17, O-13), 21 (Drop D, level 3 wording, NS-46-R25, NS-47-R14, R37, R38, no Days ask flag), 22 (Drop D, founder digest, ids moved out), 27 (position and poster name, R10 floor), FR-PRV-25, FR-LCY-13, FR-SEC-06, FR-QAL-02 and BL-577's last criterion.
 - Founder digest in `22-final-holistic-spec.md` section 7: E43, E46, E47, E56, E59 and the acceptance lines for CL-008, 015, 052, 097, 099, 103 (default in force, deadline Mon 23 Nov).
 - Counts now equal `p0.py`: 1,050 P0 rows (536 NS, 514 FR); 198 row-covered, 81 cite-covered, 44 card-level only, 727 none; 771 without a row-level backlog row. Re-run `tools/trace-gen` (parse, gen, check: all passed, 947 FR rows) and `tools/review/p0.py`.
