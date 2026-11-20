@@ -21,7 +21,7 @@ Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wa
 3. FILES  Touch (12 files): packages/content/src/features/find.en.ts, test/find-copy.test.ts; packages/api/src/{kill-switches,remote-config,envelope,standards}.ts and test;
    scripts/packs/remote-config.json; apps/mobile/src/lib/find/{flag,pause}.ts, test/find-flag.test.ts; one check-in line.
    Never: lines 1 to 5 of `packages/api/src/kill-switches.ts` (the header; AX-4 is a separate PR: add only the `bookSearch` key), `packages/content/src/features/index.ts` and `test/support/copy-surfaces.ts` (the photo stack owns them until #840: the registration line is BRIEF-BL952-8), app/(tabs)/book.tsx.
-   Shared file rule: none open.
+   Shared file rule: `packages/api/README.md:62` still says "Eight keys"; `bookSearch` makes nine. CR-69 A5 gives that count and `KILL_SWITCH_FLAG` to the one PR that adds the new kill-switch keys with the drift test; #894 adds the `bookSearch` key and its test only, and says in its body which PR updates the README line.
 
 4. READING PACK: Pack 2 items 1 to 3; ADR 0028 D4; `docs/engineering/readiness-20nov/` PR #917 Pack 9 (contracts: additive keys, API-R11).
 
