@@ -228,7 +228,7 @@ await join(N, 'contributor', child, A);
   const del = await codeOf(() => as(B, `delete from public.book_entries where id = $1`, [id]));
   const ins = await codeOf(() => as(B, `insert into public.book_entries (id, child_id, author_id, kind, occurred_on, captured_at, capture_mode,
       engine_version, final_text) values ($1, $2, $3, 'letter', '2026-01-01', now(), 'typed', 1, 'x')`, [uuid7(), child, B]));
-  check(`[F11-REQ-082] the other parent cannot update, delete or insert through book_entries (${upd}, ${del}, ${ins})`,
+  check(`[NS-25-R3][F11-REQ-082] the other parent cannot update, delete or insert through book_entries (${upd}, ${del}, ${ins})`,
     upd === '42501' && del === '42501' && ins === '42501');
   check('the author\'s words are unchanged', (await sys(`select final_text from entries where id = $1`, [id])).rows[0].final_text === 'Her own words.');
   check('nor through my_policy_state', (await codeOf(() => as(B, `delete from public.my_policy_state`))) !== 'ok'

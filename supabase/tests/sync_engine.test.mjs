@@ -203,7 +203,8 @@ check('[K-09] own letters come whole: raw transcript and edit list included', m.
 const bRow = m.get(b1);
 check('[K-09] other people\'s letters never carry raw transcript, edit list, STT metadata, raw hash, search or delete reason',
   bRow && bRow.own === false && ['raw_transcript', 'machine_edits', 'stt_meta', 'raw_sha256', 'search', 'deleted_reason'].every((c) => !(c in bRow)));
-check('[B F9] a parent receives the co-parent\'s in-book letter but never a private one', m.has(b1) && !m.has(bPriv));
+// NS-25-R3 is proven by this set together, each citing it: sync_engine.test.mjs:207 (no private letter of the co-parent in the pull), v1_wire_contract.test.mjs:55 (no read from entries), sync_v1_server.test.mjs:234 (another's Erase now changes nothing), v1_gate_hardening.test.mjs:231 (no write through book_entries), data_governance.test.mjs:58 (delete_entry, which sync_push entry.delete calls, is refused; not cited yet, #26 and #32 change that file).
+check('[NS-25-R3][B F9] a parent receives the co-parent\'s in-book letter but never a private one', m.has(b1) && !m.has(bPriv));
 check('[B F9] parents receive family letters waiting for review', m.get(n1)?.approval === 'pending');
 check('own tombstones come down so the other phones learn of the delete', m.get(vOld) === undefined && [...m.values()].every((x) => x.own || x.deleted_at === null));
 check('every row carries its version, rows come in version order', [...m.values()].every((x) => /^\d+$/.test(x.v)));
@@ -297,7 +298,7 @@ check('[B-REQ-016] B leaves the book: own letters removed, membership gone',
   (await one(B, `select public.request_book_deletion($1, 'ios') r`, [CHILD])).r === 'left_and_removed_own_letters');
 r = await pull(B, bHead);
 const g = r.gone.find((x) => x.id === CHILD);
-check('a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
+check('[NS-25-R4] a book the caller left is reported gone, with the caller\'s own tombstones', g?.reason === 'not_member'
   && g.rows.some((x) => x.id === b1 && x.deleted_at !== null && x.own === true) && g.rows.every((x) => x.own === true) && !r.books.some((x) => x.id === CHILD));
 r = await pull(A, { epoch: 1, books: { [SIB]: { cursor: null } } });
 check('a deleted book is reported gone as deleted', r.gone.find((x) => x.id === SIB)?.reason === 'deleted');
