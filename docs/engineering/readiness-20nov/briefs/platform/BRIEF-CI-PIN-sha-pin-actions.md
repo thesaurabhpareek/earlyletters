@@ -27,7 +27,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (small, no dependency)
    web-e2e.yml:43 checkout@v4, :45 setup-node@v4, :50 cache@v4, :61 cache@v4, :77 upload-artifact@v4;  web.yml:52 checkout@v4, :54 setup-node@v4, :61 cache@v4.
    Already pinned elsewhere, by same-major SHA, in this repo: checkout 11bd71901bbe5b1630ceea73d27597364c9af683 (v4.2.2, release-ios.yml), setup-node 49933ea5288caeca8642d1e84afbd3f7d6820020 (v4.4.0,
    .github/actions/setup/action.yml:6), cache 0057852bfaa89a56745cba8c7296529d2fc39830 (v4.3.0, same file :13). upload-artifact has no v4 SHA in the repo: resolve it with
-   `git ls-remote https://github.com/actions/upload-artifact 'refs/tags/v4*'` and record the command output in the PR (never write a SHA from memory).
+   `git ls-remote https://github.com/actions/upload-artifact 'refs/tags/v4*' 'refs/tags/v4*^{}'` (for an annotated tag the SHA to use is the peeled `^{}` line, the commit; the first line is the tag object) and record the command output in the PR (never write a SHA from memory).
 
 6. DATA AND SECURITY: no data class. Why: a mutable tag runs someone else's code with our token (06-security-engineering.md:21). Boundary: supply chain (SEC-R10). Rec: pin to the SAME major as today (v4), so
    behaviour does not change; the repo also holds newer pins (checkout v7.0.1, setup-node v7.0.0, cache v6.1.0, upload-artifact v7.0.2): moving to those is a major upgrade and needs its own backlog row (my rule).
@@ -40,7 +40,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (small, no dependency)
 
 10. PR BREAKDOWN: PR 1 | ~110 lines (test 60, patch 50) | base develop. The test must not turn develop red before the founder applies the patch, so it is a ratchet:
     it holds an explicit list of the 17 known unpinned lines (file and line text), fails on any unpinned line not on the list, and fails if a listed line is already pinned
-    (the list only shrinks). The founder's patch empties the list in the same diff. Flag-off proof: the test passes on develop as it stands.
+    (the list only shrinks). The list must NOT live only in the PR's own test file, where its author can grow it: keep it in `docs/ops/action-pins-allowlist.txt` and have the test compare it with the base branch's copy (`git show origin/<base>:<path>`), failing when any line was added. The founder's patch empties the list in the same diff. Flag-off proof: the test passes on develop as it stands.
 
 11. LENSES: A security-architect, B principal-architect.
 

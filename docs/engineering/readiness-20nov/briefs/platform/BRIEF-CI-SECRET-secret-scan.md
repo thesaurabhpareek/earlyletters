@@ -18,6 +18,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (before Build 14: the first bu
 3. FILES
    Touch: scripts/packs/secret-scan.mjs and .test.ts (extend; ops owns scripts/**), scripts/guards/secret-scan-repo.mjs only if the pack scanner must stay pack-specific,
           docs/ops/SECRETS.md (new), docs/ops/proposed/workflows/secret-scan-step.yml (the step for `ci.yml` `unit`), docs/agents/checkins/ops-rd-h3-secret.md
+   Option A scans the tree at HEAD only, NOT history: a secret committed and later deleted stays in git history and is not found (say so in SECRETS.md; history is GitHub secret scanning's job, a founder setting). Option B must be configured to redact: output with the matched value fails the review.
    Never: .github/workflows/**; any real key, host, project ref or token in a fixture or doc; scripts/agents/**.
    Shared file: docs/engineering/ENFORCEMENT.md row SEC-R03 changes only through principal-architect.
 
