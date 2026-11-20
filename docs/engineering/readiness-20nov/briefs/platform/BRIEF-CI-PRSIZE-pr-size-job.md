@@ -41,7 +41,7 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (the photo and BL-952 stacks a
 
 10. PR BREAKDOWN: PR 1 script + tests ~140 lines, 3 files; PR 2 workflow proposal ~60 lines, 2 files | base develop | advisory until the founder pastes it.
 
-11. LENSES: A principal-architect (`scripts/*.mjs`), B qa. Wiring: scripts/guards tests are in no CI list [V], so the test goes in the root `node --test` list (package.json:11, compliance-engineer reads `package.json`). The base-branch fetch the label check and diff need is the single `unit` step in BRIEF CI-PIN section 10.
+11. LENSES: A principal-architect (`scripts/*.mjs`), B qa. Wiring: scripts/guards tests are in no CI list [V], so the test goes in the root `node --test` list (package.json:11, compliance-engineer reads `package.json`). The base-branch fetch the label check and diff need is the single `unit` step in BRIEF CI-PIN section 10 (the label check in the `unit` job only; the PR-size job itself uses its own `fetch-depth: 0` and needs no such step, as 9b says).
 
 12. ORDER: any time. Before the Build 14 stacks start (they are the PRs it will measure). Blocked by the founder's proof choice.
 
