@@ -98,7 +98,7 @@ describe('scribe://listen never records by itself (J19, J20)', () => {
 
   describe('the tap that arms Listen', () => {
     beforeEach(() => resetListenStart());
-    it('is false when nothing armed it (link, restored screen)', () => {
+    it('[NS-35-R7] is false when nothing armed it (link, restored screen)', () => {
       expect(consumeListenStart()).toBe(false);
     });
     it('is true once after Speak is tapped, then false', () => {
