@@ -31,7 +31,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
    apps/mobile/src/lib/backup/runtime.ts:423           `openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, ...)`; `backupDbs` map caches the handle (:416, `dbFor` at :420). NEW TASK in PR 2: `runtime.ts` has NO close or evict for that handle (the `close` of the `openNativeDb` result is dropped at :423): add `closeBackupDb(profileId)` that closes it and removes it from the map; B5-5 and Erase call it before deleting
    apps/mobile/src/lib/db/repos/open-native.ts:17      `SQLite.openDatabaseSync(name)`: default folder is `SQLite.defaultDatabaseDirectory` (`resilience/recovery-export.ts:33`)
    apps/mobile/src/lib/packs/app-support.ts:38-39      the only use of `setExcludedFromBackup` WITH a read-back (`isExcludedFromBackup`); `lib/model-files.ts:43` sets the exclusion with NO read-back
-   apps/mobile/src/lib/erase-everything.ts:57-71       `eraseDeviceFiles()` (function at :57, ends at :71): recordings, copies, caches; NO backup file, no `backup` word in the file [V grep]
+   apps/mobile/src/lib/erase-everything.ts:57-70       `eraseDeviceFiles()` (function at :57, ends at :70): recordings, copies, caches; NO backup file, no `backup` word in the file [V grep]
    apps/mobile/src/lib/erase-everything.ts:76,79       `SIGN_IN_LEFTOVERS` and `finish()`, which removes Keychain leftovers: add the token items here
    apps/mobile/src/lib/resilience/recovery-export.logic.ts:34 `DB_FILE = /^scribe\.db(-wal|-shm|-journal)?$/i`; :38-42 `folderFor`: backup-*.db is not copied (X-2)
    apps/mobile/src/lib/supabase/secure-storage.ts:40    `secureStorage` (Keychain)
