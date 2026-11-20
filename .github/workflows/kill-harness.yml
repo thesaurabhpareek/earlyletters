@@ -186,7 +186,9 @@ jobs:
           echo "workspace=${name}.xcworkspace" >> "$GITHUB_OUTPUT"
           echo "scheme=${name}" >> "$GITHUB_OUTPUT"
 
-      # The same key as ios-compile.yml: Pods do not depend on the app env, and pod install corrects a near miss.
+      # The same key as ios-compile.yml, and pod install corrects a near miss. The key leaves out the app env, but the
+      # Pods depend on it: a compile with the testflight env that restores this job's e2e-env Pods reinstalls AppAuth,
+      # GTMAppAuth and GoogleSignIn, and that install clears React-Core-prebuilt's flavour marker (#853).
       - name: Restore CocoaPods
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
