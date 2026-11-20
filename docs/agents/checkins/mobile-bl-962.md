@@ -1,0 +1,1 @@
+06:02 (20 Nov) mobile | done: [X6-R1] rules, plist and dependency scans added to no-system-indexing.test.ts per Karma AX-8 ruling; D2 checked in node_modules (no switch) | next: full suite, PR, journal | blocked/needs: none
