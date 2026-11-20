@@ -301,6 +301,12 @@ export const en = {
     discardButton: "Let it go",
     discardTitle: "Let this recording go?",
     discardBody: "It will be removed from this phone.",
+    // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R9). Replaces discardBody on Review and Listen
+    // once approved; BL-977 switches both screens and retires discardBody. Option A, recommended: the claim NS-09
+    // section 19 enables, plus the R9 clause. B: "It will be removed, and it cannot be brought back." (no place: also
+    // true of the account copy, so a wider deletion claim for counsel). C: "It will be removed from the phone, and it
+    // cannot be brought back." (e2e area A).
+    discardBodyNoUndo: "It will be removed from this phone, and it cannot be brought back.",
     discardConfirm: "Remove it",
     keepButton: "Keep it",
     // VoiceOver name of the Pause / Keep talking button. One name for the whole recording, so VoiceOver never re-reads
@@ -380,6 +386,15 @@ export const en = {
     // A save that failed: a caution line above the primary, which reads "Try again" for that attempt (S17).
     // What happened, then where the words are (LNG-05).
     saveFailed: "That did not save. Your words are still here.",
+    // TODO(founder): PROPOSED, needs word approval (BL-925; NS-09-R4a, R4b). Let it go was confirmed but the phone
+    // would not remove the file yet: one muted line under the words, once for that recording on that Review visit,
+    // read by VoiceOver once the screen settles (BL-926). The row stays marked and the launch sweep tries again at
+    // every launch; after 3 launches Storage lists it with Remove now (NS-09-R6). No "we" (only the sanctioned
+    // promises say it), and none of "failed", "error", "deleted everywhere", "instantly" (NS-09 section 16).
+    // Option A, recommended: the card's intent, with no time to break. B: "This recording is not removed yet. {app}
+    // tries again each time it opens." (e2e area A; true by construction, but leads with the failure). C: "This
+    // recording is still on this phone. It will be removed the next time {app} opens." (a time the sweep can miss).
+    letGoPending: "This recording is still on this phone. {app} will finish removing it.",
     // The one view control, "With small fixes | Exactly as said": the view and the choice for this letter, until it is saved.
     view: {
       fixes: "With small fixes",
@@ -823,6 +838,14 @@ export const en = {
       unplayableTitle: "Recordings that may not play",
       unplayableOne: "This recording may not play. Export keeps the file.",
       unplayableMany: "{count} recordings may not play. Export keeps the files.",
+      // TODO(founder): PROPOSED, needs word approval (BL-925 for NS-09-R6). One row per recording whose let-go has
+      // not finished after 3 launches, with Remove now; the same words stay if Remove now does not finish either.
+      // Which screen shows it (Storage, as the card says, or Where your letters live) is open (TDD 08 K3); the keys
+      // sit with the other recording states so either works. Option A, recommended (e2e area A): no count, and two
+      // rows never both say "One". B: "One recording is still on this phone." (the card's intent; reads as a count).
+      letGoStuck: "A recording you let go is still on this phone.",
+      removeNowButton: "Remove now",
+      removeNowHintA11y: "Tries again to remove this recording.",
     },
     export: {
       title: "Export",

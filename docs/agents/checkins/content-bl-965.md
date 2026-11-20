@@ -1,0 +1,1 @@
+05:53 (20 Nov) content | done: BL-925 NS-09 keys PROPOSED in strings.en.ts (Review line, confirm body, Storage row, Remove now and hint), options in comments; content tests 395 green, all options pass the rules test | next: PR, then the BL-965 founder words packet | blocked/needs: founder word approval; a test file needs packages/content/test/**, outside the claim
