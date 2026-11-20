@@ -3969,6 +3969,40 @@ How the harness reads this section: a row is eligible when its Status is `ready`
 - Scope: `sync`: today's server behaviour for a let-go held draft (NS-09, D7); whether `sync_pull` serves rows while consent is outstanding (NS-10); that the pull parser tolerates an unknown response key (NS-06 B10.1). `data-architect`: the B10.1 choice (default b); whether `held_drafts` allows nulling a withheld take's words (NS-17). `mobile`: whether expo-notifications sets `hiddenPreviewsBodyPlaceholder` (NS-13-R33); whether Read together keeps the screen awake (NS-24-R9); `Intl.Segmenter` on Hermes (BL-957).
 - Done when: each answer is a dated line on its card.
 
+## End-to-end experience design (20 Nov 2026)
+
+Written 20 Nov 2026 by Karma on the founder's instruction to assign five design leads, five animation leads and five content design leads to full prototyping, design, integrations, happy and unhappy paths and errors. Brief: `docs/design/e2e/BRIEF.md`. Source of truth: the locked cards only (CR-66); engineering inputs: `13-engineering-plan.md`, #847, BL-922 to BL-987. Mode pair: the leads run in an interactive session, so the dispatcher does not start a second copy. Output stays design, motion and words; it changes no card and no engineering plan, and lists card gaps and engineering gaps for Karma to rule.
+
+#### BL-988 End-to-end experience, area A: Capture
+- Status: in-progress (interactive session, three leads: design, motion, content). Mode: pair. Owner: design systems, content. Milestone: M15. Size: M.
+- Satisfies: the Design inputs, Content inputs, Happy path, Unhappy paths, Scenario coverage and State space sections of NS-01 (capture side), NS-04, NS-06 C, NS-09, NS-14, NS-15, NS-16, NS-17, NS-19, NS-35.
+- Scope: `docs/design/e2e/A-capture/`: DESIGN.md (journeys, screen and state inventory, AX5 layouts, components, integration map to card rows, backlog rows, flags, kill switches and error codes), PROTOTYPE.html (clickable, every state, light and dark, AX5), MOTION.md and MOTION-PROTOTYPE.html (Reduce Motion for every item), WORDS.md (every string as a PROPOSED key, VoiceOver and Voice Control names, every error message, claims check).
+- Done when: the three files are reconciled on screen ids, merged as docs, and card gaps and engineering gaps are ruled by Karma. Words reach a build only after the founder approves them.
+
+#### BL-989 End-to-end experience, area B: Book and reading
+- Status: in-progress (interactive session, three leads: design, motion, content). Mode: pair. Owner: design systems, content. Milestone: M15. Size: M.
+- Satisfies: the Design inputs, Content inputs, Happy path, Unhappy paths, Scenario coverage and State space sections of NS-01 (Photos lens), NS-02, NS-06 A and B, NS-21, NS-22, NS-23, NS-24, NS-29, NS-37.
+- Scope: `docs/design/e2e/B-book-and-reading/`: DESIGN.md (journeys, screen and state inventory, AX5 layouts, components, integration map to card rows, backlog rows, flags, kill switches and error codes), PROTOTYPE.html (clickable, every state, light and dark, AX5), MOTION.md and MOTION-PROTOTYPE.html (Reduce Motion for every item), WORDS.md (every string as a PROPOSED key, VoiceOver and Voice Control names, every error message, claims check).
+- Done when: the three files are reconciled on screen ids, merged as docs, and card gaps and engineering gaps are ruled by Karma. Words reach a build only after the founder approves them.
+
+#### BL-990 End-to-end experience, area C: Keeping and trust
+- Status: in-progress (interactive session, three leads: design, motion, content). Mode: pair. Owner: design systems, content. Milestone: M15. Size: M.
+- Satisfies: the Design inputs, Content inputs, Happy path, Unhappy paths, Scenario coverage and State space sections of NS-07 C28, NS-08, NS-10, NS-11, NS-12, NS-36; rulings D1, D6, D8.
+- Scope: `docs/design/e2e/C-keeping-and-trust/`: DESIGN.md (journeys, screen and state inventory, AX5 layouts, components, integration map to card rows, backlog rows, flags, kill switches and error codes), PROTOTYPE.html (clickable, every state, light and dark, AX5), MOTION.md and MOTION-PROTOTYPE.html (Reduce Motion for every item), WORDS.md (every string as a PROPOSED key, VoiceOver and Voice Control names, every error message, claims check).
+- Done when: the three files are reconciled on screen ids, merged as docs, and card gaps and engineering gaps are ruled by Karma. Words reach a build only after the founder approves them.
+
+#### BL-991 End-to-end experience, area D: Family, sharing and reminders
+- Status: in-progress (interactive session, three leads: design, motion, content). Mode: pair. Owner: design systems, content. Milestone: M15. Size: M.
+- Satisfies: the Design inputs, Content inputs, Happy path, Unhappy paths, Scenario coverage and State space sections of NS-03, NS-05, NS-07 C5, NS-13, NS-18, NS-25, NS-32.
+- Scope: `docs/design/e2e/D-family-sharing-reminders/`: DESIGN.md (journeys, screen and state inventory, AX5 layouts, components, integration map to card rows, backlog rows, flags, kill switches and error codes), PROTOTYPE.html (clickable, every state, light and dark, AX5), MOTION.md and MOTION-PROTOTYPE.html (Reduce Motion for every item), WORDS.md (every string as a PROPOSED key, VoiceOver and Voice Control names, every error message, claims check).
+- Done when: the three files are reconciled on screen ids, merged as docs, and card gaps and engineering gaps are ruled by Karma. Words reach a build only after the founder approves them.
+
+#### BL-992 End-to-end experience, area E: Foundations and system states
+- Status: in-progress (interactive session, three leads: design, motion, content). Mode: pair. Owner: design systems, content. Milestone: M15. Size: M.
+- Satisfies: the Design inputs, Content inputs, Happy path, Unhappy paths, Scenario coverage and State space sections of NS-33, NS-34, the frame's standing states, every error code, first run, Plus and the allowance.
+- Scope: `docs/design/e2e/E-foundations-and-system-states/`: DESIGN.md (journeys, screen and state inventory, AX5 layouts, components, integration map to card rows, backlog rows, flags, kill switches and error codes), PROTOTYPE.html (clickable, every state, light and dark, AX5), MOTION.md and MOTION-PROTOTYPE.html (Reduce Motion for every item), WORDS.md (every string as a PROPOSED key, VoiceOver and Voice Control names, every error message, claims check).
+- Done when: the three files are reconciled on screen ids, merged as docs, and card gaps and engineering gaps are ruled by Karma. Words reach a build only after the founder approves them.
+
 ## Appendix: TDD proposal to BL mapping
 
 Unchanged from the 3 Oct morning version. Every task id proposed in TDD 01 to 09 maps to exactly one BL id. "+" means merged into that task. Where the BL id is now superseded or deferred, the status above says where it went.
