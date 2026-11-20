@@ -11,7 +11,7 @@ Written 20 Nov 2026 after the founder's directive of the same day, quoted verbat
 3. Product triages in this order: A answer from record, F needs evidence (cheapest check first), E founder-only, C cross-lens, D exec ruling, B clarify in place. Section 3 has the rule.
 4. Nothing waits in a line. Lens reviews (design, policy, security, QA, engineering) run at the same time. A fact check runs while they do.
 5. Only three things are gates: the founder-only list (Karma, section 3), the X2 security and counsel read, and the merge gates (D-132: two counted reviews at the full 40-char head sha, green CI).
-6. Changing a locked statement needs an errata row (next free E number, now E43) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
+6. Changing a locked statement needs an errata row (next free E number, now E61) that lists every changed id and ends with a "Plan delta:" line. A clarification that changes no meaning needs only a line in the PR body naming the id.
 7. Apply the change to the card in the same PR as the errata row. Tell engineering the same day by handoff, with the plan delta.
 8. Silence past the target time means the stated default stands, except founder-only and counsel items, which wait with their safe default in force and nothing irreversible done.
 9. Only class E reaches the founder: batched, one digest line a day, each with a default and a deadline. Never one at a time.

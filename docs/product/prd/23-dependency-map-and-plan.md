@@ -338,7 +338,7 @@ Facts: highest used id BL-999; `lib.mjs:52` (`BL_RE`), `:74` (heading regex) and
 
 | Option | What it is | For | Against |
 |---|---|---|---|
-| A | Tier A ids BL-826 to BL-829 (`BACKLOG-GAPS.md` section 4: free in all three checks; I rechecked `develop`, this branch, open PR titles and remote branch names: no hit) | works today; four ids | 4 rows for 588 P0 rows: unreviewable at 109 to 196 rows each |
+| A | Tier A ids BL-826 to BL-829 (`BACKLOG-GAPS.md` section 4: free in all three checks; I rechecked `develop`, this branch, open PR titles and remote branch names: no hit) | works today; four ids | 4 rows for 580 P0 rows: unreviewable at 109 to 196 rows each |
 | B | Tier B block BL-677 to BL-711 (35 free holes) | one id per group G01 to G35 | inside ranges that old commit messages allocated; collision risk; needs Karma to confirm one block |
 | C | Fix the dispatcher: make the three regexes `\d{3,4}`, the test, and add a four-digit test | permanent; small | `scripts/agents/**` is founder-owned; agents cannot edit it; a one-time interactive session or the founder does it |
 | D | Edit `Satisfies:` lines on existing rows | no ids | G01 and parts of G04, G07 only; not new work |
