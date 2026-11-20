@@ -1000,7 +1000,7 @@ Job 5, "Tell me what to write about, without nagging". The parent's own note to 
 |---|---|---|---|
 | NS-18-R1 | Given a typed day and words, Then exactly 1 notification is delivered that day, and the app shows those words unchanged after the tap | P1 | `[NS-18-R1] one notification on the typed day` |
 | NS-18-R2 | Given that day also has an ordinary reminder or a month note, Then only the typed one is delivered | P1 | `[NS-18-R2] the typed day replaces a reminder` |
-| NS-18-R3 | Given the default, Then the body is the fixed line and never the typed words; Given the parent turned showing on, Then the body is their words unchanged | P0 (a) | `[NS-18-R3] words hidden by default` |
+| NS-18-R3 | Given the default, Then the body is the fixed line and never the typed words; Given the parent turned showing on, Then the body is their words unchanged; the typed words of a day (ticked or typed) follow the day-name switch `notifications.dayNames`, off by default and forced off with App lock (E45) | P0 (a) | `[NS-18-R3] words hidden by default` |
 | NS-18-R4 | Given reminders have backed off or stopped (NS-13), Then a typed day is still delivered | P1 | `[NS-18-R4] back-off never drops a typed day` |
 | NS-18-R5 | Given the field, Then it accepts 1 to 80 characters (PROPOSED), any script | P1 | `[NS-18-R5] typed words length` |
 | NS-18-R6 | Given sign-out, Erase everything or account deletion, Then typed days and their notifications are removed | P0 (a)(b) | `[NS-18-R6] typed days removed` |

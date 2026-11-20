@@ -63,6 +63,7 @@ The reviews found no one cut in the pack, 87 P0 rows and a long chain of unbuilt
 | A | NS-48 phase 1 (day-part filter, weekday tone, the built 8 re-keyed, rules-test coverage, no key in the payload) | No planner change beyond words | The next build (Build 13 or later) |
 | B | NS-46 seasonal, family and civic days, US only; the plain browse-and-tick list in Me (the fallback with no question, no tradition, no country); NS-47 store rules only; NS-50 rank 2b; NS-49 level 1 (moved from A on 20 Nov, CL-015: it needs NS-01, which stays dark; only if the A-S01 re-draw passes its AX5 test) | NS-01 on `testflight`; the one notification budget, typed days in reminders, the Home slip registry and the Quiet this book control (their rows are in `23-dependency-map-and-plan.md` section 1a); the days store registered and Erase-scanned; counsel on any copied table and on the consent line | 1.0 only if every gate closes before freeze, otherwise 1.1 |
 | C | NS-47 ask slip and tradition browse; culture-led days; tradition-member review; the day-name switch; NS-48 recency and last-letter layers; NS-49 level 2; NS-51 photo moments (spike first); NS-52 pictures and videos (Variant A) | Counsel CUL-Q5 to Q7 and Q11; the J-CUL-01 device walk; a recorded reviewer per tradition; the NS-13 anchor; the entitlement; a weak-link launch run on iOS 17.0, 17.1, 17.2 and 26 | After 1.0 is approved |
+| D | NS-38 to NS-45 (card 19) as one first-run stack: age question, region check, sign-in, consent, first letter, Plus and allowance, account life | Wave 1 and Drop A shipped; the founder approves its words (E43) | Before any family outside the founder's signs in |
 
 Not in this pack and parked: a Home strip, other countries' days, regional days (Pongal, Onam, Parsi New Year) in the first drop, OPP-02 to OPP-05 before first-run evidence (`12-parked-and-not-built.md`, `functions/feature-opportunities.md`).
 
@@ -104,7 +105,7 @@ Standing rules for a day library: a tradition ships only after a member of that 
 
 ## 7. Founder decisions: answered 20 Nov (the eight residue items)
 
-Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture" (`FOUNDER-MESSAGES-VERBATIM.md` item 33). Every default below is accepted. Where two defaults conflict, customer experience wins. The earlier long master list is closed: the founder-only groups and the 79 ruled groups (113 closure rows) are one line each, by id, in `GAP-LOG.md` "Closures 20 Nov" (CL-001 to CL-113); the source is Project doc `infra/exec-rulings-2026-11-20-pre-kickoff-debate.md`. Nothing is copied here.
+Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture" (`FOUNDER-MESSAGES-VERBATIM.md` item 33). Every default below is accepted. Where two defaults conflict, customer experience wins. The earlier long master list is closed: the founder-only groups and the 79 ruled groups (113 closure rows) are one line each, by id, in `GAP-LOG.md` "Closures 20 Nov" (CL-001 to CL-134; CL-001 to CL-113 are the 113 grouped rows); the source is Project doc `infra/exec-rulings-2026-11-20-pre-kickoff-debate.md`. Nothing is copied here.
 
 | Id | Decision | Answer (default accepted) | Closure ids |
 |---|---|---|---|
@@ -117,7 +118,7 @@ Status: ANSWERED 20 Nov 2026. The founder, relayed 20 Nov: "Go with all default 
 | F7 | Account hands | Decision made, action pending (list below) | CL-019, CL-038, CL-042, CL-062, CL-066, CL-090, CL-091 |
 | F8 | Alpha families | Tell them before the build; the founder decides any gift | CL-077 |
 
-Drops (Q-FD-7, CL-015): A with the next build (NS-48 phase 1), B only if its gates close before 1.0 freeze (now including NS-49 level 1), C after 1.0 is approved.
+Drops (Q-FD-7, CL-015, E43): A with the next build (NS-48 phase 1), B only if its gates close before 1.0 freeze (now including NS-49 level 1), C after 1.0 is approved, D (first-run, NS-38 to NS-45) after wave 1 and Drop A and before any family outside the founder's signs in.
 
 Founder hands (decisions made; these are actions pending his hands, not questions):
 - Apple: request the Journaling Suggestions capability on the App ID if the portal says a request is needed (approval UNVERIFIED).
@@ -127,6 +128,22 @@ Founder hands (decisions made; these are actions pending his hands, not question
 - Borrowed phones: iOS 17.0 or 17.1, iOS 17.2 or later, an iPad.
 - Money: counsel engagement, accountant for tax and payment points, the pen test.
 - People: tell the alpha families first.
+
+Founder digest: defaults that stand (added 20 Nov, one line each, default and deadline). These are founder-only or counsel-only. The default is the working position, not his decision, and nothing irreversible is done on it. Deadline for all: Mon 23 Nov 2026, his to change; a "no" on any line reopens it. The one counsel list is `docs/engineering/readiness-20nov/security/SECURITY-OPEN-QUESTIONS.md` (PR #915).
+
+| Id | One line for the founder | Default in force | Where |
+|---|---|---|---|
+| E43 (CL-117) | First-run (NS-38 to NS-45) ships as Drop D: after wave 1 and Drop A, before any family outside yours signs in | Yes, in that order | `18` E43 |
+| E46 (CL-120) | The sensitive-data withdrawal control is not built today; I add one P0 row and it is built before anyone outside the family signs in | Add the row; counsel-adjacent | `18` E46 |
+| E47 (CL-121) | The country check fails open and counts an error if its own lookup fails; the hook stays off until counsel and the CCO answer | Fail open; hook off | `18` E47 |
+| E56 (CL-130) | A No at the age step sends nothing and records nothing; Terms 2.1 and Privacy 8 are aligned later (legal text is yours) | Card as written; BL-580 deferred | `18` E56 |
+| E59 (CL-133) | The free allowance is per phone, not per account | Per phone, as built | `18` E59 |
+| CL-008 | Pilot notes kept 30 days, consent records 12 months; no pilot before the reads | 30 days and 12 months | card 03 |
+| CL-099 | Support keeps messages 12 months; support never reads a letter | 12 months | `functions/support.md` |
+| CL-015 | Which drop ships what: A with Build 13, B only if its gates close before freeze, C after 1.0; NS-49 level 1 moved from A to B (E31) | As recorded | card 21 release line |
+| CL-052 | Photo moments (NS-51) is not in 1.0: a spike in Build 13 behind a flag, ships in 1.1; pictures and videos (NS-52) after 1.0 | As recorded (F1, E32, E34) | card 21, card 27 |
+| CL-097 | No printed book in 1.0; entity, partner, price, tax and the Mail Order Rule wait for a go or no-go | No print in 1.0 | `functions/print-and-fulfilment.md` |
+| CL-103 | Spend cap on uploads (waits), one plain iCloud line, accountant before any storage-linked Plus change | As recorded | `functions/finance.md` |
 
 Karma's items (parent-visible, not founder items): the conflicts list of card 21, RV-1 to RV-24 and K11 to K17 in `GAP-LOG.md`. K12 and K14 to K17 are carried into the cards in place as of 20 Nov (CL-112: K12 in NS-48-R34, K14 in NS-30, K15 after NS-45-R18 and NS-10-R14, K16 in `14-test-plan.md` section 7, K17 as NS-17-R11 and R12); no errata row, because no locked statement changed.
 
@@ -153,7 +170,7 @@ I did not run the product, a device, a test or any code; I rely on the cards, th
 Status: LOCKED 20 Nov 2026 for requirements rev 2: cards 00 to 27, the function files in `functions/`, and the design areas A to E (`docs/design/e2e/*/DESIGN.md`). Authority: the founder, 20 Nov: "Go with all default answers. Focus on what's best for customer experience. And proceed to lock all requirements and once done inform harness and engg leads working on architecture."
 
 What locked means:
-- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E42); the row names every changed id.
+- A change is made only by an errata row with the next free E number in `18-errata-after-lock.md` (highest today E60); the row names every changed id.
 - No duplicate copies: one home per fact; link by id. Anything new carries a status header.
 - Two layers (founder items 9 and 15): the product layer reads as customer need and carries no BL or PR ids; the execution layer (backlog, trace, engineering plan) carries them and maps back. Ids are not stripped by script.
 - Rulings live in `GAP-LOG.md`, by id; card text and the closure lines agree, and where they differ the card wins (CR-66).
