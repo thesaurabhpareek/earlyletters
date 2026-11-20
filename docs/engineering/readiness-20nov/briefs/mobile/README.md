@@ -58,10 +58,6 @@ Not briefed, with the reason: #798 and #799 (Karma disposes of #798, the legal r
 
 ## Conflicts for product and Karma (written as Conflict lines; I did not build either way)
 - NS-01-R20b (Change last in VoiceOver) against #838 (Change under the picture). Plan M30; RN reading order is experimental.
-- Picture above the words (card, e2e B-S08) against after the words (#839). DESIGN-DELTA C-01.
-- Undo clock: card windows against a toast that never times out (C-02); `components/ui/toast.tsx` is design-systems'.
-- "Months" twice in one Book bar (C-09). "Start from a photo" weight (C-08).
-- NS-32-R4b: plan notices at the 64 ceiling against the design's 60 in total (Conflict P1).
 - BL-955: backlog says write the copy when the pick returns; the card title says nothing is kept before Review. E2: encoding during a take breaks NS-37-R2.
 - NS-52 (several items, video) and NS-51 (photo moments) would change #835, BL-932, BL-933: unlocked, not built to.
 - Key name for the placeholder: `notifications.previewPlaceholder` (09-capture design) against `reminders.previewPlaceholder` (11-foundations).
