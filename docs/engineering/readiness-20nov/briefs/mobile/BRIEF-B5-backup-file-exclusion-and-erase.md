@@ -1,5 +1,5 @@
 Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (every cite below was re-read by grep at develop `e95733b0`, 20 Nov 21:30 UTC).
-Blocked until: nothing for PRs 1 to 3 (CR-71 B5, branch `docs/cto-rulings-cr71-20nov`, PR #1018, line 769; DECISIONS-20nov.md B5 and C7 on PR #1013, branch `docs/decisions-closed-20nov`: both OPEN, so the ruling is cited from those branches and re-read when they merge). PR 4 (the preflight gate) is the OPS claim, BL-958 (`apps/mobile/scripts/preflight-*.mjs`): mobile writes the check as a pure function with a test; `ops` wires it, or Karma lets mobile do it. The `/stop` page is G-04-02 (not built: no `stop` route in `apps/web/src/app` [V `ls`]); its owner is not mobile. B5 gates the FIRST OUTSIDE FAMILY and `EXPO_PUBLIC_BACKUP`, not a servers-off Build 13 (DECISIONS-20nov.md question 1, default).
+Blocked until: #1018 (CR-71) and #1013 (DECISIONS-20nov.md) are merged: the brief rests on CR-71 B5 (branch `docs/cto-rulings-cr71-20nov`, line 769) and DECISIONS-20nov.md B5 and C7 (branch `docs/decisions-closed-20nov`), both OPEN at this commit, and plan 17 rule 6 forbids building on a ruling that sits only on an open branch. It unblocks, for PRs 1 to 3, when both are on develop; re-read B5 then. PR 4 (the preflight gate) is the OPS claim, BL-958 (`apps/mobile/scripts/preflight-*.mjs`): mobile writes the check as a pure function with a test; `ops` wires it, or Karma lets mobile do it. The `/stop` page is G-04-02 (not built: no `stop` route in `apps/web/src/app` [V `ls`]); its owner is not mobile. B5 gates the FIRST OUTSIDE FAMILY and `EXPO_PUBLIC_BACKUP`, not a servers-off Build 13 (DECISIONS-20nov.md question 1, default).
 
 ```
 BRIEF B5 (backup file: exclusion, erase, Keychain token, gate)   Filled by: mobile for Karma, 20 Nov 2026 21:30 UTC
@@ -14,7 +14,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
    [B5-4] Erase everything deletes every backup-*.db file first, before any await               mutant: skip the delete (today: none)
    [B5-5] sign-out closes the backup handle, then deletes the file; the book stays (D1)         mutant: delete before closing the handle; or delete the book
    [B5-6] an upload token is in the Keychain and the column holds none; Erase and sign-out remove the item   mutant: write the token back to the column
-   [B5-7] preflight fails `EXPO_PUBLIC_BACKUP=on` unless B5 exists, escrow keys are non-empty and `/stop` answers 200   mutant: drop one of the three
+   [B5-7] the backup gate check fails `EXPO_PUBLIC_BACKUP=on` unless B5 exists, escrow keys are non-empty and the `/stop` route exists and answers 200 in its unit test   mutant: drop one of the three. STATIC only: no network call in preflight; the live 200 is an ops release step
    [B5-8] the recovery export still copies scribe.db* only (X-2 unchanged)                      mutant: widen the `DB_FILE` pattern
    Each test arranges a real failing state first (an existing excluded=false file; a Keychain with a seeded token) and is red on develop at e95733b0 (no guard, no delete, token in the column).
 
@@ -54,7 +54,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
     PR 1: `files.ts`, launch exclusion with read-back, gate test allow-list | about 200 lines | base develop | flag-off proof: runs with the flag off (existing installs may hold a file)
     PR 2: delete on Erase and on sign-out | about 200 | base PR 1
     PR 3: upload token to Keychain, existing rows moved once at open | about 250 | base PR 2
-    PR 4: the preflight gate (pure check plus test; wiring is ops') | about 150 | base develop; ops claim
+    PR 4: the gate check as a NEW pure file `apps/mobile/scripts/lib/backup-gate-check.mjs` plus `apps/mobile/test/backup-gate-check.test.ts` (reads `eas.json`, `escrow-keys.ts` and the `apps/web/src/app/stop` route file; no network) | about 150 | base develop; `ops` wires it into `preflight-*.mjs` (BL-958), mobile does not edit those files
 
 11. LENSES: A security-architect, B privacy. Native: no Swift change planned; if `ScribeFiles` needs one, stop and ask.
 
@@ -66,7 +66,7 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
 
 14. ONLY A PHONE CAN PROVE: install over an older TestFlight build that created `backup-*.db` with the flag on, relaunch, confirm the file is excluded (an encrypted Finder backup does not list it; `scribe.db` is listed); Erase everything then Keychain and folder hold nothing; sign-out then relaunch; kill during the delete. `qa` writes the rows in `docs/qa/DEVICE_TEST_PLAN.md`.
 
-15. STOP AND ASK: exclusion cannot be set per file on a device; the token must stay in the file for resume to work; a Swift change is needed; `ops` will not take PR 4; the gate wants a network call in preflight (Rec: static check plus an ops release step).
+15. STOP AND ASK: exclusion cannot be set per file on a device; the token must stay in the file for resume to work; a Swift change is needed; `ops` will not wire PR 4's check; anyone wants a network call inside preflight (the answer is no: static check plus an ops release step).
 
 16. HARNESS: claim row: NONE yet for `lib/backup/**`; Karma adds it. Journal issue #8, marker `<!-- journal run:sess-20261120-mobile-b5 agent:mobile -->`.
     Check-in `docs/agents/checkins/mobile-b5.md`. Branches `feat/mobile-b5-{1-exclusion,2-erase,3-keychain,4-gate}`. Comments start `<!-- agent:mobile -->`.
