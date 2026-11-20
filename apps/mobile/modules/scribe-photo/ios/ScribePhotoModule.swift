@@ -28,16 +28,19 @@ private struct Refused: Error {}
 /// NS-01 (photo with a letter): the two native steps behind a picture, and nothing else.
 ///
 /// pickOne: Apple's system photo picker, PHPickerViewController, made with PHPickerConfiguration() and no photo
-/// library. It runs out of process, so the app makes no permission request and reads only the one picture the parent
-/// chose (NS-01-R2, R22). One picker at a time; a picker UIKit never shows answers as a failure after 2 s. The picked
-/// file is copied into Caches/ImagePicker, under the plain name JavaScript gives, before the provider's handler
-/// returns. A Live Photo gives its still image; an iCloud-only picture downloads through the item provider. Cancel
-/// resolves null.
+/// library. It runs out of process, so it needs no photo-library permission and reads only the one picture the parent
+/// chose (NS-01-R2, R22). One picker at a time, inside a small sheet of ours: the sheet going away for any reason (the
+/// app dismissing every modal by code included, which tells no delegate) answers a Cancel, and a picker UIKit never
+/// shows answers a failure after 2 s. The picked file is copied into Caches/ImagePicker, under the plain name
+/// JavaScript gives, before the provider's handler returns. A Live Photo gives its still image; an iCloud-only picture
+/// downloads through the item provider. Cancel resolves null.
 ///
 /// reencodeUpright: reads ONE picked file in Caches/ImagePicker, refuses a container type outside the allowlist or a
 /// canvas over the pixel cap before decoding, turns the pixels upright (the Exif turn is baked in) and writes a JPEG
 /// into Caches/ScribePhoto, under the plain name JavaScript gives. No source property is copied, so no Exif, XMP, IPTC,
 /// MPF, GPS or embedded thumbnail can follow. JavaScript checks the result again (strip.ts) before anything is stored.
+/// It runs on a serial queue of its own, so a long decode never holds ExpoModulesCore's shared queue (scribe-keys,
+/// scribe-audio).
 ///
 /// Paths from JavaScript are not trusted: each must be a plain file name directly inside its Caches folder, worked out
 /// here, and a folder is never removed or written over (review N-B1). No network, no location, no permission request,
@@ -53,6 +56,7 @@ public class ScribePhotoModule: Module {
   private static let allowedTypes: Set<String> = [UTType.jpeg.identifier, UTType.heic.identifier, UTType.heif.identifier, UTType.png.identifier]
   /// How long UIKit gets to show the picker before it counts as refused (scribe-store's StoreSheet, security review L9).
   private static let presentTimeout: TimeInterval = 2.0
+  private static let reencodeQueue = DispatchQueue(label: "scribe.photo.reencode", qos: .userInitiated)
 
   public func definition() -> ModuleDefinition {
     Name("ScribePhoto")
@@ -77,13 +81,14 @@ public class ScribePhotoModule: Module {
       } catch {
         throw ScribePhotoException.reencode
       }
-    }
+    }.runOnQueue(ScribePhotoModule.reencodeQueue)
   }
 
   // MARK: - paths
 
   /// `uri` as a file with a plain name directly inside `<Caches>/<folder>`, which is worked out here and created if
-  /// needed. Dot segments are resolved and links followed before comparing; anything else throws.
+  /// needed. Dot segments are resolved and links followed before comparing; anything else throws. The name rule ends in
+  /// `\z`, not `$`: ICU's `$` also matches before a final line break.
   private static func fileIn(_ folder: String, _ uri: String) throws -> URL {
     let fm = FileManager.default
     let caches = try fm.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
@@ -91,7 +96,7 @@ public class ScribePhotoModule: Module {
     try fm.createDirectory(at: home, withIntermediateDirectories: true)
     guard let url = URL(string: uri), url.isFileURL else { throw Refused() }
     let file = url.standardizedFileURL
-    guard file.lastPathComponent.range(of: "^[0-9A-Za-z-]{1,64}\\.[0-9A-Za-z]{1,8}$", options: .regularExpression) != nil,
+    guard file.lastPathComponent.range(of: "^[0-9A-Za-z-]{1,64}\\.[0-9A-Za-z]{1,8}\\z", options: .regularExpression) != nil,
           file.deletingLastPathComponent().resolvingSymlinksInPath().path == home.resolvingSymlinksInPath().path else {
       throw Refused()
     }
@@ -117,6 +122,8 @@ public class ScribePhotoModule: Module {
 
   @MainActor
   private func presentPicker() async throws -> NSItemProvider? {
+    // A sheet that was shown and is gone without answering (dismissed by code) is answered here as a Cancel.
+    if let open = PickerSession.current, open.shown, open.host?.presentingViewController == nil { open.cancel() }
     // One picker at a time, as scribe-store's StoreSheet: a second call is refused at once and presents nothing.
     guard PickerSession.current == nil else { throw ScribePhotoException.pick }
     // A presenter on its way out, or already showing something, would refuse the picker and never call back.
@@ -134,16 +141,19 @@ public class ScribePhotoModule: Module {
       // The body runs synchronously on the caller's actor (main); say so for older toolchains.
       MainActor.assumeIsolated {
         let session = PickerSession(continuation)
+        let host = PickerHost(picker, session)
         picker.delegate = session
-        picker.presentationController?.delegate = session
-        presenter.present(picker, animated: true) {
+        session.host = host
+        presenter.present(host, animated: true) {
           session.shown = true
+          // Shown only after the watchdog answered: nothing waits for it, so it goes away again.
+          if session.answered { host.dismiss(animated: true) }
         }
         // Never stuck: if UIKit refuses the presentation, no delegate call ever comes, so a watchdog checks that the
-        // picker really appeared and otherwise answers with the closed code, which frees the session for the next tap.
-        Task { @MainActor [weak session, weak picker] in
+        // sheet really appeared and otherwise answers with the closed code, which frees the session for the next tap.
+        Task { @MainActor [weak session, weak host] in
           try? await Task.sleep(nanoseconds: UInt64(ScribePhotoModule.presentTimeout * 1_000_000_000))
-          guard let session, PickerSession.current === session, !session.shown, picker?.presentingViewController == nil else { return }
+          guard let session, PickerSession.current === session, !session.shown, host?.presentingViewController == nil else { return }
           session.refuse()
         }
       }
@@ -224,15 +234,17 @@ public class ScribePhotoModule: Module {
   }
 }
 
-/// One presentation of the picker. It is held as `current` (the picker keeps its delegates weakly) until it answers,
-/// exactly once: a pick, a Cancel, a swipe that dismisses the sheet, or the watchdog. While it is `current` no other
-/// picker is presented. Both delegate protocols are main-actor, and so is this class.
+/// One presentation of the picker. It is held as `current` and by its sheet (the picker keeps its delegate weakly), and
+/// answers exactly once: a pick, a Cancel, the sheet going away, a stale session found by the next call, or the
+/// watchdog. While it is `current` no other picker is presented. The delegate protocol is main-actor, and so is this.
 @MainActor
-private final class PickerSession: NSObject, PHPickerViewControllerDelegate, UIAdaptivePresentationControllerDelegate {
+private final class PickerSession: NSObject, PHPickerViewControllerDelegate {
   static var current: PickerSession?
 
   private var continuation: CheckedContinuation<NSItemProvider?, Error>?
+  weak var host: PickerHost?
   var shown = false
+  var answered: Bool { continuation == nil }
 
   init(_ continuation: CheckedContinuation<NSItemProvider?, Error>) {
     self.continuation = continuation
@@ -241,11 +253,12 @@ private final class PickerSession: NSObject, PHPickerViewControllerDelegate, UIA
   }
 
   func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-    picker.dismiss(animated: true)
+    host?.dismiss(animated: true)
     finish(.success(results.first?.itemProvider))
   }
 
-  func presentationControllerDidDismiss(_ presentationController: UIPresentationController) {
+  /// No picture: the sheet went away without a pick, or the next call found this session stale.
+  func cancel() {
     finish(.success(nil))
   }
 
@@ -259,5 +272,38 @@ private final class PickerSession: NSObject, PHPickerViewControllerDelegate, UIA
     self.continuation = nil
     if PickerSession.current === self { PickerSession.current = nil }
     continuation.resume(with: result)
+  }
+}
+
+/// The picker's sheet: PHPickerViewController embedded as its only child, presented in its place. Whatever makes it go
+/// away (Cancel, a pick, a swipe-down, or react-native-screens dismissing every modal by code, which no delegate hears)
+/// ends with viewDidDisappear, which answers a Cancel if nothing answered yet (scribe-store's onDisappear). It holds
+/// the session, so the picker's buttons keep working for as long as it is on screen.
+private final class PickerHost: UIViewController {
+  let session: PickerSession
+  private let picker: PHPickerViewController
+
+  init(_ picker: PHPickerViewController, _ session: PickerSession) {
+    self.picker = picker
+    self.session = session
+    super.init(nibName: nil, bundle: nil)
+  }
+
+  required init?(coder aDecoder: NSCoder) {
+    return nil
+  }
+
+  override func viewDidLoad() {
+    super.viewDidLoad()
+    addChild(picker)
+    picker.view.frame = view.bounds
+    picker.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+    view.addSubview(picker.view)
+    picker.didMove(toParent: self)
+  }
+
+  override func viewDidDisappear(_ animated: Bool) {
+    super.viewDidDisappear(animated)
+    session.cancel()
   }
 }

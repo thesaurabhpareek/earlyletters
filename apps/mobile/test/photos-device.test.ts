@@ -89,9 +89,11 @@ const PINNED: [string, string][] = [
   // Paths from JavaScript: a plain name directly inside the Caches folder worked out natively, links resolved.
   ['    let caches = try fm.url(for: .cachesDirectory, in: .userDomainMask, appropriateFor: nil, create: true)\n', 'the Caches folder'],
   ['    let file = url.standardizedFileURL\n', 'dot segments resolved'],
-  [String.raw`    guard file.lastPathComponent.range(of: "^[0-9A-Za-z-]{1,64}\\.[0-9A-Za-z]{1,8}$", options: .regularExpression) != nil,` + '\n', 'a plain file name'],
+  [String.raw`    guard file.lastPathComponent.range(of: "^[0-9A-Za-z-]{1,64}\\.[0-9A-Za-z]{1,8}\\z", options: .regularExpression) != nil,` + '\n', 'a plain file name, to the end of the input'],
   ['          file.deletingLastPathComponent().resolvingSymlinksInPath().path == home.resolvingSymlinksInPath().path else {\n', 'directly inside the folder, links resolved'],
+  ['    return file\n', 'the checked file is the one used'],
   ['        let out = try ScribePhotoModule.fileIn("ImagePicker", destination)\n', 'the pick destination inside Caches/ImagePicker'],
+  ['        try await ScribePhotoModule.copyPicked(from: provider, to: out)\n', 'the copy goes to the checked destination'],
   ['    let url = try fileIn("ImagePicker", sourceUri)\n    let out = try fileIn("ScribePhoto", destinationUri)\n', 'the re-encode source in Caches/ImagePicker, its destination in Caches/ScribePhoto'],
   // Nothing at the destination but a regular file is ever removed; a folder or a link refuses.
   ['    guard attributes[.type] as? FileAttributeType == .typeRegular else { throw Refused() }\n    try fm.removeItem(at: out)\n', 'only a regular file is made room for'],
@@ -100,14 +102,27 @@ const PINNED: [string, string][] = [
   ['          ScribePhotoModule.removeIfFile(out)\n          continuation.resume(throwing: ScribePhotoException.pick)\n', 'a partial original removed'],
   ['      try clear(out)\n      guard let dest = CGImageDestinationCreateWithURL(out as CFURL, UTType.jpeg.identifier as CFString, 1, nil) else {\n', 'the JPEG, never over a folder'],
   ['      guard CGImageDestinationFinalize(dest) else {\n        removeIfFile(out)\n', 'a failed JPEG removed'],
-  // One picker at a time, and never stuck when UIKit refuses to present it.
+  // One picker at a time, inside a sheet of ours, and never stuck: not when UIKit refuses to present it, and not when
+  // the app dismisses it by code, which tells no delegate (round 3, review A must-fix, review B N-P1).
+  ['    if let open = PickerSession.current, open.shown, open.host?.presentingViewController == nil { open.cancel() }\n', 'a stale session answered as a Cancel'],
   ['    guard PickerSession.current == nil else { throw ScribePhotoException.pick }\n', 'one picker in flight'],
   ['  static var current: PickerSession?\n', 'the session in flight'],
+  ['    PickerSession.current = self\n', 'a new session takes the one slot'],
   ['    if PickerSession.current === self { PickerSession.current = nil }\n', 'the session released when it answers'],
-  ['        presenter.present(picker, animated: true) {\n          session.shown = true\n        }\n', 'a presentation that reports it happened'],
+  ['    self.continuation = nil\n', 'an answer given once'],
+  ['        let host = PickerHost(picker, session)\n        picker.delegate = session\n        session.host = host\n', 'the picker in its sheet, with its delegate'],
+  ['        presenter.present(host, animated: true) {\n          session.shown = true\n', 'a presentation of the sheet that reports it happened'],
+  ['          if session.answered { host.dismiss(animated: true) }\n', 'a sheet shown after the answer goes away again'],
   ['          try? await Task.sleep(nanoseconds: UInt64(ScribePhotoModule.presentTimeout * 1_000_000_000))\n', 'the watchdog wait'],
-  ['          guard let session, PickerSession.current === session, !session.shown, picker?.presentingViewController == nil else { return }\n          session.refuse()\n', 'the watchdog'],
+  ['          guard let session, PickerSession.current === session, !session.shown, host?.presentingViewController == nil else { return }\n          session.refuse()\n', 'the watchdog'],
+  ['    host?.dismiss(animated: true)\n    finish(.success(results.first?.itemProvider))\n', 'a pick or Cancel closes the sheet and answers'],
+  ['    finish(.success(nil))\n', 'no picture answers null'],
   ['    finish(.failure(ScribePhotoException.pick))\n', 'a refused picker fails with its code'],
+  ['    addChild(picker)\n    picker.view.frame = view.bounds\n    picker.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]\n    view.addSubview(picker.view)\n    picker.didMove(toParent: self)\n', 'the picker embedded in its sheet'],
+  ['  override func viewDidDisappear(_ animated: Bool) {\n    super.viewDidDisappear(animated)\n    session.cancel()\n  }\n', 'the sheet going away answers a Cancel'],
+  // The re-encode runs on a serial queue of its own, not ExpoModulesCore's shared one (review B N-B5r).
+  ['  private static let reencodeQueue = DispatchQueue(label: "scribe.photo.reencode", qos: .userInitiated)\n', 'a serial queue of its own'],
+  ['    }.runOnQueue(ScribePhotoModule.reencodeQueue)\n', 'the re-encode on that queue'],
   // The decode: an uncached source, a checked multiply, inside an autorelease pool.
   ['      let noCache = [kCGImageSourceShouldCache: false] as CFDictionary\n', 'the cache flag off'],
   ['      guard let source = CGImageSourceCreateWithURL(url as CFURL, noCache),\n', 'an uncached source'],
@@ -129,6 +144,13 @@ const COUNTS: [RegExp, number, string][] = [
   [/\bmaxPixels\b/g, 2, 'the cap, unchanged'],
   [/\blongestSide\b/g, 2, 'the limit, unchanged'],
   [/\bkCGImageSourceShouldCache\b/g, 2, 'the cache flag'],
+  [/\bAsyncFunction\b/g, 2, 'two exports'],
+  [/\bpresent\(/g, 1, 'one presentation, of the sheet'],
+  [/\.dismiss\(/g, 2, 'the sheet dismissed after an answer only'],
+  [/PHPickerViewController\(/g, 1, 'one picker'],
+  [/\bPickerHost\(/g, 1, 'one sheet'],
+  [/\brunOnQueue\b/g, 1, 'one queue choice'],
+  [/\breencodeQueue\b/g, 2, 'the queue, used once'],
 ];
 
 /** Every problem the scan finds in ScribePhotoModule.swift; empty when the module is what the reviews accepted. */
@@ -143,15 +165,18 @@ export function swiftProblems(swift: string): string[] {
   const imports = [...code.matchAll(/^import (\w+)/gm)].map((m) => m[1]).sort();
   if (imports.join() !== 'ExpoModulesCore,Foundation,ImageIO,PhotosUI,UIKit,UniformTypeIdentifiers') out.push(`imports: ${imports.join()}`);
   // No permission, camera, library, location, network or logging, anywhere (NS-01-R2, R22; ITMS-90683; review N8).
-  never(/requestAuthorization|requestAccess|authorizationStatus|AVCapture|AVFoundation|UIImagePickerController|PHPhotoLibrary|PHAsset|PHImageManager|PHFetch|photoLibrary:|CoreLocation|CLLocation|UsageDescription/, 'a permission, camera, library or location API');
+  never(/requestAuthorization|requestAccess|authorizationStatus|AVCapture|AVFoundation|UIImagePickerController|PHPhotoLibrary|PHAsset|PHImageManager|PHFetch|\bphotoLibrary\b|CoreLocation|CLLocation|UsageDescription/, 'a permission, camera, library or location API');
   never(/URLSession|URLRequest|NWConnection|CFNetwork|NSURLConnection|WebKit/, 'a network API');
-  never(/\bprint\(|debugPrint|\bdump\(|NSLog|os_log|OSLog|\bLogger\b|\blog\.|os_signpost|fputs|standardError/, 'logging');
+  never(/\bprint\(|debugPrint|\bdump\(|NSLog|os_log|OSLog|\bLogger\b|\blog\b|os_signpost|fputs|standardError/, 'logging');
   // No other way to copy, write, move or remove a file, and no other image source or destination.
-  never(/contentsOf|\.write\(to|write\(toFile|\b(moveItem|linkItem|createSymbolicLink|createFile|replaceItem|trashItem|FileHandle|OutputStream|fopen|clonefile|copyfile|unlink|rmdir)\b/, 'another file copy, write or removal');
+  never(/contentsOf|\.write\(to|write\(toFile|replaceItem|\b(moveItem|linkItem|createSymbolicLink|createFile|trashItem|FileHandle|OutputStream)\b/, 'another file copy, write or removal');
+  never(/\b(rename|renameat|renamex_np|link|linkat|symlink|remove|unlink|open|creat|truncate|fopen|fwrite|rmdir|mkdir|clonefile|copyfile|exchangedata)\s*\(/, 'a POSIX file call');
+  never(/\bCI[A-Z]\w*|CoreImage|writeJPEGRepresentation|jpegRepresentation|heifRepresentation|pngRepresentation|\bUIImage\b|jpegData|pngData|heicData/, 'another image writer');
+  never(/\b(Function|StaticFunction|StaticAsyncFunction|Property|Constant|Constants|Events|View|Prop|Class|OnCreate|OnDestroy|OnStartObserving|OnStopObserving|OnAppEntersForeground|OnAppEntersBackground|OnAppBecomesActive)\s*\(/, 'another export');
   never(/CGImageSourceCreate(WithData|Incremental|ImageAtIndex)|CGImageDestinationCreateWith(Data|DataConsumer)/, 'another image source or destination');
   never(/width \* height|height \* width/, 'an unchecked multiply');
   // The picker: Apple's out-of-process picker with no library, images only, one, the file as it is.
-  if ((code.match(/PHPickerConfiguration\(/g) ?? []).length !== 1 || !/var configuration = PHPickerConfiguration\(\)\n/.test(code)) out.push('the picker configuration is not PHPickerConfiguration() with no library');
+  if ((code.match(/PHPickerConfiguration\s*\(/g) ?? []).length !== 1 || !/var configuration = PHPickerConfiguration\(\)\n/.test(code)) out.push('the picker configuration is not PHPickerConfiguration() with no library');
   need(/configuration\.filter = \.images\n/, 'images only');
   need(/configuration\.selectionLimit = 1\n/, 'one picture');
   need(/configuration\.preferredAssetRepresentationMode = \.current\n/, 'the current representation');
@@ -167,6 +192,7 @@ export function swiftProblems(swift: string): string[] {
   const before = (a: string, b: string, why: string) => void ((at(a) < 0 || at(b) < 0 || at(a) > at(b)) && out.push(`order: ${why}`));
   before('ScribePhotoModule.fileIn("ImagePicker", destination)', 'self.presentPicker()', 'the pick destination is checked first');
   before('fileIn("ScribePhoto", destinationUri)', 'CGImageSourceCreateWithURL(', 'the re-encode paths are checked first');
+  before('if let open = PickerSession.current', 'guard PickerSession.current == nil', 'a stale session is answered before the busy check');
   before('guard PickerSession.current == nil', 'presenter.present(', 'the busy check comes first');
   before('allowedTypes.contains(type)', 'CGImageSourceCreateThumbnailAtIndex(', 'the format allowlist before the decode');
   before('pixels <= maxPixels', 'CGImageSourceCreateThumbnailAtIndex(', 'the pixel cap before the decode');
@@ -202,7 +228,8 @@ export function swiftProblems(swift: string): string[] {
   const fns = [...code.matchAll(/AsyncFunction\("(\w+)"\) \{[^\n]* in\n/g)];
   if (fns.map((m) => m[1]).join() !== 'pickOne,reencodeUpright') out.push(`functions: ${fns.map((m) => m[1]).join()}`);
   for (const m of fns) {
-    const body = code.slice(m.index! + m[0].length, code.indexOf('\n    }\n', m.index!));
+    const rest = code.slice(m.index! + m[0].length);
+    const body = rest.slice(0, rest.search(/\n {4}\}/));
     if (!new RegExp(String.raw`^ {6}do \{\n[\s\S]*\n {6}\} catch \{\n {8}throw ScribePhotoException\.${own[m[1]]}\n {6}\}$`).test(body)) out.push(`${m[1]}: a failure can leave without its own closed code`);
   }
   return out;
@@ -261,8 +288,8 @@ describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () 
       'a session never released': swap('    if PickerSession.current === self { PickerSession.current = nil }\n', ''),
       'no watchdog': swap('          session.refuse()\n', ''),
       'a longer watchdog': swap('presentTimeout: TimeInterval = 2.0', 'presentTimeout: TimeInterval = 60.0'),
-      'a watchdog that never fires': swap('!session.shown, picker?.presentingViewController == nil', 'false'),
-      'a presentation that never reports': swap('presenter.present(picker, animated: true) {\n          session.shown = true\n        }', 'presenter.present(picker, animated: true)'),
+      'a watchdog that never fires': swap('!session.shown, host?.presentingViewController == nil', 'false'),
+      'a presentation that never reports': swap('          session.shown = true\n', ''),
       'an unchecked pick destination': swap('let out = try ScribePhotoModule.fileIn("ImagePicker", destination)', 'let out = URL(string: destination)!'),
       'an unchecked re-encode source': swap('let url = try fileIn("ImagePicker", sourceUri)', 'let url = URL(string: sourceUri)!'),
       'the JPEG written into the picker folder': swap('fileIn("ScribePhoto", destinationUri)', 'fileIn("ImagePicker", destinationUri)'),
@@ -274,6 +301,32 @@ describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () 
       'a folder made room for': swap('    guard attributes[.type] as? FileAttributeType == .typeRegular else { throw Refused() }\n', ''),
       'whatever is there removed after a failed JPEG': swap('        removeIfFile(out)\n        throw', '        try? FileManager.default.removeItem(at: out)\n        throw'),
       'a partial original kept': swap('          ScribePhotoModule.removeIfFile(out)\n', ''),
+      // Round 3: the sheet, the stale session and the lifecycle lines (review A must-fix and note 3, review B N-P1).
+      'the picker presented without its sheet': swap('presenter.present(host, animated: true)', 'presenter.present(picker, animated: true)'),
+      'a sheet dismissed by code never answers': swap('    super.viewDidDisappear(animated)\n    session.cancel()\n', '    super.viewDidDisappear(animated)\n'),
+      'a stale session kept': swap('    if let open = PickerSession.current, open.shown, open.host?.presentingViewController == nil { open.cancel() }\n', ''),
+      'a stale session refused, not answered': swap('{ open.cancel() }', '{ open.refuse() }'),
+      'a late sheet left up': swap('          if session.answered { host.dismiss(animated: true) }\n', ''),
+      'nothing claims the slot': swap('    PickerSession.current = self\n', ''),
+      'no picker delegate': swap('        picker.delegate = session\n', ''),
+      'a sheet that does not know its session': swap('        session.host = host\n', ''),
+      'the picker not embedded': swap('    view.addSubview(picker.view)\n', ''),
+      'the sheet left up after a pick': swap('    host?.dismiss(animated: true)\n', ''),
+      'a second resume': swap('    self.continuation = nil\n', ''),
+      'the copy to an unchecked uri': swap('copyPicked(from: provider, to: out)', 'copyPicked(from: provider, to: URL(string: destination)!)'),
+      'the unchecked url used': swap('    return file\n', '    return url\n'),
+      'a name with a trailing line break': swap(String.raw`\\z"`, '$"'),
+      'the re-encode on the shared queue': swap('    }.runOnQueue(ScribePhotoModule.reencodeQueue)\n', '    }\n'),
+      'the re-encode on the main queue': swap('.runOnQueue(ScribePhotoModule.reencodeQueue)', '.runOnQueue(.main)'),
+      'the original moved over the JPEG': swap('      CGImageDestinationAddImage(dest, image, write as CFDictionary)\n', '      CGImageDestinationAddImage(dest, image, write as CFDictionary)\n      _ = try? FileManager.default.replaceItemAt(out, withItemAt: url)\n'),
+      'POSIX rename': swap('      try clear(out)\n', '      _ = rename(url.path, out.path)\n      try clear(out)\n'),
+      'POSIX link': swap('      try clear(out)\n', '      _ = link(url.path, out.path)\n      try clear(out)\n'),
+      'a CoreImage write': swap('      try clear(out)\n', '      try CIContext().writeJPEGRepresentation(of: CIImage(cgImageSource: source, index: index), to: out, colorSpace: CGColorSpaceCreateDeviceRGB())\n      try clear(out)\n'),
+      'log on a continuation line': swap('      let index = CGImageSourceGetPrimaryImageIndex', '      log\n        .info(sourceUri)\n      let index = CGImageSourceGetPrimaryImageIndex'),
+      'log in parentheses': swap('      let index = CGImageSourceGetPrimaryImageIndex', '      (log).info(sourceUri)\n      let index = CGImageSourceGetPrimaryImageIndex'),
+      'a third export': swap('    /// The destination file uri once an upright', '    Function("tidy") { (p: String) in _ = Darwin.remove(p) }\n\n    /// The destination file uri once an upright'),
+      'a third async export': swap('    /// The destination file uri once an upright', '    AsyncFunction ("tidy") { (p: String) in try FileManager.default.removeItem(atPath: p) }\n\n    /// The destination file uri once an upright'),
+      'a library picker written with spaces': swap('    configuration.filter = .images\n', '    configuration = PHPickerConfiguration (photoLibrary : .shared())\n    configuration.filter = .images\n'),
     };
     for (const [name, text] of Object.entries(mutants)) expect(swiftProblems(text).length, name).toBeGreaterThan(0);
     // A second source file in ios/ is compiled by the pod, so the list of scanned files must change.
