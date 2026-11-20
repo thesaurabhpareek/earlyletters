@@ -762,20 +762,21 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Tier and type: T2 (database, auth, secrets and release gates; two reviews on every implementing PR); Cynefin complicated.
 - Ruling:
   - C1 server-enforced step-up before `request_account_deletion` and book deletion, cancel exempt; product confirms the screen.
-  - C2 one database role per Edge Function (the `escrow_svc` pattern), `invite-redeem` first, `purge-worker` keeps the secret key alone; before the first outside family.
-  - C3 one migration writes the missing audit actions; `security_events` is a separate service-only 12-month store with a named reader; before the first outside family.
+  - C2 one database role per Edge Function (the `escrow_svc` pattern), `invite-redeem` first, `purge-worker` keeps the secret key alone; before the first outside family. C1 and C2 each need an access-rule test (allow and deny) in `supabase/tests`.
+  - C3 one migration writes the missing audit actions; `security_events` is a separate service-only 12-month store; its reader is `ops` (a scheduled read, one alert to the founder, threshold named in the building PR); before the first outside family.
   - C4 design S1 closes the live photo upload policies before the first outside family and together with photo slices #835 to #840; applying it is the founder's step.
-  - C5 the permanent purged-id guard stores a keyed hash of the id, never a raw list; counsel and the CPrivO read the retention wording before apply.
+  - C5 the permanent purged-id guard stores a keyed hash of the id, never a raw list; the hash key is held by the founder as a database secret and is never in the repo or a client; counsel and the CPrivO read the retention wording before apply.
   - B5 the phone backup file is excluded from device backup on existing installs, deleted on Erase, its token moves to Keychain, and a preflight gate keeps `EXPO_PUBLIC_BACKUP` off until B5, the escrow keys and the stop page exist.
-  - C9 the `insights_reader` grant to `authenticator` is dropped. C10 the line "We will sign that device out" gets a lever or is removed.
+  - C9 the `insights_reader` grant to `authenticator` is dropped. C10 the line "We will sign that device out" gets a lever or is removed; any new or removed words are PROPOSED.
   - A3 the consent gate needs a minimum count of consent acts and a minimum-build or update-line condition besides 14 days of zero nulls.
   - A5 SHA pins first, then scanning, not PR #30 whole; the two-job deploy runs job 1 only from a trusted ref; every workflow change stays a proposal the founder pastes.
   - B8 `audit_events.detail` gets a key allowlist, and the export carries only the requester's own rows.
   - E4 FP-9 is built by `mobile` and reviewed by `sync` (this records the plan's wording).
-  - CR-69 A4, A12 and A13 are edited as E73 asks: wider adoption of a local days file is no; Q-E10 is E64; A13's questions are closed by E43 to E59 and E69 to E73.
+  - CR-69 A4, A12 and A13 are edited as E73 asks: wider adoption of a local days file is no; Q-E10 is E64; A13's questions are answered by E43 to E59 and E69 to E73; E47, E56, E59 and E72 remain counsel or founder defaults, not closed.
+  - Every migration named here is applied only by the founder, with `approve-migration`.
   - Not decided here: Pro plan, applying migrations, recovery custody, SQLCipher, allowance per phone or per account, the new-device sign-in email order, Apple enrolment, publisher type, retention periods, the words (FOUNDER, COUNSEL or PRODUCT in the decision record).
 - Why: the reviewers reproduced each gap against code and the seats concur or give a condition; each item is reversible by a new migration or a revert, and none weakens the constitution.
 - Debate: the CPO and the pack differ on when the new-device email ships; left to product and the founder with a recommendation. Self-challenged otherwise: building roles and stores before any outside family is early cost; the answer is that a leak after an outside family signs in cannot be undone.
 - Door: two-way with cost until a migration is applied.
 - Way back: a new ruling supersedes this one; each implementing PR reverts by `git revert`.
-- Revisit when: the founder answers section 8 of the decision record, or the hosted project is read. Karma
+- Revisit when: the hosted project is read, the Pro plan is decided (the founder said later on 20 Nov), or counsel answers. Karma
