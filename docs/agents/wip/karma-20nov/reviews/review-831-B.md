@@ -1,0 +1,20 @@
+## Review B at 0ed88d62ecc72c342c4c9ad40a1084672691718a: PASS WITH NOTES
+
+Head verified (gh api pulls/831: 0ed88d62, base 5f5dfaf4 = origin/develop; re-checked after CI). Fix diff ff8f0ce0..0ed88d62: 3 files, +13/-10; vs develop: 3 files, +27/-2. Merge-tree clean (b5aaa7f9); mergeable_state clean.
+Read: CLAUDE.md; both reviews at ff8f0ce0; PR body "Fix round"; fix diff; CR-62 at head (RULINGS.md:570-592); SKILL.md sections 3 and 11; ADR 0028 at 1bee878b (:54, :56, :57, :71, :252, :254, :263); Review B at 1bee878b on #797 (comment 7023426673); NX-39-memory-library.md:288, :298; BACKLOG.md:3395-3403 at head; #798 at e7d399b3 book.tsx:411, button.tsx:174-215, find.en.ts:11-18; #829 at bb07317d (BL-931, BL-933).
+M1 closed. Open list adds (5) the evening-before opening (:589, = B packet item 5), (6) ADR Q4 (:590; matches adr:252: privacy with founder, no in Build 13, by the Build 13 freeze), (7) the backup stance as the founder's F9 (:591; NX-39:298 is a founder row, default photos in). D1 (:575) now states the backup as a fact of #796 that "follows the founder's NX-39 F9 default ... and is not decided here (open item 7)".
+M2 closed. :580: A recommends accepting D3a; B passes with notes, leaves acceptance to Karma, lists items 1 to 5. True to comment 7023426673 ("acceptance is Karma's"). :584 names items 1 to 5 as B's packet; they match B's (1)-(5), item 3 tightened (see notes for 2 and 4).
+M3 closed. BACKLOG.md:3403 and RULINGS.md:587 say the same: the row's owner `data-architect` (:3396) drafts with `legal`, `content` for words; the founder merges (D-125; SKILL.md section 3, "Merging legal text"); the photo export PR waits for his merge. Owner and Who lines unchanged.
+Last round's notes closed: heading names "session earlyletters-61" in CR-61's form (:570, :558); "can state" (:579); PRD 02-find.md:40 "drawn as an icon; Find is its VoiceOver label and Large Content Viewer title" is true of #798 (book.tsx:411 IconButton label=findCopy.button; button.tsx LARGE_CONTENT(label) sets accessibilityLargeContentTitle, iOS). Test title unchanged.
+Founder and counsel: nothing decided for them. No money. Promises to families stay with content and counsel (items 4, 5) and the founder's merge (item 3). Whether to build the seal, hiding from the other parent and counsel's words for minors stay open, default not built (:585). approve-migration stays his (:582). L4 follows DATA_CLASSIFICATION.md:49, a data call.
+Words: plain, no filler; added lines ASCII only (grep: nothing).
+CI at this head: 11 runs, 10 success, 1 compliance-fence cancelled (a duplicate; the other compliance-fence run is success). Required per branch protection (required, compliance-fence, applied migrations unchanged): all success. Combined status success.
+Must fix: none.
+Notes
+- :587 and BACKLOG.md:3403 gate on the founder's merge, stricter than ADR D2 (adr:71, "in a PR for the founder"), which :574 accepts "as written"; and the gate sits under "not decided here" (:584). One clause in the Ruling, "CR-62 tightens D2's gate to the founder's merge", makes it one gate everywhere. BL-933 in #829 (bb07317d) still names only ADR acceptance as its block; that fix is #829's.
+- Item 2 (:586) "read on the server only by `service_role` in the publish job" is wider than B's packet words, "read by service_role only in the publish job"; the book_entries predicate reads seal_opens_at as view owner (B's note at 1bee878b). Since :584 calls these B's items, use B's words.
+- Item 4 (:588) drops data-policy.md:144 and pages.en.ts:240 from B's item 4; "the lines ADR :57 names" covers them.
+- :575 "BL-931 slice 3" exists only in open PR #829; say so, as :587 does for BL-933.
+Not verified: that earlyletters-61 is the authoring session's name; the 170 docs tests in the PR body (not run here); id collisions (lens A); Apple's backup statement.
+This verdict is for head 0ed88d62 only; the PASS holds because required CI is green at this exact head, and lapses if the head moves.
+Reviewer: independent of the author (CR-44).

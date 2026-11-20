@@ -1,0 +1,32 @@
+## Review A at 49d3b568c0b97ed94f051380380b8603e939ffd3: CHANGES
+
+Lens A (is every changed sentence read, registered text intact, tests bite, sentences true of Build 12). Head verified with gh api: 49d3b568, draft, base develop. Content-only (13 files, no screen .tsx; two logic files change comments). Merges cleanly with develop (git merge-tree: no conflicts). The work is careful and most of it is right; two items need a decision before merge and one is a cleanup.
+
+### What I read and ran
+- The full diff against merge-base 0c88ee4f, and for each changed key the code that reads it.
+- At head: content package 16 files / 382 tests green; mobile auth-machine, delete-account, account-view, settings-p6b, account-deletion-gate 174/174 green; mobile full run 4410 pass, 72 fail, all 72 from expo-clipboard and expo-local-authentication missing in this sandbox (config, privacy-manifest, licences, store-sign-in, preflight, hosting, capabilities, app-lock-wiring). No name- or copy-related failure.
+- Red-before: reverse-applied the PR's source hunks (content/src, mobile/src) to the merge-base and kept the tests. build12-untrue-copy.test.ts fails 5 of 8 (the PR body says 6 of 8): red are "no claim beyond the held lines", "delete intro", "sign-in sheet", "error lines", "Account and Privacy"; green on old copy are "reads real surfaces", "held list only shrinks" and the rule self-test. The test bites on the old copy. The changed spec pins in server-surfaces-auth and server-surfaces-account-deletion are updated to the new words, as intended.
+- Added lines scanned for em/en dashes, curly quotes, ellipsis, emoji: none. No button label touched. Every changed string is listed in the PR body table (checked key by key). Nothing writes or rewrites a person's words.
+- CI at head: 14 success, 1 skipped (iOS simulator build). A PASS holds only once required CI is green at this exact head.
+
+### Must-fix
+1. "Your letters are still on this phone." is untrue on a phone with no letters, and the PR's own rule says error lines are read on such phones (VOICE.md edit; test header: "an error on a new phone is read on a phone that holds no letters"). It was kept in errors.network (auth.en.ts:123, `${lettersSafe} Sign in once you are back online.`), in session_expired, and in code.lettersSafe. Only the code-screen line is gated on a book (sign-in/code.tsx:277, `active`); errors.network goes straight to the screen with no check (lib/auth/messages.ts:12 -> ErrorLine). In Build 12 sign-in comes before the first book (D-160), and offline at "Send link" is the likeliest first error: a new person with nothing on the phone reads that their letters are still there. Change errors.network to "Nothing has changed. Sign in once you are back online." (and session_expired the same way unless a book is certain), keep the "still on this phone" line only under the gated code field, and update the startsWith pins (server-surfaces-auth.test.ts:175, the build12 test, e2e-web/j22 SAFE). Caveat: if #724's offline screen takes over before this ErrorLine on first run, exposure is smaller; I did not read #724.
+2. what.intro is counsel-HELD text (HELD in server-surfaces-account-deletion.test.ts, header of settings/delete-account.logic.ts, spec C8) and this PR rewrites it and deletes S64's introProposed. The new sentence is true (the purge deletes children and entries after the 30 days, supabase/migrations/20261003020000_purge_batching.sql:103-120; recordings are never on our servers: EXPO_PUBLIC_BACKUP is off in every eas.json profile and the only storage path, lib/backup/runtime.ts, is gated), and it says less than before. But it is a retention promise, so merge only with counsel and founder approval recorded on the PR. This is a gate, not a code fault. REGISTERED maps (server-surfaces-auth, experience-pass) and CONSENT_NEVER are untouched; the HELD entry above is the only held text edited.
+
+### Should-fix
+- en.settings.delete.bookBody was edited but nothing reads it: delete-book.tsx:104 reads bookBodyThisPhone, and that screen only opens on a phone that never signed in (localDeletionAllowed). The edited line still says "Every letter and recording ... removed from this phone and from our servers", which by the PR's own reasoning implies recordings are on servers. Delete the unread key or make it match bookBodyThisPhone, and drop it from the approval list (it asks the founder to approve a line nobody sees).
+- The scan covers 7 surfaces. Text outside it that still speaks of family or sharing: children settings familyCanReadHelp (behind doors.familyCanReadSwitch in settings/children/[id].tsx:146, which I did not evaluate), Apple Family Sharing lines in features/billing.en.ts:36,216 (Apple's own feature; likely true, not checked against the build), and the emails (the body says they were not audited). Not verified whether any is shown in this build.
+
+### Checked and true
+Reads: first_letter title and bodies via sign-in/index.tsx:117-118 (trigger from review.tsx:501); invite titles and bodies are read but only from invite surfaces hidden in this build; signedOutBody account.tsx:126; syncLabel account.tsx:224; sensitiveLabel privacy.tsx:103; keptSynced via privacy.logic facts (only when sync status is on); every errors.* kind has a producer (machine.logic.ts, session-provider.tsx, code.tsx). "The words of your letters come with you to a new phone": pull stores final_text (sync/merge.ts mergeOwnRow). "Recordings are kept on the phone that made them" matches #768's wording. "Sync across your phones" fits the Account and Privacy rows. Servers-off no-op: every changed string sits behind capabilities.signIn, sync or accountDeletion with a signed-in session (account.tsx:54, privacy.tsx:63, settings/index.tsx:172-177), so a servers-off build shows none of it; read from code, not run on a device.
+
+### Nits
+privacy.tsx:99 comment still says "Sync and family sharing"; docs/legal/compliance-register.md row 21 quotes the old label. "Keep {child}'s words on any phone" reads fine with the fallback ("your child's").
+
+### Device test plan
+docs/qa/run-sheets/AL-07-account-deletion.md covers Delete account step 1 (read the new intro). Add to a sign-in run: airplane mode on a fresh install, tap Send link, read the line.
+
+### Not verified
+Device; #722, #724, #728 diffs (the body lists them as follow-ups); the web invite pages and emails; claims-capabilities.test.ts against a Build 12 profile.
+
+Reviewer: independent of the author (CR-44).

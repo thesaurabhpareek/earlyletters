@@ -1,0 +1,18 @@
+## Review B at 2476302e8c10db1db0a24273dd4dde1af049344f: PASS
+
+Lens B (public claims, content rules, process), PR 709, delta review of the new head. This replaces my review of 94b1c327. No must-fix and no remaining notes that touch this PR. The PASS holds only once required CI is green at this exact head; when I looked it was not (see CI).
+
+**What I read and ran at this head**
+- `gh api .../pulls/709 --jq .head.sha` returned 2476302e8c10db1db0a24273dd4dde1af049344f. One commit on 94b1c327. Delta vs the previous head: 1 file, 1 line replaced (2 changed lines in the diff, one removed, one added). Word diff: `D-121, on this phone only;` became `D-121 (on-device only, servers off);`. Nothing else in the banner moved.
+- Against the merge-base 6cd2223b (still equal to origin/develop): 1 file, +2 lines, `docs/store/app-store-staged-1.0-proposal.md` only. Nothing in `docs/legal/**`, `store.en.ts` or `.github`. `git diff --check`: clean. `git merge-tree --write-tree origin/develop 2476302e`: exit 0, clean.
+- Added lines: 0 non-ASCII characters (python unicodedata scan), so no em or en dash, curly quote, ellipsis or emoji. No fear, guilt or loss language. Nothing implies AI writes anything.
+- Erase lines: grep of the added lines for "hold no copy", "sent anywhere", "start again", "backup", "this phone" and "happens on" returns 0. The only overlap I raised, "on this phone only" against `onThisPhone` (`strings.en.ts:891`), is gone. The new phrase "(on-device only, servers off)" is the file's own wording: its Status line (line 5) says "the first store build is on-device only, with server features, backup, status report and analytics off". It describes what the section 6 draft was written for and promises nothing.
+- Banner, read as someone about to paste: unchanged from the version I passed. Bold "Superseded", "Do not paste from this file", the live listing named (`app-store.md`, `store.en.ts`, `packages/brand`, `store.config.json`), "Three items below are not in the live listing", "This says nothing about the app itself", the section 6 caution, then "read it as history, not as copy". The five retired strings were 0 hits in the live sources at origin/develop at the previous head and develop has not moved (`origin/develop` is still 6cd2223b), so that check stands.
+- PR body, re-read: it now says the banner states the three items as "not in the live listing", carries no line numbers, says nothing about the app itself, and has the section 6 sentence. That matches the diff, and its named in-app examples match what I found (`stories.en.ts:56`, `strings.en.ts:973`). Template headings are all present. "Changes nothing else" and "no claim changes" are true. The note I raised about "The banner cites line 18" is fixed.
+- CI at this head when I looked: 7 runs, 2 completed success (install, applied migrations unchanged), 5 in progress (typecheck, tests and content rules, Deno functions, no e2e seam, database rules), and the "required" check had not appeared. Content tests passed (15 files, 367 tests) at an earlier head; the delta is a few words in one markdown line that no test reads, so I did not re-run them.
+
+**Carried over, outside this PR (follow-ups, as the coordinator said)**: `docs/release/FOUNDER_QUEUE.md:170` (Q3-10) still sends the founder to section 8 of this file; the CMO skill (`SKILL.md:155`) and CCO skill (`:106`) still cite the file as live.
+
+**Not verified**: full `npm test`, `test:db`, typecheck at this head (CI still running); whether open PRs beyond the first API page touch the file (checked only at 45b8ca08); the live app-review notes text.
+
+Reviewer: independent of the author (CR-44).

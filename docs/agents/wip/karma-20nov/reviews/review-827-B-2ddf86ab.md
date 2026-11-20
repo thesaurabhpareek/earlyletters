@@ -1,0 +1,21 @@
+## Review B at 2ddf86ab29c7aef24a53ce21da0ed715035c0e69: PASS WITH NOTES
+Head verified: `gh api .head.sha` = 2ddf86ab, base develop (be1c1142), two commits (230a1e31 plus the 2ddf86ab wording fix). Merge-base 74b394bb; the PR touches docs/DECISIONS.md (+31/-1) and docs/release/FOUNDER_QUEUE.md (+3/-3) only.
+Read: CLAUDE.md; Reviews A and B at 230a1e31; the PR body as updated; `git diff 230a1e31 2ddf86ab`; D-160, D-126, D-161, D-162 and the index rows at the head (DECISIONS.md:667-669, :961, :1155, :1161-1184); FOUNDER_QUEUE.md:29, :59, :94; the code each new claim cites, on origin/develop.
+1. B1, credit: `git log -S CO_PARENT_IN_STORE_BUILD origin/develop` lists be8e11fc (#720), 16972746 (#737), 10b785d2 (#724). 16972746 only adds a comment naming it; be8e11fc removes that comment and adds the test (store-family-tab.test.ts:75 on develop). DECISIONS.md:1179 now credits #720 with exactly that. Fixed.
+2. B2, the sheet: DECISIONS.md:1165 Decision says "no build has a reachable 'coming soon' co-parent surface", "no sheet or screen a person can open", and points to Open. :1170 Open names LeaveLater in apps/mobile/src/app/invite/leave.tsx (develop :54-62, title familyCopy.soon.status at :58), served at :46 only when servers on AND alpha and inviteDestination is not 'flow' (entry.logic.ts:48 LEAVE_BOOK_OFFERED = false, :55); nothing links to it (grep: comments only); LINK_ROUTE_ALLOWLIST = ['/', '/invite'] (entry.logic.ts:121). The nine `familyCopy.soon` keys listed match family.en.ts:168-189 exactly, and the only reader under apps/mobile/src is leave.tsx:58. Fixed and true.
+3. Dates: added lines from the merge-base carry "11 Nov" 14 times and "12 Nov" once, in the D-161 Source sentence recording the relay (:1164); "2026-11-12" zero times. Index rows :667-669, D-160 :1155, D-126 :961 and FOUNDER_QUEUE :29, :59, :94 all read 11 Nov.
+4. D-162 Source (:1176) lists the three attributions without picking: B12-5 (welcome.logic.ts:49, first-run-welcome.test.ts:243, DEVICE_TEST_PLAN.md:971 S1-178; no B12-5 under docs/agents, grep), Karma's ruling of 11 Nov (#737 and #720 bodies), the founder on 11 Nov (relay). Cross-references :1183 agrees.
+5. Numbering (:1162): #576 is open and adds D-140, #591 is open and adds D-139, and D-139 is on develop (:662); #827 alone takes D-161 and D-162. True.
+6. Servers-off exception (:1168, :1180): eas.json:76 gives testflight APP_ENV preview; the #720 body contains "Visible consequence in the servers-off alpha, by design" and cites infra/closed-questions-2026-11-11.md. True.
+7. Words: 0 non-ASCII bytes in added lines (grep from the merge-base and from develop); none of the _AUTHORING.md:208 banned words; no rhetorical questions; plain active sentences in the first person, as D-157 to D-160. CR-25: "Home", "Book", "Me" = strings.en.ts:61-63 byte for byte; "Coming soon" = family.en.ts:168; "Write this book together" = family.en.ts:41 and :188.
+8. Nothing deleted: a word-diff from the merge-base removes only the token `soon".` in row F1 (the full stop moved after the new parenthetical). D-160, D-126 and the three FOUNDER_QUEUE lines keep every old word.
+9. Privacy: no new name, email or family detail. "Asha" and "his own words" pre-exist on the amended line.
+10. The PR body matches the files: five columns, #576 and #591 named, 11 Nov, the three-way attribution, the LeaveLater cleanup, the #720 credit.
+Must fix: none.
+Notes
+- :1164 "The founder confirmed the decision in chat with Karma" states as fact what the author has not seen; the opening of the same line ("I have not seen the chat itself") covers it. No change needed; "as Karma relays it" would be tighter.
+- :1162 nests parentheses three deep and :1170 runs about 230 words. Readable; the key fact (both numbers free) sits at the end of the parenthetical.
+- CI at this head: all 10 check-runs success, including `required`, `compliance-fence` and `applied migrations unchanged`; combined status success. Any new commit voids this review.
+Not verified: the chat itself; the Project doc; the two DECISIONS-reading tests were not re-run here (CI's "tests and content rules" is green at the head); a device run.
+A PASS holds only while required CI is green at this exact head (it is now) and the founder merges (D-125).
+Reviewer: independent of the author (CR-44).

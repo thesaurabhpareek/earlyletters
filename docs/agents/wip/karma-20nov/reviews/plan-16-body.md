@@ -1,0 +1,112 @@
+## What
+
+`docs/product/prd/17-engineering-project-plan.md`: the task-level engineering plan for the new scope, one level below `13-engineering-plan.md`. Docs only.
+
+It is numbered 17 because #846 adds `16-council-review-round-2.md`.
+
+- **What it maps (section 1).** The locked pack at #846's head, with the re-sync rule, the ids the lock renamed or removed (1.1), and the founder record it uses.
+- **Work breakdown (section 2).** One row per backlog row and per open PR: BL-923 to BL-949, the lock's BL-952 to BL-987, the older M15 rows, the nine photo PRs in merge order, Find, and the release and process PRs. Each row has: the card rows it satisfies; one owner handle; two reviewer lenses; size; wave; dependencies; build target; gate; and status with head.
+  - Rows claimed today in #855 are marked "in progress today".
+  - Rows whose PR count will come from the engineering designs are marked "PR breakdown: see design".
+- **Dependency graph and critical paths (section 3).** A mermaid graph and the critical paths to a Build 13 store candidate, Build 14 and Build 15, with the founder gates on each. Section 3a lists the live P0 rows that fail today or have no test, and what holds the Build 13 cut.
+- **Capacity (section 4).** From the last seven days: 9 merges and 66 counted reviews, median 3 rounds. Weeks per wave are estimates in three bands, and there is a review order for when reviewers are scarce. No dates are set.
+- **Lanes, founder inputs and questions (section 5).** The lanes that never wait, the founder inputs in the order they are needed, and founder questions Q1 to Q8.
+- **Device batches (section 6).** One run sheet per build, on the lock's device matrix, with Asha test installs only (D13).
+- **Risks and mismatches (sections 7 and 8).** The top 8 risks, and 26 open mismatches (M1 to M28; the lock resolved M7 and M12), each with file:line, a proposed fix and an owner for each part.
+- **Agent readiness (section 9).** A summary of `ai-eng-lead`'s report, with the lane decision. The autonomous lane stays off for waves 1 and 2; switching it on is the founder's call.
+- **Engineering design (section 10).** Points to `docs/tdd/new-scope/`, whose six designs are being written in parallel.
+
+Also: one row for file 17 in `docs/product/prd/README.md`, and one pointer line at the top of `13-engineering-plan.md`. Nothing else in 13 changes. #846 also puts a line at `13:3`, so whichever merges second resolves a one-line conflict.
+
+## What it maps
+
+- The cards, 13, 14, README, 00 and the backlog are keyed to #846 at `450bcb4a`, the locked requirements pack v1.0 (the 217-page PDF of 20 Nov).
+  - The plan maps #846's head and re-syncs once more when #846 merges.
+  - The founder named the locked pack the source of truth in a message Karma relayed in this session. That naming is not in a record yet; product's draft CR-66 on #846 would record it.
+- The branch is cut from develop `e9dca86c`, and it merges cleanly with develop `20553b18`.
+- State lines are as of 20 Nov 2026.
+- The founder's "Yes, all three" (recorded on #827, #797, #798 and each photo PR) covers the photo size exceptions, #827 and the Ready clicks on #797 and #798.
+
+## Founder questions (section 5.3)
+
+For Q1 to Q3 and Q6 to Q8, the default holds until he answers. Q4 and Q5 carry a recommendation only, because a size exception is his to accept (CODE-R02). #798 as one PR, and this file, do not merge until he answers. A split that keeps every PR inside the limit needs no exception.
+
+- **Q1. Which P0 rows must the Build 13 store candidate meet (14:98; G0 at 14:96)?** This is the plan's recommendation, taken as the default.
+  - The cut waits for:
+    - BL-922 (NS-10-R0);
+    - BL-925 and BL-926 (NS-09-R4a, R4b);
+    - BL-928 (NS-33-R1, R2, R4);
+    - BL-961 (NS-10-R3) and BL-967 (NS-13-R14), whose rows fail today;
+    - BL-978's NS-10-R7 fix, because a P1 failure blocks a store build (14:14).
+  - The live never-list rows get a passing test before the cut: NS-08-R6, NS-13-R5, R6a, R6b and NS-32-R12.
+  - Under the stricter reading, which is the default until he says otherwise, so do these possible leaks:
+    - NS-10-R5 with the upload part of [X4-R1];
+    - [X6-R1] with NS-21-R13.
+  - For the other rows in section 3a he decides: a fix or a test before the cut (recommended), or shipping a known defect or an untested row by his written decision.
+  - Any such decision is a change to 14:98, not a waiver. 14:98's only waiver covers device rows when no phone was available.
+- **Q2. Does the Build 13 cut wait for photo and Find?** Default: no.
+  - They ship dark, with flags off in `production`, and Build 14 turns them on after the counsel read on the photo label.
+  - An option, not the default: if that read is late, Build 14 turns on Find and Share with photo dark.
+- **Q3. Seals: in scope, or "not built" as CR-62 item 1 says?** Default: in scope, and no seal code is written until counsel answers Q6.
+- **Q4. Keep #798 as one PR with a size exception?** Recommendation: no. Split it, as the locked BL-952 says.
+  - A `mobile` agent started the split today.
+  - The split PRs merge under D-132 with no founder step.
+  - Only #798 kept as one PR would wait for his acceptance.
+- **Q5. This PR's size exception.** Recommendation: accept. No merge until he answers.
+- **Q6. The autonomous agent lane.** Default: off for waves 1 and 2.
+- **Q7. The daily run cap** (the agents ask for 50 runs a day against a cap of 30). Default: unchanged at 30.
+- **Q8. The notification cap.** Default: one a day across all books, as the locked NS-32 states. NX-39 F6 makes the number his.
+
+## Re-sync rule (section 1 of the file)
+
+1. The plan maps one commit of the requirements: today #846's head. It changes when that head moves, when #846 merges, or when develop later changes under `docs/product/prd/`, `docs/roadmap/` or the new-scope sections of `docs/BACKLOG.md`.
+2. Karma re-syncs within one working day and lists every card or row id that was added, removed or reworded. Product lists changed ids in each card PR body.
+3. Changed ids are handled this way:
+   - a reworded row keeps its work row;
+   - a removed row holds its work row by status until product re-points it;
+   - a new row gets a work row or a "no work" line.
+4. Re-read every open PR head. A head that moved after its counted reviews needs a new review (D-132).
+5. Redo the graph and capacity only when a dependency, size or wave changed.
+6. Change the commit in the header. Re-sync from develop, or from #846's head while the founder names it the source; never from any other open branch.
+
+## Changes since the first reviews
+
+- **Round 1 (ce7a5245).**
+  - The release-content questions became founder questions Q1 and Q2, and M23 was added.
+  - The notes from both lenses were applied, and the file was renumbered from 16 to 17.
+- **Round 2 (a0f8a90b).**
+  - Q1 no longer rests on a 14:79 waiver that does not exist.
+  - Q4 and Q5 became recommendations.
+  - The mismatch owners follow a corrected legend.
+- **Re-key (946037804).**
+  - The plan now follows the locked pack at `450bcb4a`: its cites, the lock's rows in waves, and the 296-row P0 register.
+  - Device batches follow the lock's matrix, and capacity was recomputed.
+  - New sections 1.1 and 10.
+- **Round 3 (this push).**
+  - Find is no longer gated on the founder.
+  - Q1 names the known P0 defects and recommends that BL-961 and BL-967 hold the cut.
+  - The leak readings are the founder's call, with the stricter reading as the default.
+  - The design findings sit under BL-961 and BL-978, and BL-978 depends on BL-922.
+  - New row P-9 (the NS-13 cut tests).
+  - Today's merges, open PRs and running workstreams are recorded.
+- Each commit message lists its items.
+
+## Checks
+
+- `npm test -w packages/content`: 18 files, 395 tests pass, including `no-real-family-data` over the staged files.
+- Added lines are ASCII only: no em or en dashes, curly quotes, ellipsis characters or emoji.
+- No device was run. The file's "Not verified" section lists what was not checked.
+
+## Size
+
+3 files, +770 lines: 767 in file 17, 2 in 13, 1 in README.
+
+Size exception: 770 lines of docs, one plan document; splitting it would separate the work breakdown from the dependency graph it feeds. The founder accepts or refuses this exception.
+
+## Merge
+
+The founder accepts or refuses the size exception first (Q5). Then two counted reviews at the head and green CI, and Karma merges under D-132.
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+https://claude.ai/code/session_01NBzZMdFrvcifyquTUAekLF
