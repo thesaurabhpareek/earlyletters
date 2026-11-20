@@ -13,7 +13,7 @@ Order of precedence when two sources disagree: cards (CR-66), then the function 
 
 ## 1. The where-can-it-be-used matrix
 
-Cell codes: **A** allowed; **C<n>** allowed with condition n (section 2); **F** forbidden. Default is F: a purpose not listed for a row does not exist. A row's level decides its ceiling: L4 is F for every purpose that is not "product" or "legal requests" unless a condition says otherwise.
+Cell codes: **A** allowed; **C<n>** allowed with condition n (section 2); **F** forbidden; **F-X2** forbidden until X2 is satisfied (C10). Sources are given per row and per condition, not per cell. Default is F: a purpose not listed for a row does not exist. A row's level decides its ceiling: L4 is F for every purpose that is not "product" or "legal requests" unless a condition says otherwise.
 
 | Row | Data (DC level, section) | Product | Support | Analytics | Security | Debugging | Reporting | Marketing | AI features | Legal requests |
 |---|---|---|---|---|---|---|---|---|---|---|
@@ -23,9 +23,9 @@ Cell codes: **A** allowed; **C<n>** allowed with condition n (section 2); **F** 
 | M4 | Identifiers and paths: person, book and letter ids, object paths, device and install ids (L3; DC 1.1 rules 4, 5; 4.1, 4.3.1) | A | C4 | F | C5 | C6 | F | F | F | C8 |
 | M5 | Consent and process records: `policy_acceptances`, `deletion_requests`, `legal_holds`, `subscription_consents`, `audit_events`, `ops.audit_log`, `escrow_unwraps` (L3; DC 4.1) | A | C4 | F | C5 | C6 | C2 | F | F | C8 |
 | M6 | Network and device facts: IP address, user agent, locale, request headers (L3; DC 4.2, 4.8) | F | F | F | C9 | F | F | F | F | C8 |
-| M7 | Letter content: `final_text`, `raw_transcript`, `machine_edits`, `stt_meta`, versions, held drafts, search index (L4; DC 4.1.1 `entries`, `entry_versions`) | A | F | F | F | F | F | F | C10 | C8 |
-| M8 | Audio and photos, on the phone and in private buckets (L4; DC 4.4, 4.6, 4.3.1) | A | F | F | F | F | F | F | C10 | C8 |
-| M9 | The child and family: name, nickname, birthday, due date, languages, goals, dictionary terms, sealed dates (L4; DC 1.1 rules 6, 7; `children`, `dictionary_terms`) | A | F | F | F | F | F | F | C10 | C8 |
+| M7 | Letter content: `final_text`, `raw_transcript`, `machine_edits`, `stt_meta`, versions, held drafts, search index (L4; DC 4.1.1 `entries`, `entry_versions`) | A | F | F | F | F | F | F | F-X2 | C8 |
+| M8 | Audio and photos, on the phone and in private buckets (L4; DC 4.4, 4.6, 4.3.1) | A | F | F | F | F | F | F | F-X2 | C8 |
+| M9 | The child and family: name, nickname, birthday, due date, languages, goals, dictionary terms, sealed dates (L4; DC 1.1 rules 6, 7; `children`, `dictionary_terms`) | A | F | F | F | F | F | F | F-X2 | C8 |
 | M10 | Secrets and keys: sessions, invite tokens, escrow and wrapped keys, Apple refresh token, signing and service keys (L4; DC 1.1 rule 8) | A | F | F | C11 | F | F | F | F | F |
 | M11 | Safety tiers (L4; DC 4.6; device only) | A | F | F | F | F | F | F | F | F |
 | M12 | Plan state on the phone (`plus.cache`, StoreKit result) (L3; DC open issue 9) | A | F | C1 | F | F | C2 | F | F | F |
@@ -45,7 +45,7 @@ The product column for M7 to M9 means the person's own phone and the paths the c
 | C7 | Only an address the person gave for that purpose and has not withdrawn (the website waitlist). It sits at Resend, is never joined to an account, and is deleted on request. App users get transactional mail only until counsel and the founder decide otherwise. | `subprocessors.md` (Resend row); `data-policy.md:187`; LEGAL-REQ-053 [V]; question Q5 |
 | C8 | Counsel has validated the request and named the scope. Engineering only preserves (hold, or the preservation script when built). Engineering never searches, reads, discloses or notifies on its own judgment. | chapter 08 DSR-R10, R11, "Never"; LEGAL-REQ-057 [V] |
 | C9 | A vendor may hold an IP address in its own log (Supabase Auth, Vercel, Cloudflare). We copy none into our tables. The country check uses the address in memory and drops it; only daily counts by outcome and jurisdiction code remain, 2 years. | FR-PRV-26; D-131, D-136 [V row text] |
-| C10 | Only on the person's own device for 1.0 (on-device speech and the faithful-edit engine). Any cloud AI provider needs: the person's AI-processing consent, the minimum content, identifiers stripped, zero retention, no training, a signed processing agreement, a data-map row. No feature writes, rewrites, summarises or shapes a person's words, whatever the provider. | CLAUDE.md constitution; LEGAL-REQ-020 [V `ENGINEERING_REQUIREMENTS.md:168-173`]; DC section 2 "Processors"; FR-AIS-01, -02 |
+| C10 | **X2 first (E23, `00-product-frame.md:90`).** A child's voice, a picture or letter text leaving the phone for any cloud AI provider is forbidden until a security read and a counsel read have both been done and the founder has decided; the matrix cells M7 to M9 for AI features are F-X2 for that reason. This is a ceiling for a decision not taken. On the person's own device for 1.0 (on-device speech and the faithful-edit engine) it is allowed. If X2 is ever satisfied, a provider also needs: the person's AI-processing consent, the minimum content, identifiers stripped, zero retention, no training, a signed processing agreement, a data-map row. No feature writes, rewrites, summarises or shapes a person's words, whatever the provider. | CLAUDE.md constitution; LEGAL-REQ-020 [V `ENGINEERING_REQUIREMENTS.md:168-173`]; DC section 2 "Processors"; FR-AIS-01, -02; X2 per review B |
 | C11 | A secret is read only by the holder named in document 04, in the store named there, and never leaves it. A rotation or a break-glass use writes an `ops.audit_log` row (`key_change`, `break_glass`). | `docs/ops/SECURITY.md` section 1; FR-BKO-20 [V] |
 
 ## 3. The same matrix, as the code proves it
@@ -60,12 +60,14 @@ Where a cell is F, name the test or the missing test. Missing means a gap (secti
 | Logs hold no content | closed logger, no free-text field | `_shared/log/log.ts:141-198`; `canary.test.ts` | [V] |
 | Support never needs content | summary function with canaries | FR-BKO-02 | not built |
 | Support mail carries no content | fixed subject, empty body | FR-SUP-03, FR-PRV-12 (`packages/brand/index.ts:61` builds a bare `mailto:`) | true today [V], pin test not built |
-| Debug reads no content | no L4 grant to any API role; Postgres `DETAIL` not exported | `explicit_grants.sql:49-56`; chapter 10 OBS-R02 | grants [V]; log verbosity [U] |
+| Debug reads no content | no L4 grant to any API role; Postgres `DETAIL` not exported | `supabase/migrations/20261023060000_explicit_grants.sql:49-56`; chapter 10 OBS-R02 | grants [V]; log verbosity [U] |
 | Marketing uses no app data | no ad SDK, no join between waitlist and accounts | LEGAL-REQ-016 denylist test | card row; denylist test [U] |
 | Legal requests read nothing | no staff tool shows L4; no disclosure path | LEGAL-REQ-025, -057 | script not built |
 | Letter content never to a model | no cloud AI path in 1.0.x | build flags; DC 4.8 "v1.1" | [V DC]; code scan for AI endpoints [U] |
 
 ## 4. Retention and deletion schedule
+
+Periods marked "proposed" (unconfirmed sign-up 7 days, crash events 90 days, analytics 12 months, support mail 2 years) are proposals, not law.
 
 One schedule. Periods are the ones in force or proposed in `data-policy.md` section 6 and DATA-REQ-060 to -066; where a period is only proposed it says so. "Job" is what removes the record; a console setting is recorded in a runbook, never done from memory (DATA-REQ-006).
 
@@ -116,7 +118,7 @@ Rules that never bend:
 2. A held scope is skipped by purge and by account deletion until the hold is released (`legal_holds`, `purge_due`; DATA-REQ-035) [V `20261108020000:130-133, 160`].
 3. No request deletes, edits or hides another author's letter (DSR-R04).
 4. Deleting from the Supabase dashboard is forbidden: it cascades letters and skips every step (DB-17).
-5. A restore from the nightly dump replays the ledger before any phone syncs (FR-PRV-09) [card row; ledger bucket exists, 60 days]. The honest limit while production is on Free: up to 24 hours of deletions can return after the project is lost; said in the incident notice, not the policy (PQ-10, CL-081).
+5. A restore from the nightly dump replays the ledger before any phone syncs (FR-PRV-09) [card row; ledger bucket exists, 60 days]. The honest limit while production is on Free: up to 24 hours of deletions can return after the project is lost; where it is said is counsel's call; default the incident notice, not the policy (PQ-10, CL-081).
 6. Under-18 or under-13 discovery: the underage runbook applies and may skip the 30-day grace on counsel's word (DATA-REQ-027, chapter 08 Exceptions) [V `docs/ops/runbooks/underage-account.md` exists].
 
 Not live yet [V chapter 08 DSR-R06, `APPLY.md:48`]: the worker is built and tested; deploying it and its cron to a live project is a founder step (D-041). Until then nothing executes account deletion after day 30 on a live project, and no policy sentence may say it does.
@@ -159,10 +161,10 @@ Not live yet [V chapter 08 DSR-R06, `APPLY.md:48`]: the worker is built and test
 | Vercel | website | visit logs; waitlist address | app data | 1 hour to 1 day [V/U] | `reliability.md:34` |
 | PostHog (not in any 1.0.x build) | opt-in analytics | M2 through the catalogue, random id | M3 to M11 | 12 months; `analytics-forget` | `posthog.ts`; `data-policy.md` 4.5 |
 | GitHub | code, CI, the age-encrypted nightly dump | the encrypted dump; fixtures | an unencrypted production row; a secret | dump 7 days | FR-PRV-08; counsel PQ-3 |
-| AI provider (none in 1.0.x) | optional cloud assistance, v1.1 or later | minimum content for one task, with the AI-processing consent, identifiers stripped | anything under C10 not met; training; retention | zero retention | LEGAL-REQ-020; DC section 2 |
+| AI provider (none in 1.0.x) | optional cloud assistance, v1.1 or later; **FORBIDDEN until X2** (security read and counsel read before a voice, picture or letter text leaves the phone, then a founder decision) | nothing today. After X2: minimum content for one task, with the AI-processing consent, identifiers stripped | a child's voice, picture or letter text before X2; anything under C10 not met; training; retention | zero retention | LEGAL-REQ-020; DC section 2; C10 |
 | Support mailbox (the founder's mail) | support | what the person writes | a request for letter text, a child name, ID, birth date or payment detail | 2 years after last message (proposed) | FR-SUP-09; `data-requests-by-email.md` |
 
-The AI-provider row is a ceiling for a decision not yet taken. Today no letter text, recording, photo or child name goes to any model provider.
+The AI-provider row is a ceiling for a founder decision not yet taken, and is forbidden until X2. Today no letter text, recording, photo or child name goes to any model provider.
 
 ## 9. Operating rules for engineers
 
@@ -202,7 +204,7 @@ The AI-provider row is a ceiling for a decision not yet taken. Today no letter t
 | Q1 | counsel | May a parent's own audit and deletion rows be part of an access answer (PQ-5)? | Yes, in `account.json` |
 | Q2 | counsel, founder | What happens to server rows when sensitive-data consent is withdrawn (PQ-1)? | Writes stop at once; nothing is deleted by withdrawal alone; the person can delete |
 | Q3 | counsel | Does an encrypted nightly dump at GitHub make GitHub a processor (PQ-3)? | Name it in the providers page anyway |
-| Q4 | founder | Pro plan (7-day backup, 7-day logs) before the first store build? | Decide with Q1 of `05`; until then Free and the 24-hour limit in the incident notice (PQ-10) |
+| Q4 | founder | Pro plan (7-day backup, 7-day logs) before the first store build? | No change until the founder decides; decide with Q1 of `05` |
 | Q5 | CMO, counsel | May app users ever get marketing email? | No. Transactional only; waitlist list kept apart |
 | Q6 | CLO | Who writes the legal-request intake wording and the appeal path (no repo text says how an appeal is handled)? | `legal`; engineering supplies the facts in section 7 |
 | Q7 | CDO | Which period for inactive accounts (OQ-11)? | None in v1 (a keepsake is opened years later) |
@@ -210,4 +212,4 @@ The AI-provider row is a ceiling for a decision not yet taken. Today no letter t
 
 ## 13. How I checked this file
 
-Cites sampled: 24 (read this session). Held: 22. Two did not hold as written in their source: the 7-day Pro backup sentence against production (C06-1) and the `SCPRG` guard that chapter 08 names (C06-5). Sampled: `20261108020000:128-218`; `20261004200000:363-400`; `20261016001000:133-148`; `explicit_grants.sql:49-56`; `posthog.ts:163-171`; `log.ts:67-73, 141-198`; `runbook.ts:1-29`; `APPLY.md:48`; `privacy-policy.md:72, 82-84`; `data-policy.md:147-160, 175-232`; `DELETION_AND_EXPORT_SPEC.md` DATA-REQ-035, -050 to -056, 2.6.3; `ENGINEERING_REQUIREMENTS.md:168-173, 479-483`; `data-requests-by-email.md` section 0; `subprocessors.md`; DC 1, 2, 4.1 to 4.9; chapter 08 rules and matrix; chapter 10 OBS rules; FR-BKO-02, -04, -05, -16, FR-PRV-03, -05, -08, -12, -26, -31, FR-DAT-01, -05, -28, FR-REL-26 text rows. Not verified: any live vendor console; Deno and database test runs; the `preflight-production` check for FR-PRV-31; whether the underage runbook says what I summarised beyond its existence.
+Cites sampled: 24 (read this session). Held: 22. Two did not hold as written in their source: the 7-day Pro backup sentence against production (C06-1) and the `SCPRG` guard that chapter 08 names (C06-5). Sampled: `20261108020000:128-218`; `20261004200000:363-400`; `20261016001000:133-148`; `supabase/migrations/20261023060000_explicit_grants.sql:49-56`; `posthog.ts:163-171`; `log.ts:67-73, 141-198`; `runbook.ts:1-29`; `APPLY.md:48`; `privacy-policy.md:72, 82-84`; `data-policy.md:147-160, 175-232`; `DELETION_AND_EXPORT_SPEC.md` DATA-REQ-035, -050 to -056, 2.6.3; `ENGINEERING_REQUIREMENTS.md:168-173, 479-483`; `data-requests-by-email.md` section 0; `subprocessors.md`; DC 1, 2, 4.1 to 4.9; chapter 08 rules and matrix; chapter 10 OBS rules; FR-BKO-02, -04, -05, -16, FR-PRV-03, -05, -08, -12, -26, -31, FR-DAT-01, -05, -28, FR-REL-26 text rows. Not verified: any live vendor console; Deno and database test runs; the `preflight-production` check for FR-PRV-31; whether the underage runbook says what I summarised beyond its existence.
