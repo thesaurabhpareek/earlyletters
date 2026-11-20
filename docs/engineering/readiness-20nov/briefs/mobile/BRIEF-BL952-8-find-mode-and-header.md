@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:56 UTC).
-Blocked until: #894 and #895 merged (words, switch, wiring); #840 merged (this slice edits `app/(tabs)/book.tsx` and registers keys in `packages/content/src/features/index.ts`, which the photo stack owns until then: Karma's ruling); #879 merged for R24 (the guard is #895's). Not opened yet: the PR does not exist [V: no open PR titled "BL-952 (8/8)"]. Conflict C-09 (PR #923): "Months" appears twice in one bar once Find and "Go to a month" land; product and content rule the word.
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549`, 20 Nov 19:04 UTC).
+Blocked until: #894 and #895 merged (words, switch, wiring); #840 merged (this slice edits `app/(tabs)/book.tsx` and registers keys in `packages/content/src/features/index.ts`, which the photo stack owns until then: Karma's ruling); #879 merged for R24 (the guard is #895's). Not opened yet: the PR does not exist [V: no open PR titled "BL-952 (8/8)"]. Karma: please accept the 8a/8b split (the plan counts one PR 8 of 8). Conflict C-09 (PR #923): "Months" appears twice in one bar once Find and "Go to a month" land; product and content rule the word.
 
 ```
-BRIEF BL-952-8 (Find mode and header)             Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:56 UTC
+BRIEF BL-952-8 (Find mode and header)             Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When Find is on, one "Find" action sits on the Book header; typing three or more characters shows the first row within 300 ms p95, a failed search says so once with Try again,
@@ -52,7 +52,7 @@ Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wa
 
 10. PR BREAKDOWN (Karma's design: PR 8 of 8; this brief proposes two to stay under 400 lines)
     PR 8a: Find mode, header action, failed and getting-ready lines, isolates | about 350 lines, 9 files | base develop after #895 | flag-off proof: `EXPO_PUBLIC_BOOK_SEARCH` unset draws no action
-    PR 8b: registration line, `[NS-02-R29]` fixtures test, device row text, `content` coordination for R39 | about 200 lines, 5 files | base 8a
+    PR 8b: registration line, `[NS-02-R29]` fixtures test, device row text for `qa` (that file is `qa`'s: hand the text over, do not edit it), `content` coordination for R39 | about 200 lines, 5 files | base 8a
 
 11. LENSES: A principal-architect, B compliance-engineer (plan 2.2). `design-systems` reads the screen (it owns `components/ui`).
 

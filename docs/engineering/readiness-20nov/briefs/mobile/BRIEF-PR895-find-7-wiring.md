@@ -1,8 +1,8 @@
-Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `92e37929`, 20 Nov 19:53 UTC).
+Re-open every file:line before relying on it: several cites in the designs went stale on 20 Nov (checked here at develop `16e61549` and head `92e37929`, 20 Nov 19:04 UTC).
 Blocked until: #894 merged (this PR's base is `feat/mobile-bl-952-6-words`); for the account guard, #879 merged (BL-961 3 of 3), because `bookVisibleNow` does not exist on develop; S1-205 device row owner (`qa`, the founder's phone). Size: GitHub shows +338/-10 in 12 files; the honest merge delta is about that [V `git diff --shortstat origin/feat/mobile-bl-952-6-words origin/feat/mobile-bl-952-7-wiring`]. The boot-wiring line in `app/_layout.tsx` is in this PR by Karma's ruling (a test pins it); the `mobile` charter normally forbids it.
 
 ```
-BRIEF PR-895 (BL-952 slice 7 of 8)                Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:53 UTC
+BRIEF PR-895 (BL-952 slice 7 of 8)                Filled by: mobile RD-H1 for Karma, 20 Nov 2026 19:04 UTC
 Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wave: 1
 
 1. GOAL: When a letter changes, is hidden, restored, purged or arrives by sync, the Find index changes in the same transaction; with Find off the index and its view are dropped;
@@ -24,7 +24,7 @@ Agent: mobile   Lane: Pack 2 (Find and search)   Build: 13 dark, 14 on (Q2)   Wa
    no reconcile on book hide; Find-off path keeping the view; `markWordsReviewed` without the hook. Add (catalogue C): R16a reindex after commit outside the transaction; R18 `DELETE FROM` instead of `DROP`.
 
 3. FILES  Touch: lib/db/repos/{children,entries,wipe}.ts (Find calls only), lib/sync/engine.ts (the reconcile call only), lib/store.ts (Find functions and the erase line only),
-   lib/find/sources.ts, app/_layout.tsx (the `startFindCatchUp` line and import only), lib/README.md, docs/qa/DEVICE_TEST_PLAN.md (row S1-205 only), test/find-fixture.ts, test/find-wiring.test.ts.
+   lib/find/sources.ts, app/_layout.tsx (the `startFindCatchUp` line and import only), lib/README.md, docs/qa/DEVICE_TEST_PLAN.md (row S1-205 only; the file is `qa`'s: the row is #798's own and #895 already carries it; Karma accepts that, or `qa` takes the row text), test/find-fixture.ts, test/find-wiring.test.ts.
    Never: any other store.ts function; `_layout.tsx` beyond the one line; lib/reminders/**; photos functions in store.ts.
    Shared file rule: `store.ts` is also edited by #835, #839, #879; `_layout.tsx` also by #871 (mount and import only): whichever lands second merges develop.
 
