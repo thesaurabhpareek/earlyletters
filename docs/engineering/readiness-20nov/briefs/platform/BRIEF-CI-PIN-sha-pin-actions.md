@@ -40,9 +40,9 @@ Agent: ops   Lane: Pack 10   Build: any   Wave: 1 (small, no dependency)
 
 10. PR BREAKDOWN: PR 1 | ~110 lines (test 60, patch 50) | base develop. The test must not turn develop red before the founder applies the patch, so it is a ratchet:
     it holds an explicit list of the 17 known unpinned lines (file and line text), fails on any unpinned line not on the list, and fails if a listed line is already pinned
-    (the list only shrinks). The list must NOT live only in the PR's own test file, where its author can grow it: keep it in `docs/ops/action-pins-allowlist.txt` and have the test compare it with the base branch's copy (`git show origin/<base>:<path>`), failing when any line was added. The founder's patch empties the list in the same diff. Flag-off proof: the test passes on develop as it stands.
+    (the list only shrinks). The list must NOT live only in the PR's own test file, where its author can grow it: keep it in `docs/ops/action-pins-allowlist.txt` and have the test compare it with the base branch's copy (`git show origin/<base>:<path>`), failing when any line was added. HOW the base copy exists in CI: the `unit` job checks out at default depth with no base ref, so `git show origin/<base>:...` fails there. The test reads the base copy from `origin/$GITHUB_BASE_REF` and fails (never skips) when it is absent in CI. The founder adds ONE step to `unit` (the same step serves BRIEF BL-964 and BRIEF CI-SIZEGATE), before `npm test`, on pull_request events only: `git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"`. Until he adds it, run the compare in the `seam-guard` job, which has fetch-depth 0 (ci.yml:115). The founder's patch empties the list in the same diff. Flag-off proof: the test passes on develop as it stands.
 
-11. LENSES: A security-architect, B principal-architect.
+11. LENSES: A security-architect, B principal-architect; mobile reads the test under apps/mobile/**.
 
 12. ORDER: any time; with BRIEF B13-CHECKS and CI-SECRET it is one founder sitting ("paste three patches"). Blocked by the founder for the apply.
 
