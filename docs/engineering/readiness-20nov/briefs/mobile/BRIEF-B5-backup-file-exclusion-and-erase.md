@@ -11,12 +11,13 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
    [B5-1] an existing backup file is excluded from the backup and read back at launch        mutant: skip the read-back
    [B5-2] the exclusion covers -wal, -shm and -journal and NEVER scribe.db                       mutant: exclude the whole SQLite folder (then scribe.db is lost from the backup)
    [B5-3] a file whose exclusion reads false is deleted and the store refuses to open           mutant: keep and open it
-   [B5-4] Erase everything deletes every backup-*.db file first, before any await               mutant: skip the delete (today: none)
+   [B5-4] Erase everything deletes every backup-*.db file inside `eraseDeviceFiles()` (a synchronous call, so no await can precede it)               mutant: skip the delete (today: none)
    [B5-5] sign-out closes the backup handle, then deletes the file; the book stays (D1)         mutant: delete before closing the handle; or delete the book
    [B5-6] an upload token is in the Keychain and the column holds none; Erase and sign-out remove the item   mutant: write the token back to the column
    [B5-7] the backup gate check fails `EXPO_PUBLIC_BACKUP=on` unless B5 exists, escrow keys are non-empty and the `/stop` route exists and answers 200 in its unit test   mutant: drop one of the three. STATIC only: no network call in preflight; the live 200 is an ops release step
    [B5-8] the recovery export still copies scribe.db* only (X-2 unchanged)                      mutant: widen the `DB_FILE` pattern
-   Each test arranges a real failing state first (an existing excluded=false file; a Keychain with a seeded token) and is red on develop at e95733b0 (no guard, no delete, token in the column).
+   B5-1 to B5-7 arrange a real failing state first (an existing excluded=false file; a Keychain with a seeded token) and are red on develop at e95733b0 (no guard, no delete, token in the column). B5-8 and the "never scribe.db" half of B5-2 are GUARD tests: they pass on develop (`DB_FILE` already excludes backup-*.db) and their only proof is their named mutant.
+   [B5-9] (PROPOSED) existing token rows move to the Keychain once at open, the column is nulled, a second open changes nothing   mutant: skip the null-out. Plan: `backup_meta` (an existing key/value table in local-db.ts) holds a `tokens_in_keychain` marker; one transaction per open, no schema bump (the column stays, nullable).
 
 3. FILES  Touch: apps/mobile/src/lib/backup/{local-db,runtime}.ts (token only), a new `lib/backup/files.ts` (names, exclusion, delete: imports only expo-file-system, the `ScribeFiles` module and `SQLite.defaultDatabaseDirectory`, nothing from the backup runtime), `lib/erase-everything.ts` (one call inside `eraseDeviceFiles`), the sign-out seam beside `settleReminderSession` (`lib/auth/session-provider.tsx:206`), tests under apps/mobile/test/.
    Never: `lib/resilience/recovery-export*.ts` (unchanged on purpose, B5-8 only reads it), packages/api, supabase/**, app/_layout.tsx, `scripts/preflight-*.mjs` (ops claim BL-958), docs/legal/**.
@@ -27,10 +28,10 @@ Agent: mobile   Lane: Pack 3 (Account and consent) with Pack 1 file rules   Buil
 5. CODE ENTRY POINTS (develop e95733b0)
    apps/mobile/src/lib/backup/local-db.ts:60-85       SCHEMA_V1: `backup_jobs` has `wrapped_file_key`, `upload_url`, `upload_token`
    apps/mobile/src/lib/backup/account.ts:28-32         `backupDbFileFor(profileId)` gives `backup-<uuid>.db`
-   apps/mobile/src/lib/backup/runtime.ts:423           `openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, ...)`; `backupDbs` map caches the handle (:416, `dbFor` at :420): close before delete
+   apps/mobile/src/lib/backup/runtime.ts:423           `openBackupDb(openNativeDb(backupDbFileFor(profileId)).db, ...)`; `backupDbs` map caches the handle (:416, `dbFor` at :420). NEW TASK in PR 2: `runtime.ts` has NO close or evict for that handle (the `close` of the `openNativeDb` result is dropped at :423): add `closeBackupDb(profileId)` that closes it and removes it from the map; B5-5 and Erase call it before deleting
    apps/mobile/src/lib/db/repos/open-native.ts:17      `SQLite.openDatabaseSync(name)`: default folder is `SQLite.defaultDatabaseDirectory` (`resilience/recovery-export.ts:33`)
-   apps/mobile/src/lib/packs/app-support.ts:38-39      the ONLY use of `setExcludedFromBackup` plus a read-back (`isExcludedFromBackup`); `lib/model-files.ts:43` the other
-   apps/mobile/src/lib/erase-everything.ts:57-80       `eraseDeviceFiles()`: recordings, copies, caches; NO backup file, no `backup` word in the file [V grep]
+   apps/mobile/src/lib/packs/app-support.ts:38-39      the only use of `setExcludedFromBackup` WITH a read-back (`isExcludedFromBackup`); `lib/model-files.ts:43` sets the exclusion with NO read-back
+   apps/mobile/src/lib/erase-everything.ts:57-71       `eraseDeviceFiles()` (function at :57, ends at :71): recordings, copies, caches; NO backup file, no `backup` word in the file [V grep]
    apps/mobile/src/lib/erase-everything.ts:76,79       `SIGN_IN_LEFTOVERS` and `finish()`, which removes Keychain leftovers: add the token items here
    apps/mobile/src/lib/resilience/recovery-export.logic.ts:34 `DB_FILE = /^scribe\.db(-wal|-shm|-journal)?$/i`; :38-42 `folderFor`: backup-*.db is not copied (X-2)
    apps/mobile/src/lib/supabase/secure-storage.ts:40    `secureStorage` (Keychain)
