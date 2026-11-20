@@ -4,7 +4,7 @@ Status: CURRENT, 20 Nov 2026 | Owner: `product` | Replaces: none | Load when: so
 
 Docs only. Nothing in this file is built, decided or dated. It answers the founder's ask of 20 Nov 2026: "confirm when we are ready to start development work and have all requirements and dependency mapping and project plan ready."
 
-Pinned to `develop` at `021ecdfea` (fetched 23:52 UTC). `develop` moves every few minutes today, so every count below says how it was run, and you can run it again. Where I could not check something it says NOT VERIFIED. I did not run `npm test`, a device, or any hosted service.
+Pinned to `develop` at `021ecdfea` (fetched 23:58 UTC). `develop` moves every few minutes today, so every count below says how it was run, and you can run it again. Where I could not check something it says NOT VERIFIED. I did not run `npm test`, a device, or any hosted service.
 
 ## 0. The short answer
 
@@ -206,7 +206,7 @@ The statuses in the tables use the GitHub state, not the old plan text.
 | F4 | Founder fixes the production database connection secret | - | DBDEPLOY | founder | S | - | founder act; may not be needed for Build 13 if servers stay off (answer 1 of DECISIONS-20n | founder; not done (plan 17 3a, read 20 Nov) |
 | DBDEPLOY | Re-run db-v0.1.0 deploy: dry run, then push (29 migrations) | F4 | P-7 | ops | S | - | founder approves; approve-migration | not started; conflicts with "servers off for Build 13" (see 2.6) |
 | P-7 | Record the applied migrations (.github/migrations-applied.txt) | DBDEPLOY | - | ops | S | - | - | not written; brief yes |
-| PR-830 | Develop snapshot into main (conflicts) | - | B13-CUT | founder | S | - | founder names the full sha | open, conflicts (plan 17, 20 Nov); NOT VERIFIED now |
+| PR-830 | Develop snapshot into main (conflicts) | - | B13-CUT | founder | S | - | founder names the full sha | open; conflicts per plan 17 (not re-read); compliance-fence red: no CCO approval for the head |
 | B13-CHECKS | Wire release-ios.yml checks (founder pastes the patch) | - | BL-976-WIRE, B13-CUT | ops | S | - | founder pastes workflow patch | not written; brief yes |
 | B13-CUT | Release branch and RC tag from main | PR-830, B13-CHECKS | - | ops | S | - | founder approves app-store environment | not started; brief yes |
 | CI-SET | CI briefs: SHA pins, secret scan, PR size, coverage, lint, size gate, queue (8 b | - | - | ops | M | - | founder approves dev dependencies; pastes workflows | not written; briefs yes (grouped here) |
@@ -561,7 +561,7 @@ Run by `docs/product/prd/tools/readiness-check.py`, which reads the Depends on c
 python3 -I docs/product/prd/tools/readiness-check.py docs/product/READINESS-20nov.md
 ```
 
-Result on this file: PENDING
+Result on this file: `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables
 
 What the check proves and does not prove:
 - It proves the table is internally consistent: every id in Depends on is a row, there is no cycle, and no row outside the instrumentation chain depends on an instrumentation row.
@@ -595,6 +595,8 @@ Instrumentation: the longest chain is IN-01/an to IN-06/an and IN-08/an. It has 
 7. **`design-spec-sync`.** I was asked to include it. I could not find a PR, branch, backlog row or doc by that name (searched `docs/`, `agents/`, open PR titles, and `git branch -r`). The nearest items are IA-FINAL (#1033, merged) and the design specs under `docs/design/specs/`. NOT VERIFIED. If it is a row, give me its id and I will add it.
 8. **Plan precedence.** Plan 17 line 3 and `locked-pack-plan.md` differ on which one sets engineering order (plan 23 section 5 raised this). #847 merged, so plan 17 now stands; `13-engineering-plan.md` sections 4 and 5 and plan 23 sections 2 are older and should say so.
 9. **Instrumentation changes the permissions matrix and the label.** #1054 lists seven legal-text changes, all counsel-must-confirm and all in `docs/legal`, which only the founder merges. It also asks the founder one question: photo access level (the shipped default is the system picker, no permission).
+
+10. **The compliance fence is red on the develop-into-main PR.** Every recent run of `compliance-fence` on a head equal to `develop` fails with "no cco approval for head" and lists age-gate and migration paths as needing CCO review. The pull request with `develop` as its head is #830 (inferred). Each develop push moves that head, so an approval would have to be re-given for the final head. That belongs to Karma and the CCO role, and it matters for the cut (PR-830 blocks B13-CUT).
 
 ## 3. Project plan
 
@@ -650,7 +652,7 @@ Waiting on a founder step, not on a row: BL-926 and BL-977 (G3 approval of #866'
 
 From `agents/roster.json` (`wip_limit`): mobile 3, sync 2, data-architect 2, qa 3, security-architect 1. Also content 2, privacy 2, design-systems 2, analytics 2, security 2, ops 1, legal 1. Team caps: `max_runs_per_day_total` 30, `max_parallel` 6, `max_open_agent_prs` 10.
 
-Open PRs labelled `agent:<handle>` today: (labels). That is far above every limit, so the autonomous lane could only review and fix if it were on. It is off (plan 17 Q6; `HARNESS.md`), and `AGENTS_ENABLED` is not readable from this session, so the lane state is NOT VERIFIED. In practice the PRs come from interactive sessions on the founder's account. The limits are the plan; the real cap is the founder's review time.
+Open PRs labelled `agent:<handle>` today: mobile 16, ops 10, qa 8, content 8, product 6, legal 5, design-systems 4, sync 4, security-architect 4, privacy 3, data-architect 2, regulatory-affairs 2 (81 PRs in all). That is far above every limit, so the autonomous lane could only review and fix if it were on. It is off (plan 17 Q6; `HARNESS.md`), and `AGENTS_ENABLED` is not readable from this session, so the lane state is NOT VERIFIED. In practice the PRs come from interactive sessions on the founder's account. The limits are the plan; the real cap is the founder's review time.
 
 How the slots are used in Wave 1:
 
@@ -724,7 +726,7 @@ Never before every line below is closed. The turn-on row is `IN-08/an`. In this 
 | Error messages carry no dates: `packages/core/src/age.ts:15` and `packages/core/src/child.ts:28` and `:33` throw `Invalid ISO date: ${iso}` | IN-ops-01 (`mobile`, `core`, S) | Not started. I read all three lines on `develop` at `021ecdfea`: all three still interpolate the date. See 4.4 on its overlap with BL-1011 |
 | Consent sheet words, in the Shown, Records, Never, Decline shape (PRIV-R21) | IN-K9 (privacy, content, S), IN-14/pm1 | Not started. Words are the founder's (G3) |
 | Privacy label and policy text change, subprocessor row, data-map row | IN-DS-09, IN-DS-01, IN-DS-04 (retention number equal to the policy) | Not started. `docs/legal` is the founder's merge |
-| Counsel read | G2 | No packet question exists for analytics yet in #872. Not started |
+| Counsel read | G2 | Packet 1.7.0 (#872) defers the analytics questions Q6 and Q7 to v1.1 under D-095 (`COUNSEL_PACKET.md` line 156). They need reopening for production analytics. Not started |
 | The erratum | E-INSTR-1, plus a D-### superseding D-095 and D-124 item 3 (IN-14/pm1, IN-DA-01) | Draft text is IN-201 (PM2). Founder decides |
 | The build test: today any 1.0.x profile with analytics on fails; production needs "analytics only behind consent" | IN-DS-08, IN-02/pm1, IN-04/an (validators V1 to V16) | Not started |
 | The release gate rewrite (OG-1 to OG-10) and the label-guard exception for `posthog-react-native` | IN-ops-04, IN-DS-08 | Not started. Founder applies workflow patches |
@@ -759,14 +761,14 @@ YES means I checked it and the evidence is named. NO means I checked and it is n
 | 3 | Backlog rows exist for every NS card | YES at card level, NO at P0-row level | 47 of 52 cards named by a BL row. 665 of 1,052 P0 rows have no row-level BL row: gate G0 is not met. NS-38 to NS-45 have only proposed group rows. 100 instrumentation rows and 26 first-run rows have no BL id (section 2.15 item 4) |
 | 4 | The counting tool is right | NO | `p0.py` ignores four-digit ids and reads plan 17 (section 1.5). Numbers in this file are from a patched copy |
 | 5 | ADRs filed as Proposed | YES | ADRs 0029 to 0035 on `develop` (#1029 merged), each "Status: Proposed, 20 Nov 2026" (`git show origin/develop:docs/adr/0029-...`). None is Accepted, and only the founder accepts |
-| 6 | Dependency map: no cycle, no missing blocker | YES | PENDING (section 2.13) |
+| 6 | Dependency map: no cycle, no missing blocker | YES | `rows 243, edges 205, errors 0` (exit 0). Re-run it after any edit to the tables (section 2.13) |
 | 7 | Dependency map covers every work item | NOT VERIFIED | It covers every item the backlog, the plans and the instrumentation files name. It cannot cover an item no file names. `design-spec-sync` was not found (section 2.15 item 7) |
 | 8 | Wave 1 rows ready, with briefs | NO for three rows, YES for the rest | Briefs exist for BL-966, BL-922, BL-978, PR-879, BL-957, BL-929, BL-964, T1, T3, P-4, B5 and the release steps. None for BL-963, BL-985, BL-982 (section 3.2). `ls docs/engineering/readiness-20nov/briefs/*` |
 | 9 | Wave 1 rows can be handed out by the dispatcher | YES for BL ids, NO for the rest | #912 merged; `node scripts/agents/check.mjs` says "26 agents, 592 backlog tasks ... agent team is consistent". Rows with no BL id (instrumentation, FP, several release steps) cannot be dispatched |
 | 10 | Review framework | YES in the repo, NOT VERIFIED for Karma's | Counted reviews and CR-70 are in `COORDINATION.md`; `CHECKS-AND-BALANCES.md` exists. Karma's 20 Nov execution map and review framework are a Project doc I could not open here |
-| 11 | CI green on `develop` | YES for the last completed runs; head pending | (to be filled) |
-| 12 | Tests pass | NOT VERIFIED | I ran `node scripts/agents/check.mjs` only. I did not run `npm test`, `typecheck`, `test:db` or `test:functions` |
-| 13 | Open-PR stock | (to be filled) | REST `GET /repos/.../pulls?state=open`, counted (time) UTC |
+| 11 | CI green on `develop` | YES for the last completed runs; head pending | The `CI` workflow (`ci.yml`) on `develop` is success on 32fc2f52f (23:29 UTC), f102aac39 (23:30), 55574906c (23:37) and c4ee026fe (23:42); the head 021ecdfea was pending at 23:52. Runs on commits pushed seconds apart are cancelled by the newer push, which is not red. I read workflow-run conclusions only, not the jobs inside (typecheck, test, db, iOS). One check is red: `compliance-fence` ("no cco approval for head") on the pull request whose head is `develop`, which I infer is #830 (develop into main); it sits on the Build 13 release path (section 2.2, PR-830). It is not a failure of develop's own CI. |
+| 12 | Tests pass | NOT VERIFIED for the product suites; YES for the agent scripts | `node scripts/agents/check.mjs` passes and `node --test 'scripts/agents/*.test.mjs'` passes 249 of 249 (these are the checks that parse the backlog). I did not run `npm test`, `typecheck`, `test:db` or `test:functions`: the disk had about 850 MB free |
+| 13 | Open-PR stock | 160 open (88 draft, 72 ready for review); 81 carry an `agent:` label; 5 `needs:founder`; 5 `review:changes-needed`; 144 target `develop`, 16 target `main` or a stacked branch.. Plan 23 counted 178 open at 17:08 UTC. Counted before this PR was opened | REST `GET /repos/.../pulls?state=open`, counted 23:56 UTC |
 | 14 | Instrumentation does not block Wave 1 | YES | Section 4.3 and the check in 2.13 |
 | 15 | Production analytics may turn on | NO | Ten preconditions open (section 4.2) |
 | 16 | Words approved | NO | No PROPOSED word is approved (`DECISIONS-20nov.md` section 8) |
