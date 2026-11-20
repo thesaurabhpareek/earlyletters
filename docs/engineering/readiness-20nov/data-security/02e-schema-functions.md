@@ -219,3 +219,10 @@ The 44 functions in `supabase/tests/grants.mjs:18-33` (`SERVICE_ROLE_FUNCTIONS`)
 
 - Q-e1 (CISO) Add `AUTHENTICATED_FUNCTIONS` to `grants.mjs`. Default: yes, owner `qa`, listing the 55 client RPCs and the 15 granted sync_private helpers above (not the two definer-only ones); `data-architect` supplies the list.
 - Q-e2 (CDO) `sync_push` is an invoker function and relies on direct table grants for `entries`, `held_drafts` and `child_member_prefs`. Default: keep as is; moving it to definer would widen what a bug can reach.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-e1: AGREE (CDO and CISO returns). `AUTHENTICATED_FUNCTIONS` in `supabase/tests/grants.mjs`, owner `qa`. Every new function in 02i (S6 to S8) carries its grant in `grants.mjs`, per CLAUDE.md.
+- Q-e2: AGREE. `sync_push` stays invoker.

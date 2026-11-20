@@ -367,3 +367,11 @@ Tables a family book is made of: people, books, who belongs, invitations, letter
 - Q-a1 (CDO, CISO) Keep the four inert policies? Default: keep and list them; remove only with a test that proves the deny still holds.
 - Q-a2 (CPO) Does any card need `dictionary_terms`? Default: leave it, add no writer, and carry the table as "built, unreachable" until a card names it.
 - Q-a3 (CDO, `sync`) Sweep `held_drafts_gone` after how many days? Default: no sweep until `sync` states the longest offline period a phone may have, because a phone offline longer than the sweep would not learn a draft left.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-a1: AGREE (CDO return). Keep the four inert policies and list them (01a 8.3: 14 across the pack). Add a test that the set of policies with no matching grant equals a written list, so a later grant cannot wake one silently. Gap G-8, gate G10 [E].
+- Q-a2: AGREE (CDO return). Leave `dictionary_terms` unreachable. Condition: a test that account purge and book purge cover it. Gap G-4, gate G10 [E].
+- Q-a3: tied to C5. `sync` states the longest offline period a phone may have; the `held_drafts_gone` sweep and the purged-id guard (01a G-23) both take their period from that one number. Until then no sweep. Gap G-3, gate G10 [E].

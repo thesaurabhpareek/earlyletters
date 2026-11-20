@@ -51,7 +51,7 @@ The constitution (CLAUDE.md): no entry text, transcript, audio or child name in 
 | Id | Surface | Where | What could leak | Status | Control and proof |
 |---|---|---|---|---|---|
 | B-1 | iPhone device backup | no exclusion on `scribe.db`, recordings, photos (`ScribeAudioModule.swift:94` excludes only listening copies; `packs/app-support.ts:39`, `model-files.ts:41` packs and models) | all L4 on the phone, in the person's own iCloud or computer backup | BY DESIGN | ADR 0028 D1 and NX-39 F9 choose it; Apple is the processor; the Settings words must say it (`content`) |
-| B-2 | `backup-<id>.db` in that backup | `backup/local-db.ts:60-85` | upload token, wrapped file key | GAP | G-11: not excluded from the iPhone backup, no delete on Erase; flag off |
+| B-2 | `backup-<id>.db` in that backup | `backup/local-db.ts:60-85` | upload token, wrapped file key | GAP | G-11: not excluded from the iPhone backup, no delete on Erase; flag off. RULED (B5): exclude, delete on Erase and sign-out, token to Keychain, preflight gate (01a 8.5) |
 | B-3 | iCloud Keychain | `backup/keys.ts:4-6` | book keys travel to the person's other Apple devices | BY DESIGN | synchronizable item; the server never sees the key; the wrap is escrowed separately |
 | B-4 | Supabase database backups | hosted | every table, including deleted rows until the backup ages out | BY DESIGN, partly unverified | off backups within 7 more days (`DATA_CLASSIFICATION.md` 2 Deletion); encryption at rest **Unverified** (LEGAL-REQ-022(c)); the daily `ops-ledger` copy lets a restore replay deletions (`purge_ledger`) |
 | B-5 | `ops-ledger` bucket | `purge-worker/daily.ts:6`, `20261023000000:1611` | ids of purged records; the unwrap log copy holds person, device and book ids | CONTROLLED, with an exception | service role only, 60 days, outside database backups. The escrow copy is made before pseudonymising, so ids remain up to 60 days after an account is deleted (Gap G-16) |
@@ -102,3 +102,14 @@ G-5 to G-21 are in 01a section 7. New in this file: none. The register adds evid
 - Q-b2 (CPO-privacy) Put the vendor-log gap (L-5) in the vendor table of 06 with its retention. Default: yes.
 - Q-b3 (CISO, founder) If remote push is ever decided, the first PR is a rule file (payload fields allowed: none of L3 or L4), before any entitlement. Default: no remote push in v1.0; the founder decides later.
 - Q-b4 (CCO) Confirm Supabase encryption at rest in writing before launch (LEGAL-REQ-022(c)). Default: ask the vendor; nothing here can verify it.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, cited as "CDO return").
+
+- Q-b1: RULED (B5). Both parts: exclude `backup-<id>.db` from the device backup and delete it on Erase and on sign-out of that account. Add: `upload_token` to the Keychain (this-device-only class) or stop persisting it; a test that fails if the file is created without the exclusion flag; the preflight gate of 01a 8.5 so `EXPO_PUBLIC_BACKUP` cannot go on first (C7). `mobile` builds it. [V] none of this exists today: `setExcludedFromBackup` is called for packs and models only (`packs/app-support.ts:38`, `model-files.ts:43`).
+- Q-b2: AGREE (CDO return). Vendor-log gap L-5 goes in the vendor table of 06.
+- Q-b3: AGREED (B1). "Not in 1.0", not "never"; never for security alerts. If it is ever decided, the first PR is a rule file allowing no L3 or L4 field in a payload, before any entitlement, key or table. [V] P-1 holds: the entitlement is stripped and nothing asks for a token.
+- Q-b4: AGREE (CDO return). Ask Supabase in writing for encryption at rest; [U] until the founder has the reply.
+- B-4 and B-5 (hosted backups, `ops-ledger`): the purged-id guard (G-23, 01a 8.2) is a new copy of a deleted letter's id in hashed form only; it is not a list and is never joined to a person or book (C5).
+- A1 (Supabase Pro) is the founder's. `data-policy.md:211` says Pro daily backups while production is on Free [V per the record]; nothing public about server backups until A1 closes.

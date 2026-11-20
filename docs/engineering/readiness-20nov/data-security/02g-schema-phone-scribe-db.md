@@ -256,3 +256,10 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Evidence: 
 
 - Q-g1 (CPO-privacy) Is the iOS device backup of `scribe.db` accepted for v1.0? Default: yes, as ADR 0028 D1 and `DATA_CLASSIFICATION.md` 4.5 assume, and the settings screen says so in plain words (words are `content`'s).
 - Q-g2 (CISO) SQLCipher before launch? Default: not decided here; LEGAL-REQ-022(d) stays open for the founder.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-g1: B4, COUNSEL and FOUNDER; recommend accept for 1.0. Open and `mobile`'s to answer: are the safety tiers inside `scribe.db` (and so inside the device backup)? Until answered nobody writes "stays on this phone" about them.
+- Q-g2: C8, FOUNDER confirm. Recommendation: no SQLCipher before 1.0; read back the file protection class on a real device and record it. [U] not done.

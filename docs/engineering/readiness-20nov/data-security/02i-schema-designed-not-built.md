@@ -21,7 +21,7 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Everything
 
 | Id | Object | Source | Change and PROPOSED level | Test and risk |
 |---|---|---|---|---|
-| S1 | trigger `entries_15_photo_closed` / `entries_photo_closed()` (SCPHO); drop policies `entry_photos_author_insert` and `_update` | DS 2.3, NS-01-R61 | refuse a non-null `photo_path` on insert and a change to a non-null on update; an unchanged value passes (DS CK8). Closes Gap G-9 | `photo_bucket_closed.test.mjs` (to write); about 280 lines, 5 files (DS 3.6) |
+| S1 | trigger `entries_15_photo_closed` / `entries_photo_closed()` (SCPHO); drop policies `entry_photos_author_insert` and `_update` | DS 2.3, NS-01-R61 | refuse a non-null `photo_path` on insert and a change to a non-null on update; an unchanged value passes (DS CK8). Closes Gap G-9. Timing (C4): GF, merged together with photo slices #835 to #840, founder applies; test on a database built from all files | `photo_bucket_closed.test.mjs` (to write); about 280 lines, 5 files (DS 3.6) |
 | H1 | hooks `sync_private.entry_groups_apply`, `entry_own_extra`, `public.entries_extra_content` | DS 2.3 | restate `sync_push`, `sync_pull`, `entries_family_rules()` once so later column PRs stay small | existing sync tests; question OQ-K1 |
 | S2 | `entries` and `held_drafts` `first_mark` L3, `first_label` L4 (320 code point ceiling) | DS 2.3 | author sees it on other phones through `to_jsonb(h)` | `firsts` |
 | S3 | `held_drafts.words_withheld` L4; `held_drafts_stamp()` allows `raw_transcript` null only with the flag | DS 2.3 | | to write |
@@ -30,6 +30,10 @@ Status: draft for the council, 20 Nov 2026. Author: `data-architect`. Everything
 | F28 | `20261031000000_compliance_gates.sql` (PR #424): `public.hook_before_user_created(event jsonb)`, `ops.restricted_jurisdictions` L1, `ops.compliance_check_counts` L2, `ops.geo_ip_ranges`, `ops.geo_ip_meta` (`12-first-run.md:98`), `ops.country_of`; the hook is granted to `supabase_auth_admin` only (`12-first-run.md:104`) | `12-first-run.md` 0.1, 3.3 | reads the IP in memory, stores no IP; refuses only a `scope = 'country'`, `status = 'block'` row; fails open. Timestamp sorts before `20261109000000`, so it must be re-stamped (`12-first-run.md` FS-14) | needs a hosted dashboard step to enable; sanctions fail-open is counsel's |
 | W1 | `withdraw_sensitive_data` (FP-19) | `12-first-run-5.md` FP-19 | a withdrawal argument and a deletion path for sensitive-data consent; not built | counsel and product first (CF-9) |
 | X1 | storage buckets `child-photos`, `inbox`, `avatars`, `exports` | `DATA_CLASSIFICATION.md` 4.4 | named in code, not created (Gap G-10) | per card |
+| S6 | table `public.security_events` (name PROPOSED): its own store, not a new action in `audit_events` (C3) | CDO return, C3(b); SEC-R24 | service role only, no grant to `anon` or `authenticated`; retention 12 months (D-021); no person id in clear (a keyed hash, L3 PROPOSED); `kind` a closed enum; counts only. Minimum kinds: wrong-code bursts, global invite pause tripped, step-up failures, restore requests, deletion requests refused, ceiling hit on alert mail. Gap G-24, gate GF | grant listed in `grants.mjs`; test: no role but the service function reads it. The PR names the reader and the threshold or it does not merge; recommended reader `ops` on a schedule the founder sets, founder confirms (open) |
+| S7 | one migration with writers for `export_created`, `legal_hold_placed`, `legal_hold_released`, `support_access` (allowed by the check at `20261002020000:315-320`, written by no function [V grep]). Gap G-24, gate GF | C3(a); 05 Q6 | `detail` keys on an allowlist, content-free; support and break-glass acts also write `ops.audit_log` first ("no row, no act", 03 section 9) | one allow and one deny test per writer |
+| S8 | table `SCPRG` (name PROPOSED): permanent purged-id guard, a 16-byte keyed hash (HMAC with a function secret) of a deleted letter's id and no other column; `entries_not_purged` and the book purge check consult it after `purge_ledger` (01a 8.2). Gap G-23, gate GF [E] | C5 | L2 PROPOSED; no person id, no book id, never joined, no grant. May be written now; not applied until counsel and the privacy chief approve the retention wording | test: a stale phone replays a deleted letter at day 61 and is refused (fails today) |
+| S9 | one migration: the 10 missing column comments on `insights._letters` and `_book_family` (G-2, gate G10 [E]); drop `grant insights_reader to authenticator` (`20261004300000:35-37`, G-26, gate GF [E]) | CDO return 01a Q-2; C9 | levels as `privacy` rules (`_letters` holds `entry_id`, `author_id`, `child_id`, L3) | `classification.test.mjs` widened (01a 8.4); grants test |
 
 ## 3. Phone settings keys and secure items (no table change)
 
@@ -71,3 +75,12 @@ Pictures and videos (L11 and the media folders) are in the iPhone backup by deci
 - Q-i1 (CPO, CLO) The days store and the moments index are L4 files holding a person's culture or places. Default: L4, excluded from backup, never exported, as the cards say.
 - Q-i2 (CDO) Which of L12 to L15 and S2 to S5 ship before v1.0? Default: the order in DS 3.6; no migration starts until the founder says so.
 - Q-i3 (CPO-privacy) Confirm `entry_media.kind`, `ext`, `bytes` as L2 (DS OQ-P2 default L2) rather than L1.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-i1: AGREE L4 and excluded from backup. "Never exported" needs the product owner and counsel: it is the person's own content, and an export that omits it may not answer an access request (COUNSEL, one word).
+- Q-i2: AGREE the order in DS 3.6; no migration starts until the founder says so.
+- Q-i3: AGREE L2 for `entry_media.kind`, `ext`, `bytes` (never L1; L1 is public).
+- S1 timing and S6 to S9 (section 2): see the rows added there. Nothing in section 2 is built or applied.

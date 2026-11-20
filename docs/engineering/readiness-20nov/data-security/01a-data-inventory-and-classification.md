@@ -94,6 +94,95 @@ Also worth a reader's time: no function is executable by `PUBLIC` or `anon` (0 o
 
 G-1 inventory stale (C-1). G-2 `insights._letters`, `_book_family` 10 columns without a label, test reads `public` only. G-3 `held_drafts_gone` no age sweep. G-4 `dictionary_terms` unreachable. G-5 `legal_holds` released rows never deleted. G-6 `subscription_report_rates` windows and `subscription_status` rows have no age sweep. G-7 no script proves every policy has an allow and a deny test; the access matrix and 43 other test files exist but a name match is not proof (standing duty 1: I did not close it in this pass). G-8 14 inert policies (grant missing; my first count of 13 missed one). G-9 photo bucket still writable. G-10 `child-photos` bucket absent. G-11 `backup-<id>.db` (unclassified, in the iPhone backup, not deleted by Erase; not in the recovery export). G-13 jsonb columns bounded by size only. G-15 direct INSERT and UPDATE on `entries` and `held_drafts`. G-16 unwrap log 24 against 12 months and the 60-day ops-ledger copy. G-17 no `AUTHENTICATED_FUNCTIONS` list. G-18 four functions named in no test. G-19 mirror columns on phone `children`. G-20 no age sweep on phone `rejected_writes`. G-21 15 settings keys unlisted.
 
+## 8. Council amendments (20 Nov 2026)
+
+Source of every change below: the executive alignment record `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`; ids A1 to F3) and the CDO and CISO return (`cdo-ciso.md`, a working file of the run, not in the repo; cited as "CDO return" with its item id). Where a change comes from the CDO return only, the line says so. Gates are the record's: G13 before the Build 13 cut, GF before the first family outside the founder's signs in, G10 before 1.0. A gate marked [E] is mine, because the record names none for that item; Karma or the founder may move it. Nothing here is applied to any hosted project.
+
+### 8.1 Numbered gaps with owner and gate
+
+Existing ids keep their numbers (G-1 to G-21 above; G-12 and G-14 are not used in 01a to 02i). G-22 is taken by 02d (`audio_blobs.wrapped_file_key` is selectable by the app role). New ids here start at G-23.
+
+| Gap | What | Owner | Gate | Decision cite |
+|---|---|---|---|---|
+| G-2 | 10 columns in `insights._letters` and `_book_family` have no label; `classification.test.mjs:14` reads schema `public` only. Fix: a new migration with the 10 comments (data-architect) and a test over `ops`, `insights`, `sync_private` and the phone's `migrations.ts` comments (`qa`). Detail in 8.4 | data-architect (migration), `qa` (test) | G10 [E] | CDO return, 01a Q-2 (AGREE) |
+| G-3 | `held_drafts_gone` has no age sweep. Period comes from the same number as G-23: the longest offline period a phone may have, stated by `sync` | data-architect with `sync` | G10 [E]; no sweep until `sync` answers | CDO return, 02a Q-a3 |
+| G-4 | `dictionary_terms` is unreachable (no grant, no writer). Leave it. Condition: a test shows account purge and book purge cover it | data-architect | G10 [E] | CDO return, 02a Q-a2 |
+| G-5 | `legal_holds` released rows are never deleted. Default stands (keep) until counsel names a period | `privacy`, counsel | COUNSEL, no gate | B7; CDO return, 02b Q-b1 |
+| G-6 | `subscription_report_rates` windows have no age sweep (`subscription_status` rows go with the account) | data-architect | G10 [E] | CDO return, 02c Q-c1, Q-c2 |
+| G-8 | 14 inert policies (see 8.3) | data-architect | G10 [E] | CDO return, 02a Q-a1 |
+| G-9 | `entry_photos_author_insert` and `_update` live; closed by S1 (02i). Applying S1 is the founder's step | data-architect (migration), founder (apply) | GF, and merged together with photo slices #835 to #840 | C4, B3 |
+| G-11 | `backup-<profile id>.db`: classify (L4, PROPOSED, `privacy` rules), exclude from device backup, delete on Erase and on sign-out of that account, `upload_token` to the Keychain, test red without each, preflight gate (8.5) | `mobile` (code), `sync` (token), data-architect (class) | before `EXPO_PUBLIC_BACKUP` goes on, and GF at the latest [E for GF] | B5, C7 |
+| G-13 | `audit_events.detail`, `deletion_requests.receipt`, `policy_acceptances.context` bounded by size only. Key allowlist first (`privacy` lists the keys), then the migration | `privacy` (keys), data-architect (migration) | before audit rows enter any export; GF [E] | B8 |
+| G-23 | No permanent purged-id guard after day 60 (`SCPRG` absent: `grep` of `supabase/` finds none). From day 61 a stale phone can re-insert a deleted letter, because `entries_not_purged` reads `purge_ledger` only (`20261004100000:116-126`) and housekeeping deletes ledger rows older than 60 days (`20261108020000:217`). Design in 8.2 | data-architect | migration written now, not applied until counsel and the privacy chief approve the retention wording; GF [E] | C5 |
+| G-24 | `security_events` store absent; four audit actions are allowed by the check at `20261002020000:315-320` but no function writes them. Both are in 02i (S6, S7) | data-architect | GF | C3 |
+| G-25 | The data map is hand-kept; `docs/legal/DATA_CLASSIFICATION.md` is a year behind (G-1). Generate, do not revive PR #37 (8.6) | data-architect (generator), `privacy` (levels) | G10 [E] | CDO return, 01a Q-1 |
+| G-26 | `insights_reader` is granted to `authenticator` (`20261004300000:35-37`); only `service_role` runs the weekly report. Drop it in the next migration pack (02i S9) | data-architect | GF [E] | C9 |
+
+The two sweeps (G-3, G-5) are not built; each has its default in the table.
+
+### 8.2 G-23: the purged-id guard (C5)
+
+Direction is ruled (C5): a keyed hash of the id, never a raw list. Counsel and the privacy chief read the retention wording before any apply; engineering may write the migration now.
+
+- Why a hash: a permanent table of deleted letter ids outlives the account. It is a retention promise that D-111 (erasure records kept until the book or account is deleted) does not cover, and device ids are UUIDv7, so a raw id carries a creation time [CDO return, C5; the UUIDv7 point is [E], not re-read in code here].
+- Shape (PROPOSED, in 02i S8): one table, one column of 16 bytes (HMAC of the id under a function secret, held by the purge function only), no person id, no book id, never joined to another table, no role holds a grant. `entries_not_purged` and the book purge check consult it as well as `purge_ledger`.
+- Promise the policy may say after counsel reads it: "we keep an unreadable fingerprint of a deleted letter's id so it cannot come back". Words are PROPOSED; `content` and counsel own them.
+- Test (to write): a stale phone replays a deleted letter at day 61 and is refused. It fails on develop today.
+- Open for counsel: the retention period of the guard itself. Default: until the book or account is deleted, which is D-111's own clock.
+
+### 8.3 The 14 inert policies (G-8)
+
+A policy is inert when the role it names holds no grant on the table. The count is 14 across the pack (02a 4, 02b 2, 02c 3, 02d 5). They are defence in depth and harmless today. Risk: a later grant wakes one silently. Control (CDO return, 02a Q-a1; test owner `qa`, list owner data-architect): a test that the set of policies with no matching grant equals the written list, so a new grant fails until the list is changed on purpose. Gate G10 [E].
+
+| File | Inert policies |
+|---|---|
+| 02a | `child_invites_select`, `entry_versions_author_select`, `children_member_update`, `dictionary_terms_owner` |
+| 02b | `audit_events_own`, `policy_documents_read` |
+| 02c | `sync_op_receipts_own_insert`, `sync_op_receipts_own_delete`, `sync_rate_windows_own` |
+| 02d | `backup_devices_own`, `backup_usage_own`, `escrow_unwraps_own`, `restore_requests_own`, `restore_approvals_own` |
+
+### 8.4 The classification test gap (G-2)
+
+`supabase/tests/classification.test.mjs:8-14` selects `n.nspname = 'public'` only [V, read this session]. Extend it to `ops`, `insights`, `sync_private` and to the comments in `apps/mobile/src/lib/db/migrations.ts`. Order: add the 10 comments in a new migration first (02i S9), then widen the test, or it fails on the 10. A test change belongs to `qa`; the migration needs the founder's `approve-migration`. Each new column keeps carrying its level in the same PR (DATA-REQ-001, DATA-REQ-002).
+
+### 8.5 Gate for the backup flag (B5, C7)
+
+`EXPO_PUBLIC_BACKUP` is "off" in all four `eas.json` profiles and `BUNDLED_ESCROW_KEYS` is empty (`apps/mobile/src/lib/backup/escrow-keys.ts:12-14`) [V, CDO return]. B5 asks for a preflight check that fails any build with the flag on unless: B5 is done, the escrow key lists are non-empty, and the stop page answers 200. 01a records it as the exit condition of G-11; the check itself is `mobile` and `qa` work.
+
+### 8.6 The data-map generator replaces PR #37 (G-25)
+
+PR #37 is open (`docs(legal): privacy data map, claims register and checker`, +2349 -7 on the read of 20 Nov; the CDO skill's 1,568 lines is the map file alone [U]). It predates D-100. Do not revive it whole (CDO return, 01a Q-1). Plan: a generator reads the Postgres catalog through the test harness and the phone's `migrations.ts`, writes the map, and a checker fails on any column without a map row; `privacy` owns the levels and the founder merges anything under `docs/legal`. `BACKLOG.md` lists BL-016 under "Superseded or deferred" (line 51) and as an open card (line 193); that disagreement is Karma's to settle [V grep]. Until the generator exists, this pack is the schema column of the map.
+
+### 8.7 Map from `DATA_CLASSIFICATION.md` section numbers to this pack
+
+This closes the reviewer note that the pack's ids did not line up with the legal document. Level names L1 to L4 are the same in both. Read left to right.
+
+| `DATA_CLASSIFICATION.md` | Subject | Where it is in this pack |
+|---|---|---|
+| 0 | How it is enforced | 01a section 2 (reproduce), 8.4, G-2, G-7, G-25 |
+| 1, 1.1 | Levels, rules for choosing | 01a section 1; 02 legend (a gap is a Conflict line, never a new level) |
+| 2 | Handling rules per level | 01a section 3 (Forbidden column), C-4 |
+| 3 | Child scope | 01a section 3 row "Child identity"; 01b R-1 |
+| 4.1.1 | Schema `public` | 02a, 02b, 02c, 02d; C-1, C-2, G-1 |
+| 4.1.2 | Schema `ops` | 02d |
+| 4.1.3, 4.9 | `insights` views and aggregates | 02c; 01b A-5, A-6; G-2 |
+| 4.2 | `auth` schema | 01a section 3 row "Person identity"; 01b L-5 |
+| 4.3 | Planned server tables | 02i section 2 |
+| 4.3.1 | Recording backup tables | 02d; C-5 |
+| 4.4 | Storage buckets | 02f; 02i X1; C-3, G-9, G-10 |
+| 4.5 | Device SQLite | 02g; 02h sections 1 and 3; C-1, G-19, G-21 |
+| 4.6 | Device files and secure storage | 02h sections 2, 4, 5; G-11 |
+| 4.7 | Analytics properties | 01a section 3 row "Analytics events"; 01b A-1, A-2 |
+| 4.8 | Logs and processors | 01a section 2 (Vendors); 01b sections 1 and 7 (L-1 to L-6, M-4); `privacy` 06 |
+| 5 | Changes made 2 Oct | history; no row |
+| 6 | Open issues for owners | 01a Q-4; 01b A-2, P-2, R-1 (issues 2, 3, 4) |
+
+### 8.8 Corrections
+
+- Migration count. The CDO skill (`.claude/skills/early-letters-cdo/SKILL.md:115, 175`) says `develop` has 26 migration files. Counted on `origin/develop` this session: 31 under `supabase/migrations`; `.github/migrations-applied.txt` records 2; so 29 are not recorded as applied [V]. This pack already says 31. The skill is not mine to edit; Karma routes the fix.
+- B4 (device backup of `scribe.db`, recordings, pictures): COUNSEL and FOUNDER. Recommendation: accept for 1.0. One part is open and is `mobile`'s to answer: whether the safety tiers sit inside `scribe.db`, and so inside the backup, before any screen says they "stay on this phone" (CDO return, B4).
+- Q-5 below: plan state is labelled L3 as built; the conflict with ADR 0013 and the legal document goes to `privacy` and counsel (C-2).
+
 ## Questions for the council
 
 - Q-1 (CDO, CPO-privacy) Make `docs/legal/data-map.yaml` (BL-016) generated from the catalog query used here, so the inventory cannot go stale again. Default: yes; `data-architect` writes the generator, `privacy` owns the levels.
@@ -101,3 +190,11 @@ G-1 inventory stale (C-1). G-2 `insights._letters`, `_book_family` 10 columns wi
 - Q-3 (founder) Applying the 29 unapplied migrations (finding 1) is the founder's step. Default: no action by agents; this pack only states the gap.
 - Q-4 (counsel and product) Is the iPhone device backup of `scribe.db`, recordings and pictures acceptable for v1.0? This is theirs to answer; I set no default. The build today follows ADR 0028 D1 and `DATA_CLASSIFICATION.md` 4.5, which assume it. Any Settings words about it are `content`'s and PROPOSED.
 - Q-5 (CLO) Is a server-side plan state (finding 5) in scope of the privacy policy section on purchases? Default: yes as labelled L3; counsel confirms.
+
+### Council answers (20 Nov 2026)
+
+- Q-1: AGREE, generated; replaces PR #37 (8.6, G-25).
+- Q-2: AGREE (8.4, G-2).
+- Q-3: A2 is RULED with conditions: name the target project, staging first, dump before applying, record the apply in the same PR as the `migrations-applied.txt` change (D-041). The act is the founder's.
+- Q-4: B4, COUNSEL and FOUNDER (8.8).
+- Q-5: AGREE L3 as built; conflict C-2 to `privacy` and counsel.

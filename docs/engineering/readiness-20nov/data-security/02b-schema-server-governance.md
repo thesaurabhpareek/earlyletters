@@ -264,3 +264,12 @@ Tables that record what happened, delete what must go, hold what must stay, and 
 - Q-b1 (CLO) Retention for released legal holds. Default: keep until counsel names a period; no code change.
 - Q-b2 (CPO, CPO-privacy) Should a person see their own audit rows? Default: no; correct `DATA_CLASSIFICATION.md` section 2 (founder merge) rather than add a grant.
 - Q-b3 (CDO) Add a key allowlist check to the three jsonb columns? Default: yes, as a new migration with a test, after `privacy` lists the keys. Not started.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, head `e7d9bf15`) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-b1: COUNSEL (B7). Default stands: released holds are kept until counsel names a period (G-5).
+- Q-b2: AGREED, no audit screen (B8). Correct the sentence in `DATA_CLASSIFICATION.md` section 2 (founder merge); add no grant. Rows enter the export only after the `detail` key allowlist ships and only the requester's own rows (a removal row names another person).
+- Q-b3: AGREE (CDO), after `privacy` lists the keys and before any audit row is exported (G-13).
+- C3 adds writers: the check at `20261002020000:315-320` allows `export_created`, `legal_hold_placed`, `legal_hold_released`, `support_access`, and the only other migration mentions are restatements of the same list (`20261003000000:309`, `20261015020000:89`); no function writes them [V grep]. One migration writes them (02i S7).
