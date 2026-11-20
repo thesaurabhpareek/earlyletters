@@ -1,0 +1,53 @@
+# Security scans, first slice of BL-117. NON-BLOCKING by design: this workflow is not in the `required` job's
+# needs list and is not a required status check, and each job sets continue-on-error, so a red result never stops a merge.
+# Rollback: delete this file (nothing else refers to it). To make it blocking later, add its job names to branch
+# protection only after two weeks of green runs and a founder decision (.github/README.md, Security scan).
+# No secrets, no write permissions, no third-party actions: only the two pinned first-party actions below.
+name: Security scan
+
+on:
+  pull_request:
+  push:
+    branches: [develop, main]
+  schedule:
+    - cron: '17 5 * * 1'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  denylist:
+    name: sdk and import denylist (advisory)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Guard tests
+        run: node --test scripts/guards/sdk-denylist.test.mjs
+      - name: Denylist scan
+        run: node scripts/guards/sdk-denylist.mjs
+
+  audit:
+    name: npm audit, production dependencies (advisory)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+      - name: Audit the lockfile (no install)
+        run: npm audit --package-lock-only --omit=dev --audit-level=high

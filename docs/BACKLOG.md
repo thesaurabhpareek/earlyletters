@@ -158,7 +158,7 @@ Exact steps, time, cost and deadlines are in `docs/FOUNDER_TASKS.md`. This secti
 - Status: done (vitest in `apps/mobile` runs inside root `npm test`, about 1,150 tests across workspaces; integration wave a66376a). Lint rules (banned imports, no `console`) move to BL-117.
 
 #### BL-117 CI security and platform scans [High]
-- Status: ready (BL-004 is done). Mode: agent. Owner: security engineer.
+- Status: in progress (first slice: advisory `security-scan.yml` with the SDK and import denylist and `npm audit`; the rest of the scope below is open). Was: ready (BL-004 is done). Mode: agent. Owner: security engineer.
 - Scope: SDK and import denylist (ads, attribution, tracking, AdSupport, AppTrackingTransparency, HealthKit, face and diarization libraries, speech synthesis and voice cloning for CVL-04); manifest lint; gitleaks; Semgrep and SQL lint; OSV and npm audit; a release-bundle grep that fails on any dev bypass (from BL-216: `onContinueDev`, `devShortcutsAllowed` must be false in preview and production); placeholder scan (`TODO` publisher values fail release builds only); lint rules from BL-121.
 
 #### BL-122 Agent fence and review rule
