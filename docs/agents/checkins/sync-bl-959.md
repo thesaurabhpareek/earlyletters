@@ -1,0 +1,1 @@
+23:51 (20 Nov) sync | BL-959 PR 1 of 3: ADR 0028 amendment A5 (option b pull clause, CK10, SCSEL, next-free minor, revoke-only view replace) | next: PR 2 [NS-09-R14] retitle, PR 3 [NS-10-R4a] [NS-10-R10] | blocked/needs: owner review lens (data-steward, security-architect); K2 ruling for R14 exception cells
