@@ -39,6 +39,7 @@ Agent: ops   Lane: Pack 10 (harness)   Build: none   Wave: 1
 7. LIBRARIES: none.
 8. BUDGETS: none new (same number of API calls).
 
+9a. REVIEW B FIXES: (item 2) a macOS job is also `skipped` when the `changes` job FAILS, so "skipped is fine" would pass a native PR on broken CI. Accept `skipped` for `compile` only when the queue itself computes that ios-compile's filter says not native (the workflow's path list, ios-compile.yml:306-311) AND `native changes` concluded success; otherwise skipped stays red. Add `[HG-MQ] a skipped compile with a failed `changes` job is still WATCH-RED`. (item 1) removing `eas.json` from NATIVE_PATHS is a LOOSENING of the merge gate (an eas.json PR would no longer need the macOS checks): state it so in the README of the patch and leave it to Karma's ruling; do not bundle it with the bug fix.
 9. ACCEPTANCE: the three tests green on the patched tree and red on develop's; the full existing test file green; a table in the README of which verdict each of five sample PRs gets before and after (eas.json only; apps/mobile/package.json only; a native module; a docs PR; a stack slice).
    Done also means the patch is shown to turn one verdict only where intended (diff the `--json` output on the 20 PRs open now: only rows touching those paths change).
 

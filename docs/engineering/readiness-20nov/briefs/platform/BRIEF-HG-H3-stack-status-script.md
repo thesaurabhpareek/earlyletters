@@ -34,6 +34,7 @@ Agent: ops   Lane: Pack 10 (harness)   Build: none   Wave: 1
 7. LIBRARIES: none (Node built-ins, `gh` via child_process like merge-queue.mjs).
 8. BUDGETS: one API call per open stacked PR plus one list call [E]; under 10 seconds.
 
+9a. REVIEW B FIX: `ahead_by` and `behind_by` stay [U] until one real `compare` response is read and pasted into the test fixture; until then the table prints `unknown` for them and the next-step column uses base PR state and `mergeable_state` only.
 9. ACCEPTANCE: columns: PR, base ref, base PR, base state, mergeable_state, ahead_by, behind_by, next step. A final line counts stacks and the oldest unmerged base. `--json`. Done also means the fixtures reproduce the six photo slices and the two BL-952 rows.
 
 10. PR BREAKDOWN: PR 1 | ~190 lines, 4 files | base develop | not run by anything; the founder moves it.
