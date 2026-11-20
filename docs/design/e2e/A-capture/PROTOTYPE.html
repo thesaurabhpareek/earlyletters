@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Area A. Capture: clickable prototype (PROPOSED words, fictional Asha)</title>
+<!--
+  Self-contained: no network, no framework. Token values copied from packages/design-tokens/src/tokens.ts (light, dark,
+  highContrast, space, radius, target, type sizes). Material policy from docs/design/system/BRIEF.md section 3: glass only
+  on the control layer, solid fallback under Reduce Transparency. Screen and state ids match DESIGN.md.
+  Words are intent only; WORDS.md holds the PROPOSED keys. Pictures are drawn shapes, never people.
+-->
+<style>
+:root{
+  --bg:#FBF8F3;--surface:#F5EFE7;--raised:#FFFFFF;--text:#2B2722;--muted:#6B645B;--accent:#8A5A3B;--accentSoft:#F1E6DC;
+  --onAccent:#FFFFFF;--line:#E6DED3;--focus:#2F6F8F;--recording:#B5473A;--success:#3F7A55;--caution:#94661A;
+  --controlBorder:#8A8175;--editMark:#8A5A3B;--destructive:#B5473A;--scrim:rgba(43,39,34,.32);
+  --glass:rgba(255,253,250,.58);--glassEdge:rgba(255,255,255,.75);--glassShadow:0 6px 16px rgba(43,39,34,.10);
+  --serif:'Literata','Iowan Old Style','Georgia',serif;--sans:-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif;
+}
+body{margin:0;font-family:var(--sans);background:#e9e4dc;color:#2B2722}
+.app{display:grid;grid-template-columns:250px 415px 1fr;gap:16px;padding:16px;min-height:100vh;box-sizing:border-box}
+.panel{background:#fff;border-radius:12px;padding:12px;font-size:13px;line-height:1.4;overflow:auto;max-height:calc(100vh - 32px)}
+.panel h2{font-size:13px;margin:12px 0 6px;text-transform:uppercase;letter-spacing:.06em;color:#6B645B}
+.panel button{font:inherit;cursor:pointer}
+.navlist button{display:block;width:100%;text-align:left;border:0;background:none;padding:5px 6px;border-radius:6px}
+.navlist button.on{background:#F1E6DC;font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips button{border:1px solid #8A8175;background:#fff;border-radius:999px;padding:3px 9px;font-size:12px}
+.chips button.on{background:#8A5A3B;color:#fff;border-color:#8A5A3B}
+.toggles label{display:block;margin:3px 0}
+.note{background:#F5EFE7;border-radius:8px;padding:8px;margin-top:8px;white-space:pre-wrap}
+.jsteps li{margin:3px 0}.jsteps li.on{font-weight:700}
+.stage{display:flex;justify-content:center;align-items:flex-start}
+/* Phone: 375 x 812 pt */
+.phone{width:375px;height:812px;border-radius:44px;border:10px solid #1d1b19;position:relative;overflow:hidden;background:var(--bg);color:var(--text);box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.status{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font:600 15px var(--sans);position:absolute;top:0;left:0;right:0;z-index:30}
+.scr{position:absolute;top:44px;left:0;right:0;bottom:0;display:flex;flex-direction:column}
+.scroll{flex:1;overflow-y:auto;padding:8px 20px 280px}
+.scroll.short{padding-bottom:40px}
+.pinned{position:absolute;left:12px;right:12px;bottom:92px;z-index:10;padding:12px;border-radius:28px}
+.pinned.nobar{bottom:16px}
+.tabbar{position:absolute;left:16px;right:16px;bottom:14px;height:62px;border-radius:31px;display:flex;justify-content:space-around;align-items:center;z-index:12}
+.tabbar div{font:600 11px var(--sans);text-align:center;color:var(--muted);min-width:60px}.tabbar div.on{color:var(--accent)}
+.tabbar svg{display:block;margin:0 auto 2px}
+.hdr{display:flex;justify-content:space-between;align-items:center;padding:4px 12px;min-height:52px;z-index:11}
+/* Materials */
+.glass{background:var(--glass);-webkit-backdrop-filter:blur(22px) saturate(1.7);backdrop-filter:blur(22px) saturate(1.7);border:1px solid var(--glassEdge);box-shadow:var(--glassShadow)}
+.glassClear{background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.35);color:#fff}
+.rt .glass{background:var(--raised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+.rt .glassClear{background:#2B2722;-webkit-backdrop-filter:none;backdrop-filter:none}
+.glassBtn{background:transparent;border:0;border-radius:999px;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:0 14px;font:500 16px var(--sans);color:var(--accent);cursor:pointer}
+/* Type (tokens.ts) and AX5 sizes */
+.t-promptHero{font:400 28px/36px var(--serif)} .t-prompt{font:400 24px/32px var(--serif)}
+.t-title1{font:500 28px/34px var(--serif)} .t-title2{font:500 22px/28px var(--serif)}
+.t-headline{font:600 18px/23px var(--sans)} .t-body{font:400 18px/24px var(--sans)} .t-callout{font:400 17px/22px var(--sans)}
+.t-subhead{font:400 16px/21px var(--sans)} .t-footnote{font:400 14px/19px var(--sans)}
+.t-dateline{font:500 14px/18px var(--sans);letter-spacing:.6px;text-transform:uppercase}
+.t-letter{font:400 20px/32px var(--serif)} .t-sig{font:italic 400 20px/32px var(--serif)}
+.ax5 .t-promptHero{font-size:58px;line-height:68px}.ax5 .t-prompt{font-size:55px;line-height:64px}
+.ax5 .t-title1{font-size:58px;line-height:66px}.ax5 .t-title2{font-size:56px;line-height:64px}
+.ax5 .t-headline{font-size:53px;line-height:62px;font-weight:700}.ax5 .t-body{font-size:53px;line-height:62px}
+.ax5 .t-callout{font-size:51px;line-height:60px}.ax5 .t-subhead{font-size:49px;line-height:58px}
+.ax5 .t-footnote{font-size:44px;line-height:52px}.ax5 .t-dateline{font-size:44px;line-height:52px}
+.ax5 .t-letter{font-size:60px;line-height:76px}.ax5 .t-sig{font-size:60px;line-height:76px}
+.ax5 .btn{font-size:49px;line-height:58px;font-weight:700}
+.muted{color:var(--muted)} .accent{color:var(--accent)} .caution{color:var(--caution)}
+/* Buttons */
+.btn{border:0;border-radius:999px;min-height:44px;padding:10px 18px;font:600 17px/22px var(--sans);display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-sizing:border-box;text-align:center;word-break:break-word}
+.btn.primary{background:var(--accent);color:var(--onAccent);min-height:56px}
+.btn.secondary{background:var(--raised);color:var(--text);border:1px solid var(--controlBorder)}
+.btn.capture{background:var(--accent);color:var(--onAccent);min-height:64px;flex:1}
+.btn.quiet{background:none;color:var(--accent);font-weight:500}
+.btn.dim{opacity:.38;cursor:default}
+.btn.full{width:100%}
+.row{display:flex;gap:8px}.col{display:flex;flex-direction:column;gap:6px}
+.ax5 .row.stackax{flex-direction:column}
+.center{text-align:center;align-items:center;justify-content:center}
+.card{background:var(--raised);border-radius:14px;padding:14px;box-shadow:0 2px 6px rgba(43,39,34,.06)}
+.dark .card{box-shadow:none;border:1px solid var(--line)}
+.sheetPaper{background:var(--raised);border-radius:28px 28px 14px 14px;padding:20px;box-shadow:0 6px 16px rgba(43,39,34,.10)}
+.dark .sheetPaper{box-shadow:none;border:1px solid var(--line)}
+.hctl{display:inline-flex;align-items:center;gap:6px;min-height:44px;color:var(--muted);cursor:pointer;background:none;border:0;padding:0;text-align:left}
+.hctl u{text-decoration:none;border-bottom:1px dotted var(--controlBorder)}
+.mark{border-bottom:2px dotted var(--editMark)} .struck{text-decoration:line-through;color:var(--muted)}
+.lamp{position:absolute;top:-80px;right:-120px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(233,170,90,.30),rgba(233,170,90,0) 65%);pointer-events:none}
+.dark .lamp{background:radial-gradient(circle,rgba(217,164,126,.16),rgba(217,164,126,0) 65%)}
+.pic{position:relative;border-radius:8px;overflow:hidden;background:linear-gradient(#cfe1ea,#f3dcc0);border:1px solid transparent}
+.dark .pic,.hc .pic{border-color:var(--line)}
+.pic .sun{position:absolute;width:30%;aspect-ratio:1;border-radius:50%;background:#f2b45c;top:14%;left:58%}
+.pic .hill{position:absolute;left:-10%;right:-10%;bottom:-30%;height:60%;border-radius:50%;background:#7d9a6a}
+.pic .hill2{position:absolute;left:30%;right:-40%;bottom:-38%;height:55%;border-radius:50%;background:#5f7d55}
+.aura{width:240px;height:240px;border-radius:50%;margin:0 auto;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,rgba(181,71,58,.22),rgba(181,71,58,0) 70%)}
+.disc{width:120px;height:120px;border-radius:50%;background:var(--recording);cursor:pointer}
+.disc.dimmed{opacity:.45}
+.scrimL{position:absolute;inset:0;background:var(--scrim);z-index:20}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;z-index:21;border-radius:34px;padding:18px 20px 22px;max-height:84%;overflow:auto}
+.alert{position:absolute;left:44px;right:44px;top:270px;z-index:21;border-radius:26px;padding:20px 16px 8px;text-align:center}
+.toast{position:absolute;left:16px;right:16px;bottom:150px;z-index:15;border-radius:24px;padding:10px 10px 10px 18px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.vo{display:inline-block;min-width:20px;height:20px;border-radius:10px;background:var(--focus);color:#fff;font:700 12px/20px var(--sans);text-align:center;margin-right:4px;vertical-align:middle}
+.ax5 .vo{transform:scale(1.4)}
+.field{border:1px solid var(--controlBorder);border-radius:8px;padding:12px;min-height:24px;background:var(--raised);color:var(--text)}
+.chipsP{display:flex;flex-wrap:wrap;gap:8px}
+.chipP{border:1px solid var(--controlBorder);border-radius:999px;padding:10px 14px;min-height:44px;box-sizing:border-box;display:inline-flex;align-items:center}
+.chipP.sel{background:var(--accentSoft);border:2px solid var(--accent);font-weight:600}
+.listRow{display:flex;justify-content:space-between;align-items:center;min-height:56px;border-bottom:1px solid var(--line);gap:8px;cursor:pointer}
+.hyp{border:1px dashed var(--caution);border-radius:10px;padding:8px;margin:6px 0}
+.ax5 .scroll{padding-bottom:100px}
+.ax5 .btn svg{width:36px;height:36px}
+.ax5 .hctl svg{width:32px;height:32px}
+.ax5 .pinned{position:static;margin:16px 0 0;padding:0;border:0;background:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.glassBtn.glass{background:var(--glass);border:1px solid var(--glassEdge)}
+.rt .glassBtn.glass{background:var(--raised);border:1px solid var(--line)}
+.paperRegion{background:linear-gradient(rgba(0,0,0,0),var(--bg) 18%);box-shadow:none;border:0}
+.ax5 .scroll .glass,.ax5 .pinned .glass{background:var(--raised);-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid var(--line);box-shadow:none}
+.recCaps{display:flex;align-items:center;gap:10px;justify-content:center}
+.dot{width:14px;height:14px;border-radius:7px;background:var(--recording);display:inline-block}
+.dot.hollow{background:none;border:2px solid var(--recording)}
+small.k{font-family:monospace;color:#6B645B}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="panel">
+    <strong>Area A. Capture</strong><br><span class="muted">Prototype for DESIGN.md. Words are intent (PROPOSED). Fictional family: Asha, and Kiran for two-book states.</span>
+    <h2>Display</h2>
+    <div class="toggles">
+      <label><input type="checkbox" id="tDark"> Dark</label>
+      <label><input type="checkbox" id="tAx5"> Largest text (AX5 plus Bold Text)</label>
+      <label><input type="checkbox" id="tRt"> Reduce Transparency (solid glass fallback)</label>
+      <label><input type="checkbox" id="tHc"> Increase Contrast</label>
+      <label><input type="checkbox" id="tVo"> VoiceOver order badges</label>
+    </div>
+    <h2>Journeys</h2>
+    <div class="navlist" id="jlist"></div>
+    <h2>Screens</h2>
+    <div class="navlist" id="slist"></div>
+  </div>
+  <div class="stage"><div class="phone" id="phone"></div></div>
+  <div class="panel">
+    <div id="title" style="font-weight:700;font-size:15px"></div>
+    <h2>States</h2><div class="chips" id="states"></div>
+    <div class="note" id="note"></div>
+    <div id="jpanel"></div>
+  </div>
+</div>
+<script>
+'use strict';
+/* ---------- Tokens (copied from packages/design-tokens/src/tokens.ts) ---------- */
+var THEME={
+  light:{bg:'#FBF8F3',surface:'#F5EFE7',raised:'#FFFFFF',text:'#2B2722',muted:'#6B645B',accent:'#8A5A3B',accentSoft:'#F1E6DC',onAccent:'#FFFFFF',line:'#E6DED3',focus:'#2F6F8F',recording:'#B5473A',success:'#3F7A55',caution:'#94661A',controlBorder:'#8A8175',editMark:'#8A5A3B',destructive:'#B5473A',scrim:'rgba(43,39,34,.32)',glass:'rgba(255,253,250,.58)',glassEdge:'rgba(255,255,255,.75)'},
+  dark:{bg:'#161412',surface:'#1B1917',raised:'#201D1A',text:'#F2ECE4',muted:'#B3AA9E',accent:'#D9A47E',accentSoft:'#3A2E25',onAccent:'#1E1612',line:'#33302C',focus:'#8CC4DE',recording:'#F08C7C',success:'#8CC9A0',caution:'#E3B866',controlBorder:'#857C70',editMark:'#D9A47E',destructive:'#F08C7C',scrim:'rgba(0,0,0,.55)',glass:'rgba(40,36,32,.58)',glassEdge:'rgba(255,255,255,.14)'},
+  hcLight:{muted:'#524B43',accent:'#6E4529',line:'#6B645B'},
+  hcDark:{muted:'#D6CEC3',accent:'#E8BC9A',line:'#B3AA9E'}
+};
+var S={screen:'A-S01',state:'default',dark:false,ax5:false,rt:false,hc:false,vo:false,journey:null,step:0};
+
+/* ---------- Icons (simple strokes) ---------- */
+function ic(name,size,color){size=size||20;color=color||'currentColor';var p={
+ mic:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+ pen:'<path d="M4 20l4-1 11-11-3-3L5 16z"/>',
+ image:'<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-8 8"/>',
+ chev:'<path d="M9 6l6 6-6 6"/>',chevd:'<path d="M6 9l6 6 6-6"/>',
+ cal:'<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+ play:'<path d="M7 5l12 7-12 7z"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',lock:'<rect x="6" y="11" width="12" height="9" rx="2"/><path d="M9 11V8a3 3 0 0 1 6 0v3"/>',
+ refresh:'<path d="M20 11a8 8 0 1 0-2 6M20 5v6h-6"/>',home:'<path d="M4 11l8-7 8 7v9H4z"/>',book:'<path d="M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/>',me:'<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 5-6 8-6s7 2 8 6"/>',
+ micoff:'<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 11 5M3 3l18 18"/>',warn:'<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16v1"/>'
+ }[name]||'';return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';}
+
+/* ---------- Helpers ---------- */
+function v(n){return S.vo?'<span class="vo" title="VoiceOver order">'+n+'</span>':'';}
+function T(style,text,cls,extra){return '<div class="t-'+style+' '+(cls||'')+'" '+(extra||'')+'>'+text+'</div>';}
+function B(label,o){o=o||{};var cls='btn '+(o.kind||'secondary')+(o.full?' full':'')+(o.dim?' dim':'');
+ var go=o.go?' data-go="'+o.go+'"':'';return '<button class="'+cls+'"'+go+(o.style?' style="'+o.style+'"':'')+'>'+(o.vo?v(o.vo):'')+(o.icon?ic(o.icon,20):'')+'<span>'+label+'</span></button>';}
+function pic(w,h,pan){return '<div class="pic" style="width:'+w+';height:'+h+';'+(pan?'':'')+'" role="img" aria-label="Photo with this letter"><div class="sun"></div><div class="hill"></div><div class="hill2"></div></div>';}
+function thumb(){var h=S.ax5?88:160;return '<div style="display:flex;justify-content:center">'+pic(Math.round(h*4/3)+'px',h+'px')+'</div>';}
+function tabbar(){return '<div class="tabbar glass">'+[['home','Home',1],['book','Book',0],['me','Me',0]].map(function(t){return '<div class="'+(t[2]?'on':'')+'">'+ic(t[0],22)+t[1]+'</div>';}).join('')+'</div>';}
+function closeHdr(extra,left,closeTo){return '<div class="hdr"><span>'+(left||'')+'</span><div class="glass" style="border-radius:999px;display:flex">'+(extra||'')+'<button class="glassBtn" data-go="'+(closeTo||'A-S01:default')+'">Close</button></div></div>';}
+function screen(o){ // o: hdr, body, pinned, tab, pinnedNoBar, overlay, inlinePinnedAt
+ var pinned=o.pinned?'<div class="pinned '+(o.pinnedClass||'glass')+(o.tab?'':' nobar')+'">'+o.pinned+'</div>':'';
+ var body=o.body; if(S.ax5&&o.pinned){ body=body.replace('<!--INLINE-->',pinned); pinned=''; if(body.indexOf('class="pinned')<0) body+= '<div class="pinned">'+o.pinned+'</div>'; }
+ return '<div class="scr">'+(o.lamp?'<div class="lamp"></div>':'')+(o.hdr||'')+'<div class="scroll'+(o.pinned?'':' short')+'">'+body+'</div>'+pinned+(o.toast||'')+(o.tab?tabbar():'')+(o.overlay||'')+'</div>';}
+function sheet(title,inner){return '<div class="scrimL" data-go="'+(S._back||'A-S07:default')+'"></div><div class="sheet glass" role="dialog">'+T('headline',title,'','style="text-align:center;margin-bottom:12px"')+inner+'</div>';}
+function toast(text,undo){return '<div class="toast glass" role="status"><span class="t-subhead">'+text+'</span>'+(undo?B('Undo',{kind:'quiet',go:undo}):'')+'</div>';}
+
+/* ---------- A-S01 Home ---------- */
+function dayCard(kind){
+ var quiet=kind==='quiet',two=kind==='two';
+ var name=quiet?'Memorial Day':two?'First day of spring and Mother&rsquo;s Day':'Thanksgiving';
+ var line=quiet?'The book is open if you want it.':'Anything you would like Asha to hear about today?';
+ return '<div class="card" role="group" aria-label="'+name+'. '+line+'">'+v(4)+T('callout','<b>'+name+'.</b> '+line)+
+  '<div style="display:flex;'+(S.ax5?'':'justify-content:flex-end;')+'">'+B('Not today',{kind:'quiet',go:quiet?'A-S01:dayDismissedQuiet':'A-S01:dayDismissed',full:S.ax5,vo:5})+'</div></div>';}
+function doorNote(txt){return '<div style="background:var(--surface);border-radius:12px;padding:12px;display:flex;gap:10px;align-items:flex-start" role="note"><span aria-hidden="true">'+ic('lock',18,'var(--muted)')+'</span>'+T('callout',txt)+'</div>';}
+function asksCard(){return '<div class="card col" style="gap:10px">'+v(4)+T('callout','Would you like a reminder on the days that matter to your family?')+doorNote('The days you choose stay on this phone.')+B('Choose days',{kind:'secondary',full:true,go:'A-S01:daysAskGone',vo:5})+B('Not now',{kind:'secondary',full:true,go:'A-S01:daysAskGone',vo:6})+'</div>';}
+function home(st){
+ if(st==='quietBook'||st==='daysAskGone') st='default';
+ var two=/twoBooks/.test(st)||st==='secondAccount';var nameless=st==='twoBooksNameless';
+ var child=st==='secondAccount'?'Kiran':'Asha';
+ var out='';
+ var quietDay=st==='dayTodayQuiet'||st==='dayDismissedQuiet';
+ if(two) out+='<button class="hctl t-subhead" data-go="A-S02:default" style="color:var(--text)">'+v(1)+'<span>For '+(nameless?'your child, born 2 March':child)+'</span>'+ic('chevd',16)+'</button>';
+ out+=T('dateline',v(2)+(nameless?'Your child &middot; Month 7':(child+' &middot; '+(st==='beforeYou'?'Before You':(child==='Kiran'?'31 months':'7 months')))),'muted','style="margin-top:6px"');
+ out+=T('title2',v(3)+'Good evening, <span class="muted">Mama.</span>','','style="margin-top:10px"');
+ // the one slip slot, directly above the prompt block
+ var slip='';
+ if(st==='dayToday') slip=dayCard('bright'); if(st==='dayTodayTwo') slip=dayCard('two'); if(st==='dayTodayQuiet') slip=dayCard('quiet');
+ if(st==='daysAsk') slip=asksCard();
+ if(st==='waiting'){slip='<div class="card" data-go="A-S07:default" style="cursor:pointer">'+v(4)+'<div class="row" style="align-items:center"><div style="flex:1">'+T('subhead','Recorded before the app closed.')+T('footnote','Tue 9 June &middot; 1 min','muted')+'</div>'+pic('40px','40px')+'</div>'+B('Pick it up',{kind:'quiet',go:'A-S07:default'})+'</div>';}
+ if(st==='heldMany'){slip='<div class="card">'+v(4)+T('subhead','Letters waiting to be kept.')+B('Show them',{kind:'quiet'})+'</div>';}
+ if(st==='slipPast'){slip='<div class="card">'+v(4)+T('footnote','A LETTER FROM MAY','muted t-dateline')+T('letter','"You slept on my chest the whole film."')+'<span class="t-footnote muted">B-S17 draws this slip</span></div>';}
+ if(st==='slipSeal'){slip='<div class="card">'+v(4)+T('subhead','A sealed letter opens today.')+'<span class="t-footnote muted">B-S18 draws this slip</span></div>';}
+ if(st==='slipCopy'){slip='<div class="card">'+v(4)+T('subhead','A copy of the year is ready to save.')+'<span class="t-footnote muted">C-S06 draws this slip</span></div>';}
+ if(st==='snapshot') slip='<div style="height:96px;border:1px dashed var(--controlBorder);border-radius:14px;display:flex;align-items:center;justify-content:center">'+T('footnote','Blank where a slip would show (E18)','muted')+'</div>';
+ var below=st==='daysAskBelow';
+ if(slip&&!below) out+='<div style="margin-top:18px">'+slip+'</div>';
+ if(st==='typedDay') out+=T('callout','Nursery starts','','style="margin-top:18px;border-left:3px solid var(--accent);padding-left:10px"')+T('footnote','Your words, from a day you added','muted');
+ if(st==='lowStorage') out+=T('footnote','This phone is nearly full. You can still speak a letter. (E-S17 line)','caution','style="margin-top:12px"');
+ var prompt=st==='beforeYou'?'What do you want to tell '+child+' before you meet?':'What made '+child+' laugh today?';
+ if(!quietDay) out+='<div style="margin-top:22px">'+T('promptHero',v(6)+prompt)+'<div style="margin-left:-16px;margin-top:6px">'+B('Another thought',{kind:'quiet',icon:'refresh',vo:7})+'</div></div>';
+ if(below) out+='<div style="margin-top:18px">'+asksCard().replace(/v\(4\)/,'')+'</div>';
+ out+='<!--INLINE-->';
+ var c='';
+ if(st==='plusLine'||st==='planLapse') c+=T('footnote','New letters need Plus to be kept. Speaking and reading stay open. (E-S26 words)','muted center','style="padding:0 6px 8px;text-align:center"');
+ c+='<div class="glass" style="border-radius:40px;padding:6px"><div class="row stackax">'+B('Speak',{kind:'capture',icon:'mic',go:'A-S05:recording',vo:8})+B('Type',{kind:'capture',icon:'pen',go:'A-S06:default',vo:9})+'</div></div>';
+ if(st!=='photoOff') c+=B('Start from a photo',{kind:'quiet',icon:'image',go:st==='photoMenu'?'A-S01:default':'A-S03:open',full:true,vo:10});
+ if(st==='quietKept') c+='<div class="row center" style="align-items:center;min-height:44px">'+T('subhead','A quiet day, kept.','muted')+B('Undo',{kind:'quiet',go:'A-S01:default'})+'</div>';
+ else c+=B('Not much today',{kind:'quiet',go:'A-S01:quietKept',full:true,vo:11});
+ var html=screen({body:out,pinned:c,tab:true,lamp:true,pinnedClass:'paperRegion'});
+ if(st==='photoMenu') html=html.replace(/<\/div>$/,'<div class="glass" role="menu" style="position:absolute;left:60px;right:60px;bottom:150px;border-radius:18px;padding:6px;z-index:6"><div class="listRow" role="menuitem" data-go="A-S03:open" style="padding:0 12px">'+ic('image',20)+T('body','Choose a photo')+'</div><div class="listRow" role="menuitem" data-go="A-S03:suggestions" style="padding:0 12px;border:0">'+ic('cal',20)+T('body','Pick from recent days')+'</div></div></div>');
+ return html;
+}
+/* ---------- A-S02 Whose book ---------- */
+function whose(st){var base=home('twoBooks');var nameless=st==='nameless';
+ var rows=[['Asha',"Asha's book",'Month 7',true],['Kiran',"Kiran's book",'Month 31',false]];
+ if(nameless) rows=[['a',"Your child's book",'Born 2 March &middot; Month 7',true],['b',"Your child's book",'Born 14 August 2023 &middot; Month 27',false]];
+ if(st==='many') rows.push(['Ravi',"Ravi's book",'Before You',false]);
+ var inner=rows.map(function(r,i){return '<div class="listRow" data-go="A-S01:twoBooks">'+v(i+2)+'<div style="flex:1">'+T('body',r[1])+T('footnote',r[2],'muted')+'</div>'+(r[3]?'<span class="t-headline accent" aria-label="selected">&#10003;</span>':'<span style="width:22px;height:22px;border-radius:50%;border:2px solid var(--controlBorder)"></span>')+'</div>';}).join('')+'<div class="listRow">'+T('body','Add a book','accent')+'</div>';
+ S._back='A-S01:twoBooks';return base.replace(/<\/div>$/,sheet(v(1)+'Whose book?',inner)+'</div>');}
+/* ---------- A-S03 Picker ---------- */
+function picker(st){
+
+ if(st==='suggestionsCancel'||st==='levelAbsent') return home('default');
+ if(st==='suggestionsNoPhoto') return ready('suggestionNoPhoto');
+ if(st==='suggestions'){var rows=[['Saturday','A-S16:default'],['A walk on Sunday','A-S04:suggestionLabel'],['Tuesday','A-S04:suggestionNoPhoto']];
+  return '<div class="scr" style="background:#f2f2f7;color:#000"><div class="hdr"><span class="t-body" data-go="A-S01:default" style="color:#007aff;cursor:pointer">Cancel</span><span class="t-headline">Recent days</span><span style="width:50px"></span></div><div class="scroll short">'+rows.map(function(r){return '<div class="listRow" data-go="'+r[1]+'" style="padding:0 14px;background:#fff;margin-bottom:6px;border-radius:12px"><span class="t-body">'+r[0]+'</span></div>';}).join('')+'<div class="t-footnote" style="text-align:center;margin-top:10px;color:#666">Stand-in for the phone&rsquo;s own sheet. Internal only: never a store frame (NS-49-R37). Row 1 has several photos, row 2 one, row 3 none.</div></div></div>';}
+ if(st==='cancel') return home('default').replace(/<\/div>$/,toast('(nothing shown: back on Home, nothing written)')+'</div>');
+ if(st==='appLockDrop') return '<div class="scr center" style="display:flex;background:var(--bg)">'+ic('lock',48)+T('title2','Early Letters is locked','','style="margin-top:12px"')+T('footnote','E-S22 cover. The pick was dropped; 0 files.','muted')+'</div>';
+ if(st==='iCloudOffline') return ready('iCloudOffline'); if(st==='failed') return ready('photoCouldNotOpen');
+ var grid='';for(var i=0;i<12;i++){grid+='<div data-go="A-S04:readyPhoto" style="cursor:pointer">'+pic('100%','110px')+'</div>';}
+ var dl=st==='downloading'?'<div class="sheet glass" style="bottom:300px">'+T('subhead','Downloading from iCloud','','style="text-align:center"')+'<div style="height:6px;background:var(--line);border-radius:3px;margin:12px 0"><div style="width:45%;height:6px;background:var(--focus);border-radius:3px"></div></div>'+B('Cancel',{kind:'quiet',full:true,go:'A-S01:default'})+'<div class="t-footnote muted" style="text-align:center">System progress (R17b; P-1 needed)</div></div>':'';
+ return '<div class="scr" style="background:#f2f2f7;color:#000"><div class="hdr"><span class="t-body" data-go="A-S01:default" style="color:#007aff;cursor:pointer">Cancel</span><span class="t-headline">Photos</span><span style="width:50px"></span></div><div class="scroll short"><div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:2px">'+grid+'</div><div class="t-footnote" style="text-align:center;margin-top:10px;color:#666">Apple picker (system). No permission question.</div></div>'+dl+'</div>';}
+/* ---------- A-S04 Ready ---------- */
+function ready(st){
+ var problem={primer:['mic','Your phone will ask about the microphone','Early Letters uses it to hear the letters you speak to Asha. It listens only while you record.','Continue','Type instead'],
+  denied:['micoff','The microphone is off for Early Letters','You can type this letter, or turn the microphone on in Settings.','Type instead','Open Settings'],
+  busy:['micoff','Another app is using the microphone','Close it, then try again. Or type this one.','Try again','Type instead'],
+  full:['warn','This phone is full','There is no room to record. Typing still works.','Type instead','Try again']}[st];
+ if(problem){return screen({hdr:closeHdr(),body:'<div class="col center" style="margin-top:90px;gap:16px"><div style="width:88px;height:88px;border-radius:50%;background:var(--accentSoft);display:flex;align-items:center;justify-content:center">'+ic(problem[0],40,'var(--accent)')+'</div>'+T('title2',v(1)+problem[1],'','style="text-align:center"')+T('body',v(2)+problem[2],'muted','style="text-align:center"')+'</div>',pinned:'<div class="col">'+B(problem[3],{kind:st==='primer'?'secondary':'primary',full:true,go:problem[3]==='Type instead'?'A-S06:default':'A-S05:recording',vo:3})+B(problem[4],{kind:'secondary',full:true,go:problem[4]==='Type instead'?'A-S06:default':'',vo:4})+'</div>'});}
+ var photo=/Photo|panorama|iCloud|photoCould|suggestionLabel|suggestionTaken|suggestionCleared/.test(st)||st==='ax5'||st==='vo';
+ var top='<div class="col center" style="gap:4px">'+T('headline',v(photo?6:1)+'To Asha')+'<div class="row center" style="gap:6px">'+ic('lock',14,'var(--muted)')+T('footnote','Only you, until you add it to the book.','muted')+'</div></div>';
+ if(!photo){
+  return screen({hdr:closeHdr(),body:top+T('prompt',v(2)+'What made Asha laugh today?','muted','style="text-align:center;margin-top:16px"')+'<div class="aura" style="margin-top:30px"><div class="glass" style="width:150px;height:150px;border-radius:50%;display:flex;align-items:center;justify-content:center"><div class="disc" data-go="A-S05:recording" role="button" aria-label="Start recording"></div></div></div>'+T('callout',v(3)+'Tap the red circle and talk.','muted','style="text-align:center;margin-top:10px"')+(st==='lowSpace'?T('footnote','This phone is low on space. If it fills up, the recording stops and what you said so far is kept.','caution','style="text-align:center;margin-top:8px"'):'')+(st==='suggestionNoPhoto'?T('footnote','That one had no photo in it. (one calm line; nothing else kept)','muted','style="text-align:center;margin-top:10px"'):'')+(st==='doorway'?T('footnote','Arrived from a doorway: identical to Ready; VoiceOver announces Ready.','muted','style="text-align:center;margin-top:16px"'):''),
+   pinned:'<div style="height:56px"></div>',pinnedClass:'paperRegion'});}
+ var slot;
+ if(st==='photoCouldNotOpen') slot='<div class="card center col" style="min-height:120px">'+T('subhead','That photo could not be opened.','muted')+B('Choose another',{kind:'quiet',go:'A-S03:open'})+'</div>';
+ else if(st==='iCloudOffline') slot='<div class="card center col" style="min-height:120px">'+T('subhead','This picture is in iCloud and needs a connection.','muted')+B('Choose another',{kind:'quiet',go:'A-S03:open'})+'</div>';
+ else if(st==='panorama') slot='<div style="display:flex;justify-content:center;align-items:center;height:160px">'+pic('335px','80px')+'</div>'+T('footnote','Fitted, never cropped (R42)','muted','style="text-align:center"');
+ else slot=v(1)+thumb();
+ var change=(st==='photoCouldNotOpen'||st==='iCloudOffline')?'':'<div style="display:flex;justify-content:center">'+B('Change photo',{kind:'quiet',go:'A-S03:open',vo:5})+'</div>';
+ var sug=st==='suggestionLabel'?'<div class="card" style="margin-top:10px" role="group" aria-label="From your phone: A walk on Sunday"><div class="row" style="align-items:center;gap:8px">'+ic('image',18,'var(--muted)')+T('subhead','From your phone: A walk on Sunday')+'</div><div class="row">'+B('Use this',{kind:'quiet',go:'A-S04:suggestionTaken'})+B('Clear',{kind:'quiet',go:'A-S04:suggestionCleared'})+'</div></div>':st==='suggestionTaken'?T('footnote','Kept as the words for the photo. You can change them on the next page.','muted','style="text-align:center;margin-top:10px"'):'';
+ return screen({hdr:closeHdr(),body:top+'<div style="margin-top:14px">'+slot+'</div>'+change+sug+T('prompt',v(2)+'What made Asha laugh today?','','style="text-align:center;margin-top:10px"'),
+  pinned:'<div class="glass" style="border-radius:40px;padding:6px"><div class="row stackax">'+B('Speak',{kind:'capture',icon:'mic',go:'A-S05:withPhoto',vo:3})+B('Type',{kind:'capture',icon:'pen',go:'A-S06:withPhoto',vo:4})+'</div></div>',pinnedClass:'paperRegion'});}
+/* ---------- A-S05 Recording ---------- */
+function rec(st){
+ if(st==='interrupted') return review('interrupted');
+ var paused=st==='paused';var line=paused?'Paused.':st==='stillHere'?'Still here. Take your time.':st==='finishing'?'Saving your words.':st==='saved'?'Saved, in your words.':'Listening.';
+ var top='<div class="row center" style="gap:10px">'+(st==='withPhoto'?pic('56px','56px'):'')+'<div class="col">'+T('headline',v(1)+'To Asha')+'<div class="row" style="gap:6px;align-items:center">'+ic('lock',14,'var(--muted)')+T('footnote',v(2)+'Only you, until you add it to the book.','muted')+'</div></div></div>';
+ var clock=T('headline',v(4)+(paused?'1:12':'1:12'),'muted','style="text-align:center;font-variant-numeric:tabular-nums"')+T('callout',v(5)+line,'','style="text-align:center"');
+ var body=top+T('prompt',v(3)+'What made Asha laugh today?','muted','style="text-align:center;margin-top:12px"')+'<div class="aura" style="margin-top:20px;'+(paused?'opacity:.5':'')+'"><div class="disc'+(paused?' dimmed':'')+'"></div></div>'+(S.ax5?'':clock)+(paused||st==='finishing'||st==='saved'?'':T('footnote',st==='lowSpace'?'This phone is low on space. If it fills up, the recording stops and what you said so far is kept.':'Say it however it comes.',st==='lowSpace'?'caution':'muted','style="text-align:center;margin-top:6px;padding:0 10px"'));
+ var dis=st==='finishing'||st==='saved';
+ var ctl=(S.ax5?clock:'')+'<div class="glass" style="border-radius:40px;padding:6px"><div class="row stackax">'+B(paused?'Keep talking':'Pause',{kind:'secondary',style:'flex:1;background:transparent;border:0',dim:dis,go:paused?'A-S05:recording':'A-S05:paused',vo:6})+'<button class="btn capture'+(dis?' dim':'')+'" data-go="A-S07:writing" style="flex:1.4">'+v(7)+'<span class="dot'+(paused?' hollow':'')+'" style="background:'+(paused?'none':'#fff')+';border-color:#fff"></span><span>Finish</span><span style="font-variant-numeric:tabular-nums;opacity:.85">1:12</span></button></div></div>'+B('Let it go',{kind:'quiet',full:true,go:'A-S11:confirmListen',vo:8});
+ return screen({hdr:'<div class="hdr" style="visibility:hidden"><span class="glassBtn">x</span></div>',body:body,pinned:ctl,pinnedClass:'paperRegion'});}
+/* ---------- A-S06 Write ---------- */
+function write(st){
+ var top=st==='withPhoto'?thumb()+'<div style="display:flex;justify-content:center">'+B('Change photo',{kind:'quiet',go:'A-S03:open'})+'</div>':'';
+ var line=st==='forTake'?T('subhead','Your words for this recording. They stay exactly as you type them.','muted'):T('prompt','What made Asha laugh today?','muted');
+ var text=st==='forTake'?'Hoy te reiste con el perro.':'You laughed at the dog until you hiccuped.';
+ var stateLine=st==='notSaved'?'Not saved yet':'Saved on this phone';
+ var tl=st==='tooLong'?T('footnote','This is a very long letter. Every word is kept. You can start another letter to say more.','muted','style="margin-top:8px"'):'';
+ return screen({hdr:closeHdr('<button class="glassBtn" data-go="A-S07:typed" style="font-weight:600">Save</button>'),body:top+line+'<div class="field t-letter" style="margin-top:14px;min-height:220px;border-color:var(--accent)" aria-label="Your letter">'+text+'<span style="border-left:2px solid var(--accent)"></span></div>'+T('footnote',stateLine,'muted','style="margin-top:6px"')+tl+T('footnote','Writing tools off on this field (D2, card gap G-16)','muted','style="margin-top:14px;opacity:.7"')});}
+/* ---------- A-S07 Review ---------- */
+var WORDS_CARDS={writing:['Writing down what you said.','Long recordings take a little more time.','','Read it back later'],
+ downloading:['Your voice is kept','Your words follow once the download is done.','Keep the recording','Type it instead'],
+ language:['Waiting for its language','This recording waits on this phone until its language is ready. (Line to be reworded: card gap G-05)','Keep the recording','Type it instead'],
+ failed:['No words yet for this one','The recording is kept.','Try again','Keep the recording'],
+ shortTake:['That was very short','Keep it, or let it go?','Let it go','Keep the recording'],
+ noWords:['No words in this one','','Keep the recording','Write the words'],
+ emptyTake:['Nothing was recorded','The recording ended before any sound came in.','Record again','Type it instead']};
+function review(st){
+ var two=st==='twoBooks';var from=st==='fromSet'?'Nani':st==='fromTooLong'?'Grandmother Lakshmi Venkataraman':'Mama';var fromOff=st==='fromOff';
+ var day=st==='dateSet'?'5 June &middot; Month 7':'Today, 9 June';
+ var hdr=closeHdr(st==='typed'?'':'<button class="glassBtn">'+v(2)+ic('play',16)+(st==='playing'?'Pause':'Play')+'</button>','',  'A-S01:waiting').replace('>Close</button>','>'+v(1)+'Close</button>');
+ var out=T('title1',v(3)+'Read it back');
+ if(st==='interrupted') out+=T('footnote','A call came in, so the recording stopped there. Everything before that is kept.','muted','style="margin-top:8px"');
+ if(st==='noDraft'){return screen({hdr:hdr,body:out+'<div class="col center" style="margin-top:80px;gap:14px">'+T('title2','Nothing to read back here','','style="text-align:center"')+B('Go to the book',{kind:'primary'})+'</div>'});}
+ if(st==='firstNote') out+='<div class="card" style="margin-top:12px;background:var(--surface)">'+T('headline','Small fixes are marked')+T('subhead','Tap a marked word to see what you said. Put it back if you like.','muted')+B('Got it',{kind:'quiet'})+'</div>';
+ var wc=WORDS_CARDS[st];
+ if(wc){out+='<div class="card col center" style="margin-top:18px;min-height:170px">'+T('headline',wc[0],'','style="text-align:center"')+(wc[1]?T('subhead',wc[1],'muted','style="text-align:center"'):'')+(wc[2]?B(wc[2],{kind:'primary',go:wc[2]==='Let it go'?'A-S11:confirm':'A-S13:voiceOnly'}):'')+(wc[3]?B(wc[3],{kind:'quiet',go:'A-S06:default'}):'')+'</div>'+B('Let it go',{kind:'quiet',go:'A-S11:confirm'});return screen({hdr:hdr,body:out});}
+ if(st==='notRemoved'){return screen({hdr:hdr,body:out+T('subhead','That recording is still on this phone. We will finish removing it.','muted','style="margin-top:30px" role="status"')+'<div style="margin-top:20px">'+B('Done',{kind:'quiet',go:'A-S01:default'})+'</div>'});}
+ var words;
+ if(st==='typed'||st==='laterWords') words='You laughed at the dog until you hiccuped, and then you laughed at the hiccups.';
+ else if(st==='exact') words='So um you laughed at the the dog until you hiccuped and then you laughed at the hiccups';
+ else if(st==='anotherLanguageOffer'||st==='withheld'||st==='withheldUndo') words='Oil to reeste con el pero, and then a stay pay.';
+ else if(st==='photoNeedsWords') words='<span class="muted">No words yet.</span>';
+ else words='So <span class="struck">um</span> you laughed at <span class="struck">the</span> the dog until you hiccuped<span class="mark">,</span> and then you laughed at the hiccups<span class="mark">.</span>';
+ if(st==='editing') words='<div class="field t-letter" style="border:0;padding:0">'+words.replace(/<[^>]+>/g,'')+'<span style="border-left:2px solid var(--accent)"></span></div>';
+ var sheetHdr='<div class="'+(S.ax5?'col':'row')+'" style="justify-content:space-between;align-items:flex-start;gap:4px"><div class="col" style="gap:0">'+(two?'<button class="hctl t-dateline" data-go="A-S02:default">'+v(4)+'<u>To Kiran</u>'+ic('chevd',14)+'</button>':'<span class="t-dateline muted" style="min-height:44px;display:flex;align-items:center">'+v(4)+'To Asha</span>')+'<button class="hctl t-dateline" data-go="A-S08:day">'+v(5)+'<u>'+day+'</u>'+ic('cal',14)+'</button></div>'+(fromOff?'<span class="t-dateline muted" style="min-height:44px;display:flex;align-items:center">'+v(6)+'From Mama</span>':'<button class="hctl t-dateline" data-go="A-S09:empty">'+v(6)+'<u>From '+from+'</u>'+ic('pen',14)+'</button>')+'</div>';
+ var body;
+ if(st==='withheld'||st==='withheldUndo'){body=T('subhead','These words are set aside. Your recording is kept, and the words can wait for their language, or you can type them.','muted','style="margin-top:8px"')+'<div class="col" style="margin-top:14px">'+B('Write the words',{kind:'primary',go:'A-S06:forTake'})+B('Keep the recording',{kind:'quiet',go:'A-S13:voiceOnly'})+'</div>';}
+ else body='<div class="t-letter" style="margin-top:8px">'+v(7)+words+'</div>';
+ if(st==='markOpen') body+='<div class="card" style="margin-top:10px;background:var(--surface)">'+T('subhead','Took out a sound','','style="font-weight:600"')+T('subhead','An um or an uh, taken out.')+T('footnote','You said','muted')+T('letter','"um"')+'<div class="row">'+B('Put it back',{kind:'secondary',go:'A-S07:putBack'})+B('Close',{kind:'quiet'})+'</div></div>';
+ if(st==='putBack') body+='<div class="row" style="align-items:center;flex-wrap:wrap">'+T('subhead','Put back.','muted')+B('Undo',{kind:'quiet',go:'A-S07:default'})+B('Close',{kind:'quiet'})+'</div>';
+ if(st==='partUnwritten') body+=T('footnote','Part of this recording has no words written here. Play it to hear all of it.','muted','style="margin-top:8px"');
+ out+='<div class="sheetPaper" style="margin-top:16px'+(st==='editing'?';border:1.5px solid var(--accent)':'')+'">'+sheetHdr+body+'</div>';
+ if(!/typed|laterWords|withheld|editing/.test(st)){
+  out+='<div class="row" style="margin-top:14px;border:1px solid var(--controlBorder);border-radius:999px;padding:3px">'+'<div class="chipP '+(st==='exact'?'':'sel')+'" style="flex:1;justify-content:center;border:0">'+v(8)+(st==='exact'?'':'&#10003; ')+'With small fixes</div><div class="chipP '+(st==='exact'?'sel':'')+'" style="flex:1;justify-content:center;border:0">'+(st==='exact'?'&#10003; ':'')+'Exactly as said</div></div>';
+  out+='<div class="row" style="justify-content:space-between;min-height:48px;align-items:center">'+T('subhead',v(9)+'3 small fixes')+ic('chev',16)+'</div>';
+ }
+ if(!/withheld|editing|laterWords/.test(st)) out+='<div style="margin-left:-16px">'+B('Change words',{kind:'quiet',go:'A-S07:editing',vo:10})+'</div>';
+ if(st==='anotherLanguageOffer'||st==='default'||st==='vo') out+='<div style="margin-left:-16px">'+B('This was in another language',{kind:'quiet',go:'A-S10:withheld',vo:11})+'</div>';
+ // picture card
+ if(/withPhoto|photoNeedsWords/.test(st)) out+='<div class="card col" style="margin-top:10px">'+v(12)+'<div style="display:flex;justify-content:center">'+pic(S.ax5?'117px':'213px',S.ax5?'88px':'160px')+'</div><div class="row stackax center">'+B('Change photo',{kind:'quiet',go:'A-S12:confirm'})+B('Take the photo off',{kind:'quiet',go:'A-S07:photoUndo'})+'</div>'+T('footnote','A few words about this picture, if you like','muted')+'<div class="field t-subhead"></div>'+T('footnote','Where, if you like','muted')+'<div class="field t-subhead">Grandma\'s garden</div></div>';
+ else if(st==='photoNotStored') out+='<div class="card col" style="margin-top:10px">'+T('subhead','The photo did not come along this time. Your words are all here.','muted')+B('Add a photo',{kind:'quiet',go:'A-S03:open'})+'</div>';
+ else if(!/typed|withheld|editing/.test(st)) out+='<div style="margin-left:-16px">'+B('Add a photo',{kind:'quiet',icon:'image',go:'A-S03:open'})+'</div>';
+ if(st!=='editing') out+='<div style="margin-left:-16px">'+B('Let it go',{kind:'quiet',go:st==='withPhoto'?'A-S11:confirmPhoto':'A-S11:confirm',style:'color:var(--muted)',vo:13})+'</div>';
+ out+='<!--INLINE-->';
+ var keepOff=st==='photoNeedsWords'||st==='fromTooLong';
+ var foot=st==='editing'?B('Done',{kind:'primary',full:true,go:'A-S07:default'}):
+  (st==='fromTooLong'?T('subhead','That name is longer than 30 characters. A shorter one will fit.','caution','style="text-align:center;padding-bottom:6px" role="alert"'):'')+
+  (st==='dateNotSaved'?T('subhead','That date did not save. The letter keeps the day it had.','caution','style="text-align:center;padding-bottom:6px" role="alert"'):'')+
+  (st==='saveFailed'?T('subhead','That did not save. Your words are still here.','caution','style="text-align:center;padding-bottom:6px" role="alert"'):'')+
+  (keepOff?T('footnote','A letter needs words. Speak or type a few.','muted','style="text-align:center;padding-bottom:6px"'):'')+
+  B(st==='saveFailed'?'Try again':(two?"Add to Kiran's book":"Add to Asha's book"),{kind:'primary',full:true,dim:keepOff,go:keepOff?'':(/withPhoto/.test(st)?'A-S13:savedPhoto':'A-S13:saved'),vo:14})+B('Keep private',{kind:'quiet',full:true,dim:keepOff,go:keepOff?'':'A-S13:savedPrivate',vo:15});
+ var tst='';
+ if(st==='photoUndo') tst=toast('Photo taken off.','A-S07:withPhoto');
+ if(st==='withheldUndo') tst=toast('Words set aside.','A-S07:anotherLanguageOffer');
+ if(st==='keepStillSaving') tst=toast('This recording is still being saved. Give it a moment, then tap Keep again.');
+ var r=screen({hdr:hdr,body:out,pinned:foot,toast:tst});
+ return r.replace('class="pinned glass nobar"','class="pinned glass nobar" style="left:0;right:0;bottom:0;border-radius:28px 28px 0 0;padding-bottom:28px"');}
+/* ---------- A-S08 Day sheet ---------- */
+function daysheet(st){S._back='A-S07:default';var base=review('default');
+ var tabs='<div class="row" style="border:1px solid var(--controlBorder);border-radius:999px;padding:3px">'+(st==='unborn'?'<div class="chipP sel" style="flex:1;justify-content:center;border:0">&#10003; A day</div>':'<div class="chipP '+(st==='month'?'':'sel')+'" style="flex:1;justify-content:center;border:0">'+(st==='month'?'':'&#10003; ')+'A day</div><div class="chipP '+(st==='month'?'sel':'')+'" style="flex:1;justify-content:center;border:0">'+(st==='month'?'&#10003; ':'')+'A month</div>')+'</div>';
+ var inner=v(2)+tabs;
+ if(st==='month'){inner+='<div style="margin-top:8px">'+['Before You','The first weeks','Month 1','Month 2','Month 3','Month 7'].map(function(m,i){return '<div class="listRow">'+T('body',m)+(i===4?'<span class="accent">&#10003;</span>':'')+'</div>';}).join('')+'</div>';}
+ else{inner+='<div class="row center" style="gap:14px;margin:18px 0">'+['3','4','5','6','7'].map(function(d){return '<div class="chipP'+(d==='5'?' sel':'')+'">'+d+'</div>';}).join('')+'</div>'+T('footnote',st==='bound'?'This is as far back as it goes: 3 years before the birthday.':'June 2026. No day after today is offered.','muted','style="text-align:center"');}
+ inner+='<div style="margin-top:14px">'+B('Save',{kind:'primary',full:true,go:'A-S07:dateSet',dim:st==='unchanged',vo:3})+'</div>';
+ return base.replace(/<\/div>$/,sheet(v(1)+'When was this?',inner)+'</div>');}
+/* ---------- A-S09 From sheet ---------- */
+function fromsheet(st){S._back='A-S07:default';var base=review('default');
+ var val=st==='typing'?'Nan':st==='tooLong'?'Grandmother Lakshmi Venkataramanan of':'';
+ var inner=T('footnote','From','muted')+'<div class="field t-body" aria-label="From">'+v(2)+val+'<span style="border-left:2px solid var(--accent)"></span></div>';
+ if(st==='tooLong') inner+=T('footnote','A little shorter, please.','caution','style="margin-top:4px" role="alert"');
+ inner+=T('footnote',v(3)+'Ask before you record someone else.','muted','style="margin-top:10px"');
+ if(st==='recent'||st==='typing') inner+=T('footnote','Names used on this phone','muted','style="margin-top:14px"')+'<div class="chipsP" style="margin-top:6px">'+v(4)+['Grandma','Grandpa','Aunt Lena'].map(function(n){return '<span class="chipP" data-go="A-S07:fromSet">'+n+'</span>';}).join('')+'</div>';
+ inner+='<div class="col" style="margin-top:16px">'+B('Done',{kind:'primary',full:true,dim:st==='tooLong',go:st==='tooLong'?'':'A-S07:fromSet',vo:5})+B('Sign as Mama',{kind:'quiet',full:true,go:'A-S07:default'})+'</div>';
+ return base.replace(/<\/div>$/,sheet(v(1)+'Who is speaking?',inner)+'</div>');}
+/* ---------- A-S10 Another language ---------- */
+function lang(st){var map={offer:'anotherLanguageOffer',withheld:'withheld',withheldUndo:'withheldUndo',typed:'typed'};
+ if(st==='keptWaiting') return home('waiting').replace('Recorded before the app closed.','Waiting for its words.');
+ return review(map[st]);}
+/* ---------- A-S11 Let it go ---------- */
+function letgo(st){
+ if(st==='notRemoved') return review('notRemoved');
+ if(st==='storageStuck') return screen({hdr:'<div class="hdr"><button class="glassBtn glass">'+ic('chev',18)+'</button><span class="t-headline">Storage</span><span style="width:44px"></span></div>',body:'<div class="card"><div class="listRow">'+T('subhead','A recording you let go is still on this phone.')+B('Remove now',{kind:'quiet'})+'</div></div>'+T('footnote','C-S18 draws this screen','muted','style="margin-top:8px"')});
+ var base=st==='confirmListen'?rec('recording'):review(st==='confirmPhoto'?'withPhoto':'default');
+ var body=st==='confirmPhoto'?'The recording and its photo will be removed from this phone. They cannot be brought back.':'It will be removed from this phone. It cannot be brought back.';
+ var a='<div class="scrimL"></div><div class="sheet glass" role="alertdialog">'+T('headline',v(1)+'Let this recording go?','','style="text-align:center"')+T('subhead',v(2)+body,'','style="margin:8px 0 16px;text-align:center"')+'<div class="col">'+B('Keep it',{kind:'primary',full:true,go:st==='confirmListen'?'A-S05:recording':'A-S07:default',vo:3})+'<button class="btn quiet full" data-go="A-S01:default" style="color:var(--destructive)">'+v(4)+'Remove it</button></div></div>';
+ return base.replace(/<\/div>$/,a+'</div>');}
+/* ---------- A-S12 Replace and Undo ---------- */
+function replace(st){S._back='A-S07:withPhoto';
+ if(st==='confirm'){var inner='<div class="row stackax center" style="gap:14px">'+'<div class="col center">'+v(2)+pic('117px','88px')+T('footnote','Now','muted')+'</div><div class="col center">'+v(3)+'<div class="pic" style="width:117px;height:88px;background:linear-gradient(#e8d6ef,#f6e3cf)"><div class="sun" style="left:12%"></div><div class="hill"></div></div>'+T('footnote','Just picked','muted')+'</div></div><div class="col" style="margin-top:14px">'+B('Keep the first one',{kind:'secondary',full:true,go:'A-S07:withPhoto',vo:4})+B('Use this one',{kind:'secondary',full:true,go:'A-S12:undo',vo:5})+'</div>';
+  return review('withPhoto').replace(/<\/div>$/,sheet(v(1)+'Use this picture instead?',inner)+'</div>');}
+ var label={undo:'Photo changed.',undoVo:'Photo changed. (Open until VoiceOver has read this line plus 10 s)',undoSwitch:'Photo changed. (Open until you move on: Switch Control)',closed:''}[st];
+ var r=review('withPhoto');
+ if(st==='closed') return r;
+ return r.replace(/<\/div>$/,toast(label,'A-S07:withPhoto')+'</div>');}
+/* ---------- A-S13 After Keep ---------- */
+function after(st){
+ if(st==='gate') return review('default').replace(/<\/div>$/,'<div class="scrimL"></div><div class="sheet glass">'+T('headline','E-S10: the Keep gate sheet','','style="text-align:center"')+T('subhead','Area E draws this sheet. "Keep it here for now" holds the letter; nothing is lost.','muted','style="text-align:center;margin:10px 0"')+B('Keep it here for now',{kind:'secondary',full:true,go:'A-S13:held'})+'</div></div>');
+ if(st==='held') return home('waiting').replace(/<\/div>$/,toast('Waiting to be kept, on Home.')+'</div>');
+ var chip=st==='savedPrivate'?'Kept private':st==='voiceOnly'?'Kept. Its words will follow.':'Month 7';
+ return screen({body:'<div class="col center" style="margin-top:120px;gap:14px"><div class="sheetPaper" style="width:280px;transform:scale(.9)">'+T('dateline','To Asha &middot; Month 7','muted')+(st==='savedPhoto'?pic('100%','120px'):'')+T('letter',st==='voiceOnly'?'Waiting for its words.':'You laughed at the dog until you hiccuped.')+'</div>'+T('title2','Kept.')+T('subhead',chip,'muted')+B('Done',{kind:'quiet',go:'A-S01:default'})+'</div>'});}
+/* ---------- A-S14 Doorways ---------- */
+function doorway(st){
+ if(st==='appLock') return picker('appLockDrop').replace('The pick was dropped; 0 files.','After Face ID, Ready opens (A-S04.doorway).');
+ if(st==='activeTake') return rec('recording').replace(/<\/div>$/,toast('(A second start is refused; this take stays.)')+'</div>');
+ if(st==='failed') return home('default');
+ var wall='<div class="scr" style="background:linear-gradient(#3b4a5c,#1f2630);color:#fff"><div style="text-align:center;margin-top:40px;font:200 72px var(--sans)">9:41</div>';
+ var w={widget:'<div style="margin:30px auto;width:150px;height:150px;border-radius:24px;background:rgba(255,255,255,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer" data-go="A-S14:locked">'+ic('mic',36,'#fff')+'<span class="t-subhead">Start a letter</span></div><div class="t-footnote" style="text-align:center;opacity:.7">Static: no name, no letter, no count</div>',
+  control:'<div style="margin:30px auto;width:80px;height:80px;border-radius:40px;background:rgba(255,255,255,.22);display:flex;align-items:center;justify-content:center;cursor:pointer" data-go="A-S14:locked">'+ic('mic',30,'#fff')+'</div><div class="t-footnote" style="text-align:center">Start a letter</div>',
+  actionButton:'<div style="margin:30px auto;width:200px;border-radius:20px;background:rgba(255,255,255,.2);padding:14px;text-align:center" data-go="A-S14:locked" class="t-subhead">Action Button: Start a letter</div><div class="t-footnote" style="text-align:center;opacity:.7">Not on an SE 3: iOS does not offer it, the app says nothing</div>',
+  siri:'<div style="margin:30px 20px;border-radius:24px;background:rgba(255,255,255,.2);padding:16px" data-go="A-S14:locked"><div class="t-subhead">"Start a letter in Early Letters"</div><div class="t-footnote" style="opacity:.8;margin-top:6px">Siri opens the app at Ready. It never records by itself.</div></div>',
+  locked:'<div style="margin:60px auto;text-align:center">'+ic('lock',40,'#fff')+'<div class="t-subhead" style="margin-top:10px">Unlock with Face ID first</div><div class="t-footnote" style="opacity:.7;margin-top:6px">No take starts from a locked screen</div>'+'<div style="margin-top:20px">'+B('(simulate unlock)',{kind:'secondary',go:'A-S04:doorway'})+'</div></div>'}[st]||'';
+ return wall+w+'<div class="t-footnote" style="position:absolute;bottom:30px;left:0;right:0;text-align:center;opacity:.7">Conditional on NS-04: only doorways that passed</div></div>';}
+/* ---------- A-S15 Hands-free hypotheses ---------- */
+function hyp(){var rows=[['H1 Ready','A-S04:doorway','built'],['H3 Listening','A-S05:recording','built'],['H4 Quiet stretch','A-S05:stillHere','built'],['H5 Paused','A-S05:paused','built'],['H6 Interrupted','A-S05:interrupted','built'],['H8 Limit reached','','hypothesis: no card row (G-20)'],['H9 Low space mid take','','hypothesis'],['Screen-off recording','','not designed: founder decision (EX-3)'],['Route change (AirPods)','','NS-04 Q14 decides'],['Driving Focus','A-S04:doorway','no change, no driving words']];
+ return screen({hdr:'<div class="hdr"><span class="t-headline">Hands-free: hypotheses</span></div>',body:rows.map(function(r){return '<div class="hyp" '+(r[1]?'data-go="'+r[1]+'" style="cursor:pointer"':'')+'>'+T('subhead',r[0])+T('footnote',r[2]+(r[1]?' &middot; opens '+r[1]:''),'muted')+'</div>';}).join('')});}
+
+/* ---------- A-S16 One photo from a suggestion ---------- */
+function onephoto(st){
+ if(st==='closed') return home('default');
+ var cells='';for(var i=1;i<=4;i++){cells+='<div data-go="A-S04:suggestionLabel" role="button" aria-label="Picture '+i+' of 4" style="cursor:pointer;min-height:96px">'+(st==='loading'?'<div style="height:110px;background:var(--line);border-radius:8px"></div>':pic('100%','110px'))+'</div>';}
+ S._back='A-S01:default';
+ return home('default').replace(/<\/div>$/,sheet(v(1)+'Choose one photo','<div style="display:grid;grid-template-columns:'+(S.ax5?'1fr':'1fr 1fr')+';gap:10px">'+cells+'</div>'+T('footnote','Nothing is kept until you choose. Swipe down to choose none.','muted','style="text-align:center;margin-top:10px"'))+'</div>');}
+
+/* ---------- Registry: ids match DESIGN.md ---------- */
+var SCREENS={
+ 'A-S01':{t:'Home (Say)',f:home,states:['default','twoBooks','twoBooksNameless','beforeYou','waiting','heldMany','slipSeal','slipCopy','slipPast','dayToday','dayTodayTwo','dayTodayQuiet','dayDismissed','dayDismissedQuiet','daysAsk','daysAskBelow','daysAskGone','quietBook','snapshot','photoMenu','plusLine','photoOff','quietKept','fromReminder','typedDay','lowStorage','offline','killSwitch','planLapse','signedOut','secondAccount','ax5','vo','dark'],
+  n:{dayToday:'NS-50 rank 2b: one slip directly above the prompt block; one non-interactive element, Not today is a separate 44 pt button (own row at AX5). No haptic, no Undo, returns tomorrow.',dayTodayTwo:'Two ticked days on one date: one slip naming both.',dayTodayQuiet:'Quiet-tone day: name and the quiet line; no prompt block, no question (default pending Q-FD-24; DESIGN G-22).',dayDismissed:'Slip gone until the next local day; the prompt block returns.',dayDismissedQuiet:'On a quiet-tone day the prompt block stays absent for the day.',daysAsk:'NS-47 rank 3b: question, static DoorNote, Choose days and Not now stacked at equal weight and size; at most two showings; never a count or a price.',daysAskBelow:'Device-check fallback (NS-47-R32): the ask sits below the prompt when the prompt would not stay in view.',daysAskGone:'After either answer or two unanswered showings: ordinary Home. Me, Days stays one tap away.',quietBook:'A quieted or hidden active book: no day slip, no ask (NS-50-R8). Drawn as default.',snapshot:'App-switcher snapshot: blank where a slip would show, with or without App lock (E18).',photoMenu:'Level 2 present (drop C): Start from a photo opens a two-item menu. Absent below iOS 17.2: it opens the picker directly.',slipSeal:'Rank 2 (B-S18).',slipCopy:'Rank 3 (C-S06).',default:'One book. Capture cluster is one glass container over the paper; tab bar is native glass (2 glass surfaces).\nRows: NS-35-R1, NS-01-R1, NS-14-R2. Flag EXPO_PUBLIC_PHOTOS.',twoBooks:'Switcher above the dateline (NS-14-R1). Tap opens A-S02.',twoBooksNameless:'Each label carries its date (NS-14-R7).',waiting:'Slip 1: the waiting cards, as built. A picture draft shows a 40 pt thumbnail (G-19). Pick it up resumes (not a start).',heldMany:'Two or more held letters fold into one row.',slipPast:'Slip 4 (B-S17). At most one slip.',plusLine:'Allowance used, no Plus: the standing line; capture never blocked.',photoOff:'Flag off, killSwitches.photos, or no native module: the start is absent, no gap (R19, R59).',quietKept:'D-S21 draws this line. Undo per T4.',fromReminder:'Tap on an evening nudge: Home within 2 s, current prompt, nothing records (NS-13-R9, NS-35-R7).',typedDay:'The parent\'s own typed words above the prompt (NS-18; D-S11).',lowStorage:'E-S17 line; capture works.',offline:'Same as default: capture never needs a network.',killSwitch:'serverFeaturesEnabled() off: same as default.',planLapse:'Plus line may show; capture never blocked.',signedOut:'Works on the local book (D1).',secondAccount:'B\'s books only; selection reset (NS-14-R11).',ax5:'Cluster rides inline under Another thought, solid (no longer floats). Names wrap, never truncate (NS-14-R5).',vo:'Badges show the reading order. Default size: slip before the cluster; AX5: cluster first.',dark:'Dark tokens; glass darkens.'}},
+ 'A-S02':{t:'Whose book sheet',f:whose,states:['default','many','nameless','ax5','vo','dark'],n:{default:'One Sheet (glass), ChoiceGroup rows (content inside, no glass on glass). A tap chooses and closes; Home and Book share the selection (R6). p95 300 ms.',nameless:'Dates tell nameless books apart (R7).',many:'Scrolls inside the sheet. A hidden book is absent (R9).'}},
+ 'A-S03':{t:'Apple photo picker',f:picker,states:['open','suggestions','suggestionsCancel','suggestionsNoPhoto','levelAbsent','downloading','cancel','iCloudOffline','failed','appLockDrop'],n:{open:'System picker, no permission question (R2). Tap any picture.',downloading:'iCloud: progress and Cancel (R17b; not met in #837; P-1).',cancel:'Nothing written, no message (R4).',iCloudOffline:'Ends on Ready with one calm line (R46).',failed:'photo_pick_failed: Ready with the could-not-open line.',appLockDrop:'Pick dropped, 0 files (R47).'}},
+ 'A-S04':{t:'Listen at Ready',f:ready,states:['ready','lowSpace','readyPhoto','suggestionLabel','suggestionTaken','suggestionCleared','suggestionNoPhoto','panorama','photoCouldNotOpen','iCloudOffline','primer','denied','busy','full','doorway','ax5','vo','dark'],n:{ready:'At rest (link, restored screen, doorway): the red circle starts. Solid disc: not yet recording, so not glass.',readyPhoto:'Card says Speak and Type (R3, R20b): thumbnail max 160 pt, fitted; Change under it. G-11.',panorama:'Fits uncropped (R42).',photoCouldNotOpen:'#838 line; capture goes on.',primer:'Our note before the iOS question; Continue and Type instead equal.',denied:'mic_denied.',busy:'No catalogue code (E-09).',full:'storage_low. No draft created.',doorway:'Identical to Ready (NS-06-C1).',ax5:'With a picture: thumbnail 88 pt from AX3 (R39); Speak and Type stack and stay on screen.',vo:'Order thumbnail, prompt, Speak, Type, Change (R20b), set explicitly.'}},
+ 'A-S05':{t:'Listen while recording',f:rec,states:['recording','stillHere','paused','finishing','saved','lowSpace','withPhoto','interrupted','ax5','vo','dark'],n:{recording:'Recording control (Pause, Finish, Let it go) is the one glass container. Only the aura moves, only with the voice. VoiceOver never speaks into the take.',stillHere:'After 8 s under -50 dB. Never auto-stops.',paused:'Aura still and dimmed.',withPhoto:'Still 56 pt thumbnail beside To Asha (G-14).',interrupted:'Call or Siri: the take is kept; Review says why in one line.',ax5:'Clock and line pin with the controls.'}},
+ 'A-S06':{t:'Write (Type)',f:write,states:['default','withPhoto','forTake','notSaved','tooLong','ax5','dark'],n:{default:'Built. Writing tools off (G-16).',forTake:'From Type the words yourself (NS-17-R9): never machine-edited.'}},
+ 'A-S07':{t:'Review',f:review,states:['writing','downloading','language','failed','shortTake','noWords','emptyTake','default','exact','editing','typed','twoBooks','dateSet','fromSet','fromOff','withPhoto','photoNeedsWords','photoNotStored','photoUndo','anotherLanguageOffer','withheld','withheldUndo','notRemoved','saveFailed','laterWords','interrupted','noDraft','keepStillSaving','firstNote','playing','markOpen','putBack','dateNotSaved','fromTooLong','partUnwritten','ax5','vo','dark'],
+  n:{default:'Header (Close, Play) one glass container; Keep footer one glass container. Letter sheet is content: its To, day and From controls are LetterHeaderControl (proposed).\nTap the day line (A-S08) or From (A-S09).',dateSet:'NS-15: the chosen day; VoiceOver hears the new month once (R12).',fromSet:'NS-16: From Nani; read-only after Keep.',fromOff:'Flag off: plain signature.',withPhoto:'Picture card: content layer (controls under the picture, so no clear glass needed).',photoNeedsWords:'R5a: Keep off with the reason in words.',photoNotStored:'G-08: same line as R58, on Review.',photoUndo:'Undo toast is the third glass surface (max 3). T4 window; the button leaves with the window (R38b).',anotherLanguageOffer:'NS-17-R5: one tap.',withheld:'D10: words never shown. Play stays.',withheldUndo:'G-07: Undo for the T4 window.',notRemoved:'NS-09-R4a: once, announced after the screen settles; never blocks leaving.',saveFailed:'Caution line; primary reads Try again.',ax5:'Header controls stack; footer inline and solid; picture card stacks.',vo:'Badge numbers follow section A-S07 VoiceOver order.'}},
+ 'A-S16':{t:'One photo from a suggestion',f:onephoto,states:['default','loading','closed','ax5','vo','dark'],n:{default:'N7 sheet; thumbnails 96 pt or more, one column at AX5; Picture n of 4; nothing stored until a choice (NS-49-R8, R30).',loading:'Placeholders fade, no spinner.',closed:'Swipe down chooses none: Home as before.'}},
+ 'A-S08':{t:'Day sheet',f:daysheet,states:['day','month','unborn','bound','unchanged','ax5','dark'],n:{day:'Built DateSheet. No future day; 3 years back at most (R5). Never a date from the words or a picture.',unborn:'Month tab hidden for a child not born yet.',unchanged:'Save off until the pick differs.'}},
+ 'A-S09':{t:'From sheet',f:fromsheet,states:['empty','recent','typing','tooLong','ax5','dark'],n:{empty:'One field; instruction line, no checkbox (D9, R18). No Contacts, no network (R4).',recent:'Names used on this phone, up to 20; never from Contacts.',tooLong:'sign_as_too_long: refused before any upload (R6). Counts code points (BL-957).'}},
+ 'A-S10':{t:'Another language',f:lang,states:['offer','withheld','withheldUndo','typed','keptWaiting'],n:{offer:'Quiet control under the words; hint reads its consequence.',withheld:'Machine output withheld (D10): never shown, indexed, shared, printed, exported.',typed:'Typed words: no fixes, never machine-edited.',keptWaiting:'Home shows it waiting for its words.'}},
+ 'A-S11':{t:'Let it go',f:letgo,states:['confirm','confirmPhoto','confirmListen','notRemoved','storageStuck'],n:{confirm:'System alert: Keep it is the default; says it cannot be brought back (R9). No Undo after.',confirmPhoto:'The picture goes with it (R16c).',storageStuck:'After 3 launches: C-S18.'}},
+ 'A-S12':{t:'Replace confirm and Undo',f:replace,states:['confirm','undo','undoVo','undoSwitch','closed'],n:{confirm:'Keep the first one is the safe default (R7).',undo:'10 s window (T4).',undoVo:'Extended while VoiceOver reads (R38a).',undoSwitch:'Until the parent moves on (R38c).',closed:'No dead Undo (R38b).'}},
+ 'A-S13':{t:'After Keep',f:after,states:['saved','savedPhoto','savedPrivate','voiceOnly','gate','held'],n:{saved:'Built saved moment; lands on the Book. No celebration.',gate:'E-S10 owns the sheet.',held:'The letter waits on Home.'}},
+ 'A-S14':{t:'Doorways (conditional)',f:doorway,states:['widget','control','actionButton','siri','locked','appLock','activeTake','failed'],n:{widget:'Static. Tap to walk unlock then Ready.',failed:'Lands on Home, no message (C6).'}},
+ 'A-S15':{t:'Hands-free (hypotheses)',f:hyp,states:['map'],n:{map:'Spec 05 states mapped onto built states. NS-04 findings decide.'}}
+};
+var JOURNEYS=[
+ ['A-J01 Speak and keep',[['A-S01','default'],['A-S04','primer'],['A-S05','recording'],['A-S05','finishing'],['A-S07','writing'],['A-S07','default'],['A-S13','saved']]],
+ ['A-J02 Type and keep',[['A-S01','default'],['A-S06','default'],['A-S07','typed'],['A-S13','saved']]],
+ ['A-J03 Start from a photo',[['A-S01','default'],['A-S03','open'],['A-S04','readyPhoto'],['A-S05','withPhoto'],['A-S07','withPhoto'],['A-S13','savedPhoto']]],
+ ['A-J04 Two books',[['A-S01','twoBooks'],['A-S02','default'],['A-S05','recording'],['A-S07','twoBooks'],['A-S13','saved']]],
+ ['A-J05 Another day',[['A-S07','default'],['A-S08','day'],['A-S07','dateSet'],['A-S13','saved']]],
+ ['A-J06 Someone else speaks',[['A-S07','default'],['A-S09','recent'],['A-S07','fromSet'],['A-S13','saved']]],
+ ['A-J07 Another language',[['A-S10','offer'],['A-S10','withheldUndo'],['A-S10','withheld'],['A-S06','forTake'],['A-S10','typed'],['A-S13','saved']]],
+ ['A-J08 Let it go (Review)',[['A-S07','default'],['A-S11','confirm'],['A-S01','default']]],
+ ['A-J09 Let it go (Listen)',[['A-S05','recording'],['A-S11','confirmListen'],['A-S01','default']]],
+ ['A-J10 Not much today',[['A-S01','default'],['A-S01','quietKept']]],
+ ['A-J11 Reminder lands on Home',[['A-S01','fromReminder'],['A-S05','recording']]],
+ ['A-J12 Typed day lands',[['A-S01','typedDay']]],
+ ['A-J13 Doorway to Ready',[['A-S14','widget'],['A-S14','locked'],['A-S04','doorway'],['A-S05','recording'],['A-S07','default']]],
+ ['A-J14 Pick up a waiting letter',[['A-S01','waiting'],['A-S07','default'],['A-S13','saved']]],
+ ['A-J15 Past the allowance',[['A-S01','plusLine'],['A-S07','default'],['A-S13','gate'],['A-S13','held']]],
+ ['A-J16 Change or take off a photo',[['A-S07','withPhoto'],['A-S12','confirm'],['A-S12','undo'],['A-S12','closed'],['A-S07','photoUndo']]],
+ ['A-J17 VoiceOver only',[['A-S01','vo'],['A-S05','vo'],['A-S07','vo'],['A-S13','saved']]],
+ ['A-J18 Day slip',[['A-S01','dayToday'],['A-S01','dayDismissed'],['A-S01','dayTodayTwo']]],
+ ['A-J19 Quiet-tone day',[['A-S01','dayTodayQuiet'],['A-S01','dayDismissedQuiet']]],
+ ['A-J20 The Days ask',[['A-S01','daysAsk'],['A-S01','daysAskBelow'],['A-S01','daysAskGone']]],
+ ['A-J21 Recent days',[['A-S01','photoMenu'],['A-S03','suggestions'],['A-S16','default'],['A-S04','suggestionLabel'],['A-S04','suggestionTaken'],['A-S05','withPhoto'],['A-S07','withPhoto'],['A-S13','savedPhoto']]],
+ ['Unhappy: Home slips and recent days',[['A-S01','snapshot'],['A-S01','quietBook'],['A-S03','suggestionsCancel'],['A-S03','suggestionsNoPhoto'],['A-S03','levelAbsent'],['A-S16','closed']]],
+ ['Unhappy: microphone',[['A-S04','denied'],['A-S04','busy'],['A-S04','full'],['A-S05','interrupted']]],
+ ['Unhappy: words not ready',[['A-S07','writing'],['A-S07','downloading'],['A-S07','failed'],['A-S07','shortTake'],['A-S07','noWords'],['A-S07','emptyTake'],['A-S07','saveFailed']]],
+ ['Unhappy: photo',[['A-S03','cancel'],['A-S03','downloading'],['A-S04','iCloudOffline'],['A-S04','photoCouldNotOpen'],['A-S07','photoNotStored'],['A-S07','photoNeedsWords'],['A-S11','confirmPhoto'],['A-S01','photoOff']]],
+ ['Unhappy: From and day',[['A-S09','tooLong'],['A-S07','fromOff'],['A-S08','bound'],['A-S08','unborn']]],
+ ['Unhappy: Let it go stuck',[['A-S11','confirm'],['A-S11','notRemoved'],['A-S11','storageStuck']]],
+ ['Unhappy: doorways',[['A-S14','activeTake'],['A-S14','appLock'],['A-S14','failed'],['A-S15','map']]]
+];
+
+/* ---------- Render ---------- */
+function applyTheme(){var p=Object.assign({},S.dark?THEME.dark:THEME.light,S.hc?(S.dark?THEME.hcDark:THEME.hcLight):{});
+ var r=document.getElementById('phone').style;Object.keys(p).forEach(function(k){r.setProperty('--'+k,p[k]);});}
+function render(){
+ var st=S.state;var ph=document.getElementById('phone');
+ if(st==='dark'){S.dark=true;} if(st==='ax5'){S.ax5=true;} if(st==='vo'){S.vo=true;}
+ ['tDark','tAx5','tRt','tHc','tVo'].forEach(function(id){var k={tDark:'dark',tAx5:'ax5',tRt:'rt',tHc:'hc',tVo:'vo'}[id];document.getElementById(id).checked=S[k];});
+ ph.className='phone'+(S.dark?' dark':'')+(S.ax5?' ax5':'')+(S.rt?' rt':'')+(S.hc?' hc':'');
+ applyTheme();
+ var def=SCREENS[S.screen];var rs=(st==='dark'||st==='ax5'||st==='vo'||/^(offline|killSwitch|signedOut)$/.test(st))?def.states[0]:st;
+ if(S.screen==='A-S04'&&(st==='ax5'||st==='vo')) rs=st;
+ if(S.screen==='A-S07'&&(st==='ax5'||st==='vo')) rs=st==='ax5'?'withPhoto':'default';
+ var html=def.f(rs);
+ ph.innerHTML='<div class="status"><span>9:41</span><span>'+S.screen+'.'+st+'</span></div>'+html;
+ document.getElementById('title').textContent=S.screen+' '+def.t+'  /  '+S.screen+'.'+st;
+ document.getElementById('states').innerHTML=def.states.map(function(x){return '<button class="'+(x===st?'on':'')+'" data-st="'+x+'">'+x+'</button>';}).join('');
+ document.getElementById('note').textContent=(def.n&&def.n[st])||(def.n&&def.n[def.states[0]]&&st!==def.states[0]?'See DESIGN.md '+S.screen+' states table.':'')||'See DESIGN.md.';
+ document.getElementById('slist').innerHTML=Object.keys(SCREENS).map(function(k){return '<button class="'+(k===S.screen?'on':'')+'" data-scr="'+k+'">'+k+' '+SCREENS[k].t+'</button>';}).join('');
+ document.getElementById('jlist').innerHTML=JOURNEYS.map(function(j,i){return '<button class="'+(i===S.journey?'on':'')+'" data-j="'+i+'">'+j[0]+'</button>';}).join('');
+ var jp=document.getElementById('jpanel');
+ if(S.journey!==null){var j=JOURNEYS[S.journey];jp.innerHTML='<h2>'+j[0]+'</h2><ol class="jsteps">'+j[1].map(function(s,i){return '<li class="'+(i===S.step?'on':'')+'">'+s[0]+'.'+s[1]+'</li>';}).join('')+'</ol><button id="jprev">Back</button> <button id="jnext">Next</button>';
+  document.getElementById('jprev').onclick=function(){if(S.step>0){S.step--;goStep();}};document.getElementById('jnext').onclick=function(){if(S.step<j[1].length-1){S.step++;goStep();}};}
+ else jp.innerHTML='';
+}
+function goStep(){var s=JOURNEYS[S.journey][1][S.step];S.screen=s[0];S.state=s[1];render();}
+function go(target){if(!target)return;var p=target.split(':');S.screen=p[0];S.state=p[1]||SCREENS[p[0]].states[0];S.journey=null;render();}
+document.addEventListener('click',function(e){var el=e.target.closest('[data-go],[data-st],[data-scr],[data-j]');if(!el)return;
+ if(el.dataset.st){S.state=el.dataset.st;render();return;}
+ if(el.dataset.scr){S.screen=el.dataset.scr;S.state=SCREENS[S.screen].states[0];S.journey=null;render();return;}
+ if(el.dataset.j!==undefined){S.journey=+el.dataset.j;S.step=0;goStep();return;}
+ if(el.dataset.go!==undefined) go(el.dataset.go);});
+[['tDark','dark'],['tAx5','ax5'],['tRt','rt'],['tHc','hc'],['tVo','vo']].forEach(function(p){document.getElementById(p[0]).addEventListener('change',function(e){S[p[1]]=e.target.checked;if(!e.target.checked&&S.state===p[1])S.state=SCREENS[S.screen].states[0];render();});});
+(function(){var h=(location.hash||'').slice(1);if(!h)return;var parts=h.split('&');var p=parts[0].split(':');if(SCREENS[p[0]]){S.screen=p[0];S.state=p[1]||SCREENS[p[0]].states[0];}
+ parts.slice(1).forEach(function(k){if(k in S)S[k]=true;});})();
+render();
+</script>
+</body>
+</html>
