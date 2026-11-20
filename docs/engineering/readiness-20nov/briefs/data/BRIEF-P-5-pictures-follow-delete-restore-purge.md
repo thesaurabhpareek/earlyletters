@@ -12,6 +12,7 @@ Blocked until: #835 (entry_media store, head 39cf30d3) merged, which waits on th
      [NS-36-R1b] restore returns everything  mutant: restore the letter row only
      [NS-36-R1c] purge removes picture files  mutant: purge the row and leave files
      [NS-36-R2] export holds every part      (the writer is BL-933; assert the manifest here once it lands)
+   Arrange must assert first that the picture row and its three files EXIST before the act (otherwise each test passes on an empty store); the purge test asserts files exist, then purge, then absent, files removed before the row.
    Fixture: Asha letter with the stored copy, two smaller copies, a first and a seal (when they exist), clock advanced 31 days.
 
 3. FILES: TOUCH / DO NOT TOUCH

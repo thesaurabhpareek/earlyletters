@@ -9,7 +9,8 @@ Blocked until: Karma's ruling on OQ-K1 (default H1) and the founder's size excep
    Rows: NS-36-R11 (F12), NS-06-A10, A11, B21 (the later users). H1 itself has no card row; its proof is the unchanged suite.
    Tests (new titles, PROPOSED; no card gives them):
      [H1] sync functions equal 20261016000000 apart from the hook lines   (pg_get_functiondef compared; mutant: change one clause outside the hooks)
-     [H1] every sync_v1 cell passes unchanged                              (the existing suite, no edits; mutant: make a hook return a column)
+     [H1] every sync_v1 cell passes unchanged                              (the existing suite, no edits)
+     [H1] a hook cannot leak a column to a non-author   mutant: make entry_own_extra return a column; the existing cell that catches it is the sync_private allowlist test, access_matrix.test.mjs:651-669 (SYNC_PRIVATE_FOR_SIGNED_IN lists exactly the callable helpers), plus a new cell: another member's pull holds no key the hook adds
    Hooks (data-and-sync 2.3): sync_private.entry_groups_apply(p_id, d, p_changed) security invoker, one guarded update that writes only when a value differs; sync_private.entry_own_extra(public.entries) appended to both own-row builders; public.entries_extra_content(new, old) OR-ed into the consent tuple.
    Red on develop: no hook exists; a column PR restates the whole function.
 
@@ -23,14 +24,14 @@ PR #917 KNOWLEDGE-PACKS-2.md Pack 9; data-and-sync.md sections 2.3 (H1), 4, 8 ri
    Stale-fact check: re-open every file:line you cite; `git grep` the symbol.
 
 5. CODE ENTRY POINTS (file:line, checked at 16e61549 unless marked)
-   supabase/migrations/20261016000000_sync_v1_server.sql:931   sync_push (354 lines to :1285); :1302 sync_pull (358 lines to :1660)
+   supabase/migrations/20261016000000_sync_v1_server.sql:931   sync_push (security INVOKER, :932; 354 lines to :1284); :1302 sync_pull (security DEFINER, :1303; 358 lines to :1659)
    supabase/migrations/20261016000000_sync_v1_server.sql:1031-1033   unknown group raises 22023 for good
    supabase/migrations/20261016000000_sync_v1_server.sql:1481-1496  own-row builder; :1498 book_entries read; :1635 to_jsonb(h) held row
    supabase/migrations/20261015030000_v1_wire_contract_columns.sql:145   latest entries_family_rules (search the latest, E29)
    supabase/tests/sync_v1_server.test.mjs, v1_wire_contract.test.mjs, sync_perf.test.mjs:38   suites that must stay green and fast
 
 6. DATA AND SECURITY
-   Data classes: none new (no column). Security invoker hooks run under the caller's RLS; a hook never widens a read. No content in logs.
+   Data classes: none new (no column). Correction after review: sync_push is security invoker (:932) but sync_pull is security DEFINER (:1303), so a hook called from the pull does NOT run under the caller's RLS. Therefore every hook is a PURE function of its arguments plus the caller id passed in (it reads no table of its own); entry_own_extra takes the row and the caller id. DB-R14: each hook ends with `revoke execute ... from public, anon`. DB-R15: any hook that is definer sets search_path = pg_catalog, public and has a comment saying why; prefer invoker and pure. No content in logs.
    Boundary: sync read and write paths and the consent tuple. Owner of the read: security-architect; red-team (D-041).
 
 7. LIBRARIES ALLOWED
