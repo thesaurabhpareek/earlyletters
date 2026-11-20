@@ -15,12 +15,12 @@ Order is within a lane (1 first). Size S about 300 lines or less, M one or two P
 
 | Order | Brief | Lane | Depends on | Size | Lens A / B | Wave | Blocked on |
 |---|---|---|---|---|---|---|---|
-| P1 | `BRIEF-PR835-photo-3a-migration-11.md` | photo | develop | 783 lines, 15 files | data-steward / security-architect | 1 | founder (size, #854), Karma (Q-E12) |
+| P1 | `BRIEF-PR835-photo-3a-migration-11.md` | photo | develop | 783 lines, 15 files | data-steward / security-architect | 1 | founder (size, #854) only: Q-E12 is answered no (CR-69 A2, E35) |
 | P2 | `BRIEF-PR836-photo-3b-stored-copy.md` | photo | #835 | 1,015 lines, 16 files | principal-architect / compliance-engineer | 1 | founder (size, #854, character-limit line) |
 | P3 | `BRIEF-PR837-photo-4a-picker-pending.md` | photo | #836 | 732 lines, 15 files | principal-architect / security-architect | 1 | founder (size, #854) |
-| P4 | `BRIEF-PR838-photo-4b-home-capture.md` | photo | #837 | 629 lines, 25 files | principal-architect / design-systems | 1 | founder (size, 5 keys), product (R20b) |
-| P5 | `BRIEF-PR839-photo-4c-letter-page.md` | photo | #838 | 603 lines, 17 files | principal-architect / design-systems | 1 | founder (size, 13 keys), product (C-01, N7) |
-| P6 | `BRIEF-PR840-photo-5-photos-lens.md` | photo | #839 | 342 lines, 12 files (inside CODE-R02) | design-systems / principal-architect | 1 | founder (1 key), product (C-09) |
+| P4 | `BRIEF-PR838-photo-4b-home-capture.md` | photo | #837 | 629 lines, 25 files | principal-architect / design-systems | 1 | founder (size, 5 keys); R20b is settled (E40) |
+| P5 | `BRIEF-PR839-photo-4c-letter-page.md` | photo | #838 | 603 lines, 17 files | principal-architect / design-systems | 1 | founder (size, 13 keys); C-01 is ruled (picture above the words) so #839 is reworked and grows; product (N7 only: [U] I found no closure in CR-69 or GAP-LOG) |
+| P6 | `BRIEF-PR840-photo-5-photos-lens.md` | photo | #839 | 342 lines, 12 files (inside CODE-R02) | design-systems / principal-architect | 1 | founder (1 key); C-09 is ruled ("Go to a month" stands) |
 | P7 | `BRIEF-BL953-stored-copy-cap.md` | photo | BL-931 | S | principal-architect / security-architect | 2 | BL-931 |
 | P8 | `BRIEF-P1-icloud-progress-and-cancel.md` | photo | BL-931, BL-953 (wave 2), BL-878, row 33-3 (`progress-bar.tsx` is not on develop) | S | principal-architect / security-architect | 2 (plan 2.4) | founder (word), an id, design-systems (33-3) |
 | P9 | `BRIEF-BL957-one-length-rule.md` | photo | #839 (field limits live in components/photos/*); reuses `splitsCluster` (`packages/core/src/text.ts:78`) and `graphemes()` (`book-cover.logic.ts:104`) | S | principal-architect / data-steward | 2 | #839 |
@@ -32,15 +32,15 @@ Order is within a lane (1 first). Size S about 300 lines or less, M one or two P
 | P15 | `BRIEF-BL933-export-1-7-0.md` | photo | BL-868, BL-931 | M, 2 PRs | data-steward / compliance-engineer | 2 | founder (BL-868 legal merge), Karma (minor) |
 | F1 | `BRIEF-PR894-find-6-words-pause-switch.md` | find | #885 (merged) | 228 lines, 12 files (not 2,077) | principal-architect / compliance-engineer | 1 | founder (12 words) |
 | F2 | `BRIEF-PR895-find-7-wiring.md` | find | #894; #879 for the guard | 338 lines, 12 files | principal-architect / compliance-engineer | 1 | #894, #879, device row S1-205 |
-| F3 | `BRIEF-BL952-8-find-mode-and-header.md` | find | #894, #895, #840, #879 | M, 2 PRs | principal-architect / compliance-engineer | 1 | content (R39 reword), product (C-09) |
+| F3 | `BRIEF-BL952-8-find-mode-and-header.md` | find | #894, #895, #840, #879 | M, 2 PRs | principal-architect / compliance-engineer | 1 | content (R39 reword) |
 | A1 | `BRIEF-PR871-bl961-2-account-cover.md` | account | #869 (merged) | 385 lines net, 11 files | principal-architect / security-architect | 1 | founder (held-screen words) |
 | A2 | `BRIEF-PR879-bl961-3-store-reads.md` | account | #871 | 341 + 24 lines, 9 files | principal-architect / security-architect | 1 | #871 |
 | A3 | `BRIEF-BL922-held-screen-and-one-reader.md` | account | #871, #879 | M, 2 PRs | principal-architect / security-architect | 1 | #871, founder (words) |
 | A4 | `BRIEF-HO911-delete-account-second-account.md` | account | #879 | S, about 80 lines | security-architect / compliance-engineer | 1 | #879 |
 | A5 | `BRIEF-BL978A-new-phone-retry-method-switch.md` | account | BL-922 | M, about 300 lines | principal-architect / security-architect | 1 | BL-922, founder (R12 line) |
 | A6 | `BRIEF-BL978B-book-level-recordings-line.md` | account | BL-978a, BL-965 words | M, about 300 lines | principal-architect / design-systems | 1 | founder (words) |
-| R1 | `BRIEF-BL966A-notification-budget-registry.md` | reminders | none | S, about 250 lines | principal-architect / compliance-engineer | 1 | Karma (Q-E1), founder (Q8), product (R4b) |
-| R2 | `BRIEF-BL966B-planner-one-a-day.md` | reminders | 966a | M, about 350 lines | principal-architect / compliance-engineer | 1 | 966a, Q-E1 |
+| R1 | `BRIEF-BL966A-notification-budget-registry.md` | reminders | none | S, about 250 lines | principal-architect / compliance-engineer | 1 | founder (Q8); Q-E1 and R4b are closed by CR-69 A1 (one `budget.ts`, 60 in total, plan notices first); `payments` owns a one-line re-plan hook |
+| R2 | `BRIEF-BL966B-planner-one-a-day.md` | reminders | 966a | M, about 350 lines | principal-architect / compliance-engineer | 1 | 966a |
 | R3 | `BRIEF-BL966C-categories-placeholder-interruption.md` | reminders | 966b | S, about 150 lines | principal-architect / compliance-engineer | 1 | founder (placeholder words), Karma (key name) |
 | R4 | `BRIEF-HO908-planner-account-guard.md` | reminders | #879 | S, about 60 lines | principal-architect / compliance-engineer | 1 | #879 |
 | R5 | `BRIEF-HO910-reminders-account-gone-and-upgrade.md` | reminders | #879 (case 1) | S, 2 PRs | principal-architect / compliance-engineer | 1 | #879, Karma (which builds shipped) |
@@ -49,15 +49,16 @@ Order is within a lane (1 first). Size S about 300 lines or less, M one or two P
 Not briefed, with the reason: #798 and #799 (Karma disposes of #798, the legal row is the founder's); BL-868, BL-870, BL-959, BL-960, #854, #873, #907, #909 (other lanes: data, sync, privacy, legal, security); BL-925, BL-926, BL-977, P-4 (keeping lane, not mine); BL-937, BL-938, BL-939, BL-946, BL-982, BL-985 and later waves (blocked behind the briefs above; write them when their blockers merge); device rows S1-204, S1-205, J-N rows (qa). NS-10 rows R1, R6, R14 are two-phone device rows (qa); R9 waits for `sync`'s answer (OQ-6).
 
 ## Findings that change the plan (each also in the brief)
-0. Closures of 20 Nov evening (inputs branch 84bcf961) change eight briefs: #835 (E35), #838 to #840 (E40, C-01, C-02, C-09), BL-954, BL-932, BL-933, BL-952-8, BL-966a/b, BL-943.
+0. Closures of 20 Nov evening (inputs branch 84bcf961; CR-69 A1 and A2 on branch `docs/cto-rulings-cr69-20nov`, PR #981; CL-115, CL-116; errata E34 to E42) supersede the older lines below. They changed eleven briefs: #835 (E35, A2), #838 to #840 (E40, C-01, C-02, C-09), BL-954, BL-932, BL-933, BL-952-8, BL-966a and b, BL-943. PR #980 corrects five of them (BL-943, #838, #839, #840, BL-954); the rest are on their own PRs.
 1. #894 is not 2,081 lines. GitHub counts the squash-merged #881 to #885 under it. The merge result against develop is 12 files, +228/-4 [V `git merge-tree --write-tree`]. It needs no size exception and the "dirty" flag is stale: the local merge is clean. Merge develop into the branch and re-read the head.
 2. Plan 2.3 says BL-922's "922b is #869". It is not: #869 is the pure `bookVisibleTo`. The consent sheet still calls `readAccountBooks` twice (`consent.tsx:134`, `:151`) and the test pins it (`first-run-new-account.test.ts:152-156`) [V]. BL-922 has no PR.
-3. Q-E12 (migration 11 amended in #835 for several pictures and video, or migration 12 later) is Karma's and must be ruled before #835 merges (PR #932, PACK-DELTA-3 section 3.2).
-4. `budget.ts` has two shapes (a pure chooser in the handoff, a class registry in our design: Q-E1). The test titles hold under both; the exports wait.
+3. Q-E12 is CLOSED: answered no (CR-69 A2, E35, CR-64). #835 merges as it is; NS-52 lands in a new local migration after 1.0.
+4. CLOSED by CR-69 A1: one `budget.ts` holds the registry and `chooseOnePerDay`; ranks typed day, birthday, `libraryDay`, month, evening; `TOTAL_MAX = 60`; 60 pending in total, plan notices first. The planner allowed 64 (`planner.ts:295`, `plan-reminders.logic.ts:48`), so the change lowers it. `payments` owns a one-line re-plan hook on the plan-notice scheduler.
 5. The planner guard (#908) and the Delete-account guard (#911) both need `bookVisibleNow`, which only #879 adds. NSC-03 stays open for reminders until HO-908.
 
 ## Conflicts for product and Karma (written as Conflict lines; I did not build either way)
-- NS-01-R20b (Change last in VoiceOver) against #838 (Change under the picture). Plan M30; RN reading order is experimental.
+- CLOSED by product after this README was first written (CL-115, CL-116, errata E34 to E42, CR-69 A1 and A2): R20b order (E40: thumbnail, Change, prompt, Speak, Type, as built in #838); picture ABOVE the words (C-01: #839 must change); timed Undo windows with one clock owned by the toast, `createUndo` (C-02; BL-954 rewritten); toast keeps Close (C-07); "Start from a photo" third and quiet (C-08); "Go to a month" stands (C-09); six slip ranks (E36); 60 in total (E13); Q-E12 no (E35).
+- Still open: N7 (an existing picture is hidden on its page when the switch is off; R19 does not say) [U closure not found];
 - BL-955: backlog says write the copy when the pick returns; the card title says nothing is kept before Review. E2: encoding during a take breaks NS-37-R2.
 - NS-52 (several items, video) and NS-51 (photo moments) would change #835, BL-932, BL-933: unlocked, not built to.
 - Key name for the placeholder: `notifications.previewPlaceholder` (09-capture design) against `reminders.previewPlaceholder` (11-foundations).
@@ -86,3 +87,5 @@ Sampled about 60 file:line cites across the briefs against develop `16e61549` an
 | #927 | `agent/qa/readiness-quality-4` | `quality/TEST-CASE-CATALOGUE-D-*.md` |
 | #928, #929 | `agent/ops/readiness-performance`, `-2` | `performance/NFR-BUDGETS.md`, `MEASUREMENT-PLAN.md` |
 | #931, #932, #933 | `agent/principal-architect/readiness-inputs`, `-pack-delta-b`, `-pack-delta-c` | `inputs/PACK-DELTA*.md`, `RESYNC-LIST.md` |
+
+Notes after review A: BL-957 reuses `splitsCluster` in `packages/core/src/text.ts` and adds an export (CR-69 A8 "Grapheme counting"); no second copy. In #958, brief 894 adds the `bookSearch` key only; the CR-69 A5 PR owns `packages/api/README.md` "Eight keys" and `KILL_SWITCH_FLAG`. Each table row's PR: #835 to #837 are in #953; #838 to #840 in #954; P-1, BL-953, BL-957 in #955; P-5, BL-954, BL-955 in #956; BL-932, BL-956, BL-933 in #957; #894, #895, BL-952-8 in #958; #871, #879, BL-922 in #959; HO-911, BL-978a/b in #960; BL-966 a to c in #961; HO-908, HO-910, BL-943 in #962.
