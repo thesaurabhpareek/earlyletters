@@ -363,3 +363,12 @@ Sync bookkeeping, the plan status the phone reports, and the aggregate schema `i
 - Q-c1 (CPO-privacy, CLO) Is a server copy of plan state still wanted given ADR 0013? Default: yes, as built and labelled L3; add the four tables to the inventory in BL-960.
 - Q-c2 (CCO) Retention of `subscription_status` rows. Default: with the account only.
 - Q-c3 (CISO) Extend `classification.test.mjs` to `ops` and `insights`. Default: yes, as a test-only change by `qa` with `data-architect` adding the 10 missing comments in a new migration.
+
+### Council answers (20 Nov 2026)
+
+Source: `DECISIONS-20nov.md` (PR #1013, branch `docs/decisions-closed-20nov`, until it merges) and the CDO and CISO return (`cdo-ciso.md`, working file, "CDO return"). Gates and numbered gaps: 01a section 8.
+
+- Q-c1: AGREE, as built and labelled L3; conflict C-2 goes to `privacy` and counsel.
+- Q-c2: AGREE, rows live with the account; give `subscription_report_rates` windows an age sweep (G-6, G10 [E]).
+- Q-c3: AGREE (CDO return). Add the 10 missing comments in a new migration (02i S9), then widen `classification.test.mjs` (01a 8.4). Two internal views no role reads; unlabelled is still unlabelled.
+- C9 (RULED): drop the grant of `insights_reader` to `authenticator` (`20261004300000:35-37` [V]); only `service_role` runs the weekly report (02i S9).
