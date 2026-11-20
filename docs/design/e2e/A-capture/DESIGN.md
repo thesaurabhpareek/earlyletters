@@ -973,13 +973,13 @@ The design response is the FR requirement itself (FUNCTION-TRACE section 1).
 | OPP-08 | A-S03 | Bringing in a file by a system picker: not drawn here (NS-06; not in this area's cards) |
 
 ### 11.3 Contradictions with a product ruling (flagged, not resolved)
-1. FR-OPP-03 and FR-PHS-54 say "only the chosen item reaches the app"; RV-12 ruled that wrong. This file follows RV-12 and NS-49-R16; the FR text needs the amendment.
+1. FR-OPP-03 and FR-PHS-54 say "only the chosen item reaches the app"; RV-12 ruled that wrong. This file follows RV-12 and NS-49-R16; the FR text is amended (20 Nov).
 2. FR-OPP-07 ("from {child}" path) against NS-16-R5 (never invite a child to speak): not drawn.
 3. FR-OPP-04 ("the same question again") against NS-46-R22 and the "no again" rule in NS-48-R4: not drawn.
 4. NS-50-R3 against R15 on one or two renderings of a quiet-tone day (G-22).
-5. NS-49-R1 says "one of the equal starts" in section 3 and "never larger than Speak" and "quiet capsule" in R1; the design draws it quiet, third (the section 23 default). The card text itself disagrees.
+5. NS-49-R1 says "one of the equal starts" in section 3 and "never larger than Speak" and "quiet capsule" in R1; the design draws it quiet, third (the section 23 default). The card text is corrected (20 Nov): the third and quiet start.
 6. FUNCTION-TRACE 6.1 row for cultural-data says "A-S01 Home strip (today strip, NS-50)": the product ruling is slip, not strip (R-IA-3). The design follows the ruling.
-7. NS-47-R29 prescribes `DoorNote` "dismissible" in a list of what it must never be, but its sentence reads "never collapsed, dismissible, behind an info glyph or glass": ambiguous list; this file reads it as "never dismissible".
+7. NS-47-R29 prescribes `DoorNote` "dismissible" in a list of what it must never be, but its sentence reads "never collapsed, dismissible, behind an info glyph or glass": ambiguous list; this file reads it as "never dismissible"; the card is corrected to say so (20 Nov).
 
 ## 12. Round 2 additions (founder direction 20 Nov, second round): photo moments, and pictures and videos with a letter
 

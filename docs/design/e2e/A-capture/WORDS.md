@@ -112,7 +112,7 @@ We add no line above Apple's picker until counsel clears the NX-33 label line (N
 | `listen.ready.hint` | E | "Tap the red circle and talk." | A-S04.ready, A-S04.doorway | same | n/a | BRAND glossary (record control) |
 | `listen.ready.startA11y` | E | "Start recording" | the red circle (no visible text) | label | input labels `listen.ready.startInputLabels` | NS-06-C1, NS-33 |
 | `listen.ready.startInputLabels` | P | ["Start recording", "Red circle", "Record"] | Voice Control only | n/a | any of the three | NS-33 (Voice Control), spec 05 section 9 |
-| `features.photos.capture.thumbA11y` | P | "The photo you picked" | A-S04.readyPhoto, the thumbnail | label (image) | n/a | NS-01-R20b (order: thumbnail, prompt, Speak, Type, Change photo) |
+| `features.photos.capture.thumbA11y` | P | "The photo you picked" | A-S04.readyPhoto, the thumbnail | label (image) | n/a | NS-01-R20b (order: thumbnail, Change photo, prompt, Speak, Type; errata E40) |
 | `features.photos.capture.change` | C | "Change photo" Was: "Change" | A-S04.readyPhoto, A-S06.withPhoto, under the thumbnail | same | "Change photo" | NS-01-R20b, R20e; gap W2 |
 | `common.closeButton` | E | "Close" | A-S04 all (a back-out writes nothing) | same | "Close" | NS-01-R4 |
 | `features.photos.capture.openFailed` | C | "That photo could not be opened. You can choose another, or go on without one." Was: "That photo could not be opened. Choose another." | A-S04.photoCouldNotOpen, in the thumbnail slot | announced once | n/a | NS-01 section 15 (#838 state); A-U15 |

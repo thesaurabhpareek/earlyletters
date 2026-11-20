@@ -338,7 +338,7 @@ iOS Bold Text asks for heavier text. Apple's emphasized weights for its own styl
 | Literata Italic 400 (signature) | Literata Italic 400, no change | Signatures do not get heavier | Literata SemiBold Italic 600, opsz 16 (new cut) |
 | Tiro Devanagari Hindi 400 | Tiro Regular, no change | No heavier Tiro exists (Google Fonts has Regular and Italic only) | Q3 |
 
-Stage 1 is the audit's map (AUDIT 7) and ships with DS2-04; stage 2 needs the new files and a size measurement against the 40 MB budget (DS2-05). Symbols step one weight heavier with Bold Text (section 8). Q3: Devanagari letter runs either stay in Tiro Regular under Bold Text (the letter's face does not change mid-paragraph) or switch to a heavier OFL Devanagari serif; that is a design call for the Chief Design Officer role, not a token call.
+Stage 1 is the audit's map (AUDIT 7) and ships with DS2-04; stage 2 needs the new files and a size measurement against the 40 MB budget (DS2-05). Symbols step one weight heavier with Bold Text (section 8). Q3 (answered 20 Nov, errata E17): Devanagari letter runs stay in Tiro Regular under Bold Text (the letter's face does not change mid-paragraph); the role still has its Bold Text face by the fallback above.
 
 ### 4.5 Numerals
 
