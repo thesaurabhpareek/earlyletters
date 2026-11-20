@@ -67,7 +67,7 @@ export interface PickedFiles {
   read(uri: string): Promise<Uint8Array>;
   /** Never throws: a file already gone is fine. */
   remove(uri: string): Promise<void>;
-  /** Empties the picker's folder. Never throws. */
+  /** Empties the picker's folder (Caches/ImagePicker) and the re-encode's (Caches/ScribePhoto). Never throws. */
   sweep(): Promise<void>;
 }
 

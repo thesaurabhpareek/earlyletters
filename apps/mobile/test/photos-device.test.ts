@@ -1,6 +1,7 @@
 /// <reference types="node" />
-// Device-side pieces of Photo with a letter that run in Node: the orientation baker (C7), and the scribe-photo Swift
-// module read as source (C8). What only a phone can show is listed as device checks in the PR.
+// Device-side pieces of Photo with a letter that run in Node: the file layer over the expo-file-system stand-in (C7,
+// C9), the entry_media table and the launch sweep (ADR 0028 D1, D5), the orientation baker (C7), and the scribe-photo
+// Swift module read as source (C8). What only a phone can show is listed as device checks in the PR.
 import { mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -74,6 +75,7 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
     await f.remove(other);
     await f.remove(traversal);
     expect(h.disk.files.has(other)).toBe(true);
+    expect(h.disk.files.has(traversal)).toBe(true);
     await f.remove(inside);
     expect(h.disk.files.has(inside)).toBe(false);
     await expect(f.read(other)).rejects.toThrow();
@@ -119,13 +121,18 @@ describe('[NX-39-R53][C7] the launch sweep empties Caches/ImagePicker and refuse
     const db = `${h.disk.documents}SQLite/scribe.db`;
     const take = put(h.disk, `${recorderDir(h.disk)}/recording-0194.m4a`, 10);
     const stray = put(h.disk, `${folder.uri}x.png`, 10);
+    // Two .jpg files outside photos/, so a guard weakened to "ends in .jpg" goes red.
+    const baked = put(h.disk, `${h.disk.caches}ScribePhoto/b.jpg`, 10);
+    const docJpg = put(h.disk, `${h.disk.documents}x.jpg`, 10);
     // From photos/, three levels up is the container: these names would reach Documents if remove() trusted them.
-    for (const bad of ['../../../Documents/SQLite/scribe.db', '../../../Documents/ExpoAudio/recording-0194.m4a', 'x.png', '.', '..', '']) {
+    for (const bad of ['../../../Documents/SQLite/scribe.db', '../../../Documents/ExpoAudio/recording-0194.m4a', '../../Caches/ScribePhoto/b.jpg', '../../../Documents/x.jpg', 'x.png', '.', '..', '']) {
       await files.remove(bad);
     }
     expect(h.disk.files.has(db), 'database').toBe(true);
     expect(h.disk.files.has(take), 'recording').toBe(true);
     expect(h.disk.files.has(stray), 'stray file').toBe(true);
+    expect(h.disk.files.has(baked), 'the re-encode JPEG').toBe(true);
+    expect(h.disk.files.has(docJpg), 'a JPEG in Documents').toBe(true);
     expect(folder.exists).toBe(true);
     expect(namesIn(h.disk, folder.uri)).toEqual(['0194-abc.jpg', 'x.png']);
   });
@@ -666,6 +673,10 @@ describe('[C8] the Swift module: Apple\'s picker and ImageIO, nothing else', () 
     } finally {
       rmSync(extra, { recursive: true, force: true });
     }
+  });
+  it('[C8] the Swift name rule is files.ts PLAIN_NAME ending in \\z, so the two cannot drift (#841 review)', () => {
+    const jsRule = /const PLAIN_NAME = \/(.+)\/;/.exec(readFileSync(join(__dirname, '..', 'src', 'lib', 'photos', 'files.ts'), 'utf8'))?.[1] ?? '';
+    expect(/range\(of: "([^"]+)"/.exec(swift)?.[1].replace(/\\\\/g, '\\')).toBe(jsRule.replace(/\$$/, '\\z'));
   });
   it('[C8] the pod declares the frameworks the module imports and depends on ExpoModulesCore only; the config names one module', () => {
     const pod = readFileSync(join(dir, 'ios', 'ScribePhoto.podspec'), 'utf8');
