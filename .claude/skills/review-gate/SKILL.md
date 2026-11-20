@@ -12,18 +12,19 @@ Load this before you review a pull request whose merge needs two counted reviews
 | What | Where |
 |---|---|
 | Who merges, and the gate | `docs/DECISIONS.md` D-132 (Karma merges after two independent counted reviews on the current head and green CI); `docs/agents/COORDINATION.md` section 6 |
-| The counted format | `.claude/skills/early-letters-cto/SKILL.md` section 4 ("strict counted format"); `scripts/agents/merge-queue.mjs` lines 19 to 24 and 72 |
+| The counted format | `.claude/skills/early-letters-cto/SKILL.md` section 4 ("strict counted format"); Karma's ruling of 20 Nov 2026 on the verdict words (to be recorded as a CR in `docs/agents/cto/RULINGS.md`); `scripts/agents/merge-queue.mjs` lines 19 to 24 and 72 |
 | What a reviewer checks, in order | `docs/agents/OPERATING_MODEL.md` section 6; your charter; chapters by rule id (`docs/engineering/PRINCIPLES.md`) |
 | Size | CODE-R02 in `docs/engineering/01-code-and-change.md` (400 lines, 20 files, or a `Size exception:` line) |
 | Merge readiness, live | `node scripts/agents/merge-queue.mjs` (read-only; REST through `gh api`) |
 
 ## 2. The first line is the vote
 
-`## Review A at <40-character head sha>: PASS` (or `Review B`).
+`## Review A at <40-character head sha>: PASS` or `: PASS WITH NOTES` (or `Review B`).
 
 - `merge-queue.mjs` reads only line 1 of a PR comment. It needs the full 40-character lowercase sha of the current head, and counts only comments whose author association is OWNER, MEMBER or COLLABORATOR.
-- Only the exact word `PASS` meets a lens. `PASS WITH NOTES`, `CHANGES`, `BLOCKED` or any other word at the head blocks that lens until a later `PASS` (`merge-queue.mjs:47-51`, `:72`).
-- No must-fix: write `PASS` and put the notes in the body. Any must-fix: write `CHANGES`.
+- `PASS` and `PASS WITH NOTES` are counted passes; `CHANGES`, `FAIL` and `BLOCKED` are not (Karma's ruling of 20 Nov 2026). The newest verdict at the head decides a lens.
+- No must-fix: `PASS`, or `PASS WITH NOTES` with the notes in the body. Any must-fix: `CHANGES`.
+- `merge-queue.mjs` (lines 47 to 51 and 72) still counts only the exact word `PASS` and shows `PASS WITH NOTES` as BLOCKED-REVIEW until Karma's fix to it merges; read its table with that in mind.
 - Get the head from the API (`gh api repos/<repo>/pulls/<n> --jq .head.sha`), never from a local branch. Start only when CI is settled and the head has been quiet 10 minutes; the review binds to the full 40-character sha (CR-44 as recorded in `docs/agents/harness-v2/LESSONS-2026-11-08.md` line 10; `merge-queue.mjs` WAIT-QUIET).
 - A marker line such as `<!-- steward:<handle>:<sha> -->` or `<!-- agent:<handle> -->` on line 1 makes the comment uncounted. That conflicts with `OPERATING_MODEL.md` section 4 and AIE-R30, and the founder has not resolved it. Until he does, a review you post as Lens A or B starts with the header, and names you on its last line (`Reviewer: <handle>, independent of the author.`). A review in your charter's marker format is advisory: it is read, not counted.
 
@@ -49,5 +50,5 @@ Keep this order; reviewers who skip a part leave the merger to redo it.
 ## 5. Evidence this is repeated know-how
 
 - #828, #829, #831 and #832 (merged into `develop` on 19 and 20 Nov) each carry Review A and Review B comments in this header at the merged head.
-- All four merged at heads where both lenses wrote `PASS WITH NOTES`, which `merge-queue.mjs` reports as BLOCKED-REVIEW. Writing `PASS` with notes in the body satisfies both the tool and the CTO skill. Which word counts is Karma's ruling to make.
+- All four merged at heads where both lenses wrote `PASS WITH NOTES`; Karma's ruling of 20 Nov 2026 records that as a counted pass.
 - The red-team and five steward charters still describe the marker format (`<!-- red-team:<sha> -->`, `<!-- steward:<handle>:<sha> -->`), used by the dispatcher, which has not run (`docs/agents/HARNESS.md` line 11).
