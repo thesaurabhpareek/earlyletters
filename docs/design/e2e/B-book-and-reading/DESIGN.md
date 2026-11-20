@@ -799,16 +799,16 @@ Open design questions, each with the default this file uses:
 
 | Id | Question | Default |
 |---|---|---|
-| Q-B1 | Where does the past letter sit in the single slip slot: above the prompt (NS-50-R4) or below "Another thought"? | Wherever A-S01 draws the slot, for every rank alike |
-| Q-B2 | Is Apple's title, once taken by "Use this", fine as the parent's own words with no marker? | Yes (as the card); privacy and Karma may reverse |
-| Q-B3 | Should Read together show the picture? | No: words only, as built; a later row if parents ask |
-| Q-B4 | Which key does the seal-opened line's "Not now" use? | Its own key, until content rules |
-| Q-B5 | Is a line about the app being English wanted on reading screens for a non-English book? | No: Save a copy, the printable intro, Me help and the listing carry it |
-| Q-B6 | Which face for Arabic and Chinese, at what file-size cost? | System faces; no bundled face until the cost is stated |
-| Q-B7 | Should the Book offer any way to find letters by a day the parent chose? | No (section 12a); reopen only if NS-31 reopens |
-| Q-B8 | Does "A book to hold" in B-S02 stay under Quiet and Hide, or lead? | Under them; the Book's first jobs are Quiet and Hide |
-| Q-B9 | Does the Months sheet keep its month lines (facts) given FR-DAT-03? | Yes (B G-07 ruled CARD); no new count anywhere |
-| Q-B10 | A hidden letter's day in Recently deleted: show the day or only "Hidden"? | Show the day and no words (as NS-06-B25) |
+| Q-B1 | Where does the past letter sit in the single slip slot: above the prompt (NS-50-R4) or below "Another thought"? | Wherever A-S01 draws the slot, for every rank alike CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B2 | Is Apple's title, once taken by "Use this", fine as the parent's own words with no marker? | Yes (as the card); privacy and Karma may reverse CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-035: Never without Use this; once taken it is the parent's own words, no marker; privacy may reverse |
+| Q-B3 | Should Read together show the picture? | No: words only, as built; a later row if parents ask CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B4 | Which key does the seal-opened line's "Not now" use? | Its own key, until content rules CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B5 | Is a line about the app being English wanted on reading screens for a non-English book? | No: Save a copy, the printable intro, Me help and the listing carry it CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B6 | Which face for Arabic and Chinese, at what file-size cost? | System faces; no bundled face until the cost is stated CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B7 | Should the Book offer any way to find letters by a day the parent chose? | No (section 12a); reopen only if NS-31 reopens CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B8 | Does "A book to hold" in B-S02 stay under Quiet and Hide, or lead? | Under them; the Book's first jobs are Quiet and Hide CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B9 | Does the Months sheet keep its month lines (facts) given FR-DAT-03? | Yes (B G-07 ruled CARD); no new count anywhere CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B10 | A hidden letter's day in Recently deleted: show the day or only "Hidden"? | Show the day and no words (as NS-06-B25) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
 
 ---
 
@@ -862,11 +862,11 @@ Mapped to the functions' round 2 addenda when they land: privacy (backgrounded a
 
 | Id | Question | Default |
 |---|---|---|
-| Q-B11 | May "Photo 2 of 4" inside one letter be spoken, as Read together's "Letter n of m" is? | Yes, as a position; Karma extends rule 3 |
-| Q-B12 | At the media limit, is a calm line wanted where the row was? | Yes, no number |
-| Q-B13 | Does the Photos lens keep its name when videos join? | Keep "Photos"; content may rename |
-| Q-B14 | Can the parent reorder media? | No; added order |
-| Q-B15 | Does Save a copy hold the video file, or only say it stays on the phone? | Area C and the founder (Q-PM-3); the Book assumes the file is held when it is on the phone |
-| Q-B16 | Do a family's own videos need captions under WCAG 1.2 for this private app? | Not drawn; compliance reads; the video's sound is not transcribed (Q-PM-4 default) |
-| Q-B17 | Does Read together show media? | Words only, as Q-B3; a later row |
-| Q-B18 | Moments inside the Book, as a lens? | No (section 15d) |
+| Q-B11 | May "Photo 2 of 4" inside one letter be spoken, as Read together's "Letter n of m" is? | Yes, as a position; Karma extends rule 3 CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B12 | At the media limit, is a calm line wanted where the row was? | Yes, no number CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B13 | Does the Photos lens keep its name when videos join? | Keep "Photos"; content may rename CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B14 | Can the parent reorder media? | No; added order CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B15 | Does Save a copy hold the video file, or only say it stays on the phone? | Area C and the founder (Q-PM-3); the Book assumes the file is held when it is on the phone CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B16 | Do a family's own videos need captions under WCAG 1.2 for this private app? | Not drawn; compliance reads; the video's sound is not transcribed (Q-PM-4 default) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-049: No; compliance reads WCAG point |
+| Q-B17 | Does Read together show media? | Words only, as Q-B3; a later row CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |
+| Q-B18 | Moments inside the Book, as a lens? | No (section 15d) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-105: Defaults stand; Q-B15 resolved by Q-PM-3 Variant A (file held on phone) |

@@ -1170,17 +1170,17 @@ Every state: interruption level `active`, never time-sensitive, no sound set by 
 
 | Id | Question | Default |
 |---|---|---|
-| Q-D-1 | Is the day-name switch placed under the list on C-S24 or on D-S06? | C-S24 (RV-13); area C draws it |
-| Q-D-2 | One switch for every day's words or per day (G-D14)? | One switch (RV-8); Karma rules the errata row |
-| Q-D-3 | Does D-S06 show the row "Days" before tree test T1? | Yes, under Reminders, opening C-S24 |
-| Q-D-4 | Birthday lock title with names off: "A birthday today" or "Something for the book today"? | "Something for the book today" (G-D21 default); founder and CPrivO decide |
-| Q-D-5 | Does a month reminder's "Month 4" belong on a lock screen? | Keep as built (G-D29) |
-| Q-D-6 | `journalNote` wording and whether it shows below level 2 | Shown only where level 2 exists; no "journal" |
-| Q-D-7 | Is the quiet-tone Home line instead of, or under, the prompt? | Instead (RV-7, Q-FD-24) |
-| Q-D-8 | Day slip dismissal word | "Not today" (NS-50-R7) |
-| Q-D-9 | Does an AX5 Bold Text SE 3 fit both DoorNotes and the first tick sentence without scrolling past the first row? | Allowed to scroll; DoorNotes first (G-D28); device check |
-| Q-D-10 | Does the remote pause also cancel delivered reminders? | No: pending only (NS-46-R28) |
-| Q-D-R1 | Photo-moment source rank and cap | After a ticked day; one per 7 days; no back-off exemption (G-D31, G-D34) |
-| Q-D-R2 | Default lock-screen wording for the photo-moment nudge | The card's wording with the plain fallback available; CPrivO decides |
-| Q-D-R3 | May the nudge add a reminder on a day with none? | No (G-D32) |
-| Q-D-R4 | Does the nudge need Reminders on? | Yes |
+| Q-D-1 | Is the day-name switch placed under the list on C-S24 or on D-S06? | C-S24 (RV-13); area C draws it CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-2 | One switch for every day's words or per day (G-D14)? | One switch (RV-8); Karma rules the errata row CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-3 | Does D-S06 show the row "Days" before tree test T1? | Yes, under Reminders, opening C-S24 CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-4 | Birthday lock title with names off: "A birthday today" or "Something for the book today"? | "Something for the book today" (G-D21 default); founder and CPrivO decide CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-5 | Does a month reminder's "Month 4" belong on a lock screen? | Keep as built (G-D29) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-6 | `journalNote` wording and whether it shows below level 2 | Shown only where level 2 exists; no "journal" CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-7 | Is the quiet-tone Home line instead of, or under, the prompt? | Instead (RV-7, Q-FD-24) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-8 | Day slip dismissal word | "Not today" (NS-50-R7) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-9 | Does an AX5 Bold Text SE 3 fit both DoorNotes and the first tick sentence without scrolling past the first row? | Allowed to scroll; DoorNotes first (G-D28); device check CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-10 | Does the remote pause also cancel delivered reminders? | No: pending only (NS-46-R28) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-R1 | Photo-moment source rank and cap | After a ticked day; one per 7 days; no back-off exemption (G-D31, G-D34) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-R2 | Default lock-screen wording for the photo-moment nudge | The card's wording with the plain fallback available; CPrivO decides FOUNDER-ANSWERED 20 Nov, default accepted (CL-054): Founder's example vs neutral; default neutral line, revisit with App lock off and names on |
+| Q-D-R3 | May the nudge add a reminder on a day with none? | No (G-D32) CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
+| Q-D-R4 | Does the nudge need Reminders on? | Yes CLOSED 20 Nov, see GAP-LOG Closures (product pack) CL-108: Defaults stand; Q-D-4 neutral lock title; Q-D-R2 follows Q-PM-9 (founder) |
