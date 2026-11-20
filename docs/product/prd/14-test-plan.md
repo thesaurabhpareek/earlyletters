@@ -99,28 +99,42 @@ Every P0 unit, source and journey test green; every P0 device row run on the can
 
 ## 7. The P0 register
 
-Every acceptance row in the cards is P1 unless it is listed here. RR-4 reason: (a) a promise in `03-goals-and-principles.md` section 1, (b) a legal or store duty, (c) the core loop.
+Rebuilt 20 Nov 2026 from the Priority column of every locked card (`01` to `12`): 296 P0 rows. The card is the source of truth; this register is its index. A row is P0 only if its card says so, with an RR-4 reason: (a) a promise in `03-goals-and-principles.md` section 1, (b) a legal or store duty, (c) the core loop. Every other acceptance row is P1 unless its card says P2. When a card changes a row's priority, the same PR regenerates this table (`python3` over the cards' acceptance tables, matching rows whose Priority cell starts `P0`).
 
-| Rows | Reason |
-|---|---|
-| NS-09-R1 to R4b, R7, R8 | (a) kept and let go are both promises |
-| NS-10-R0, R1, R3, R4 | (a) kept; (b) consent and deletion |
-| NS-08-R5, R6, R7 | (a) kept; (b) label and claims |
-| NS-11-R5 | (a) no counts or fear |
-| NS-13-R5, R6a, R6b, R10, R11, R12, R14, R15 | (a) no guilt, no name on the lock screen; (b) no selling in a reminder |
-| NS-14-R3, R4 | (c) the letter files in the right book |
-| NS-15-R4, R11 | (a) the machine never adds meaning; (b) deletion |
-| NS-16-R4, the Never rows | (b) another adult's and a child's data |
-| NS-17-R1, R2, R3, R5 | (a) no word the parent did not say |
-| NS-21-R4, NS-33-R1 to R8 | (b) accessibility duty (LEGAL-REQ-051) |
-| NS-23-R5, R8 | (a) private and sealed letters stay so |
-| NS-24-R2, R3 | (a) only the parents' words; privacy |
-| NS-25-R1, R2, R3, R6 | (a) private; (b) store rule 2.1(a) |
-| NS-32-R1, R4 | (a) no nagging; (b) plan notices |
-| NS-35-R1 | (c) one place to start |
-| NS-36-R1a to R1c, R3, R5, R6 | (a) yours always, private; (b) deletion and inventory |
+| Card | P0 rows | Reasons |
+|---|---|---|
+| NS-01 | NS-01-R4, NS-01-R6, NS-01-R8, NS-01-R9a, NS-01-R9b, NS-01-R13a, NS-01-R13b, NS-01-R14, NS-01-R15, NS-01-R16a, NS-01-R16b, NS-01-R16c, NS-01-R17a, NS-01-R17c, NS-01-R18, NS-01-R21b, NS-01-R22, NS-01-R25, NS-01-R26, NS-01-R27, NS-01-R29, NS-01-R30, NS-01-R31, NS-01-R32, NS-01-R33, NS-01-R35, NS-01-R36, NS-01-R37a, NS-01-R38a, NS-01-R38b, NS-01-R49, NS-01-R50, NS-01-R51, NS-01-R52, NS-01-R55, NS-01-R61, NS-01-R62 | (a) (b) (c) |
+| NS-02 | NS-02-R4, NS-02-R5, NS-02-R14, NS-02-R15, NS-02-R16a, NS-02-R16b, NS-02-R16c, NS-02-R16d, NS-02-R18, NS-02-R22, NS-02-R24, NS-02-R25, NS-02-R26, NS-02-R31, NS-02-R44, NS-02-R47, NS-02-R48, NS-02-R49 | (a) (b) (c) |
+| NS-03 | NS-03-R1, NS-03-R2, NS-03-R3, NS-03-R4, NS-03-R5, NS-03-R7, NS-03-R8 | (a) (b) |
+| NS-04 | NS-04-R2, NS-04-R4, NS-04-R5, NS-04-R6, NS-04-R7, NS-04-R8 | (a) (b) (c) |
+| NS-05 | NS-05-R3a, NS-05-R3b, NS-05-R4a, NS-05-R5a, NS-05-R5b, NS-05-R6a, NS-05-R6b, NS-05-R7, NS-05-R10a, NS-05-R10b, NS-05-R12, NS-05-R16a, NS-05-R16b, NS-05-R18, NS-05-R21, NS-05-R25, NS-05-R27 | (a) |
+| NS-06 | NS-06-A2a, NS-06-A4, NS-06-A5, NS-06-A13, NS-06-A15, NS-06-A17, NS-06-A22, NS-06-A25, NS-06-B1, NS-06-B1b, NS-06-B2, NS-06-B5, NS-06-B6, NS-06-B8, NS-06-B8b, NS-06-B10, NS-06-B12, NS-06-B16, NS-06-B17, NS-06-B18, NS-06-B20, NS-06-B21, NS-06-B22, NS-06-B23, NS-06-B26, NS-06-C1, NS-06-C2, NS-06-C3, NS-06-C4, NS-06-C7, NS-06-C9 | (a) (b) (c) |
+| NS-07 | NS-07-C5-3, NS-07-C5-9, NS-07-C5-12, NS-07-C28-2, NS-07-C28-3, NS-07-C28-4, NS-07-C28-5, NS-07-C28-11, NS-07-C28-12, NS-07-C28-13, NS-07-C28-17, NS-07-C28-18, NS-07-G11-1a, NS-07-G11-3 | (a) (b) |
+| NS-08 | NS-08-R4, NS-08-R5, NS-08-R6, NS-08-R7, NS-08-R9, NS-08-R10, NS-08-R11, NS-08-R13, NS-08-R14, NS-08-R16, NS-08-R17, NS-08-R18, NS-08-R19 | (a) (b) (c) |
+| NS-09 | NS-09-R1, NS-09-R2, NS-09-R3, NS-09-R4a, NS-09-R4b, NS-09-R7, NS-09-R8, NS-09-R9, NS-09-R10, NS-09-R11, NS-09-R12, NS-09-R14, NS-09-R15 | (a) (b) |
+| NS-10 | NS-10-R0, NS-10-R1, NS-10-R3, NS-10-R4a, NS-10-R4b, NS-10-R5, NS-10-R6, NS-10-R8, NS-10-R10 | (a) (b) |
+| NS-11 | NS-11-R5, NS-11-R8, NS-11-R10, NS-11-R12, NS-11-R23 | (a) |
+| NS-12 | NS-12-R2, NS-12-R3, NS-12-R6, NS-12-R7, NS-12-R8 | (a) (b) |
+| NS-13 | NS-13-R3, NS-13-R4, NS-13-R5, NS-13-R6a, NS-13-R6b, NS-13-R10, NS-13-R11, NS-13-R12, NS-13-R13, NS-13-R14, NS-13-R15, NS-13-R18, NS-13-R19, NS-13-R23, NS-13-R24, NS-13-R27, NS-13-R30, NS-13-R31 | (a) (b) |
+| NS-14 | NS-14-R3, NS-14-R4, NS-14-R8, NS-14-R11 | (b) (c) |
+| NS-15 | NS-15-R4, NS-15-R11, NS-15-R16, NS-15-R18 | (a) (b) |
+| NS-16 | NS-16-R3, NS-16-R4, NS-16-R5, NS-16-R6, NS-16-R9, NS-16-R15, NS-16-R16, NS-16-R18 | (a) (b) |
+| NS-17 | NS-17-R1, NS-17-R2, NS-17-R3, NS-17-R4, NS-17-R5, NS-17-R6, NS-17-R7, NS-17-R8, NS-17-R10 | (a) (b) |
+| NS-18 | NS-18-R3, NS-18-R6, NS-18-R8 | (a) (b) |
+| NS-19 | NS-19-R1, NS-19-R4 | (a) |
+| NS-21 | NS-21-R4, NS-21-R9, NS-21-R11, NS-21-R12, NS-21-R13 | (a) (b) |
+| NS-22 | NS-22-R2, NS-22-R3 | (b) |
+| NS-23 | NS-23-R5, NS-23-R8, NS-23-R11, NS-23-R15, NS-23-R17 | (a) |
+| NS-24 | NS-24-R2, NS-24-R3, NS-24-R10 | (a) |
+| NS-25 | NS-25-R1, NS-25-R2, NS-25-R3, NS-25-R4, NS-25-R6, NS-25-R7, NS-25-R10, NS-25-R12, NS-25-R14, NS-25-R15, NS-25-R16, NS-25-R17, NS-25-R19 | (a) (b) (c) |
+| NS-32 | NS-32-R1, NS-32-R1b, NS-32-R4, NS-32-R4b, NS-32-R8, NS-32-R11, NS-32-R12, NS-32-R14 | (a) (b) |
+| NS-33 | NS-33-R1, NS-33-R2, NS-33-R3, NS-33-R4, NS-33-R5, NS-33-R6, NS-33-R7, NS-33-R8, NS-33-R9, NS-33-R10, NS-33-R12, NS-33-R15, NS-33-R16 | (b) (c) |
+| NS-34 | NS-34-R2, NS-34-R5, NS-34-R6 | (a) (c) |
+| NS-35 | NS-35-R1, NS-35-R3, NS-35-R4, NS-35-R7 | (a) (c) |
+| NS-36 | NS-36-R1a, NS-36-R1b, NS-36-R1c, NS-36-R1d, NS-36-R2, NS-36-R3, NS-36-R4, NS-36-R5, NS-36-R6, NS-36-R7, NS-36-R8, NS-36-R10, NS-36-R11, NS-36-R12 | (a) (b) |
+| NS-37 | NS-37-R2, NS-37-R4, NS-37-R5 | (a) (b) (c) |
 
-Every P0 row needs a test and a backlog row before its card's flag turns on in any build outside the founder's family (RR-3).
+Cross-cutting P0 tests that every card cites: `[X4-R1]` (a second account never sees, claims or uploads the first account's local letters), `[X6-R1]` (no letter text, child name, picture or prompt donated to system intelligence), `[FRAME-SLIP]` (an unregistered Home slip fails). Every P0 row needs a test and a backlog row before its card's flag turns on in any build outside the founder's family (RR-3). Until gate G0 passes (`scripts/trace.mjs` sees NS ids), traceability of these rows is checked by hand at each candidate.
 
 ## 8. Tests owed today
 

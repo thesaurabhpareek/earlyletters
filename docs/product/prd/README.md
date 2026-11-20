@@ -1,10 +1,10 @@
 # New-scope product requirements (11 Nov 2026)
 
-Author: `product`. Status: Draft v1 for the founder and the owners named in each file. Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`.
+Author: `product`. Status: Locked v1.0, 20 Nov 2026 (council round 2; record in `16-council-review-round-2.md`). Docs only: nothing here is built, no string is live, no decision is recorded in `DECISIONS.md`. Cards state order and gates, never build numbers or dates (ruling T5); the roadmap and `13-engineering-plan.md` own timing.
 
 Aligned on 11 Nov to the design specs in PR #794 (`docs/design/specs/NEW-SCOPE-INDEX-11nov.md` and 01 to 07, head at time of writing `0a8499ab`, which will move: cite PR #794 and read its current head; see the changes list below). Where a design default and an earlier line of mine differed, the design default won and the file says so.
 
-Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order (it follows X1 of the closed list; X1 does not order Share one letter, so the build order for Share is set by the build targets in the table below, not by the file order): photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (earliest Build 15).
+Scope came from the founder's request of 10 to 11 Nov 2026 as recorded in `closed-questions-2026-11-11.md` (X1 order of new work, X2 voice leaving the phone, X3 and X4 free versus Plus). One file per item, in this order (it follows X1 of the closed list; X1 does not order Share one letter, so the build order for Share is set by the build targets in the table below, not by the file order): photo with a letter, Find, the family-hears-it pilot, the hands-free spike, Share one letter, then Firsts and the sealed letter (after Share one letter Level 1 and the five-parent study).
 
 ## Added 19 Nov 2026: the full pack
 
@@ -40,39 +40,39 @@ Cards for items further down the rank are shorter on purpose: they record the de
 | The machine may remove and repair, and may never add meaning. No streaks, points or counts of gaps. `{child}` only. | CLAUDE.md, BRAND.md, VOICE.md |
 | One gate: Keep after the allowance of 2, planned raise 2, 5, 10 (D-082). Capture is never blocked. What a family kept stays theirs to read, hear and export. No "free forever". | D-082, closed X3 and X4 |
 | A copy of a child's voice leaving the phone needs a `security-architect` read and a counsel read first. | closed X2 |
-| Memory Library is after Build 13 as a whole. NS-01 is only NX-39 P0 (one picture per letter), which the exec record already puts in Build 13. | `exec-rulings-2026-11-10-expansion.md`; NX-39 |
+| Memory Library comes after the photo release as a whole. NS-01 is only NX-39 P0 (one picture per letter). | `exec-rulings-2026-11-10-expansion.md`; NX-39 |
 | Metrics are content-free. Opt-in analytics is off through 1.0 (D-124). | F18, NX-39-R34 |
 | Lens, Photos lens, Firsts lens, Home memory, index and Find (as a header action) are internal terms. `content` names the parent-facing words (BRAND.md glossary, CR-25); a parent never reads "lens". | BRAND.md |
 | Level 1 share has no recording row and no recording path until `security-architect` and counsel reads are on record; design spec 03 has removed its recording toggle (SH-R2, SH-R10). The shared text has no footer, brand name or link (NS-05-R16, SH-R10). | Karma, 11 Nov |
-| Build 13 is one photo per letter and no video. The design cap of 8 photos and 2 videos is out of Build 13. | design spec 01 section 1a |
+| The first photo release is one picture per letter and no video. The design cap of 8 photos and 2 videos is out of scope for it. | design spec 01 section 1a |
 
 ## The files
 
-| Rank | File | Item | Build target | Flag | Type |
+| Rank | File | Item | Order and gate | Flag | Type |
 |---|---|---|---|---|---|
-| 1 | `01-photo-with-a-letter.md` | Photo-first capture on Home; Photos lens in the Book | 13 | `EXPO_PUBLIC_PHOTOS` | Build |
-| 2 | `02-find.md` | Search the family's own letters on the phone | 13 | `EXPO_PUBLIC_BOOK_SEARCH` | Build |
+| 1 | `01-photo-with-a-letter.md` | Photo-first capture on Home; Photos lens in the Book | First; gates G1 to G5 | `EXPO_PUBLIC_PHOTOS` | Build |
+| 2 | `02-find.md` | Search the family's own letters on the phone | With photos; gates G1 to G5 | `EXPO_PUBLIC_BOOK_SEARCH` | Build |
 | 3 | `03-family-hears-it-pilot.md` | Concierge pilot with 8 to 10 parents | none | none | Research, no build |
 | 4 | `04-hands-free-capture-spike.md` | Time-boxed spike on hands-free start | none | none | Spike |
-| 5 | `05-share-one-letter.md` | One-letter share; the Share tab question | 14 earliest (Level 1) | `EXPO_PUBLIC_SHARE_LETTER` | Build, gated |
-| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | In scope, specified now; build after Share one letter (Level 1) ships and the five-parent study has run, earliest Build 15 for Firsts, the sealed letter and quick capture (flag `EXPO_PUBLIC_QUICK_CAPTURE` for Part C); sealed is author-only (nothing reaches another phone before the day, ADR 0028 D3) and `data-architect` reconciles the UTC instant with the calendar date by Fri 20 Nov 2026 | `EXPO_PUBLIC_FIRSTS` and others | Build, gated by study and spike |
+| 5 | `05-share-one-letter.md` | One-letter share; the Share tab question | After photos and Find; counsel Q45 gates the production flag | `EXPO_PUBLIC_SHARE_LETTER` | Build, gated |
+| 6 | `06-firsts-sealed-letter-quick-capture.md` | Firsts, sealed letter, quick capture | After Share one letter (Level 1) and the five-parent study; sealed is author-only (ADR 0028 D3) and the seal sync choice is card section B10.1 (default: pull clause) | `EXPO_PUBLIC_FIRSTS`, `EXPO_PUBLIC_QUICK_CAPTURE` and others | Build, gated by study and spike |
 | 7 | `07-remaining-capability-rows.md` | Every other NX-42 row: cited, specified or parked | mixed | `EXPO_PUBLIC_PRINT_READY` | Mixed |
 
-Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced (earliest Build 15). Flag names and build numbers are proposals. The release train and `capabilities.ts` set the final names. Dates for Build 13 and Build 14 are not in the repo; this folder does not invent them.
+Firsts and the sealed letter are in scope and not cancelled; only their build is sequenced. Flag names are proposals; `capabilities.ts` sets the final names. Dates are not in this folder.
 
 ## What the founder is asked, with defaults
 
-Every open question in every file has a default. The ones that need the founder:
+Every open question in every file has a default. On 20 Nov every default below was taken under the founder's 19 Nov delegation ("Consult with exec team and make all decisions."); each stays reversible by the founder. Timing words in the defaults are superseded by the roadmap (ruling T5).
 
 | Ask | File | Default if no answer | By |
 |---|---|---|---|
-| Is Photos P1 (date from the file) in Build 13? | 01 OQ-1 | No, P0 only | Fri 20 Nov 2026 |
-| Search across all books? | 02 OQ-1 | No, active book only | Fri 20 Nov 2026 |
-| Accept the pilot principle and the proposed success lines | 03 OQ-1, section 8 | Yes, as written | Fri 20 Nov 2026 |
-| Spike engineer and week | 04 OQ-1 | The Monday after Build 13 is cut | Fri 20 Nov 2026 |
-| Share one letter in Build 14, and no Share tab | 05 OQ-1, OQ-5 | Build 14; no tab | Fri 20 Nov 2026 |
-| Firsts and sealed letters: both in scope; when the five-parent study runs | 06 OQ-A1, OQ-B1 | Study after Build 13; both built earliest Build 15, after Share one letter (Level 1) ships and the five-parent study has run | Fri 20 Nov 2026 |
-| Proof books spend (the amount in the exec record, Q2) | 07 OQ-1 | No spend | Fri 20 Nov 2026 |
+| Is Photos P1 (date from the file) in Build 13? | 01 OQ-1 | No, P0 only | Taken 20 Nov |
+| Search across all books? | 02 OQ-1 | No, active book only | Taken 20 Nov |
+| Accept the pilot principle and the proposed success lines | 03 OQ-1, section 8 | Yes, as written | Taken 20 Nov |
+| Spike engineer and week | 04 OQ-1 | The Monday after Build 13 is cut | Taken 20 Nov |
+| Share one letter in Build 14, and no Share tab | 05 OQ-1, OQ-5 | Build 14; no tab | Taken 20 Nov |
+| Firsts and sealed letters: both in scope; when the five-parent study runs | 06 OQ-A1, OQ-B1 | Study after Build 13; both built earliest Build 15, after Share one letter (Level 1) ships and the five-parent study has run | Taken 20 Nov |
+| Proof books spend (the amount in the exec record, Q2) | 07 OQ-1 | No spend | Taken 20 Nov |
 
 ## Reads that gate anything
 
