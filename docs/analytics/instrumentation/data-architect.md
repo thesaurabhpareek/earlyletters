@@ -1,6 +1,8 @@
 # Instrumentation: where measurement data lives and the reporting layer (data-architect)
 
-Status: PROPOSED, 20 Nov 2026. Author: `data-architect`. Partner PM: PM4 family, reminders, days and lifecycle (`docs/product/instrumentation/04-family-reminders-days-lifecycle.md`, PR #1043). Read beside: `00-event-standard.md` (PR #1042), `data-steward.md` (PR #1037), `ops.md` (PR #1044). Docs only. `supabase/**` is founder-only, so every migration below is text for review, not a file, and no `approve-migration` label is claimed. Nothing here turns analytics on: it is built DARK (FR-DAT-01, D-095, D-124 item 3).
+Status: PROPOSED, 20 Nov 2026. Author: `data-architect`. Partner PM: PM4 family, reminders, days and lifecycle (`docs/product/instrumentation/04-family-reminders-days-lifecycle.md`, PR #1043). Read beside: `00-event-standard.md` (PR #1042), `data-steward.md` (PR #1037), `ops.md` (PR #1044). Docs only. `supabase/**` is founder-only, so every migration below is text for review, not a file, and no `approve-migration` label is claimed.
+
+Revision 2 (20 Nov, later): founder direction in chat, "We are going to build for production now so analytics is needed. I am done with beta now." Analytics ships in the production release behind the opt-in consent gate; it is no longer dark through 1.0.x. This file now designs the data layer for a live product: retention, deletion on withdrawal (data-steward findings F-1 to F-5, `data-steward.md` section 7, merged), classification, the reporting role and cost. The locked statements FR-DAT-01, D-095 and D-124 item 3 say the opposite; they are not edited here. The change needs an erratum (number from the errata owner, next free after E83; CL-158) and the store label, privacy policy line 24 and 45 and the consent wording are the founder's and counsel's (steward section 10).
 
 Founder rule (20 Nov, binding): only completely free, open-source tools that fit Expo/React Native, Supabase and Vercel; no paid product or tier. The coordinator adds: the Supabase and Vercel free tiers already in the stack stay.
 
@@ -10,12 +12,14 @@ Tags: [V] read this session, [U] unverified. Outside facts were read on 20 Nov 2
 
 | Id | Decision (all PROPOSED) | Default |
 |---|---|---|
-| DA-1 | Phone events (screen, ui, perf and domain events with side `phone`) live in PostHog Cloud on its free plan, nowhere in our Postgres | Yes, dark; needs founder and counsel (section 3) |
+| DA-1 | Phone events (screen, ui, perf and domain events with side `phone`) live in PostHog Cloud on its free plan, nowhere in our Postgres | Yes; needs founder and counsel (section 3) |
 | DA-2 | Server counts live in Postgres schema `insights`, as k = 10 views over rows we already keep, plus at most two new gated counters | Yes (section 5) |
 | DA-3 | Reporting layer: Metabase OSS, run on demand from the founder's laptop in Docker, reading through one read-only role; before that, Supabase SQL editor plus `insights_aggregates()` | Yes (section 4) |
 | DA-4 | One new login role `reporting_reader`, member of `insights_reader` only, read-only by default, 5 s statement timeout, 2 connections | Yes (section 6) |
 | DA-5 | No measurement data in object storage. Reports are files in the private ops repo | Yes |
-| DA-6 | New server writes for measurement stay behind a switch that is off in every 1.0.x build | Yes (section 5.3) |
+| DA-6 | New server counters keep an operator kill switch, on at release (section 5.3) | Yes |
+| DA-7 | Withdrawal deletes what we hold: a signed-out `withdrawal` route on `analytics-forget`, with a counts-only global quota (section 6) | Yes, needs the erratum and counsel |
+| DA-8 | Production volume is watched against the free cap, and we never upgrade (section 3, 8) | Yes |
 
 ## 2. Where every kind of measurement data lives
 
@@ -46,7 +50,7 @@ Facts read this session:
 | A. PostHog Cloud, free plan | MIT product [V]; plan $0, no card, hard cap, over-cap events dropped, never billed [V] | Yes if "free tier of an open-source product, like the Supabase and Vercel free tiers" is accepted; PM4 and `data-steward.md` read the rule more strictly. The founder rules (decision F-1) | One more processor: subprocessor row (PRIV-R12), DPA, label rows change, counsel on "Linked" (steward section 7). Keeps TRACKING_PLAN promise 4 (nothing on our servers stores the id). Deletion is asynchronous (steward F-2) | RECOMMENDED default |
 | B. Own table in Supabase | Postgres is open source; Supabase free plan | Yes, no new vendor | We build the ingest endpoint (public, so abuse and rate limits), the funnels, retention and dashboards (the founder said adopt, not build). The id would sit in the same database as accounts, so promise 4 breaks. 500 MB is shared with letters and there are no backups [V]. Size: Assumption of 250 bytes a row with its index, 320k rows a month is about 80 MB a month, so raw events need a 30 day limit and a daily roll-up | FALLBACK only if counsel refuses a third party. Must be a separate Supabase project, not a schema, so no join is possible. Whether the 2 active project limit leaves room next to staging and production is [U] |
 | C. Self-hosted PostHog | MIT [V] | Software yes; the host is not free | Needs 4 vCPU, 16 GB, 30 GB [V]; neither Supabase nor Vercel runs Docker Compose; unsupported [V]; we would become the processor and own security and deletion | REJECT: no free host in the stack |
-| D. Nothing beyond Apple's numbers | Free | Yes | No funnels, no taps, no impressions; today's 1.0 posture | The 1.0 line, unchanged |
+| D. Nothing beyond Apple's numbers | Free | Yes | No funnels, no taps, no impressions | Superseded by the founder's direction; kept as the answer if counsel blocks both A and B |
 
 Why A over B: the founder's own clarification asks for taps, impressions and funnels, which is what a product-analytics tool provides and B would make us write. A costs no database space and adds no write path or public endpoint to our Supabase project. B's one real advantage is that no outside party holds a pseudonymous behaviour log; that is a counsel and founder call, so B is kept ready as the fallback and A is a default, not a decision.
 
@@ -123,11 +127,11 @@ create view insights.weekly_server_counters as
 
 Properties that make it safe: no person column and no foreign key to any account table; the only inputs are two values checked against a registry the migration seeds, so a call site cannot write a string we did not list; counts are calls, not people, and the read-out says so. Registry rows are generated from the catalogue (standard section 7) so a drift test (V8) compares `counter_registry` to the doc.
 
-### 5.3 The 1.0 contradiction, and the switch
+### 5.3 Production gate and kill switch
 
-FR-DAT-01 says no "counter" is "written for us" in 1.0.x, and FR-DAT-28 says `insights.*` is not read in 1.0 unless the founder rules. Reading existing-row views writes nothing. The two counters would write. So `_bump` returns at once while `insights._switch.on_` is false, and the switch is flipped by the founder in the same step as the label change. The migration may still be applied earlier (inert). Proposed change box:
+With analytics shipping, FR-DAT-01 ("no counter ... written for us") no longer describes the product, so the counters are not hidden behind it. `insights._switch.on_` stays as an operator kill switch: the founder sets it on at release and can set it off in one statement if a counter misbehaves (a runaway write path, an abuse of `peek_invite`). The counters hold no person, so they need no consent gate (standard section 7: `none_server_aggregate`, k = 10); whether counsel wants them named in the policy is F-9.
 
-> Proposed change (needs erratum E83, CL-158): add to FR-DAT-01 or FR-DAT-28 that "a server counter table may exist in 1.0.x provided its write path is switched off". Without it the counters wait for the release that turns analytics on.
+> Proposed change (needs an erratum, next free after E83, CL-158): replace FR-DAT-01 and FR-DAT-28 for the production release with "analytics is on only after a parent says yes; server counts of calls, with no person, are always on and published only at k = 10". Founder direction of 20 Nov is the reason; legal text and label follow it.
 
 ### 5.4 What is NOT stored on the server
 
@@ -157,10 +161,49 @@ Rule set, each with a test in `supabase/tests/reporting_role.test.mjs` (LEGAL-RE
 | No privilege escalation | none | `set role service_role`, `set role authenticated` and `grant` fail |
 | Bounded | a 1 s query runs | `select pg_sleep(6)` is cancelled at 5 s; a third connection is refused |
 | Not reachable by the app | none | `anon` and `authenticated` cannot select `insights.*` or execute `_bump` (extends `insights_aggregates.test.mjs`) |
-| Counter safety | `_bump` with a registered pair adds 1 when the switch is on | with the switch off nothing is written; an unknown counter or outcome raises; no function takes free text |
+| Counter safety | `_bump` with a registered pair adds 1 when the switch is on | with the kill switch off nothing is written; an unknown counter or outcome raises; no function takes free text |
 | Unlabelled columns | none | the classification test fails a new column without class and level |
 
 Residual risk, said plainly: a database password on a laptop is a credential outside Supabase. Mitigation: Tier 0 needs none; the role can read only k = 10 counts, so a leak shows no person; rotate after each use (founder-hands). Network restrictions on the free plan are [U].
+
+## 6a. Retention, withdrawal and deletion (production)
+
+Retention (data-steward section 5; numbers are counsel's, Q51):
+
+| Data | Retention | Enforced by |
+|---|---|---|
+| PostHog events | 12 months; the free plan itself keeps events 1 year [V posthog.com/pricing], so no job of ours is needed under A | the plan; a release gate compares the policy number to it (steward IN-DS-04) |
+| Deleted PostHog data in backups | stays until backups expire, about two weeks for events and about 12 months for app data; clean-up runs monthly (steward section 5, from PostHog's deletion page, not re-read by me) | say "within about a month" (F-4), counsel reconciles with the 14 days in the deletion spec |
+| `insights.server_counter_daily` | raw rows 13 months, then deleted by a monthly job (proposed, in `ops` cron or `pg_cron` [U on free plan]) | a test seeds a 14 month row and runs the job |
+| Weekly views | derived, nothing stored | n/a |
+| Consent act row | account life, then pseudonymised and kept 3 years (PRIV-R21, counsel Q41 e) | existing |
+| Fallback B events | raw 30 days, daily roll-up kept 13 months | job plus test |
+
+Withdrawal (steward F-1 to F-5). Design, data side only:
+
+1. Phone: on withdraw it retires the current id and now also calls `analytics-forget` with all retained ids at once (F-5: when the cap of 20 would drop an id, forget it first).
+2. Server: `analytics-forget` accepts a new reason `withdrawal` for a caller with no account. The ids are random UUIDs we never issued to a person, so possession of them is the credential: an attacker cannot delete another family's events without knowing their random id. The abuse left is flooding the PostHog delete API, so the route has a global, counts-only quota instead of a per-person one. Proposed migration `YYYYMMDD020000_forget_withdrawal_quota.sql`: `ops.forget_quota_anon(day date primary key, n int not null check (n >= 0))`, bumped by a definer function `ops.forget_anon_take(p_limit int) returns boolean` that returns false when the day's `n` reached `p_limit` (proposed 500 a day). No id, no IP, no person column; class L2 aggregate; granted to `service_role` only; allow and deny tests: take succeeds under the limit, fails at the limit, `anon` and `authenticated` cannot execute or select, the table holds no column that could hold an id (a shape test).
+3. Receipts: the deletion spec receipt for this path says `posthog: accepted`, not `deleted` (F-3). The function reads `persons_queued_for_deletion` and `deletion_errors`, logs counts only and retries (steward IN-DS-03). A silent miss must not read as success.
+4. Proof: the staging drill (steward F-2, IN-DS-06) is a release gate. If PostHog does not delete events that have no person profile, option A cannot promise deletion, and the answer is fallback B, where deletion is `delete from ... where analytics_id = any(ids)` in a definer function with a pinned `search_path`, no logging of ids, and a receipt `store: verified` (steward F-6).
+5. Account deletion keeps its existing path (signed-in, per-person quota 5 a day, `ops.forget_quota`).
+6. What stays after withdrawal: server counters (no person), the consent act rows (a record that a choice was made, never the analytics id), and Apple's own numbers.
+
+## 6b. Classification of what this file adds
+
+Every column carries class and level in the same PR (DATA-REQ-001, 002); the classification test fails on an unlabelled one. Per steward section 2, anything recorded here is L2; L3 and L4 are not representable.
+
+| Object.column | Class | Level | Note |
+|---|---|---|---|
+| `insights.counter_registry.name, v, allowed_outcomes` | product analytics definition | L1 | our own names, no data about a person |
+| `insights.server_counter_daily.day` | product analytics | L2 | aggregate day, not a person's date |
+| `insights.server_counter_daily.counter, outcome` | product analytics | L2 | closed values |
+| `insights.server_counter_daily.n` | product analytics | L2 | calls, not people; published only at k = 10 |
+| `insights._switch.on_` | operational | L1 | |
+| `ops.forget_quota_anon.day, n` | operational counts | L2 | counts only, no id |
+| role `reporting_reader` | n/a | n/a | grants listed in `grants.mjs` |
+| PostHog event properties | product analytics | L2 | owned by `analytics` and the steward's table; none is stored by us under A |
+
+The privacy label impact (Usage Data, Diagnostics, Linked or not) is `data-steward.md` section 10; for the server counters it is "no identifier collected".
 
 ## 7. Indexes and query budget
 
@@ -180,14 +223,14 @@ Residual risk, said plainly: a database password on a laptop is a credential out
 | Always-on dashboard host | Not free; not proposed | self-host page minimums [V] |
 | Engineering time | 2 migrations, one test file, catalogue rows | the backlog below |
 
-Total running cost proposed: $0. What "free" does not buy: a dashboard that is up when the founder is away, backups of the free Supabase project [V "Not included in free"], and a guarantee the free PostHog plan stays as read today (it is a hosted plan that could change, [U]).
+Total running cost proposed: $0, at production volume up to the PostHog cap. What "free" does not buy: a dashboard that is up when the founder is away, backups of the free Supabase project [V "Not included in free"], and a guarantee the free PostHog plan stays as read today (it is a hosted plan that could change, [U]).
 
 ## 9. Where this meets the standard, PM4 and the pack
 
 1. PM4 rows use `family.invite.peeked` and `family.second_voice.reached`. The standard's action list is closed and has neither `peeked` nor `reached` (standard section 2). Proposed mapping: `family.invite.opened` and `family.second_voice.kept`, both in the list. If PM4 and `analytics` prefer the original names, the list needs a PR to the standard. Decision for `analytics` and PM4; no erratum needed.
 2. PM4 section 4.2 marks `family.invite.accepted` a "server counter". Under 5.1 it is a view over a row that already exists, so it needs no new write.
 3. The standard's server consent gate is `none_server_aggregate` with k = 10 (section 7). PM4 section 5 quotes FR-DAT-08 "no cell under 5". The two differ; I follow k = 10 (stricter, already built).
-4. FR-DAT-01 versus new server counters: section 5.3. Locked text is not changed here.
+4. FR-DAT-01, D-095 and D-124 item 3 (no analytics in 1.0.x) versus the founder's production direction: section 5.3 and the header. Locked text is not changed here; an erratum is proposed.
 5. `data-steward.md` section 1 rates PostHog Cloud "No, by the founder's wording" and PM4 declines it. This file recommends it as a default and says so; the founder settles (F-1). I do not override either file's finding that the rule can be read strictly.
 6. TRACKING_PLAN promise 4 stays true under A and breaks under B (steward section 1). Under A the plan's ADR 0008 choice of PostHog (cited in TRACKING_PLAN 5.2) is preserved.
 7. Retention: A's free plan keeps 1 year [V], matching the steward's 12 months, so no retention job of ours is needed under A.
@@ -199,15 +242,18 @@ Total running cost proposed: $0. What "free" does not buy: a dashboard that is u
 | F-1 | Is PostHog Cloud's free plan (an open-source product, $0, no card, hard cap) inside "completely free, open-source"? | Yes, as the Supabase and Vercel free tiers are. If no: fallback B (separate Supabase project) |
 | F-2 | Region of the PostHog project (EU or US) | EU if offered [U]; decide before the first event |
 | F-3 | Counsel: is a pseudonymous id at PostHog "Linked" for the Apple label, and does it need a DPA and a subprocessor row | Treat as Linked until counsel says otherwise (steward section 7) |
-| F-4 | Approve the two migrations (counters, reporting role) with `approve-migration` | Not requested until analytics has a release date; reviewing now is allowed |
+| F-4 | Approve the two migrations (counters, reporting role) with `approve-migration` | Requested for the production release train; red-team review first (D-041) |
 | F-5 | Allow a database login (`reporting_reader`) on the founder's laptop, or Tier 0 only | Tier 0 only until a dashboard is wanted |
-| F-6 | Erratum E83 wording in 5.3 | Wait: counters ship with the release that turns analytics on |
+| F-9 | Do server counters of calls (no person) need a line in the privacy policy and a label row | Yes, one plain line, counsel confirms |
+| F-10 | The production project is on the Supabase free plan: no backups, paused after 1 week of inactivity [V]. Keep it, or add a paid plan | Keep, per the founder rule, with the keepalive and the backups repo job (`ops`); the founder accepts the risk in writing |
+| F-6 | Erratum text for production analytics (5.3) and for withdrawal deletion (section 6), one erratum or two | Two: the first is a product rule, the second adds to the locked analytics promise |
 | F-7 | Metabase (AGPL, internal use) or Superset (Apache-2.0) | Metabase; counsel confirms the AGPL reading |
 | F-8 | Any always-on host for dashboards | None; stay on demand |
 
 ## Risks
 
-1. Event volume is an assumption (400 a month a parent). Mitigation: baseline first; the 80 percent sampling trigger exists; over-cap events are dropped, so the last days of a month could be missing and a read-out must say so.
+1. Event volume is an assumption (400 a month a parent) and in production the cap is real. Mitigation: the 80 percent sampling trigger (TRACKING_PLAN 5.3, remote config); a weekly look at PostHog's usage page by hand or the read-out job (an API for usage is [U]); over-cap events are dropped, so the last days of a month could be missing and a read-out says so. Never sampled: consent, letter saved, capture, family, errors. We never upgrade; when the cap bites we sample harder.
+1a. Production on free tiers: Supabase free has no backups and pauses after a week of inactivity [V]. This is outside measurement but it is now a live-product risk (F-10).
 2. The free PostHog plan or the Supabase free plan can change terms or pause (Supabase pauses after 1 week of inactivity [V]); the keepalive in ops covers the second.
 3. A reporting credential on a laptop. Mitigated by k = 10 only and Tier 0.
 4. Counters count calls, not people; a retried or abused `peek_invite` inflates them. Rate limits already exist on invites [U]; the read-out labels it "calls".
@@ -220,14 +266,16 @@ Total running cost proposed: $0. What "free" does not buy: a dashboard that is u
 
 | Id | Wave | Row | Owner | Size | Depends on | Founder hands |
 |---|---|---|---|---|---|---|
-| IN-DA-01 | 1 | Founder rules F-1, F-2 and F-3; subprocessor and label notes drafted | privacy, data-architect | S | none | yes |
+| IN-DA-01 | 1 | Founder rules F-1, F-2, F-3 and F-10; the production erratum; subprocessor and label notes drafted | privacy, data-architect | S | none | yes |
 | IN-DA-02 | 1 | `EXPLAIN` every `insights` view on seeded data; index only where over budget; state budget in the PR | data-architect | S | none | no |
 | IN-DA-03 | 1 | Write `reporting_reader` migration and `reporting_role.test.mjs` with the rows in section 6, plus grants.mjs row | data-architect | M | IN-DA-02 | yes (approve-migration, supabase) |
 | IN-DA-04 | 2 | Views `weekly_second_voice` and `weekly_invites_accepted` (5.1) with tests and column labels | data-architect | M | 00-event-standard merged, PM4 mapping | yes |
-| IN-DA-05 | 2 | Counters migration (5.2), switch, `_bump` call sites in `peek_invite` and the email sender, tests | data-architect, sync | M | IN-DA-03, E83 or release date | yes |
+| IN-DA-05 | 2 | Counters migration (5.2), kill switch, `_bump` call sites in `peek_invite` and the email sender, retention job, tests | data-architect, sync | M | IN-DA-03, the production erratum | yes |
+| IN-DA-10 | 1 | Withdrawal route: `ops.forget_quota_anon` migration (6a), `withdrawal` reason in `analytics-forget`, read `deletion_errors`, retired-id cap fix, tests | data-architect, sync | M | F-1, F-3, the withdrawal erratum | yes (legal text, supabase) |
+| IN-DA-11 | 1 | Release gate: the staging deletion drill passes and the policy retention number equals the PostHog setting | qa, ops | S | IN-DA-10, steward IN-DS-06 | yes |
 | IN-DA-06 | 2 | Tier 0 snippets and the weekly read-out job in the ops repo | decision-science, ops | S | IN-DA-04 | yes (secret) |
 | IN-DA-07 | 3 | Metabase on demand: saved questions as text in the ops repo, runbook, credential rotation step | ops | S | IN-DA-03, F-5 | yes |
-| IN-DA-08 | 3 | Staging drill: events under a test id reach PostHog, forget removes them; counters with switch off write nothing | qa | S | F-1, IN-DA-05 | yes |
+| IN-DA-08 | 2 | Staging drill: events under a test id reach PostHog, forget (account and withdrawal paths) removes them; counters with the kill switch off write nothing | qa | S | F-1, IN-DA-05, IN-DA-10 | yes |
 | IN-DA-09 | 3 | Fallback B design (separate project, 30 day raw, daily roll-up) only if F-1 or F-3 say no | data-architect | M | F-1 | yes |
 
 New dependencies: none. The PostHog SDK already exists in `packages/analytics`; Metabase runs outside the repo as a container.
