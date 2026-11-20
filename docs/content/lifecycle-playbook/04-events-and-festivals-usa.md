@@ -552,3 +552,228 @@ This repeats NS-47 section 12 for the picker and adds only what this file introd
 - **Records:** nothing on our servers. On the phone, the ticked days and `culture.asked` (no tradition, no place). No `record_policy_act` row (NS-47 Door lines). If counsel's answer to CUL-Q6 is yes, this line changes.
 - **Never:** a pre-ticked day; a second ask after Not now; a tradition, place or country on the child; any of them in analytics, logs, crash reports, URLs, notification identifiers, the Save a copy file, a backup, support mail, links or email; an inference from a name, locale, place or language; "Prefer not to say" stored as a value.
 - **Decline and withdraw:** Not now is a full answer of equal weight; the app is unchanged; Days stays one tap away in Me; untick, Clear all, sign-out, Erase and Delete account clear it; export and deletion still work.
+
+---
+
+## 8. Content briefs per observance
+
+These are briefs and PROPOSED words, not finished copy. `content` finishes every string under VOICE.md after the cultural reads in section 12; the founder approves words that are a promise to a user. Every proposed line is ASCII, at most two short sentences, has no exclamation mark, no digit, no greeting, no "your" before a day name and no claim about {child}. I checked them by eye against the fear, AI and rewrite patterns in `rules.test.ts` and NS-46-R17. The rules test itself was not run.
+
+### 8.1 How a brief is built: the five keys
+
+| Key | Naming | What it holds | Rule |
+|---|---|---|---|
+| Name | `days.name.<id>` | The day's name as families use it. No greeting, no "your", no digit outside a name from the allowlist | NS-46-R17 |
+| In-app line | `days.landing.<id>.<n>` (PROPOSED; n = 1, 2 here, 4 when DL-5 is met). Fallback if product keeps one shared line: `days.landing.bright`, `days.landing.quiet`, `days.landing.month` | The one line shown with the name above the ordinary prompt, on an unlocked phone: after the tap, and on the Home day slip. Part 3's PC-3 picks it with `(year - 2026 + dayOrdinal) mod n`, so n years show n different lines | NS-46-R13, NS-50-R3; PC-2 keeps every day word under `days.*`. Per-day keys need a ruling (Q-EV-3) |
+| Local reminder | Title `days.lock.title.neutral`, body `days.lock.body.neutral` (quiet days: `days.lock.body.quiet`). Allowlisted days (seasons, New Year's Day, Thanksgiving, Independence Day, Labor Day): the title is `days.name.<id>` | Shared and neutral for every layer; no per-day words, no child, no age, no tradition (E45, E82, NS-47-R12). If the parent turned the day-name switch on, the name is the title | The neutral words belong to NS-47 and parts 1 and 3 (01 section 12.8 proposes "Something for the book today" and "A day you chose to mark. A few words, if you like."). This file adds none |
+| Email | none (E75) | Transactional mail only at 1.0. No event email exists; [02-email-lifecycle.md](02-email-lifecycle.md) should schedule none | E75; part 3 L-04 |
+| Push | `days.push.<id>` reserved, parked | No APNs key, token table or entitlement in 1.0. A day reminder can never be a server push, by design (part 3 section 13.1) | E79 |
+
+### 8.2 Proposed lines
+
+The name is rendered from `days.name.<id>`, then the line: "{day}. {line}". A moving day adds ", around today" after the name (`days.picker.around`).
+
+| Code | PROPOSED words | Tone | Where it fits |
+|---|---|---|---|
+| L1 | Anything you would like {child} to hear about today? | bright | The baseline (DAY 5.3). Any day |
+| L2 | Is there something about today you would like {child} to know? | bright | Days that carry a meaning the app must not describe |
+| L3 | Say the name of this day the way you say it, for {child}. | bright | Days named in a language other than English. Fits the multilingual rule: the words stay in the language spoken |
+| L4 | What does today look like? | bright | Seasons and ordinary civic days |
+| L5 | What do you notice today? A line is plenty. | bright | Any day; sensory and light |
+| L6 | The book is open if you want it. | quiet | The only line of a quiet day (`days.landing.quiet`) |
+| L7 | A few words for {child} today, if you like. | bright | Heritage months, sent on the first day only (`days.landing.month`) |
+| L12 | What is the first thing you would like {child} to hear this year? | bright | New Year's Day only |
+| L13 | What would you like {child} to hear as the year turns? | bright | New Year's Eve only |
+| L14 | Who is someone you would like {child} to know about? | bright | Family days and Siblings Day; names no relationship |
+
+### 8.3 Moment types: what the parent is invited to say
+
+A moment is an idea for what a parent might say to {child}. It is never a claim about {child}, never a count and never a question the parent could fail.
+
+| Code | The moment | Why it is safe |
+|---|---|---|
+| M1 | **Sensory now.** One thing seen, heard or smelled today | Needs no belief, no presence, no practice |
+| M2 | **Name it.** The day's name, said the way the family says it, in the language the parent speaks | Honours the multilingual rule: the parent's words stay in their language |
+| M3 | **A hope for {child}.** One thing the parent would like {child} to hear about this day, one day | Love and time, never an ending |
+| M4 | **Ordinary detail.** What the day looked like where the parent is | Fits a day the family marks in no special way |
+| M5 | **A person.** Someone who matters, named in the parent's words | Never presumes who. Family days only |
+| M6 | **Quiet.** Nothing is asked | Quiet days only |
+
+**Age fit.** The day line carries no age and never says what {child} can do (E82; NS-47-R5). Age fit belongs to the ordinary prompt shown below the line, which the catalogue already picks by the age the Book shows (Q-NTC-9). A brief that needed age would break E82, so none does. From the first week to five, M1, M2 and M4 work at every age, and M3 and M5 do too because the parent is the speaker.
+
+### 8.4 Global never-say codes
+
+Every row obeys N1 to N11. The last column of each brief lists only what is extra for that row.
+
+| Code | Never |
+|---|---|
+| N1 | A greeting: Happy, Merry, Blessed, Mubarak, Shalom, Namaste, Gong xi, Feliz, or any other |
+| N2 | An explanation, history or meaning of the day; a "festival of ..." phrase; the word "celebrate" (the picker's verb is "mark"); what the day is "for" or "about" |
+| N3 | A presence or practice: gather, together, around the table, family time, who was there, food, prayer, fasting, gifts, decorations, costumes, travel |
+| N4 | A count, comparison or look-back: another, again, first, last year, "this year's", a streak, a gap |
+| N5 | A gendered word for {child} (he, she, son, daughter, boy, girl), or any claim that {child} keeps, follows or belongs to a tradition or a heritage |
+| N6 | A label on the parent or home: "your religion", "your faith", "your tradition", "your culture", "your heritage", "your community"; a tradition, a country or a place in a lock-screen string |
+| N7 | A question mark or the word "remember" on a quiet line |
+| N8 | An exclamation mark, emoji, em or en dash, curly quote, ellipsis character, or a digit outside a date |
+| N9 | Any hint that the app wrote, suggested the meaning of, improved or shaped the words. The app invites; the words are the parent's |
+| N10 | Use on any marketing surface (store, site, email, social, ad, press) |
+| N11 | Certainty about a moving date. In the app: "around". On the lock screen: nothing about the date |
+
+### 8.5 Briefs by group
+
+Lines are "1 / 2" codes from 8.2: the first two lines to write for `days.landing.<id>.1` and `.2`; DL-5's third and fourth are for the writing round. Only rows with `library_status` `yes` are briefed here; excluded and candidate rows are in 8.6.
+
+**A1. Civic days**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `new_years_day` | M1 or M3: what the first morning of the year sounded like | L12 / L4 | Resolutions, "fresh start", "new you", a look back at the year |
+| `mlk_day` | M2 or M3 in the parent's own words | L2 / L1 | Quoting or paraphrasing Dr. King; describing the man, the movement or what the day "teaches"; "dream" lines |
+| `presidents_day` | M4: an ordinary day, often a day off | L4 / L5 | Naming any president, party or office; politics |
+| `memorial_day` | M6 | L6 | "Remember", "honor", "sacrifice", "fallen", "heroes"; a question; a flag image. Quiet tone |
+| `juneteenth` | M2 or M3 | L2 / L3 | Explaining the history; "freedom day" lines; "celebrate"; implying the family's descent or identity |
+| `independence_day` | M1 or M4: what today looks like | L4 / L5 | Patriotic claims; assuming fireworks, flags or a barbecue |
+| `labor_day` | M4 | L4 / L5 | "Work", "rest you earned", assuming employment |
+| `veterans_day` | M6 | L6 | "Thank you for your service"; assuming the parent or a relative served. Quiet tone |
+| `thanksgiving` | M1 or M3 | L1 / L5 | "Gather", "table", "turkey", "grateful" as an instruction; "first Thanksgiving"; assuming the family keeps the day |
+
+**A2. Family and parent days** (the parent may be bereaved, single, one of two fathers or two mothers, a grandparent raising {child}, or in a home that does not keep the day)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `mothers_day` | M5 or M3 | L1 / L14 | "Your mother", "mom", "mum", "your wife"; assuming the parent is a mother or has one; "thank" lines |
+| `fathers_day` | M5 or M3 | L1 / L14 | "Your father", "dad", "your husband"; assuming the parent is a father or has one |
+| `grandparents_day` | M5 | L1 / L14 | "Your grandparents"; assuming any are living or near; Nani, Dada or Grandma as a default (the family's own word is the parent's) |
+| `siblings_day` | M5 | L1 / L14 | Assuming {child} has a sibling; "big brother" or "big sister" |
+| `valentines_day` | M3 or M1 | L1 / L5 | A partner, romance, "your love", gifts |
+
+**A3. Seasonal**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `spring_start`, `summer_start`, `fall_start`, `winter_start` | M1 or M4: light, weather, what is outside | L4 / L5 | "New beginnings", "rebirth", "the year ends", "dark and cold"; a season name that does not match the hemisphere control; a date or hour |
+| `meteorological_seasons` | M1 or M4 | L4 / L5 | As above. The second choice in the picker, not a duplicate card |
+| `halloween` | M1 or M4 | L4 / L5 | Costumes, candy, "scary", "spooky"; assuming the family keeps it; child-directed imagery in any marketing |
+| `new_years_eve` | M3 | L13 / L5 | "Ending", "last", "farewell", "countdown", resolutions |
+
+**B. Heritage months** (proposed layer; fire on the first day only; one reminder per month; never a series)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `black_history_month` | M2 or M3 | L7 / L2 | A list of people or facts; quotes; "celebrate"; asking about the family's background |
+| `womens_history_month` | M3 | L7 / L2 | Gendering {child}; "girl power"; a list of people |
+| `jewish_american_heritage_month` | M3 | L7 / L2 | Pairing with persecution or the Holocaust; "your Jewish family"; any religious practice |
+| `aanhpi_heritage_month` | M2 or M3 | L7 / L2 | Treating many communities as one; food, dress or flags; "model minority" language; guessing which community |
+| `hispanic_heritage_month` | M2 or M3 | L7 / L3 | "Your Hispanic heritage"; choosing between "Hispanic" and "Latino" for the family (both are used; the cultural read decides the key's one name) |
+| `native_american_heritage_month` | M2 or M3 | L7 / L2 | "Ancestors", "spirit", mascots, feathers, "land" lines; any link to Thanksgiving copy; ceremonial content of any nation |
+
+**C1. Baha'i** (blocked until the 2027 dates are read from the Baha'i World Centre)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `naw_ruz_bahai`, `ridvan` | M2 | L3 / L1 | "The Baha'i Faith teaches"; any explanation of the Faith or a holy day; a greeting |
+
+**C2. Buddhist** (dates differ by national list; the picker asks which)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `vesak` | M2 or M1 | L3 / L1 | "Enlightenment" or "the Buddha's birth" claims; assuming a vegetarian family; ranking the national dates |
+| `makha_bucha`, `asalha_bucha` | M2 | L3 / L1 | Explaining the event; assuming Thai or any one tradition |
+| `songkran` | M2 or M1 | L4 / L3 | Water-fight imagery; assuming the family is Thai or Buddhist |
+
+**C3. Christian**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `epiphany_three_kings` | M2 | L3 / L1 | Gift-giving claims; "Dia de Reyes" unless the cultural read says so |
+| `ash_wednesday` | M2 | L3 / L1 | Ashes, Lent, "give up", "repent", fasting |
+| `palm_sunday` | M2 | L3 / L1 | Describing the day |
+| `good_friday` | M6 | L6 | "Crucifixion", "suffering", "remember"; a question. Quiet tone |
+| `easter_western` | M1 or M3 | L1 / L5 | "He is risen", bunnies, eggs; "Happy"; ranking against Orthodox Easter |
+| `pentecost` | M2 | L3 / L1 | Describing the day |
+| `christmas_day` | M1 or M3 | L1 / L5 | "Merry", Santa, trees, gifts, "the birth of ..."; assuming the family is Christian; making it a public title |
+| `christmas_orthodox` | M2 | L3 / L1 | "Old Christmas", "late Christmas", "the other Christmas"; assuming a church |
+| `easter_orthodox` | M1 or M2 | L1 / L3 | "The other Easter", "late Easter"; ranking churches |
+
+**C4. Hindu** (dates are lunisolar and regional; the picker asks which when lists differ)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `makar_sankranti` | M2 or M4 | L4 / L3 | Kites, sesame, any practice |
+| `maha_shivaratri` | M2 | L3 / L1 | Fast, vigil, any practice |
+| `holi` | M2 or M1 | L3 / L4 | "Festival of colours", colour imagery, "play"; any practice |
+| `ugadi` | M2 | L3 / L1 | Assuming a region; any practice |
+| `rama_navami` | M2 | L3 / L1 | Describing the day |
+| `raksha_bandhan` | M2 or M5 | L1 / L3 | A brother, a sister, a thread; any presumption of siblings |
+| `janmashtami` | M2 | L3 / L1 | Describing the day |
+| `ganesh_chaturthi` | M2 | L3 / L1 | Describing the day |
+| `navratri` | M2 | L3 / L1 | "Nine nights of dance" or any practice |
+| `dussehra` | M2 | L3 / L1 | "Good over evil" or any meaning |
+| `diwali` | M1 or M2 | L1 / L5 | "Festival of lights", lamps, sweets, rangoli, "Happy Diwali"; tying it to one faith; assuming a region. One day, not five |
+
+**C5. Jain and Sikh**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `mahavir_jayanti` | M2 | L3 / L1 | Describing the day |
+| `vaisakhi` | M2 or M4 | L3 / L1 | A spelling (Vaisakhi or Baisakhi) chosen without the cultural read; harvest or religious meaning claims |
+| `gurpurab_nanak` | M2 | L3 / L1 | Describing the day; explaining "Guru" |
+
+**C6. Jewish** (begin at sundown the evening before; calculated, so no "around")
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `tu_bishvat` | M2 or M1 | L3 / L5 | Describing the day |
+| `purim` | M2 | L3 / L1 | Costumes, the story |
+| `passover` | M2 | L3 / L1 | Seder, matzah, "freedom" claims; offering later days |
+| `shavuot` | M2 | L3 / L1 | Describing the day |
+| `rosh_hashanah` | M2 or M3 | L3 / L1 | "Shana Tova"; apples and honey; judgement or repentance language |
+| `yom_kippur` | M6 | L6 | "Atone", "fast", "forgive"; a question. Quiet tone |
+| `sukkot` | M2 | L3 / L1 | Booths, harvest claims |
+| `simchat_torah` | M2 | L3 / L1 | Describing the day; assuming the Diaspora schedule for an Israeli family (a difference I did not read) |
+| `hanukkah` | M1 or M2 | L1 / L5 | "The Jewish Christmas", "eight nights", gelt, menorah, gifts; the evening candle (the app sends in the morning) |
+
+**C7. Muslim** (dates are announced late and differ by method; always "around"; one "which date" choice at most)
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `ramadan_start` | M2 | L3 / L1 | Fasting, hunger, children, prayer, "holy month" explained; "Ramadan Mubarak" |
+| `eid_al_fitr` | M1 or M2 | L1 / L3 | "Eid Mubarak"; "end of fasting"; presents |
+| `eid_al_adha` | M2 | L3 / L1 | Sacrifice, pilgrimage; "Eid Mubarak" |
+| `islamic_new_year` | M2 | L3 / L1 | Describing the day |
+| `mawlid` | M2 | L3 / L1 | Offering it as expected: many Muslims do not keep it (DAY 4.4); describing the day |
+
+**D. Culture-led days**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `kwanzaa` | M2 or M3 | L3 / L1 | The seven principles, one per day; a series of seven reminders; "Happy Kwanzaa"; assuming African American identity |
+| `lunar_new_year` | M2 or M1 | L1 / L3 | "Year of the (animal)", red envelopes, dumplings, "Gong xi fa cai"; assuming Chinese; naming one community when many keep it |
+| `lantern_festival` | M2 or M5 | L3 / L5 | Describing the day |
+| `dragon_boat` | M2 | L3 / L5 | Describing the day; food |
+| `mid_autumn_chuseok` | M2 or M1 | L3 / L1 | Mooncakes, moon-gazing, any practice; choosing for the parent between the Chinese, Korean and Vietnamese date |
+
+**F. Regional (if and when a place list ships)**
+
+| Id | Moment | Lines | Never, in addition |
+|---|---|---|---|
+| `mardi_gras` | M1 or M4 | L4 / L5 | Beads, parades, party, "Carnival" as a claim; assuming New Orleans; any faith meaning |
+| `cesar_chavez_day` | M2 or M3 | L2 / L3 | Describing his life or the labour movement; assuming Latino or farmworker families |
+| `kuhio_day`, `kamehameha_day`, `hawaii_statehood_day` | M2 | L3 / L2 | Describing the person or the history; assuming a Native Hawaiian family; dropping diacritics without the cultural read |
+
+### 8.6 Not briefed, and why
+
+| Row or group | Status | Why no words |
+|---|---|---|
+| `columbus_day`, `dst_start`, `dst_end`, `all_saints_souls`, `ashura`, `lailat_al_qadr`, `tisha_bav`, `yom_hashoah`, `obon`, `ullambana`, `qingming`, `dia_de_los_muertos`, `cinco_de_mayo`, `patriots_day` | excluded | DAY section 6: mourning, a contested name, commercial or state-only. A family adds its own typed day. NS-46-R18 fails the build if one is in the library |
+| `arab_american_heritage_month`, `caribbean_american_heritage_month`, `pride_month`, `bodhi_day`, `las_posadas`, `karva_chauth`, `yalda`, `shichi_go_san`, `lei_day` | candidate | No source read this session. Each needs a source and a cultural read before it is a row. `pride_month` and `karva_chauth` may never be offered: section 12 |
+| `pongal`, `onam`, `parsi_new_year`, `mexican_independence` | deferred | Q-FD-17 (regional and sub-community days) and Q-FD-16 (no country list in the first drop) |
+| `nowruz` | blocked | The date is computed and unverified (section 4). No words until an official calendar is read |
+| `naw_ruz_bahai`, `ridvan` | blocked | 2027 dates not read; the briefs above are held |
+| `quinceanera` | milestone | No date. A typed day. See 8.7 |
+| `powwow`, `cherry_blossom`, `metro_festivals`, `diwali_state` | not a library day | Community events, weather, a state's recognition; see 6.4 and 11.3 |
+| `christmas_day_civic`, `first_day_of_school` | duplicate, typed-day pointer | One library id for Christmas; school start is the parent's own date |
+
+### 8.7 Family milestones that are not dates
+
+Quinceanera is described by the source as a girl's 15th birthday, religious and social, with practice that varies and families who skip it (S24). It is far from a child of 0 to 5. The same holds for a baptism, a naming day, a Bar or Bat Mitzvah, a first communion, a first haircut and an aqiqah. None is a library day (DAY 6). The only supported ways to mark one are (a) the parent's own typed day (NS-18) and (b) a plain prompt the parent opens by hand. The app never offers one because of a heritage, a place, a name or a tick; never gives a milestone an age; and never gives {child} a gender through one.
