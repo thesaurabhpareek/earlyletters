@@ -1,7 +1,5 @@
-import sys; sys.path.insert(0,'/home/claude/trace-gen')
 from model import *
 PW=re.compile(r'frame|every card|all cards|each card|all e2e|every screen|all areas|all cards',re.I)
-CODEFN={'SUP':'support','POL':'policy','MKT':'marketing','OPS':'operations','FIN':'finance','DAT':'data','PRV':'privacy','LEG':'legal','CMP':'compliance','SEC':'security','RSK':'risk'}
 def esc(s): return s.replace('|','/').replace('\n',' ')
 def prio(cell):
     m=re.match(r'(P[0-3])',cell)
@@ -21,11 +19,10 @@ def runs(nums):
         while j+1<len(nums) and nums[j+1]==nums[j]+1: j+=1
         out.append((nums[i],nums[j])); i=j+1
     return out
-def cardcell(r,flag_none=True):
-    links=r['links']; rows=ns_rows(links); allns=sorted(set(ns_expand(links)))
+def cardcell(r):
+    links=r['links']; rows=ns_rows(links); allns=sorted(set(n for n in ns_expand(links) if 1<=n<=99))
     parts=[]
     if allns:
-        i=0
         for a,b in runs(allns):
             if b-a>=3 and not any(rows.get(n) for n in range(a,b+1)):
                 parts.append('NS-%02d to NS-%02d'%(a,b))
