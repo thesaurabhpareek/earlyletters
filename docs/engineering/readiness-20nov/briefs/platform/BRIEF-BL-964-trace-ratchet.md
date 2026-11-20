@@ -41,7 +41,7 @@ Agent: qa (owner of scripts/trace.mjs)   Lane: Pack 10 (+ qa)   Build: 13 (G0 is
 
 10. PR BREAKDOWN: PR 1 retarget and `--json` (read the locked cards by `--register` path) ~150 lines, 2 files; PR 2 ratchet + baseline ~200 lines, 3 files | base develop | `--check` not used by CI yet (flag-off proof: `npm test` output unchanged).
 
-11. LENSES: A principal-architect (`scripts/*.mjs`), B ai-eng-lead (it enforces AIE rules) [E].
+11. LENSES: A principal-architect (`scripts/*.mjs`), B ai-eng-lead (it enforces AIE rules) [E]. The base-branch baseline compare needs the single `unit` fetch step of BRIEF CI-PIN section 10 (founder); trace.test.mjs is in the root `node --test` list (package.json:11 [V]), so the new tests run in CI.
 
 12. ORDER: PR 1 now; PR 2 after #846 merges. Before BRIEF QA-TITLES; before the Build 13 device sheet needs G0. Blocked by #846 (product/founder) and the founder's 07 Q8.
 

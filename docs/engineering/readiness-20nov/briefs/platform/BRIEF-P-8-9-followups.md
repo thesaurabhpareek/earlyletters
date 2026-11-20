@@ -43,7 +43,7 @@ Agent: qa   Lane: Pack 10 (+ qa)   Build: 13   Wave: 1   (plan 2.9 rows P-8, P-9
 
 10. PR BREAKDOWN: PR 1 | ~60 lines, 3 files | base develop | no flag (tests and titles only).
 
-11. LENSES: A qa peer, B compliance-engineer (R5, R6a, R6b are lock-screen rules).
+11. LENSES: A qa peer, B compliance-engineer (R5, R6a, R6b are lock-screen rules); mobile reads (tests under apps/mobile/** by a qa name).
 
 12. ORDER: after BRIEF QA-TITLES (it lists offenders). Independent of BL-964. Blocked by nothing.
 
