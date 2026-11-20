@@ -43,7 +43,7 @@ Source: plan 17 and 17b, the three brief READMEs (`briefs/*/README.md`). Waves a
 2. Wave 1 fixes: second-account book (BL-922, BL-961), consent retry, quiet books, held screen. These come before any new field group.
 3. Drop A with the next build: days stack A, kill-switch PR (CR-69 A5), notification budget registry (BL-966, `TOTAL_MAX = 60`, plan notices first).
 4. First-run Drop D (NS-38 to NS-45, 21 PRs [E]) ships before any family outside the founder's signs in (E43). Consent order (CR-69 A6): founder applies migration `20261108000000`; builder ships with its release blocked until the APPLY.md file 29 check is shown; measured gate (zero null `app_build` sheet acts for 14 days, engineering default); then the founder sets `app.consent_fields_required`.
-5. Drop B (days B stack) only if its gates close before the 1.0 freeze; Drop C and NS-52 after 1.0 is approved; NS-51 is a spike in Build 13 and ships in 1.1 after counsel and device rows (E32).
+5. Drop B (days B stack) only if its gates close before the 1.0 freeze; Drop C and NS-52 after 1.0 is approved; NS-51 is a spike in Build 13 and ships in 1.1 after counsel and device rows (E32; the plan states this as a default, the founder confirms).
 6. Platform: label guard activation, SHA pins, secret scan, PR size and coverage jobs, lint introduction; each needs a founder workflow paste or dependency approval first.
 
 ## 4. Readiness checklist (what "ready" means here)
