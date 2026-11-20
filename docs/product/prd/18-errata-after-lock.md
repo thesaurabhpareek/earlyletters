@@ -1,6 +1,6 @@
 # 18. Errata after the lock (20 Nov 2026)
 
-Status: CURRENT (LOCKED rev 2) (errata register, highest E80) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
+Status: CURRENT (LOCKED rev 2) (errata register, highest E82) | 20 Nov 2026 | Owner: Karma (CTO role, product side) | Replaces: none | Load when: a card statement and engineering seem to differ, or you change a locked statement (next free E number).
 
 Owner: Karma (CTO role, product side). Source: the engineering evaluation passes on the lock head `450bcb4a` (`docs/engineering/eval-20nov/A-data-and-sync.md` section 8, `B-mobile-client.md` section 8). The cards stay locked; these are corrections ruled on the card side under CR-66. They are applied to the cards in one docs PR after #846 merges, so the lock head does not move under the engineering thread. Until then, engineering builds to this file where it differs from a card.
 
@@ -87,9 +87,9 @@ Added by `product` in reply to engineering's message on #931 to #933 (readiness 
 
 Applied without an E number (class A answers or B1 clarifications that change no test): NS-48-R11 (the card already says the migrated eight keep their built named titles, rendered only when names are on); NS-47-R6 against R7 (E37 note); BL-982 typed days (NS-46-R3 says one list on screen, two stores underneath, and R40 needs it); NS-32-R4b, R7 and the ceiling table line (E13 applied); NS-33-R14 (E17 applied); NS-36-R4 and R6 and NS-09-R4b test titles; NS-49 section 3 "equal starts" and NS-47-R29 "never dismissible" wording; NS-50-R15 one rendering; FR-OPP-03 and FR-PHS-54 (RV-12 wording); the paths and ids (`docs/legal/DATA_CLASSIFICATION.md` section 4.6, proposed ADR 0029 with no file yet, `scribe-library`); cards 19, 21 and 27 status lines (inside the lock, PR #934); the C44 to C46 first-run cite in card 07.
 
-## Plan delta summary, E43 to E80 (20 Nov, rulings on engineering's questions)
+## Plan delta summary, E43 to E82 (20 Nov, rulings on engineering's questions)
 
-Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-154 in `GAP-LOG.md`, one per row E43 to E80 in order (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
+Rulings by Karma with product under the founder's standing delegation ("go with all default answers"); the rule used: where engineering's proposed answer shows less, stores less, sends less or can be undone, take it. Eight are founder-only or counsel-only and are defaults that stand, in the founder digest (`22-final-holistic-spec.md` section 7), not closed for good: E43, E46, E47, E56, E59, E67 (its lines), E75 and E78. E72 restates E47 and stays counsel-only. The closure rows are CL-117 to CL-157 in `GAP-LOG.md`, one per row E43 to E82 in order, plus CL-155 for CR-71 D1, which is E78 confirmed (CL-117 is E43, CL-136 is E62, CL-143 is E69, CL-148 is E74).
 
 | E | Plan effect | Docs and rows touched | Told |
 |---|---|---|---|
@@ -131,6 +131,8 @@ Rulings by Karma with product under the founder's standing delegation ("go with 
 | E78 | new P0 row NS-08-R21 joins gap group G03; one proposed row (no BL id until #912 merges): the new-device email, built before the backup flip; nothing for 1.0 | card 08 NS-08-R21; FR-SEC-36; F02-REQ-017 | sync, security-architect, content |
 | E79 | none; no APNs key, token table or push entitlement in 1.0 | card 10 NS-26 | mobile, security-architect |
 | E80 | none; the dictionary stays on the phone, the server table stays unreachable | `functions/ai-and-speech.md` FR-AIS-34 | mobile, data-architect |
+| E81 | none for 1.0 (no alert sender is built); the alert cap binds NS-08-R21 and any later sender | `functions/risk-security.md` FR-SEC-36 | sync, security-architect |
+| E82 | BL-966 and the reminder copy PR add the names-off test; content swaps the birthday body when names are off | NS-13-R24, NS-32-R12 | mobile, content, design-systems |
 
 ## Founder-only list: defaults that stand (20 Nov)
 
@@ -314,4 +316,24 @@ Ruling: phone only. It is never synced, copied to the server or put in the serve
 
 Edited in place: FR-AIS-34. Plan delta: none; mobile, data-architect.
 
-Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79 adds none. Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
+## Fifth round, E81 to E82 (20 Nov, Karma with product, from engineering's council decisions record)
+
+Source: CR-71 (#1018) and the decisions record (#1013), the three items it left to product: D1 (confirmed as E78, CL-155), D2 (E81, CL-156), D4 (E82, CL-157). Same rule: show less, store less, send less, undoable. None is a founder line. The closure rows are CL-155 to CL-157.
+
+### E81: how many alert emails, and how fast (20 Nov, Karma with product; FR-SEC-36; CR-71 D2, #1013)
+
+Question: engineering's decision record asks for a limit on security-alert email (PRD V2 says the first 5 an hour go one by one and later ones fold into one summary).
+
+Ruling: at 1.0 the question does not arise, because E76 builds no new alert email and E77 sends none after wrong codes or "Sign out other devices". The limit is written now so no later sender can skip it: any alert sender added after 1.0 sends the first 5 in an hour one by one, folds the rest into one summary within minutes, and stops at 20 alert emails per account per day. The cap never applies to sign-in codes, so it cannot lock a parent out; a folded summary counts as one; an alert stopped by the cap still shows as an in-app line on next open. The 20 is engineering's number, a safety ceiling and not a promise to a parent. Alerts stay out of quiet hours (E76). A parent is told nothing about the limit. Nothing here is a founder line.
+
+Edited in place: FR-SEC-36. Plan delta: none for 1.0 (no alert sender is built); the cap is a requirement on NS-08-R21's sender and on any later one; sync, security-architect.
+
+### E82: the lock screen shows no age with names off (20 Nov, Karma with product; NS-13-R24, NS-32-R12; CR-71 D4, #1013)
+
+Question: a reminder that carries a month number, or the line "A year of letters.", tells anyone who sees the lock screen how old the child is, even when names are off. Should it?
+
+Ruling: no. With names off (the default), and whenever App lock is on, no notification title or body carries a month number, an age, a count of months or years, or "A year of letters.". The title stays the neutral reminder title and the body is the neutral fixed line with no child name that E45 sets for a day-name title (`days.lock.body.neutral`), reused for any reminder that would have carried an age. With names on and App lock off, the wording of NS-13-R24 stands as before (a weekday, a month number or the child's name). Where a body would have carried the age, the neutral body is used instead. This only removes words from a lock screen. The birthday body "A year of letters. Want to read them together today?" is not shown with names off. The hidden-preview placeholder (NS-32-R13) stays as NS-13-R33 has it. Placeholder words are the proposed row 18, option A, on #870 and are proposed words, not live. The device check NTC-T24 passes before the row counts as done.
+
+Edited in place: NS-13-R24 (09-capture.md), NS-32-R12 (11-foundations.md). Plan delta: BL-966 and the reminder copy PR add the names-off test (no digit and no "year" in any lock-screen string); `content` swaps the birthday body for the neutral line when names are off; mobile, content, design-systems.
+
+Founder note: E75 and E78 add one line each to the founder's digest (defaults that stand, deadline Mon 23 Nov). E79, E81 and E82 add none; E78 is also CR-71 D1, confirmed unchanged (CL-155). Nothing here is counsel-only; the Q34 point in E75 is already on the counsel list.
