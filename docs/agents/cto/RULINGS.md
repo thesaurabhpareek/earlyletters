@@ -690,3 +690,30 @@ Proxy note for every session (30 Oct): the agent proxy refuses repository settin
 - Door: two-way; every row names its own way back.
 - Way back: a new ruling that supersedes this one; each row is reverted by reverting its PR.
 - Revisit when: the first four-week baseline from B67 exists, or the agent lane is switched on. Karma
+
+### CR-70 Standing merge delegation: the merge owner may merge without a founder comment when five conditions hold; it replaces CR-54 (PROVISIONAL, Fri 20 Nov 2026, Karma (drafting session), on the founder's words in chat today and on 10 Nov)
+- Status: provisional. This is a draft in a pull request the founder has not merged. The rule below is in effect from the merge of this PR and not before. Until then the old rule (CR-54) stands.
+- Question: must the founder keep naming the PR and the full sha in a comment before a PR merges, and keep clicking ready for review?
+- Tier and type: T3, because it moves a merge gate the founder owns. Complicated. This PR touches `docs/agents/`, which is a founder path, so the delegation does not cover it. The founder merges it.
+- The founder's words, verbatim. Today, 20 Nov 2026: "Do it for me. I can't post in 46. Make CTO do it. Automate such basic things and they shouldn't need me to add comments. Change that policy." On 10 Nov 2026 (relayed in the Project document `infra/founder-ruling-2026-11-11-standing-merge-delegation.md`): "Click ready for review for me. And change the rule that it needs me to comment."
+- Ruling: the merge owner may merge a PR without a founder comment when all five of these hold.
+  - 1. Review A and Review B are PASS in the counted format (CR-63) on the exact 40-character head sha, each from a different lens.
+  - 2. The required checks `required`, `compliance-fence` and `applied migrations unchanged` are green on that same head.
+  - 3. A dry-run merge into the current `develop` is clean, and the merge call pins `sha=` to that head.
+  - 4. The PR touches none of: `.github/**`; `apps/mobile/eas.json`; `docs/legal/**`; `compliance/**`; hosted migrations; user-facing promises or words that need his approval; money, accounts or keys; `docs/DECISIONS.md`.
+  - 5. A draft PR is marked ready first, by REST: `POST /repos/{o}/{r}/pulls/{n}/ccr/ready_for_review`.
+- Outside item 4, the old rule stays. For a PR that touches anything listed there, the founder still names the PR and the full sha, as under CR-54.
+- Also true under this ruling:
+  - The merge is logged on the board before it happens.
+  - Any new commit voids both reviews. They are posted again on the new head.
+  - Agents still do not approve or label. That covers `karma:approved` and `approve-migration`. Agents still do not post CCO lines.
+  - A session that holds a review file may post it as a PR comment. The founder never has to post review comments.
+  - The founder can narrow or revoke this with one line.
+- Options considered: keep CR-54 and have the founder comment each time (he has said no); let agents approve and label (rejected, the labels stay human); delegate everything including the item 4 paths (rejected, those are the paths where a wrong merge costs money, trust or a store rejection).
+- Why: the founder cannot post in some threads and has told us twice to stop asking him for a comment that carries no judgment. The judgment sits in the two reviews, the three checks and the path list. A comment from him on a PR that meets all five adds a step and no information.
+- Pre-mortem (two weeks on, this went badly): (1) a PR that needed his approval slipped through as "no promise": detected by the board log, which names the files; the doubt rule is that a PR with any unclear item 4 case goes to him; (2) a review was posted by a session that wrote it and read as independent: the two lenses must differ, and CR-63's note on independence of method applies; (3) the head moved after the reviews: the `sha=` pin makes the merge call fail.
+- Not verified when this was drafted: (a) live branch protection on `develop` was not read; the rule assumes the three required checks are enforced there, and that must be read before the first merge under it. (b) Who the merge owner is on the board was not read; I take it to be Karma or the coordinator, as D-132 says, and it should be named in the board line. (c) The text of CR-54 and the Project document were not readable from this session. No repo file holds CR-54 (CR-60 says the same). The conditions above come from the founder's brief to me, not from a reading of those texts. (d) The `ccr/ready_for_review` endpoint was not called.
+- Supersession: this entry supersedes CR-54 for PRs that meet all five conditions. This log is append only, so CR-54 gets no banner here. CR-54 has no entry in this file.
+- Door: two-way.
+- Way back: for a merge made under this rule, revert PR. For the rule, a docs PR that restores CR-54, or one line from the founder.
+- Revisit when: the first five merges under it are done, or any merge under it turns out to have met item 4. Karma
