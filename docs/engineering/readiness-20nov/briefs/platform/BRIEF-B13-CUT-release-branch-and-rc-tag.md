@@ -1,8 +1,8 @@
 # BRIEF B13-CUT: the release branch and RC tag cut checklist for Build 13
 
-Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#846, unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
+Re-open every file:line before relying on it. Cites at `origin/develop` 16e61549, 20 Nov 2026 about 18:50 UTC. Tags [V] [E] [U]. Card and `14-test-plan.md` line cites are at the locked pack `450bcb4a` (#934 rev 2 (88f3a975; #846 closed), unmerged: `git show origin/docs/prd-lock-v1-20nov:<path>`); develop still holds the older cards.
 
-**Blocked until: BRIEFs F4, P-7 and 830 are done; the founder answers Q1 (which P0 rows the cut meets; default in plan 5.3 holds the cut for BL-922, BL-925/926, BL-928, BL-961, NS-09-R6) and names the cut go; he picks the marketing version (1.0.0 or 1.0.1: plan 3a "Not verified" says Build 12 may not be submitted).** Founder-only: the go, the version, pushing the tag if he keeps it (RELEASE.md 1.2 says coordinator only), approving the `app-store` environment, submitting. The agent writes the checklist file and dry-runs the checks; it never tags, builds or submits.
+**Blocked until: BRIEFs F4, P-7 and 830 are done; the founder answers Q1 (which P0 rows the cut meets; the plan's recommendation (5.3), not a default, holds the cut for BL-922, BL-925/926, BL-928, BL-961, NS-09-R6) and names the cut go; he picks the marketing version (1.0.0 or 1.0.1: plan 3a "Not verified" says Build 12 may not be submitted).** Founder-only: the go, the version, pushing the tag if he keeps it (RELEASE.md 1.2 says coordinator only), approving the `app-store` environment, submitting. The agent writes the checklist file and dry-runs the checks; it never tags, builds or submits.
 
 ```
 BRIEF B13-CUT                                     Filled by: ops (RD-H3) 20 Nov 2026 18:50 UTC
@@ -58,7 +58,7 @@ Agent: ops   Lane: Pack 10   Build: 13   Wave: 1
 
 12. ORDER: after F4, P-7, 830, BRIEF B13-CHECKS and BL-976-WIRE (so the checks are complete). Before the device sheet. Blocked by the founder (Q1, version, go).
 
-13. DONE (the dry run is a `workflow_dispatch`: an agent may not be allowed to dispatch [U]; if refused, the founder dispatches and pastes the run URL, and the brief is done on that): [ ] ASCII only; [ ] cites re-opened; [ ] dry-run output pasted; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
+13. DONE (the dry run is a `workflow_dispatch`: an agent may not be allowed to dispatch [U]; the founder is the dispatcher; the `checks` job can run on develop, so the release branch is not needed for the dry run; every checklist row's owner is the founder or the coordinator, never the author agent; if refused, the founder dispatches and pastes the run URL, and the brief is done on that): [ ] ASCII only; [ ] cites re-opened; [ ] dry-run output pasted; [ ] PR body per HARNESS-RUN with `needs:founder`; [ ] journal #22; [ ] check-in.
 
 14. ONLY A PHONE CAN PROVE: the whole device sheet (plan 6.1: J-N1, J-N2/S1-204, NS-10-R3, NS-13-R14, J-N21, J-N24, J-N27, BL-928 row, BL-929);
     ITMS-90683 upload result; the iPad row. The checklist links them; it does not replace them.
