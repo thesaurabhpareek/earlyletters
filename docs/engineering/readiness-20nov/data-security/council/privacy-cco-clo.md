@@ -48,82 +48,82 @@ F3 workflow pastes: no legal or privacy touch; no view
 - Why: the pack reads the entitlement as stripped (app.config.ts:103-106, 07.1 R2) [V by author]. Apple 4.5.4 (read today): push "should not be used to send sensitive personal or confidential information" and not for promotions without explicit in-app opt-in and an opt-out. A token table is also new collection.
 - CHANGE (small): the list says "never for security alerts". Record it as "not in 1.0". An absolute in a decisions file tends to get copied into public text. Security alerts by push can be argued later by the CISO.
 - Conditions: if push is ever decided, the eight steps in 07.3 section 4 hold, the label gets a row first, payloads are kind plus fixed words (LR-10). The stale email-catalogue "one push" line (C1 in 07.1) is fixed so no copy promises it.
-- Closure line: "B1 closed 20 Nov 2026: no remote push in 1.0; revisit only by a new founder decision with the 07.3 section 4 list; CPrivO and CCO agree."
+- Proposed record (the seat's suggested closure line; nothing is closed until the founder, counsel or product decides): "B1 proposed record, [date] when decided: no remote push in 1.0; revisit only by a new founder decision with the 07.3 section 4 list; CPrivO and CCO agree."
 
 ### B2. Cloud AI for a child's voice, picture or letter text
 - Verdict: AGREE. Forbidden until X2 (security read plus counsel read); nothing leaves the phone.
 - Why: Apple 5.1.2(i) (read today): "You must clearly disclose where personal data will be shared with third parties, including with third-party AI, and obtain explicit permission before doing so." The constitution already bars any feature that writes or shapes words. Doc 06 C10 is right that letter text should also wait for a founder decision, not only audio and pictures; X2 as written does not cover text, so I adopt the pack's recommendation.
 - Condition: a code scan for AI endpoints is [U] in doc 06 section 3. Ask Karma for it before a store build (one test: no network call to a model host from a v1 build).
 - Pre-staged for counsel only if the founder ever opens the door: whether sending text to a zero-retention processor is "sharing" under the state consumer-health laws in the register (CR-020 to CR-032 rest on secondary sources not re-read: [U]).
-- Closure line: "B2 closed 20 Nov 2026: no letter text, voice or picture goes to any model provider in 1.0.x; any change needs X2 (security and counsel reads) and a founder decision; CPrivO, CCO and CLO agree."
+- Closure line: "B2 proposed record, [date] when decided: no letter text, voice or picture goes to any model provider in 1.0.x; any change needs X2 (security and counsel reads) and a founder decision; CPrivO, CCO and CLO agree."
 
 ### B3. Variant B (mediaSync, pictures leave the phone)
 - Verdict: AGREE not chosen, not built. NEEDS EVIDENCE first (gap G2).
 - Why: doc 06 lists a bucket entry-photos in the retention and deletion tables and doc 05 lists "photo upload policies live" (C4 in the list, finding "entry_photos_author_insert/update" [V]). If those policies are live and any build uploads a picture, then pictures already leave the phone and "variant B not built" is not true as a statement about the system. E23 and C10 say a picture sent to another person needs the same two reads as a child's voice.
 - Check and owner: the CTO/mobile owner states, from code, whether any 1.0.x path uploads a photo to entry-photos. If yes, B3 becomes a FOUNDER question with the label, policy and C4 closed first.
-- Closure line (if the check says no path uploads): "B3 closed 20 Nov 2026: no picture leaves the phone in 1.0.x; the entry-photos policies are narrowed by the S1 migration; label and policy match." If it says yes: reopen as FOUNDER.
+- Closure line (if the check says no path uploads): "B3 proposed record, [date] when decided: no picture leaves the phone in 1.0.x; the entry-photos policies are narrowed by the S1 migration; label and policy match." If it says yes: reopen as FOUNDER.
 
 ### B4. iPhone device backup of scribe.db, recordings and pictures
 - Verdict: AGREE the default for 1.0 (no change), with NEEDS COUNSEL on wording.
 - Reasoning: for a keepsake, losing a baby's voice is the larger harm, and a person's own iPhone backup is their own storage. Apple's privacy-details page (read today) defines "collect" as transmitting data off the device for us or our partners to access; it "does not address" iCloud or user-initiated backup. So I cannot say from Apple's page that it is outside "collect" or that it is inside. I mark the label reading [U] and put it to counsel.
 - The real exposure is the sentence, not the backup. Any "recordings stay on this phone" line (COUNSEL_PACKET Q17; register s.3 rows 1, 15, 16, 20) is untrue if the phone's own backup holds a copy. The deletion side too: Erase on the phone does not delete a copy in the person's iCloud backup.
 - Conditions: (1) no sentence says "only on this phone" until Q17 is answered; the safe form is "on this phone and in your own iPhone backup if you have one on" (words are the founder's, E2); (2) the Erase and delete-account screens say that a copy in the person's own phone backup is theirs to delete (Apple's deletion page: say what is retained); (3) B5 closes the one part that is ours.
-- Closure line: "B4 closed 20 Nov 2026: device backup of the app's data is left as iOS does it; no 'only on this phone' wording until counsel answers Q17; CPrivO and CCO agree; counsel must confirm."
+- Closure line: "B4 proposed record, [date] when decided: device backup of the app's data is left as iOS does it; no 'only on this phone' wording until counsel answers Q17; CPrivO and CCO agree; counsel must confirm."
 
 ### B5. The backup file backup-<profile id>.db (upload URL, token, wrapped key)
 - Verdict: AGREE, CHANGE to tighten.
 - Why: a token and a wrapped key sitting in a device backup travels to a place we do not control (G of the C7 point: the escrow key lists are also empty today).
 - Conditions: exclude the file from device backup AND apply the exclusion on existing installs at next launch (a flag set only at creation misses files already made); delete it on Erase and on sign-out; one test for the flag and one for deletion; the backup feature flag cannot turn on in a build where either test is missing (CCO gate item).
-- Closure line: "B5 closed 20 Nov 2026: exclusion and deletion built and tested before the backup flag; CPrivO and CCO agree."
+- Closure line: "B5 proposed record, [date] when decided: exclusion and deletion built and tested before the backup flag; CPrivO and CCO agree."
 
 ### B6. Region hook fails open or closed (Q57)
 - Verdict: AGREE fail-open for now; NEEDS COUNSEL (Q57 e).
 - Why: D-131 and D-136 set the blocked countries and the Privacy Policy line; CCO-5 and D-137 already accept no name screening and record that OFAC liability is strict (as recorded there; I did not re-read OFAC today, [U] on my side). The hook is one control among several: US-only storefront (D-083), the Terms 2.4 confirmation, the escalation check. A closed hook would turn every lookup failure into a refused US parent, with no privacy benefit.
 - Conditions: lookup failures are counted by result in the existing daily counts (no IP, no country stored with the account; CPrivO-2 flips to Coarse Location if that changes); a failure rate above a set level alerts the founder; the wording at D-136 stays "takes effect when the check ships".
 - Counsel question: CQ6.
-- Closure line: "B6 closed 20 Nov 2026: open on lookup failure, failures counted and alerted; counsel answers Q57 (e); CCO and CLO agree; counsel must confirm."
+- Closure line: "B6 proposed record, [date] when decided: open on lookup failure, failures counted and alerted; counsel answers Q57 (e); CCO and CLO agree; counsel must confirm."
 
 ### B7. Retention periods and related items
 Overall: AGREE that the defaults are "as built, marked 'as built, not approved'". Retention promises are the founder's (my skill s.5; Karma s.3). Until he approves, no period appears in the Privacy Policy, the store listing or the app. Nothing here is live: doc 05 reads the live database as migration files 1 and 2 only (APPLY.md:48), so no retention job runs in production today. That makes it cheap to change a period now and costly after (lengthening is one-way).
 
 B7a. Q51: 12 vs 24 months for the key-unwrap log (D-021 says 12 for ops, security and escrow logs; the build keeps escrow_unwraps 24).
-- Verdict: CHANGE and NEEDS COUNSEL. Decide the shorter in code now (12, matching D-021). The log records who opened a family's recovery key; its use is dispute and access evidence. Counsel says if a longer clock is needed; the founder then amends D-021 on the record. Do not let the build contradict a decision silently.
-- Closure line: "B7a closed 20 Nov 2026: escrow_unwraps kept 12 months as D-021 until counsel answers Q51; any lengthening is a founder decision."
+- Verdict: CHANGE and NEEDS COUNSEL and NEEDS FOUNDER. This seat recommends the shorter clock (12, matching D-021); the build keeps 24 as built until counsel and the founder answer, and the retention period is the founder's call. The log records who opened a family's recovery key; its use is dispute and access evidence. Counsel says if a longer clock is needed; the founder then amends D-021 on the record. Do not let the build contradict a decision silently.
+- Closure line: "B7a proposed: escrow_unwraps 12 months as D-021 is recommended; 24 stays as built until counsel answers Q51 and the founder decides; any lengthening is a founder decision."
 
 B7b. Released legal holds.
 - Verdict: AGREE as built with conditions. A held scope is skipped by purge and account deletion until released (purge_due, DATA-REQ-035 [V]). On release, normal clocks apply at the next purge_due run.
 - Conditions: release writes an audit row (legal_hold_released is defined and never written; finding 1 in doc 05); the legal_holds row carries matter_ref and review_by; data-policy.md section 7 and line 223 stop saying staff read held data "with a logged support_access event" until a writer exists (C05-3 / C06-2). Preservation script (LEGAL-REQ-057) is not built: the first request would be improvised; say so to counsel (CQ9).
-- Closure line: "B7b closed 20 Nov 2026: holds follow the as-built rule; hold and release rows are written before any hold is relied on; counsel must confirm the duties on release."
+- Closure line: "B7b proposed record, [date] when decided: holds follow the as-built rule; hold and release rows are written before any hold is relied on; counsel must confirm the duties on release."
 
 B7c. GitHub as processor (PQ-3).
 - Verdict: AGREE name GitHub in subprocessors.md and the providers page anyway (C06-4); NEEDS COUNSEL whether it is a processor for an age-encrypted dump it cannot open. I did not read GitHub's terms: [U].
 - NEEDS EVIDENCE: the "7 days" is the premise of the 38-day promise (31 + 7). A private git repo keeps old commits. How is the dump removed at day 7 (release assets or artifacts deleted, or history rewritten)? Owner: ops. If it cannot be shown, the 38-day sentence stays unpublished.
-- Closure line: "B7c closed 20 Nov 2026: GitHub is named as a provider of the encrypted dump; the 7-day removal is shown by a dated drill; counsel must confirm its legal role."
+- Closure line: "B7c proposed record, [date] when decided: GitHub is named as a provider of the encrypted dump; the 7-day removal is shown by a dated drill; counsel must confirm its legal role."
 
 B7d. Audit rows in an access request (PQ-5).
 - Verdict: AGREE default (rows about the requester, in account.json); NEEDS COUNSEL.
 - Conditions: only rows where the requester is actor or subject, never another member's rows or any staff row naming a staff handle; the export needs a new definer function (audit_events has no reader today: finding 3); detail fields are enums and counts only (so no other person's data leaks into the export).
-- Closure line: "B7d closed 20 Nov 2026: an access answer includes the requester's own audit and deletion rows via Save a copy; counsel must confirm."
+- Closure line: "B7d proposed record, [date] when decided: an access answer includes the requester's own audit and deletion rows via Save a copy; counsel must confirm."
 
 B7e. Guideline 4.5.4 and local reminders.
 - Verdict: AGREE default (local reminders only, no promotion), NEEDS COUNSEL.
 - Source: 4.5.4, read today, is written about Push Notifications. Whether it governs a local notification is a judgment I do not make. Our design is safe either way: no sensitive content (neutral titles, D4), no promotion, not required to use the app (5.1.2(i) also says an app may not require users to enable push to use it). Counsel confirm (CQ7).
-- Closure line: "B7e closed 20 Nov 2026: reminders stay local and unpromotional; wording keeps to 4.5.4 either way; counsel must confirm applicability."
+- Closure line: "B7e proposed record, [date] when decided: reminders stay local and unpromotional; wording keeps to 4.5.4 either way; counsel must confirm applicability."
 
 B7f. Notices after deletion.
 - Verdict: AGREE (a completion email is sent before the auth user is removed and is the last mail to that address).
 - Source: Apple's deletion page says to "provide a confirmation when the deletion is complete" and to tell people what is retained. That supports the receipt. CAN-SPAM treatment of transactional mail: [U] (ftc.gov unreachable); counsel confirm (CQ7).
 - Privacy cost, stated plainly: Resend holds the address and the email text for 30 days, so that one copy lasts to about day 60. The pack names it as the one exception. Keep it named in the policy and the receipt itself.
-- Closure line: "B7f closed 20 Nov 2026: one completion receipt, no later mail; the Resend copy is named as the one exception; counsel must confirm."
+- Closure line: "B7f proposed record, [date] when decided: one completion receipt, no later mail; the Resend copy is named as the one exception; counsel must confirm."
 
 B7g. Everything else as built (unconfirmed sign-up row 7 days proposed, support mail 2 years proposed, analytics 12 months proposed, crash 90 days proposed, inactive accounts none, tester answers 90 days, deletion receipts 3 years, policy_acceptances life plus 3 years, purge ledger 60 days).
 - Verdict: AGREE the marking. NEEDS FOUNDER before any period is published. NEEDS COUNSEL on inactive accounts (OQ-11): the default "no automatic deletion in v1" is a retention choice that keeps children's data indefinitely; privacy view: acceptable because a keepsake is opened years later, if the policy says it plainly and export and delete are always available.
 - Gap: unconfirmed sign-up rows have no purge job (FR-PRV-05 not built): an address kept without a purpose. Build before the first outside family.
-- Closure line: "B7g closed 20 Nov 2026: periods remain 'as built, not approved'; none published until the founder approves; counsel confirms Q26 periods."
+- Closure line: "B7g proposed record, [date] when decided: periods remain 'as built, not approved'; none published until the founder approves; counsel confirms Q26 periods."
 
 ### B8. Does a parent ever see their own audit rows on a screen
 - Verdict: AGREE: no screen in 1.0; rows go into the export (see B7d). A screen would add a new reader of audit_events and new words. Revisit if counsel says an access request must be answered live.
-- Closure line: "B8 closed 20 Nov 2026: no audit screen; own rows in Save a copy."
+- Closure line: "B8 proposed record, [date] when decided: no audit screen; own rows in Save a copy."
 
 ## 3. Section D (customer communication)
 
@@ -133,25 +133,25 @@ B7g. Everything else as built (unconfirmed sign-up row 7 days proposed, support 
 - Compliance: I found no row in the register that requires any of A1, A3, A6. LEGAL-REQ-037 (repo requirement) asks to log new-device sign-in; that is a repo rule, not a law I read. The trade-off (an outside family has no new-device warning for a while) is the CISO's and CPO's call.
 - CAN-SPAM [U]: classing alert mail as transactional is counsel's (CQ7).
 - Conditions: every alert states fixed words, no IP, place, device name, token or sign-in link (07.2 section 3); alerts go only to the inbox owner.
-- Closure line: "D1 closed 20 Nov 2026: v1 sends only what Supabase Auth and the built senders send, plus A6 if cheap; A1 after a CPrivO label read and a device-hash design; CPrivO and CCO agree."
+- Closure line: "D1 proposed record, [date] when decided: v1 sends only what Supabase Auth and the built senders send, plus A6 if cheap; A1 after a CPrivO label read and a device-hash design; CPrivO and CCO agree."
 
 ### D2. Quiet hours and alert cap
 - Verdict: AGREE. Alerts exempt from quiet hours; A1, A3 to A9 never capped; A2 capped at 5 per 24 h. The 5 is our number [E], an engineering parameter, not a promise. No law I read sets it.
-- Closure line: "D2 closed 20 Nov 2026: exempt; security alerts never capped; the cap of 5 for A2 is an engineering estimate."
+- Closure line: "D2 proposed record, [date] when decided: exempt; security alerts never capped; the cap of 5 for A2 is an engineering estimate."
 
 ### D3. Email after repeated wrong codes; server lockout
 - Verdict: AGREE no email; phone pause only. Privacy note: a server-side count per address needs the address hash in an ops counter (L3) and must not appear in logs. Server lockout is the CISO's; I flag that the phone pause lives in memory (lost on restart) and the vendor per-IP limit was "read 3 Oct" [U].
-- Closure line: "D3 closed 20 Nov 2026: no email on repeated wrong codes; server lockout is the CISO's decision."
+- Closure line: "D3 proposed record, [date] when decided: no email on repeated wrong codes; server lockout is the CISO's decision."
 
 ### D4. Neutral lock-screen body and birthday title
 - Verdict: AGREE and strengthen. Child name and birthday are L4. Apple's privacy page lists "religious or philosophical beliefs" and "pregnancy or childbirth information" as Sensitive Info (read today), and library days (L5) can reveal faith. 4.5.4 says push should not carry sensitive information (applicability to local is CQ7).
 - Rule: the neutral title is the default for the birthday, month and library-day notifications; a name appears only if the parent turned names on AND App lock is off (LR-01). Add the category and hidden-preview placeholder (NS-32-R13).
 - Evidence needed: [U] whether iOS keeps a local notification's title when previews are hidden. A founder device check (NTC-T24) is the proof; the CCO gate holds the claim "nothing shows on your lock screen" until it runs.
-- Closure line: "D4 closed 20 Nov 2026: neutral birthday title by default; names only on a parent's own switch with App lock off; category and placeholder built; device check run."
+- Closure line: "D4 proposed record, [date] when decided: neutral birthday title by default; names only on a parent's own switch with App lock off; category and placeholder built; device check run."
 
 ### D5. Marketing email to app sign-ups
 - Verdict: AGREE: no; transactional only; waitlist addresses kept apart and deletable. A marketing send would be a new use of the address (founder-only for me), needs its own opt-in, the CAN-SPAM rules [U], a policy change and the house rule against win-back mail.
-- Closure line: "D5 closed 20 Nov 2026: no marketing email to app accounts; waitlist separate; reopen only by a founder decision with counsel."
+- Closure line: "D5 proposed record, [date] when decided: no marketing email to app accounts; waitlist separate; reopen only by a founder decision with counsel."
 
 (D6, budget of 60: no privacy or legal touch; no view.)
 
