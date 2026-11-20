@@ -89,7 +89,7 @@ Also worth a reader's time: no function is executable by `PUBLIC` or `anon` (0 o
 | C-7 | D-021 (12 months for key-unwrap logs) against 24 months built (`20261023000000:1602`) | counsel Q51 (already open) |
 | C-8 | CLOSED. Media text ceilings: `data-and-sync.md` L11 was amended on develop to 2240 and 960 (as built; 1120 and 480 superseded), which matches `14-media-library-video.md` F1. Only [U] remains: #835's head was not read | none |
 | C-9 | NS-51-R6 "in the phone database" against R23 "excluded from backup" | resolved by CR-69 A4 (a file); product to confirm on #934 |
-| C-10 | Gate of the new-device email. NS-08-R21 and E78 (`18-errata-after-lock.md`): built, tested and read by `security-architect` before the backup flip; nothing for 1.0. The decisions record D1 (PR #1013) and the founder, in chat on 20 Nov as relayed to me, say before the first outside family. The card wins (CR-66) and I do not choose; the earlier of the two gates is safe for the device table (02i S10) | Karma, product (CPO), founder |
+| C-10 | Gate of the new-device email. E78 / NS-08-R21 gate the new-device email before the backup flip; the founder decided (`DECISIONS-20nov.md` section 8 item 7, on develop since #1013 merged; section 10) before the first outside family. The founder's date is earlier and so stricter: building the email before the first outside family satisfies both. Cards win on wording (CR-66), so product records the founder's decision in an erratum; engineering builds to the stricter gate (02i S10) | product (erratum), engineering |
 
 ## 7. Gaps (each has a default; none needs a decision today)
 
@@ -191,7 +191,7 @@ This closes the reviewer note that the pack's ids did not line up with the legal
 ### 8.9 Errata E74 to E82 (`docs/product/prd/18-errata-after-lock.md`, develop `df2c3502`)
 
 - E74 (audit rows): no screen. A person's own `audit_events` and `deletion_requests` rows go in `account.json` in Save a copy only. "Own" is actor or account owner; another member shows as "another member", with no name, email or id; a test on the export file checks that no letter words, recording or child name are in it. A definer function returns only the caller's rows (data-architect, 02i S12, design only); no API role gets a grant on the table. This keeps G-13's key allowlist as a condition for the producing function and C-4's sentence fix.
-- E78 (new-device email): not built for 1.0. It needs a new server sender, a device table and a stop page; the device table is designed, not built (02i S10, design only), gated by NS-08-R21 before the backup flip. Conflict C-10 below.
+- E78 (new-device email): not built for 1.0. It needs a new server sender, a device table and a stop page; the device table is designed, not built (02i S10, design only), gated by NS-08-R21 before the backup flip. Conflict C-10 below (resolved: build to the founder's stricter gate).
 - E79 (push): no APNs key, no push token table, no push entitlement in 1.0. 01b P-1 holds; 02i adds no token table.
 - E80 (dictionary): phone only, never synced, copied or put in a server export; G-4 is closed as by design above. Where on the phone it is stored (schema 10 has no table) is open to `mobile` and data-architect [U].
 - E81 (alert cap): nothing built for 1.0. Any alert sender needs cap state (02i S11, design only): first 5 in an hour one by one, the rest folded into one summary, a ceiling of 20 alert emails per account per day (engineering's number, [E]).
