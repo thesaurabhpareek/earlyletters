@@ -74,3 +74,11 @@ About 70 locations opened for these 23 briefs and this file; about 58 held as fi
 ## After review B (20 Nov, pushed as normal commits)
 
 F4: the `db-production` approval covers the whole deploy job, so a green dry run pushes by itself; the brief now says so and asks for a two-job proposal. The file count is [U] (31 minus 2 is arithmetic). #830: per-hunk review of main's 3 commits (656 files, 4 migrations), not the stat; both branches hold the same 31 migrations. Size gate: hard budgets have no waiver, baselines are compared with the base branch. Trace baseline: same. Perf profile: default internal. Merge queue: skipped is accepted only when the queue itself says not native; removing eas.json is a loosening for Karma. Q6 dropped.
+
+## Tests that no CI list runs, and the one workflow change (review A)
+
+`npm test` runs every workspace (`apps/*`, `packages/*`, `experiments`) plus a fixed `node --test` list (root package.json:11: trace, release setup, compliance). Not run by `npm test` or any workflow [V grep]: `scripts/packs/*.test.ts` (secret-scan), `scripts/size/lib.test.ts`, `scripts/status/page.test.mjs`, `scripts/guards/docs-leak-guard.test.mjs`, `scripts/qa/skip-guard.test.mjs`. No brief wires docs-leak-guard or skip-guard: that is a gap for qa and Karma to give a row. New tests in these briefs go under `apps/mobile/test` (runs in `unit`) or into the root `node --test` list, never only into those folders.
+
+Three briefs compare a file with the base branch's copy (CI-PIN allow list, BL-964 baseline, CI-SIZEGATE baseline). The `unit` job has a default-depth checkout with no base ref, so `git show origin/<base>:...` fails there. One founder step serves all three, before `npm test`, pull_request events only: `git fetch --no-tags --depth=1 origin "+refs/heads/$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"`. The tests fail, never skip, when the base copy is missing in CI.
+
+Dispatch note: briefs 6 and 14 need a `workflow_dispatch`; an agent may not be allowed to make one [U]. If refused, the founder dispatches and the brief is done on his run ids.
