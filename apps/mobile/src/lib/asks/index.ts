@@ -12,6 +12,7 @@
  * | `asks.keepBookOffered` | `on` once the Keep the book sheet was offered after a letter |
  * | `asks.firstLetterSession` | session key (ms epoch) in which the first letter was saved |
  * | `asks.lastAskDay` | local day (YYYY-MM-DD) of the last ask, for one ask per calendar day |
+ * | `asks.keptLetterSessions`, `asks.lastKeptSession` | sessions that ended in a kept letter (./kept-sessions; stays on the phone) |
  *
  * Sessions are tracked here, not by the analytics lifecycle, because analytics is off in the whole 1.0 line
  * (D-124 item 3) and its lifecycle never starts then. A session is a process start, or a return to the
@@ -21,8 +22,10 @@ import { AppState } from 'react-native';
 import { noteAskShown } from '@/lib/analytics/ask';
 import { getSetting, listChildren, listEntriesForChild, listHiddenChildren, setSetting } from '@/lib/store';
 import { readPrefs } from '@/lib/reminders/prefs';
+import { createKeptSessionCounter } from './kept-sessions';
 import { localDay, nextAsk, sessionAfterForeground, type NextAsk } from './next-ask.logic';
 
+export { KEPT_SESSIONS_KEY, LAST_KEPT_SESSION_KEY, type KeptSessionCounter } from './kept-sessions';
 export { MAX_REMINDER_PRIMES, nextAsk, primeAllowed, type AskFacts, type NextAsk } from './next-ask.logic';
 
 const K = {
@@ -57,6 +60,20 @@ function lettersOnPhone(): number {
   return n;
 }
 
+const keptSessions = createKeptSessionCounter({ get: getSetting, set: setSetting });
+
+/**
+ * Sessions that ended in at least one kept letter, counted on this phone only (NX-31-R14). For the lock and reminder
+ * sequencer to come; nothing reads it yet, and nothing about it is sent or tracked.
+ */
+export function keptLetterSessions(): number {
+  try {
+    return keptSessions.keptLetterSessions();
+  } catch {
+    return 0;
+  }
+}
+
 /** Any ask appeared now: no other ask this session or this calendar day. */
 export function noteAsked(now = Date.now()): void {
   askSession = session;
@@ -75,6 +92,11 @@ export function noteReminderPrimeShown(): void {
  * Returns the one ask due, and records it as shown when it is the account sheet (the card records itself when it appears).
  */
 export function askAfterSave(input: { firstLetter: boolean; signInOffered: boolean }, now = Date.now()): NextAsk {
+  try {
+    keptSessions.noteLetterKept(session);
+  } catch {
+    // a count is never worth an error after a save
+  }
   try {
     if (input.firstLetter && getSetting(K.firstLetterSession) === null) setSetting(K.firstLetterSession, String(session));
     const stored = Number(getSetting(K.firstLetterSession));
